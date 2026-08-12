@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.advancement.PlayerMobSocialTracker;
 import games.brennan.dungeontrain.compat.EchoIdentity;
 import games.brennan.dungeontrain.ship.CarriageDeck;
 import games.brennan.dungeontrain.train.Trains;
+import games.brennan.dungeontrain.worldgen.WorldFloor;
 import games.brennan.playermob.entity.PlayerMobEntity;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.server.MinecraftServer;
@@ -52,6 +53,16 @@ import java.util.UUID;
  *   <li>Logout — clears the player's transient {@link PlayerMobSocialTracker}
  *       state.</li>
  * </ul>
+ *
+ * <p><b>Below the bedrock, Reboarder does not count.</b> The hallway-portal system builds its rooms
+ * in the empty basement under a DT overworld's bedrock, so a PlayerMob that follows a player through
+ * a portal reads as off the carriage deck and credits a shove nobody made. {@link #step} drops any
+ * hit on a mob under {@link WorldFloor#bedrockY(ServerLevel)}.</p>
+ *
+ * <p><b>Into the Void is deliberately exempt.</b> It is earned by an echo dying
+ * {@code FELL_OUT_OF_WORLD}, which is always below the bedrock — the same rule applied there would
+ * delete the advancement rather than correct it. It keeps its own guard instead: the strike must
+ * have landed while the echo was on the train.</p>
  *
  * <p>Item give/receive (A Silent Friend / Friends) is captured separately via
  * PlayerMob's {@code PlayerMobSocialHooks} gift seam, forwarded by
@@ -167,6 +178,7 @@ public final class PlayerMobAdvancementEvents {
         pruneEchoStrikes(now);
         if (RECENT_HITS.isEmpty()) return;
 
+        int bedrockY = WorldFloor.bedrockY(level);
         List<Trains.Carriage> carriages = Trains.allCarriages(level);
         // Snapshot so we can mutate the map while iterating.
         for (Map.Entry<UUID, ReboarderHit> entry : new ArrayList<>(RECENT_HITS.entrySet())) {
@@ -179,12 +191,13 @@ public final class PlayerMobAdvancementEvents {
             // null ⇒ unloaded or dead (no live position); otherwise its support.
             Boolean onDeck = (mob != null && mob.isAlive())
                 ? CarriageDeck.isOnCarriageDeck(carriages, mob) : null;
+            boolean belowBedrock = mob != null && mob.isAlive() && mob.getY() < bedrockY;
 
-            ReboarderStep outcome = step(hit, onDeck, dead, expired);
+            ReboarderStep outcome = step(hit, onDeck, dead, expired, belowBedrock);
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("[DungeonTrain] Reboarder mob={} onDeck={} dead={} expired={} "
-                        + "wasOnTrain={} lastOnDeck={} offScans={} -> {}",
-                    mobUuid, onDeck, dead, expired, hit.wasOnTrain(),
+                        + "belowBedrock={} wasOnTrain={} lastOnDeck={} offScans={} -> {}",
+                    mobUuid, onDeck, dead, expired, belowBedrock, hit.wasOnTrain(),
                     hit.lastOnDeck(), hit.offScans(), outcome.decision());
             }
             switch (outcome.decision()) {
@@ -204,12 +217,19 @@ public final class PlayerMobAdvancementEvents {
      * Pure decision for one off-deck scan of a tracked hit — side-effect-free so
      * {@code PlayerMobReboarderTest} can table-test it.
      *
-     * @param onDeck  mob's current carriage support, or {@code null} when it is
-     *                unloaded or dead (no live position to test)
-     * @param dead    the mob exists but is no longer alive
-     * @param expired the push window has elapsed since the strike
+     * @param onDeck       mob's current carriage support, or {@code null} when it is
+     *                     unloaded or dead (no live position to test)
+     * @param dead         the mob exists but is no longer alive
+     * @param expired      the push window has elapsed since the strike
+     * @param belowBedrock the mob is under the world's bedrock — the basement the portal system
+     *                     builds its rooms in. It walked through a door with the player rather than
+     *                     being shoved off a moving train, so the hit is dropped outright; without
+     *                     this, punching a PlayerMob and then leading it through a portal awards
+     *                     Reboarder.
      */
-    static ReboarderStep step(ReboarderHit hit, Boolean onDeck, boolean dead, boolean expired) {
+    static ReboarderStep step(ReboarderHit hit, Boolean onDeck, boolean dead, boolean expired,
+                              boolean belowBedrock) {
+        if (belowBedrock) return new ReboarderStep(ReboarderDecision.DROP, hit);
         if (onDeck != null) {                            // live: we can see where it is
             if (hit.wasOnTrain() && !onDeck) {           // off the carriage deck right now
                 int off = hit.offScans() + 1;

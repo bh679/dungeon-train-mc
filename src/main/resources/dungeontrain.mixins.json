@@ -20,6 +20,8 @@
     "NoiseBasedChunkGeneratorMixin",
     "ChunkGeneratorDecorationMixin",
     "ChunkGeneratorStructureStateMixin",
+    "WorldGenRegionFloorMixin",
+    "StructureBasementMixin",
     "ChunkStatusSpawnMixin",
     "RandomStateMixin",
     "ServerGamePacketListenerImplSignBookMixin",
@@ -64,6 +66,8 @@
     "client.MinecraftFramerateThrottleMixin",
     "client.SoundEngineMusicFadeMixin",
     "client.LanguageSelectEntryLogoMixin",
+    "client.SectionOcclusionGraphPortalSwapMixin",
+    "client.LevelRendererPortalSwapCompileMixin",
     "client.LanguageSelectEntryAccessor",
     "client.I18nAccessor",
     "client.LanguageManagerReapplyMixin"

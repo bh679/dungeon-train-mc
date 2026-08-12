@@ -34,6 +34,8 @@ import java.util.Optional;
  *   <li>{@code returned_to_train} — re-boarded after getting off the carriage</li>
  *   <li>{@code used_pillar_stairs} — entered a bridge-pillar side staircase</li>
  *   <li>{@code used_tunnel_stairs} — entered a tunnel stairwell (surface entrance or shaft)</li>
+ *   <li>{@code entered_portal_room} — stood in a portal room's body, past its corridor, for 5s</li>
+ *   <li>{@code distant_portal_exit} — left a portal room by a corridor far from the way in</li>
  * </ul>
  *
  * <p>JSON shape:

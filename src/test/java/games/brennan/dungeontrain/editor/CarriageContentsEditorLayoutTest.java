@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.editor;
 
+import games.brennan.dungeontrain.portal.PortalCorridorSize;
 import games.brennan.dungeontrain.train.CarriageContents;
 import games.brennan.dungeontrain.train.CarriageContentsGroup;
 import games.brennan.dungeontrain.train.CarriageContentsRegistry;
@@ -61,7 +62,10 @@ final class CarriageContentsEditorLayoutTest {
     void noGroups_topLevelRow() {
         registerCustom("alpha");
         registerCustom("beta");
-        int xStep = DIMS.length() + EditorLayout.GAP;
+        // The stride is the WIDEST plot any contents can have, not a carriage — the portal
+        // corridor's contents plot is longer, and a carriage-wide stride would run it into its
+        // neighbour. See CarriageContentsEditor.plotStep.
+        int xStep = PortalCorridorSize.corridorLength(DIMS) + EditorLayout.GAP;
 
         BlockPos alpha = plot("alpha");
         BlockPos beta = plot("beta");

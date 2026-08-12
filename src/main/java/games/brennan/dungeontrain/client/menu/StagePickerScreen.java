@@ -53,6 +53,9 @@ public final class StagePickerScreen implements MenuScreen {
     private final boolean groupMemberMode;
     private final String groupParentId;
     private final String groupMemberId;
+    /** {@link games.brennan.dungeontrain.track.variant.TrackKind#id()} for a track-side sub-variant;
+     *  empty for a contents one. Decides which {@code stage apply …} route the toggles dispatch. */
+    private final String groupKindId;
     private final LinkedHashSet<String> groupSelected = new LinkedHashSet<>();
 
     public StagePickerScreen(String category, String modelId, String modelName, String currentStageId) {
@@ -67,6 +70,7 @@ public final class StagePickerScreen implements MenuScreen {
         this.groupMemberMode = false;
         this.groupParentId = "";
         this.groupMemberId = "";
+        this.groupKindId = "";
     }
 
     private StagePickerScreen(String variantId, CarriagePartKind kind, String name, String currentStageId) {
@@ -81,10 +85,12 @@ public final class StagePickerScreen implements MenuScreen {
         this.groupMemberMode = false;
         this.groupParentId = "";
         this.groupMemberId = "";
+        this.groupKindId = "";
     }
 
-    private StagePickerScreen(String parentId, String memberId, Collection<String> currentStageIds) {
+    private StagePickerScreen(String kindId, String parentId, String memberId, Collection<String> currentStageIds) {
         this.groupMemberMode = true;
+        this.groupKindId = kindId == null ? "" : kindId;
         this.groupParentId = parentId == null ? "" : parentId;
         this.groupMemberId = memberId == null ? "" : memberId;
         if (currentStageIds != null) {
@@ -115,7 +121,25 @@ public final class StagePickerScreen implements MenuScreen {
      * command; {@code currentStageIds} seeds which rows start ticked.
      */
     public static StagePickerScreen forGroupMember(String parentId, String memberId, Collection<String> currentStageIds) {
-        return new StagePickerScreen(parentId, memberId, currentStageIds);
+        return new StagePickerScreen("", parentId, memberId, currentStageIds);
+    }
+
+    /**
+     * The same multi-select picker for a <em>track-side</em> sub-variant (today: a portal room's) —
+     * identical toggles, routed to {@code stage apply tracks-group <kind> <parent> <member> <token>}
+     * instead. {@code kindId} is the {@code TrackKind} id the member's sidecar lives under.
+     */
+    public static StagePickerScreen forTrackGroupMember(String kindId, String parentId, String memberId,
+                                                        Collection<String> currentStageIds) {
+        return new StagePickerScreen(kindId, parentId, memberId, currentStageIds);
+    }
+
+    /** The {@code stage apply …} command toggling {@code token} for this group member. */
+    private String groupStageCommand(String token) {
+        return groupKindId.isEmpty()
+            ? EditorPlotTeleport.groupMemberStageApplyCommandFor(groupParentId, groupMemberId, token)
+            : EditorPlotTeleport.trackGroupMemberStageApplyCommandFor(
+                groupKindId, groupParentId, groupMemberId, token);
     }
 
     @Override
@@ -157,8 +181,7 @@ public final class StagePickerScreen implements MenuScreen {
             checkbox(groupSelected.isEmpty()) + "Custom (no Stage — clear all)",
             () -> {
                 groupSelected.clear();
-                CommandRunner.run(EditorPlotTeleport.groupMemberStageApplyCommandFor(
-                    groupParentId, groupMemberId, "custom"));
+                CommandRunner.run(groupStageCommand("custom"));
             }));
 
         for (ClientStages.Info s : ClientStages.all()) {
@@ -167,8 +190,7 @@ public final class StagePickerScreen implements MenuScreen {
             String label = checkbox(on) + s.name() + "  [" + ClientStages.gateSummary(s) + "]";
             out.add(new CommandMenuEntry.ClientAction(label, () -> {
                 if (!groupSelected.remove(stageId)) groupSelected.add(stageId);
-                CommandRunner.run(EditorPlotTeleport.groupMemberStageApplyCommandFor(
-                    groupParentId, groupMemberId, stageId));
+                CommandRunner.run(groupStageCommand(stageId));
             }));
         }
         if (ClientStages.isEmpty()) {

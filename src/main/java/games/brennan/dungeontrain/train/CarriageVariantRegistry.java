@@ -150,6 +150,14 @@ public final class CarriageVariantRegistry {
         CUSTOMS.clear();
         int bundled = loadBundledScan();
         int config = loadConfigDir();
+
+        // The hallway portal corridor is always offered, with or without an .nbt on disk. Every other
+        // custom is discovered by finding its file, but a portal has code-generated geometry to fall
+        // back on (PortalCarriageBuilder), so requiring a file first would hide it from the editor —
+        // and the editor is where its file is supposed to come from. Opening it stamps the built-in
+        // corridor; saving writes the .nbt that every portal carriage and twin then stamps from.
+        CUSTOMS.add(games.brennan.dungeontrain.portal.PortalCarriageBuilder.portalVariant().id());
+
         games.brennan.dungeontrain.editor.StageBlockIndex.invalidateAll();
 
         LOGGER.info("[DungeonTrain] Carriage variant registry loaded — {} built-in + {} custom ({} bundled, {} config)",

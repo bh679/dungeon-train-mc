@@ -4,7 +4,11 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.debug.DebugFlags;
 import games.brennan.dungeontrain.difficulty.DifficultyProgression;
+import games.brennan.dungeontrain.editor.CarriageContentsGroupStore;
 import games.brennan.dungeontrain.editor.CarriageContentsStore;
+import games.brennan.dungeontrain.portal.PortalCarriageBuilder;
+import games.brennan.dungeontrain.portal.PortalCorridorMask;
+import games.brennan.dungeontrain.portal.PortalCorridorSize;
 import games.brennan.dungeontrain.editor.CarriageContentsVariantBlocks;
 import games.brennan.dungeontrain.editor.CarriageVariantBlocks;
 import games.brennan.dungeontrain.editor.ContainerContentsPool;
@@ -101,6 +105,76 @@ public final class CarriageContentsPlacer {
      * at their minimums; callers should treat a zero-or-negative dimension as
      * "no interior volume" and skip placement.
      */
+    /**
+     * The box {@code contents} is authored against — which is <b>not</b> always the world's carriage
+     * dims.
+     *
+     * <p>The portal corridor's contents are the exception: a corridor runs past its slot into the
+     * cart between a portal's pair, so what stands inside one is measured over
+     * {@link games.brennan.dungeontrain.portal.PortalCorridorSize#corridorDims} — 13×7×7 at the
+     * default, giving an 11×5×5 interior. The contents-side counterpart of
+     * {@link CarriagePlacer#variantDims}, and load-bearing for the same reason: the template's size
+     * gate, the editor plot, and the sidecar's bounds all have to agree on one box or the template is
+     * rejected, the plot is the wrong size, and entries past the carriage's length are dropped.</p>
+     *
+     * <p><b>Feed this the world's carriage dims, never its own output.</b> Every method here that
+     * takes a {@code (contents, dims)} pair resolves the box itself, so callers pass the world's dims
+     * and let it decide — handing one an already-resolved corridor box would grow it a second time.
+     * The box-only methods ({@link #captureTemplate}, {@link #eraseAt}, {@link #discardEntitiesAt})
+     * are the other half of that convention: they have no {@code contents} to resolve from, so their
+     * callers pass the resolved box.</p>
+     */
+    public static CarriageDims contentsDims(CarriageContents contents, CarriageDims dims) {
+        return isPortalContents(contents.id())
+            ? PortalCorridorSize.corridorDims(dims)
+            : dims;
+    }
+
+    /**
+     * True for the portal contents <b>or any sub-variant of it</b>.
+     *
+     * <p>A sub-variant is an alternative filling for the same space — the group picks between the
+     * parent and its members for one slot — so a member of the portal group is authored into a
+     * corridor exactly as its parent is, and has to be measured the same way. Sizing one as a
+     * carriage gives it a plot four blocks short, and a template captured there is rejected by the
+     * size gate the moment it is loaded.</p>
+     *
+     * <p>Walks the whole parent chain rather than checking one level, since groups may nest, and
+     * counts its steps: {@code findParentOf} reads sidecars off disk, and a cycle authored into
+     * them ({@code a}'s parent is {@code b}, {@code b}'s is {@code a}) would otherwise hang the
+     * server on a lookup that runs per placement.</p>
+     *
+     * <p><b>Public because the editor's shell choice reads it too</b>
+     * ({@code CarriageContentsEditor.shellFor}). It used to compare ids directly and so shelled a
+     * sub-variant's corridor-sized plot with a standard carriage — the box rule and the shell rule
+     * were the same question answered twice, and only one of them learned about groups.</p>
+     */
+    public static boolean isPortalContents(CarriageContents contents) {
+        return isPortalContents(contents.id());
+    }
+
+    private static boolean isPortalContents(String id) {
+        String portal = PortalCarriageBuilder.portalContents().id();
+        String current = id;
+        for (int depth = 0; depth <= MAX_GROUP_DEPTH; depth++) {
+            if (current.equals(portal)) return true;
+            Optional<String> parent = CarriageContentsGroupStore.findParentOf(current);
+            if (parent.isEmpty()) return false;
+            current = parent.get();
+        }
+        LOGGER.warn("[DungeonTrain] Contents group chain from '{}' exceeded {} levels — "
+            + "treating as un-nested. Check for a cycle in the group sidecars.", id, MAX_GROUP_DEPTH);
+        return false;
+    }
+
+    /** How far {@link #isPortalContents} will walk a group chain before calling it a cycle. */
+    private static final int MAX_GROUP_DEPTH = 16;
+
+    /** {@link #interiorSize} of the box {@code contents} is authored against. */
+    public static Vec3i interiorSizeFor(CarriageContents contents, CarriageDims dims) {
+        return interiorSize(contentsDims(contents, dims));
+    }
+
     public static Vec3i interiorSize(CarriageDims dims) {
         return new Vec3i(
             Math.max(0, dims.length() - 2),
@@ -153,8 +227,10 @@ public final class CarriageContentsPlacer {
     public static void placeAt(ServerLevel level, BlockPos carriageOrigin, CarriageContents contents,
                                CarriageDims dims, long seed, int carriageIndex) {
         placeAtInternal(level, carriageOrigin, contents, dims, seed, carriageIndex, /*placeBlocks*/ true, /*spawnEntities*/ true);
-        applyVariantBlocks(level, carriageOrigin, contents, dims, seed, carriageIndex);
-        applyContentPools(level, carriageOrigin, contents, dims, seed, carriageIndex);
+        applyVariantBlocks(level, interiorOrigin(carriageOrigin), interiorSizeFor(contents, dims),
+            contents, seed, carriageIndex, PortalCorridorMask.NONE);
+        applyContentPools(level, interiorOrigin(carriageOrigin), interiorSizeFor(contents, dims),
+            contents, seed, carriageIndex, PortalCorridorMask.NONE);
     }
 
     /**
@@ -186,8 +262,48 @@ public final class CarriageContentsPlacer {
     public static void placeBlocksOnly(ServerLevel level, BlockPos carriageOrigin, CarriageContents contents,
                                         CarriageDims dims, long seed, int carriageIndex) {
         placeAtInternal(level, carriageOrigin, contents, dims, seed, carriageIndex, /*placeBlocks*/ true, /*spawnEntities*/ false);
-        applyVariantBlocks(level, carriageOrigin, contents, dims, seed, carriageIndex);
-        applyContentPools(level, carriageOrigin, contents, dims, seed, carriageIndex);
+        applyVariantBlocks(level, interiorOrigin(carriageOrigin), interiorSizeFor(contents, dims),
+            contents, seed, carriageIndex, PortalCorridorMask.NONE);
+        applyContentPools(level, interiorOrigin(carriageOrigin), interiorSizeFor(contents, dims),
+            contents, seed, carriageIndex, PortalCorridorMask.NONE);
+    }
+
+    /**
+     * Stamp a contents template's <b>blocks</b> at an explicit anchor and box, masked.
+     *
+     * <p>The entry point for a furnished portal room. Everything else here derives its interior from
+     * a carriage — {@code carriageOrigin.offset(1,1,1)}, sized {@code dims - 2} — and a room is
+     * neither: it is a larger box, and the furnishing sits at an offset inside it that
+     * {@code PortalRoomContents.anchorsIn} decides. So the anchor and the box are passed rather than
+     * re-derived, which is also why {@code box} here is the <b>template's</b> size and not the
+     * room's: the variant sidecar and the content pools are authored against the template, so they
+     * must be walked over the template's own extent wherever it happens to have landed.</p>
+     *
+     * <p><b>Blocks only, and no entity pass at all</b> — not even a deferred one. A room copy is
+     * stamped, retired and re-stamped as the tiling window slides, so a per-copy entity spawn would
+     * be a spawner with an outlet per tile. That is the same reason {@code PortalRoomMobs} exists for
+     * the room's own mob entries: it pairs every spawn with a reap, and a contents template's entity
+     * list has no such pairing. Corridors take the same line
+     * ({@code PortalCarriageBuilder.stampCorridorContents}).</p>
+     *
+     * <p>{@code mask} is the volume the room's stamp must leave alone — the twin corridors standing
+     * inside the tiling, and an {@code ENDLESS_OPEN} tile's whole interior.</p>
+     */
+    public static void placeBlocksAt(ServerLevel level, BlockPos anchor, CarriageContents contents,
+                                     Vec3i box, long seed, int carriageIndex,
+                                     PortalCorridorMask mask) {
+        if (box.getX() <= 0 || box.getY() <= 0 || box.getZ() <= 0) return;
+        PortalCorridorMask safeMask = mask == null ? PortalCorridorMask.NONE : mask;
+
+        Optional<StructureTemplate> stored = CarriageContentsStore.getFitting(level, contents, box);
+        if (stored.isEmpty()) return;
+
+        stampTemplateBlocks(level, anchor, stored.get(), safeMask);
+        clearBakedNarrativeLecternBooks(level, anchor, box);
+        applyVariantBlocks(level, anchor, box, contents, seed, carriageIndex, safeMask);
+        applyContentPools(level, anchor, box, contents, seed, carriageIndex, safeMask);
+        LOGGER.info("[DungeonTrain] Placed contents {} at {} source=stored box={}x{}x{} target=portal_room",
+            contents.id(), anchor, box.getX(), box.getY(), box.getZ());
     }
 
     /**
@@ -220,7 +336,7 @@ public final class CarriageContentsPlacer {
     private static void placeAtInternal(ServerLevel level, BlockPos carriageOrigin, CarriageContents contents,
                                          CarriageDims dims, long seed, int carriagePIdx,
                                          boolean placeBlocks, boolean spawnEntities) {
-        Vec3i size = interiorSize(dims);
+        Vec3i size = interiorSizeFor(contents, dims);
         if (size.getX() <= 0 || size.getY() <= 0 || size.getZ() <= 0) {
             // Carriage at its minimum dims has zero or negative interior
             // along at least one axis — no room for contents.
@@ -359,16 +475,20 @@ public final class CarriageContentsPlacer {
      * with the optional block-entity NBT applied. The empty-placeholder
      * sentinel resolves to AIR so authors can randomise "block or empty"
      * positions inside an interior.
+     *
+     * <p>Takes the interior {@code origin} and {@code size} outright rather than re-deriving them
+     * from a carriage, because the portal-room path anchors the same template somewhere that is not
+     * {@code carriageOrigin.offset(1,1,1)} — see {@code placeBlocksAt}. {@code mask} is the volume
+     * this pass must not write into, {@link PortalCorridorMask#NONE} for a carriage.</p>
      */
-    private static void applyVariantBlocks(ServerLevel level, BlockPos carriageOrigin,
-                                            CarriageContents contents, CarriageDims dims,
-                                            long seed, int carriageIndex) {
-        Vec3i size = interiorSize(dims);
+    private static void applyVariantBlocks(ServerLevel level, BlockPos origin, Vec3i size,
+                                            CarriageContents contents,
+                                            long seed, int carriageIndex,
+                                            PortalCorridorMask mask) {
         if (size.getX() <= 0 || size.getY() <= 0 || size.getZ() <= 0) return;
         CarriageContentsVariantBlocks sidecar = CarriageContentsVariantBlocks.loadFor(contents, size);
         if (sidecar.isEmpty()) return;
 
-        BlockPos origin = interiorOrigin(carriageOrigin);
         // Difficulty gate: drop out-of-band eggs from each cell's candidate pool
         // before the pick, using the carriage's own positional tier (offset-aware,
         // so an admin /dungeontrain difficulty re-themes contents in step with the
@@ -382,6 +502,7 @@ public final class CarriageContentsPlacer {
                 ? sidecar.resolve(entry.localPos(), seed, carriageIndex, diffTier)
                 : sidecar.resolve(entry.localPos(), seed, carriageIndex);
             BlockPos world = origin.offset(entry.localPos());
+            if (mask.covers(world)) continue;
             if (picked == null) {
                 // Difficulty-filtered to nothing: the cell's only candidates were mob
                 // (spawn-egg) entries, all out of band for this carriage's tier. The mob
@@ -433,16 +554,15 @@ public final class CarriageContentsPlacer {
      * touched twice (the pool read-through would otherwise re-roll into a
      * variant cell that already has its own roll).</p>
      */
-    private static void applyContentPools(ServerLevel level, BlockPos carriageOrigin,
-                                          CarriageContents contents, CarriageDims dims,
-                                          long seed, int carriageIndex) {
+    private static void applyContentPools(ServerLevel level, BlockPos origin, Vec3i size,
+                                          CarriageContents contents,
+                                          long seed, int carriageIndex,
+                                          PortalCorridorMask mask) {
         String plotKey = "contents:" + contents.id();
         games.brennan.dungeontrain.editor.ContainerContentsStore store =
             games.brennan.dungeontrain.editor.ContainerContentsStore.loadFor(plotKey);
-        BlockPos origin = interiorOrigin(carriageOrigin);
         // Skip cells already handled by a variant entry — the variant flow
         // already rolled into them.
-        Vec3i size = interiorSize(dims);
         games.brennan.dungeontrain.editor.CarriageContentsVariantBlocks variants =
             games.brennan.dungeontrain.editor.CarriageContentsVariantBlocks.loadFor(contents, size);
         java.util.Set<BlockPos> variantPositions = new java.util.HashSet<>();
@@ -456,7 +576,9 @@ public final class CarriageContentsPlacer {
             // else returns the local pool, else empty. Empty → skip.
             games.brennan.dungeontrain.editor.ContainerContentsPool pool = store.poolAt(localPos);
             if (pool.isEmpty()) continue;
-            rollAndApplyPool(level, origin.offset(localPos), localPos, pool, seed, carriageIndex);
+            BlockPos world = origin.offset(localPos);
+            if (mask.covers(world)) continue;
+            rollAndApplyPool(level, world, localPos, pool, seed, carriageIndex);
         }
         // Second pass: cells with NEITHER a variant entry NOR a store pool/link
         // never reach the loop above at all — e.g. a bookshelf baked directly
@@ -469,6 +591,7 @@ public final class CarriageContentsPlacer {
                     BlockPos localPos = new BlockPos(x, y, z);
                     if (variantPositions.contains(localPos) || storePositions.contains(localPos)) continue;
                     BlockPos worldPos = origin.offset(localPos);
+                    if (mask.covers(worldPos)) continue;
                     net.minecraft.world.level.block.state.BlockState state = level.getBlockState(worldPos);
                     if (!state.hasBlockEntity()) continue;
                     // Suspicious sand/gravel baked into a content .nbt: stamp a vanilla
@@ -549,7 +672,19 @@ public final class CarriageContentsPlacer {
      * tells {@code placeInWorld} to skip its own entity pass.</p>
      */
     private static void stampTemplateBlocks(ServerLevel level, BlockPos origin, StructureTemplate template) {
+        stampTemplateBlocks(level, origin, template, PortalCorridorMask.NONE);
+    }
+
+    /**
+     * {@link #stampTemplateBlocks} that leaves every cell {@code mask} covers alone — the portal-room
+     * path, where the box a furnishing lands in may overlap a twin corridor or an open tile's
+     * suppressed interior. Applied as a template processor, the same way
+     * {@code CarriagePlacer.stampTemplateAt} masks a room's own stamp.
+     */
+    private static void stampTemplateBlocks(ServerLevel level, BlockPos origin, StructureTemplate template,
+                                            PortalCorridorMask mask) {
         StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
+        if (mask != null && !mask.isEmpty()) settings.addProcessor(mask.asProcessor());
         // Relighting stamp (flag 3): unlike the shell/pads, the contents pass is NOT placed in the source
         // world before a Sable assemble — it runs post-assemble at shipyard coords (train) or on a permanent
         // editor plot. A raw section-local write there bypasses LevelChunk.setBlockState and therefore Sable's
@@ -985,7 +1120,7 @@ public final class CarriageContentsPlacer {
         // .nbt file) still spawn here via spawnEntitiesFromTemplate; only
         // the stochastic per-spawn variant rolls are suppressed.
         if (carriagePIdx == EDITOR_SENTINEL_PIDX) return;
-        Vec3i size = interiorSize(dims);
+        Vec3i size = interiorSizeFor(contents, dims);
         if (size.getX() <= 0 || size.getY() <= 0 || size.getZ() <= 0) return;
         CarriageContentsVariantBlocks sidecar = CarriageContentsVariantBlocks.loadFor(contents, size);
         if (sidecar.isEmpty()) return;

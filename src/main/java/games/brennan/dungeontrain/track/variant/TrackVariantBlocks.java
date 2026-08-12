@@ -112,6 +112,21 @@ public final class TrackVariantBlocks {
         return new TrackVariantBlocks(new LinkedHashMap<>(), new LinkedHashMap<>(), kind, d[0], d[1], d[2], false);
     }
 
+    /**
+     * Deep copy of {@code source} — every cell, its lock id, the mirror axes and the
+     * mirror-variants flag. Used by the editor's "new from current" paths so a duplicate keeps
+     * the whole of the source's authoring data rather than just its cells.
+     *
+     * <p>The result is a genuinely distinct instance on purpose: {@link #save} puts {@code this}
+     * into the name-keyed cache, so persisting the source object under a second name would leave
+     * both names aliased to one mutable sidecar.</p>
+     */
+    public static synchronized TrackVariantBlocks copyOf(TrackVariantBlocks source) {
+        return new TrackVariantBlocks(
+            new LinkedHashMap<>(source.entries), new LinkedHashMap<>(source.lockIds),
+            source.kind, source.mirrorX, source.mirrorY, source.mirrorZ, source.mirrorVariants);
+    }
+
     /** Mirror X (length) axis. True unless the sidecar sets {@code mirror.x=false}. */
     public boolean mirrorX() { return mirrorX; }
 
@@ -393,7 +408,7 @@ public final class TrackVariantBlocks {
     }
 
     /** True when the axes match this kind's defaults — the absent-{@code mirror}-field state. */
-    private boolean isDefaultMirror() {
+    public boolean isDefaultMirror() {
         boolean[] d = defaultMirror(kind);
         return mirrorX == d[0] && mirrorY == d[1] && mirrorZ == d[2] && !mirrorVariants;
     }

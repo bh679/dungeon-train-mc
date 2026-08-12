@@ -124,6 +124,10 @@ public final class TemplateStores {
         games.brennan.dungeontrain.editor.ContainerContentsStore.clearCache();
         games.brennan.dungeontrain.track.variant.TrackVariantStore.clearCache();
         games.brennan.dungeontrain.track.variant.TrackVariantBlocks.clearCache();
+        // Group sidecars travel with their kind's templates, so a package switch can change which
+        // rooms are sub-variants — and a stale answer here would put a member back in the top-level
+        // pool as a sibling of its own parent.
+        games.brennan.dungeontrain.editor.TrackVariantGroupStore.clearCache();
     }
 
     private static void reloadRegistries() {
