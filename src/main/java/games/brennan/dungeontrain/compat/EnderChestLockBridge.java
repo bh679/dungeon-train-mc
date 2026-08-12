@@ -2,15 +2,21 @@ package games.brennan.dungeontrain.compat;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.cheat.RunIntegrity;
+import games.brennan.dungeontrain.config.DungeonTrainConfig;
+import games.brennan.dungeontrain.player.DifficultyPartition;
+import games.brennan.dungeontrain.player.EnderChestLabel;
 import games.brennan.enderchestpersistence.EnderChestStore;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.GameType;
 import org.slf4j.Logger;
 
+import java.util.Optional;
+
 /**
- * Locks a Free Play (cheated) run's Ender Chest onto the creative-mode slot, so
- * cheated items can never reach the player's legit survival/adventure chest and a
- * Free Play run can't read or modify the real one.
+ * Decides which Ender Chest a player is looking at: it locks a Free Play (cheated) run onto the
+ * creative-mode slot, so cheated items can never reach a legit chest, and it scopes the legit chest to
+ * the player's <em>difficulty profile</em>, so each vanilla difficulty stashes separately.
  *
  * <p>The bundled EnderChestPersistence (ECP) mod already keeps a separate Ender
  * Chest per game mode. This bridge registers a {@link EnderChestStore.SlotKeyProvider}
@@ -43,16 +49,35 @@ public final class EnderChestLockBridge {
     private EnderChestLockBridge() {}
 
     /**
-     * Register the slot-lock provider with ECP. Call once from common setup. The
-     * provider returns the creative slot key for cheated runs and {@code null}
-     * (defer to the game-mode default) otherwise.
+     * Register the slot provider with ECP. Call once from common setup. The provider answers both
+     * questions ECP's slot key has to encode, in priority order:
+     *
+     * <ol>
+     *   <li>a cheated run is locked onto the creative slot, whatever else is true;</li>
+     *   <li>otherwise the game-mode slot is scoped to the player's difficulty profile, so each vanilla
+     *       difficulty keeps its own Ender Chest (config {@code difficultyIsolatedStash}).</li>
+     * </ol>
+     *
+     * <p>Free Play deliberately wins: a cheated run must not be able to read or write ANY legit chest,
+     * including the difficulty-scoped ones. And because {@code DifficultyPartition} gives Normal an empty
+     * suffix, a Normal profile resolves to exactly the key it used before this existed — every current
+     * stash stays where it is.</p>
      */
     public static void install() {
-        EnderChestStore.registerSlotProvider((player, defaultKey) ->
-            RunIntegrity.isCheated(player) ? FREE_PLAY_SLOT : null);
+        EnderChestStore.registerSlotProvider((player, defaultKey) -> {
+            if (RunIntegrity.isCheated(player)) {
+                return FREE_PLAY_SLOT;
+            }
+            if (!DungeonTrainConfig.getDifficultyIsolatedStash()) {
+                return null; // defer to the plain game-mode key
+            }
+            String suffix = DifficultyPartition.suffixFor(player.level().getDifficulty());
+            return suffix.isEmpty() ? null : defaultKey + suffix;
+        });
         active = true;
-        LOGGER.info("[DungeonTrain] Ender Chest lock installed — Free Play runs use the '{}' slot.",
-            FREE_PLAY_SLOT);
+        LOGGER.info("[DungeonTrain] Ender Chest slots installed — Free Play uses '{}'; "
+                + "difficulty-isolated stash: {}.",
+            FREE_PLAY_SLOT, DungeonTrainConfig.getDifficultyIsolatedStash());
     }
 
     /**
@@ -63,5 +88,31 @@ public final class EnderChestLockBridge {
     public static void engage(ServerPlayer player) {
         if (!active) return;
         EnderChestStore.refreshSlot(player);
+    }
+
+    /** Whether a seam-capable ECP is present and the slot provider is registered. */
+    public static boolean isActive() {
+        return active;
+    }
+
+    /**
+     * The title to show when {@code player} opens an Ender Chest, or empty to leave vanilla's alone —
+     * see {@link EnderChestLabel}.
+     *
+     * <p>Built from the same inputs as the slot-key provider above, deliberately: derive the label from
+     * anything else and it could name a chest other than the one being opened. Empty whenever the
+     * provider isn't registered, since without ECP there is only ever the one vanilla chest and a label
+     * would be describing a split that doesn't exist.</p>
+     */
+    public static Optional<Component> titleFor(ServerPlayer player, Component baseTitle) {
+        if (!active) {
+            return Optional.empty();
+        }
+        return EnderChestLabel.titleFor(
+            baseTitle,
+            RunIntegrity.isCheated(player),
+            player.gameMode.getGameModeForPlayer(),
+            player.level().getDifficulty(),
+            DungeonTrainConfig.getDifficultyIsolatedStash());
     }
 }

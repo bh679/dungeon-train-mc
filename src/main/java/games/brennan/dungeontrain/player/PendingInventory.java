@@ -54,6 +54,8 @@ public final class PendingInventory {
     private static volatile int xpLevel;
     private static volatile float xpProgress;
     private static volatile int xpTotal;
+    /** The {@link DifficultyPartition} key the snapshot was taken on — the carry never crosses profiles. */
+    private static volatile String partition;
 
     private PendingInventory() {}
 
@@ -77,13 +79,32 @@ public final class PendingInventory {
         xpLevel = player.experienceLevel;
         xpProgress = player.experienceProgress;
         xpTotal = player.totalExperience;
-        LOGGER.info("[DungeonTrain] keepInventory carry: captured {} item stack(s) + level {} XP for {}",
-                saved.size(), xpLevel, player.getName().getString());
+        partition = DifficultyPartition.keyFor(player.level());
+        LOGGER.info("[DungeonTrain] keepInventory carry: captured {} item stack(s) + level {} XP for {} ({})",
+                saved.size(), xpLevel, player.getName().getString(), partition);
     }
 
     /** True only when a snapshot is present and belongs to {@code id}. */
     public static boolean isPresentFor(UUID id) {
         return slots != null && id != null && id.equals(playerId);
+    }
+
+    /**
+     * Whether a present snapshot belongs to {@code player}'s current difficulty profile.
+     *
+     * <p>The next world inherits the dying world's difficulty, so in the normal flow this always holds.
+     * It is checked anyway because the consequence of being wrong is the one thing difficulty isolation
+     * exists to prevent — a loadout crossing from one profile into another (say, an operator changing
+     * difficulty on the death screen). A mismatch discards the carry rather than applying it.</p>
+     */
+    public static boolean matchesPartition(ServerPlayer player) {
+        String captured = partition;
+        return captured == null || captured.equals(DifficultyPartition.keyFor(player.level()));
+    }
+
+    /** The difficulty partition the pending snapshot was captured on, or {@code null} when there is none. */
+    public static String capturedPartition() {
+        return partition;
     }
 
     /**
@@ -133,5 +154,6 @@ public final class PendingInventory {
         xpLevel = 0;
         xpProgress = 0.0f;
         xpTotal = 0;
+        partition = null;
     }
 }

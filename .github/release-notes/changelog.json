@@ -6492,6 +6492,24 @@
       "released_at": "2026-08-11T14:48:13Z"
     },
     {
+      "id": "difficulty-isolated-profiles",
+      "version": "0.554.0",
+      "type": "feat",
+      "title": "Each difficulty is now its own run",
+      "summary": "Peaceful, Easy, Normal and Hard each keep their own gear, XP, Ender Chest and echoes. Switch difficulty and you switch profiles \u2014 what you were carrying is waiting for you when you switch back, and nothing you farmed on an easier setting comes with you.",
+      "highlights": [
+        "Your Ender Chest is now per-difficulty, and so is the inventory and XP carried between runs when keepInventory is on.",
+        "An Ender Chest that isn't your default one says so in its title — \"Ender Chest (Hard)\", \"(Adventure · Hard)\" or \"(Free Play)\" — so an empty chest never looks like lost items.",
+        "Echoes only return on the difficulty they died on, so a Hard run never meets a Peaceful ghost.",
+        "Changing difficulty in-game tells you in chat which profile you moved to and where your gear is waiting.",
+        "Normal keeps everything you already have \u2014 existing Ender Chests and past lives all belong to Normal, so nothing goes missing."
+      ],
+      "date": "2026-08-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "multiplayer-death-screen",
       "version": "0.553.0",
       "type": "feat",
@@ -6509,7 +6527,7 @@
     },
     {
       "id": "difficulty-offset-world-scoped",
-      "version": "0.554.0",
+      "version": "0.555.0",
       "type": "fix",
       "title": "Difficulty set by command no longer follows you into a new world or a new life",
       "summary": "Setting the difficulty by command \u2014 /dungeontrain difficulty, or the difficulty /dtp applies when it drops you somewhere far down the line \u2014 used to be written once and left everywhere: start a brand-new world and it opened at whatever tier you last set, and dying didn't undo it either, so a fresh run carried on at a difficulty it never earned. That setting now belongs to the world you set it in. A new world starts on automatic, dying puts you back on automatic, and the world you set it in still remembers it when you come back.",

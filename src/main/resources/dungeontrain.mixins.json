@@ -10,6 +10,7 @@
     "FlowingFluidExternalWaterMixin",
     "AdvancementVisibilityEvaluatorMixin",
     "BedBlockMixin",
+    "EnderChestBlockLabelMixin",
     "ServerPlayerBedSpawnMixin",
     "BucketItemMixin",
     "ChunkAccessAccessor",
