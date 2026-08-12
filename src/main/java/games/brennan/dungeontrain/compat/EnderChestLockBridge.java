@@ -4,10 +4,14 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.cheat.RunIntegrity;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.player.DifficultyPartition;
+import games.brennan.dungeontrain.player.EnderChestLabel;
 import games.brennan.enderchestpersistence.EnderChestStore;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.GameType;
 import org.slf4j.Logger;
+
+import java.util.Optional;
 
 /**
  * Decides which Ender Chest a player is looking at: it locks a Free Play (cheated) run onto the
@@ -84,5 +88,31 @@ public final class EnderChestLockBridge {
     public static void engage(ServerPlayer player) {
         if (!active) return;
         EnderChestStore.refreshSlot(player);
+    }
+
+    /** Whether a seam-capable ECP is present and the slot provider is registered. */
+    public static boolean isActive() {
+        return active;
+    }
+
+    /**
+     * The title to show when {@code player} opens an Ender Chest, or empty to leave vanilla's alone —
+     * see {@link EnderChestLabel}.
+     *
+     * <p>Built from the same inputs as the slot-key provider above, deliberately: derive the label from
+     * anything else and it could name a chest other than the one being opened. Empty whenever the
+     * provider isn't registered, since without ECP there is only ever the one vanilla chest and a label
+     * would be describing a split that doesn't exist.</p>
+     */
+    public static Optional<Component> titleFor(ServerPlayer player, Component baseTitle) {
+        if (!active) {
+            return Optional.empty();
+        }
+        return EnderChestLabel.titleFor(
+            baseTitle,
+            RunIntegrity.isCheated(player),
+            player.gameMode.getGameModeForPlayer(),
+            player.level().getDifficulty(),
+            DungeonTrainConfig.getDifficultyIsolatedStash());
     }
 }
