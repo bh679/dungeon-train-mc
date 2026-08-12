@@ -190,6 +190,39 @@ public final class PortalRoomEditor {
     }
 
     /**
+     * The editor's Reset for a room: back to the last saved template, at the last saved <b>size</b>.
+     *
+     * <p>Reset restamps a plot from what is on disk, which for every other plot kind is the whole
+     * story — their footprints are fixed in code. A room's is not, so a reset that only restamped the
+     * blocks left the plot standing at whatever size the steppers had most recently produced: the
+     * author's unsaved geometry was discarded but their unsaved dimensions were not. Dropping the
+     * override in {@link PortalRoomSizes} is what makes Reset mean the same thing here as everywhere
+     * else.</p>
+     *
+     * <p>Clearing the snapshot first is what tells {@link #relayout} not to carry the live plot
+     * across — resetting is precisely the case where the author wants the live blocks thrown away.
+     * The rows a shrink filed go with them: they are keyed to sizes this room is no longer walking
+     * through, and keeping them would let a later grow restore a row from an abandoned resize.</p>
+     */
+    public static void resetToSaved(ServerLevel overworld, String name, CarriageDims dims) {
+        Vec3i before = plotSize(name, dims);
+        EditorPlotSnapshots.clear(snapshotKey(name));
+        PortalRoomResizeMemory.get(overworld).forget(name);
+        // The relayout is for the rest of the row — reverting a size can re-pack the plots after this
+        // one. It restamps nothing when no box moved, so the reset itself is the stampPlot below,
+        // which goes to disk for its blocks and is idempotent either way.
+        relayout(overworld, dims, () -> PortalRoomSizes.revert(name));
+        stampPlot(overworld, name, dims);
+
+        Vec3i after = plotSize(name, dims);
+        if (!before.equals(after)) {
+            LOGGER.info("[DungeonTrain] Portal room '{}' reset — size back to {}x{}x{} from {}x{}x{}",
+                name, after.getX(), after.getY(), after.getZ(),
+                before.getX(), before.getY(), before.getZ());
+        }
+    }
+
+    /**
      * Wipe what has been built in {@code name}'s plot and leave the plain built-in shell behind.
      *
      * <p>What the editor's Clear does, and deliberately not what {@link #clearPlot} does: that one

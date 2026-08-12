@@ -6051,7 +6051,7 @@ public final class EditorCommand {
             : " (clamped from " + blocks + " — the room must still seal the corridor mouth and fit its Y lane)";
         String faces = describeFaces(dims, axis, before, value);
         source.sendSuccess(() -> Component.literal(
-            "Portal room '" + name + "' " + axisName + " is now " + value + note + faces
+            "Portal room '" + name + "' " + axisName + " is now " + value + note + "." + faces
             + " What you built is still there — /dt save to keep the new size."
         ).withStyle(ChatFormatting.GREEN), true);
         return 1;

@@ -155,6 +155,51 @@ class PortalRoomResizeTest {
     }
 
     @Test
+    @DisplayName("Reset drops the stepper's override and leaves the size the template reported")
+    void revert_restoresTheSavedSize() {
+        PortalRoomSizes.clear();
+        Vec3i saved = new Vec3i(11, 7, 13);
+        PortalRoomSizes.observe("resettable", saved);
+        PortalRoomSizes.pending("resettable", new Vec3i(21, 9, 17));
+        assertEquals(21, PortalRoomSizes.sizeOf("resettable", DEFAULT_DIMS).getX(),
+            "the override should be what the plot stamps at before a reset");
+
+        PortalRoomSizes.revert("resettable");
+
+        assertEquals(saved, PortalRoomSizes.sizeOf("resettable", DEFAULT_DIMS),
+            "reset must fall back to the saved size, not keep the abandoned one");
+        PortalRoomSizes.clear();
+    }
+
+    @Test
+    @DisplayName("Reset on a room that was never saved falls back to the built-in size")
+    void revert_withNothingSaved_isTheBuiltInSize() {
+        PortalRoomSizes.clear();
+        PortalRoomSizes.pending("fresh", new Vec3i(31, 9, 19));
+
+        PortalRoomSizes.revert("fresh");
+
+        assertEquals(PortalRoomLayout.builtInSize(DEFAULT_DIMS),
+            PortalRoomSizes.sizeOf("fresh", DEFAULT_DIMS));
+        PortalRoomSizes.clear();
+    }
+
+    @Test
+    @DisplayName("A save keeps the new size — revert is the only thing that throws one away")
+    void settle_keepsTheSizeThatRevertWouldDrop() {
+        PortalRoomSizes.clear();
+        PortalRoomSizes.observe("saved", new Vec3i(11, 7, 13));
+        PortalRoomSizes.pending("saved", new Vec3i(15, 7, 13));
+
+        PortalRoomSizes.settle("saved", new Vec3i(15, 7, 13));
+        PortalRoomSizes.revert("saved");
+
+        assertEquals(new Vec3i(15, 7, 13), PortalRoomSizes.sizeOf("saved", DEFAULT_DIMS),
+            "once saved, the size is the template's — a later reset cannot undo it");
+        PortalRoomSizes.clear();
+    }
+
+    @Test
     @DisplayName("The alternation counts from this world's floor, not from zero")
     void alternation_isRelativeToTheWorldsMinimum() {
         CarriageDims wide = CarriageDims.clamp(9, 21, 7);

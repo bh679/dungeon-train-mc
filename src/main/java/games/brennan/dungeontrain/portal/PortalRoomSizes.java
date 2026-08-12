@@ -60,6 +60,18 @@ public final class PortalRoomSizes {
         PENDING.put(name, size);
     }
 
+    /**
+     * Drop the editor override, leaving the size the template last reported.
+     *
+     * <p>What the editor's Reset needs. {@link #settle} also clears the override, but only because a
+     * save has just made a new size authoritative — calling it here would bake the abandoned resize
+     * in as the known size, which is the opposite of a reset.</p>
+     */
+    public static void revert(String name) {
+        if (name == null) return;
+        PENDING.remove(name);
+    }
+
     /** Drop everything known about {@code name} — it has been deleted. */
     public static void forget(String name) {
         if (name == null) return;
