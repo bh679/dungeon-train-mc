@@ -151,12 +151,22 @@ public final class CarriageVariantRegistry {
         int bundled = loadBundledScan();
         int config = loadConfigDir();
 
-        // The hallway portal corridor is always offered, with or without an .nbt on disk. Every other
-        // custom is discovered by finding its file, but a portal has code-generated geometry to fall
-        // back on (PortalCarriageBuilder), so requiring a file first would hide it from the editor —
-        // and the editor is where its file is supposed to come from. Opening it stamps the built-in
-        // corridor; saving writes the .nbt that every portal carriage and twin then stamps from.
-        CUSTOMS.add(games.brennan.dungeontrain.portal.PortalCarriageBuilder.portalVariant().id());
+        // Both hallway portal corridors are always offered, with or without an .nbt on disk. Every
+        // other custom is discovered by finding its file, but a portal has code-generated geometry to
+        // fall back on (PortalCarriageBuilder), so requiring a file first would hide it from the
+        // editor — and the editor is where its file is supposed to come from. Opening one stamps the
+        // built-in corridor; saving writes the .nbt that every portal carriage and twin of that kind
+        // then stamps from.
+        //
+        // Being in CUSTOMS does NOT put them in the ordinary carriage pool: CarriagePlacer filters
+        // every portal template out of that pool by name (PortalCarriageBuilder.isPortalVariant),
+        // which is also what the weights in templates/weights.json used to do before they were
+        // repurposed to carry the split between the two kinds.
+        for (games.brennan.dungeontrain.portal.PortalCorridorKind kind
+                : games.brennan.dungeontrain.portal.PortalCorridorKind.values()) {
+            CUSTOMS.add(games.brennan.dungeontrain.portal.PortalCarriageBuilder
+                .portalVariant(kind).id());
+        }
 
         games.brennan.dungeontrain.editor.StageBlockIndex.invalidateAll();
 

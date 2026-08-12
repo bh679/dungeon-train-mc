@@ -8,6 +8,7 @@ import games.brennan.dungeontrain.portal.PortalCarriageLayout;
 import games.brennan.dungeontrain.portal.PortalCarriageRole;
 import games.brennan.dungeontrain.portal.PortalCarriageSelection;
 import games.brennan.dungeontrain.portal.PortalClear;
+import games.brennan.dungeontrain.portal.PortalCorridorKind;
 import games.brennan.dungeontrain.portal.PortalCorridorSize;
 import dev.ryanhcode.sable.sublevel.plot.LevelPlot;
 import games.brennan.dungeontrain.portal.PortalEditMirror;
@@ -374,7 +375,9 @@ public final class PortalCarriageEvents {
         if (PortalRegistry.get(level).carriageEvery() <= PortalCarriageSelection.CARRIAGE_EVERY_OFF) return;
 
         CarriageDims dims = DungeonTrainWorldData.get(level).dims();
-        PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims);
+        // No tick-wide layout: two pairs on the same train can have drawn different corridor kinds
+        // (PortalCarriageSelection.corridorKindFor), and the layout is what the midpoint, the far
+        // door and the containment bounds all come from. It is resolved per pair, below.
         int groupSize = DungeonTrainConfig.getGroupSize();
         int padLen = CarriagePlacer.halfPadLen(dims);
 
@@ -427,6 +430,11 @@ public final class PortalCarriageEvents {
                     // the role falls out of which end of the group this one is.
                     PortalCarriageRole role = PortalCarriageRole.roleFor(carriageIndex, groupSize);
                     int pairKey = PortalCarriageRole.entryIndexOf(carriageIndex, groupSize);
+                    // A standing pair keeps the kind it was planned with; one not yet planned draws
+                    // it from the same function planStructure will. Either way both of a pair's
+                    // corridors answer alike, because the key is the group's anchor.
+                    PortalCorridorKind kind = kindFor(level, pairKey);
+                    PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims, kind);
 
                     // Group layout: [BACK pad | carriage 0 | carriage 1 | … ]. Exact doubles, so the
                     // mapping neither lurches on a block boundary nor fights the group's jitter.
@@ -436,7 +444,7 @@ public final class PortalCarriageEvents {
                     // match where CarriagePlacer actually stamped the blocks, or the swap plane would
                     // sit a few blocks off the corridor the player is walking down.
                     double originX = bb.minX() + padLen + (double) slot * dims.length()
-                        + PortalCorridorSize.originOffsetX(role, dims);
+                        + PortalCorridorSize.originOffsetX(role, dims, kind);
                     double originY = bb.minY();
                     double originZ = bb.minZ();
 
@@ -450,7 +458,7 @@ public final class PortalCarriageEvents {
 
         // Once per pair rather than once per carriage, and outside the loop above so it also runs for
         // pairs nobody is near any more — those are exactly the ones that need draining.
-        tickRoomTiling(level, dims, layout, players);
+        tickRoomTiling(level, dims, players);
     }
 
     /**
@@ -463,7 +471,7 @@ public final class PortalCarriageEvents {
      * its twin at a position the train has left.</p>
      */
     private static void tickRoomTiling(ServerLevel level, CarriageDims dims,
-                                       PortalCarriageLayout layout, List<ServerPlayer> players) {
+                                       List<ServerPlayer> players) {
         if (STRUCTURES.isEmpty()) {
             clearFogFor(players, Set.of());
             clearTrainAudioFor(players, Set.of());
@@ -478,6 +486,7 @@ public final class PortalCarriageEvents {
 
         for (Map.Entry<Integer, PortalStructure> pair : pairs) {
             PortalStructure structure = pair.getValue();
+            PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims, structure.kind());
             List<PortalStructure> others = new ArrayList<>(pairs.size());
             for (Map.Entry<Integer, PortalStructure> other : pairs) {
                 if (!other.getKey().equals(pair.getKey())) others.add(other.getValue());
@@ -528,7 +537,7 @@ public final class PortalCarriageEvents {
             exit.getX(), exit.getY(), exit.getZ(),
             // The corridor's length, not the carriage's — the client fades the engine along the
             // corridor it is actually standing in.
-            PortalCorridorSize.corridorLength(dims), dims.height(), dims.width(),
+            PortalCorridorSize.corridorLength(dims, structure.kind()), dims.height(), dims.width(),
             TRAIN_AUDIO_FADE_BLOCKS);
 
         for (ServerPlayer player : players) {
@@ -760,7 +769,8 @@ public final class PortalCarriageEvents {
         // Publish for PortalEditMirror, which needs to answer "is this block in a portal corridor?"
         // on the hot path of every sub-level block change and cannot re-derive train geometry there —
         // and for PortalPuppetAttack, which needs the frames to measure a hit through the mirror.
-        publishPairing(carriageIndex, ship, dims, originX, originY, originZ, twinOrigin, frames);
+        publishPairing(carriageIndex, ship, dims, built.kind(), originX, originY, originZ,
+            twinOrigin, frames);
 
         swapPlayers(level, players, frames, carriageIndex, pairKey, built, dims, role,
             PortalRoomTiling.Tile.BASE, /*copyOnly*/ false);
@@ -888,7 +898,7 @@ public final class PortalCarriageEvents {
             // teleporting them anyway means dropping them through a floor that has not arrived.
             PortalFrames.Origin destination = boundTwin != null ? boundTwin : frames.twin();
             if (move.toFrame() == PortalFrames.FRAME_TWIN
-                && !PortalExitBindings.corridorLoaded(level, destination, dims)) {
+                && !PortalExitBindings.corridorLoaded(level, destination, dims, structure.kind())) {
                 if (PortalSwapDiagnostics.due(
                         level, PortalSwapDiagnostics.Reason.TWIN_NOT_LOADED, id)) {
                     PortalSwapDiagnostics.refused(PortalSwapDiagnostics.Reason.TWIN_NOT_LOADED,
@@ -1089,6 +1099,7 @@ public final class PortalCarriageEvents {
      * carriage blocks.</p>
      */
     private static void publishPairing(int carriageIndex, ManagedShip ship, CarriageDims dims,
+                                       PortalCorridorKind kind,
                                        double originX, double originY, double originZ,
                                        BlockPos twinOrigin, PortalFrames frames) {
         if (!(ship instanceof SableManagedShip sable)) return;
@@ -1101,7 +1112,22 @@ public final class PortalCarriageEvents {
         // world's — an assumption that reflected mirrored edits onto the opposite side of the corridor.
         PortalPairIndex.publish(carriageIndex,
             new PortalPairIndex.Entry(carriageIndex, plot, ship,
-                new Vec3(originX, originY, originZ), twinOrigin, dims, frames));
+                new Vec3(originX, originY, originZ), twinOrigin, dims, kind, frames));
+    }
+
+    /**
+     * This pair's corridor kind: the one it was planned with when a structure stands, the one it
+     * <i>will</i> be planned with when none does yet.
+     *
+     * <p>The two agree — {@code planStructure} draws from the same function — but the standing
+     * record is authoritative, because it is what the blocks in the ground were built to. Only that
+     * distinction matters, and only for the window in which somebody re-weights the corridor
+     * variants while a pair is standing; see {@link PortalCarriageSelection#corridorKindFor}.</p>
+     */
+    private static PortalCorridorKind kindFor(ServerLevel level, int pairKey) {
+        PortalStructure standing = STRUCTURES.get(pairKey);
+        return standing != null ? standing.kind()
+            : PortalCarriageSelection.corridorKindFor(level, pairKey);
     }
 
     /** True if any player is anywhere inside a pair structure — either corridor, or the room between. */
@@ -1155,7 +1181,7 @@ public final class PortalCarriageEvents {
         BlockPos origin = structure.origin();
         int span = structure.spanX(dims);
         Vec3i room = structure.roomSize();
-        PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims);
+        PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims, structure.kind());
         // Half the room's overhang either side of the corridor, plus a block; never less than the
         // slack the built-in room was tuned with.
         int slackZ = Math.max(POCKET_ROOM_SLACK, (room.getZ() - dims.width()) / 2 + 1);
@@ -1281,7 +1307,6 @@ public final class PortalCarriageEvents {
 
         int groupSize = DungeonTrainConfig.getGroupSize();
         CarriageDims dims = DungeonTrainWorldData.get(level).dims();
-        PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims);
         PortalRegistry registry = PortalRegistry.get(level);
         int gate = PortalCarriageSelection.firstEligibleGroup();
 
@@ -1339,6 +1364,14 @@ public final class PortalCarriageEvents {
                 + ", mode=" + structure.mode());
         }
 
+        // The kind decides the corridor's length, and so the midpoint the lines below quote. Read
+        // from the structure when one stands, since that is the one the blocks were built to.
+        PortalCorridorKind kind = structure != null ? structure.kind() : kindFor(level, pairKey);
+        PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims, kind);
+        out.add("  corridor: " + kind + ", " + layout.length() + " blocks"
+            + (kind == PortalCorridorKind.SHORT ? " (one carriage; the cart between stands whole)"
+                : " (grows into the cart between the pair)"));
+
         int padLen = CarriagePlacer.halfPadLen(dims);
         for (int slot = 0; slot < groupSize; slot++) {
             int carriageIndex = anchor + slot;
@@ -1346,7 +1379,7 @@ public final class PortalCarriageEvents {
 
             PortalCarriageRole role = PortalCarriageRole.roleFor(carriageIndex, groupSize);
             double originX = bb.minX() + padLen + (double) slot * dims.length()
-                + PortalCorridorSize.originOffsetX(role, dims);
+                + PortalCorridorSize.originOffsetX(role, dims, kind);
             double originY = bb.minY();
             double originZ = bb.minZ();
 
@@ -1368,7 +1401,7 @@ public final class PortalCarriageEvents {
                     : structure.exitOrigin(dims);
                 PortalFrames.Origin twin = new PortalFrames.Origin(
                     twinOrigin.getX(), twinOrigin.getY(), twinOrigin.getZ());
-                boolean loaded = PortalExitBindings.corridorLoaded(level, twin, dims);
+                boolean loaded = PortalExitBindings.corridorLoaded(level, twin, dims, kind);
                 out.add("    twin: " + twinOrigin + ", chunks " + (loaded ? "LOADED" : "NOT LOADED — "
                         + PortalSwapDiagnostics.Reason.TWIN_NOT_LOADED.explanation())
                     + ", drift from this carriage "

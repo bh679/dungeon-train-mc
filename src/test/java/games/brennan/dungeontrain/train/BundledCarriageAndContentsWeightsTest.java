@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.train;
 
+import games.brennan.dungeontrain.portal.PortalCorridorKind;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -117,8 +118,11 @@ final class BundledCarriageAndContentsWeightsTest {
         names.addAll(BundledNbtScanner.scanBasenames(
             BundledCarriageAndContentsWeightsTest.class,
             CarriageVariantRegistry.BUNDLED_RESOURCE_PREFIX, LOGGER));
-        // Registered by code rather than discovered by file — see this class's javadoc.
-        names.add(PortalCarriageBuilder.portalVariant().id());
+        // Registered by code rather than discovered by file — see this class's javadoc. Both
+        // corridor kinds, since CarriageVariantRegistry.reload force-adds each.
+        for (PortalCorridorKind kind : PortalCorridorKind.values()) {
+            names.add(PortalCarriageBuilder.portalVariant(kind).id());
+        }
         names.add(PortalCarriageBuilder.middleVariant().id());
         return names;
     }
@@ -136,6 +140,11 @@ final class BundledCarriageAndContentsWeightsTest {
         names.addAll(BundledNbtScanner.scanBasenames(
             BundledCarriageAndContentsWeightsTest.class,
             CarriageContentsRegistry.BUNDLED_RESOURCE_PREFIX, LOGGER, ".group.json"));
+        // Both corridors' contents are force-added by CarriageContentsRegistry.reload for the same
+        // reason their shells are: the plot has to exist before the .nbt authored in it does.
+        for (PortalCorridorKind kind : PortalCorridorKind.values()) {
+            names.add(PortalCarriageBuilder.portalContents(kind).id());
+        }
         return names;
     }
 

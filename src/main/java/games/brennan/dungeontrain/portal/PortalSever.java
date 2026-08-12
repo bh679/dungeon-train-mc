@@ -137,7 +137,8 @@ public final class PortalSever {
      */
     private static void openCentreWall(ServerLevel level, PortalPairIndex.Entry entry) {
         PortalFrames frames = entry.frames();
-        for (int[] cell : PortalCentreWall.doorwayCellsFromCorridor(entry.dims(), frames.role())) {
+        for (int[] cell : PortalCentreWall.doorwayCellsFromCorridor(
+                entry.dims(), entry.kind(), frames.role())) {
             SilentBlockOps.clearBlockSilent(level, entry.plotPosOf(cell));
         }
     }

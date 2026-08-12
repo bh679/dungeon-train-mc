@@ -155,11 +155,11 @@ class PortalRoomLayoutTest {
     @DisplayName("The room starts one corridor along +X and is centred on the corridor's doorway line")
     void roomOrigin_sitsPastTheCorridorAndOnTheWalkwayCentre() {
         BlockPos entry = new BlockPos(100, -60, 40);
-        PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(DEFAULT_DIMS);
+        PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(DEFAULT_DIMS, PortalCorridorKind.LONG);
         int width = PortalRoomLayout.minWidth(DEFAULT_DIMS);
         BlockPos room = PortalRoomLayout.roomOrigin(entry, DEFAULT_DIMS, layout, width);
 
-        assertEquals(entry.getX() + PortalCorridorSize.corridorLength(DEFAULT_DIMS), room.getX(),
+        assertEquals(entry.getX() + PortalCorridorSize.corridorLength(DEFAULT_DIMS, PortalCorridorKind.LONG), room.getX(),
             "room begins where the corridor ends — a corridor, which is longer than a carriage");
         assertEquals(entry.getY(), room.getY(), "room shares the corridor's floor");
 
@@ -171,7 +171,7 @@ class PortalRoomLayoutTest {
     @DisplayName("A wider room stays centred on the doorway line — it grows both ways, not one")
     void roomOrigin_recentresAsTheRoomWidens() {
         BlockPos entry = new BlockPos(0, 0, 0);
-        PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(DEFAULT_DIMS);
+        PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(DEFAULT_DIMS, PortalCorridorKind.LONG);
 
         for (int width : new int[]{13, 17, 25}) {
             BlockPos room = PortalRoomLayout.roomOrigin(entry, DEFAULT_DIMS, layout, width);
@@ -192,7 +192,7 @@ class PortalRoomLayoutTest {
         // a corridor narrower than 5 has no walkway beside its doorway and layoutFor throws.
         for (int carriageWidth = PortalCarriageLayout.MIN_WIDTH; carriageWidth <= CarriageDims.MAX_WIDTH; carriageWidth++) {
             CarriageDims dims = CarriageDims.clamp(9, carriageWidth, 7);
-            PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims);
+            PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims, PortalCorridorKind.LONG);
             int width = PortalRoomLayout.minWidth(dims);
             BlockPos room = PortalRoomLayout.roomOrigin(entry, dims, layout, width);
 
@@ -215,7 +215,7 @@ class PortalRoomLayoutTest {
 
         for (int carriageWidth = PortalCarriageLayout.MIN_WIDTH; carriageWidth <= CarriageDims.MAX_WIDTH; carriageWidth++) {
             CarriageDims dims = CarriageDims.clamp(9, carriageWidth, 7);
-            PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims);
+            PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims, PortalCorridorKind.LONG);
             int tooNarrow = PortalRoomLayout.minWidth(dims) - 1;
             BlockPos room = PortalRoomLayout.roomOrigin(entry, dims, layout, tooNarrow);
 

@@ -48,13 +48,16 @@ public final class PortalPairIndex {
      * @param carriageWorld the corridor's origin in WORLD space, read live from the ship's AABB
      * @param twinOrigin    the twin corridor's origin in world space
      * @param dims          carriage dims, which bound both corridors
+     * @param kind          this pair's corridor shape, which together with {@code dims} is what
+     *                      actually bounds them — see {@link PortalCorridorSize}
      * @param frames        the same pairing as a frame mapping, for code that needs to convert
      *                      <i>positions</i> between the copies rather than block cells — see
      *                      {@link PortalPuppetAttack}, which measures an attacker's reach to a target
      *                      in the other corridor and can only do that through the mirror
      */
     public record Entry(int carriageIndex, LevelPlot plot, ManagedShip ship, Vec3 carriageWorld,
-                        BlockPos twinOrigin, CarriageDims dims, PortalFrames frames) {
+                        BlockPos twinOrigin, CarriageDims dims, PortalCorridorKind kind,
+                        PortalFrames frames) {
 
         /** Local cell of a shipyard position, or {@code null} if it falls outside the corridor. */
         public int[] localOfPlot(int x, int y, int z) {
@@ -76,7 +79,7 @@ public final class PortalPairIndex {
             // cart (PortalCorridorSize), and bounding this at dims.length() would call the last few
             // blocks of every corridor "outside", so nothing standing there would be mirrored.
             if (dx < 0 || dy < 0 || dz < 0
-                || dx >= PortalCorridorSize.corridorLength(dims)
+                || dx >= PortalCorridorSize.corridorLength(dims, kind)
                 || dy >= dims.height() || dz >= dims.width()) {
                 return null;
             }

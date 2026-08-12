@@ -20,7 +20,7 @@ class PortalStructureTest {
 
     private static final CarriageDims DIMS = CarriageDims.DEFAULT;   // carriage length 9
     /** What the twins are actually spaced by — the corridor's length, 13 at the default dims. */
-    private static final int CORRIDOR = PortalCorridorSize.corridorLength(DIMS);
+    private static final int CORRIDOR = PortalCorridorSize.corridorLength(DIMS, PortalCorridorKind.LONG);
     private static final BlockPos ORIGIN = new BlockPos(200, -60, -30);
 
     private static PortalStructure withRoomLength(int length) {
@@ -61,7 +61,7 @@ class PortalStructureTest {
     @Test
     @DisplayName("The room begins where the entry corridor ends, whatever its length")
     void roomOrigin_abutsTheEntryCorridor() {
-        PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(DIMS);
+        PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(DIMS, PortalCorridorKind.LONG);
         for (int length : new int[]{PortalRoomLayout.MIN_LENGTH, 11, 21, PortalRoomLayout.MAX_LENGTH}) {
             PortalStructure s = withRoomLength(length);
             assertEquals(ORIGIN.getX() + CORRIDOR, s.roomOrigin(DIMS, layout).getX());
@@ -97,7 +97,7 @@ class PortalStructureTest {
         assertEquals(plain.spanX(DIMS), tiled.spanX(DIMS));
         assertEquals(plain.exitOrigin(DIMS), tiled.exitOrigin(DIMS));
         assertEquals(plain.exitTwinOffsetX(DIMS), tiled.exitTwinOffsetX(DIMS));
-        PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(DIMS);
+        PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(DIMS, PortalCorridorKind.LONG);
         assertEquals(plain.roomOrigin(DIMS, layout), tiled.roomOrigin(DIMS, layout));
     }
 
@@ -105,7 +105,7 @@ class PortalStructureTest {
     @DisplayName("A base-only structure reports the base room's own bounds — the boxes are unchanged")
     void baseOnlyTilingKeepsTheOldBounds() {
         PortalStructure s = withRoomLength(15);
-        PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(DIMS);
+        PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(DIMS, PortalCorridorKind.LONG);
         BlockPos room = s.roomOrigin(DIMS, layout);
 
         assertEquals(room.getX(), s.tiledMinX(DIMS, layout));
@@ -120,7 +120,7 @@ class PortalStructureTest {
         PortalStructure s = withRoomLength(15).withTiling(PortalRoomTiling.base()
             .with(new PortalRoomTiling.Tile(2, 1))
             .with(new PortalRoomTiling.Tile(-1, -3)));
-        PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(DIMS);
+        PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(DIMS, PortalCorridorKind.LONG);
         BlockPos room = s.roomOrigin(DIMS, layout);
 
         assertEquals(room.getX() - s.roomLength(), s.tiledMinX(DIMS, layout));
@@ -133,7 +133,7 @@ class PortalStructureTest {
     @DisplayName("tileOrigin and tileAt are inverses — a copy's corner resolves back to its own tile")
     void tileOriginAndTileAtAgree() {
         PortalStructure s = withRoomLength(15);
-        PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(DIMS);
+        PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(DIMS, PortalCorridorKind.LONG);
         for (PortalRoomTiling.Tile tile : new PortalRoomTiling.Tile[]{
             PortalRoomTiling.Tile.BASE, new PortalRoomTiling.Tile(3, 2),
             new PortalRoomTiling.Tile(-2, -4)}) {
