@@ -82,11 +82,13 @@ final class BuilderTileModelRenderer {
     /**
      * Centre the build in the cell, scale it to fit, and turn it.
      *
-     * <p>GUI space counts Y downwards and block space counts it up, and the obvious fix — a
-     * negative Y scale — is wrong: it mirrors the model, which reverses triangle winding, and
-     * backface culling then shows you the inside of every block. A half turn about X flips Y the
-     * same way while staying a proper rotation, so the tilt is folded into it as
-     * {@code π − pitch} and the winding survives.</p>
+     * <p><b>The negative Y scale is deliberate — do not "fix" it.</b> It mirrors the model, and a
+     * mirror is exactly what this needs: GUI space is left-handed (X right, Y <em>down</em>, Z
+     * towards the viewer) where block models are authored right-handed, so one flip somewhere is
+     * required to make triangle winding come out facing the camera. Replacing this with a proper
+     * rotation — a half turn about X, which puts every vertex in the identical place — leaves the
+     * handedness wrong and backface culling then shows you the inside of every block. Vanilla does
+     * the same thing for entities in inventories: {@code scale(size, size, -size)}.</p>
      *
      * <p>The scale is driven by the model's longest horizontal diagonal rather than its width, so a
      * long carriage and a squat room both stay inside the cell through a full rotation.</p>
@@ -108,8 +110,8 @@ final class BuilderTileModelRenderer {
                 height * FILL / Math.max(occupiedY, 1.0F));
 
         pose.translate(centreX, centreY, Z_OFFSET);
-        pose.scale(scale, scale, scale);
-        pose.mulPose(new Quaternionf().rotateX((float) Math.PI - pitchRadians));
+        pose.scale(scale, -scale, scale);
+        pose.mulPose(new Quaternionf().rotateX(pitchRadians));
         pose.mulPose(new Quaternionf().rotateY((float) Math.toRadians(yaw)));
         // The mesh is built in the template's own coordinates, so shift the middle of the occupied
         // box — not of the file's declared bounds — onto the pivot.
