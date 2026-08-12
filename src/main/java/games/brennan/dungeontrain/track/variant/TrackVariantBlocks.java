@@ -413,6 +413,30 @@ public final class TrackVariantBlocks {
         return mirrorX == d[0] && mirrorY == d[1] && mirrorZ == d[2] && !mirrorVariants;
     }
 
+    /**
+     * This sidecar as the JSON text {@link #save} would write.
+     *
+     * <p>Public so a detached sidecar can be carried somewhere other than a file — the portal-room
+     * resize memory files the cells a shrink cropped this way, in the schema they already round-trip
+     * through, rather than inventing a second encoding for the same {@link VariantState}s.</p>
+     */
+    public synchronized String asJsonText() {
+        return toJsonText();
+    }
+
+    /**
+     * Parse a detached sidecar from text produced by {@link #asJsonText}.
+     *
+     * <p>Never enters {@link #CACHE}: the result belongs to whoever asked for it, and putting a
+     * fragment under {@code (kind, name)} would shadow the real sidecar for the rest of the
+     * session.</p>
+     */
+    public static TrackVariantBlocks fromJsonText(String json, TrackKind kind, String name,
+                                                  Vec3i size) {
+        if (json == null || json.isBlank()) return emptyFor(kind);
+        return parse(new java.io.StringReader(json), kind, name, "memory", size);
+    }
+
     private String toJsonText() {
         StringBuilder sb = new StringBuilder();
         sb.append("{\n  \"schemaVersion\": ").append(CURRENT_SCHEMA_VERSION).append(",\n");

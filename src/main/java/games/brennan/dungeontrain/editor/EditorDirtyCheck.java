@@ -281,7 +281,13 @@ public final class EditorDirtyCheck {
             boolean unsaved = snapshot != null
                 && !regionMatchesSnapshot(level, origin, fp.getX(), fp.getY(), fp.getZ(), snapshot, skip);
 
-            if (unsaved) {
+            // A resize is an unsaved change the block compare cannot see: it re-stamps the plot and
+            // re-takes the snapshot, so the live blocks match their baseline exactly while the plot
+            // stands at a size no saved template has. Only /dt save makes a size permanent, and
+            // without this the panel would report a resized room as clean.
+            boolean resized = !fp.equals(PortalRoomTemplateStore.sizeOf(level, name, dims));
+
+            if (unsaved || resized) {
                 out.add(new DirtyEntry("portals", "portal_room." + name,
                     "portal room / " + name, true, false));
             }

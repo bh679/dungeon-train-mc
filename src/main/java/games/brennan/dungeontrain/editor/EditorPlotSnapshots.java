@@ -72,6 +72,16 @@ public final class EditorPlotSnapshots {
         return v == null ? null : new HashMap<>(v);
     }
 
+    /**
+     * Whether {@code key} has a snapshot — i.e. whether its plot has been stamped this session.
+     *
+     * <p>Cheaper than {@link #get}, which copies the whole map, and says what the caller means when
+     * the question is "is this plot standing in the world" rather than "what did it look like".</p>
+     */
+    public static synchronized boolean has(String key) {
+        return SNAPSHOTS.containsKey(key);
+    }
+
     /** Drop the snapshot for a specific (category, model). Called from each editor's {@code clearPlot} so a switched-away category doesn't leave stale snapshots that the next dirty check would compare an empty plot against. */
     public static synchronized void clear(String key) {
         SNAPSHOTS.remove(key);

@@ -430,6 +430,34 @@ public final class ContainerContentsStore {
         return gameDir.getParent();
     }
 
+    /**
+     * This store as the JSON text {@link #save} would write.
+     *
+     * <p>Public for the same reason {@code TrackVariantBlocks.asJsonText} is: the portal-room resize
+     * memory carries the pools and links a shrink cropped, and the format they already round-trip
+     * through is the right one to carry them in.</p>
+     */
+    public synchronized String asJsonText() {
+        return toJsonText();
+    }
+
+    /**
+     * Parse a detached store from text produced by {@link #asJsonText}. Never enters {@link #CACHE} —
+     * it is a fragment, not the plot's store.
+     */
+    public static ContainerContentsStore fromJsonText(String plotKey, String json) {
+        if (json == null || json.isBlank()) return detached(plotKey);
+        return parseFromReader(new java.io.StringReader(json), plotKey, "memory");
+    }
+
+    /**
+     * An empty store that is nobody's plot — somewhere to collect pools and links before
+     * {@link #asJsonText} carries them off. Uncached, so it cannot be mistaken for the real store.
+     */
+    public static ContainerContentsStore detached(String plotKey) {
+        return new ContainerContentsStore(plotKey, new LinkedHashMap<>(), new LinkedHashMap<>());
+    }
+
     private String toJsonText() {
         StringBuilder sb = new StringBuilder(256);
         sb.append("{\n");

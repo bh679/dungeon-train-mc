@@ -5,12 +5,14 @@ import games.brennan.dungeontrain.portal.PortalCarriageBuilder;
 import games.brennan.dungeontrain.portal.PortalClear;
 import games.brennan.dungeontrain.portal.PortalCorridorMask;
 import games.brennan.dungeontrain.portal.PortalRoomLayout;
+import games.brennan.dungeontrain.portal.PortalRoomResize;
 import games.brennan.dungeontrain.portal.PortalRoomSizes;
 import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.track.variant.TrackVariantBlocks;
 import games.brennan.dungeontrain.track.variant.TrackVariantRegistry;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
+import games.brennan.dungeontrain.world.PortalRoomResizeMemory;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.network.chat.Component;
@@ -245,6 +247,10 @@ public final class PortalRoomEditor {
         TrackVariantBlocks.delete(TrackKind.PORTAL_ROOM, name);
         cleared += variants;
 
+        // Same reasoning as the pools: a cleared room has nothing left to restore, and a remembered
+        // row would put the chests back on the next grow.
+        cleared += PortalRoomResizeMemory.get(overworld).forget(name);
+
         String plotKey = ContainerContentsStore.trackPlotKey(TrackKind.PORTAL_ROOM, name);
         ContainerContentsStore store = ContainerContentsStore.loadFor(plotKey);
         // Copy the positions before mutating — removePool writes to the map they are drawn from.
@@ -329,37 +335,48 @@ public final class PortalRoomEditor {
             name, size.getX(), size.getY(), size.getZ());
     }
 
-    /** Which axis of a room a size command addresses. */
-    public enum Axis { LENGTH, WIDTH, HEIGHT }
-
     /**
      * Restamp {@code name}'s plot with one axis changed.
      *
-     * <p>Keeps what was authored. The plot is restamped at the new size with the saved room laid
-     * back over it — clipped to the new box, so shrinking crops rather than spilling — and only the
-     * space the resize newly exposed comes back as the built-in room. The change is a plot state
-     * until the next save writes a template of that size.</p>
+     * <p>Keeps what the author can see, not what they last saved. Each block of the change is a
+     * {@link PortalRoomResize.Step} — which face moves, and where that leaves the room's contents —
+     * and the live plot is carried across each one. Length and width alternate faces, so a room grows
+     * outwards from where it was built rather than always off the far end; a shrink files the row it
+     * removes so stepping back up puts it back.</p>
+     *
+     * <p>Nothing is written to disk. The change is a plot state until {@code /dt save} writes a
+     * template of the new size.</p>
      *
      * @return the size actually applied, after clamping to what this world's corridor allows
      */
-    public static Vec3i setSize(ServerLevel overworld, String name, Axis axis, int value,
-                                CarriageDims dims) {
+    public static Vec3i setSize(ServerLevel overworld, String name, PortalRoomResize.Axis axis,
+                                int value, CarriageDims dims) {
         Vec3i current = plotSize(name, dims);
-        Vec3i wanted = switch (axis) {
-            case LENGTH -> new Vec3i(value, current.getY(), current.getZ());
-            case WIDTH -> new Vec3i(current.getX(), current.getY(), value);
-            case HEIGHT -> new Vec3i(current.getX(), value, current.getZ());
-        };
-        Vec3i clamped = PortalRoomLayout.clampSize(dims, wanted);
-
-        // Through relayout, which erases and restamps only what actually moves. A room resizes
-        // freely inside its reserved slot, so this is usually just this one plot; crossing a slot
-        // boundary is what pays for shifting the rest of the row.
-        relayout(overworld, dims, () -> PortalRoomSizes.pending(name, clamped));
+        Vec3i clamped = PortalRoomLayout.clampSize(dims,
+            PortalRoomResize.with(current, axis, value));
+        applySteps(overworld, name, dims, PortalRoomResize.plan(dims, axis, current,
+            PortalRoomResize.of(clamped, axis)));
 
         LOGGER.info("[DungeonTrain] Portal room '{}' plot restamped at {}x{}x{} ({} -> {})",
             name, clamped.getX(), clamped.getY(), clamped.getZ(), axis, value);
         return clamped;
+    }
+
+    /**
+     * Walk {@code steps}, applying each single-block change to the plot in turn.
+     *
+     * <p>One block at a time rather than one jump: every step is then a resize of exactly the shape
+     * the stepper makes, so the alternation, the row filed by a shrink and the row a grow takes back
+     * are the same whether the author typed a number or tapped the button that many times. Each step
+     * goes through {@link #relayout}, which erases and restamps only the plots that actually move — a
+     * room resizes freely inside its reserved slot, so that is usually just this one.</p>
+     */
+    private static void applySteps(ServerLevel overworld, String name, CarriageDims dims,
+                                   java.util.List<PortalRoomResize.Step> steps) {
+        for (PortalRoomResize.Step step : steps) {
+            Vec3i after = step.sizeAfter();
+            relayout(overworld, dims, () -> PortalRoomSizes.pending(name, after), name, step);
+        }
     }
 
     /** Where one plot sits and how big it is — enough to erase it later. */
@@ -378,9 +395,42 @@ public final class PortalRoomEditor {
      * future layout rule cannot silently leave debris behind.</p>
      */
     public static void relayout(ServerLevel overworld, CarriageDims dims, Runnable change) {
+        relayout(overworld, dims, change, null, null);
+    }
+
+    /**
+     * {@link #relayout} carrying one plot's resize step — which face moved, and where that leaves the
+     * room's contents.
+     *
+     * <p>{@code resizing} names the plot the step belongs to. Every other plot that moves is carried
+     * across unchanged: it is being shoved along the row by a neighbour, not resized.</p>
+     */
+    private static void relayout(ServerLevel overworld, CarriageDims dims, Runnable change,
+                                 String resizing, PortalRoomResize.Step step) {
         Map<String, PlotBox> before = snapshotBoxes(dims);
+        // Nothing in `change` touches the world — it moves numbers in PortalRoomSizes — so the plots
+        // are still standing untouched after it runs, and which ones actually move is known.
         change.run();
         Map<String, PlotBox> after = snapshotBoxes(dims);
+
+        // Read the plots that are about to move out of the world before anything is cleared. This is
+        // what makes a resize non-destructive: re-stamping from the saved template — which is what
+        // used to happen — replaced everything the author had built since their last save, on every
+        // stepper click. A plot that has never been stamped this session has nothing live to carry
+        // and falls back to the saved template, which is right on the way into the editor.
+        Map<String, StructureTemplate> live = new java.util.LinkedHashMap<>();
+        for (Map.Entry<String, PlotBox> e : before.entrySet()) {
+            PlotBox now = after.get(e.getKey());
+            if (now != null && now.equals(e.getValue())) continue;
+            StructureTemplate captured = captureLive(overworld, e.getKey(), e.getValue());
+            if (captured != null) live.put(e.getKey(), captured);
+        }
+
+        // A shrink's row has to be filed while it is still standing in the world.
+        if (step != null && !step.grow() && live.containsKey(resizing)) {
+            PlotBox box = before.get(resizing);
+            PortalRoomResizeSlabs.stash(overworld, resizing, box.origin(), box.size(), step);
+        }
 
         int moved = 0;
         for (Map.Entry<String, PlotBox> e : before.entrySet()) {
@@ -392,13 +442,52 @@ public final class PortalRoomEditor {
         }
         for (Map.Entry<String, PlotBox> e : after.entrySet()) {
             PlotBox was = before.get(e.getKey());
-            if (was == null || !was.equals(e.getValue())) {
-                stampPlot(overworld, e.getKey(), dims);
+            if (was != null && was.equals(e.getValue())) continue;
+            String name = e.getKey();
+            StructureTemplate captured = live.get(name);
+            if (captured == null) {
+                stampPlot(overworld, name, dims);
+                continue;
             }
+            restampLive(overworld, name, dims, e.getValue(), captured,
+                name.equals(resizing) ? step : null);
         }
         if (moved > 1) {
             LOGGER.info("[DungeonTrain] Portal room row re-laid out — {} plots moved", moved);
         }
+    }
+
+    /**
+     * The plot as it currently stands in the world, or null when it is not standing there yet.
+     *
+     * <p>The snapshot {@link EditorPlotSnapshots} takes on every stamp is the test for "has this plot
+     * been built this session" — without one the box is still solid rock, and capturing it would
+     * carry a plot-shaped lump of deepslate into the new size.</p>
+     */
+    private static StructureTemplate captureLive(ServerLevel overworld, String name, PlotBox box) {
+        if (!EditorPlotSnapshots.has(snapshotKey(name))) return null;
+        StructureTemplate template = new StructureTemplate();
+        template.fillFromWorld(overworld, box.origin(), box.size(), false, Blocks.STRUCTURE_VOID);
+        return template;
+    }
+
+    /** Lay a captured plot back down at its new box, applying {@code step}'s shift and stashed row. */
+    private static void restampLive(ServerLevel overworld, String name, CarriageDims dims,
+                                    PlotBox box, StructureTemplate captured,
+                                    PortalRoomResize.Step step) {
+        Vec3i shift = step == null ? Vec3i.ZERO : step.shift();
+        PortalCarriageBuilder.stampRoomFromLive(overworld, box.origin(), box.size(), captured,
+            shift, /*relight*/ true);
+
+        // Cells first, then the row: both are addressed in plot-local coordinates, and a restored
+        // row's coordinates are already in the new frame.
+        PortalRoomResizeSlabs.shiftSidecars(name, box.size(), shift);
+        if (step != null && step.grow()) {
+            PortalRoomResizeSlabs.restore(overworld, name, box.origin(), box.size(), step);
+        }
+
+        setOutline(overworld, box.origin(), box.size(), OUTLINE_BLOCK);
+        captureSnapshot(overworld, box.origin(), box.size(), name);
     }
 
     private static Map<String, PlotBox> snapshotBoxes(CarriageDims dims) {
@@ -420,7 +509,8 @@ public final class PortalRoomEditor {
      */
     public static Vec3i setSize(ServerLevel overworld, String name, Vec3i wanted, CarriageDims dims) {
         Vec3i clamped = PortalRoomLayout.clampSize(dims, wanted);
-        relayout(overworld, dims, () -> PortalRoomSizes.pending(name, clamped));
+        applySteps(overworld, name, dims,
+            PortalRoomResize.plan(dims, plotSize(name, dims), clamped));
         LOGGER.info("[DungeonTrain] Portal room '{}' plot restamped at {}x{}x{} (typed {}x{}x{})",
             name, clamped.getX(), clamped.getY(), clamped.getZ(),
             wanted.getX(), wanted.getY(), wanted.getZ());
@@ -428,12 +518,8 @@ public final class PortalRoomEditor {
     }
 
     /** Current value of {@code axis} for {@code name}. */
-    public static int axisOf(Vec3i size, Axis axis) {
-        return switch (axis) {
-            case LENGTH -> size.getX();
-            case WIDTH -> size.getZ();
-            case HEIGHT -> size.getY();
-        };
+    public static int axisOf(Vec3i size, PortalRoomResize.Axis axis) {
+        return PortalRoomResize.of(size, axis);
     }
 
     /** Snapshot the freshly-stamped plot for {@link EditorDirtyCheck}'s baseline. */
@@ -476,6 +562,10 @@ public final class PortalRoomEditor {
         template.fillFromWorld(overworld, origin, size, false, Blocks.STRUCTURE_VOID);
 
         PortalRoomTemplateStore.save(name, template);
+
+        // The saved size is the authored one now. A row filed by an earlier shrink would put blocks
+        // back that the author has deliberately stepped away from and then saved without.
+        PortalRoomResizeMemory.get(overworld).forget(name);
 
         captureSnapshot(overworld, origin, size, name);
 

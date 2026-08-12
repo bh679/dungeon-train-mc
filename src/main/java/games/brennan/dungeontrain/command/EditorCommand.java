@@ -22,6 +22,7 @@ import games.brennan.dungeontrain.editor.CarriageVariantPartsStore;
 import games.brennan.dungeontrain.editor.EditorCategory;
 import games.brennan.dungeontrain.editor.PortalRoomEditor;
 import games.brennan.dungeontrain.portal.PortalRoomLayout;
+import games.brennan.dungeontrain.portal.PortalRoomResize;
 import games.brennan.dungeontrain.editor.EditorDevMode;
 import games.brennan.dungeontrain.editor.EditorStampedCategoryState;
 import games.brennan.dungeontrain.editor.EditorWelcome;
@@ -415,9 +416,9 @@ public final class EditorCommand {
                         .suggests(PORTAL_ROOM_NAME_SUGGESTIONS)
                         .executes(ctx -> runPortalRoomEnter(ctx.getSource(),
                             StringArgumentType.getString(ctx, "name")))))
-                .then(portalSizeNode("length", PortalRoomEditor.Axis.LENGTH))
-                .then(portalSizeNode("width", PortalRoomEditor.Axis.WIDTH))
-                .then(portalSizeNode("height", PortalRoomEditor.Axis.HEIGHT))
+                .then(portalSizeNode("length", PortalRoomResize.Axis.LENGTH))
+                .then(portalSizeNode("width", PortalRoomResize.Axis.WIDTH))
+                .then(portalSizeNode("height", PortalRoomResize.Axis.HEIGHT))
                 // All three at once, in the order the menus label them.
                 .then(Commands.literal("size")
                     .then(Commands.argument("length", IntegerArgumentType.integer(1, 512))
@@ -5932,7 +5933,7 @@ public final class EditorCommand {
      * {@link PortalRoomEditor#setSize}, which clamps to what this world's corridor allows.</p>
      */
     private static LiteralArgumentBuilder<CommandSourceStack> portalSizeNode(
-        String literal, PortalRoomEditor.Axis axis
+        String literal, PortalRoomResize.Axis axis
     ) {
         return Commands.literal(literal)
             .then(Commands.literal("inc").executes(ctx -> runPortalRoomSizeStep(ctx.getSource(), axis, +1)))
@@ -5982,8 +5983,32 @@ public final class EditorCommand {
         return 1;
     }
 
+    /**
+     * Which faces a resize moved, as a sentence fragment — or empty when nothing changed.
+     *
+     * <p>Worth saying out loud because it is not what the steppers used to do: growth landed on the
+     * far face every time, and an author who has built against one wall wants to know which way the
+     * room just opened. A shrink also says that the row is recoverable, since it no longer looks
+     * like one from the world.</p>
+     */
+    private static String describeFaces(CarriageDims dims, PortalRoomResize.Axis axis,
+                                        int before, int after) {
+        java.util.List<PortalRoomResize.Step> steps = PortalRoomResize.plan(
+            dims, axis, PortalRoomResize.with(net.minecraft.core.Vec3i.ZERO, axis, before), after);
+        if (steps.isEmpty()) return "";
+        long min = steps.stream().filter(s -> s.side() == PortalRoomResize.Side.MIN).count();
+        long max = steps.size() - min;
+        // Height never alternates — its floor is the corridor's, so only the ceiling can move.
+        String where = axis == PortalRoomResize.Axis.HEIGHT ? "the ceiling"
+            : min > 0 && max > 0 ? "both ends"
+            : min > 0 ? "the near end" : "the far end";
+        return steps.get(0).grow()
+            ? " Grown at " + where + "."
+            : " Cropped at " + where + " — step back up and those blocks come back.";
+    }
+
     /** Nudge one axis of the room plot the player is standing in by {@code delta}. */
-    private static int runPortalRoomSizeStep(CommandSourceStack source, PortalRoomEditor.Axis axis, int delta) {
+    private static int runPortalRoomSizeStep(CommandSourceStack source, PortalRoomResize.Axis axis, int delta) {
         ServerPlayer player = requirePlayer(source);
         if (player == null) return 0;
         CarriageDims dims = DungeonTrainWorldData.get(source.getServer().overworld()).dims();
@@ -6001,11 +6026,11 @@ public final class EditorCommand {
      * {@code /dt editor portals length|width|height <blocks>} — restamp the room plot the player is
      * standing in with that axis set.
      *
-     * <p>Destructive: the box changes size, so the plot goes back to the built-in room at the new
-     * size. Nothing is written to disk until the next {@code /dt save}, which is what makes the
-     * size permanent.</p>
+     * <p>Non-destructive: the live room is carried across, length and width alternate which face
+     * moves, and a shrink files the row it removes so stepping back up returns it. Nothing is written
+     * to disk until the next {@code /dt save}, which is what makes the size permanent.</p>
      */
-    private static int runPortalRoomSize(CommandSourceStack source, PortalRoomEditor.Axis axis, int blocks) {
+    private static int runPortalRoomSize(CommandSourceStack source, PortalRoomResize.Axis axis, int blocks) {
         ServerPlayer player = requirePlayer(source);
         if (player == null) return 0;
         ServerLevel overworld = source.getServer().overworld();
@@ -6018,14 +6043,16 @@ public final class EditorCommand {
             return 0;
         }
 
+        int before = PortalRoomEditor.axisOf(PortalRoomEditor.plotSize(name, dims), axis);
         net.minecraft.core.Vec3i applied = PortalRoomEditor.setSize(overworld, name, axis, blocks, dims);
         int value = PortalRoomEditor.axisOf(applied, axis);
         String axisName = axis.name().toLowerCase(Locale.ROOT);
         String note = value == blocks ? ""
             : " (clamped from " + blocks + " — the room must still seal the corridor mouth and fit its Y lane)";
+        String faces = describeFaces(dims, axis, before, value);
         source.sendSuccess(() -> Component.literal(
-            "Portal room '" + name + "' " + axisName + " is now " + value + note
-            + ". What you built is still there — /dt save to keep the new size."
+            "Portal room '" + name + "' " + axisName + " is now " + value + note + faces
+            + " What you built is still there — /dt save to keep the new size."
         ).withStyle(ChatFormatting.GREEN), true);
         return 1;
     }

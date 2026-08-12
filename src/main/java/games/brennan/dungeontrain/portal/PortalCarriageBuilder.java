@@ -1349,6 +1349,31 @@ public final class PortalCarriageBuilder {
     }
 
     /**
+     * Stamp a box from a template the caller already holds, rather than from the one on disk.
+     *
+     * <p>What the editor's resize uses. {@link #stampRoomAt} re-reads the <b>saved</b> room, which is
+     * right when a copy is being laid on the corridor row but wrong on a stepper click: everything
+     * the author had built since their last save would be replaced by the last thing they saved. The
+     * caller captures the plot as it currently stands and hands it here instead, so a resize carries
+     * the live room across and nothing on disk is consulted or written.</p>
+     *
+     * <p>{@code shift} is where the old box's contents land in the new one — non-zero when the resize
+     * moved the {@code MIN} face, which grows the room outwards rather than always off the far end.
+     * The built-in shell goes down first so whatever the box grew into has walls, and the live room
+     * is laid over it clipped to the box, exactly as the saved-template resize path does.</p>
+     */
+    public static void stampRoomFromLive(ServerLevel level, BlockPos roomOrigin, Vec3i size,
+                                         StructureTemplate live, Vec3i shift, boolean relight) {
+        clearRoomBox(level, roomOrigin, size, PortalCorridorMask.NONE, relight);
+        clearIntruders(level, roomOrigin, size);
+        plugFluidsAround(level, roomOrigin, size);
+
+        stampRoomBuiltIn(level, roomOrigin, size, relight, PortalCorridorMask.NONE);
+        CarriagePlacer.stampTemplateAt(level, roomOrigin.offset(shift), live,
+            clipTo(roomOrigin, size, PortalCorridorMask.NONE), relight);
+    }
+
+    /**
      * A processor that drops any cell outside {@code roomOrigin + size}, and any cell {@code mask}
      * covers.
      *
