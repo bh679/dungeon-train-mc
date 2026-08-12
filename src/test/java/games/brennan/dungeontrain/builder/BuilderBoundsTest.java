@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.builder;
 
 import games.brennan.dungeontrain.train.CarriageDims;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Vec3i;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -95,5 +96,52 @@ final class BuilderBoundsTest {
         assertFalse(BuilderBounds.isInsideBuild(
                 new BlockPos(first.minX(), BuilderWorldLayout.Y_TRACK_RAIL, 0),
                 List.of(first)), "the rails are below the build");
+    }
+    // ---- portal rooms: one box, at the author's size rather than the carriage's ----
+
+    @Test
+    @DisplayName("A room is one box, sized by the room and centred on the origin")
+    void roomVolumeIsOneAuthorSizedBox() {
+        List<BoundingBox> boxes = BuilderBounds.roomVolume(new Vec3i(21, 7, 13));
+        assertEquals(1, boxes.size());
+
+        BoundingBox box = boxes.get(0);
+        assertEquals(new Vec3i(21, 7, 13), BuilderBounds.sizeOf(box),
+                "the box must span the room, not the carriage dims");
+        assertEquals(BuilderWorldLayout.Y_STAND, box.minY(),
+                "a room carries its own floor, so it stands on the grass rather than in it");
+        // Centred: the two ends sit either side of the origin.
+        assertTrue(box.minX() < 0 && box.maxX() >= 0, "room should straddle x=0");
+        assertTrue(box.minZ() < 0 && box.maxZ() >= 0, "room should straddle z=0");
+    }
+
+    @Test
+    @DisplayName("An odd and an even room both keep their exact size")
+    void roomVolumeDoesNotRoundTheSize() {
+        // Centring halves the extent, and integer division there is the obvious place to lose a
+        // block off one end.
+        assertEquals(new Vec3i(11, 5, 11),
+                BuilderBounds.sizeOf(BuilderBounds.roomVolume(new Vec3i(11, 5, 11)).get(0)));
+        assertEquals(new Vec3i(48, 11, 48),
+                BuilderBounds.sizeOf(BuilderBounds.roomVolume(new Vec3i(48, 11, 48)).get(0)));
+    }
+
+    @Test
+    @DisplayName("No room size means no volume, not a zero-sized one")
+    void noRoomMeansNoVolume() {
+        // Every consumer reads an empty list as "nothing to save, nothing in bounds"; a box of size
+        // zero would instead be a volume that exists and can never be dirty.
+        assertTrue(BuilderBounds.roomVolume(null).isEmpty());
+    }
+
+    @Test
+    @DisplayName("A volume's extent comes from its box")
+    void sizeOfReadsTheBox() {
+        BoundingBox carriage = BuilderBounds.buildVolumes(1, DIMS).get(0);
+        assertEquals(new Vec3i(DIMS.length(), DIMS.height(), DIMS.width()),
+                BuilderBounds.sizeOf(carriage),
+                "a carriage box must still measure as the carriage dims it was built from");
+        assertEquals(new BlockPos(carriage.minX(), carriage.minY(), carriage.minZ()),
+                BuilderBounds.originOf(carriage));
     }
 }

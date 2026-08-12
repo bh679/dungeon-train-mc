@@ -30,6 +30,7 @@ final class BuilderTrackPlotTest {
     @DisplayName("Every plot is inside the platform and clear of the world floor")
     void everyPlotIsSomewhereBuildable() {
         for (TrackKind kind : TrackKind.values()) {
+            if (!BuilderTrackPlot.isTrackSide(kind)) continue;   // never authored on a plot
             BoundingBox box = BuilderTrackPlot.volume(kind, DIMS);
             // The protection rule refuses to unprotect the bedrock floor whatever else is going on,
             // so a plot reaching it would be one the builder could never finish editing.
@@ -54,6 +55,7 @@ final class BuilderTrackPlotTest {
     @DisplayName("The footprint is the kind's own, and the box matches it")
     void volumeMatchesFootprint() {
         for (TrackKind kind : TrackKind.values()) {
+            if (!BuilderTrackPlot.isTrackSide(kind)) continue;   // never authored on a plot
             Vec3i size = BuilderTrackPlot.footprint(kind, DIMS);
             BoundingBox box = BuilderTrackPlot.volume(kind, DIMS);
             assertEquals(kind.dims(DIMS), size, kind.id());

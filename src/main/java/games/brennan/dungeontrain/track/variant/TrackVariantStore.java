@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.track.variant;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.portal.PortalRoomLayout;
 import games.brennan.dungeontrain.train.CarriageDims;
 import net.minecraft.core.HolderGetter;
 import net.minecraft.core.Vec3i;
@@ -259,13 +260,14 @@ public final class TrackVariantStore {
         HolderGetter<Block> blocks = level.registryAccess().lookupOrThrow(Registries.BLOCK);
         template.load(blocks, tag);
 
-        Vec3i expected = kind.dims(dims);
+        Vec3i bounds = acceptableBounds(kind, dims);
         Vec3i size = template.getSize();
-        if (!size.equals(expected)) {
+        if (!boundsMatch(kind, size, bounds)) {
             LOGGER.warn(
-                "[DungeonTrain] Track template {}:{} ({}) has bounds {}x{}x{}, expected {}x{}x{} — ignoring.",
+                "[DungeonTrain] Track template {}:{} ({}) has bounds {}x{}x{}, expected {}x{}x{}{} — ignoring.",
                 kind.id(), name, origin, size.getX(), size.getY(), size.getZ(),
-                expected.getX(), expected.getY(), expected.getZ()
+                bounds.getX(), bounds.getY(), bounds.getZ(),
+                kind.freeSizeAboveFloor() ? " (minimum; larger is allowed)" : ""
             );
             return Optional.empty();
         }
@@ -273,12 +275,43 @@ public final class TrackVariantStore {
         return Optional.of(template);
     }
 
+    /**
+     * The bounds a loaded template of {@code kind} is judged against — an exact size for most kinds,
+     * a per-axis floor for a {@link TrackKind#freeSizeAboveFloor()} one.
+     *
+     * <p>Not {@link TrackKind#dims} for the free kind. That reports the <b>built-in</b> portal room's
+     * footprint, which is a real instance rather than a limit, and borrowing it here made the built-in
+     * room's width the minimum every authored room had to clear — a room could be rejected for being
+     * narrower than a shell it has nothing to do with. {@code PortalRoomLayout.minSize} is the actual
+     * floor: what the corridor mouth needs to stay sealed.</p>
+     */
+    private static Vec3i acceptableBounds(TrackKind kind, CarriageDims dims) {
+        return kind.freeSizeAboveFloor() ? PortalRoomLayout.minSize(dims) : kind.dims(dims);
+    }
+
+    /**
+     * Whether a loaded template's bounds are acceptable for {@code kind}.
+     *
+     * <p>Normally an exact match against {@link #acceptableBounds}. For a
+     * {@link TrackKind#freeSizeAboveFloor()} kind those bounds are a <b>floor</b> — the author may go
+     * bigger on any axis, and only undersize is rejected, because that is the case that breaks
+     * something in world (a portal room too narrow or too short to seal the corridor mouth that opens
+     * into it).</p>
+     */
+    private static boolean boundsMatch(TrackKind kind, Vec3i size, Vec3i bounds) {
+        if (kind.freeSizeAboveFloor()) {
+            return size.getX() >= bounds.getX()
+                && size.getY() >= bounds.getY()
+                && size.getZ() >= bounds.getZ();
+        }
+        return size.equals(bounds);
+    }
+
     private static Optional<StructureTemplate> filterForDims(
         TrackKind kind, String name, Optional<StructureTemplate> cached, CarriageDims dims
     ) {
         if (cached.isEmpty()) return cached;
-        Vec3i expected = kind.dims(dims);
-        if (cached.get().getSize().equals(expected)) return cached;
+        if (boundsMatch(kind, cached.get().getSize(), acceptableBounds(kind, dims))) return cached;
         LOGGER.warn(
             "[DungeonTrain] Cached track template {}:{} no longer matches dims {}x{}x{} — falling back.",
             kind.id(), name, dims.length(), dims.width(), dims.height()

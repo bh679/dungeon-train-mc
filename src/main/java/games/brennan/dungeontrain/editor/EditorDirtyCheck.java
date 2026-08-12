@@ -89,6 +89,7 @@ public final class EditorDirtyCheck {
         scanPillarSections(overworld, dims, devmode, out);
         scanAdjuncts(overworld, dims, devmode, out);
         scanTunnels(overworld, dims, devmode, out);
+        scanPortalRooms(overworld, dims, devmode, out);
 
         return out;
     }
@@ -101,10 +102,13 @@ public final class EditorDirtyCheck {
             String key = EditorPlotSnapshots.key("carriages", v.id());
             Map<BlockPos, BlockState> snapshot = EditorPlotSnapshots.get(key);
 
-            Set<BlockPos> skip = variantCellPositions(CarriageVariantBlocks.loadFor(v, dims).entries());
+            // The variant's own box — a carriage-sized compare would miss every unsaved edit past
+            // x=8 in the longer portal corridor and report it clean.
+            CarriageDims box = CarriageEditor.plotDims(v, dims);
+            Set<BlockPos> skip = variantCellPositions(CarriageVariantBlocks.loadFor(v, box).entries());
             boolean unsaved = snapshot != null
                 && !regionMatchesSnapshot(level, origin,
-                    dims.length(), dims.height(), dims.width(),
+                    box.length(), box.height(), box.width(),
                     snapshot, skip);
 
             boolean unpromoted = devmode
@@ -128,7 +132,7 @@ public final class EditorDirtyCheck {
             // Snapshots for contents are keyed to the INTERIOR region so the
             // shell isn't part of the diff (matches the save's capture region).
             BlockPos interiorOrigin = origin.offset(1, 1, 1);
-            Vec3i interior = CarriageContentsPlacer.interiorSize(dims);
+            Vec3i interior = CarriageContentsPlacer.interiorSizeFor(c, dims);
             String key = EditorPlotSnapshots.key("contents", c.id());
             Map<BlockPos, BlockState> snapshot = EditorPlotSnapshots.get(key);
 
@@ -264,6 +268,26 @@ public final class EditorDirtyCheck {
         }
     }
 
+    private static void scanPortalRooms(ServerLevel level, CarriageDims dims, boolean devmode,
+                                        List<DirtyEntry> out) {
+        for (String name : TrackVariantRegistry.namesFor(TrackKind.PORTAL_ROOM)) {
+            BlockPos origin = PortalRoomEditor.plotOrigin(name, dims);
+            String key = PortalRoomEditor.snapshotKey(name);
+            Map<BlockPos, BlockState> snapshot = EditorPlotSnapshots.get(key);
+
+            Vec3i fp = PortalRoomEditor.plotSize(name, dims);
+            Set<BlockPos> skip = variantCellPositions(
+                TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, name, fp).entries());
+            boolean unsaved = snapshot != null
+                && !regionMatchesSnapshot(level, origin, fp.getX(), fp.getY(), fp.getZ(), snapshot, skip);
+
+            if (unsaved) {
+                out.add(new DirtyEntry("portals", "portal_room." + name,
+                    "portal room / " + name, true, false));
+            }
+        }
+    }
+
     /**
      * Position-by-position compare of the live world region against
      * {@code snapshot}. Skips {@code skip} positions (variant cells —
@@ -308,8 +332,9 @@ public final class EditorDirtyCheck {
             BlockPos origin = CarriageEditor.plotOrigin(variant, dims);
             if (origin == null) return out;
             String key = EditorPlotSnapshots.key("carriages", modelId);
-            Set<BlockPos> skip = variantCellPositions(CarriageVariantBlocks.loadFor(variant, dims).entries());
-            collectDiffs(overworld, origin, dims.length(), dims.height(), dims.width(),
+            CarriageDims box = CarriageEditor.plotDims(variant, dims);
+            Set<BlockPos> skip = variantCellPositions(CarriageVariantBlocks.loadFor(variant, box).entries());
+            collectDiffs(overworld, origin, box.length(), box.height(), box.width(),
                 EditorPlotSnapshots.get(key), skip, out);
             return out;
         }
@@ -320,7 +345,7 @@ public final class EditorDirtyCheck {
             BlockPos origin = CarriageContentsEditor.plotOrigin(contents, dims);
             if (origin == null) return out;
             BlockPos interiorOrigin = origin.offset(1, 1, 1);
-            Vec3i interior = CarriageContentsPlacer.interiorSize(dims);
+            Vec3i interior = CarriageContentsPlacer.interiorSizeFor(contents, dims);
             String key = EditorPlotSnapshots.key("contents", modelId);
             Set<BlockPos> skip = variantCellPositions(
                 CarriageContentsVariantBlocks.loadFor(contents, interior).entries());
@@ -372,6 +397,15 @@ public final class EditorDirtyCheck {
                 collectDiffs(overworld, origin, fp.getX(), fp.getY(), fp.getZ(),
                     EditorPlotSnapshots.get(TunnelEditor.tunnelSnapshotKey(tv, name)), skip, out);
             }
+        }
+        if ("portals".equals(categoryId) && modelId.contains(".")) {
+            String name = modelId.substring(modelId.indexOf('.') + 1);
+            BlockPos origin = PortalRoomEditor.plotOrigin(name, dims);
+            Vec3i fp = PortalRoomEditor.plotSize(name, dims);
+            Set<BlockPos> skip = variantCellPositions(
+                TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, name, fp).entries());
+            collectDiffs(overworld, origin, fp.getX(), fp.getY(), fp.getZ(),
+                EditorPlotSnapshots.get(PortalRoomEditor.snapshotKey(name)), skip, out);
         }
         return out;
     }
@@ -446,7 +480,8 @@ public final class EditorDirtyCheck {
         return switch (model.kind()) {
             case CARRIAGE, CONTENTS -> model.id();
             case TRACK -> "track." + model.variantName();
-            case PILLAR, STAIRS, STAIRS_ENTRANCE, TUNNEL -> model.id() + "." + model.variantName();
+            case PILLAR, STAIRS, STAIRS_ENTRANCE, TUNNEL, PORTAL_ROOM ->
+                model.id() + "." + model.variantName();
             case PART, WHOLE_CARRIAGE -> null;
         };
     }

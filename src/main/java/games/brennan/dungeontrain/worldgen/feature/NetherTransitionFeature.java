@@ -11,6 +11,7 @@ import games.brennan.dungeontrain.worldgen.GenDeterminismLog;
 import games.brennan.dungeontrain.worldgen.GenProfiler;
 import games.brennan.dungeontrain.worldgen.NetherBand;
 import games.brennan.dungeontrain.worldgen.NetherMountainTerrain;
+import games.brennan.dungeontrain.worldgen.WorldFloor;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import games.brennan.dungeontrain.worldgen.density.NetherBandContext;
 import games.brennan.dungeontrain.worldgen.density.NetherCoreBiomes;
@@ -213,7 +214,9 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
             boolean oceanEntrance = isOceanEntrance(overworld, cycle.netherBandEntranceX(chunkMinX + 8),
                     g.trackCenterZ(), seaLevel);
 
-            int minY = level.getMinBuildHeight();
+            // Column bottoms are the world's floor, not the level's — the empty portal basement
+            // under the bedrock is not terrain for this band to reshape.
+            int minY = WorldFloor.bedrockY(level);
             int worldTop = level.getMaxBuildHeight() - 1;
 
             ChunkAccess chunk = level.getChunk(cp.x, cp.z);

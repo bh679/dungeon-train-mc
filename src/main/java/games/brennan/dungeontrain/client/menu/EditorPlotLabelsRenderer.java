@@ -76,7 +76,234 @@ public final class EditorPlotLabelsRenderer {
         ACTION_CLEAR,
         BUTTON_CONTENTS,
         /** "Enter" row — clicking teleports the player INSIDE the plot (under the cage). Visible only when already inPlot. */
-        BUTTON_ENTER_INSIDE
+        BUTTON_ENTER_INSIDE,
+        LENGTH_DEC,
+        LENGTH_INC,
+        WIDTH_DEC,
+        WIDTH_INC,
+        HEIGHT_DEC,
+        HEIGHT_INC,
+        /** The number between a dimension row's arrows — opens a typing field for that axis alone. */
+        LENGTH_TYPE,
+        WIDTH_TYPE,
+        HEIGHT_TYPE,
+        /** The whole mode row — one button, clicking it steps to the next mode. */
+        MODE_CYCLE,
+        /** The sub-mode row — only shown while the mode makes copies. */
+        COPIES_CYCLE,
+        /** The furnishing row — whether the room takes a contents template, and how it is fitted. */
+        ROOM_CONTENTS_CYCLE,
+        /** The extra-corridors row — only shown while the walls repeat. */
+        EXITS_CYCLE,
+        /** The stepper for how far apart those extra corridors go. */
+        EXIT_EVERY_DEC,
+        EXIT_EVERY_INC,
+        EXIT_EVERY_TYPE,
+        /** The stepper for how often the base pair's exit is walled off. */
+        EXIT_MOVE_DEC,
+        EXIT_MOVE_INC,
+        EXIT_MOVE_TYPE
+    }
+
+    /**
+     * The rows a panel can show, in display order.
+     *
+     * <p><b>Single source of truth for the row walk.</b> Counting, hit-testing and drawing used to
+     * re-derive the sequence independently with their own cursors, so a row inserted at a different
+     * position in any one of them made clicks land on the wrong cell. They all consume
+     * {@link #rows} now, so the three cannot drift.</p>
+     */
+    public enum RowKind {
+        NAME, WEIGHT, LENGTH, WIDTH, HEIGHT, MODE, COPIES, ROOM_CONTENTS, EXITS, EXIT_EVERY,
+        EXIT_MOVE, ENTER, ACTION, CONTENTS
+    }
+
+    /** The rows {@code entry} shows, top to bottom. */
+    public static RowKind[] rows(EditorPlotLabelsPacket.Entry entry) {
+        RowKind[] buf = new RowKind[RowKind.values().length];
+        int n = 0;
+        buf[n++] = RowKind.NAME;
+        if (entry.weight() != EditorPlotLabelsPacket.NO_WEIGHT) buf[n++] = RowKind.WEIGHT;
+        if (hasDimensionRows(entry)) {
+            buf[n++] = RowKind.LENGTH;
+            buf[n++] = RowKind.WIDTH;
+            buf[n++] = RowKind.HEIGHT;
+        }
+        if (hasModeRow(entry)) buf[n++] = RowKind.MODE;
+        if (hasCopiesRow(entry)) buf[n++] = RowKind.COPIES;
+        if (hasRoomContentsRow(entry)) buf[n++] = RowKind.ROOM_CONTENTS;
+        if (hasExitsRow(entry)) buf[n++] = RowKind.EXITS;
+        if (hasExitEveryRow(entry)) buf[n++] = RowKind.EXIT_EVERY;
+        if (hasExitMoveRow(entry)) buf[n++] = RowKind.EXIT_MOVE;
+        if (hasEnterRow(entry)) buf[n++] = RowKind.ENTER;
+        if (hasActionRow(entry)) buf[n++] = RowKind.ACTION;
+        if (hasContentsButton(entry)) buf[n++] = RowKind.CONTENTS;
+        return java.util.Arrays.copyOf(buf, n);
+    }
+
+    /**
+     * What this room does at its walls — portal rooms only, and only while the player is standing in
+     * the plot, on the same reasoning as the dimension rows.
+     *
+     * <p>Sits directly under them because it is the same kind of fact: a property of the room's box
+     * rather than of the template inside it.</p>
+     */
+    public static boolean hasModeRow(EditorPlotLabelsPacket.Entry entry) {
+        return entry.inPlot()
+            && "PORTALS".equals(entry.category())
+            && !EditorPlotLabelsPacket.NO_MODE.equals(entry.roomMode());
+    }
+
+    /**
+     * Length / width / height steppers — portal rooms only, and only while the player is standing
+     * in the plot. A portal room is the one plot kind whose box the author chooses, so it is the
+     * only one with anything to step.
+     */
+    public static boolean hasDimensionRows(EditorPlotLabelsPacket.Entry entry) {
+        return entry.inPlot()
+            && "PORTALS".equals(entry.category())
+            && entry.roomLength() != EditorPlotLabelsPacket.NO_SIZE;
+    }
+
+    /** The value a dimension row displays, or {@code -1} if {@code kind} is not a dimension row. */
+    public static int dimensionValue(EditorPlotLabelsPacket.Entry entry, RowKind kind) {
+        return switch (kind) {
+            case LENGTH -> entry.roomLength();
+            case WIDTH -> entry.roomWidth();
+            case HEIGHT -> entry.roomHeight();
+            default -> -1;
+        };
+    }
+
+    /** Command token for a dimension row's axis — {@code length} / {@code width} / {@code height}. */
+    public static String dimensionAxis(RowKind kind) {
+        return switch (kind) {
+            case LENGTH -> "length";
+            case WIDTH -> "width";
+            case HEIGHT -> "height";
+            default -> "";
+        };
+    }
+
+    /**
+     * Whether the Copies row shows: only when the walls repeat the whole room, since that is the
+     * only mode that makes copies for the setting to describe.
+     */
+    public static boolean hasCopiesRow(EditorPlotLabelsPacket.Entry entry) {
+        return hasModeRow(entry)
+            && games.brennan.dungeontrain.portal.PortalRoomSettings.parse(entry.roomMode())
+                .copiesApply();
+    }
+
+    /** What the Copies row reads, e.g. {@code "Copies: Dynamic"}. */
+    public static String copiesLabel(String modeTag) {
+        return "Copies: " + games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag)
+            .copies().displayName();
+    }
+
+    /**
+     * Whether the Contents row shows: on every portal room, unlike Copies.
+     *
+     * <p>Furnishing is not a property of the walls — a sealed room can take a contents template as
+     * readily as a repeating one — so it is gated on being a portal room at all, the same condition
+     * as the Walls row, and not on what the Walls row currently says.</p>
+     */
+    public static boolean hasRoomContentsRow(EditorPlotLabelsPacket.Entry entry) {
+        return hasModeRow(entry);
+    }
+
+    /** What the Contents row reads, e.g. {@code "Contents: Fit"}. */
+    public static String roomContentsLabel(String modeTag) {
+        return "Contents: " + games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag)
+            .contents().displayName();
+    }
+
+    /**
+     * Whether the Exits row shows: only while the walls repeat, since only an endless room has
+     * anywhere to put an extra way back to the train.
+     *
+     * <p>Both endless modes, unlike Copies — an Endless Open room is asked the question too, it just
+     * answers Off by default.</p>
+     */
+    public static boolean hasExitsRow(EditorPlotLabelsPacket.Entry entry) {
+        return hasModeRow(entry)
+            && games.brennan.dungeontrain.portal.PortalRoomSettings.parse(entry.roomMode())
+                .exitsApply();
+    }
+
+    /** What the Exits row reads, e.g. {@code "Exits: Random"}. */
+    public static String exitsLabel(String modeTag) {
+        return "Exits: " + games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag)
+            .exits().displayName();
+    }
+
+    /**
+     * Whether the spacing stepper shows: only when Exits is showing and is laying corridors.
+     *
+     * <p>Absent rather than dimmed at Off, on the same reasoning the Copies row is absent under a
+     * mode that makes no copies — a control with nothing on the other end of it is worse than no
+     * control.</p>
+     */
+    public static boolean hasExitEveryRow(EditorPlotLabelsPacket.Entry entry) {
+        return hasExitsRow(entry)
+            && games.brennan.dungeontrain.portal.PortalRoomSettings.parse(entry.roomMode())
+                .exits().lays();
+    }
+
+    /**
+     * What the spacing stepper reads.
+     *
+     * <p>Worded to the reading it is under, because the same number means two different things:
+     * {@code On} spaces a lattice, {@code Random} sets odds. "Every 8" and "1 in 8" are the shortest
+     * honest way to say which one is in force.</p>
+     */
+    public static String exitEveryLabel(String modeTag) {
+        games.brennan.dungeontrain.portal.PortalRoomExits exits =
+            games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag).exits();
+        return exits.kind() == games.brennan.dungeontrain.portal.PortalRoomExits.Kind.RANDOM
+            ? "1 in " + exits.every()
+            : "Every " + exits.every();
+    }
+
+    /**
+     * Whether the moved-exit stepper shows: only under Random.
+     *
+     * <p>Walling off the way straight back out is only fair when there is something unpredictable to
+     * go and find. Under the lattice a player could work the walk out in advance; under Off it would
+     * wall the only way onward there is.</p>
+     */
+    public static boolean hasExitMoveRow(EditorPlotLabelsPacket.Entry entry) {
+        return hasExitsRow(entry)
+            && games.brennan.dungeontrain.portal.PortalRoomSettings.parse(entry.roomMode())
+                .exits().movesApply();
+    }
+
+    /** What the moved-exit stepper reads, e.g. {@code "Moved exit: 7/10"}. */
+    public static String exitMoveLabel(String modeTag) {
+        return "Moved exit: " + games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag)
+            .exits().moveChance() + "/10";
+    }
+
+    /**
+     * What the mode row reads, e.g. {@code "Walls: Endless Open"}.
+     *
+     * <p>Resolved through {@code PortalRoomMode.parse}, which is total, so a tag hand-edited into
+     * {@code weights.json} that nothing recognises shows the default the room will actually behave as
+     * rather than the misspelling.</p>
+     */
+    public static String modeLabel(String modeTag) {
+        return "Walls: " + games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag)
+            .mode().displayName();
+    }
+
+    /** Short prefix drawn to the left of a dimension row's number. */
+    public static String dimensionLabel(RowKind kind) {
+        return switch (kind) {
+            case LENGTH -> "L";
+            case WIDTH -> "W";
+            case HEIGHT -> "H";
+            default -> "";
+        };
     }
 
     /** Where the player's crosshair is currently pointing. */
@@ -219,10 +446,44 @@ public final class EditorPlotLabelsRenderer {
     /**
      * Compute the half-width of {@code entry}'s panel in world units. Same
      * formula used by the renderer and the raycast so cell rectangles agree.
+     *
+     * <p><b>Every row that can outgrow the panel has to be measured here.</b> The width used to come
+     * from the name alone, on the assumption that {@link #MIN_HALF_W} covered every other row — true
+     * while the longest was "Contents". The Walls row broke it: a variant called {@code default} is
+     * six characters and "Walls: Endless Repetition" is twenty-five, so the label spilled out past
+     * both edges of the backdrop. Taking the widest of the two means the panel fits whatever it
+     * actually has to say, and the raycast reads the same figure so the cells stay under what is
+     * drawn.</p>
      */
     public static double halfWidth(EditorPlotLabelsPacket.Entry entry, Font font) {
-        double nameW = font.width(entry.name()) * TEXT_SCALE + 2 * PAD_X;
-        double w = Math.max(MIN_HALF_W * 2.0, nameW);
+        return halfWidth(entry, font::width);
+    }
+
+    /**
+     * {@link #halfWidth(EditorPlotLabelsPacket.Entry, Font)} against any text measurer.
+     *
+     * <p>Exists for the same reason {@code cellAt} has an explicit-halfWidth overload: the
+     * {@link Font} is the one part of this that cannot run headless, and the width rule is worth a
+     * test of its own now that more than the name feeds it.</p>
+     */
+    public static double halfWidth(EditorPlotLabelsPacket.Entry entry,
+                                   java.util.function.ToIntFunction<String> measure) {
+        double w = Math.max(MIN_HALF_W * 2.0, measure.applyAsInt(entry.name()) * TEXT_SCALE + 2 * PAD_X);
+        if (hasModeRow(entry)) {
+            w = Math.max(w, measure.applyAsInt(modeLabel(entry.roomMode())) * TEXT_SCALE + 2 * PAD_X);
+        }
+        if (hasCopiesRow(entry)) {
+            w = Math.max(w, measure.applyAsInt(copiesLabel(entry.roomMode())) * TEXT_SCALE + 2 * PAD_X);
+        }
+        if (hasExitsRow(entry)) {
+            w = Math.max(w, measure.applyAsInt(exitsLabel(entry.roomMode())) * TEXT_SCALE + 2 * PAD_X);
+        }
+        if (hasExitMoveRow(entry)) {
+            // The longest of the portal-room labels after Walls — the arrows either side leave it
+            // only the middle third, so the panel has to be sized for it or it clips.
+            w = Math.max(w, measure.applyAsInt(exitMoveLabel(entry.roomMode())) * 3 * TEXT_SCALE
+                + 2 * PAD_X);
+        }
         return w / 2.0;
     }
 
@@ -236,12 +497,7 @@ public final class EditorPlotLabelsRenderer {
      * to step into a cage to edit it.</p>
      */
     public static int rowCount(EditorPlotLabelsPacket.Entry entry) {
-        int rows = 1; // name
-        if (entry.weight() != EditorPlotLabelsPacket.NO_WEIGHT) rows++;
-        if (hasEnterRow(entry)) rows++;
-        if (hasActionRow(entry)) rows++;
-        if (hasContentsButton(entry)) rows++;
-        return rows;
+        return rows(entry).length;
     }
 
     /** "Enter" row — visible only when the player is already inside this plot. */
@@ -261,12 +517,25 @@ public final class EditorPlotLabelsRenderer {
     public static boolean hasActionRow(EditorPlotLabelsPacket.Entry entry) {
         if (!entry.inPlot()) return false;
         String c = entry.category();
-        return "CARRIAGES".equals(c) || "CONTENTS".equals(c) || "TRACKS".equals(c);
+        return "CARRIAGES".equals(c) || "CONTENTS".equals(c) || "TRACKS".equals(c)
+            || "PORTALS".equals(c);
     }
 
-    /** Contents button — carriages only, gated on the player being inside the plot. */
+    /**
+     * Contents button — opens the per-template allow-list. Gated on the player being inside the
+     * plot, and on there being a pool for the toggles to steer.
+     *
+     * <p>Carriages always have one. A portal room only has one <b>while its Contents setting is
+     * on</b>: with it Off the room draws nothing, so an allow-list would be a screen full of
+     * toggles that change nothing. The setting rides in the room's own mode tag, already on the
+     * entry, so the button appears and disappears as the Contents row above it is cycled.</p>
+     */
     public static boolean hasContentsButton(EditorPlotLabelsPacket.Entry entry) {
-        return entry.inPlot() && "CARRIAGES".equals(entry.category());
+        if (!entry.inPlot()) return false;
+        if ("CARRIAGES".equals(entry.category())) return true;
+        return hasRoomContentsRow(entry)
+            && games.brennan.dungeontrain.portal.PortalRoomSettings.parse(entry.roomMode())
+                .contents().furnishes();
     }
 
     /** True when the weight arrows (interactive [-] / [+]) should render and accept clicks. */
@@ -294,55 +563,71 @@ public final class EditorPlotLabelsRenderer {
      */
     public static CellKind cellAt(EditorPlotLabelsPacket.Entry entry, Font font,
                                   double hitX, double hitY) {
-        double halfW = halfWidth(entry, font);
+        return cellAt(entry, halfWidth(entry, font), hitX, hitY);
+    }
+
+    /**
+     * {@link #cellAt(EditorPlotLabelsPacket.Entry, Font, double, double)} with the panel's
+     * half-width supplied directly.
+     *
+     * <p>Split out because the half-width is the one part of the hit math that needs a
+     * {@link Font} — everything below it is pure arithmetic over the row list, which is exactly
+     * the part worth testing.</p>
+     */
+    public static CellKind cellAt(EditorPlotLabelsPacket.Entry entry, double halfW,
+                                  double hitX, double hitY) {
         double halfH = halfHeight(entry);
         if (hitX < -halfW || hitX > halfW || hitY < -halfH || hitY > halfH) return CellKind.NONE;
 
-        int rows = rowCount(entry);
+        RowKind[] rows = rows(entry);
         // Row 0 is the topmost (name); subsequent rows go down.
         // y range for row N: [halfH - (N+1)*ROW_H, halfH - N*ROW_H].
         int rowFromTop = (int) Math.floor((halfH - hitY) / ROW_H);
-        if (rowFromTop < 0 || rowFromTop >= rows) return CellKind.NONE;
+        if (rowFromTop < 0 || rowFromTop >= rows.length) return CellKind.NONE;
 
-        // Row 0: name — clickable teleport target (only for actionable
-        // categories; parts plots have an empty category and stay
-        // non-interactive on the name row, matching their lack of action
-        // buttons).
-        if (rowFromTop == 0) {
-            return entry.category().isEmpty() ? CellKind.NONE : CellKind.NAME;
-        }
-
-        // Walk through optional rows in display order to figure out what this row IS.
-        int next = 1;
-        if (entry.weight() != EditorPlotLabelsPacket.NO_WEIGHT) {
-            if (rowFromTop == next) {
-                // Weight row is always visible (display only) but arrow cells
-                // are only clickable when the player is inside the plot.
-                return hasWeightArrows(entry) ? weightRowCell(hitX, halfW) : CellKind.NONE;
-            }
-            next++;
-        }
-        if (hasEnterRow(entry)) {
-            if (rowFromTop == next) return CellKind.BUTTON_ENTER_INSIDE;
-            next++;
-        }
-        if (hasActionRow(entry)) {
-            if (rowFromTop == next) return actionRowCell(hitX, halfW);
-            next++;
-        }
-        if (hasContentsButton(entry)) {
-            if (rowFromTop == next) return CellKind.BUTTON_CONTENTS;
-        }
-        return CellKind.NONE;
+        return switch (rows[rowFromTop]) {
+            // Name — clickable teleport target, except on parts plots, which have an empty
+            // category and stay non-interactive to match their lack of action buttons.
+            case NAME -> entry.category().isEmpty() ? CellKind.NONE : CellKind.NAME;
+            // Weight is always visible (display only) but its arrows are clickable only from
+            // inside the plot.
+            case WEIGHT -> hasWeightArrows(entry) ? weightRowCell(hitX, halfW) : CellKind.NONE;
+            // The number between the arrows types that row's axis on its own — the panel has no
+            // keyboard entry of its own, and stepping from 13 to 48 is thirty-five taps.
+            case LENGTH -> stepperCell(hitX, halfW, CellKind.LENGTH_DEC, CellKind.LENGTH_INC, CellKind.LENGTH_TYPE);
+            case WIDTH -> stepperCell(hitX, halfW, CellKind.WIDTH_DEC, CellKind.WIDTH_INC, CellKind.WIDTH_TYPE);
+            case HEIGHT -> stepperCell(hitX, halfW, CellKind.HEIGHT_DEC, CellKind.HEIGHT_INC, CellKind.HEIGHT_TYPE);
+            // One button rather than a stepper: there are three modes, and naming the one you want
+            // costs no more clicks than aiming at an arrow for it.
+            case MODE -> CellKind.MODE_CYCLE;
+            case COPIES -> CellKind.COPIES_CYCLE;
+            case ROOM_CONTENTS -> CellKind.ROOM_CONTENTS_CYCLE;
+            case EXITS -> CellKind.EXITS_CYCLE;
+            case EXIT_EVERY -> stepperCell(hitX, halfW,
+                CellKind.EXIT_EVERY_DEC, CellKind.EXIT_EVERY_INC, CellKind.EXIT_EVERY_TYPE);
+            case EXIT_MOVE -> stepperCell(hitX, halfW,
+                CellKind.EXIT_MOVE_DEC, CellKind.EXIT_MOVE_INC, CellKind.EXIT_MOVE_TYPE);
+            case ENTER -> CellKind.BUTTON_ENTER_INSIDE;
+            case ACTION -> actionRowCell(hitX, halfW);
+            case CONTENTS -> CellKind.BUTTON_CONTENTS;
+        };
     }
 
     private static CellKind weightRowCell(double hitX, double halfW) {
-        // Decrement on the left third; increment on the right third; the middle
-        // (number display) is non-interactive.
+        return stepperCell(hitX, halfW, CellKind.WEIGHT_DEC, CellKind.WEIGHT_INC, CellKind.NONE);
+    }
+
+    /**
+     * Thirds split shared by every {@code [-] N [+]} row: decrement on the left third, increment on
+     * the right third, and {@code middle} for the number between them — {@link CellKind#NONE} where
+     * the number is display-only.
+     */
+    private static CellKind stepperCell(double hitX, double halfW, CellKind dec, CellKind inc,
+                                        CellKind middle) {
         double third = (halfW * 2.0) / 3.0;
-        if (hitX < -halfW + third) return CellKind.WEIGHT_DEC;
-        if (hitX > halfW - third) return CellKind.WEIGHT_INC;
-        return CellKind.NONE;
+        if (hitX < -halfW + third) return dec;
+        if (hitX > halfW - third) return inc;
+        return middle;
     }
 
     private static CellKind actionRowCell(double hitX, double halfW) {
@@ -418,64 +703,164 @@ public final class EditorPlotLabelsRenderer {
             drawQuad(ps, buffer, halfW, -halfH, halfW + t, halfH, borderColor);
         }
 
-        int rowIdx = 0;
-        // Name row (always). Hover-highlight when the player is aiming at it
-        // and the row is teleport-clickable (i.e. the entry has a category).
+        // One pass over the shared row list, so what is drawn and what cellAt hit-tests cannot
+        // disagree about which row is where.
         double topY = halfH;
-        double rowTop = topY - rowIdx * ROW_H;
-        double rowBottom = rowTop - ROW_H;
-        if (hovered == CellKind.NAME) {
-            drawQuad(ps, buffer, -halfW + 0.005, rowBottom + 0.005,
-                halfW - 0.005, rowTop - 0.005, HOVER_COLOR);
-        }
-        drawCenteredText(ps, buffer, font, entry.name(),
-            0, (rowTop + rowBottom) / 2.0, NAME_COLOR);
-        rowIdx++;
+        RowKind[] rowKinds = rows(entry);
+        for (int rowIdx = 0; rowIdx < rowKinds.length; rowIdx++) {
+            RowKind rowKind = rowKinds[rowIdx];
+            double rTop = topY - rowIdx * ROW_H;
+            double rBot = rTop - ROW_H;
+            double rCY = (rTop + rBot) / 2.0;
 
-        // Weight row — display always when there's a weight pool; arrows only
-        // when inside the plot (the player has to step into the cage to edit).
-        if (entry.weight() != EditorPlotLabelsPacket.NO_WEIGHT) {
-            double wTop = topY - rowIdx * ROW_H;
-            double wBot = wTop - ROW_H;
-            double wCY = (wTop + wBot) / 2.0;
-            drawQuad(ps, buffer, -halfW, wTop - 0.005, halfW, wTop + 0.005, ROW_SEP_COLOR);
-
-            if (hasWeightArrows(entry)) {
-                double third = (halfW * 2.0) / 3.0;
-                double leftR = -halfW + third;
-                double rightL = halfW - third;
-                if (hovered == CellKind.WEIGHT_DEC) {
-                    drawQuad(ps, buffer, -halfW + 0.005, wBot + 0.005, leftR - 0.005, wTop - 0.005, HOVER_COLOR);
-                } else if (hovered == CellKind.WEIGHT_INC) {
-                    drawQuad(ps, buffer, rightL + 0.005, wBot + 0.005, halfW - 0.005, wTop - 0.005, HOVER_COLOR);
+            switch (rowKind) {
+                case NAME -> {
+                    // Hover-highlight when the player is aiming at it and the row is
+                    // teleport-clickable (i.e. the entry has a category).
+                    if (hovered == CellKind.NAME) {
+                        drawQuad(ps, buffer, -halfW + 0.005, rBot + 0.005,
+                            halfW - 0.005, rTop - 0.005, HOVER_COLOR);
+                    }
+                    drawCenteredText(ps, buffer, font, entry.name(), 0, rCY, NAME_COLOR);
                 }
-                drawCenteredText(ps, buffer, font, "-", (-halfW + leftR) / 2.0, wCY, ARROW_COLOR);
-                drawCenteredText(ps, buffer, font, "+", (rightL + halfW) / 2.0, wCY, ARROW_COLOR);
+                // Weight — display always when there's a weight pool; arrows only when inside
+                // the plot (the player has to step into the cage to edit).
+                case WEIGHT -> {
+                    drawQuad(ps, buffer, -halfW, rTop - 0.005, halfW, rTop + 0.005, ROW_SEP_COLOR);
+                    if (hasWeightArrows(entry)) {
+                        drawStepperArrows(ps, buffer, font, halfW, rTop, rBot, rCY,
+                            hovered, CellKind.WEIGHT_DEC, CellKind.WEIGHT_INC);
+                    }
+                    drawCenteredText(ps, buffer, font, "×" + entry.weight(), 0, rCY, WEIGHT_COLOR);
+                }
+                // Room size — portal rooms only. Same [-] N [+] geometry as weight.
+                case LENGTH, WIDTH, HEIGHT -> {
+                    CellKind dec = switch (rowKind) {
+                        case LENGTH -> CellKind.LENGTH_DEC;
+                        case WIDTH -> CellKind.WIDTH_DEC;
+                        default -> CellKind.HEIGHT_DEC;
+                    };
+                    CellKind inc = switch (rowKind) {
+                        case LENGTH -> CellKind.LENGTH_INC;
+                        case WIDTH -> CellKind.WIDTH_INC;
+                        default -> CellKind.HEIGHT_INC;
+                    };
+                    drawQuad(ps, buffer, -halfW, rTop - 0.005, halfW, rTop + 0.005, ROW_SEP_COLOR);
+                    drawStepperArrows(ps, buffer, font, halfW, rTop, rBot, rCY, hovered, dec, inc);
+                    CellKind type = switch (rowKind) {
+                        case LENGTH -> CellKind.LENGTH_TYPE;
+                        case WIDTH -> CellKind.WIDTH_TYPE;
+                        default -> CellKind.HEIGHT_TYPE;
+                    };
+                    if (hovered == type) {
+                        double third = (halfW * 2.0) / 3.0;
+                        drawQuad(ps, buffer, -halfW + third + 0.005, rBot + 0.005,
+                            halfW - third - 0.005, rTop - 0.005, HOVER_COLOR);
+                    }
+                    drawCenteredText(ps, buffer, font,
+                        dimensionLabel(rowKind) + " " + dimensionValue(entry, rowKind),
+                        0, rCY, WEIGHT_COLOR);
+                }
+                // Mode — full-width button showing what this room does at its walls; clicking steps
+                // to the next one. Sits under the dimension rows because it is the same kind of
+                // fact: a property of the room's box rather than of the template inside it.
+                case MODE -> {
+                    drawQuad(ps, buffer, -halfW, rTop - 0.005, halfW, rTop + 0.005, ROW_SEP_COLOR);
+                    int bg = hovered == CellKind.MODE_CYCLE ? HOVER_COLOR : BUTTON_BG;
+                    drawQuad(ps, buffer, -halfW + 0.01, rBot + 0.005, halfW - 0.01, rTop - 0.005, bg);
+                    drawCenteredText(ps, buffer, font, modeLabel(entry.roomMode()), 0, rCY, WEIGHT_COLOR);
+                }
+                // Copies — the sub-mode under Walls, present only while the walls repeat the room.
+                case COPIES -> {
+                    int bg = hovered == CellKind.COPIES_CYCLE ? HOVER_COLOR : BUTTON_BG;
+                    drawQuad(ps, buffer, -halfW + 0.01, rBot + 0.005, halfW - 0.01, rTop - 0.005, bg);
+                    drawCenteredText(ps, buffer, font, copiesLabel(entry.roomMode()), 0, rCY, WEIGHT_COLOR);
+                }
+                // Contents — whether this room is furnished from the contents pool, and how a
+                // furnishing smaller than the room is fitted into it. Off by default.
+                case ROOM_CONTENTS -> {
+                    int bg = hovered == CellKind.ROOM_CONTENTS_CYCLE ? HOVER_COLOR : BUTTON_BG;
+                    drawQuad(ps, buffer, -halfW + 0.01, rBot + 0.005, halfW - 0.01, rTop - 0.005, bg);
+                    drawCenteredText(ps, buffer, font, roomContentsLabel(entry.roomMode()), 0, rCY, WEIGHT_COLOR);
+                }
+                // Exits — how many extra ways back to the train this room scatters through its
+                // copies. Only an endless room has anywhere to put one.
+                case EXITS -> {
+                    int bg = hovered == CellKind.EXITS_CYCLE ? HOVER_COLOR : BUTTON_BG;
+                    drawQuad(ps, buffer, -halfW + 0.01, rBot + 0.005, halfW - 0.01, rTop - 0.005, bg);
+                    drawCenteredText(ps, buffer, font, exitsLabel(entry.roomMode()), 0, rCY, WEIGHT_COLOR);
+                }
+                // How far apart those go. Same [-] N [+] geometry as the dimension rows, and the
+                // number types on its own for the same reason: stepping 8 → 40 is thirty-two taps.
+                case EXIT_EVERY -> {
+                    drawStepperArrows(ps, buffer, font, halfW, rTop, rBot, rCY, hovered,
+                        CellKind.EXIT_EVERY_DEC, CellKind.EXIT_EVERY_INC);
+                    if (hovered == CellKind.EXIT_EVERY_TYPE) {
+                        double third = (halfW * 2.0) / 3.0;
+                        drawQuad(ps, buffer, -halfW + third + 0.005, rBot + 0.005,
+                            halfW - third - 0.005, rTop - 0.005, HOVER_COLOR);
+                    }
+                    drawCenteredText(ps, buffer, font, exitEveryLabel(entry.roomMode()),
+                        0, rCY, WEIGHT_COLOR);
+                }
+                // How often this room walls off the base pair's exit, so the only ways onward are
+                // the copies. Random only — the lattice is predictable enough to walk.
+                case EXIT_MOVE -> {
+                    drawStepperArrows(ps, buffer, font, halfW, rTop, rBot, rCY, hovered,
+                        CellKind.EXIT_MOVE_DEC, CellKind.EXIT_MOVE_INC);
+                    if (hovered == CellKind.EXIT_MOVE_TYPE) {
+                        double third = (halfW * 2.0) / 3.0;
+                        drawQuad(ps, buffer, -halfW + third + 0.005, rBot + 0.005,
+                            halfW - third - 0.005, rTop - 0.005, HOVER_COLOR);
+                    }
+                    drawCenteredText(ps, buffer, font, exitMoveLabel(entry.roomMode()),
+                        0, rCY, WEIGHT_COLOR);
+                }
+                // Enter — full-width button, visible only when the player is already inside the
+                // plot. Clicking dispatches EditorPlotActionPacket(ENTER_INSIDE) so the player
+                // teleports to the plot floor (the default teleport lands on top).
+                case ENTER -> {
+                    drawQuad(ps, buffer, -halfW, rTop - 0.005, halfW, rTop + 0.005, ROW_SEP_COLOR);
+                    int bg = hovered == CellKind.BUTTON_ENTER_INSIDE ? HOVER_COLOR : BUTTON_BG;
+                    drawQuad(ps, buffer, -halfW + 0.01, rBot + 0.005, halfW - 0.01, rTop - 0.005, bg);
+                    drawCenteredText(ps, buffer, font, "Enter", 0, rCY, BUTTON_TEXT_COLOR);
+                }
+                case ACTION -> drawActionRow(ps, buffer, font, halfW, rTop, rBot, rCY, hovered);
+                case CONTENTS -> {
+                    int bg = hovered == CellKind.BUTTON_CONTENTS ? HOVER_COLOR : BUTTON_BG;
+                    drawQuad(ps, buffer, -halfW, rTop - 0.005, halfW, rTop + 0.005, ROW_SEP_COLOR);
+                    drawQuad(ps, buffer, -halfW + 0.01, rBot + 0.005, halfW - 0.01, rTop - 0.005, bg);
+                    drawCenteredText(ps, buffer, font, "Contents", 0, rCY, BUTTON_TEXT_COLOR);
+                }
             }
-            drawCenteredText(ps, buffer, font, "×" + entry.weight(), 0, wCY, WEIGHT_COLOR);
-            rowIdx++;
         }
 
-        // Enter row — full-width "Enter" button, visible only when the
-        // player is already inside the plot. Clicking dispatches
-        // EditorPlotActionPacket(ENTER_INSIDE) so the player teleports to
-        // the plot floor (the default teleport now lands on top).
-        if (hasEnterRow(entry)) {
-            double eTop = topY - rowIdx * ROW_H;
-            double eBot = eTop - ROW_H;
-            double eCY = (eTop + eBot) / 2.0;
-            drawQuad(ps, buffer, -halfW, eTop - 0.005, halfW, eTop + 0.005, ROW_SEP_COLOR);
-            int bg = hovered == CellKind.BUTTON_ENTER_INSIDE ? HOVER_COLOR : BUTTON_BG;
-            drawQuad(ps, buffer, -halfW + 0.01, eBot + 0.005, halfW - 0.01, eTop - 0.005, bg);
-            drawCenteredText(ps, buffer, font, "Enter", 0, eCY, BUTTON_TEXT_COLOR);
-            rowIdx++;
-        }
+        ps.popPose();
+    }
 
-        // Action row (Save / R / C).
-        if (hasActionRow(entry)) {
-            double aTop = topY - rowIdx * ROW_H;
-            double aBot = aTop - ROW_H;
-            double aCY = (aTop + aBot) / 2.0;
+    /** The {@code [-]} / {@code [+]} cells shared by the weight row and every dimension row. */
+    private static void drawStepperArrows(
+        PoseStack ps, MultiBufferSource buffer, Font font, double halfW,
+        double rTop, double rBot, double rCY, CellKind hovered, CellKind dec, CellKind inc
+    ) {
+        double third = (halfW * 2.0) / 3.0;
+        double leftR = -halfW + third;
+        double rightL = halfW - third;
+        if (hovered == dec) {
+            drawQuad(ps, buffer, -halfW + 0.005, rBot + 0.005, leftR - 0.005, rTop - 0.005, HOVER_COLOR);
+        } else if (hovered == inc) {
+            drawQuad(ps, buffer, rightL + 0.005, rBot + 0.005, halfW - 0.005, rTop - 0.005, HOVER_COLOR);
+        }
+        drawCenteredText(ps, buffer, font, "-", (-halfW + leftR) / 2.0, rCY, ARROW_COLOR);
+        drawCenteredText(ps, buffer, font, "+", (rightL + halfW) / 2.0, rCY, ARROW_COLOR);
+    }
+
+    /** The {@code [Save 70%][R 15%][C 15%]} row. */
+    private static void drawActionRow(
+        PoseStack ps, MultiBufferSource buffer, Font font, double halfW,
+        double aTop, double aBot, double aCY, CellKind hovered
+    ) {
+        {
             double w = halfW * 2.0;
             double saveR = -halfW + 0.70 * w;
             double resetR = -halfW + 0.85 * w;
@@ -497,21 +882,7 @@ public final class EditorPlotLabelsRenderer {
             drawCenteredText(ps, buffer, font, "Save", saveCX, aCY, BUTTON_TEXT_COLOR);
             drawCenteredText(ps, buffer, font, "R", resetCX, aCY, BUTTON_TEXT_COLOR);
             drawCenteredText(ps, buffer, font, "C", clearCX, aCY, BUTTON_TEXT_COLOR);
-            rowIdx++;
         }
-
-        // Contents row (carriages).
-        if (hasContentsButton(entry)) {
-            double cTop = topY - rowIdx * ROW_H;
-            double cBot = cTop - ROW_H;
-            double cCY = (cTop + cBot) / 2.0;
-            int bg = hovered == CellKind.BUTTON_CONTENTS ? HOVER_COLOR : BUTTON_BG;
-            drawQuad(ps, buffer, -halfW, cTop - 0.005, halfW, cTop + 0.005, ROW_SEP_COLOR);
-            drawQuad(ps, buffer, -halfW + 0.01, cBot + 0.005, halfW - 0.01, cTop - 0.005, bg);
-            drawCenteredText(ps, buffer, font, "Contents", 0, cCY, BUTTON_TEXT_COLOR);
-        }
-
-        ps.popPose();
     }
 
     private static void drawCenteredText(

@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.builder.BuilderDirtyCheck;
 import games.brennan.dungeontrain.builder.BuilderMode;
+import games.brennan.dungeontrain.builder.BuilderSpawn;
 import games.brennan.dungeontrain.builder.BuilderWorldLayout;
 import games.brennan.dungeontrain.builder.BuilderWorldSetup;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
@@ -79,9 +80,10 @@ public record BuilderSwitchPacket(String modeId, boolean force) implements Custo
             // Put the player back on the platform: the mode they switched to may be shorter than
             // the one they were standing in, which would otherwise leave them inside solid blocks
             // or hanging in the air where a carriage used to be.
-            var spawn = BuilderWorldLayout.spawnPos(DungeonTrainWorldData.get(level).dims());
+            var spawn = BuilderSpawn.forLevel(level);
             player.teleportTo(level, spawn.getX() + 0.5, spawn.getY(), spawn.getZ() + 0.5,
                 player.getYRot(), player.getXRot());
+            BuilderSpawn.startFlying(player);
         });
     }
 }

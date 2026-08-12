@@ -53,32 +53,31 @@ public final class BuilderDirtyCheck {
     /**
      * Indices of the build volumes whose blocks differ from their post-stamp baseline.
      *
-     * <p>Carriages when the mode parks a train, and the single track plot when it doesn't — the
-     * indices are into {@link BuilderBounds#volumesFor}, so a track build reports {@code [0]} for
-     * "the one thing on the plot has been edited". Callers only ever ask how many there are and
-     * whether the list is empty, which reads the same either way.</p>
+     * <p>Carriages when the mode parks a train, the single track plot when it doesn't, and a portal
+     * room's own box in Train Dimensions — the indices are into {@link BuilderBounds#volumesFor}, so
+     * the latter two report {@code [0]} for "the one thing here has been edited". Callers only ever
+     * ask how many there are and whether the list is empty, which reads the same either way.</p>
+     *
+     * <p>No {@code carriages <= 0} early-out: that was the right guard while every volume was a
+     * carriage, and it is exactly what would stop a track plot or a room ever reporting itself
+     * dirty, since neither mode parks a carriage by design.</p>
      */
     public static List<Integer> dirtyCarriages(ServerLevel level) {
         List<Integer> dirty = new ArrayList<>();
         DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
-        CarriageDims dims = data.dims();
-        int carriages = BuilderWorldSetup.parkedCarriages(data);
         TrackKind trackKind = BuilderTrackBuild.kindOf(data);
-        List<BoundingBox> volumes = BuilderBounds.volumesFor(carriages, trackKind, dims);
-        if (volumes.isEmpty()) {
-            return dirty;
-        }
-        boolean track = trackKind != null && carriages <= 0;
-        Vec3i size = track
-                ? BuilderTrackPlot.footprint(trackKind, dims)
-                : new Vec3i(dims.length(), dims.height(), dims.width());
+        boolean track = trackKind != null && BuilderWorldSetup.parkedCarriages(data) <= 0;
+        List<BoundingBox> volumes = BuilderBounds.volumesFor(level);
 
         for (int i = 0; i < volumes.size(); i++) {
             BoundingBox box = volumes.get(i);
             String key = track ? snapshotKey(trackKind, data.builderName()) : snapshotKey(i);
             Map<BlockPos, BlockState> baseline = EditorPlotSnapshots.get(key);
-            BlockPos origin = new BlockPos(box.minX(), box.minY(), box.minZ());
-            if (isDirty(baseline, size, local -> level.getBlockState(origin.offset(local)))) {
+            BlockPos origin = BuilderBounds.originOf(box);
+            // Size from the box: a room's is the author's and a track plot's is its footprint,
+            // neither of which is CarriageDims.
+            if (isDirty(baseline, BuilderBounds.sizeOf(box),
+                    local -> level.getBlockState(origin.offset(local)))) {
                 dirty.add(i);
             }
         }
@@ -95,6 +94,8 @@ public final class BuilderDirtyCheck {
      * @param baseline post-stamp snapshot in <b>local</b> coordinates, or null if never captured.
      *                 {@link EditorPlotSnapshots} omits air to stay sparse, so an absent entry
      *                 means "this position was air" — not "unknown".
+     * @param dims     the carriage footprint to walk — the convenience form, for the volumes that
+     *                 really are carriage-shaped
      * @param liveAt   live block state at a local position
      */
     public static boolean isDirty(Map<BlockPos, BlockState> baseline, CarriageDims dims,

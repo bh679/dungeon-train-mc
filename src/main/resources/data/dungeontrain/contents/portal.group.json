@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 3,
+  "selfWeight": 1,
+  "variants": [
+    {
+      "id": "portalzigzag",
+      "weight": 2
+    },
+    {
+      "id": "two",
+      "weight": 3
+    },
+    {
+      "id": "bookportal",
+      "weight": 1
+    },
+    {
+      "id": "bookportal2",
+      "weight": 3
+    },
+    {
+      "id": "lit",
+      "weight": 1
+    },
+    {
+      "id": "seats",
+      "weight": 1
+    },
+    {
+      "id": "zigzagportal",
+      "weight": 1
+    }
+  ]
+}

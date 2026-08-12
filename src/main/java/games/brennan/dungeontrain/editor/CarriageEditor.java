@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.editor;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.portal.PortalCorridorSize;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriagePlacer;
 import games.brennan.dungeontrain.train.CarriageVariant;
@@ -93,12 +94,41 @@ public final class CarriageEditor {
     }
 
     /**
+     * The box a variant's plot occupies.
+     *
+     * <p>Every variant but one is a plain carriage box. The <b>portal corridor</b> is longer than a
+     * carriage — it runs past its slot into the cart between a portal's pair
+     * ({@link games.brennan.dungeontrain.portal.PortalCorridorSize}) — so its plot has to be that
+     * long too, or stamping it would spill four blocks into the neighbouring variant's plot and its
+     * capture would save a truncated corridor.</p>
+     *
+     * <p><b>Only for sizing the plot box</b> — clearing it, caging it, capturing it, snapshotting it.
+     * Never pass the result back into {@link CarriagePlacer#placeAt}: the placer derives the corridor
+     * length from the world's carriage dims itself, and handing it an already-lengthened figure would
+     * apply the growth twice.</p>
+     *
+     * <p>Delegates to {@link CarriagePlacer#variantDims} rather than repeating the rule — the plot,
+     * the template the plot is captured into, and the sidecar bounds the plot is edited against all
+     * have to be the same box, and two copies of that rule would be free to drift apart.</p>
+     */
+    public static CarriageDims plotDims(CarriageVariant variant, CarriageDims dims) {
+        return CarriagePlacer.variantDims(variant, dims);
+    }
+
+    /**
+     * The uniform {@code +X} step between plots — the widest plot any variant can have, so the
+     * longer portal-corridor plot cannot reach its neighbour whatever order the registry is in.
+     */
+    private static int plotStep(CarriageDims dims) {
+        return PortalCorridorSize.corridorLength(dims) + EditorLayout.GAP;
+    }
+
+    /**
      * Plot origin for {@code variant}. Step along {@code +X} is
-     * {@code CarriageDims.length() + EditorLayout.GAP} so adjacent plots
-     * always have a uniform {@link EditorLayout#GAP}-block air gap between
-     * footprints — matching the rule used in {@link CarriagePartEditor},
-     * {@link TrackSidePlots}, and {@link CarriageContentsEditor}. Returns
-     * {@code null} if the variant is not registered.
+     * {@link #plotStep} so adjacent plots always have at least a uniform
+     * {@link EditorLayout#GAP}-block air gap between footprints — matching the rule used in
+     * {@link CarriagePartEditor}, {@link TrackSidePlots}, and {@link CarriageContentsEditor}.
+     * Returns {@code null} if the variant is not registered.
      */
     public static BlockPos plotOrigin(CarriageVariant variant, CarriageDims dims) {
         List<CarriageVariant> all = CarriageVariantRegistry.allVariants();
@@ -111,8 +141,7 @@ public final class CarriageEditor {
             }
         }
         if (index < 0) return null;
-        int step = dims.length() + EditorLayout.GAP;
-        return new BlockPos(FIRST_PLOT_X + index * step, PLOT_Y, PLOT_Z);
+        return new BlockPos(FIRST_PLOT_X + index * plotStep(dims), PLOT_Y, PLOT_Z);
     }
 
     /**
@@ -123,13 +152,14 @@ public final class CarriageEditor {
         for (CarriageVariant variant : CarriageVariantRegistry.allVariants()) {
             BlockPos o = plotOrigin(variant, dims);
             if (o == null) continue;
+            CarriageDims box = plotDims(variant, dims);
             // Y upper bound includes a couple of blocks of headroom above the
             // cage top so a player who teleported to "on top" via the new
             // landing-on-top default still counts as inPlot — same panel
             // controls (green border, action row, Enter button) stay visible.
-            if (pos.getX() >= o.getX() - 1 && pos.getX() <= o.getX() + dims.length()
-                && pos.getY() >= o.getY() - 1 && pos.getY() <= o.getY() + dims.height() + 2
-                && pos.getZ() >= o.getZ() - 1 && pos.getZ() <= o.getZ() + dims.width()) {
+            if (pos.getX() >= o.getX() - 1 && pos.getX() <= o.getX() + box.length()
+                && pos.getY() >= o.getY() - 1 && pos.getY() <= o.getY() + box.height() + 2
+                && pos.getZ() >= o.getZ() - 1 && pos.getZ() <= o.getZ() + box.width()) {
                 return variant;
             }
         }
@@ -166,11 +196,12 @@ public final class CarriageEditor {
         rememberReturn(player);
         stampPlot(overworld, variant, dims);
 
-        double tx = origin.getX() + dims.length() / 2.0;
+        CarriageDims box = plotDims(variant, dims);
+        double tx = origin.getX() + box.length() / 2.0;
         double ty = onTop
-            ? origin.getY() + dims.height() + 1.0
+            ? origin.getY() + box.height() + 1.0
             : origin.getY() + 1.0;
-        double tz = origin.getZ() + dims.width() / 2.0;
+        double tz = origin.getZ() + box.width() / 2.0;
         player.teleportTo(overworld, tx, ty, tz, player.getYRot(), player.getXRot());
 
         LOGGER.info("[DungeonTrain] Editor enter: {} -> {} plot at {} dims={}x{}x{} ({})",
@@ -198,11 +229,14 @@ public final class CarriageEditor {
         // touch the in-memory cache until /save.
         ContainerContentsStore.invalidate("carriage:" + variant.id());
 
-        CarriagePlacer.eraseAt(overworld, origin, dims);
+        // Box operations use the PLOT's dims (longer for the portal corridor); the placer keeps the
+        // world's carriage dims and derives the corridor length itself — see plotDims.
+        CarriageDims box = plotDims(variant, dims);
+        CarriagePlacer.eraseAt(overworld, origin, box);
         EditorPlotEntityClearer.discardNonPlayersIn(
-            overworld, origin, new Vec3i(dims.length(), dims.height(), dims.width()));
+            overworld, origin, new Vec3i(box.length(), box.height(), box.width()));
         CarriagePlacer.placeAt(overworld, origin, variant, dims);
-        setOutline(overworld, origin, OUTLINE_BLOCK, dims);
+        setOutline(overworld, origin, OUTLINE_BLOCK, box);
 
         // Snapshot the freshly-stamped state so EditorDirtyCheck has a
         // baseline to compare against. The stamp pass composes base NBT +
@@ -211,7 +245,7 @@ public final class CarriageEditor {
         // post-composition state here.
         EditorPlotSnapshots.capture(
             EditorPlotSnapshots.key("carriages", variant.id()),
-            overworld, origin, dims.length(), dims.height(), dims.width()
+            overworld, origin, box.length(), box.height(), box.width()
         );
     }
 
@@ -245,12 +279,14 @@ public final class CarriageEditor {
      * the pre-unregister registry snapshot.</p>
      */
     public static void restampRowAfterDeletion(ServerLevel level, int oldDeletedIndex, int oldCount, CarriageDims dims) {
-        int step = dims.length() + EditorLayout.GAP;
         BlockState air = Blocks.AIR.defaultBlockState();
+        // Erased at the widest plot size — the loop works by index and cannot know which of the
+        // shifted variants was the long portal-corridor plot, and clearing extra air is harmless.
+        CarriageDims widest = PortalCorridorSize.corridorDims(dims);
         for (int i = oldDeletedIndex; i < oldCount; i++) {
-            BlockPos pos = new BlockPos(FIRST_PLOT_X + i * step, PLOT_Y, PLOT_Z);
-            CarriagePlacer.eraseAt(level, pos, dims);
-            setOutline(level, pos, air, dims);
+            BlockPos pos = new BlockPos(FIRST_PLOT_X + i * plotStep(dims), PLOT_Y, PLOT_Z);
+            CarriagePlacer.eraseAt(level, pos, widest);
+            setOutline(level, pos, air, widest);
         }
         List<CarriageVariant> remaining = CarriageVariantRegistry.allVariants();
         for (int i = oldDeletedIndex; i < remaining.size(); i++) {
@@ -267,8 +303,9 @@ public final class CarriageEditor {
     public static void clearPlot(ServerLevel overworld, CarriageVariant variant, CarriageDims dims) {
         BlockPos origin = plotOrigin(variant, dims);
         if (origin == null) return;
-        CarriagePlacer.eraseAt(overworld, origin, dims);
-        setOutline(overworld, origin, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(), dims);
+        CarriageDims box = plotDims(variant, dims);
+        CarriagePlacer.eraseAt(overworld, origin, box);
+        setOutline(overworld, origin, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(), box);
         // Drop the dirty-check baseline — the plot is no longer stamped, so
         // comparing a future live read (all air) to a stamped snapshot would
         // report every carriage as dirty when the player switches categories.
@@ -298,17 +335,21 @@ public final class CarriageEditor {
         // Apply the editor mirror (save-time backstop to live mirroring) before
         // capture so the stored template is symmetric per the sidecar's enabled
         // axes. No-op when all axes are off (the carriage default).
-        CarriageVariantBlocks sidecar = CarriageVariantBlocks.loadFor(variant, dims);
+        // The plot's own box — longer than a carriage for the portal corridor, so the capture below
+        // saves the whole corridor rather than its first nine blocks, and the sidecar keeps entries
+        // authored in the part of the plot that is past a carriage's length.
+        CarriageDims box = plotDims(variant, dims);
+        CarriageVariantBlocks sidecar = CarriageVariantBlocks.loadFor(variant, box);
         // "V" toggle: mirror the variant pools first so the structural pass below
         // sees (and preserves) the freshly-reflected far cells via markersOf.
         EditorVariantMirror.rebuildFromMaster(overworld, new BlockVariantPlot.CarriagePlot(
-            variant, origin, new Vec3i(dims.length(), dims.height(), dims.width()), dims));
+            variant, origin, new Vec3i(box.length(), box.height(), box.width()), dims));
         EditorMirror.rebuildFromMaster(overworld, origin,
-            new Vec3i(dims.length(), dims.height(), dims.width()),
+            new Vec3i(box.length(), box.height(), box.width()),
             sidecar.mirrorX(), sidecar.mirrorY(), sidecar.mirrorZ(),
             EditorMirror.markersOf(sidecar.entries()));
 
-        StructureTemplate template = captureTemplate(overworld, origin, dims);
+        StructureTemplate template = captureTemplate(overworld, origin, box);
         CarriageTemplateStore.save(variant, template);
 
         // Variant sidecar: snapshot whatever the in-memory cache holds (the
@@ -331,11 +372,11 @@ public final class CarriageEditor {
         // clean on the next /dt editor unsaved-list query.
         EditorPlotSnapshots.capture(
             EditorPlotSnapshots.key("carriages", variant.id()),
-            overworld, origin, dims.length(), dims.height(), dims.width()
+            overworld, origin, box.length(), box.height(), box.width()
         );
 
         LOGGER.info("[DungeonTrain] Editor save: {} -> {} template dims={}x{}x{} ({} variant entries)",
-            player.getName().getString(), variant.id(), dims.length(), dims.width(), dims.height(),
+            player.getName().getString(), variant.id(), box.length(), box.width(), box.height(),
             sidecar.size());
 
         if (!EditorDevMode.isEnabled()) return SaveResult.skipped();
@@ -422,7 +463,7 @@ public final class CarriageEditor {
 
         // Copy the source's variant sidecar into the new variant so the
         // duplicate shares the "pick from these blocks" authoring.
-        CarriageVariantBlocks sourceSidecar = CarriageVariantBlocks.loadFor(source, dims);
+        CarriageVariantBlocks sourceSidecar = CarriageVariantBlocks.loadFor(source, plotDims(source, dims));
         if (!sourceSidecar.isEmpty()) {
             CarriageVariantBlocks copy = CarriageVariantBlocks.empty();
             for (CarriageVariantBlocks.Entry e : sourceSidecar.entries()) {
@@ -460,7 +501,7 @@ public final class CarriageEditor {
         BlockPos origin = plotOrigin(current, dims);
         if (origin == null) throw new IOException("Unknown variant '" + current.id() + "'.");
 
-        StructureTemplate template = captureTemplate(overworld, origin, dims);
+        StructureTemplate template = captureTemplate(overworld, origin, plotDims(current, dims));
 
         if (current instanceof CarriageVariant.Custom currentCustom) {
             if (!CarriageVariantRegistry.register(renamed)) {

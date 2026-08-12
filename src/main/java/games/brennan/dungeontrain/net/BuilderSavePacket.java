@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.net;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.builder.BuilderNewOptions;
+import games.brennan.dungeontrain.builder.BuilderOpenRequest;
 import games.brennan.dungeontrain.builder.BuilderPhotoPaths;
 import games.brennan.dungeontrain.builder.BuilderPhotoRequest;
 import games.brennan.dungeontrain.builder.BuilderTrackBuild;
@@ -94,6 +95,9 @@ public record BuilderSavePacket() implements CustomPacketPayload {
         }
         if (BuilderNewOptions.SubType.PARTS.id().equals(subTypeId)) {
             return BuilderPhotoPaths.Kind.PART;
+        }
+        if (BuilderOpenRequest.PORTAL_ROOM_SUB_TYPE.equals(subTypeId)) {
+            return BuilderPhotoPaths.Kind.PORTAL_ROOM;
         }
         return BuilderPhotoPaths.Kind.CARRIAGE;
     }

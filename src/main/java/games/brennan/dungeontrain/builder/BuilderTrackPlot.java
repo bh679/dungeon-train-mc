@@ -47,6 +47,23 @@ public final class BuilderTrackPlot {
 
     private BuilderTrackPlot() {}
 
+    /**
+     * Whether this kind is authored on a track plot at all.
+     *
+     * <p>False for {@link TrackKind#PORTAL_ROOM} alone. It is a {@code TrackKind} because that is
+     * where its files live — {@code portals/room} — but nothing about it is track-side: Train
+     * Dimensions opens it as its own volume centred on the world, through
+     * {@code BuilderWorldSetup.openPortalRoom}, and it never appears in a {@link BuilderTrackGroup}
+     * or on a plot.</p>
+     *
+     * <p>Stated once here so the invariant "every track kind is reachable and has a plot" can stay
+     * exactly true of the kinds it is about, rather than being quietly weakened to accommodate one
+     * that isn't.</p>
+     */
+    public static boolean isTrackSide(TrackKind kind) {
+        return kind != TrackKind.PORTAL_ROOM;
+    }
+
     /** The template's footprint — the same box {@link TrackKind} tells every other caller about. */
     public static Vec3i footprint(TrackKind kind, CarriageDims dims) {
         return kind.dims(dims);
@@ -58,6 +75,10 @@ public final class BuilderTrackPlot {
             case TILE, TUNNEL_SECTION, TUNNEL_PORTAL -> true;
             case PILLAR_TOP, PILLAR_MIDDLE, PILLAR_BOTTOM,
                  ADJUNCT_STAIRS, ADJUNCT_STAIRS_ENTRANCE -> false;
+            // A portal room is a TrackKind on disk and nothing else here: it is never authored on a
+            // track plot at all — Train Dimensions opens it as its own volume, through
+            // BuilderWorldSetup.openPortalRoom — so it is not in the corridor and never asks.
+            case PORTAL_ROOM -> false;
         };
     }
 
@@ -93,6 +114,11 @@ public final class BuilderTrackPlot {
                     BuilderTrackScene.groundY() + PillarSection.BOTTOM.height());
             case PILLAR_TOP -> columnOrigin(g,
                     BuilderTrackScene.bedY() - PillarSection.TOP.height());
+            // Never reached: a portal room has its own origin, centred on the world rather than
+            // placed on a line — BuilderWorldLayout.portalRoomOrigin. Answering the corridor origin
+            // here would be a plausible-looking wrong place, so it answers nothing.
+            case PORTAL_ROOM -> throw new IllegalArgumentException(
+                    "portal rooms are not authored on a track plot — see BuilderWorldLayout.portalRoomOrigin");
             // Beside the column, flush against the corridor, reaching deck height — the generator's
             // own origin for an up-staircase.
             case ADJUNCT_STAIRS -> new BlockPos(

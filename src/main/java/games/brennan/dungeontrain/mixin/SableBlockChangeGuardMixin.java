@@ -5,6 +5,7 @@ import dev.ryanhcode.sable.api.sublevel.ServerSubLevelContainer;
 import dev.ryanhcode.sable.api.sublevel.SubLevelContainer;
 import dev.ryanhcode.sable.sublevel.ServerSubLevel;
 import dev.ryanhcode.sable.sublevel.plot.LevelPlot;
+import games.brennan.dungeontrain.portal.PortalEditMirror;
 import games.brennan.dungeontrain.ship.sable.WorldgenForceGuard;
 import games.brennan.dungeontrain.train.SharedCarriageChangeFilter;
 import games.brennan.dungeontrain.train.SharedCarriageRegistry;
@@ -71,6 +72,13 @@ public abstract class SableBlockChangeGuardMixin {
         if (container.getChunkHolder(cpos) == null) return;
         LevelPlot plot = container.getPlot(cpos);
         if (plot == null || !(plot.getSubLevel() instanceof ServerSubLevel serverSub)) return;
+
+        // Hallway portal: a corridor and its twin must stay block-for-block identical or the crossing
+        // becomes visible, so any edit inside a portal carriage is copied to its twin. Placed on
+        // Sable's own choke point, this catches redstone, pistons and explosions as well as players.
+        // PortalEditMirror no-ops when no portals are live, and guards its own re-entry.
+        PortalEditMirror.onCarriageBlockChanged(level, plot, x, y, z, newState);
+
         UUID subLevelId = serverSub.getUniqueId();
         if (!SharedCarriageRegistry.hasSubLevel(subLevelId)) return;
         // Not every block change is a BUILD change — breaking a loot container and flipping a transient

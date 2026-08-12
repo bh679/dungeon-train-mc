@@ -36,11 +36,14 @@ public final class BuilderDefaultOpen {
      * @param wholeCarriages  saved whole carriages, {@code EditorTemplateLists.wholeCarriages()}
      * @param carriageShells  registered carriage shells, {@code EditorTemplateLists.carriages()}
      * @param contents        top-level contents templates, {@code EditorTemplateLists.contents()}
+     * @param portalRooms     portal rooms in the order the Open grid would reach them,
+     *                        {@code EditorTemplateLists.portalRooms(mode)} walked over the room modes
      */
     public static Optional<BuilderOpenRequest> requestFor(BuilderMode mode,
                                                           List<String> wholeCarriages,
                                                           List<String> carriageShells,
-                                                          List<String> contents) {
+                                                          List<String> contents,
+                                                          List<String> portalRooms) {
         if (mode == null) {
             return Optional.empty();
         }
@@ -48,11 +51,15 @@ public final class BuilderDefaultOpen {
             case TRAIN_OUTSIDE -> carriage(wholeCarriages, carriageShells);
             case INSIDE_CARRIAGE -> first(contents).map(
                     id -> new BuilderOpenRequest(BuilderPhotoPaths.Kind.CONTENTS, id, null));
-            // Both track modes land on the kind their Open grid opens on, so the tile and the
-            // library agree about what "the default" is for that part of the line. `default` is the
-            // one name every kind is guaranteed to ship.
-            case TRACKS_TUNNELS, TRAIN_DIMENSIONS -> BuilderOpenRequest.forTrack(
+            // The kind this mode's Open grid opens on, so the tile and the library agree about what
+            // "the default" is for that part of the line. `default` is the one name every track kind
+            // is guaranteed to ship.
+            case TRACKS_TUNNELS -> BuilderOpenRequest.forTrack(
                     BuilderOpenOptions.defaultTrackKind(mode), TrackKind.DEFAULT_NAME);
+            // A portal room, not the portal. Train Dimensions is named for what is on the *other
+            // side* of the mouth — BuilderOpenOptions.openSourceFor sends it to PORTAL_ROOMS — so
+            // opening TUNNEL_PORTAL here put the tunnel mouth on the plot and called it a dimension.
+            case TRAIN_DIMENSIONS -> first(portalRooms).map(BuilderOpenRequest::forPortalRoom);
         };
     }
 

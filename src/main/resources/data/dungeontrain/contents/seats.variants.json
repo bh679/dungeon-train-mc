@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 8,
+  "mirror": { "x": true, "y": false, "z": true, "v": true },
+  "variants": {
+    "4,0,2": { "lockId": 1, "states": [{"state": "minecraft:spruce_log[axis=y]", "rotation": {"mode": "lock", "dirs": ["up"]}}, {"state": "minecraft:spruce_fence[east=false,north=false,south=false,waterlogged=false,west=false]", "rotation": {"mode": "lock", "dirs": ["up"]}}] },
+    "6,0,2": { "lockId": 1, "states": [{"state": "minecraft:spruce_log[axis=y]", "rotation": {"mode": "lock", "dirs": ["up"]}}, {"state": "minecraft:spruce_fence[east=false,north=false,south=false,waterlogged=false,west=false]", "rotation": {"mode": "lock", "dirs": ["up"]}}] },
+    "5,0,2": [{"state": "minecraft:spruce_log[axis=y]", "rotation": {"mode": "lock", "dirs": ["up"]}}, {"state": "minecraft:spruce_fence[east=false,north=false,south=false,waterlogged=false,west=false]", "rotation": {"mode": "lock", "dirs": ["up"]}}, {"state": "minecraft:command_block[conditional=false,facing=up]", "rotation": {"mode": "lock", "dirs": ["up"]}}],
+    "3,0,2": { "lockId": 2, "states": [{"state": "minecraft:spruce_log[axis=y]", "rotation": {"mode": "lock", "dirs": ["up"]}}, {"state": "minecraft:spruce_fence[east=false,north=false,south=false,waterlogged=false,west=false]", "rotation": {"mode": "lock", "dirs": ["up"]}}] },
+    "7,0,2": { "lockId": 2, "states": [{"state": "minecraft:spruce_log[axis=y]", "rotation": {"mode": "lock", "dirs": ["up"]}}, {"state": "minecraft:spruce_fence[east=false,north=false,south=false,waterlogged=false,west=false]", "rotation": {"mode": "lock", "dirs": ["up"]}}] },
+    "3,1,2": { "lockId": 2, "states": [{"state": "minecraft:spruce_log[axis=y]", "rotation": {"mode": "lock", "dirs": ["up"]}}, {"state": "minecraft:spruce_fence[east=false,north=false,south=false,waterlogged=false,west=false]", "rotation": {"mode": "lock", "dirs": ["up"]}}] },
+    "7,1,2": { "lockId": 2, "states": [{"state": "minecraft:spruce_log[axis=y]", "rotation": {"mode": "lock", "dirs": ["up"]}}, {"state": "minecraft:spruce_fence[east=false,north=false,south=false,waterlogged=false,west=false]", "rotation": {"mode": "lock", "dirs": ["up"]}}] },
+    "3,2,2": { "lockId": 2, "states": [{"state": "minecraft:spruce_log[axis=y]", "rotation": {"mode": "lock", "dirs": ["up"]}}, {"state": "minecraft:spruce_fence[east=false,north=false,south=false,waterlogged=false,west=false]", "rotation": {"mode": "lock", "dirs": ["up"]}}] },
+    "7,2,2": { "lockId": 2, "states": [{"state": "minecraft:spruce_log[axis=y]", "rotation": {"mode": "lock", "dirs": ["up"]}}, {"state": "minecraft:spruce_fence[east=false,north=false,south=false,waterlogged=false,west=false]", "rotation": {"mode": "lock", "dirs": ["up"]}}] },
+    "3,3,2": { "lockId": 2, "states": [{"state": "minecraft:spruce_log[axis=y]", "rotation": {"mode": "lock", "dirs": ["up"]}}, {"state": "minecraft:spruce_fence[east=false,north=false,south=false,waterlogged=false,west=false]", "rotation": {"mode": "lock", "dirs": ["up"]}}] },
+    "7,3,2": { "lockId": 2, "states": [{"state": "minecraft:spruce_log[axis=y]", "rotation": {"mode": "lock", "dirs": ["up"]}}, {"state": "minecraft:spruce_fence[east=false,north=false,south=false,waterlogged=false,west=false]", "rotation": {"mode": "lock", "dirs": ["up"]}}] }
+  }
+}

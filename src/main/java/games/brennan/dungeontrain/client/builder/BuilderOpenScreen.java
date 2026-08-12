@@ -12,6 +12,7 @@ import games.brennan.dungeontrain.net.BuilderDirtyRequestPacket;
 import games.brennan.dungeontrain.net.BuilderNewPacket;
 import games.brennan.dungeontrain.net.BuilderOpenPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.portal.PortalRoomMode;
 import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.train.CarriagePartKind;
 import net.minecraft.client.Minecraft;
@@ -221,7 +222,25 @@ public final class BuilderOpenScreen extends Screen {
                 }
                 yield trackGroup == null ? trackGroupIds() : trackKindIds();
             }
+            // All four modes at the top, whether or not anything is authored for them — see
+            // BuilderOpenOptions.OpenSource.PORTAL_ROOMS.
+            case PORTAL_ROOMS -> group.isEmpty()
+                    ? portalRoomModeIds()
+                    : EditorTemplateLists.portalRooms(PortalRoomMode.parse(group));
         };
+    }
+
+    /**
+     * The four room modes as the ids the grid carries around, in menu order — the reasoning for
+     * that order, and why it isn't {@code PortalRoomMode.values()}, is on
+     * {@link BuilderOpenOptions#PORTAL_ROOM_MODE_ORDER}, which the Builder Menu tile reads too.
+     */
+    private static List<String> portalRoomModeIds() {
+        List<String> out = new ArrayList<>();
+        for (PortalRoomMode m : BuilderOpenOptions.PORTAL_ROOM_MODE_ORDER) {
+            out.add(m.id());
+        }
+        return out;
     }
 
     /**
@@ -277,9 +296,14 @@ public final class BuilderOpenScreen extends Screen {
      * or a Stage is an authored id, which gets read as words rather than looked up.</p>
      */
     private Component groupLabel() {
+        BuilderOpenOptions.OpenSource source = BuilderOpenOptions.openSourceFor(mode, subType);
+        if (source == BuilderOpenOptions.OpenSource.PORTAL_ROOMS) {
+            // Not BuilderLabels.pretty: a room mode's id would come back as "Bedrock Lock", which is
+            // not what the tile the player clicked said.
+            return portalModeLabel(group);
+        }
         TrackKind kind = TrackKind.fromId(group);
-        return kind != null && BuilderOpenOptions.openSourceFor(mode, subType)
-                        == BuilderOpenOptions.OpenSource.TRACK_KINDS
+        return kind != null && source == BuilderOpenOptions.OpenSource.TRACK_KINDS
                 ? Component.translatable(trackKindLabelKey(kind))
                 : Component.literal(BuilderLabels.pretty(group));
     }
@@ -341,6 +365,9 @@ public final class BuilderOpenScreen extends Screen {
             return Component.translatable("gui.dungeontrain.builder.new.saved_build",
                     BuilderLabels.pretty(bare));
         }
+        if (source == BuilderOpenOptions.OpenSource.PORTAL_ROOMS && group.isEmpty()) {
+            return portalModeLabel(bare);
+        }
         // A type or kind tile names something the mod ships, not something a builder authored, so it
         // reads out of the language file. One more level in, these same cells are template names.
         if (source == BuilderOpenOptions.OpenSource.TRACK_KINDS && activeTrackKind() == null) {
@@ -357,6 +384,26 @@ public final class BuilderOpenScreen extends Screen {
         return Component.literal(BuilderLabels.pretty(bare));
     }
 
+    /**
+     * A room mode's caption on this screen — one word, not {@code PortalRoomMode.displayName()}.
+     *
+     * <p>The editor's names ("Endless Repetition") say what the mode does to a room, which is what
+     * an author toggling one needs to read. These tiles are a choice between four places, and the
+     * shortest word that separates them ("Repeating") is what a caption under a picture has room
+     * for. Two vocabularies for one enum, on purpose: the surfaces are asking different
+     * questions.</p>
+     */
+    private static Component portalModeLabel(String modeId) {
+        return Component.translatable("gui.dungeontrain.builder.open.portal_mode."
+                + PortalRoomMode.parse(modeId).id());
+    }
+
+    /**
+     * The breadcrumb's caption — what {@link #group} is called, in the same words its tile used.
+     *
+     * <p>Not {@code BuilderLabels.pretty(group)} for every source: a room mode's id would come back
+     * as "Bedrock Lock", which is not what the tile the player clicked said.</p>
+     */
     /**
      * Whether {@code value} is a row the grid can look inside — the drill-in button's condition.
      *
@@ -474,6 +521,9 @@ public final class BuilderOpenScreen extends Screen {
     /** The line under the grid: why it's empty, or why you can look but not touch. */
     private Component statusNote(boolean openable) {
         if (!openable) {
+            // "Make one with New and save it" is the advice for an empty grid you could have filled.
+            // A room mode with nothing in it is not that: New has no arm that makes a portal room,
+            // so the true thing to say is still that this list is read-only.
             return Component.translatable("gui.dungeontrain.builder.open.not_buildable");
         }
         return entries.isEmpty() ? Component.translatable("gui.dungeontrain.builder.open.empty") : null;
@@ -607,6 +657,16 @@ public final class BuilderOpenScreen extends Screen {
      * a better answer to clicking one than silently starting an unrelated new build.</p>
      */
     private Runnable actionFor(BuilderOpenOptions.OpenSource source, String value, boolean force) {
+        // A room mode is a heading, not a template: its tile only drills in, which mouseClicked has
+        // already handled by the time anything gets here. One level down they are rooms and open.
+        if (source == BuilderOpenOptions.OpenSource.PORTAL_ROOMS) {
+            if (group.isEmpty()) {
+                return null;
+            }
+            BuilderOpenRequest request = BuilderOpenRequest.forPortalRoom(value);
+            return () -> DungeonTrainNet.sendToServer(new BuilderOpenPacket(mode.id(),
+                    request.kind().id(), request.id(), "", force));
+        }
         if (source == BuilderOpenOptions.OpenSource.TRACK_KINDS) {
             return trackActionFor(value, force);
         }

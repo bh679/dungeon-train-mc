@@ -215,6 +215,7 @@ final class BuilderTrackSceneTest {
     @DisplayName("The view pose stands level with the plot, not down on the platform")
     void viewPoseIsAtTheScene() {
         for (TrackKind kind : TrackKind.values()) {
+            if (!BuilderTrackPlot.isTrackSide(kind)) continue;   // never authored on a plot
             BlockPos view = BuilderTrackPlot.viewPos(kind, DIMS);
             BoundingBox plot = BuilderTrackPlot.volume(kind, DIMS);
             // Dropped on the grass under a column twelve blocks up, you would be looking at the

@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.menu.parts.PartPositionMenu;
 import games.brennan.dungeontrain.editor.EditorDirtyCheck;
+import games.brennan.dungeontrain.net.EditorStatusPacket;
 import games.brennan.dungeontrain.worldgen.TrainPhase;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -58,6 +59,15 @@ public final class EditorStatusHudOverlay {
     private static boolean devmode = false;
     /** Current variant weight for the active model, or {@link #NO_WEIGHT} when not applicable. */
     private static int weight = NO_WEIGHT;
+    /**
+     * Authored size of the portal room plot the player is in, or {@link EditorStatusPacket#NO_SIZE}
+     * for every other category — a portal room is the one plot kind whose box the author chooses.
+     */
+    private static int roomLength = EditorStatusPacket.NO_SIZE;
+    private static int roomWidth = EditorStatusPacket.NO_SIZE;
+    private static int roomHeight = EditorStatusPacket.NO_SIZE;
+    /** What that room does at its walls, or {@link EditorStatusPacket#NO_MODE} outside a portal plot. */
+    private static String roomMode = EditorStatusPacket.NO_MODE;
     /** Active model's spawn gate: min Diff-Level (default 0), max Diff-Level ({@code -1} = no upper bound), and a 4-bit phase mask (default all four set). */
     private static int minLevel = 0;
     private static int maxLevel = -1;
@@ -110,7 +120,9 @@ public final class EditorStatusHudOverlay {
     public static void setStatus(String newCategory, String newModel, String newModelId, String newModelName,
                                  boolean newDevmode, int newWeight, int newMinLevel, int newMaxLevel, int newPhaseMask,
                                  boolean newPartMenuEnabled, boolean newMirrorX, boolean newMirrorY, boolean newMirrorZ,
-                                 boolean newMirrorVariants, Set<String> newExcludedContents, String newStageId) {
+                                 boolean newMirrorVariants, Set<String> newExcludedContents, String newStageId,
+                                 int newRoomLength, int newRoomWidth, int newRoomHeight,
+                                 String newRoomMode) {
         category = newCategory == null ? "" : newCategory;
         model = newModel == null ? "" : newModel;
         modelId = newModelId == null ? "" : newModelId;
@@ -129,7 +141,26 @@ public final class EditorStatusHudOverlay {
         excludedContents = (newExcludedContents == null || newExcludedContents.isEmpty())
             ? Collections.emptySet()
             : Set.copyOf(newExcludedContents);
+        roomLength = newRoomLength;
+        roomWidth = newRoomWidth;
+        roomHeight = newRoomHeight;
+        roomMode = newRoomMode == null ? EditorStatusPacket.NO_MODE : newRoomMode;
     }
+
+    /**
+     * Authored size of the portal room the player is standing in, or
+     * {@link EditorStatusPacket#NO_SIZE} for every other category — a portal room is the one plot
+     * kind whose box the author chooses rather than the kind fixing it.
+     */
+    public static int roomLength() { return roomLength; }
+    public static int roomWidth()  { return roomWidth; }
+    public static int roomHeight() { return roomHeight; }
+
+    /**
+     * What the portal room the player is standing in does at its walls, or
+     * {@link EditorStatusPacket#NO_MODE} for every other category.
+     */
+    public static String roomMode() { return roomMode; }
 
     public static void clear() {
         category = "";
@@ -148,6 +179,10 @@ public final class EditorStatusHudOverlay {
         mirrorZ = false;
         mirrorVariants = false;
         excludedContents = Collections.emptySet();
+        roomLength = EditorStatusPacket.NO_SIZE;
+        roomWidth = EditorStatusPacket.NO_SIZE;
+        roomHeight = EditorStatusPacket.NO_SIZE;
+        roomMode = EditorStatusPacket.NO_MODE;
         unsavedList = null;
         clearChangesList();
     }

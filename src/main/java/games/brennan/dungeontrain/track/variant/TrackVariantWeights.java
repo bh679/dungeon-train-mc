@@ -95,14 +95,30 @@ public final class TrackVariantWeights {
     }
 
     /**
-     * Update one weight on disk and in memory, keeping the entry's inline gate <b>and</b> its Stage
-     * link. Returns the clamped value.
+     * The raw per-kind mode tag for {@code (kind, name)}, or {@code null} when the entry sets none.
+     *
+     * <p>Opaque here — what a mode means belongs to the owning kind. Today only
+     * {@link TrackKind#PORTAL_ROOM} defines any; resolve one with
+     * {@code PortalRoomMode.parse(modeFor(...))}, which turns null and anything unrecognised into
+     * that kind's default.</p>
+     */
+    public static synchronized String modeFor(TrackKind kind, String name) {
+        if (name == null) return null;
+        TemplateMeta m = CURRENT.get(kind).get(name.toLowerCase(Locale.ROOT));
+        return m == null ? null : m.mode();
+    }
+
+    /**
+     * Update one weight on disk and in memory, keeping the entry's inline gate, its Stage link
+     * <b>and</b> its mode tag. Returns the clamped value.
      */
     public static synchronized int set(TrackKind kind, String name, int value) throws IOException {
         String key = name.toLowerCase(Locale.ROOT);
         int clamped = clamp(value);
         Map<String, TemplateMeta> next = new HashMap<>(CURRENT.get(kind));
         TemplateMeta prev = next.get(key);
+        // mergeWeight copies prev via withWeight, so the gate, the Stage link and the mode tag all
+        // survive a weight tweak — rebuilding the record from parts here would drop them.
         next.put(key, TemplateMeta.mergeWeight(prev, clamped));
         CURRENT.put(kind, next);
         writeConfig(kind, next);
@@ -146,13 +162,33 @@ public final class TrackVariantWeights {
         if (link == null && prev != null && prev.stageId() != null) {
             inline = games.brennan.dungeontrain.editor.StageStore.effectiveGate(inline, prev.stageId());
         }
-        next.put(key, new TemplateMeta(weight, inline, link));
+        next.put(key, new TemplateMeta(weight, inline, link, prev == null ? null : prev.mode()));
         CURRENT.put(kind, next);
         writeConfig(kind, next);
         trySaveToSource(kind, next);
         LOGGER.info("[DungeonTrain] Set track stage {}:{}={} (persisted to {}).",
             kind.id(), key, link == null ? "<custom>" : link, configPath(kind));
         return link;
+    }
+
+    /**
+     * Set the per-kind mode tag for {@code (kind, name)} (null / blank clears it back to the kind's
+     * default), preserving weight, inline gate and Stage link. Persists. Returns the stored tag.
+     */
+    public static synchronized String setMode(TrackKind kind, String name, String mode) throws IOException {
+        String key = name.toLowerCase(Locale.ROOT);
+        String tag = (mode == null || mode.isBlank()) ? null : mode.trim().toLowerCase(Locale.ROOT);
+        Map<String, TemplateMeta> next = new HashMap<>(CURRENT.get(kind));
+        TemplateMeta prev = next.get(key);
+        next.put(key, prev == null
+            ? new TemplateMeta(DEFAULT, TemplateGate.DEFAULT, null, tag)
+            : prev.withMode(tag));
+        CURRENT.put(kind, next);
+        writeConfig(kind, next);
+        trySaveToSource(kind, next);
+        LOGGER.info("[DungeonTrain] Set track mode {}:{}={} (persisted to {}).",
+            kind.id(), key, tag == null ? "<default>" : tag, configPath(kind));
+        return tag;
     }
 
     /** Remove the entry for {@code (kind, name)}. Returns true if removed. */
@@ -190,6 +226,19 @@ public final class TrackVariantWeights {
 
     public static synchronized void clear() {
         for (TrackKind k : TrackKind.values()) CURRENT.put(k, Map.of());
+    }
+
+    /**
+     * Test-only seam — set one entry in memory without writing the config file, so gate-aware
+     * selection can be unit-tested without a Forge bootstrap. Mirrors
+     * {@code TrackVariantGroupStore.injectForTesting}. Do NOT call from production code: the real
+     * setters persist, and a caller that skipped that would lose the edit on the next reload.
+     */
+    public static synchronized void injectForTesting(TrackKind kind, String name, TemplateMeta meta) {
+        if (kind == null || name == null || meta == null) return;
+        Map<String, TemplateMeta> next = new HashMap<>(CURRENT.get(kind));
+        next.put(name.toLowerCase(Locale.ROOT), meta);
+        CURRENT.put(kind, Map.copyOf(next));
     }
 
     public static Path configPath(TrackKind kind) {

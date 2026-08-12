@@ -1,9 +1,12 @@
 package games.brennan.dungeontrain.editor;
 
+import games.brennan.dungeontrain.portal.PortalRoomMode;
+import games.brennan.dungeontrain.portal.PortalRoomSettings;
 import games.brennan.dungeontrain.template.Stage;
 import games.brennan.dungeontrain.template.TemplateGate;
 import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.track.variant.TrackVariantRegistry;
+import games.brennan.dungeontrain.track.variant.TrackVariantWeights;
 import games.brennan.dungeontrain.tunnel.TunnelPlacer;
 import games.brennan.dungeontrain.train.CarriageContents;
 import games.brennan.dungeontrain.train.CarriageContentsGroup;
@@ -153,6 +156,49 @@ public final class EditorTemplateLists {
         return variant == TunnelPlacer.TunnelVariant.PORTAL
                 ? TrackKind.TUNNEL_PORTAL
                 : TrackKind.TUNNEL_SECTION;
+    }
+
+    /**
+     * Portal room template names of one {@link PortalRoomMode}, {@code default} first.
+     *
+     * <p>Filtered rather than listed whole because the mode is the first thing a builder picks: a
+     * room's mode is what it does at its own walls, and a Bedrock room and an Endless one are
+     * different enough that browsing them in one pile tells you nothing.</p>
+     *
+     * <p>Flat, group parents and their members alike — {@code beam} and its {@code beamlong} sit
+     * beside each other here, unlike {@link #contents()}, which hides members behind their parent.
+     * The difference is that a portal room's mode is authored <em>per name</em> in {@code
+     * weights.json}, so a group's members are not guaranteed to share the parent's mode and
+     * drilling into the parent would hide rooms that belong in this list.</p>
+     */
+    public static List<String> portalRooms(PortalRoomMode mode) {
+        return filterByMode(TrackVariantRegistry.namesFor(TrackKind.PORTAL_ROOM),
+                name -> TrackVariantWeights.modeFor(TrackKind.PORTAL_ROOM, name), mode);
+    }
+
+    /**
+     * Testable core of {@link #portalRooms}: the mode filter, without a loaded registry.
+     *
+     * <p>{@code modeTags} hands back the raw stored tag, which is <b>not</b> a bare mode id — a room
+     * stores its copies, contents and exits settings in the same string, so what is on disk reads
+     * {@code endless_repetition/dynamic}. Reading it with {@code PortalRoomMode.parse} would match
+     * none of those and quietly file every settings-carrying room under the default mode; {@link
+     * PortalRoomSettings#parse} splits the segments off first, which is why it is the one used
+     * here.</p>
+     */
+    static List<String> filterByMode(List<String> names,
+                                     java.util.function.Function<String, String> modeTags,
+                                     PortalRoomMode mode) {
+        if (names == null || mode == null) {
+            return List.of();
+        }
+        List<String> out = new ArrayList<>();
+        for (String name : names) {
+            if (PortalRoomSettings.parse(modeTags.apply(name)).mode() == mode) {
+                out.add(name);
+            }
+        }
+        return List.copyOf(out);
     }
 
     /** Stage ids, earliest stretch of the game first. */

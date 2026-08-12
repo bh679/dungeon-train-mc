@@ -59,11 +59,33 @@ import java.util.Set;
 public record EditorStatusPacket(String category, String model, String modelId, String modelName, boolean devmode,
                                  int weight, int minLevel, int maxLevel, int phaseMask,
                                  boolean partMenuEnabled, boolean mirrorX, boolean mirrorY, boolean mirrorZ,
-                                 boolean mirrorVariants, Set<String> excludedContents, String stageId)
+                                 boolean mirrorVariants, Set<String> excludedContents, String stageId,
+                                 int roomLength, int roomWidth, int roomHeight, String roomMode)
     implements CustomPacketPayload {
 
     /** Sentinel for "weight is not applicable to this model". */
     public static final int NO_WEIGHT = -1;
+
+    /**
+     * Sentinel for "this model has no authored size" — every category except portal rooms, whose
+     * plots are fixed by their kind rather than chosen per variant.
+     */
+    public static final int NO_SIZE = -1;
+
+    /** Sentinel for "this model has no mode" — everything but a portal room. */
+    public static final String NO_MODE = "";
+
+    /**
+     * Wire length cap on {@link #roomMode}.
+     *
+     * <p>Sized for the tag rather than guessed at. {@code PortalRoomSettings} packs four settings
+     * into one {@code /}-separated string, and its longest form —
+     * {@code endless_repetition/dynamic/tile/random:64} — is forty-one characters. The cap was 32
+     * when the tag topped out at thirty-one, which left it one setting away from
+     * {@code writeUtf} throwing on a perfectly ordinary room. This has headroom for the next
+     * segment; {@link EditorPlotLabelsPacket} carries the same tag and must keep the same cap.</p>
+     */
+    public static final int MODE_TAG_MAX = 64;
 
     /** {@code maxLevel} sentinel mirroring {@code TemplateGate.ALL} — "no upper level bound". */
     public static final int MAX_LEVEL_ALL = -1;
@@ -76,6 +98,7 @@ public record EditorStatusPacket(String category, String model, String modelId, 
             ? Collections.emptySet()
             : Set.copyOf(excludedContents);
         if (stageId == null) stageId = "";
+        if (roomMode == null) roomMode = NO_MODE;
     }
 
     /** Back-compat constructor for Custom (unlinked) statuses — leaves {@code stageId} empty. */
@@ -85,6 +108,27 @@ public record EditorStatusPacket(String category, String model, String modelId, 
                               boolean mirrorVariants, Set<String> excludedContents) {
         this(category, model, modelId, modelName, devmode, weight, minLevel, maxLevel, phaseMask,
             partMenuEnabled, mirrorX, mirrorY, mirrorZ, mirrorVariants, excludedContents, "");
+    }
+
+    /** Back-compat constructor for models with no authored size — everything but portal rooms. */
+    public EditorStatusPacket(String category, String model, String modelId, String modelName, boolean devmode,
+                              int weight, int minLevel, int maxLevel, int phaseMask,
+                              boolean partMenuEnabled, boolean mirrorX, boolean mirrorY, boolean mirrorZ,
+                              boolean mirrorVariants, Set<String> excludedContents, String stageId) {
+        this(category, model, modelId, modelName, devmode, weight, minLevel, maxLevel, phaseMask,
+            partMenuEnabled, mirrorX, mirrorY, mirrorZ, mirrorVariants, excludedContents, stageId,
+            NO_SIZE, NO_SIZE, NO_SIZE, NO_MODE);
+    }
+
+    /** Back-compat constructor from before portal rooms carried a mode. */
+    public EditorStatusPacket(String category, String model, String modelId, String modelName, boolean devmode,
+                              int weight, int minLevel, int maxLevel, int phaseMask,
+                              boolean partMenuEnabled, boolean mirrorX, boolean mirrorY, boolean mirrorZ,
+                              boolean mirrorVariants, Set<String> excludedContents, String stageId,
+                              int roomLength, int roomWidth, int roomHeight) {
+        this(category, model, modelId, modelName, devmode, weight, minLevel, maxLevel, phaseMask,
+            partMenuEnabled, mirrorX, mirrorY, mirrorZ, mirrorVariants, excludedContents, stageId,
+            roomLength, roomWidth, roomHeight, NO_MODE);
     }
 
     public static final Type<EditorStatusPacket> TYPE =
@@ -119,6 +163,10 @@ public record EditorStatusPacket(String category, String model, String modelId, 
         buf.writeVarInt(excludedContents.size());
         for (String s : excludedContents) buf.writeUtf(s);
         buf.writeUtf(stageId == null ? "" : stageId, 64);
+        buf.writeVarInt(roomLength);
+        buf.writeVarInt(roomWidth);
+        buf.writeVarInt(roomHeight);
+        buf.writeUtf(roomMode == null ? NO_MODE : roomMode, MODE_TAG_MAX);
     }
 
     public static EditorStatusPacket decode(FriendlyByteBuf buf) {
@@ -145,7 +193,12 @@ public record EditorStatusPacket(String category, String model, String modelId, 
             for (int i = 0; i < n; i++) excluded.add(buf.readUtf(64));
         }
         String stageId = buf.readUtf(64);
-        return new EditorStatusPacket(c, m, id, name, d, w, minLv, maxLv, phases, pme, mx, my, mz, mv, excluded, stageId);
+        int rl = buf.readVarInt();
+        int rw = buf.readVarInt();
+        int rh = buf.readVarInt();
+        String mode = buf.readUtf(MODE_TAG_MAX);
+        return new EditorStatusPacket(c, m, id, name, d, w, minLv, maxLv, phases, pme, mx, my, mz, mv, excluded,
+            stageId, rl, rw, rh, mode);
     }
 
     @Override
@@ -158,6 +211,7 @@ public record EditorStatusPacket(String category, String model, String modelId, 
             packet.category, packet.model, packet.modelId, packet.modelName,
             packet.devmode, packet.weight, packet.minLevel, packet.maxLevel, packet.phaseMask,
             packet.partMenuEnabled, packet.mirrorX, packet.mirrorY, packet.mirrorZ, packet.mirrorVariants,
-            packet.excludedContents, packet.stageId));
+            packet.excludedContents, packet.stageId,
+            packet.roomLength, packet.roomWidth, packet.roomHeight, packet.roomMode));
     }
 }

@@ -196,6 +196,9 @@ public final class TrackVariantRegistry {
         for (TreeSet<String> set : NAMES.values()) set.clear();
         ZERO_WARNED.clear();
         GATE_EMPTY_WARNED.clear();
+        GROUP_WARNED.clear();
+        // Room sizes are read off templates, so they belong to the world that was just closed.
+        games.brennan.dungeontrain.portal.PortalRoomSizes.clear();
     }
 
     /**
@@ -220,7 +223,9 @@ public final class TrackVariantRegistry {
      * {@code null} skips gating.
      */
     public static String pickName(TrackKind kind, long worldSeed, long tileIndex, GateContext gateCtx) {
-        List<String> pool = namesFor(kind);
+        // Sub-variants are reached through their parent, never beside it — a member in the top-level
+        // pool would be drawn twice over, once on its own and once through the group.
+        List<String> pool = games.brennan.dungeontrain.editor.TrackVariantGroupStore.topLevelNames(kind);
         int n = pool.size();
         if (n == 0) return TrackKind.DEFAULT_NAME;
 
@@ -250,13 +255,87 @@ public final class TrackVariantRegistry {
         Random rng = new Random(mixed);
         if (total <= 0) {
             warnAllZeroOnce(kind);
-            return effective.get(rng.nextInt(en));
+            return resolveGroup(kind, effective.get(rng.nextInt(en)), rng, gateCtx);
         }
         int r = rng.nextInt(total);
         for (int i = 0; i < en; i++) {
-            if (r < cumulative[i]) return effective.get(i);
+            if (r < cumulative[i]) return resolveGroup(kind, effective.get(i), rng, gateCtx);
         }
-        return effective.get(en - 1);
+        return resolveGroup(kind, effective.get(en - 1), rng, gateCtx);
+    }
+
+    /**
+     * Second hop of the pick: if {@code picked} has a group sidecar, draw one of its weighted
+     * sub-variants against the parent's own {@code selfWeight}.
+     *
+     * <p>The draw continues the <b>same</b> {@code rng} the parent was picked from, so the whole
+     * two-hop answer stays a pure function of {@code (worldSeed, tileIndex, kind)} — a portal pair
+     * re-stamped further down the track lands on the same room, which is the invariant the illusion
+     * rests on. A name with no group consumes nothing extra from the stream, so worlds that predate
+     * groups keep the exact variant they had.</p>
+     *
+     * <p>Single-hop only: a member that is itself a parent is treated as a leaf and logged, matching
+     * {@code CarriageContentsRegistry}. Anything unresolvable falls back to {@code picked}.</p>
+     */
+    private static String resolveGroup(TrackKind kind, String picked, Random rng, GateContext gateCtx) {
+        Optional<TrackVariantGroup> groupOpt =
+            games.brennan.dungeontrain.editor.TrackVariantGroupStore.get(kind, picked);
+        if (groupOpt.isEmpty() || groupOpt.get().isEmpty()) return picked;
+        TrackVariantGroup group = groupOpt.get();
+
+        List<TrackVariantGroup.Member> eligible = group.members();
+        if (gateCtx != null) {
+            List<TrackVariantGroup.Member> gated = new ArrayList<>(eligible.size());
+            for (TrackVariantGroup.Member m : eligible) {
+                if (gateCtx.allows(effectiveGateOf(m))) gated.add(m);
+            }
+            if (gated.isEmpty()) {
+                // Every sub-variant is gated out here. The parent itself is still a real variant, so
+                // it stands in rather than the pick failing.
+                warnGroupGateEmptyOnce(kind, picked);
+                return picked;
+            }
+            eligible = gated;
+        }
+
+        TrackVariantGroup.Member chosen = group.pick(rng, eligible);
+        if (chosen == null) return picked; // self entry won, or every weight is 0
+        if (!contains(kind, chosen.id())) {
+            warnUnknownMemberOnce(kind, picked, chosen.id());
+            return picked;
+        }
+        if (games.brennan.dungeontrain.editor.TrackVariantGroupStore.exists(kind, chosen.id())) {
+            warnNestedGroupOnce(kind, picked, chosen.id());
+        }
+        return chosen.id();
+    }
+
+    /** A member's effective gate — the union of its linked Stages' gates, else its inline gate. */
+    private static games.brennan.dungeontrain.template.TemplateGate effectiveGateOf(TrackVariantGroup.Member m) {
+        if (!m.isStageLinked()) return m.gate();
+        // Any linked Stage allowing the context is enough, so take the first that does; the caller
+        // only asks a yes/no question of the gate it gets back.
+        return games.brennan.dungeontrain.editor.StageStore.effectiveGate(m.gate(), m.stageIds().get(0));
+    }
+
+    private static final Set<String> GROUP_WARNED = java.util.concurrent.ConcurrentHashMap.newKeySet();
+
+    private static void warnGroupGateEmptyOnce(TrackKind kind, String parent) {
+        if (!GROUP_WARNED.add("gate:" + kind.id() + ":" + parent)) return;
+        LOGGER.warn("[DungeonTrain] Track variant group {}:{} — per-member gates excluded every sub-variant for this pick; using the parent. Check the members' level bands and phases.",
+            kind.id(), parent);
+    }
+
+    private static void warnUnknownMemberOnce(TrackKind kind, String parent, String child) {
+        if (!GROUP_WARNED.add("unknown:" + kind.id() + ":" + parent + ":" + child)) return;
+        LOGGER.warn("[DungeonTrain] Track variant group {}:{} references unknown sub-variant '{}' — using the parent for this pick.",
+            kind.id(), parent, child);
+    }
+
+    private static void warnNestedGroupOnce(TrackKind kind, String parent, String child) {
+        if (!GROUP_WARNED.add("nested:" + kind.id() + ":" + parent + ":" + child)) return;
+        LOGGER.error("[DungeonTrain] Track variant group {}:{} has nested-group member '{}' — nested groups are NOT resolved. Treating as leaf.",
+            kind.id(), parent, child);
     }
 
     private static final java.util.EnumSet<TrackKind> ZERO_WARNED = java.util.EnumSet.noneOf(TrackKind.class);
@@ -376,7 +455,11 @@ public final class TrackVariantRegistry {
                 n -> new Template.Tunnel(TunnelVariant.PORTAL, n)));
     }
 
+    private static final TemplateRegistry<Template.PortalRoom> PORTAL_ROOM_ADAPTER =
+        makeAdapter(TrackKind.PORTAL_ROOM, TemplateKind.PORTAL_ROOM, Template.PortalRoom::new);
+
     public static TemplateRegistry<Template.Track> adapterForTrack() { return TRACK_ADAPTER; }
+    public static TemplateRegistry<Template.PortalRoom> adapterForPortalRoom() { return PORTAL_ROOM_ADAPTER; }
     public static TemplateRegistry<Template.Pillar> adapterForPillar(PillarSection section) {
         return PILLAR_ADAPTERS.get(section);
     }

@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.builder.BuilderCinematicService;
 import games.brennan.dungeontrain.builder.BuilderMode;
+import games.brennan.dungeontrain.builder.BuilderSpawn;
 import games.brennan.dungeontrain.builder.BuilderTrackBuild;
 import games.brennan.dungeontrain.builder.BuilderTrackPlot;
 import games.brennan.dungeontrain.builder.BuilderWorldLayout;
@@ -79,17 +80,15 @@ public record BuilderSetupPacket(String modeId) implements CustomPacketPayload {
             // so on a fresh builder world the player is currently in mid-air over the void.
             DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
             CarriageDims dims = data.dims();
-            // Far enough back that the whole run fits on screen — a three-carriage train seen
-            // from the old fixed margin was a wall of hull. Read back off the world rather than
-            // off the mode, so the framing follows whatever setupIfNeeded actually parked.
-            //
-            // A track mode gets its own standoff instead, the way BuilderOpenPacket does: that
-            // framing is sized from the train's length, and a track build has no train — it would
-            // stand you back off an empty corridor with the plot somewhere behind you.
+            // A track plot gets its own standoff, and everything else goes through BuilderSpawn —
+            // the same split BuilderOpenPacket makes, for the same reason. BuilderSpawn sizes the
+            // train standoff off what is actually parked (and answers the portal room itself), but
+            // a track build has no train at all: it would stand you back off an empty corridor with
+            // the plot somewhere behind you.
             TrackKind trackKind = BuilderTrackBuild.kindOf(data);
             BlockPos spawn = trackKind != null
                 ? BuilderTrackPlot.viewPos(trackKind, dims)
-                : BuilderWorldLayout.spawnPos(dims, BuilderWorldSetup.parkedCarriages(data));
+                : BuilderSpawn.forLevel(level);
             // Facing the template, not vanilla's yaw 0 — the spawn sits on the +Z side of the
             // train, so yaw 0 (straight down +Z) would put the build squarely behind them.
             float[] facing = BuilderCinematicService.facingFrom(
@@ -97,6 +96,9 @@ public record BuilderSetupPacket(String modeId) implements CustomPacketPayload {
             level.setDefaultSpawnPos(spawn, facing[0]);
             player.teleportTo(level, spawn.getX() + 0.5, spawn.getY(), spawn.getZ() + 0.5,
                 facing[0], facing[1]);
+            // First entry, and the case this exists for: in Train Dimensions there is no platform
+            // under that spot at all.
+            BuilderSpawn.startFlying(player);
             // The join-time bounds packet was sent before this stamp existed, so resend now that
             // the carriages (and therefore the build volumes) are real.
             BuilderBoundsPacket.sendTo(player, level);

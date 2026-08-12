@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.train;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.net.relay.SharedCarriageClient;
+import games.brennan.dungeontrain.portal.PortalCarriageSelection;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.Shipyard;
 import games.brennan.dungeontrain.ship.Shipyards;
@@ -70,6 +71,19 @@ public final class TrainAssembler {
                                              String stageId, List<String> onlineUuids) {
         if (!games.brennan.dungeontrain.event.SharedCarriageGate.canDiscover()) return null;
         if (!SharedCarriageFlags.isSharedVariant(variant.id())) return null;
+        // No part of a portal can be served from the pool. The variant rolled for this slot is an
+        // ordinary one even here — the portal substitution happens later, inside CarriagePlacer.placeAt
+        // — so without this check a buffered lease is stamped verbatim over the slot and the corridor
+        // never gets placed at all, which is how an entry or exit intermittently came out as somebody
+        // else's carriage. A corridor also has to match its twin block-for-block for the crossing to
+        // work, and the cart between the two corridors is sealed space nobody can reach.
+        //
+        // Checked after the shared-variant test rather than before it so the log line stays at the
+        // frequency of shared slots (~1 in 73) instead of firing on every portal index.
+        if (PortalCarriageSelection.isPortalPart(level, carriagePIdx)) {
+            logLeaseOutcome(carriagePIdx, "PORTAL_SLOT", null);
+            return null;
+        }
         // A slot no stage covers can't be matched against the pool at all — the relay only serves
         // carriages pooled under a stage, so this is a template slot by definition.
         if (stageId == null || stageId.isEmpty()) {
@@ -543,8 +557,12 @@ public final class TrainAssembler {
             // The stage precondition mirrors tryLeaseShared's: the relay pools a carriage under its stage
             // and refuses to lease one that has none, so registering a stageless slot would upload a build
             // nobody can ever be served — pool pollution, and the author's work silently stranded.
+            // The portal exclusion mirrors tryLeaseShared's: what stands in a portal slot is a corridor
+            // (or the sealed cart between two of them), not this slot's rolled variant, so registering
+            // it would upload a corridor to the community pool the first time anyone edited one.
             if (games.brennan.dungeontrain.event.SharedCarriageGate.canDiscover()
                     && SharedCarriageFlags.isSharedVariant(variant.id())
+                    && !PortalCarriageSelection.isPortalPart(level, carriagePIdx)
                     && stageBySlot[slot] != null && !stageBySlot[slot].isEmpty()) {
                 // No credits: nobody has contributed to a brand-new local build yet.
                 SharedCarriageRegistry.register(level, ship.subLevelId(), trainId, carriagePIdx,

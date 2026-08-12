@@ -150,7 +150,10 @@ public final class EditorHelpPanelRenderer {
         double cx = pos.getX() + 0.5;
         double cy = pos.getY() + 0.5;
         double cz = pos.getZ() + 0.5;
-        boolean isZRow = "tracks".equals(navMenu.activeCategoryId());
+        // Portal room plots share the track-side +Z row layout, so they need the same
+        // perpendicular anchor.
+        String activeCategory = navMenu.activeCategoryId();
+        boolean isZRow = "tracks".equals(activeCategory) || "portals".equals(activeCategory);
         if (isZRow) {
             return new Vec3(cx - WORLD_OFFSET_BLOCKS, cy, cz);
         }

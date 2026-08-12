@@ -6,6 +6,7 @@ import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.worldgen.ChuncksBand;
 import games.brennan.dungeontrain.worldgen.DisintegrationBand;
 import games.brennan.dungeontrain.worldgen.UpsideDownBand;
+import games.brennan.dungeontrain.worldgen.WorldFloor;
 import net.minecraft.core.SectionPos;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
@@ -22,8 +23,14 @@ import net.neoforged.neoforge.event.level.ChunkEvent;
 import java.util.Optional;
 
 /**
- * Forces a solid 1-block-thick bedrock layer at {@code min_y} for every
- * newly-generated chunk in a Dungeon Train overworld.
+ * Forces a solid 1-block-thick bedrock layer at the world's terrain floor —
+ * {@link WorldFloor#bedrockY} — for every newly-generated chunk in a Dungeon
+ * Train overworld.
+ *
+ * <p>That floor is the noise settings' {@code min_y}, not the dimension
+ * type's: DT's dimension types run 80 blocks deeper so the portal system has
+ * an empty basement under the world to stamp its twin structures into. The
+ * bedrock caps that basement off.</p>
  *
  * <p>The DT overworld noise settings inherit vanilla's noise function (which
  * is calibrated for {@code min_y = -64}) but use higher floors — 32 for the
@@ -93,11 +100,14 @@ public final class BedrockFloorEvents {
         long upsideStartX = roofInvert ? UpsideDownBand.startX(level) : UpsideDownBand.OFF;
         boolean maybeUpside = upsideStartX != UpsideDownBand.OFF && chunkMinX + 15 >= upsideStartX;
 
-        int minY = level.getMinBuildHeight();
-        int sectionIdx = chunk.getSectionIndex(minY);
+        // The floor of TERRAIN, not of the level: a DT overworld's dimension type runs below its
+        // noise settings so the portal system has an empty basement to work in, and the bedrock
+        // belongs at the top of that basement — under the world, not under the basement.
+        int floorY = WorldFloor.bedrockY(level);
+        int sectionIdx = chunk.getSectionIndex(floorY);
         LevelChunkSection section = chunk.getSection(sectionIdx);
         int sectionBaseY = SectionPos.sectionToBlockCoord(chunk.getSectionYFromSectionIndex(sectionIdx));
-        int localY = minY - sectionBaseY;
+        int localY = floorY - sectionBaseY;
         BlockState bedrock = Blocks.BEDROCK.defaultBlockState();
         for (int dx = 0; dx < 16; dx++) {
             int worldX = chunkMinX + dx;

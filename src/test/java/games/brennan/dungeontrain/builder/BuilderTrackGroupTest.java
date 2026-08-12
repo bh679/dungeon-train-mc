@@ -28,9 +28,16 @@ final class BuilderTrackGroupTest {
         for (BuilderTrackGroup group : BuilderTrackGroup.values()) {
             listed.addAll(group.kinds());
         }
-        assertEquals(TrackKind.values().length, listed.size(),
-                "a kind is listed twice, or not at all");
+        // Track-side kinds only: PORTAL_ROOM is a TrackKind because that is where its files live,
+        // and is opened through Train Dimensions as its own volume rather than off a plot.
+        List<TrackKind> trackSide = new ArrayList<>();
         for (TrackKind kind : TrackKind.values()) {
+            if (BuilderTrackPlot.isTrackSide(kind)) {
+                trackSide.add(kind);
+            }
+        }
+        assertEquals(trackSide.size(), listed.size(), "a kind is listed twice, or not at all");
+        for (TrackKind kind : trackSide) {
             assertTrue(listed.contains(kind), kind.id() + " is in no group — unreachable in Open");
         }
     }
