@@ -11,6 +11,11 @@ import games.brennan.dungeontrain.track.TrackGenerator;
 import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.train.CarriageContents;
 import games.brennan.dungeontrain.train.CarriageContentsPlacer;
+import games.brennan.dungeontrain.editor.PortalRoomEditor;
+import games.brennan.dungeontrain.editor.PortalRoomTemplateStore;
+import games.brennan.dungeontrain.portal.PortalClear;
+import games.brennan.dungeontrain.portal.PortalCorridorMask;
+import games.brennan.dungeontrain.portal.PortalRoomSizes;
 import games.brennan.dungeontrain.train.CarriageContentsRegistry;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriagePartPlacer;
@@ -24,10 +29,12 @@ import games.brennan.dungeontrain.train.WholeCarriageRegistry;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Vec3i;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
+import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import org.slf4j.Logger;
 
 import java.util.HashSet;
@@ -451,10 +458,16 @@ public final class BuilderWorldSetup {
         DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
         CarriageDims dims = data.dims();
 
+        // A portal room is not stamped on a carriage — it is the volume — so it takes its own path
+        // before the carriage arithmetic below, which would reject it for parking no train.
+        if (request.isPortalRoom()) {
+            return openPortalRoom(level, data, dims, mode, request);
+        }
+
         int carriages = mode.carriageCount();
         if (carriages <= 0) {
-            // The track modes park no carriage, so there is no volume to load a template into.
-            // BuilderOpenOptions.isOpenable already says so; this is the server-side backstop.
+            // The remaining carriage-less mode (Tracks & Tunnels) parks nothing to load a template
+            // into. BuilderOpenOptions.isOpenable already says so; this is the server-side backstop.
             LOGGER.warn("[DungeonTrain] Builder open: mode '{}' has no carriage to open into", mode.id());
             return false;
         }
@@ -493,7 +506,7 @@ public final class BuilderWorldSetup {
         // Only now: the world genuinely holds this template, so Save may point at it.
         data.setBuilderName(request.id());
         data.setBuilderStage(stageId);
-        data.setBuilderSubType(request.subType().id(), request.partKindId());
+        data.setBuilderSubType(request.subTypeToken(), request.partKindId());
         data.setBuilderMirror(open.mirror());
 
         for (int i = 0; i < carriages; i++) {
@@ -507,6 +520,80 @@ public final class BuilderWorldSetup {
                 stageId.isEmpty() ? "<none>" : stageId,
                 shownStage.isEmpty() ? "<none>" : shownStage);
         return true;
+    }
+
+    /**
+     * Open a portal room: clear the track and stand the room on the platform.
+     *
+     * <p>Nothing like the carriage arms above, because a room is not <em>on</em> anything. There is
+     * no shell to park, no stage overlay to route and no mirror flags to carry — a room's mirroring
+     * lives in its own variant sidecar, which {@code PortalRoomEditor} rebuilds at save time.</p>
+     *
+     * <p>The size comes from the template by way of a load: {@code PortalRoomSizes} only knows the
+     * built-in figure until something has read the file this session, so opening a room authored at
+     * 21 blocks without loading first would stand up an 11-block built-in one. This is the same
+     * first line, and the same reason, as {@code PortalRoomEditor.stampPlot}.</p>
+     *
+     * <p>Ordering matches the carriage path and matters for the same reason: the world is stamped
+     * first and {@code builderName} is set only once it holds the room, so a failed stamp leaves the
+     * build unnamed and Save cannot overwrite the file.</p>
+     */
+    private static boolean openPortalRoom(ServerLevel level, DungeonTrainWorldData data,
+                                          CarriageDims dims, BuilderMode mode,
+                                          BuilderOpenRequest request) {
+        String name = request.id();
+        PortalRoomTemplateStore.get(level, name, dims);
+        Vec3i size = PortalRoomSizes.sizeOf(name, dims);
+
+        BuilderMode previousMode = BuilderMode.fromId(data.builderMode()).orElse(mode);
+        clearTrain(level, dims, previousMode.carriageCount());
+        clearPreviousRoom(level, data, dims);
+        data.setBuilderMode(mode.id());
+
+        BlockPos origin = BuilderWorldLayout.portalRoomOrigin(size);
+        try {
+            PortalRoomEditor.stampRoomInto(level, origin, size, name, dims, /*outline*/ false);
+        } catch (RuntimeException e) {
+            LOGGER.error("[DungeonTrain] Builder open: stamping portal room '{}' failed — "
+                    + "leaving the build unnamed so a save cannot overwrite it", name, e);
+            return false;
+        }
+
+        data.setBuilderName(name);
+        data.setBuilderStage("");
+        data.setBuilderSubType(request.subTypeToken(), request.partKindId());
+        // A room's mirroring is authored in its own sidecar, not in the builder's flags; carrying
+        // the last build's axes over would apply them to geometry never authored against them.
+        data.setBuilderMirror(BuilderMirrorFlags.DEFAULT);
+
+        EditorPlotSnapshots.capture(BuilderDirtyCheck.snapshotKey(0), level, origin,
+                size.getX(), size.getY(), size.getZ());
+        LOGGER.info("[DungeonTrain] Builder open: portal room '{}' into mode '{}' at {} ({}x{}x{})",
+                name, mode.id(), origin, size.getX(), size.getY(), size.getZ());
+        return true;
+    }
+
+    /**
+     * Erase whatever room is standing, before a different one is stamped over the same ground.
+     *
+     * <p>Rooms differ in size, so stamping a small one where a large one stood would leave the old
+     * room's outer shell around it — the new room inside the corpse of the last. Reads the outgoing
+     * room's own size rather than the incoming one's, which is the whole point.</p>
+     */
+    private static void clearPreviousRoom(ServerLevel level, DungeonTrainWorldData data,
+                                          CarriageDims dims) {
+        if (!BuilderOpenRequest.PORTAL_ROOM_SUB_TYPE.equals(data.builderSubType())) {
+            return;
+        }
+        String previous = data.builderName();
+        if (previous == null || previous.isEmpty()) {
+            return;
+        }
+        Vec3i size = PortalRoomSizes.sizeOf(previous, dims);
+        BlockPos origin = BuilderWorldLayout.portalRoomOrigin(size);
+        PortalClear.clearBoxRelit(level, BoundingBox.fromCorners(origin,
+                origin.offset(size.getX() - 1, size.getY() - 1, size.getZ() - 1)),
+                PortalCorridorMask.NONE);
     }
 
     /**
@@ -542,6 +629,9 @@ public final class BuilderWorldSetup {
                     && CarriagePartRegistry.isKnown(request.partKind(), request.id())
                     ? shellOnly(level)
                     : Optional.empty();
+            // A room resolves nothing here: there is no shell to stand it on, and it never reaches
+            // this method — openPortalRoom takes its own path out of applyOpen well before this.
+            case PORTAL_ROOM -> Optional.empty();
         };
     }
 

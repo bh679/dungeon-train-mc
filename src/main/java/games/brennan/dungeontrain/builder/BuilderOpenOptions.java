@@ -48,8 +48,7 @@ public final class BuilderOpenOptions {
         TRACK_TILES,
         /**
          * The four {@code PortalRoomMode}s, with the portal rooms of each underneath — two levels,
-         * drilled into the way a contents group is. Listed for reference only — see
-         * {@link #isOpenable}.
+         * drilled into the way a contents group is. A room one level in opens.
          *
          * <p>The mode leads because it is the coarsest thing about a room and the one a builder
          * decides first: it says what the room does at its own walls, so a Bedrock room and an
@@ -94,21 +93,26 @@ public final class BuilderOpenOptions {
     /**
      * Whether clicking a tile from this source can actually load it.
      *
-     * <p>False for track tiles and portal rooms. Not an oversight and not a permission check — there is
+     * <p>False for track tiles alone now. Not an oversight and not a permission check — there is
      * genuinely nothing to open into: {@link BuilderWorldSetup#applyNew} stamps nothing when the
      * mode's {@code carriageCount()} is zero, {@link BuilderNewRequest} has no field that could name
-     * a track kind or tunnel variant, and {@code BuilderSave} has no arm that would write one back.
-     * Those three together are the builder editor those modes are still waiting on.</p>
+     * a track kind, and {@code BuilderSave} has no arm that would write one back.</p>
      *
      * <p>They are still <em>listed</em>, because "this mode has eleven templates and you can't edit
      * them here yet" is a true and useful thing for the screen to say, and an empty grid would say
-     * something false. When the loop lands, this method is the only thing that changes.</p>
+     * something false.</p>
+     *
+     * <p>{@link OpenSource#PORTAL_ROOMS} used to sit beside them and no longer does. A room is not
+     * stamped on a carriage — it <em>is</em> the volume — so it needed none of the three things
+     * above, only its own arm through {@code applyOpen} and {@code BuilderSave}. Those exist, so the
+     * tiles are live.</p>
      */
     public static boolean isOpenable(OpenSource source) {
         return source == OpenSource.STAGES
                 || source == OpenSource.CONTENTS
                 || source == OpenSource.CARRIAGES_BY_STAGE
-                || source == OpenSource.PARTS;
+                || source == OpenSource.PARTS
+                || source == OpenSource.PORTAL_ROOMS;
     }
 
     /**
@@ -160,7 +164,10 @@ public final class BuilderOpenOptions {
             case CONTENTS -> BuilderPhotoPaths.Kind.CONTENTS;
             case CARRIAGES_BY_STAGE -> insideGroup ? BuilderPhotoPaths.Kind.CARRIAGE : null;
             case PARTS -> BuilderPhotoPaths.Kind.PART;
-            case TRACK_TILES, PORTAL_ROOMS -> null;
+            // Like CARRIAGES_BY_STAGE, the level changes the answer: a mode is a heading with no
+            // file to photograph, and one level in the entries are room templates that have one.
+            case PORTAL_ROOMS -> insideGroup ? BuilderPhotoPaths.Kind.PORTAL_ROOM : null;
+            case TRACK_TILES -> null;
         };
     }
 

@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -36,7 +37,7 @@ final class BuilderOpenRequestTest {
             CarriagePartKind partKind = subType == BuilderNewOptions.SubType.PARTS
                     ? CarriagePartKind.WALLS
                     : null;
-            assertEquals(subType, request(subType, "thing", partKind).subType(),
+            assertEquals(subType.id(), request(subType, "thing", partKind).subTypeToken(),
                     "sub type did not survive for " + subType.id());
         }
     }
@@ -78,6 +79,37 @@ final class BuilderOpenRequestTest {
         BuilderOpenRequest direct = new BuilderOpenRequest(BuilderPhotoPaths.Kind.CARRIAGE, null, null);
         assertEquals("", direct.id());
         assertTrue(direct.isEmpty());
+    }
+
+    // ---- portal rooms: the one kind no sub type names ----
+
+    @Test
+    @DisplayName("A portal room request carries its own kind and token")
+    void portalRoomHasItsOwnKindAndToken() {
+        BuilderOpenRequest request = BuilderOpenRequest.forPortalRoom("labrynth");
+        assertEquals(BuilderPhotoPaths.Kind.PORTAL_ROOM, request.kind());
+        assertEquals("labrynth", request.id());
+        assertEquals(BuilderOpenRequest.PORTAL_ROOM_SUB_TYPE, request.subTypeToken());
+        assertTrue(request.isPortalRoom());
+        assertEquals("", request.partKindId(), "a room has no part kind to send");
+    }
+
+    @Test
+    @DisplayName("The portal room token is not one of New's sub types")
+    void portalRoomTokenIsNotASubType() {
+        // If it ever collided with one, BuilderSave would take a carriage arm for a room and write
+        // the room's blocks over a carriage template.
+        for (BuilderNewOptions.SubType subType : BuilderNewOptions.SubType.values()) {
+            assertFalse(subType.id().equals(BuilderOpenRequest.PORTAL_ROOM_SUB_TYPE),
+                    "sub type " + subType + " collides with the portal room token");
+        }
+    }
+
+    @Test
+    @DisplayName("Everything that isn't a room says so")
+    void onlyRoomsAreRooms() {
+        assertFalse(request(BuilderNewOptions.SubType.WHOLE_CARRIAGE, "desert", null).isPortalRoom());
+        assertFalse(request(BuilderNewOptions.SubType.CARRIAGE_ROOM, "mess_hall", null).isPortalRoom());
     }
 
     private static BuilderOpenRequest request(BuilderNewOptions.SubType subType, String id,

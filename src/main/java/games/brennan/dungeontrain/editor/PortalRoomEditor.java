@@ -181,10 +181,38 @@ public final class PortalRoomEditor {
         BlockPos origin = plotOrigin(name, dims);
         Vec3i size = plotSize(name, dims);
 
-        EditorPlotEntityClearer.discardNonPlayersIn(overworld, origin, size);
-        PortalCarriageBuilder.stampRoomAt(overworld, origin, dims, name, size, /*relight*/ true);
-        setOutline(overworld, origin, size, OUTLINE_BLOCK);
+        stampRoomInto(overworld, origin, size, name, dims, /*outline*/ true);
         captureSnapshot(overworld, origin, size, name);
+    }
+
+    /**
+     * Stamp {@code name}'s room into any level at any origin — the body {@link #stampPlot} used to
+     * be, with the editor's plot column no longer assumed.
+     *
+     * <p>Split out for the Train Builder, which opens a room into a builder world rather than the
+     * editor's overworld. Sharing the body rather than writing a second one is what keeps the two
+     * surfaces stamping the same blocks: {@code stampRoomAt} composes the template with its
+     * per-cell variant sidecar, and a re-implementation would be a second answer to a question that
+     * already has one.</p>
+     *
+     * <p><b>Does not snapshot.</b> The dirty-check baseline is keyed by surface —
+     * {@link #snapshotKey} for an editor plot, {@code BuilderDirtyCheck.snapshotKey} for a builder
+     * volume — and they live in one global {@code EditorPlotSnapshots} store. Capturing the editor's
+     * key here would mean stamping a room in a builder world silently re-baselines the editor's plot
+     * against blocks from another dimension. Each caller captures its own.</p>
+     *
+     * @param outline whether to cage the box in bedrock. True for an editor plot, where the cage
+     *                separates neighbouring plots on a shared column; false for the builder, whose
+     *                one room has no neighbour and whose edge is drawn by the out-of-bounds wash
+     *                instead
+     */
+    public static void stampRoomInto(ServerLevel level, BlockPos origin, Vec3i size, String name,
+                                     CarriageDims dims, boolean outline) {
+        EditorPlotEntityClearer.discardNonPlayersIn(level, origin, size);
+        PortalCarriageBuilder.stampRoomAt(level, origin, dims, name, size, /*relight*/ true);
+        if (outline) {
+            setOutline(level, origin, size, OUTLINE_BLOCK);
+        }
     }
 
     /**
@@ -463,24 +491,41 @@ public final class PortalRoomEditor {
         BlockPos origin = plotOrigin(name, dims);
         Vec3i size = plotSize(name, dims);
 
-        // Author edits one master octant; rebuild the rest in-world before capture, so the stored
-        // template (and every room stamped from it) matches what the author sees.
-        TrackVariantBlocks sidecar = TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, name, size);
-        EditorVariantMirror.rebuildFromMaster(overworld,
-            new BlockVariantPlot.TrackPlot(TrackKind.PORTAL_ROOM, name, origin, size));
-        EditorMirror.rebuildFromMaster(overworld, origin, size,
-            sidecar.mirrorX(), sidecar.mirrorY(), sidecar.mirrorZ(),
-            EditorMirror.markersOf(sidecar.entries()));
-
-        StructureTemplate template = new StructureTemplate();
-        template.fillFromWorld(overworld, origin, size, false, Blocks.STRUCTURE_VOID);
-
-        PortalRoomTemplateStore.save(name, template);
-
+        SaveResult result = saveRoomFrom(overworld, origin, size, name);
         captureSnapshot(overworld, origin, size, name);
 
         LOGGER.info("[DungeonTrain] Editor save: {} -> portal room '{}' template ({}x{}x{})",
             player.getName().getString(), name, size.getX(), size.getY(), size.getZ());
+        return result;
+    }
+
+    /**
+     * Capture the box at {@code origin} as {@code name}'s template — the body {@link #save} used to
+     * be, with the editor's plot column and its player no longer assumed.
+     *
+     * <p>Split out for the Train Builder, and the reason it is shared rather than rewritten is the
+     * mirror rebuild below. An author edits one master octant and the rest of the room is generated
+     * from it; a save that captured the world without rebuilding first would store a half-built room
+     * that looks nothing like what the author was standing in. That is exactly the step a second
+     * implementation forgets, and the failure is silent.</p>
+     *
+     * <p>Does not snapshot, for the reason {@link #stampRoomInto} gives.</p>
+     */
+    public static SaveResult saveRoomFrom(ServerLevel level, BlockPos origin, Vec3i size, String name)
+            throws IOException {
+        // Author edits one master octant; rebuild the rest in-world before capture, so the stored
+        // template (and every room stamped from it) matches what the author sees.
+        TrackVariantBlocks sidecar = TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, name, size);
+        EditorVariantMirror.rebuildFromMaster(level,
+            new BlockVariantPlot.TrackPlot(TrackKind.PORTAL_ROOM, name, origin, size));
+        EditorMirror.rebuildFromMaster(level, origin, size,
+            sidecar.mirrorX(), sidecar.mirrorY(), sidecar.mirrorZ(),
+            EditorMirror.markersOf(sidecar.entries()));
+
+        StructureTemplate template = new StructureTemplate();
+        template.fillFromWorld(level, origin, size, false, Blocks.STRUCTURE_VOID);
+
+        PortalRoomTemplateStore.save(name, template);
 
         if (!EditorDevMode.isEnabled()) return SaveResult.skipped();
         try {

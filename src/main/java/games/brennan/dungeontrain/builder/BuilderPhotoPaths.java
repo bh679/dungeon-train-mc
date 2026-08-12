@@ -3,6 +3,8 @@ package games.brennan.dungeontrain.builder;
 import games.brennan.dungeontrain.editor.CarriageContentsStore;
 import games.brennan.dungeontrain.editor.CarriagePartTemplateStore;
 import games.brennan.dungeontrain.editor.CarriageTemplateStore;
+import games.brennan.dungeontrain.track.variant.TrackKind;
+import games.brennan.dungeontrain.track.variant.TrackVariantStore;
 import games.brennan.dungeontrain.train.CarriagePartKind;
 
 import java.nio.file.Path;
@@ -22,7 +24,13 @@ public final class BuilderPhotoPaths {
     public enum Kind {
         CARRIAGE("carriage"),
         CONTENTS("contents"),
-        PART("part");
+        PART("part"),
+        /**
+         * A portal room. Unlike the three above it isn't a train template at all — it lives in the
+         * track variant tree under {@code portals/room} — but a photo is a photo, and the Open grid
+         * shows all four the same way.
+         */
+        PORTAL_ROOM("portal_room");
 
         private final String id;
 
@@ -67,6 +75,8 @@ public final class BuilderPhotoPaths {
             case PART -> partKind == null
                     ? Optional.empty()
                     : Optional.of(withPng(CarriagePartTemplateStore.fileFor(partKind, id)));
+            case PORTAL_ROOM -> Optional.of(withPng(
+                    TrackVariantStore.fileFor(TrackKind.PORTAL_ROOM, id)));
         };
     }
 
@@ -84,6 +94,9 @@ public final class BuilderPhotoPaths {
                     : Optional.empty();
             case PART -> partKind != null && CarriagePartTemplateStore.sourceTreeAvailable()
                     ? Optional.of(withPng(CarriagePartTemplateStore.sourceFileFor(partKind, id)))
+                    : Optional.empty();
+            case PORTAL_ROOM -> TrackVariantStore.sourceTreeAvailable()
+                    ? Optional.of(withPng(TrackVariantStore.sourceFileFor(TrackKind.PORTAL_ROOM, id)))
                     : Optional.empty();
         };
     }

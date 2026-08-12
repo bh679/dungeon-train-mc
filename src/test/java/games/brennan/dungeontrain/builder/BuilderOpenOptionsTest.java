@@ -70,10 +70,13 @@ final class BuilderOpenOptionsTest {
     }
 
     @Test
-    @DisplayName("Only CARRIAGES_BY_STAGE cares which level the grid is on")
+    @DisplayName("Only the two-level sources care which level the grid is on")
     void otherSourcesIgnoreTheLevel() {
         for (BuilderOpenOptions.OpenSource source : BuilderOpenOptions.OpenSource.values()) {
-            if (source == BuilderOpenOptions.OpenSource.CARRIAGES_BY_STAGE) {
+            // The two whose top level is a heading with no file behind it — a stage, a room mode —
+            // and whose second level is templates that do have one.
+            if (source == BuilderOpenOptions.OpenSource.CARRIAGES_BY_STAGE
+                    || source == BuilderOpenOptions.OpenSource.PORTAL_ROOMS) {
                 continue;
             }
             assertEquals(BuilderOpenOptions.photoKindFor(source, "maze"),
@@ -107,17 +110,19 @@ final class BuilderOpenOptionsTest {
     }
 
     @Test
-    @DisplayName("Only the carriage sources are openable today")
-    void onlyCarriageSourcesAreOpenable() {
+    @DisplayName("Everything but track tiles is openable")
+    void onlyTrackTilesAreNotOpenable() {
         assertTrue(BuilderOpenOptions.isOpenable(BuilderOpenOptions.OpenSource.STAGES));
         assertTrue(BuilderOpenOptions.isOpenable(BuilderOpenOptions.OpenSource.CONTENTS));
         assertTrue(BuilderOpenOptions.isOpenable(BuilderOpenOptions.OpenSource.PARTS));
         assertTrue(BuilderOpenOptions.isOpenable(BuilderOpenOptions.OpenSource.CARRIAGES_BY_STAGE));
+        // A room is the volume rather than something stamped on a carriage, so it needed only its
+        // own arm through applyOpen and BuilderSave — both of which now exist.
+        assertTrue(BuilderOpenOptions.isOpenable(BuilderOpenOptions.OpenSource.PORTAL_ROOMS));
 
-        // Not a policy choice — there is no stamp or save path for these yet. When one lands, this
-        // is the assertion that should fail and tell you to flip it.
+        // Not a policy choice — there is no stamp or save path for a track tile yet. When one
+        // lands, this is the assertion that should fail and tell you to flip it.
         assertFalse(BuilderOpenOptions.isOpenable(BuilderOpenOptions.OpenSource.TRACK_TILES));
-        assertFalse(BuilderOpenOptions.isOpenable(BuilderOpenOptions.OpenSource.PORTAL_ROOMS));
     }
 
     @Test
@@ -144,9 +149,12 @@ final class BuilderOpenOptionsTest {
         // Null rather than a new enum constant: nothing photographs a track, so an entry for one
         // would be a path that never has a file behind it.
         assertNull(BuilderOpenOptions.photoKindFor(BuilderOpenOptions.OpenSource.TRACK_TILES, "default"));
+
+        // A room mode is a heading with nothing to photograph; the rooms under it are templates
+        // with a picture beside them, taken when the room was last saved.
         assertNull(BuilderOpenOptions.photoKindFor(BuilderOpenOptions.OpenSource.PORTAL_ROOMS, "bedrock_lock"));
-        // Drilled in as well: a room has no photo either, so the level must not change the answer.
-        assertNull(BuilderOpenOptions.photoKindFor(BuilderOpenOptions.OpenSource.PORTAL_ROOMS, "labrynth", true));
+        assertEquals(BuilderPhotoPaths.Kind.PORTAL_ROOM, BuilderOpenOptions.photoKindFor(
+                BuilderOpenOptions.OpenSource.PORTAL_ROOMS, "labrynth", true));
     }
 
     @Test

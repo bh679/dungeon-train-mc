@@ -450,6 +450,16 @@ public final class BuilderOpenScreen extends Screen {
      * are opened.</p>
      */
     private Runnable actionFor(BuilderOpenOptions.OpenSource source, String value, boolean force) {
+        // A room mode is a heading, not a template: its tile only drills in, which mouseClicked has
+        // already handled by the time anything gets here. One level down they are rooms and open.
+        if (source == BuilderOpenOptions.OpenSource.PORTAL_ROOMS) {
+            if (group.isEmpty()) {
+                return null;
+            }
+            BuilderOpenRequest request = BuilderOpenRequest.forPortalRoom(value);
+            return () -> DungeonTrainNet.sendToServer(new BuilderOpenPacket(mode.id(),
+                    request.kind().id(), request.id(), "", force));
+        }
         boolean stageTile = source == BuilderOpenOptions.OpenSource.STAGES
                 ? !BuilderOpenOptions.isSavedBuild(value)
                 : source == BuilderOpenOptions.OpenSource.CARRIAGES_BY_STAGE && group.isEmpty();

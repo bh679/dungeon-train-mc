@@ -2,8 +2,8 @@ package games.brennan.dungeontrain.builder;
 
 import games.brennan.dungeontrain.editor.EditorPlotSnapshots;
 import games.brennan.dungeontrain.train.CarriageDims;
-import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Vec3i;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
@@ -36,23 +36,24 @@ public final class BuilderDirtyCheck {
         return EditorPlotSnapshots.key("builder", "carriage:" + carriageIndex);
     }
 
-    /** Indices of the carriages whose blocks differ from their post-stamp baseline. */
+    /**
+     * Indices of the build volumes whose blocks differ from their post-stamp baseline.
+     *
+     * <p>Volumes, not carriages: {@link BuilderBounds#volumesFor} answers with a portal room's one
+     * box in Train Dimensions and the carriage run everywhere else. The old {@code carriages <= 0}
+     * early-out is gone with it — that was the right guard while every volume was a carriage, and
+     * it is exactly what would make a room never report itself dirty, since Train Dimensions parks
+     * no carriages by design.</p>
+     */
     public static List<Integer> dirtyCarriages(ServerLevel level) {
         List<Integer> dirty = new ArrayList<>();
-        DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
-        int carriages = BuilderMode.fromId(data.builderMode())
-                .map(BuilderMode::carriageCount)
-                .orElse(0);
-        if (carriages <= 0) {
-            return dirty;
-        }
-        CarriageDims dims = data.dims();
-        List<BoundingBox> volumes = BuilderBounds.buildVolumes(carriages, dims);
+        List<BoundingBox> volumes = BuilderBounds.volumesFor(level);
         for (int i = 0; i < volumes.size(); i++) {
             BoundingBox box = volumes.get(i);
             Map<BlockPos, BlockState> baseline = EditorPlotSnapshots.get(snapshotKey(i));
-            BlockPos origin = new BlockPos(box.minX(), box.minY(), box.minZ());
-            if (isDirty(baseline, dims, local -> level.getBlockState(origin.offset(local)))) {
+            BlockPos origin = BuilderBounds.originOf(box);
+            if (isDirty(baseline, BuilderBounds.sizeOf(box),
+                    local -> level.getBlockState(origin.offset(local)))) {
                 dirty.add(i);
             }
         }
@@ -69,16 +70,19 @@ public final class BuilderDirtyCheck {
      * @param baseline post-stamp snapshot in <b>local</b> coordinates, or null if never captured.
      *                 {@link EditorPlotSnapshots} omits air to stay sparse, so an absent entry
      *                 means "this position was air" — not "unknown".
+     * @param size     the volume's extent, from the box rather than from {@link CarriageDims} — a
+     *                 portal room's is the author's, and comparing it through carriage dims would
+     *                 walk the wrong window
      * @param liveAt   live block state at a local position
      */
-    public static boolean isDirty(Map<BlockPos, BlockState> baseline, CarriageDims dims,
+    public static boolean isDirty(Map<BlockPos, BlockState> baseline, Vec3i size,
                                   Function<BlockPos, BlockState> liveAt) {
         if (baseline == null) {
             return false;
         }
-        for (int dx = 0; dx < dims.length(); dx++) {
-            for (int dy = 0; dy < dims.height(); dy++) {
-                for (int dz = 0; dz < dims.width(); dz++) {
+        for (int dx = 0; dx < size.getX(); dx++) {
+            for (int dy = 0; dy < size.getY(); dy++) {
+                for (int dz = 0; dz < size.getZ(); dz++) {
                     BlockPos local = new BlockPos(dx, dy, dz);
                     BlockState expected = baseline.get(local);
                     BlockState live = liveAt.apply(local);

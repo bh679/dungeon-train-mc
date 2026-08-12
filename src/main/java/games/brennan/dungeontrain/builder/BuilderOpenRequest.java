@@ -26,6 +26,9 @@ import java.util.Optional;
  */
 public record BuilderOpenRequest(BuilderPhotoPaths.Kind kind, String id, CarriagePartKind partKind) {
 
+    /** The token {@link #subTypeToken} records for a portal room. */
+    public static final String PORTAL_ROOM_SUB_TYPE = "portal_room";
+
     public BuilderOpenRequest {
         id = id == null ? "" : id;
     }
@@ -58,13 +61,39 @@ public record BuilderOpenRequest(BuilderPhotoPaths.Kind kind, String id, Carriag
         };
     }
 
-    /** The sub type this request saves back as, so the server records what {@code BuilderSave} needs. */
-    public BuilderNewOptions.SubType subType() {
+    /**
+     * A portal room, which no sub type names.
+     *
+     * <p>Its own factory rather than an arm of {@link #forSelection}, because that method reads a
+     * {@link BuilderNewOptions.SubType} and Train Dimensions has none — the mode's Open arm maps
+     * straight off the mode. See {@code BuilderOpenOptions.openSourceFor}.</p>
+     */
+    public static BuilderOpenRequest forPortalRoom(String id) {
+        return new BuilderOpenRequest(BuilderPhotoPaths.Kind.PORTAL_ROOM, id, null);
+    }
+
+    /**
+     * The sub-type token recorded on the world, so a later Save knows what it is looking at.
+     *
+     * <p>A token rather than a {@link BuilderNewOptions.SubType}, because a portal room is not one
+     * and must not become one: that enum is the New screen's cycle control, so a fourth value would
+     * offer "Portal Room" on a screen that cannot make one. The field on the world has always been a
+     * free string, so the three readers that parse it — {@code BuilderSave.subTypeOf},
+     * {@code BuilderSavePacket.kindOf}, {@code BuilderBoundsPacket} — each answer for this token
+     * explicitly.</p>
+     */
+    public String subTypeToken() {
         return switch (kind) {
-            case CARRIAGE -> BuilderNewOptions.SubType.WHOLE_CARRIAGE;
-            case CONTENTS -> BuilderNewOptions.SubType.CARRIAGE_ROOM;
-            case PART -> BuilderNewOptions.SubType.PARTS;
+            case CARRIAGE -> BuilderNewOptions.SubType.WHOLE_CARRIAGE.id();
+            case CONTENTS -> BuilderNewOptions.SubType.CARRIAGE_ROOM.id();
+            case PART -> BuilderNewOptions.SubType.PARTS.id();
+            case PORTAL_ROOM -> PORTAL_ROOM_SUB_TYPE;
         };
+    }
+
+    /** Whether this request is for a portal room rather than something on a carriage. */
+    public boolean isPortalRoom() {
+        return kind == BuilderPhotoPaths.Kind.PORTAL_ROOM;
     }
 
     public String partKindId() {

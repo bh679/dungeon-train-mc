@@ -100,15 +100,11 @@ public record BuilderBoundsPacket(List<BoundingBox> volumes, String modeId, Stri
             return new BuilderBoundsPacket(List.of(), "", "", 0, "", "", "", -1);
         }
         DungeonTrainWorldData data = DungeonTrainWorldData.get(overworld);
-        int carriages = BuilderMode.fromId(data.builderMode())
-            .map(BuilderMode::carriageCount)
-            .orElse(0);
-        CarriageDims dims = data.dims();
         String modeId = data.builderMode() == null ? "" : data.builderMode();
         // Empty name = an unnamed draft; the client uses it to decide whether Save can write
         // straight away or has to ask for a name first.
         String buildName = data.builderName() == null ? "" : data.builderName();
-        return new BuilderBoundsPacket(BuilderBounds.buildVolumes(carriages, dims), modeId,
+        return new BuilderBoundsPacket(BuilderBounds.volumesFor(overworld), modeId,
                 buildName, data.builderMirror().pack(),
                 orEmpty(data.builderSubType()), orEmpty(data.builderPartKind()),
                 orEmpty(data.builderStage()), weightOf(data));

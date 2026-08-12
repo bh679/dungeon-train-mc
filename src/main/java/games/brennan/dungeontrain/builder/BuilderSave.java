@@ -10,6 +10,7 @@ import games.brennan.dungeontrain.editor.CarriageVariantBlocks;
 import games.brennan.dungeontrain.editor.EditorMirror;
 import games.brennan.dungeontrain.editor.EditorPlotSnapshots;
 import games.brennan.dungeontrain.editor.EditorVariantMirror;
+import games.brennan.dungeontrain.editor.PortalRoomEditor;
 import games.brennan.dungeontrain.editor.StageStore;
 import games.brennan.dungeontrain.editor.WholeCarriageTemplateStore;
 import games.brennan.dungeontrain.train.CarriageContents;
@@ -72,10 +73,7 @@ public final class BuilderSave {
         }
         DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
         CarriageDims dims = data.dims();
-        int carriages = BuilderMode.fromId(data.builderMode())
-                .map(BuilderMode::carriageCount)
-                .orElse(0);
-        List<BoundingBox> volumes = BuilderBounds.buildVolumes(carriages, dims);
+        List<BoundingBox> volumes = BuilderBounds.volumesFor(level);
 
         Optional<Integer> target = saveTarget(volumes.size(), BuilderDirtyCheck.dirtyCarriages(level));
         if (target.isEmpty()) {
@@ -88,16 +86,25 @@ public final class BuilderSave {
             return Result.failed("this build has no name yet");
         }
         BoundingBox box = volumes.get(target.get());
-        BlockPos origin = new BlockPos(box.minX(), box.minY(), box.minZ());
-        BuilderNewOptions.SubType subType = subTypeOf(data.builderSubType());
+        BlockPos origin = BuilderBounds.originOf(box);
+        String subTypeToken = data.builderSubType();
+        boolean portalRoom = BuilderOpenRequest.PORTAL_ROOM_SUB_TYPE.equals(subTypeToken);
+        BuilderNewOptions.SubType subType = subTypeOf(subTypeToken);
         try {
-            // Mirror first, capture second — the same order every editor save() uses. Without it a
-            // build with mirroring on saves only the half that was actually placed by hand.
-            mirrorBeforeCapture(level, origin, dims);
-            switch (subType) {
-                case CARRIAGE_ROOM -> saveContents(level, origin, dims, name);
-                case PARTS -> savePart(level, origin, dims, name, data.builderPartKind());
-                case WHOLE_CARRIAGE -> saveWholeCarriage(level, origin, dims, name, data.builderStage());
+            if (portalRoom) {
+                // No mirrorBeforeCapture: a portal room's mirror is rebuilt by the editor's own
+                // save path, off the room's variant sidecar rather than the builder's flags — see
+                // PortalRoomEditor.saveRoomFrom, which is the same body the Train Editor runs.
+                savePortalRoom(level, origin, BuilderBounds.sizeOf(box), name);
+            } else {
+                // Mirror first, capture second — the same order every editor save() uses. Without it
+                // a build with mirroring on saves only the half that was actually placed by hand.
+                mirrorBeforeCapture(level, origin, dims);
+                switch (subType) {
+                    case CARRIAGE_ROOM -> saveContents(level, origin, dims, name);
+                    case PARTS -> savePart(level, origin, dims, name, data.builderPartKind());
+                    case WHOLE_CARRIAGE -> saveWholeCarriage(level, origin, dims, name, data.builderStage());
+                }
             }
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] Builder save failed for {}", name, t);
@@ -109,12 +116,13 @@ public final class BuilderSave {
         // over work that no longer differs from disk.
         for (int i = 0; i < volumes.size(); i++) {
             BoundingBox b = volumes.get(i);
+            Vec3i size = BuilderBounds.sizeOf(b);
             EditorPlotSnapshots.capture(BuilderDirtyCheck.snapshotKey(i), level,
-                    new BlockPos(b.minX(), b.minY(), b.minZ()),
-                    dims.length(), dims.height(), dims.width());
+                    BuilderBounds.originOf(b), size.getX(), size.getY(), size.getZ());
         }
         LOGGER.info("[DungeonTrain] Builder save: wrote {} '{}' from volume {}",
-                subType.id(), name, target.get());
+                portalRoom ? BuilderOpenRequest.PORTAL_ROOM_SUB_TYPE : subType.id(),
+                name, target.get());
         return Result.ok(name);
     }
 
@@ -203,7 +211,30 @@ public final class BuilderSave {
         }
     }
 
-    /** Tolerant of a world saved before sub types were recorded — those were all carriages. */
+    /**
+     * Write the build back as a portal room template.
+     *
+     * <p>Straight through to the Train Editor's own save body, so a room saved here and a room saved
+     * from {@code /dt editor portals} produce the same file — including the master-octant mirror
+     * rebuild, which a separate implementation would omit and so store a half-built room.</p>
+     *
+     * <p>Nothing to do about the size afterwards: {@code PortalRoomTemplateStore.save} already calls
+     * {@code PortalRoomSizes.settle}, which makes the written template the authority and spends any
+     * pending override the size control had set.</p>
+     */
+    private static void savePortalRoom(ServerLevel level, BlockPos origin, Vec3i size, String name)
+            throws IOException {
+        PortalRoomEditor.saveRoomFrom(level, origin, size, name);
+    }
+
+    /**
+     * Tolerant of a world saved before sub types were recorded — those were all carriages.
+     *
+     * <p>Also the fallback for {@code portal_room}, which is deliberately not one of these values.
+     * Callers must test for that token <em>before</em> asking this, the way {@link #save} does; the
+     * whole-carriage answer here is what an older world means by a blank field, not a claim that a
+     * room is a carriage.</p>
+     */
     private static BuilderNewOptions.SubType subTypeOf(String id) {
         for (BuilderNewOptions.SubType value : BuilderNewOptions.SubType.values()) {
             if (value.id().equals(id)) {

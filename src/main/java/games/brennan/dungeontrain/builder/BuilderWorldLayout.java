@@ -4,6 +4,7 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriagePlacer;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Vec3i;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
@@ -176,5 +177,26 @@ public final class BuilderWorldLayout {
     /** Pads wrap a run of more than one carriage, exactly as {@code spawnGroup} does. */
     public static boolean usesPads(int carriages) {
         return carriages > 1;
+    }
+
+    /**
+     * Lowest corner of the portal room the Train Dimensions mode opens, for a room of {@code size}.
+     *
+     * <p>Centred on the origin on both horizontal axes and standing on the grass, so the room sits
+     * where the train would and the spawn framing already points at it. The mode parks no carriages
+     * ({@link BuilderMode#carriageCount()} is zero), so nothing is in the way.</p>
+     *
+     * <p>The floor row is at {@link #Y_STAND} rather than {@link #Y_GRASS}: a room template carries
+     * its own floor, so laying it on the grass would bury that floor one block deep and leave the
+     * author standing on the wrong surface.</p>
+     *
+     * <p>The biggest room the game allows is {@code PortalRoomLayout.MAX_LENGTH} × {@code MAX_HEIGHT}
+     * × {@code MAX_WIDTH} — 48 × 11 × 48 — against a {@link #SIZE}-block platform 96 tall, so even
+     * the largest sits inside the world with room to walk around it.</p>
+     */
+    public static BlockPos portalRoomOrigin(Vec3i size) {
+        int x = -size.getX() / 2;
+        int z = -size.getZ() / 2;
+        return new BlockPos(x, Y_STAND, z);
     }
 }
