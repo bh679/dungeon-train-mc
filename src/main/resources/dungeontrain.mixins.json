@@ -60,7 +60,6 @@
     "client.LightTextureUpsideDownBandMixin",
     "client.LevelGetShadeMixin",
     "client.ModelBlockRendererUpsideDownMixin",
-    "client.ModelBlockRendererTrackGhostMixin",
     "client.MinecraftFramerateThrottleMixin",
     "client.SoundEngineMusicFadeMixin",
     "client.LanguageSelectEntryLogoMixin"

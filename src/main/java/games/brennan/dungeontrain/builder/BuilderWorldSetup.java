@@ -559,6 +559,12 @@ public final class BuilderWorldSetup {
         clearTrackPlot(level, data, dims);
         data.setBuilderMode(mode.id());
 
+        // The rest of the line stops being blocks. Everything outside the plot is drawn as ghosts
+        // from here on (BuilderTrackGhostShape), and a ghost that is also a real block is not a
+        // ghost — it can be broken, walked on, and saved into the wrong template. Erasing is what
+        // makes the drawn version the only version.
+        eraseCorridorTrack(level, dims);
+
         BlockPos origin = BuilderTrackPlot.origin(kind, dims);
         Vec3i size = BuilderTrackPlot.footprint(kind, dims);
         forceChunksFor(level, origin, size);
@@ -648,8 +654,43 @@ public final class BuilderWorldSetup {
         erase(level, origin, size);
         EditorPlotSnapshots.clear(BuilderDirtyCheck.snapshotKey(previous, data.builderName()));
         data.setBuilderTrackKind("");
-        if (BuilderTrackPlot.inCorridor(previous)) {
-            stampTrack(level, dims);
+        // Unconditional: opening any track template erases the whole corridor, so leaving one has
+        // to put all of it back, whichever kind was on the plot.
+        stampTrack(level, dims);
+    }
+
+    /**
+     * Take the corridor track out of the world — both rows, the full length of the platform.
+     *
+     * <p>Only ever called on the way into a track build, and always followed by either the template
+     * being stamped on the plot or {@link #stampTrack} putting the line back. The line the builder
+     * sees in between is {@code BuilderTrackGhostRenderer}'s, which is drawn.</p>
+     */
+    private static void eraseCorridorTrack(ServerLevel level, CarriageDims dims) {
+        BlockState air = Blocks.AIR.defaultBlockState();
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        int minZ = 0;
+        int maxZ = dims.width() - 1;
+
+        for (int cx = BuilderWorldLayout.MIN_XZ >> 4; cx <= BuilderWorldLayout.MAX_XZ >> 4; cx++) {
+            for (int cz = minZ >> 4; cz <= maxZ >> 4; cz++) {
+                WorldgenForceGuard.forceChunk(level, cx, cz);
+                LevelChunk chunk = level.getChunk(cx, cz);
+                int xLo = Math.max(BuilderWorldLayout.MIN_XZ, cx << 4);
+                int xHi = Math.min(BuilderWorldLayout.MAX_XZ, (cx << 4) + 15);
+                int zLo = Math.max(minZ, cz << 4);
+                int zHi = Math.min(maxZ, (cz << 4) + 15);
+                for (int x = xLo; x <= xHi; x++) {
+                    for (int z = zLo; z <= zHi; z++) {
+                        for (int y = BuilderWorldLayout.Y_TRACK_BED;
+                                y <= BuilderWorldLayout.Y_TRACK_RAIL; y++) {
+                            SilentBlockOps.setBlockSectionLocal(level, chunk,
+                                    pos.set(x, y, z).immutable(), air);
+                        }
+                    }
+                }
+                chunk.setUnsaved(true);
+            }
         }
     }
 
