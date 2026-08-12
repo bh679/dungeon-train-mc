@@ -6739,6 +6739,58 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "death-screen-modrec-after-donate",
+      "version": "0.552.0",
+      "type": "refactor",
+      "title": "Mod recommendations now come after the support page",
+      "summary": "On the death screen, the page asking which of your other mods you'd recommend now appears after the support page, just before you board again. Same pages, new order.",
+      "highlights": [
+        "Mod recommendations moved after 'support the line'"
+      ],
+      "pr": 934,
+      "date": "2026-08-11",
+      "released": true,
+      "released_in": "v0.552.0",
+      "released_at": "2026-08-11T14:48:13Z"
+    },
+    {
+      "id": "in-game-translation-editor",
+      "version": "0.552.0",
+      "type": "feat",
+      "title": "Fix your language's own text, from inside the game",
+      "summary": "Dungeon Train speaks nineteen languages besides English, and most of those lines were written by a machine. If one of them reads wrong to you, you can now fix it yourself: Options \u2192 Language \u2192 Help Translate opens the mod's whole vocabulary, line by line, with the English original beside each one and your language's current wording ready to edit. Send your fixes in and, once a human has read them, they reach everyone playing in that language \u2014 no update to install. Your name goes on them in the credits, unless you would rather it did not.",
+      "highlights": [
+        "Help Translate sits on the language screen, and on the title screen beside the language button",
+        "Every line the mod ships, with filters for what a human has never checked",
+        "Work in a batch and send it when it is ready \u2014 nothing leaves the game until you press Submit",
+        "Approved fixes arrive when the game starts or you change language",
+        "A fix applies to the version it was written against and later ones, so an old fix never overwrites newer wording",
+        "Export and import the files if you would rather work outside the game",
+        "Translators are named in the credits, and the language list's AI marker retreats as lines get human-checked",
+        "Submitting needs network consent, like everything else that carries your name"
+      ],
+      "date": "2026-08-11",
+      "released": true,
+      "released_in": "v0.552.0",
+      "released_at": "2026-08-11T14:48:13Z"
+    },
+    {
+      "id": "multiplayer-death-screen",
+      "version": "0.553.0",
+      "type": "feat",
+      "title": "The death screen recap now works in multiplayer",
+      "summary": "Dying on a server used to give you Minecraft's plain death screen. Now you get the same end-of-run recap singleplayer gets \u2014 your fall, your deeds, your cargo, your ride photos and the rest \u2014 with Respawn in place of the board-a-new-train button, since a server world isn't yours to restart.",
+      "highlights": [
+        "The narrative death screen now appears on LAN and dedicated servers",
+        "Respawn replaces Board anew there, and the delete-world toggle is hidden"
+      ],
+      "pr": 948,
+      "date": "2026-08-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

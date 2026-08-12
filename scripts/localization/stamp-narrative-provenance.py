@@ -11,7 +11,9 @@ relative to the locale dir (e.g. ``random_books/deathnote``):
 
 This is the narrative counterpart of stamp-provenance.py (which does the flat-key UI lang
 files). Same two recipes, same author-registry rules, same one-entry-per-line on-disk format
-(``provenance_io.write_provenance``). Nothing here ships in the jar.
+(``provenance_io.write_provenance``). The sidecars themselves never ship — but every run also
+refreshes the shipped ``localization_provenance/<locale>.json`` manifests, whose ``books``
+field is derived from them (the in-game translation editor filters on it).
 
   New translation wave (after adding/translating books):
       python3 scripts/localization/stamp-narrative-provenance.py --sync \
@@ -113,12 +115,16 @@ def process_locale(locale: str, narrative_dir: Path, prov_dir: Path,
 
 
 def main(argv: list[str] | None = None) -> int:
+    default_prov_dir = provenance_io.DEFAULT_NARRATIVE_PROVENANCE_DIR
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--narrative-dir", type=Path,
                         default=provenance_io.DEFAULT_NARRATIVE_DIR)
-    parser.add_argument("--provenance-dir", type=Path,
-                        default=provenance_io.DEFAULT_NARRATIVE_PROVENANCE_DIR)
+    parser.add_argument("--provenance-dir", type=Path, default=default_prov_dir)
     parser.add_argument("--authors-file", type=Path, default=provenance_io.DEFAULT_AUTHORS_FILE)
+    parser.add_argument("--manifest-dir", type=Path, default=None,
+                        help="where to write the shipped localization_provenance manifests "
+                             "(default: the assets dir; skipped on a redirected "
+                             "--provenance-dir run)")
     parser.add_argument("--locale", action="append",
                         help="restrict to specific locale(s); default all")
     parser.add_argument("--sync", action="store_true",
@@ -191,6 +197,18 @@ def main(argv: list[str] | None = None) -> int:
     for locale, prov, summary in results:
         provenance_io.write_provenance(args.provenance_dir / f"{locale}.json", prov)
         print(summary)
+
+    # The shipped manifests cover the books as well as the lang namespaces, so a
+    # narrative-only stamp still has to rebuild them. Skipped when --provenance-dir points
+    # somewhere other than the real sidecar dir (the tests) unless --manifest-dir says
+    # where to put them, so a test run can never write into the real assets tree.
+    if args.manifest_dir is not None or args.provenance_dir == default_prov_dir:
+        changed = provenance_io.refresh_manifests(
+            authors,
+            narrative_prov_dir=args.provenance_dir,
+            manifest_dir=args.manifest_dir or provenance_io.DEFAULT_MANIFEST_DIR)
+        if changed:
+            print(f"OK: refreshed {len(changed)} localization_provenance manifest(s).")
     return 0
 
 
