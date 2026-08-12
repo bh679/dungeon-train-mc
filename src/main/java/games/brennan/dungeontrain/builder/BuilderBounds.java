@@ -91,7 +91,10 @@ public final class BuilderBounds {
                     ? List.of()
                     : roomVolume(PortalRoomSizes.sizeOf(name, dims));
         }
-        return buildVolumes(mode == null ? 0 : mode.carriageCount(), dims);
+        // What is actually parked, not what the mode would park for a whole carriage: opening a room
+        // or a part parks one carriage, and asking the mode would cut three volumes out of a
+        // one-carriage world.
+        return buildVolumes(BuilderWorldSetup.parkedCarriages(data), dims);
     }
 
     /**

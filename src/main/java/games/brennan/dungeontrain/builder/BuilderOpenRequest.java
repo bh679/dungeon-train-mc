@@ -91,6 +91,27 @@ public record BuilderOpenRequest(BuilderPhotoPaths.Kind kind, String id, Carriag
         };
     }
 
+    /**
+     * Which sub type this request's template belongs to, or <b>null</b> for a portal room.
+     *
+     * <p>Read for one thing: how much train to park around what was opened
+     * ({@code BuilderWorldLayout.parkedCarriages}). Null rather than a stand-in, because a room is
+     * not stamped on a carriage at all — {@code applyOpen} takes the room path before any of that
+     * arithmetic, and {@code parkedCarriages} already reads null as "the mode's own count". Naming
+     * some sub type here instead would be a quiet claim that a room is a kind of carriage build.</p>
+     *
+     * <p>Not the same question as {@link #subTypeToken}, which is what gets recorded on the world so
+     * a later Save knows which store to write.</p>
+     */
+    public BuilderNewOptions.SubType subType() {
+        return switch (kind) {
+            case CARRIAGE -> BuilderNewOptions.SubType.WHOLE_CARRIAGE;
+            case CONTENTS -> BuilderNewOptions.SubType.CARRIAGE_ROOM;
+            case PART -> BuilderNewOptions.SubType.PARTS;
+            case PORTAL_ROOM -> null;
+        };
+    }
+
     /** Whether this request is for a portal room rather than something on a carriage. */
     public boolean isPortalRoom() {
         return kind == BuilderPhotoPaths.Kind.PORTAL_ROOM;

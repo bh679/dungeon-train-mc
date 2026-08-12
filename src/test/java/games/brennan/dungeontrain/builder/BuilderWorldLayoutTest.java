@@ -158,6 +158,66 @@ final class BuilderWorldLayoutTest {
     }
 
     @Test
+    @DisplayName("Only a whole carriage parks the mode's full run; one template parks one carriage")
+    void parkedCarriagesFollowsTheSubType() {
+        // The silhouette case: three carriages is what Train Outside exists to show you.
+        assertEquals(3, BuilderWorldLayout.parkedCarriages(
+                BuilderMode.TRAIN_OUTSIDE, BuilderNewOptions.SubType.WHOLE_CARRIAGE));
+        // One template is one carriage — three copies would be three answers to a one-answer
+        // question, and it reads as a generic train rather than as the thing you opened.
+        assertEquals(1, BuilderWorldLayout.parkedCarriages(
+                BuilderMode.TRAIN_OUTSIDE, BuilderNewOptions.SubType.CARRIAGE_ROOM));
+        assertEquals(1, BuilderWorldLayout.parkedCarriages(
+                BuilderMode.TRAIN_OUTSIDE, BuilderNewOptions.SubType.PARTS));
+        // Inside the wall there was only ever one carriage, so nothing changes there.
+        for (BuilderNewOptions.SubType subType : BuilderNewOptions.SubType.values()) {
+            assertEquals(1, BuilderWorldLayout.parkedCarriages(BuilderMode.INSIDE_CARRIAGE, subType));
+        }
+    }
+
+    @Test
+    @DisplayName("A world with no sub type yet keeps the mode's own count")
+    void parkedCarriagesDefaultsToTheModeBeforeAnySelection() {
+        // setupIfNeeded's path: a title-screen click, before New or Open has narrowed it. Reading
+        // this as "one carriage" would silently shrink every freshly-created builder world.
+        assertEquals(3, BuilderWorldLayout.parkedCarriages(BuilderMode.TRAIN_OUTSIDE, null));
+        assertEquals(1, BuilderWorldLayout.parkedCarriages(BuilderMode.INSIDE_CARRIAGE, null));
+    }
+
+    @Test
+    @DisplayName("The carriage-less modes park none whatever is being authored")
+    void parkedCarriagesStaysZeroForTheTrackModes() {
+        for (BuilderNewOptions.SubType subType : BuilderNewOptions.SubType.values()) {
+            assertEquals(0, BuilderWorldLayout.parkedCarriages(BuilderMode.TRACKS_TUNNELS, subType));
+            assertEquals(0, BuilderWorldLayout.parkedCarriages(BuilderMode.TRAIN_DIMENSIONS, subType));
+        }
+        assertEquals(0, BuilderWorldLayout.parkedCarriages(BuilderMode.TRACKS_TUNNELS, null));
+        assertEquals(0, BuilderWorldLayout.parkedCarriages(null, null));
+    }
+
+    @Test
+    @DisplayName("Both carriage modes ghost the same run, however much of it is real")
+    void ghostGroupIsTheSameTrainFromEitherSide() {
+        // A train reads the same from either side of the wall. Sizing the ghosts from the parked
+        // count instead is what left Inside Carriage — which parks one by definition — drawing none.
+        assertEquals(BuilderWorldLayout.OUTSIDE_CARRIAGES,
+                BuilderWorldLayout.ghostGroupCarriages(BuilderMode.TRAIN_OUTSIDE));
+        assertEquals(BuilderWorldLayout.OUTSIDE_CARRIAGES,
+                BuilderWorldLayout.ghostGroupCarriages(BuilderMode.INSIDE_CARRIAGE));
+        assertTrue(BuilderWorldLayout.ghostGroupCarriages(BuilderMode.INSIDE_CARRIAGE)
+                > BuilderWorldLayout.parkedCarriages(BuilderMode.INSIDE_CARRIAGE, null),
+                "an inside build has to have slots left over, or there is nothing to ghost");
+    }
+
+    @Test
+    @DisplayName("The carriage-less modes imply no train around them")
+    void ghostGroupIsZeroForTheTrackModes() {
+        assertEquals(0, BuilderWorldLayout.ghostGroupCarriages(BuilderMode.TRACKS_TUNNELS));
+        assertEquals(0, BuilderWorldLayout.ghostGroupCarriages(BuilderMode.TRAIN_DIMENSIONS));
+        assertEquals(0, BuilderWorldLayout.ghostGroupCarriages(null));
+    }
+
+    @Test
     @DisplayName("Spawn is on the grass and clear of the track corridor")
     void spawnIsClearOfTheTrain() {
         BlockPos spawn = BuilderWorldLayout.spawnPos(DIMS);

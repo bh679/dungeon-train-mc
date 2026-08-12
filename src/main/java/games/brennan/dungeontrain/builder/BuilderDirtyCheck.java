@@ -47,6 +47,11 @@ public final class BuilderDirtyCheck {
      */
     public static List<Integer> dirtyCarriages(ServerLevel level) {
         List<Integer> dirty = new ArrayList<>();
+        // volumesFor, not buildVolumes: it reads parkedCarriages for a carriage world and answers
+        // with the room's single box in Train Dimensions. The carriages <= 0 early-out that used to
+        // guard this went with it — that was right while every volume was a carriage, and it is
+        // exactly what would stop a room ever reporting itself dirty, since Train Dimensions parks
+        // no carriages by design.
         List<BoundingBox> volumes = BuilderBounds.volumesFor(level);
         for (int i = 0; i < volumes.size(); i++) {
             BoundingBox box = volumes.get(i);

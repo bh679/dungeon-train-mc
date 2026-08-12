@@ -43,7 +43,10 @@ public final class BuilderSpawn {
         if (room != null) {
             return BuilderWorldLayout.portalRoomSpawn(room);
         }
-        return BuilderWorldLayout.spawnPos(dims, mode == null ? 0 : mode.carriageCount());
+        // What is parked, not what the mode would park: opening a room or a part parks one carriage
+        // where a whole carriage parks three, and the standoff is sized from the train that is
+        // actually out there.
+        return BuilderWorldLayout.spawnPos(dims, BuilderWorldSetup.parkedCarriages(data));
     }
 
     /**

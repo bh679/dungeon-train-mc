@@ -112,6 +112,24 @@ final class BuilderOpenRequestTest {
         assertFalse(request(BuilderNewOptions.SubType.CARRIAGE_ROOM, "mess_hall", null).isPortalRoom());
     }
 
+    @Test
+    @DisplayName("A request's sub type is the store it saves to, never how much train to park")
+    void requestSubTypeIsNotTheParkedCount() {
+        // A carriage browsed under a Stage in the Carriage Room arm. The request has to say
+        // WHOLE_CARRIAGE — BuilderSave reads it to pick which store to write, and this really is a
+        // carriage template — while the builder opened exactly one of them.
+        BuilderOpenRequest opened =
+                new BuilderOpenRequest(BuilderPhotoPaths.Kind.CARRIAGE, "windowed", null);
+        assertEquals(BuilderNewOptions.SubType.WHOLE_CARRIAGE, opened.subType());
+
+        // So deriving the count from the request parks the whole run — which is the bug this
+        // separation exists to prevent. The arm the tile was clicked in is the one that decides.
+        assertEquals(3, BuilderWorldLayout.parkedCarriages(
+                BuilderMode.TRAIN_OUTSIDE, opened.subType()));
+        assertEquals(1, BuilderWorldLayout.parkedCarriages(
+                BuilderMode.TRAIN_OUTSIDE, BuilderNewOptions.SubType.CARRIAGE_ROOM));
+    }
+
     private static BuilderOpenRequest request(BuilderNewOptions.SubType subType, String id,
                                               CarriagePartKind partKind) {
         Optional<BuilderOpenRequest> built = BuilderOpenRequest.forSelection(subType, id, partKind);

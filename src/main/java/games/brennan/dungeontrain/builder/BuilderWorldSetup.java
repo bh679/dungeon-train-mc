@@ -77,6 +77,32 @@ public final class BuilderWorldSetup {
     private BuilderWorldSetup() {}
 
     /**
+     * How many carriages are parked on the track right now.
+     *
+     * <p>The recorded count, not a re-derivation of it. Every path that stamps or clears the train
+     * writes what it actually laid down, so the build volumes, the dirty check, the save cut, the
+     * cinematic framing and the spawn standoff all read the same number the stamp used — rather
+     * than five copies of an inference that can disagree with the blocks.</p>
+     *
+     * <p>Deriving it from mode and sub type nearly works and then doesn't: those answer "what is
+     * this build for" and "what does it save as", and the Open screen's carriage list is where the
+     * second one comes apart from the count. Browsing rooms from outside the train opens a
+     * <em>carriage</em> template — it must save as a whole carriage, which is what {@code
+     * BuilderSave} reads the sub type for, while standing alone on the track.</p>
+     *
+     * <p>Falls back to the mode's own count for a world saved before the field existed, which is
+     * exactly what those worlds were stamped with.</p>
+     */
+    public static int parkedCarriages(DungeonTrainWorldData data) {
+        int recorded = data.builderCarriages();
+        if (recorded >= 0) {
+            return recorded;
+        }
+        return BuilderWorldLayout.parkedCarriages(
+                BuilderMode.fromId(data.builderMode()).orElse(null), null);
+    }
+
+    /**
      * @param mode which builder tile the player picked — decides how much train gets parked
      * @return true if the world was stamped, false if it was already set up
      */
@@ -96,10 +122,13 @@ public final class BuilderWorldSetup {
             stampPlatform(level);
             stampTrack(level, dims);
         }
-        int carriages = mode.carriageCount();
+        // No sub type yet — this is the title-screen click, before New or Open has narrowed it —
+        // so the mode's own count stands.
+        int carriages = BuilderWorldLayout.parkedCarriages(mode, null);
         if (carriages > 0) {
             stampTrain(level, dims, carriages);
         }
+        DungeonTrainWorldData.get(level).setBuilderCarriages(carriages);
 
         // Persist the mode: it was a title-screen click and lives nowhere else, so without this
         // a reopened builder world can't tell the client where the build bounds are.
@@ -127,7 +156,7 @@ public final class BuilderWorldSetup {
         DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
         CarriageDims dims = data.dims();
         BuilderMode previousMode = BuilderMode.fromId(data.builderMode()).orElse(null);
-        int previous = previousMode == null ? 0 : previousMode.carriageCount();
+        int previous = parkedCarriages(data);
 
         clearTrain(level, dims, previous);
         // Whatever room was standing goes too: it belongs to the mode being left, and leaving it
@@ -146,10 +175,15 @@ public final class BuilderWorldSetup {
             clearScenery(level);
         }
 
-        int carriages = mode.carriageCount();
+        // A mode switch changes the mode, not what is being authored: a build that stood alone
+        // stays alone, and one that was a full run stays a full run, scaled to the new mode.
+        int carriages = previous == 1 && mode.carriageCount() > 0
+                ? 1
+                : BuilderWorldLayout.parkedCarriages(mode, null);
         if (carriages > 0) {
             stampTrain(level, dims, carriages);
         }
+        data.setBuilderCarriages(carriages);
         data.setBuilderMode(mode.id());
         // The name and sub type belonged to the build being discarded. Leaving them would point Save
         // at a template the world no longer holds — the one thing applyOpen's ordering exists to
@@ -426,35 +460,39 @@ public final class BuilderWorldSetup {
         CarriageDims dims = data.dims();
         BuilderMode mode = request.mode();
 
-        BuilderMode previousMode = BuilderMode.fromId(data.builderMode()).orElse(mode);
-        int previousCarriages = previousMode.carriageCount();
+        // Read before anything below overwrites it: clearTrain has to erase the footprint that is
+        // actually out there, and after setBuilderSubType the world data describes the new build.
+        int previousCarriages = parkedCarriages(data);
         clearTrain(level, dims, previousCarriages);
         data.setBuilderMode(mode.id());
 
         // A stage doesn't name a carriage — it decides which parts get stamped onto one. Selecting
         // it before the stamp is the whole mechanism: CarriagePlacer.placeAt reads
         // EditorStageSelection.effective() and routes to the per-stage parts overlay, which is
-        // exactly what makes a desert carriage look like the desert. Without this the builder just
-        // inherits whatever stage the editor last had focused.
-        if (!request.stageId().isEmpty()) {
-            EditorStageSelection.select(request.stageId());
-        }
+        // exactly what makes a desert carriage look like the desert.
+        //
+        // Unconditional, including for an empty id. EditorStageSelection is one global sticky
+        // singleton shared with the Train Editor, so skipping the call doesn't mean "no stage" —
+        // it means "whatever stage was last selected", and a new build with no stage would come out
+        // wearing the parts of the last one that had one.
+        EditorStageSelection.select(request.stageId());
 
-        int carriages = mode.carriageCount();
+        int carriages = BuilderWorldLayout.parkedCarriages(mode, request.subType());
         if (carriages > 0) {
             stampTrain(level, dims, carriages, request.shell());
             overlaySelection(level, dims, carriages, request);
         } else {
             data.setBuilderVariant(request.shell().id());
         }
+        data.setBuilderCarriages(carriages);
         data.setBuilderName(request.name());
         data.setBuilderStage(request.stageId());
         data.setBuilderSubType(request.subType().id(), request.partKindId());
         // A new build is a new thing to mirror — carrying the last build's axes over would apply
         // them to geometry that was never authored against them.
         data.setBuilderMirror(BuilderMirrorFlags.DEFAULT);
-        LOGGER.info("[DungeonTrain] Builder new: mode '{}', {} '{}' on shell '{}', stage '{}', from '{}', name '{}'",
-                mode.id(), request.subType().id(),
+        LOGGER.info("[DungeonTrain] Builder new: mode '{}' ({} carriage(s)), {} '{}' on shell '{}', stage '{}', from '{}', name '{}'",
+                mode.id(), carriages, request.subType().id(),
                 request.picked().isEmpty() ? "<none>" : request.picked(), request.shell().id(),
                 request.stageId().isEmpty() ? "<none>" : request.stageId(),
                 request.wholeCarriageId().isEmpty() ? "<blank>" : request.wholeCarriageId(),
@@ -526,7 +564,7 @@ public final class BuilderWorldSetup {
      * @return true if the world now holds the requested template
      */
     public static boolean applyOpen(ServerLevel level, BuilderMode mode, BuilderOpenRequest request) {
-        return applyOpen(level, mode, request, "");
+        return applyOpen(level, mode, request, "", null);
     }
 
     /**
@@ -542,10 +580,19 @@ public final class BuilderWorldSetup {
      * {@code desert} and hitting Save re-gates a built-in carriage to desert-only spawning, which is
      * not something browsing should be able to do.</p>
      *
+     * <p>{@code viewSubType} is the arm of the Open screen the tile was clicked in, and it decides
+     * <b>how much train to park</b> — nothing else. It is not the same answer as
+     * {@link BuilderOpenRequest#subType()}, which comes from the store the template lives in, and
+     * the carriage list is where the two part company: a carriage browsed under a Stage is a
+     * carriage template (so it must save as one) opened as a single room-sized build (so one
+     * carriage is stamped). Deriving the count from the request instead put three on the track.</p>
+     *
      * @param browsedStageId the stage being browsed, or empty to use the template's own link
+     * @param viewSubType    the sub type the grid was showing, or null to follow the request's own
      */
     public static boolean applyOpen(ServerLevel level, BuilderMode mode, BuilderOpenRequest request,
-                                    String browsedStageId) {
+                                    String browsedStageId,
+                                    BuilderNewOptions.SubType viewSubType) {
         if (!level.dimensionTypeRegistration().is(BuilderWorldLayout.BUILDER_DIMENSION_TYPE)) {
             return false;
         }
@@ -561,7 +608,8 @@ public final class BuilderWorldSetup {
             return openPortalRoom(level, data, dims, mode, request);
         }
 
-        int carriages = mode.carriageCount();
+        int carriages = BuilderWorldLayout.parkedCarriages(mode,
+                viewSubType == null ? request.subType() : viewSubType);
         if (carriages <= 0) {
             // The remaining carriage-less mode (Tracks & Tunnels) parks nothing to load a template
             // into. BuilderOpenOptions.isOpenable already says so; this is the server-side backstop.
@@ -577,8 +625,8 @@ public final class BuilderWorldSetup {
         }
         Resolved open = resolved.get();
 
-        BuilderMode previousMode = BuilderMode.fromId(data.builderMode()).orElse(mode);
-        clearTrain(level, dims, previousMode.carriageCount());
+        // Read before setBuilderSubType below rewrites it — see applyNew.
+        clearTrain(level, dims, parkedCarriages(data));
         data.setBuilderMode(mode.id());
 
         // Before the stamp, for the same reason applyNew does it: CarriagePlacer.placeAt reads
@@ -588,9 +636,10 @@ public final class BuilderWorldSetup {
         String shownStage = browsedStageId == null || browsedStageId.isEmpty()
                 ? stageId
                 : browsedStageId;
-        if (!shownStage.isEmpty()) {
-            EditorStageSelection.select(shownStage);
-        }
+        // Unconditional, empty id included. The selection is a global that outlives this call, so
+        // guarding on non-empty made browsing leak: open a carriage under `desert`, then open
+        // anything with no stage of its own, and the second one came out wearing desert's parts.
+        EditorStageSelection.select(shownStage);
 
         stampTrain(level, dims, carriages, open.shell());
         if (!overlayOpen(level, dims, carriages, request, open)) {
@@ -601,6 +650,7 @@ public final class BuilderWorldSetup {
         }
 
         // Only now: the world genuinely holds this template, so Save may point at it.
+        data.setBuilderCarriages(carriages);
         data.setBuilderName(request.id());
         data.setBuilderStage(stageId);
         data.setBuilderSubType(request.subTypeToken(), request.partKindId());
@@ -611,9 +661,14 @@ public final class BuilderWorldSetup {
             EditorPlotSnapshots.capture(BuilderDirtyCheck.snapshotKey(i), level, origin,
                     dims.length(), dims.height(), dims.width());
         }
-        LOGGER.info("[DungeonTrain] Builder open: {} '{}' into mode '{}' on shell '{}', stage '{}'"
-                        + " (shown as '{}')",
-                request.kind().id(), request.id(), mode.id(), open.shell().id(),
+        // The carriage count is in here because it is the one thing about an open you cannot see
+        // from the outcome without counting blocks — and it is decided by the browsing arm rather
+        // than by anything else on this line, so a wrong count looks like a correct open.
+        LOGGER.info("[DungeonTrain] Builder open: {} '{}' into mode '{}' as '{}' ({} carriage(s))"
+                        + " on shell '{}', stage '{}' (shown as '{}')",
+                request.kind().id(), request.id(), mode.id(),
+                viewSubType == null ? request.subType().id() : viewSubType.id(), carriages,
+                open.shell().id(),
                 stageId.isEmpty() ? "<none>" : stageId,
                 shownStage.isEmpty() ? "<none>" : shownStage);
         return true;
@@ -743,10 +798,19 @@ public final class BuilderWorldSetup {
      */
     private static Optional<Resolved> resolveCarriage(ServerLevel level, CarriageDims dims, String id) {
         Optional<CarriageVariant> shell = CarriageVariantRegistry.find(id);
-        Optional<WholeCarriage> saved = WholeCarriageRegistry.find(id)
-                // Registered is not the same as readable at this world's dims — filter on the
-                // template the placer would actually get, not on the registry entry.
-                .filter(wc -> WholeCarriageTemplateStore.get(level, wc, dims).isPresent());
+        Optional<WholeCarriage> saved = WholeCarriageRegistry.find(id);
+        // Registered is not the same as readable at this world's dims, and the difference has to be
+        // fatal on its own rather than folded into the emptiness check below. BuilderSave writes a
+        // WholeCarriage *and* a same-named shell for every build, so a shell always resolves for
+        // anything a builder saved — meaning "whole carriage unreadable" would otherwise fall
+        // straight through to the bare shell, open under the template's name, and arm the next Save
+        // to write an empty carriage over the file being edited. Exactly what Open exists to stop.
+        if (saved.isPresent() && WholeCarriageTemplateStore.get(level, saved.get(), dims).isEmpty()) {
+            LOGGER.warn("[DungeonTrain] Builder open: whole carriage '{}' is registered but has no "
+                    + "template at {}x{}x{} — refusing rather than opening its bare shell",
+                    id, dims.length(), dims.height(), dims.width());
+            return Optional.empty();
+        }
         if (shell.isEmpty() && saved.isEmpty()) {
             return Optional.empty();
         }

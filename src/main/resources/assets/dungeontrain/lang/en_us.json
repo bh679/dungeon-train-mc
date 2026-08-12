@@ -666,6 +666,7 @@
   "gui.dungeontrain.builder.clear": "Clear",
   "gui.dungeontrain.builder.rename": "Rename",
   "gui.dungeontrain.builder.delete": "Delete",
+  "gui.dungeontrain.builder.ghost_train": "Ghost Train",
   "gui.dungeontrain.builder.confirm.reset": "Reload this carriage from its last save? Unsaved changes will be lost.",
   "gui.dungeontrain.builder.confirm.clear": "Remove every block from this carriage?",
   "gui.dungeontrain.builder.confirm.delete": "Delete this carriage design permanently?",

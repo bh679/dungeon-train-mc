@@ -2,9 +2,9 @@ package games.brennan.dungeontrain.net;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.builder.BuilderBounds;
-import games.brennan.dungeontrain.builder.BuilderMode;
 import games.brennan.dungeontrain.builder.BuilderNewOptions;
 import games.brennan.dungeontrain.builder.BuilderWorldLayout;
+import games.brennan.dungeontrain.builder.BuilderWorldSetup;
 import games.brennan.dungeontrain.client.builder.BuilderBoundsState;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriageVariantRegistry;

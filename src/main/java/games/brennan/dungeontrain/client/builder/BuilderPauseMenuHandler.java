@@ -100,6 +100,7 @@ public final class BuilderPauseMenuHandler {
     private static final Component CLEAR = Component.translatable("gui.dungeontrain.builder.clear");
     private static final Component RENAME = Component.translatable("gui.dungeontrain.builder.rename");
     private static final Component DELETE = Component.translatable("gui.dungeontrain.builder.delete");
+    private static final Component GHOST_TRAIN = Component.translatable("gui.dungeontrain.builder.ghost_train");
     private static final Component RESET_PROMPT = Component.translatable("gui.dungeontrain.builder.confirm.reset");
     private static final Component CLEAR_PROMPT = Component.translatable("gui.dungeontrain.builder.confirm.clear");
     private static final Component DELETE_PROMPT = Component.translatable("gui.dungeontrain.builder.confirm.delete");
@@ -296,6 +297,11 @@ public final class BuilderPauseMenuHandler {
 
         // Shape.
         addMirrorRow(event, x, y, width, height);
+        y += rowStride;
+
+        // View, under the shape toggles it behaves like — the one control here that changes what
+        // you see rather than what you're building.
+        event.addListener(new BuilderGhostButton(x, y, width, height, GHOST_TRAIN));
         y += rowStride + BuilderPauseMenuLayout.GROUP_GAP;
 
         // Size, for the one thing the builder edits that has one worth changing. Added only when a
