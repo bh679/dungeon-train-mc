@@ -47,11 +47,11 @@ final class BuilderOpenOptionsTest {
     void onlyTwoLevelListsDrillIn() {
         assertTrue(BuilderOpenOptions.drillsIn(BuilderOpenOptions.OpenSource.CONTENTS));
         assertTrue(BuilderOpenOptions.drillsIn(BuilderOpenOptions.OpenSource.CARRIAGES_BY_STAGE));
+        assertTrue(BuilderOpenOptions.drillsIn(BuilderOpenOptions.OpenSource.PORTAL_ROOMS));
 
         assertFalse(BuilderOpenOptions.drillsIn(BuilderOpenOptions.OpenSource.STAGES));
         assertFalse(BuilderOpenOptions.drillsIn(BuilderOpenOptions.OpenSource.PARTS));
         assertFalse(BuilderOpenOptions.drillsIn(BuilderOpenOptions.OpenSource.TRACK_TILES));
-        assertFalse(BuilderOpenOptions.drillsIn(BuilderOpenOptions.OpenSource.TUNNEL_PORTALS));
     }
 
     @Test
@@ -101,7 +101,7 @@ final class BuilderOpenOptionsTest {
         for (BuilderNewOptions.SubType subType : BuilderNewOptions.SubType.values()) {
             assertEquals(BuilderOpenOptions.OpenSource.TRACK_TILES,
                     BuilderOpenOptions.openSourceFor(BuilderMode.TRACKS_TUNNELS, subType));
-            assertEquals(BuilderOpenOptions.OpenSource.TUNNEL_PORTALS,
+            assertEquals(BuilderOpenOptions.OpenSource.PORTAL_ROOMS,
                     BuilderOpenOptions.openSourceFor(BuilderMode.TRAIN_DIMENSIONS, subType));
         }
     }
@@ -117,7 +117,7 @@ final class BuilderOpenOptionsTest {
         // Not a policy choice — there is no stamp or save path for these yet. When one lands, this
         // is the assertion that should fail and tell you to flip it.
         assertFalse(BuilderOpenOptions.isOpenable(BuilderOpenOptions.OpenSource.TRACK_TILES));
-        assertFalse(BuilderOpenOptions.isOpenable(BuilderOpenOptions.OpenSource.TUNNEL_PORTALS));
+        assertFalse(BuilderOpenOptions.isOpenable(BuilderOpenOptions.OpenSource.PORTAL_ROOMS));
     }
 
     @Test
@@ -144,7 +144,9 @@ final class BuilderOpenOptionsTest {
         // Null rather than a new enum constant: nothing photographs a track, so an entry for one
         // would be a path that never has a file behind it.
         assertNull(BuilderOpenOptions.photoKindFor(BuilderOpenOptions.OpenSource.TRACK_TILES, "default"));
-        assertNull(BuilderOpenOptions.photoKindFor(BuilderOpenOptions.OpenSource.TUNNEL_PORTALS, "default"));
+        assertNull(BuilderOpenOptions.photoKindFor(BuilderOpenOptions.OpenSource.PORTAL_ROOMS, "bedrock_lock"));
+        // Drilled in as well: a room has no photo either, so the level must not change the answer.
+        assertNull(BuilderOpenOptions.photoKindFor(BuilderOpenOptions.OpenSource.PORTAL_ROOMS, "labrynth", true));
     }
 
     @Test

@@ -11,8 +11,8 @@ import games.brennan.dungeontrain.net.BuilderDirtyRequestPacket;
 import games.brennan.dungeontrain.net.BuilderNewPacket;
 import games.brennan.dungeontrain.net.BuilderOpenPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.portal.PortalRoomMode;
 import games.brennan.dungeontrain.train.CarriagePartKind;
-import games.brennan.dungeontrain.tunnel.TunnelPlacer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
@@ -122,19 +122,6 @@ public final class BuilderOpenScreen extends Screen {
                         scrollY = 0;
                         rebuild();
                     }));
-            // Looking inside a group: the group sits beside the sub type, sharing its row, and
-            // clicking it comes back out. It reads as a second half of the same choice — "Carriage
-            // Room, the Maze ones" — which is what it is.
-            if (!group.isEmpty()) {
-                controls.add(Button.builder(
-                                Component.literal(BuilderLabels.pretty(group)),
-                                b -> {
-                                    group = "";
-                                    scrollY = 0;
-                                    rebuild();
-                                })
-                        .bounds(controlX, y, CONTROL_WIDTH, ROW_HEIGHT).build());
-            }
             if (BuilderOpenOptions.showsPartKind(mode, subType)) {
                 controls.add(BuilderTypeControls.partKind(controlX, y, CONTROL_WIDTH, ROW_HEIGHT, partKind,
                         value -> {
@@ -143,6 +130,24 @@ public final class BuilderOpenScreen extends Screen {
                             rebuild();
                         }));
             }
+        }
+        // Looking inside a group: the group sits under the type controls, and clicking it comes back
+        // out. It reads as a second half of the same choice — "Carriage Room, the Maze ones" — which
+        // is what it is.
+        //
+        // Outside the sub-type block, not inside it, because it is the only way back out of a drill-in
+        // and Train Dimensions has no sub type to hang it off: while this lived in there, drilling
+        // into a room mode left the four mode tiles unreachable short of cycling the mode away and
+        // back.
+        if (!group.isEmpty()) {
+            controls.add(Button.builder(
+                            groupLabel(),
+                            b -> {
+                                group = "";
+                                scrollY = 0;
+                                rebuild();
+                            })
+                    .bounds(controlX, y, CONTROL_WIDTH, ROW_HEIGHT).build());
         }
         y = BuilderTypeControls.layoutRows(controls, controlX, CONTROL_WIDTH, y, ROW_HEIGHT, ROW_GAP);
         controls.forEach(this::addRenderableWidget);
@@ -185,8 +190,21 @@ public final class BuilderOpenScreen extends Screen {
                     : EditorTemplateLists.carriages();
             case PARTS -> EditorTemplateLists.parts(partKindValue());
             case TRACK_TILES -> EditorTemplateLists.tracks();
-            case TUNNEL_PORTALS -> EditorTemplateLists.tunnels(TunnelPlacer.TunnelVariant.PORTAL);
+            // All four modes at the top, whether or not anything is authored for them — see
+            // BuilderOpenOptions.OpenSource.PORTAL_ROOMS.
+            case PORTAL_ROOMS -> group.isEmpty()
+                    ? portalRoomModeIds()
+                    : EditorTemplateLists.portalRooms(PortalRoomMode.parse(group));
         };
+    }
+
+    /** The four room modes, in enum order, as the ids the grid carries around. */
+    private static List<String> portalRoomModeIds() {
+        List<String> out = new ArrayList<>();
+        for (PortalRoomMode m : PortalRoomMode.values()) {
+            out.add(m.id());
+        }
+        return out;
     }
 
     /**
@@ -224,7 +242,36 @@ public final class BuilderOpenScreen extends Screen {
             return Component.translatable("gui.dungeontrain.builder.new.saved_build",
                     BuilderLabels.pretty(bare));
         }
+        if (source == BuilderOpenOptions.OpenSource.PORTAL_ROOMS && group.isEmpty()) {
+            return portalModeLabel(bare);
+        }
         return Component.literal(BuilderLabels.pretty(bare));
+    }
+
+    /**
+     * A room mode's caption on this screen — one word, not {@code PortalRoomMode.displayName()}.
+     *
+     * <p>The editor's names ("Endless Repetition") say what the mode does to a room, which is what
+     * an author toggling one needs to read. These tiles are a choice between four places, and the
+     * shortest word that separates them ("Repeating") is what a caption under a picture has room
+     * for. Two vocabularies for one enum, on purpose: the surfaces are asking different
+     * questions.</p>
+     */
+    private static Component portalModeLabel(String modeId) {
+        return Component.translatable("gui.dungeontrain.builder.open.portal_mode."
+                + PortalRoomMode.parse(modeId).id());
+    }
+
+    /**
+     * The breadcrumb's caption — what {@link #group} is called, in the same words its tile used.
+     *
+     * <p>Not {@code BuilderLabels.pretty(group)} for every source: a room mode's id would come back
+     * as "Bedrock Lock", which is not what the tile the player clicked said.</p>
+     */
+    private Component groupLabel() {
+        return BuilderOpenOptions.openSourceFor(mode, subType) == BuilderOpenOptions.OpenSource.PORTAL_ROOMS
+                ? portalModeLabel(group)
+                : Component.literal(BuilderLabels.pretty(group));
     }
 
     /**
@@ -298,6 +345,9 @@ public final class BuilderOpenScreen extends Screen {
     /** The line under the grid: why it's empty, or why you can look but not touch. */
     private Component statusNote(boolean openable) {
         if (!openable) {
+            // "Make one with New and save it" is the advice for an empty grid you could have filled.
+            // A room mode with nothing in it is not that: New has no arm that makes a portal room,
+            // so the true thing to say is still that this list is read-only.
             return Component.translatable("gui.dungeontrain.builder.open.not_buildable");
         }
         return entries.isEmpty() ? Component.translatable("gui.dungeontrain.builder.open.empty") : null;

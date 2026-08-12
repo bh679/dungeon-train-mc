@@ -46,21 +46,38 @@ public final class BuilderOpenOptions {
         PARTS,
         /** Track tile templates. Listed for reference only — see {@link #isOpenable}. */
         TRACK_TILES,
-        /** Tunnel portal templates. Listed for reference only — see {@link #isOpenable}. */
-        TUNNEL_PORTALS
+        /**
+         * The four {@code PortalRoomMode}s, with the portal rooms of each underneath — two levels,
+         * drilled into the way a contents group is. Listed for reference only — see
+         * {@link #isOpenable}.
+         *
+         * <p>The mode leads because it is the coarsest thing about a room and the one a builder
+         * decides first: it says what the room does at its own walls, so a Bedrock room and an
+         * Endless one are different kinds of place rather than two skins of the same one. All four
+         * are always shown, including the ones nothing is authored for yet — an absent tile would
+         * say the mode doesn't exist, which is the one thing this screen must not say about a
+         * choice the author still has.</p>
+         */
+        PORTAL_ROOMS
     }
 
     /**
      * What this selection lists.
      *
      * <p>The two track modes have no sub type, so they map straight off the mode — Tracks &amp;
-     * Tunnels to the track tiles, Train Dimensions to the portals behind them, matching the mapping
-     * {@link BuilderMode} documents.</p>
+     * Tunnels to the track tiles, Train Dimensions to the rooms behind a portal, matching the
+     * mapping {@link BuilderMode} documents.</p>
+     *
+     * <p>Train Dimensions used to list the tunnel portal <em>facades</em> ({@code default},
+     * {@code darkportal}) — the arch the train drives through, which is a piece of track. What
+     * {@link BuilderMode#TRAIN_DIMENSIONS} names is the room on the other side of it, and those did
+     * not exist as authorable templates when this screen was written. They do now, so the arm lists
+     * what it always said it listed.</p>
      */
     public static OpenSource openSourceFor(BuilderMode mode, BuilderNewOptions.SubType subType) {
         if (!BuilderNewOptions.hasSubTypes(mode)) {
             return mode == BuilderMode.TRAIN_DIMENSIONS
-                    ? OpenSource.TUNNEL_PORTALS
+                    ? OpenSource.PORTAL_ROOMS
                     : OpenSource.TRACK_TILES;
         }
         return switch (subType) {
@@ -77,7 +94,7 @@ public final class BuilderOpenOptions {
     /**
      * Whether clicking a tile from this source can actually load it.
      *
-     * <p>False for tracks and tunnels. Not an oversight and not a permission check — there is
+     * <p>False for track tiles and portal rooms. Not an oversight and not a permission check — there is
      * genuinely nothing to open into: {@link BuilderWorldSetup#applyNew} stamps nothing when the
      * mode's {@code carriageCount()} is zero, {@link BuilderNewRequest} has no field that could name
      * a track kind or tunnel variant, and {@code BuilderSave} has no arm that would write one back.
@@ -98,12 +115,15 @@ public final class BuilderOpenOptions {
      * Whether this source has a second level the grid can look inside.
      *
      * <p>Only half the question for {@link OpenSource#CONTENTS}, where it is the individual entry
-     * that is or isn't a group; for {@link OpenSource#CARRIAGES_BY_STAGE} every top-level entry is a
-     * stage and so every one of them drills in. Here rather than in the screen so the rule is
-     * testable without a client.</p>
+     * that is or isn't a group; for {@link OpenSource#CARRIAGES_BY_STAGE} and
+     * {@link OpenSource#PORTAL_ROOMS} every top-level entry is a heading — a stage, a room mode —
+     * and so every one of them drills in. Here rather than in the screen so the rule is testable
+     * without a client.</p>
      */
     public static boolean drillsIn(OpenSource source) {
-        return source == OpenSource.CONTENTS || source == OpenSource.CARRIAGES_BY_STAGE;
+        return source == OpenSource.CONTENTS
+                || source == OpenSource.CARRIAGES_BY_STAGE
+                || source == OpenSource.PORTAL_ROOMS;
     }
 
     /** Convenience for the screen: whether anything in this mode/sub type can be opened. */
@@ -140,7 +160,7 @@ public final class BuilderOpenOptions {
             case CONTENTS -> BuilderPhotoPaths.Kind.CONTENTS;
             case CARRIAGES_BY_STAGE -> insideGroup ? BuilderPhotoPaths.Kind.CARRIAGE : null;
             case PARTS -> BuilderPhotoPaths.Kind.PART;
-            case TRACK_TILES, TUNNEL_PORTALS -> null;
+            case TRACK_TILES, PORTAL_ROOMS -> null;
         };
     }
 

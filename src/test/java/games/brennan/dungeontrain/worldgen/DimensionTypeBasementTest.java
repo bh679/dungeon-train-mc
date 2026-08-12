@@ -116,13 +116,44 @@ final class DimensionTypeBasementTest {
         return noise;
     }
 
+    /**
+     * The DT overworld presets — every dimension type paired with a noise settings file of the same
+     * name.
+     *
+     * <p>Pairing rather than listing the folder, because not everything in it is a stretch of the
+     * train's world. {@code builder.json} is the Train Builder's workshop: a fixed-time flat world
+     * with no noise settings, no terrain, and no portals, so every invariant below — a basement
+     * under the bedrock, six twin lanes in it, terrain that stops at the same ceiling — is a
+     * question that does not apply to it. Asserting them anyway would fail the build for a file that
+     * is behaving correctly.</p>
+     *
+     * <p>The pairing is the test, not a way around it: a real overworld preset that lost its noise
+     * settings would silently drop out of this list, so {@link #everyOverworldPresetIsChecked}
+     * pins the count.</p>
+     */
     private static List<Path> dimensionTypes() throws IOException {
         List<Path> out = new ArrayList<>();
         try (Stream<Path> files = Files.list(repoFile(DIM_TYPES))) {
-            files.filter(p -> p.getFileName().toString().endsWith(".json")).forEach(out::add);
+            files.filter(p -> p.getFileName().toString().endsWith(".json"))
+                .filter(p -> Files.isRegularFile(repoFile(NOISE).resolve(p.getFileName())))
+                .forEach(out::add);
         }
         assertFalse(out.isEmpty(), "no dimension types found under " + DIM_TYPES);
         return out;
+    }
+
+    @Test
+    @DisplayName("every noise settings preset has a dimension type checked against it")
+    void everyOverworldPresetIsChecked() throws IOException {
+        // The backstop on the pairing above: an overworld preset whose dimension type went missing —
+        // or was renamed out of step with its noise settings — would leave the basement invariants
+        // untested for that stretch of the world rather than failing.
+        List<Path> noiseFiles = new ArrayList<>();
+        try (Stream<Path> files = Files.list(repoFile(NOISE))) {
+            files.filter(p -> p.getFileName().toString().endsWith(".json")).forEach(noiseFiles::add);
+        }
+        assertEquals(noiseFiles.size(), dimensionTypes().size(),
+            "every noise settings file must have a dimension type of the same name beside it");
     }
 
     private static JsonObject read(Path file) throws IOException {
