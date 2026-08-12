@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.difficulty.DifficultyApplier;
 import games.brennan.dungeontrain.difficulty.DifficultyProgression;
+import games.brennan.dungeontrain.portal.PortalCarriageSelection;
 import games.brennan.dungeontrain.train.CarriagePlacer.CarriageType;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.playermob.compat.TrainConfinement;
@@ -53,6 +54,20 @@ import java.util.UUID;
  *       The tag also opts the mob into the existing carriage-entity handlers
  *       (difficulty gear, diagnostics), consistent with other on-train mobs.</li>
  * </ul>
+ *
+ * <p><b>Portal groups are skipped outright</b>
+ * ({@link games.brennan.dungeontrain.portal.PortalCarriageSelection#isPortalGroup}). A group that won
+ * a portal is entry corridor, sealed cart, exit corridor — the cart between the corridors is
+ * unreachable by design, so a mob placed there would tick forever where nobody can ever meet it, and
+ * the corridors are twinned copies that must match block-for-block rather than rooms to stand in.
+ * Nothing filters this out on its own: {@code TrainAssembler.spawnGroup} stashes a pending record for
+ * every non-relay slot, portal carriages included — only the <em>contents</em> pass early-returns on
+ * a portal — so without this gate {@link #pickHostCarriage} would draw from a pool that is, at the
+ * default group size, entirely portal.</p>
+ *
+ * <p>The gate is the <em>group</em>, not the individual carriage, because a PlayerMob does not stay
+ * where it is put: it marches the length of the train ({@code TrainConfinement}), so one spawned in an
+ * ordinary slot of a portal group walks into the corridor and through the swap under its own steam.</p>
  */
 public final class PlayerMobGroupSpawner {
 
@@ -76,6 +91,11 @@ public final class PlayerMobGroupSpawner {
     public static void maybeSpawnForGroup(ServerLevel level,
                                           TrainTransformProvider provider,
                                           PendingContentsEntitySpawn[] pending) {
+        // Portal groups get no PlayerMob at all — checked before the roll so one never quietly
+        // consumes a draw. See the class javadoc for why the whole group is off limits, not just
+        // its corridors.
+        if (PortalCarriageSelection.isPortalGroup(level, provider.getPIdx())) return;
+
         int oneIn = DungeonTrainWorldData.get(level.getServer().overworld()).getEffectivePlayerMobSpawnOneIn();
         if (oneIn <= 0) return;                       // disabled
         if (pending == null || pending.length == 0) return;

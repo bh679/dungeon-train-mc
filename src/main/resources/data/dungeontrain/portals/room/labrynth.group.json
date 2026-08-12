@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 3,
+  "selfWeight": 0,
+  "variants": [
+    {
+      "id": "paths",
+      "weight": 11,
+      "minLevel": 15
+    },
+    {
+      "id": "pathssmall",
+      "weight": 1,
+      "maxLevel": 10
+    },
+    {
+      "id": "backrooms",
+      "weight": 8,
+      "minLevel": 10
+    }
+  ]
+}

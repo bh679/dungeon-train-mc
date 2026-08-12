@@ -209,6 +209,32 @@ public final class CarriageContentsRegistry {
         return resolveGroup(ctx.picked, ctx.parentRng, safeAllow, gateCtx);
     }
 
+    /**
+     * Whether {@code allow} leaves any top-level content eligible at all — i.e. whether
+     * {@link #pick} would draw a real template rather than hitting its
+     * never-leave-a-carriage-unfurnished fallback to {@link ContentsType#DEFAULT}.
+     *
+     * <p>Exists because that fallback is right for a carriage and wrong for a portal room. A
+     * carriage must always spawn with a coherent interior, so an allow-list that excludes
+     * everything still yields the built-in default. A room whose author switched every template off
+     * means an empty room, and dropping the default into it would be the opposite of the
+     * instruction — so {@code PortalCarriageBuilder.applyRoomContents} asks this first and places
+     * nothing when the answer is no.</p>
+     *
+     * <p>Applies the same two rules {@link #buildPickContext} does — group children never enter the
+     * top-level pool, and the allow-list filters what remains — so the two cannot disagree about
+     * what "empty" means.</p>
+     */
+    public static synchronized boolean anyAllowed(CarriageContentsAllowList allow) {
+        CarriageContentsAllowList safeAllow = (allow == null) ? CarriageContentsAllowList.EMPTY : allow;
+        Set<String> childIds = CarriageContentsGroupStore.allChildIds();
+        for (CarriageContents c : allContents()) {
+            if (childIds.contains(c.id())) continue;
+            if (safeAllow.isAllowed(c.id())) return true;
+        }
+        return false;
+    }
+
     /** Synchronised pool snapshot + top-level weighted pick. */
     private static synchronized PickContext buildPickContext(
         long worldSeed, int carriageIndex, CarriageContentsAllowList allow, GateContext gateCtx
@@ -297,6 +323,27 @@ public final class CarriageContentsRegistry {
 
     /** Sentinel id used internally to mark the synthetic-self entry in the resolution pool. */
     private static final String SELF_TOKEN = "<self>";
+
+    /**
+     * Draw a sub-variant of a parent that is already known, rather than one that was just picked.
+     *
+     * <p>{@link #pick} is the only other way into a group roll, and it starts by choosing a parent
+     * from the world's contents pool. A portal corridor has no such choice to make — it is always
+     * the {@code portal} contents — but it still wants that parent's sub-variants. Without this it
+     * stamped {@code portal.nbt} and nothing else, because the group is only ever consulted on the
+     * pick path.</p>
+     *
+     * <p>{@code seed} decides the draw. The caller owns it, because the caller is what knows which
+     * copies of a thing must agree: a corridor and its underground twin are stamped by two separate
+     * calls and have to land on the same member or the crossing shows a seam, so they pass a seed
+     * derived from the portal pair rather than from either call site.</p>
+     *
+     * <p>Returns {@code parent} unchanged when it has no group sidecar.</p>
+     */
+    public static CarriageContents resolveSubVariant(CarriageContents parent, long seed,
+                                                     GateContext gateCtx) {
+        return resolveGroup(parent, new Random(seed), CarriageContentsAllowList.EMPTY, gateCtx);
+    }
 
     /**
      * If {@code picked} has a group sidecar, draw one of its weighted members.

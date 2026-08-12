@@ -6543,6 +6543,18 @@
       "released_at": null
     },
     {
+      "id": "train-dimensions-update",
+      "version": "0.556.0",
+      "type": "feat",
+      "title": "Train Dimensions \u2014 doors on the train that open somewhere else",
+      "summary": "Somewhere past your first stretch of track, a corridor between two carriages stops being a corridor. Walk it and the sound of the train falls away behind you, and you come out in a room that could never have fitted inside the carriage you stepped into \u2014 a hall, a library, a place of beams and sculk, some of them going on for as long as you care to keep walking. What you find is drawn from how far you have come, so late portals open onto places the early ones never do, and every portal rolls its own room: chests you loot stay looted when you walk back in. The train keeps rolling while you look around, and the ground you cover in there counts toward your journey. Nothing strands you \u2014 there is always a way back out \u2014 and if you would rather the door weren't there at all, breaking through the corridor's outer wall closes that portal for good.",
+      "highlights": [],
+      "date": "2026-08-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "middleclick-copy-block-variants",
       "version": "0.556.0",
       "type": "feat",
@@ -6554,6 +6566,50 @@
         "Vanilla pick-block still works on every other block"
       ],
       "pr": 959,
+      "date": "2026-08-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "portal-room-resize-both-ends",
+      "version": "0.556.0",
+      "type": "feat",
+      "title": "Resizing a portal room now grows it from both ends",
+      "summary": "In the room editor, the length and width steppers alternate which wall moves, so a room grows outwards from what you have built instead of always off the far end. Shrinking is no longer one-way: the row you crop is remembered for this world, and stepping the size back up puts those blocks, their variants and their chest contents back exactly as they were. Resizing also keeps whatever you have built since your last save, and Reset now puts a room's dimensions back along with its blocks.",
+      "highlights": [
+        "Length and width grow and shrink from alternating ends; height still moves only its ceiling",
+        "A row removed by shrinking comes back if you grow the room again",
+        "Resizing no longer discards edits made since your last save",
+        "Reset restores the saved size, not just the saved blocks"
+      ],
+      "date": "2026-08-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "tradeeverything-0-3-0-bump",
+      "version": "0.556.0",
+      "type": "feat",
+      "title": "Villagers price up the item you are holding",
+      "summary": "Updated the bundled Trade Everything mod. A villager's Trade Anything slot now cycles through what it will take and previews the price for the item you are currently holding, so you can see what a trade is worth before you make it.",
+      "highlights": [
+        "Held-item price preview in the Trade Anything slot",
+        "Cycling Trade Anything icon"
+      ],
+      "date": "2026-08-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "pathssmall-room-variant-pass",
+      "version": "0.556.0",
+      "type": "content",
+      "title": "More variety in one of the small path rooms",
+      "summary": "A pass over the pathssmall portal room: more of its blocks now vary between copies, and more of its containers roll from curated pools, so repeat visits look and loot differently.",
+      "highlights": [],
       "date": "2026-08-12",
       "released": false,
       "released_in": null,

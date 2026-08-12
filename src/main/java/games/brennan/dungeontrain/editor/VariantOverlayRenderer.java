@@ -257,7 +257,8 @@ public final class VariantOverlayRenderer {
 
                 PartPositionMenuController.update(player, plotVariant, plotOrigin, dims);
 
-                CarriageVariantBlocks sidecar = CarriageVariantBlocks.loadFor(plotVariant, dims);
+                CarriageVariantBlocks sidecar = CarriageVariantBlocks.loadFor(
+                    plotVariant, CarriageEditor.plotDims(plotVariant, dims));
                 if (sidecar.isEmpty()) {
                     clearHoverIfStale(player);
                     continue;
@@ -276,7 +277,7 @@ public final class VariantOverlayRenderer {
                 BlockPos carriageOrigin = CarriageContentsEditor.plotOrigin(contentsPlot, dims);
                 if (carriageOrigin == null) continue;
                 BlockPos interiorOrigin = carriageOrigin.offset(1, 1, 1);
-                Vec3i interiorSize = CarriageContentsPlacer.interiorSize(dims);
+                Vec3i interiorSize = CarriageContentsPlacer.interiorSizeFor(contentsPlot, dims);
                 CarriageContentsVariantBlocks contentsSidecar = CarriageContentsVariantBlocks.loadFor(
                     contentsPlot, interiorSize);
                 if (contentsSidecar.isEmpty()) {
@@ -409,28 +410,51 @@ public final class VariantOverlayRenderer {
         String excludedKey = excludedContents.isEmpty()
             ? ""
             : String.join(",", new TreeSet<>(excludedContents));
+        // Authored room size — portal rooms only; every other kind's plot is fixed by its kind.
+        // In the key as well as the packet, or a resize would not re-send and the steppers would
+        // keep reading the old numbers.
+        net.minecraft.core.Vec3i roomSize = l.category() == EditorCategory.PORTALS
+            ? PortalRoomEditor.plotSize(modelName, dims)
+            : null;
+        int roomLength = roomSize == null ? EditorStatusPacket.NO_SIZE : roomSize.getX();
+        int roomWidth = roomSize == null ? EditorStatusPacket.NO_SIZE : roomSize.getZ();
+        int roomHeight = roomSize == null ? EditorStatusPacket.NO_SIZE : roomSize.getY();
+        // Resolved rather than passed through raw, so the row shows the mode the room will actually
+        // behave as even when the tag on disk is absent or misspelt.
+        String roomMode = roomSize == null ? EditorStatusPacket.NO_MODE
+            : games.brennan.dungeontrain.portal.PortalRoomSettings.of(modelName).toTag();
+
         String key = l.category().name() + "|" + l.model().displayName() + "|" + devmode + "|" + weight
             + "|" + minLevel + "|" + maxLevel + "|" + phaseMask + "|" + stageId
-            + "|" + partMenuEnabled + "|" + mirror[0] + mirror[1] + mirror[2] + mirror[3] + "|" + excludedKey;
+            + "|" + partMenuEnabled + "|" + mirror[0] + mirror[1] + mirror[2] + mirror[3] + "|" + excludedKey
+            + "|" + roomLength + "x" + roomHeight + "x" + roomWidth + "/" + roomMode;
         if (key.equals(prev)) return;
         LAST_STATUS.put(uuid, key);
         DungeonTrainNet.sendTo(player, new EditorStatusPacket(
             l.category().displayName(), l.model().displayName(), l.model().id(), modelName,
             devmode, weight, minLevel, maxLevel, phaseMask, partMenuEnabled,
-            mirror[0], mirror[1], mirror[2], mirror[3], excludedContents, stageId));
+            mirror[0], mirror[1], mirror[2], mirror[3], excludedContents, stageId,
+            roomLength, roomWidth, roomHeight, roomMode));
     }
 
     /**
-     * Sidecar-driven excluded contents set for the active carriage variant
-     * (loaded via {@link CarriageVariantContentsAllowStore}). Empty for any
-     * non-carriage model — the field is meaningless outside carriage editor
-     * plots and the client renders nothing for it.
+     * Sidecar-driven excluded contents set for the model the player is standing in — a carriage
+     * variant ({@link CarriageVariantContentsAllowStore}) or a portal room
+     * ({@link PortalRoomContentsAllowStore}). Empty for every other kind, which has no contents
+     * pool; the client renders nothing for it there.
      */
     private static Set<String> excludedContentsFor(Template model) {
-        if (!(model instanceof Template.Carriage cm)) return Collections.emptySet();
-        CarriageContentsAllowList allow = CarriageVariantContentsAllowStore.get(cm.variant())
-            .orElse(CarriageContentsAllowList.EMPTY);
-        return allow.excluded();
+        if (model instanceof Template.Carriage cm) {
+            return CarriageVariantContentsAllowStore.get(cm.variant())
+                .orElse(CarriageContentsAllowList.EMPTY).excluded();
+        }
+        // Portal rooms draw from the same pool when their Contents setting is on, and steer it with
+        // their own sidecar. The packet field is shared, so the room's Contents screen reads the
+        // excluded set exactly as a carriage's does — no client-side change was needed for this.
+        if (model instanceof Template.PortalRoom pr) {
+            return PortalRoomContentsAllowStore.getOrEmpty(pr.name()).excluded();
+        }
+        return Collections.emptySet();
     }
 
     /**
@@ -662,6 +686,11 @@ public final class VariantOverlayRenderer {
             BlockPos p = l.worldPos();
             keyBuf.append(p.getX()).append(',').append(p.getY()).append(',').append(p.getZ())
                 .append(':').append(l.name()).append('=').append(l.weight())
+                // Room size and mode in the key too, or a resize or a Walls click would not re-push
+                // and the panel would keep showing the old numbers and the old mode.
+                .append('@').append(l.roomLength()).append('x').append(l.roomHeight())
+                .append('x').append(l.roomWidth())
+                .append('/').append(l.roomMode())
                 .append(l.inPlot() ? "*" : "").append(';');
         }
         String snapshotKey = keyBuf.toString();
@@ -680,7 +709,8 @@ public final class VariantOverlayRenderer {
             entries.add(new EditorPlotLabelsPacket.Entry(
                 l.worldPos(), l.name(), l.weight(),
                 l.category(), l.modelId(), l.modelName(),
-                l.inPlot(), l.isUser(), l.isImported()));
+                l.inPlot(), l.isUser(), l.isImported(),
+                l.roomLength(), l.roomWidth(), l.roomHeight(), l.roomMode()));
         }
         EditorPlotLabels.Label first = labels.get(0);
         LOGGER.info("[DungeonTrain] EditorPlotLabels: send {} entries (category {}, first '{}' weight={} @ {}) to {}",
@@ -990,6 +1020,7 @@ public final class VariantOverlayRenderer {
         java.util.List<EditorTypeMenusPacket.Menu> baseMenus,
         ServerPlayer player, CarriageDims dims, EditorCategory category
     ) {
+        if (category == EditorCategory.PORTALS) return appendPortalRoomSubVariants(baseMenus, player, dims);
         if (category != EditorCategory.CONTENTS) return baseMenus;
         CarriageContents active = CarriageContentsEditor.plotContaining(player.blockPosition(), dims);
         if (active == null) return baseMenus;
@@ -1054,6 +1085,83 @@ public final class VariantOverlayRenderer {
         BlockPos perPlotAnchor = null;
         for (EditorPlotLabels.Label l : EditorPlotLabels.forCategory(category, dims)) {
             if (active.id().equals(l.modelId())) {
+                perPlotAnchor = l.worldPos();
+                break;
+            }
+        }
+        if (perPlotAnchor == null) return baseMenus;
+
+        java.util.List<EditorTypeMenusPacket.Menu> out = new java.util.ArrayList<>(baseMenus.size() + 1);
+        out.addAll(baseMenus);
+        out.add(new EditorTypeMenusPacket.Menu(
+            perPlotAnchor, SUB_VARIANTS_TYPE_NAME, rows, true));
+        return out;
+    }
+
+    /**
+     * The Sub-Variants companion for the portal room plot the player is standing in — the same
+     * panel the CONTENTS plots get, one template layer up.
+     *
+     * <p>Rows carry the <b>room name</b> as their {@code modelId} rather than the kind tag every
+     * other PORTALS row uses. That is what lets the client read the parent off row 0 exactly as it
+     * does for contents, and it costs nothing here because these rows only ever dispatch the two
+     * commands that take names: teleport (which reads {@code modelName}) and the group weight nudge
+     * (which the input handler routes by category).</p>
+     */
+    private static java.util.List<EditorTypeMenusPacket.Menu> appendPortalRoomSubVariants(
+        java.util.List<EditorTypeMenusPacket.Menu> baseMenus, ServerPlayer player, CarriageDims dims
+    ) {
+        games.brennan.dungeontrain.track.variant.TrackKind kind =
+            games.brennan.dungeontrain.track.variant.TrackKind.PORTAL_ROOM;
+        String active = PortalRoomEditor.plotContaining(player.blockPosition(), dims);
+        if (active == null) return baseMenus;
+
+        // Standing inside a sub-variant shows its parent's pool, so the panel reads the same from
+        // any plot in the group.
+        String parent = TrackVariantGroupStore.exists(kind, active)
+            ? active
+            : TrackVariantGroupStore.findParentOf(kind, active).orElse(active);
+
+        Optional<games.brennan.dungeontrain.track.variant.TrackVariantGroup> groupOpt =
+            TrackVariantGroupStore.get(kind, parent);
+        boolean hasMembers = groupOpt.isPresent() && !groupOpt.get().isEmpty();
+        // With no members to compete against, selfWeight decides nothing — hide the cell rather
+        // than offer a dial that does nothing.
+        int selfRowWeight = hasMembers
+            ? groupOpt.get().selfWeight()
+            : games.brennan.dungeontrain.net.EditorPlotLabelsPacket.NO_WEIGHT;
+
+        String cat = EditorCategory.PORTALS.name();
+        List<EditorTypeMenusPacket.Variant> rows = new java.util.ArrayList<>();
+        EditorPlotLabels.Provenance parentProv = EditorPlotLabels.provenanceOf(
+            games.brennan.dungeontrain.track.variant.TrackVariantStore.fileFor(kind, parent));
+        rows.add(new EditorTypeMenusPacket.Variant(
+            parent + " (default)", selfRowWeight,
+            cat, parent, parent, parentProv.isUser(), parentProv.isImported()));
+        if (hasMembers) {
+            for (var m : groupOpt.get().members()) {
+                EditorPlotLabels.Provenance prov = EditorPlotLabels.provenanceOf(
+                    games.brennan.dungeontrain.track.variant.TrackVariantStore.fileFor(kind, m.id()));
+                // Members carry a per-member spawn gate + zero-or-more Stage links, same as a contents
+                // group member — surface the same gate/Stage cells. When linked the renderer draws a
+                // Stage chip in place of min/max/phase, so the gate behind it is only visible for
+                // Custom members. The leading "(default)" self-row above stays weight-only.
+                String primaryStage = m.stageIds().isEmpty() ? null : m.stageIds().get(0);
+                games.brennan.dungeontrain.template.TemplateGate g =
+                    StageStore.effectiveGate(m.gate(), primaryStage);
+                rows.add(new EditorTypeMenusPacket.Variant(
+                    m.id(), m.weight(),
+                    g.minLevel(), g.maxLevel(),
+                    games.brennan.dungeontrain.worldgen.TrainPhase.toMask(g.phases()),
+                    cat, m.id(), m.id(),
+                    prov.isUser(), prov.isImported(),
+                    java.util.List.of(), m.stageIds()));
+            }
+        }
+
+        BlockPos perPlotAnchor = null;
+        for (EditorPlotLabels.Label l : EditorPlotLabels.forCategory(EditorCategory.PORTALS, dims)) {
+            if (active.equals(l.modelName())) {
                 perPlotAnchor = l.worldPos();
                 break;
             }

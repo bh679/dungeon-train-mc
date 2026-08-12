@@ -1,7 +1,6 @@
 {
   "black": 1,
   "cracked": 3,
-  "fancy": 10,
   "fancywood": 13,
   "fire": {
     "weight": 3,
@@ -9,10 +8,10 @@
       "NETHER"
     ]
   },
-  "open": 20,
   "pen": 15,
-  "shared": 3,
-  "shop": 10,
-  "standard": 18,
+  "portal": 0,
+  "portal_middle": 0,
+  "shared": 1,
+  "standard": 19,
   "windowed": 20
 }

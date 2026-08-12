@@ -5,6 +5,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.track.variant.TrackKind;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.fml.loading.FMLPaths;
@@ -101,6 +102,18 @@ public final class ContainerContentsStore {
         this.plotKey = plotKey;
         this.pools = pools;
         this.links = links;
+    }
+
+    /**
+     * The plot key a track-side template's pool is stored under — {@code "track:<kind>:<name>"}.
+     *
+     * <p>Exists so the editor that <b>writes</b> a pool and the placer that <b>reads</b> it derive
+     * the key from one place. They did not, and a portal room's authored contents were being looked
+     * up under a key that sanitised to a different filename, so every chest in the room rolled
+     * nothing.</p>
+     */
+    public static String trackPlotKey(TrackKind kind, String name) {
+        return "track:" + kind.id() + ":" + name;
     }
 
     public static synchronized ContainerContentsStore loadFor(String plotKey) {
@@ -415,6 +428,34 @@ public final class ContainerContentsStore {
     private static Path projectRootOrNull() {
         Path gameDir = FMLPaths.GAMEDIR.get();
         return gameDir.getParent();
+    }
+
+    /**
+     * This store as the JSON text {@link #save} would write.
+     *
+     * <p>Public for the same reason {@code TrackVariantBlocks.asJsonText} is: the portal-room resize
+     * memory carries the pools and links a shrink cropped, and the format they already round-trip
+     * through is the right one to carry them in.</p>
+     */
+    public synchronized String asJsonText() {
+        return toJsonText();
+    }
+
+    /**
+     * Parse a detached store from text produced by {@link #asJsonText}. Never enters {@link #CACHE} —
+     * it is a fragment, not the plot's store.
+     */
+    public static ContainerContentsStore fromJsonText(String plotKey, String json) {
+        if (json == null || json.isBlank()) return detached(plotKey);
+        return parseFromReader(new java.io.StringReader(json), plotKey, "memory");
+    }
+
+    /**
+     * An empty store that is nobody's plot — somewhere to collect pools and links before
+     * {@link #asJsonText} carries them off. Uncached, so it cannot be mistaken for the real store.
+     */
+    public static ContainerContentsStore detached(String plotKey) {
+        return new ContainerContentsStore(plotKey, new LinkedHashMap<>(), new LinkedHashMap<>());
     }
 
     private String toJsonText() {

@@ -68,6 +68,8 @@ public final class PhaseSelectScreen implements MenuScreen {
             case "contents" -> "dungeontrain editor contents phase " + modelId;
             case "tracks" -> modelName.isEmpty() ? null
                 : "dungeontrain editor tracks phase " + modelId + " " + modelName;
+            case "portals" -> modelName.isEmpty() ? null
+                : "dungeontrain editor portals phase " + modelId + " " + modelName;
             default -> null;
         };
     }

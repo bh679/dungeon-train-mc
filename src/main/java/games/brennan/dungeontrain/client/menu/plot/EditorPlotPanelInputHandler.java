@@ -141,6 +141,25 @@ public final class EditorPlotPanelInputHandler {
             case NAME -> dispatchTeleport(entry);
             case WEIGHT_DEC -> dispatchWeight(entry, "dec");
             case WEIGHT_INC -> dispatchWeight(entry, "inc");
+            case LENGTH_DEC -> dispatchDimension(entry, "length", "dec");
+            case LENGTH_INC -> dispatchDimension(entry, "length", "inc");
+            case WIDTH_DEC -> dispatchDimension(entry, "width", "dec");
+            case WIDTH_INC -> dispatchDimension(entry, "width", "inc");
+            case HEIGHT_DEC -> dispatchDimension(entry, "height", "dec");
+            case HEIGHT_INC -> dispatchDimension(entry, "height", "inc");
+            case LENGTH_TYPE -> openAxisEntry(entry, "length", "Length", entry.roomLength());
+            case WIDTH_TYPE -> openAxisEntry(entry, "width", "Width", entry.roomWidth());
+            case HEIGHT_TYPE -> openAxisEntry(entry, "height", "Height", entry.roomHeight());
+            case MODE_CYCLE -> dispatchModeCycle(entry);
+            case COPIES_CYCLE -> dispatchCopiesCycle(entry);
+            case ROOM_CONTENTS_CYCLE -> dispatchRoomContentsCycle(entry);
+            case EXITS_CYCLE -> dispatchExitsCycle(entry);
+            case EXIT_EVERY_DEC -> dispatchExitEvery(entry, "dec");
+            case EXIT_EVERY_INC -> dispatchExitEvery(entry, "inc");
+            case EXIT_EVERY_TYPE -> openExitEveryEntry(entry);
+            case EXIT_MOVE_DEC -> dispatchExitMove(entry, "dec");
+            case EXIT_MOVE_INC -> dispatchExitMove(entry, "inc");
+            case EXIT_MOVE_TYPE -> openExitMoveEntry(entry);
             case ACTION_SAVE -> dispatchAction(entry, EditorPlotActionPacket.Action.SAVE);
             case ACTION_RESET -> dispatchAction(entry, EditorPlotActionPacket.Action.RESET);
             case ACTION_CLEAR -> dispatchAction(entry, EditorPlotActionPacket.Action.CLEAR);
@@ -167,6 +186,93 @@ public final class EditorPlotPanelInputHandler {
      * shared {@link EditorPlotTeleport#weightCommandFor(String, String, String, String)}
      * routing helper.
      */
+    /**
+     * Open the typing field for one axis of the portal room the player is standing in.
+     *
+     * <p>The panel itself cannot take keyboard input, so it hands off to a keyboard menu screen —
+     * the same move {@code + New} makes to reach the name picker. One axis per button, so setting
+     * a width never disturbs the length someone just dialled in.</p>
+     */
+    private static void openAxisEntry(EditorPlotLabelsPacket.Entry entry, String axis,
+                                      String label, int current) {
+        if (!"PORTALS".equals(entry.category())) return;
+        CommandMenuState.openAt(
+            new games.brennan.dungeontrain.client.menu.PortalRoomAxisScreen(axis, label, current));
+    }
+
+    /** Step the portal room the player is standing in to its next mode. */
+    private static void dispatchModeCycle(EditorPlotLabelsPacket.Entry entry) {
+        String cmd = EditorPlotTeleport.modeCycleCommandFor(entry.category());
+        if (cmd == null) return;
+        CommandRunner.run(cmd);
+    }
+
+    /** Step the portal room the player is standing in to its next copies sub-mode. */
+    private static void dispatchCopiesCycle(EditorPlotLabelsPacket.Entry entry) {
+        String cmd = EditorPlotTeleport.copiesCycleCommandFor(entry.category());
+        if (cmd == null) return;
+        CommandRunner.run(cmd);
+    }
+
+    /** Step the portal room the player is standing in to the next Contents value. */
+    private static void dispatchRoomContentsCycle(EditorPlotLabelsPacket.Entry entry) {
+        String cmd = EditorPlotTeleport.roomContentsCycleCommandFor(entry.category());
+        if (cmd == null) return;
+        CommandRunner.run(cmd);
+    }
+
+    /** Step the portal room the player is standing in to the next Exits value. */
+    private static void dispatchExitsCycle(EditorPlotLabelsPacket.Entry entry) {
+        String cmd = EditorPlotTeleport.exitsCycleCommandFor(entry.category());
+        if (cmd == null) return;
+        CommandRunner.run(cmd);
+    }
+
+    /** Nudge how far apart the room's extra corridors go. */
+    private static void dispatchExitEvery(EditorPlotLabelsPacket.Entry entry, String dir) {
+        String cmd = EditorPlotTeleport.exitEveryCommandFor(entry.category(), dir);
+        if (cmd == null) return;
+        CommandRunner.run(cmd);
+    }
+
+    /**
+     * Open the typing field for the exits spacing.
+     *
+     * <p>The current value comes off the room's own settings tag, which the panel already carries —
+     * the same source the row's label reads, so the field cannot open showing a different number
+     * from the one next to it.</p>
+     */
+    private static void openExitEveryEntry(EditorPlotLabelsPacket.Entry entry) {
+        if (!"PORTALS".equals(entry.category())) return;
+        int current = games.brennan.dungeontrain.portal.PortalRoomSettings.parse(entry.roomMode())
+            .exits().every();
+        CommandMenuState.openAt(new games.brennan.dungeontrain.client.menu.PortalRoomAxisScreen(
+            "exitevery", "Exits", "tiles", current));
+    }
+
+    /** Nudge how often the room walls off the base pair's exit. */
+    private static void dispatchExitMove(EditorPlotLabelsPacket.Entry entry, String dir) {
+        String cmd = EditorPlotTeleport.exitMoveCommandFor(entry.category(), dir);
+        if (cmd == null) return;
+        CommandRunner.run(cmd);
+    }
+
+    /** Open the typing field for the moved-exit chance, prefilled from the room's own tag. */
+    private static void openExitMoveEntry(EditorPlotLabelsPacket.Entry entry) {
+        if (!"PORTALS".equals(entry.category())) return;
+        int current = games.brennan.dungeontrain.portal.PortalRoomSettings.parse(entry.roomMode())
+            .exits().moveChance();
+        CommandMenuState.openAt(new games.brennan.dungeontrain.client.menu.PortalRoomAxisScreen(
+            "exitmove", "Moved exit", "0-10", current));
+    }
+
+    /** Step one axis of the portal room the player is standing in. */
+    private static void dispatchDimension(EditorPlotLabelsPacket.Entry entry, String axis, String dir) {
+        String cmd = EditorPlotTeleport.dimensionCommandFor(entry.category(), axis, dir);
+        if (cmd == null) return;
+        CommandRunner.run(cmd);
+    }
+
     private static void dispatchWeight(EditorPlotLabelsPacket.Entry entry, String dir) {
         String cmd = EditorPlotTeleport.weightCommandFor(entry.category(), entry.modelId(), entry.modelName(), dir);
         if (cmd == null) return;
@@ -188,8 +294,26 @@ public final class EditorPlotPanelInputHandler {
      * stacks the contents screen on top so the user lands directly in it.
      */
     private static void openContents(EditorPlotLabelsPacket.Entry entry) {
-        if (!"CARRIAGES".equals(entry.category())) return;
+        CarriageContentsAllowScreen screen = contentsScreenFor(entry);
+        if (screen == null) return;
         CommandMenuState.open();
-        CommandMenuState.drillIn(new CarriageContentsAllowScreen(entry.modelId()));
+        CommandMenuState.drillIn(screen);
+    }
+
+    /**
+     * The allow-list screen for {@code entry}, or null for a category that has no contents pool.
+     *
+     * <p>A carriage is addressed by its variant id ({@code modelId}); a portal room by its name
+     * ({@code modelName}) — {@code modelId} is the kind tag {@code "portal_room"} and is the same
+     * for every room, so using it would point every room's toggles at one shared sidecar.</p>
+     */
+    private static CarriageContentsAllowScreen contentsScreenFor(EditorPlotLabelsPacket.Entry entry) {
+        if ("CARRIAGES".equals(entry.category())) {
+            return CarriageContentsAllowScreen.forCarriage(entry.modelId());
+        }
+        if ("PORTALS".equals(entry.category())) {
+            return CarriageContentsAllowScreen.forPortalRoom(entry.modelName());
+        }
+        return null;
     }
 }

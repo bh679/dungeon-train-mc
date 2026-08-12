@@ -28,6 +28,9 @@ public final class EditorPlotTeleport {
             case "CARRIAGES" -> "dungeontrain editor enter " + modelId;
             case "CONTENTS" -> "dungeontrain editor contents enter " + modelId;
             case "TRACKS" -> trackTeleportCommand(modelId);
+            // Portals address a specific room by name — there is only one kind, so modelId
+            // carries no information the command needs.
+            case "PORTALS" -> "dungeontrain editor portals enter " + modelName;
             // Parts: modelId is the kind tag ("floor"/"walls"/"roof"/"doors"),
             // modelName is the variant name. Server command is
             // {@code /dt editor part enter <kind> <name>}.
@@ -47,8 +50,64 @@ public final class EditorPlotTeleport {
             case "CARRIAGES" -> "dungeontrain editor weight " + modelId + " " + dir;
             case "CONTENTS" -> "dungeontrain editor contents weight " + modelId + " " + dir;
             case "TRACKS" -> "dungeontrain editor tracks weight " + modelId + " " + modelName + " " + dir;
+            case "PORTALS" -> "dungeontrain editor portals weight " + modelId + " " + modelName + " " + dir;
             default -> null;
         };
+    }
+
+    /**
+     * Build the slash command that steps one axis of a portal room's box in {@code dir}
+     * ({@code "inc"} / {@code "dec"}), or {@code null} for any other category.
+     *
+     * <p>Position-resolved: the server reads which plot the player is standing in, so no model id
+     * is spliced in. That is safe because the dimension rows only render while the player is inside
+     * the plot.</p>
+     */
+    public static String dimensionCommandFor(String category, String axis, String dir) {
+        if (!"PORTALS".equals(category)) return null;
+        return "dungeontrain editor portals " + axis + " " + dir;
+    }
+
+    /**
+     * Build the slash command that steps the portal room the player is standing in to its next
+     * {@code PortalRoomMode}. Null for every other category — nothing else has walls to decide about.
+     *
+     * <p>Addressed by the plot the player is in rather than by name, like the dimension steppers and
+     * for the same reason: the row only exists while they are standing in it.</p>
+     */
+    public static String modeCycleCommandFor(String category) {
+        if (!"PORTALS".equals(category)) return null;
+        return "dungeontrain editor portals mode next";
+    }
+
+    /** As {@link #modeCycleCommandFor}, for the Copies sub-mode under Endless Repetition. */
+    public static String copiesCycleCommandFor(String category) {
+        if (!"PORTALS".equals(category)) return null;
+        return "dungeontrain editor portals copies next";
+    }
+
+    /** As {@link #modeCycleCommandFor}, for whether the room is furnished from the contents pool. */
+    public static String roomContentsCycleCommandFor(String category) {
+        if (!"PORTALS".equals(category)) return null;
+        return "dungeontrain editor portals contents next";
+    }
+
+    /** As {@link #modeCycleCommandFor}, for how many extra corridors an endless room lays. */
+    public static String exitsCycleCommandFor(String category) {
+        if (!"PORTALS".equals(category)) return null;
+        return "dungeontrain editor portals exits next";
+    }
+
+    /** As {@link #dimensionCommandFor}, for the spacing those extra corridors are laid at. */
+    public static String exitEveryCommandFor(String category, String dir) {
+        if (!"PORTALS".equals(category)) return null;
+        return "dungeontrain editor portals exitevery " + dir;
+    }
+
+    /** As {@link #dimensionCommandFor}, for how often the base pair's exit is walled off. */
+    public static String exitMoveCommandFor(String category, String dir) {
+        if (!"PORTALS".equals(category)) return null;
+        return "dungeontrain editor portals exitmove " + dir;
     }
 
     /**
@@ -63,6 +122,7 @@ public final class EditorPlotTeleport {
             case "CARRIAGES" -> "dungeontrain editor " + sub + " " + modelId + " " + dir;
             case "CONTENTS" -> "dungeontrain editor contents " + sub + " " + modelId + " " + dir;
             case "TRACKS" -> "dungeontrain editor tracks " + sub + " " + modelId + " " + modelName + " " + dir;
+            case "PORTALS" -> "dungeontrain editor portals " + sub + " " + modelId + " " + modelName + " " + dir;
             default -> null;
         };
     }
@@ -80,6 +140,7 @@ public final class EditorPlotTeleport {
             case "CARRIAGES" -> "dungeontrain editor phase " + modelId + " " + phaseToken + " " + action;
             case "CONTENTS" -> "dungeontrain editor contents phase " + modelId + " " + phaseToken + " " + action;
             case "TRACKS" -> "dungeontrain editor tracks phase " + modelId + " " + modelName + " " + phaseToken + " " + action;
+            case "PORTALS" -> "dungeontrain editor portals phase " + modelId + " " + modelName + " " + phaseToken + " " + action;
             default -> null;
         };
     }
@@ -94,6 +155,42 @@ public final class EditorPlotTeleport {
      */
     public static String groupMemberWeightCommandFor(String parentId, String memberId, String dir) {
         return "dungeontrain editor contents group set-weight " + parentId + " " + memberId + " " + dir;
+    }
+
+    /**
+     * {@link #groupMemberWeightCommandFor} for a portal room's sub-variants — same idea one template
+     * layer up, so the same companion panel drives both. {@code parentId == memberId} edits the
+     * parent's own share of the draw.
+     */
+    public static String portalRoomGroupWeightCommandFor(String parentId, String memberId, String dir) {
+        return "dungeontrain editor portals group set-weight " + parentId + " " + memberId + " " + dir;
+    }
+
+    /**
+     * {@link #groupMemberLevelCommandFor} for a portal room's sub-variants. The room's group verbs
+     * live under {@code editor portals group …} with the kind implied, matching
+     * {@link #portalRoomGroupWeightCommandFor}.
+     */
+    public static String portalRoomGroupLevelCommandFor(String parentId, String memberId, String sub, String dir) {
+        return "dungeontrain editor portals group " + sub + " " + parentId + " " + memberId + " " + dir;
+    }
+
+    /** {@link #groupMemberPhaseCommandFor} for a portal room's sub-variants. */
+    public static String portalRoomGroupPhaseCommandFor(String parentId, String memberId,
+                                                        String phaseToken, String action) {
+        return "dungeontrain editor portals group phase " + parentId + " " + memberId
+            + " " + phaseToken + " " + action;
+    }
+
+    /**
+     * {@link #groupMemberStageApplyCommandFor} for a track-side sub-variant. Unlike the group gate
+     * verbs this one is kind-qualified — it hangs off the shared {@code stage apply} node, which
+     * spans every category, so the kind cannot be implied by the command path.
+     */
+    public static String trackGroupMemberStageApplyCommandFor(String kindId, String parentId, String memberId,
+                                                              String stageToken) {
+        return "dungeontrain editor stage apply tracks-group " + kindId + " " + parentId + " "
+            + memberId + " " + stageToken;
     }
 
     /**
@@ -139,6 +236,8 @@ public final class EditorPlotTeleport {
             case "CARRIAGES" -> "dungeontrain editor stage apply carriage " + modelId + " " + stageToken;
             case "CONTENTS" -> "dungeontrain editor stage apply contents " + modelId + " " + stageToken;
             case "TRACKS" -> "dungeontrain editor stage apply tracks " + modelId + " " + modelName + " " + stageToken;
+            // Rooms are a TrackKind under the hood, so the stage-apply route is the tracks one.
+            case "PORTALS" -> "dungeontrain editor stage apply tracks " + modelId + " " + modelName + " " + stageToken;
             default -> null;
         };
     }

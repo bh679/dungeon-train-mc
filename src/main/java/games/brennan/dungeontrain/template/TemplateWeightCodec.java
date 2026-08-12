@@ -20,13 +20,14 @@ import java.util.function.IntUnaryOperator;
  * entry's JSON value is <b>either</b> a bare integer (weight only, default gate — the legacy form,
  * fully backward-compatible) <b>or</b> an object:
  *
- * <pre>{ "weight": 5, "minLevel": 3, "maxLevel": "all", "phases": ["NETHER","VOID"] }</pre>
+ * <pre>{ "weight": 5, "minLevel": 3, "maxLevel": "all", "phases": ["NETHER","VOID"], "mode": "endless_open" }</pre>
  *
- * <p>The object form is emitted only when the gate is non-default ({@link TemplateGate#isDefault()}),
- * and within it each gate field is omitted when it is at its own default (minLevel 0, maxLevel
- * {@link TemplateGate#ALL}, all phases). So a store full of plain weights round-trips byte-identically
- * to the pre-feature {@code {"id": int}} files. {@code maxLevel} accepts a number or the string
- * {@code "all"} (= {@link TemplateGate#ALL}), reusing the idiom from the mob difficulty band.</p>
+ * <p>The object form is emitted only when something on the entry is non-default — a non-default gate
+ * ({@link TemplateGate#isDefault()}), a Stage link, or a mode tag — and within it each gate field is
+ * omitted when it is at its own default (minLevel 0, maxLevel {@link TemplateGate#ALL}, all phases).
+ * So a store full of plain weights round-trips byte-identically to the pre-feature
+ * {@code {"id": int}} files. {@code maxLevel} accepts a number or the string {@code "all"}
+ * (= {@link TemplateGate#ALL}), reusing the idiom from the mob difficulty band.</p>
  */
 public final class TemplateWeightCodec {
 
@@ -41,6 +42,12 @@ public final class TemplateWeightCodec {
     /** Optional array of Stage links (sub-variant members only) — the union of gates applies. See
      * {@link #parseStages}/{@link #writeStages}. A single link still serialises as {@link #K_STAGE}. */
     public static final String K_STAGES = "stages";
+    /**
+     * Optional per-kind mode tag. Opaque here — see {@link TemplateMeta#mode()}. Absent means the
+     * owning kind's default, which is why it is never emitted for a null mode and why an
+     * unrecognised value is the reader's problem rather than a parse failure.
+     */
+    public static final String K_MODE = "mode";
     /** String accepted (and never emitted — absence means the same) for {@link TemplateGate#ALL}. */
     public static final String MAX_ALL = "all";
 
@@ -61,7 +68,17 @@ public final class TemplateWeightCodec {
             if (we == null || !we.isJsonPrimitive() || !we.getAsJsonPrimitive().isNumber()) return null;
             Integer w = finiteRound(we);
             if (w == null) return null;
-            return new TemplateMeta(clampWeight.applyAsInt(w), parseGate(o), parseStage(o));
+            return new TemplateMeta(clampWeight.applyAsInt(w), parseGate(o), parseStage(o), parseMode(o));
+        }
+        return null;
+    }
+
+    /** The optional per-kind mode tag on an entry object; {@code null} when absent or blank. */
+    public static String parseMode(JsonObject o) {
+        JsonElement el = o.get(K_MODE);
+        if (el != null && el.isJsonPrimitive() && el.getAsJsonPrimitive().isString()) {
+            String s = el.getAsString().trim().toLowerCase(Locale.ROOT);
+            return s.isEmpty() ? null : s;
         }
         return null;
     }
@@ -178,9 +195,9 @@ public final class TemplateWeightCodec {
         JsonObject out = new JsonObject();
         for (Map.Entry<String, TemplateMeta> e : new TreeMap<>(byId).entrySet()) {
             TemplateMeta meta = e.getValue();
-            // Bare-int only when both axes are at their no-op default: default inline gate AND
-            // no Stage link. A linked entry always takes the object form (it carries "stage").
-            if (meta.gate().isDefault() && meta.stageId() == null) {
+            // Bare-int only when every axis is at its no-op default: default inline gate, no Stage
+            // link AND no mode tag. An entry carrying either always takes the object form.
+            if (meta.gate().isDefault() && meta.stageId() == null && meta.mode() == null) {
                 out.addProperty(e.getKey(), meta.weight());
             } else {
                 out.add(e.getKey(), entryObject(meta));
@@ -194,6 +211,7 @@ public final class TemplateWeightCodec {
         o.addProperty(K_WEIGHT, meta.weight());
         writeGateFields(o, meta.gate());
         if (meta.stageId() != null) o.addProperty(K_STAGE, meta.stageId());
+        if (meta.mode() != null) o.addProperty(K_MODE, meta.mode());
         return o;
     }
 

@@ -112,6 +112,21 @@ public final class TrackVariantBlocks {
         return new TrackVariantBlocks(new LinkedHashMap<>(), new LinkedHashMap<>(), kind, d[0], d[1], d[2], false);
     }
 
+    /**
+     * Deep copy of {@code source} — every cell, its lock id, the mirror axes and the
+     * mirror-variants flag. Used by the editor's "new from current" paths so a duplicate keeps
+     * the whole of the source's authoring data rather than just its cells.
+     *
+     * <p>The result is a genuinely distinct instance on purpose: {@link #save} puts {@code this}
+     * into the name-keyed cache, so persisting the source object under a second name would leave
+     * both names aliased to one mutable sidecar.</p>
+     */
+    public static synchronized TrackVariantBlocks copyOf(TrackVariantBlocks source) {
+        return new TrackVariantBlocks(
+            new LinkedHashMap<>(source.entries), new LinkedHashMap<>(source.lockIds),
+            source.kind, source.mirrorX, source.mirrorY, source.mirrorZ, source.mirrorVariants);
+    }
+
     /** Mirror X (length) axis. True unless the sidecar sets {@code mirror.x=false}. */
     public boolean mirrorX() { return mirrorX; }
 
@@ -393,9 +408,33 @@ public final class TrackVariantBlocks {
     }
 
     /** True when the axes match this kind's defaults — the absent-{@code mirror}-field state. */
-    private boolean isDefaultMirror() {
+    public boolean isDefaultMirror() {
         boolean[] d = defaultMirror(kind);
         return mirrorX == d[0] && mirrorY == d[1] && mirrorZ == d[2] && !mirrorVariants;
+    }
+
+    /**
+     * This sidecar as the JSON text {@link #save} would write.
+     *
+     * <p>Public so a detached sidecar can be carried somewhere other than a file — the portal-room
+     * resize memory files the cells a shrink cropped this way, in the schema they already round-trip
+     * through, rather than inventing a second encoding for the same {@link VariantState}s.</p>
+     */
+    public synchronized String asJsonText() {
+        return toJsonText();
+    }
+
+    /**
+     * Parse a detached sidecar from text produced by {@link #asJsonText}.
+     *
+     * <p>Never enters {@link #CACHE}: the result belongs to whoever asked for it, and putting a
+     * fragment under {@code (kind, name)} would shadow the real sidecar for the rest of the
+     * session.</p>
+     */
+    public static TrackVariantBlocks fromJsonText(String json, TrackKind kind, String name,
+                                                  Vec3i size) {
+        if (json == null || json.isBlank()) return emptyFor(kind);
+        return parse(new java.io.StringReader(json), kind, name, "memory", size);
     }
 
     private String toJsonText() {

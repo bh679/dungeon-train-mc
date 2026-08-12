@@ -19,7 +19,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "49";
+    public static final String PROTOCOL_VERSION = "51";
 
     private DungeonTrainNet() {}
 
@@ -60,6 +60,22 @@ public final class DungeonTrainNet {
         // hands the entity its constant plot coordinate so the client positions it from the carriage's
         // own synced sub-level pose (phase-locked, no shimmer). See TrainStaticContentsCarrier.
         registrar.playToClient(CarriedStaticEntityPacket.TYPE, CarriedStaticEntityPacket.STREAM_CODEC, CarriedStaticEntityPacket::handle);
+
+        // Hallway portal puppets: stand-ins for the entities in the other half of a portal pair, so
+        // two players either side of the midpoint can still see each other. Pushed every tick while a
+        // corridor is occupied, and once empty when it clears. See portal/PortalPuppets.
+        registrar.playToClient(PortalPuppetsPacket.TYPE, PortalPuppetsPacket.STREAM_CODEC, PortalPuppetsPacket::handle);
+        registrar.playToClient(PortalRoomFogPacket.TYPE, PortalRoomFogPacket.STREAM_CODEC, PortalRoomFogPacket::handle);
+        // …and the swap itself, which the client cannot infer from the position packet that carries it:
+        // the renderer has to be told to finish its occlusion rebuild before drawing, or the first
+        // frames in the twin draw nothing at all. See client/portal/ClientPortalSwap.
+        registrar.playToClient(PortalSwapPacket.TYPE, PortalSwapPacket.STREAM_CODEC, PortalSwapPacket::handle);
+        // …and the same region trick for the engine sound: a twin corridor is not a sub-level, so the
+        // client cannot work out from the train's geometry that it should still sound like one.
+        registrar.playToClient(PortalTrainAudioPacket.TYPE, PortalTrainAudioPacket.STREAM_CODEC, PortalTrainAudioPacket::handle);
+        // …and the swing back the other way: a puppet is not an entity, so a hit on one needs its own
+        // round trip. The id is re-validated against the live pairing before anything is damaged.
+        registrar.playToServer(PortalPuppetAttackPacket.TYPE, PortalPuppetAttackPacket.STREAM_CODEC, PortalPuppetAttackPacket::handle);
 
         registrar.playToServer(ContainerHotkeyPacket.TYPE, ContainerHotkeyPacket.STREAM_CODEC, ContainerHotkeyPacket::handle);
         registrar.playToServer(ContainerContentsMenuTogglePacket.TYPE, ContainerContentsMenuTogglePacket.STREAM_CODEC, ContainerContentsMenuTogglePacket::handle);
