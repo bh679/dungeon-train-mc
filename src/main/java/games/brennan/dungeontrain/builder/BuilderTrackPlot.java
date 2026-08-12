@@ -45,6 +45,14 @@ public final class BuilderTrackPlot {
      */
     public static final int OFF_CORRIDOR_MARGIN = 4;
 
+    /**
+     * How far the entrance pavilion sinks into the top of its staircase.
+     *
+     * <p>{@code ENTRANCE_OVERLAP_Y} in the generator: the bottom two rows of the entrance sit over
+     * the last stair stamp so the two read as one structure rather than a hut balanced on a hole.</p>
+     */
+    private static final int ENTRANCE_OVERLAP_Y = 2;
+
     private BuilderTrackPlot() {}
 
     /** The template's footprint — the same box {@link TrackKind} tells every other caller about. */
@@ -95,10 +103,16 @@ public final class BuilderTrackPlot {
                     BuilderTrackScene.bedY() - PillarSection.TOP.height());
             // Beside the column, flush against the corridor, reaching deck height — the generator's
             // own origin for an up-staircase.
-            case ADJUNCT_STAIRS, ADJUNCT_STAIRS_ENTRANCE -> new BlockPos(
+            case ADJUNCT_STAIRS -> new BlockPos(
                     editedColumnCentreX() - 1,
                     BuilderTrackScene.stairsTopY() - size.getY() + 1,
                     BuilderTrackScene.stairsMinZ(false, dims));
+            // The pavilion capping a down-stairs shaft: a 5x5 centred on the 3x3 shaft, its lowest
+            // two rows overlapping the top of the staircase the way the generator overlaps them.
+            case ADJUNCT_STAIRS_ENTRANCE -> new BlockPos(
+                    editedColumnCentreX() - 2,
+                    BuilderTrackScene.shaftSurfaceY(dims) - ENTRANCE_OVERLAP_Y,
+                    BuilderTrackScene.shaftMinZ(dims) - 1);
         };
     }
 

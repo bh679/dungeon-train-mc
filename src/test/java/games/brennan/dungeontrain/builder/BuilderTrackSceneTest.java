@@ -142,6 +142,45 @@ final class BuilderTrackSceneTest {
     }
 
     @Test
+    @DisplayName("Every block of a pillar-bottom plot is the builder's to edit")
+    void thePillarBottomIsFullyEditable() {
+        // The bug this pins: the column stands from the bed row, so the track-row rule locked the
+        // lowest two rows of the plot and there was no way to finish the template.
+        BoundingBox plot = BuilderTrackPlot.volume(TrackKind.PILLAR_BOTTOM, DIMS);
+        for (int y = plot.minY(); y <= plot.maxY(); y++) {
+            for (int z = plot.minZ(); z <= plot.maxZ(); z++) {
+                assertFalse(BuilderWorldLayout.isProtected(new BlockPos(plot.minX(), y, z), DIMS, true),
+                        "locked at y=" + y + " z=" + z);
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("A stairs entrance caps a shaft over a ground-level line, not the elevated one")
+    void entranceSitsOnItsShaft() {
+        BoundingBox entrance = BuilderTrackPlot.volume(TrackKind.ADJUNCT_STAIRS_ENTRANCE, DIMS);
+        TrackGeometry ground = BuilderTrackScene.groundGeometry(DIMS);
+
+        // The down-stairs case: the line is underground, so the entrance belongs above a shaft that
+        // climbs out of it — not on the bridge every other kind is previewed against.
+        assertEquals(BuilderWorldLayout.Y_TRACK_BED, ground.bedY());
+        assertTrue(entrance.minY() > BuilderTrackScene.shaftFloorY(DIMS),
+                "the entrance should be up the shaft, not down in the tunnel");
+        assertEquals(BuilderTrackScene.shaftSurfaceY(DIMS) - 2, entrance.minY(),
+                "its lowest rows overlap the last stair stamp");
+        // Centred on the 3-wide shaft: a 5-wide pavilion overhangs it by one on each side.
+        assertEquals(BuilderTrackScene.shaftMinZ(DIMS) - 1, entrance.minZ());
+    }
+
+    @Test
+    @DisplayName("The shaft climbs a whole number of stair stamps")
+    void theShaftIsAWholeNumberOfStamps() {
+        int climb = BuilderTrackScene.shaftSurfaceY(DIMS) - BuilderTrackScene.shaftFloorY(DIMS);
+        assertEquals(0, climb % PillarAdjunct.STAIRS.ySize(),
+                "a part stamp would preview a clipped staircase the generator never builds");
+    }
+
+    @Test
     @DisplayName("The view pose stands level with the plot, not down on the platform")
     void viewPoseIsAtTheScene() {
         for (TrackKind kind : TrackKind.values()) {

@@ -54,9 +54,13 @@ final class BuilderTrackSceneGhosts {
     static Map<BlockPos, BlockState> build(long worldSeed, CarriageDims dims, BoundingBox plot,
                                            TrackKind openKind, String openName,
                                            Map<BlockPos, BlockState> livePlot) {
+        Live live = new Live(worldSeed, dims, openKind, openName, livePlot);
+        if (openKind == TrackKind.ADJUNCT_STAIRS_ENTRANCE) {
+            return buildDownStairsScene(live, dims, plot);
+        }
+
         Map<BlockPos, BlockState> cells = new LinkedHashMap<>();
         TrackGeometry g = BuilderTrackScene.geometry(dims);
-        Live live = new Live(worldSeed, dims, openKind, openName, livePlot);
         int editedX = BuilderTrackPlot.editedColumnCentreX();
 
         for (int centreX : BuilderTrackScene.pillarCentresX()) {
@@ -114,6 +118,62 @@ final class BuilderTrackSceneGhosts {
                     ? BuilderGhostTemplates.cells(kind, openName, dims)
                     : plotCells;
         }
+    }
+
+    /**
+     * The scene a stairs entrance belongs to: an underground line, and a shaft climbing out of it.
+     *
+     * <p>Everything else here previews the elevated line, because everything else is part of it. An
+     * entrance is not — it caps a <em>down</em>-staircase, which the generator only builds where the
+     * line runs underground. So the picture is the one that case actually produces: the track down at
+     * ground level, a tunnel around it, a staircase climbing from the tunnel deck to the surface, and
+     * the entrance on top. Previewing it against a bridge would be previewing the wrong thing.</p>
+     */
+    private static Map<BlockPos, BlockState> buildDownStairsScene(Live live, CarriageDims dims,
+                                                                  BoundingBox plot) {
+        Map<BlockPos, BlockState> cells = new LinkedHashMap<>();
+        TrackGeometry g = BuilderTrackScene.groundGeometry(dims);
+        int shaftX = BuilderTrackPlot.editedColumnCentreX();
+
+        appendLine(cells, live, g, shaftX);
+
+        // The tunnel the line runs through — a run either side of the shaft, since a down-staircase
+        // only exists where there is tunnel to come up out of.
+        TunnelGeometry tg = TunnelGeometry.from(g);
+        int length = TunnelPlacer.LENGTH;
+        int originZ = tg.wallMinZ() + 1;
+        Map<BlockPos, BlockState> section = BuilderGhostTemplates.cells(
+                TrackKind.TUNNEL_SECTION, TrackKind.DEFAULT_NAME, dims);
+        for (int repeat = -1; repeat <= 1; repeat++) {
+            putTunnel(cells, section, shaftX - length / 2 + repeat * length,
+                    tg.floorY(), originZ, length, false);
+        }
+
+        // The staircase climbing the shaft, repeated the way the generator repeats it — from just
+        // under the surface down to the deck it starts from.
+        Map<BlockPos, BlockState> stairs = BuilderGhostTemplates.cells(
+                TrackKind.ADJUNCT_STAIRS, TrackKind.DEFAULT_NAME, dims);
+        int floorY = BuilderTrackScene.shaftFloorY(dims);
+        int height = PillarAdjunct.STAIRS.ySize();
+        int originX = shaftX - 1;
+        int shaftZ = BuilderTrackScene.shaftMinZ(dims);
+        for (int top = BuilderTrackScene.shaftSurfaceY(dims) - 1; top >= floorY; top -= height) {
+            int base = top - height + 1;
+            for (Map.Entry<BlockPos, BlockState> entry : stairs.entrySet()) {
+                BlockPos local = entry.getKey();
+                int y = base + local.getY();
+                if (y < floorY || y > top) {
+                    continue;
+                }
+                cells.put(new BlockPos(originX + local.getX(), y, shaftZ + local.getZ()),
+                        entry.getValue());
+            }
+        }
+
+        if (plot != null) {
+            cells.keySet().removeIf(plot::isInside);
+        }
+        return cells;
     }
 
     /**
@@ -216,7 +276,7 @@ final class BuilderTrackSceneGhosts {
             for (Map.Entry<BlockPos, BlockState> entry : template.entrySet()) {
                 BlockPos local = entry.getKey();
                 cells.put(new BlockPos(originX + local.getX(),
-                                BuilderTrackScene.bedY() + local.getY(),
+                                g.bedY() + local.getY(),
                                 g.trackZMin() + local.getZ()),
                         entry.getValue());
             }
@@ -263,13 +323,15 @@ final class BuilderTrackSceneGhosts {
     }
 
     /**
-     * The tunnel run the open section sits in: one section either side, capped by portals.
+     * The tunnel run around the open piece.
      *
-     * <p>A tunnel is only ever seen as part of a run, and the two things worth judging are the seam
-     * between consecutive sections and the mouth you come out of — so the preview is
-     * {@code portal | section | you | section | portal}. The exit portal is mirrored on X the way
-     * the generator mirrors it, because a portal is not symmetrical and an unmirrored copy at the
-     * far end would show the wrong face.</p>
+     * <p>A tunnel is only ever seen as part of a run, and what you are judging is the seam between
+     * consecutive sections and the mouth you come out of. A <b>section</b> therefore gets
+     * {@code portal | section | you | section | portal} — run on both sides, capped either end.</p>
+     *
+     * <p>A <b>portal</b> gets tunnel on <em>one</em> side only, because that is what a portal is: the
+     * mouth. Tunnel behind it, open air in front. Ghosting a run on both sides would draw the one
+     * thing the piece exists to deny.</p>
      */
     private static void appendTunnelRun(Map<BlockPos, BlockState> cells, Live live,
                                         TrackGeometry g, BoundingBox plot) {
@@ -285,11 +347,18 @@ final class BuilderTrackSceneGhosts {
                 ? live.open(TrackKind.TUNNEL_SECTION)
                 : BuilderGhostTemplates.cells(TrackKind.TUNNEL_SECTION, TrackKind.DEFAULT_NAME,
                         live.dims());
-        Map<BlockPos, BlockState> portal = live.openKind() == TrackKind.TUNNEL_PORTAL
-                ? live.open(TrackKind.TUNNEL_PORTAL)
-                : BuilderGhostTemplates.cells(TrackKind.TUNNEL_PORTAL, TrackKind.DEFAULT_NAME,
-                        live.dims());
 
+        if (live.openKind() == TrackKind.TUNNEL_PORTAL) {
+            // Behind the mouth only. The plot is the entrance portal, which the generator stamps
+            // unmirrored at the low-X end of a run, so the tunnel runs away from it on +X.
+            putTunnel(cells, section, plotMinX + length, tg.floorY(), originZ, length, false);
+            putTunnel(cells, section, plotMinX + 2 * length, tg.floorY(), originZ, length, false);
+            return;
+        }
+
+        Map<BlockPos, BlockState> portal =
+                BuilderGhostTemplates.cells(TrackKind.TUNNEL_PORTAL, TrackKind.DEFAULT_NAME,
+                        live.dims());
         putTunnel(cells, section, plotMinX - length, tg.floorY(), originZ, length, false);
         putTunnel(cells, section, plotMinX + length, tg.floorY(), originZ, length, false);
         // Entrance at the low-X mouth, exit at the high-X one — mirrored, as the generator stamps it.

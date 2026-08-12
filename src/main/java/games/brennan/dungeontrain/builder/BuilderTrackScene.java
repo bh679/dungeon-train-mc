@@ -166,6 +166,44 @@ public final class BuilderTrackScene {
         return minusZ ? g.trackZMin() - depth : g.trackZMax() + 1;
     }
 
+    // ---- the down-stairs scene ----
+    //
+    // A stairs *entrance* is a different situation from everything else here. It belongs to the
+    // down-stairs case: the line is underground in a tunnel, a shaft climbs from it to the surface,
+    // and the entrance is the pavilion capping that shaft. So its scene is not the elevated line at
+    // all — it is a ground-level line, a tunnel around it, and a staircase going up.
+
+    /** The line's geometry for the down-stairs scene: on the ground, where the corridor already is. */
+    public static TrackGeometry groundGeometry(CarriageDims dims) {
+        return TrackGeometry.from(dims, BuilderWorldLayout.TRAIN_Y);
+    }
+
+    /** Floor of the shaft — {@code bedY + 2} in the generator, the deck the stairs start from. */
+    public static int shaftFloorY(CarriageDims dims) {
+        return groundGeometry(dims).bedY() + 2;
+    }
+
+    /**
+     * The surface the entrance sits on.
+     *
+     * <p>Two full stair stamps above the shaft floor: enough that the climb reads as a climb rather
+     * than a step, and a whole number of stamps so the preview shows the repeat the generator
+     * actually makes rather than a clipped one.</p>
+     */
+    public static int shaftSurfaceY(CarriageDims dims) {
+        return shaftFloorY(dims) + 2 * PillarAdjunct.STAIRS.ySize();
+    }
+
+    /**
+     * Lowest Z of the shaft.
+     *
+     * <p>One block further out than an up-staircase, which is where {@code downStairsOriginZ} puts
+     * it — the shaft has to clear the tunnel wall the line runs through.</p>
+     */
+    public static int shaftMinZ(CarriageDims dims) {
+        return groundGeometry(dims).trackZMax() + 2;
+    }
+
     /**
      * Highest row a staircase reaches — three above the column's cap.
      *
