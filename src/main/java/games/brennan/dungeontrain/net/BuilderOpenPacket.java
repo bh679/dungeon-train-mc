@@ -138,8 +138,12 @@ public record BuilderOpenPacket(String modeId, String kindId, String id, String 
             DungeonTrainNet.sendTo(player, BuilderDirtyPacket.state(0));
 
             // Stand the player clear of what was just stamped — the opened template may be a
-            // different height from whatever was parked here before.
-            BlockPos spawn = BuilderWorldLayout.spawnPos(DungeonTrainWorldData.get(level).dims());
+            // different height from whatever was parked here before, and a different *length*:
+            // opening a room parks one carriage where a whole carriage parks three, so the standoff
+            // is sized from what is actually out there rather than from the bare-minimum floor.
+            DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
+            BlockPos spawn = BuilderWorldLayout.spawnPos(data.dims(),
+                    BuilderWorldSetup.parkedCarriages(data));
             player.teleportTo(level, spawn.getX() + 0.5, spawn.getY(), spawn.getZ() + 0.5,
                     player.getYRot(), player.getXRot());
 

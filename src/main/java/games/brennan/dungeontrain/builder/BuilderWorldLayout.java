@@ -84,6 +84,30 @@ public final class BuilderWorldLayout {
 
     private BuilderWorldLayout() {}
 
+    /**
+     * How many carriages this selection actually parks on the track.
+     *
+     * <p>{@link BuilderMode#carriageCount()} answers "how much train does this mode want to see",
+     * which is the right question for a <b>whole carriage</b>: you are judging a silhouette from the
+     * platform, and one carriage in isolation tells you nothing about how the run reads. It is the
+     * wrong question for everything else you can open. A carriage room and a part are each <em>one
+     * template</em>, and stamping three copies of one template is three answers to a question that
+     * has one — it reads as a generic train rather than as the thing you clicked.</p>
+     *
+     * <p>A null sub type means the world has never had a New or an Open in it: the mode is a
+     * title-screen click and nothing has narrowed it yet, so the mode's own count stands. That is
+     * the {@code setupIfNeeded} path, and it must keep behaving exactly as it did.</p>
+     */
+    public static int parkedCarriages(BuilderMode mode, BuilderNewOptions.SubType subType) {
+        if (mode == null || mode.carriageCount() <= 0) {
+            return 0;   // the track and portal modes park none, whatever is being authored
+        }
+        if (subType == null || subType == BuilderNewOptions.SubType.WHOLE_CARRIAGE) {
+            return mode.carriageCount();
+        }
+        return 1;
+    }
+
     public static boolean inPlatform(int x, int z) {
         return x >= MIN_XZ && x <= MAX_XZ && z >= MIN_XZ && z <= MAX_XZ;
     }

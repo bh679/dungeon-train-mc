@@ -42,6 +42,27 @@ public final class BuilderNewOptions {
         public String labelKey() {
             return "gui.dungeontrain.builder.new.subtype." + id;
         }
+
+        /**
+         * The sub type behind a stored id, or empty when there isn't one.
+         *
+         * <p>The read side of {@code DungeonTrainWorldData.builderSubType()}, which keeps the id
+         * string rather than the enum. Empty for a world that has never had a New or an Open run in
+         * it — that is a real state, not a corrupt one, and callers are expected to have a default
+         * for it.</p>
+         */
+        public static java.util.Optional<SubType> fromId(String raw) {
+            if (raw == null) {
+                return java.util.Optional.empty();
+            }
+            String needle = raw.trim().toLowerCase(java.util.Locale.ROOT);
+            for (SubType value : values()) {
+                if (value.id.equals(needle)) {
+                    return java.util.Optional.of(value);
+                }
+            }
+            return java.util.Optional.empty();
+        }
     }
 
     /**

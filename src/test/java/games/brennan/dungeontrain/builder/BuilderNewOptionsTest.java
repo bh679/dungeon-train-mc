@@ -200,4 +200,27 @@ final class BuilderNewOptionsTest {
         // packet resolves the id against the registry and starts blank when it misses.
         assertTrue(BuilderNewOptions.parsePick(BuilderNewOptions.tagWholeCarriage("")).isEmpty());
     }
+
+    @Test
+    @DisplayName("Every sub type round-trips through its stored id")
+    void subTypeIdsRoundTrip() {
+        // The world data keeps the id string, and the parked carriage count is read back off it —
+        // a sub type that didn't round-trip would silently fall back to the mode's own count.
+        for (BuilderNewOptions.SubType subType : BuilderNewOptions.SubType.values()) {
+            assertEquals(subType, BuilderNewOptions.SubType.fromId(subType.id()).orElse(null));
+        }
+    }
+
+    @Test
+    @DisplayName("An absent or unknown sub type is empty, not a guess")
+    void unknownSubTypeIsEmpty() {
+        // Null is a real state: a world stamped straight off the title screen has never had a New
+        // or an Open run in it. Callers own the default, so this must not pick one for them.
+        assertTrue(BuilderNewOptions.SubType.fromId(null).isEmpty());
+        assertTrue(BuilderNewOptions.SubType.fromId("").isEmpty());
+        assertTrue(BuilderNewOptions.SubType.fromId("carriage").isEmpty());
+        // Tolerant of case and stray whitespace, the way BuilderMode.fromId is.
+        assertEquals(BuilderNewOptions.SubType.CARRIAGE_ROOM,
+                BuilderNewOptions.SubType.fromId(" Carriage_Room ").orElse(null));
+    }
 }

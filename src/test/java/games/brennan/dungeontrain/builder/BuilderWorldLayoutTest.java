@@ -121,6 +121,44 @@ final class BuilderWorldLayoutTest {
     }
 
     @Test
+    @DisplayName("Only a whole carriage parks the mode's full run; one template parks one carriage")
+    void parkedCarriagesFollowsTheSubType() {
+        // The silhouette case: three carriages is what Train Outside exists to show you.
+        assertEquals(3, BuilderWorldLayout.parkedCarriages(
+                BuilderMode.TRAIN_OUTSIDE, BuilderNewOptions.SubType.WHOLE_CARRIAGE));
+        // One template is one carriage — three copies would be three answers to a one-answer
+        // question, and it reads as a generic train rather than as the thing you opened.
+        assertEquals(1, BuilderWorldLayout.parkedCarriages(
+                BuilderMode.TRAIN_OUTSIDE, BuilderNewOptions.SubType.CARRIAGE_ROOM));
+        assertEquals(1, BuilderWorldLayout.parkedCarriages(
+                BuilderMode.TRAIN_OUTSIDE, BuilderNewOptions.SubType.PARTS));
+        // Inside the wall there was only ever one carriage, so nothing changes there.
+        for (BuilderNewOptions.SubType subType : BuilderNewOptions.SubType.values()) {
+            assertEquals(1, BuilderWorldLayout.parkedCarriages(BuilderMode.INSIDE_CARRIAGE, subType));
+        }
+    }
+
+    @Test
+    @DisplayName("A world with no sub type yet keeps the mode's own count")
+    void parkedCarriagesDefaultsToTheModeBeforeAnySelection() {
+        // setupIfNeeded's path: a title-screen click, before New or Open has narrowed it. Reading
+        // this as "one carriage" would silently shrink every freshly-created builder world.
+        assertEquals(3, BuilderWorldLayout.parkedCarriages(BuilderMode.TRAIN_OUTSIDE, null));
+        assertEquals(1, BuilderWorldLayout.parkedCarriages(BuilderMode.INSIDE_CARRIAGE, null));
+    }
+
+    @Test
+    @DisplayName("The carriage-less modes park none whatever is being authored")
+    void parkedCarriagesStaysZeroForTheTrackModes() {
+        for (BuilderNewOptions.SubType subType : BuilderNewOptions.SubType.values()) {
+            assertEquals(0, BuilderWorldLayout.parkedCarriages(BuilderMode.TRACKS_TUNNELS, subType));
+            assertEquals(0, BuilderWorldLayout.parkedCarriages(BuilderMode.TRAIN_DIMENSIONS, subType));
+        }
+        assertEquals(0, BuilderWorldLayout.parkedCarriages(BuilderMode.TRACKS_TUNNELS, null));
+        assertEquals(0, BuilderWorldLayout.parkedCarriages(null, null));
+    }
+
+    @Test
     @DisplayName("Spawn is on the grass and clear of the track corridor")
     void spawnIsClearOfTheTrain() {
         BlockPos spawn = BuilderWorldLayout.spawnPos(DIMS);

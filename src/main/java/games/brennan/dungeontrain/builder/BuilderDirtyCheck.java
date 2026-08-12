@@ -40,9 +40,7 @@ public final class BuilderDirtyCheck {
     public static List<Integer> dirtyCarriages(ServerLevel level) {
         List<Integer> dirty = new ArrayList<>();
         DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
-        int carriages = BuilderMode.fromId(data.builderMode())
-                .map(BuilderMode::carriageCount)
-                .orElse(0);
+        int carriages = BuilderWorldSetup.parkedCarriages(data);
         if (carriages <= 0) {
             return dirty;
         }
