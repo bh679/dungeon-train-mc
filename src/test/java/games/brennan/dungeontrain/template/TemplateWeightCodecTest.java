@@ -131,6 +131,76 @@ final class TemplateWeightCodecTest {
         assertEquals(EnumSet.of(TrainPhase.NETHER), back.gate().phases());
     }
 
+    // ---- Per-kind mode tag (v4 — optional "mode" field; today only portal rooms) ----
+
+    @Test
+    @DisplayName("absent mode key parses as null — pre-feature files unchanged")
+    void parseNoMode() {
+        assertNull(TemplateWeightCodec.parseEntry(JsonParser.parseString("20"), CLAMP).mode());
+        assertNull(TemplateWeightCodec.parseEntry(
+            JsonParser.parseString("{\"weight\":5,\"minLevel\":3}"), CLAMP).mode());
+    }
+
+    @Test
+    @DisplayName("mode key parses (lower-cased, trimmed); blank is normalised to null")
+    void parseMode() {
+        assertEquals("endless_open", TemplateWeightCodec.parseEntry(
+            JsonParser.parseString("{\"weight\":5,\"mode\":\" Endless_Open \"}"), CLAMP).mode());
+        assertNull(TemplateWeightCodec.parseEntry(
+            JsonParser.parseString("{\"weight\":5,\"mode\":\"\"}"), CLAMP).mode());
+    }
+
+    @Test
+    @DisplayName("a mode alone forces the object form — a bare int cannot carry one")
+    void emitModeOnly() {
+        JsonObject out = TemplateWeightCodec.toJson(Map.of(
+            "moded", TemplateMeta.of(3).withMode("endless_repetition")));
+        assertTrue(out.get("moded").isJsonObject());
+        JsonObject o = out.getAsJsonObject("moded");
+        assertEquals(3, o.get("weight").getAsInt());
+        assertEquals("endless_repetition", o.get("mode").getAsString());
+        // Default gate + no stage link ⇒ nothing else emitted.
+        assertFalse(o.has("minLevel"));
+        assertFalse(o.has("maxLevel"));
+        assertFalse(o.has("phases"));
+        assertFalse(o.has("stage"));
+    }
+
+    @Test
+    @DisplayName("no mode still serialises to a bare int — existing weights.json round-trip byte-identically")
+    void emitWithoutModeStaysBareInt() {
+        JsonObject out = TemplateWeightCodec.toJson(Map.of("plain", TemplateMeta.of(20)));
+        assertTrue(out.get("plain").isJsonPrimitive());
+        assertEquals(20, out.get("plain").getAsInt());
+    }
+
+    @Test
+    @DisplayName("round-trip preserves the mode alongside gate and stage link")
+    void roundTripMode() {
+        TemplateMeta original = new TemplateMeta(
+            6, new TemplateGate(1, 12, EnumSet.of(TrainPhase.VOID)), "endgame", "bedrock_lock");
+        JsonObject json = TemplateWeightCodec.toJson(Map.of("x", original));
+        TemplateMeta back = TemplateWeightCodec.parseEntry(json.get("x"), CLAMP);
+        assertEquals("bedrock_lock", back.mode());
+        assertEquals("endgame", back.stageId());
+        assertEquals(1, back.gate().minLevel());
+        assertEquals(12, back.gate().maxLevel());
+        assertEquals(EnumSet.of(TrainPhase.VOID), back.gate().phases());
+    }
+
+    @Test
+    @DisplayName("withMode keeps weight, gate and stage link; null clears the tag")
+    void withModeKeepsTheRest() {
+        TemplateMeta base = new TemplateMeta(
+            8, new TemplateGate(2, 20, EnumSet.of(TrainPhase.NETHER)), "deep");
+        TemplateMeta moded = base.withMode("endless_open");
+        assertEquals("endless_open", moded.mode());
+        assertEquals(8, moded.weight());
+        assertEquals("deep", moded.stageId());
+        assertEquals(base.gate(), moded.gate());
+        assertNull(moded.withMode(null).mode());
+    }
+
     // ---- Multi Stage links (v3 — optional "stages" array, sub-variant members) ----
 
     @Test

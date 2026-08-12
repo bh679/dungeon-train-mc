@@ -21,7 +21,9 @@ public enum TemplateKind {
     PILLAR,
     STAIRS,
     STAIRS_ENTRANCE,
-    TUNNEL;
+    TUNNEL,
+    /** The pocket room a portal carriage group's two corridors open into. */
+    PORTAL_ROOM;
 
     public String id() {
         return name().toLowerCase(Locale.ROOT);

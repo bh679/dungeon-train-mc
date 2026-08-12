@@ -31,6 +31,46 @@ final class CarriageContentsRegistryFilterTest {
         CarriageContentsRegistry.clear();
     }
 
+    // ---- anyAllowed: the question a portal room asks before pick() can answer it ----
+
+    @Test
+    @DisplayName("anyAllowed: EMPTY allows everything; a null list is treated as EMPTY")
+    void anyAllowed_emptyAllowsEverything() {
+        assertTrue(CarriageContentsRegistry.anyAllowed(CarriageContentsAllowList.EMPTY));
+        assertTrue(CarriageContentsRegistry.anyAllowed(null));
+    }
+
+    @Test
+    @DisplayName("anyAllowed: false only once EVERY top-level content is excluded")
+    void anyAllowed_falseOnlyWhenAllExcluded() {
+        CarriageContentsAllowList allow = CarriageContentsAllowList.EMPTY;
+        Set<String> ids = new HashSet<>();
+        for (CarriageContents c : CarriageContentsRegistry.allContents()) ids.add(c.id());
+
+        int remaining = ids.size();
+        for (String id : ids) {
+            allow = allow.withExcluded(id);
+            remaining--;
+            // Still true while anything is left; the last exclusion is what flips it.
+            assertEquals(remaining > 0, CarriageContentsRegistry.anyAllowed(allow),
+                "after excluding " + id + ", " + remaining + " left");
+        }
+        assertFalse(CarriageContentsRegistry.anyAllowed(allow));
+    }
+
+    @Test
+    @DisplayName("anyAllowed disagreeing with pick's fallback is the whole point of it existing")
+    void anyAllowed_isWhatDistinguishesTheFallback() {
+        CarriageContentsAllowList allow = CarriageContentsAllowList.EMPTY;
+        for (CarriageContents c : CarriageContentsRegistry.allContents()) {
+            allow = allow.withExcluded(c.id());
+        }
+        // pick() still hands back the built-in default — a carriage must never spawn hollow…
+        assertNotNull(CarriageContentsRegistry.pick(0L, 0, allow));
+        // …but anyAllowed reports the truth, so a portal room can decline to place it.
+        assertFalse(CarriageContentsRegistry.anyAllowed(allow));
+    }
+
     @Test
     @DisplayName("EMPTY allow-list matches the legacy unfiltered pick")
     void empty_allow_matches_legacy() {

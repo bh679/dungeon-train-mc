@@ -27,10 +27,39 @@ import java.util.Set;
  */
 public final class CarriageContentsAllowScreen implements MenuScreen {
 
-    private final String variantId;
+    /** The editor subcommand a carriage's toggles dispatch to. */
+    private static final String CARRIAGE_COMMAND = "carriage-contents";
+
+    /** The editor subcommand a portal room's toggles dispatch to. */
+    private static final String PORTAL_ROOM_COMMAND = "portal-room-contents";
+
+    private final String targetId;
+    private final String command;
 
     public CarriageContentsAllowScreen(String variantId) {
-        this.variantId = variantId == null ? "" : variantId;
+        this(variantId, CARRIAGE_COMMAND);
+    }
+
+    private CarriageContentsAllowScreen(String targetId, String command) {
+        this.targetId = targetId == null ? "" : targetId;
+        this.command = command;
+    }
+
+    /** The allow-list for a carriage variant's shell. */
+    public static CarriageContentsAllowScreen forCarriage(String variantId) {
+        return new CarriageContentsAllowScreen(variantId, CARRIAGE_COMMAND);
+    }
+
+    /**
+     * The allow-list for a portal room.
+     *
+     * <p>Same screen, same toggles, same excluded set off the status packet — only the subcommand
+     * differs, because the two write to different sidecar directories. Reached from the plot
+     * panel's Contents button, which only appears while the room's Contents setting is on: with it
+     * Off there is no pool for these toggles to steer.</p>
+     */
+    public static CarriageContentsAllowScreen forPortalRoom(String roomName) {
+        return new CarriageContentsAllowScreen(roomName, PORTAL_ROOM_COMMAND);
     }
 
     @Override
@@ -53,16 +82,22 @@ public final class CarriageContentsAllowScreen implements MenuScreen {
             out.add(new CommandMenuEntry.Toggle(
                 id,
                 allowed,
-                "dungeontrain editor carriage-contents " + variantId + " " + id + " on",
-                "dungeontrain editor carriage-contents " + variantId + " " + id + " off"
+                commandFor(id, true),
+                commandFor(id, false)
             ));
         }
         out.add(new CommandMenuEntry.Back("< Back"));
         return out;
     }
 
-    /** Visible-for-test accessor — the variant id this screen targets. */
+    /** The slash command one row's toggle dispatches, in the direction {@code on} names. */
+    private String commandFor(String contentsId, boolean on) {
+        return "dungeontrain editor " + command + " " + targetId + " " + contentsId
+            + (on ? " on" : " off");
+    }
+
+    /** Visible-for-test accessor — the id this screen targets (a variant id or a room name). */
     public String variantId() {
-        return variantId;
+        return targetId;
     }
 }

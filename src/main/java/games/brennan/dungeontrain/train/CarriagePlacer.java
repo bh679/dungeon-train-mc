@@ -6,6 +6,11 @@ import games.brennan.dungeontrain.editor.CarriageTemplateStore;
 import games.brennan.dungeontrain.editor.CarriageVariantBlocks;
 import games.brennan.dungeontrain.editor.CarriageVariantPartsStore;
 import games.brennan.dungeontrain.editor.VariantState;
+import games.brennan.dungeontrain.config.DungeonTrainConfig;
+import games.brennan.dungeontrain.portal.PortalCarriageBuilder;
+import games.brennan.dungeontrain.portal.PortalCarriageRole;
+import games.brennan.dungeontrain.portal.PortalCarriageSelection;
+import games.brennan.dungeontrain.portal.PortalCorridorSize;
 import games.brennan.dungeontrain.template.GateContext;
 import games.brennan.dungeontrain.template.TemplateKind;
 import games.brennan.dungeontrain.template.TemplateType;
@@ -240,6 +245,46 @@ public final class CarriagePlacer {
         CarriageDims dims, CarriageGenerationConfig config, int carriageIndex,
         boolean applyContents, boolean flatbedAtBack, boolean flatbedAtFront, int groupAnchorWorldX
     ) {
+        // Portal carriages replace the whole carriage with a hallway-portal corridor
+        // (games.brennan.dungeontrain.portal). Returning here deliberately skips the parts overlay,
+        // the variant-block sidecar and the contents pass: the corridor's geometry IS the carriage,
+        // and loot or furniture stamped into it would both block the walkway and break the
+        // block-for-block match with its twin that the illusion depends on.
+        if (PortalCarriageSelection.isPortalCarriage(level, carriageIndex)) {
+            // A corridor is longer than the slot it was placed for and grows inward, into the cart
+            // between the pair — so an ENTRY runs forward out of its slot and an EXIT starts before
+            // its own (PortalCorridorSize). Both the stamp and the footprint sweep have to use that
+            // box, not the slot's: the EXIT's overrun is written AFTER the cart's own footprint was
+            // collected, so a slot-sized sweep here would leave those blocks behind in the world
+            // instead of lifting them into the group's Sable sub-level.
+            int groupSize = DungeonTrainConfig.getGroupSize();
+            PortalCarriageRole role = PortalCarriageRole.roleFor(carriageIndex, groupSize);
+            BlockPos corridorOrigin =
+                origin.offset(PortalCorridorSize.originOffsetX(role, dims), 0, 0);
+            CarriageDims corridorDims = PortalCorridorSize.corridorDims(dims);
+
+            // The pair's key, derived the same way PortalCarriageEvents derives it for the twin —
+            // a pure function of the carriage index, so the corridor placed here and the twin
+            // placed underground later roll the same contents sub-variant without either knowing
+            // about the other. Entry and exit share the key, and so share a corridor.
+            int pairKey = PortalCarriageRole.entryIndexOf(carriageIndex, groupSize);
+            PortalCarriageBuilder.stampCarriage(level, corridorOrigin, dims, /*relight*/ false, pairKey);
+            // Report the portal variant, not the one the roll happened to land on: what stands here
+            // is a portal corridor, and a log line reading "variant=fancywood sources=portal" sends
+            // anyone reading it after the fact looking for a bug that isn't there.
+            return finishPlace(level, corridorOrigin, PortalCarriageBuilder.portalVariant(),
+                corridorDims, "portal", null);
+        }
+
+        // The cart between a portal's two corridors, from its own template. Sealed space by
+        // construction — the corridors either side swap a player out before they can reach it — so it
+        // skips the same passes the corridors do. Furnishing a room nobody can enter with loot, and
+        // trapping mobs in it, is the waste that pinning a portal to one group exists to remove.
+        if (PortalCarriageSelection.isPortalMiddle(level, carriageIndex)) {
+            PortalCarriageBuilder.stampMiddle(level, origin, dims, /*relight*/ false);
+            return finishPlace(level, origin, PortalCarriageBuilder.middleVariant(), dims, "portal_middle", null);
+        }
+
         // relight=false: the spawn shell/parts are placed in the SOURCE world and lifted into a Sable
         // sub-level this same tick; Sable's moveBlocks re-places each block via LevelChunk.setBlockState
         // and relights it in the plot, so the world-side light engine work here would be discarded (#645).
@@ -254,11 +299,16 @@ public final class CarriagePlacer {
         boolean nbtBacked = "stored".equals(base) || overlay != null;
         if (nbtBacked) {
             applyVariantBlocks(level, origin, variant, dims, config, carriageIndex);
-        } else if ("legacy".equals(base)) {
-            CarriageVariantBlocks sidecar = CarriageVariantBlocks.loadFor(variant, dims);
+        } else {
+            // Warn for EVERY base that drops a non-empty sidecar, not just "legacy". stampBase also
+            // returns "portal", "portal_middle" and null, and all three used to fall through both
+            // arms in silence — which is how a 264-cell portal sidecar sat unapplied without ever
+            // saying so. If a sidecar was authored and nothing laid it, that is worth a line.
+            CarriageVariantBlocks sidecar = CarriageVariantBlocks.loadFor(variant, variantDims(variant, dims));
             if (!sidecar.isEmpty()) {
-                LOGGER.warn("[DungeonTrain] Variant sidecar for '{}' ignored — built-in using hardcoded fallback.",
-                    variant.id());
+                LOGGER.warn("[DungeonTrain] Variant sidecar for '{}' ignored — {} basis has no "
+                        + "per-position overlay ({} cells dropped).",
+                    variant.id(), base == null ? "absent" : base, sidecar.entries().size());
             }
         }
 
@@ -290,6 +340,7 @@ public final class CarriagePlacer {
         ServerLevel level, BlockPos origin, CarriageVariant variant,
         CarriageDims dims, CarriageGenerationConfig config, int carriageIndex
     ) {
+        if (PortalCarriageSelection.isPortalPart(level, carriageIndex)) return;
         applyContents(level, origin, variant, dims, config, carriageIndex,
             /*placeBlocks*/ true, /*spawnEntities*/ true, GateContext.WORLDX_FROM_PIDX);
     }
@@ -313,6 +364,11 @@ public final class CarriagePlacer {
         if (variant instanceof CarriageVariant.Builtin b && b.type() == CarriageType.FLATBED) {
             return null;
         }
+        // No part of a portal gets contents, for the same reason FLATBED gets none: there is no
+        // interior to furnish. Loot in a corridor's walkway would also break the block-for-block
+        // match with its twin that the crossing depends on, and loot in the cart between the two
+        // corridors would sit in a room with no way into it.
+        if (PortalCarriageSelection.isPortalPart(level, carriageIndex)) return null;
         return applyContents(level, origin, variant, dims, config, carriageIndex,
             /*placeBlocks*/ true, /*spawnEntities*/ false, groupAnchorWorldX);
     }
@@ -336,6 +392,12 @@ public final class CarriagePlacer {
         // forced to the COMMAND_BLOCK sentinel by the canonical
         // VariantState constructor). Subject to the same 48-block player-
         // distance gate that wraps this entity pass.
+        // No part of a portal takes either pass — not the shell/parts mob spawn above, and not the
+        // contents entities below. A mob standing in one corridor and not its twin is exactly the
+        // difference a player would see at the crossing, and a mob in the cart between them would
+        // spend its life in a sealed room.
+        if (PortalCarriageSelection.isPortalPart(level, carriageIndex)) return;
+
         spawnShellAndPartsVariantMobs(level, origin, variant, dims, config.seed(), carriageIndex, groupAnchorWorldX);
         if (variant instanceof CarriageVariant.Builtin b && b.type() == CarriageType.FLATBED) {
             return;
@@ -361,7 +423,7 @@ public final class CarriagePlacer {
     private static void spawnShellVariantMobs(ServerLevel level, BlockPos origin,
                                                CarriageVariant variant, CarriageDims dims,
                                                long seed, int carriageIndex) {
-        CarriageVariantBlocks sidecar = CarriageVariantBlocks.loadFor(variant, dims);
+        CarriageVariantBlocks sidecar = CarriageVariantBlocks.loadFor(variant, variantDims(variant, dims));
         if (sidecar.isEmpty()) return;
         int spawned = 0;
         for (CarriageVariantBlocks.Entry e : sidecar.entries()) {
@@ -467,14 +529,55 @@ public final class CarriagePlacer {
         }
     }
 
+    /**
+     * The box {@code variant} actually occupies — which is <b>not</b> always the world's carriage
+     * dims.
+     *
+     * <p>The portal corridor is the exception: it runs past its slot into the cart between a
+     * portal's pair, so its template, its editor plot, its sidecar bounds and its mirror axis are
+     * all measured over {@link PortalCorridorSize#corridorDims} instead. Every question of the form
+     * "how big is this variant's box" has to come through here, because the pieces disagreeing is
+     * not a visible mistake — it is a template silently rejected on size, a mirror reflecting around
+     * the wrong axis, and a sidecar entry dropped for being out of bounds.</p>
+     *
+     * <p><b>Never feed the result back into {@link #placeAt} or {@code stampBase}.</b> Those derive
+     * the corridor length from the world's carriage dims themselves; handing them an
+     * already-lengthened figure would apply the growth twice.</p>
+     */
+    public static CarriageDims variantDims(CarriageVariant variant, CarriageDims dims) {
+        return variant.equals(PortalCarriageBuilder.portalVariant())
+            ? PortalCorridorSize.corridorDims(dims)
+            : dims;
+    }
+
     private static void applyVariantBlocks(
         ServerLevel level, BlockPos origin, CarriageVariant variant,
         CarriageDims dims, CarriageGenerationConfig config, int carriageIndex
     ) {
-        CarriageVariantBlocks sidecar = CarriageVariantBlocks.loadFor(variant, dims);
+        applyVariantBlocks(level, origin, variant, dims, config.seed(), carriageIndex);
+    }
+
+    /**
+     * Resolve and lay a variant's template sidecar over an already-stamped shell, rolled at an
+     * explicit {@code (seed, index)}.
+     *
+     * <p><b>Public because the portal corridor needs the same three behaviours and must not
+     * reimplement them:</b> the placeholder→air translation, the lock-aware
+     * {@code RotationApplier} call, and the {@code ContainerContentsPlacement} hand-off that lets a
+     * picked chest roll its pool. A corridor cannot reuse the {@code CarriageGenerationConfig}
+     * overload because it does not roll against its own carriage index — both halves of a crossing
+     * have to resolve identically and neither knows about the other, so
+     * {@code PortalCarriageBuilder} passes the pair's key instead. See
+     * {@code PortalCarriageBuilder.stampCorridorFrom}.</p>
+     */
+    public static void applyVariantBlocks(
+        ServerLevel level, BlockPos origin, CarriageVariant variant,
+        CarriageDims dims, long seed, int carriageIndex
+    ) {
+        CarriageVariantBlocks sidecar = CarriageVariantBlocks.loadFor(variant, variantDims(variant, dims));
         if (sidecar.isEmpty()) return;
         for (CarriageVariantBlocks.Entry e : sidecar.entries()) {
-            VariantState picked = sidecar.resolve(e.localPos(), config.seed(), carriageIndex);
+            VariantState picked = sidecar.resolve(e.localPos(), seed, carriageIndex);
             if (picked == null) continue;
             BlockPos world = origin.offset(e.localPos());
             if (CarriageVariantBlocks.isEmptyPlaceholder(picked.state())) {
@@ -482,11 +585,11 @@ public final class CarriagePlacer {
             } else {
                 BlockState rotated = games.brennan.dungeontrain.editor.RotationApplier.apply(
                     picked.state(), picked.rotation(), picked.half(),
-                    e.localPos(), config.seed(), carriageIndex,
+                    e.localPos(), seed, carriageIndex,
                     sidecar.lockIdAt(e.localPos()));
                 games.brennan.dungeontrain.editor.ContainerContentsPlacement.place(
                     level, world, rotated, picked.blockEntityNbt(),
-                    "carriage:" + variant.id(), e.localPos(), config.seed(), carriageIndex,
+                    "carriage:" + variant.id(), e.localPos(), seed, carriageIndex,
                     picked.linkedLootPrefabId());
             }
         }
@@ -508,7 +611,13 @@ public final class CarriagePlacer {
                                     CarriageDims dims, long seed, int carriageIndex,
                                     boolean flatbedAtBack, boolean flatbedAtFront, int groupAnchorWorldX,
                                     boolean relight) {
-        Optional<StructureTemplate> stored = CarriageTemplateStore.get(level, variant, dims);
+        // Looked up against the VARIANT's box, not the world's carriage dims. CarriageTemplateStore
+        // caches by variant id alone and re-checks the cached entry against whatever dims the caller
+        // passed — so asking for the portal corridor at carriage dims does not merely miss, it caches
+        // an empty result under "portal" that then defeats the correctly-sized lookup for the rest of
+        // the session, dropping every corridor (and every saved edit to it) back to the built-in.
+        Optional<StructureTemplate> stored =
+            CarriageTemplateStore.get(level, variant, variantDims(variant, dims));
         if (stored.isPresent()) {
             // Filter cells the parts overlay will claim — keeps the base from
             // stamping (and the parts overlay from having to pre-erase) any
@@ -527,6 +636,19 @@ public final class CarriagePlacer {
         if (variant instanceof CarriageVariant.Builtin b) {
             legacyPlaceAt(level, origin, b.type(), dims, relight);
             return "legacy";
+        }
+        // The portal corridor is the one custom with code-generated geometry to fall back on, so it
+        // stamps something even before anyone has authored its .nbt. Without this the editor would
+        // open an empty plot for it — and the editor is where that .nbt is meant to come from.
+        if (variant.equals(PortalCarriageBuilder.portalVariant())) {
+            PortalCarriageBuilder.stampCorridorFrom(level, origin, dims, relight);
+            return "portal";
+        }
+        // Same for the cart between a portal's corridors: something to open in the editor before
+        // anyone has authored its .nbt, since the editor is where that .nbt comes from.
+        if (variant.equals(PortalCarriageBuilder.middleVariant())) {
+            PortalCarriageBuilder.stampMiddle(level, origin, dims, relight);
+            return "portal_middle";
         }
         return null;
     }
@@ -583,7 +705,11 @@ public final class CarriagePlacer {
         int bodyHits = 0;
         int partHits = 0;
         for (CarriageVariant variant : CarriageVariantRegistry.allVariants()) {
-            CarriageTemplateStore.get(level, variant, dims);
+            // At the variant's OWN box — this sweep runs over every registered variant on
+            // ServerStartedEvent, so warming the portal corridor at plain carriage dims would log a
+            // size-mismatch warning on every world load and leave the one variant that most needs
+            // warming un-warmed.
+            CarriageTemplateStore.get(level, variant, variantDims(variant, dims));
             bodyHits++;
             Optional<CarriagePartAssignment> assignment = CarriageVariantPartsStore.get(variant);
             if (assignment.isEmpty()) continue;
@@ -1113,6 +1239,32 @@ public final class CarriagePlacer {
                 }
             }
         }
+    }
+
+    /**
+     * Stamp a carriage-sized {@link StructureTemplate} at {@code origin}, choosing the write path the
+     * same way every other carriage stamp does.
+     *
+     * <p>Exists so the hallway portal ({@code games.brennan.dungeontrain.portal}) can put an authored
+     * corridor into both a carriage and its static twin without duplicating the relit /
+     * section-local decision, which belongs here next to the reasons for it.</p>
+     *
+     * @param relight {@code true} for blocks nothing will lift into a Sable sub-level (an editor plot,
+     *                or a portal twin standing in the world); {@code false} on the spawn path
+     */
+    public static void stampTemplateAt(ServerLevel level, BlockPos origin, StructureTemplate template,
+                                       boolean relight) {
+        stampTemplate(level, origin, template, null, relight);
+    }
+
+    /**
+     * {@link #stampTemplateAt} with a {@link StructureProcessor} in front of the write, so a caller
+     * can drop cells it must not touch. Used by the portal room to stamp copies around the twin
+     * corridors rather than through them.
+     */
+    public static void stampTemplateAt(ServerLevel level, BlockPos origin, StructureTemplate template,
+                                       StructureProcessor processor, boolean relight) {
+        stampTemplate(level, origin, template, processor, relight);
     }
 
     private static void stampTemplate(ServerLevel level, BlockPos origin, StructureTemplate template,

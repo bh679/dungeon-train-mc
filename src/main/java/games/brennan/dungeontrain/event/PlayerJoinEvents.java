@@ -22,6 +22,7 @@ import games.brennan.dungeontrain.tunnel.TunnelGenerator;
 import games.brennan.dungeontrain.tunnel.TunnelGeometry;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.world.StartingDimension;
+import games.brennan.dungeontrain.worldgen.WorldFloor;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -815,12 +816,16 @@ public final class PlayerJoinEvents {
      * Walk down from the world ceiling through air/fluid/leaves/vines until
      * a solid block is hit. Returns the Y of that block (ground Y); caller
      * stands the player at {@code groundY + 1}. Returns
-     * {@code level.getMinBuildHeight() - 1} (sentinel: no ground found) if
-     * every scanned block is passable.
+     * {@code WorldFloor.bedrockY(level) - 1} (sentinel: no ground found) if
+     * every scanned block is passable. The scan stops at the world's bedrock
+     * rather than the level's build floor, so it never descends into the
+     * portal basement below it.
      */
     private static int findGroundY(ServerLevel level, int x, int z, boolean allowWater) {
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-        int minY = level.getMinBuildHeight();
+        // Stop at the world's floor, not the level's: below the bedrock is the portal system's
+        // basement, and a twin structure's roof is not ground to stand a player on.
+        int minY = WorldFloor.bedrockY(level);
         int startY = level.getMaxBuildHeight() - 1;
         for (int y = startY; y >= minY; y--) {
             pos.set(x, y, z);
@@ -863,7 +868,7 @@ public final class PlayerJoinEvents {
      * ice spikes lands the player at snow-Y but inside a tall ice column).
      */
     private static boolean isSafePlayerPos(ServerLevel level, int x, int y, int z, boolean allowWater) {
-        if (y < level.getMinBuildHeight() + VOID_CLEARANCE) return false;
+        if (y < WorldFloor.bedrockY(level) + VOID_CLEARANCE) return false;
         if (y > level.getMaxBuildHeight() - CEILING_CLEARANCE) return false;
 
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();

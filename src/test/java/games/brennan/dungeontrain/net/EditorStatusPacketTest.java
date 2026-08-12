@@ -127,6 +127,27 @@ final class EditorStatusPacketTest {
         assertEquals("default", decoded.modelName());
     }
 
+    @org.junit.jupiter.api.Test
+    @org.junit.jupiter.api.DisplayName("Portal room size survives the round trip; other categories carry NO_SIZE")
+    void roomSizeRoundTrips() {
+        EditorStatusPacket sized = new EditorStatusPacket(
+            "Portals", "portal room / default", "portal_room", "default", true,
+            1, 0, -1, EditorStatusPacket.ALL_PHASES_MASK, true, false, false, false, false,
+            java.util.Collections.emptySet(), "", 21, 17, 9);
+        EditorStatusPacket back = roundTrip(sized);
+        org.junit.jupiter.api.Assertions.assertEquals(21, back.roomLength());
+        org.junit.jupiter.api.Assertions.assertEquals(17, back.roomWidth());
+        org.junit.jupiter.api.Assertions.assertEquals(9, back.roomHeight());
+
+        // The back-compat constructor every other category uses reports "no authored size".
+        EditorStatusPacket unsized = new EditorStatusPacket(
+            "Carriages", "standard", "standard", "standard", false,
+            1, 0, -1, EditorStatusPacket.ALL_PHASES_MASK, true, false, false, false, false,
+            java.util.Collections.emptySet());
+        org.junit.jupiter.api.Assertions.assertEquals(
+            EditorStatusPacket.NO_SIZE, roundTrip(unsized).roomLength());
+    }
+
     private static EditorStatusPacket roundTrip(EditorStatusPacket original) {
         FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
         original.encode(buf);

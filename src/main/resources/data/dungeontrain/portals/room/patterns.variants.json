@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 8,
+  "mirror": { "x": true, "y": true, "z": true, "v": true },
+  "variants": {
+    "5,3,5": [{"state": "minecraft:stripped_birch_wood[axis=y]", "rotation": {"mode": "lock", "dirs": ["up"]}}, {"state": "minecraft:red_concrete", "rotation": {"mode": "lock", "dirs": ["up"]}}, {"state": "minecraft:gray_concrete", "rotation": {"mode": "lock", "dirs": ["up"]}}, {"state": "minecraft:black_concrete", "rotation": {"mode": "lock", "dirs": ["up"]}}, {"state": "minecraft:cyan_concrete", "rotation": {"mode": "lock", "dirs": ["up"]}}]
+  }
+}
