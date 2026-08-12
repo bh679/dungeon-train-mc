@@ -2,7 +2,6 @@ package games.brennan.dungeontrain.client.support;
 
 import games.brennan.dungeontrain.client.analytics.UiAnalytics;
 import games.brennan.dungeontrain.client.links.OfficialLinks;
-import games.brennan.dungeontrain.client.menu.ColorTintedButton;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -22,12 +21,12 @@ import java.util.List;
  * title screen's dev-only icon (see {@code client.TitleScreenBookPromoButton}); the entry point does
  * not exist on a release build, so neither does this page for players.
  *
- * <p>One row of three price points ({@link BookPromoTier}), each opening the relay's checkout route
- * through vanilla's {@link ConfirmLinkScreen} and returning <em>here</em> afterwards, so a player who
- * backs out of one can pick another. Structurally a slimmed-down
- * {@link SupportScreen}: the same translucent contrast panel, the same wrapped-copy-over-panel
- * layout, the same tinted buttons and the same confirm-and-come-back link flow — this is a second
- * instance of that surface, not a new pattern.</p>
+ * <p>One row of three price points ({@link BookPromoTier}), each drawn as the books it buys
+ * ({@link BookPromoTierButton}) and opening the relay's checkout route through vanilla's
+ * {@link ConfirmLinkScreen}, returning <em>here</em> afterwards so a player who backs out of one can
+ * pick another. Structurally a slimmed-down {@link SupportScreen}: the same translucent contrast
+ * panel, the same wrapped-copy-over-panel layout and the same confirm-and-come-back link flow — this
+ * is a second instance of that surface, not a new pattern.</p>
  *
  * <p><b>When the relay has served no checkout route</b> ({@link PaymentLinks#tiersAvailable()} —
  * offline, or the key is unset) the three buttons render <b>disabled</b> under an explanatory line
@@ -45,7 +44,6 @@ public final class BookPromoScreen extends Screen {
 
     private static final int MAX_COL_W = 360;
     private static final int SIDE_MARGIN = 40;
-    private static final int BUTTON_H = 20;
     private static final int BUTTON_GAP = 6;
     private static final int TOP = 16;
     private static final int PANEL_PAD = 10;
@@ -56,9 +54,6 @@ public final class BookPromoScreen extends Screen {
     private static final int COLOUR_DESC = 0xFFCACACA;
     /** Muted amber for the "checkout unavailable" line — a notice, not an error the player caused. */
     private static final int COLOUR_NOTICE = 0xFFE0B56A;
-
-    /** Same blue the donation surfaces give their Stripe-backed price points. */
-    private static final float[] TINT_BLUE = {0.35F, 0.62F, 1.00F};
 
     private final Screen parent;
 
@@ -118,7 +113,7 @@ public final class BookPromoScreen extends Screen {
         for (int i = 0; i < tiers.length; i++) {
             addRenderableWidget(tierButton(tiers[i], colX + i * (each + BUTTON_GAP), y, each, available));
         }
-        y += BUTTON_H;
+        y += BookPromoTierButton.HEIGHT;
 
         panelBottom = y + PANEL_PAD;
 
@@ -127,11 +122,13 @@ public final class BookPromoScreen extends Screen {
                 .build());
     }
 
-    /** One price point. Inactive (but still visible, still explaining itself) when there is no route. */
+    /**
+     * One price point, drawn as its books ({@link BookPromoTierButton}) over the price label.
+     * Inactive — but still visible, still explaining itself — when there is no checkout route.
+     */
     private Button tierButton(BookPromoTier tier, int x, int y, int w, boolean available) {
-        ColorTintedButton button = new ColorTintedButton(x, y, w, BUTTON_H,
-                Component.translatable(tier.labelKey()),
-                TINT_BLUE[0], TINT_BLUE[1], TINT_BLUE[2],
+        BookPromoTierButton button = new BookPromoTierButton(x, y, w,
+                Component.translatable(tier.labelKey()), tier.quantity(),
                 b -> openCheckout(tier));
         button.setTooltip(Tooltip.create(Component.translatable(tier.tooltipKey())));
         button.active = available;
