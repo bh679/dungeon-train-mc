@@ -49,11 +49,16 @@ import java.util.UUID;
  *   ] }
  * }</pre>
  *
- * <p><b>Partitioned by difficulty.</b> Each vanilla difficulty keeps its own profile — see
- * {@link DifficultyPartition}. Normal uses the original {@code <uuid>.json} path, so every existing
- * profile stays whole and needs no migration; the others live under {@code <partition>/<uuid>.json}. The
- * single-argument methods target Normal and exist for call sites with no player context; everything driven
- * by a live player passes the partition explicitly.</p>
+ * <p><b>Two buckets.</b> An advancement earned over many lives belongs to the player on every difficulty; one
+ * that must be achieved within a single life belongs to the difficulty it was achieved on. {@link
+ * AdvancementScope} decides which, and each goes to its own file:</p>
+ * <ul>
+ *   <li>{@link #GLOBAL_BUCKET} → {@code <uuid>.json} — the path this store has always used, so an existing
+ *       profile keeps its cross-life advancements with no migration;</li>
+ *   <li>a difficulty → {@code <difficulty>/<uuid>.json}, one per difficulty including {@code normal}.</li>
+ * </ul>
+ * <p>{@link #readMerged} is the union in force on one difficulty — what a login replay grants. The
+ * single-argument methods target the global bucket.</p>
  *
  * <p>Concurrency: methods are {@code synchronized} on the class. In
  * single-player there is never contention (single thread). On dedicated
@@ -76,29 +81,37 @@ public final class GlobalAchievementStore {
 
     private GlobalAchievementStore() {}
 
-    /** Resolve the sidecar file path for {@code playerUuid} in the legacy (Normal) partition. */
+    /**
+     * The bucket holding cross-life advancements — the ones that belong to the player on every difficulty.
+     * Its file is the bare {@code <uuid>.json}, i.e. exactly the path this store has always used, so an
+     * existing profile needs no migration.
+     */
+    public static final String GLOBAL_BUCKET = "";
+
+    /** Resolve the file path for {@code playerUuid}'s cross-life (global) bucket. */
     public static Path file(UUID playerUuid) {
-        return file(playerUuid, DifficultyPartition.LEGACY_KEY);
+        return file(playerUuid, GLOBAL_BUCKET);
     }
 
-    /** Resolve the sidecar file path for {@code playerUuid} in {@code partition}. */
-    public static Path file(UUID playerUuid, String partition) {
-        return FMLPaths.CONFIGDIR.get().resolve(DIR_NAME).resolve(relativeFile(playerUuid, partition));
+    /** Resolve the file path for {@code playerUuid} in {@code bucket} ({@link #GLOBAL_BUCKET} or a difficulty). */
+    public static Path file(UUID playerUuid, String bucket) {
+        return FMLPaths.CONFIGDIR.get().resolve(DIR_NAME).resolve(relativeFile(playerUuid, bucket));
     }
 
     /**
-     * The sidecar's path relative to {@link #DIR_NAME}: {@code <uuid>.json} for the legacy partition,
-     * {@code <partition>/<uuid>.json} otherwise.
+     * The sidecar's path relative to {@link #DIR_NAME}: {@code <uuid>.json} for {@link #GLOBAL_BUCKET},
+     * {@code <difficulty>/<uuid>.json} for a single-life bucket.
      *
-     * <p>The legacy partition keeps the original path exactly, so an existing profile stays whole and
-     * reachable on Normal with nothing to migrate — the same rule the stash and the echo pool follow.</p>
+     * <p>EVERY difficulty gets a subdirectory, {@code normal} included — the per-life bucket must never
+     * share a file with the global one, which owns the bare filename.</p>
      *
      * <p>A subdirectory rather than a {@code <uuid>|hard.json} suffix, unlike the Ender Chest slot key:
      * that key is an NBT tag name, this is a real filename, and {@code |} is illegal in one on Windows.</p>
      */
-    static String relativeFile(UUID playerUuid, String partition) {
-        String suffixKey = DifficultyPartition.suffixFor(partition);
-        return suffixKey.isEmpty() ? playerUuid + ".json" : partition + "/" + playerUuid + ".json";
+    static String relativeFile(UUID playerUuid, String bucket) {
+        return bucket == null || bucket.isEmpty()
+            ? playerUuid + ".json"
+            : bucket + "/" + playerUuid + ".json";
     }
 
     /**
@@ -107,12 +120,27 @@ public final class GlobalAchievementStore {
      * malformed case).
      */
     public static synchronized Set<ResourceLocation> read(UUID playerUuid) {
-        return read(playerUuid, DifficultyPartition.LEGACY_KEY);
+        return read(playerUuid, GLOBAL_BUCKET);
+    }
+
+    /**
+     * The whole profile in force on {@code partition}: the cross-life (global) bucket plus that
+     * difficulty's single-life bucket — see {@link AdvancementScope}. This is what a login replay grants.
+     */
+    public static synchronized Set<ResourceLocation> readMerged(UUID playerUuid, String partition) {
+        Set<ResourceLocation> merged = new LinkedHashSet<>(read(playerUuid, GLOBAL_BUCKET));
+        merged.addAll(read(playerUuid, perLifeBucket(partition)));
+        return merged;
+    }
+
+    /** The single-life bucket for {@code partition}; a blank partition falls back to the legacy difficulty. */
+    public static String perLifeBucket(String partition) {
+        return partition == null || partition.isEmpty() ? DifficultyPartition.LEGACY_KEY : partition;
     }
 
     /** {@link #read(UUID)} for one difficulty partition. */
-    public static synchronized Set<ResourceLocation> read(UUID playerUuid, String partition) {
-        Path path = file(playerUuid, partition);
+    public static synchronized Set<ResourceLocation> read(UUID playerUuid, String bucket) {
+        Path path = file(playerUuid, bucket);
         if (!Files.isRegularFile(path)) return Set.of();
         try (Reader reader = Files.newBufferedReader(path)) {
             JsonElement element = JsonParser.parseReader(reader);
@@ -137,7 +165,7 @@ public final class GlobalAchievementStore {
      * @return {@code true} when the file was actually mutated.
      */
     public static synchronized boolean append(UUID playerUuid, ResourceLocation advancement) {
-        return append(playerUuid, DifficultyPartition.LEGACY_KEY, advancement);
+        return append(playerUuid, GLOBAL_BUCKET, advancement);
     }
 
     /** {@link #append(UUID, ResourceLocation)} into one difficulty partition. */
@@ -159,7 +187,7 @@ public final class GlobalAchievementStore {
      * @return the number of ids actually added (0 when all were already present).
      */
     public static synchronized int appendAll(UUID playerUuid, Collection<ResourceLocation> advancements) {
-        return appendAll(playerUuid, DifficultyPartition.LEGACY_KEY, advancements);
+        return appendAll(playerUuid, GLOBAL_BUCKET, advancements);
     }
 
     /** {@link #appendAll(UUID, Collection)} into one difficulty partition. */
@@ -182,7 +210,7 @@ public final class GlobalAchievementStore {
      * @return {@code true} when the file was actually mutated.
      */
     public static synchronized boolean remove(UUID playerUuid, ResourceLocation advancement) {
-        return remove(playerUuid, DifficultyPartition.LEGACY_KEY, advancement);
+        return remove(playerUuid, GLOBAL_BUCKET, advancement);
     }
 
     /** {@link #remove(UUID, ResourceLocation)} from one difficulty partition. */

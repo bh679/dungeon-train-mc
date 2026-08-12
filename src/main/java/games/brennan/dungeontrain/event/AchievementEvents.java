@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.event;
 import com.mojang.logging.LogUtils;
 import games.brennan.discordpresence.discord.DiscordService;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.advancement.AdvancementScope;
 import games.brennan.dungeontrain.advancement.CompletionistAdvancement;
 import games.brennan.dungeontrain.advancement.FarStartAdvancement;
 import games.brennan.dungeontrain.advancement.GlobalAchievementStore;
@@ -155,6 +156,50 @@ public final class AchievementEvents {
                     + "advancements are no longer attributable, so the absorb + logout reconcile are "
                     + "suppressed until the next world.", player.getName().getString());
         }
+    }
+
+    /**
+     * Which bucket {@code holder} is recorded in for {@code player}: the cross-life global bucket, or this
+     * difficulty's single-life bucket. See {@link AdvancementScope} for where the line is drawn.
+     */
+    private static String bucketFor(ServerPlayer player, AdvancementHolder holder) {
+        return AdvancementScope.isPerLife(holder)
+            ? GlobalAchievementStore.perLifeBucket(DifficultyPartition.activeKeyFor(player.level()))
+            : GlobalAchievementStore.GLOBAL_BUCKET;
+    }
+
+    /**
+     * One-time split of a pre-buckets profile: single-life ids sitting in the global file move into the
+     * current difficulty's bucket.
+     *
+     * <p>Before advancements had buckets, everything lived in the one file. Left there, a single-life
+     * advancement would replay on every difficulty — exactly what it shouldn't do. Legacy progress is
+     * attributed to the difficulty being played when the split happens, which for almost everyone is Normal;
+     * that is a guess, but the alternative (dropping it) is worse and it is unknowable either way.</p>
+     */
+    private static void splitLegacyProfileBuckets(ServerPlayer player) {
+        MinecraftServer server = player.getServer();
+        if (server == null) return;
+        UUID uuid = player.getUUID();
+        ServerAdvancementManager mgr = server.getAdvancements();
+        Set<ResourceLocation> moving = new LinkedHashSet<>();
+        for (ResourceLocation id : GlobalAchievementStore.read(uuid, GlobalAchievementStore.GLOBAL_BUCKET)) {
+            AdvancementHolder holder = mgr.get(id);
+            // An id whose advancement is gone can't be classified — leave it in the global bucket rather than
+            // guessing; it is inert until that mod/datapack returns.
+            if (holder != null && AdvancementScope.isPerLife(holder)) {
+                moving.add(id);
+            }
+        }
+        if (moving.isEmpty()) return;
+        String bucket = GlobalAchievementStore.perLifeBucket(
+            DifficultyPartition.activeKeyFor(player.level()));
+        GlobalAchievementStore.appendAll(uuid, bucket, moving);
+        for (ResourceLocation id : moving) {
+            GlobalAchievementStore.remove(uuid, GlobalAchievementStore.GLOBAL_BUCKET, id);
+        }
+        LOGGER.info("[DungeonTrain] Moved {} single-life advancement(s) out of {}'s cross-life profile into "
+                + "the '{}' bucket (one-time split)", moving.size(), player.getName().getString(), bucket);
     }
 
     /**
@@ -825,6 +870,9 @@ public final class AchievementEvents {
         // updated player's complete vanilla / other-mod trees, which will never
         // re-fire AdvancementEarnEvent — is captured before the replay below
         // mirrors the store back onto this world.
+        // Before anything reads the buckets: move any single-life ids that predate the split out of the
+        // cross-life file, so they stop replaying on every difficulty.
+        splitLegacyProfileBuckets(player);
         absorbWorldAdvancementsIntoSidecar(player);
         // Replay the cross-world sidecar onto this world's advancements, then
         // re-evaluate the "Everything Burrito" capstone. The capstone check runs
@@ -854,8 +902,9 @@ public final class AchievementEvents {
      */
     private static void replaySidecarAdvancements(ServerPlayer player) {
         UUID uuid = player.getUUID();
-        Set<ResourceLocation> granted =
-            GlobalAchievementStore.read(uuid, DifficultyPartition.activeKeyFor(player.level()));
+        // The cross-life bucket plus THIS difficulty's single-life bucket — see AdvancementScope.
+        Set<ResourceLocation> granted = GlobalAchievementStore.readMerged(uuid,
+            DifficultyPartition.activeKeyFor(player.level()));
         if (granted.isEmpty()) return;
         MinecraftServer server = player.getServer();
         if (server == null) return;
@@ -917,25 +966,30 @@ public final class AchievementEvents {
     private static void absorbWorldAdvancementsIntoSidecar(ServerPlayer player) {
         MinecraftServer server = player.getServer();
         if (server == null) return;
-        if (isProfileMismatched(player)) {
-            return; // this world's advancements are a mix of profiles — see markProfileMismatched
-        }
+        // Cross-life ids are difficulty-independent, so they are always safe to absorb. Only the
+        // single-life half is withheld when this world's state isn't attributable — see markProfileMismatched.
+        boolean mismatched = isProfileMismatched(player);
         ServerAdvancementManager mgr = server.getAdvancements();
-        Set<ResourceLocation> done = new LinkedHashSet<>();
+        Set<ResourceLocation> global = new LinkedHashSet<>();
+        Set<ResourceLocation> perLife = new LinkedHashSet<>();
         for (AdvancementHolder holder : mgr.getAllAdvancements()) {
             if (!shouldPersist(holder)) continue;
             // Don't absorb a cheated world's gameplay/vanilla earns into the
             // cross-world profile; editor/* authoring still flows through.
             if (!RunIntegrity.persistsAdvancement(player, holder)) continue;
-            if (player.getAdvancements().getOrStartProgress(holder).isDone()) {
-                done.add(holder.id());
-            }
+            if (!player.getAdvancements().getOrStartProgress(holder).isDone()) continue;
+            (AdvancementScope.isPerLife(holder) ? perLife : global).add(holder.id());
         }
         int added = GlobalAchievementStore.appendAll(player.getUUID(),
-            DifficultyPartition.activeKeyFor(player.level()), done);
+            GlobalAchievementStore.GLOBAL_BUCKET, global);
+        if (!mismatched) {
+            added += GlobalAchievementStore.appendAll(player.getUUID(),
+                GlobalAchievementStore.perLifeBucket(DifficultyPartition.activeKeyFor(player.level())),
+                perLife);
+        }
         if (added > 0) {
-            LOGGER.info("[DungeonTrain] Absorbed {} already-earned advancement(s) into global store for {}",
-                added, player.getName().getString());
+            LOGGER.info("[DungeonTrain] Absorbed {} already-earned advancement(s) into the cross-world "
+                    + "profile for {}", added, player.getName().getString());
         }
     }
 
@@ -962,20 +1016,23 @@ public final class AchievementEvents {
         MinecraftServer server = player.getServer();
         if (server == null) return;
         // NEVER reconcile a mismatched world against a profile it wasn't replayed from: every entry would
-        // look revoked and the whole profile would be deleted. See markProfileMismatched.
-        if (isProfileMismatched(player)) {
-            MISMATCHED_PROFILES.remove(uuid);
-            return;
-        }
-        String partition = DifficultyPartition.activeKeyFor(player.level());
+        // look revoked and the whole profile would be deleted. See markProfileMismatched. The cross-life
+        // bucket is difficulty-independent, so only the single-life bucket is at risk.
+        boolean mismatched = isProfileMismatched(player);
+        MISMATCHED_PROFILES.remove(uuid);
+        String perLifeBucket = GlobalAchievementStore.perLifeBucket(
+            DifficultyPartition.activeKeyFor(player.level()));
         ServerAdvancementManager mgr = server.getAdvancements();
-        Set<ResourceLocation> sidecar = GlobalAchievementStore.read(uuid, partition);
         int removed = 0;
-        for (ResourceLocation id : sidecar) {
-            AdvancementHolder holder = mgr.get(id);
-            if (holder == null) continue; // removed mod/datapack — leave it (may return)
-            if (player.getAdvancements().getOrStartProgress(holder).isDone()) continue;
-            if (GlobalAchievementStore.remove(uuid, partition, id)) removed++;
+        for (String bucket : mismatched
+                ? List.of(GlobalAchievementStore.GLOBAL_BUCKET)
+                : List.of(GlobalAchievementStore.GLOBAL_BUCKET, perLifeBucket)) {
+            for (ResourceLocation id : GlobalAchievementStore.read(uuid, bucket)) {
+                AdvancementHolder holder = mgr.get(id);
+                if (holder == null) continue; // removed mod/datapack — leave it (may return)
+                if (player.getAdvancements().getOrStartProgress(holder).isDone()) continue;
+                if (GlobalAchievementStore.remove(uuid, bucket, id)) removed++;
+            }
         }
         if (removed > 0) {
             LOGGER.info("[DungeonTrain] Logout reconcile: removed {} revoked advancement(s) from sidecar for {}",
@@ -1028,7 +1085,7 @@ public final class AchievementEvents {
         if (shouldPersist(advancement)
                 && RunIntegrity.persistsAdvancement(player, advancement)
                 && GlobalAchievementStore.append(player.getUUID(),
-                    DifficultyPartition.activeKeyFor(player.level()), id)) {
+                    bucketFor(player, advancement), id)) {
             LOGGER.info("[DungeonTrain] Wrote global achievement {} for {}",
                 id, player.getName().getString());
         }

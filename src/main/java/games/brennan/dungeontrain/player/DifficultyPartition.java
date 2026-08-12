@@ -76,6 +76,11 @@ public final class DifficultyPartition {
      * the wrong one.</p>
      */
     public static String activeKeyFor(Level level) {
-        return DungeonTrainConfig.getDifficultyIsolatedStash() ? keyFor(level) : LEGACY_KEY;
+        return isolationEnabled() ? keyFor(level) : LEGACY_KEY;
+    }
+
+    /** Whether difficulty profiles are enabled at all (config {@code difficultyIsolatedStash}). */
+    public static boolean isolationEnabled() {
+        return DungeonTrainConfig.getDifficultyIsolatedStash();
     }
 }
