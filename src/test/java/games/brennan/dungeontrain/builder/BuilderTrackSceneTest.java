@@ -179,6 +179,20 @@ final class BuilderTrackSceneTest {
     }
 
     @Test
+    @DisplayName("The staircase runs two rows up inside the entrance")
+    void theStaircaseReachesIntoTheEntrance() {
+        BoundingBox entrance = BuilderTrackPlot.volume(TrackKind.ADJUNCT_STAIRS_ENTRANCE, DIMS);
+        int shaftTop = BuilderTrackScene.shaftTopY(DIMS);
+
+        // The entrance is dropped ENTRANCE_OVERLAP_Y so its lowest rows sit inside the top of the
+        // stairs — the two structures meet rather than stack. Two rows exactly: shaftTop and the one
+        // below it.
+        assertTrue(shaftTop >= entrance.minY(), "the stairs stop below the entrance");
+        assertEquals(2, shaftTop - entrance.minY() + 1,
+                "the overlap should be exactly the generator's ENTRANCE_OVERLAP_Y rows");
+    }
+
+    @Test
     @DisplayName("The shaft runs floor-to-surface the generator's way")
     void theShaftUsesTheGeneratorsRows() {
         assertEquals(TrackGenerator.downStairsFloorY(BuilderTrackScene.groundGeometry(DIMS)),

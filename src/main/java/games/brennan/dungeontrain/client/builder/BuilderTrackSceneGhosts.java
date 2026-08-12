@@ -167,8 +167,16 @@ final class BuilderTrackSceneGhosts {
             }
         }
 
+        // The plot's own box is cleared of scene ghosts *before* the staircase goes in, because the
+        // staircase legitimately shares rows with it: the entrance is dropped ENTRANCE_OVERLAP_Y so
+        // its bottom two rows sit inside the top of the stairs. Clearing afterwards would take those
+        // two rows of stair with it and leave the flight stopping short of the thing it arrives at.
+        if (plot != null) {
+            cells.keySet().removeIf(plot::isInside);
+        }
+
         // The staircase climbing the shaft, repeated the way the generator repeats it — from just
-        // under the surface down to the deck it starts from.
+        // under the surface down to the deck it starts from, and up into the entrance's lowest rows.
         Map<BlockPos, BlockState> stairs = BuilderGhostTemplates.cells(
                 TrackKind.ADJUNCT_STAIRS, TrackKind.DEFAULT_NAME, dims);
         int height = PillarAdjunct.STAIRS.ySize();
@@ -180,15 +188,27 @@ final class BuilderTrackSceneGhosts {
                 if (y < floorY || y > top) {
                     continue;
                 }
-                cells.put(new BlockPos(originX + local.getX(), y, shaftZ + local.getZ()),
-                        entry.getValue());
+                BlockPos world = new BlockPos(originX + local.getX(), y, shaftZ + local.getZ());
+                // Where the entrance itself has a block, the entrance wins — the generator stamps
+                // the stairs first and the entrance over them. Everywhere else in those rows the
+                // stair keeps showing, which is what makes the join visible.
+                if (occupiedByPlot(world, plot, live.plotCells())) {
+                    continue;
+                }
+                cells.put(world, entry.getValue());
             }
         }
-
-        if (plot != null) {
-            cells.keySet().removeIf(plot::isInside);
-        }
         return cells;
+    }
+
+    /** Whether the plot has a real block at this world position. */
+    private static boolean occupiedByPlot(BlockPos world, BoundingBox plot,
+                                          Map<BlockPos, BlockState> plotCells) {
+        if (plot == null || !plot.isInside(world)) {
+            return false;
+        }
+        return plotCells.containsKey(new BlockPos(world.getX() - plot.minX(),
+                world.getY() - plot.minY(), world.getZ() - plot.minZ()));
     }
 
     /**
