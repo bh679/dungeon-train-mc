@@ -4,6 +4,7 @@ import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.DoubleArgumentType;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
+import games.brennan.dungeontrain.difficulty.DifficultyOffset;
 import games.brennan.dungeontrain.difficulty.DifficultyProgression;
 import games.brennan.dungeontrain.event.DtpPlacementService;
 import games.brennan.dungeontrain.track.TrackGeometry;
@@ -126,7 +127,7 @@ public final class DtpCommand {
         int rawTravelled = DifficultyProgression.rawMaxTravelledCarriageIndex(trainLevel);
         int difficultyOffset = DifficultyProgression.travelledOffsetForRequestedTier(
             requestedTier, rawTravelled, DungeonTrainConfig.getCarriagesPerTier(), DungeonTrainConfig.getProgressionLevelDelay());
-        DungeonTrainConfig.setDifficultyTravelledOffset(difficultyOffset);
+        DifficultyOffset.set(server, difficultyOffset);
 
         BlockPos origin = new BlockPos((int) Math.floor(x), trainY, 0);
         Vector3d spawnerWorldPos = new Vector3d(x, trainY, 0);

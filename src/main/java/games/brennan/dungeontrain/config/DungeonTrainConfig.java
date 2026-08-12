@@ -351,7 +351,7 @@ public final class DungeonTrainConfig {
                 .comment("Number of carriages per tier step. tierIndex = floor(abs(pIdx) / carriagesPerTier), clamped to the loaded tier list. Game default 20; set to 1 for fast-paced/testing progression.")
                 .defineInRange("carriagesPerTier", DEFAULT_CARRIAGES_PER_TIER, MIN_CARRIAGES_PER_TIER, MAX_CARRIAGES_PER_TIER);
         ModConfigSpec.IntValue difficultyTravelledOffset = b
-                .comment("Signed offset (in carriages) added to every player's live travelled-carriage progress for difficulty purposes: the game behaves as if each player had travelled this many extra carriages. Shifts the boarding HUD (Diff-Car + Diff-Level), the onboarding stages (no-hostiles/slimes), mob gearing, villager trade caps, carriage-distance achievements, and Discord level-up posts — all together. 0 (default) = fully automatic. Set via /dungeontrain difficulty <tier>, which recomputes this as (target carriages for the requested tier - current raw progress) so the effective tier becomes exactly what was requested at that moment; the offset then stays fixed while real travel keeps moving the effective value, until the next command invocation re-anchors it. /dungeontrain difficulty auto resets this to 0. Does NOT affect the deterministic per-carriage world-gen tier (that keys off carriage position, not player progress).")
+                .comment("Signed offset (in carriages) added to every player's live travelled-carriage progress for difficulty purposes: the game behaves as if each player had travelled this many extra carriages. Shifts the boarding HUD (Diff-Car + Diff-Level), the onboarding stages (no-hostiles/slimes), mob gearing, villager trade caps, carriage-distance achievements, and Discord level-up posts — all together. 0 (default) = fully automatic. Set via /dungeontrain difficulty <tier>, which recomputes this as (target carriages for the requested tier - current raw progress) so the effective tier becomes exactly what was requested at that moment; the offset then stays fixed while real travel keeps moving the effective value, until the next command invocation re-anchors it. /dungeontrain difficulty auto resets this to 0. This entry is a MIRROR of per-world state (stored in the world's dungeontrain_world.dat): it is re-read from the world you load, so an offset set in one world never carries into another, and it is cleared when a new run starts (respawn after death, when you're the only player online). Does NOT affect the deterministic per-carriage world-gen tier (that keys off carriage position, not player progress).")
                 .defineInRange("difficultyTravelledOffset", DEFAULT_DIFFICULTY_TRAVELLED_OFFSET, MIN_DIFFICULTY_TRAVELLED_OFFSET, MAX_DIFFICULTY_TRAVELLED_OFFSET);
         ModConfigSpec.BooleanValue difficultyAffectsBabyMobs = b
                 .comment("When true, baby mobs (zombies, piglins, etc.) also receive difficulty gear and effects. Default false to avoid silly visuals (baby zombies in netherite).")
@@ -652,6 +652,12 @@ public final class DungeonTrainConfig {
      * achievements, Discord). 0 (default) = no adjustment. Re-anchored by
      * {@code /dungeontrain difficulty <tier>}; cleared to 0 by
      * {@code /dungeontrain difficulty auto}.
+     *
+     * <p>This global config entry is a <strong>mirror</strong> of per-world state — the
+     * authoritative copy lives in {@code DungeonTrainWorldData}. Write it through
+     * {@code DifficultyOffset.set}, never this class directly, so the two stay in step;
+     * {@code DifficultyOffsetLifecycle} re-mirrors it on world load and clears it on
+     * respawn.</p>
      */
     public static int getDifficultyTravelledOffset() {
         return isLoaded() ? DIFFICULTY_TRAVELLED_OFFSET.get() : DEFAULT_DIFFICULTY_TRAVELLED_OFFSET;
