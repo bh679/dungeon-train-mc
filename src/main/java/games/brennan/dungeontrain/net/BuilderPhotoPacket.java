@@ -4,6 +4,7 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.builder.BuilderCinematic;
 import games.brennan.dungeontrain.builder.BuilderMode;
 import games.brennan.dungeontrain.builder.BuilderPhotoRequest;
+import games.brennan.dungeontrain.builder.BuilderTrackPlot;
 import games.brennan.dungeontrain.builder.BuilderWorldLayout;
 import games.brennan.dungeontrain.client.builder.BuilderPhotoClient;
 import games.brennan.dungeontrain.train.CarriageDims;
@@ -15,6 +16,7 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
@@ -35,7 +37,8 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  * a template that has never been photographed takes its picture once and leaves it alone
  * afterwards. An explicit Save sends false — it always re-photographs what you just made.</p>
  */
-public record BuilderPhotoPacket(String kindId, String id, String partKindId, boolean onlyIfMissing,
+public record BuilderPhotoPacket(String kindId, String id, String partKindId, String trackKindId,
+                                 boolean onlyIfMissing,
                                  double camX, double camY, double camZ,
                                  double focusX, double focusY, double focusZ)
         implements CustomPacketPayload {
@@ -49,12 +52,13 @@ public record BuilderPhotoPacket(String kindId, String id, String partKindId, bo
                 buf.writeUtf(p.kindId, 16);
                 buf.writeUtf(p.id, 64);
                 buf.writeUtf(p.partKindId, 16);
+                buf.writeUtf(p.trackKindId, 32);
                 buf.writeBoolean(p.onlyIfMissing);
                 buf.writeDouble(p.camX); buf.writeDouble(p.camY); buf.writeDouble(p.camZ);
                 buf.writeDouble(p.focusX); buf.writeDouble(p.focusY); buf.writeDouble(p.focusZ);
             },
             buf -> new BuilderPhotoPacket(buf.readUtf(16), buf.readUtf(64), buf.readUtf(16),
-                    buf.readBoolean(),
+                    buf.readUtf(32), buf.readBoolean(),
                     buf.readDouble(), buf.readDouble(), buf.readDouble(),
                     buf.readDouble(), buf.readDouble(), buf.readDouble())
         );
@@ -85,12 +89,23 @@ public record BuilderPhotoPacket(String kindId, String id, String partKindId, bo
                 .map(BuilderMode::carriageCount)
                 .orElse(0);
 
-        BlockPos spawn = BuilderWorldLayout.spawnPos(dims, carriages);
+        BlockPos spawn;
+        Vec3 focus;
+        if (request.trackKind() != null) {
+            // A track build has no train to frame on, and the carriage framing would aim the camera
+            // at an empty stretch of corridor. Frame the plot itself instead — the same box the
+            // client washes around and the save cuts from, so the picture is of the template.
+            BoundingBox box = BuilderTrackPlot.volume(request.trackKind(), dims);
+            spawn = BuilderTrackPlot.viewPos(request.trackKind(), dims);
+            focus = box.getCenter().getCenter();
+        } else {
+            spawn = BuilderWorldLayout.spawnPos(dims, carriages);
+            focus = BuilderCinematic.focus(carriages, dims);
+        }
         Vec3 cam = BuilderCinematic.eyeOf(spawn.getX() + 0.5, spawn.getY(), spawn.getZ() + 0.5);
-        Vec3 focus = BuilderCinematic.focus(carriages, dims);
 
         DungeonTrainNet.sendTo(player, new BuilderPhotoPacket(
-                request.kind().id(), request.id(), request.partKindId(), onlyIfMissing,
-                cam.x, cam.y, cam.z, focus.x, focus.y, focus.z));
+                request.kind().id(), request.id(), request.partKindId(), request.trackKindId(),
+                onlyIfMissing, cam.x, cam.y, cam.z, focus.x, focus.y, focus.z));
     }
 }

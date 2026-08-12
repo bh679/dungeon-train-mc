@@ -145,12 +145,33 @@ public final class BuilderWorldLayout {
      * a rail. Everything from the train floor up stays editable — that is the build.
      */
     public static boolean isProtected(BlockPos pos, CarriageDims dims) {
+        return isProtected(pos, dims, false);
+    }
+
+    /**
+     * As above, for a world that may be holding a track-side build.
+     *
+     * <p>The track rows stop being protected while one is open, because by then they are not the
+     * track: opening a track template erases the corridor so the line can be drawn as ghosts, and
+     * the scene puts the build itself down there — a pillar column stands from {@link #Y_STAND},
+     * which is the bed row. Protecting those rows then defends nothing and locks the bottom of
+     * every column the builder is trying to author, which is exactly what it did.</p>
+     *
+     * <p>The floor and the grass stay protected regardless. Nothing is ever authored there, and a
+     * hole in the world floor of a builder dimension is not a recoverable mistake.</p>
+     *
+     * @param trackBuildOpen whether a track-side template is currently open in this world
+     */
+    public static boolean isProtected(BlockPos pos, CarriageDims dims, boolean trackBuildOpen) {
         int y = pos.getY();
         if (!inPlatform(pos.getX(), pos.getZ())) {
             return false;
         }
         if (y == Y_BEDROCK || y == Y_GRASS) {
             return true;
+        }
+        if (trackBuildOpen) {
+            return false;
         }
         return (y == Y_TRACK_BED || y == Y_TRACK_RAIL) && inCorridor(pos.getZ(), dims);
     }

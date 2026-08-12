@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.net;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.builder.BuilderBounds;
 import games.brennan.dungeontrain.builder.BuilderNewOptions;
+import games.brennan.dungeontrain.builder.BuilderTrackBuild;
 import games.brennan.dungeontrain.builder.BuilderWorldLayout;
 import games.brennan.dungeontrain.builder.BuilderWorldSetup;
 import games.brennan.dungeontrain.client.builder.BuilderBoundsState;
@@ -38,12 +39,15 @@ import java.util.List;
  * change at exactly the same moments the volumes do (entry, New, mode switch), plus one more: the
  * mirror command resends this after a toggle.</p>
  *
- * @param buildName what the build saves as; empty means an unnamed draft
- * @param mirrorMask packed {@link games.brennan.dungeontrain.builder.BuilderMirrorFlags}
+ * @param buildName   what the build saves as; empty means an unnamed draft
+ * @param mirrorMask  packed {@link games.brennan.dungeontrain.builder.BuilderMirrorFlags}
+ * @param trackKindId which track-side kind is on the plot, empty for a carriage build. The
+ *                    track-mode counterpart of {@code subTypeId}: exactly one of the two is ever
+ *                    set, because a build is either part of a carriage or part of the line.
  */
 public record BuilderBoundsPacket(List<BoundingBox> volumes, String modeId, String buildName,
                                   int mirrorMask, String subTypeId, String partKindId,
-                                  String stageId, int weight)
+                                  String stageId, int weight, String trackKindId)
         implements CustomPacketPayload {
 
     /** Guards against a malformed or hostile payload allocating an unbounded list. */
@@ -61,6 +65,7 @@ public record BuilderBoundsPacket(List<BoundingBox> volumes, String modeId, Stri
                 buf.writeUtf(packet.subTypeId, 32);
                 buf.writeUtf(packet.partKindId, 16);
                 buf.writeUtf(packet.stageId, 32);
+                buf.writeUtf(packet.trackKindId, 32);
                 buf.writeVarInt(packet.weight + 1);   // -1 = "doesn't apply"; varint wants non-negative
                 buf.writeVarInt(Math.min(packet.volumes.size(), MAX_VOLUMES));
                 for (int i = 0; i < Math.min(packet.volumes.size(), MAX_VOLUMES); i++) {
@@ -76,6 +81,7 @@ public record BuilderBoundsPacket(List<BoundingBox> volumes, String modeId, Stri
                 String subTypeId = buf.readUtf(32);
                 String partKindId = buf.readUtf(16);
                 String stageId = buf.readUtf(32);
+                String trackKindId = buf.readUtf(32);
                 int weight = buf.readVarInt() - 1;
                 int count = Math.min(buf.readVarInt(), MAX_VOLUMES);
                 List<BoundingBox> boxes = new ArrayList<>(count);
@@ -85,7 +91,7 @@ public record BuilderBoundsPacket(List<BoundingBox> volumes, String modeId, Stri
                         buf.readVarInt(), buf.readVarInt(), buf.readVarInt()));
                 }
                 return new BuilderBoundsPacket(boxes, modeId, buildName, mirrorMask,
-                        subTypeId, partKindId, stageId, weight);
+                        subTypeId, partKindId, stageId, weight, trackKindId);
             }
         );
 
@@ -97,7 +103,7 @@ public record BuilderBoundsPacket(List<BoundingBox> volumes, String modeId, Stri
     /** Build the packet for a player's current world — empty outside a builder world. */
     public static BuilderBoundsPacket forLevel(ServerLevel overworld) {
         if (!overworld.dimensionTypeRegistration().is(BuilderWorldLayout.BUILDER_DIMENSION_TYPE)) {
-            return new BuilderBoundsPacket(List.of(), "", "", 0, "", "", "", -1);
+            return new BuilderBoundsPacket(List.of(), "", "", 0, "", "", "", -1, "");
         }
         DungeonTrainWorldData data = DungeonTrainWorldData.get(overworld);
         int carriages = BuilderWorldSetup.parkedCarriages(data);
@@ -106,10 +112,14 @@ public record BuilderBoundsPacket(List<BoundingBox> volumes, String modeId, Stri
         // Empty name = an unnamed draft; the client uses it to decide whether Save can write
         // straight away or has to ask for a name first.
         String buildName = data.builderName() == null ? "" : data.builderName();
-        return new BuilderBoundsPacket(BuilderBounds.buildVolumes(carriages, dims), modeId,
+        // volumesFor rather than buildVolumes: a track mode parks no carriage but does have a plot,
+        // and sending the empty list for it is what left the wash and the info panel dead there.
+        List<BoundingBox> volumes =
+                BuilderBounds.volumesFor(carriages, BuilderTrackBuild.kindOf(data), dims);
+        return new BuilderBoundsPacket(volumes, modeId,
                 buildName, data.builderMirror().pack(),
                 orEmpty(data.builderSubType()), orEmpty(data.builderPartKind()),
-                orEmpty(data.builderStage()), weightOf(data));
+                orEmpty(data.builderStage()), weightOf(data), orEmpty(data.builderTrackKind()));
     }
 
     /**

@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.event;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.builder.BuilderTrackBuild;
 import games.brennan.dungeontrain.builder.BuilderWorldLayout;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
@@ -51,6 +52,6 @@ public final class BuilderProtectionEvents {
             return false;
         }
         CarriageDims dims = DungeonTrainWorldData.get(level).dims();
-        return BuilderWorldLayout.isProtected(pos, dims);
+        return BuilderWorldLayout.isProtected(pos, dims, BuilderTrackBuild.isActive(level));
     }
 }

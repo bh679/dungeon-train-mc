@@ -1,7 +1,9 @@
 package games.brennan.dungeontrain.builder;
 
+import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.train.CarriageDims;
 import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -68,6 +70,29 @@ final class BuilderWorldLayoutTest {
         assertFalse(BuilderWorldLayout.isProtected(new BlockPos(0, 3, DIMS.width()), DIMS),
                 "one block past the corridor is open ground at track height");
         assertFalse(BuilderWorldLayout.isProtected(new BlockPos(0, 2, -1), DIMS));
+    }
+
+    @Test
+    @DisplayName("An open track build unlocks the track rows — the column stands in them")
+    void trackRowsUnlockForATrackBuild() {
+        // The regression this exists to stop: the scene stands its columns from Y_STAND, which is
+        // the bed row, so the old rule locked the bottom two blocks of every pillar the builder was
+        // trying to author. By then the corridor has been erased anyway, so it defended nothing.
+        BlockPos bed = new BlockPos(0, BuilderWorldLayout.Y_TRACK_BED, 1);
+        BlockPos rail = new BlockPos(0, BuilderWorldLayout.Y_TRACK_RAIL, 1);
+        assertTrue(BuilderWorldLayout.isProtected(bed, DIMS, false));
+        assertTrue(BuilderWorldLayout.isProtected(rail, DIMS, false));
+        assertFalse(BuilderWorldLayout.isProtected(bed, DIMS, true));
+        assertFalse(BuilderWorldLayout.isProtected(rail, DIMS, true));
+    }
+
+    @Test
+    @DisplayName("The world floor stays locked even mid track build")
+    void theFloorIsNeverUnlocked() {
+        // A hole in the floor of a builder dimension is not a recoverable mistake, and nothing is
+        // ever authored down there.
+        assertTrue(BuilderWorldLayout.isProtected(new BlockPos(0, BuilderWorldLayout.Y_BEDROCK, 1), DIMS, true));
+        assertTrue(BuilderWorldLayout.isProtected(new BlockPos(0, BuilderWorldLayout.Y_GRASS, 1), DIMS, true));
     }
 
     @Test

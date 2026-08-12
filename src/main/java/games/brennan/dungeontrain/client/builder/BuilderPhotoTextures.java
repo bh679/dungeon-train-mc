@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.client.builder;
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.builder.BuilderPhotoPaths;
+import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.train.CarriagePartKind;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.DynamicTexture;
@@ -44,28 +45,39 @@ public final class BuilderPhotoTextures {
 
     private BuilderPhotoTextures() {}
 
-    /** The template's photo, or null when it hasn't got one. */
+    /** As {@link #textureFor(BuilderPhotoPaths.Kind, String, CarriagePartKind, TrackKind)}, carriage-side. */
     public static Photo textureFor(BuilderPhotoPaths.Kind kind, String id,
                                    CarriagePartKind partKind) {
+        return textureFor(kind, id, partKind, null);
+    }
+
+    /** The template's photo, or null when it hasn't got one. */
+    public static Photo textureFor(BuilderPhotoPaths.Kind kind, String id,
+                                   CarriagePartKind partKind, TrackKind trackKind) {
         if (kind == null || id == null || id.isEmpty()) {
             return null;
         }
-        String key = cacheKey(kind, id, partKind);
+        String key = cacheKey(kind, id, partKind, trackKind);
         Optional<Photo> cached = CACHE.get(key);
         if (cached != null) {
             return cached.orElse(null);
         }
-        Optional<Photo> loaded = load(kind, id, partKind);
+        Optional<Photo> loaded = load(kind, id, partKind, trackKind);
         CACHE.put(key, loaded);
         return loaded.orElse(null);
     }
 
     /** Forget one entry, so a photo written just now is picked up instead of a cached miss. */
     public static void invalidate(BuilderPhotoPaths.Kind kind, String id, CarriagePartKind partKind) {
+        invalidate(kind, id, partKind, null);
+    }
+
+    public static void invalidate(BuilderPhotoPaths.Kind kind, String id, CarriagePartKind partKind,
+                                  TrackKind trackKind) {
         if (kind == null || id == null) {
             return;
         }
-        CACHE.remove(cacheKey(kind, id, partKind));
+        CACHE.remove(cacheKey(kind, id, partKind, trackKind));
     }
 
     /**
@@ -81,8 +93,8 @@ public final class BuilderPhotoTextures {
     }
 
     private static Optional<Photo> load(BuilderPhotoPaths.Kind kind, String id,
-                                        CarriagePartKind partKind) {
-        Optional<Path> path = BuilderPhotoPaths.photoFor(kind, id, partKind);
+                                        CarriagePartKind partKind, TrackKind trackKind) {
+        Optional<Path> path = BuilderPhotoPaths.photoFor(kind, id, partKind, trackKind);
         if (path.isEmpty() || !Files.isRegularFile(path.get())) {
             return Optional.empty();
         }
@@ -103,8 +115,11 @@ public final class BuilderPhotoTextures {
         }
     }
 
-    private static String cacheKey(BuilderPhotoPaths.Kind kind, String id, CarriagePartKind partKind) {
+    private static String cacheKey(BuilderPhotoPaths.Kind kind, String id, CarriagePartKind partKind,
+                                   TrackKind trackKind) {
         // Part names are only unique within their kind — `standard` exists as a floor and as a door.
-        return kind.id() + ":" + (partKind == null ? "" : partKind.id()) + ":" + id;
+        // Track names are the same story, and worse: `default` exists under all eight track kinds.
+        return kind.id() + ":" + (partKind == null ? "" : partKind.id())
+                + ":" + (trackKind == null ? "" : trackKind.id()) + ":" + id;
     }
 }

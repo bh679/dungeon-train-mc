@@ -3,6 +3,8 @@ package games.brennan.dungeontrain.builder;
 import games.brennan.dungeontrain.editor.CarriageContentsStore;
 import games.brennan.dungeontrain.editor.CarriagePartTemplateStore;
 import games.brennan.dungeontrain.editor.CarriageTemplateStore;
+import games.brennan.dungeontrain.track.variant.TrackKind;
+import games.brennan.dungeontrain.track.variant.TrackVariantStore;
 import games.brennan.dungeontrain.train.CarriagePartKind;
 
 import java.nio.file.Path;
@@ -22,7 +24,14 @@ public final class BuilderPhotoPaths {
     public enum Kind {
         CARRIAGE("carriage"),
         CONTENTS("contents"),
-        PART("part");
+        PART("part"),
+        /**
+         * A track-side template — track tile, pillar section, tunnel, or stairs adjunct.
+         *
+         * <p>Needs a {@link TrackKind} the way {@link #PART} needs a {@link CarriagePartKind}: the
+         * eight kinds each have their own directory, and {@code default} exists in all of them.</p>
+         */
+        TRACK("track");
 
         private final String id;
 
@@ -52,12 +61,19 @@ public final class BuilderPhotoPaths {
 
     private BuilderPhotoPaths() {}
 
+    /** As {@link #photoFor(Kind, String, CarriagePartKind, TrackKind)}, for a non-track kind. */
+    public static Optional<Path> photoFor(Kind kind, String id, CarriagePartKind partKind) {
+        return photoFor(kind, id, partKind, null);
+    }
+
     /**
      * The photo path for a saved template, or empty when the kind or its arguments don't resolve.
      *
-     * @param partKind only read for {@link Kind#PART}; each kind of part has its own directory
+     * @param partKind  only read for {@link Kind#PART}; each kind of part has its own directory
+     * @param trackKind only read for {@link Kind#TRACK}, for the same reason
      */
-    public static Optional<Path> photoFor(Kind kind, String id, CarriagePartKind partKind) {
+    public static Optional<Path> photoFor(Kind kind, String id, CarriagePartKind partKind,
+                                          TrackKind trackKind) {
         if (kind == null || id == null || id.isEmpty()) {
             return Optional.empty();
         }
@@ -67,11 +83,20 @@ public final class BuilderPhotoPaths {
             case PART -> partKind == null
                     ? Optional.empty()
                     : Optional.of(withPng(CarriagePartTemplateStore.fileFor(partKind, id)));
+            case TRACK -> trackKind == null
+                    ? Optional.empty()
+                    : Optional.of(withPng(TrackVariantStore.fileFor(trackKind, id)));
         };
     }
 
-    /** The dev-mode source-tree twin, so an authored photo ships with the template it describes. */
+    /** As {@link #sourcePhotoFor(Kind, String, CarriagePartKind, TrackKind)}, for a non-track kind. */
     public static Optional<Path> sourcePhotoFor(Kind kind, String id, CarriagePartKind partKind) {
+        return sourcePhotoFor(kind, id, partKind, null);
+    }
+
+    /** The dev-mode source-tree twin, so an authored photo ships with the template it describes. */
+    public static Optional<Path> sourcePhotoFor(Kind kind, String id, CarriagePartKind partKind,
+                                                TrackKind trackKind) {
         if (kind == null || id == null || id.isEmpty()) {
             return Optional.empty();
         }
@@ -84,6 +109,9 @@ public final class BuilderPhotoPaths {
                     : Optional.empty();
             case PART -> partKind != null && CarriagePartTemplateStore.sourceTreeAvailable()
                     ? Optional.of(withPng(CarriagePartTemplateStore.sourceFileFor(partKind, id)))
+                    : Optional.empty();
+            case TRACK -> trackKind != null && TrackVariantStore.sourceTreeAvailable()
+                    ? Optional.of(withPng(TrackVariantStore.sourceFileFor(trackKind, id)))
                     : Optional.empty();
         };
     }

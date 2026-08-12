@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.builder;
 
+import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.train.CarriagePartKind;
 
 import java.util.Optional;
@@ -12,7 +13,20 @@ import java.util.Optional;
  * a part photographs the thing that was picked. Point it at the wrong one and the picture lands
  * beside a template it isn't a picture of.</p>
  */
-public record BuilderPhotoRequest(BuilderPhotoPaths.Kind kind, String id, CarriagePartKind partKind) {
+public record BuilderPhotoRequest(BuilderPhotoPaths.Kind kind, String id, CarriagePartKind partKind,
+                                  TrackKind trackKind) {
+
+    /** The three-arg form, for the carriage-side kinds that have no track kind to carry. */
+    public BuilderPhotoRequest(BuilderPhotoPaths.Kind kind, String id, CarriagePartKind partKind) {
+        this(kind, id, partKind, null);
+    }
+
+    /** A track template's photo, which lands beside its {@code .nbt} like every other kind's. */
+    public static Optional<BuilderPhotoRequest> forTrack(TrackKind trackKind, String id) {
+        return trackKind == null || id == null || id.isEmpty()
+                ? Optional.empty()
+                : Optional.of(new BuilderPhotoRequest(BuilderPhotoPaths.Kind.TRACK, id, null, trackKind));
+    }
 
     /**
      * What the New screen's selection just stamped, or empty when it named nothing on disk.
@@ -46,5 +60,9 @@ public record BuilderPhotoRequest(BuilderPhotoPaths.Kind kind, String id, Carria
 
     public String partKindId() {
         return partKind == null ? "" : partKind.id();
+    }
+
+    public String trackKindId() {
+        return trackKind == null ? "" : trackKind.id();
     }
 }

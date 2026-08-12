@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.builder;
 
+import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.train.CarriageDims;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
@@ -44,6 +45,37 @@ public final class BuilderBounds {
                     dims.width() - 1));
         }
         return boxes;
+    }
+
+    /**
+     * The single box a track-side build is authored in, or empty when this isn't one.
+     *
+     * <p>One box where a carriage build gets one per carriage, because a track template is one
+     * template — you open a tunnel, not a run of three. Same list type all the same, so every
+     * downstream consumer (the wash renderer, the dirty check, the bounds packet) keeps taking the
+     * same shape and needs no track-specific arm of its own.</p>
+     */
+    public static List<BoundingBox> trackVolumes(TrackKind kind, CarriageDims dims) {
+        return kind == null ? List.of() : List.of(BuilderTrackPlot.volume(kind, dims));
+    }
+
+    /**
+     * The volumes this builder world is authoring right now, whichever kind of build it holds.
+     *
+     * <p>The one call every consumer should make: a track build and a carriage build differ in where
+     * the boxes come from and in nothing else, and spreading that fork across four callers is how
+     * they drift.</p>
+     *
+     * <p>Takes the count that was actually parked rather than deriving one from the mode. Those are
+     * different questions — opening a room parks one carriage where its mode would park three — and
+     * cutting three boxes out of a one-carriage world reads two templates' worth of empty air.</p>
+     */
+    public static List<BoundingBox> volumesFor(int parkedCarriages, TrackKind trackKind,
+                                               CarriageDims dims) {
+        if (parkedCarriages > 0) {
+            return buildVolumes(parkedCarriages, dims);
+        }
+        return trackVolumes(trackKind, dims);
     }
 
     /** True when {@code pos} is inside any build volume. An empty list means nothing is in bounds. */

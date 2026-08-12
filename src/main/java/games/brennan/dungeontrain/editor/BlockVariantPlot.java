@@ -406,7 +406,13 @@ public interface BlockVariantPlot {
         private final Vec3i footprint;
         private final TrackVariantBlocks sidecar;
 
-        TrackPlot(TrackKind kind, String name, BlockPos origin, Vec3i footprint) {
+        /**
+         * Public because the origin is a parameter, and the Train Builder authors these track
+         * templates somewhere else entirely — on a plot at ground level rather than in the editor's
+         * Y=250 grid. {@link #forKey} can't serve it: that resolver asks {@link TrackSidePlots} where
+         * the plot is, which is the one thing a builder plot answers differently.
+         */
+        public TrackPlot(TrackKind kind, String name, BlockPos origin, Vec3i footprint) {
             this.kind = kind;
             this.name = name;
             this.origin = origin;
