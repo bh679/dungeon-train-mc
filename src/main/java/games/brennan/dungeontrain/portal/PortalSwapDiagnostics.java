@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import net.minecraft.server.level.ServerLevel;
 import org.slf4j.Logger;
 
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -27,6 +28,14 @@ import java.util.Map;
  *
  * <p><b>Not a rate limiter on the failure.</b> Nothing here changes what the portal does; every
  * refusal still refuses. This only decides how often it is worth writing down.</p>
+ *
+ * <p><b>Free when it is quiet, which is why it is always on.</b> The throttle is tested through
+ * {@link #due} <i>before</i> any caller builds a message, so a condition already reported inside its
+ * window costs two map lookups and a comparison — no formatting, no concatenation, not even a call to
+ * ask the subject its name. That is deliberate: diagnostics that cost something get switched off, and
+ * diagnostics that are off do not answer the next report. The paths that reach here are anomalous to
+ * begin with — a swap the rule wanted and did not get — so even the unthrottled case is a handful of
+ * lines, not a per-tick tax.</p>
  */
 public final class PortalSwapDiagnostics {
 
@@ -38,8 +47,14 @@ public final class PortalSwapDiagnostics {
      */
     private static final int PERIOD_TICKS = 100;
 
-    /** {@code subject + "/" + reason} → game time it was last logged. */
-    private static final Map<String, Long> LAST_LOGGED = new HashMap<>();
+    /**
+     * Reason → subject identity → game time it was last logged.
+     *
+     * <p>Nested rather than keyed on a composite so that looking a throttle up costs no allocation:
+     * the outer key is an enum and the inner one is the subject's own identity object. See
+     * {@link #due}.</p>
+     */
+    private static final Map<Reason, Map<Object, Long>> LAST_LOGGED = new EnumMap<>(Reason.class);
 
     /**
      * Why a swap was refused.
@@ -50,10 +65,10 @@ public final class PortalSwapDiagnostics {
     public enum Reason {
 
         /** Riding something. The train carries its passengers through; the portal leaves them alone. */
-        PASSENGER("player is riding an entity — passengers are carried through, never swapped"),
+        PASSENGER(true, "player is riding an entity — passengers are carried through, never swapped"),
 
         /** Swapped moments ago and still inside the settling window. Ordinary, and self-clearing. */
-        COOLDOWN("player swapped within the last second — waiting for the client to acknowledge it"),
+        COOLDOWN(true, "player swapped within the last second — waiting for the client to acknowledge it"),
 
         /** The shell was broken past the midpoint. Permanent until {@code portal severed clear}. */
         SEVERED("this pair's corridor shell was broken open — the way IN is closed for good"),
@@ -87,9 +102,20 @@ public final class PortalSwapDiagnostics {
         /** Sable handed back a zero box for a sub-level that has not ticked yet. */
         DEGENERATE_AABB("the carriage group's bounding box is degenerate — it has not ticked yet");
 
+        /**
+         * True for a state that is ordinary rather than wrong — it stops a swap, but nothing about it
+         * needs fixing. Logged at INFO; everything else at WARN.
+         */
+        private final boolean benign;
+
         private final String explanation;
 
         Reason(String explanation) {
+            this(false, explanation);
+        }
+
+        Reason(boolean benign, String explanation) {
+            this.benign = benign;
             this.explanation = explanation;
         }
 
@@ -102,21 +128,53 @@ public final class PortalSwapDiagnostics {
     private PortalSwapDiagnostics() {}
 
     /**
-     * Note a refused swap, at most once per {@link #PERIOD_TICKS} for this subject and reason.
+     * Whether this subject's refusal for this reason is due to be written down.
      *
-     * @param subject who or what the refusal is about — a player name, or a carriage/group index.
-     *                Only ever a throttle key and a log field
+     * <p><b>Split from {@link #refused} so that costing nothing is structural rather than a claim.</b>
+     * Every caller wraps its message-building in this test, so on the overwhelmingly common path — a
+     * condition that has already been reported inside the throttle window — the work done is two map
+     * lookups and a long comparison. No message is built, no coordinates are formatted, and the
+     * subject's own name is not even asked for. Rolling the two together, with the detail passed as an
+     * argument, would have every caller build a string on every tick for the throttle to discard,
+     * which is the shape of cost that makes diagnostics worth turning off. This one is not.</p>
+     *
+     * <p>Keyed on the subject's <i>identity</i> — a {@link java.util.UUID} for a player, the index for
+     * a carriage — rather than on its printable name, so nothing is concatenated to look the throttle
+     * up either.</p>
+     *
+     * <p><b>Asking marks it asked</b>, so this must be the <i>last</i> condition a caller tests. A
+     * caller that asks and then decides it had nothing to say has spent a window on a tick that logged
+     * nothing, and a real occurrence a moment later would be silently swallowed — which is the one
+     * failure a diagnostic cannot afford. Where a caller has its own "is this worth reporting" test,
+     * that test goes first and this one goes after the {@code &&}.</p>
+     */
+    public static boolean due(ServerLevel level, Reason reason, Object subject) {
+        if (level == null) return false;
+
+        Map<Object, Long> perSubject = LAST_LOGGED.computeIfAbsent(reason, r -> new HashMap<>());
+        long now = level.getGameTime();
+        Long last = perSubject.get(subject);
+        if (last != null && now - last < PERIOD_TICKS) return false;
+        perSubject.put(subject, now);
+        return true;
+    }
+
+    /**
+     * Write down a refused swap. Call only inside a {@link #due} test, which is what bounds how often
+     * this happens.
+     *
+     * @param subject who the refusal is about, as it should read in the log
      * @param detail  the specifics worth reading: coordinates, origins, names. Free text
      */
-    public static void refused(ServerLevel level, String subject, Reason reason, String detail) {
-        if (level == null) return;
-
-        String key = subject + "/" + reason.name();
-        long now = level.getGameTime();
-        Long last = LAST_LOGGED.get(key);
-        if (last != null && now - last < PERIOD_TICKS) return;
-        LAST_LOGGED.put(key, now);
-
+    public static void refused(Reason reason, String subject, String detail) {
+        // Benign reasons are ordinary game states that happen to stop a swap — a player in a boat, a
+        // player who swapped a moment ago — and logging those at WARN would train the reader to
+        // ignore the level that the real failures use.
+        if (reason.benign) {
+            LOGGER.info("[DungeonTrain] Portal swap skipped [{}] for {}: {} — {}",
+                reason.name(), subject, reason.explanation(), detail);
+            return;
+        }
         LOGGER.warn("[DungeonTrain] Portal swap refused [{}] for {}: {} — {}",
             reason.name(), subject, reason.explanation(), detail);
     }
@@ -127,7 +185,8 @@ public final class PortalSwapDiagnostics {
      * <p>Called when the server stops, alongside the other static state
      * {@code PortalCarriageEvents.onServerStopped} drops. A surviving entry would silence the first
      * few seconds of the next world a single-player client opens — which is exactly the window
-     * somebody debugging a portal would be watching.</p>
+     * somebody debugging a portal would be watching. It also keeps the map from holding a UUID for
+     * every player who has ever been refused anything.</p>
      */
     public static void clear() {
         LAST_LOGGED.clear();

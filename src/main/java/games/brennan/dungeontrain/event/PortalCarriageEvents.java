@@ -664,10 +664,16 @@ public final class PortalCarriageEvents {
         if (structure == null && role != PortalCarriageRole.ENTRY) {
             // Only worth saying when somebody is actually in the corridor: being merely near an exit
             // whose entry has not been approached yet is the ordinary case every time a train rolls
-            // past, and is not a failure of anything.
-            if (anyPlayerInCorridor(players, layout, originX, originY, originZ)) {
-                PortalSwapDiagnostics.refused(level, "carriage " + carriageIndex,
-                    PortalSwapDiagnostics.Reason.EXIT_WITHOUT_STRUCTURE,
+            // past, and is not a failure of anything. Asked BEFORE the throttle, unlike the tests in
+            // swapPlayers: this one decides whether there is anything to report at all, and asking
+            // the throttle first would spend a window on a tick that was never going to log, leaving
+            // a real occurrence a second later with nothing to say. The scan is affordable here
+            // because handlePortalCarriage has already returned for any pair nobody is near.
+            if (anyPlayerInCorridor(players, layout, originX, originY, originZ)
+                && PortalSwapDiagnostics.due(level,
+                    PortalSwapDiagnostics.Reason.EXIT_WITHOUT_STRUCTURE, carriageIndex)) {
+                PortalSwapDiagnostics.refused(PortalSwapDiagnostics.Reason.EXIT_WITHOUT_STRUCTURE,
+                    "carriage " + carriageIndex,
                     "pair=" + pairKey + " — this pair's entry corridor is carriage " + pairKey
                         + ", and nobody has been within " + (int) APPROACH_RANGE
                         + " blocks of it yet, so its room has never been placed");
@@ -687,10 +693,12 @@ public final class PortalCarriageEvents {
             // corridor that IS a portal and does nothing at all: the fit test in ensureStructure is
             // against the room this pair rolled, so a taller room can fail here where the built-in one
             // fits, and from in-game the two are indistinguishable.
-            if (anyPlayerInCorridor(players, layout, originX, originY, originZ)) {
+            if (anyPlayerInCorridor(players, layout, originX, originY, originZ)
+                && PortalSwapDiagnostics.due(level,
+                    PortalSwapDiagnostics.Reason.NO_TWIN_STRUCTURE, carriageIndex)) {
                 int bedrockY = WorldFloor.bedrockY(level);
-                PortalSwapDiagnostics.refused(level, "carriage " + carriageIndex,
-                    PortalSwapDiagnostics.Reason.NO_TWIN_STRUCTURE,
+                PortalSwapDiagnostics.refused(PortalSwapDiagnostics.Reason.NO_TWIN_STRUCTURE,
+                    "carriage " + carriageIndex,
                     "pair=" + pairKey + " lane=" + PortalTwinLanes.twinFloorY(
                         level.getMinBuildHeight(), bedrockY, pairKey, groupSize)
                         + " worldMinY=" + level.getMinBuildHeight() + " bedrockY=" + bedrockY
@@ -796,17 +804,27 @@ public final class PortalCarriageEvents {
             PortalFrames.Move move = frames.redirectedTo(frames.requiredMove(px, py, pz), boundTwin);
             if (move == null) continue;
 
-            String who = player.getName().getString();
+            // Every diagnostic below is wrapped in its own `due` test rather than handed a message to
+            // throw away. See PortalSwapDiagnostics#due: it is what keeps these lines costing nothing
+            // on the tick after the first one, which is what lets them stay switched on.
+            UUID id = player.getUUID();
 
             if (player.isPassenger()) {
-                PortalSwapDiagnostics.refused(level, who, PortalSwapDiagnostics.Reason.PASSENGER,
-                    "carriage=" + carriageIndex + " riding=" + player.getVehicle().getType().toShortString());
+                if (PortalSwapDiagnostics.due(level, PortalSwapDiagnostics.Reason.PASSENGER, id)) {
+                    PortalSwapDiagnostics.refused(PortalSwapDiagnostics.Reason.PASSENGER,
+                        player.getName().getString(),
+                        "carriage=" + carriageIndex
+                            + " riding=" + player.getVehicle().getType().toShortString());
+                }
                 continue;
             }
             if (onCooldown(player, level.getGameTime())) {
-                PortalSwapDiagnostics.refused(level, who, PortalSwapDiagnostics.Reason.COOLDOWN,
-                    "carriage=" + carriageIndex + " until=" + COOLDOWNS.get(player.getUUID())
-                        + " now=" + level.getGameTime());
+                if (PortalSwapDiagnostics.due(level, PortalSwapDiagnostics.Reason.COOLDOWN, id)) {
+                    PortalSwapDiagnostics.refused(PortalSwapDiagnostics.Reason.COOLDOWN,
+                        player.getName().getString(),
+                        "carriage=" + carriageIndex + " until=" + COOLDOWNS.get(id)
+                            + " now=" + level.getGameTime());
+                }
                 continue;
             }
 
@@ -815,10 +833,14 @@ public final class PortalCarriageEvents {
             // in the room can be shut out of the train. See PortalSever.
             if (move.toFrame() == PortalFrames.FRAME_TWIN
                 && PortalSever.isSevered(level, carriageIndex)) {
-                PortalSwapDiagnostics.refused(level, who, PortalSwapDiagnostics.Reason.SEVERED,
-                    "carriage=" + carriageIndex + " pair=" + pairKey
-                        + " — the two blocks between the pair's doors are open instead, so the group "
-                        + "can be walked straight through; /dungeontrain portal severed clear repairs it");
+                if (PortalSwapDiagnostics.due(level, PortalSwapDiagnostics.Reason.SEVERED, id)) {
+                    PortalSwapDiagnostics.refused(PortalSwapDiagnostics.Reason.SEVERED,
+                        player.getName().getString(),
+                        "carriage=" + carriageIndex + " pair=" + pairKey
+                            + " — the two blocks between the pair's doors are open instead, so the "
+                            + "group can be walked straight through; '/dungeontrain portal severed "
+                            + "clear' repairs it");
+                }
                 continue;
             }
 
@@ -830,12 +852,16 @@ public final class PortalCarriageEvents {
             PortalFrames.Origin destination = boundTwin != null ? boundTwin : frames.twin();
             if (move.toFrame() == PortalFrames.FRAME_TWIN
                 && !PortalExitBindings.corridorLoaded(level, destination, dims)) {
-                PortalSwapDiagnostics.refused(level, who, PortalSwapDiagnostics.Reason.TWIN_NOT_LOADED,
-                    "carriage=" + carriageIndex + " twin=(" + fmt(destination.x()) + ", "
-                        + fmt(destination.y()) + ", " + fmt(destination.z()) + ")"
-                        + (boundTwin != null ? " (bound copy)" : " (original)")
-                        + " carriage now at (" + fmt(frames.carriage().x()) + ", "
-                        + fmt(frames.carriage().y()) + ", " + fmt(frames.carriage().z()) + ")");
+                if (PortalSwapDiagnostics.due(
+                        level, PortalSwapDiagnostics.Reason.TWIN_NOT_LOADED, id)) {
+                    PortalSwapDiagnostics.refused(PortalSwapDiagnostics.Reason.TWIN_NOT_LOADED,
+                        player.getName().getString(),
+                        "carriage=" + carriageIndex + " twin=(" + fmt(destination.x()) + ", "
+                            + fmt(destination.y()) + ", " + fmt(destination.z()) + ")"
+                            + (boundTwin != null ? " (bound copy)" : " (original)")
+                            + " carriage now at (" + fmt(frames.carriage().x()) + ", "
+                            + fmt(frames.carriage().y()) + ", " + fmt(frames.carriage().z()) + ")");
+                }
                 continue;
             }
 
@@ -859,10 +885,14 @@ public final class PortalCarriageEvents {
             // what it says there.
             if (move.toFrame() == PortalFrames.FRAME_TWIN
                 && !landingSupported(level, move.x(), targetY, move.z())) {
-                PortalSwapDiagnostics.refused(level, who, PortalSwapDiagnostics.Reason.NO_LANDING,
-                    "carriage=" + carriageIndex + " landing=(" + fmt(move.x()) + ", " + fmt(targetY)
-                        + ", " + fmt(move.z()) + ") — chunks are loaded but empty for "
-                        + LANDING_SUPPORT_DEPTH + " blocks down. Leaving them where they are.");
+                if (PortalSwapDiagnostics.due(level, PortalSwapDiagnostics.Reason.NO_LANDING, id)) {
+                    PortalSwapDiagnostics.refused(PortalSwapDiagnostics.Reason.NO_LANDING,
+                        player.getName().getString(),
+                        "carriage=" + carriageIndex + " landing=(" + fmt(move.x()) + ", "
+                            + fmt(targetY) + ", " + fmt(move.z()) + ") — chunks are loaded but empty "
+                            + "for " + LANDING_SUPPORT_DEPTH
+                            + " blocks down. Leaving them where they are.");
+                }
                 continue;
             }
 
