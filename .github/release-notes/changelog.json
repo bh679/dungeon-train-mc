@@ -6826,6 +6826,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "builder-open-clears-scene",
+      "version": "0.552.0",
+      "type": "fix",
+      "title": "Opening a build in the Train Builder clears the scene first",
+      "summary": "Open now hands you the template you opened and nothing else. Anything left standing from the last build \u2014 blocks stacked on the platform, a block floating over the train, mobs or armour stands that wandered in \u2014 used to survive an Open and sit alongside the new build. The platform and the track stay put.",
+      "highlights": [
+        "Stray blocks left outside a build are cleared when you open something.",
+        "Leftover mobs, armour stands and dropped items are cleared too.",
+        "Opening a smaller portal room no longer leaves the previous room's shell around it."
+      ],
+      "date": "2026-08-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
