@@ -6808,6 +6808,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "portal-room-builder-editing",
+      "version": "0.552.0",
+      "type": "feat",
+      "title": "Build portal rooms in the Train Builder",
+      "summary": "The Train Builder's Train Dimensions mode now opens the rooms behind a portal. They are listed by what each one does at its walls \u2014 Bedrock, Void, Endless or Repeating \u2014 and picking a kind shows every room built that way. Open one and it stands in front of you in empty space, with its own boundary drawn around it as a see-through preview: the bedrock shell that seals it, the floor and ceiling of an open plain, or the room repeating away into the distance. You can resize it and save it back.",
+      "highlights": [
+        "Train Dimensions lists portal rooms by kind: Bedrock, Void, Endless, Repeating",
+        "Open a portal room, resize its length, height and width, and save it back",
+        "A see-through preview shows what the room does at its walls, built from its own blocks",
+        "Builder worlds start you hovering, so an empty one can't drop you"
+      ],
+      "pr": 950,
+      "date": "2026-08-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
