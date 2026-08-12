@@ -92,6 +92,8 @@ public final class OutOfBoundsWashRenderer {
         // Template photos are read from this install's directory; the next world may be a different
         // one, and a kept entry would show one template's picture beside another's name.
         BuilderPhotoTextures.clear();
+        // Same reasoning for the baked previews, plus these are GPU buffers worth handing back.
+        BuilderTileMeshCache.clear();
     }
 
     private static void rescan() {

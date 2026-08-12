@@ -89,6 +89,15 @@ public final class CarriagePartTemplateStore {
         StageBlockIndex.invalidateAll();
     }
 
+    /**
+     * This part's raw NBT, with no dims gate — for showing the template rather than stamping it.
+     * See {@link TemplateNbt} for why the gate is skipped.
+     */
+    public static Optional<CompoundTag> rawTag(CarriagePartKind kind, String name) {
+        return TemplateNbt.read(SUBDIR_BASE + "/" + kind.id(), name + EXT,
+            RESOURCE_PREFIX + kind.id() + "/" + name + EXT, "part template " + kind.id() + ":" + name);
+    }
+
     public static synchronized Optional<StructureTemplate> get(
         ServerLevel level, CarriagePartKind kind, String name, CarriageDims dims
     ) {

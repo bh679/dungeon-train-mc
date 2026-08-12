@@ -19,9 +19,11 @@ import net.neoforged.api.distmarker.OnlyIn;
  * look is deliberately the picker tile's — {@link BuilderTileButton}'s label strip and hover
  * border — because a wall of pictures you choose from is the same gesture in both places.</p>
  *
- * <p>Templates that have never been photographed fall back to the mode's tile art, dimmed further
- * so a real photo is obviously a photo. A builder world writes the missing pictures as you browse
- * (see {@code BuilderPhotoPacket}'s {@code onlyIfMissing}), so a fresh library fills itself in.</p>
+ * <p>What fills the picture, in order of preference: a <b>3D model</b> built from the template's own
+ * blocks ({@link BuilderTileMeshCache}), which is framed to the build and cannot go stale; failing
+ * that its <b>photo</b>, which is what a tile still waiting for its turn to bake shows, and what a
+ * template with no readable blocks keeps forever; failing that the mode's <b>tile art</b>, dimmed
+ * further so a real preview is obviously a real preview.</p>
  */
 @OnlyIn(Dist.CLIENT)
 final class BuilderTemplateTile {
@@ -31,6 +33,9 @@ final class BuilderTemplateTile {
     private static final int LABEL_STRIP_BG = 0xC0101010;
     private static final int LABEL_COLOUR = 0xFFFFFF;
     private static final int LABEL_INACTIVE = 0xFF909090;
+
+    /** The ground a 3D model stands against, in place of a photo. */
+    private static final int MODEL_BACKDROP = 0xFF14161C;
 
     private static final int IDLE_DIM = 0x40000000;
     /** No photo: the stand-in art is pushed further back so it doesn't read as this template's own. */
@@ -64,21 +69,23 @@ final class BuilderTemplateTile {
      *                  saved build is shown under a heading so it can't be mistaken for a Stage
      * @param openable  false for a listed-but-not-yet-buildable template — drawn dimmed, with a grey
      *                  label and no hover border, so it reads as "shown, not offered"
+     * @param yaw       degrees the 3D model is turned to; ignored when there isn't one
      */
     static void render(GuiGraphics g, BuilderMode mode, boolean modeArtAvailable,
                        BuilderPhotoPaths.Kind photoKind, String id, CarriagePartKind partKind,
                        TrackKind trackKind, Component label,
-                       int x, int y, int width, int height, boolean hovered, boolean openable) {
-        BuilderPhotoTextures.Photo photo = photoKind == null
-                ? null
-                : BuilderPhotoTextures.textureFor(photoKind, id, partKind, trackKind);
+                       int x, int y, int width, int height, boolean hovered, boolean openable,
+                       float yaw) {
+        BuilderTileMesh mesh = BuilderTileMeshCache.meshFor(photoKind, id, partKind, trackKind);
 
-        if (photo != null) {
-            BuilderTileArt.renderCover(g, photo.texture(), photo.width(), photo.height(),
-                    x, y, width, height, 1.0F);
+        if (mesh != null) {
+            // A flat ground behind the model: the mode art under a 3D build is visual noise, and a
+            // build needs something to sit against or it reads as cut out.
+            g.fill(x, y, x + width, y + height, MODEL_BACKDROP);
+            BuilderTileModelRenderer.render(g, mesh, x, y, width, height, yaw);
         } else {
-            BuilderTileArt.render(g, mode, modeArtAvailable, x, y, width, height, 1.0F);
-            g.fill(x, y, x + width, y + height, FALLBACK_DIM);
+            renderFlat(g, mode, modeArtAvailable, photoKind, id, partKind, trackKind,
+                    x, y, width, height);
         }
 
         boolean highlight = hovered && openable;
@@ -96,6 +103,30 @@ final class BuilderTemplateTile {
         g.drawCenteredString(mc.font, label, x + width / 2,
                 stripTop + (LABEL_STRIP_H - mc.font.lineHeight) / 2,
                 openable ? LABEL_COLOUR : LABEL_INACTIVE);
+    }
+
+    /**
+     * The picture when there is no model to draw: this template's photo, or the mode's art.
+     *
+     * <p>Both of these were the whole story before 3D previews. They still cover the cases a model
+     * can't: a tile whose bake hasn't come up in the queue yet, a template whose blocks won't read,
+     * and a category tile that has no template of its own at all.</p>
+     */
+    private static void renderFlat(GuiGraphics g, BuilderMode mode, boolean modeArtAvailable,
+                                   BuilderPhotoPaths.Kind photoKind, String id,
+                                   CarriagePartKind partKind, TrackKind trackKind,
+                                   int x, int y, int width, int height) {
+        BuilderPhotoTextures.Photo photo = photoKind == null
+                ? null
+                : BuilderPhotoTextures.textureFor(photoKind, id, partKind, trackKind);
+
+        if (photo != null) {
+            BuilderTileArt.renderCover(g, photo.texture(), photo.width(), photo.height(),
+                    x, y, width, height, 1.0F);
+        } else {
+            BuilderTileArt.render(g, mode, modeArtAvailable, x, y, width, height, 1.0F);
+            g.fill(x, y, x + width, y + height, FALLBACK_DIM);
+        }
     }
 
     /**
