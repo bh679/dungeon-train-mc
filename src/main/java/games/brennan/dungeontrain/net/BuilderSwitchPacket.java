@@ -83,6 +83,7 @@ public record BuilderSwitchPacket(String modeId, boolean force) implements Custo
             var spawn = BuilderSpawn.forLevel(level);
             player.teleportTo(level, spawn.getX() + 0.5, spawn.getY(), spawn.getZ() + 0.5,
                 player.getYRot(), player.getXRot());
+            BuilderSpawn.startFlying(player);
         });
     }
 }

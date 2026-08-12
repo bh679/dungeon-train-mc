@@ -6,6 +6,8 @@ import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.player.Abilities;
 
 /**
  * Where a player stands in a builder world.
@@ -42,6 +44,39 @@ public final class BuilderSpawn {
             return BuilderWorldLayout.portalRoomSpawn(room);
         }
         return BuilderWorldLayout.spawnPos(dims, mode == null ? 0 : mode.carriageCount());
+    }
+
+    /**
+     * Leave the player hovering rather than falling, on arrival in a builder world.
+     *
+     * <p>The world spawn is anchored at server start, <em>before</em> the client has said which mode
+     * was picked — so it cannot know a Train Dimensions world will have no platform, and it puts the
+     * player at the standoff over open void. {@code BuilderSetupPacket} re-anchors a moment later,
+     * and this is what makes the gap between the two harmless.</p>
+     *
+     * <p><b>Creative is not protection from the void.</b> It removes fall damage, which is why this
+     * looked survivable; the player still falls, and falling out of the bottom of the world kills
+     * them regardless of game mode.</p>
+     *
+     * <p>Sets {@code flying}, never {@code mayfly}. A builder world is created
+     * {@link net.minecraft.world.level.GameType#CREATIVE} so the permission is already there; if it
+     * somehow isn't, the honest response is to leave the abilities alone rather than grant something
+     * the game mode withheld — and a granted {@code mayfly} would be reverted by the next
+     * {@code onUpdateAbilities} a game-mode change triggers, making it a bug that only appears
+     * later.</p>
+     */
+    public static void startFlying(ServerPlayer player) {
+        if (player == null
+                || !player.serverLevel().dimensionTypeRegistration()
+                        .is(BuilderWorldLayout.BUILDER_DIMENSION_TYPE)) {
+            return;
+        }
+        Abilities abilities = player.getAbilities();
+        if (!abilities.mayfly || abilities.flying) {
+            return;
+        }
+        abilities.flying = true;
+        player.onUpdateAbilities();
     }
 
     /** The open room's size, or null when this world isn't showing one. */

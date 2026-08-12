@@ -134,6 +134,9 @@ public record BuilderNewPacket(String modeId, String subTypeId,
             BlockPos spawn = BuilderSpawn.forLevel(level);
             player.teleportTo(level, spawn.getX() + 0.5, spawn.getY(), spawn.getZ() + 0.5,
                     player.getYRot(), player.getXRot());
+            // Hovering, not falling: the spot above may be open void, and creative removes fall
+            // damage without stopping the fall.
+            BuilderSpawn.startFlying(player);
 
             // Backfill: the world now holds this template, so if it has never been photographed,
             // this is a free chance to do it. `onlyIfMissing` keeps it to once — browsing the

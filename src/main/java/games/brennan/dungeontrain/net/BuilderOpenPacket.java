@@ -143,6 +143,9 @@ public record BuilderOpenPacket(String modeId, String kindId, String id, String 
             BlockPos spawn = BuilderSpawn.forLevel(level);
             player.teleportTo(level, spawn.getX() + 0.5, spawn.getY(), spawn.getZ() + 0.5,
                     player.getYRot(), player.getXRot());
+            // Hovering, not falling: the spot above may be open void, and creative removes fall
+            // damage without stopping the fall.
+            BuilderSpawn.startFlying(player);
 
             // Backfill the library: this template is now in the world, so if it has never been
             // photographed this is a free chance to take the picture. Built from the *opened* id

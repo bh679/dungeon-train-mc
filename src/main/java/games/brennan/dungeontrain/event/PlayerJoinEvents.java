@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.event;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.builder.BuilderCinematicService;
+import games.brennan.dungeontrain.builder.BuilderSpawn;
 import games.brennan.dungeontrain.debug.DebugFlags;
 import games.brennan.dungeontrain.editor.EditorWelcome;
 import games.brennan.dungeontrain.net.BuilderBoundsPacket;
@@ -199,6 +200,9 @@ public final class PlayerJoinEvents {
         DungeonTrainNet.sendTo(player, new VoidBandSyncPacket(bandData.dims().length(), bandData.startsWithTrain(), bandData.getTrainY()));
         // Train Builder build volumes — empty (and therefore inert) in every ordinary world.
         BuilderBoundsPacket.sendTo(player, player.serverLevel().getServer().overworld());
+        // Reopening a builder world: no setup packet fires for one that is already stamped, so this
+        // is the only chance to leave the player hovering rather than dropping into the void.
+        BuilderSpawn.startFlying(player);
         // If the intro cinematic will play, open the loading screen + freeze the
         // player from world-entry so they don't fall while the train settles.
         CinematicIntroService.armPreloadIfNeeded(player);

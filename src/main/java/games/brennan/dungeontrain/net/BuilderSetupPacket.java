@@ -86,6 +86,9 @@ public record BuilderSetupPacket(String modeId) implements CustomPacketPayload {
             level.setDefaultSpawnPos(spawn, facing[0]);
             player.teleportTo(level, spawn.getX() + 0.5, spawn.getY(), spawn.getZ() + 0.5,
                 facing[0], facing[1]);
+            // First entry, and the case this exists for: in Train Dimensions there is no platform
+            // under that spot at all.
+            BuilderSpawn.startFlying(player);
             // The join-time bounds packet was sent before this stamp existed, so resend now that
             // the carriages (and therefore the build volumes) are real.
             BuilderBoundsPacket.sendTo(player, level);
