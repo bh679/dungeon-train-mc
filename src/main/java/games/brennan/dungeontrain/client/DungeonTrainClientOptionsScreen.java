@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.client;
 import games.brennan.discordpresence.client.NetworkConsentScreen;
 import games.brennan.discordpresence.config.DiscordPresenceClientConfig;
 import games.brennan.dungeontrain.client.localization.edit.TranslationScreen;
+import games.brennan.dungeontrain.client.progress.ProgressAccountScreen;
 import games.brennan.dungeontrain.client.localization.edit.TranslationTarget;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.config.ContentMode;
@@ -114,6 +115,16 @@ public final class DungeonTrainClientOptionsScreen extends Screen {
                 // a parent comes to change it.
                 .setTooltip(Tooltip.create(Component.translatable("gui.dungeontrain.options.content_mode.tip")));
         y += ROW_GAP;
+
+        // Progress account — where the player finds their recovery code, and the only place it is shown.
+        // Only meaningful with network access granted, since the account lives on the relay.
+        if (DiscordPresenceClientConfig.isGranted()) {
+            addRenderableWidget(Button.builder(Component.translatable("gui.dungeontrain.options.progress_account"),
+                            b -> this.minecraft.setScreen(new ProgressAccountScreen(this)))
+                    .bounds(left, y, ROW_W, ROW_H).build())
+                    .setTooltip(tip("gui.dungeontrain.options.progress_account.tip"));
+            y += ROW_GAP;
+        }
 
         // Snapshot chat log ON/OFF.
         addRenderableWidget(CycleButton.onOffBuilder(ClientDisplayConfig.isRideSnapshotChatLogEnabled())
