@@ -166,10 +166,27 @@ final class BuilderTrackSceneTest {
         assertEquals(BuilderWorldLayout.Y_TRACK_BED, ground.bedY());
         assertTrue(entrance.minY() > BuilderTrackScene.shaftFloorY(DIMS),
                 "the entrance should be up the shaft, not down in the tunnel");
-        assertEquals(BuilderTrackScene.shaftSurfaceY(DIMS) - 2, entrance.minY(),
-                "its lowest rows overlap the last stair stamp");
-        // Centred on the 3-wide shaft: a 5-wide pavilion overhangs it by one on each side.
-        assertEquals(BuilderTrackScene.shaftMinZ(DIMS) - 1, entrance.minZ());
+        // Placed by the generator's own call, so the overlap into the staircase is the same block
+        // on both sides rather than two implementations agreeing by luck.
+        assertEquals(TrackGenerator.downStairsEntranceOrigin(
+                        BuilderTrackScene.shaftMinX(BuilderTrackPlot.editedColumnCentreX()),
+                        BuilderTrackScene.shaftMinZ(DIMS),
+                        BuilderTrackScene.shaftSurfaceY(DIMS)),
+                new BlockPos(entrance.minX(), entrance.minY(), entrance.minZ()));
+        // Its lowest rows sit inside the top of the shaft rather than above it.
+        assertTrue(entrance.minY() <= BuilderTrackScene.shaftTopY(DIMS),
+                "the entrance floats over the staircase instead of capping it");
+    }
+
+    @Test
+    @DisplayName("The shaft runs floor-to-surface the generator's way")
+    void theShaftUsesTheGeneratorsRows() {
+        assertEquals(TrackGenerator.downStairsFloorY(BuilderTrackScene.groundGeometry(DIMS)),
+                BuilderTrackScene.shaftFloorY(DIMS));
+        assertEquals(TrackGenerator.downStairsTopInclusive(BuilderTrackScene.shaftSurfaceY(DIMS)),
+                BuilderTrackScene.shaftTopY(DIMS));
+        assertEquals(TrackGenerator.downStairsOriginZ(false, BuilderTrackScene.groundGeometry(DIMS)),
+                BuilderTrackScene.shaftMinZ(DIMS));
     }
 
     @Test

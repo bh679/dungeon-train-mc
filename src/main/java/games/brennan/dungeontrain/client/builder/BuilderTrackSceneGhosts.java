@@ -4,6 +4,7 @@ import games.brennan.dungeontrain.builder.BuilderTrackPlot;
 import games.brennan.dungeontrain.builder.BuilderTrackScene;
 import games.brennan.dungeontrain.track.PillarAdjunct;
 import games.brennan.dungeontrain.track.PillarSection;
+import games.brennan.dungeontrain.track.TrackGenerator;
 import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.track.TrackPlacer;
 import games.brennan.dungeontrain.tunnel.TunnelGeometry;
@@ -149,15 +150,29 @@ final class BuilderTrackSceneGhosts {
                     tg.floorY(), originZ, length, false);
         }
 
+        int floorY = BuilderTrackScene.shaftFloorY(dims);
+        int topInclusive = BuilderTrackScene.shaftTopY(dims);
+        int originX = BuilderTrackScene.shaftMinX(shaftX);
+        int shaftZ = BuilderTrackScene.shaftMinZ(dims);
+
+        // Carve the shaft before the staircase goes down it — the generator's own step, and its
+        // comment is explicit that the bottom rows of the carve sit inside the tunnel. That is what
+        // opens the doorway from the corridor into the stairwell; without it the tunnel wall would
+        // be ghosted straight through the stairs, which is the one join this preview is for.
+        for (int dx = 0; dx < TrackGenerator.shaftFootprintX(); dx++) {
+            for (int dz = 0; dz < TrackGenerator.shaftFootprintZ(); dz++) {
+                for (int y = floorY; y <= topInclusive; y++) {
+                    cells.remove(new BlockPos(originX + dx, y, shaftZ + dz));
+                }
+            }
+        }
+
         // The staircase climbing the shaft, repeated the way the generator repeats it — from just
         // under the surface down to the deck it starts from.
         Map<BlockPos, BlockState> stairs = BuilderGhostTemplates.cells(
                 TrackKind.ADJUNCT_STAIRS, TrackKind.DEFAULT_NAME, dims);
-        int floorY = BuilderTrackScene.shaftFloorY(dims);
         int height = PillarAdjunct.STAIRS.ySize();
-        int originX = shaftX - 1;
-        int shaftZ = BuilderTrackScene.shaftMinZ(dims);
-        for (int top = BuilderTrackScene.shaftSurfaceY(dims) - 1; top >= floorY; top -= height) {
+        for (int top = topInclusive; top >= floorY; top -= height) {
             int base = top - height + 1;
             for (Map.Entry<BlockPos, BlockState> entry : stairs.entrySet()) {
                 BlockPos local = entry.getKey();

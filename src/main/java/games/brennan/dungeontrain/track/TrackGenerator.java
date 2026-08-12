@@ -1842,11 +1842,53 @@ public final class TrackGenerator {
      * that Z to form a "doorway" gap that the player walks through when
      * exiting the staircase into the corridor.
      */
-    private static int downStairsOriginZ(boolean flipped, TrackGeometry g) {
+    /**
+     * Lowest Z of a down-stairs shaft.
+     *
+     * <p>Public so the Train Builder's preview places its shaft where the world would. Everything
+     * about a down-staircase is offsets from the line, and a preview that recomputed them would be
+     * a second answer to a question that has one.</p>
+     */
+    public static int downStairsOriginZ(boolean flipped, TrackGeometry g) {
         return flipped ? g.trackZMin() - STAIRS_Z - 1 : g.trackZMax() + 2;
     }
 
     /** Center Z of the 3-wide down-stair footprint on the assigned side. */
+    /** Lowest X of a down-stairs shaft, centred on the column it drops beside. */
+    public static int downStairsOriginX(int centerX) {
+        return centerX - 1;
+    }
+
+    /** Floor of the shaft — the deck the staircase starts from, two above the bed. */
+    public static int downStairsFloorY(TrackGeometry g) {
+        return g.bedY() + 2;
+    }
+
+    /** Highest row of the shaft — one below the surface the entrance caps it with. */
+    public static int downStairsTopInclusive(int surfaceY) {
+        return surfaceY - 1;
+    }
+
+    /**
+     * Lowest corner of the entrance pavilion capping a shaft.
+     *
+     * <p>A 5×5 centred on the 3×3 shaft, dropped {@link #ENTRANCE_OVERLAP_Y} so its bottom rows sit
+     * inside the top of the staircase — which is what makes the two read as one structure rather
+     * than a hut balanced over a hole.</p>
+     */
+    public static BlockPos downStairsEntranceOrigin(int originX, int originZ, int surfaceY) {
+        return new BlockPos(originX - 1, surfaceY - ENTRANCE_OVERLAP_Y, originZ - 1);
+    }
+
+    /** Footprint of the shaft on X and Z — the staircase's own, since it is what runs down it. */
+    public static int shaftFootprintX() {
+        return STAIRS_X;
+    }
+
+    public static int shaftFootprintZ() {
+        return STAIRS_Z;
+    }
+
     private static int downStairsCenterZ(boolean flipped, TrackGeometry g) {
         return downStairsOriginZ(flipped, g) + (STAIRS_Z - 1) / 2;
     }

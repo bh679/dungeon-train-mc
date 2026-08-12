@@ -4,6 +4,7 @@ import games.brennan.dungeontrain.track.PillarAdjunct;
 import games.brennan.dungeontrain.track.TrackGenerator;
 import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.train.CarriageDims;
+import net.minecraft.core.BlockPos;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -178,9 +179,19 @@ public final class BuilderTrackScene {
         return TrackGeometry.from(dims, BuilderWorldLayout.TRAIN_Y);
     }
 
-    /** Floor of the shaft — {@code bedY + 2} in the generator, the deck the stairs start from. */
+    /** Floor of the shaft — the generator's own, the deck the stairs start from. */
     public static int shaftFloorY(CarriageDims dims) {
-        return groundGeometry(dims).bedY() + 2;
+        return TrackGenerator.downStairsFloorY(groundGeometry(dims));
+    }
+
+    /** Highest row of the shaft: one below the surface, as the generator has it. */
+    public static int shaftTopY(CarriageDims dims) {
+        return TrackGenerator.downStairsTopInclusive(shaftSurfaceY(dims));
+    }
+
+    /** Lowest X of the shaft, centred on the column it drops beside. */
+    public static int shaftMinX(int centreX) {
+        return TrackGenerator.downStairsOriginX(centreX);
     }
 
     /**
@@ -201,7 +212,19 @@ public final class BuilderTrackScene {
      * it — the shaft has to clear the tunnel wall the line runs through.</p>
      */
     public static int shaftMinZ(CarriageDims dims) {
-        return groundGeometry(dims).trackZMax() + 2;
+        return TrackGenerator.downStairsOriginZ(false, groundGeometry(dims));
+    }
+
+    /**
+     * Lowest corner of the entrance capping the shaft — the generator's own placement.
+     *
+     * <p>Called rather than recomputed, because the entrance's whole position is offsets from the
+     * shaft and the overlap into the staircase, and two implementations of that would eventually
+     * disagree by a block in a way nobody would notice until it shipped.</p>
+     */
+    public static BlockPos entranceOrigin(int centreX, CarriageDims dims) {
+        return TrackGenerator.downStairsEntranceOrigin(
+                shaftMinX(centreX), shaftMinZ(dims), shaftSurfaceY(dims));
     }
 
     /**
