@@ -6505,9 +6505,9 @@
         "Normal keeps everything you already have \u2014 existing Ender Chests and past lives all belong to Normal, so nothing goes missing."
       ],
       "date": "2026-08-12",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.556.0",
+      "released_at": "2026-08-12T15:07:04Z"
     },
     {
       "id": "multiplayer-death-screen",
@@ -6521,9 +6521,9 @@
       ],
       "pr": 948,
       "date": "2026-08-12",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.556.0",
+      "released_at": "2026-08-12T15:07:04Z"
     },
     {
       "id": "difficulty-offset-world-scoped",
@@ -6538,9 +6538,9 @@
         "On a server with other players still riding, one player's death leaves the difficulty alone"
       ],
       "date": "2026-08-12",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.556.0",
+      "released_at": "2026-08-12T15:07:04Z"
     },
     {
       "id": "train-dimensions-update",
@@ -6550,9 +6550,9 @@
       "summary": "Somewhere past your first stretch of track, a corridor between two carriages stops being a corridor. Walk it and the sound of the train falls away behind you, and you come out in a room that could never have fitted inside the carriage you stepped into \u2014 a hall, a library, a place of beams and sculk, some of them going on for as long as you care to keep walking. What you find is drawn from how far you have come, so late portals open onto places the early ones never do, and every portal rolls its own room: chests you loot stay looted when you walk back in. The train keeps rolling while you look around, and the ground you cover in there counts toward your journey. Nothing strands you \u2014 there is always a way back out \u2014 and if you would rather the door weren't there at all, breaking through the corridor's outer wall closes that portal for good.",
       "highlights": [],
       "date": "2026-08-12",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.556.0",
+      "released_at": "2026-08-12T15:07:04Z"
     },
     {
       "id": "middleclick-copy-block-variants",
@@ -6567,9 +6567,9 @@
       ],
       "pr": 959,
       "date": "2026-08-12",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.556.0",
+      "released_at": "2026-08-12T15:07:04Z"
     },
     {
       "id": "portal-room-resize-both-ends",
@@ -6584,9 +6584,9 @@
         "Reset restores the saved size, not just the saved blocks"
       ],
       "date": "2026-08-12",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.556.0",
+      "released_at": "2026-08-12T15:07:04Z"
     },
     {
       "id": "tradeeverything-0-3-0-bump",
@@ -6599,9 +6599,9 @@
         "Cycling Trade Anything icon"
       ],
       "date": "2026-08-12",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.556.0",
+      "released_at": "2026-08-12T15:07:04Z"
     },
     {
       "id": "pathssmall-room-variant-pass",
@@ -6611,9 +6611,9 @@
       "summary": "A pass over the pathssmall portal room: more of its blocks now vary between copies, and more of its containers roll from curated pools, so repeat visits look and loot differently.",
       "highlights": [],
       "date": "2026-08-12",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.556.0",
+      "released_at": "2026-08-12T15:07:04Z"
     },
     {
       "id": "portal-sever-on-shell-break",
@@ -6629,9 +6629,9 @@
       ],
       "pr": 899,
       "date": "2026-08-07",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.556.0",
+      "released_at": "2026-08-12T15:07:04Z"
     },
     {
       "id": "portal-swap-no-flash",
@@ -6645,9 +6645,9 @@
       ],
       "pr": 902,
       "date": "2026-08-07",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.556.0",
+      "released_at": "2026-08-12T15:07:04Z"
     },
     {
       "id": "portal-room-enemies-and-varied-corridors",
@@ -6661,9 +6661,9 @@
       ],
       "pr": 903,
       "date": "2026-08-07",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.556.0",
+      "released_at": "2026-08-12T15:07:04Z"
     },
     {
       "id": "bedrockless-fog-falloff",
@@ -6677,9 +6677,9 @@
         "Fixed: the fog used to cut out the moment you stepped off the structure, instead of thickening"
       ],
       "date": "2026-08-08",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.556.0",
+      "released_at": "2026-08-12T15:07:04Z"
     },
     {
       "id": "portal-room-placed-once",
@@ -6693,9 +6693,9 @@
         "Portal rooms are built once instead of being repeatedly re-laid as the train moves"
       ],
       "date": "2026-08-08",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.556.0",
+      "released_at": "2026-08-12T15:07:04Z"
     },
     {
       "id": "portal-tunnel-music-fade",
@@ -6710,9 +6710,9 @@
       ],
       "pr": 909,
       "date": "2026-08-08",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.556.0",
+      "released_at": "2026-08-12T15:07:04Z"
     },
     {
       "id": "portal-rooms-not-off-the-train",
@@ -6727,9 +6727,9 @@
       ],
       "pr": 910,
       "date": "2026-08-08",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.556.0",
+      "released_at": "2026-08-12T15:07:04Z"
     },
     {
       "id": "portal-endless-tunnel-surrounds",
@@ -6743,9 +6743,9 @@
         "The way back to the train is still a wall with a door in it, unchanged"
       ],
       "date": "2026-08-08",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.556.0",
+      "released_at": "2026-08-12T15:07:04Z"
     },
     {
       "id": "no-mobs-under-bedrock",
@@ -6759,9 +6759,9 @@
         "A portal room's own mobs, and any you lead in yourself, are untouched"
       ],
       "date": "2026-08-08",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.556.0",
+      "released_at": "2026-08-12T15:07:04Z"
     },
     {
       "id": "nothing-generates-under-bedrock",
@@ -6776,9 +6776,9 @@
       ],
       "pr": 911,
       "date": "2026-08-08",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.556.0",
+      "released_at": "2026-08-12T15:07:04Z"
     },
     {
       "id": "portal-room-cave-noises",
@@ -6793,9 +6793,9 @@
         "Controlled by the Ambient volume slider, like cave noises anywhere else"
       ],
       "date": "2026-08-08",
-      "released": false,
-      "released_in": null,
-      "released_at": null,
+      "released": true,
+      "released_in": "v0.556.0",
+      "released_at": "2026-08-12T15:07:04Z",
       "pr": 916
     },
     {
@@ -6809,9 +6809,9 @@
         "Rooms you have already looted stay looted when you walk back in"
       ],
       "date": "2026-08-09",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.556.0",
+      "released_at": "2026-08-12T15:07:04Z"
     },
     {
       "id": "portal-room-stage-gating",
@@ -6827,9 +6827,9 @@
       ],
       "pr": 924,
       "date": "2026-08-09",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.556.0",
+      "released_at": "2026-08-12T15:07:04Z"
     },
     {
       "id": "portal-room-furnishing-breaks-plates",
@@ -6843,9 +6843,9 @@
       ],
       "pr": 927,
       "date": "2026-08-09",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.556.0",
+      "released_at": "2026-08-12T15:07:04Z"
     },
     {
       "id": "portal-room-extra-exits",
@@ -6862,9 +6862,9 @@
       ],
       "pr": 928,
       "date": "2026-08-09",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.556.0",
+      "released_at": "2026-08-12T15:07:04Z"
     },
     {
       "id": "portal-room-contents-curation",
@@ -6880,9 +6880,9 @@
       ],
       "pr": 930,
       "date": "2026-08-11",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.556.0",
+      "released_at": "2026-08-12T15:07:04Z"
     },
     {
       "id": "portal-doorway-stays-with-its-carriage",
@@ -6896,9 +6896,9 @@
       ],
       "pr": 935,
       "date": "2026-08-11",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.556.0",
+      "released_at": "2026-08-12T15:07:04Z"
     },
     {
       "id": "portal-min-difficulty-gate",
@@ -6912,9 +6912,9 @@
       ],
       "pr": 944,
       "date": "2026-08-12",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.556.0",
+      "released_at": "2026-08-12T15:07:04Z"
     },
     {
       "id": "impossible-room-advancements",
@@ -6929,9 +6929,9 @@
       ],
       "pr": 953,
       "date": "2026-08-12",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.556.0",
+      "released_at": "2026-08-12T15:07:04Z"
     },
     {
       "id": "portal-severed-walkthrough-and-diagnostics",
@@ -6945,9 +6945,9 @@
       ],
       "pr": 957,
       "date": "2026-08-12",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.556.0",
+      "released_at": "2026-08-12T15:07:04Z"
     }
   ]
 }
