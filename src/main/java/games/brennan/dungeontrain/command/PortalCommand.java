@@ -4,6 +4,7 @@ import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.editor.CarriageTemplateStore;
+import games.brennan.dungeontrain.event.PortalCarriageEvents;
 import games.brennan.dungeontrain.portal.PortalAnchors;
 import games.brennan.dungeontrain.portal.PortalBuilder;
 import games.brennan.dungeontrain.portal.PortalCarriageBuilder;
@@ -93,6 +94,7 @@ public final class PortalCommand {
                 .then(Commands.argument("every", IntegerArgumentType.integer(1, 64))
                     .executes(ctx -> runCarriage(ctx.getSource(),
                         IntegerArgumentType.getInteger(ctx, "every")))))
+            .then(Commands.literal("diagnose").executes(ctx -> runDiagnose(ctx.getSource())))
             .then(Commands.literal("severed")
                 .executes(ctx -> runSeveredList(ctx.getSource()))
                 .then(Commands.literal("list").executes(ctx -> runSeveredList(ctx.getSource())))
@@ -312,6 +314,43 @@ public final class PortalCommand {
      * The corridors whose way in has been broken open. Reports both directions explicitly, because
      * "severed" reads as fully dead and it is not — the way out of a severed corridor still works.
      */
+    /**
+     * Say why the nearest portal is or is not working, from where the caller is standing.
+     *
+     * <p>The in-game half of {@link games.brennan.dungeontrain.portal.PortalSwapDiagnostics}: that
+     * names a refusal <i>after</i> it happens, in the log; this answers the same question while the
+     * player is still standing in the corridor, and covers the states that produce no refusal at all
+     * because the swap was never attempted — a group culled, a structure never placed, or a stretch of
+     * track that was never eligible for a portal in the first place.</p>
+     *
+     * <p>The report itself is assembled by
+     * {@link games.brennan.dungeontrain.event.PortalCarriageEvents#diagnose}, which owns the live
+     * state it describes.</p>
+     */
+    private static int runDiagnose(CommandSourceStack source) {
+        ServerPlayer player;
+        try {
+            player = source.getPlayerOrException();
+        } catch (Exception e) {
+            source.sendFailure(Component.literal(
+                "This command must be run by a player — it reports on the portal nearest to you."));
+            return 0;
+        }
+
+        List<String> report = PortalCarriageEvents.diagnose(source.getLevel(), player);
+        source.sendSuccess(() -> Component.literal("Portal diagnosis:")
+            .withStyle(ChatFormatting.AQUA), false);
+        for (String line : report) {
+            source.sendSuccess(() -> Component.literal(line), false);
+        }
+        // Also to the log, where it can be pasted into a bug report alongside the refusal lines the
+        // swap itself writes — the two together are the whole picture, and a screenshot of chat is
+        // not something anyone can grep.
+        LOGGER.info("[DungeonTrain] Portal diagnosis for {}:\n  {}",
+            player.getName().getString(), String.join("\n  ", report));
+        return report.size();
+    }
+
     private static int runSeveredList(CommandSourceStack source) {
         List<Integer> severed = PortalRegistry.get(source.getLevel()).severed();
         if (severed.isEmpty()) {

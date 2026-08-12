@@ -6824,6 +6824,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "portal-severed-walkthrough-and-diagnostics",
+      "version": "0.554.0",
+      "type": "fix",
+      "title": "A broken portal can be walked through, and portals stop failing silently",
+      "summary": "Breaking open a portal corridor's shell still closes the portal for good, but the pair no longer leaves three carriages of dead end behind it: the blocks between its two doors are removed, so you can walk straight through the group and carry on down the train. Separately, a portal you lingered in could quietly stop working \u2014 its destination was left behind as the train rolled on, and walking past the midpoint then did nothing at all. It now keeps up with you.",
+      "highlights": [
+        "A severed portal opens into a walk-through instead of a dead end",
+        "Portals no longer stop working if you linger in the corridor before crossing"
+      ],
+      "pr": 957,
+      "date": "2026-08-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

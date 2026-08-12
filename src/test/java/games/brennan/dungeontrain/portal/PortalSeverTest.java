@@ -119,6 +119,40 @@ final class PortalSeverTest {
         assertFalse(severs(PortalCarriageRole.ENTRY, pastMid, 3, ENTRY_LAYOUT.doorZ()));
     }
 
+    /**
+     * The property the walk-through leans on.
+     *
+     * <p>{@code PortalSever.onCarriageBlockChanged} severs the broken corridor <b>and</b> its
+     * partner, and {@code PortalCarriageBuilder.stampMiddle} then asks a single question — "is this
+     * group's anchor severed?" — to decide whether to stamp the wall between the pair's doors open.
+     * That one question is only a correct pair-level answer if the anchor lands in the set whichever
+     * end was broken, which it does because the anchor <i>is</i> the entry's index.</p>
+     *
+     * <p>Were that to stop holding, a pair broken from its exit end would record two indices, neither
+     * of them the anchor, and the wall would stamp shut again on the next pass of the rolling window —
+     * closing the way out from under a player walking through it.</p>
+     */
+    @Test
+    @DisplayName("severing either end always marks the group's anchor")
+    void severingEitherEndMarksTheAnchor() {
+        for (int groupSize : new int[] {3, 4, 7}) {
+            for (int anchorOrdinal = -3; anchorOrdinal <= 3; anchorOrdinal++) {
+                int anchor = anchorOrdinal * groupSize;
+                int entry = anchor + PortalCarriageSelection.SLOT_ENTRY;
+                int exit = anchor + PortalCarriageSelection.SLOT_EXIT;
+
+                assertEquals(anchor, PortalCarriageRole.entryIndexOf(entry, groupSize));
+                assertEquals(anchor, PortalCarriageRole.entryIndexOf(exit, groupSize));
+
+                // Broken from the entry: the anchor is the broken index itself.
+                assertEquals(anchor, entry, "the entry corridor IS the group anchor");
+                // Broken from the exit: the anchor is the partner that goes with it.
+                assertEquals(anchor, PortalCarriageRole.partnerIndex(exit, groupSize),
+                    "an exit's partner must be the anchor, at group size " + groupSize);
+            }
+        }
+    }
+
     @Test
     @DisplayName("the shell test agrees with the geometry the corridor is actually stamped from")
     void shellMatchesStampedGeometry() {

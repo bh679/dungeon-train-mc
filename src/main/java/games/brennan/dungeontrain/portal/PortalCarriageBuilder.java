@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.portal;
 
+import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.editor.CarriageTemplateStore;
 import games.brennan.dungeontrain.editor.CarriageVariantBlocks;
 import games.brennan.dungeontrain.editor.ContainerContentsPlacement;
@@ -96,6 +97,16 @@ public final class PortalCarriageBuilder {
     private static final BlockState SHELL = Blocks.STONE_BRICKS.defaultBlockState();
     /** Crossing-zone floor. Light 15 at source, which is what makes external leakage irrelevant. */
     private static final BlockState CROSSING_LIGHT = Blocks.SEA_LANTERN.defaultBlockState();
+
+    /**
+     * The two blocks between a pair's two dummy doors, while the portal still works — see
+     * {@link PortalCentreWall}.
+     *
+     * <p>Deliberately not the corridor's own {@link #SHELL}. This is the one cell of the wall a player
+     * can meet head-on, and a plain plate rather than more masonry is what makes it legible when a
+     * severed pair opens it into a walk-through.</p>
+     */
+    static final BlockState CENTRE_WALL_DOORWAY = Blocks.BLACK_CONCRETE.defaultBlockState();
 
     /** Pocket-area palette, beyond the twin's far door — deliberately shares nothing with the corridor. */
     static final BlockState POCKET_SHELL = Blocks.POLISHED_BLACKSTONE_BRICKS.defaultBlockState();
@@ -421,11 +432,20 @@ public final class PortalCarriageBuilder {
      * eaten into this slot at all ({@code overrun == 0}, which happens only for carriages long enough
      * to hit {@link games.brennan.dungeontrain.train.CarriageDims#MAX_LENGTH}). At every ordinary
      * carriage length there is no longer a cart-shaped space for it to describe.</p>
+     *
+     * <p><b>A severed pair is stamped open.</b> The wall's doorway column is left as air when this
+     * group's portal has been broken, which turns three carriages of dead end into an ordinary
+     * walk-through — see {@link PortalCentreWall}. Read from {@link PortalRegistry} at stamp time
+     * rather than remembered, because a corridor's blocks are re-stamped every time the rolling
+     * window brings the group round again, and the severing outlives all of them.</p>
+     *
+     * @param carriageIndex the cart's own index along the track, which resolves the pair whose
+     *                      severed state decides whether the wall is opened
      */
     public static Set<BlockPos> stampMiddle(ServerLevel level, BlockPos origin, CarriageDims dims,
-                                            boolean relight) {
+                                            boolean relight, int carriageIndex) {
         if (PortalCorridorSize.overrun(dims) > 0) {
-            return stampCentreWall(level, origin, dims, relight);
+            return stampCentreWall(level, origin, dims, relight, isPairSevered(level, carriageIndex));
         }
 
         Optional<StructureTemplate> stored = CarriageTemplateStore.get(level, MIDDLE_VARIANT, dims);
@@ -437,28 +457,52 @@ public final class PortalCarriageBuilder {
     }
 
     /**
+     * True if the pair this carriage belongs to has had its portal severed.
+     *
+     * <p>Asked of the group's anchor, which is a pair-level question however the break was made:
+     * {@link PortalSever} records the broken corridor <i>and</i> its partner, and one of those two is
+     * always the anchor.</p>
+     */
+    private static boolean isPairSevered(ServerLevel level, int carriageIndex) {
+        int pairKey = PortalCarriageRole.entryIndexOf(carriageIndex, DungeonTrainConfig.getGroupSize());
+        return PortalRegistry.get(level).isSevered(pairKey);
+    }
+
+    /**
      * The wall left standing between two corridors that have grown into this slot from both ends:
      * {@link PortalCorridorSize#centreWallWidth} solid columns at the centre of the group.
      *
      * <p>Solid rather than a hollow shell. A hollow one would be a sealed pocket of air nobody can
      * ever reach, which is the waste that lengthening the corridors exists to remove; and at the
      * default carriage length the wall is a single column, where "hollow" has no meaning anyway.</p>
+     *
+     * <p>Solid <i>except</i> the doorway column between the two dummy doors, which is black concrete
+     * while the portal works and air once it has been severed — {@link PortalCentreWall} has the whole
+     * of that rule and the reasons for it.</p>
      */
     private static Set<BlockPos> stampCentreWall(ServerLevel level, BlockPos origin,
-                                                 CarriageDims dims, boolean relight) {
+                                                 CarriageDims dims, boolean relight, boolean severed) {
         Set<BlockPos> placed = new HashSet<>();
-        int from = PortalCorridorSize.overrun(dims);
-        int to = from + PortalCorridorSize.centreWallWidth(dims);
+        int from = PortalCentreWall.minX(dims);
+        int to = PortalCentreWall.maxXExclusive(dims);
 
         for (int dx = from; dx < to; dx++) {
             for (int dz = 0; dz < dims.width(); dz++) {
                 for (int dy = 0; dy < dims.height(); dy++) {
+                    BlockState state = SHELL;
+                    if (PortalCentreWall.isDoorwayColumn(dims, dx, dy, dz)) {
+                        state = severed ? Blocks.AIR.defaultBlockState() : CENTRE_WALL_DOORWAY;
+                    }
+
                     BlockPos pos = origin.offset(dx, dy, dz);
                     if (relight) {
-                        level.setBlock(pos, SHELL, Block.UPDATE_ALL);
+                        level.setBlock(pos, state, Block.UPDATE_ALL);
                     } else {
-                        SilentBlockOps.setBlockSectionLocal(level, pos, SHELL);
+                        SilentBlockOps.setBlockSectionLocal(level, pos, state);
                     }
+                    // Air included: the cell is part of this cart's footprint either way, and a
+                    // position left out of the set is one ShipAssembler does not lift into the
+                    // group's sub-level. See CarriagePlacer.finishPlace.
                     placed.add(pos.immutable());
                 }
             }
