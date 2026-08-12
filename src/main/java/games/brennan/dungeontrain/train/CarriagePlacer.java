@@ -281,7 +281,7 @@ public final class CarriagePlacer {
         // skips the same passes the corridors do. Furnishing a room nobody can enter with loot, and
         // trapping mobs in it, is the waste that pinning a portal to one group exists to remove.
         if (PortalCarriageSelection.isPortalMiddle(level, carriageIndex)) {
-            PortalCarriageBuilder.stampMiddle(level, origin, dims, /*relight*/ false);
+            PortalCarriageBuilder.stampMiddle(level, origin, dims, /*relight*/ false, carriageIndex);
             return finishPlace(level, origin, PortalCarriageBuilder.middleVariant(), dims, "portal_middle", null);
         }
 
@@ -647,7 +647,7 @@ public final class CarriagePlacer {
         // Same for the cart between a portal's corridors: something to open in the editor before
         // anyone has authored its .nbt, since the editor is where that .nbt comes from.
         if (variant.equals(PortalCarriageBuilder.middleVariant())) {
-            PortalCarriageBuilder.stampMiddle(level, origin, dims, relight);
+            PortalCarriageBuilder.stampMiddle(level, origin, dims, relight, carriageIndex);
             return "portal_middle";
         }
         return null;

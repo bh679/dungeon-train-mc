@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.portal;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
+import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.state.BlockState;
@@ -27,6 +28,14 @@ import org.slf4j.Logger;
  * nearer. Nothing this class does can strand anybody, which is also why the trigger is restricted
  * to the carriage-side copy: a break in a twin corridor or anywhere in the room is ignored
  * outright.</p>
+ *
+ * <p><b>And the group opens up.</b> A severed pair is still three carriages of train, and with no
+ * swap left in it the entry corridor is a dead end — in through the near door, and nowhere to go but
+ * back. So the two blocks between the pair's two dummy doors are removed and the group becomes an
+ * ordinary walk-through: entry corridor, through both doors, out of the exit corridor. That is the
+ * backup for a portal that has stopped working, and {@link PortalCentreWall} holds the geometry and
+ * the reasons. It happens twice over — here, for whoever is standing in the corridor at the moment it
+ * breaks, and again in {@link PortalCarriageBuilder#stampMiddle} every time the group is re-stamped.</p>
  *
  * <p><b>Permanent.</b> Recorded against the carriage index in {@link PortalRegistry}, which is a
  * fixed place along the track, and persisted. It has to be stored rather than re-derived from the
@@ -100,10 +109,37 @@ public final class PortalSever {
         // two are in completely different parts of the world.
         PortalSeverEffects.play(level, carriagePos, twinPos);
 
+        openCentreWall(level, entry);
+
         LOGGER.info("[DungeonTrain] Portal connection severed: carriages {} ({}) + {} (partner), "
                 + "shell broken at local ({},{},{}) — world {}, twin {}. "
                 + "Both ends are closed to entry; both ways out stay open.",
             broken, frames.role(), partner, local[0], local[1], local[2], carriagePos, twinPos);
+    }
+
+    /**
+     * Open the doorway column through the wall between the pair's two corridors, so the group becomes
+     * an ordinary walk-through rather than three carriages of dead end. See {@link PortalCentreWall}.
+     *
+     * <p><b>Why here as well as at stamp time.</b> {@code PortalCarriageBuilder.stampMiddle} reads the
+     * severed state and would open the wall on its own — but only the next time the rolling window
+     * brings this group round again, which is a minute or more away and may never happen while the
+     * player who just broke the shell is standing in the corridor looking at it. This does it now; the
+     * stamp keeps it open afterwards.</p>
+     *
+     * <p>Written into the ship's plot at shipyard coordinates through {@link SilentBlockOps}, the same
+     * path {@link PortalEditMirror} uses — poking the chunk directly changes the block server-side and
+     * tells no client. {@code clearBlockSilent} rather than an air state so nothing is left behind.</p>
+     *
+     * <p>Nothing mirrors into the twin: these cells belong to the cart between the corridors, so
+     * {@code localOfPlot} puts them outside every corridor and the mirror ignores them — which is
+     * right, because the twin pair has no cart between its halves to open.</p>
+     */
+    private static void openCentreWall(ServerLevel level, PortalPairIndex.Entry entry) {
+        PortalFrames frames = entry.frames();
+        for (int[] cell : PortalCentreWall.doorwayCellsFromCorridor(entry.dims(), frames.role())) {
+            SilentBlockOps.clearBlockSilent(level, entry.plotPosOf(cell));
+        }
     }
 
     /**
