@@ -90,8 +90,11 @@ public final class StartingBookRegistry {
             StartingBookContext ctx = contextFor(id);
             // Overlay the host-locale variant on the English base when one is bundled/shipped
             // (see NarrativeContentLocale); the id (and thus its context) stays identical.
-            Resource source = NarrativeContentLocale.localized(resourceManager, id, DIR).orElse(entry.getValue());
-            try (InputStream in = source.open()) {
+            // Overlay the host-locale variant on the English base, then fold in any
+            // translation-editor overrides (integrated server only — see
+            // NarrativeTranslationOverrides). The id stays identical, so pool weights and
+            // variant-count denominators are unaffected.
+            try (InputStream in = NarrativeContentLocale.open(resourceManager, id, DIR, entry.getValue())) {
                 RandomBookFile book = RandomBookCodec.parse(in, id);
                 POOLS.get(ctx).put(id, book);
                 perContext.merge(ctx, 1, Integer::sum);

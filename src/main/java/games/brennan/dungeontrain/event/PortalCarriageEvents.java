@@ -27,6 +27,7 @@ import games.brennan.dungeontrain.portal.PortalRoomTiling;
 import games.brennan.dungeontrain.portal.PortalSever;
 import games.brennan.dungeontrain.portal.PortalSwapDiagnostics;
 import games.brennan.dungeontrain.portal.PortalStructure;
+import games.brennan.dungeontrain.portal.PortalTripTracker;
 import games.brennan.dungeontrain.portal.PortalTwinLanes;
 import games.brennan.dungeontrain.net.PortalRoomFogPacket;
 import games.brennan.dungeontrain.net.PortalSwapPacket;
@@ -66,6 +67,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import javax.annotation.Nullable;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -245,6 +247,41 @@ public final class PortalCarriageEvents {
             if (box.contains(x, y, z)) return true;
         }
         return false;
+    }
+
+    /**
+     * The pair whose room <b>body</b> contains {@code (x, y, z)}, or {@code null} for anywhere else.
+     *
+     * <p>The room body is the structure minus its corridors: past the entry twin's far door, before
+     * the exit twin's, and not inside any of the copies the endless modes scattered through the
+     * tiling. Read by {@code BoardingProgressEvents} for the two things that must not count a
+     * doorway as a room — the trip that credits the train's travel to somebody who has gone inside,
+     * and the dwell behind "Train inside a train?".</p>
+     *
+     * <p><b>Why the corridor mask rather than an X range.</b> The pair's own exit can stand beside
+     * another tile entirely and the copies stand anywhere, so the corridors are not one span either
+     * side of the room. {@link PortalCarriageBuilder#allCorridorMask} is what <i>places</i> them, so
+     * asking it cannot disagree about where they are — the same reason {@link #structureBox} reads
+     * it instead of computing its own bounds.</p>
+     *
+     * <p><b>Unpadded, unlike {@link #isInsidePortalStructure}.</b> That query's {@code fogPad} is
+     * spawning margin — deliberately generous, because a skeleton appearing just outside the room is
+     * still the room's problem. Credit is not: the swept void beside a Compatible Terrain room is
+     * not somewhere a player is riding the train from.</p>
+     */
+    @Nullable
+    public static Integer portalRoomBodyPairKey(CarriageDims dims, double x, double y, double z) {
+        if (STRUCTURES.isEmpty()) return null;
+        for (Map.Entry<Integer, PortalStructure> entry : STRUCTURES.entrySet()) {
+            PortalStructure structure = entry.getValue();
+            if (!structureBox(dims, structure).contains(x, y, z)) continue;
+            if (PortalCarriageBuilder.allCorridorMask(structure, dims)
+                    .covers(Mth.floor(x), Mth.floor(y), Mth.floor(z))) {
+                continue;
+            }
+            return entry.getKey();
+        }
+        return null;
     }
 
     private static boolean onCooldown(ServerPlayer player, long gameTime) {
@@ -901,7 +938,15 @@ public final class PortalCarriageEvents {
             // a player who deliberately walked back to it has asked for.
             if (move.toFrame() == PortalFrames.FRAME_CARRIAGE) {
                 PortalExitBindings.bind(player.getUUID(), pairKey, tile);
+                // How far this way out is from the way in — measured from where they are standing
+                // NOW, before the teleport, because that is the exit corridor's position rather than
+                // the carriage's. Empty for a player whose way in we never saw (logged in inside a
+                // room, or joined after the trip began), which earns nothing rather than guessing.
+                PortalTripTracker.noteExited(player.getUUID(), px, pz)
+                    .ifPresent(metres -> AchievementEvents.notifyPortalExitDistance(player, metres));
             } else {
+                // Going in: where they land is the way in every later exit is measured against.
+                PortalTripTracker.noteEntered(player.getUUID(), pairKey, move.x(), move.z());
                 // Going in: leave a trail, so whatever is following a second behind arrives where
                 // this player did rather than at the original twin. A follower is by definition
                 // behind, so by the time it crosses, this player is no longer here to be asked.

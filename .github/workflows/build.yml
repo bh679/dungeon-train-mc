@@ -78,7 +78,9 @@ jobs:
 
   # Stdlib-only Python guard for the translation provenance sidecars (who translated / who
   # human-reviewed each string). Two flavours, both under localization/ and both repo-side
-  # only (never shipped):
+  # only (the sidecars never ship — but the generated manifests derived from them, at
+  # assets/dungeontrain/localization_provenance/, do, and check-provenance.py fails on any
+  # drift between the two since the in-game translation editor filters on them):
   #   * per-LINE, for the flat-key UI lang files — dungeontrain at
   #     localization/provenance/<locale>.json plus each sibling mod (AIN/PlayerMob/
   #     DiscordPresence, whose translations are committed here) at
@@ -108,3 +110,4 @@ jobs:
           python3 scripts/localization/test_stamp_provenance.py
           python3 scripts/localization/test_check_narrative_provenance.py
           python3 scripts/localization/test_stamp_narrative_provenance.py
+          python3 scripts/localization/test_provenance_io.py
