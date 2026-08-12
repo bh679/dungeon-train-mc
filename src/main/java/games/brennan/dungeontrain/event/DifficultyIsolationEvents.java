@@ -63,6 +63,11 @@ public final class DifficultyIsolationEvents {
                 LoadoutStore.swap(player, fromKey, toKey);
                 // ECP re-resolves the slot key, which now carries the new difficulty's suffix.
                 EnderChestLockBridge.engage(player);
+                // The advancement sidecar now points at the new profile while this world still holds the
+                // old one's grants. Tell AchievementEvents, or its login/logout sweeps will cross-
+                // contaminate — or delete — a profile. Advancements already granted here stay granted; the
+                // screen only lines up with the new profile in the next world.
+                AchievementEvents.markProfileMismatched(player);
                 player.sendSystemMessage(Component.translatable(
                     "chat.dungeontrain.difficulty_profile.swapped",
                     Component.translatable(to.getKey()),

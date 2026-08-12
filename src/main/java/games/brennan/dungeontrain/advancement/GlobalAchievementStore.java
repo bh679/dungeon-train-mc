@@ -6,6 +6,7 @@ import com.mojang.logging.LogUtils;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.JsonOps;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import games.brennan.dungeontrain.player.DifficultyPartition;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.fml.loading.FMLPaths;
 import org.slf4j.Logger;
@@ -48,6 +49,12 @@ import java.util.UUID;
  *   ] }
  * }</pre>
  *
+ * <p><b>Partitioned by difficulty.</b> Each vanilla difficulty keeps its own profile — see
+ * {@link DifficultyPartition}. Normal uses the original {@code <uuid>.json} path, so every existing
+ * profile stays whole and needs no migration; the others live under {@code <partition>/<uuid>.json}. The
+ * single-argument methods target Normal and exist for call sites with no player context; everything driven
+ * by a live player passes the partition explicitly.</p>
+ *
  * <p>Concurrency: methods are {@code synchronized} on the class. In
  * single-player there is never contention (single thread). On dedicated
  * server, simultaneous logins for different players still serialize
@@ -69,9 +76,29 @@ public final class GlobalAchievementStore {
 
     private GlobalAchievementStore() {}
 
-    /** Resolve the sidecar file path for {@code playerUuid}. */
+    /** Resolve the sidecar file path for {@code playerUuid} in the legacy (Normal) partition. */
     public static Path file(UUID playerUuid) {
-        return FMLPaths.CONFIGDIR.get().resolve(DIR_NAME).resolve(playerUuid + ".json");
+        return file(playerUuid, DifficultyPartition.LEGACY_KEY);
+    }
+
+    /** Resolve the sidecar file path for {@code playerUuid} in {@code partition}. */
+    public static Path file(UUID playerUuid, String partition) {
+        return FMLPaths.CONFIGDIR.get().resolve(DIR_NAME).resolve(relativeFile(playerUuid, partition));
+    }
+
+    /**
+     * The sidecar's path relative to {@link #DIR_NAME}: {@code <uuid>.json} for the legacy partition,
+     * {@code <partition>/<uuid>.json} otherwise.
+     *
+     * <p>The legacy partition keeps the original path exactly, so an existing profile stays whole and
+     * reachable on Normal with nothing to migrate — the same rule the stash and the echo pool follow.</p>
+     *
+     * <p>A subdirectory rather than a {@code <uuid>|hard.json} suffix, unlike the Ender Chest slot key:
+     * that key is an NBT tag name, this is a real filename, and {@code |} is illegal in one on Windows.</p>
+     */
+    static String relativeFile(UUID playerUuid, String partition) {
+        String suffixKey = DifficultyPartition.suffixFor(partition);
+        return suffixKey.isEmpty() ? playerUuid + ".json" : partition + "/" + playerUuid + ".json";
     }
 
     /**
@@ -80,7 +107,12 @@ public final class GlobalAchievementStore {
      * malformed case).
      */
     public static synchronized Set<ResourceLocation> read(UUID playerUuid) {
-        Path path = file(playerUuid);
+        return read(playerUuid, DifficultyPartition.LEGACY_KEY);
+    }
+
+    /** {@link #read(UUID)} for one difficulty partition. */
+    public static synchronized Set<ResourceLocation> read(UUID playerUuid, String partition) {
+        Path path = file(playerUuid, partition);
         if (!Files.isRegularFile(path)) return Set.of();
         try (Reader reader = Files.newBufferedReader(path)) {
             JsonElement element = JsonParser.parseReader(reader);
@@ -105,9 +137,15 @@ public final class GlobalAchievementStore {
      * @return {@code true} when the file was actually mutated.
      */
     public static synchronized boolean append(UUID playerUuid, ResourceLocation advancement) {
-        Set<ResourceLocation> current = new LinkedHashSet<>(read(playerUuid));
+        return append(playerUuid, DifficultyPartition.LEGACY_KEY, advancement);
+    }
+
+    /** {@link #append(UUID, ResourceLocation)} into one difficulty partition. */
+    public static synchronized boolean append(UUID playerUuid, String partition,
+                                              ResourceLocation advancement) {
+        Set<ResourceLocation> current = new LinkedHashSet<>(read(playerUuid, partition));
         if (!current.add(advancement)) return false;
-        writeAtomic(playerUuid, current);
+        writeAtomic(playerUuid, partition, current);
         return true;
     }
 
@@ -121,12 +159,18 @@ public final class GlobalAchievementStore {
      * @return the number of ids actually added (0 when all were already present).
      */
     public static synchronized int appendAll(UUID playerUuid, Collection<ResourceLocation> advancements) {
+        return appendAll(playerUuid, DifficultyPartition.LEGACY_KEY, advancements);
+    }
+
+    /** {@link #appendAll(UUID, Collection)} into one difficulty partition. */
+    public static synchronized int appendAll(UUID playerUuid, String partition,
+                                            Collection<ResourceLocation> advancements) {
         if (advancements.isEmpty()) return 0;
-        Set<ResourceLocation> current = new LinkedHashSet<>(read(playerUuid));
+        Set<ResourceLocation> current = new LinkedHashSet<>(read(playerUuid, partition));
         int before = current.size();
         current.addAll(advancements);
         int added = current.size() - before;
-        if (added > 0) writeAtomic(playerUuid, current);
+        if (added > 0) writeAtomic(playerUuid, partition, current);
         return added;
     }
 
@@ -138,14 +182,20 @@ public final class GlobalAchievementStore {
      * @return {@code true} when the file was actually mutated.
      */
     public static synchronized boolean remove(UUID playerUuid, ResourceLocation advancement) {
-        Set<ResourceLocation> current = new LinkedHashSet<>(read(playerUuid));
+        return remove(playerUuid, DifficultyPartition.LEGACY_KEY, advancement);
+    }
+
+    /** {@link #remove(UUID, ResourceLocation)} from one difficulty partition. */
+    public static synchronized boolean remove(UUID playerUuid, String partition,
+                                              ResourceLocation advancement) {
+        Set<ResourceLocation> current = new LinkedHashSet<>(read(playerUuid, partition));
         if (!current.remove(advancement)) return false;
-        writeAtomic(playerUuid, current);
+        writeAtomic(playerUuid, partition, current);
         return true;
     }
 
-    private static void writeAtomic(UUID playerUuid, Set<ResourceLocation> granted) {
-        Path path = file(playerUuid);
+    private static void writeAtomic(UUID playerUuid, String partition, Set<ResourceLocation> granted) {
+        Path path = file(playerUuid, partition);
         try {
             Files.createDirectories(path.getParent());
         } catch (IOException e) {

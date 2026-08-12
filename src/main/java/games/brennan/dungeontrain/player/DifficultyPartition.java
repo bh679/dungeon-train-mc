@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.player;
 
+import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.level.Level;
 
@@ -63,5 +64,18 @@ public final class DifficultyPartition {
     /** A storage key scoped to {@code partitionKey} — {@code base} unchanged on the legacy partition. */
     public static String scopeKey(String base, String partitionKey) {
         return base + suffixFor(partitionKey);
+    }
+
+    /**
+     * The partition a player in {@code level} is actually stored under right now: {@link #keyFor(Level)}
+     * when difficulty isolation is enabled, else {@link #LEGACY_KEY}.
+     *
+     * <p>The single answer to "which profile am I in", shared by every consumer (Ender Chest slot, loadout
+     * locker, advancement sidecar). Each deriving its own would let them disagree — and a chest, a loadout
+     * and an advancement file that disagree about the current profile is precisely how data gets written to
+     * the wrong one.</p>
+     */
+    public static String activeKeyFor(Level level) {
+        return DungeonTrainConfig.getDifficultyIsolatedStash() ? keyFor(level) : LEGACY_KEY;
     }
 }

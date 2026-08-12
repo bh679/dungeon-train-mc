@@ -58,6 +58,7 @@ public final class DungeonTrainWorldData extends SavedData {
     private static final String TAG_JOIN_REPORT_POSTED = "joinReportPosted";
     private static final String TAG_BREAK_BLOCKS_ON_CONTACT_OVERRIDE = "breakBlocksOnContactOverride";
     private static final String TAG_USED_CARRIAGE_IDS = "usedSharedCarriageIds";
+    private static final String TAG_ADVANCEMENT_PARTITION = "advancementPartition";
 
     private int trainY;
     private boolean startsWithTrain;
@@ -72,6 +73,8 @@ public final class DungeonTrainWorldData extends SavedData {
     private Boolean breakBlocksOnContactOverride;
     /** Per-world one-shot: true once the join-info report (DT version + train seed + mods) has been posted to Discord. */
     private boolean joinReportPosted;
+    /** The difficulty profile this world's advancements were last replayed from; "" = never replayed. */
+    private String advancementPartition = "";
 
     /**
      * Transient scheduling set of chunk keys ({@link net.minecraft.world.level.ChunkPos#toLong}) whose
@@ -232,6 +235,11 @@ public final class DungeonTrainWorldData extends SavedData {
         if (tag.contains(TAG_JOIN_REPORT_POSTED)) {
             data.joinReportPosted = tag.getBoolean(TAG_JOIN_REPORT_POSTED);
         }
+        // Absent on worlds that predate difficulty-isolated advancements → "" → the first login stamps it
+        // and treats the world as matching, so nothing is suppressed for existing saves.
+        if (tag.contains(TAG_ADVANCEMENT_PARTITION)) {
+            data.advancementPartition = tag.getString(TAG_ADVANCEMENT_PARTITION);
+        }
         // getIntArray returns an empty array for an absent key, so worlds saved before shared carriages
         // simply start having placed nothing.
         data.usedCarriageIds.loadFrom(tag.getIntArray(TAG_USED_CARRIAGE_IDS));
@@ -258,6 +266,7 @@ public final class DungeonTrainWorldData extends SavedData {
             tag.putBoolean(TAG_BREAK_BLOCKS_ON_CONTACT_OVERRIDE, breakBlocksOnContactOverride);
         }
         tag.putBoolean(TAG_JOIN_REPORT_POSTED, joinReportPosted);
+        tag.putString(TAG_ADVANCEMENT_PARTITION, advancementPartition);
         tag.putIntArray(TAG_USED_CARRIAGE_IDS, usedCarriageIds.toIntArray());
         return tag;
     }
@@ -398,6 +407,27 @@ public final class DungeonTrainWorldData extends SavedData {
      */
     public boolean joinReportPosted() {
         return joinReportPosted;
+    }
+
+    /**
+     * The difficulty profile this world's advancement state was last replayed from, or {@code ""} when it
+     * has never been replayed (a fresh world, or one saved before advancements were partitioned).
+     *
+     * <p>Durable on purpose. A session flag can't survive the case that actually bites: change difficulty,
+     * quit to title, then reload the SAME world. Its advancement file still holds the old profile's grants,
+     * so without this the login sweep would absorb them into the new profile — or, at logout, decide the new
+     * profile's entries were all revoked and delete them. See {@code AchievementEvents}.</p>
+     */
+    public String advancementPartition() {
+        return advancementPartition;
+    }
+
+    /** Record which difficulty profile this world's advancements now reflect. */
+    public void setAdvancementPartition(String partition) {
+        String value = partition == null ? "" : partition;
+        if (value.equals(advancementPartition)) return;
+        advancementPartition = value;
+        setDirty();
     }
 
     /** Mark the per-world join-info report as posted so it never fires again for this world. */

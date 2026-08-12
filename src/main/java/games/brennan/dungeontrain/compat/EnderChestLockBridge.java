@@ -68,10 +68,9 @@ public final class EnderChestLockBridge {
             if (RunIntegrity.isCheated(player)) {
                 return FREE_PLAY_SLOT;
             }
-            if (!DungeonTrainConfig.getDifficultyIsolatedStash()) {
-                return null; // defer to the plain game-mode key
-            }
-            String suffix = DifficultyPartition.suffixFor(player.level().getDifficulty());
+            // activeKeyFor folds in the config gate, so the chest, the loadout locker and the advancement
+            // sidecar can never disagree about which profile is current.
+            String suffix = DifficultyPartition.suffixFor(DifficultyPartition.activeKeyFor(player.level()));
             return suffix.isEmpty() ? null : defaultKey + suffix;
         });
         active = true;
