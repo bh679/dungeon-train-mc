@@ -1,9 +1,11 @@
 package games.brennan.dungeontrain.builder;
 
 import games.brennan.dungeontrain.track.PillarSection;
+import games.brennan.dungeontrain.track.TrackPalette;
 import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.train.CarriageDims;
 import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 
 import java.util.ArrayList;
@@ -37,6 +39,17 @@ public final class BuilderTrackGhostShape {
     /** How far along X the ghosted line runs either side of the plot. */
     public static final int LINE_RADIUS_X = 48;
 
+    /**
+     * One ghost block: where it goes, and what it is made of.
+     *
+     * <p>The state is carried rather than assumed because the ghosts are drawn with the block's own
+     * model and texture — a rail has to ghost as a rail, not as a stone brick with a rail's name.
+     * The states are {@link TrackPalette}'s, which is what {@code TrackGenerator} paints with when a
+     * template has nothing to say about a column, so the modelled ghost is the game's own fallback
+     * rather than a guess made here.</p>
+     */
+    public record Cell(BlockPos pos, BlockState state) {}
+
     private BuilderTrackGhostShape() {}
 
     /**
@@ -46,13 +59,13 @@ public final class BuilderTrackGhostShape {
      * thing on the plot, so the renderer repeats <em>that</em> down the line instead of a model of
      * it, and gets the template being edited rather than an approximation of it.</p>
      */
-    public static List<BlockPos> cells(TrackKind kind, BoundingBox plot, CarriageDims dims) {
+    public static List<Cell> cells(TrackKind kind, BoundingBox plot, CarriageDims dims) {
         if (kind == null || plot == null || BuilderTrackPlot.inCorridor(kind)) {
             return List.of();
         }
-        List<BlockPos> cells = new ArrayList<>();
+        List<Cell> cells = new ArrayList<>();
         int columnTop = appendColumn(cells, kind, plot);
-        appendLine(cells, plot, columnTop + 1, dims);
+        appendLine(cells, kind, plot, columnTop + 1, dims);
         return cells;
     }
 
@@ -70,13 +83,13 @@ public final class BuilderTrackGhostShape {
      *
      * @return the Y of the column's top row — the plot's own top when nothing was added
      */
-    private static int appendColumn(List<BlockPos> cells, TrackKind kind, BoundingBox plot) {
+    private static int appendColumn(List<Cell> cells, TrackKind kind, BoundingBox plot) {
         int top = plot.maxY();
         for (PillarSection section : sectionsAbove(kind)) {
             for (int dy = 1; dy <= section.height(); dy++) {
                 for (int x = plot.minX(); x <= plot.maxX(); x++) {
                     for (int z = plot.minZ(); z <= plot.maxZ(); z++) {
-                        cells.add(new BlockPos(x, top + dy, z));
+                        cells.add(new Cell(new BlockPos(x, top + dy, z), TrackPalette.PILLAR));
                     }
                 }
             }
@@ -99,16 +112,26 @@ public final class BuilderTrackGhostShape {
     /**
      * The line itself: a bed across the corridor with rails on it, running away on both X.
      *
-     * <p>Centred on the plot rather than on the world's corridor, because the plot is what it is
-     * there to meet — a pillar spans the corridor's width, so the two line up, and a staircase
-     * narrower than the corridor still gets a line wide enough to read as one.</p>
+     * <p>Placed against the plot rather than at the world's corridor, because the plot is what it is
+     * there to meet — but <em>where</em> against it depends on how the piece attaches. A pillar is
+     * under the line and spans the corridor's width, so the line sits centred on top of it. A
+     * staircase is beside the line, so the line runs past its edge at the same height.</p>
      *
      * @param bedY the row the bed sits on — one above whatever the column's cap turned out to be
      */
-    private static void appendLine(List<BlockPos> cells, BoundingBox plot, int bedY, CarriageDims dims) {
+    private static void appendLine(List<Cell> cells, TrackKind kind, BoundingBox plot,
+                                   int bedY, CarriageDims dims) {
         int width = Math.max(dims.width(), plot.getZSpan());
-        int centreZ = (plot.minZ() + plot.maxZ()) / 2;
-        int minZ = centreZ - width / 2;
+        int minZ;
+        if (isAdjunct(kind)) {
+            // Beside it, not over it. A staircase is stamped alongside the pillar and outside the
+            // corridor, leading outward from the line — so the line runs past its inward edge, and
+            // drawing it overhead would put the stairs under the track they are meant to climb to.
+            minZ = plot.minZ() - width;
+        } else {
+            int centreZ = (plot.minZ() + plot.maxZ()) / 2;
+            minZ = centreZ - width / 2;
+        }
         int maxZ = minZ + width - 1;
         // The rails sit one in from each edge of the bed, matching the fallback TrackGenerator
         // paints when a tile template has nothing to say about a column.
@@ -118,12 +141,17 @@ public final class BuilderTrackGhostShape {
         int centreX = (plot.minX() + plot.maxX()) / 2;
         for (int x = centreX - LINE_RADIUS_X; x <= centreX + LINE_RADIUS_X; x++) {
             for (int z = minZ; z <= maxZ; z++) {
-                cells.add(new BlockPos(x, bedY, z));
+                cells.add(new Cell(new BlockPos(x, bedY, z), TrackPalette.BED));
             }
-            cells.add(new BlockPos(x, bedY + 1, railNear));
+            cells.add(new Cell(new BlockPos(x, bedY + 1, railNear), TrackPalette.RAIL));
             if (railFar != railNear) {
-                cells.add(new BlockPos(x, bedY + 1, railFar));
+                cells.add(new Cell(new BlockPos(x, bedY + 1, railFar), TrackPalette.RAIL));
             }
         }
+    }
+
+    /** Whether this kind hangs off the side of a pillar rather than stacking into one. */
+    static boolean isAdjunct(TrackKind kind) {
+        return kind == TrackKind.ADJUNCT_STAIRS || kind == TrackKind.ADJUNCT_STAIRS_ENTRANCE;
     }
 }

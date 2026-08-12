@@ -9,6 +9,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -30,12 +31,16 @@ final class BuilderTrackGhostShapeTest {
         return BuilderTrackPlot.volume(kind, DIMS);
     }
 
-    private static int lowestGhostY(List<BlockPos> cells) {
-        return cells.stream().mapToInt(BlockPos::getY).min().orElseThrow();
+    private static List<BlockPos> positions(List<BuilderTrackGhostShape.Cell> cells) {
+        return cells.stream().map(BuilderTrackGhostShape.Cell::pos).collect(Collectors.toList());
     }
 
-    private static int highestGhostY(List<BlockPos> cells) {
-        return cells.stream().mapToInt(BlockPos::getY).max().orElseThrow();
+    private static int lowestGhostY(List<BuilderTrackGhostShape.Cell> cells) {
+        return cells.stream().mapToInt(c -> c.pos().getY()).min().orElseThrow();
+    }
+
+    private static int highestGhostY(List<BuilderTrackGhostShape.Cell> cells) {
+        return cells.stream().mapToInt(c -> c.pos().getY()).max().orElseThrow();
     }
 
     @Test
@@ -60,10 +65,10 @@ final class BuilderTrackGhostShapeTest {
             BoundingBox plot = plotFor(kind);
             int stacked = BuilderTrackGhostShape.sectionsAbove(kind).stream()
                     .mapToInt(PillarSection::height).sum();
-            List<BlockPos> cells = BuilderTrackGhostShape.cells(kind, plot, DIMS);
+            List<BuilderTrackGhostShape.Cell> cells = BuilderTrackGhostShape.cells(kind, plot, DIMS);
 
             int bedY = plot.maxY() + stacked + 1;
-            assertTrue(cells.contains(new BlockPos(plot.minX(), bedY, plot.minZ())),
+            assertTrue(positions(cells).contains(new BlockPos(plot.minX(), bedY, plot.minZ())),
                     kind.id() + ": no bed at y=" + bedY);
             // And the rails one above that — the top of everything drawn.
             assertEquals(bedY + 1, highestGhostY(cells), kind.id() + ": rails should cap the ghost");
@@ -74,13 +79,15 @@ final class BuilderTrackGhostShapeTest {
     @DisplayName("The ghosted column starts immediately above the plot, with no gap")
     void theColumnIsContinuous() {
         BoundingBox plot = plotFor(TrackKind.PILLAR_BOTTOM);
-        List<BlockPos> cells = BuilderTrackGhostShape.cells(TrackKind.PILLAR_BOTTOM, plot, DIMS);
+        List<BuilderTrackGhostShape.Cell> cells =
+                BuilderTrackGhostShape.cells(TrackKind.PILLAR_BOTTOM, plot, DIMS);
         // A gap here would read as two separate objects rather than one column.
         assertEquals(plot.maxY() + 1, lowestGhostY(cells));
         int capY = plot.maxY() + PillarSection.MIDDLE.height() + PillarSection.TOP.height();
         for (int y = plot.maxY() + 1; y <= capY; y++) {
             final int row = y;
-            assertTrue(cells.stream().anyMatch(c -> c.getY() == row), "column has a hole at y=" + row);
+            assertTrue(cells.stream().anyMatch(c -> c.pos().getY() == row),
+                    "column has a hole at y=" + row);
         }
     }
 
@@ -88,7 +95,8 @@ final class BuilderTrackGhostShapeTest {
     @DisplayName("Stairs get the line at the top of the plot and no column under it")
     void stairsGetALineButNoColumn() {
         BoundingBox plot = plotFor(TrackKind.ADJUNCT_STAIRS);
-        List<BlockPos> cells = BuilderTrackGhostShape.cells(TrackKind.ADJUNCT_STAIRS, plot, DIMS);
+        List<BuilderTrackGhostShape.Cell> cells =
+                BuilderTrackGhostShape.cells(TrackKind.ADJUNCT_STAIRS, plot, DIMS);
         assertFalse(cells.isEmpty());
         // Nothing between the plot and the line: the first thing drawn is the bed.
         assertEquals(plot.maxY() + 1, lowestGhostY(cells));
@@ -96,15 +104,45 @@ final class BuilderTrackGhostShapeTest {
     }
 
     @Test
+    @DisplayName("The stairs' line runs beside them, not over them")
+    void stairsGetTheLineToOneSide() {
+        BoundingBox plot = plotFor(TrackKind.ADJUNCT_STAIRS);
+        List<BuilderTrackGhostShape.Cell> cells =
+                BuilderTrackGhostShape.cells(TrackKind.ADJUNCT_STAIRS, plot, DIMS);
+        int maxGhostZ = cells.stream().mapToInt(c -> c.pos().getZ()).max().orElseThrow();
+
+        // Worldgen stamps a staircase alongside the pillar, outside the corridor, leading outward
+        // from the line — so nothing of the line may sit over the plot's own footprint, or the
+        // stairs would be under the track they exist to climb to.
+        assertTrue(maxGhostZ < plot.minZ(),
+                "line reaches z=" + maxGhostZ + ", which is over the plot starting at " + plot.minZ());
+        assertEquals(plot.minZ() - 1, maxGhostZ, "the line should run right up against the stairs");
+    }
+
+    @Test
+    @DisplayName("A pillar's line does sit over it — it is what holds the line up")
+    void pillarsGetTheLineOverhead() {
+        BoundingBox plot = plotFor(TrackKind.PILLAR_TOP);
+        List<BuilderTrackGhostShape.Cell> cells =
+                BuilderTrackGhostShape.cells(TrackKind.PILLAR_TOP, plot, DIMS);
+        int centreZ = (plot.minZ() + plot.maxZ()) / 2;
+        assertTrue(cells.stream().anyMatch(c -> c.pos().getZ() == centreZ),
+                "nothing drawn over the middle of the pillar");
+    }
+
+    @Test
     @DisplayName("The line runs away on both sides of the plot")
     void theLineRunsBothWays() {
         BoundingBox plot = plotFor(TrackKind.PILLAR_TOP);
-        List<BlockPos> cells = BuilderTrackGhostShape.cells(TrackKind.PILLAR_TOP, plot, DIMS);
+        List<BuilderTrackGhostShape.Cell> cells =
+                BuilderTrackGhostShape.cells(TrackKind.PILLAR_TOP, plot, DIMS);
         int centreX = (plot.minX() + plot.maxX()) / 2;
-        assertTrue(cells.stream().anyMatch(c -> c.getX() < centreX), "nothing drawn back up the line");
-        assertTrue(cells.stream().anyMatch(c -> c.getX() > centreX), "nothing drawn down the line");
+        assertTrue(cells.stream().anyMatch(c -> c.pos().getX() < centreX),
+                "nothing drawn back up the line");
+        assertTrue(cells.stream().anyMatch(c -> c.pos().getX() > centreX),
+                "nothing drawn down the line");
         assertEquals(centreX - BuilderTrackGhostShape.LINE_RADIUS_X,
-                cells.stream().mapToInt(BlockPos::getX).min().orElseThrow());
+                cells.stream().mapToInt(c -> c.pos().getX()).min().orElseThrow());
     }
 
     @Test
