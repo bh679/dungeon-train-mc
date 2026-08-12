@@ -1,6 +1,6 @@
 {
   "beam": {
-    "weight": 3,
+    "weight": 2,
     "minLevel": 1,
     "maxLevel": 20,
     "mode": "bedrockless"
@@ -42,7 +42,7 @@
     "mode": "endless_repetition/dynamic"
   },
   "labrynth": {
-    "weight": 5,
+    "weight": 3,
     "mode": "endless_repetition/dynamic"
   },
   "library_dimension": {
@@ -70,7 +70,7 @@
     "mode": "endless_open"
   },
   "window": {
-    "weight": 5,
+    "weight": 1,
     "maxLevel": 10,
     "mode": "bedrockless"
   },
