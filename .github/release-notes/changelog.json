@@ -6948,6 +6948,23 @@
       "released": true,
       "released_in": "v0.556.0",
       "released_at": "2026-08-12T15:07:04Z"
+    },
+    {
+      "id": "video-tools-menu-page",
+      "version": "0.557.0",
+      "type": "feat",
+      "title": "Video Tools page for content creators",
+      "summary": "A new Video Tools page on the title menu, behind the spyglass icon, for anyone filming Dungeon Train. It covers cinematographer mode \u2014 spectator flight that swings open every door around you, including the doors on the moving train \u2014 and replaying the intro cinematic from anywhere in a run, along with the two gotchas worth knowing before you hit record. It also points you at #streams-and-media-of-dungeontrain to share what you make, and at the dev if you need a hand.",
+      "highlights": [
+        "New Video Tools page on the title menu (spyglass icon)",
+        "Documents /dt cinematographer \u2014 spectator flight with auto-opening doors, an adjustable door radius, and clear-view for shots through walls",
+        "Documents /dt cinematic \u2014 replay the intro cinematic from anywhere, or press C in spectator",
+        "Flags that cinematographer mode puts the run into Free Play, while replaying the cinematic does not"
+      ],
+      "date": "2026-08-13",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
