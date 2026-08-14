@@ -654,7 +654,7 @@
   "gui.dungeontrain.credits.translations.person_line": "%1$s — %2$s",
   "gui.dungeontrain.credits.translations.lang_percent": "%1$s (%2$s)",
   "gui.dungeontrain.video_tools.title": "Video Tools",
-  "gui.dungeontrain.video_tools.button.tooltip": "Video Tools",
+  "gui.dungeontrain.video_tools.button": "Video Tools",
   "gui.dungeontrain.video_tools.subtitle": "Filming Dungeon Train? Here's what the mod gives you.",
   "gui.dungeontrain.video_tools.cinematographer.header": "Cinematographer mode",
   "gui.dungeontrain.video_tools.cinematographer.desc": "Drops you into spectator and swings open every door within 50 blocks as you fly — including the doors on the moving train, so you can chase a shot down the whole length of it without one closing in your face. Run it again to drop back into whatever mode you were in.",
