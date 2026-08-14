@@ -117,10 +117,9 @@ public final class VideoToolsScreen extends Screen {
         y = addLeftWrapped(tr("cinematic.hotkey"), y, lh, COLOUR_DESC);
         y += SECTION_GAP;
 
-        // 3. The two gotchas — cheats, and the Free Play taint.
+        // 3. The gotcha — cinematographer mode taints the run into Free Play.
         y = addLeftWrapped(tr("notes.header"), y, lh, COLOUR_HEADER);
         y += HEADER_GAP;
-        y = addLeftWrapped(tr("notes.cheats"), y, lh, COLOUR_DESC);
         y = addLeftWrapped(tr("notes.free_play"), y, lh, COLOUR_DESC);
         y += SECTION_GAP;
 
