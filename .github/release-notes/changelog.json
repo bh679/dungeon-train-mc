@@ -6948,6 +6948,25 @@
       "released": true,
       "released_in": "v0.556.0",
       "released_at": "2026-08-12T15:07:04Z"
+    },
+    {
+      "id": "video-tools-menu-page",
+      "version": "0.557.0",
+      "type": "feat",
+      "title": "Video Tools page for content creators",
+      "summary": "A new Video Tools button on the title menu, for anyone filming Dungeon Train. Each of the two filming commands gets a tile playing a clip of what it actually looks like \u2014 cinematographer mode, which flies you through the train in spectator with every door swinging open ahead of you, and the intro cinematic, which you can replay from anywhere in a run. Click a tile for the full rundown. The page also points you at #streams-and-media-of-dungeontrain to share what you make, and at the dev if you need a hand with a shot.",
+      "highlights": [
+        "New Video Tools page on the title menu, with an animated tile per filming command",
+        "/dt cinematographer \u2014 spectator flight with auto-opening doors (including on the moving train), an adjustable door radius, and clear-view for shots through walls",
+        "/dt cinematic \u2014 replay the intro cinematic from anywhere, or press C in spectator",
+        "Flags that cinematographer mode puts the run into Free Play, while replaying the cinematic does not",
+        "Discord moves to a logomark button above Credits, freeing its old slot for Video Tools"
+      ],
+      "date": "2026-08-13",
+      "released": false,
+      "released_in": null,
+      "released_at": null,
+      "pr": 963
     }
   ]
 }

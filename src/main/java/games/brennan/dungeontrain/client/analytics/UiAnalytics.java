@@ -76,6 +76,11 @@ public final class UiAnalytics {
     public static final String TARGET_CONTENT_MODE_KID = "content_mode_kid";
     public static final String TARGET_AFFILIATE = "affiliate";
     public static final String TARGET_DISCORD = "discord";
+    // The title-screen spyglass icon → the Video Tools page (TitleScreenCreditsButton). Needs
+    // "video_tools" in the relay's ui-events.js TARGETS whitelist, like every target above, or the
+    // event 400s and is dropped; the Discord button ON that page reports as TARGET_DISCORD from the
+    // title-screen surface, so the funnel keeps counting Discord clicks either way.
+    public static final String TARGET_VIDEO_TOOLS = "video_tools";
     // Death-screen button targets (see NarrativeDeathScreen). Lock-step with ui-events.js TARGETS.
     public static final String TARGET_CONTRIBUTE = "contribute"; // "Contribute" opens the donate-options window
     public static final String TARGET_BOARD_ANEW = "board_anew";  // "Board anew" — start the next run
