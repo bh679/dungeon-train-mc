@@ -6948,6 +6948,22 @@
       "released": true,
       "released_in": "v0.556.0",
       "released_at": "2026-08-12T15:07:04Z"
+    },
+    {
+      "id": "support-page-help-translate",
+      "version": "0.557.0",
+      "type": "feat",
+      "title": "Help Translate on the Ways to Help page",
+      "summary": "If you play Dungeon Train in a language that was machine-translated, the Ways to Help page now offers you the translation editor directly - so fixing the lines that read wrong sits alongside donating, sharing and feedback as a way to help. The page also scrolls now, and its Done button stays put at the bottom instead of sliding off the edge of a small window.",
+      "highlights": [
+        "New \"Help Translate\" section on the Ways to Help page, shown when your language still has AI-translated lines nobody has reviewed",
+        "The Ways to Help page scrolls, and Done is pinned to the bottom so it can never be pushed off-screen"
+      ],
+      "pr": 964,
+      "date": "2026-08-14",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
