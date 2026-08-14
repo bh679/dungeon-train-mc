@@ -252,7 +252,7 @@ def import_books(rows: list[dict], narrative_dir: Path, dry_run: bool,
         if not path.is_file():
             problems.append(f"{locale} {book_path}: no such book for this locale")
             continue
-        original = path.read_text(encoding="utf-8", newline="")
+        original = pio.read_verbatim(path)
         text = original
         applied: dict[str, set[str]] = {}
         for row in book_rows:
@@ -267,7 +267,7 @@ def import_books(rows: list[dict], narrative_dir: Path, dry_run: bool,
         if not applied:
             continue
         if not dry_run and text != original:
-            path.write_text(text, encoding="utf-8", newline="")
+            pio.write_verbatim(path, text)
         every_field = set(pio.book_string_fields(json.loads(text)))
         for name, fields in applied.items():
             target = rewritten if every_field and fields >= every_field else revised

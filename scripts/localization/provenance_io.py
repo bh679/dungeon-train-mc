@@ -568,9 +568,7 @@ def set_lang_value(path: Path, key: str, value: str) -> bool:
     grouping that json.dump would flatten, and zh_cn.json is CRLF. Returns False when the
     key is not in the file — the caller reports it rather than inventing a line.
     """
-    # newline="" on the READ too: without it Python translates CRLF to LF before we look, so
-    # the probe below always says LF and zh_cn.json gets silently rewritten end to end.
-    raw = path.read_text(encoding="utf-8", newline="")
+    raw = read_verbatim(path)
     eol = "\r\n" if "\r\n" in raw else "\n"
     lines = raw.replace("\r\n", "\n").split("\n")
     needle = json.dumps(key, ensure_ascii=False) + ":"
@@ -578,9 +576,27 @@ def set_lang_value(path: Path, key: str, value: str) -> bool:
         if line.strip().startswith(needle):
             comma = "," if line.rstrip().endswith(",") else ""
             lines[i] = f"  {json.dumps(key, ensure_ascii=False)}: {json.dumps(value, ensure_ascii=False)}{comma}"
-            path.write_text(eol.join(lines), encoding="utf-8", newline="")
+            write_verbatim(path, eol.join(lines))
             return True
     return False
+
+
+def read_verbatim(path: Path) -> str:
+    """A file's text with its line endings intact.
+
+    ``newline=""`` matters on the READ as much as the write: without it Python turns CRLF into
+    LF before any caller can look, so a CRLF file's endings are undetectable and it gets
+    silently rewritten end to end. Spelled with ``open`` rather than ``Path.read_text(newline=)``
+    because that keyword landed in 3.13 and CI runs older.
+    """
+    with open(path, encoding="utf-8", newline="") as f:
+        return f.read()
+
+
+def write_verbatim(path: Path, text: str) -> None:
+    """Write ``text`` with its line endings exactly as given — see read_verbatim."""
+    with open(path, "w", encoding="utf-8", newline="") as f:
+        f.write(text)
 
 
 # Mirrors NarrativeBookFields.STRUCTURAL_KEYS / UNUSED_KEY on the client: ids and layout
