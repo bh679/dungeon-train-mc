@@ -2,6 +2,9 @@ package games.brennan.dungeontrain.client.support;
 
 import games.brennan.dungeontrain.client.analytics.UiAnalytics;
 import games.brennan.dungeontrain.client.links.OfficialLinks;
+import games.brennan.dungeontrain.client.localization.LocalizationCreditRegistry;
+import games.brennan.dungeontrain.client.localization.edit.TranslationScreen;
+import games.brennan.dungeontrain.client.localization.edit.TranslationTarget;
 import games.brennan.dungeontrain.client.menu.ColorTintedButton;
 import games.brennan.dungeontrain.client.menu.DarkTintedButton;
 import net.minecraft.Util;
@@ -37,6 +40,10 @@ import java.util.List;
  *   <li><b>Share the Mod</b> — text only.</li>
  *   <li><b>Feedback &amp; Testing</b> — text only, with an inline clickable
  *       "Discord" link ("Join the Discord") to get involved.</li>
+ *   <li><b>Help Translate</b> — a button into the in-game translation editor
+ *       ({@link games.brennan.dungeontrain.client.localization.edit.TranslationScreen}), shown
+ *       only to the players it is addressed to: those running a language the mod ships
+ *       machine-translated and no human has worked through yet. See {@link #translateTarget()}.</li>
  * </ol>
  *
  * <p>Both the coloured buttons and the inline "Discord" links open their URL
@@ -104,8 +111,19 @@ public final class SupportScreen extends Screen {
      * One link button in a section: label key + target URL + optional sprite tint
      * (null = default grey) + optional hover-tooltip key (null = none) + the
      * analytics target name ({@link UiAnalytics} enum) for click/confirm events.
+     *
+     * <p>{@code action} is the escape hatch for the one button that does not leave the game: when
+     * it is set the button runs it instead of opening {@code url} (which is then null), skipping
+     * the {@link ConfirmLinkScreen} that only makes sense for an outbound link. Every other row
+     * uses the five-argument constructor and behaves exactly as before.</p>
      */
-    private record LinkButton(String labelKey, String url, float[] tint, String tooltipKey, String analyticsTarget) {}
+    private record LinkButton(String labelKey, String url, float[] tint, String tooltipKey,
+                              String analyticsTarget, Runnable action) {
+
+        LinkButton(String labelKey, String url, float[] tint, String tooltipKey, String analyticsTarget) {
+            this(labelKey, url, tint, tooltipKey, analyticsTarget, null);
+        }
+    }
 
     /**
      * One row of buttons in a section, with its own height and its own share of the column width —
@@ -229,6 +247,17 @@ public final class SupportScreen extends Screen {
                 Component.translatable(copyKey("gui.dungeontrain.support.feedback.desc"), discordLink()),
                 List.of());
 
+        // Translate — last, and only for the players it is addressed to (see translateTarget). Last
+        // rather than woven in among the others so the three existing headers keep their numbers,
+        // and so a language that is already reviewed simply sees the page it saw before.
+        String translateTarget = translateTarget();
+        if (!translateTarget.isEmpty()) {
+            y = addSection(y, lh,
+                    Component.translatable("gui.dungeontrain.support.translate.header"),
+                    Component.translatable(copyKey("gui.dungeontrain.support.translate.desc")),
+                    List.of(ButtonRow.primary(List.of(translateButton(translateTarget)), colW)));
+        }
+
         panelBottom = y + (PANEL_PAD - SECTION_GAP);
 
         // Done flows just below the content panel so it can never collide with a
@@ -280,7 +309,9 @@ public final class SupportScreen extends Screen {
     /** Build a link button, tinted to {@link LinkButton#tint()} when set, else the default grey. */
     private Button makeLinkButton(int x, int y, int w, int h, LinkButton lb) {
         Component label = Component.translatable(lb.labelKey());
-        Button.OnPress onPress = b -> openLink(lb.url(), lb.analyticsTarget());
+        Button.OnPress onPress = lb.action() != null
+                ? b -> runAction(lb.action(), lb.analyticsTarget())
+                : b -> openLink(lb.url(), lb.analyticsTarget());
         float[] t = lb.tint();
         Button button = (t == null)
                 ? new DarkTintedButton(x, y, w, h, label, onPress)
@@ -342,6 +373,38 @@ public final class SupportScreen extends Screen {
         return List.of(donate, second);
     }
 
+    /**
+     * The language the Translate section should offer, or {@code ""} to leave the section out.
+     *
+     * <p>Two questions, both already answered elsewhere. {@link TranslationTarget#resolveForClient()}
+     * gives the language this client could edit at all — the player's own, or nothing on English
+     * (a dev build points at its dev target instead, which is what makes this section testable
+     * without switching the whole game to Chinese). Then {@link LocalizationCreditRegistry
+     * #isHumanReviewed} asks whether it still needs the help: a locale a translator has worked
+     * through is not one to keep nagging on the page about ways to help. That check already folds
+     * in the approvals this client has downloaded since the build was cut, so a language volunteers
+     * finish off stops advertising the section without waiting for a release.</p>
+     */
+    private static String translateTarget() {
+        String target = TranslationTarget.resolveForClient();
+        if (target.isEmpty() || LocalizationCreditRegistry.isHumanReviewed(target)) {
+            return "";
+        }
+        return target;
+    }
+
+    /**
+     * The Translate section's single button: straight into the editor for {@code target}, with this
+     * hub as its parent so closing the editor comes back here rather than to the title screen.
+     */
+    private LinkButton translateButton(String target) {
+        // Default grey, not one of the payment tints: this is the one button on the page that does
+        // not ask for money, and colouring it like the ones that do would misread.
+        return new LinkButton("gui.dungeontrain.translate.button", null, null,
+                "gui.dungeontrain.support.translate.tooltip", UiAnalytics.TARGET_TRANSLATE,
+                () -> Minecraft.getInstance().setScreen(new TranslationScreen(this, target)));
+    }
+
     /** @see PaymentLinks#donateUrl() */
     private static String revolutUrl() {
         return PaymentLinks.donateUrl();
@@ -388,6 +451,18 @@ public final class SupportScreen extends Screen {
             // Return to the hub so the player can follow more than one link.
             Minecraft.getInstance().setScreen(this);
         }, url, true));
+    }
+
+    /**
+     * Run an in-game button's action, recording the click. The counterpart to {@link #openLink} for
+     * the buttons that stay inside the game: no confirm prompt, because nothing is being opened
+     * outside Minecraft, and so no confirm event either — the click is the whole funnel.
+     */
+    private void runAction(Runnable action, String analyticsTarget) {
+        if (analyticsTarget != null) {
+            UiAnalytics.click(UiAnalytics.SURFACE_SUPPORT_PAGE, analyticsTarget);
+        }
+        action.run();
     }
 
     /**

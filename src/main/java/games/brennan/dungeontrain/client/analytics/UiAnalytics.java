@@ -76,6 +76,10 @@ public final class UiAnalytics {
     public static final String TARGET_CONTENT_MODE_KID = "content_mode_kid";
     public static final String TARGET_AFFILIATE = "affiliate";
     public static final String TARGET_DISCORD = "discord";
+    // "Help Translate" on the Support page — the one button there that stays inside the game, so it
+    // records a click and no confirm (there is no external link to follow through on). Lock-step
+    // with ui-events.js TARGETS: until the relay whitelists `translate`, these 400 silently.
+    public static final String TARGET_TRANSLATE = "translate";
     // Death-screen button targets (see NarrativeDeathScreen). Lock-step with ui-events.js TARGETS.
     public static final String TARGET_CONTRIBUTE = "contribute"; // "Contribute" opens the donate-options window
     public static final String TARGET_BOARD_ANEW = "board_anew";  // "Board anew" — start the next run
