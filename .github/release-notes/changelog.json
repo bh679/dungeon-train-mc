@@ -6961,9 +6961,9 @@
       ],
       "pr": 964,
       "date": "2026-08-14",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.557.0",
+      "released_at": "2026-08-14T12:26:13Z"
     },
     {
       "id": "video-tools-menu-page",
@@ -6979,9 +6979,9 @@
         "Discord moves to a logomark button above Credits, freeing its old slot for Video Tools"
       ],
       "date": "2026-08-13",
-      "released": false,
-      "released_in": null,
-      "released_at": null,
+      "released": true,
+      "released_in": "v0.557.0",
+      "released_at": "2026-08-14T12:26:13Z",
       "pr": 963
     }
   ]
