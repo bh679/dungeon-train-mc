@@ -3,8 +3,6 @@
   "locale": "zh_cn",
   "lang": {
     "dungeontrain": [
-      "chat.dungeontrain.lovenote.no_name",
-      "chat.dungeontrain.lovenote.taken",
       "generator.dungeontrain.dungeon_train_flat",
       "gui.dungeontrain.death.modrec.kicker",
       "gui.dungeontrain.death.modrec.ask",
