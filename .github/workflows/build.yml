@@ -111,3 +111,4 @@ jobs:
           python3 scripts/localization/test_check_narrative_provenance.py
           python3 scripts/localization/test_stamp_narrative_provenance.py
           python3 scripts/localization/test_provenance_io.py
+          python3 scripts/localization/test_import_approved_translations.py

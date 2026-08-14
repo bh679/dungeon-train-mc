@@ -36,6 +36,7 @@ part of this per-line system that enters the jar, and likewise generated, never
 hand-edited.
 """
 import json
+import re
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -543,3 +544,165 @@ def write_provenance(path: Path, prov: dict) -> None:
     lines.append("}")
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+# ---- editing the translated content itself -----------------------------------
+#
+# The two scripts that write a human's translation back into the repo —
+# apply-review-csv.py (the CSV return leg) and import-approved-translations.py (the
+# relay return leg) — need the same edits, so they live here rather than in either one.
+
+NS_PREFIX = re.compile(r"^\[([a-z]+)\]\s+(.*)$")
+
+
+def split_namespace(key: str) -> tuple[str, str]:
+    """``"[playermob] some.key"`` -> ("playermob", "some.key"); bare keys -> dungeontrain."""
+    m = NS_PREFIX.match(key)
+    return (m.group(1), m.group(2)) if m else ("dungeontrain", key)
+
+
+def set_lang_value(path: Path, key: str, value: str) -> bool:
+    """Replace one key's value in a lang file, preserving formatting and line endings.
+
+    A text-level edit rather than a load/dump round trip: the lang files carry blank-line
+    grouping that json.dump would flatten, and zh_cn.json is CRLF. Returns False when the
+    key is not in the file — the caller reports it rather than inventing a line.
+    """
+    # newline="" on the READ too: without it Python translates CRLF to LF before we look, so
+    # the probe below always says LF and zh_cn.json gets silently rewritten end to end.
+    raw = path.read_text(encoding="utf-8", newline="")
+    eol = "\r\n" if "\r\n" in raw else "\n"
+    lines = raw.replace("\r\n", "\n").split("\n")
+    needle = json.dumps(key, ensure_ascii=False) + ":"
+    for i, line in enumerate(lines):
+        if line.strip().startswith(needle):
+            comma = "," if line.rstrip().endswith(",") else ""
+            lines[i] = f"  {json.dumps(key, ensure_ascii=False)}: {json.dumps(value, ensure_ascii=False)}{comma}"
+            path.write_text(eol.join(lines), encoding="utf-8", newline="")
+            return True
+    return False
+
+
+# Mirrors NarrativeBookFields.STRUCTURAL_KEYS / UNUSED_KEY on the client: ids and layout
+# hints validate-locale.py requires to match the reference byte-for-byte, plus retired
+# prose no player ever sees. The editor never offers these, so an approved unit naming one
+# did not come from the editor.
+BOOK_STRUCTURAL_KEYS = frozenset({"id", "ref", "page", "_translator_note"})
+BOOK_UNUSED_KEY = "unused"
+
+
+def set_book_field(book: dict | list, field: str, value: str) -> bool:
+    """Set one dotted-path string leaf of a parsed narrative book, in place.
+
+    ``field`` is the path the in-game editor submits (``title``, ``variants.0``,
+    ``letters.2.variants.1``, ``0.narration``) — integer segments index arrays, everything
+    else is an object key. Returns False, changing nothing, unless the path already resolves
+    to a string leaf: this only ever REPLACES existing prose. Creating a path would invent
+    structure the English book does not have, and validate-locale.py would reject it.
+    """
+    if not field:
+        return False
+    segments = field.split(".")
+    node = book
+    for segment in segments[:-1]:
+        node = _book_child(node, segment)
+        if node is None:
+            return False
+    last = segments[-1]
+    if isinstance(node, list):
+        if not last.isdigit():
+            return False
+        index = int(last)
+        if index >= len(node) or not isinstance(node[index], str):
+            return False
+        node[index] = value
+        return True
+    if isinstance(node, dict):
+        if last in BOOK_STRUCTURAL_KEYS or last == BOOK_UNUSED_KEY:
+            return False
+        if not isinstance(node.get(last), str):
+            return False
+        node[last] = value
+        return True
+    return False
+
+
+def _book_child(node, segment: str):
+    """One step down a book's tree, or None when the segment does not resolve."""
+    if isinstance(node, list):
+        return node[int(segment)] if segment.isdigit() and int(segment) < len(node) else None
+    if isinstance(node, dict):
+        if segment in BOOK_STRUCTURAL_KEYS or segment == BOOK_UNUSED_KEY:
+            return None
+        return node.get(segment)
+    return None
+
+
+def set_book_field_text(text: str, field: str, value: str) -> str | None:
+    """One book's raw text with ``field`` replaced, or None when it cannot be done safely.
+
+    Books are edited at the text level for the same reason lang files are: 36 of them group
+    array entries with blank lines and 34 are CRLF, both of which a json.dumps round trip
+    would silently rewrite end to end. So this swaps the ENCODED old string for the encoded
+    new one, and only when that encoding occurs exactly once — two identical prose strings in
+    one book make the target ambiguous, and guessing would corrupt the wrong variant.
+
+    The result is parsed and compared against the tree the edit was supposed to produce, so a
+    replacement that landed anywhere unintended returns None instead of being written.
+    """
+    try:
+        book = json.loads(text)
+    except json.JSONDecodeError:
+        return None
+    old = book_field_value(book, field)
+    if old is None:
+        return None
+    if old == value:
+        return text  # already the approved text — nothing to write, and not an error
+    encoded_old = json.dumps(old, ensure_ascii=False)
+    if text.count(encoded_old) != 1:
+        return None
+    edited = text.replace(encoded_old, json.dumps(value, ensure_ascii=False))
+    if not set_book_field(book, field, value):
+        return None
+    try:
+        if json.loads(edited) != book:
+            return None
+    except json.JSONDecodeError:
+        return None
+    return edited
+
+
+def book_field_value(book: dict | list, field: str) -> str | None:
+    """The string at ``field``'s dotted path, or None when it is not an editable string leaf."""
+    if not field:
+        return None
+    node = book
+    for segment in field.split("."):
+        node = _book_child(node, segment)
+        if node is None:
+            return None
+    return node if isinstance(node, str) else None
+
+
+def book_string_fields(node, path: str = "", depth: int = 0) -> list[str]:
+    """Every editable dotted field path in a parsed book, in document order.
+
+    The Python side of NarrativeBookFields.flatten — same walk, same exclusions, same depth
+    guard. Used to tell a book whose every field an import replaced (the translator becomes
+    its author) from one where it fixed a line or two (the author stands, they reviewed it).
+    """
+    if depth > 8:
+        return []
+    out: list[str] = []
+    if isinstance(node, dict):
+        for key, child in node.items():
+            if key in BOOK_STRUCTURAL_KEYS or key == BOOK_UNUSED_KEY:
+                continue
+            out += book_string_fields(child, f"{path}.{key}" if path else key, depth + 1)
+    elif isinstance(node, list):
+        for i, child in enumerate(node):
+            out += book_string_fields(child, f"{path}.{i}" if path else str(i), depth + 1)
+    elif isinstance(node, str) and path:
+        out.append(path)
+    return out
