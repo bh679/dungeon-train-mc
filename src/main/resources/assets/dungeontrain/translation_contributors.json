@@ -26,6 +26,16 @@
           "total": 1152
         }
       ]
+    },
+    {
+      "name": "Run_xu",
+      "languages": [
+        {
+          "locale": "zh_cn",
+          "contributed": 2,
+          "total": 1152
+        }
+      ]
     }
   ]
 }
