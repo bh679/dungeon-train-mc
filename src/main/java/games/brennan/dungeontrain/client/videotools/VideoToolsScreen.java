@@ -22,26 +22,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The <b>Video Tools</b> page, opened from the title-screen spyglass icon (see
- * {@code TitleScreenCreditsButton}, which owns the DT icon column). Everything a
- * content creator needs to film Dungeon Train, in four sections:
+ * The <b>Video Tools</b> hub, opened from the title-screen button beside Train Editor. Leads with
+ * a clickable, looping tile per filming command — the clip shows what the command does faster than
+ * a paragraph can — with the command and a one-line blurb under each. Clicking a tile opens its
+ * {@link VideoToolDetailScreen}. Below the tiles: where to post what you make, and how to reach
+ * the dev.
  *
- * <ol>
- *   <li><b>Cinematographer mode</b> — {@code /dt cinematographer}, its door radius,
- *       and the clear-view sub-mode.</li>
- *   <li><b>Replay the intro cinematic</b> — {@code /dt cinematic}, its two start
- *       modes, and the C hotkey.</li>
- *   <li><b>Worth knowing</b> — both commands need cheats, and cinematographer mode
- *       flags the run as Free Play while {@code cinematic} does not.</li>
- *   <li><b>Share it / get help</b> — the Discord media channel, and {@code @dev}.</li>
- * </ol>
- *
- * <p>Layout and scrolling mirror {@code credits.CreditsScreen} exactly: the content
- * column is laid out once in {@link #init} into a flat list of positioned {@link Line}s
- * (canvas-relative Y), then drawn in a scissor-clipped viewport in {@link #render}
- * offset by {@link #scrollY}. Inline links are hit-tested in {@link #mouseClicked}
- * against the same lines and opened through vanilla's {@link ConfirmLinkScreen},
- * returning here. The Discord and Done buttons are fixed below the viewport.</p>
+ * <p>Layout and scrolling follow {@code credits.CreditsScreen}: content is laid out once in
+ * {@link #init} into positioned {@link Line}s at canvas-relative Y, drawn in a scissor-clipped
+ * viewport offset by {@link #scrollY}, with inline links hit-tested against the same lines and
+ * opened through vanilla's {@link ConfirmLinkScreen}. The tiles are {@link Tile} rects in that
+ * same canvas space, so they scroll and hit-test with the text.</p>
  */
 public final class VideoToolsScreen extends Screen {
 
@@ -51,6 +42,7 @@ public final class VideoToolsScreen extends Screen {
     private static final int TOP = 16;
     private static final int HEADER_GAP = 3;
     private static final int SECTION_GAP = 10;
+    private static final int TILE_GAP = 6;
     private static final int SCROLL_STEP = 12;
 
     private static final int COLOUR_PANEL = 0xC0101010;
@@ -60,10 +52,12 @@ public final class VideoToolsScreen extends Screen {
     private static final int COLOUR_COMMAND = 0xFFFFD37F;
     /** Blue used for inline links (RGB, no alpha). */
     private static final int COLOUR_LINK = 0x5B9BFF;
+    /** 1px frame around each tile — brightens on hover so the tile reads as clickable. */
+    private static final int COLOUR_TILE_EDGE = 0xFF3A3A3A;
+    private static final int COLOUR_TILE_EDGE_HOVER = 0xFFFFFFFF;
 
     private final Screen parent;
 
-    // Computed in init(), consumed in render()/click handling.
     private int colX;
     private int colW;
     private int viewportTop;
@@ -72,14 +66,12 @@ public final class VideoToolsScreen extends Screen {
     private int scrollY;
     private int maxScroll;
     private final List<Line> lines = new ArrayList<>();
+    private final List<Tile> tiles = new ArrayList<>();
 
-    /**
-     * One laid-out text line at a canvas-relative Y. {@code centered} lines are horizontally
-     * centred on the screen (title/subtitle); the rest draw at the content column. The
-     * {@link FormattedCharSequence} carries any inline-link {@link Style}, so both drawing and
-     * hit-testing use it directly.
-     */
-    private record Line(FormattedCharSequence text, int canvasY, boolean centered, int colour) {}
+    private record Line(FormattedCharSequence text, int canvasY, boolean centered, int x, int wrapW, int colour) {}
+
+    /** One clickable command tile: its clip's rect in canvas space. */
+    private record Tile(VideoTool tool, int x, int canvasY, int w, int h) {}
 
     public VideoToolsScreen(Screen parent) {
         super(Component.translatable("gui.dungeontrain.video_tools.title"));
@@ -89,6 +81,7 @@ public final class VideoToolsScreen extends Screen {
     @Override
     protected void init() {
         lines.clear();
+        tiles.clear();
         colW = Math.min(MAX_COL_W, this.width - SIDE_MARGIN);
         colX = (this.width - colW) / 2;
         int lh = this.font.lineHeight;
@@ -100,34 +93,13 @@ public final class VideoToolsScreen extends Screen {
         y = addCenteredWrapped(tr("subtitle"), y, lh, COLOUR_DESC);
         y += SECTION_GAP;
 
-        // 1. Cinematographer mode.
-        y = addLeftWrapped(tr("cinematographer.header"), y, lh, COLOUR_HEADER);
-        y += HEADER_GAP;
-        y = addLeftWrapped(Component.literal("/dt cinematographer"), y, lh, COLOUR_COMMAND);
-        y = addLeftWrapped(tr("cinematographer.desc"), y, lh, COLOUR_DESC);
-        y = addLeftWrapped(tr("cinematographer.distance"), y, lh, COLOUR_DESC);
-        y = addLeftWrapped(tr("cinematographer.clearview"), y, lh, COLOUR_DESC);
+        y = addTileRow(y, lh);
         y += SECTION_GAP;
 
-        // 2. Intro cinematic replay.
-        y = addLeftWrapped(tr("cinematic.header"), y, lh, COLOUR_HEADER);
-        y += HEADER_GAP;
-        y = addLeftWrapped(Component.literal("/dt cinematic"), y, lh, COLOUR_COMMAND);
-        y = addLeftWrapped(tr("cinematic.desc"), y, lh, COLOUR_DESC);
-        y = addLeftWrapped(tr("cinematic.hotkey"), y, lh, COLOUR_DESC);
-        y += SECTION_GAP;
-
-        // 3. The gotcha — cinematographer mode taints the run into Free Play.
-        y = addLeftWrapped(tr("notes.header"), y, lh, COLOUR_HEADER);
-        y += HEADER_GAP;
-        y = addLeftWrapped(tr("notes.free_play"), y, lh, COLOUR_DESC);
-        y += SECTION_GAP;
-
-        // 4. Where the finished video goes, and how to reach the dev.
+        // Where the finished video goes. "…on the Discord" is an inline link so the channel is
+        // reachable without scrolling back to the button.
         y = addLeftWrapped(tr("share.header"), y, lh, COLOUR_HEADER);
         y += HEADER_GAP;
-        // "…on the Discord" is the inline link, so the channel can be reached without
-        // scrolling back down to the button.
         y = addLeftWrapped(tr("share.desc", link(Component.literal("Discord"), OfficialLinks.discord())),
                 y, lh, COLOUR_DESC);
         y += SECTION_GAP;
@@ -139,8 +111,6 @@ public final class VideoToolsScreen extends Screen {
 
         contentHeight = y;
 
-        // One bottom row: "Join the Discord" beside Done. The viewport ends just above the
-        // row so scrolling content never overlaps the buttons.
         int rowY = this.height - 28;
         viewportTop = TOP;
         viewportBottom = rowY - 8;
@@ -157,10 +127,33 @@ public final class VideoToolsScreen extends Screen {
 
         addRenderableWidget(new DarkTintedButton(rowX, rowY, discordW, 20,
                 tr("discord_button"), b -> openDiscord()));
-
         addRenderableWidget(Button.builder(CommonComponents.GUI_DONE, b -> onClose())
                 .bounds(rowX + discordW + gap, rowY, doneW, 20)
                 .build());
+    }
+
+    /**
+     * The two command tiles, side by side: clip, command, blurb. Both captions are laid out in
+     * their own half-width column so a long blurb wraps inside its tile rather than across both.
+     * Returns the canvas Y below the taller of the two.
+     */
+    private int addTileRow(int y, int lh) {
+        int tileW = (colW - TILE_GAP) / 2;
+        int tileH = tileW * VideoTool.FRAME_H / VideoTool.FRAME_W;
+
+        int bottom = y;
+        for (int i = 0; i < VideoTool.ALL.size(); i++) {
+            VideoTool tool = VideoTool.ALL.get(i);
+            int x = colX + i * (tileW + TILE_GAP);
+            tiles.add(new Tile(tool, x, y, tileW, tileH));
+
+            int ty = y + tileH + 3;
+            ty = addWrappedAt(tool.header(), x, tileW, ty, lh, COLOUR_HEADER);
+            ty = addWrappedAt(Component.literal(tool.command()), x, tileW, ty, lh, COLOUR_COMMAND);
+            ty = addWrappedAt(tool.blurb(), x, tileW, ty, lh, COLOUR_DESC);
+            bottom = Math.max(bottom, ty);
+        }
+        return bottom;
     }
 
     private static MutableComponent tr(String suffix) {
@@ -172,21 +165,25 @@ public final class VideoToolsScreen extends Screen {
     }
 
     private int addCentered(Component text, int y, int lh, int colour) {
-        lines.add(new Line(text.getVisualOrderText(), y, true, colour));
+        lines.add(new Line(text.getVisualOrderText(), y, true, 0, colW, colour));
         return y + lh;
     }
 
     private int addCenteredWrapped(Component text, int y, int lh, int colour) {
         for (FormattedCharSequence line : this.font.split(text, colW)) {
-            lines.add(new Line(line, y, true, colour));
+            lines.add(new Line(line, y, true, 0, colW, colour));
             y += lh;
         }
         return y;
     }
 
     private int addLeftWrapped(Component text, int y, int lh, int colour) {
-        for (FormattedCharSequence line : this.font.split(text, colW)) {
-            lines.add(new Line(line, y, false, colour));
+        return addWrappedAt(text, colX, colW, y, lh, colour);
+    }
+
+    private int addWrappedAt(Component text, int x, int wrapW, int y, int lh, int colour) {
+        for (FormattedCharSequence line : this.font.split(text, wrapW)) {
+            lines.add(new Line(line, y, false, x, wrapW, colour));
             y += lh;
         }
         return y;
@@ -223,6 +220,21 @@ public final class VideoToolsScreen extends Screen {
         }, discordUrl, true));
     }
 
+    /** The tile under the given mouse position within the scrolled viewport, or null. */
+    private Tile tileAt(double mouseX, double mouseY) {
+        if (mouseY < viewportTop || mouseY >= viewportBottom) {
+            return null;
+        }
+        double canvasY = mouseY - viewportTop + scrollY;
+        for (Tile tile : tiles) {
+            if (canvasY >= tile.canvasY() && canvasY < tile.canvasY() + tile.h()
+                    && mouseX >= tile.x() && mouseX < tile.x() + tile.w()) {
+                return tile;
+            }
+        }
+        return null;
+    }
+
     /** The clickable {@link Style} under the given mouse position within the scrolled viewport, or null. */
     private Style styleAt(double mouseX, double mouseY) {
         if (mouseY < viewportTop || mouseY >= viewportBottom) {
@@ -235,7 +247,7 @@ public final class VideoToolsScreen extends Screen {
                 continue;
             }
             int lineWidth = this.font.width(line.text());
-            int startX = line.centered() ? this.width / 2 - lineWidth / 2 : colX;
+            int startX = line.centered() ? this.width / 2 - lineWidth / 2 : line.x();
             if (mouseX < startX || mouseX >= startX + lineWidth) {
                 continue;
             }
@@ -247,6 +259,11 @@ public final class VideoToolsScreen extends Screen {
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (button == 0) {
+            Tile tile = tileAt(mouseX, mouseY);
+            if (tile != null) {
+                Minecraft.getInstance().setScreen(new VideoToolDetailScreen(this, tile.tool()));
+                return true;
+            }
             Style style = styleAt(mouseX, mouseY);
             if (style != null && style.getClickEvent() != null
                     && style.getClickEvent().getAction() == ClickEvent.Action.OPEN_URL) {
@@ -268,8 +285,6 @@ public final class VideoToolsScreen extends Screen {
 
     @Override
     public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
-        // Blurred menu panorama (vanilla), then a translucent panel behind the scrolling
-        // viewport so text stays readable over the spinning background.
         super.renderBackground(g, mouseX, mouseY, partialTick);
         g.fill(colX - PANEL_PAD, viewportTop - PANEL_PAD,
                 colX + colW + PANEL_PAD, viewportBottom + PANEL_PAD, COLOUR_PANEL);
@@ -277,11 +292,21 @@ public final class VideoToolsScreen extends Screen {
 
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
-        // Draws the background (with our panel) and the bottom-row widgets.
         super.render(g, mouseX, mouseY, partialTick);
 
         int lh = this.font.lineHeight;
+        Tile hovered = tileAt(mouseX, mouseY);
         g.enableScissor(colX - PANEL_PAD, viewportTop, colX + colW + PANEL_PAD, viewportBottom);
+
+        for (Tile tile : tiles) {
+            int drawY = viewportTop + tile.canvasY() - scrollY;
+            if (drawY + tile.h() < viewportTop || drawY > viewportBottom) {
+                continue; // cull off-viewport clips
+            }
+            AnimatedSheet.draw(g, tile.tool(), tile.x(), drawY, tile.w(), tile.h());
+            g.renderOutline(tile.x() - 1, drawY - 1, tile.w() + 2, tile.h() + 2,
+                    tile == hovered ? COLOUR_TILE_EDGE_HOVER : COLOUR_TILE_EDGE);
+        }
         for (Line line : lines) {
             int drawY = viewportTop + line.canvasY() - scrollY;
             if (drawY + lh < viewportTop || drawY > viewportBottom) {
@@ -289,7 +314,7 @@ public final class VideoToolsScreen extends Screen {
             }
             int x = line.centered()
                     ? this.width / 2 - this.font.width(line.text()) / 2
-                    : colX;
+                    : line.x();
             g.drawString(this.font, line.text(), x, drawY, line.colour(), false);
         }
         g.disableScissor();
