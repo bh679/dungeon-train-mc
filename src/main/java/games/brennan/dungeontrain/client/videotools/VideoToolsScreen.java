@@ -42,7 +42,9 @@ public final class VideoToolsScreen extends Screen {
     private static final int TOP = 16;
     private static final int HEADER_GAP = 3;
     private static final int SECTION_GAP = 10;
-    private static final int TILE_GAP = 6;
+    private static final int TILE_GAP = 10;
+    /** Breathing room each side of a tile's clip. The caption still spans the full half-column. */
+    private static final int TILE_PAD = 16;
     private static final int SCROLL_STEP = 12;
 
     private static final int COLOUR_PANEL = 0xC0101010;
@@ -138,19 +140,21 @@ public final class VideoToolsScreen extends Screen {
      * Returns the canvas Y below the taller of the two.
      */
     private int addTileRow(int y, int lh) {
-        int tileW = (colW - TILE_GAP) / 2;
-        int tileH = tileW * VideoTool.FRAME_H / VideoTool.FRAME_W;
+        int cellW = (colW - TILE_GAP) / 2;
+        // The clip is inset inside its cell; the caption keeps the full cell width beneath it.
+        int clipW = Math.max(1, cellW - 2 * TILE_PAD);
+        int clipH = clipW * VideoTool.FRAME_H / VideoTool.FRAME_W;
 
         int bottom = y;
         for (int i = 0; i < VideoTool.ALL.size(); i++) {
             VideoTool tool = VideoTool.ALL.get(i);
-            int x = colX + i * (tileW + TILE_GAP);
-            tiles.add(new Tile(tool, x, y, tileW, tileH));
+            int cellX = colX + i * (cellW + TILE_GAP);
+            tiles.add(new Tile(tool, cellX + TILE_PAD, y, clipW, clipH));
 
-            int ty = y + tileH + 3;
-            ty = addWrappedAt(tool.header(), x, tileW, ty, lh, COLOUR_HEADER);
-            ty = addWrappedAt(Component.literal(tool.command()), x, tileW, ty, lh, COLOUR_COMMAND);
-            ty = addWrappedAt(tool.blurb(), x, tileW, ty, lh, COLOUR_DESC);
+            int ty = y + clipH + 6;
+            ty = addWrappedAt(tool.header(), cellX, cellW, ty, lh, COLOUR_HEADER);
+            ty = addWrappedAt(Component.literal(tool.command()), cellX, cellW, ty, lh, COLOUR_COMMAND);
+            ty = addWrappedAt(tool.blurb(), cellX, cellW, ty, lh, COLOUR_DESC);
             bottom = Math.max(bottom, ty);
         }
         return bottom;
