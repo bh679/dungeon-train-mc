@@ -8,7 +8,7 @@ import java.nio.file.Path;
 import java.util.Optional;
 
 /**
- * Three-tier store for {@code portals/room/<name>.contents-allow.json} — which contents templates a
+ * Three-tier store for {@code portals/dimensional_carriage/<name>.contents-allow.json} — which contents templates a
  * dimensional carriage may draw when its Contents setting
  * ({@link games.brennan.dungeontrain.portal.DimensionalCarriageContents}) is anything but Off.
  *

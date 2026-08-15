@@ -44,7 +44,7 @@ final class DimensionalCarriageSubVariantTest {
         // Weights carry the per-room gate the top-level pool filters on; start from a blank table so
         // the shipped weights.json cannot decide these answers either.
         TrackVariantWeights.clear();
-        // The mod ships a real group sidecar for 'default' (portals/room/default.group.json), and
+        // The mod ships a real group sidecar for 'default' (portals/dimensional_carriage/default.group.json), and
         // 'default' is in every pool as the synthetic fallback — so without this the classpath copy
         // would leak its members into these fixtures and the answers would depend on shipped
         // content. Injecting an empty group states the world each test wants.

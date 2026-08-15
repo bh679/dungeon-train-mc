@@ -34,7 +34,7 @@ import java.util.Locale;
  *   <li>{@link #PILLAR_TOP} / {@link #PILLAR_MIDDLE} / {@link #PILLAR_BOTTOM} —
  *       {@code pillars/<section>/<name>.nbt}</li>
  *   <li>{@link #ADJUNCT_STAIRS} — {@code pillars/adjunct_stairs/<name>.nbt}</li>
- *   <li>{@link #DIMENSIONAL_CARRIAGE} — {@code portals/room/<name>.nbt}</li>
+ *   <li>{@link #DIMENSIONAL_CARRIAGE} — {@code portals/dimensional_carriage/<name>.nbt}</li>
  * </ul>
  *
  * <p>The seed used to deterministically pick a name for a given tile derives
@@ -51,7 +51,7 @@ public enum TrackKind {
     PILLAR_BOTTOM("pillar_bottom", "pillars/bottom"),
     ADJUNCT_STAIRS("adjunct_stairs", "pillars/adjunct_stairs"),
     ADJUNCT_STAIRS_ENTRANCE("adjunct_stairs_entrance", "pillars/adjunct_stairs_entrance"),
-    DIMENSIONAL_CARRIAGE("dimensional_carriage", "portals/room");
+    DIMENSIONAL_CARRIAGE("dimensional_carriage", "portals/dimensional_carriage");
 
     /** The default ("built-in") variant name present even when the disk is empty. */
     public static final String DEFAULT_NAME = "default";

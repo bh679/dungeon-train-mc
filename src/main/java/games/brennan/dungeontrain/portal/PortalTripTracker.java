@@ -35,7 +35,7 @@ public final class PortalTripTracker {
      *
      * <p>Chosen to clear an ordinary trip. The walk from the entry twin to the pair's own exit twin
      * is one corridor plus one room ({@code PortalStructure.exitTwinOffsetX}); across every room
-     * shipped in {@code data/dungeontrain/portals/room} that is 19–34 blocks at the default carriage
+     * shipped in {@code data/dungeontrain/portals/dimensional_carriage} that is 19–34 blocks at the default carriage
      * dims, so the pair's own way out never earns this and only a corridor an endless mode stood
      * elsewhere ({@link PortalExitSites}) does.</p>
      *

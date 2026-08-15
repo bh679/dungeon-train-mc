@@ -30,7 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * an entry for a template that does not exist is loaded, never read, and never mentioned: no build
  * failure, no warning, no log line. It simply sits there looking like configuration that applies.</p>
  *
- * <p>That is exactly how {@code "pathsmol"} survived in {@code portals/room/weights.json} — a name
+ * <p>That is exactly how {@code "pathsmol"} survived in {@code portals/dimensional_carriage/weights.json} — a name
  * from an editor session that was deliberately removed from {@code labrynth.group.json} in the same
  * commit and left behind here, where nothing could report it. Meanwhile the real template,
  * {@code pathssmall.nbt}, silently took the default weight and mode. Both halves of that failure are

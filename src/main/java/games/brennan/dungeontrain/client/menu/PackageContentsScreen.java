@@ -130,7 +130,7 @@ public final class PackageContentsScreen implements MenuScreen {
             String partName = name.substring(sep + 1);
             return new TeleportTarget("PARTS", partKind, partName);
         }
-        if ("portals/room".equals(section.subdir())) {
+        if ("portals/dimensional_carriage".equals(section.subdir())) {
             // One kind in the category, so the modelId is fixed; the basename is the room name.
             return new TeleportTarget("PORTALS", "dimensional_carriage", name);
         }

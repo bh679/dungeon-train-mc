@@ -570,7 +570,7 @@ public final class DimensionalCarriageEditor {
      * Capture the plot the player is standing in as {@code name}'s template.
      *
      * <p>When {@link EditorDevMode} is on, also writes into the source tree at
-     * {@code src/main/resources/data/dungeontrain/portals/room/} so authored rooms ship with the
+     * {@code src/main/resources/data/dungeontrain/portals/dimensional_carriage/} so authored rooms ship with the
      * next build — parity with {@link TunnelEditor#save}.</p>
      */
     public static SaveResult save(ServerPlayer player, String name) throws IOException {

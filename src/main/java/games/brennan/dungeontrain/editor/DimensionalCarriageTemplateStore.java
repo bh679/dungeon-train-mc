@@ -21,8 +21,8 @@ import java.util.Optional;
  * Editor + builder-facing facade over {@link TrackVariantStore} for portal pocket rooms, mirroring
  * {@link TunnelTemplateStore}.
  *
- * <p>Disk layout {@code config/dungeontrain/user/portals/room/<name>.nbt}, bundled classpath
- * {@code /data/dungeontrain/portals/room/}. There is no bundled room today — with nothing on disk
+ * <p>Disk layout {@code config/dungeontrain/user/portals/dimensional_carriage/<name>.nbt}, bundled classpath
+ * {@code /data/dungeontrain/portals/dimensional_carriage/}. There is no bundled room today — with nothing on disk
  * {@link #get} returns empty and {@code PortalCarriageBuilder} stamps the built-in geometry, which
  * is what gives the editor a non-empty plot to author the first real room in.</p>
  *

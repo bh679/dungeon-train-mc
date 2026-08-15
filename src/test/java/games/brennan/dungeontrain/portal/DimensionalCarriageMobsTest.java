@@ -112,7 +112,7 @@ class DimensionalCarriageMobsTest {
         // minecraft:air in distantenemies.nbt now), so its variant entry went with the block rather
         // than being dropped on save. The floor warden at 5,1,6, on sculk, is the one that remains.
         try (InputStream in = DimensionalCarriageMobsTest.class.getResourceAsStream(
-                "/data/dungeontrain/portals/room/distantenemies.variants.json")) {
+                "/data/dungeontrain/portals/dimensional_carriage/distantenemies.variants.json")) {
             assertNotNull(in, "distantenemies.variants.json must ship");
             JsonObject json = JsonParser.parseReader(
                 new InputStreamReader(in, StandardCharsets.UTF_8)).getAsJsonObject();
