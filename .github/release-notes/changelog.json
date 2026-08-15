@@ -7034,6 +7034,21 @@
       "released": true,
       "released_in": "v0.560.0",
       "released_at": "2026-08-15T03:43:22Z"
+    },
+    {
+      "id": "variant-option-group-refs",
+      "version": "0.561.0",
+      "type": "content",
+      "title": "Portal-side carriages hang together",
+      "summary": "Blocks in the portal-side carriages no longer each pick their own look in isolation \u2014 some of them now follow the carriage's stonework, so a run of wall or floor reads as one surface instead of a patchwork. Which blocks follow and which stay independent varies per carriage, so the effect changes as you ride.",
+      "highlights": [
+        "Portal-side contents now share their look between blocks rather than rolling each one separately"
+      ],
+      "pr": 969,
+      "date": "2026-08-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
