@@ -1,14 +1,22 @@
 package games.brennan.dungeontrain.editor;
 
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.track.variant.TrackKind;
 import org.slf4j.Logger;
 
 import java.io.IOException;
+import java.io.Writer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * One-shot upgrade migration for the <b>portal room → dimensional carriage</b> rename.
@@ -148,6 +156,7 @@ public final class DimensionalCarriageRenameMigration {
         Path legacy = root.resolve(LEGACY_SUBDIR);
         if (!Files.isDirectory(legacy)) return;
         Path dest = root.resolve(NEW_SUBDIR);
+        mergeWeights(legacy, dest);
         int moved = UserContentMigration.walkAndMove(legacy, dest, NEW_SUBDIR);
         if (moved > 0) {
             LOGGER.info("[DungeonTrain] Dimensional-carriage rename: moved {} file(s) {} -> {}",
@@ -156,6 +165,82 @@ public final class DimensionalCarriageRenameMigration {
         UserContentMigration.deleteIfEmpty(legacy);
         // The portals/ parent is shared with nothing else today, so it is left in place
         // whether or not it is now empty — EditorCategory.PORTALS still writes into it.
+    }
+
+    /**
+     * Fold the legacy {@code weights.json} into an existing destination one, then drop it so the
+     * directory walk that follows has nothing left to skip.
+     *
+     * <p>{@code weights.json} is the one file in this directory that must not follow the plain
+     * skip-if-destination-exists rule. It is not one variant's data — it is the map holding
+     * <i>every</i> variant's weight, gate, mode and Stage link, so skipping it doesn't lose one
+     * template, it loses the tuning for all of them at once while their {@code .nbt} files migrate
+     * happily alongside. That gap is reachable in practice: run the new build once (the stores
+     * write a destination {@code weights.json} of their own), then restore a backup of the old
+     * {@code portals/room/}.</p>
+     *
+     * <p><b>Destination entries win.</b> Anything already at the new path was authored after the
+     * rename and is newer than the file being folded in, so only ids the destination lacks are
+     * added. Merging at the {@code JsonObject} level rather than through {@code TemplateWeightCodec}
+     * keeps each adopted entry byte-for-byte as its author left it — no round-trip that could
+     * normalise a field or drop one this build doesn't recognise.</p>
+     *
+     * <p>A parse failure on either side leaves both files untouched and logs: the legacy file then
+     * stays put, the walk skips it as before, and nothing is destroyed on the way to a bad merge.</p>
+     */
+    private static void mergeWeights(Path legacyDir, Path destDir) {
+        Path legacyFile = legacyDir.resolve(TrackKind.WEIGHTS_FILE);
+        Path destFile = destDir.resolve(TrackKind.WEIGHTS_FILE);
+        // Nothing to reconcile: with no destination file the plain move below does the right thing.
+        if (!Files.isRegularFile(legacyFile) || !Files.isRegularFile(destFile)) return;
+
+        JsonObject legacyJson = readObject(legacyFile);
+        JsonObject destJson = readObject(destFile);
+        if (legacyJson == null || destJson == null) return;
+
+        List<String> adopted = new ArrayList<>();
+        for (Map.Entry<String, JsonElement> entry : legacyJson.entrySet()) {
+            if (destJson.has(entry.getKey())) continue;
+            destJson.add(entry.getKey(), entry.getValue());
+            adopted.add(entry.getKey());
+        }
+
+        if (!adopted.isEmpty()) {
+            try (Writer w = Files.newBufferedWriter(destFile, StandardCharsets.UTF_8)) {
+                new GsonBuilder().setPrettyPrinting().create().toJson(destJson, w);
+            } catch (IOException e) {
+                LOGGER.error("[DungeonTrain] Failed to merge {} into {}: {}",
+                    legacyFile, destFile, e.toString());
+                return;
+            }
+            LOGGER.info("[DungeonTrain] Dimensional-carriage rename: adopted {} weight entr(ies) from {} -> {} {}",
+                adopted.size(), legacyFile, destFile, adopted);
+        }
+
+        try {
+            Files.delete(legacyFile);
+        } catch (IOException e) {
+            // Harmless: the walk below will skip it and the next start retries the merge, which is
+            // idempotent now that every id it carries is present at the destination.
+            LOGGER.warn("[DungeonTrain] Merged but couldn't remove legacy {}: {}",
+                legacyFile, e.toString());
+        }
+    }
+
+    /** Parse a JSON object file, or {@code null} if it is unreadable or not an object. */
+    private static JsonObject readObject(Path file) {
+        try {
+            JsonElement root = JsonParser.parseString(Files.readString(file, StandardCharsets.UTF_8));
+            if (!root.isJsonObject()) {
+                LOGGER.warn("[DungeonTrain] {} is not a JSON object — leaving the weights merge alone.",
+                    file);
+                return null;
+            }
+            return root.getAsJsonObject();
+        } catch (IOException | RuntimeException e) {
+            LOGGER.warn("[DungeonTrain] Couldn't read {} for the weights merge: {}", file, e.toString());
+            return null;
+        }
     }
 
     /**

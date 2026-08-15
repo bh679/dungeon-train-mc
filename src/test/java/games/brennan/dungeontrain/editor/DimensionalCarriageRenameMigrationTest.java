@@ -1,5 +1,7 @@
 package games.brennan.dungeontrain.editor;
 
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -78,6 +80,78 @@ final class DimensionalCarriageRenameMigrationTest {
         assertEquals("{c}", read(containers.resolve("track_pillar_top_default.contents.json")),
             "another kind's pool must not be touched");
         assertFalse(Files.exists(containers.resolve("track_portal_room_default.contents.json")));
+    }
+
+    @Test
+    @DisplayName("weights merge into an existing destination rather than being skipped")
+    void mergesWeightsIntoExistingDestination(@TempDir Path root) throws Exception {
+        // The gap this closes: run the new build once (stores write a destination weights.json),
+        // then restore a backup of the old portals/room/. Skipping here would migrate every .nbt
+        // while silently dropping the weight, gate, mode and stage link of all of them.
+        write(root.resolve(LEGACY_DIR).resolve("weights.json"), """
+            {
+              "legacyonly": { "weight": 7, "minLevel": 3, "mode": "bedrockless" },
+              "shared":     { "weight": 1 }
+            }
+            """);
+        write(root.resolve(NEW_DIR).resolve("weights.json"), """
+            {
+              "shared":   { "weight": 99 },
+              "postnewer": { "weight": 5 }
+            }
+            """);
+        write(root.resolve(LEGACY_DIR).resolve("legacyonly.nbt"), "blocks");
+
+        DimensionalCarriageRenameMigration.migrateRoot(root);
+
+        JsonObject merged = JsonParser
+            .parseString(read(root.resolve(NEW_DIR).resolve("weights.json")))
+            .getAsJsonObject();
+
+        assertTrue(merged.has("legacyonly"), "an id only the legacy file had must be adopted");
+        assertEquals(7, merged.getAsJsonObject("legacyonly").get("weight").getAsInt());
+        assertEquals("bedrockless", merged.getAsJsonObject("legacyonly").get("mode").getAsString(),
+            "the whole entry is adopted verbatim, not just its weight");
+        assertEquals(3, merged.getAsJsonObject("legacyonly").get("minLevel").getAsInt());
+
+        assertEquals(99, merged.getAsJsonObject("shared").get("weight").getAsInt(),
+            "on a conflict the destination wins — it was authored after the rename");
+        assertEquals(5, merged.getAsJsonObject("postnewer").get("weight").getAsInt(),
+            "entries only the destination had survive untouched");
+
+        assertFalse(Files.exists(root.resolve(LEGACY_DIR).resolve("weights.json")),
+            "the merged legacy file is removed so the directory walk has nothing left to skip");
+        assertEquals("blocks", read(root.resolve(NEW_DIR).resolve("legacyonly.nbt")),
+            "the template the adopted weights describe migrates alongside them");
+    }
+
+    @Test
+    @DisplayName("weights move plainly when the destination has none")
+    void movesWeightsWhenNoDestination(@TempDir Path root) throws Exception {
+        write(root.resolve(LEGACY_DIR).resolve("weights.json"), "{\"a\":{\"weight\":2}}");
+
+        DimensionalCarriageRenameMigration.migrateRoot(root);
+
+        JsonObject moved = JsonParser
+            .parseString(read(root.resolve(NEW_DIR).resolve("weights.json")))
+            .getAsJsonObject();
+        assertEquals(2, moved.getAsJsonObject("a").get("weight").getAsInt());
+    }
+
+    @Test
+    @DisplayName("unparseable weights leave both files alone rather than merging badly")
+    void malformedWeightsAreLeftAlone(@TempDir Path root) throws Exception {
+        write(root.resolve(LEGACY_DIR).resolve("weights.json"), "{ not json");
+        write(root.resolve(NEW_DIR).resolve("weights.json"), "{\"keep\":{\"weight\":4}}");
+
+        DimensionalCarriageRenameMigration.migrateRoot(root);
+
+        assertEquals("{ not json", read(root.resolve(LEGACY_DIR).resolve("weights.json")),
+            "nothing is destroyed on the way to a merge that couldn't be computed");
+        JsonObject dest = JsonParser
+            .parseString(read(root.resolve(NEW_DIR).resolve("weights.json")))
+            .getAsJsonObject();
+        assertEquals(4, dest.getAsJsonObject("keep").get("weight").getAsInt());
     }
 
     @Test
