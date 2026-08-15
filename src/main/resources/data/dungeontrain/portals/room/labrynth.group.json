@@ -9,7 +9,8 @@
     },
     {
       "id": "pathssmall",
-      "weight": 1
+      "weight": 1,
+      "maxLevel": 10
     },
     {
       "id": "backrooms",

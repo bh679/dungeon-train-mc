@@ -872,8 +872,13 @@ public sealed interface Template
         }
         @Override public String variantName() { return name; }
 
+        /**
+         * Through {@link PortalRoomEditor#resetToSaved} rather than a bare restamp: a room's
+         * footprint is the author's, so "back to what is on disk" has to put the <b>size</b> back
+         * too. Every other kind's plot size is fixed in code and a restamp is the whole reset.
+         */
         @Override public void restampPlot(ServerLevel level, CarriageDims dims) {
-            PortalRoomEditor.stampPlot(level, name, dims);
+            PortalRoomEditor.resetToSaved(level, name, dims);
         }
         @Override public Optional<StructureTemplate> bundled(ServerLevel level, CarriageDims dims) {
             return Optional.empty();

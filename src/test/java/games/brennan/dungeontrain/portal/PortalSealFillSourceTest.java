@@ -26,7 +26,7 @@ class PortalSealFillSourceTest {
     private static final CarriageDims DIMS = CarriageDims.DEFAULT;
     private static final BlockPos ORIGIN = new BlockPos(200, -60, -30);
     private static final Vec3i SIZE = PortalRoomLayout.builtInSize(DIMS);
-    private static final PortalCarriageLayout LAYOUT = PortalCarriageBuilder.layoutFor(DIMS);
+    private static final PortalCarriageLayout LAYOUT = PortalCarriageBuilder.layoutFor(DIMS, PortalCorridorKind.LONG);
 
     private static PortalStructure structure(Tile exitTile) {
         return new PortalStructure(ORIGIN, "labrynth", SIZE,

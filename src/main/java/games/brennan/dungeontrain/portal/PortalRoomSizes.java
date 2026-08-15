@@ -61,7 +61,7 @@ public final class PortalRoomSizes {
     }
 
     /**
-     * Drop an unsaved resize, keeping what the template last said.
+     * Drop an in-flight resize of {@code name} without settling it.
      *
      * <p>The Train Builder calls this when it opens a room, so a footprint changed with the size
      * steppers and then walked away from does not follow the room into its next open. In the editor
@@ -74,6 +74,18 @@ public final class PortalRoomSizes {
      * same time, but the coupling is real and worth knowing about rather than discovering.</p>
      */
     public static void clearPending(String name) {
+        if (name == null) return;
+        PENDING.remove(name);
+    }
+
+    /**
+     * Drop the editor override, leaving the size the template last reported.
+     *
+     * <p>What the editor's Reset needs. {@link #settle} also clears the override, but only because a
+     * save has just made a new size authoritative — calling it here would bake the abandoned resize
+     * in as the known size, which is the opposite of a reset.</p>
+     */
+    public static void revert(String name) {
         if (name == null) return;
         PENDING.remove(name);
     }

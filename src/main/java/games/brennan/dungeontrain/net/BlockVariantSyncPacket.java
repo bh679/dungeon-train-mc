@@ -71,10 +71,28 @@ public record BlockVariantSyncPacket(
      * {@code maxDiff == -1} is the "all" sentinel (no upper bound). Both
      * default to {@code 0} / {@code -1} on non-mob rows and are only rendered
      * for mob rows.</p>
+     *
+     * <p>{@code groupRef} mirrors the v9
+     * {@link games.brennan.dungeontrain.editor.VariantState#groupRef}: when
+     * {@code > 0} this row is a lock-group reference and renders as
+     * "→ Group N" instead of a block path. {@code groupRefLive} is the
+     * server's verdict on whether that group currently resolves — a dead
+     * reference renders red, the same warning the editor gives a dangling
+     * loot-prefab link. Liveness is computed server-side because only the
+     * server holds the sidecar's full reference graph.</p>
      */
     public record Entry(String stateString, @Nullable String beNbt, int weight,
                         byte rotMode, byte rotDirMask, @Nullable String linkedLootPrefabId,
-                        @Nullable String entityId, byte halfMode, int minDiff, int maxDiff) {
+                        @Nullable String entityId, byte halfMode, int minDiff, int maxDiff,
+                        int groupRef, boolean groupRefLive) {
+
+        /** Backward-compat constructor for call sites that carry a difficulty band but no group reference. */
+        public Entry(String stateString, @Nullable String beNbt, int weight,
+                     byte rotMode, byte rotDirMask, @Nullable String linkedLootPrefabId,
+                     @Nullable String entityId, byte halfMode, int minDiff, int maxDiff) {
+            this(stateString, beNbt, weight, rotMode, rotDirMask, linkedLootPrefabId, entityId,
+                halfMode, minDiff, maxDiff, 0, false);
+        }
 
         /** Backward-compat constructor for call sites that don't carry a loot link. */
         public Entry(String stateString, @Nullable String beNbt, int weight,
@@ -105,6 +123,11 @@ public record BlockVariantSyncPacket(
         /** True for v7 mob entries — the C-menu renders the spawn-egg icon for these rows. */
         public boolean isMob() {
             return entityId != null && !entityId.isEmpty();
+        }
+
+        /** True for v9 lock-group reference rows — the C-menu renders "→ Group N" for these. */
+        public boolean isGroupRef() {
+            return groupRef > 0;
         }
     }
 
@@ -155,6 +178,8 @@ public record BlockVariantSyncPacket(
             buf.writeByte(e.halfMode());
             buf.writeVarInt(e.minDiff());
             buf.writeVarInt(e.maxDiff());
+            buf.writeVarInt(e.groupRef());
+            buf.writeBoolean(e.groupRefLive());
         }
     }
 
@@ -187,8 +212,10 @@ public record BlockVariantSyncPacket(
             byte halfMode = buf.readByte();
             int minDiff = buf.readVarInt();
             int maxDiff = buf.readVarInt();
+            int groupRef = buf.readVarInt();
+            boolean groupRefLive = buf.readBoolean();
             entries.add(new Entry(stateStr, nbt, weight, rotMode, rotDirMask,
-                linkedLootPrefabId, entityId, halfMode, minDiff, maxDiff));
+                linkedLootPrefabId, entityId, halfMode, minDiff, maxDiff, groupRef, groupRefLive));
         }
         return new BlockVariantSyncPacket(id, local, entries, lockId, anchor, right, up);
     }

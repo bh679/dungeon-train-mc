@@ -10,6 +10,7 @@
     "FlowingFluidExternalWaterMixin",
     "AdvancementVisibilityEvaluatorMixin",
     "BedBlockMixin",
+    "EnderChestBlockLabelMixin",
     "ServerPlayerBedSpawnMixin",
     "BucketItemMixin",
     "ChunkAccessAccessor",
@@ -66,7 +67,10 @@
     "client.SoundEngineMusicFadeMixin",
     "client.LanguageSelectEntryLogoMixin",
     "client.SectionOcclusionGraphPortalSwapMixin",
-    "client.LevelRendererPortalSwapCompileMixin"
+    "client.LevelRendererPortalSwapCompileMixin",
+    "client.LanguageSelectEntryAccessor",
+    "client.I18nAccessor",
+    "client.LanguageManagerReapplyMixin"
   ],
   "server": [],
   "injectors": {

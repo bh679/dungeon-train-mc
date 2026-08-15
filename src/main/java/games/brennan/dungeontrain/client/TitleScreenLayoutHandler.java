@@ -4,23 +4,19 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.cheat.CheatModListFetcher;
 import games.brennan.dungeontrain.client.analytics.UiAnalytics;
-import games.brennan.dungeontrain.client.builder.TrainBuilderMenuButton;
-import games.brennan.dungeontrain.client.builder.TrainBuilderScreen;
 import games.brennan.dungeontrain.client.links.OfficialLinks;
-import games.brennan.dungeontrain.client.menu.PulsingDiscordButton;
+import games.brennan.dungeontrain.client.menu.DarkTintedButton;
+import games.brennan.dungeontrain.client.videotools.VideoToolsScreen;
 import games.brennan.dungeontrain.client.localization.LocalizationCredit;
 import games.brennan.dungeontrain.client.localization.LocalizationCreditLabel;
 import games.brennan.dungeontrain.client.localization.LocalizationCreditRegistry;
 import games.brennan.dungeontrain.client.version.LauncherDetector;
 import games.brennan.dungeontrain.client.version.VersionCheckState;
 import games.brennan.dungeontrain.client.version.VersionStatusButton;
-import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.editor.EditorDevMode;
-import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.events.GuiEventListener;
-import net.minecraft.client.gui.screens.ConfirmLinkScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.network.chat.Component;
@@ -30,25 +26,23 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ScreenEvent;
 import org.slf4j.Logger;
 
-import java.net.URI;
 import java.util.List;
 
 /**
  * Restructures the title screen so the NeoForge "Mods" button slot is replaced
- * by a 50/50 split of <b>Train Builder</b> + <b>Discord</b>, and the
+ * by a 50/50 split of <b>Dungeon Train Editor</b> + <b>Video Tools</b>, and the
  * vanilla Options/Quit row absorbs the displaced Mods button as a 33/33/33
  * split of <b>Mods | Options | Quit Game</b>.
  *
- * <p>Discord opens the current official invite via {@link ConfirmLinkScreen}.</p>
- *
- * <p>The first slot holds a {@link TrainBuilderMenuButton}: normally <b>Train Builder</b>,
- * opening {@link TrainBuilderScreen}; on a dev build, holding Shift turns it into the old
- * <b>Train Editor</b> button. The editor path is unchanged — it launches a fresh creative world
- * via {@link DevQuickWorldHandler#launchEditorWorld(Screen)}, which names the world
- * "train editor N" using the lowest unused index, and arms
- * {@link EditorDevMode#queueOnForNextStart()} so editor mode is forced on after the server
- * finishes starting, regardless of the {@code CarriageTemplateStore.sourceTreeAvailable()}
- * gate.</p>
+ * <p>Video Tools opens the filming guide for content creators. It holds the slot
+ * Discord used to occupy — Discord now rides the icon column above Credits (see
+ * {@code TitleScreenCreditsButton}), where its logomark says what a word had to
+ * say here. The Editor button launches a fresh creative world via
+ * {@link DevQuickWorldHandler#launchEditorWorld(Screen)} — which names the
+ * world "train editor N" using the lowest unused index — and arms
+ * {@link EditorDevMode#queueOnForNextStart()} so editor mode is forced on
+ * after the server finishes starting, regardless of the
+ * {@code CarriageTemplateStore.sourceTreeAvailable()} gate.</p>
  *
  * <p>If any of Mods/Options/Quit can't be located on the title screen (e.g.
  * a third-party mod has already rewritten the menu), this handler logs a
@@ -59,7 +53,9 @@ public final class TitleScreenLayoutHandler {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    private static final Component DISCORD_LABEL = Component.translatable("gui.dungeontrain.discord_button");
+    private static final Component VIDEO_TOOLS_LABEL = Component.translatable("gui.dungeontrain.video_tools.button");
+    private static final Component EDITOR_LABEL = Component.translatable("gui.dungeontrain.editor_button");
+
     private static final Component MODS_KEY = Component.translatable("fml.menu.mods");
     private static final Component OPTIONS_KEY = Component.translatable("menu.options");
     private static final Component QUIT_KEY = Component.translatable("menu.quit");
@@ -153,28 +149,18 @@ public final class TitleScreenLayoutHandler {
         quit.setY(rowY);
         quit.setWidth(thirdW);
 
-        // Train Builder by default; on a dev build, holding Shift swaps this same widget to the
-        // old Train Editor. The slot is only half a row wide (Discord has the other half), so a
-        // separate Editor button would not fit alongside it.
-        TrainBuilderMenuButton builder = new TrainBuilderMenuButton(slotX, slotY, halfW, slotH,
-                () -> openBuilder(titleScreen),
-                () -> openEditor(titleScreen));
-        event.addListener(builder);
+        DarkTintedButton editor = new DarkTintedButton(slotX, slotY, halfW, slotH,
+                EDITOR_LABEL, b -> openEditor(titleScreen));
+        event.addListener(editor);
 
-        // If the player opted out of the developer welcome popup, keep the
-        // Discord affordance gently visible via a pulsing blue border —
-        // they can still find their way to the channel without being
-        // re-prompted by a modal.
-        boolean optedOut = ClientDisplayConfig.isDeveloperPopupOptedOut();
-        // Stand down while the menu-chat envelope pulses over unread messages — one pulse at a time.
-        Button discord = optedOut
-                ? new PulsingDiscordButton(slotX + halfW + GAP, slotY, halfW, slotH,
-                        DISCORD_LABEL, b -> openDiscord(titleScreen),
-                        games.brennan.dungeontrain.client.chat.MenuChatButtonHandler::hasUnreadPulse)
-                : Button.builder(DISCORD_LABEL, b -> openDiscord(titleScreen))
-                        .bounds(slotX + halfW + GAP, slotY, halfW, slotH)
-                        .build();
-        event.addListener(discord);
+        // Video Tools — the filming guide for content creators. Holds the slot Discord used to
+        // occupy; Discord itself now rides the icon column above Credits (TitleScreenCreditsButton),
+        // where its logomark carries the meaning a word had to carry here.
+        event.addListener(new DarkTintedButton(slotX + halfW + GAP, slotY, halfW, slotH,
+                VIDEO_TOOLS_LABEL, b -> {
+                    UiAnalytics.click(UiAnalytics.SURFACE_TITLE_SCREEN, UiAnalytics.TARGET_VIDEO_TOOLS);
+                    Minecraft.getInstance().setScreen(new VideoToolsScreen(titleScreen));
+                }));
     }
 
     private static Button findButton(ScreenEvent.Init.Post event, Component message) {
@@ -184,24 +170,6 @@ public final class TitleScreenLayoutHandler {
             }
         }
         return null;
-    }
-
-    private static void openDiscord(Screen parent) {
-        UiAnalytics.click(UiAnalytics.SURFACE_TITLE_SCREEN, UiAnalytics.TARGET_DISCORD);
-        // Read at click time so a relay-served rotation still applies after the menu was built.
-        String discordUrl = OfficialLinks.discord();
-        Minecraft.getInstance().setScreen(new ConfirmLinkScreen(yes -> {
-            UiAnalytics.confirm(UiAnalytics.SURFACE_TITLE_SCREEN, UiAnalytics.TARGET_DISCORD, yes);
-            if (yes) {
-                Util.getPlatform().openUri(URI.create(discordUrl));
-            }
-            Minecraft.getInstance().setScreen(parent);
-        }, discordUrl, true));
-    }
-
-    private static void openBuilder(Screen parent) {
-        LOGGER.info("TitleScreenLayout: Train Builder button clicked — opening the builder picker");
-        Minecraft.getInstance().setScreen(new TrainBuilderScreen(parent));
     }
 
     private static void openEditor(Screen parent) {

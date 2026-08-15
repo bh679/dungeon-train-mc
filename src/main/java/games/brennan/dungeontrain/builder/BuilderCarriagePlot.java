@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.builder;
 
 import games.brennan.dungeontrain.editor.BlockVariantPlot;
+import games.brennan.dungeontrain.editor.VariantGroupResolver;
 import games.brennan.dungeontrain.editor.VariantState;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
@@ -172,5 +173,19 @@ public final class BuilderCarriagePlot implements BlockVariantPlot {
     @Override
     public int nextFreeLockId() {
         return 1;
+    }
+
+    /**
+     * An empty resolver — this plot has no lock groups to resolve references between.
+     *
+     * <p>The same answer the rest of this class gives the v9 lock-group API, and for the same
+     * reason: the builder edits one volume with no sidecar behind it until the build is named and
+     * saved, so there are no groups, no references, and nothing for the graph to analyse. A resolver
+     * over two empty maps reports exactly that, where returning null would make every caller that
+     * merely asks the question fall over.</p>
+     */
+    @Override
+    public VariantGroupResolver groupRefs() {
+        return new VariantGroupResolver(Collections.emptyMap(), Collections.emptyMap());
     }
 }

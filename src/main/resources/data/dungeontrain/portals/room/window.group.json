@@ -4,7 +4,7 @@
   "variants": [
     {
       "id": "window_contents",
-      "weight": 3
+      "weight": 5
     }
   ]
 }

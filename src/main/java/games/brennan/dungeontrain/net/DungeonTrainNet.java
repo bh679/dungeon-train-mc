@@ -124,6 +124,9 @@ public final class DungeonTrainNet {
         // Full tagged ride-photo gallery, client → server when the death screen opens; the server
         // archives every photo (+ its facets) to the relay's Photos page via ShotUploadClient.
         registrar.playToServer(RideGalleryPacket.TYPE, RideGalleryPacket.STREAM_CODEC, RideGalleryPacket::handle);
+        // Ride-photo cue, server → client: a moment only the server can see (a drifting carriage
+        // being changed, arriving in a Train Dimension) that the client should try to photograph.
+        registrar.playToClient(SnapshotCuePacket.TYPE, SnapshotCuePacket.STREAM_CODEC, SnapshotCuePacket::handle);
         // Bug-report logs: client → server when the player reports a bug on the death-screen survey;
         // archived under logs/<version>/<user>/ and posted as Discord attachments to the feedback feed.
         registrar.playToServer(BugReportLogsPacket.TYPE, BugReportLogsPacket.STREAM_CODEC, BugReportLogsPacket::handle);
@@ -203,6 +206,9 @@ public final class DungeonTrainNet {
 
         // Per-part editor-grid visibility (hidden set) — S2C mirror for the part-list ☑/☐ glyphs.
         registrar.playToClient(PartVisibilityPacket.TYPE, PartVisibilityPacket.STREAM_CODEC, PartVisibilityPacket::handle);
+
+        // Editor middle-click: copy the looked-at cell's variants into the hotbar (C2S).
+        registrar.playToServer(BlockVariantCopyPickPacket.TYPE, BlockVariantCopyPickPacket.STREAM_CODEC, BlockVariantCopyPickPacket::handle);
     }
 
     /** Convenience: send a payload to the server (client → server). */

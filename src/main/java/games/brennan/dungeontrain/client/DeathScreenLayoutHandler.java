@@ -4,10 +4,10 @@ import com.mojang.logging.LogUtils;
 import dev.ryanhcode.sable.api.sublevel.ServerSubLevelContainer;
 import dev.ryanhcode.sable.api.sublevel.SubLevelContainer;
 import games.brennan.dungeontrain.DungeonTrain;
-import games.brennan.dungeontrain.client.builder.BuilderWorldCheck;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
+import games.brennan.dungeontrain.net.DeathStatsPacket;
 import games.brennan.dungeontrain.player.PendingInventory;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.Shipyard;
@@ -17,6 +17,7 @@ import games.brennan.dungeontrain.train.TrainTransformProvider;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.world.StartingDimension;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.client.gui.screens.DeathScreen;
 import net.minecraft.client.gui.screens.GenericMessageScreen;
 import net.minecraft.client.gui.screens.Screen;
@@ -46,6 +47,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ScreenEvent;
+import net.neoforged.neoforge.network.registration.NetworkRegistry;
 import org.slf4j.Logger;
 
 import java.util.Optional;
@@ -56,10 +58,10 @@ import java.util.function.Function;
 
 /**
  * Replaces the vanilla {@link DeathScreen} with {@link NarrativeDeathScreen} —
- * the paginated "the Dungeon Train asks" recap — on singleplayer Dungeon Train
- * worlds. In Dungeon Train, dying ends the run: the narrative screen offers
- * "Board anew" (a fresh world) and "Leave the line" (the title screen), with no
- * respawn-in-place, so hardcore worlds get the same treatment.
+ * the paginated "the Dungeon Train asks" recap — on Dungeon Train worlds. In
+ * singleplayer, dying ends the run: the narrative screen offers "Board anew" (a
+ * fresh world) and "Leave the line" (the title screen), with no respawn-in-place,
+ * so hardcore worlds get the same treatment.
  *
  * <p>This class also owns the world-transition plumbing the narrative screen
  * calls: {@link #launchWorld} creates a fresh save (carrying forward the current
@@ -68,9 +70,14 @@ import java.util.function.Function;
  * to the title. Both run the Sable sub-level pre-drain so the integrated server
  * tears down cleanly (see {@link #preDrainTrainSubLevels}).</p>
  *
- * <p>LAN / dedicated-server death screens are left untouched — we can't recreate
- * a world we don't own; the singleplayer guard ({@code getSingleplayerServer()})
- * gates the swap.</p>
+ * <p><b>LAN / dedicated servers get the screen too</b>, so a multiplayer player
+ * sees the same recap, survey, ride photos and donation page a singleplayer one
+ * does. What changes there is the run-ending control: a world we don't own can't
+ * be recreated, so "Board anew" becomes vanilla's Respawn (see
+ * {@code NarrativeDeathScreen.remote()}), and the delete-on-reboard toggle is
+ * hidden. The swap is gated on the server actually running Dungeon Train — a
+ * server without it never sends {@link DeathStatsPacket}, and a recap with no
+ * run behind it is worse than the vanilla screen.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class DeathScreenLayoutHandler {
@@ -114,21 +121,30 @@ public final class DeathScreenLayoutHandler {
     private DeathScreenLayoutHandler() {}
 
     /**
-     * Swap the vanilla death screen for the narrative one as it opens. Guarded
-     * to singleplayer (integrated server present). The new screen is not a
-     * {@link DeathScreen}, so the re-fired {@code Opening} event for it is a
-     * no-op — no recursion.
+     * Swap the vanilla death screen for the narrative one as it opens. The new
+     * screen is not a {@link DeathScreen}, so the re-fired {@code Opening} event
+     * for it is a no-op — no recursion.
      */
     @SubscribeEvent
     public static void onScreenOpening(ScreenEvent.Opening event) {
         if (!(event.getNewScreen() instanceof DeathScreen)) return;
-        if (Minecraft.getInstance().getSingleplayerServer() == null) return;
-        // Train Builder worlds keep the vanilla death screen. The narrative screen is about a
-        // run — what you did, how far you got, boarding anew — and a build sandbox has no run
-        // to narrate. This one guard covers everything downstream of the swap: the narrative
-        // pages, the survey, mod recommendations, the support card, and reboard.
-        if (BuilderWorldCheck.isBuilderWorld()) return;
+        if (!dungeonTrainWorld()) return;
         event.setNewScreen(new NarrativeDeathScreen());
+    }
+
+    /**
+     * Whether this death happened on a world Dungeon Train is running. Always true in
+     * singleplayer (our own integrated server); on a remote server it asks whether the
+     * connection negotiated DT's own channel, which is the client-side way to know the
+     * server has the mod. Without that check a DT client joining any other server would
+     * be handed a run recap the server never sent stats for.
+     */
+    private static boolean dungeonTrainWorld() {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.getSingleplayerServer() != null) return true;
+        ClientPacketListener connection = mc.getConnection();
+        return connection != null
+                && NetworkRegistry.hasChannel(connection, DeathStatsPacket.TYPE.id());
     }
 
     public static void launchWorld(Screen lastScreen, boolean sameSeed) {

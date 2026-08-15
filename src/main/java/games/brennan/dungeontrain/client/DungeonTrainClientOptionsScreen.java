@@ -2,6 +2,8 @@ package games.brennan.dungeontrain.client;
 
 import games.brennan.discordpresence.client.NetworkConsentScreen;
 import games.brennan.discordpresence.config.DiscordPresenceClientConfig;
+import games.brennan.dungeontrain.client.localization.edit.TranslationScreen;
+import games.brennan.dungeontrain.client.localization.edit.TranslationTarget;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.config.ContentMode;
 import net.minecraft.client.gui.components.Button;
@@ -62,6 +64,19 @@ public final class DungeonTrainClientOptionsScreen extends Screen {
                 .bounds(left, y, ROW_W, ROW_H).build())
                 .setTooltip(tip("gui.dungeontrain.options.editor_settings.tip"));
         y += ROW_GAP;
+
+        // Translation editor. Shown only when there is a language to edit — on en_us in a release
+        // build there is none and the row would be a dead end; a dev build points it at the dev
+        // target instead so the editor is testable with the UI still in English.
+        String translateTarget = TranslationTarget.resolveForClient();
+        if (!translateTarget.isEmpty()) {
+            addRenderableWidget(Button.builder(
+                            Component.translatable("gui.dungeontrain.options.translate"),
+                            b -> this.minecraft.setScreen(new TranslationScreen(this, translateTarget)))
+                    .bounds(left, y, ROW_W, ROW_H).build())
+                    .setTooltip(tip("gui.dungeontrain.options.translate.tip"));
+            y += ROW_GAP;
+        }
 
         // Master network / internet-connection switch (DP's one-time "use the internet?" consent). OFF
         // revokes immediately; turning it ON routes through DP's informed consent screen rather than

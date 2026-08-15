@@ -110,6 +110,10 @@ public final class WorldLifecycleEvents {
         CarriageTemplateStore.clearCache();
         games.brennan.dungeontrain.train.CarriagePlacer.clearHalfFlatbedCache();
         games.brennan.dungeontrain.train.Trains.clearRegistry();
+        // With the registry, not on its own: a train id is regenerated per world, so a surviving
+        // stopped-tick count would be subtracted from a fresh train's elapsed ticks and start it
+        // life somewhere behind where it belongs.
+        games.brennan.dungeontrain.train.TrainMotionFreeze.clear();
         games.brennan.dungeontrain.train.TrainCarriageAppender.clearSettleTracker();
         games.brennan.dungeontrain.event.CarriageGroupGapTicker.resetWarnings();
         PillarTemplateStore.clearCache();
@@ -117,6 +121,7 @@ public final class WorldLifecycleEvents {
         games.brennan.dungeontrain.track.variant.TrackVariantStore.clearCache();
         games.brennan.dungeontrain.track.variant.TrackVariantBlocks.clearCache();
         games.brennan.dungeontrain.portal.PortalCorridorContents.clear();
+        games.brennan.dungeontrain.portal.PortalCarriageSelection.clearCorridorKinds();
         LOGGER.debug("[DungeonTrain] Cleared carriage-, half-flatbed-, pillar-, track-template and portal-corridor-contents caches and Trains registry on server stop.");
     }
 }

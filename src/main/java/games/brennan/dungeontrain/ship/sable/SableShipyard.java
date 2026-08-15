@@ -55,13 +55,36 @@ public final class SableShipyard implements Shipyard {
      * Sable's static registry at class-load — well before any world loads — so
      * a ticket that happened to persist and reload still resolves by name
      * (and is then swept by {@link #releaseAllForceLoads}). Keyed by
-     * {@link Unit} because a sub-level is either held by us or not; there is
-     * only ever one DT ticket per sub-level.</p>
+     * {@link Unit} because a sub-level is either held for this reason or not.</p>
+     *
+     * <p><b>One type per {@link Shipyard.Hold}, and that is load-bearing.</b> The ticket type is the
+     * holder's identity: two subsystems sharing one are the same holder, and either's release drops
+     * the other's hold. This class used to carry a single type on the reasoning that "there is only
+     * ever one DT ticket per sub-level" — true until the portal rooms started holding carriage
+     * groups, at which point the appender's per-tick trailing-window reconcile silently revoked the
+     * room's hold and Sable culled the group out from under a player standing inside it.</p>
      */
     private static final SubLevelLoadingTicketType<Unit> DT_TRAILING_TICKET =
         SubLevelLoadingTicketType.create(
             ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "trailing_segment"),
             Unit.CODEC);
+
+    /**
+     * The portal rooms' hold — see the note above on why it is not the trailing one.
+     *
+     * <p>Its own name in Sable's registry, so it is a distinct ticket and the trailing window's
+     * release cannot touch it. Swept by {@link #releaseAllForceLoads} alongside the other, because
+     * both are Dungeon Train's and neither may survive a session boundary.</p>
+     */
+    private static final SubLevelLoadingTicketType<Unit> DT_PORTAL_ROOM_TICKET =
+        SubLevelLoadingTicketType.create(
+            ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "portal_room"),
+            Unit.CODEC);
+
+    /** The ticket that carries {@code hold}. */
+    private static SubLevelLoadingTicketType<Unit> ticketFor(Shipyard.Hold hold) {
+        return hold == Shipyard.Hold.PORTAL_ROOM ? DT_PORTAL_ROOM_TICKET : DT_TRAILING_TICKET;
+    }
 
     private final ServerLevel level;
 
@@ -142,25 +165,25 @@ public final class SableShipyard implements Shipyard {
     }
 
     @Override
-    public void forceLoad(ManagedShip ship) {
+    public void forceLoad(ManagedShip ship, Shipyard.Hold hold) {
         if (!(ship instanceof SableManagedShip sableShip)) {
             LOGGER.warn("[Sable] forceLoad called with non-Sable ManagedShip: {}", ship);
             return;
         }
         ServerSubLevelContainer container = SubLevelContainer.getContainer(level);
         if (container == null) return;
-        container.addForceLoadTicket(sableShip.subLevel(), DT_TRAILING_TICKET, Unit.INSTANCE);
+        container.addForceLoadTicket(sableShip.subLevel(), ticketFor(hold), Unit.INSTANCE);
     }
 
     @Override
-    public void releaseForceLoad(ManagedShip ship) {
+    public void releaseForceLoad(ManagedShip ship, Shipyard.Hold hold) {
         if (!(ship instanceof SableManagedShip sableShip)) {
             LOGGER.warn("[Sable] releaseForceLoad called with non-Sable ManagedShip: {}", ship);
             return;
         }
         ServerSubLevelContainer container = SubLevelContainer.getContainer(level);
         if (container == null) return;
-        container.removeForceLoadTicket(sableShip.subLevel(), DT_TRAILING_TICKET, Unit.INSTANCE);
+        container.removeForceLoadTicket(sableShip.subLevel(), ticketFor(hold), Unit.INSTANCE);
     }
 
     @Override
@@ -174,7 +197,14 @@ public final class SableShipyard implements Shipyard {
         Collection<ServerSubLevel> forceLoaded = container.collectForceLoadedSubLevels();
         int removed = 0;
         for (ServerSubLevel sub : forceLoaded) {
+            // Both of Dungeon Train's ticket types, because this is the session-boundary sweep and
+            // neither may survive it — Sable persists tickets and resurrects what they hold. A
+            // sub-level can carry both at once (a trailing carriage whose group is also a portal
+            // pair), so these are two independent removals rather than an either/or.
             if (container.removeForceLoadTicket(sub, DT_TRAILING_TICKET, Unit.INSTANCE)) {
+                removed++;
+            }
+            if (container.removeForceLoadTicket(sub, DT_PORTAL_ROOM_TICKET, Unit.INSTANCE)) {
                 removed++;
             }
         }

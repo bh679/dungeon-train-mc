@@ -65,6 +65,8 @@ public final class RideSnapshotCapture {
     private static SnapshotTag captureTag;
 
     private static volatile SnapshotTag pendingTag;
+    /** Where the pending shot's camera may stand; {@link SnapshotFraming#NONE} for almost every shot. */
+    private static volatile SnapshotFraming pendingFraming = SnapshotFraming.NONE;
 
     // ── Targeted (echo) capture: frame an arbitrary subject entity and hand the PNG to a callback ──
     private static volatile int pendingSubjectId = -1;
@@ -86,7 +88,18 @@ public final class RideSnapshotCapture {
     // ── Director API ─────────────────────────────────────────────────────
     /** Queue a shot of this tag; the pose is built at render time. */
     public static void request(SnapshotTag tag) {
-        if (tag != null) pendingTag = tag;
+        request(tag, SnapshotFraming.NONE);
+    }
+
+    /**
+     * Queue a shot whose camera is restricted to {@code framing} — see {@link SnapshotFraming}. Used
+     * by the server-cued {@link SnapshotTag#THRESHOLD} shot, which must not be taken from the next
+     * copy of a tiled room or from inside a twin corridor.
+     */
+    public static void request(SnapshotTag tag, SnapshotFraming framing) {
+        if (tag == null) return;
+        pendingFraming = framing == null ? SnapshotFraming.NONE : framing;
+        pendingTag = tag;
     }
 
     /**
@@ -205,10 +218,13 @@ public final class RideSnapshotCapture {
         } else {
             SnapshotTag tag = pendingTag;
             if (tag == null) return;
+            SnapshotFraming framing = pendingFraming;
             pendingTag = null;
+            pendingFraming = SnapshotFraming.NONE;
             // Pose in render space (correct world coords). Null = too dark or no clear/unobstructed
             // angle → skip; the director requests again shortly (its cool-down throttles retries).
-            CinematicCameraController.Pose pose = SnapshotCamera.poseFor(level, tag, player, partialTick);
+            CinematicCameraController.Pose pose =
+                    SnapshotCamera.poseFor(level, tag, player, partialTick, framing);
             if (pose == null) return;
             captureTag = tag;
             capturePose = pose;
@@ -334,6 +350,7 @@ public final class RideSnapshotCapture {
     /** Drop any pending/in-flight capture (world leave). */
     public static void disposeTarget() {
         pendingTag = null;
+        pendingFraming = SnapshotFraming.NONE;
         pendingSubjectCallback = null;
         pendingSubjectId = -1;
     }

@@ -178,18 +178,26 @@ public final class BlockVariantMenuController {
 
         Vec3 right = up.cross(normal).normalize();
 
+        // Liveness of every v9 reference in this cell, decided once against the
+        // plot's whole reference graph — the client can't work it out on its
+        // own, it only ever sees one cell.
+        VariantGroupRefs.Graph refGraph = plot.groupRefs().graph();
+        int cellLockId = plot.lockIdAt(localPos);
+
         List<BlockVariantSyncPacket.Entry> entries = new ArrayList<>(states.size());
         for (VariantState s : states) {
             String stateStr = BlockStateParser.serialize(s.state());
             String beNbt = s.hasBlockEntityData() ? s.blockEntityNbt().toString() : null;
             VariantRotation rot = s.rotation();
             String entityId = s.entityId() == null ? null : s.entityId().toString();
+            boolean refLive = s.isGroupRef() && refGraph.isLiveRef(cellLockId, s.groupRef());
             entries.add(new BlockVariantSyncPacket.Entry(
                 stateStr, beNbt, s.weight(),
                 (byte) rot.mode().ordinal(), (byte) rot.dirMask(),
                 s.linkedLootPrefabId(), entityId,
                 (byte) s.half().mode().ordinal(),
-                s.difficulty().min(), s.difficulty().max()));
+                s.difficulty().min(), s.difficulty().max(),
+                s.groupRef(), refLive));
         }
         return new BlockVariantSyncPacket(plot.key(), localPos, entries, lockId, anchor, right, up);
     }
@@ -246,6 +254,66 @@ public final class BlockVariantMenuController {
         switch (packet.op()) {
             case ADD -> {
                 ItemStack held = player.getMainHandItem();
+                // v9 lock-group reference branch. A variant clipboard copied
+                // from a locked cell already carries that cell's lock-id, so
+                // "copy a cell in group 1, hold it, press Add here" is the
+                // whole authoring gesture — no new item and no new button.
+                // Right-click paste keeps its existing meaning (overwrite this
+                // cell and join the group); only Add reads the clipboard as a
+                // reference.
+                if (held.getItem() instanceof VariantClipboardItem) {
+                    int refGroup = VariantClipboardItem.decodeLockId(
+                        VariantClipboardItem.readClipboardTag(held));
+                    if (refGroup <= 0) {
+                        actionBar(player, "That clipboard was copied from an unlocked cell — lock the source cell first",
+                            ChatFormatting.YELLOW);
+                        return;
+                    }
+                    if (wasEmpty) {
+                        // A reference is a second opinion, not a first one:
+                        // the cell needs its own candidate before it can
+                        // sometimes defer. Same rule the Lock button applies.
+                        actionBar(player, "Add at least one variant before adding a group reference",
+                            ChatFormatting.YELLOW);
+                        return;
+                    }
+                    int cellLock = plot.lockIdAt(localPos);
+                    if (refGroup == cellLock) {
+                        actionBar(player, "A cell cannot reference its own group (" + refGroup + ")",
+                            ChatFormatting.YELLOW);
+                        return;
+                    }
+                    List<VariantState> targetStates =
+                        plot.groupRefs().statesForLockId(refGroup);
+                    if (targetStates == null || targetStates.isEmpty()) {
+                        actionBar(player, "No cell in this template uses lock-id " + refGroup,
+                            ChatFormatting.YELLOW);
+                        return;
+                    }
+                    if (cellLock > 0 && VariantGroupRefs.reaches(plot.groupRefs(), refGroup, cellLock)) {
+                        actionBar(player, "Group " + refGroup + " already leads back to group " + cellLock
+                            + " — that would loop", ChatFormatting.YELLOW);
+                        return;
+                    }
+                    for (VariantState existing : mutated) {
+                        if (existing.groupRef() == refGroup) {
+                            actionBar(player, "This cell already references group " + refGroup,
+                                ChatFormatting.YELLOW);
+                            return;
+                        }
+                    }
+                    if (mutated.size() >= MAX_ENTRIES) {
+                        actionBar(player, "Variant cell full (max " + MAX_ENTRIES + ")", ChatFormatting.YELLOW);
+                        return;
+                    }
+                    // The placeholder is only ever the editor's icon and the
+                    // fallback if the reference is later cleared — the pick
+                    // path always follows the reference instead.
+                    mutated.add(VariantState.ofGroupRef(refGroup, targetStates.get(0).state()));
+                    actionBar(player, "Added reference to group " + refGroup, ChatFormatting.GREEN);
+                    dirty = true;
+                    break;
+                }
                 // Spawn-egg branch: add a v7 mob variant entry. The cell rolls
                 // AIR at spawn (mob entries are auto-stamped with the
                 // empty-placeholder sentinel) and a deferred entity pass
@@ -661,6 +729,12 @@ public final class BlockVariantMenuController {
      *
      * <p>Out-of-range indices and missing cells return silently; the
      * client can be slightly stale relative to the sidecar.</p>
+     *
+     * <p>A v9 reference row previews what it points at rather than its own
+     * placeholder. Any single preview is necessarily arbitrary — the
+     * referenced group rolls afresh per carriage — so it is drawn at
+     * {@code (world seed, index 0)}, which at least shows a genuinely
+     * possible outcome and shows the same one on every click.</p>
      */
     private static void previewEntry(ServerLevel level, BlockVariantPlot plot,
                                      BlockPos localPos, int entryIndex) {
@@ -668,6 +742,12 @@ public final class BlockVariantMenuController {
         if (current == null) return;
         if (entryIndex < 0 || entryIndex >= current.size()) return;
         VariantState picked = current.get(entryIndex);
+        if (picked.isGroupRef()) {
+            VariantState followed = VariantGroupRefs.follow(picked, plot.groupRefs(),
+                plot.groupRefs().graph(), level.getSeed(), 0);
+            if (followed == null) return;  // dead reference — nothing to show
+            picked = followed;
+        }
 
         int lockId = plot.lockIdAt(localPos);
         Set<BlockPos> targets = lockId > 0 ? plot.positionsWithLockId(lockId) : Set.of(localPos);
@@ -737,12 +817,76 @@ public final class BlockVariantMenuController {
      * instead of resetting to empty on the new cell.
      */
     private static void handleCopy(ServerPlayer player, BlockVariantPlot plot, BlockPos localPos) {
+        Clipboard clip = buildClipboardStack(player, plot, localPos);
+        if (clip == null) return;
+        boolean placed = player.getInventory().add(clip.stack());
+        if (!placed) player.drop(clip.stack(), false);
+        actionBar(player, "Copied " + clip.summary(), ChatFormatting.GREEN);
+    }
+
+    /** A freshly-built clipboard item plus the action-bar summary describing what it captured. */
+    private record Clipboard(ItemStack stack, String summary) {}
+
+    /**
+     * Middle-click shortcut for {@link #handleCopy}: resolve the plot + cell
+     * the player is looking at (same preamble {@link #toggle} uses — no open
+     * menu required) and deliver the clipboard item straight to the hotbar.
+     *
+     * <p>Driven by {@link games.brennan.dungeontrain.net.BlockVariantCopyPickPacket},
+     * whose client half only fires when the crosshair is on a cell that
+     * actually has variants — so vanilla pick-block keeps working everywhere
+     * else in the editor.</p>
+     */
+    public static void copyAtCrosshair(ServerPlayer player) {
+        if (!player.hasPermissions(2)) {
+            actionBar(player, "Block variant copy requires OP", ChatFormatting.RED);
+            return;
+        }
+        ServerLevel level = player.serverLevel();
+        CarriageDims dims = DungeonTrainWorldData.get(level).dims();
+
+        BlockVariantPlot plot = BlockVariantPlot.resolveAt(player, dims);
+        if (plot == null) {
+            actionBar(player, "Not in a block-variant editor plot", ChatFormatting.YELLOW);
+            return;
+        }
+
+        HitResult hit = player.pick(TOGGLE_REACH, 1.0f, false);
+        if (!(hit instanceof BlockHitResult bhit) || bhit.getType() == HitResult.Type.MISS) {
+            actionBar(player, "Look at a block to copy its variants", ChatFormatting.YELLOW);
+            return;
+        }
+        BlockPos localPos = bhit.getBlockPos().subtract(plot.origin());
+        if (!plot.inBounds(localPos)) {
+            actionBar(player, "Block is outside the editor plot", ChatFormatting.YELLOW);
+            return;
+        }
+
+        Clipboard clip = buildClipboardStack(player, plot, localPos);
+        if (clip == null) return;
+        giveToHotbar(player, clip);
+    }
+
+    /**
+     * Build the clipboard {@link ItemStack} for {@code localPos} — the cell's
+     * candidate list + lock-id + (when authored) its container contents pool,
+     * read from the same {@link ContainerContentsStore} the loot menu writes
+     * to, so a chest cell's hand-tuned drop pool round-trips through paste
+     * instead of resetting to empty on the new cell.
+     *
+     * <p>Sends the "nothing to copy" action bar itself and returns {@code null}
+     * when the cell has too few candidates to be worth copying; on success the
+     * caller decides the wording, since delivery differs (copied vs switched
+     * to an identical clipboard already in the hotbar).</p>
+     */
+    private static @Nullable Clipboard buildClipboardStack(ServerPlayer player, BlockVariantPlot plot,
+                                                           BlockPos localPos) {
         List<VariantState> current = plot.statesAt(localPos);
         if (current == null || current.size() < CarriageVariantBlocks.MIN_STATES_PER_ENTRY) {
             actionBar(player, "Nothing to copy — cell needs at least "
                 + CarriageVariantBlocks.MIN_STATES_PER_ENTRY + " variants",
                 ChatFormatting.YELLOW);
-            return;
+            return null;
         }
         int lockId = plot.lockIdAt(localPos);
         ContainerContentsPool pool = ContainerContentsStore.loadFor(plot.key()).poolAt(localPos);
@@ -751,12 +895,63 @@ public final class BlockVariantMenuController {
         CompoundTag tag = VariantClipboardItem.encodeStates(current, lockId,
             poolCaptured ? pool : null);
         VariantClipboardItem.writeClipboardTag(stack, tag);
-        boolean placed = player.getInventory().add(stack);
-        if (!placed) player.drop(stack, false);
         String lockSuffix = lockId > 0 ? " (lock-id " + lockId + ")" : "";
         String poolSuffix = poolCaptured ? " +pool(" + pool.size() + ")" : "";
-        actionBar(player, "Copied " + current.size() + " variants" + lockSuffix + poolSuffix,
-            ChatFormatting.GREEN);
+        return new Clipboard(stack, current.size() + " variants" + lockSuffix + poolSuffix);
+    }
+
+    /**
+     * Put {@code clip} in the player's hand.
+     *
+     * <p>Mirrors vanilla pick-block's "already have it" behaviour first: when
+     * an identical clipboard (same item, same captured payload) is already in
+     * the hotbar, just switch to that slot rather than minting a duplicate.</p>
+     *
+     * <p>Otherwise slot choice is vanilla's
+     * {@link net.minecraft.world.entity.player.Inventory#getSuitableHotbarSlot()}:
+     * the selected slot when it's empty, else the first empty hotbar slot,
+     * else the selected slot — i.e. a full hotbar means the held stack is
+     * displaced. The displaced stack goes back into the inventory and is
+     * only dropped when there's nowhere left to put it, so nothing is
+     * silently destroyed.</p>
+     */
+    private static void giveToHotbar(ServerPlayer player, Clipboard clip) {
+        net.minecraft.world.entity.player.Inventory inv = player.getInventory();
+
+        int existing = findInHotbar(inv, clip.stack());
+        if (existing >= 0) {
+            selectSlot(player, inv, existing);
+            actionBar(player, "Switched to clipboard — " + clip.summary(), ChatFormatting.GREEN);
+            return;
+        }
+
+        int slot = inv.getSuitableHotbarSlot();
+        ItemStack displaced = inv.getItem(slot);
+        inv.setItem(slot, clip.stack());
+        selectSlot(player, inv, slot);
+        if (!displaced.isEmpty() && !inv.add(displaced)) {
+            player.drop(displaced, false);
+        }
+        player.inventoryMenu.broadcastChanges();
+        actionBar(player, "Copied " + clip.summary(), ChatFormatting.GREEN);
+    }
+
+    /**
+     * Hotbar slot holding a clipboard identical to {@code stack} (same item and
+     * same captured components — the encoded states / lock-id / pool live in
+     * {@code CUSTOM_DATA}), or {@code -1} when there is none.
+     */
+    private static int findInHotbar(net.minecraft.world.entity.player.Inventory inv, ItemStack stack) {
+        for (int i = 0; i < net.minecraft.world.entity.player.Inventory.getSelectionSize(); i++) {
+            if (ItemStack.isSameItemSameComponents(inv.getItem(i), stack)) return i;
+        }
+        return -1;
+    }
+
+    /** Set the held hotbar slot server-side and tell the client so its selection follows. */
+    private static void selectSlot(ServerPlayer player, net.minecraft.world.entity.player.Inventory inv, int slot) {
+        inv.selected = slot;
+        player.connection.send(new net.minecraft.network.protocol.game.ClientboundSetCarriedItemPacket(slot));
     }
 
     /**
