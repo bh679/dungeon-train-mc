@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 4,
+  "floor": [
+    {
+      "name": "wood",
+      "weight": 1,
+      "stage": "copper"
+    }
+  ],
+  "walls": [
+    {
+      "name": "woodnice",
+      "weight": 1,
+      "stage": "copper"
+    }
+  ],
+  "roof": [
+    {
+      "name": "mud_wood_oak",
+      "weight": 1,
+      "stage": "copper"
+    }
+  ],
+  "doors": [
+    {
+      "name": "woodwooddoor",
+      "weight": 1,
+      "stage": "copper"
+    }
+  ]
+}
