@@ -3,8 +3,6 @@
   "locale": "zh_cn",
   "lang": {
     "dungeontrain": [
-      "chat.dungeontrain.lovenote.no_name",
-      "chat.dungeontrain.lovenote.taken",
       "generator.dungeontrain.dungeon_train_flat",
       "gui.dungeontrain.death.modrec.kicker",
       "gui.dungeontrain.death.modrec.ask",
@@ -36,6 +34,9 @@
       "advancements.dungeontrain.dungeon_train.no_good_deed.description",
       "advancements.dungeontrain.dungeon_train.loved_back.title",
       "advancements.dungeontrain.dungeon_train.loved_back.description",
+      "gui.dungeontrain.support.translate.header",
+      "gui.dungeontrain.support.translate.desc",
+      "gui.dungeontrain.support.translate.tooltip",
       "gui.dungeontrain.death.narr.lbl_server_cost",
       "gui.dungeontrain.death.narr.goal_running_costs",
       "gui.dungeontrain.death.narr.goal_dev_tools",

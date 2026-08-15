@@ -27,46 +27,21 @@ edited directly; the script prints the stamp command for those instead.
 """
 import argparse
 import csv
-import json
-import re
 import subprocess
 import sys
 from pathlib import Path
 
 import provenance_io as pio
+from provenance_io import set_lang_value, split_namespace
 
 HERE = Path(__file__).resolve().parent
 STAMP = HERE / "stamp-provenance.py"
 OK, FIXED, SKIP = "ok", "fixed", "skip"
-NS_PREFIX = re.compile(r"^\[([a-z]+)\]\s+(.*)$")
 
 
 def locale_from_path(path: Path) -> str:
     """The locale is the CSV's parent directory (localization/review/<locale>/…)."""
     return path.parent.name
-
-
-def split_namespace(key: str) -> tuple[str, str]:
-    """``"[playermob] some.key"`` -> ("playermob", "some.key"); bare keys -> dungeontrain."""
-    m = NS_PREFIX.match(key)
-    return (m.group(1), m.group(2)) if m else ("dungeontrain", key)
-
-
-def set_lang_value(path: Path, key: str, value: str) -> bool:
-    """Replace one key's value in a lang file, preserving formatting and line endings."""
-    # newline="" on the READ too: without it Python translates CRLF to LF before we look, so
-    # the probe below always says LF and zh_cn.json gets silently rewritten end to end.
-    raw = path.read_text(encoding="utf-8", newline="")
-    eol = "\r\n" if "\r\n" in raw else "\n"
-    lines = raw.replace("\r\n", "\n").split("\n")
-    needle = json.dumps(key, ensure_ascii=False) + ":"
-    for i, line in enumerate(lines):
-        if line.strip().startswith(needle):
-            comma = "," if line.rstrip().endswith(",") else ""
-            lines[i] = f"  {json.dumps(key, ensure_ascii=False)}: {json.dumps(value, ensure_ascii=False)}{comma}"
-            path.write_text(eol.join(lines), encoding="utf-8", newline="")
-            return True
-    return False
 
 
 def run_stamp(locale: str, namespace: str, keys: list[str], reviewer: str,

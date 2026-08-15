@@ -9,7 +9,9 @@ import games.brennan.dungeontrain.portal.PortalCarriageRole;
 import games.brennan.dungeontrain.portal.PortalCarriageSelection;
 import games.brennan.dungeontrain.portal.PortalClear;
 import games.brennan.dungeontrain.portal.PortalCorridorKind;
+import games.brennan.dungeontrain.portal.PortalCorridorMask;
 import games.brennan.dungeontrain.portal.PortalCorridorSize;
+import games.brennan.dungeontrain.portal.PortalRoomCell;
 import dev.ryanhcode.sable.sublevel.plot.LevelPlot;
 import games.brennan.dungeontrain.portal.PortalEditMirror;
 import games.brennan.dungeontrain.portal.PortalExitBindings;
@@ -302,6 +304,42 @@ public final class PortalCarriageEvents {
                 continue;
             }
             return entry.getKey();
+        }
+        return null;
+    }
+
+    /**
+     * The single room copy {@code (x, y, z)} stands in, or {@code null} when it isn't in a room body
+     * at all. See {@link PortalRoomCell} for why a caller wants the one copy rather than
+     * {@link #structureBox}, which is the whole tiled rectangle.
+     *
+     * <p>Reads the same two sources as {@link #portalRoomBodyPairKey} — the structure box to find
+     * the pair, {@link PortalCarriageBuilder#allCorridorMask} to find the corridors — so it cannot
+     * disagree with it about where a room ends and a corridor begins.</p>
+     */
+    @Nullable
+    public static PortalRoomCell portalRoomCell(CarriageDims dims, double x, double y, double z) {
+        if (STRUCTURES.isEmpty()) return null;
+        for (PortalStructure structure : STRUCTURES.values()) {
+            if (!structureBox(dims, structure).contains(x, y, z)) continue;
+            PortalCorridorMask mask = PortalCarriageBuilder.allCorridorMask(structure, dims);
+            if (mask.covers(Mth.floor(x), Mth.floor(y), Mth.floor(z))) continue;
+
+            PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims, structure.kind());
+            PortalRoomTiling.Tile tile = structure.tileAt(dims, layout, x, z);
+            BlockPos min = structure.tileOrigin(dims, layout, tile);
+            Vec3i size = structure.roomSize();
+            BoundingBox body = new BoundingBox(
+                min.getX(), min.getY(), min.getZ(),
+                min.getX() + size.getX() - 1, min.getY() + size.getY() - 1, min.getZ() + size.getZ() - 1);
+
+            // Only the corridors standing INSIDE this copy matter; the rest of the structure's
+            // corridors are somewhere the confinement box already rules out.
+            List<BoundingBox> inside = new ArrayList<>();
+            for (BoundingBox corridor : mask.boxes()) {
+                if (corridor.intersects(body)) inside.add(corridor);
+            }
+            return new PortalRoomCell(body, inside);
         }
         return null;
     }
