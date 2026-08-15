@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.builder.BuilderCinematicService;
 import games.brennan.dungeontrain.builder.BuilderSpawn;
+import games.brennan.dungeontrain.builder.BuilderWorldSetup;
 import games.brennan.dungeontrain.debug.DebugFlags;
 import games.brennan.dungeontrain.editor.EditorWelcome;
 import games.brennan.dungeontrain.net.BuilderBoundsPacket;
@@ -199,7 +200,13 @@ public final class PlayerJoinEvents {
         // flag) so the client can fade the sky/fog toward the End across the band.
         DungeonTrainWorldData bandData = DungeonTrainWorldData.get(player.serverLevel().getServer().overworld());
         DungeonTrainNet.sendTo(player, new VoidBandSyncPacket(bandData.dims().length(), bandData.startsWithTrain(), bandData.getTrainY()));
-        // Train Builder build volumes — empty (and therefore inert) in every ordinary world.
+        // Reopening a saved Train Builder world: re-stamp it from what the world records it is
+        // holding, so a world always comes back up as a scene its mode can explain rather than as
+        // whatever the last session's blocks happened to be. No-op in every ordinary world, and in
+        // a builder world created this session (BuilderSetupPacket owns that one).
+        BuilderWorldSetup.reopen(player.serverLevel().getServer().overworld());
+        // Train Builder build volumes — empty (and therefore inert) in every ordinary world. After
+        // the reopen above, so the volumes describe the scene that is actually standing.
         BuilderBoundsPacket.sendTo(player, player.serverLevel().getServer().overworld());
         // And what that build ghosts rather than stands up. Reopening a builder world stamps
         // nothing, so this is the only thing that puts a lifted shell back on screen.
