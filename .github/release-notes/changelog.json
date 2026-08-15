@@ -7015,6 +7015,24 @@
       "released": true,
       "released_in": "v0.559.0",
       "released_at": "2026-08-15T03:09:02Z"
+    },
+    {
+      "id": "short-portal-carriage-and-facing-swap",
+      "version": "0.560.0",
+      "type": "feat",
+      "title": "Shorter portal carriages, and portals that follow where you look",
+      "summary": "Portal corridors now come in two lengths. Alongside the long corridor that stretches into the carriage behind it, there is a new one exactly the size of an ordinary carriage \u2014 and each portal on the train picks between them, so they no longer all feel the same. Crossing has changed too: which side of the portal you are on now follows the direction you are looking rather than how far you have walked. Look toward the room and you are through; turn round and you are back on the train, from anywhere in the corridor.",
+      "highlights": [
+        "A new carriage-length portal corridor, with its own interior and ten furnishing variants",
+        "Roughly half of the portals you meet are the new shorter kind",
+        "Turn around anywhere in a portal corridor to head back to the train \u2014 no need to walk back past the middle",
+        "Standing in a portal doorway no longer moves you; the door you are in is always the real one"
+      ],
+      "pr": 967,
+      "date": "2026-08-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
