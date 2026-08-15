@@ -9,18 +9,11 @@ import games.brennan.dungeontrain.builder.BuilderRoomGhosts;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.portal.PortalRoomMode;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.block.BlockRenderDispatcher;
-import net.minecraft.client.renderer.block.model.BakedQuad;
-import net.minecraft.client.renderer.texture.OverlayTexture;
-import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
 import net.minecraft.core.Vec3i;
 import net.minecraft.util.RandomSource;
-import net.minecraft.world.inventory.InventoryMenu;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
@@ -32,7 +25,6 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
-import net.neoforged.neoforge.client.model.data.ModelData;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
@@ -49,19 +41,16 @@ import java.util.Map;
  * implies: a bedrock skin, a plain of floor and ceiling, or the room repeating away into the
  * distance — see {@link BuilderRoomGhosts} for which is which.</p>
  *
- * <p><b>Textured, from each cell's own block model</b>, the same way
- * {@code BuilderTrackGhostRenderer} draws the line around an open track template. A room ghosts as
- * the room — its stone, its lamps, its floor — because what you are judging is a real space repeating
- * against the one you are standing in, and flat silhouette quads read as an abstract shape hanging in
- * the air. Two rules keep a mass of them legible:</p>
- * <ul>
- *   <li>a face is drawn only when the neighbouring cell is <em>absent</em>, so a run contributes its
- *       outer shell rather than every internal face stacked through it. The lookup wraps around the
- *       tile grid, so the seam where two copies meet is culled as the interior it is;</li>
- *   <li>the batch is culled and depth-writing ({@link RenderType#entityTranslucentCull}) and the
- *       tiles are drawn nearest-first, so the closest surface wins the pixel and nothing ghosted
- *       renders through anything else ghosted.</li>
- * </ul>
+ * <p><b>Textured, from each cell's own block model</b> — {@link BuilderGhostCells}, the same tool
+ * {@code BuilderTrackGhostRenderer} draws the line with. A room ghosts as the room — its stone, its
+ * lamps, its floor — because what you are judging is a real space repeating against the one you are
+ * standing in, and flat silhouette quads read as an abstract shape hanging in the air.</p>
+ *
+ * <p>Two things this class brings to that tool. The culling lookup {@link #neighbourOf wraps around
+ * the tile grid}, so the seam where two copies meet is culled as the interior it is. And the tiles
+ * are ordered nearest-first per frame, which is what makes the shared batch's depth write land the
+ * closest surface on each pixel — sorted by tile rather than by cell, a hundred-odd comparisons
+ * instead of a hundred thousand.</p>
  *
  * <p><b>Drawn, never stamped.</b> No block is placed. That is what keeps the ghosts out of the saved
  * template, out of the dirty check, and out of reach of the block protection — stamping them and
@@ -73,9 +62,6 @@ public final class BuilderRoomGhostRenderer {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    /** Textured, translucent, culled and depth-writing — see the class note. */
-    private static final RenderType GHOST = RenderType.entityTranslucentCull(InventoryMenu.BLOCK_ATLAS);
-
     private static final int RESCAN_INTERVAL_TICKS = 5;
 
     /**
@@ -86,11 +72,6 @@ public final class BuilderRoomGhostRenderer {
      * keeps that down — see {@link #cellsFor} — and this is the backstop under it.</p>
      */
     private static final int MAX_CELLS = 40_000;
-
-    /** Pale blue over the block's own texture, so a ghost still reads as a ghost. */
-    private static final float TINT_R = 0.80F;
-    private static final float TINT_G = 0.86F;
-    private static final float TINT_B = 1.00F;
 
     /**
      * Opacity at the room's own boundary — the Bedrock skin and the first ring of copies.
@@ -278,7 +259,7 @@ public final class BuilderRoomGhostRenderer {
         PoseStack ps = event.getPoseStack();
         Vec3 cam = event.getCamera().getPosition();
         MultiBufferSource.BufferSource buffer = mc.renderBuffers().bufferSource();
-        VertexConsumer vc = buffer.getBuffer(GHOST);
+        VertexConsumer vc = buffer.getBuffer(BuilderGhostCells.GHOST);
         BlockRenderDispatcher blocks = mc.getBlockRenderer();
         RandomSource random = RandomSource.create();
         BlockPos base = origin;
@@ -312,7 +293,7 @@ public final class BuilderRoomGhostRenderer {
         }
 
         ps.popPose();
-        buffer.endBatch(GHOST);
+        buffer.endBatch(BuilderGhostCells.GHOST);
     }
 
     /**
@@ -361,46 +342,9 @@ public final class BuilderRoomGhostRenderer {
                                   Map<BlockPos, BlockState> draw, Map<BlockPos, BlockState> neighbours,
                                   BlockPos base, int offsetX, int offsetZ, float alpha,
                                   boolean wrap, Vec3i size) {
-        for (Map.Entry<BlockPos, BlockState> entry : draw.entrySet()) {
-            BlockPos local = entry.getKey();
-            BlockState state = entry.getValue();
-            int wx = base.getX() + offsetX + local.getX();
-            int wy = base.getY() + local.getY();
-            int wz = base.getZ() + offsetZ + local.getZ();
-
-            ps.pushPose();
-            ps.translate(wx, wy, wz);
-            drawGhost(ps, vc, blocks, state, local, neighbours,
-                    LevelRenderer.getLightColor(level, new BlockPos(wx, wy, wz)),
-                    random, alpha, wrap, size);
-            ps.popPose();
-        }
-    }
-
-    /**
-     * One ghost block, from its own model.
-     *
-     * <p>The unculled quads always go in — that is where a non-cube keeps its geometry, so a torch or
-     * a rail drawn without them would be nothing at all. The per-face quads go in only where the
-     * neighbouring cell is absent, which is what keeps the inside of a mass from being drawn.</p>
-     */
-    private static void drawGhost(PoseStack ps, VertexConsumer vc, BlockRenderDispatcher blocks,
-                                  BlockState state, BlockPos local,
-                                  Map<BlockPos, BlockState> neighbours, int light,
-                                  RandomSource random, float alpha, boolean wrap, Vec3i size) {
-        BakedModel model = blocks.getBlockModel(state);
-        long seed = state.getSeed(local);
-
-        random.setSeed(seed);
-        putQuads(ps, vc, model.getQuads(state, null, random, ModelData.EMPTY, null), light, alpha);
-
-        for (Direction dir : Direction.values()) {
-            if (neighbours.containsKey(neighbourOf(local, dir, wrap, size))) {
-                continue;
-            }
-            random.setSeed(seed);
-            putQuads(ps, vc, model.getQuads(state, dir, random, ModelData.EMPTY, null), light, alpha);
-        }
+        BuilderGhostCells.draw(ps, vc, blocks, level, random, draw, neighbours,
+                next -> neighbourOf(next, wrap, size),
+                new BlockPos(base.getX() + offsetX, base.getY(), base.getZ() + offsetZ), alpha);
     }
 
     /**
@@ -412,8 +356,7 @@ public final class BuilderRoomGhostRenderer {
      * the grid is horizontal, so the floor's underside and the ceiling's top really are outside
      * faces.</p>
      */
-    private static BlockPos neighbourOf(BlockPos local, Direction dir, boolean wrap, Vec3i size) {
-        BlockPos next = local.relative(dir);
+    private static BlockPos neighbourOf(BlockPos next, boolean wrap, Vec3i size) {
         if (!wrap) {
             return next;
         }
@@ -423,11 +366,4 @@ public final class BuilderRoomGhostRenderer {
                 Math.floorMod(next.getZ(), size.getZ()));
     }
 
-    private static void putQuads(PoseStack ps, VertexConsumer vc, List<BakedQuad> quads,
-                                 int light, float alpha) {
-        for (BakedQuad quad : quads) {
-            vc.putBulkData(ps.last(), quad, TINT_R, TINT_G, TINT_B, alpha, light,
-                    OverlayTexture.NO_OVERLAY);
-        }
-    }
 }

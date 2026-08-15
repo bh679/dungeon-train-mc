@@ -8,14 +8,9 @@ import games.brennan.dungeontrain.train.CarriageDims;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.block.BlockRenderDispatcher;
-import net.minecraft.client.renderer.texture.OverlayTexture;
-import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
 import net.minecraft.util.RandomSource;
-import net.minecraft.world.inventory.InventoryMenu;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
@@ -26,13 +21,13 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
-import net.neoforged.neoforge.client.model.data.ModelData;
 
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.UnaryOperator;
 
 /**
  * Draws what surrounds an open track template — the rest of the line, and the rest of a pillar
@@ -51,15 +46,9 @@ import java.util.Map;
  * <p>Textured, from each cell's own block model, which is why the cells carry a {@link BlockState}.
  * A rail ghosts as a rail and stone brick ghosts as stone brick — flat silhouette quads read as an
  * abstract shape hanging in the air, and the whole point here is to judge a real join against real
- * blocks. Two rules keep a mass of them legible:</p>
- * <ul>
- *   <li>a face is only drawn when the neighbouring cell is <em>absent</em>, so a run contributes its
- *       outer shell rather than every internal face stacked through it;</li>
- *   <li>the batch is culled and depth-writing ({@link RenderType#entityTranslucentCull}) and drawn
- *       front-to-back, so the nearest surface wins the pixel and nothing ghosted renders behind
- *       anything else ghosted. The opaque world was drawn before this pass, so solid geometry behind
- *       a ghost still shows through the blend.</li>
- * </ul>
+ * blocks. {@link BuilderGhostCells} does the drawing and holds the two rules that keep a mass of
+ * them legible; the front-to-back ordering those rules depend on is this class's, below, and is
+ * per-cell here because a track scene is one flat pile of cells rather than a grid of repeats.</p>
  *
  * <p>The scene itself is {@link BuilderTrackSceneGhosts}' — the line, the columns under it, the arch
  * between them and the staircases climbing to it, laid out by the generator's own rules and built
@@ -67,9 +56,6 @@ import java.util.Map;
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class BuilderTrackGhostRenderer {
-
-    /** Textured, translucent, culled and depth-writing — see the class note. */
-    private static final RenderType GHOST = RenderType.entityTranslucentCull(InventoryMenu.BLOCK_ATLAS);
 
     /**
      * Ticks between sweeps.
@@ -82,10 +68,6 @@ public final class BuilderTrackGhostRenderer {
     /** Hard ceiling so a pathological build can't stall a frame. */
     private static final int MAX_CELLS = 40_000;
 
-    /** Pale blue over the block's own texture, so a ghost still reads as a ghost. */
-    private static final float TINT_R = 0.80F;
-    private static final float TINT_G = 0.86F;
-    private static final float TINT_B = 1.00F;
     /** Half opacity — solid enough to read the material, faint enough never to be mistaken for one. */
     private static final float ALPHA = 0.5F;
 
@@ -186,7 +168,7 @@ public final class BuilderTrackGhostRenderer {
         PoseStack ps = event.getPoseStack();
         Vec3 cam = event.getCamera().getPosition();
         MultiBufferSource.BufferSource buffer = mc.renderBuffers().bufferSource();
-        VertexConsumer vc = buffer.getBuffer(GHOST);
+        VertexConsumer vc = buffer.getBuffer(BuilderGhostCells.GHOST);
         BlockRenderDispatcher blocks = mc.getBlockRenderer();
         RandomSource random = RandomSource.create();
 
@@ -202,45 +184,12 @@ public final class BuilderTrackGhostRenderer {
             BlockState state = snapshot.get(pos);
             ps.pushPose();
             ps.translate(pos.getX(), pos.getY(), pos.getZ());
-            drawGhost(ps, vc, blocks, state, pos, snapshot, LevelRenderer.getLightColor(level, pos),
-                    random);
+            BuilderGhostCells.drawCell(ps, vc, blocks, state, pos, snapshot,
+                    UnaryOperator.identity(), LevelRenderer.getLightColor(level, pos), random,
+                    ALPHA);
             ps.popPose();
         }
         ps.popPose();
-        buffer.endBatch(GHOST);
-    }
-
-    /**
-     * One ghost block, from its own model.
-     *
-     * <p>The unculled quads always go in — that is where a non-cube keeps its geometry, so a rail
-     * drawn without them would be nothing at all. The per-face quads go in only where the
-     * neighbouring cell is absent, which is what keeps the inside of a run from being drawn.</p>
-     */
-    private static void drawGhost(PoseStack ps, VertexConsumer vc, BlockRenderDispatcher blocks,
-                                  BlockState state, BlockPos pos, Map<BlockPos, BlockState> cells,
-                                  int light, RandomSource random) {
-        BakedModel model = blocks.getBlockModel(state);
-        long seed = state.getSeed(pos);
-
-        random.setSeed(seed);
-        putQuads(ps, vc, model.getQuads(state, null, random, ModelData.EMPTY, null), light);
-
-        for (Direction dir : Direction.values()) {
-            if (cells.containsKey(pos.relative(dir))) {
-                continue;
-            }
-            random.setSeed(seed);
-            putQuads(ps, vc, model.getQuads(state, dir, random, ModelData.EMPTY, null), light);
-        }
-    }
-
-    private static void putQuads(PoseStack ps, VertexConsumer vc,
-                                 List<net.minecraft.client.renderer.block.model.BakedQuad> quads,
-                                 int light) {
-        for (net.minecraft.client.renderer.block.model.BakedQuad quad : quads) {
-            vc.putBulkData(ps.last(), quad, TINT_R, TINT_G, TINT_B, ALPHA, light,
-                    OverlayTexture.NO_OVERLAY);
-        }
+        buffer.endBatch(BuilderGhostCells.GHOST);
     }
 }
