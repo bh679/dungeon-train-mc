@@ -8,6 +8,7 @@ import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.saveddata.SavedData;
+import net.minecraft.world.level.storage.DimensionDataStorage;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
@@ -78,14 +79,44 @@ public final class DimensionalCarriageResizeMemory extends SavedData {
     /** Package-private rather than private so the round-trip is testable without a live level. */
     DimensionalCarriageResizeMemory() {}
 
-    public static DimensionalCarriageResizeMemory get(ServerLevel overworld) {
-        return overworld.getDataStorage().computeIfAbsent(
-            new SavedData.Factory<>(
-                DimensionalCarriageResizeMemory::new,
-                (tag, registries) -> load(tag)
-            ),
-            NAME
+    /**
+     * Pre-rename filename, when this was still called a portal room. Worlds saved before the
+     * rename have their slabs at {@code <world>/data/dungeontrain_portal_room_resize.dat};
+     * {@link #get} adopts that file the first time such a world is opened.
+     */
+    static final String LEGACY_NAME = "dungeontrain_portal_room_resize";
+
+    private static SavedData.Factory<DimensionalCarriageResizeMemory> factory() {
+        return new SavedData.Factory<>(
+            DimensionalCarriageResizeMemory::new,
+            (tag, registries) -> load(tag)
         );
+    }
+
+    /**
+     * This world's slabs, adopting the pre-rename file when that is all the world has.
+     *
+     * <p>Only the filename changed in the rename — the NBT inside is untouched — so the
+     * adopted file is read with the same codec and simply re-registered under the new name.
+     * The legacy {@code .dat} is left on disk rather than deleted, which costs a few
+     * kilobytes and keeps a downgrade to a pre-rename build working.</p>
+     */
+    public static DimensionalCarriageResizeMemory get(ServerLevel overworld) {
+        DimensionDataStorage storage = overworld.getDataStorage();
+
+        DimensionalCarriageResizeMemory current = storage.get(factory(), NAME);
+        if (current != null) return current;
+
+        DimensionalCarriageResizeMemory legacy = storage.get(factory(), LEGACY_NAME);
+        if (legacy != null) {
+            storage.set(NAME, legacy);
+            legacy.setDirty();
+            LOGGER.info("[DungeonTrain] Adopted pre-rename resize memory {}.dat as {}.dat ({} carriage(s)).",
+                LEGACY_NAME, NAME, legacy.slabs.size());
+            return legacy;
+        }
+
+        return storage.computeIfAbsent(factory(), NAME);
     }
 
     private static String key(DimensionalCarriageResize.Axis axis, int size) {

@@ -4,6 +4,13 @@ package games.brennan.dungeontrain.portal;
  * Layout of the hallway corridor <b>inside a single carriage</b>, in carriage-local coordinates
  * ({@code 0,0,0} = the carriage origin, X along the train, Y up, Z across).
  *
+ * <p><b>Not {@link DimensionalCarriageLayout}.</b> Two different things in this package are called
+ * a carriage. This one is the <i>train-side</i> carriage that hosts the portal doorway — a real
+ * carriage on the train, sized to {@code CarriageDims} like every other. The dimensional carriage
+ * is the pocket space the doorway leads into, which is not on the train and has its own free-size
+ * geometry. When you want the space a player walks through after stepping into the portal, you
+ * want the other class.</p>
+ *
  * <p>Derived from the world's {@link games.brennan.dungeontrain.train.CarriageDims} rather than
  * fixed numbers, because {@code CarriagePlacer.sizeMatches} requires every template to match those
  * dims exactly — a portal carriage is the same 9×7×7 box as every other carriage by default, and

@@ -8,6 +8,10 @@ import net.minecraft.core.Vec3i;
  * Where a portal's pocket room sits and how big it is — the pure geometry behind both the built-in
  * room and the authored {@code dimensional_carriage} template.
  *
+ * <p><b>Not {@link PortalCarriageLayout}.</b> That one is the <i>train-side</i> carriage holding
+ * the portal doorway, fixed to {@code CarriageDims}. This one is the space behind the doorway: off
+ * the train, free-size above a floor, and the thing the player actually walks the length of.</p>
+ *
  * <p><b>Free above a floor, on every axis.</b> An authored room may be any size the author likes,
  * subject to two limits per axis:</p>
  *

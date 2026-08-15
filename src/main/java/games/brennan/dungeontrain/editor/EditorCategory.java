@@ -47,7 +47,10 @@ public enum EditorCategory {
     CARRIAGES("Carriages"),
     CONTENTS("Contents"),
     TRACKS("Tracks"),
-    PORTALS("Portals"),
+    // Display name only — the enum constant and its lower-case id() stay "portals" so every
+    // `/dt editor portals ...` command token, plot-snapshot key and on-disk category folder
+    // survived the dimensional-carriage rename untouched.
+    PORTALS("Dimensional Carriages"),
     ARCHITECTURE("Architecture");
 
     private final String displayName;

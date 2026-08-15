@@ -106,6 +106,12 @@ public record PackageListRequestPacket() implements CustomPacketPayload {
         if (!Files.isDirectory(workingDir)) return out;
         for (PackageContents.Section section : PackageContents.SECTIONS) {
             List<String> names = collectNames(workingDir.resolve(section.subdir()));
+            if (names.isEmpty() && section.legacySubdir() != null) {
+                // A package authored before this section was renamed — read it where it
+                // actually is. Reported under the current slug so the client, and the
+                // teleport targets keyed off it, need no legacy case.
+                names = collectNames(workingDir.resolve(section.legacySubdir()));
+            }
             if (!names.isEmpty()) {
                 out.put(section.subdir(), names);
             }
