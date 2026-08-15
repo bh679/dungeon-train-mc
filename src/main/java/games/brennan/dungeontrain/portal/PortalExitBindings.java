@@ -134,7 +134,7 @@ public final class PortalExitBindings {
                                          PortalCarriageRole role) {
         BlockPos origin = boundOriginFor(structure, dims, player, pairKey, role);
         if (origin == null) return null;
-        return chunksLoaded(level, origin, dims) ? origin : null;
+        return chunksLoaded(level, origin, dims, structure.kind()) ? origin : null;
     }
 
     /**
@@ -180,15 +180,16 @@ public final class PortalExitBindings {
      * beside another tile.</p>
      */
     public static boolean corridorLoaded(ServerLevel level, PortalFrames.Origin origin,
-                                         CarriageDims dims) {
+                                         CarriageDims dims, PortalCorridorKind kind) {
         if (origin == null) return false;
         return chunksLoaded(level,
-            BlockPos.containing(origin.x(), origin.y(), origin.z()), dims);
+            BlockPos.containing(origin.x(), origin.y(), origin.z()), dims, kind);
     }
 
-    private static boolean chunksLoaded(ServerLevel level, BlockPos origin, CarriageDims dims) {
+    private static boolean chunksLoaded(ServerLevel level, BlockPos origin, CarriageDims dims,
+                                        PortalCorridorKind kind) {
         if (level == null) return false;
-        int length = PortalCorridorSize.corridorLength(dims);
+        int length = PortalCorridorSize.corridorLength(dims, kind);
         int minChunkX = SectionPos.blockToSectionCoord(origin.getX());
         int maxChunkX = SectionPos.blockToSectionCoord(origin.getX() + length - 1);
         int minChunkZ = SectionPos.blockToSectionCoord(origin.getZ());

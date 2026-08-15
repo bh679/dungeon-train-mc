@@ -51,8 +51,15 @@ public final class PortalCorridorContents {
 
     private PortalCorridorContents() {}
 
-    /** The contents both of this pair's corridors — and both of their twins — are furnished with. */
-    public static synchronized CarriageContents forPair(ServerLevel level, int pairKey) {
+    /**
+     * The contents both of this pair's corridors — and both of their twins — are furnished with.
+     *
+     * <p>The parent is the one authored for this pair's {@link PortalCorridorKind}: the two kinds
+     * furnish different-sized interiors, so they cannot draw from the same group. The pair's kind is
+     * itself fixed for the life of the pair, so this does not weaken the memoisation below.</p>
+     */
+    public static synchronized CarriageContents forPair(ServerLevel level, PortalCorridorKind kind,
+                                                        int pairKey) {
         long worldSeed = level.getSeed();
         if (seed == null || seed != worldSeed) {
             PICKS.clear();
@@ -62,7 +69,7 @@ public final class PortalCorridorContents {
         CarriageContents cached = PICKS.get(pairKey);
         if (cached != null) return cached;
 
-        CarriageContents parent = PortalCarriageBuilder.portalContents();
+        CarriageContents parent = PortalCarriageBuilder.portalContents(kind);
         // Ungated on purpose. A member's gate is tested against a spawn context, and the two stamp
         // sites do not share one — the carriage goes down when the train spawns, the twin from the
         // portal tick handler. Gating here could let them draw differently, which is the single

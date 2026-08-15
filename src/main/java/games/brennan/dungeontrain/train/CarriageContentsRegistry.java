@@ -528,6 +528,18 @@ public final class CarriageContentsRegistry {
         CUSTOMS.clear();
         int bundled = loadBundledScan();
         int config = loadConfigDir();
+
+        // Both corridors' contents are always offered, .nbt on disk or not — the same rule
+        // CarriageVariantRegistry applies to the corridor shells themselves. A corridor stamps its
+        // built-in geometry with no contents at all when none has been authored, so requiring the
+        // file first would hide the plot the file is supposed to be authored in. Weighted 0 in
+        // contents/weights.json, so being registered does not put either in an ordinary carriage's
+        // pick.
+        for (games.brennan.dungeontrain.portal.PortalCorridorKind kind
+                : games.brennan.dungeontrain.portal.PortalCorridorKind.values()) {
+            CUSTOMS.add(games.brennan.dungeontrain.portal.PortalCarriageBuilder
+                .portalContents(kind).id());
+        }
         validateGroups();
 
         LOGGER.info("[DungeonTrain] Carriage contents registry loaded — {} built-in + {} custom ({} bundled, {} config)",

@@ -13,6 +13,7 @@
   "maze": 4,
   "narrative": 3,
   "portal": 0,
+  "portal_short": 0,
   "sand": 0,
   "shop": 8,
   "statue": 1,

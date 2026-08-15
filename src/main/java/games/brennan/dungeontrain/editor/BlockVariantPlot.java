@@ -97,6 +97,14 @@ public interface BlockVariantPlot {
     java.util.Set<BlockPos> positionsWithLockId(int lockId);
 
     /**
+     * This plot's v9 lock-group reference resolver. The menu uses it to tell
+     * live references from dead ones when composing a sync, to reject an Add
+     * that would close a cycle, and to preview what a reference row actually
+     * resolves to.
+     */
+    VariantGroupResolver groupRefs();
+
+    /**
      * Snapshot of every {@code (localPos, lockId)} pair in this plot with
      * {@code lockId > 0}. Defensive copy — callers may iterate freely. Used
      * by the lock-id all-faces overlay to enumerate which cells need labels.
@@ -296,6 +304,7 @@ public interface BlockVariantPlot {
         @Override public int lockIdAt(BlockPos l) { return sidecar.lockIdAt(l); }
         @Override public void setLockId(BlockPos l, int id) { sidecar.setLockId(l, id); }
         @Override public java.util.Set<BlockPos> positionsWithLockId(int id) { return sidecar.positionsWithLockId(id); }
+        @Override public VariantGroupResolver groupRefs() { return sidecar.groupRefs(); }
         @Override public Map<BlockPos, Integer> allLockIds() { return sidecar.allLockIds(); }
         @Override public int nextFreeLockId() { return sidecar.nextFreeLockId(); }
         @Override public java.util.Set<BlockPos> allFlaggedPositions() { return collectPositions(sidecar.entries()); }
@@ -341,6 +350,7 @@ public interface BlockVariantPlot {
         @Override public int lockIdAt(BlockPos l) { return sidecar.lockIdAt(l); }
         @Override public void setLockId(BlockPos l, int id) { sidecar.setLockId(l, id); }
         @Override public java.util.Set<BlockPos> positionsWithLockId(int id) { return sidecar.positionsWithLockId(id); }
+        @Override public VariantGroupResolver groupRefs() { return sidecar.groupRefs(); }
         @Override public Map<BlockPos, Integer> allLockIds() { return sidecar.allLockIds(); }
         @Override public int nextFreeLockId() { return sidecar.nextFreeLockId(); }
         @Override public java.util.Set<BlockPos> allFlaggedPositions() { return collectPositions(sidecar.entries()); }
@@ -388,6 +398,7 @@ public interface BlockVariantPlot {
         @Override public int lockIdAt(BlockPos l) { return sidecar.lockIdAt(l); }
         @Override public void setLockId(BlockPos l, int id) { sidecar.setLockId(l, id); }
         @Override public java.util.Set<BlockPos> positionsWithLockId(int id) { return sidecar.positionsWithLockId(id); }
+        @Override public VariantGroupResolver groupRefs() { return sidecar.groupRefs(); }
         @Override public Map<BlockPos, Integer> allLockIds() { return sidecar.allLockIds(); }
         @Override public int nextFreeLockId() { return sidecar.nextFreeLockId(); }
         @Override public java.util.Set<BlockPos> allFlaggedPositions() { return collectPositions(sidecar.entries()); }
@@ -435,6 +446,7 @@ public interface BlockVariantPlot {
         @Override public int lockIdAt(BlockPos l) { return sidecar.lockIdAt(l); }
         @Override public void setLockId(BlockPos l, int id) { sidecar.setLockId(l, id); }
         @Override public java.util.Set<BlockPos> positionsWithLockId(int id) { return sidecar.positionsWithLockId(id); }
+        @Override public VariantGroupResolver groupRefs() { return sidecar.groupRefs(); }
         @Override public Map<BlockPos, Integer> allLockIds() { return sidecar.allLockIds(); }
         @Override public int nextFreeLockId() { return sidecar.nextFreeLockId(); }
         @Override public java.util.Set<BlockPos> allFlaggedPositions() { return collectPositions(sidecar.entries()); }

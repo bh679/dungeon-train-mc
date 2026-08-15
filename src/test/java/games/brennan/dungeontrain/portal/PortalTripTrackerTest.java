@@ -121,6 +121,49 @@ final class PortalTripTrackerTest {
     }
 
     @Test
+    @DisplayName("dwell() reads the count without advancing it")
+    void dwellReadsWithoutTicking() {
+        UUID player = UUID.randomUUID();
+        assertEquals(0, PortalTripTracker.dwell(player));
+        PortalTripTracker.tickDwell(player, true);
+        assertEquals(1, PortalTripTracker.dwell(player));
+        assertEquals(1, PortalTripTracker.dwell(player), "reading must not advance the count");
+    }
+
+    @Test
+    @DisplayName("the arrival edge is one scan only — the THRESHOLD photo is not asked for twice")
+    void arrivalEdgeFiresOnce() {
+        UUID player = UUID.randomUUID();
+        int edges = 0;
+        for (int scan = 0; scan < PortalTripTracker.DWELL_SCANS + 5; scan++) {
+            boolean was = PortalTripTracker.dwellSatisfied(PortalTripTracker.dwell(player));
+            boolean now = PortalTripTracker.dwellSatisfied(PortalTripTracker.tickDwell(player, true));
+            if (now && !was) edges++;
+        }
+        assertEquals(1, edges, "a single visit is a single arrival");
+    }
+
+    @Test
+    @DisplayName("leaving and coming back is a new arrival — a second visit earns a second photo")
+    void leavingAndReturningIsANewEdge() {
+        UUID player = UUID.randomUUID();
+        for (int scan = 0; scan < PortalTripTracker.DWELL_SCANS; scan++) {
+            PortalTripTracker.tickDwell(player, true);
+        }
+        assertTrue(PortalTripTracker.dwellSatisfied(PortalTripTracker.dwell(player)));
+
+        PortalTripTracker.tickDwell(player, false); // walked back out to the train
+        assertEquals(0, PortalTripTracker.dwell(player));
+
+        for (int scan = 1; scan < PortalTripTracker.DWELL_SCANS; scan++) {
+            assertFalse(PortalTripTracker.dwellSatisfied(PortalTripTracker.tickDwell(player, true)));
+        }
+        boolean was = PortalTripTracker.dwellSatisfied(PortalTripTracker.dwell(player));
+        boolean now = PortalTripTracker.dwellSatisfied(PortalTripTracker.tickDwell(player, true));
+        assertTrue(now && !was, "the second visit crosses the threshold again");
+    }
+
+    @Test
     @DisplayName("forget drops both the trip and the dwell")
     void forgetClearsEverything() {
         UUID player = UUID.randomUUID();

@@ -6,7 +6,7 @@ import games.brennan.dungeontrain.train.CarriageDims;
  * The doorway column through the wall that stands between a portal pair's two corridors — the two
  * blocks separating the entry corridor's far door from the exit corridor's near door.
  *
- * <p>Each corridor overruns into the cart between the pair, leaving
+ * <p>A {@link PortalCorridorKind#LONG} corridor overruns into the cart between the pair, leaving
  * {@link PortalCorridorSize#centreWallWidth} columns of it standing at the exact centre of the group
  * ({@link PortalCarriageBuilder#stampMiddle}). At the default carriage length that is a single block,
  * and the two doors are one block apart through it:</p>
@@ -17,6 +17,11 @@ import games.brennan.dungeontrain.train.CarriageDims;
  *                far door │ near door
  *                    the centre wall
  * </pre>
+ *
+ * <p>A {@link PortalCorridorKind#SHORT} corridor overruns nowhere, so the "wall" is the whole cart —
+ * {@code minX} is 0 and the width is a full carriage length. Everything below still holds: the
+ * doorway column simply runs the length of the cart, which is what turns a severed short pair into a
+ * walk-through corridor rather than a one-block hole.</p>
  *
  * <p><b>What this column is for.</b> A working portal never needs it: the entry corridor swaps you
  * into the twin before you reach its far door, and the exit corridor swaps you out before you reach
@@ -59,13 +64,13 @@ public final class PortalCentreWall {
     private PortalCentreWall() {}
 
     /** Lowest middle-slot-local X of the centre wall: the far edge of the entry corridor's overrun. */
-    public static int minX(CarriageDims dims) {
-        return PortalCorridorSize.overrun(dims);
+    public static int minX(CarriageDims dims, PortalCorridorKind kind) {
+        return PortalCorridorSize.overrun(dims, kind);
     }
 
     /** One past the highest local X of the centre wall. */
-    public static int maxXExclusive(CarriageDims dims) {
-        return minX(dims) + PortalCorridorSize.centreWallWidth(dims);
+    public static int maxXExclusive(CarriageDims dims, PortalCorridorKind kind) {
+        return minX(dims, kind) + PortalCorridorSize.centreWallWidth(dims, kind);
     }
 
     /**
@@ -83,8 +88,9 @@ public final class PortalCentreWall {
      * <p>Cells outside the wall's own X range answer {@code false} — they belong to one of the two
      * corridors, which are stamped separately and must not be touched from here.</p>
      */
-    public static boolean isDoorwayColumn(CarriageDims dims, int dx, int dy, int dz) {
-        return dx >= minX(dims) && dx < maxXExclusive(dims)
+    public static boolean isDoorwayColumn(CarriageDims dims, PortalCorridorKind kind,
+                                          int dx, int dy, int dz) {
+        return dx >= minX(dims, kind) && dx < maxXExclusive(dims, kind)
             && dy >= MIN_Y && dy <= MAX_Y
             && dz == doorZ(dims);
     }
@@ -96,9 +102,9 @@ public final class PortalCentreWall {
      * {@link PortalSever} does when a pair is severed under somebody standing in it, which has no box
      * to walk and only these cells to change.</p>
      */
-    public static int[][] doorwayCells(CarriageDims dims) {
-        int from = minX(dims);
-        int to = maxXExclusive(dims);
+    public static int[][] doorwayCells(CarriageDims dims, PortalCorridorKind kind) {
+        int from = minX(dims, kind);
+        int to = maxXExclusive(dims, kind);
         int z = doorZ(dims);
         int rows = MAX_Y - MIN_Y + 1;
 
@@ -125,15 +131,16 @@ public final class PortalCentreWall {
      * inside; {@code localOfPlot}, which does bound, keeps ignoring them — which is why opening this
      * column is not mirrored into the twin.</p>
      */
-    public static int[][] doorwayCellsFromCorridor(CarriageDims dims, PortalCarriageRole role) {
+    public static int[][] doorwayCellsFromCorridor(CarriageDims dims, PortalCorridorKind kind,
+                                                   PortalCarriageRole role) {
         // The cart's own slot begins one carriage length past the entry corridor's origin, and the
         // exit corridor's origin is a further length on, pulled back by its overrun
         // (PortalCorridorSize.originOffsetX).
         int shift = role == PortalCarriageRole.ENTRY
             ? dims.length()
-            : PortalCorridorSize.overrun(dims) - dims.length();
+            : PortalCorridorSize.overrun(dims, kind) - dims.length();
 
-        int[][] cells = doorwayCells(dims);
+        int[][] cells = doorwayCells(dims, kind);
         for (int[] cell : cells) {
             cell[0] += shift;
         }

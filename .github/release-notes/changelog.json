@@ -6983,6 +6983,72 @@
       "released_in": "v0.557.0",
       "released_at": "2026-08-14T12:26:13Z",
       "pr": 963
+    },
+    {
+      "id": "placed-armor-stands-ride-trains",
+      "version": "0.558.0",
+      "type": "fix",
+      "title": "Armor stands you place on a train now stay with the train",
+      "summary": "Placing an armor stand inside a carriage used to look like nothing happened \u2014 the stand really was created, but it ended up in the carriage's internal building space rather than on the train you were standing on, where nobody could ever see it. Placed stands now ride the carriage they were put on, staying put as the train moves and surviving a reload.",
+      "highlights": [
+        "Armor stands can be placed and displayed inside carriages",
+        "Placed stands stay locked to their carriage while the train moves",
+        "They survive carriage unloading and world reload"
+      ],
+      "date": "2026-08-15",
+      "released": true,
+      "released_in": "v0.558.0",
+      "released_at": "2026-08-15T01:38:28Z"
+    },
+    {
+      "id": "building-threshold-ride-photos",
+      "version": "0.559.0",
+      "type": "feat",
+      "title": "Ride photos for building in a drifting carriage, and for arriving in a Train Dimension",
+      "summary": "The camera that quietly takes photos of your run now watches for two more moments. Leave your marks on a drifting carriage \u2014 somebody else's build that has come to your train \u2014 and it takes a photo of the work. Walk a hallway portal and stay a while in the room on the other side, and it takes a wide shot of wherever you have ended up. Both turn up in your gallery and on the death screen with the rest of the run. The Train Dimension photo waits until you have actually walked in and looked around, so it shows the room rather than the doorway, and it is framed to stay inside the room you are standing in rather than the identical one next door.",
+      "highlights": [
+        "New photo taken when you build in a drifting carriage",
+        "New photo taken once you have arrived inside a Train Dimension",
+        "Train Dimension photos are framed from inside the room you are in, never from the copy next door or from inside a corridor"
+      ],
+      "date": "2026-08-15",
+      "released": true,
+      "released_in": "v0.559.0",
+      "released_at": "2026-08-15T03:09:02Z"
+    },
+    {
+      "id": "short-portal-carriage-and-facing-swap",
+      "version": "0.560.0",
+      "type": "feat",
+      "title": "Shorter portal carriages, and a seamless crossing",
+      "summary": "Portal corridors now come in two lengths. Alongside the long corridor that stretches into the carriage behind it, there is a new one exactly the size of an ordinary carriage \u2014 and each portal on the train picks between them, so they no longer all feel the same. Crossing one is smoother too: the door ahead of you is always a real one, changing your mind partway along works, and standing in a doorway never moves you.",
+      "highlights": [
+        "A new carriage-length portal corridor, with its own interior and ten furnishing variants",
+        "Roughly half of the portals you meet are the new shorter kind",
+        "Change your mind partway along a portal corridor and walk straight back out onto the train",
+        "The door in front of you is always one that opens \u2014 no more walking into a dead one",
+        "Standing in a portal doorway no longer moves you"
+      ],
+      "pr": 967,
+      "date": "2026-08-15",
+      "released": true,
+      "released_in": "v0.560.0",
+      "released_at": "2026-08-15T03:43:22Z"
+    },
+    {
+      "id": "variant-option-group-refs",
+      "version": "0.561.0",
+      "type": "content",
+      "title": "Portal-side carriages hang together",
+      "summary": "Blocks in the portal-side carriages no longer each pick their own look in isolation \u2014 some of them now follow the carriage's stonework, so a run of wall or floor reads as one surface instead of a patchwork. Which blocks follow and which stay independent varies per carriage, so the effect changes as you ride.",
+      "highlights": [
+        "Portal-side contents now share their look between blocks rather than rolling each one separately"
+      ],
+      "pr": 969,
+      "date": "2026-08-15",
+      "released": true,
+      "released_in": "v0.561.0",
+      "released_at": "2026-08-15T05:00:03Z"
     }
   ]
 }

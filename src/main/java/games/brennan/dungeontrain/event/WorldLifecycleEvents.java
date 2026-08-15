@@ -121,6 +121,7 @@ public final class WorldLifecycleEvents {
         games.brennan.dungeontrain.track.variant.TrackVariantStore.clearCache();
         games.brennan.dungeontrain.track.variant.TrackVariantBlocks.clearCache();
         games.brennan.dungeontrain.portal.PortalCorridorContents.clear();
+        games.brennan.dungeontrain.portal.PortalCarriageSelection.clearCorridorKinds();
         LOGGER.debug("[DungeonTrain] Cleared carriage-, half-flatbed-, pillar-, track-template and portal-corridor-contents caches and Trains registry on server stop.");
     }
 }

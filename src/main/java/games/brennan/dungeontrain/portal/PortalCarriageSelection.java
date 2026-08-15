@@ -2,11 +2,16 @@ package games.brennan.dungeontrain.portal;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
+import games.brennan.dungeontrain.train.CarriagePlacer;
+import games.brennan.dungeontrain.train.CarriageVariant;
+import games.brennan.dungeontrain.train.CarriageWeights;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Decides which carriages along the train belong to a portal, and in what part.
@@ -469,6 +474,63 @@ public final class PortalCarriageSelection {
             if (!player.gameMode.getGameModeForPlayer().isCreative()) return false;
         }
         return true;
+    }
+
+    /**
+     * Which of the two corridor shapes this pair draws — see {@link PortalCorridorKind}.
+     *
+     * <p><b>Drawn from the corridor variants' own weights</b>, with the pair's key as the index, so
+     * {@code templates/weights.json} is the one place the mix is stated: both at 1 is the shipped
+     * coin flip, {@code portal_short} at 0 turns short corridors off, and a 3:1 there is a 3:1 on the
+     * train. Reusing {@code CarriagePlacer}'s own weighted pick rather than a private coin means the
+     * numbers in that file mean the same thing here as everywhere else.</p>
+     *
+     * <p><b>Why the weights and not a hash.</b> A weight of 0 was what used to keep the portal
+     * templates out of the ordinary carriage pool, and that job has moved to
+     * {@link PortalCarriageBuilder#isPortalVariant} — which frees the weights to say the one thing
+     * about a portal template a number can usefully say.</p>
+     *
+     * <p><b>Memoised, not merely deterministic — and it has to be.</b> The weights are the one input
+     * to the whole selection that a player can move mid-session ({@code /dungeontrain editor
+     * weight}), and a corridor exists twice: as a carriage on the train and as a static twin
+     * underground, stamped by independent calls that pass no state between them. A re-weighting
+     * between those two calls would stamp a 9-block carriage against a 13-block twin and tear the
+     * crossing open. Caching the draw per {@code (worldSeed, pairKey)} means a pair keeps its shape
+     * for the life of the server, exactly as {@link PortalCorridorContents} caches a pair's
+     * furnishing for the same reason. New numbers take effect for pairs first drawn afterwards, and
+     * for every pair on the next start.</p>
+     */
+    public static synchronized PortalCorridorKind corridorKindFor(ServerLevel level, int pairKey) {
+        long worldSeed = seed(level);
+        if (kindSeed == null || kindSeed != worldSeed) {
+            KIND_PICKS.clear();
+            kindSeed = worldSeed;
+        }
+        return KIND_PICKS.computeIfAbsent(pairKey,
+            key -> corridorKindFor(key, worldSeed, CarriageWeights.current()));
+    }
+
+    /** Which world {@link #KIND_PICKS} belongs to — a second world must not inherit the first's draws. */
+    private static Long kindSeed;
+
+    private static final Map<Integer, PortalCorridorKind> KIND_PICKS = new HashMap<>();
+
+    /** Drop every cached corridor-kind draw — called when the server stops. */
+    public static synchronized void clearCorridorKinds() {
+        KIND_PICKS.clear();
+        kindSeed = null;
+    }
+
+    /** {@link #corridorKindFor(ServerLevel, int)} with its inputs supplied — the testable form. */
+    public static PortalCorridorKind corridorKindFor(int pairKey, long worldSeed,
+                                                     CarriageWeights weights) {
+        CarriageVariant picked = CarriagePlacer.weightedSeededPick(
+            worldSeed, pairKey, PortalCarriageBuilder.corridorVariants(), weights);
+        // An all-zero pool falls back to an unweighted pick rather than to nothing, so "both off"
+        // still has to resolve to a shape. LONG is the one that shipped first.
+        return picked.equals(PortalCarriageBuilder.portalVariant(PortalCorridorKind.SHORT))
+            ? PortalCorridorKind.SHORT
+            : PortalCorridorKind.LONG;
     }
 
     /**

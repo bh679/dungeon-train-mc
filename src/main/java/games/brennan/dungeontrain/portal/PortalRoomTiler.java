@@ -191,7 +191,7 @@ public final class PortalRoomTiler {
      */
     private static PortalStructure stampTile(ServerLevel level, CarriageDims dims,
                                              PortalStructure structure, Tile tile, int pairKey) {
-        PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims);
+        PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims, structure.kind());
         BlockPos origin = structure.tileOrigin(dims, layout, tile);
         Vec3i size = structure.roomSize();
 
@@ -274,7 +274,7 @@ public final class PortalRoomTiler {
      */
     private static PortalStructure eraseTile(ServerLevel level, CarriageDims dims,
                                              PortalStructure structure, Tile tile, int pairKey) {
-        PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims);
+        PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims, structure.kind());
         BlockPos origin = structure.tileOrigin(dims, layout, tile);
         Vec3i size = structure.roomSize();
 
@@ -483,7 +483,7 @@ public final class PortalRoomTiler {
      */
     private static void eachFaceCell(ServerLevel level, CarriageDims dims, PortalStructure structure,
                                      Tile tile, int dx, int dz, boolean interiorOnly, FaceCell body) {
-        PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims);
+        PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims, structure.kind());
         BlockPos origin = structure.tileOrigin(dims, layout, tile);
         Vec3i size = structure.roomSize();
         // Masked here rather than in each of the three face operations, so none of them can forget:
@@ -547,7 +547,7 @@ public final class PortalRoomTiler {
 
     /** A copy's world box, with the block of margin its closed faces and skin occupy. */
     private static BoundingBox tileBox(CarriageDims dims, PortalStructure structure, Tile tile) {
-        PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims);
+        PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims, structure.kind());
         BlockPos origin = structure.tileOrigin(dims, layout, tile);
         Vec3i size = structure.roomSize();
         return new BoundingBox(

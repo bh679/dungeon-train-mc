@@ -26,15 +26,15 @@ class PortalCorridorSizeTest {
     void defaultDims_give13AndAOneBlockWall() {
         CarriageDims d = CarriageDims.DEFAULT;
 
-        assertEquals(4, PortalCorridorSize.overrun(d));
-        assertEquals(13, PortalCorridorSize.corridorLength(d));
-        assertEquals(1, PortalCorridorSize.centreWallWidth(d));
+        assertEquals(4, PortalCorridorSize.overrun(d, PortalCorridorKind.LONG));
+        assertEquals(13, PortalCorridorSize.corridorLength(d, PortalCorridorKind.LONG));
+        assertEquals(1, PortalCorridorSize.centreWallWidth(d, PortalCorridorKind.LONG));
 
         // The picture in PortalCorridorSize's javadoc: a group of three is 27 blocks, the entry runs
         // 0..12, the exit 14..26, and x=13 is the wall between them.
         int group = 3 * d.length();
-        int entryEnd = PortalCorridorSize.corridorLength(d) - 1;
-        int exitStart = group - PortalCorridorSize.corridorLength(d);
+        int entryEnd = PortalCorridorSize.corridorLength(d, PortalCorridorKind.LONG) - 1;
+        int exitStart = group - PortalCorridorSize.corridorLength(d, PortalCorridorKind.LONG);
         assertEquals(12, entryEnd);
         assertEquals(14, exitStart);
         assertEquals(1, exitStart - entryEnd - 1);
@@ -44,14 +44,14 @@ class PortalCorridorSizeTest {
     @DisplayName("The exit corridor is pulled back by the overrun; the entry keeps its slot origin")
     void originOffset_movesOnlyTheExit() {
         CarriageDims d = CarriageDims.DEFAULT;
-        assertEquals(0, PortalCorridorSize.originOffsetX(PortalCarriageRole.ENTRY, d));
-        assertEquals(-4, PortalCorridorSize.originOffsetX(PortalCarriageRole.EXIT, d));
+        assertEquals(0, PortalCorridorSize.originOffsetX(PortalCarriageRole.ENTRY, d, PortalCorridorKind.LONG));
+        assertEquals(-4, PortalCorridorSize.originOffsetX(PortalCarriageRole.EXIT, d, PortalCorridorKind.LONG));
 
         // Pulled back by exactly enough that the corridor still ends flush with its slot: the far
         // door is the way back onto the train and cannot move.
         int slot2Origin = 2 * d.length();
-        int exitOrigin = slot2Origin + PortalCorridorSize.originOffsetX(PortalCarriageRole.EXIT, d);
-        assertEquals(3 * d.length(), exitOrigin + PortalCorridorSize.corridorLength(d));
+        int exitOrigin = slot2Origin + PortalCorridorSize.originOffsetX(PortalCarriageRole.EXIT, d, PortalCorridorKind.LONG);
+        assertEquals(3 * d.length(), exitOrigin + PortalCorridorSize.corridorLength(d, PortalCorridorKind.LONG));
     }
 
     @Test
@@ -59,11 +59,11 @@ class PortalCorridorSizeTest {
     void everyLength_leavesAWallAndFitsTheGroup() {
         for (int length = CarriageDims.MIN_LENGTH; length <= CarriageDims.MAX_LENGTH; length++) {
             CarriageDims d = dims(length);
-            int corridor = PortalCorridorSize.corridorLength(d);
-            int wall = PortalCorridorSize.centreWallWidth(d);
+            int corridor = PortalCorridorSize.corridorLength(d, PortalCorridorKind.LONG);
+            int wall = PortalCorridorSize.centreWallWidth(d, PortalCorridorKind.LONG);
 
             assertTrue(wall >= 1, "length " + length + " must leave at least one block of wall");
-            assertEquals(length, 2 * PortalCorridorSize.overrun(d) + wall,
+            assertEquals(length, 2 * PortalCorridorSize.overrun(d, PortalCorridorKind.LONG) + wall,
                 "length " + length + ": the two overruns plus the wall are exactly the cart");
             assertEquals(3 * length, 2 * corridor + wall,
                 "length " + length + ": the pair plus the wall fill the group exactly");
@@ -78,8 +78,8 @@ class PortalCorridorSizeTest {
             CarriageDims d = dims(length);
             // Throws if the corridor length fell outside [MIN_LENGTH, MAX_LENGTH] — which is the
             // whole point of the cap in overrun().
-            CarriageDims corridor = PortalCorridorSize.corridorDims(d);
-            assertEquals(PortalCorridorSize.corridorLength(d), corridor.length());
+            CarriageDims corridor = PortalCorridorSize.corridorDims(d, PortalCorridorKind.LONG);
+            assertEquals(PortalCorridorSize.corridorLength(d, PortalCorridorKind.LONG), corridor.length());
             assertEquals(d.width(), corridor.width());
             assertEquals(d.height(), corridor.height());
         }
@@ -90,18 +90,56 @@ class PortalCorridorSizeTest {
     void atMaxLength_theCorridorIsJustTheCarriage() {
         CarriageDims d = dims(CarriageDims.MAX_LENGTH);
 
-        assertEquals(0, PortalCorridorSize.overrun(d));
-        assertEquals(CarriageDims.MAX_LENGTH, PortalCorridorSize.corridorLength(d));
-        assertEquals(CarriageDims.MAX_LENGTH, PortalCorridorSize.centreWallWidth(d));
-        assertEquals(0, PortalCorridorSize.originOffsetX(PortalCarriageRole.EXIT, d));
+        assertEquals(0, PortalCorridorSize.overrun(d, PortalCorridorKind.LONG));
+        assertEquals(CarriageDims.MAX_LENGTH, PortalCorridorSize.corridorLength(d, PortalCorridorKind.LONG));
+        assertEquals(CarriageDims.MAX_LENGTH, PortalCorridorSize.centreWallWidth(d, PortalCorridorKind.LONG));
+        assertEquals(0, PortalCorridorSize.originOffsetX(PortalCarriageRole.EXIT, d, PortalCorridorKind.LONG));
     }
 
     @Test
     @DisplayName("An even carriage length leaves a two-block wall rather than half of one")
     void evenLength_leavesTwo() {
         CarriageDims d = dims(10);
-        assertEquals(4, PortalCorridorSize.overrun(d));
-        assertEquals(14, PortalCorridorSize.corridorLength(d));
-        assertEquals(2, PortalCorridorSize.centreWallWidth(d));
+        assertEquals(4, PortalCorridorSize.overrun(d, PortalCorridorKind.LONG));
+        assertEquals(14, PortalCorridorSize.corridorLength(d, PortalCorridorKind.LONG));
+        assertEquals(2, PortalCorridorSize.centreWallWidth(d, PortalCorridorKind.LONG));
+    }
+
+    @Test
+    @DisplayName("A SHORT corridor is exactly its carriage slot, at every legal length")
+    void shortKind_isExactlyTheSlot() {
+        for (int length = CarriageDims.MIN_LENGTH; length <= CarriageDims.MAX_LENGTH; length++) {
+            CarriageDims d = dims(length);
+            PortalCorridorKind k = PortalCorridorKind.SHORT;
+
+            assertEquals(0, PortalCorridorSize.overrun(d, k),
+                "length " + length + ": a short corridor reaches into no part of the cart");
+            assertEquals(length, PortalCorridorSize.corridorLength(d, k));
+            assertEquals(d, PortalCorridorSize.corridorDims(d, k),
+                "length " + length + ": a short corridor's box IS the carriage's — which is what "
+                    + "lets CarriagePlacer.variantDims leave portal_short alone");
+            // Neither end moves: with no overrun there is nothing to pull the exit back by.
+            assertEquals(0, PortalCorridorSize.originOffsetX(PortalCarriageRole.ENTRY, d, k));
+            assertEquals(0, PortalCorridorSize.originOffsetX(PortalCarriageRole.EXIT, d, k));
+        }
+    }
+
+    @Test
+    @DisplayName("Under SHORT the whole cart survives as the wall between the pair")
+    void shortKind_leavesTheWholeCartStanding() {
+        CarriageDims d = CarriageDims.DEFAULT;
+        PortalCorridorKind k = PortalCorridorKind.SHORT;
+
+        // Not one block but nine: the corridors stop at their slot boundaries, so what stands
+        // between them is a whole carriage. PortalCentreWall's arithmetic follows this without a
+        // special case, which is what makes a severed short pair a walk-through rather than a
+        // one-block hole in a sealed cart.
+        assertEquals(d.length(), PortalCorridorSize.centreWallWidth(d, k));
+        assertEquals(0, PortalCentreWall.minX(d, k));
+        assertEquals(d.length(), PortalCentreWall.maxXExclusive(d, k));
+
+        // The group still adds up exactly, as it does for LONG.
+        assertEquals(3 * d.length(),
+            2 * PortalCorridorSize.corridorLength(d, k) + PortalCorridorSize.centreWallWidth(d, k));
     }
 }
