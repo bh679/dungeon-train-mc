@@ -28,6 +28,7 @@ import games.brennan.dungeontrain.portal.PortalPuppets;
 import games.brennan.dungeontrain.portal.PortalRegistry;
 import games.brennan.dungeontrain.portal.PortalRoomLayout;
 import games.brennan.dungeontrain.portal.PortalRoomMobs;
+import games.brennan.dungeontrain.portal.PortalRoomRescue;
 import games.brennan.dungeontrain.portal.PortalRoomTiler;
 import games.brennan.dungeontrain.portal.PortalRoomTiling;
 import games.brennan.dungeontrain.portal.PortalSever;
@@ -259,6 +260,27 @@ public final class PortalCarriageEvents {
 
     /** Pair key → the game tick its corridors were first found inert. Cleared when they come back. */
     private static final Map<Integer, Long> WAITING_SINCE = new HashMap<>();
+
+    /**
+     * How long a room whose train is <b>gone</b> is left alone before its occupants are carried out,
+     * in ticks — two seconds, the same instant the message used to appear.
+     *
+     * <p>Not immediate, because the state can be momentary and a teleport is a heavy way to answer a
+     * hiccup: the freeze, the force-load ticket and the reload-from-holding all get their chance
+     * inside this window, and a corridor that comes back clears the clock so nobody is moved at all.
+     * Not longer, because past it the room is sealed and repeating forever, and every extra second is
+     * a second the player spends looking for a way out that does not exist.</p>
+     */
+    private static final int RESCUE_DELAY_TICKS = 40;
+
+    /**
+     * The same, for a group being brought back from holding — five seconds.
+     *
+     * <p>Longer on purpose. This one is actively recovering and normally surfaces within a few ticks,
+     * and walking out through the corridor is a better way to leave than being teleported, so the
+     * teleport waits for the recovery to fail rather than racing it.</p>
+     */
+    private static final int RESCUE_DELAY_REVIVING_TICKS = 100;
 
     /** Said while the pair's carriage group is on its way back from holding. */
     private static final String WAITING_KEY_REVIVING = "chat.dungeontrain.portal.reviving";
@@ -680,12 +702,63 @@ public final class PortalCarriageEvents {
             }
 
             boolean reviving = status == PortalCarriageRevival.Status.REVIVING;
-            tellWaiting(level, players, dims, entry.getValue(), pairKey,
+            PortalStructure structure = entry.getValue();
+
+            // Past the grace, this room is not getting its train back on its own, and the player is
+            // in a sealed room that repeats forever. Carry them out rather than keep describing it.
+            //
+            // The grace is what makes this safe rather than trigger-happy: the freeze, the force-load
+            // ticket and the reload-from-holding all get their chance first, and a corridor that comes
+            // back — which is nearly always — clears WAITING_SINCE and this never runs. REVIVING waits
+            // longer than GONE because it is actively recovering, and walking out through a corridor
+            // beats being teleported.
+            long inertFor = inertTicks(level, pairKey);
+            long grace = reviving ? RESCUE_DELAY_REVIVING_TICKS : RESCUE_DELAY_TICKS;
+            if (inertFor >= grace && rescueOccupants(level, players, dims, structure, pairKey)) {
+                continue;
+            }
+
+            tellWaiting(level, players, dims, structure, pairKey,
                 reviving
                     ? PortalSwapDiagnostics.Reason.GROUP_REVIVING
                     : PortalSwapDiagnostics.Reason.PAIR_NOT_WALKED,
                 reviving ? WAITING_KEY_REVIVING : WAITING_KEY_NO_TRAIN);
         }
+    }
+
+    /**
+     * How long this pair's corridors have led nowhere, in ticks, starting the clock if this is the
+     * first tick of it.
+     *
+     * <p>One clock shared by the rescue and the message, so "long enough to say something" and "long
+     * enough to carry somebody out" are measured from the same instant — and so a pair that recovers
+     * resets both at once, in {@code handlePortalCarriage}.</p>
+     */
+    private static long inertTicks(ServerLevel level, int pairKey) {
+        long now = level.getGameTime();
+        return now - WAITING_SINCE.computeIfAbsent(pairKey, key -> now);
+    }
+
+    /**
+     * Put everybody in this room back on the train.
+     *
+     * @return true if anybody was moved — false when there is no settled carriage anywhere to land
+     *         on, which is the one case where saying so is still all that can be done
+     */
+    private static boolean rescueOccupants(ServerLevel level, List<ServerPlayer> players,
+                                           CarriageDims dims, PortalStructure structure, int pairKey) {
+        AABB box = structureBox(dims, structure);
+        boolean any = false;
+        for (ServerPlayer player : players) {
+            if (!box.contains(player.getX(), player.getY(), player.getZ())) continue;
+            if (!PortalRoomRescue.returnToTrain(level, player, structure, pairKey)) return false;
+            // Landing on a deck must not be read as walking into a corridor on the tick they arrive.
+            COOLDOWNS.put(player.getUUID(), level.getGameTime() + SWAP_COOLDOWN_TICKS);
+            any = true;
+        }
+        // Nobody in the box is not a failure — the caller only reaches here with somebody inside, but
+        // they can leave between the two tests, and there is nothing left to tell them either way.
+        return any;
     }
 
     /**
@@ -708,10 +781,13 @@ public final class PortalCarriageEvents {
         // Nothing said for the first couple of seconds — see WAITING_MESSAGE_DELAY_TICKS. The log
         // above still carries it from the first tick, so a recovery that never surfaces to the player
         // is still diagnosable afterwards.
-        long now = level.getGameTime();
-        long since = WAITING_SINCE.computeIfAbsent(pairKey, key -> now);
-        if (now - since < WAITING_MESSAGE_DELAY_TICKS) return;
+        //
+        // Reached only while the rescue has not fired: either it is still inside its grace, or there
+        // is no settled carriage anywhere to land on. The second is the one case left where telling
+        // somebody their corridors lead nowhere is the whole of what can be done.
+        if (inertTicks(level, pairKey) < WAITING_MESSAGE_DELAY_TICKS) return;
 
+        long now = level.getGameTime();
         if (now % WAITING_MESSAGE_PERIOD_TICKS != 0) return;
         AABB box = structureBox(dims, structure);
         for (ServerPlayer player : players) {

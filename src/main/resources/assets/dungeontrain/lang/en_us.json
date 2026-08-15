@@ -337,6 +337,7 @@
   "chat.dungeontrain.bed.no_respawn.5": "The train is your only respawn point.",
   "chat.dungeontrain.portal.reviving": "This corridor has lost track of its train. Hold on…",
   "chat.dungeontrain.portal.no_train": "This room has lost its train. Its corridors lead nowhere.",
+  "chat.dungeontrain.portal.returned": "This room lost its train — you've been put back on it.",
   "chat.dungeontrain.advancements_hint.1": "All aboard! Press %s to see all your Dungeon Train advancements.",
   "chat.dungeontrain.advancements_hint.2": "All aboard! Your journey log awaits - press %s.",
   "chat.dungeontrain.advancements_hint.3": "Next stop: your achievements. Press %s to view all Dungeon Train advancements.",
