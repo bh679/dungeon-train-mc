@@ -609,6 +609,12 @@ public final class ClientDisplayConfig {
      * <p>Defaults {@code true}, and to {@code true} pre-load as well — unlike the framerate
      * throttle, this one has no vanilla behaviour to leave alone, and a config that hasn't loaded
      * yet should show the same thing a loaded one does.</p>
+     *
+     * <p><b>The slots and the pads, not the shell.</b> Authoring a carriage room from inside lifts
+     * the carriage's own walls and roof out of the world so the rest of the train is visible
+     * ({@code BuilderGhostCells}), and those are drawn whatever this says. They are not context you
+     * can take or leave — they are the carriage, and switching this off to hide them would leave a
+     * room with no walls and nothing drawn where they were.</p>
      */
     public static boolean isBuilderGhostTrainEnabled() {
         return !isLoaded() || BUILDER_GHOST_TRAIN.get();

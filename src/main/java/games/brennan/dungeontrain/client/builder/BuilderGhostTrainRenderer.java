@@ -88,6 +88,15 @@ public final class BuilderGhostTrainRenderer {
     private static volatile BlockPos origin = BlockPos.ZERO;
     private static volatile BuilderGhostSlots.Ghosts ghosts =
             new BuilderGhostSlots.Ghosts(List.of(), List.of(), 0);
+    /**
+     * Where the flatbed pads go, BACK first.
+     *
+     * <p>Read from {@link BuilderGhostSlots#padMinXFor} rather than off {@link #ghosts}, because
+     * {@code ghosts} answers "which carriage slots are empty" and a fully parked Train Outside group
+     * has none — while still having pads, which is the case that had them standing solid and washed
+     * red at both ends of the train.</p>
+     */
+    private static volatile List<Integer> padMinX = List.of();
     /** Whether the carriage on the track has had its shell lifted, and so needs it drawn back. */
     private static volatile boolean shellLifted = false;
     /**
@@ -124,6 +133,7 @@ public final class BuilderGhostTrainRenderer {
     private static void clear() {
         carriage = Map.of();
         ghosts = new BuilderGhostSlots.Ghosts(List.of(), List.of(), 0);
+        padMinX = List.of();
         shellLifted = false;
         drawSurroundings = false;
     }
@@ -159,7 +169,10 @@ public final class BuilderGhostTrainRenderer {
         CarriageDims dims = new CarriageDims(length, width, height);
         BuilderGhostSlots.Ghosts slots = BuilderGhostSlots.of(parked.minX(), volumes.size(), full,
                 length, CarriagePlacer.halfPadLen(dims));
-        if (slots.isEmpty() && shell.isEmpty()) {
+        // The pads separately from the slots: a fully parked group has no empty slot to ghost and
+        // still has pads, which is exactly the case that was leaving them solid and washed red.
+        List<Integer> pads = BuilderGhostSlots.padMinXFor(full, length, CarriagePlacer.halfPadLen(dims));
+        if (slots.isEmpty() && shell.isEmpty() && pads.isEmpty()) {
             clear();
             return;
         }
@@ -191,6 +204,7 @@ public final class BuilderGhostTrainRenderer {
 
         origin = min;
         ghosts = slots;
+        padMinX = pads;
         shellLifted = !shell.isEmpty();
         drawSurroundings = surroundings;
         carriage = found;
@@ -206,8 +220,10 @@ public final class BuilderGhostTrainRenderer {
         Map<BlockPos, BlockState> backPad = BuilderGhostCellsState.backPad();
         Map<BlockPos, BlockState> frontPad = BuilderGhostCellsState.frontPad();
         BuilderGhostSlots.Ghosts slots = ghosts;
+        List<Integer> pads = padMinX;
         boolean surroundings = drawSurroundings;
-        if (cells.isEmpty() || (!shellLifted && (slots.isEmpty() || !surroundings))) {
+        boolean anythingAround = surroundings && (!slots.carriageMinX().isEmpty() || !pads.isEmpty());
+        if (cells.isEmpty() || (!shellLifted && !anythingAround)) {
             return;
         }
 
@@ -244,12 +260,11 @@ public final class BuilderGhostTrainRenderer {
             }
             // The flatbed pads capping the group, sitting on the train floor like the real ones. The
             // pads are listed low-X first, which is the BACK one — the order they were captured in.
-            List<Integer> padXs = slots.padMinX();
-            for (int i = 0; i < padXs.size(); i++) {
+            for (int i = 0; i < pads.size(); i++) {
                 Map<BlockPos, BlockState> pad = i == 0 ? backPad : frontPad;
                 if (!pad.isEmpty()) {
                     batches.add(new Batch(pad, pad,
-                            new BlockPos(padXs.get(i), BuilderWorldLayout.TRAIN_Y, base.getZ())));
+                            new BlockPos(pads.get(i), BuilderWorldLayout.TRAIN_Y, base.getZ())));
                 }
             }
         }

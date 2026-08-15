@@ -66,12 +66,9 @@ public final class BuilderGhostSlots {
         if (parked != 1 || full <= 1 || carriageLength <= 0) {
             return EMPTY;
         }
-        // Pads only wrap a run of more than one, exactly as usesPads says — so a group that would
-        // not have had them does not get ghosts of them either.
-        int pad = BuilderWorldLayout.usesPads(full) ? Math.max(0, halfPadLen) : 0;
+        int pad = padLengthFor(full, halfPadLen);
         int total = full * carriageLength + 2 * pad;
-        int startX = -total / 2;
-        int enclosedX = startX + pad;
+        int enclosedX = -total / 2 + pad;
 
         List<Integer> carriages = new ArrayList<>();
         for (int i = 0; i < full; i++) {
@@ -80,9 +77,41 @@ public final class BuilderGhostSlots {
                 carriages.add(x);
             }
         }
-        List<Integer> pads = pad <= 0
-                ? List.of()
-                : List.of(startX, enclosedX + full * carriageLength);
-        return new Ghosts(carriages, pads, pad);
+        return new Ghosts(carriages, padMinXFor(full, carriageLength, halfPadLen), pad);
+    }
+
+    /**
+     * Where the flatbed pads of a {@code full}-carriage group sit, whatever is parked inside it.
+     *
+     * <p>Split out of {@link #of} because the pads and the empty carriage slots stopped being the
+     * same question. A slot is only worth ghosting when it is <em>empty</em>, so {@code of} answers
+     * nothing for a fully parked group — but the pads are ghosted either way. They are the frame
+     * around the build rather than part of it ({@code BuilderBounds} deliberately leaves them out of
+     * bounds), which is why they were being drawn solid and washed red: real blocks nobody may
+     * touch, in a world where the red wash means "this will not be saved".</p>
+     *
+     * <p>Same arithmetic {@link BuilderWorldLayout#trainStartX} stamps from — {@code [BACK pad |
+     * n × enclosed | FRONT pad]}, centred on the origin — and shared with {@code of} rather than
+     * written twice, so a ghost pad cannot drift off a real one.</p>
+     *
+     * @return the low-X block of each pad, BACK first, or empty for a group that has none
+     */
+    public static List<Integer> padMinXFor(int full, int carriageLength, int halfPadLen) {
+        int pad = padLengthFor(full, halfPadLen);
+        if (pad <= 0 || carriageLength <= 0) {
+            return List.of();
+        }
+        int startX = -(full * carriageLength + 2 * pad) / 2;
+        return List.of(startX, startX + pad + full * carriageLength);
+    }
+
+    /**
+     * How far a pad runs on X for this group, or 0 for a group that has none.
+     *
+     * <p>Pads only wrap a run of more than one, exactly as {@link BuilderWorldLayout#usesPads} says —
+     * so a group that would not have had them does not get ghosts of them either.</p>
+     */
+    private static int padLengthFor(int full, int halfPadLen) {
+        return BuilderWorldLayout.usesPads(full) ? Math.max(0, halfPadLen) : 0;
     }
 }

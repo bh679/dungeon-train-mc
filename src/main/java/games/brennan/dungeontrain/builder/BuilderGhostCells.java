@@ -16,6 +16,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -25,13 +26,15 @@ import java.util.Map;
  *
  * <ul>
  *   <li><b>The flatbed pads</b> that cap a carriage group. A one-carriage world never stamps them
- *       ({@link BuilderWorldLayout#usesPads} is false for one), but a group's silhouette is the
- *       pads' whole reason for existing, so they are drawn back in.</li>
- *   <li><b>The shell above the floor</b>, when you are authoring a carriage room from inside. The
- *       room is what you are building; the carriage around it is the thing you are building it
- *       <em>into</em>. Leaving it solid means the only thing visible from where you work is the
- *       inside of a box — the rest of the train, which is the point of standing in the middle of
- *       one, is behind an opaque wall.</li>
+ *       ({@link BuilderWorldLayout#usesPads} is false for one) and a full group stamps them solid —
+ *       where, sitting outside the build volume by design, they were washed red as blocks that will
+ *       never be saved. Neither reads as what a pad is: it frames the silhouette, and it is not
+ *       yours to build on. That is what a ghost says.</li>
+ *   <li><b>The shell</b>, when you are authoring a carriage room from inside. The room is what you
+ *       are building; the carriage around it — walls, roof and floor — is the thing you are building
+ *       it <em>into</em>. Leaving it solid means the only thing visible from where you work is the
+ *       inside of a box, with the rest of the train, which is the point of standing in the middle of
+ *       one, behind an opaque wall.</li>
  * </ul>
  *
  * <p><b>Stamped, captured, erased.</b> Both are lifted out of the world rather than modelled from
@@ -42,9 +45,11 @@ import java.util.Map;
  * whatever the parts overlay put on it: this build's doors and this build's windows, not the base
  * variant's.</p>
  *
- * <p><b>The floor course stays.</b> Only cells above {@code y == 0} are lifted. It is what you
- * stand on and what the contents rest on, and a room whose floor is a ghost is a room you cannot
- * build in.</p>
+ * <p><b>The floor goes too.</b> The lifted set is the exact complement of the box a carriage room is
+ * saved from ({@code CarriageContentsPlacer.interiorOrigin}, one in from every face) — see
+ * {@link #onSkin} — so the deck under your feet is shell like the walls are, and ghosting the walls
+ * while leaving it solid would have drawn a line through the carriage that means nothing to anyone
+ * building in it. A builder world is creative and flying, so there is nothing to fall into.</p>
  *
  * <p>The erase runs through {@link SilentBlockOps#setBlockSilentNoCascade}, which is the load-bearing
  * detail: a plain {@code UPDATE_ALL} removal fires the neighbour cascade, and every torch, button
@@ -94,13 +99,14 @@ public final class BuilderGhostCells {
      */
     public static Cells lift(ServerLevel level, CarriageDims dims, BuilderMode mode,
                              BuilderNewOptions.SubType subType, int carriages) {
-        if (carriages != 1 || mode == null) {
+        if (mode == null || carriages <= 0) {
             return Cells.EMPTY;
         }
-        BoundingBox parked = BuilderBounds.buildVolumes(carriages, dims).get(0);
-        return new Cells(liftShell(level, dims, mode, subType, parked),
-                liftPad(level, dims, mode, parked, CarriagePlacer.HalfPadSide.BACK),
-                liftPad(level, dims, mode, parked, CarriagePlacer.HalfPadSide.FRONT));
+        // The pads go whatever is parked; the shell only makes sense around the single carriage a
+        // room is authored in. See liftPad and liftShell for why the two answer differently.
+        return new Cells(liftShell(level, dims, mode, subType, carriages),
+                liftPad(level, dims, mode, CarriagePlacer.HalfPadSide.BACK),
+                liftPad(level, dims, mode, CarriagePlacer.HalfPadSide.FRONT));
     }
 
     /**
@@ -114,15 +120,17 @@ public final class BuilderGhostCells {
     private static Map<BlockPos, BlockState> liftShell(ServerLevel level, CarriageDims dims,
                                                        BuilderMode mode,
                                                        BuilderNewOptions.SubType subType,
-                                                       BoundingBox parked) {
+                                                       int carriages) {
         if (mode != BuilderMode.INSIDE_CARRIAGE
-                || subType != BuilderNewOptions.SubType.CARRIAGE_ROOM) {
+                || subType != BuilderNewOptions.SubType.CARRIAGE_ROOM
+                || carriages != 1) {
             return Map.of();
         }
+        BoundingBox parked = BuilderBounds.buildVolumes(carriages, dims).get(0);
         Map<BlockPos, BlockState> lifted = new LinkedHashMap<>();
         BlockPos.MutableBlockPos probe = new BlockPos.MutableBlockPos();
         for (int x = 0; x < dims.length(); x++) {
-            for (int y = 1; y < dims.height(); y++) {   // y == 0 is the floor: kept, see class note
+            for (int y = 0; y < dims.height(); y++) {
                 for (int z = 0; z < dims.width(); z++) {
                     if (!onSkin(x, y, z, dims)) {
                         continue;   // the interior, which is the build itself
@@ -146,35 +154,43 @@ public final class BuilderGhostCells {
      *
      * <p>The complement of {@code CarriageContentsPlacer}'s interior box — one in from each
      * perimeter wall — so what this lifts and what a carriage room saves can never overlap.</p>
+     *
+     * <p>Package-visible for {@code BuilderGhostCellsTest}, which asserts that disjointness against
+     * the capture box itself. It is the claim the whole feature stands on: if the two ever overlap,
+     * erasing a wall starts erasing somebody's saved room, and no amount of testing the renderer
+     * would catch it.</p>
      */
-    private static boolean onSkin(int x, int y, int z, CarriageDims dims) {
+    static boolean onSkin(int x, int y, int z, CarriageDims dims) {
         return x == 0 || x == dims.length() - 1
-                || y == dims.height() - 1
+                || y == 0 || y == dims.height() - 1
                 || z == 0 || z == dims.width() - 1;
     }
 
     /**
      * One flatbed pad: stamped where a real group's would go, read back, then taken away.
      *
-     * <p>Nothing is left behind — the pads sit outside the build volume, so a leftover would be
-     * scaffolding the author can walk on, break, and not understand.</p>
+     * <p><b>Whatever is parked.</b> A one-carriage world never stamps pads, and a full group stamps
+     * them solid — and solid was the wrong answer in the other direction: the pads sit outside the
+     * build volume by design ({@code BuilderBounds}), so {@code OutOfBoundsWashRenderer} painted
+     * them red, leaving the ends of the train as blocks you cannot save and must not touch. Ghosting
+     * both cases says the one true thing about a pad: it is there to show you the silhouette, and it
+     * is not yours.</p>
+     *
+     * <p>Stamped first even where a group already put one there — the stamp is idempotent, and going
+     * through {@link CarriagePlacer#placeHalfFlatbedPad} rather than reading whatever happens to be
+     * in the world is what makes the one-carriage and full-group cases the same code.</p>
      */
     private static Map<BlockPos, BlockState> liftPad(ServerLevel level, CarriageDims dims,
-                                                     BuilderMode mode, BoundingBox parked,
+                                                     BuilderMode mode,
                                                      CarriagePlacer.HalfPadSide side) {
         int full = BuilderWorldLayout.ghostGroupCarriages(mode);
-        if (!BuilderWorldLayout.usesPads(full)) {
-            return Map.of();
-        }
         int padLength = CarriagePlacer.halfPadLen(dims);
-        BuilderGhostSlots.Ghosts slots = BuilderGhostSlots.of(parked.minX(), 1, full,
-                dims.length(), padLength);
-        if (slots.padMinX().size() != 2 || padLength <= 0) {
+        List<Integer> padXs = BuilderGhostSlots.padMinXFor(full, dims.length(), padLength);
+        if (padXs.size() != 2 || padLength <= 0) {
             return Map.of();
         }
-        // BuilderGhostSlots lists the pads low-X first, which is the BACK one — the same order
-        // stampTrain places them in.
-        int padX = slots.padMinX().get(side == CarriagePlacer.HalfPadSide.BACK ? 0 : 1);
+        // Listed low-X first, which is the BACK one — the same order stampTrain places them in.
+        int padX = padXs.get(side == CarriagePlacer.HalfPadSide.BACK ? 0 : 1);
         BlockPos origin = new BlockPos(padX, BuilderWorldLayout.TRAIN_Y, 0);
 
         CarriagePlacer.placeHalfFlatbedPad(level, origin, side, dims);
