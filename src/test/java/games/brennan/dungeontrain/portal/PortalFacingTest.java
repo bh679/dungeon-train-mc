@@ -30,137 +30,171 @@ final class PortalFacingTest {
         return (float) (FACE_PLUS_X + deg);
     }
 
-    // ---- the gate -------------------------------------------------------------
+    // ---- totality: there is no undecided direction ----------------------------
 
     @Test
-    @DisplayName("inside the first block the rule answers nothing, however decisively you look")
-    void belowTheGate_holds() {
-        for (double localX : new double[] {0.0, 0.25, 0.5, 0.99}) {
-            assertEquals(Verdict.HOLD,
-                PortalFacing.verdict(localX, LENGTH, PortalCarriageRole.ENTRY, FACE_PLUS_X),
-                "localX " + localX + " is inside the doorway — being yanked here would be felt, "
-                    + "because the door frame is right there to notice it by");
-            assertEquals(Verdict.HOLD,
-                PortalFacing.verdict(localX, LENGTH, PortalCarriageRole.ENTRY, FACE_MINUS_X));
+    @DisplayName("Every direction, in every block, belongs to one copy or the other")
+    void theVerdictIsTotal() {
+        for (int length : new int[] {LENGTH, LONG_LENGTH}) {
+            for (PortalCarriageRole role : PortalCarriageRole.values()) {
+                for (double localX = -0.5; localX <= length; localX += 0.25) {
+                    for (int yaw = -180; yaw < 180; yaw += 5) {
+                        Verdict v = PortalFacing.verdict(localX, length, role, yaw);
+                        assertTrue(v == Verdict.COPY || v == Verdict.ORIGINAL,
+                            "length " + length + " " + role + " localX " + localX + " yaw " + yaw);
+                    }
+                }
+            }
         }
     }
 
-    @Test
-    @DisplayName("the gate is measured from the TRAIN-side door, which is the far end for an EXIT")
-    void theGateMirrorsWithTheRole() {
-        // ENTRY: the train is at local X 0, so the gate bites there.
-        assertEquals(Verdict.HOLD,
-            PortalFacing.verdict(0.5, LENGTH, PortalCarriageRole.ENTRY, FACE_PLUS_X));
-        assertEquals(Verdict.COPY,
-            PortalFacing.verdict(7.5, LENGTH, PortalCarriageRole.ENTRY, FACE_PLUS_X));
+    // ---- the sweep ------------------------------------------------------------
 
-        // EXIT: mirrored. The train is at local X 8, so the gate bites at the HIGH end and the room
-        // is toward -X.
-        assertEquals(Verdict.HOLD,
-            PortalFacing.verdict(7.5, LENGTH, PortalCarriageRole.EXIT, FACE_MINUS_X));
-        assertEquals(Verdict.COPY,
-            PortalFacing.verdict(0.5, LENGTH, PortalCarriageRole.EXIT, FACE_MINUS_X));
+    @Test
+    @DisplayName("The divide is 30° at the train door, 90° at the middle, 150° at the room door")
+    void theThreeAnchors() {
+        assertEquals(30.0, PortalFacing.coneDegreesAt(0, LENGTH), 1e-6);
+        assertEquals(90.0, PortalFacing.coneDegreesAt((LENGTH - 1) / 2.0, LENGTH), 1e-6);
+        assertEquals(150.0, PortalFacing.coneDegreesAt(LENGTH - 1, LENGTH), 1e-6);
+
+        assertEquals(30.0, PortalFacing.coneDegreesAt(0, LONG_LENGTH), 1e-6);
+        assertEquals(90.0, PortalFacing.coneDegreesAt((LONG_LENGTH - 1) / 2.0, LONG_LENGTH), 1e-6);
+        assertEquals(150.0, PortalFacing.coneDegreesAt(LONG_LENGTH - 1, LONG_LENGTH), 1e-6);
     }
 
-    // ---- which way is which ---------------------------------------------------
-
     @Test
-    @DisplayName("looking toward the room puts you in the copy; toward the train, in the original")
-    void theTwoDirections() {
-        // ENTRY, mid-corridor: +X is the room.
+    @DisplayName("At the middle the split is a clean perpendicular — any room-ward look crosses")
+    void theMiddleIsPerpendicular() {
+        double mid = (LENGTH - 1) / 2.0;
+        assertEquals(0.0, PortalFacing.thresholdAt(mid, LENGTH), 1e-9);
+
+        // One degree either side of dead perpendicular is enough to decide it.
         assertEquals(Verdict.COPY,
-            PortalFacing.verdict(4.5, LENGTH, PortalCarriageRole.ENTRY, FACE_PLUS_X));
+            PortalFacing.verdict(mid, LENGTH, PortalCarriageRole.ENTRY, offPlusX(89)));
         assertEquals(Verdict.ORIGINAL,
-            PortalFacing.verdict(4.5, LENGTH, PortalCarriageRole.ENTRY, FACE_MINUS_X));
+            PortalFacing.verdict(mid, LENGTH, PortalCarriageRole.ENTRY, offPlusX(91)));
+    }
 
-        // EXIT, mid-corridor: -X is the room.
+    @Test
+    @DisplayName("Near the train the train claims most directions; near the room, the room does")
+    void theShareFollowsTheEnd() {
+        // Block 0: only a look within 30° of the room crosses.
         assertEquals(Verdict.COPY,
-            PortalFacing.verdict(4.5, LENGTH, PortalCarriageRole.EXIT, FACE_MINUS_X));
+            PortalFacing.verdict(0.5, LENGTH, PortalCarriageRole.ENTRY, offPlusX(25)));
         assertEquals(Verdict.ORIGINAL,
-            PortalFacing.verdict(4.5, LENGTH, PortalCarriageRole.EXIT, FACE_PLUS_X));
-    }
+            PortalFacing.verdict(0.5, LENGTH, PortalCarriageRole.ENTRY, offPlusX(35)));
 
-    @Test
-    @DisplayName("looking across the corridor decides nothing, at any depth")
-    void perpendicularHolds() {
-        for (double localX : new double[] {1.0, 2.5, 4.5, 6.5, 8.0}) {
-            assertEquals(Verdict.HOLD,
-                PortalFacing.verdict(localX, LENGTH, PortalCarriageRole.ENTRY, FACE_ACROSS),
-                "localX " + localX + " looking dead across the corridor");
-            assertEquals(Verdict.HOLD,
-                PortalFacing.verdict(localX, LENGTH, PortalCarriageRole.ENTRY, 180f));
-        }
-    }
-
-    // ---- the lerp -------------------------------------------------------------
-
-    @Test
-    @DisplayName("at the gate the cone is strict — 25° holds, 35° does not")
-    void atTheGate_thirtyDegrees() {
-        double atGate = PortalFacing.MIN_DEPTH;
-
+        // Block 8, the room door: only a look within 30° of the TRAIN keeps you on it.
         assertEquals(Verdict.COPY,
-            PortalFacing.verdict(atGate, LENGTH, PortalCarriageRole.ENTRY, offPlusX(25)),
-            "25° off the axis is inside the 30° cone, so it should still commit");
-        assertEquals(Verdict.HOLD,
-            PortalFacing.verdict(atGate, LENGTH, PortalCarriageRole.ENTRY, offPlusX(35)),
-            "35° off the axis is outside it — stepping through the door at an angle, or glancing at "
-                + "the frame, is not asking to be moved");
+            PortalFacing.verdict(8.5, LENGTH, PortalCarriageRole.ENTRY, offPlusX(145)));
+        assertEquals(Verdict.ORIGINAL,
+            PortalFacing.verdict(8.5, LENGTH, PortalCarriageRole.ENTRY, offPlusX(155)));
     }
 
     @Test
-    @DisplayName("at the far end almost any turn commits — 80° fires where it would not at the gate")
-    void atTheFarEnd_theConeIsWideOpen() {
-        assertEquals(Verdict.HOLD,
-            PortalFacing.verdict(PortalFacing.MIN_DEPTH, LENGTH, PortalCarriageRole.ENTRY,
-                offPlusX(80)));
-        assertEquals(Verdict.COPY,
-            PortalFacing.verdict(LENGTH - 1, LENGTH, PortalCarriageRole.ENTRY, offPlusX(80)),
-            "this is what makes HOLD safe rather than a trap: by the way out, only a look within "
-                + "about 5° of dead perpendicular leaves you undecided");
-    }
-
-    @Test
-    @DisplayName("the required cone only ever widens as you go deeper")
+    @DisplayName("The divide only ever sweeps toward the room as you walk in")
     void thresholdIsMonotonic() {
         for (int length : new int[] {LENGTH, LONG_LENGTH}) {
             double previous = Double.MAX_VALUE;
-            for (double depth = PortalFacing.MIN_DEPTH; depth <= length - 1; depth += 0.25) {
-                double t = PortalFacing.thresholdAt(depth, length);
+            for (int block = 0; block <= length - 1; block++) {
+                double t = PortalFacing.thresholdAt(block, length);
                 assertTrue(t <= previous + 1e-9,
-                    "length " + length + " depth " + depth + ": the cone tightened again, which "
-                        + "would leave a player undecided at the end they have to leave through");
+                    "length " + length + " block " + block + ": the divide swung back toward the "
+                        + "train, which would take area away from the room as you approach it");
                 previous = t;
             }
         }
     }
 
-    @Test
-    @DisplayName("the ramp is clamped outside the corridor rather than running past its ends")
-    void thresholdClamps() {
-        double atGate = PortalFacing.thresholdAt(PortalFacing.MIN_DEPTH, LENGTH);
-        double atEnd = PortalFacing.thresholdAt(LENGTH - 1, LENGTH);
+    // ---- one step per block ---------------------------------------------------
 
-        // insideCorridor admits half a block of pad past either door, so both are reachable.
-        assertEquals(atGate, PortalFacing.thresholdAt(-5, LENGTH), 1e-9);
-        assertEquals(atEnd, PortalFacing.thresholdAt(LENGTH + 5, LENGTH), 1e-9);
+    @Test
+    @DisplayName("The divide does not move within a block — sub-block drift changes nothing")
+    void quantisedToTheBlock() {
+        double atBlockStart = PortalFacing.thresholdAt(
+            PortalFacing.depthFromTrainDoor(3.0, LENGTH, PortalCarriageRole.ENTRY), LENGTH);
+
+        // Integer tenths, not an accumulating `frac += 0.1`: ten of those additions reach
+        // 0.9999999999999999, and `3 + that` rounds to exactly 4.0 in double — so the loop would
+        // step into the next block and report it as a failure of the code.
+        for (int tenths = 0; tenths < 10; tenths++) {
+            double localX = 3 + tenths / 10.0;
+            assertEquals(atBlockStart,
+                PortalFacing.thresholdAt(
+                    PortalFacing.depthFromTrainDoor(localX, LENGTH, PortalCarriageRole.ENTRY),
+                    LENGTH),
+                1e-12,
+                "localX " + localX + " must read the same as localX 3.0 — this is what makes the "
+                    + "rule immune to the Sable pose drift SWAP_HYSTERESIS was sized against");
+        }
     }
 
     @Test
-    @DisplayName("a long corridor gets the same ramp stretched over its own length")
-    void bothKindsRampOverTheirOwnLength() {
-        // The ends agree; only the distance between them differs. So a SHORT pair is not merely a
-        // truncated LONG one — a player is equally decided at the same fraction along either.
-        assertEquals(PortalFacing.thresholdAt(PortalFacing.MIN_DEPTH, LENGTH),
-            PortalFacing.thresholdAt(PortalFacing.MIN_DEPTH, LONG_LENGTH), 1e-9);
+    @DisplayName("The block is floored before the role mirrors it, not after")
+    void quantisationHappensOnLocalX() {
+        // localX 3.7 is block 3 in both roles. From an ENTRY corridor's train door that is depth 3;
+        // from an EXIT corridor's, depth 5. Flooring the mirrored value would give 4, naming a block
+        // the player is not standing in.
+        assertEquals(3.0,
+            PortalFacing.depthFromTrainDoor(3.7, LENGTH, PortalCarriageRole.ENTRY), 1e-9);
+        assertEquals(5.0,
+            PortalFacing.depthFromTrainDoor(3.7, LENGTH, PortalCarriageRole.EXIT), 1e-9);
+    }
+
+    @Test
+    @DisplayName("The half block of pad outside either door reads as the door block")
+    void padClampsToTheDoor() {
+        assertEquals(0.0,
+            PortalFacing.depthFromTrainDoor(-0.4, LENGTH, PortalCarriageRole.ENTRY), 1e-9);
+        assertEquals(LENGTH - 1.0,
+            PortalFacing.depthFromTrainDoor(LENGTH + 0.4, LENGTH, PortalCarriageRole.ENTRY), 1e-9);
+    }
+
+    // ---- the mirror -----------------------------------------------------------
+
+    @Test
+    @DisplayName("EXIT mirrors ENTRY: the room is toward -X and the sweep runs the other way")
+    void theRoleMirrors() {
+        // ENTRY, at the train door: +X is the room.
+        assertEquals(Verdict.COPY,
+            PortalFacing.verdict(0.5, LENGTH, PortalCarriageRole.ENTRY, FACE_PLUS_X));
+        assertEquals(Verdict.ORIGINAL,
+            PortalFacing.verdict(0.5, LENGTH, PortalCarriageRole.ENTRY, FACE_MINUS_X));
+
+        // EXIT: the train door is at local X 8, so local X 0.5 is the ROOM end of that corridor —
+        // and the room lies toward -X.
+        assertEquals(Verdict.COPY,
+            PortalFacing.verdict(7.5, LENGTH, PortalCarriageRole.EXIT, FACE_MINUS_X));
+        assertEquals(Verdict.ORIGINAL,
+            PortalFacing.verdict(7.5, LENGTH, PortalCarriageRole.EXIT, FACE_PLUS_X));
+    }
+
+    @Test
+    @DisplayName("Looking across the corridor goes to whichever end you are nearer")
+    void perpendicularFollowsTheBlock() {
+        // Perpendicular is the tie the sweep is built around: before the middle the train has it,
+        // after the middle the room does. This is the direction with no undecided answer left.
+        assertEquals(Verdict.ORIGINAL,
+            PortalFacing.verdict(1.5, LENGTH, PortalCarriageRole.ENTRY, FACE_ACROSS));
+        assertEquals(Verdict.ORIGINAL,
+            PortalFacing.verdict(1.5, LENGTH, PortalCarriageRole.ENTRY, 180f));
+        assertEquals(Verdict.COPY,
+            PortalFacing.verdict(6.5, LENGTH, PortalCarriageRole.ENTRY, FACE_ACROSS));
+        assertEquals(Verdict.COPY,
+            PortalFacing.verdict(6.5, LENGTH, PortalCarriageRole.ENTRY, 180f));
+    }
+
+    // ---- both corridor kinds --------------------------------------------------
+
+    @Test
+    @DisplayName("Both kinds sweep the same 30→150 over their own length")
+    void bothKindsSweepTheirOwnLength() {
+        assertEquals(PortalFacing.thresholdAt(0, LENGTH),
+            PortalFacing.thresholdAt(0, LONG_LENGTH), 1e-9);
         assertEquals(PortalFacing.thresholdAt(LENGTH - 1, LENGTH),
             PortalFacing.thresholdAt(LONG_LENGTH - 1, LONG_LENGTH), 1e-9);
-
-        // Halfway along each is the same verdict for the same off-axis look.
-        double midShort = PortalFacing.MIN_DEPTH + (LENGTH - 1 - PortalFacing.MIN_DEPTH) / 2;
-        double midLong = PortalFacing.MIN_DEPTH + (LONG_LENGTH - 1 - PortalFacing.MIN_DEPTH) / 2;
-        assertEquals(PortalFacing.thresholdAt(midShort, LENGTH),
-            PortalFacing.thresholdAt(midLong, LONG_LENGTH), 1e-9);
+        assertEquals(PortalFacing.thresholdAt((LENGTH - 1) / 2.0, LENGTH),
+            PortalFacing.thresholdAt((LONG_LENGTH - 1) / 2.0, LONG_LENGTH), 1e-9);
     }
 
     // ---- the primitives -------------------------------------------------------
@@ -175,18 +209,9 @@ final class PortalFacingTest {
     }
 
     @Test
-    @DisplayName("the room is +X from an ENTRY corridor and -X from an EXIT one")
+    @DisplayName("The room is +X from an ENTRY corridor and -X from an EXIT one")
     void axisMirrors() {
         assertEquals(1, PortalFacing.axisTowardRoom(PortalCarriageRole.ENTRY));
         assertEquals(-1, PortalFacing.axisTowardRoom(PortalCarriageRole.EXIT));
-    }
-
-    @Test
-    @DisplayName("depth counts from the train-side door, whichever end of the corridor that is")
-    void depthMirrors() {
-        assertEquals(0.0, PortalFacing.depthFromTrainDoor(0, LENGTH, PortalCarriageRole.ENTRY), 1e-9);
-        assertEquals(8.0, PortalFacing.depthFromTrainDoor(8, LENGTH, PortalCarriageRole.ENTRY), 1e-9);
-        assertEquals(8.0, PortalFacing.depthFromTrainDoor(0, LENGTH, PortalCarriageRole.EXIT), 1e-9);
-        assertEquals(0.0, PortalFacing.depthFromTrainDoor(8, LENGTH, PortalCarriageRole.EXIT), 1e-9);
     }
 }

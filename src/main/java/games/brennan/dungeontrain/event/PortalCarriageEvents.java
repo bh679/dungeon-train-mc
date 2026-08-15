@@ -1435,14 +1435,13 @@ public final class PortalCarriageEvents {
             // report of "it did not swap me" has to be readable against the rule that governs the
             // thing that did not move.
             double depth = PortalFacing.depthFromTrainDoor(localX, layout.length(), role);
-            double cone = Math.toDegrees(Math.acos(
-                Math.max(-1.0, Math.min(1.0, PortalFacing.thresholdAt(depth, layout.length())))));
+            double cone = PortalFacing.coneDegreesAt(depth, layout.length());
             out.add("    you: " + (inside ? "INSIDE" : "outside") + " this corridor, localX="
-                + fmt(localX) + ", depth from the train-side door " + fmt(depth)
-                + " (facing decides past " + fmt(PortalFacing.MIN_DEPTH) + ")");
+                + fmt(localX) + ", block " + (int) depth + " of " + (layout.length() - 1)
+                + " from the train-side door");
             out.add("    facing: yaw " + fmt(player.getYRot()) + " → "
                 + PortalFacing.verdict(localX, layout.length(), role, player.getYRot())
-                + ", needs a look within " + fmt(cone) + "° of the corridor axis here");
+                + ", the room claims everything within " + fmt(cone) + "° of its axis in this block");
             out.add("    entities here still swap on the midpoint: " + fmt(layout.midX()) + " ±"
                 + fmt(PortalFrames.SWAP_HYSTERESIS));
 

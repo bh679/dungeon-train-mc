@@ -182,10 +182,10 @@ public record PortalFrames(PortalCarriageLayout layout, Origin carriage, Origin 
      * pathfinding's business and a pearl's tracks nothing. Two callers, two rules, no shared
      * parameter to get the wrong way round.</p>
      *
-     * <p>{@link PortalFacing.Verdict#HOLD} returns {@code null}: an undecided look leaves a player in
-     * whichever copy they are in, which is the whole of the fallback. There is deliberately no
-     * positional fallback underneath it — see {@link PortalFacing} for why the depth-lerped cone is
-     * what makes holding safe rather than a trap.</p>
+     * <p><b>The verdict is total</b> — every direction belongs to one copy or the other, so this
+     * returns {@code null} only when the player is already where they belong, or is in neither
+     * corridor. There is no undecided region and so no positional rule underneath it; what varies
+     * with depth is where the dividing line sits, not whether there is one.</p>
      *
      * <p>Idempotent for the same reason {@link #requiredMove} is, by a different route: the swap
      * preserves both the corridor-local offset and the yaw, so re-asking after a move gives the same
@@ -204,11 +204,7 @@ public record PortalFrames(PortalCarriageLayout layout, Origin carriage, Origin 
 
         PortalFacing.Verdict verdict =
             PortalFacing.verdict(localX, layout.length(), role, yawDegrees);
-        int wantFrame = switch (verdict) {
-            case COPY -> FRAME_TWIN;
-            case ORIGINAL -> FRAME_CARRIAGE;
-            case HOLD -> frame;
-        };
+        int wantFrame = verdict == PortalFacing.Verdict.COPY ? FRAME_TWIN : FRAME_CARRIAGE;
         if (wantFrame == frame) return null;
 
         Origin to = originOf(wantFrame);

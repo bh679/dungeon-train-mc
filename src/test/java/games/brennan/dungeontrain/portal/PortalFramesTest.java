@@ -442,16 +442,37 @@ final class PortalFramesTest {
     }
 
     @Test
-    @DisplayName("Already in the right copy, or looking across — either way, nothing to do")
-    void satisfiedOrUndecided() {
+    @DisplayName("Nothing to do when the player is already where the rule wants them")
+    void alreadySatisfied() {
         PortalFrames f = frames();
         // Facing the room, already in the twin.
         assertNull(f.requiredMoveFacing(TWIN_X + 6, TWIN_Y + FEET_Y, TWIN_Z + WALK_Z, TOWARD_ROOM));
-        // Facing across: HOLD, so the player stays in whichever copy they are in — both of them.
-        assertNull(f.requiredMoveFacing(CAR_X + 6, CAR_Y + FEET_Y, CAR_Z + WALK_Z, ACROSS));
-        assertNull(f.requiredMoveFacing(TWIN_X + 6, TWIN_Y + FEET_Y, TWIN_Z + WALK_Z, ACROSS));
+        // Facing the train, already in the carriage.
+        assertNull(f.requiredMoveFacing(CAR_X + 2, CAR_Y + FEET_Y, CAR_Z + WALK_Z, TOWARD_TRAIN));
         // In neither corridor.
         assertNull(f.requiredMoveFacing(CAR_X + 40, CAR_Y + FEET_Y, CAR_Z + WALK_Z, TOWARD_ROOM));
+    }
+
+    /**
+     * The rule is total, so looking across the corridor still decides — by which end you are nearer.
+     * Before the middle the train has it, after the middle the room does. There is nowhere in a
+     * corridor a player can stand and belong to neither copy.
+     */
+    @Test
+    @DisplayName("Looking across the corridor goes to whichever end you are nearer")
+    void perpendicularStillDecides() {
+        PortalFrames f = frames();
+        // Near the train, in the twin: perpendicular sends you back to the carriage.
+        PortalFrames.Move back = f.requiredMoveFacing(
+            TWIN_X + 1.5, TWIN_Y + FEET_Y, TWIN_Z + WALK_Z, ACROSS);
+        assertNotNull(back);
+        assertEquals(PortalFrames.FRAME_CARRIAGE, back.toFrame());
+
+        // Near the room, in the carriage: perpendicular sends you across.
+        PortalFrames.Move over = f.requiredMoveFacing(
+            CAR_X + 6.5, CAR_Y + FEET_Y, CAR_Z + WALK_Z, ACROSS);
+        assertNotNull(over);
+        assertEquals(PortalFrames.FRAME_TWIN, over.toFrame());
     }
 
     /**
@@ -463,8 +484,8 @@ final class PortalFramesTest {
     @DisplayName("Applying a facing move twice is a no-op")
     void facingMoveIsIdempotent() {
         PortalFrames f = frames();
-        for (float yaw : new float[] {TOWARD_ROOM, TOWARD_TRAIN}) {
-            for (double local : new double[] {1.5, 3, 4.5, 6, 7.5}) {
+        for (float yaw : new float[] {TOWARD_ROOM, TOWARD_TRAIN, ACROSS, 45f, -135f}) {
+            for (double local : new double[] {0.5, 1.5, 3, 4.5, 6, 7.5, 8.5}) {
                 PortalFrames.Move first = f.requiredMoveFacing(
                     CAR_X + local, CAR_Y + FEET_Y, CAR_Z + WALK_Z, yaw);
                 if (first == null) continue;
