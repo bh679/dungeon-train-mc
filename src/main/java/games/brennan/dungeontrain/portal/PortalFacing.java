@@ -16,14 +16,16 @@ package games.brennan.dungeontrain.portal;
  * block in from the train door — so near the train almost every direction keeps you on the train —
  * sweeps through <b>90° at the exact middle of the corridor</b>, where the split is a clean
  * perpendicular, and ends 140° one block in from the room door, where almost every direction keeps
- * you in the room. The two door planes themselves hold their neighbour's value; see
- * {@link #FIRST_RAMP_BLOCK}.</p>
+ * you in the room.</p>
+ *
+ * <p><b>The two door planes read no look at all</b> — they are position alone, the train's and the
+ * room's respectively. See {@link #FIRST_RAMP_BLOCK}.</p>
  *
  * <pre>
- *   block:  0    1    2   …   middle   …   L-3  L-2  L-1
- *          door ├─────────── the sweep ──────────┤ door
- *           40° 40°  …          90°         …   140° 140°
- *        ◐ mostly train      ◑ half and half      ◕ mostly room
+ *   block:   0     1    2   …   middle   …   L-3  L-2   L-1
+ *          door  ├─────────── the sweep ──────────┤   door
+ *          train  40°  …          90°         …   140°  room
+ *         always ◐ mostly train  ◑ half   ◕ mostly room always
  * </pre>
  *
  * <p><b>One step per block.</b> The line moves when you cross into the next block and not otherwise
@@ -150,12 +152,13 @@ public final class PortalFacing {
     /**
      * The first block the sweep runs over — one in from the train-side door plane.
      *
-     * <p><b>The two door planes are not part of the ramp.</b> Block 0 and block {@code length - 1}
-     * are where the doors themselves stand, so a player in one is in a doorway rather than in the
-     * corridor proper. Giving those blocks their own step would spend two of the sweep's stops on
-     * the two places a player passes through fastest and can least afford a surprise in. Instead
-     * they hold their neighbour's value: the train door reads the same as block 1, the room door the
-     * same as block {@code length - 2}.</p>
+     * <p><b>The two door planes are not part of the sweep, and do not read the look at all.</b>
+     * Block 0 and block {@code length - 1} are where the doors themselves stand, so a player in one
+     * is in a doorway rather than in the corridor proper — and a doorway is the one place where a
+     * teleport has a fixed reference right in front of the player to be noticed against. There they
+     * are placed by <b>position alone</b>: the train door block is the train's whichever way you
+     * look, the room door block is the room's. Which is also what guarantees that the door you are
+     * standing in is always the real one rather than the plugged dummy.</p>
      */
     public static final int FIRST_RAMP_BLOCK = 1;
 
@@ -165,19 +168,37 @@ public final class PortalFacing {
     }
 
     /**
+     * The threshold at the train door plane: {@code cos 0°}. No look can beat it — {@code alongAxis}
+     * never exceeds 1 — so the block is unconditionally the train's.
+     */
+    private static final double AT_TRAIN_DOOR_PLANE = 1.0;
+
+    /**
+     * And at the room door plane: {@code cos 180°}, which every look beats, so the block is
+     * unconditionally the room's.
+     */
+    private static final double AT_ROOM_DOOR_PLANE = -1.0;
+
+    /**
      * The dot product a look must beat at this depth for the room to claim it: eased from
      * {@link #CONE_AT_TRAIN_DOOR_DEGREES} at {@link #FIRST_RAMP_BLOCK} to
-     * {@link #CONE_AT_ROOM_DOOR_DEGREES} at {@link #lastRampBlock}, and clamped outside them so both
-     * door planes — and the half block of pad beyond each — read as the block just inside.
+     * {@link #CONE_AT_ROOM_DOOR_DEGREES} at {@link #lastRampBlock}.
+     *
+     * <p>Outside that range it saturates rather than clamping to the ramp's end value: the two door
+     * planes answer {@code ±1}, which is the arithmetic form of "position decides here, not
+     * facing" — see {@link #FIRST_RAMP_BLOCK}. {@link #coneDegreesAt} reports them as 0° and 180°,
+     * which is the honest reading.</p>
      *
      * <p>Zero at the exact middle of the corridor, which is the perpendicular split. That survives
      * trimming a block off each end because {@code [1, length - 2]} is still centred on
      * {@code (length - 1) / 2}.</p>
      */
     public static double thresholdAt(double depth, int length) {
+        if (depth < FIRST_RAMP_BLOCK) return AT_TRAIN_DOOR_PLANE;
+        if (depth > lastRampBlock(length)) return AT_ROOM_DOOR_PLANE;
         double span = lastRampBlock(length) - FIRST_RAMP_BLOCK;
         if (!(span > 0)) return COS_AT_TRAIN_DOOR;
-        double f = Math.max(0.0, Math.min(1.0, (depth - FIRST_RAMP_BLOCK) / span));
+        double f = (depth - FIRST_RAMP_BLOCK) / span;
         return COS_AT_TRAIN_DOOR + f * (COS_AT_ROOM_DOOR - COS_AT_TRAIN_DOOR);
     }
 
@@ -216,6 +237,13 @@ public final class PortalFacing {
     public static Verdict verdict(double localX, int length, PortalCarriageRole role,
                                   float yawDegrees) {
         double depth = depthFromTrainDoor(localX, length, role);
+
+        // The two door planes are position alone — see FIRST_RAMP_BLOCK. Branched here rather than
+        // left to the ±1 thresholds so the exact boundary is unambiguous: a player looking dead at
+        // the train has alongAxis == -1, which `> -1` would answer the wrong way round.
+        if (depth < FIRST_RAMP_BLOCK) return Verdict.ORIGINAL;
+        if (depth > lastRampBlock(length)) return Verdict.COPY;
+
         // +1 when looking straight at the room, -1 when looking straight back at the train.
         double alongAxis = axisTowardRoom(role) * lookX(yawDegrees);
         // Ties go to the train. Arbitrary, but it has to go somewhere, and the side that keeps a
