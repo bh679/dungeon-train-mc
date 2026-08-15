@@ -6826,6 +6826,39 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "builder-open-clears-scene",
+      "version": "0.552.0",
+      "type": "fix",
+      "title": "Opening a build in the Train Builder clears the scene first",
+      "summary": "Open now hands you the template you opened and nothing else. Anything left standing from the last build \u2014 blocks stacked on the platform, a block floating over the train, mobs or armour stands that wandered in \u2014 used to survive an Open and sit alongside the new build. The platform and the track stay put.",
+      "highlights": [
+        "Stray blocks left outside a build are cleared when you open something.",
+        "Leftover mobs, armour stands and dropped items are cleared too.",
+        "Opening a smaller portal room no longer leaves the previous room's shell around it."
+      ],
+      "date": "2026-08-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "builder-3d-template-tiles",
+      "version": "0.552.0",
+      "type": "feat",
+      "title": "Train Builder shows saved builds as 3D models",
+      "summary": "The Open screen's grid used to show a screenshot of each saved build, taken from wherever the camera happened to be pointing. Each tile now shows the build itself as a turntable model, framed to fit, built from the blocks the template actually contains.",
+      "highlights": [
+        "Tiles show the real build instead of a photo of it, so nothing is cut off or shot from a bad angle.",
+        "Hover a tile to turn the model and see the other side.",
+        "A template edited outside the builder shows its new shape straight away."
+      ],
+      "pr": 956,
+      "date": "2026-08-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.builder;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.editor.CarriagePartRegistry;
 import games.brennan.dungeontrain.editor.CarriageVariantBlocks;
+import games.brennan.dungeontrain.editor.EditorPlotEntityClearer;
 import games.brennan.dungeontrain.editor.EditorPlotSnapshots;
 import games.brennan.dungeontrain.editor.EditorStageSelection;
 import games.brennan.dungeontrain.editor.EditorTemplateLists;
@@ -281,6 +282,98 @@ public final class BuilderWorldSetup {
                         + " scenery {}",
                 previous, mode.id(), carriages,
                 wants == had ? "unchanged" : (wants ? "restored" : "removed"));
+    }
+
+    /**
+     * Take the whole scene back to bare platform, before an Open stamps what was asked for.
+     *
+     * <p>The clears this replaced each erased <em>the volume about to be stamped into</em> — the
+     * parked train's footprint, the outgoing track plot, the outgoing room's box. That is the right
+     * answer to "don't stamp on top of the last build" and the wrong answer to "Open gives me the
+     * template I opened": everything an author left <em>outside</em> a build volume — a tower on the
+     * platform, a block floating over the train, a mob that wandered in — survived, and the scene
+     * after Open was the new template plus every leftover from before it. The client only washed
+     * those red ({@code OutOfBoundsWashRenderer}); nothing removed them.</p>
+     *
+     * <p>So: air from {@link BuilderWorldLayout#Y_STAND} up, across the whole platform box, plus the
+     * entities standing in it. Bedrock and grass stay — they are the two courses the protection
+     * guard never lets anyone author, so nothing can have gone wrong down there, and rebuilding them
+     * is 180 000 blocks to no effect.</p>
+     *
+     * <p>Empty sections are skipped. The dimension is 96 tall and a builder world normally has
+     * blocks only in the bottom one, so the skip is the difference between this and 8.6 million
+     * writes; without it the wipe would be the most expensive thing Open does by an order of
+     * magnitude.</p>
+     *
+     * <p>Every baseline goes with the blocks — {@link EditorPlotSnapshots#clearAll()} rather than the
+     * per-key clears the old helpers each did — because after a wipe there is no volume left whose
+     * snapshot still describes anything. The caller recaptures for what it stamps. Taking the whole
+     * map is safe because every caller is gated on {@link BuilderWorldLayout#BUILDER_DIMENSION_TYPE}
+     * and the store is per-server: a builder world is a builder world, so there is no Train Editor
+     * plot open somewhere else whose baseline this would take with it.</p>
+     *
+     * @param relayTrack put the shared corridor back afterwards. False for a track open, which wants
+     *                   the corridor gone on purpose so the line can be drawn as ghosts — a ghost
+     *                   that is also a real block can be broken, stood on, and saved into the wrong
+     *                   template.
+     */
+    private static void wipeScene(ServerLevel level, DungeonTrainWorldData data, CarriageDims dims,
+                                  boolean relayTrack) {
+        BlockState air = Blocks.AIR.defaultBlockState();
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        int minChunk = BuilderWorldLayout.MIN_XZ >> 4;
+        int maxChunk = BuilderWorldLayout.MAX_XZ >> 4;
+        int topY = level.getMaxBuildHeight() - 1;
+
+        for (int cx = minChunk; cx <= maxChunk; cx++) {
+            for (int cz = minChunk; cz <= maxChunk; cz++) {
+                WorldgenForceGuard.forceChunk(level, cx, cz);
+                LevelChunk chunk = level.getChunk(cx, cz);
+
+                int xLo = Math.max(BuilderWorldLayout.MIN_XZ, cx << 4);
+                int xHi = Math.min(BuilderWorldLayout.MAX_XZ, (cx << 4) + 15);
+                int zLo = Math.max(BuilderWorldLayout.MIN_XZ, cz << 4);
+                int zHi = Math.min(BuilderWorldLayout.MAX_XZ, (cz << 4) + 15);
+                boolean touched = false;
+
+                for (int y = BuilderWorldLayout.Y_STAND; y <= topY; y++) {
+                    // One probe per section rather than per block: the section index only changes
+                    // every 16 rows, and an all-air section has nothing to erase.
+                    if ((y & 15) == 0 || y == BuilderWorldLayout.Y_STAND) {
+                        int index = chunk.getSectionIndex(y);
+                        if (index < 0 || index >= chunk.getSections().length
+                                || chunk.getSection(index).hasOnlyAir()) {
+                            y = ((y >> 4) << 4) + 15;   // skip to the last row of this section
+                            continue;
+                        }
+                    }
+                    for (int x = xLo; x <= xHi; x++) {
+                        for (int z = zLo; z <= zHi; z++) {
+                            SilentBlockOps.setBlockSectionLocal(level, chunk,
+                                    pos.set(x, y, z).immutable(), air);
+                        }
+                    }
+                    touched = true;
+                }
+                if (touched) {
+                    chunk.setUnsaved(true);
+                }
+            }
+        }
+
+        EditorPlotEntityClearer.discardNonPlayersIn(level,
+                new BlockPos(BuilderWorldLayout.MIN_XZ, BuilderWorldLayout.Y_STAND,
+                        BuilderWorldLayout.MIN_XZ),
+                new Vec3i(BuilderWorldLayout.SIZE, topY - BuilderWorldLayout.Y_STAND + 1,
+                        BuilderWorldLayout.SIZE));
+
+        EditorPlotSnapshots.clearAll();
+        // The plot went with everything else, so the world is no longer holding a track build.
+        data.setBuilderTrackKind("");
+
+        if (relayTrack) {
+            stampTrack(level, dims);
+        }
     }
 
     /**
@@ -717,9 +810,9 @@ public final class BuilderWorldSetup {
         }
         Resolved open = resolved.get();
 
-        // Read before setBuilderSubType below rewrites it — see applyNew.
-        clearTrain(level, dims, parkedCarriages(data));
-        clearTrackPlot(level, data, dims);
+        // The whole scene, not just the carriage footprint: an Open hands back the template you
+        // opened, and anything left standing beside it came from a build you already left.
+        wipeScene(level, data, dims, hasScenery(mode));
         data.setBuilderMode(mode.id());
 
         // Before the stamp, for the same reason applyNew does it: CarriagePlacer.placeAt reads
@@ -792,23 +885,20 @@ public final class BuilderWorldSetup {
             return false;
         }
 
-        // Whatever was here before goes first — a parked train from a carriage mode, and the last
-        // track plot, which may be a different kind with a different footprint.
-        BuilderMode previousMode = BuilderMode.fromId(data.builderMode()).orElse(mode);
-        clearTrain(level, dims, previousMode.carriageCount());
-        clearTrackPlot(level, data, dims);
+        // Whatever was here before goes first, all of it — a parked train from a carriage mode, the
+        // last track plot (which may be a different kind with a different footprint), and anything
+        // an author left lying around the platform.
+        //
+        // The corridor is not put back, on purpose. From here the rest of the line stops being
+        // blocks: everything outside the plot is drawn as ghosts (BuilderTrackGhostShape), and a
+        // ghost that is also a real block is not a ghost — it can be broken, walked on, and saved
+        // into the wrong template. The wipe is what makes the drawn version the only version.
+        wipeScene(level, data, dims, /*relayTrack*/ false);
         data.setBuilderMode(mode.id());
-
-        // The rest of the line stops being blocks. Everything outside the plot is drawn as ghosts
-        // from here on (BuilderTrackGhostShape), and a ghost that is also a real block is not a
-        // ghost — it can be broken, walked on, and saved into the wrong template. Erasing is what
-        // makes the drawn version the only version.
-        eraseCorridorTrack(level, dims);
 
         BlockPos origin = BuilderTrackPlot.origin(kind, dims);
         Vec3i size = BuilderTrackPlot.footprint(kind, dims);
         forceChunksFor(level, origin, size);
-        erase(level, origin, size);
 
         if (!stampTrackTemplate(level, kind, name, origin, dims)) {
             LOGGER.error("[DungeonTrain] Builder open: stamping {} '{}' failed — leaving the build "
@@ -899,41 +989,6 @@ public final class BuilderWorldSetup {
         stampTrack(level, dims);
     }
 
-    /**
-     * Take the corridor track out of the world — both rows, the full length of the platform.
-     *
-     * <p>Only ever called on the way into a track build, and always followed by either the template
-     * being stamped on the plot or {@link #stampTrack} putting the line back. The line the builder
-     * sees in between is {@code BuilderTrackGhostRenderer}'s, which is drawn.</p>
-     */
-    private static void eraseCorridorTrack(ServerLevel level, CarriageDims dims) {
-        BlockState air = Blocks.AIR.defaultBlockState();
-        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-        int minZ = 0;
-        int maxZ = dims.width() - 1;
-
-        for (int cx = BuilderWorldLayout.MIN_XZ >> 4; cx <= BuilderWorldLayout.MAX_XZ >> 4; cx++) {
-            for (int cz = minZ >> 4; cz <= maxZ >> 4; cz++) {
-                WorldgenForceGuard.forceChunk(level, cx, cz);
-                LevelChunk chunk = level.getChunk(cx, cz);
-                int xLo = Math.max(BuilderWorldLayout.MIN_XZ, cx << 4);
-                int xHi = Math.min(BuilderWorldLayout.MAX_XZ, (cx << 4) + 15);
-                int zLo = Math.max(minZ, cz << 4);
-                int zHi = Math.min(maxZ, (cz << 4) + 15);
-                for (int x = xLo; x <= xHi; x++) {
-                    for (int z = zLo; z <= zHi; z++) {
-                        for (int y = BuilderWorldLayout.Y_TRACK_BED;
-                                y <= BuilderWorldLayout.Y_TRACK_RAIL; y++) {
-                            SilentBlockOps.setBlockSectionLocal(level, chunk,
-                                    pos.set(x, y, z).immutable(), air);
-                        }
-                    }
-                }
-                chunk.setUnsaved(true);
-            }
-        }
-    }
-
     /** Force every chunk a plot touches, so the stamp below never sync-loads mid-write. */
     private static void forceChunksFor(ServerLevel level, BlockPos origin, Vec3i size) {
         int maxX = origin.getX() + size.getX() - 1;
@@ -984,12 +1039,20 @@ public final class BuilderWorldSetup {
                                           CarriageDims dims, BuilderMode mode,
                                           BuilderOpenRequest request) {
         String name = request.id();
+        // Start from what is on disk. A resize made with the size steppers and never saved is a
+        // change to the world, not to the template — PortalRoomSizes keeps it pending until a save
+        // spends it, and without this it would follow the room into its next open and read as a
+        // save that never happened.
+        PortalRoomSizes.clearPending(name);
         PortalRoomTemplateStore.get(level, name, dims);
         Vec3i size = PortalRoomSizes.sizeOf(name, dims);
 
-        BuilderMode previousMode = BuilderMode.fromId(data.builderMode()).orElse(mode);
-        clearTrain(level, dims, previousMode.carriageCount());
-        clearPreviousRoom(level, data, dims);
+        // Everything standing goes, whatever it was — a parked train from a carriage mode, the
+        // outgoing room (rooms differ in size, so a small one stamped where a large one stood used
+        // to leave the old shell around it), and any stray build on the platform. It also resets
+        // builderTrackKind, which is what stops a track template opened earlier from being written
+        // over this room by Save — BuilderSave tests that field before the portal-room token.
+        wipeScene(level, data, dims, hasScenery(mode));
         data.setBuilderMode(mode.id());
 
         BlockPos origin = BuilderWorldLayout.portalRoomOrigin(size);
