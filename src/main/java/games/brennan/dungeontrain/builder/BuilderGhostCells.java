@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.builder;
 import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriagePlacer;
+import games.brennan.dungeontrain.train.CarriageVariant;
 import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderGetter;
@@ -19,6 +20,7 @@ import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * The blocks the Train Builder shows as ghosts instead of standing up for real.
@@ -115,11 +117,18 @@ public final class BuilderGhostCells {
     public static Cells lift(ServerLevel level, CarriageDims dims, BuilderMode mode,
                              BuilderNewOptions.SubType subType, int carriages,
                              BuilderGhostMode ghostMode) {
-        // SOLID leaves everything standing, which is the whole of what it means — see
-        // BuilderGhostMode. Nothing is recorded either, so a world in SOLID has no ghosts to send.
-        if (mode == null || carriages <= 0 || ghostMode == null || !ghostMode.lifts()) {
+        if (mode == null || carriages <= 0 || ghostMode == null) {
             return Cells.EMPTY;
         }
+        if (!ghostMode.lifts()) {
+            // SOLID stands the whole group up for real instead — see solidify. Nothing is recorded,
+            // so a world in SOLID has no ghosts to send.
+            solidify(level, dims, mode, carriages);
+            return Cells.EMPTY;
+        }
+        // Leaving SOLID: the carriages it stood in the empty slots are real blocks, and the ghost
+        // that replaces them is drawn from the parked one. Left standing they would be drawn over.
+        clearSolidSlots(level, dims, mode, carriages);
         // The pads and the track go whatever is parked; the shell only makes sense around the
         // single carriage a room is authored in. See each lift for why they answer differently.
         return new Cells(liftShell(level, dims, mode, subType, carriages),
@@ -157,6 +166,81 @@ public final class BuilderGhostCells {
                     new BlockPos(padXs.get(1), BuilderWorldLayout.TRAIN_Y, 0));
         }
         restoreTrack(level, dims, cells);
+    }
+
+    /**
+     * Stand the rest of the group up for real — what {@link BuilderGhostMode#SOLID} means.
+     *
+     * <p>Solid is not "draw the ghosts opaque". A carriage room is authored from <em>inside</em> a
+     * carriage, and what you want when you ask for solid is walls you can stand on and a train
+     * around you that is really there — the outside of the carriage as much as its inside. So the
+     * empty slots either side get a real carriage and the group gets real pads, which is what the
+     * builder always stood up for Train Outside and never did for the modes that park one.</p>
+     *
+     * <p>Stamped from this world's own source variant, the same one {@code stampTrain} uses, and
+     * without contents: an empty neighbouring carriage is what a run of them looks like, and copying
+     * the room you are authoring into the slots either side would put three of your build on the
+     * track and make it very unclear which one you are editing.</p>
+     *
+     * <p>They land outside the build volume, so {@code OutOfBoundsWashRenderer} darkens them — which
+     * is exactly the right thing for it to say, and why that wash stopped being red.</p>
+     */
+    private static void solidify(ServerLevel level, CarriageDims dims, BuilderMode mode,
+                                 int carriages) {
+        List<Integer> padXs = BuilderWorldLayout.ghostGroupCarriages(mode) <= 0
+                ? List.of()
+                : padPositions(dims);
+        if (padXs.size() == 2) {
+            CarriagePlacer.placeHalfFlatbedPad(level,
+                    new BlockPos(padXs.get(0), BuilderWorldLayout.TRAIN_Y, 0),
+                    CarriagePlacer.HalfPadSide.BACK, dims);
+            CarriagePlacer.placeHalfFlatbedPad(level,
+                    new BlockPos(padXs.get(1), BuilderWorldLayout.TRAIN_Y, 0),
+                    CarriagePlacer.HalfPadSide.FRONT, dims);
+        }
+        Optional<CarriageVariant> variant = BuilderWorldSetup.currentSource(level);
+        if (variant.isEmpty()) {
+            return;   // no variant to stand up; the pads alone still frame the group
+        }
+        for (int slotX : emptySlots(dims, mode, carriages)) {
+            CarriagePlacer.placeAt(level,
+                    new BlockPos(slotX, BuilderWorldLayout.TRAIN_Y, 0), variant.get(), dims);
+        }
+    }
+
+    /**
+     * Take away what {@link #solidify} stood up in the empty slots.
+     *
+     * <p>Only the slots. The pads are erased by {@link #liftPad}, which re-stamps and re-reads them
+     * anyway, and the carriage actually parked on the track is the build — touching that would erase
+     * somebody's work.</p>
+     */
+    private static void clearSolidSlots(ServerLevel level, CarriageDims dims, BuilderMode mode,
+                                        int carriages) {
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        for (int slotX : emptySlots(dims, mode, carriages)) {
+            for (int x = 0; x < dims.length(); x++) {
+                for (int y = 0; y < dims.height(); y++) {
+                    for (int z = 0; z < dims.width(); z++) {
+                        pos.set(slotX + x, BuilderWorldLayout.TRAIN_Y + y, z);
+                        if (!level.getBlockState(pos).isAir()) {
+                            SilentBlockOps.setBlockSilentNoCascade(level, pos.immutable(),
+                                    Blocks.AIR.defaultBlockState(), null);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /** The carriage slots of the drawn group that have no real build in them. */
+    private static List<Integer> emptySlots(CarriageDims dims, BuilderMode mode, int carriages) {
+        if (carriages != 1) {
+            return List.of();   // a full group has no empty slot; nothing to stand up or take away
+        }
+        BoundingBox parked = BuilderBounds.buildVolumes(carriages, dims).get(0);
+        return BuilderGhostSlots.of(parked.minX(), 1, BuilderWorldLayout.ghostGroupCarriages(mode),
+                dims.length(), CarriagePlacer.halfPadLen(dims)).carriageMinX();
     }
 
     /**

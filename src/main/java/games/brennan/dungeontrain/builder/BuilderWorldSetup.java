@@ -431,8 +431,17 @@ public final class BuilderWorldSetup {
         if (previousCarriages <= 0) {
             return;
         }
-        int startX = BuilderWorldLayout.trainStartX(previousCarriages, dims);
-        int endX = startX + BuilderWorldLayout.totalTrainLength(previousCarriages, dims) - 1;
+        // The whole group's span, not the parked one's. Solid stands real carriages in the slots
+        // either side of a one-carriage build, and clearing only what was parked left those behind
+        // to be walked through by the next build.
+        int startX = Math.min(BuilderWorldLayout.trainStartX(previousCarriages, dims),
+                BuilderWorldLayout.trainStartX(BuilderWorldLayout.OUTSIDE_CARRIAGES, dims));
+        int endX = Math.max(
+                BuilderWorldLayout.trainStartX(previousCarriages, dims)
+                        + BuilderWorldLayout.totalTrainLength(previousCarriages, dims),
+                BuilderWorldLayout.trainStartX(BuilderWorldLayout.OUTSIDE_CARRIAGES, dims)
+                        + BuilderWorldLayout.totalTrainLength(BuilderWorldLayout.OUTSIDE_CARRIAGES, dims))
+                - 1;
         int topY = BuilderWorldLayout.TRAIN_Y + dims.height() - 1;
         BlockState air = Blocks.AIR.defaultBlockState();
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
@@ -456,6 +465,17 @@ public final class BuilderWorldSetup {
                 chunk.setUnsaved(true);
             }
         }
+        // The entities standing in it go with the blocks.
+        //
+        // Clearing the blocks alone left every armour stand, item frame, painting and mob the last
+        // template put there floating in the new one — and a contents template stamps its entities
+        // on every load, so opening the same build twice doubled them. Widened to the whole ghost
+        // group rather than the parked footprint, because Solid stands real carriages in the slots
+        // either side and those have to go too.
+        EditorPlotEntityClearer.discardNonPlayersIn(level,
+                new BlockPos(startX, BuilderWorldLayout.TRAIN_Y, 0),
+                new Vec3i(endX - startX + 1, dims.height(), dims.width()));
+
         for (int i = 0; i < previousCarriages; i++) {
             EditorPlotSnapshots.clear(BuilderDirtyCheck.snapshotKey(i));
         }

@@ -29,7 +29,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Washes blocks that sit outside the Train Builder's build volumes in translucent red.
+ * Darkens blocks that sit outside the Train Builder's build volumes.
  *
  * <p>Only what's inside a carriage becomes the saved build, so anything placed beyond it — out on
  * the platform, above the roof, past the flatbed pads — is scaffolding you'd otherwise only
@@ -62,11 +62,20 @@ public final class OutOfBoundsWashRenderer {
 
     private static final double EXPAND = 0.002;
 
-    private static final float R = 1.0F;
-    private static final float G = 0.15F;
-    private static final float B = 0.15F;
-    /** 25% opacity — the block reads as washed out rather than repainted. */
-    private static final float A = 0.25F;
+    /**
+     * Near-black rather than red.
+     *
+     * <p>Red was reading as an error, and most of what it lands on now isn't one: the flatbed pads
+     * and the carriage group standing around a Solid build are out of bounds because they are
+     * <em>scenery</em>, which is the normal state of things rather than a mistake. A dark fade says
+     * the true thing — this is not part of what you are building — without saying anything is
+     * wrong.</p>
+     */
+    private static final float R = 0.05F;
+    private static final float G = 0.05F;
+    private static final float B = 0.08F;
+    /** 15% — enough to sit the block back from the build, faint enough to read its material. */
+    private static final float A = 0.15F;
 
     /** Cached exposed faces, replaced wholesale so a render pass never sees a partial sweep. */
     private static volatile List<Face> faces = List.of();
