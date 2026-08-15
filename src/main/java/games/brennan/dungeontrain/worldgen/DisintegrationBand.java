@@ -1,6 +1,8 @@
 package games.brennan.dungeontrain.worldgen;
 
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
+import games.brennan.dungeontrain.track.TrackGeometry;
+import games.brennan.dungeontrain.tunnel.TunnelGeometry;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.server.level.ServerLevel;
 
@@ -78,5 +80,73 @@ public final class DisintegrationBand {
             if (cycle.isInUpsideDownEntryLead(worldX)) return false;
         }
         return true;
+    }
+
+    /**
+     * True iff the block at {@code (blockX, blockY, blockZ)} is <b>certainly</b> empty void — the
+     * erosion pass removed it with probability 1, so no noise roll can have spared it. The per-block
+     * counterpart to {@link #isChunkFullyEroded}, and the disintegration-band analogue of
+     * {@link ChuncksBand#isVoidSpace}.
+     *
+     * <p>Deliberately <i>conservative</i>: it answers "definitely void", never "probably void". The
+     * whole-chunk test above covers only the band core, which leaves the 120-block fade zones — the
+     * one part of the band that still holds terrain, and therefore oceans, lakes and aquifers —
+     * completely unguarded. But a fade column is not uniformly eroded: removal probability is
+     * {@code ramp × (1 + depthBoost)} with {@code depthBoost} growing to 1 over
+     * {@link Disintegration#VERTICAL_SPAN} blocks below the bed, so any column with
+     * {@code ramp ≥ 0.5} is 100% removed from ~96 blocks under the bed downward while its surface
+     * stays patchy. This returns true for exactly that certain part.</p>
+     *
+     * <p>Because {@code p ≥ 1} implies the block is air (or a preserved structure block, where a
+     * fluid veto is a no-op vanilla would perform anyway), the test cannot misfire onto real terrain.
+     * The two carve-outs {@code WorldDisintegrationEvents} applies are mirrored so it stays an exact
+     * subset of what erosion actually removed:</p>
+     * <ul>
+     *   <li>the upside-down band's entry lead-in, where erosion is suppressed so real terrain
+     *       survives as mirror source material;</li>
+     *   <li>the preserved corridor footprint in the fully-eroded core (the tunnel wall-to-wall Z
+     *       span, plus the bed and rail rows inside the track corridor), which erosion keeps intact
+     *       so the train has something to ride on.</li>
+     * </ul>
+     *
+     * <p>Gates are ordered cheapest-first — pure geometry before the {@code DungeonTrainWorldData}
+     * lookup — the same way {@link ChuncksBand#kindOf} does, so out-of-band callers fall out in a
+     * few comparisons. False when disintegration is off.</p>
+     */
+    public static boolean isVoidSpace(ServerLevel overworld, int blockX, int blockY, int blockZ) {
+        long startX = startX(overworld);
+        if (startX == OFF) return false;
+        if (blockX < startX) return false;                       // before the first band
+
+        WorldGenCycle cycle = WorldGenCycle.fromConfig();
+        if (cycle.isInUpsideDownEntryLead(blockX)) return false;  // erosion suppressed here
+        double ramp = cycle.endMiddleRamp(blockX);
+        if (ramp <= 0.0) return false;                            // overworld / nether column
+
+        DungeonTrainWorldData data = DungeonTrainWorldData.get(overworld);
+        return certainVoid(ramp, blockY, blockZ, TrackGeometry.from(data.dims(), data.getTrainY()));
+    }
+
+    /**
+     * Pure core of {@link #isVoidSpace} — "did erosion remove this block with certainty?", given an
+     * already-resolved column ramp and the train's track geometry. Split out so it is unit-testable
+     * without a NeoForge bootstrap, the same way {@link ChuncksBand#classify} and
+     * {@link ChuncksBand#cutY} are.
+     *
+     * <p>Mirrors the two carve-outs {@code WorldDisintegrationEvents} applies, so the answer stays a
+     * strict subset of what erosion actually removed: the preserved tunnel footprint in the
+     * fully-eroded core, and the bed/rail rows inside the track corridor.</p>
+     */
+    static boolean certainVoid(double ramp, int blockY, int blockZ, TrackGeometry g) {
+        if (ramp <= 0.0) return false;
+        int bedY = g.bedY();
+        if (Disintegration.removalProbabilityFromRamp(ramp, blockY, bedY) < 1.0) return false;
+
+        if (ramp >= 1.0) {
+            TunnelGeometry tg = TunnelGeometry.from(g);
+            if (blockZ >= tg.wallMinZ() && blockZ <= tg.wallMaxZ()) return false;
+        }
+        return !(blockZ >= g.trackZMin() && blockZ <= g.trackZMax()
+                && (blockY == bedY || blockY == g.railY()));
     }
 }

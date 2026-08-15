@@ -33,6 +33,30 @@ biome-source mixin, so band content (disintegration, the Nether transition) neve
 is exactly what makes it a clean baseline for train / AI / physics work — and exactly why you must
 not benchmark worldgen changes on it.
 
+## Band-content runs (the void-band fluid guard)
+
+`run-arm.sh` currently drives the **void-band fluid guard** A/B (`dungeontrain debug fluidvoid`).
+Because that lives in the disintegration band, this run **cannot** use the superflat preset — no
+band, no void, nothing for liquid to pour into. The defaults therefore switch to real DT worldgen:
+
+| var | default | why |
+|---|---|---|
+| `PERF_PRESET` | `dungeontrain:dungeon_train` | real noise terrain — the band only exists here |
+| `PERF_DTP_X` | `22218` | mid-way up the overworld→void fade of the first End band (ramp ≈ 0.75). Derivation is commented in `run-arm.sh`; recompute if you change any disintegration/nether config knob |
+
+Two consequences worth taking seriously before reading a delta:
+
+1. **Spread is wide.** The whole point of the flat preset was to keep chunk-gen noise out of
+   `avgTickMs`; on noise terrain a single window has historically spanned 13–73 ms. Only a large
+   delta is readable here.
+2. **`[fluid] vetoes` is the attribution signal.** `analyze.py` now reports it per arm. A total of
+   **0** in the ON arm means there was simply no exposed liquid at that X — the comparison is
+   vacuous, not a null result. Retarget `PERF_DTP_X` or change `PERF_SEED` and re-run.
+
+Unlike the contents-despawn A/B, the guard is set to the arm's value **before** generation and held
+for the whole run: the arms are meant to diverge exactly as two real playthroughs would. Terrain is
+identical either way — the guard only vetoes runtime fluid spread, never generation.
+
 ## Gotchas
 
 Every one of these produced a confident-looking but **invalid** result before it was understood.

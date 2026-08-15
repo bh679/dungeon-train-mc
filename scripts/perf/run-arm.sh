@@ -34,8 +34,28 @@ fi
 # Must match PerfTestMode.DEFAULT_SEED. The world seed alone pins the TRAIN seed too, because
 # DungeonTrainWorldData derives generationSeed from it — there is no second seed to set.
 SEED="${PERF_SEED:-8675309031337}"
-PRESET='dungeontrain\:dungeon_train_flat'
-DTP_X=1000
+# The flat preset bypasses DT's noise settings and biome-source mixin, so NO band content
+# generates on it — there is no void band and nothing for liquid to cascade into. A void-band
+# measurement must therefore run on real DT worldgen. Override to the flat preset only for the
+# contents-despawn style tests it was built for.
+PRESET="${PERF_PRESET:-dungeontrain\:dungeon_train}"
+
+# Target X. Default lands mid-way up the overworld→void fade of the first End band, which is the
+# zone the fluid guard covers and the only part of the band that still holds terrain (and hence
+# water). Derived from the COMMON config defaults:
+#   riseLen   = beach 64 + 5 stages x 80          = 464
+#   netherLen = 2*464 + 2*0 + 2*600 + 5000        = 7128
+#   endStart  = 2*owGap(10000) + netherLen        = 27128   (offset into the cycle)
+#   fade span = [endStart, endStart + eFade(120))
+#   phaseShift= max(0, owGap - firstOverworld)    = 5000
+#   worldX    = offset - phaseShift            ⇒ fade = [22128, 22248)
+# 22218 sits at ramp ~0.75 — strongly eroded, terrain (and any ocean/lake) still present.
+# Recompute if you change any disintegration/nether config knob.
+#
+# ⚠ Whether this X actually has exposed water is seed- and biome-dependent. If the arms come back
+# identical, check [fluid] vetoes: a zero count means there was no liquid to guard, not that the
+# guard is worthless. See scripts/perf/README.md.
+DTP_X="${PERF_DTP_X:-22218}"
 AHEAD=36               # 4 carriages x CarriageDims.DEFAULT_LENGTH (9)
 OFF_TRAIN_Z=10         # off the deck but hard beside the track (see README gotcha 5)
 POPULATE_HOPS=4        # 4x36=144 blocks, under the train's own length (see README gotcha 4)
@@ -103,10 +123,14 @@ PLAYER=$(/usr/bin/grep -oE '[A-Za-z0-9_]+ joined the game' "$SLOG" | head -1 | a
 say "player=$PLAYER; settling ${SETTLE_AFTER_JOIN}s"
 sleep "$SETTLE_AFTER_JOIN"
 
-# Populate with the gate OFF in BOTH arms so both enter the measured window holding the same
-# content. If the gate were live during the walk, arm B would sweep as it went and the arms would
-# start from different states — the one thing that would invalidate the comparison outright.
-echo "dungeontrain debug contentsdespawn off" >&3; sleep 3
+# Unlike the contents-despawn A/B this script was written for, the fluid guard is set to the arm's
+# value from the START and left there. The two arms are meant to diverge exactly as they would in a
+# real run: same seed, same route, same terrain (the guard never touches generation), differing only
+# in whether liquid is allowed to pour into the void. Forcing a shared "gate off" populate phase
+# would instead let arm A accumulate a cascade it then has to drain, which is neither arm's real
+# behaviour.
+say "fluidvoid -> $ARM_FLAG (set before generation, held for the whole run)"
+echo "dungeontrain debug fluidvoid $ARM_FLAG" >&3; sleep 3
 
 # /dtp resolves the player from the command source, so it cannot run from the bare console.
 say "dtp $DTP_X"
@@ -119,9 +143,6 @@ for _ in $(seq 1 "$POPULATE_HOPS"); do
   sleep "$POPULATE_DWELL"
 done
 say "populate done — $(/usr/bin/grep -c 'Distance gate:' "$SLOG") spawn-gate fires"
-
-say "contentsdespawn -> $ARM_FLAG"
-echo "dungeontrain debug contentsdespawn $ARM_FLAG" >&3; sleep 3
 
 say "tp +$AHEAD (4 carriages ahead)"
 echo "execute as $PLAYER at @s run tp @s ~$AHEAD ~ ~" >&3; sleep 5
@@ -154,6 +175,6 @@ sleep "$MEASURE_SECS"
 say "MEASURE END"
 echo "execute as $PLAYER at @s run tp @s ~ ~ ~" >&3
 sleep 2
-echo "dungeontrain debug contentsdespawn status" >&3; sleep 2
+echo "dungeontrain debug fluidvoid status" >&3; sleep 2
 echo "stop" >&3; sleep 15
 say "done"

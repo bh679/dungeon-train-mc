@@ -97,6 +97,15 @@ public final class DebugCommand {
                 .then(Commands.literal("on").executes(ctx -> setBandEarlyOuts(ctx.getSource(), true)))
                 .then(Commands.literal("off").executes(ctx -> setBandEarlyOuts(ctx.getSource(), false)))
                 .then(Commands.literal("status").executes(ctx -> bandEarlyOutsStatus(ctx.getSource()))))
+            // /dungeontrain debug fluidvoid <on|off|status> — toggles the disintegration band's
+            // fluid guard (the veto that stops water/lava spreading into the band's bottomless
+            // columns). OFF = pre-change behaviour, liquid really does cascade into the void —
+            // drives the Gate 2 matched-toggle A/B: same seed/ride through a fade zone, compare
+            // [mspt] and [fluid] with the guard on vs off. Terrain is identical either way.
+            .then(Commands.literal("fluidvoid")
+                .then(Commands.literal("on").executes(ctx -> setVoidFluidGuard(ctx.getSource(), true)))
+                .then(Commands.literal("off").executes(ctx -> setVoidFluidGuard(ctx.getSource(), false)))
+                .then(Commands.literal("status").executes(ctx -> voidFluidGuardStatus(ctx.getSource()))))
             .then(Commands.literal("pair")
                 .executes(ctx -> runPair(ctx.getSource(), 0.0))
                 .then(Commands.argument("velocity", DoubleArgumentType.doubleArg())
@@ -251,6 +260,24 @@ public final class DebugCommand {
                 ? "ON (optimised skip paths)"
                 : "OFF (pre-change baseline paths — A/B mode)")
         ).withStyle(on ? ChatFormatting.GREEN : ChatFormatting.GOLD), true);
+        return 1;
+    }
+
+    private static int setVoidFluidGuard(CommandSourceStack source, boolean on) {
+        games.brennan.dungeontrain.worldgen.VoidFluidGuard.ENABLED = on;
+        source.sendSuccess(() -> Component.literal(
+            "[DungeonTrain] Void-band fluid guard " + (on
+                ? "ON (liquid stops at the void edge)"
+                : "OFF (liquid cascades into the void — A/B baseline)")
+        ).withStyle(on ? ChatFormatting.GREEN : ChatFormatting.GOLD), true);
+        return 1;
+    }
+
+    private static int voidFluidGuardStatus(CommandSourceStack source) {
+        boolean on = games.brennan.dungeontrain.worldgen.VoidFluidGuard.ENABLED;
+        source.sendSuccess(() -> Component.literal(
+            "[DungeonTrain] Void-band fluid guard " + (on ? "ON" : "OFF")
+        ).withStyle(on ? ChatFormatting.GREEN : ChatFormatting.GOLD), false);
         return 1;
     }
 

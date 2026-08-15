@@ -6,6 +6,7 @@ import games.brennan.dungeontrain.editor.VariantOverlayRenderer;
 import games.brennan.dungeontrain.registry.ModDataAttachments;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.GenProfiler;
+import games.brennan.dungeontrain.worldgen.VoidFluidGuard;
 import games.brennan.dungeontrain.ship.CarriageDeck;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.sable.PhysicsFreezeController;
@@ -333,6 +334,18 @@ public final class TrainTickEvents {
             JITTER_LOGGER.debug("[mspt] dim={} avgTickMs={} carriages={} near={} trains={}",
                 level.dimension().location(), String.format("%.2f", avgTickMs), carriages,
                 countNearCarriages(level, trainsById), trainsById.size());
+
+            // Void-band fluid guard throughput. The mod has no fluid-tick or scheduled-tick
+            // instrumentation, so without this an A/B could only watch avgTickMs move and could
+            // not attribute the change to fluid load. A high veto count beside a falling [mspt]
+            // is the signature of the fade-zone cascade being cut off. Overworld-gated so the
+            // counter is drained exactly once per period (the veto itself is overworld-only).
+            if (level.dimension().equals(Level.OVERWORLD)) {
+                long vetoes = VoidFluidGuard.drainVetoes();
+                JITTER_LOGGER.debug("[fluid] dim={} guard={} vetoes={} perTick={}",
+                    level.dimension().location(), VoidFluidGuard.ENABLED ? "on" : "off", vetoes,
+                    String.format("%.1f", (double) vetoes / MSPT_LOG_PERIOD_TICKS));
+            }
         }
 
         // Kill-ahead runs once per train, against the lead carriage's

@@ -18,6 +18,7 @@ OUT = Path(sys.argv[1]) if len(sys.argv) > 1 else Path(__file__).parent / "out"
 MSPT = re.compile(r"\[mspt\].*avgTickMs=([\d.]+) carriages=(\d+) near=(\d+)")
 DESP = re.compile(r"\[despawn\] dim=.*snapshotted=(\d+) entitiesHeld=(\d+)")
 SWEEP = re.compile(r"\[despawn\] (swept|restored) pIdx=(-?\d+) entities=(\d+)")
+FLUID = re.compile(r"\[fluid\] dim=\S+ guard=(\w+) vetoes=(\d+)")
 TELE = re.compile(r"Teleported \w+ to ([\d.]+)")
 
 MIN_SAMPLES = 40      # a 120s window logs ~60; far fewer means the train left and [mspt] stopped
@@ -33,9 +34,14 @@ def load(arm):
     mark = int(mark_file.read_text().strip())
     window = text.splitlines()[mark - 1:]
 
-    mspt, carr, near, held = [], [], [], []
+    mspt, carr, near, held, vetoes = [], [], [], [], []
+    guard = "?"
     sweeps = restores = 0
     for ln in window:
+        f = FLUID.search(ln)
+        if f:
+            guard = f.group(1)
+            vetoes.append(int(f.group(2)))
         m = MSPT.search(ln)
         if m:
             mspt.append(float(m.group(1)))
@@ -54,7 +60,8 @@ def load(arm):
     probes = [float(x) for x in TELE.findall(text)]
     drift = probes[-1] - probes[-2] if len(probes) >= 2 else float("nan")
     return dict(arm=arm, n=len(mspt), mspt=mspt, carr=carr, near=near, held=held,
-                sweeps=sweeps, restores=restores, drift=drift)
+                sweeps=sweeps, restores=restores, drift=drift,
+                guard=guard, vetoes=vetoes)
 
 
 def pct(v, p):
@@ -87,13 +94,19 @@ def show(r):
     print(f"  avgTickMs mean {st.mean(m):7.2f}   median {st.median(m):7.2f}")
     print(f"            p95  {pct(m, 95):7.2f}   min    {min(m):7.2f}   max {max(m):7.2f}")
     # Spread is the headline for the perf-test ENVIRONMENT itself: on a noise-terrain world a
-    # single window spanned 13-73ms, which is what made small deltas unreadable. Flat should be tight.
+    # single window spanned 13-73ms, which is what made small deltas unreadable. Flat should be
+    # tight. ⚠ A void-band run CANNOT use the flat preset (no band generates there), so expect the
+    # wide spread — only a large delta is readable, and [fluid] vetoes are the attribution signal.
     print(f"            spread {max(m) - min(m):6.2f}  (tight spread == a usable environment)")
     print(f"  carriages      mean {st.mean(r['carr']):.1f}  range {min(r['carr'])}-{max(r['carr'])}")
     print(f"  near           mean {st.mean(r['near']):.1f}")
     if r["held"]:
         print(f"  entitiesHeld   mean {st.mean(r['held']):.1f}  max {max(r['held'])}")
     print(f"  sweeps {r['sweeps']}  restores {r['restores']}")
+    # Void-band fluid guard. A total of 0 in the ON arm means there was no liquid to guard at this
+    # X — the comparison is vacuous, not a null result. Retarget PERF_DTP_X or change the seed.
+    print(f"  fluid guard    {r['guard']}  vetoes total {sum(r['vetoes'])}"
+          f"  peak/period {max(r['vetoes']) if r['vetoes'] else 0}")
     ok, why = verdict(r)
     print(f"  drift {r['drift']:.1f} blocks -> {why}")
     print()
