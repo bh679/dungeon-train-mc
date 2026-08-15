@@ -1468,6 +1468,12 @@ public final class PortalCarriageEvents {
             + " → first eligible group ordinal " + gate
             + " (" + (long) gate * groupSize + " carriages from the origin)");
 
+        // Asked before the nearest-group search, because standing in a room is the one case that
+        // search cannot answer: a player deep in an endless room is nowhere near the train, and if
+        // their pair's group has been culled it is in no train-side lookup either. "No portal group
+        // is loaded near you" would then be the reply at exactly the moment the question matters.
+        diagnoseRoom(level, player, dims, out);
+
         Group nearest = nearestPortalGroup(level, player);
         if (nearest == null) {
             out.add("No portal group is loaded near you. If you expect one here, check the gate line "
@@ -1517,8 +1523,10 @@ public final class PortalCarriageEvents {
             if (!PortalCarriageSelection.isPortalCarriage(level, carriageIndex)) continue;
 
             PortalCarriageRole role = PortalCarriageRole.roleFor(carriageIndex, groupSize);
-            double originX = bb.minX() + padLen + (double) slot * dims.length()
-                + PortalCorridorSize.originOffsetX(role, dims);
+            // The same helper the tick uses, not a second copy of the arithmetic: a diagnosis that
+            // derived the origin itself would agree with working code and disagree with broken code,
+            // which is the wrong way round.
+            double originX = corridorOriginX(bb.minX(), padLen, slot, dims, role);
             double originY = bb.minY();
             double originZ = bb.minZ();
 
@@ -1559,6 +1567,46 @@ public final class PortalCarriageEvents {
                 + " ticks");
         }
         return out;
+    }
+
+    /**
+     * If the player is standing in a pair's room, say what that pair's carriage group is doing.
+     *
+     * <p>The question a player in a room actually has is "why did that corridor not take me back",
+     * and the answer is almost always about a group they cannot see: held loaded while they are in
+     * here ({@link PortalPairResidency}), culled and being brought back
+     * ({@link PortalCarriageRevival}), or gone. Reads the live state rather than re-deriving it,
+     * like the rest of this section — including {@link #LIVE_PAIRS}, which is the difference between
+     * "your corridors are working" and "they are inert and something is being done about it".</p>
+     */
+    private static void diagnoseRoom(ServerLevel level, ServerPlayer player, CarriageDims dims,
+                                     List<String> out) {
+        for (Map.Entry<Integer, PortalStructure> entry : STRUCTURES.entrySet()) {
+            PortalStructure structure = entry.getValue();
+            if (!structureBox(dims, structure).contains(player.getX(), player.getY(), player.getZ())) {
+                continue;
+            }
+
+            int pairKey = entry.getKey();
+            out.add("you are inside pair " + pairKey + "'s room ('" + structure.roomName()
+                + "' at " + structure.origin() + ", mode=" + structure.mode() + ")");
+
+            ManagedShip ship = PortalPairResidency.groupFor(pairKey);
+            if (ship == null) {
+                out.add("  its carriage group: UNKNOWN — no tick has ever reached this pair, so "
+                    + "there is no handle to bring back. Its corridors lead nowhere.");
+                return;
+            }
+            out.add("  its carriage group: " + (ship.isResident() ? "resident" : "CULLED")
+                + ", force-loaded by this room: " + (PortalPairResidency.holds(pairKey) ? "yes" : "no")
+                + " (" + PortalPairResidency.held() + " held in total)");
+            out.add("  its corridors this tick: " + (LIVE_PAIRS.contains(pairKey)
+                ? "live — walking past a midpoint will swap you"
+                : "INERT — " + (ship.isResident()
+                    ? "the group is resident but no walk reached it; the stranded pass runs it"
+                    : "the group is being asked back from holding; wait a moment and try again")));
+            return;
+        }
     }
 
     /** A group of the train, as the tick loop sees it. */
