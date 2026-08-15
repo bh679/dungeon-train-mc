@@ -6,11 +6,13 @@ import games.brennan.dungeontrain.net.CarriedStaticEntityPacket;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.Shipyards;
 import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.boss.enderdragon.EndCrystal;
+import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.entity.decoration.HangingEntity;
 import net.minecraft.world.level.Level;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -19,6 +21,7 @@ import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.EntityLeaveLevelEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
+import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3d;
 import org.slf4j.Logger;
 
@@ -56,8 +59,10 @@ import java.util.concurrent.ConcurrentHashMap;
  * <p><b>Membership.</b> The tracked set is a per-dimension {@code UUID -> shipyard-pos} map,
  * populated on {@link EntityJoinLevelEvent} (which fires both for the fresh spawn and on every
  * sub-level / chunk reload, giving free reload rehydration) and cleared on
- * {@link EntityLeaveLevelEvent}. Only entities carrying a DT contents tag are tracked, so a crystal
- * or painting a player placed in the plain world is never touched.</p>
+ * {@link EntityLeaveLevelEvent}. Two things get tracked: DT's own contents entities (which carry a
+ * contents tag and a spawn anchor from {@link CarriageContentsPlacer}) and armor stands a
+ * <i>player</i> places inside a carriage, adopted on the spot by {@link #adoptPlacedDecor}. Decor
+ * placed in the plain world resolves to no carriage and is never touched.</p>
  *
  * <p><b>Cost.</b> {@link #onLevelTick} walks only this registry, never the level — O(tracked static
  * contents entities), single digits in practice and zero when no such decor exists. Entities on
@@ -79,6 +84,15 @@ public final class TrainStaticContentsCarrier {
      */
     private static final Map<ResourceKey<Level>, Map<UUID, Vector3d>> TRACKED = new ConcurrentHashMap<>();
 
+    /**
+     * Persistent marker written by {@link #adoptPlacedDecor} on a decoration a player hung inside a
+     * carriage. Distinguishes an adopted armor stand — which this class carries — from one DT's own
+     * {@link CarriageContentsPlacer} spawned, which carries the same anchor keys but is left to
+     * Sable. Crystals and hanging entities don't need it: their type alone says they must be
+     * carried.
+     */
+    private static final String NBT_PLACED_DECOR = "DungeonTrainPlacedDecor";
+
     private TrainStaticContentsCarrier() {}
 
     /**
@@ -88,6 +102,26 @@ public final class TrainStaticContentsCarrier {
      */
     private static boolean isCarriableType(Entity entity) {
         return entity instanceof EndCrystal || entity instanceof HangingEntity;
+    }
+
+    /**
+     * True for a decoration a <em>player</em> can place on a carriage and expect to ride along.
+     *
+     * <p>Armor stands only, for now. They tick, so Sable's carry hooks would ordinarily run — but
+     * Sable tags {@code minecraft:armor_stand} into {@code sable:retain_in_sub_level}, which means
+     * it deliberately does <em>not</em> kick a stand out of the plot into world space when one
+     * spawns there. Retained entities stay at plot coordinates, and Sable draws plot <i>block
+     * entities</i> at the carriage's pose but has no equivalent for ordinary entities — so a stand
+     * placed on a carriage exists, correctly, somewhere no player will ever see. Carrying it is
+     * DT's job.</p>
+     *
+     * <p>Paintings and item frames are retained by the same Sable tag (via
+     * {@code #sable:wall_entities}) and are invisible on a carriage for the same reason, but they
+     * are <b>not</b> fixed here — carrying them this way produced a frame that flickers, and the
+     * cause is still open. See the known-issue note in the PR.</p>
+     */
+    private static boolean isAdoptableType(Entity entity) {
+        return entity instanceof ArmorStand;
     }
 
     /** True if {@code entity} carries a {@link CarriageContentsPlacer#DT_CONTENTS_TAG_PREFIX} tag. */
@@ -104,17 +138,73 @@ public final class TrainStaticContentsCarrier {
     public static void onEntityJoin(EntityJoinLevelEvent event) {
         if (!(event.getLevel() instanceof ServerLevel level)) return;
         Entity entity = event.getEntity();
-        if (!isCarriableType(entity) || !hasContentsTag(entity)) return;
+        boolean contentsType = isCarriableType(entity);
+        if (!contentsType && !isAdoptableType(entity)) return;
 
-        double x = entity.getPersistentData().getDouble(CarriageContentsPlacer.NBT_SPAWN_SHIPYARD_X);
-        double y = entity.getPersistentData().getDouble(CarriageContentsPlacer.NBT_SPAWN_SHIPYARD_Y);
-        double z = entity.getPersistentData().getDouble(CarriageContentsPlacer.NBT_SPAWN_SHIPYARD_Z);
-        // (0,0,0) means no anchor was ever persisted (a contents entity from before the spawn NBT
-        // existed). Nothing to anchor to — skip rather than yank it to the world origin.
-        if (x == 0.0 && y == 0.0 && z == 0.0) return;
+        CompoundTag persistent = entity.getPersistentData();
+        double x = persistent.getDouble(CarriageContentsPlacer.NBT_SPAWN_SHIPYARD_X);
+        double y = persistent.getDouble(CarriageContentsPlacer.NBT_SPAWN_SHIPYARD_Y);
+        double z = persistent.getDouble(CarriageContentsPlacer.NBT_SPAWN_SHIPYARD_Z);
+
+        // (0,0,0) means no anchor was ever persisted — a contents entity from before the spawn NBT
+        // existed (nothing to anchor to), or a stand a player just placed inside a carriage.
+        if (x == 0.0 && y == 0.0 && z == 0.0) {
+            if (contentsType || hasContentsTag(entity)) return;
+            Vector3d adopted = adoptPlacedDecor(level, entity);
+            if (adopted == null) return;
+            x = adopted.x;
+            y = adopted.y;
+            z = adopted.z;
+        } else if (!contentsType && !persistent.getBoolean(NBT_PLACED_DECOR)) {
+            // An anchored armor stand DT spawned itself (CarriageContentsPlacer writes the same
+            // anchor keys on every contents entity). Those are Sable's business, not the carrier's —
+            // only stands this class adopted at placement are carried.
+            return;
+        }
 
         TRACKED.computeIfAbsent(level.dimension(), k -> new ConcurrentHashMap<>())
             .put(entity.getUUID(), new Vector3d(x, y, z));
+    }
+
+    /**
+     * Adopt an armor stand a <em>player</em> just placed inside a carriage, so it rides with the
+     * train the way DT's own carriage contents do.
+     *
+     * <p>Sable runs block placement — and the entity spawns vanilla's placement code does alongside
+     * it — in the carriage's <i>plot</i> coordinate space, so the stand is created at the plot
+     * coordinate of the block face the player clicked. Being a retained type
+     * (see {@link #isAdoptableType}) it is then left there, in a region no player is near: the
+     * placement succeeds and the stand is nowhere to be seen.</p>
+     *
+     * <p>The fix is to give it the same anchor DT's own decor gets: the plot coordinate it was
+     * placed at <em>is</em> the shipyard coordinate the carrier wants, so persist it under the same
+     * {@link CarriageContentsPlacer#NBT_SPAWN_SHIPYARD_X} keys and let the existing per-tick
+     * re-anchor, the {@code StartTracking} packet and {@code ClientCarriedStatics} do the rest.
+     * Persisting is what makes it survive a carriage cull or a world reload: by then the carrier has
+     * moved the entity into world space, so this lookup would no longer find a carriage.</p>
+     *
+     * <p>Returns {@code null} — leaving the stand entirely alone — unless the spawn position
+     * resolves to a live carriage, so one placed on plain ground keeps its vanilla behaviour.</p>
+     */
+    @Nullable
+    private static Vector3d adoptPlacedDecor(ServerLevel level, Entity entity) {
+        Vector3d plotPos = new Vector3d(entity.getX(), entity.getY(), entity.getZ());
+        ManagedShip ship = Shipyards.of(level).findAt(BlockPos.containing(plotPos.x, plotPos.y, plotPos.z));
+        if (ship == null || !ship.isResident()) return null;
+
+        // Welded decor, per design: the carrier owns this entity's position from here on, so leave
+        // it nothing to fight. Otherwise the stand spends every tick falling and being yanked back.
+        entity.setNoGravity(true);
+
+        CompoundTag persistent = entity.getPersistentData();
+        persistent.putBoolean(NBT_PLACED_DECOR, true);
+        persistent.putDouble(CarriageContentsPlacer.NBT_SPAWN_SHIPYARD_X, plotPos.x);
+        persistent.putDouble(CarriageContentsPlacer.NBT_SPAWN_SHIPYARD_Y, plotPos.y);
+        persistent.putDouble(CarriageContentsPlacer.NBT_SPAWN_SHIPYARD_Z, plotPos.z);
+
+        LOGGER.info("[DungeonTrain] StaticContents: adopted player-placed {} at plot {} on carriage {}",
+            entity.getType().getDescriptionId(), plotPos, ship.id());
+        return plotPos;
     }
 
     @SubscribeEvent
