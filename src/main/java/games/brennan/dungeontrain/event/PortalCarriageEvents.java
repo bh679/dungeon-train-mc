@@ -14,6 +14,7 @@ import dev.ryanhcode.sable.sublevel.plot.LevelPlot;
 import games.brennan.dungeontrain.portal.PortalEditMirror;
 import games.brennan.dungeontrain.portal.PortalExitBindings;
 import games.brennan.dungeontrain.portal.PortalExitTransit;
+import games.brennan.dungeontrain.portal.PortalFacing;
 import games.brennan.dungeontrain.portal.PortalFrames;
 import games.brennan.dungeontrain.portal.PortalCorridorEntities;
 import games.brennan.dungeontrain.portal.PortalEntityTransit;
@@ -156,8 +157,28 @@ public final class PortalCarriageEvents {
      */
     private static final int SWAP_COOLDOWN_TICKS = 20;
 
+    /**
+     * The cooldown a <b>facing</b> swap answers to instead — 0.2s rather than a full second.
+     *
+     * <p>The long one above is about an unacknowledged <i>position</i>, and
+     * {@link PortalFacing} does not read one: its verdict is a function of yaw, which the client
+     * owns and which a pending teleport cannot invalidate. Holding a facing swap for a whole second
+     * would instead do harm — turn round a block from a door and you would walk into it while the
+     * copy you are in still has the dummy, which is exactly the case the facing rule exists to
+     * prevent.</p>
+     *
+     * <p>Not zero, though. Without any floor a player wiggling the mouse across the threshold gets a
+     * teleport and a {@code PortalSwapPacket} every tick. Four ticks caps that at five a second while
+     * staying far below the ~1s it takes to walk from the {@link PortalFacing#MIN_DEPTH} gate to a
+     * door.</p>
+     */
+    private static final int FACING_SWAP_COOLDOWN_TICKS = 4;
+
     /** Player → game time at which they may swap again. */
     private static final Map<UUID, Long> COOLDOWNS = new HashMap<>();
+
+    /** Player → game time their last swap was recorded at, for the shorter facing cooldown. */
+    private static final Map<UUID, Long> LAST_SWAP = new HashMap<>();
 
     /**
      * Ticks between repeat warnings about one skipped group.
@@ -285,11 +306,24 @@ public final class PortalCarriageEvents {
         return null;
     }
 
-    private static boolean onCooldown(ServerPlayer player, long gameTime) {
-        Long until = COOLDOWNS.get(player.getUUID());
+    /**
+     * True if this player may not swap yet.
+     *
+     * <p>Which cooldown applies depends on what asked for the move — see
+     * {@link #FACING_SWAP_COOLDOWN_TICKS}. A facing swap answers to the short anti-spam floor
+     * measured from the last swap of any kind; the midpoint rule keeps the full
+     * {@link #SWAP_COOLDOWN_TICKS} round-trip guard.</p>
+     */
+    private static boolean onCooldown(ServerPlayer player, long gameTime, boolean byFacing) {
+        UUID id = player.getUUID();
+        if (byFacing) {
+            Long last = LAST_SWAP.get(id);
+            return last != null && gameTime < last + FACING_SWAP_COOLDOWN_TICKS;
+        }
+        Long until = COOLDOWNS.get(id);
         if (until == null) return false;
         if (gameTime >= until) {
-            COOLDOWNS.remove(player.getUUID());
+            COOLDOWNS.remove(id);
             return false;
         }
         return true;
@@ -357,6 +391,7 @@ public final class PortalCarriageEvents {
         LAST_FOG.clear();
         LAST_TRAIN_AUDIO.clear();
         COOLDOWNS.clear();
+        LAST_SWAP.clear();
         SKIP_WARNED_AT.clear();
         PortalSwapDiagnostics.clear();
         // Where each player left a room goes with the rooms themselves — a pair key means a different
@@ -848,7 +883,12 @@ public final class PortalCarriageEvents {
             // changes what gets logged: every refusal below is now about somebody the rule actually
             // wanted to move, so a player merely walking past a corridor is silent, and a line in
             // the log always means a swap that should have fired and did not.
-            PortalFrames.Move move = frames.redirectedTo(frames.requiredMove(px, py, pz), boundTwin);
+            // The FACING rule, not the midpoint one: a player belongs in whichever copy has a real
+            // door in the direction they are looking (PortalFacing). PortalEntityTransit still runs
+            // everything else through frames.requiredMove — a mob's yaw is its pathfinding's
+            // business and a thrown pearl's tracks nothing at all.
+            PortalFrames.Move move = frames.redirectedTo(
+                frames.requiredMoveFacing(px, py, pz, player.getYRot()), boundTwin);
             if (move == null) continue;
 
             // Every diagnostic below is wrapped in its own `due` test rather than handed a message to
@@ -865,7 +905,7 @@ public final class PortalCarriageEvents {
                 }
                 continue;
             }
-            if (onCooldown(player, level.getGameTime())) {
+            if (onCooldown(player, level.getGameTime(), move.byFacing())) {
                 if (PortalSwapDiagnostics.due(level, PortalSwapDiagnostics.Reason.COOLDOWN, id)) {
                     PortalSwapDiagnostics.refused(PortalSwapDiagnostics.Reason.COOLDOWN,
                         player.getName().getString(),
@@ -971,6 +1011,7 @@ public final class PortalCarriageEvents {
             // client/portal/ClientPortalSwap.
             PacketDistributor.sendToPlayer(player, new PortalSwapPacket());
             COOLDOWNS.put(player.getUUID(), level.getGameTime() + SWAP_COOLDOWN_TICKS);
+            LAST_SWAP.put(player.getUUID(), level.getGameTime());
 
             LOGGER.info("[DungeonTrain] Portal carriage swap: player={} carriage={}{} → {} ({}, {}, {}) → ({}, {}, {})",
                 player.getName().getString(), carriageIndex, copyOnly ? " (exit copy)" : "",
@@ -1389,11 +1430,21 @@ public final class PortalCarriageEvents {
             double localX = player.getX() - originX;
             boolean inside = layout.insideCorridor(localX, player.getY() - originY,
                 player.getZ() - originZ);
+            // Both rules, because the two are answered separately now: a player swaps on where they
+            // are LOOKING (PortalFacing), everything else on the midpoint (PortalEntityTransit). A
+            // report of "it did not swap me" has to be readable against the rule that governs the
+            // thing that did not move.
+            double depth = PortalFacing.depthFromTrainDoor(localX, layout.length(), role);
+            double cone = Math.toDegrees(Math.acos(
+                Math.max(-1.0, Math.min(1.0, PortalFacing.thresholdAt(depth, layout.length())))));
             out.add("    you: " + (inside ? "INSIDE" : "outside") + " this corridor, localX="
-                + fmt(localX) + " vs midpoint " + fmt(layout.midX()) + " ±"
-                + fmt(PortalFrames.SWAP_HYSTERESIS) + " (swap fires past "
-                + fmt(layout.midX() + PortalFrames.SWAP_HYSTERESIS) + " / before "
-                + fmt(layout.midX() - PortalFrames.SWAP_HYSTERESIS) + ")");
+                + fmt(localX) + ", depth from the train-side door " + fmt(depth)
+                + " (facing decides past " + fmt(PortalFacing.MIN_DEPTH) + ")");
+            out.add("    facing: yaw " + fmt(player.getYRot()) + " → "
+                + PortalFacing.verdict(localX, layout.length(), role, player.getYRot())
+                + ", needs a look within " + fmt(cone) + "° of the corridor axis here");
+            out.add("    entities here still swap on the midpoint: " + fmt(layout.midX()) + " ±"
+                + fmt(PortalFrames.SWAP_HYSTERESIS));
 
             if (structure != null) {
                 BlockPos twinOrigin = role == PortalCarriageRole.ENTRY

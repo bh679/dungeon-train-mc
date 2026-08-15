@@ -30,6 +30,12 @@ package games.brennan.dungeontrain.portal;
  * lets a player walk train → room → train without ever turning round, and it lives here rather than
  * in the geometry because a mirrored corridor would flip the view ahead of them mid-swap.</p>
  *
+ * <p><b>Two rules, not one.</b> {@link #requiredMove} is the side-of-the-midpoint rule above and is
+ * what carries <b>everything that is not a player</b> ({@link PortalEntityTransit}).
+ * {@link #requiredMoveFacing} is what carries players, and asks which way they are <i>looking</i>
+ * instead — see {@link PortalFacing} for the rule and for why a mob cannot use it. Both map the same
+ * corridor-local offset between the same two frames; they differ only in what makes them fire.</p>
+ *
  * @param layout   the corridor layout both frames were stamped from
  * @param carriage world position of the carriage corridor's local origin, read live each tick
  * @param twin     world position of the static twin corridor's local origin
@@ -74,8 +80,21 @@ public record PortalFrames(PortalCarriageLayout layout, Origin carriage, Origin 
     /** World position of a corridor's local origin. */
     public record Origin(double x, double y, double z) {}
 
-    /** A move the invariant demands: the frame to end up in, and the world position to land at. */
-    public record Move(int toFrame, double x, double y, double z) {}
+    /**
+     * A move the invariant demands: the frame to end up in, and the world position to land at.
+     *
+     * @param byFacing {@code true} when {@link PortalFacing} asked for it rather than the midpoint
+     *                 rule. The caller needs to tell them apart because the swap cooldown is about an
+     *                 unacknowledged <i>position</i> — see {@code PortalCarriageEvents.swapPlayers} —
+     *                 and a facing verdict does not read one.
+     */
+    public record Move(int toFrame, double x, double y, double z, boolean byFacing) {
+
+        /** A move the midpoint rule asked for. */
+        public Move(int toFrame, double x, double y, double z) {
+            this(toFrame, x, y, z, false);
+        }
+    }
 
     /**
      * Y of the destination corridor's floor surface — where a player who was standing on the floor
@@ -154,6 +173,50 @@ public record PortalFrames(PortalCarriageLayout layout, Origin carriage, Origin 
     }
 
     /**
+     * The move the <b>facing</b> rule demands for a player, or {@code null} when they are already in
+     * the right copy (or in neither corridor).
+     *
+     * <p>The player-side counterpart of {@link #requiredMove}, and deliberately a separate method
+     * rather than a mode flag on it: {@link PortalEntityTransit} runs villagers, pets and thrown
+     * pearls through that one, and they must keep the midpoint rule — a mob's yaw is its
+     * pathfinding's business and a pearl's tracks nothing. Two callers, two rules, no shared
+     * parameter to get the wrong way round.</p>
+     *
+     * <p>{@link PortalFacing.Verdict#HOLD} returns {@code null}: an undecided look leaves a player in
+     * whichever copy they are in, which is the whole of the fallback. There is deliberately no
+     * positional fallback underneath it — see {@link PortalFacing} for why the depth-lerped cone is
+     * what makes holding safe rather than a trap.</p>
+     *
+     * <p>Idempotent for the same reason {@link #requiredMove} is, by a different route: the swap
+     * preserves both the corridor-local offset and the yaw, so re-asking after a move gives the same
+     * verdict and it is already satisfied.</p>
+     *
+     * @param yawDegrees the player's yaw, Minecraft's convention ({@code 0} = {@code +Z})
+     */
+    public Move requiredMoveFacing(double wx, double wy, double wz, float yawDegrees) {
+        int frame = frameAt(wx, wy, wz);
+        if (frame == FRAME_NONE) return null;
+
+        Origin from = originOf(frame);
+        double localX = wx - from.x();
+        double localY = wy - from.y();
+        double localZ = wz - from.z();
+
+        PortalFacing.Verdict verdict =
+            PortalFacing.verdict(localX, layout.length(), role, yawDegrees);
+        int wantFrame = switch (verdict) {
+            case COPY -> FRAME_TWIN;
+            case ORIGINAL -> FRAME_CARRIAGE;
+            case HOLD -> frame;
+        };
+        if (wantFrame == frame) return null;
+
+        Origin to = originOf(wantFrame);
+        return new Move(wantFrame, to.x() + localX, to.y() + localY, to.z() + localZ,
+            /*byFacing*/ true);
+    }
+
+    /**
      * The same move, but landing in a different copy of the twin corridor.
      *
      * <p>What {@link PortalExitBindings} needs: a player who left the room through an extra corridor
@@ -172,7 +235,8 @@ public record PortalFrames(PortalCarriageLayout layout, Origin carriage, Origin 
         return new Move(move.toFrame(),
             move.x() + (twinOverride.x() - twin.x()),
             move.y() + (twinOverride.y() - twin.y()),
-            move.z() + (twinOverride.z() - twin.z()));
+            move.z() + (twinOverride.z() - twin.z()),
+            move.byFacing());
     }
 
     /**
