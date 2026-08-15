@@ -7080,9 +7080,9 @@
       ],
       "pr": 974,
       "date": "2026-08-15",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.563.0",
+      "released_at": "2026-08-15T11:21:49Z"
     }
   ]
 }
