@@ -12,16 +12,18 @@ package games.brennan.dungeontrain.portal;
  * with the plugged dummy.</p>
  *
  * <p><b>One dividing line, no undecided region.</b> Every direction belongs to one copy or the
- * other; what changes with depth is <i>where the line sits</i>. It starts 40° off the room axis at
- * the train door — so near the train almost every direction keeps you on the train — sweeps through
- * <b>90° at the exact middle of the corridor</b>, where the split is a clean perpendicular, and ends
- * 140° at the room door, where almost every direction keeps you in the room.</p>
+ * other; what changes with depth is <i>where the line sits</i>. It starts 40° off the room axis one
+ * block in from the train door — so near the train almost every direction keeps you on the train —
+ * sweeps through <b>90° at the exact middle of the corridor</b>, where the split is a clean
+ * perpendicular, and ends 140° one block in from the room door, where almost every direction keeps
+ * you in the room. The two door planes themselves hold their neighbour's value; see
+ * {@link #FIRST_RAMP_BLOCK}.</p>
  *
  * <pre>
- *   train door                     middle                      room door
- *   ────────────────────────────────────────────────────────────────────
- *        40°                         90°                         140°
- *    ◐ mostly train              ◑ half and half             ◕ mostly room
+ *   block:  0    1    2   …   middle   …   L-3  L-2  L-1
+ *          door ├─────────── the sweep ──────────┤ door
+ *           40° 40°  …          90°         …   140° 140°
+ *        ◐ mostly train      ◑ half and half      ◕ mostly room
  * </pre>
  *
  * <p><b>One step per block.</b> The line moves when you cross into the next block and not otherwise
@@ -85,19 +87,19 @@ public final class PortalFacing {
     }
 
     /**
-     * How far off the room axis the dividing line sits at the <b>train</b> door plane.
+     * How far off the room axis the dividing line sits at the <b>train</b> end of the sweep.
      *
-     * <p>40°, so only a look well down the corridor toward the room counts as the room there.
-     * This is what stops a player being taken across in the doorway, where the frame in front of them
-     * is the one thing that could betray the teleport — and it is why the rule needs no separate
-     * "must be N blocks in" gate: the narrow wedge does that job continuously instead of as a
-     * step.</p>
+     * <p>Reached at {@link #FIRST_RAMP_BLOCK}, and held through the door plane itself. 40°, so only
+     * a look well down the corridor toward the room counts as the room there — which is what stops a
+     * player being taken across in the doorway, where the frame in front of them is the one thing
+     * that could betray the teleport. It is also why the rule needs no separate "must be N blocks
+     * in" gate: the narrow wedge does that job by being narrow, not by switching off.</p>
      */
     public static final double CONE_AT_TRAIN_DOOR_DEGREES = 40.0;
 
     /**
-     * And at the <b>room</b> door plane — 140°, the mirror of the above, so only a look well back
-     * down the corridor toward the train counts as the train there.
+     * And at the <b>room</b> end — 140°, the mirror of the above, so only a look well back down the
+     * corridor toward the train counts as the train there.
      *
      * <p>Being the mirror is not decoration: it is what puts the split at exactly 90° halfway along,
      * since the ease below crosses zero when {@code cos} of the two ends cancel.</p>
@@ -146,17 +148,36 @@ public final class PortalFacing {
     }
 
     /**
-     * The dot product a look must beat at this depth for the room to claim it: eased from
-     * {@link #CONE_AT_TRAIN_DOOR_DEGREES} at the train door plane to
-     * {@link #CONE_AT_ROOM_DOOR_DEGREES} at the room door plane, and clamped outside them so the
-     * half block of pad either side reads as the door it is outside of.
+     * The first block the sweep runs over — one in from the train-side door plane.
      *
-     * <p>Zero at the exact middle of the corridor, which is the perpendicular split.</p>
+     * <p><b>The two door planes are not part of the ramp.</b> Block 0 and block {@code length - 1}
+     * are where the doors themselves stand, so a player in one is in a doorway rather than in the
+     * corridor proper. Giving those blocks their own step would spend two of the sweep's stops on
+     * the two places a player passes through fastest and can least afford a surprise in. Instead
+     * they hold their neighbour's value: the train door reads the same as block 1, the room door the
+     * same as block {@code length - 2}.</p>
+     */
+    public static final int FIRST_RAMP_BLOCK = 1;
+
+    /** The last block the sweep runs over — one in from the room-side door plane. */
+    public static int lastRampBlock(int length) {
+        return length - 2;
+    }
+
+    /**
+     * The dot product a look must beat at this depth for the room to claim it: eased from
+     * {@link #CONE_AT_TRAIN_DOOR_DEGREES} at {@link #FIRST_RAMP_BLOCK} to
+     * {@link #CONE_AT_ROOM_DOOR_DEGREES} at {@link #lastRampBlock}, and clamped outside them so both
+     * door planes — and the half block of pad beyond each — read as the block just inside.
+     *
+     * <p>Zero at the exact middle of the corridor, which is the perpendicular split. That survives
+     * trimming a block off each end because {@code [1, length - 2]} is still centred on
+     * {@code (length - 1) / 2}.</p>
      */
     public static double thresholdAt(double depth, int length) {
-        double span = length - 1;
+        double span = lastRampBlock(length) - FIRST_RAMP_BLOCK;
         if (!(span > 0)) return COS_AT_TRAIN_DOOR;
-        double f = Math.max(0.0, Math.min(1.0, depth / span));
+        double f = Math.max(0.0, Math.min(1.0, (depth - FIRST_RAMP_BLOCK) / span));
         return COS_AT_TRAIN_DOOR + f * (COS_AT_ROOM_DOOR - COS_AT_TRAIN_DOOR);
     }
 

@@ -51,19 +51,37 @@ final class PortalFacingTest {
     // ---- the sweep ------------------------------------------------------------
 
     @Test
-    @DisplayName("The divide is 40° at the train door, 90° at the middle, 140° at the room door")
+    @DisplayName("The sweep runs 40° at block 1 to 140° at block L-2, with 90° at the middle")
     void theThreeAnchors() {
-        assertEquals(PortalFacing.CONE_AT_TRAIN_DOOR_DEGREES,
-            PortalFacing.coneDegreesAt(0, LENGTH), 1e-6);
-        assertEquals(90.0, PortalFacing.coneDegreesAt((LENGTH - 1) / 2.0, LENGTH), 1e-6);
-        assertEquals(PortalFacing.CONE_AT_ROOM_DOOR_DEGREES,
-            PortalFacing.coneDegreesAt(LENGTH - 1, LENGTH), 1e-6);
+        for (int length : new int[] {LENGTH, LONG_LENGTH}) {
+            assertEquals(PortalFacing.CONE_AT_TRAIN_DOOR_DEGREES,
+                PortalFacing.coneDegreesAt(PortalFacing.FIRST_RAMP_BLOCK, length), 1e-6,
+                "length " + length + " block 1");
+            assertEquals(90.0,
+                PortalFacing.coneDegreesAt((length - 1) / 2.0, length), 1e-6,
+                "length " + length + ": trimming a block off each end leaves [1, L-2] still centred "
+                    + "on (L-1)/2, so the middle is still exactly perpendicular");
+            assertEquals(PortalFacing.CONE_AT_ROOM_DOOR_DEGREES,
+                PortalFacing.coneDegreesAt(PortalFacing.lastRampBlock(length), length), 1e-6,
+                "length " + length + " block L-2");
+        }
+    }
 
-        assertEquals(PortalFacing.CONE_AT_TRAIN_DOOR_DEGREES,
-            PortalFacing.coneDegreesAt(0, LONG_LENGTH), 1e-6);
-        assertEquals(90.0, PortalFacing.coneDegreesAt((LONG_LENGTH - 1) / 2.0, LONG_LENGTH), 1e-6);
-        assertEquals(PortalFacing.CONE_AT_ROOM_DOOR_DEGREES,
-            PortalFacing.coneDegreesAt(LONG_LENGTH - 1, LONG_LENGTH), 1e-6);
+    /**
+     * The two door planes are outside the sweep and hold their neighbour's value, so a player in a
+     * doorway is treated exactly as one standing in the block just inside it.
+     */
+    @Test
+    @DisplayName("The door blocks are not steps of their own — they clamp to the block inside")
+    void theDoorBlocksClampInward() {
+        for (int length : new int[] {LENGTH, LONG_LENGTH}) {
+            assertEquals(PortalFacing.thresholdAt(PortalFacing.FIRST_RAMP_BLOCK, length),
+                PortalFacing.thresholdAt(0, length), 1e-12,
+                "length " + length + ": the train door plane must read as block 1");
+            assertEquals(PortalFacing.thresholdAt(PortalFacing.lastRampBlock(length), length),
+                PortalFacing.thresholdAt(length - 1, length), 1e-12,
+                "length " + length + ": the room door plane must read as block L-2");
+        }
     }
 
     @Test
@@ -85,18 +103,23 @@ final class PortalFacingTest {
         double atTrain = PortalFacing.CONE_AT_TRAIN_DOOR_DEGREES;
         double atRoom = PortalFacing.CONE_AT_ROOM_DOOR_DEGREES;
 
-        // Block 0: only a look inside the train-door cone crosses.
-        assertEquals(Verdict.COPY,
-            PortalFacing.verdict(0.5, LENGTH, PortalCarriageRole.ENTRY, offPlusX(atTrain - 5)));
-        assertEquals(Verdict.ORIGINAL,
-            PortalFacing.verdict(0.5, LENGTH, PortalCarriageRole.ENTRY, offPlusX(atTrain + 5)));
+        // Block 1, the train end of the sweep: only a look inside its cone crosses. Block 0, the
+        // door plane, answers identically.
+        for (double localX : new double[] {0.5, 1.5}) {
+            assertEquals(Verdict.COPY,
+                PortalFacing.verdict(localX, LENGTH, PortalCarriageRole.ENTRY, offPlusX(atTrain - 5)));
+            assertEquals(Verdict.ORIGINAL,
+                PortalFacing.verdict(localX, LENGTH, PortalCarriageRole.ENTRY, offPlusX(atTrain + 5)));
+        }
 
-        // Block 8, the room door: the mirror — only a look that far round toward the TRAIN keeps
-        // you on it.
-        assertEquals(Verdict.COPY,
-            PortalFacing.verdict(8.5, LENGTH, PortalCarriageRole.ENTRY, offPlusX(atRoom - 5)));
-        assertEquals(Verdict.ORIGINAL,
-            PortalFacing.verdict(8.5, LENGTH, PortalCarriageRole.ENTRY, offPlusX(atRoom + 5)));
+        // Block 7, the room end, and block 8, its door plane: the mirror — only a look that far
+        // round toward the TRAIN keeps you on it.
+        for (double localX : new double[] {7.5, 8.5}) {
+            assertEquals(Verdict.COPY,
+                PortalFacing.verdict(localX, LENGTH, PortalCarriageRole.ENTRY, offPlusX(atRoom - 5)));
+            assertEquals(Verdict.ORIGINAL,
+                PortalFacing.verdict(localX, LENGTH, PortalCarriageRole.ENTRY, offPlusX(atRoom + 5)));
+        }
     }
 
     @Test
