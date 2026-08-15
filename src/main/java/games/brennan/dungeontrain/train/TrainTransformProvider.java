@@ -135,6 +135,30 @@ public final class TrainTransformProvider implements KinematicDriver {
         return Math.max(0L, currentGameTick - effectiveOrigin);
     }
 
+    /**
+     * As {@link #effectiveElapsedTicks}, less the ticks this train has spent standing still.
+     *
+     * <p><b>Why the subtraction goes here and nowhere else.</b> This one term is the only place a
+     * carriage's position can be stopped. The formula below re-derives the position from scratch every
+     * tick, so there is no step to skip; and zeroing the velocity would re-evaluate the whole history
+     * of the formula and yank the carriage back to where it spawned. Take ticks out of the count and
+     * the train stands still; put no more in and it carries on from exactly where it stopped, with no
+     * jump at either edge. See {@link TrainMotionFreeze}.</p>
+     *
+     * <p><b>{@code frozenSinceSpawn}, not {@code frozenTotal}.</b> A carriage appended after an
+     * earlier freeze was not there for it, and subtracting time it never experienced would place it
+     * behind the siblings it is supposed to couple to. Each provider captures the running total when
+     * it captures its spawn tick and passes the difference.</p>
+     *
+     * <p>Clamped at zero, like the hold above, so a counter that somehow ran ahead of the elapsed
+     * ticks can only stop a carriage, never reverse it.</p>
+     */
+    static long effectiveElapsedTicks(long currentGameTick, long spawnGameTick, long holdUntilTick,
+                                      long frozenSinceSpawn) {
+        long elapsed = effectiveElapsedTicks(currentGameTick, spawnGameTick, holdUntilTick);
+        return Math.max(0L, elapsed - Math.max(0L, frozenSinceSpawn));
+    }
+
     private volatile Vector3d targetVelocity;
     private final BlockPos shipyardOrigin;
     private final ResourceKey<Level> dimensionKey;
@@ -193,6 +217,18 @@ public final class TrainTransformProvider implements KinematicDriver {
     private Vector3dc lockedPositionInModel;
     private Vector3d spawnWorldPos;
     private long spawnGameTick = -1L;
+
+    /**
+     * This train's running frozen-tick total at the moment {@link #spawnGameTick} was captured.
+     *
+     * <p>The elapsed term subtracts {@code frozenTicks(trainId) − this}, never the total: a carriage
+     * appended after an earlier freeze was not there for it, and subtracting time it never
+     * experienced would place it behind the siblings it couples to. <b>Re-based wherever
+     * {@code spawnGameTick} is</b> — including the re-anchor after a tick gap, where keeping the old
+     * value would subtract every historical frozen tick a second time from an elapsed count that now
+     * starts at the re-anchor. See {@link TrainMotionFreeze}.</p>
+     */
+    private long frozenTicksAtSpawn = 0L;
 
     // One-shot sub-block world-X nudge applied the instant spawnWorldPos is
     // captured on the first kinematic tick (see nextTransform). Lets the
@@ -357,6 +393,7 @@ public final class TrainTransformProvider implements KinematicDriver {
     public void preSeedSpawnTick(long currentGameTick) {
         if (this.spawnGameTick != -1L) return;
         this.spawnGameTick = currentGameTick;
+        this.frozenTicksAtSpawn = TrainMotionFreeze.frozenTicks(trainId);
     }
 
     /**
@@ -789,6 +826,7 @@ public final class TrainTransformProvider implements KinematicDriver {
             // correct time origin even when Sable's first tick is delayed.
             if (spawnGameTick == -1L) {
                 spawnGameTick = currentGameTick;
+                frozenTicksAtSpawn = TrainMotionFreeze.frozenTicks(trainId);
             }
             canonicalPos = new Vector3d(spawnWorldPos);
             // Apply any pre-seeded sub-block world-X nudge exactly once, now
@@ -843,7 +881,12 @@ public final class TrainTransformProvider implements KinematicDriver {
         // effective origin stays spawnGameTick). See beginLoadGrace /
         // WORLD_LOAD_MOTION_GRACE_TICKS.
         long holdUntil = MOTION_HOLD_UNTIL.getOrDefault(dimensionKey, Long.MIN_VALUE);
-        long elapsedTicks = effectiveElapsedTicks(currentGameTick, spawnGameTick, holdUntil);
+        // And stand still for as long as this train is frozen — the ticks it spends stopped are
+        // simply not counted, so it neither advances now nor jumps when it starts again. Zero for
+        // every train that has never frozen, which makes this line a no-op for all of them.
+        long frozenSinceSpawn = TrainMotionFreeze.frozenTicks(trainId) - frozenTicksAtSpawn;
+        long elapsedTicks = effectiveElapsedTicks(currentGameTick, spawnGameTick, holdUntil,
+            frozenSinceSpawn);
         canonicalPos.set(
             spawnWorldPos.x + targetVelocity.x() * elapsedTicks * PHYSICS_DT,
             spawnWorldPos.y + targetVelocity.y() * elapsedTicks * PHYSICS_DT,
@@ -881,6 +924,10 @@ public final class TrainTransformProvider implements KinematicDriver {
         if (shouldReanchor(lastNextTransformGameTick, currentGameTick)) {
             spawnWorldPos.set(canonicalPos);
             spawnGameTick = currentGameTick;
+            // With the elapsed count now measured from here, the frozen ticks before here are
+            // already baked into the position we just re-based onto. Carrying the old baseline
+            // would subtract every one of them a second time.
+            frozenTicksAtSpawn = TrainMotionFreeze.frozenTicks(trainId);
             if (prevEffectivePos != null) prevEffectivePos.set(canonicalPos);
         }
         lastNextTransformGameTick = currentGameTick;

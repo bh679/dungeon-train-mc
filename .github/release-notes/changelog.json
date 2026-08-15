@@ -7049,6 +7049,23 @@
       "released": true,
       "released_in": "v0.561.0",
       "released_at": "2026-08-15T05:00:03Z"
+    },
+    {
+      "id": "portal-room-train-waits",
+      "version": "0.562.0",
+      "type": "fix",
+      "title": "Train Dimensions: the way back always works",
+      "summary": "Every corridor in a Train Dimension now takes you back aboard \u2014 the one you came in through and the extra ways out scattered deep in the room \u2014 however long you stay or how far you wander. Before, a room you had gone far enough into could quietly lose its train, leaving you sealed in with nowhere left to walk.",
+      "highlights": [
+        "Corridor copies deep in an endless room always lead back to the train",
+        "No more getting stranded in a Train Dimension you walked too far into",
+        "Untested in multiplayer \u2014 how this behaves with several players on one train is not yet known"
+      ],
+      "pr": 970,
+      "date": "2026-08-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

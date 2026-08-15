@@ -311,6 +311,16 @@ dependencies {
     testImplementation platform('org.junit:junit-bom:5.10.2')
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+    // joml-primitives again, this time for the JUnit launcher. It is `compileOnly` +
+    // `additionalRuntimeClasspath` above, and the test launcher inherits from `runtimeClasspath` but
+    // not from the moddev-specific one — so without this the type is simply absent under
+    // `./gradlew test`. That is not a theoretical gap: FML resolves the descriptor of every declared
+    // method when it registers an `@EventBusSubscriber`, so one method signature naming `AABBdc`
+    // fails DT's whole construction with a NoClassDefFoundError, and every test in the run reports
+    // "Could not start Gradle Test Executor" instead of naming the cause. Test-scoped, so nothing
+    // about the shipped jar or either run classpath changes.
+    testImplementation 'org.joml:joml-primitives:1.10.0'
 }
 
 tasks.named('test', Test).configure {

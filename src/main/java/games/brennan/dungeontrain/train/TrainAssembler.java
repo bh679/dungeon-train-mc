@@ -655,6 +655,9 @@ public final class TrainAssembler {
         // the appender's wait-for-Sable-settle tracker so the first
         // post-wipe spawn doesn't get gated on a now-deleted ship's AABB.
         Trains.clearRegistry();
+        // The stopped-tick counts go with the ids they are keyed on: the train being wiped here is
+        // the only thing they described, and a fresh train must start from zero.
+        TrainMotionFreeze.clear();
         TrainCarriageAppender.clearSettleTracker();
         games.brennan.dungeontrain.event.CarriageGroupGapTicker.resetWarnings();
         Shipyard shipyard = Shipyards.of(level);

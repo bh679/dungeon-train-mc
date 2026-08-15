@@ -152,4 +152,26 @@ public final class PortalSever {
     public static boolean isSevered(ServerLevel level, int carriageIndex) {
         return PortalRegistry.get(level).isSevered(carriageIndex);
     }
+
+    /**
+     * Whether a severed pair refuses this move — the one-way rule, in one place.
+     *
+     * <p>Inbound only. Everything this class does is about closing the way <b>in</b>; the way out is
+     * never cut, at either end, so a player or a led villager already in the room can always walk back
+     * onto the train through whichever corridor is nearer — including one of the copies an endless
+     * room scatters through its tiles, which are ways out and nothing else.</p>
+     *
+     * <p>Written as a predicate rather than left inline because it is asserted in two places — the
+     * player swap in {@code PortalCarriageEvents} and {@link PortalEntityTransit} — and the
+     * asymmetry is the kind that survives a refactor only if it is somewhere it can be tested. Both
+     * callers pass the answer they already have rather than a level, so nothing here reads the
+     * registry twice.</p>
+     *
+     * @param toFrame  where the move is going: {@link PortalFrames#FRAME_TWIN} or
+     *                 {@link PortalFrames#FRAME_CARRIAGE}
+     * @param severed  whether this corridor's pair has been severed
+     */
+    public static boolean blocksMove(int toFrame, boolean severed) {
+        return severed && toFrame == PortalFrames.FRAME_TWIN;
+    }
 }

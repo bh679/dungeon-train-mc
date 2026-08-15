@@ -134,6 +134,70 @@ final class TrainTransformProviderTest {
         assertEquals(3L, TrainTransformProvider.effectiveElapsedTicks(1053L, spawn, holdUntil));
     }
 
+    // ── Frozen-tick elapsed math ───────────────────────────────────────────
+    // The overload that stands a train still while somebody is inside one of its
+    // portal rooms (TrainMotionFreeze). Frozen ticks are subtracted from the
+    // elapsed count, which is the only place a position built as a pure function
+    // of elapsed time can be stopped — and, because they were never counted,
+    // resuming needs no code and produces no jump.
+
+    @Test
+    @DisplayName("frozen ticks hold the position, and it carries on from there — no jump either way")
+    void frozenElapsedTicks_holdsThenResumesWithoutJumping() {
+        long spawn = 1000L;
+
+        // Running normally for 10 ticks.
+        assertEquals(10L, TrainTransformProvider.effectiveElapsedTicks(1010L, spawn, NO_GRACE, 0L));
+
+        // Frozen from 1010: every tick that passes is also a frozen tick, so the
+        // elapsed count — and the position derived from it — stands still.
+        assertEquals(10L, TrainTransformProvider.effectiveElapsedTicks(1011L, spawn, NO_GRACE, 1L));
+        assertEquals(10L, TrainTransformProvider.effectiveElapsedTicks(1050L, spawn, NO_GRACE, 40L));
+
+        // Released at 1050 with 40 ticks frozen. The next tick is a single step
+        // from where it stopped, not a lurch covering the whole freeze.
+        assertEquals(11L, TrainTransformProvider.effectiveElapsedTicks(1051L, spawn, NO_GRACE, 40L));
+        assertEquals(15L, TrainTransformProvider.effectiveElapsedTicks(1055L, spawn, NO_GRACE, 40L));
+    }
+
+    @Test
+    @DisplayName("a train that never freezes is identical to before the term existed")
+    void frozenElapsedTicks_zeroIsTheOldBehaviour() {
+        long spawn = 1000L;
+        long holdUntil = 1020L;
+        assertEquals(
+            TrainTransformProvider.effectiveElapsedTicks(1030L, spawn, holdUntil),
+            TrainTransformProvider.effectiveElapsedTicks(1030L, spawn, holdUntil, 0L));
+        assertEquals(
+            TrainTransformProvider.effectiveElapsedTicks(1007L, spawn, NO_GRACE),
+            TrainTransformProvider.effectiveElapsedTicks(1007L, spawn, NO_GRACE, 0L));
+    }
+
+    @Test
+    @DisplayName("a carriage appended after a freeze subtracts only what it was there for")
+    void frozenElapsedTicks_countsOnlySinceSpawn() {
+        // The train froze for 40 ticks before this carriage existed. Its provider
+        // captured the running total at spawn, so it passes the DIFFERENCE — 0 —
+        // and joins its siblings in lockstep. Passing the train's whole history
+        // instead would place it 40 ticks of travel behind the group it couples to.
+        long spawn = 2000L;
+        assertEquals(5L, TrainTransformProvider.effectiveElapsedTicks(2005L, spawn, NO_GRACE, 0L));
+        // And a later freeze it IS present for still stops it.
+        assertEquals(5L, TrainTransformProvider.effectiveElapsedTicks(2010L, spawn, NO_GRACE, 5L));
+    }
+
+    @Test
+    @DisplayName("the term can only stop a carriage, never reverse it")
+    void frozenElapsedTicks_clampsAtZero() {
+        long spawn = 1000L;
+        // More frozen ticks than elapsed ones — only reachable if a counter ran
+        // ahead of its baseline — must floor at the spawn position rather than
+        // running the carriage backwards down the track.
+        assertEquals(0L, TrainTransformProvider.effectiveElapsedTicks(1010L, spawn, NO_GRACE, 999L));
+        // A negative difference is treated as none rather than added as travel.
+        assertEquals(10L, TrainTransformProvider.effectiveElapsedTicks(1010L, spawn, NO_GRACE, -50L));
+    }
+
     @Test
     @DisplayName("helper does not mutate its Vector3dc inputs")
     void computeEffectivePosition_doesNotMutateInputs() {

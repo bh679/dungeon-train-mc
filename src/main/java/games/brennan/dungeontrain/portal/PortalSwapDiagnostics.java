@@ -100,7 +100,27 @@ public final class PortalSwapDiagnostics {
         GROUP_NOT_RESIDENT("the carriage group's sub-level is culled — its pose is stale"),
 
         /** Sable handed back a zero box for a sub-level that has not ticked yet. */
-        DEGENERATE_AABB("the carriage group's bounding box is degenerate — it has not ticked yet");
+        DEGENERATE_AABB("the carriage group's bounding box is degenerate — it has not ticked yet"),
+
+        /**
+         * The group is on its way back from holding and the corridor is waiting for it.
+         *
+         * <p>Benign: somebody is in the room, the pair was culled, and {@link PortalCarriageRevival}
+         * has asked for it back. It lasts the few ticks the sub-level takes to surface, after which
+         * the ordinary walk picks the pair up and the swap fires off the real pose.</p>
+         */
+        GROUP_REVIVING(true, "the carriage group is being brought back from holding — the way out reopens when it surfaces"),
+
+        /**
+         * Somebody is in a pair's room and no walk reached its group at all.
+         *
+         * <p>The one that used to be silent, and the reason a copy could be a dead corridor: with the
+         * group absent from the tick walk, neither the base twin nor any copy of it does anything, and
+         * an endless room has nowhere else to walk to. Reaching this after
+         * {@link PortalCarriageRevival} has had its say means the group is neither resident nor in
+         * holding — nothing can bring it back.</p>
+         */
+        PAIR_NOT_WALKED("nobody's walk reached this pair's carriage group, and it is not in holding — its corridors have nothing to lead to");
 
         /**
          * True for a state that is ordinary rather than wrong — it stops a swap, but nothing about it
