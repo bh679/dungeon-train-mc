@@ -6983,6 +6983,22 @@
       "released_in": "v0.557.0",
       "released_at": "2026-08-14T12:26:13Z",
       "pr": 963
+    },
+    {
+      "id": "placed-armor-stands-ride-trains",
+      "version": "0.558.0",
+      "type": "fix",
+      "title": "Armor stands you place on a train now stay with the train",
+      "summary": "Placing an armor stand inside a carriage used to look like nothing happened \u2014 the stand really was created, but it ended up in the carriage's internal building space rather than on the train you were standing on, where nobody could ever see it. Placed stands now ride the carriage they were put on, staying put as the train moves and surviving a reload.",
+      "highlights": [
+        "Armor stands can be placed and displayed inside carriages",
+        "Placed stands stay locked to their carriage while the train moves",
+        "They survive carriage unloading and world reload"
+      ],
+      "date": "2026-08-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
