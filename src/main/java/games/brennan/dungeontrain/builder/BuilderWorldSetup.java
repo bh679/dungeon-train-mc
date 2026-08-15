@@ -19,8 +19,6 @@ import games.brennan.dungeontrain.train.CarriageContents;
 import games.brennan.dungeontrain.train.CarriageContentsPlacer;
 import games.brennan.dungeontrain.editor.PortalRoomEditor;
 import games.brennan.dungeontrain.editor.PortalRoomTemplateStore;
-import games.brennan.dungeontrain.portal.PortalClear;
-import games.brennan.dungeontrain.portal.PortalCorridorMask;
 import games.brennan.dungeontrain.portal.PortalRoomSizes;
 import games.brennan.dungeontrain.train.CarriageContentsRegistry;
 import games.brennan.dungeontrain.train.CarriageDims;
@@ -40,15 +38,17 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
-import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 import org.slf4j.Logger;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.WeakHashMap;
 
 /**
  * Builds the Train Builder world's contents once: the grass platform, a straight track across it,
@@ -81,6 +81,14 @@ public final class BuilderWorldSetup {
 
     private static final BlockState BEDROCK = Blocks.BEDROCK.defaultBlockState();
     private static final BlockState GRASS = Blocks.GRASS_BLOCK.defaultBlockState();
+
+    /**
+     * Levels {@link #reopen} has already stood back up this server run. Weak, and keyed on the
+     * level object rather than on anything saved, so a fresh run of the same world reopens again
+     * while a second player joining the current one does not restart it under the first.
+     */
+    private static final Map<ServerLevel, Boolean> REOPENED =
+            Collections.synchronizedMap(new WeakHashMap<>());
 
     private BuilderWorldSetup() {}
 
@@ -123,13 +131,14 @@ public final class BuilderWorldSetup {
             return false;
         }
 
-        CarriageDims dims = DungeonTrainWorldData.get(level).dims();
+        DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
+        CarriageDims dims = data.dims();
         long t0 = System.nanoTime();
 
-        if (hasScenery(mode)) {
-            stampPlatform(level);
-            stampTrack(level, dims);
-        }
+        // The same reconcile every other entry point runs. A world this fresh has nothing to wipe,
+        // but going through one door means a fresh world and a switched one are stamped by the same
+        // code — which is what stops them from drifting apart again.
+        resetScene(level, data, dims, mode, /*corridor*/ true);
         // No sub type yet — this is the title-screen click, before New or Open has narrowed it —
         // so the mode's own count stands.
         int carriages = BuilderWorldLayout.parkedCarriages(mode, null);
@@ -142,8 +151,81 @@ public final class BuilderWorldSetup {
         // a reopened builder world can't tell the client where the build bounds are.
         DungeonTrainWorldData.get(level).setBuilderMode(mode.id());
         DungeonTrainWorldData.get(level).setBuilderMirror(BuilderMirrorFlags.DEFAULT);
+        // This world is now stood up for this run, so a second player joining it goes down
+        // {@link #reopen}'s already-done arm instead of restarting it under the first.
+        REOPENED.put(level, Boolean.TRUE);
 
         LOGGER.info("[DungeonTrain] Builder world stamped for mode '{}' ({} carriage(s)) in {} ms",
+                mode.id(), carriages, (System.nanoTime() - t0) / 1_000_000);
+        return true;
+    }
+
+    /**
+     * Reopening a saved builder world: put the scene back the way its own record describes, rather
+     * than trusting the blocks that were saved.
+     *
+     * <p>A builder world's blocks are a working copy, and the world data beside them is the record
+     * of what that copy is meant to be — mode, template, sub type, stage. Loading used to take the
+     * blocks at their word, so a world saved in a state the builder no longer produces stayed that
+     * way forever: a room standing on grass, a carriage over void, a corridor with holes in it.
+     * Re-running the Open that put the build there is the same operation the rest of the builder
+     * uses, so a reopened world and a freshly opened one are the same scene by construction.</p>
+     *
+     * <p><b>Unsaved work does not survive this.</b> The build comes back from the template on disk,
+     * so edits made after the last Save are gone on reopen — the deliberate trade for a world that
+     * is never in a state the builder cannot explain.</p>
+     *
+     * <p>Once per level per server run: a second player joining a builder world must not restart it
+     * under the first.</p>
+     *
+     * @return true if the world was re-stamped
+     */
+    public static boolean reopen(ServerLevel level) {
+        if (!level.dimensionTypeRegistration().is(BuilderWorldLayout.BUILDER_DIMENSION_TYPE)) {
+            return false;
+        }
+        DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
+        // No recorded mode means nothing has ever been stamped here — a world created this session,
+        // whose setup BuilderSetupPacket owns. Leaving it alone is what keeps the two paths apart.
+        BuilderMode mode = BuilderMode.fromId(data.builderMode()).orElse(null);
+        if (mode == null) {
+            return false;
+        }
+        if (REOPENED.putIfAbsent(level, Boolean.TRUE) != null) {
+            return false;
+        }
+
+        CarriageDims dims = data.dims();
+        long t0 = System.nanoTime();
+        Optional<BuilderOpenRequest> holding = BuilderOpenRequest.fromWorldData(
+                data.builderName(), data.builderSubType(), data.builderPartKind(),
+                data.builderTrackKind());
+
+        // What the world says it parked, not what the mode would park: a carriage opened as a
+        // single room-sized build records one, and reopening it as three would be a different scene.
+        BuilderNewOptions.SubType view = data.builderCarriages() == 1
+                ? BuilderNewOptions.SubType.CARRIAGE_ROOM
+                : null;
+        if (holding.isPresent() && applyOpen(level, mode, holding.get(), "", view)) {
+            LOGGER.info("[DungeonTrain] Builder world reopened: '{}' re-stamped into mode '{}' in {} ms",
+                    holding.get().id(), mode.id(), (System.nanoTime() - t0) / 1_000_000);
+            return true;
+        }
+
+        // A draft with no name, or a template that no longer resolves. Either way the world holds
+        // nothing that can be re-stamped from disk, so it comes back as the mode's bare scene on the
+        // shell it was last stamped from — the same thing setupIfNeeded stands up for a fresh world.
+        String recorded = data.builderName();
+        int carriages = BuilderWorldLayout.parkedCarriages(mode, null);
+        resetScene(level, data, dims, mode, /*corridor*/ true);
+        if (carriages > 0) {
+            stampTrain(level, dims, carriages);
+        }
+        data.setBuilderCarriages(carriages);
+        data.setBuilderName("");
+        LOGGER.info("[DungeonTrain] Builder world reopened: nothing re-stampable on record ({}), "
+                        + "stood mode '{}' back up with {} carriage(s) in {} ms",
+                recorded == null || recorded.isEmpty() ? "<draft>" : "'" + recorded + "'",
                 mode.id(), carriages, (System.nanoTime() - t0) / 1_000_000);
         return true;
     }
@@ -152,10 +234,11 @@ public final class BuilderWorldSetup {
      * Re-shape an existing builder world for a different mode: strip the parked train and stamp
      * the new one, adding or removing the scenery if the modes disagree about wanting it.
      *
-     * <p>The platform and the track used to be left alone unconditionally — every mode shared them,
-     * and rebuilding 180 000 blocks to change a carriage count would be absurd. They are no longer
-     * shared: Train Dimensions builds in open void. So the scenery is now rebuilt only when crossing
-     * that boundary, which is at most once per switch and never on a carriage-to-carriage one.</p>
+     * <p>The scenery used to be rebuilt only when the outgoing and incoming modes disagreed about
+     * wanting it, off a recorded previous mode. That was a bookkeeping answer to a question the
+     * world can answer directly, and it got it wrong: switching out of Train Dimensions restored the
+     * platform and left the line unlaid. {@link #resetScene} now reconciles it against the incoming
+     * mode every time, so there is no previous state to have recorded wrongly.</p>
      *
      * <p>Discards whatever was in the old carriages, so callers own the unsaved-changes
      * conversation (see {@code BuilderSwitchPacket}).</p>
@@ -163,28 +246,13 @@ public final class BuilderWorldSetup {
     public static void restamp(ServerLevel level, BuilderMode mode) {
         DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
         CarriageDims dims = data.dims();
-        BuilderMode previousMode = BuilderMode.fromId(data.builderMode()).orElse(null);
+        // Read before the wipe: this is what the world was holding, and the carriage-count rule
+        // below is the one thing about the outgoing build that survives the switch.
         int previous = parkedCarriages(data);
 
-        clearTrain(level, dims, previous);
-        // Whatever room was standing goes too: it belongs to the mode being left, and leaving it
-        // would strand an unowned volume in the middle of the next mode's train.
-        clearPreviousRoom(level, data, dims);
-        // A track template left standing would be scenery nobody asked for in a carriage build —
-        // and a tunnel is tall enough to swallow the train.
-        clearTrackPlot(level, data, dims);
-
-        // The scenery, only when the two modes disagree about wanting it. A null previous mode is a
-        // world whose mode was never recorded, which by definition predates the void mode and so
-        // has scenery already.
-        boolean had = previousMode == null || hasScenery(previousMode);
-        boolean wants = hasScenery(mode);
-        if (wants && !had) {
-            stampPlatform(level);
-            stampTrack(level, dims);
-        } else if (!wants && had) {
-            clearScenery(level);
-        }
+        // Everything standing goes — the parked train, whatever room was up, the track plot, and any
+        // stray build on the platform — and the scenery comes back as this mode wants it.
+        resetScene(level, data, dims, mode, /*corridor*/ true);
 
         // A mode switch changes the mode, not what is being authored: a build that stood alone
         // stays alone, and one that was a full run stays a full run, scaled to the new mode.
@@ -203,8 +271,7 @@ public final class BuilderWorldSetup {
         data.setBuilderSubType("", "");
         LOGGER.info("[DungeonTrain] Builder world re-stamped: {} carriage(s) -> '{}' ({} carriage(s)),"
                         + " scenery {}",
-                previous, mode.id(), carriages,
-                wants == had ? "unchanged" : (wants ? "restored" : "removed"));
+                previous, mode.id(), carriages, hasScenery(mode) ? "platform + line" : "void");
     }
 
     /**
@@ -235,13 +302,21 @@ public final class BuilderWorldSetup {
      * and the store is per-server: a builder world is a builder world, so there is no Train Editor
      * plot open somewhere else whose baseline this would take with it.</p>
      *
-     * @param relayTrack put the shared corridor back afterwards. False for a track open, which wants
-     *                   the corridor gone on purpose so the line can be drawn as ghosts — a ghost
-     *                   that is also a real block can be broken, stood on, and saved into the wrong
-     *                   template.
+     * <p>Ends by reconciling the scenery for {@code mode} ({@link #applyScenery}), so every caller
+     * gets a world that matches the mode it is about to stamp into rather than whatever the last
+     * mode left behind. <b>Order matters and is the reason the scenery is done here rather than by
+     * the callers afterwards:</b> {@link BuilderWorldLayout#Y_TRACK_BED} is 2, which is also
+     * {@link BuilderWorldLayout#Y_STAND}, the row a portal room's floor sits on — reconciling after
+     * the build was stamped would take the floor out from under it.</p>
+     *
+     * @param mode     the mode being stamped into — decides whether this world ends up with a
+     *                 platform and a line under it, or open void
+     * @param corridor put the shared corridor back. False for a track open, which wants the corridor
+     *                 gone on purpose so the line can be drawn as ghosts — a ghost that is also a
+     *                 real block can be broken, stood on, and saved into the wrong template.
      */
-    private static void wipeScene(ServerLevel level, DungeonTrainWorldData data, CarriageDims dims,
-                                  boolean relayTrack) {
+    private static void resetScene(ServerLevel level, DungeonTrainWorldData data, CarriageDims dims,
+                                   BuilderMode mode, boolean corridor) {
         BlockState air = Blocks.AIR.defaultBlockState();
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         int minChunk = BuilderWorldLayout.MIN_XZ >> 4;
@@ -294,7 +369,32 @@ public final class BuilderWorldSetup {
         // The plot went with everything else, so the world is no longer holding a track build.
         data.setBuilderTrackKind("");
 
-        if (relayTrack) {
+        applyScenery(level, dims, mode, corridor);
+    }
+
+    /**
+     * Bring the platform and the line to what {@code mode} wants, from whatever is there now.
+     *
+     * <p>The one place that decides what the ground under a build looks like. It used to be decided
+     * in four places that each knew about a different part of it — {@code setupIfNeeded} stamped it
+     * once for a fresh world, {@code restamp} rebuilt it only when two modes disagreed,
+     * {@code applyNew} never touched it, and the wipe above put the track back but never the grass —
+     * so opening a portal room from a carriage mode stood the room on a lawn, and going the other way
+     * left a carriage floating in void. Reconciling unconditionally is both the fix and the reason
+     * there is nothing left to keep in sync.</p>
+     *
+     * <p>Cheap to call when it has nothing to do: both arms skip cells that already hold what they
+     * would write, so the common case (the scenery is already right) is a pass of palette reads
+     * rather than 180 000 writes and their client updates.</p>
+     */
+    private static void applyScenery(ServerLevel level, CarriageDims dims, BuilderMode mode,
+                                     boolean corridor) {
+        if (!hasScenery(mode)) {
+            clearScenery(level);
+            return;
+        }
+        stampPlatform(level);
+        if (corridor) {
             stampTrack(level, dims);
         }
     }
@@ -305,12 +405,17 @@ public final class BuilderWorldSetup {
      * <p>The exact inverse of {@link #stampPlatform} plus {@link #stampTrack}, and written the same
      * way — section-local over the same 300 × 300 box. Clears the track rows as well as the two
      * platform courses, because the track sits above the grass rather than in it.</p>
+     *
+     * <p>Cells already air are read and skipped. This runs on every entry into a void mode, and in
+     * a world that is already void that is the entire box — 360 000 no-op writes, each with its own
+     * client update, for nothing.</p>
      */
     private static void clearScenery(ServerLevel level) {
         BlockState air = Blocks.AIR.defaultBlockState();
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         int minChunk = BuilderWorldLayout.MIN_XZ >> 4;
         int maxChunk = BuilderWorldLayout.MAX_XZ >> 4;
+        int cleared = 0;
 
         for (int cx = minChunk; cx <= maxChunk; cx++) {
             for (int cz = minChunk; cz <= maxChunk; cz++) {
@@ -326,54 +431,21 @@ public final class BuilderWorldSetup {
                     for (int z = zLo; z <= zHi; z++) {
                         for (int y = BuilderWorldLayout.Y_BEDROCK;
                              y <= BuilderWorldLayout.Y_TRACK_RAIL; y++) {
-                            SilentBlockOps.setBlockSectionLocal(level, chunk,
-                                    pos.set(x, y, z).immutable(), air);
+                            pos.set(x, y, z);
+                            if (chunk.getBlockState(pos).isAir()) {
+                                continue;
+                            }
+                            SilentBlockOps.setBlockSectionLocal(level, chunk, pos.immutable(), air);
+                            cleared++;
                         }
                     }
                 }
                 chunk.setUnsaved(true);
             }
         }
+        LOGGER.info("[DungeonTrain] Builder scenery: cleared to void ({} block(s))", cleared);
     }
 
-    /**
-     * Erase the previous train's footprint back to air — the full span including the flatbed pads,
-     * from the train floor up through the carriage roof. Snapshots go with it: a baseline for a
-     * carriage that no longer exists would make the next dirty check compare against a ghost.
-     */
-    private static void clearTrain(ServerLevel level, CarriageDims dims, int previousCarriages) {
-        if (previousCarriages <= 0) {
-            return;
-        }
-        int startX = BuilderWorldLayout.trainStartX(previousCarriages, dims);
-        int endX = startX + BuilderWorldLayout.totalTrainLength(previousCarriages, dims) - 1;
-        int topY = BuilderWorldLayout.TRAIN_Y + dims.height() - 1;
-        BlockState air = Blocks.AIR.defaultBlockState();
-        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-
-        for (int cx = startX >> 4; cx <= endX >> 4; cx++) {
-            for (int cz = 0; cz <= (dims.width() - 1) >> 4; cz++) {
-                WorldgenForceGuard.forceChunk(level, cx, cz);
-                LevelChunk chunk = level.getChunk(cx, cz);
-                int xLo = Math.max(startX, cx << 4);
-                int xHi = Math.min(endX, (cx << 4) + 15);
-                int zLo = Math.max(0, cz << 4);
-                int zHi = Math.min(dims.width() - 1, (cz << 4) + 15);
-                for (int x = xLo; x <= xHi; x++) {
-                    for (int z = zLo; z <= zHi; z++) {
-                        for (int y = BuilderWorldLayout.TRAIN_Y; y <= topY; y++) {
-                            SilentBlockOps.setBlockSectionLocal(level, chunk,
-                                    pos.set(x, y, z).immutable(), air);
-                        }
-                    }
-                }
-                chunk.setUnsaved(true);
-            }
-        }
-        for (int i = 0; i < previousCarriages; i++) {
-            EditorPlotSnapshots.clear(BuilderDirtyCheck.snapshotKey(i));
-        }
-    }
 
     /**
      * Whether the mode wants the platform and the track under it.
@@ -415,6 +487,10 @@ public final class BuilderWorldSetup {
      * this is 180 000 blocks and every one of them is a plain cube under open sky — skylight above
      * the surface is unaffected by adding floor beneath it, so there is nothing for the light
      * engine to recompute.</p>
+     *
+     * <p>Cells that already hold the right block are read and skipped, for the same reason as
+     * {@link #clearScenery}: this runs on every entry into a scenery mode, and most of those find
+     * the platform already standing.</p>
      */
     private static void stampPlatform(ServerLevel level) {
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
@@ -422,6 +498,7 @@ public final class BuilderWorldSetup {
         int maxChunkX = BuilderWorldLayout.MAX_XZ >> 4;
         int minChunkZ = BuilderWorldLayout.MIN_XZ >> 4;
         int maxChunkZ = BuilderWorldLayout.MAX_XZ >> 4;
+        int laid = 0;
 
         for (int cx = minChunkX; cx <= maxChunkX; cx++) {
             for (int cz = minChunkZ; cz <= maxChunkZ; cz++) {
@@ -435,15 +512,26 @@ public final class BuilderWorldSetup {
 
                 for (int x = xLo; x <= xHi; x++) {
                     for (int z = zLo; z <= zHi; z++) {
-                        SilentBlockOps.setBlockSectionLocal(level, chunk,
-                                pos.set(x, BuilderWorldLayout.Y_BEDROCK, z).immutable(), BEDROCK);
-                        SilentBlockOps.setBlockSectionLocal(level, chunk,
-                                pos.set(x, BuilderWorldLayout.Y_GRASS, z).immutable(), GRASS);
+                        laid += layCourse(level, chunk, pos.set(x, BuilderWorldLayout.Y_BEDROCK, z),
+                                BEDROCK);
+                        laid += layCourse(level, chunk, pos.set(x, BuilderWorldLayout.Y_GRASS, z),
+                                GRASS);
                     }
                 }
                 chunk.setUnsaved(true);
             }
         }
+        LOGGER.info("[DungeonTrain] Builder scenery: platform laid ({} block(s))", laid);
+    }
+
+    /** One platform cell, written only when it isn't already that block. */
+    private static int layCourse(ServerLevel level, LevelChunk chunk, BlockPos.MutableBlockPos pos,
+                                 BlockState state) {
+        if (chunk.getBlockState(pos).is(state.getBlock())) {
+            return 0;
+        }
+        SilentBlockOps.setBlockSectionLocal(level, chunk, pos.immutable(), state);
+        return 1;
     }
 
     // ---- track ----
@@ -462,13 +550,22 @@ public final class BuilderWorldSetup {
         int maxChunkX = BuilderWorldLayout.MAX_XZ >> 4;
         int minChunkZ = g.trackZMin() >> 4;
         int maxChunkZ = g.trackZMax() >> 4;
+        TrackGenerator.PaintTally tally = new TrackGenerator.PaintTally();
 
         for (int cx = minChunkX; cx <= maxChunkX; cx++) {
             for (int cz = minChunkZ; cz <= maxChunkZ; cz++) {
                 WorldgenForceGuard.forceChunk(level, cx, cz);
-                TrackGenerator.ensureTracksForChunk(level, cx, cz, g, filled);
+                TrackGenerator.ensureTracksForChunk(level, cx, cz, g, filled, tally);
             }
         }
+
+        // The painter declines cells silently, in half a dozen different ways, and this call is the
+        // one place that asked for a whole corridor and knows it should have got one — so it says
+        // what it got. A run that writes nothing is a bug, not a no-op.
+        LOGGER.info("[DungeonTrain] Builder track: bed y={} rail y={} z={}..{} over chunks x {}..{} "
+                        + "z {}..{} — {}",
+                g.bedY(), g.railY(), g.trackZMin(), g.trackZMax(), minChunkX, maxChunkX,
+                minChunkZ, maxChunkZ, tally);
     }
 
     // ---- train ----
@@ -563,11 +660,10 @@ public final class BuilderWorldSetup {
         CarriageDims dims = data.dims();
         BuilderMode mode = request.mode();
 
-        // Read before anything below overwrites it: clearTrain has to erase the footprint that is
-        // actually out there, and after setBuilderSubType the world data describes the new build.
-        int previousCarriages = parkedCarriages(data);
-        clearTrain(level, dims, previousCarriages);
-        clearTrackPlot(level, data, dims);
+        // The whole scene, the same as Open — and for the same reason. Erasing only the volumes
+        // about to be stamped into left everything an author had put *outside* them standing: a
+        // tower on the platform, a block over the train, a mob that wandered in. New means new.
+        resetScene(level, data, dims, mode, /*corridor*/ true);
         data.setBuilderMode(mode.id());
 
         // A stage doesn't name a carriage — it decides which parts get stamped onto one. Selecting
@@ -735,7 +831,7 @@ public final class BuilderWorldSetup {
 
         // The whole scene, not just the carriage footprint: an Open hands back the template you
         // opened, and anything left standing beside it came from a build you already left.
-        wipeScene(level, data, dims, hasScenery(mode));
+        resetScene(level, data, dims, mode, /*corridor*/ true);
         data.setBuilderMode(mode.id());
 
         // Before the stamp, for the same reason applyNew does it: CarriagePlacer.placeAt reads
@@ -816,7 +912,7 @@ public final class BuilderWorldSetup {
         // blocks: everything outside the plot is drawn as ghosts (BuilderTrackGhostShape), and a
         // ghost that is also a real block is not a ghost — it can be broken, walked on, and saved
         // into the wrong template. The wipe is what makes the drawn version the only version.
-        wipeScene(level, data, dims, /*relayTrack*/ false);
+        resetScene(level, data, dims, mode, /*corridor*/ false);
         data.setBuilderMode(mode.id());
 
         BlockPos origin = BuilderTrackPlot.origin(kind, dims);
@@ -881,36 +977,6 @@ public final class BuilderWorldSetup {
                 sidecar.mirrorVariants());
     }
 
-    /**
-     * Erase the previous track plot back to air, and drop its baseline with it.
-     *
-     * <p>Same reasoning as {@link #clearTrain}: a baseline for a plot that no longer holds what it
-     * described would have the next dirty check comparing against a ghost. Skipped entirely when
-     * the world wasn't holding a track build, which is the common case.</p>
-     *
-     * <p>A plot that sat <em>in</em> the corridor takes a stretch of the shared track with it when
-     * it goes — a tunnel is ten blocks long and the tile that replaces it is four, so the erase
-     * would leave the line with holes either side of the new plot. So the corridor is re-laid
-     * afterwards, by the same {@link #stampTrack} call that put it there in the first place. The
-     * caller stamps its own template after this returns, so it wins over the restored track where
-     * the two overlap.</p>
-     */
-    private static void clearTrackPlot(ServerLevel level, DungeonTrainWorldData data,
-                                       CarriageDims dims) {
-        TrackKind previous = BuilderTrackBuild.kindOf(data);
-        if (previous == null) {
-            return;
-        }
-        BlockPos origin = BuilderTrackPlot.origin(previous, dims);
-        Vec3i size = BuilderTrackPlot.footprint(previous, dims);
-        forceChunksFor(level, origin, size);
-        erase(level, origin, size);
-        EditorPlotSnapshots.clear(BuilderDirtyCheck.snapshotKey(previous, data.builderName()));
-        data.setBuilderTrackKind("");
-        // Unconditional: opening any track template erases the whole corridor, so leaving one has
-        // to put all of it back, whichever kind was on the plot.
-        stampTrack(level, dims);
-    }
 
     /** Force every chunk a plot touches, so the stamp below never sync-loads mid-write. */
     private static void forceChunksFor(ServerLevel level, BlockPos origin, Vec3i size) {
@@ -975,7 +1041,7 @@ public final class BuilderWorldSetup {
         // to leave the old shell around it), and any stray build on the platform. It also resets
         // builderTrackKind, which is what stops a track template opened earlier from being written
         // over this room by Save — BuilderSave tests that field before the portal-room token.
-        wipeScene(level, data, dims, hasScenery(mode));
+        resetScene(level, data, dims, mode, /*corridor*/ true);
         data.setBuilderMode(mode.id());
 
         BlockPos origin = BuilderWorldLayout.portalRoomOrigin(size);
@@ -1001,28 +1067,6 @@ public final class BuilderWorldSetup {
         return true;
     }
 
-    /**
-     * Erase whatever room is standing, before a different one is stamped over the same ground.
-     *
-     * <p>Rooms differ in size, so stamping a small one where a large one stood would leave the old
-     * room's outer shell around it — the new room inside the corpse of the last. Reads the outgoing
-     * room's own size rather than the incoming one's, which is the whole point.</p>
-     */
-    private static void clearPreviousRoom(ServerLevel level, DungeonTrainWorldData data,
-                                          CarriageDims dims) {
-        if (!BuilderOpenRequest.PORTAL_ROOM_SUB_TYPE.equals(data.builderSubType())) {
-            return;
-        }
-        String previous = data.builderName();
-        if (previous == null || previous.isEmpty()) {
-            return;
-        }
-        Vec3i size = PortalRoomSizes.sizeOf(previous, dims);
-        BlockPos origin = BuilderWorldLayout.portalRoomOrigin(size);
-        PortalClear.clearBoxRelit(level, BoundingBox.fromCorners(origin,
-                origin.offset(size.getX() - 1, size.getY() - 1, size.getZ() - 1)),
-                PortalCorridorMask.NONE);
-    }
 
     /**
      * Everything {@link #applyOpen} needs, gathered before the world is touched.
