@@ -7049,6 +7049,23 @@
       "released": true,
       "released_in": "v0.561.0",
       "released_at": "2026-08-15T05:00:03Z"
+    },
+    {
+      "id": "portal-room-train-waits",
+      "version": "0.562.0",
+      "type": "fix",
+      "title": "Train Dimensions: the way back always works, and the train waits for you",
+      "summary": "Walk deep into a Train Dimension and the train now stops and waits, instead of rolling on without you. Every corridor in the room \u2014 the one you came in through and the extra ways out scattered through it \u2014 takes you straight back aboard, however long you stay or how far you wander. Before, a room you had gone far enough into could quietly lose its train and leave you with nowhere to walk.",
+      "highlights": [
+        "The train stops while you are inside its Train Dimension, and carries on from where it stopped when you return",
+        "Corridor copies deep in an endless room always lead back to the train",
+        "A train that is being ridden, or that somebody is standing near, keeps moving as before"
+      ],
+      "pr": 970,
+      "date": "2026-08-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
