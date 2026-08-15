@@ -36,6 +36,7 @@ import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
@@ -124,12 +125,17 @@ public final class BuilderWorldSetup {
      * record, so switching from a carriage room to a part doesn't leave the room's shell ghosting
      * around a carriage that has its own again.</p>
      */
-    private static void refreshGhostCells(ServerLevel level, CarriageDims dims) {
+    public static void refreshGhostCells(ServerLevel level, CarriageDims dims) {
         DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
         BuilderMode mode = BuilderMode.fromId(data.builderMode()).orElse(null);
         int carriages = parkedCarriages(data);
+        // Put the line back before reading it. A carriage-to-carriage mode switch re-stamps the
+        // train but not the scenery, so without this the second lift finds the air the first one
+        // left and records an empty track — see BuilderGhostCells.restoreTrack.
+        BuilderGhostCells.restoreTrack(level, dims, BuilderGhostCells.fromTag(
+                data.builderGhostCells(), level.holderLookup(Registries.BLOCK)));
         BuilderGhostCells.Cells cells = BuilderGhostCells.lift(level, dims, mode,
-                subTypeFor(mode, data), carriages);
+                subTypeFor(mode, data), carriages, data.builderGhostMode());
         data.setBuilderGhostCells(cells.isEmpty() ? null : BuilderGhostCells.toTag(cells));
 
         for (int i = 0; i < carriages; i++) {
@@ -137,6 +143,37 @@ public final class BuilderWorldSetup {
             EditorPlotSnapshots.capture(BuilderDirtyCheck.snapshotKey(i), level, origin,
                     dims.length(), dims.height(), dims.width());
         }
+    }
+
+    /**
+     * Change what the builder does with the scenery around the build, and make the world match.
+     *
+     * <p>Two of the three modes are the same world — {@code GHOST} and {@code NONE} both lift, and
+     * differ only in whether the client draws what was lifted — so a switch between them moves no
+     * blocks. {@code SOLID} is the one that does, in both directions: leaving it lifts, and entering
+     * it puts back exactly what was taken.</p>
+     *
+     * <p>Restored before the mode is stored, so a failure part-way leaves the world and the setting
+     * describing the same thing.</p>
+     */
+    public static void setGhostMode(ServerLevel level, BuilderGhostMode mode) {
+        DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
+        CarriageDims dims = data.dims();
+        BuilderGhostMode current = data.builderGhostMode();
+        if (current == mode) {
+            return;
+        }
+        if (current.lifts() && !mode.lifts()) {
+            BuilderGhostCells.restore(level, dims, parkedCarriages(data),
+                    BuilderGhostCells.fromTag(data.builderGhostCells(),
+                            level.holderLookup(Registries.BLOCK)));
+            data.setBuilderGhostCells(null);
+        }
+        data.setBuilderGhostMode(mode);
+        // Lifts when the new mode wants it and does nothing when the blocks are already gone, so
+        // this covers SOLID -> GHOST without a second arm for it.
+        refreshGhostCells(level, dims);
+        LOGGER.info("[DungeonTrain] Builder ghost mode: '{}' -> '{}'", current.id(), mode.id());
     }
 
     /**

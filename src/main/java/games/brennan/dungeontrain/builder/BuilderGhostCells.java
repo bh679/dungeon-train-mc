@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.builder;
 
+import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriagePlacer;
 import games.brennan.dungeontrain.worldgen.SilentBlockOps;
@@ -61,6 +62,7 @@ public final class BuilderGhostCells {
     private static final String TAG_SHELL = "shell";
     private static final String TAG_BACK_PAD = "backPad";
     private static final String TAG_FRONT_PAD = "frontPad";
+    private static final String TAG_TRACK = "track";
     private static final String TAG_POS = "p";
     private static final String TAG_STATE = "s";
 
@@ -78,13 +80,26 @@ public final class BuilderGhostCells {
      */
     public record Cells(Map<BlockPos, BlockState> shell,
                         Map<BlockPos, BlockState> backPad,
-                        Map<BlockPos, BlockState> frontPad) {
+                        Map<BlockPos, BlockState> frontPad,
+                        Map<BlockPos, BlockState> track) {
 
-        public static final Cells EMPTY = new Cells(Map.of(), Map.of(), Map.of());
+        public static final Cells EMPTY = new Cells(Map.of(), Map.of(), Map.of(), Map.of());
 
         public boolean isEmpty() {
-            return shell.isEmpty() && backPad.isEmpty() && frontPad.isEmpty();
+            return shell.isEmpty() && backPad.isEmpty() && frontPad.isEmpty() && track.isEmpty();
         }
+    }
+
+    /**
+     * Where the lifted track is measured from — the low corner of the corridor it runs down.
+     *
+     * <p>Its own origin rather than the carriage's, because the track is the one lifted shape that
+     * isn't part of a carriage: it runs the length of the platform and stays put while the train
+     * around it changes length.</p>
+     */
+    public static BlockPos trackOrigin(CarriageDims dims) {
+        TrackGeometry g = TrackGeometry.from(dims, BuilderWorldLayout.TRAIN_Y);
+        return new BlockPos(BuilderWorldLayout.MIN_XZ, g.bedY(), g.trackZMin());
     }
 
     /**
@@ -98,15 +113,86 @@ public final class BuilderGhostCells {
      *                  one-carriage world, since a full group is missing nothing
      */
     public static Cells lift(ServerLevel level, CarriageDims dims, BuilderMode mode,
-                             BuilderNewOptions.SubType subType, int carriages) {
-        if (mode == null || carriages <= 0) {
+                             BuilderNewOptions.SubType subType, int carriages,
+                             BuilderGhostMode ghostMode) {
+        // SOLID leaves everything standing, which is the whole of what it means — see
+        // BuilderGhostMode. Nothing is recorded either, so a world in SOLID has no ghosts to send.
+        if (mode == null || carriages <= 0 || ghostMode == null || !ghostMode.lifts()) {
             return Cells.EMPTY;
         }
-        // The pads go whatever is parked; the shell only makes sense around the single carriage a
-        // room is authored in. See liftPad and liftShell for why the two answer differently.
+        // The pads and the track go whatever is parked; the shell only makes sense around the
+        // single carriage a room is authored in. See each lift for why they answer differently.
         return new Cells(liftShell(level, dims, mode, subType, carriages),
                 liftPad(level, dims, mode, CarriagePlacer.HalfPadSide.BACK),
-                liftPad(level, dims, mode, CarriagePlacer.HalfPadSide.FRONT));
+                liftPad(level, dims, mode, CarriagePlacer.HalfPadSide.FRONT),
+                liftTrack(level, dims, mode));
+    }
+
+    /**
+     * Put back what {@link #lift} took — the way into {@link BuilderGhostMode#SOLID}.
+     *
+     * <p>Written from the recorded cells rather than re-stamped from the templates, so what comes
+     * back is what was actually taken: this build's parts overlay on the shell, this world's track
+     * variants down the corridor. Re-stamping would quietly replace all of it with whatever the
+     * registry picks today.</p>
+     *
+     * <p>Skips any cell an author has since filled. Nothing can normally get into these spaces —
+     * the track rows are protected and the shell ring is outside what a room saves — but "restore"
+     * must never mean "overwrite something that is there".</p>
+     */
+    public static void restore(ServerLevel level, CarriageDims dims, int carriages, Cells cells) {
+        if (cells == null || cells.isEmpty()) {
+            return;
+        }
+        if (carriages == 1 && !cells.shell().isEmpty()) {
+            BoundingBox parked = BuilderBounds.buildVolumes(carriages, dims).get(0);
+            restoreAt(level, cells.shell(),
+                    new BlockPos(parked.minX(), parked.minY(), parked.minZ()));
+        }
+        List<Integer> padXs = padPositions(dims);
+        if (padXs.size() == 2) {
+            restoreAt(level, cells.backPad(),
+                    new BlockPos(padXs.get(0), BuilderWorldLayout.TRAIN_Y, 0));
+            restoreAt(level, cells.frontPad(),
+                    new BlockPos(padXs.get(1), BuilderWorldLayout.TRAIN_Y, 0));
+        }
+        restoreTrack(level, dims, cells);
+    }
+
+    /**
+     * Put back just the line, before a fresh lift reads it.
+     *
+     * <p>The shell and the pads heal themselves on a re-stamp — {@code stampTrain} lays a new shell
+     * and {@link #liftPad} stamps its own pad before capturing it — but nothing re-stamps the track
+     * on a carriage-to-carriage mode switch, because {@code BuilderWorldSetup.restamp} only rebuilds
+     * the scenery when crossing the has-scenery boundary. So the second lift would find the air the
+     * first one left and record an empty line, and the track ghost would vanish on the first mode
+     * switch.</p>
+     *
+     * <p>Safe to do unconditionally, and safe in a way the shell is not: {@link #trackOrigin} is
+     * fixed by the platform rather than by the parked group, so it means the same place whatever the
+     * carriage count has changed to.</p>
+     */
+    public static void restoreTrack(ServerLevel level, CarriageDims dims, Cells cells) {
+        if (cells != null && !cells.track().isEmpty()) {
+            restoreAt(level, cells.track(), trackOrigin(dims));
+        }
+    }
+
+    private static void restoreAt(ServerLevel level, Map<BlockPos, BlockState> cells, BlockPos origin) {
+        for (Map.Entry<BlockPos, BlockState> entry : cells.entrySet()) {
+            BlockPos pos = origin.offset(entry.getKey());
+            if (!level.getBlockState(pos).isAir()) {
+                continue;
+            }
+            SilentBlockOps.setBlockSilentNoCascade(level, pos, entry.getValue(), null);
+        }
+    }
+
+    /** Where this world's pads sit, for both the lift and the restore. */
+    private static List<Integer> padPositions(CarriageDims dims) {
+        return BuilderGhostSlots.padMinXFor(BuilderWorldLayout.OUTSIDE_CARRIAGES, dims.length(),
+                CarriagePlacer.halfPadLen(dims));
     }
 
     /**
@@ -183,9 +269,10 @@ public final class BuilderGhostCells {
     private static Map<BlockPos, BlockState> liftPad(ServerLevel level, CarriageDims dims,
                                                      BuilderMode mode,
                                                      CarriagePlacer.HalfPadSide side) {
-        int full = BuilderWorldLayout.ghostGroupCarriages(mode);
         int padLength = CarriagePlacer.halfPadLen(dims);
-        List<Integer> padXs = BuilderGhostSlots.padMinXFor(full, dims.length(), padLength);
+        List<Integer> padXs = BuilderWorldLayout.ghostGroupCarriages(mode) <= 0
+                ? List.of()
+                : padPositions(dims);
         if (padXs.size() != 2 || padLength <= 0) {
             return Map.of();
         }
@@ -214,6 +301,48 @@ public final class BuilderGhostCells {
         return lifted;
     }
 
+    /**
+     * The bed and rails down the corridor, taken away and handed back.
+     *
+     * <p>The clearest case of the three. The track is not part of any template, it is not in any
+     * build volume, and {@link BuilderWorldLayout#isProtected} already forbids touching it — it has
+     * always been scenery that merely looked like blocks. Ghosting it says so.</p>
+     *
+     * <p>The whole corridor rather than the stretch under the train: a ghost that stopped where the
+     * carriages end would put a hard line across the platform at a point that means nothing, and the
+     * line would move every time the parked count changed.</p>
+     *
+     * <p>Only for a mode that has scenery — Train Dimensions builds in open void and has no track to
+     * lift.</p>
+     */
+    private static Map<BlockPos, BlockState> liftTrack(ServerLevel level, CarriageDims dims,
+                                                       BuilderMode mode) {
+        if (!BuilderWorldSetup.hasScenery(mode)) {
+            return Map.of();
+        }
+        TrackGeometry g = TrackGeometry.from(dims, BuilderWorldLayout.TRAIN_Y);
+        BlockPos origin = trackOrigin(dims);
+        Map<BlockPos, BlockState> lifted = new LinkedHashMap<>();
+        BlockPos.MutableBlockPos probe = new BlockPos.MutableBlockPos();
+
+        for (int x = BuilderWorldLayout.MIN_XZ; x <= BuilderWorldLayout.MAX_XZ; x++) {
+            for (int y = g.bedY(); y <= g.railY(); y++) {
+                for (int z = g.trackZMin(); z <= g.trackZMax(); z++) {
+                    probe.set(x, y, z);
+                    BlockState state = level.getBlockState(probe);
+                    if (state.isAir()) {
+                        continue;
+                    }
+                    lifted.put(new BlockPos(x - origin.getX(), y - origin.getY(),
+                            z - origin.getZ()), state);
+                    SilentBlockOps.setBlockSilentNoCascade(level, probe.immutable(),
+                            Blocks.AIR.defaultBlockState(), null);
+                }
+            }
+        }
+        return lifted;
+    }
+
     // ---- Persistence ----
 
     /**
@@ -231,6 +360,7 @@ public final class BuilderGhostCells {
         tag.put(TAG_SHELL, writeCells(cells.shell()));
         tag.put(TAG_BACK_PAD, writeCells(cells.backPad()));
         tag.put(TAG_FRONT_PAD, writeCells(cells.frontPad()));
+        tag.put(TAG_TRACK, writeCells(cells.track()));
         return tag;
     }
 
@@ -241,7 +371,8 @@ public final class BuilderGhostCells {
         }
         return new Cells(readCells(tag.getList(TAG_SHELL, Tag.TAG_COMPOUND), blocks),
                 readCells(tag.getList(TAG_BACK_PAD, Tag.TAG_COMPOUND), blocks),
-                readCells(tag.getList(TAG_FRONT_PAD, Tag.TAG_COMPOUND), blocks));
+                readCells(tag.getList(TAG_FRONT_PAD, Tag.TAG_COMPOUND), blocks),
+                readCells(tag.getList(TAG_TRACK, Tag.TAG_COMPOUND), blocks));
     }
 
     private static ListTag writeCells(Map<BlockPos, BlockState> cells) {

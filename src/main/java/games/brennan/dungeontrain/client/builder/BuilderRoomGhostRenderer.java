@@ -4,9 +4,9 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.builder.BuilderGhostMode;
 import games.brennan.dungeontrain.builder.BuilderOpenRequest;
 import games.brennan.dungeontrain.builder.BuilderRoomGhosts;
-import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.portal.PortalRoomMode;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -131,11 +131,12 @@ public final class BuilderRoomGhostRenderer {
     private static void rescan() {
         Minecraft mc = Minecraft.getInstance();
         List<BoundingBox> volumes = BuilderBoundsState.volumes();
-        // The same switch the carriage ghosts read. One toggle for "draw the builder's ghosts",
+        // The same switch the carriage ghosts read. One control for "draw the builder's ghosts",
         // because from the player's side that is one thing — two settings for two renderers drawing
-        // the same idea would be a distinction only the code cares about.
+        // the same idea would be a distinction only the code cares about. A room has no scenery of
+        // its own to make solid, so Solid and None come to the same thing here: no ghosts.
         if (volumes.isEmpty() || mc.level == null
-                || !ClientDisplayConfig.isBuilderGhostTrainEnabled()
+                || BuilderGhostCellsState.mode() != BuilderGhostMode.GHOST
                 || !BuilderOpenRequest.PORTAL_ROOM_SUB_TYPE.equals(BuilderBoundsState.subTypeId())) {
             clear();
             return;

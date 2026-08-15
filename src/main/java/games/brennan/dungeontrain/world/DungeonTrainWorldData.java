@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.world;
 
+import games.brennan.dungeontrain.builder.BuilderGhostMode;
 import games.brennan.dungeontrain.builder.BuilderMirrorFlags;
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
@@ -69,6 +70,7 @@ public final class DungeonTrainWorldData extends SavedData {
     private static final String TAG_BUILDER_TRACK_KIND = "builderTrackKind";
     private static final String TAG_BUILDER_CARRIAGES = "builderCarriages";
     private static final String TAG_BUILDER_GHOST_CELLS = "builderGhostCells";
+    private static final String TAG_BUILDER_GHOST_MODE = "builderGhostMode";
 
     private int trainY;
     private boolean startsWithTrain;
@@ -116,6 +118,12 @@ public final class DungeonTrainWorldData extends SavedData {
      * anyone asks again, the shell it describes has already been erased from the world.</p>
      */
     private CompoundTag builderGhostCells;
+    /**
+     * Whether the scenery around the build is ghosted, hidden, or left standing —
+     * {@code BuilderGhostMode}. World state rather than a client preference because one of the
+     * three decides whether the blocks are <em>there</em>; see that enum for the full reasoning.
+     */
+    private String builderGhostMode;
     /**
      * What kind of thing this build is — {@code whole_carriage}, {@code carriage_room} or
      * {@code parts}. Save needs it: a room and a part are captured from different regions and
@@ -344,6 +352,9 @@ public final class DungeonTrainWorldData extends SavedData {
         if (tag.contains(TAG_BUILDER_GHOST_CELLS)) {
             data.builderGhostCells = tag.getCompound(TAG_BUILDER_GHOST_CELLS).copy();
         }
+        if (tag.contains(TAG_BUILDER_GHOST_MODE)) {
+            data.builderGhostMode = tag.getString(TAG_BUILDER_GHOST_MODE);
+        }
         if (tag.contains(TAG_BUILDER_SUB_TYPE)) {
             data.builderSubType = tag.getString(TAG_BUILDER_SUB_TYPE);
         }
@@ -400,6 +411,9 @@ public final class DungeonTrainWorldData extends SavedData {
         }
         if (builderGhostCells != null && !builderGhostCells.isEmpty()) {
             tag.put(TAG_BUILDER_GHOST_CELLS, builderGhostCells.copy());
+        }
+        if (builderGhostMode != null) {
+            tag.putString(TAG_BUILDER_GHOST_MODE, builderGhostMode);
         }
         if (builderSubType != null) {
             tag.putString(TAG_BUILDER_SUB_TYPE, builderSubType);
@@ -467,6 +481,19 @@ public final class DungeonTrainWorldData extends SavedData {
     /** Records what {@code BuilderGhostCells.lift} took out of the world. Null clears it. */
     public void setBuilderGhostCells(CompoundTag cells) {
         this.builderGhostCells = cells == null || cells.isEmpty() ? null : cells.copy();
+        setDirty();
+    }
+
+    /**
+     * Whether the scenery around the build is ghosted, hidden, or solid. Never null — a world saved
+     * before this existed reads as {@code BuilderGhostMode.DEFAULT}.
+     */
+    public BuilderGhostMode builderGhostMode() {
+        return BuilderGhostMode.orDefault(builderGhostMode);
+    }
+
+    public void setBuilderGhostMode(BuilderGhostMode mode) {
+        this.builderGhostMode = mode == null ? null : mode.id();
         setDirty();
     }
 

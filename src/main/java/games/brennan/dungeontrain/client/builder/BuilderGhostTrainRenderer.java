@@ -3,10 +3,10 @@ package games.brennan.dungeontrain.client.builder;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.builder.BuilderGhostMode;
 import games.brennan.dungeontrain.builder.BuilderGhostSlots;
 import games.brennan.dungeontrain.builder.BuilderMode;
 import games.brennan.dungeontrain.builder.BuilderWorldLayout;
-import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriagePlacer;
 import net.minecraft.client.Minecraft;
@@ -99,16 +99,6 @@ public final class BuilderGhostTrainRenderer {
     private static volatile List<Integer> padMinX = List.of();
     /** Whether the carriage on the track has had its shell lifted, and so needs it drawn back. */
     private static volatile boolean shellLifted = false;
-    /**
-     * Whether to draw the <em>rest of the train</em> — the empty slots and the pads.
-     *
-     * <p>Separate from {@link #shellLifted} because the display toggle governs one and not the
-     * other. "Show the builder's ghosts" is a question about context you can take or leave; the
-     * shell of the carriage you are standing in is not context, it is the carriage, and it has been
-     * lifted out of the world. Switching the toggle off must not leave a room with no walls and
-     * nothing drawn where they were.</p>
-     */
-    private static volatile boolean drawSurroundings = false;
 
     private static int tickCounter = 0;
 
@@ -135,7 +125,6 @@ public final class BuilderGhostTrainRenderer {
         ghosts = new BuilderGhostSlots.Ghosts(List.of(), List.of(), 0);
         padMinX = List.of();
         shellLifted = false;
-        drawSurroundings = false;
     }
 
     /**
@@ -149,9 +138,10 @@ public final class BuilderGhostTrainRenderer {
         Minecraft mc = Minecraft.getInstance();
         List<BoundingBox> volumes = BuilderBoundsState.volumes();
         Map<BlockPos, BlockState> shell = BuilderGhostCellsState.shell();
-        boolean surroundings = ClientDisplayConfig.isBuilderGhostTrainEnabled();
-        // With the toggle off there is still the lifted shell to put back — see drawSurroundings.
-        if (volumes.isEmpty() || mc.level == null || (!surroundings && shell.isEmpty())) {
+        // NONE lifts exactly as GHOST does and simply doesn't draw it, so there is nothing to sweep
+        // for; SOLID lifts nothing, so there is nothing to draw. Either way, no ghosts.
+        if (volumes.isEmpty() || mc.level == null
+                || BuilderGhostCellsState.mode() != BuilderGhostMode.GHOST) {
             clear();
             return;
         }
@@ -172,7 +162,8 @@ public final class BuilderGhostTrainRenderer {
         // The pads separately from the slots: a fully parked group has no empty slot to ghost and
         // still has pads, which is exactly the case that was leaving them solid and washed red.
         List<Integer> pads = BuilderGhostSlots.padMinXFor(full, length, CarriagePlacer.halfPadLen(dims));
-        if (slots.isEmpty() && shell.isEmpty() && pads.isEmpty()) {
+        if (slots.isEmpty() && shell.isEmpty() && pads.isEmpty()
+                && BuilderGhostCellsState.track().isEmpty()) {
             clear();
             return;
         }
@@ -206,7 +197,6 @@ public final class BuilderGhostTrainRenderer {
         ghosts = slots;
         padMinX = pads;
         shellLifted = !shell.isEmpty();
-        drawSurroundings = surroundings;
         carriage = found;
     }
 
@@ -219,11 +209,11 @@ public final class BuilderGhostTrainRenderer {
         Map<BlockPos, BlockState> shell = BuilderGhostCellsState.shell();
         Map<BlockPos, BlockState> backPad = BuilderGhostCellsState.backPad();
         Map<BlockPos, BlockState> frontPad = BuilderGhostCellsState.frontPad();
+        Map<BlockPos, BlockState> track = BuilderGhostCellsState.track();
         BuilderGhostSlots.Ghosts slots = ghosts;
         List<Integer> pads = padMinX;
-        boolean surroundings = drawSurroundings;
-        boolean anythingAround = surroundings && (!slots.carriageMinX().isEmpty() || !pads.isEmpty());
-        if (cells.isEmpty() || (!shellLifted && !anythingAround)) {
+        if (BuilderGhostCellsState.mode() != BuilderGhostMode.GHOST
+                || (cells.isEmpty() && track.isEmpty())) {
             return;
         }
 
@@ -254,19 +244,23 @@ public final class BuilderGhostTrainRenderer {
         if (shellLifted) {
             batches.add(new Batch(shell, cells, base));
         }
-        if (surroundings) {
-            for (int slotX : slots.carriageMinX()) {
-                batches.add(new Batch(cells, cells, new BlockPos(slotX, base.getY(), base.getZ())));
+        for (int slotX : slots.carriageMinX()) {
+            batches.add(new Batch(cells, cells, new BlockPos(slotX, base.getY(), base.getZ())));
+        }
+        // The flatbed pads capping the group, sitting on the train floor like the real ones. The
+        // pads are listed low-X first, which is the BACK one — the order they were captured in.
+        for (int i = 0; i < pads.size(); i++) {
+            Map<BlockPos, BlockState> pad = i == 0 ? backPad : frontPad;
+            if (!pad.isEmpty()) {
+                batches.add(new Batch(pad, pad,
+                        new BlockPos(pads.get(i), BuilderWorldLayout.TRAIN_Y, base.getZ())));
             }
-            // The flatbed pads capping the group, sitting on the train floor like the real ones. The
-            // pads are listed low-X first, which is the BACK one — the order they were captured in.
-            for (int i = 0; i < pads.size(); i++) {
-                Map<BlockPos, BlockState> pad = i == 0 ? backPad : frontPad;
-                if (!pad.isEmpty()) {
-                    batches.add(new Batch(pad, pad,
-                            new BlockPos(pads.get(i), BuilderWorldLayout.TRAIN_Y, base.getZ())));
-                }
-            }
+        }
+        // The line the whole thing stands on. One batch for all 300 blocks of it, which is fine
+        // for the ordering: it is a flat ribbon under everything else, so there is no near end of
+        // it that has to win a pixel against a far end.
+        if (!track.isEmpty()) {
+            batches.add(new Batch(track, track, BuilderGhostCellsState.trackOrigin()));
         }
         batches.sort(Comparator.comparingDouble(b -> b.distanceSqr(cam)));
 

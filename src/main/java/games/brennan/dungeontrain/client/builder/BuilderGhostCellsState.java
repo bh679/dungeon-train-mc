@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.builder;
 
+import games.brennan.dungeontrain.builder.BuilderGhostMode;
 import games.brennan.dungeontrain.net.BuilderGhostCellsPacket;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.state.BlockState;
@@ -23,6 +24,9 @@ public final class BuilderGhostCellsState {
     private static volatile Map<BlockPos, BlockState> shell = Map.of();
     private static volatile Map<BlockPos, BlockState> backPad = Map.of();
     private static volatile Map<BlockPos, BlockState> frontPad = Map.of();
+    private static volatile Map<BlockPos, BlockState> track = Map.of();
+    private static volatile BlockPos trackOrigin = BlockPos.ZERO;
+    private static volatile BuilderGhostMode mode = BuilderGhostMode.DEFAULT;
 
     private BuilderGhostCellsState() {}
 
@@ -30,12 +34,39 @@ public final class BuilderGhostCellsState {
         shell = Map.copyOf(packet.shell());
         backPad = Map.copyOf(packet.backPad());
         frontPad = Map.copyOf(packet.frontPad());
+        track = Map.copyOf(packet.track());
+        trackOrigin = packet.trackOrigin();
+        mode = BuilderGhostMode.orDefault(packet.modeId());
     }
 
     public static void clear() {
         shell = Map.of();
         backPad = Map.of();
         frontPad = Map.of();
+        track = Map.of();
+        trackOrigin = BlockPos.ZERO;
+        mode = BuilderGhostMode.DEFAULT;
+    }
+
+    /**
+     * What this world does with the scenery around the build.
+     *
+     * <p>The server's answer, not a local preference: {@code SOLID} means the blocks are really
+     * there, so the client cannot hold an opinion of its own about it. The pause-menu button reads
+     * this to know what it is showing and what to cycle to.</p>
+     */
+    public static BuilderGhostMode mode() {
+        return mode;
+    }
+
+    /** The bed and rails down the corridor, local to {@link #trackOrigin()}. */
+    public static Map<BlockPos, BlockState> track() {
+        return track;
+    }
+
+    /** Where the lifted track is measured from — its own origin, not the carriage's. */
+    public static BlockPos trackOrigin() {
+        return trackOrigin;
     }
 
     /** The carriage skin above the floor, local to the carriage box; empty when it wasn't lifted. */

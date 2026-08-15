@@ -73,7 +73,6 @@ public final class ClientDisplayConfig {
     public static final ModConfigSpec.BooleanValue FRAMERATE_THROTTLE_ENABLED;
     public static final ModConfigSpec.IntValue FRAMERATE_THROTTLE_FPS;
     public static final ModConfigSpec.BooleanValue DELETE_WORLD_ON_REBOARD;
-    public static final ModConfigSpec.BooleanValue BUILDER_GHOST_TRAIN;
     /**
      * Relay pool ids of community (player-written) books this player has read, stored as decimal strings.
      * GLOBAL client-side read history — persists across worlds and servers (unlike the retired per-world
@@ -140,7 +139,6 @@ public final class ClientDisplayConfig {
         FRAMERATE_THROTTLE_ENABLED = pair.getLeft().framerateThrottleEnabled;
         FRAMERATE_THROTTLE_FPS = pair.getLeft().framerateThrottleFps;
         DELETE_WORLD_ON_REBOARD = pair.getLeft().deleteWorldOnReboard;
-        BUILDER_GHOST_TRAIN = pair.getLeft().builderGhostTrain;
         SHARED_BOOKS_READ = pair.getLeft().sharedBooksRead;
         DEATH_SCREEN_LAST_NPS = pair.getLeft().deathScreenLastNps;
         POLITICAL_FILTER = pair.getLeft().politicalFilter;
@@ -247,11 +245,10 @@ public final class ClientDisplayConfig {
                 .define("deleteOnReboard", true);
         b.pop();
 
-        b.push("builder");
-        ModConfigSpec.BooleanValue builderGhostTrain = b
-                .comment("Draw the rest of the train as translucent ghost blocks in the Train Builder. Opening a carriage room or a part parks the single carriage you are editing, which loses the sense of where it sits in a run; the empty slots either side are filled in at about 10% opacity so you can still read the whole train. Nothing is stamped — the ghosts are drawn, not built, so they can never end up in a saved template. Set false to see only what you are editing. Toggleable in-game from the Train Builder pause menu.")
-                .define("ghostTrain", true);
-        b.pop();
+        // The Train Builder's ghost setting used to live here, as a client-side boolean. It moved to
+        // world data as BuilderGhostMode when it grew a third state: Solid decides whether the
+        // scenery blocks are *there*, which the server owns and everyone in the world must agree on.
+        // See BuilderGhostMode for the full reasoning.
 
         b.push("sharedBooks");
         ModConfigSpec.ConfigValue<List<? extends String>> sharedBooksRead = b
@@ -303,7 +300,7 @@ public final class ClientDisplayConfig {
                 rideSnapshotDiskOffload, rideSnapshotFlushMinFps, rideSnapshotFlushMinTps, rideSnapshotMaxOnDisk,
                 rideSnapshotMaxResolution,
                 framerateThrottleEnabled, framerateThrottleFps, deleteWorldOnReboard,
-                builderGhostTrain, sharedBooksRead,
+                sharedBooksRead,
                 deathScreenLastNps, politicalFilter, contentMode);
     }
 
@@ -601,33 +598,6 @@ public final class ClientDisplayConfig {
         FRAMERATE_THROTTLE_ENABLED.save();
     }
 
-    // ----- Train Builder ghost train -----
-
-    /**
-     * Draw the empty carriage slots either side of the build as translucent ghosts?
-     *
-     * <p>Defaults {@code true}, and to {@code true} pre-load as well — unlike the framerate
-     * throttle, this one has no vanilla behaviour to leave alone, and a config that hasn't loaded
-     * yet should show the same thing a loaded one does.</p>
-     *
-     * <p><b>The slots and the pads, not the shell.</b> Authoring a carriage room from inside lifts
-     * the carriage's own walls and roof out of the world so the rest of the train is visible
-     * ({@code BuilderGhostCells}), and those are drawn whatever this says. They are not context you
-     * can take or leave — they are the carriage, and switching this off to hide them would leave a
-     * room with no walls and nothing drawn where they were.</p>
-     */
-    public static boolean isBuilderGhostTrainEnabled() {
-        return !isLoaded() || BUILDER_GHOST_TRAIN.get();
-    }
-
-    /** Persist the ghost-train toggle. Idempotent: an unchanged value skips the TOML write. */
-    public static void setBuilderGhostTrainEnabled(boolean value) {
-        if (!isLoaded()) return;
-        if (BUILDER_GHOST_TRAIN.get() == value) return;
-        BUILDER_GHOST_TRAIN.set(value);
-        BUILDER_GHOST_TRAIN.save();
-    }
-
     /** Framerate to cap to while idle. Only ever lowers the rate — see {@link FramerateThrottle#decide}. */
     public static int getFramerateThrottleFps() {
         return isLoaded() ? FRAMERATE_THROTTLE_FPS.get() : FramerateThrottle.DEFAULT_THROTTLE_FPS;
@@ -760,7 +730,6 @@ public final class ClientDisplayConfig {
             ModConfigSpec.BooleanValue framerateThrottleEnabled,
             ModConfigSpec.IntValue framerateThrottleFps,
             ModConfigSpec.BooleanValue deleteWorldOnReboard,
-            ModConfigSpec.BooleanValue builderGhostTrain,
             ModConfigSpec.ConfigValue<List<? extends String>> sharedBooksRead,
             ModConfigSpec.IntValue deathScreenLastNps,
             ModConfigSpec.EnumValue<PoliticalFilter> politicalFilter,

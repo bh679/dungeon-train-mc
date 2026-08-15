@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.net;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.builder.BuilderGhostCells;
+import games.brennan.dungeontrain.builder.BuilderGhostMode;
 import games.brennan.dungeontrain.builder.BuilderWorldLayout;
 import games.brennan.dungeontrain.client.builder.BuilderGhostCellsState;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
@@ -42,7 +43,10 @@ import java.util.Map;
  */
 public record BuilderGhostCellsPacket(Map<BlockPos, BlockState> shell,
                                       Map<BlockPos, BlockState> backPad,
-                                      Map<BlockPos, BlockState> frontPad)
+                                      Map<BlockPos, BlockState> frontPad,
+                                      Map<BlockPos, BlockState> track,
+                                      BlockPos trackOrigin,
+                                      String modeId)
         implements CustomPacketPayload {
 
     /**
@@ -58,11 +62,19 @@ public record BuilderGhostCellsPacket(Map<BlockPos, BlockState> shell,
     public static final StreamCodec<FriendlyByteBuf, BuilderGhostCellsPacket> STREAM_CODEC =
         StreamCodec.of(
             (buf, packet) -> {
+                buf.writeUtf(packet.modeId, 16);
+                buf.writeBlockPos(packet.trackOrigin);
                 writeCells(buf, packet.shell);
                 writeCells(buf, packet.backPad);
                 writeCells(buf, packet.frontPad);
+                writeCells(buf, packet.track);
             },
-            buf -> new BuilderGhostCellsPacket(readCells(buf), readCells(buf), readCells(buf))
+            buf -> {
+                String modeId = buf.readUtf(16);
+                BlockPos trackOrigin = buf.readBlockPos();
+                return new BuilderGhostCellsPacket(readCells(buf), readCells(buf), readCells(buf),
+                        readCells(buf), trackOrigin, modeId);
+            }
         );
 
     private static void writeCells(FriendlyByteBuf buf, Map<BlockPos, BlockState> cells) {
@@ -105,15 +117,18 @@ public record BuilderGhostCellsPacket(Map<BlockPos, BlockState> shell,
         if (!overworld.dimensionTypeRegistration().is(BuilderWorldLayout.BUILDER_DIMENSION_TYPE)) {
             return empty();
         }
-        BuilderGhostCells.Cells cells = BuilderGhostCells.fromTag(
-                DungeonTrainWorldData.get(overworld).builderGhostCells(),
+        DungeonTrainWorldData data = DungeonTrainWorldData.get(overworld);
+        BuilderGhostCells.Cells cells = BuilderGhostCells.fromTag(data.builderGhostCells(),
                 overworld.holderLookup(Registries.BLOCK));
-        return new BuilderGhostCellsPacket(cells.shell(), cells.backPad(), cells.frontPad());
+        return new BuilderGhostCellsPacket(cells.shell(), cells.backPad(), cells.frontPad(),
+                cells.track(), BuilderGhostCells.trackOrigin(data.dims()),
+                data.builderGhostMode().id());
     }
 
     /** An empty payload, which is how a world with nothing ghosted tells the client to stop. */
     public static BuilderGhostCellsPacket empty() {
-        return new BuilderGhostCellsPacket(Map.of(), Map.of(), Map.of());
+        return new BuilderGhostCellsPacket(Map.of(), Map.of(), Map.of(), Map.of(), BlockPos.ZERO,
+                BuilderGhostMode.DEFAULT.id());
     }
 
     public static void sendTo(ServerPlayer player, ServerLevel overworld) {
