@@ -6999,6 +6999,22 @@
       "released": true,
       "released_in": "v0.558.0",
       "released_at": "2026-08-15T01:38:28Z"
+    },
+    {
+      "id": "building-threshold-ride-photos",
+      "version": "0.559.0",
+      "type": "feat",
+      "title": "Ride photos for building in a drifting carriage, and for arriving in a Train Dimension",
+      "summary": "The camera that quietly takes photos of your run now watches for two more moments. Leave your marks on a drifting carriage \u2014 somebody else's build that has come to your train \u2014 and it takes a photo of the work. Walk a hallway portal and stay a while in the room on the other side, and it takes a wide shot of wherever you have ended up. Both turn up in your gallery and on the death screen with the rest of the run. The Train Dimension photo waits until you have actually walked in and looked around, so it shows the room rather than the doorway, and it is framed to stay inside the room you are standing in rather than the identical one next door.",
+      "highlights": [
+        "New photo taken when you build in a drifting carriage",
+        "New photo taken once you have arrived inside a Train Dimension",
+        "Train Dimension photos are framed from inside the room you are in, never from the copy next door or from inside a corridor"
+      ],
+      "date": "2026-08-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

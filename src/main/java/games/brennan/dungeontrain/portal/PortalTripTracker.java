@@ -109,6 +109,18 @@ public final class PortalTripTracker {
         return next;
     }
 
+    /**
+     * {@code uuid}'s current dwell count without advancing it — 0 when they are not in a room body.
+     *
+     * <p>Exists so a caller can see the <em>edge</em>: {@link #tickDwell} clamps at
+     * {@link #DWELL_SCANS}, so "arrived just now" is a dwell that was below the threshold before the
+     * tick and at it afterwards. {@link #dwellSatisfied} alone is true on every later scan too, which
+     * is right for an advancement (vanilla dedupes) and wrong for anything that happens each time.</p>
+     */
+    public static int dwell(UUID uuid) {
+        return DWELL.getOrDefault(uuid, 0);
+    }
+
     /** True once a dwell count means the player has been in the room body long enough. */
     public static boolean dwellSatisfied(int scans) {
         return scans >= DWELL_SCANS;
