@@ -51,15 +51,19 @@ final class PortalFacingTest {
     // ---- the sweep ------------------------------------------------------------
 
     @Test
-    @DisplayName("The divide is 30° at the train door, 90° at the middle, 150° at the room door")
+    @DisplayName("The divide is 40° at the train door, 90° at the middle, 140° at the room door")
     void theThreeAnchors() {
-        assertEquals(30.0, PortalFacing.coneDegreesAt(0, LENGTH), 1e-6);
+        assertEquals(PortalFacing.CONE_AT_TRAIN_DOOR_DEGREES,
+            PortalFacing.coneDegreesAt(0, LENGTH), 1e-6);
         assertEquals(90.0, PortalFacing.coneDegreesAt((LENGTH - 1) / 2.0, LENGTH), 1e-6);
-        assertEquals(150.0, PortalFacing.coneDegreesAt(LENGTH - 1, LENGTH), 1e-6);
+        assertEquals(PortalFacing.CONE_AT_ROOM_DOOR_DEGREES,
+            PortalFacing.coneDegreesAt(LENGTH - 1, LENGTH), 1e-6);
 
-        assertEquals(30.0, PortalFacing.coneDegreesAt(0, LONG_LENGTH), 1e-6);
+        assertEquals(PortalFacing.CONE_AT_TRAIN_DOOR_DEGREES,
+            PortalFacing.coneDegreesAt(0, LONG_LENGTH), 1e-6);
         assertEquals(90.0, PortalFacing.coneDegreesAt((LONG_LENGTH - 1) / 2.0, LONG_LENGTH), 1e-6);
-        assertEquals(150.0, PortalFacing.coneDegreesAt(LONG_LENGTH - 1, LONG_LENGTH), 1e-6);
+        assertEquals(PortalFacing.CONE_AT_ROOM_DOOR_DEGREES,
+            PortalFacing.coneDegreesAt(LONG_LENGTH - 1, LONG_LENGTH), 1e-6);
     }
 
     @Test
@@ -78,17 +82,21 @@ final class PortalFacingTest {
     @Test
     @DisplayName("Near the train the train claims most directions; near the room, the room does")
     void theShareFollowsTheEnd() {
-        // Block 0: only a look within 30° of the room crosses.
-        assertEquals(Verdict.COPY,
-            PortalFacing.verdict(0.5, LENGTH, PortalCarriageRole.ENTRY, offPlusX(25)));
-        assertEquals(Verdict.ORIGINAL,
-            PortalFacing.verdict(0.5, LENGTH, PortalCarriageRole.ENTRY, offPlusX(35)));
+        double atTrain = PortalFacing.CONE_AT_TRAIN_DOOR_DEGREES;
+        double atRoom = PortalFacing.CONE_AT_ROOM_DOOR_DEGREES;
 
-        // Block 8, the room door: only a look within 30° of the TRAIN keeps you on it.
+        // Block 0: only a look inside the train-door cone crosses.
         assertEquals(Verdict.COPY,
-            PortalFacing.verdict(8.5, LENGTH, PortalCarriageRole.ENTRY, offPlusX(145)));
+            PortalFacing.verdict(0.5, LENGTH, PortalCarriageRole.ENTRY, offPlusX(atTrain - 5)));
         assertEquals(Verdict.ORIGINAL,
-            PortalFacing.verdict(8.5, LENGTH, PortalCarriageRole.ENTRY, offPlusX(155)));
+            PortalFacing.verdict(0.5, LENGTH, PortalCarriageRole.ENTRY, offPlusX(atTrain + 5)));
+
+        // Block 8, the room door: the mirror — only a look that far round toward the TRAIN keeps
+        // you on it.
+        assertEquals(Verdict.COPY,
+            PortalFacing.verdict(8.5, LENGTH, PortalCarriageRole.ENTRY, offPlusX(atRoom - 5)));
+        assertEquals(Verdict.ORIGINAL,
+            PortalFacing.verdict(8.5, LENGTH, PortalCarriageRole.ENTRY, offPlusX(atRoom + 5)));
     }
 
     @Test

@@ -12,15 +12,15 @@ package games.brennan.dungeontrain.portal;
  * with the plugged dummy.</p>
  *
  * <p><b>One dividing line, no undecided region.</b> Every direction belongs to one copy or the
- * other; what changes with depth is <i>where the line sits</i>. It starts 30° off the room axis at
+ * other; what changes with depth is <i>where the line sits</i>. It starts 40° off the room axis at
  * the train door — so near the train almost every direction keeps you on the train — sweeps through
  * <b>90° at the exact middle of the corridor</b>, where the split is a clean perpendicular, and ends
- * 150° at the room door, where almost every direction keeps you in the room.</p>
+ * 140° at the room door, where almost every direction keeps you in the room.</p>
  *
  * <pre>
  *   train door                     middle                      room door
  *   ────────────────────────────────────────────────────────────────────
- *        30°                         90°                         150°
+ *        40°                         90°                         140°
  *    ◐ mostly train              ◑ half and half             ◕ mostly room
  * </pre>
  *
@@ -32,7 +32,7 @@ package games.brennan.dungeontrain.portal;
  * <p><b>Lerped in the cosine, not in the angle.</b> The comparison the rule actually makes is
  * against a dot product, so easing the cosine is the arithmetic without a round trip through
  * {@code acos}. It swings the line quickly near the two doors and slowly through the middle, and it
- * still lands on exactly 90° halfway along — {@code cos 150° = -cos 30°}, so the ease crosses zero
+ * still lands on exactly 90° halfway along — {@code cos 140° = -cos 40°}, so the ease crosses zero
  * at the midpoint whichever way it is written.</p>
  *
  * <p><b>Players only.</b> {@link PortalEntityTransit} keeps the midpoint rule, because a mob's yaw is
@@ -87,22 +87,22 @@ public final class PortalFacing {
     /**
      * How far off the room axis the dividing line sits at the <b>train</b> door plane.
      *
-     * <p>30°, so only a look nearly straight down the corridor at the room counts as the room there.
+     * <p>40°, so only a look well down the corridor toward the room counts as the room there.
      * This is what stops a player being taken across in the doorway, where the frame in front of them
      * is the one thing that could betray the teleport — and it is why the rule needs no separate
      * "must be N blocks in" gate: the narrow wedge does that job continuously instead of as a
      * step.</p>
      */
-    public static final double CONE_AT_TRAIN_DOOR_DEGREES = 30.0;
+    public static final double CONE_AT_TRAIN_DOOR_DEGREES = 40.0;
 
     /**
-     * And at the <b>room</b> door plane — 150°, the mirror of the above, so only a look nearly
-     * straight back down the corridor at the train counts as the train there.
+     * And at the <b>room</b> door plane — 140°, the mirror of the above, so only a look well back
+     * down the corridor toward the train counts as the train there.
      *
      * <p>Being the mirror is not decoration: it is what puts the split at exactly 90° halfway along,
      * since the ease below crosses zero when {@code cos} of the two ends cancel.</p>
      */
-    public static final double CONE_AT_ROOM_DOOR_DEGREES = 150.0;
+    public static final double CONE_AT_ROOM_DOOR_DEGREES = 140.0;
 
     private static final double COS_AT_TRAIN_DOOR =
         Math.cos(Math.toRadians(CONE_AT_TRAIN_DOOR_DEGREES));
