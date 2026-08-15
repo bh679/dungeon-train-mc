@@ -38,12 +38,12 @@ public final class NewSourcePickerScreen implements MenuScreen {
          */
         CONTENTS_SUB_VARIANT,
         /**
-         * Sub-variant of a portal room. {@code currentId} carries the parent room, {@code sourceId}
+         * Sub-variant of a dimensional carriage. {@code currentId} carries the parent room, {@code sourceId}
          * the room the author is standing in. Same Current / Parent shape as
          * {@link #CONTENTS_SUB_VARIANT}, collapsing to a single row when the two are the same room.
          * Dispatches {@code editor portals group new <parent> <name> [source]}.
          */
-        PORTAL_ROOM_SUB_VARIANT
+        DIMENSIONAL_CARRIAGE_SUB_VARIANT
     }
 
     private final Category category;
@@ -80,8 +80,8 @@ public final class NewSourcePickerScreen implements MenuScreen {
             // consistently with its siblings; the entry list collapses to
             // a single name TypeArg + Back below.
             case TRACKS -> "New " + kind + " — name";
-            case PORTALS -> "New portal room — name";
-            case CONTENTS_SUB_VARIANT, PORTAL_ROOM_SUB_VARIANT -> "New sub-variant of " + currentId + " — name";
+            case PORTALS -> "New dimensional carriage — name";
+            case CONTENTS_SUB_VARIANT, DIMENSIONAL_CARRIAGE_SUB_VARIANT -> "New sub-variant of " + currentId + " — name";
         };
     }
 
@@ -148,10 +148,10 @@ public final class NewSourcePickerScreen implements MenuScreen {
                         "Current (" + sourceId + ")", "name", prefix, sourceId));
                 }
             }
-            case PORTAL_ROOM_SUB_VARIANT -> {
+            case DIMENSIONAL_CARRIAGE_SUB_VARIANT -> {
                 // Same Current / Parent shape as CONTENTS_SUB_VARIANT. The parent is baked into the
                 // prefix; the source token after the name is the room to copy. No "Blank" row —
-                // a portal room's empty state is the built-in geometry, which the server already
+                // a dimensional carriage's empty state is the built-in geometry, which the server already
                 // falls back to when the chosen source has nothing saved.
                 String prefix = "dungeontrain editor portals group new " + currentId;
                 if (!sourceId.isEmpty() && !sourceId.equals(currentId)) {

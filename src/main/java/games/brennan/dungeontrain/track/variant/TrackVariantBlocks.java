@@ -418,7 +418,7 @@ public final class TrackVariantBlocks {
     /**
      * This sidecar as the JSON text {@link #save} would write.
      *
-     * <p>Public so a detached sidecar can be carried somewhere other than a file — the portal-room
+     * <p>Public so a detached sidecar can be carried somewhere other than a file — the dimensional-carriage
      * resize memory files the cells a shrink cropped this way, in the schema they already round-trip
      * through, rather than inventing a second encoding for the same {@link VariantState}s.</p>
      */

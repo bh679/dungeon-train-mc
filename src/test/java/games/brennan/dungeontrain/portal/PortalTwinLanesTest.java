@@ -42,7 +42,7 @@ final class PortalTwinLanesTest {
             assertTrue(twinY > DT_MIN_Y,
                 "lane " + lane + " floor " + twinY + " must clear the build floor");
             assertTrue(PortalTwinLanes.fitsUnderWorld(
-                    DT_MIN_Y, DT_BEDROCK_Y, twinY, PortalRoomLayout.MAX_HEIGHT),
+                    DT_MIN_Y, DT_BEDROCK_Y, twinY, DimensionalCarriageLayout.MAX_HEIGHT),
                 "lane " + lane + " floor " + twinY + " must hold a tallest room under the bedrock");
         }
     }
@@ -88,7 +88,7 @@ final class PortalTwinLanesTest {
         int twinY = PortalTwinLanes.twinFloorY(DT_MIN_Y, DT_BEDROCK_Y, -3 * GROUP_SIZE, GROUP_SIZE);
         assertTrue(twinY >= PortalTwinLanes.floorY(DT_MIN_Y));
         assertTrue(PortalTwinLanes.fitsUnderWorld(
-            DT_MIN_Y, DT_BEDROCK_Y, twinY, PortalRoomLayout.MAX_HEIGHT));
+            DT_MIN_Y, DT_BEDROCK_Y, twinY, DimensionalCarriageLayout.MAX_HEIGHT));
     }
 
     @Test
@@ -102,14 +102,14 @@ final class PortalTwinLanesTest {
         }
         // Nothing to stay under, so the under-the-world check defers to the caller's other fits.
         assertTrue(PortalTwinLanes.fitsUnderWorld(VANILLA_MIN_Y, VANILLA_BEDROCK_Y,
-            VANILLA_MIN_Y + PortalTwinLanes.FLOOR_MARGIN, PortalRoomLayout.MAX_HEIGHT));
+            VANILLA_MIN_Y + PortalTwinLanes.FLOOR_MARGIN, DimensionalCarriageLayout.MAX_HEIGHT));
     }
 
     @Test
     @DisplayName("a basement too shallow for a second lane yields exactly one")
     void shallowBasement() {
         // Room for a tallest structure, but not for another lane above it.
-        int bedrock = PortalTwinLanes.floorY(DT_MIN_Y) + PortalRoomLayout.MAX_HEIGHT + 1;
+        int bedrock = PortalTwinLanes.floorY(DT_MIN_Y) + DimensionalCarriageLayout.MAX_HEIGHT + 1;
         assertEquals(1, PortalTwinLanes.usableLanes(DT_MIN_Y, bedrock));
     }
 

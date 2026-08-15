@@ -8,7 +8,7 @@ import games.brennan.dungeontrain.difficulty.BoardingProgressData;
 import games.brennan.dungeontrain.discord.DifficultyLevelReport;
 import games.brennan.dungeontrain.net.BoardingProgressPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
-import games.brennan.dungeontrain.portal.PortalRoomCell;
+import games.brennan.dungeontrain.portal.DimensionalCarriageCell;
 import games.brennan.dungeontrain.net.SnapshotCue;
 import games.brennan.dungeontrain.net.SnapshotCuePacket;
 import games.brennan.dungeontrain.player.PlayerBiomeProgress;
@@ -126,7 +126,7 @@ public final class BoardingProgressEvents {
      * Per-portal-pair last-known entry-carriage centre. Drives the distance credited to players
      * standing in that pair's room, whose own position says nothing about how far they have
      * travelled. Pruned each scan to the pairs somebody is actually in — see
-     * {@link #creditPortalRoomOccupants}. Pair key → last sampled centre.
+     * {@link #creditDimensionalCarriageOccupants}. Pair key → last sampled centre.
      */
     private static final Map<Integer, Vec3> LAST_PAIR_CARRIAGE_POS = new HashMap<>();
 
@@ -189,10 +189,10 @@ public final class BoardingProgressEvents {
         // rather than booking a teleport-sized jump.
         LAST_BOARDED_POS.keySet().retainAll(boarded.keySet());
 
-        // A player who walked into a portal room is off every carriage AABB, so none of the above
-        // sees them. Credit them here instead — see creditPortalRoomOccupants for what "credit"
+        // A player who walked into a dimensional carriage is off every carriage AABB, so none of the above
+        // sees them. Credit them here instead — see creditDimensionalCarriageOccupants for what "credit"
         // means when the room they are standing in does not move.
-        creditPortalRoomOccupants(level, carriages, boarded);
+        creditDimensionalCarriageOccupants(level, carriages, boarded);
 
         BoardingProgressData data = BoardingProgressData.get(level);
         UUID leader = data.activeLeaderUUID();
@@ -316,14 +316,14 @@ public final class BoardingProgressEvents {
     }
 
     /**
-     * Credit everybody standing in a portal room's body the way the boarded path credits everybody
+     * Credit everybody standing in a dimensional carriage's body the way the boarded path credits everybody
      * standing in a carriage.
      *
      * <h2>Why this exists</h2>
-     * <p>A portal room is stamped into the basement below bedrock, and the player who walks into one
+     * <p>A dimensional carriage is stamped into the basement below bedrock, and the player who walks into one
      * is inside no carriage AABB at all. Every counter above therefore stopped for them — silently,
      * as a side effect of how boarding is detected rather than as a decision anyone made. Going
-     * through a portal room cost you progress. This is the explicit branch that says otherwise.</p>
+     * through a dimensional carriage cost you progress. This is the explicit branch that says otherwise.</p>
      *
      * <h2>Distance is the train's, not the player's</h2>
      * <p>On the train, the world-position delta {@link #accumulateBoardedDistance} measures is the
@@ -338,7 +338,7 @@ public final class BoardingProgressEvents {
      * same movement rather than each re-deriving it, and a pair nobody is in costs nothing.</p>
      *
      * <h2>Corridors are not rooms</h2>
-     * <p>{@link PortalCarriageEvents#portalRoomBodyPairKey} excludes the twin corridors and every
+     * <p>{@link PortalCarriageEvents#dimensionalCarriageBodyPairKey} excludes the twin corridors and every
      * scattered copy of them. A player crossing a portal carriage passes through a doorway, not a
      * room, and neither the credit nor the dwell behind "Train inside a train?" should treat those
      * few blocks as having gone somewhere.</p>
@@ -346,14 +346,14 @@ public final class BoardingProgressEvents {
     /**
      * The THRESHOLD ride-photo cue for a player who has just arrived in a room, carrying the room
      * copy they are standing in and the corridors inside it so their client can keep the camera out
-     * of both the copy next door and the twin corridors — see {@code PortalRoomCell}.
+     * of both the copy next door and the twin corridors — see {@code DimensionalCarriageCell}.
      *
      * <p>An unresolvable cell (the structure moved out from under the scan) sends the cue anyway,
      * unframed: a photo taken from a slightly wrong spot beats no photo of arriving at all.</p>
      */
     private static SnapshotCuePacket thresholdCue(CarriageDims dims, ServerPlayer player) {
         String reason = "entered a train dimension";
-        PortalRoomCell cell = PortalCarriageEvents.portalRoomCell(
+        DimensionalCarriageCell cell = PortalCarriageEvents.dimensionalCarriageCell(
             dims, player.getX(), player.getY(), player.getZ());
         if (cell == null) return new SnapshotCuePacket(SnapshotCue.THRESHOLD, reason);
         List<SnapshotCuePacket.Box> exclude = new ArrayList<>(cell.corridors().size());
@@ -366,7 +366,7 @@ public final class BoardingProgressEvents {
             box.minX(), box.minY(), box.minZ(), box.maxX(), box.maxY(), box.maxZ());
     }
 
-    private static void creditPortalRoomOccupants(ServerLevel level, List<Trains.Carriage> carriages,
+    private static void creditDimensionalCarriageOccupants(ServerLevel level, List<Trains.Carriage> carriages,
                                                   Map<UUID, Integer> boarded) {
         CarriageDims dims = DungeonTrainWorldData.get(level).dims();
         Map<Integer, Double> movedByPair = new HashMap<>();
@@ -382,7 +382,7 @@ public final class BoardingProgressEvents {
             // them here and a player could bank four seconds, step onto the train, and come back to
             // earn the advancement one second later.
             Integer pairKey = boarded.containsKey(player.getUUID()) ? null
-                : PortalCarriageEvents.portalRoomBodyPairKey(
+                : PortalCarriageEvents.dimensionalCarriageBodyPairKey(
                     dims, player.getX(), player.getY(), player.getZ());
             if (pairKey == null) {
                 PortalTripTracker.tickDwell(player.getUUID(), false);
@@ -403,7 +403,7 @@ public final class BoardingProgressEvents {
             int pairKey = entry.getValue();
 
             // Lifetime train-time — same gating as the boarded path: frozen for a cheated run and
-            // while dead, so a death screen in a portal room racks up no more than one on the train.
+            // while dead, so a death screen in a dimensional carriage racks up no more than one on the train.
             if (player.isAlive() && !RunIntegrity.isCheated(player)) {
                 long newTotal = GlobalPlayerStats.addTrainTicks(player.getUUID(), SCAN_PERIOD_TICKS);
                 AchievementEvents.notifyTrainTime(player, newTotal);
@@ -417,14 +417,14 @@ public final class BoardingProgressEvents {
 
             double moved = movedByPair.computeIfAbsent(pairKey,
                 key -> pairCarriageMovement(carriages, key));
-            if (moved > 0.0) accumulatePortalRoomDistance(player, moved);
+            if (moved > 0.0) accumulateDimensionalCarriageDistance(player, moved);
 
             // "Train inside a train?" — five seconds in the room body, not the doorway.
             boolean wasSatisfied = PortalTripTracker.dwellSatisfied(
                 PortalTripTracker.dwell(player.getUUID()));
             if (PortalTripTracker.dwellSatisfied(
                     PortalTripTracker.tickDwell(player.getUUID(), true))) {
-                AchievementEvents.notifyEnteredPortalRoom(player);
+                AchievementEvents.notifyEnteredDimensionalCarriage(player);
                 // The same threshold, but only on the scan it is first crossed: the player has walked
                 // in, looked around, and the room has had time to render. Photographing the teleport
                 // itself would catch the arrival stall instead of the room. Every later scan is the
@@ -472,10 +472,10 @@ public final class BoardingProgressEvents {
     }
 
     /**
-     * Book {@code metres} of the train's travel to a player standing in a portal room, into the same
+     * Book {@code metres} of the train's travel to a player standing in a dimensional carriage, into the same
      * two counters {@link #accumulateBoardedDistance} feeds and with the same cheat gating.
      */
-    private static void accumulatePortalRoomDistance(ServerPlayer player, double metres) {
+    private static void accumulateDimensionalCarriageDistance(ServerPlayer player, double metres) {
         double runMeters = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get())
             .addDistance(metres);
         AchievementEvents.notifyRunDistance(player, runMeters);

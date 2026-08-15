@@ -128,10 +128,10 @@ final class EditorStatusPacketTest {
     }
 
     @org.junit.jupiter.api.Test
-    @org.junit.jupiter.api.DisplayName("Portal room size survives the round trip; other categories carry NO_SIZE")
+    @org.junit.jupiter.api.DisplayName("Dimensional carriage size survives the round trip; other categories carry NO_SIZE")
     void roomSizeRoundTrips() {
         EditorStatusPacket sized = new EditorStatusPacket(
-            "Portals", "portal room / default", "portal_room", "default", true,
+            "Portals", "dimensional carriage / default", "dimensional_carriage", "default", true,
             1, 0, -1, EditorStatusPacket.ALL_PHASES_MASK, true, false, false, false, false,
             java.util.Collections.emptySet(), "", 21, 17, 9);
         EditorStatusPacket back = roundTrip(sized);

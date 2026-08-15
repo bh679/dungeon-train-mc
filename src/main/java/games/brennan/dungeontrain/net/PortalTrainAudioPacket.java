@@ -19,7 +19,7 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  * That is a number about the Y lane the structure was assigned, not about anything the player can
  * see or hear a reason for.</p>
  *
- * <p><b>A place, not a state</b> — the same shape {@link PortalRoomFogPacket} uses, and for the same
+ * <p><b>A place, not a state</b> — the same shape {@link DimensionalCarriageFogPacket} uses, and for the same
  * reason. "You are in a corridor now" / "you are not any more" has one failure mode that matters: a
  * player who disconnects inside a corridor never receives the second message and comes back with the
  * engine pinned at full volume. Describing the corridors instead means walking out goes quiet with
@@ -34,7 +34,7 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  *
  * <p>Both corridor origins are carried in full rather than the exit being derived from the entry plus
  * an offset. That offset is one corridor plus the pair's room, and the room's length comes from
- * whichever {@code portal_room} template the pair rolled — a figure the client has no way to know,
+ * whichever {@code dimensional_carriage} template the pair rolled — a figure the client has no way to know,
  * and one this packet would silently get wrong the day the layout changes.</p>
  *
  * @param minX       the structure's bounds, corridors and room copies included; outside them this

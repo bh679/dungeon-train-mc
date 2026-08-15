@@ -276,21 +276,21 @@ public record EditorPlotActionPacket(
 
     private static void dispatchPortals(ServerPlayer sender, ServerLevel overworld, CarriageDims dims,
                                         EditorPlotActionPacket packet) throws Exception {
-        if (!games.brennan.dungeontrain.track.variant.TrackKind.PORTAL_ROOM.id().equals(packet.modelId)) {
+        if (!games.brennan.dungeontrain.track.variant.TrackKind.DIMENSIONAL_CARRIAGE.id().equals(packet.modelId)) {
             LOGGER.info("[DungeonTrain] EditorPlotAction: portals {} not wired (modelId='{}')",
                 packet.action, packet.modelId);
             return;
         }
         String name = packet.modelName;
-        String label = "portal room '" + name + "'";
+        String label = "dimensional carriage '" + name + "'";
         switch (packet.action) {
-            case SAVE -> SaveCommand.saveOnePlayerVisible(sender, new Template.PortalRoom(name));
-            case RESET -> ResetCommand.resetToSavedPlayerVisible(sender, new Template.PortalRoom(name));
+            case SAVE -> SaveCommand.saveOnePlayerVisible(sender, new Template.DimensionalCarriage(name));
+            case RESET -> ResetCommand.resetToSavedPlayerVisible(sender, new Template.DimensionalCarriage(name));
             case CLEAR -> {
                 // The same path the X menu's Clear takes. This used to call clearPlot, which erases
                 // the box to nothing — leaving the author looking into a hole with no shell and no
                 // cage, and leaving both sidecars behind to restock the room on the next stamp.
-                int cleared = games.brennan.dungeontrain.editor.PortalRoomEditor
+                int cleared = games.brennan.dungeontrain.editor.DimensionalCarriageEditor
                     .clearEverything(overworld, name, dims);
                 sender.sendSystemMessage(Component.literal(
                     "Editor: cleared all blocks in " + label
@@ -299,9 +299,9 @@ public record EditorPlotActionPacket(
                             : "."))
                     .copy().withStyle(ChatFormatting.GREEN));
             }
-            case ENTER_INSIDE -> games.brennan.dungeontrain.editor.PortalRoomEditor.enter(sender, name, false);
+            case ENTER_INSIDE -> games.brennan.dungeontrain.editor.DimensionalCarriageEditor.enter(sender, name, false);
         }
-        LOGGER.info("[DungeonTrain] EditorPlotAction: {} {} portal room '{}'",
+        LOGGER.info("[DungeonTrain] EditorPlotAction: {} {} dimensional carriage '{}'",
             sender.getName().getString(), packet.action, name);
     }
 }

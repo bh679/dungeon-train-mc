@@ -136,7 +136,7 @@ public final class CategoryTemplatesScreen implements MenuScreen {
             return "dungeontrain editor enter tunnel_"
                 + tm.variant().name().toLowerCase(Locale.ROOT);
         }
-        if (model instanceof Template.PortalRoom rm) {
+        if (model instanceof Template.DimensionalCarriage rm) {
             return "dungeontrain editor portals enter " + rm.name();
         }
         return null;

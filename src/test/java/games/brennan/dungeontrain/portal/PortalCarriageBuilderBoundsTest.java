@@ -22,7 +22,7 @@ class PortalCarriageBuilderBoundsTest {
     @DisplayName("An ordinary lane writes the row under its floor")
     void higherLanesWriteBelowTheFloor() {
         int worldMin = -64;
-        int laneFloor = worldMin + FLOOR_MARGIN + PortalRoomLayout.TWIN_LANE_HEIGHT;
+        int laneFloor = worldMin + FLOOR_MARGIN + DimensionalCarriageLayout.TWIN_LANE_HEIGHT;
         assertEquals(laneFloor - 1, PortalCarriageBuilder.lowestWritableY(worldMin, laneFloor));
     }
 

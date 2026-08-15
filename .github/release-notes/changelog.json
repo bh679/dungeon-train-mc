@@ -7066,6 +7066,23 @@
       "released": true,
       "released_in": "v0.562.0",
       "released_at": "2026-08-15T05:50:06Z"
+    },
+    {
+      "id": "dimensional-carriages-rename",
+      "version": "0.563.0",
+      "type": "refactor",
+      "title": "Portal rooms are now dimensional carriages",
+      "summary": "The space a portal's corridors open into is now called a dimensional carriage. This is a naming change only \u2014 nothing about how they generate, look or play is different. If you author content, the editor category is renamed and your saved carriages, their weights and their container pools move to the new name automatically the first time you load a world.",
+      "highlights": [
+        "Editor category renamed from Portals to Dimensional Carriages",
+        "Authored rooms, weights and container pools migrate automatically on first load",
+        "No gameplay, worldgen or generation change"
+      ],
+      "pr": 972,
+      "date": "2026-08-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

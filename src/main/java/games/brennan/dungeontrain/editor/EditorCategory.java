@@ -47,7 +47,10 @@ public enum EditorCategory {
     CARRIAGES("Carriages"),
     CONTENTS("Contents"),
     TRACKS("Tracks"),
-    PORTALS("Portals"),
+    // Display name only — the enum constant and its lower-case id() stay "portals" so every
+    // `/dt editor portals ...` command token, plot-snapshot key and on-disk category folder
+    // survived the dimensional-carriage rename untouched.
+    PORTALS("Dimensional Carriages"),
     ARCHITECTURE("Architecture");
 
     private final String displayName;
@@ -137,9 +140,9 @@ public enum EditorCategory {
             return Optional.of(new Located(TRACKS,
                 new Template.Tunnel(tunnelLoc.variant(), tunnelLoc.name())));
         }
-        String roomName = PortalRoomEditor.plotContaining(pos, dims);
+        String roomName = DimensionalCarriageEditor.plotContaining(pos, dims);
         if (roomName != null) {
-            return Optional.of(new Located(PORTALS, new Template.PortalRoom(roomName)));
+            return Optional.of(new Located(PORTALS, new Template.DimensionalCarriage(roomName)));
         }
         return Optional.empty();
     }
@@ -213,14 +216,14 @@ public enum EditorCategory {
     }
 
     /**
-     * Every registered portal room, {@code default} first — the same
+     * Every registered dimensional carriage, {@code default} first — the same
      * {@link TrackVariantRegistry} name ordering the track-side kinds use.
      */
     private static List<Template> portalModels() {
-        List<String> names = TrackVariantRegistry.namesFor(TrackKind.PORTAL_ROOM);
+        List<String> names = TrackVariantRegistry.namesFor(TrackKind.DIMENSIONAL_CARRIAGE);
         List<Template> out = new ArrayList<>(names.size());
         for (String name : names) {
-            out.add(new Template.PortalRoom(name));
+            out.add(new Template.DimensionalCarriage(name));
         }
         return out;
     }
@@ -257,7 +260,7 @@ public enum EditorCategory {
         for (TunnelVariant t : TunnelVariant.values()) {
             TunnelEditor.clearPlot(overworld, t);
         }
-        PortalRoomEditor.clearAllPlots(overworld, dims);
+        DimensionalCarriageEditor.clearAllPlots(overworld, dims);
         // Parts live adjacent to carriages (Z=80+ rows) but span no other
         // category, so we clear them alongside everything else when switching.
         CarriagePartEditor.clearAllPlots(overworld, dims);

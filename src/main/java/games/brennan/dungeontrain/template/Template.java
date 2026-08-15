@@ -9,11 +9,11 @@ import games.brennan.dungeontrain.editor.CarriagePartTemplateStore;
 import games.brennan.dungeontrain.editor.CarriageTemplateStore;
 import games.brennan.dungeontrain.editor.PillarEditor;
 import games.brennan.dungeontrain.editor.PillarTemplateStore;
-import games.brennan.dungeontrain.editor.PortalRoomEditor;
-import games.brennan.dungeontrain.editor.PortalRoomTemplateStore;
+import games.brennan.dungeontrain.editor.DimensionalCarriageEditor;
+import games.brennan.dungeontrain.editor.DimensionalCarriageTemplateStore;
 import games.brennan.dungeontrain.portal.PortalCarriageBuilder;
-import games.brennan.dungeontrain.portal.PortalRoomLayout;
-import games.brennan.dungeontrain.portal.PortalRoomSizes;
+import games.brennan.dungeontrain.portal.DimensionalCarriageLayout;
+import games.brennan.dungeontrain.portal.DimensionalCarriageSizes;
 import games.brennan.dungeontrain.editor.TrackEditor;
 import games.brennan.dungeontrain.editor.TrackPlotLocator;
 import games.brennan.dungeontrain.editor.TrackTemplateStore;
@@ -83,7 +83,7 @@ public sealed interface Template
             Template.Pillar,
             Template.Adjunct,
             Template.Tunnel,
-            Template.PortalRoom {
+            Template.DimensionalCarriage {
 
     /** Stable command-token identifier — used by EditorMenuScreen + commands. */
     String id();
@@ -763,20 +763,20 @@ public sealed interface Template
      * <p>The only template whose <b>length is the author's to choose</b>: height and width are
      * pinned by the corridor mouth, but the length is the distance walked underneath, which is the
      * whole point of the portal. {@link #plotSize} reads it back from
-     * {@link PortalRoomSizes}.</p>
+     * {@link DimensionalCarriageSizes}.</p>
      */
-    record PortalRoom(String name) implements Template {
-        public PortalRoom {
+    record DimensionalCarriage(String name) implements Template {
+        public DimensionalCarriage {
             Objects.requireNonNull(name, "name");
         }
 
-        public PortalRoom() { this(TrackKind.DEFAULT_NAME); }
+        public DimensionalCarriage() { this(TrackKind.DEFAULT_NAME); }
 
-        @Override public String id() { return "portal_room"; }
+        @Override public String id() { return "dimensional_carriage"; }
 
-        @Override public String displayName() { return "portal room / " + name; }
+        @Override public String displayName() { return "dimensional carriage / " + name; }
 
-        @Override public TemplateKind kind() { return TemplateKind.PORTAL_ROOM; }
+        @Override public TemplateKind kind() { return TemplateKind.DIMENSIONAL_CARRIAGE; }
 
         @Override public boolean isBuiltin() { return TrackKind.DEFAULT_NAME.equals(name); }
 
@@ -785,37 +785,37 @@ public sealed interface Template
             return false;
         }
 
-        @Override public TemplateStore<PortalRoom> store() { return PortalRoomTemplateStore.adapter(); }
-        @Override public TemplateRegistry<PortalRoom> registry() { return TrackVariantRegistry.adapterForPortalRoom(); }
+        @Override public TemplateStore<DimensionalCarriage> store() { return DimensionalCarriageTemplateStore.adapter(); }
+        @Override public TemplateRegistry<DimensionalCarriage> registry() { return TrackVariantRegistry.adapterForDimensionalCarriage(); }
 
         @Override public int weight() {
-            return TrackVariantWeights.weightFor(TrackKind.PORTAL_ROOM, name);
+            return TrackVariantWeights.weightFor(TrackKind.DIMENSIONAL_CARRIAGE, name);
         }
         @Override public TemplateGate gate() {
-            return TrackVariantWeights.gateFor(TrackKind.PORTAL_ROOM, name);
+            return TrackVariantWeights.gateFor(TrackKind.DIMENSIONAL_CARRIAGE, name);
         }
         @Override public String stageId() {
-            String s = TrackVariantWeights.stageIdFor(TrackKind.PORTAL_ROOM, name);
+            String s = TrackVariantWeights.stageIdFor(TrackKind.DIMENSIONAL_CARRIAGE, name);
             return s == null ? "" : s;
         }
         @Override public String variantName() { return name; }
 
         /**
-         * Through {@link PortalRoomEditor#resetToSaved} rather than a bare restamp: a room's
+         * Through {@link DimensionalCarriageEditor#resetToSaved} rather than a bare restamp: a room's
          * footprint is the author's, so "back to what is on disk" has to put the <b>size</b> back
          * too. Every other kind's plot size is fixed in code and a restamp is the whole reset.
          */
         @Override public void restampPlot(ServerLevel level, CarriageDims dims) {
-            PortalRoomEditor.resetToSaved(level, name, dims);
+            DimensionalCarriageEditor.resetToSaved(level, name, dims);
         }
         @Override public Optional<StructureTemplate> bundled(ServerLevel level, CarriageDims dims) {
             return Optional.empty();
         }
         @Override public BlockPos editorPlotOrigin(ServerLevel level, CarriageDims dims) {
-            return PortalRoomEditor.plotOrigin(name, dims);
+            return DimensionalCarriageEditor.plotOrigin(name, dims);
         }
         @Override public Vec3i plotSize(CarriageDims dims) {
-            return PortalRoomSizes.sizeOf(name, dims);
+            return DimensionalCarriageSizes.sizeOf(name, dims);
         }
         @Override public void placeAt(ServerLevel level, BlockPos origin, CarriageDims dims, PlaceContext ctx) {
             PortalCarriageBuilder.stampRoomAt(level, origin, dims, name, plotSize(dims), /*relight*/ true);

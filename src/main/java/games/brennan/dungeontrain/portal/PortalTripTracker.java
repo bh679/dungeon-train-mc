@@ -6,7 +6,7 @@ import java.util.OptionalDouble;
 import java.util.UUID;
 
 /**
- * What a player did on one trip through a portal room, for the two advancements that ask.
+ * What a player did on one trip through a dimensional carriage, for the two advancements that ask.
  *
  * <h2>Why a trip is remembered rather than measured at the door</h2>
  * <p>Both questions are about a journey, not a position. "Was this a <i>different</i> way out" can
@@ -35,11 +35,11 @@ public final class PortalTripTracker {
      *
      * <p>Chosen to clear an ordinary trip. The walk from the entry twin to the pair's own exit twin
      * is one corridor plus one room ({@code PortalStructure.exitTwinOffsetX}); across every room
-     * shipped in {@code data/dungeontrain/portals/room} that is 19–34 blocks at the default carriage
+     * shipped in {@code data/dungeontrain/portals/dimensional_carriage} that is 19–34 blocks at the default carriage
      * dims, so the pair's own way out never earns this and only a corridor an endless mode stood
      * elsewhere ({@link PortalExitSites}) does.</p>
      *
-     * <p><b>Not a proof, a margin.</b> {@link PortalRoomLayout#MAX_LENGTH} is 48, so a room authored
+     * <p><b>Not a proof, a margin.</b> {@link DimensionalCarriageLayout#MAX_LENGTH} is 48, so a room authored
      * longer than about 37 would put its own exit past this line and earn the advancement on a
      * straight walk through. That is a fair reading of "at least 50 blocks from the entrance" rather
      * than a bug — but it is the thing to re-check if a much longer room is ever authored.</p>

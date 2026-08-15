@@ -311,10 +311,10 @@ public final class EditorTypeMenuInputHandler {
                 if (isSubVariants) {
                     String parentId = menu.variants().get(0).modelId();
                     String memberId = variant.modelId();
-                    // Portal rooms carry the same panel one template layer up — same parent/member
+                    // Dimensional carriages carry the same panel one template layer up — same parent/member
                     // shape, different command prefix.
                     String cmd = "PORTALS".equals(variant.category())
-                        ? EditorPlotTeleport.portalRoomGroupWeightCommandFor(parentId, memberId, dir)
+                        ? EditorPlotTeleport.dimensionalCarriageGroupWeightCommandFor(parentId, memberId, dir)
                         : EditorPlotTeleport.groupMemberWeightCommandFor(parentId, memberId, dir);
                     LOGGER.debug("[DungeonTrain] EditorTypeMenu weight (group {}): {}",
                         parentId.equals(memberId) ? "self" : "member", cmd);
@@ -354,9 +354,9 @@ public final class EditorTypeMenuInputHandler {
     private static void openStagePicker(EditorTypeMenusPacket.Menu menu, EditorTypeMenusPacket.Variant variant) {
         if (isSubVariants(menu)) {
             String parentId = menu.variants().get(0).modelId();
-            CommandMenuState.openAt(isPortalRoom(variant)
+            CommandMenuState.openAt(isDimensionalCarriage(variant)
                 ? games.brennan.dungeontrain.client.menu.StagePickerScreen.forTrackGroupMember(
-                    games.brennan.dungeontrain.track.variant.TrackKind.PORTAL_ROOM.id(),
+                    games.brennan.dungeontrain.track.variant.TrackKind.DIMENSIONAL_CARRIAGE.id(),
                     parentId, variant.modelId(), variant.stageIds())
                 : games.brennan.dungeontrain.client.menu.StagePickerScreen.forGroupMember(
                     parentId, variant.modelId(), variant.stageIds()));
@@ -445,10 +445,10 @@ public final class EditorTypeMenuInputHandler {
         String dir = shift ? "dec" : "inc";
         if (isSubVariants(menu)) {
             String parentId = menu.variants().get(0).modelId();
-            // Portal rooms carry the same panel one template layer up — same parent/member shape,
+            // Dimensional carriages carry the same panel one template layer up — same parent/member shape,
             // different command prefix (as in the WEIGHT case above).
-            String cmd = isPortalRoom(variant)
-                ? EditorPlotTeleport.portalRoomGroupLevelCommandFor(parentId, variant.modelId(), sub, dir)
+            String cmd = isDimensionalCarriage(variant)
+                ? EditorPlotTeleport.dimensionalCarriageGroupLevelCommandFor(parentId, variant.modelId(), sub, dir)
                 : EditorPlotTeleport.groupMemberLevelCommandFor(parentId, variant.modelId(), sub, dir);
             LOGGER.debug("[DungeonTrain] EditorTypeMenu group {} : {}", sub, cmd);
             CommandRunner.run(cmd);
@@ -473,8 +473,8 @@ public final class EditorTypeMenuInputHandler {
         String action = shift ? "others" : (on ? "off" : "on");
         if (isSubVariants(menu)) {
             String parentId = menu.variants().get(0).modelId();
-            String cmd = isPortalRoom(variant)
-                ? EditorPlotTeleport.portalRoomGroupPhaseCommandFor(
+            String cmd = isDimensionalCarriage(variant)
+                ? EditorPlotTeleport.dimensionalCarriageGroupPhaseCommandFor(
                     parentId, variant.modelId(), PHASE_TOKENS[slot], action)
                 : EditorPlotTeleport.groupMemberPhaseCommandFor(
                     parentId, variant.modelId(), PHASE_TOKENS[slot], action);
@@ -501,11 +501,11 @@ public final class EditorTypeMenuInputHandler {
     }
 
     /**
-     * True when a Sub-Variants row belongs to a portal room rather than a contents variant. The two
+     * True when a Sub-Variants row belongs to a dimensional carriage rather than a contents variant. The two
      * share the panel and its cells but not their command prefixes, so every group-edit dispatch has
      * to pick one. Category is the discriminator the server already sets on the row.
      */
-    private static boolean isPortalRoom(EditorTypeMenusPacket.Variant variant) {
+    private static boolean isDimensionalCarriage(EditorTypeMenusPacket.Variant variant) {
         return "PORTALS".equals(variant.category());
     }
 
@@ -543,7 +543,7 @@ public final class EditorTypeMenuInputHandler {
         if (games.brennan.dungeontrain.editor.VariantOverlayRenderer.SUB_VARIANTS_TYPE_NAME
                 .equals(menu.typeName())) {
             boolean portals = "PORTALS".equals(category);
-            // A portal room's own name rides in modelName: for every track-side kind modelId is the
+            // A dimensional carriage's own name rides in modelName: for every track-side kind modelId is the
             // KIND tag and stays constant across that kind's variants, so it can't name the plot the
             // author is standing in. Contents put their id in modelId, so currentId is already right.
             String sourceId = portals
@@ -552,7 +552,7 @@ public final class EditorTypeMenuInputHandler {
             LOGGER.debug("[DungeonTrain] EditorTypeMenu New: sub-variant of parent '{}' (source '{}')",
                 first.modelId(), sourceId);
             NewSourcePickerScreen.Category subCategory = portals
-                ? NewSourcePickerScreen.Category.PORTAL_ROOM_SUB_VARIANT
+                ? NewSourcePickerScreen.Category.DIMENSIONAL_CARRIAGE_SUB_VARIANT
                 : NewSourcePickerScreen.Category.CONTENTS_SUB_VARIANT;
             CommandMenuState.openAt(new NewSourcePickerScreen(
                 subCategory, null, first.modelId(), sourceId));
@@ -577,7 +577,7 @@ public final class EditorTypeMenuInputHandler {
             case "TRACKS" -> new NewSourcePickerScreen(
                 NewSourcePickerScreen.Category.TRACKS, first.modelId(), "");
             // Portals: same single-name shape as tracks, dispatched through the portals prefix.
-            // Kind tag is the variant's modelId (portal_room).
+            // Kind tag is the variant's modelId (dimensional_carriage).
             case "PORTALS" -> new NewSourcePickerScreen(
                 NewSourcePickerScreen.Category.PORTALS, first.modelId(), "");
             default -> null;

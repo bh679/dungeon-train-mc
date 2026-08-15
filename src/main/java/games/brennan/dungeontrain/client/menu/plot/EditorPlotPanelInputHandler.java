@@ -187,7 +187,7 @@ public final class EditorPlotPanelInputHandler {
      * routing helper.
      */
     /**
-     * Open the typing field for one axis of the portal room the player is standing in.
+     * Open the typing field for one axis of the dimensional carriage the player is standing in.
      *
      * <p>The panel itself cannot take keyboard input, so it hands off to a keyboard menu screen —
      * the same move {@code + New} makes to reach the name picker. One axis per button, so setting
@@ -197,31 +197,31 @@ public final class EditorPlotPanelInputHandler {
                                       String label, int current) {
         if (!"PORTALS".equals(entry.category())) return;
         CommandMenuState.openAt(
-            new games.brennan.dungeontrain.client.menu.PortalRoomAxisScreen(axis, label, current));
+            new games.brennan.dungeontrain.client.menu.DimensionalCarriageAxisScreen(axis, label, current));
     }
 
-    /** Step the portal room the player is standing in to its next mode. */
+    /** Step the dimensional carriage the player is standing in to its next mode. */
     private static void dispatchModeCycle(EditorPlotLabelsPacket.Entry entry) {
         String cmd = EditorPlotTeleport.modeCycleCommandFor(entry.category());
         if (cmd == null) return;
         CommandRunner.run(cmd);
     }
 
-    /** Step the portal room the player is standing in to its next copies sub-mode. */
+    /** Step the dimensional carriage the player is standing in to its next copies sub-mode. */
     private static void dispatchCopiesCycle(EditorPlotLabelsPacket.Entry entry) {
         String cmd = EditorPlotTeleport.copiesCycleCommandFor(entry.category());
         if (cmd == null) return;
         CommandRunner.run(cmd);
     }
 
-    /** Step the portal room the player is standing in to the next Contents value. */
+    /** Step the dimensional carriage the player is standing in to the next Contents value. */
     private static void dispatchRoomContentsCycle(EditorPlotLabelsPacket.Entry entry) {
         String cmd = EditorPlotTeleport.roomContentsCycleCommandFor(entry.category());
         if (cmd == null) return;
         CommandRunner.run(cmd);
     }
 
-    /** Step the portal room the player is standing in to the next Exits value. */
+    /** Step the dimensional carriage the player is standing in to the next Exits value. */
     private static void dispatchExitsCycle(EditorPlotLabelsPacket.Entry entry) {
         String cmd = EditorPlotTeleport.exitsCycleCommandFor(entry.category());
         if (cmd == null) return;
@@ -244,9 +244,9 @@ public final class EditorPlotPanelInputHandler {
      */
     private static void openExitEveryEntry(EditorPlotLabelsPacket.Entry entry) {
         if (!"PORTALS".equals(entry.category())) return;
-        int current = games.brennan.dungeontrain.portal.PortalRoomSettings.parse(entry.roomMode())
+        int current = games.brennan.dungeontrain.portal.DimensionalCarriageSettings.parse(entry.roomMode())
             .exits().every();
-        CommandMenuState.openAt(new games.brennan.dungeontrain.client.menu.PortalRoomAxisScreen(
+        CommandMenuState.openAt(new games.brennan.dungeontrain.client.menu.DimensionalCarriageAxisScreen(
             "exitevery", "Exits", "tiles", current));
     }
 
@@ -260,13 +260,13 @@ public final class EditorPlotPanelInputHandler {
     /** Open the typing field for the moved-exit chance, prefilled from the room's own tag. */
     private static void openExitMoveEntry(EditorPlotLabelsPacket.Entry entry) {
         if (!"PORTALS".equals(entry.category())) return;
-        int current = games.brennan.dungeontrain.portal.PortalRoomSettings.parse(entry.roomMode())
+        int current = games.brennan.dungeontrain.portal.DimensionalCarriageSettings.parse(entry.roomMode())
             .exits().moveChance();
-        CommandMenuState.openAt(new games.brennan.dungeontrain.client.menu.PortalRoomAxisScreen(
+        CommandMenuState.openAt(new games.brennan.dungeontrain.client.menu.DimensionalCarriageAxisScreen(
             "exitmove", "Moved exit", "0-10", current));
     }
 
-    /** Step one axis of the portal room the player is standing in. */
+    /** Step one axis of the dimensional carriage the player is standing in. */
     private static void dispatchDimension(EditorPlotLabelsPacket.Entry entry, String axis, String dir) {
         String cmd = EditorPlotTeleport.dimensionCommandFor(entry.category(), axis, dir);
         if (cmd == null) return;
@@ -303,8 +303,8 @@ public final class EditorPlotPanelInputHandler {
     /**
      * The allow-list screen for {@code entry}, or null for a category that has no contents pool.
      *
-     * <p>A carriage is addressed by its variant id ({@code modelId}); a portal room by its name
-     * ({@code modelName}) — {@code modelId} is the kind tag {@code "portal_room"} and is the same
+     * <p>A carriage is addressed by its variant id ({@code modelId}); a dimensional carriage by its name
+     * ({@code modelName}) — {@code modelId} is the kind tag {@code "dimensional_carriage"} and is the same
      * for every room, so using it would point every room's toggles at one shared sidecar.</p>
      */
     private static CarriageContentsAllowScreen contentsScreenFor(EditorPlotLabelsPacket.Entry entry) {
@@ -312,7 +312,7 @@ public final class EditorPlotPanelInputHandler {
             return CarriageContentsAllowScreen.forCarriage(entry.modelId());
         }
         if ("PORTALS".equals(entry.category())) {
-            return CarriageContentsAllowScreen.forPortalRoom(entry.modelName());
+            return CarriageContentsAllowScreen.forDimensionalCarriage(entry.modelName());
         }
         return null;
     }

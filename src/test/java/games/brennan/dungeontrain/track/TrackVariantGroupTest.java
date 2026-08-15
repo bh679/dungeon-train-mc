@@ -19,7 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Codec + draw coverage for {@link TrackVariantGroup} — the sub-variant sidecar behind portal room
+ * Codec + draw coverage for {@link TrackVariantGroup} — the sub-variant sidecar behind dimensional carriage
  * groups. Pure logic: no filesystem, no Forge bootstrap.
  */
 final class TrackVariantGroupTest {

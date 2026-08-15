@@ -36,7 +36,8 @@ public final class EnterCategoryMenuScreen implements MenuScreen {
             entryFor("Tracks", "tracks", current),
             entryFor("Carriages", "carriages", current),
             entryFor("Contents", "contents", current),
-            entryFor("Portals", "portals", current),
+            // Label only — the "portals" id is the command token and stays as it is.
+            entryFor("Dimensional Carriages", "portals", current),
             new CommandMenuEntry.Back("< Back")
         );
     }

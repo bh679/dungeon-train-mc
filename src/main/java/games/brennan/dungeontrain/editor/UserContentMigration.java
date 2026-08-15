@@ -93,6 +93,10 @@ public final class UserContentMigration {
             migrateSubdir(slug);
         }
         migrateLooseFile("weights.json");
+
+        // Last: everything above has landed in user/, so the portal-room -> dimensional-carriage
+        // rename sees one layout rather than two. Still ahead of every store's reload().
+        DimensionalCarriageRenameMigration.runOnce();
     }
 
     private static void migrateSubdir(String slug) {
@@ -130,8 +134,12 @@ public final class UserContentMigration {
      * Returns the number of files successfully moved. Skips any entry whose
      * destination already exists — the user has authored something new in the
      * post-migration layout and we mustn't clobber it.
+     *
+     * <p>Package-private rather than private so
+     * {@link DimensionalCarriageRenameMigration} can reuse the same
+     * skip-if-exists / retry-next-start semantics instead of restating them.</p>
      */
-    private static int walkAndMove(Path legacy, Path dest, String label) {
+    static int walkAndMove(Path legacy, Path dest, String label) {
         int moved = 0;
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(legacy)) {
             for (Path entry : stream) {
@@ -174,8 +182,11 @@ public final class UserContentMigration {
      * Quietly remove {@code dir} if it has no entries left after migration.
      * Leaves directories that still contain anything (e.g. weights.json files
      * that aren't subject to this migration) untouched.
+     *
+     * <p>Package-private for {@link DimensionalCarriageRenameMigration}, which
+     * tidies up the same way after its own directory move.</p>
      */
-    private static void deleteIfEmpty(Path dir) {
+    static void deleteIfEmpty(Path dir) {
         if (!Files.isDirectory(dir)) return;
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir)) {
             if (stream.iterator().hasNext()) return;

@@ -131,7 +131,7 @@ final class TemplateWeightCodecTest {
         assertEquals(EnumSet.of(TrainPhase.NETHER), back.gate().phases());
     }
 
-    // ---- Per-kind mode tag (v4 — optional "mode" field; today only portal rooms) ----
+    // ---- Per-kind mode tag (v4 — optional "mode" field; today only dimensional carriages) ----
 
     @Test
     @DisplayName("absent mode key parses as null — pre-feature files unchanged")

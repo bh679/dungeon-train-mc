@@ -153,15 +153,15 @@ public final class EditorMenuScreen implements MenuScreen {
                 CarriageContentsAllowScreen.forCarriage(modelId)));
         }
 
-        // The same drilldown for a portal room, but only while its Contents setting is on — with it
+        // The same drilldown for a dimensional carriage, but only while its Contents setting is on — with it
         // Off the room draws nothing and the toggles would steer an empty pool. Addressed by room
-        // NAME, not modelId: modelId is the kind tag "portal_room" and is shared by every room.
+        // NAME, not modelId: modelId is the kind tag "dimensional_carriage" and is shared by every room.
         if ("portals".equals(category) && modelName != null && !modelName.isEmpty()
-            && games.brennan.dungeontrain.portal.PortalRoomSettings
+            && games.brennan.dungeontrain.portal.DimensionalCarriageSettings
                 .parse(EditorStatusHudOverlay.roomMode()).contents().furnishes()) {
             out.add(new CommandMenuEntry.DrillIn(
                 "Contents",
-                CarriageContentsAllowScreen.forPortalRoom(modelName)));
+                CarriageContentsAllowScreen.forDimensionalCarriage(modelName)));
         }
 
         // Weight — Triple row: [-] / Weight (N) / [+] for every category that
@@ -172,7 +172,7 @@ public final class EditorMenuScreen implements MenuScreen {
         CommandMenuEntry weightRow = weightTripleFor(category, modelId, modelName, currentWeight);
         if (weightRow != null) out.add(weightRow);
 
-        // Size — portals only. A portal room is the one plot whose box the author chooses: length
+        // Size — portals only. A dimensional carriage is the one plot whose box the author chooses: length
         // outright (it is the distance walked underneath a portal, not a footprint) and width and
         // height above the floor the corridor mouth sets. Position-resolved (no model id in the
         // command), so these need the player inside the plot.
@@ -322,8 +322,8 @@ public final class EditorMenuScreen implements MenuScreen {
     }
 
     /**
-     * Build a {@link CommandMenuEntry.Triple} stepper for one axis of a portal room's box, or null
-     * when the server hasn't reported a size (i.e. this isn't a portal room plot).
+     * Build a {@link CommandMenuEntry.Triple} stepper for one axis of a dimensional carriage's box, or null
+     * when the server hasn't reported a size (i.e. this isn't a dimensional carriage plot).
      *
      * <p>Same shape as {@link #weightTripleFor}: side cells nudge by one and keep the menu open so
      * the player can tap; the middle cell drops into typing mode for an exact value. The command is
@@ -335,7 +335,7 @@ public final class EditorMenuScreen implements MenuScreen {
      * {@code −} past the floor simply stops.</p>
      */
     /**
-     * The row that says what a portal room does at its walls, or null outside a portal room plot.
+     * The row that says what a dimensional carriage does at its walls, or null outside a dimensional carriage plot.
      *
      * <p>One cycling button rather than a stepper or a drilldown: there are three modes, so any of
      * them is at most two taps away, and staying open lets the player tap past the one they do not
@@ -373,7 +373,7 @@ public final class EditorMenuScreen implements MenuScreen {
      */
     static CommandMenuEntry copiesRowFor(String currentMode) {
         if (currentMode == null || EditorStatusPacket.NO_MODE.equals(currentMode)) return null;
-        if (!games.brennan.dungeontrain.portal.PortalRoomSettings.parse(currentMode).copiesApply()) {
+        if (!games.brennan.dungeontrain.portal.DimensionalCarriageSettings.parse(currentMode).copiesApply()) {
             return null;
         }
         return new CommandMenuEntry.Stay(
@@ -385,7 +385,7 @@ public final class EditorMenuScreen implements MenuScreen {
      * The Contents row — whether the room is furnished from the ordinary contents pool, and how a
      * furnishing smaller than the room is fitted into it.
      *
-     * <p>Shown for every portal room, unlike Copies: furnishing is not a property of the walls, so a
+     * <p>Shown for every dimensional carriage, unlike Copies: furnishing is not a property of the walls, so a
      * sealed room can take one as readily as a repeating one.</p>
      */
     static CommandMenuEntry roomContentsRowFor(String currentMode) {
@@ -406,7 +406,7 @@ public final class EditorMenuScreen implements MenuScreen {
      */
     static CommandMenuEntry exitsRowFor(String currentMode) {
         if (currentMode == null || EditorStatusPacket.NO_MODE.equals(currentMode)) return null;
-        if (!games.brennan.dungeontrain.portal.PortalRoomSettings.parse(currentMode).exitsApply()) {
+        if (!games.brennan.dungeontrain.portal.DimensionalCarriageSettings.parse(currentMode).exitsApply()) {
             return null;
         }
         return new CommandMenuEntry.Stay(
@@ -424,8 +424,8 @@ public final class EditorMenuScreen implements MenuScreen {
      */
     static CommandMenuEntry exitEveryTripleFor(String currentMode) {
         if (currentMode == null || EditorStatusPacket.NO_MODE.equals(currentMode)) return null;
-        games.brennan.dungeontrain.portal.PortalRoomSettings settings =
-            games.brennan.dungeontrain.portal.PortalRoomSettings.parse(currentMode);
+        games.brennan.dungeontrain.portal.DimensionalCarriageSettings settings =
+            games.brennan.dungeontrain.portal.DimensionalCarriageSettings.parse(currentMode);
         if (!settings.exitsApply() || !settings.exits().lays()) return null;
 
         String prefix = "dungeontrain editor portals exitevery";
@@ -445,8 +445,8 @@ public final class EditorMenuScreen implements MenuScreen {
      */
     static CommandMenuEntry exitMoveTripleFor(String currentMode) {
         if (currentMode == null || EditorStatusPacket.NO_MODE.equals(currentMode)) return null;
-        games.brennan.dungeontrain.portal.PortalRoomSettings settings =
-            games.brennan.dungeontrain.portal.PortalRoomSettings.parse(currentMode);
+        games.brennan.dungeontrain.portal.DimensionalCarriageSettings settings =
+            games.brennan.dungeontrain.portal.DimensionalCarriageSettings.parse(currentMode);
         if (!settings.exitsApply() || !settings.exits().movesApply()) return null;
 
         String prefix = "dungeontrain editor portals exitmove";

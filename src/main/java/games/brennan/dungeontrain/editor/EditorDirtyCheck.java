@@ -89,7 +89,7 @@ public final class EditorDirtyCheck {
         scanPillarSections(overworld, dims, devmode, out);
         scanAdjuncts(overworld, dims, devmode, out);
         scanTunnels(overworld, dims, devmode, out);
-        scanPortalRooms(overworld, dims, devmode, out);
+        scanDimensionalCarriages(overworld, dims, devmode, out);
 
         return out;
     }
@@ -268,16 +268,16 @@ public final class EditorDirtyCheck {
         }
     }
 
-    private static void scanPortalRooms(ServerLevel level, CarriageDims dims, boolean devmode,
+    private static void scanDimensionalCarriages(ServerLevel level, CarriageDims dims, boolean devmode,
                                         List<DirtyEntry> out) {
-        for (String name : TrackVariantRegistry.namesFor(TrackKind.PORTAL_ROOM)) {
-            BlockPos origin = PortalRoomEditor.plotOrigin(name, dims);
-            String key = PortalRoomEditor.snapshotKey(name);
+        for (String name : TrackVariantRegistry.namesFor(TrackKind.DIMENSIONAL_CARRIAGE)) {
+            BlockPos origin = DimensionalCarriageEditor.plotOrigin(name, dims);
+            String key = DimensionalCarriageEditor.snapshotKey(name);
             Map<BlockPos, BlockState> snapshot = EditorPlotSnapshots.get(key);
 
-            Vec3i fp = PortalRoomEditor.plotSize(name, dims);
+            Vec3i fp = DimensionalCarriageEditor.plotSize(name, dims);
             Set<BlockPos> skip = variantCellPositions(
-                TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, name, fp).entries());
+                TrackVariantBlocks.loadFor(TrackKind.DIMENSIONAL_CARRIAGE, name, fp).entries());
             boolean unsaved = snapshot != null
                 && !regionMatchesSnapshot(level, origin, fp.getX(), fp.getY(), fp.getZ(), snapshot, skip);
 
@@ -285,11 +285,11 @@ public final class EditorDirtyCheck {
             // re-takes the snapshot, so the live blocks match their baseline exactly while the plot
             // stands at a size no saved template has. Only /dt save makes a size permanent, and
             // without this the panel would report a resized room as clean.
-            boolean resized = !fp.equals(PortalRoomTemplateStore.sizeOf(level, name, dims));
+            boolean resized = !fp.equals(DimensionalCarriageTemplateStore.sizeOf(level, name, dims));
 
             if (unsaved || resized) {
-                out.add(new DirtyEntry("portals", "portal_room." + name,
-                    "portal room / " + name, true, false));
+                out.add(new DirtyEntry("portals", "dimensional_carriage." + name,
+                    "dimensional carriage / " + name, true, false));
             }
         }
     }
@@ -406,12 +406,12 @@ public final class EditorDirtyCheck {
         }
         if ("portals".equals(categoryId) && modelId.contains(".")) {
             String name = modelId.substring(modelId.indexOf('.') + 1);
-            BlockPos origin = PortalRoomEditor.plotOrigin(name, dims);
-            Vec3i fp = PortalRoomEditor.plotSize(name, dims);
+            BlockPos origin = DimensionalCarriageEditor.plotOrigin(name, dims);
+            Vec3i fp = DimensionalCarriageEditor.plotSize(name, dims);
             Set<BlockPos> skip = variantCellPositions(
-                TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, name, fp).entries());
+                TrackVariantBlocks.loadFor(TrackKind.DIMENSIONAL_CARRIAGE, name, fp).entries());
             collectDiffs(overworld, origin, fp.getX(), fp.getY(), fp.getZ(),
-                EditorPlotSnapshots.get(PortalRoomEditor.snapshotKey(name)), skip, out);
+                EditorPlotSnapshots.get(DimensionalCarriageEditor.snapshotKey(name)), skip, out);
         }
         return out;
     }
@@ -484,7 +484,7 @@ public final class EditorDirtyCheck {
         return switch (model.kind()) {
             case CARRIAGE, CONTENTS -> model.id();
             case TRACK -> "track." + model.variantName();
-            case PILLAR, STAIRS, STAIRS_ENTRANCE, TUNNEL, PORTAL_ROOM ->
+            case PILLAR, STAIRS, STAIRS_ENTRANCE, TUNNEL, DIMENSIONAL_CARRIAGE ->
                 model.id() + "." + model.variantName();
             case PART -> null;
         };

@@ -1,6 +1,6 @@
 package games.brennan.dungeontrain.track.variant;
 
-import games.brennan.dungeontrain.portal.PortalRoomLayout;
+import games.brennan.dungeontrain.portal.DimensionalCarriageLayout;
 import games.brennan.dungeontrain.track.PillarAdjunct;
 import games.brennan.dungeontrain.track.PillarSection;
 import games.brennan.dungeontrain.track.TrackPlacer;
@@ -34,7 +34,7 @@ import java.util.Locale;
  *   <li>{@link #PILLAR_TOP} / {@link #PILLAR_MIDDLE} / {@link #PILLAR_BOTTOM} —
  *       {@code pillars/<section>/<name>.nbt}</li>
  *   <li>{@link #ADJUNCT_STAIRS} — {@code pillars/adjunct_stairs/<name>.nbt}</li>
- *   <li>{@link #PORTAL_ROOM} — {@code portals/room/<name>.nbt}</li>
+ *   <li>{@link #DIMENSIONAL_CARRIAGE} — {@code portals/dimensional_carriage/<name>.nbt}</li>
  * </ul>
  *
  * <p>The seed used to deterministically pick a name for a given tile derives
@@ -51,7 +51,7 @@ public enum TrackKind {
     PILLAR_BOTTOM("pillar_bottom", "pillars/bottom"),
     ADJUNCT_STAIRS("adjunct_stairs", "pillars/adjunct_stairs"),
     ADJUNCT_STAIRS_ENTRANCE("adjunct_stairs_entrance", "pillars/adjunct_stairs_entrance"),
-    PORTAL_ROOM("portal_room", "portals/room");
+    DIMENSIONAL_CARRIAGE("dimensional_carriage", "portals/dimensional_carriage");
 
     /** The default ("built-in") variant name present even when the disk is empty. */
     public static final String DEFAULT_NAME = "default";
@@ -126,7 +126,7 @@ public enum TrackKind {
                 new Vec3i(PillarAdjunct.STAIRS.xSize(), PillarAdjunct.STAIRS.ySize(), PillarAdjunct.STAIRS.zSize());
             case ADJUNCT_STAIRS_ENTRANCE ->
                 new Vec3i(PillarAdjunct.STAIRS_ENTRANCE.xSize(), PillarAdjunct.STAIRS_ENTRANCE.ySize(), PillarAdjunct.STAIRS_ENTRANCE.zSize());
-            case PORTAL_ROOM -> PortalRoomLayout.builtInSize(worldDims);
+            case DIMENSIONAL_CARRIAGE -> DimensionalCarriageLayout.builtInSize(worldDims);
         };
     }
 
@@ -134,32 +134,32 @@ public enum TrackKind {
      * True when a template of this kind may be <b>larger</b> than {@link #dims} on any axis, which
      * is then treated as a floor rather than an exact size.
      *
-     * <p>Only {@link #PORTAL_ROOM}. A portal room must be at least as wide and tall as the corridor
+     * <p>Only {@link #DIMENSIONAL_CARRIAGE}. A dimensional carriage must be at least as wide and tall as the corridor
      * mouth that opens into it — smaller and the mouth's seal ring cannot close, leaving the twin
      * structure open to the surrounding rock — but there is no reason it cannot be bigger. Length
      * has no floor at all beyond legibility: it is the distance a player walks underneath, which is
      * exactly the dial the portal exists to turn.</p>
      *
      * <p>Everything downstream reads the real size off the loaded template
-     * ({@code PortalStructure}, {@code PortalRoomSizes}) rather than off {@link #dims}, so a
+     * ({@code PortalStructure}, {@code DimensionalCarriageSizes}) rather than off {@link #dims}, so a
      * larger-than-floor template is authored intent rather than a broken file.</p>
      */
     public boolean freeSizeAboveFloor() {
-        return this == PORTAL_ROOM;
+        return this == DIMENSIONAL_CARRIAGE;
     }
 
     /**
      * True when this kind has code-generated geometry to fall back on, so a variant with no stored
      * template is a working variant rather than an empty plot.
      *
-     * <p>Only {@link #PORTAL_ROOM}. Every other kind ships a bundled {@code default.nbt}; the
-     * portal room ships none on purpose, because its fallback is
+     * <p>Only {@link #DIMENSIONAL_CARRIAGE}. Every other kind ships a bundled {@code default.nbt}; the
+     * dimensional carriage ships none on purpose, because its fallback is
      * {@code PortalCarriageBuilder.stampRoomBuiltIn} — which is what lets the editor open a
      * non-empty plot to author the first real room in. Anything that assumes "a variant means a
      * file exists" has to check this: duplicating {@code default} has nothing to copy.</p>
      */
     public boolean hasBuiltInFallback() {
-        return this == PORTAL_ROOM;
+        return this == DIMENSIONAL_CARRIAGE;
     }
 
     /** Parse a lowercase id back to a kind, or {@code null} if unrecognised. */

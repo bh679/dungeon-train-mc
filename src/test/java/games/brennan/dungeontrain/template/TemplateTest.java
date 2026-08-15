@@ -112,7 +112,7 @@ final class TemplateTest {
         assertThrows(NullPointerException.class,
             () -> new Template.Part(null));
         assertThrows(NullPointerException.class,
-            () -> new Template.PortalRoom(null));
+            () -> new Template.DimensionalCarriage(null));
     }
 
     @Test
@@ -126,7 +126,7 @@ final class TemplateTest {
         assertTemplateBindings(new Template.Pillar(PillarSection.TOP), TemplateKind.PILLAR);
         assertTemplateBindings(new Template.Adjunct(PillarAdjunct.STAIRS), TemplateKind.STAIRS);
         assertTemplateBindings(new Template.Tunnel(TunnelVariant.SECTION), TemplateKind.TUNNEL);
-        assertTemplateBindings(new Template.PortalRoom(), TemplateKind.PORTAL_ROOM);
+        assertTemplateBindings(new Template.DimensionalCarriage(), TemplateKind.DIMENSIONAL_CARRIAGE);
     }
 
     private static void assertTemplateBindings(Template t, TemplateKind expected) {

@@ -85,17 +85,17 @@ final class CarriageContentsAllowScreenTest {
         assertEquals("Contents", new CarriageContentsAllowScreen("standard").title());
     }
 
-    // ---- the portal-room face of the same screen ----
+    // ---- the dimensional-carriage face of the same screen ----
 
     @Test
-    @DisplayName("forPortalRoom targets the room subcommand, splicing the room NAME")
-    void portalRoom_commandStrings() {
-        CarriageContentsAllowScreen screen = CarriageContentsAllowScreen.forPortalRoom("window_contents");
+    @DisplayName("forDimensionalCarriage targets the room subcommand, splicing the room NAME")
+    void dimensionalCarriage_commandStrings() {
+        CarriageContentsAllowScreen screen = CarriageContentsAllowScreen.forDimensionalCarriage("window_contents");
         CommandMenuEntry.Toggle row = (CommandMenuEntry.Toggle) screen.entries().get(0);
         assertEquals("default", row.label());
-        assertEquals("dungeontrain editor portal-room-contents window_contents default on",
+        assertEquals("dungeontrain editor dimensional-carriage-contents window_contents default on",
             row.cmdToTurnOn());
-        assertEquals("dungeontrain editor portal-room-contents window_contents default off",
+        assertEquals("dungeontrain editor dimensional-carriage-contents window_contents default off",
             row.cmdToTurnOff());
     }
 
@@ -115,7 +115,7 @@ final class CarriageContentsAllowScreenTest {
     @Test
     @DisplayName("Both faces share the row set and the title — only the subcommand differs")
     void bothFacesShareEverythingElse() {
-        CarriageContentsAllowScreen room = CarriageContentsAllowScreen.forPortalRoom("book");
+        CarriageContentsAllowScreen room = CarriageContentsAllowScreen.forDimensionalCarriage("book");
         CarriageContentsAllowScreen carriage = CarriageContentsAllowScreen.forCarriage("standard");
         assertEquals(carriage.entries().size(), room.entries().size());
         assertEquals("Contents", room.title());

@@ -15,7 +15,7 @@ import java.util.Objects;
  *
  * <p><b>Why this is a record rather than a {@code BlockPos}.</b> The exit twin's position is one
  * corridor plus one room along from the entry twin — and the room's length comes from whichever
- * {@code portal_room} template this pair rolled, so it is not a constant. Four separate places used
+ * {@code dimensional_carriage} template this pair rolled, so it is not a constant. Four separate places used
  * to re-derive that offset from {@code dims.length() + POCKET_LENGTH}: where the exit twin is
  * stamped, how far {@code eraseTwin} reaches, the occupancy box, and the origin the EXIT role's
  * {@code PortalFrames} maps into. If any of them disagreed with the others, a player walking back
@@ -49,7 +49,7 @@ import java.util.Objects;
  * those.</p>
  *
  * @param origin     world position of the entry twin's minimum corner — the structure's origin
- * @param roomName   the {@code portal_room} variant this pair rolled
+ * @param roomName   the {@code dimensional_carriage} variant this pair rolled
  * @param roomSize   the room's full box, shell included, as stamped (length is the free axis)
  * @param settings   what this room does at its walls, and what its copies are, resolved when the
  *                   pair was planned
@@ -58,46 +58,46 @@ import java.util.Objects;
  * @param kind       which of the two corridor shapes this pair's two corridors are
  */
 public record PortalStructure(BlockPos origin, String roomName, Vec3i roomSize,
-                              PortalRoomSettings settings, PortalRoomTiling tiling,
-                              PortalExitCopies exitCopies, PortalRoomTiling.Tile exitTile,
+                              DimensionalCarriageSettings settings, DimensionalCarriageTiling tiling,
+                              PortalExitCopies exitCopies, DimensionalCarriageTiling.Tile exitTile,
                               PortalCorridorKind kind) {
 
     public PortalStructure {
         Objects.requireNonNull(origin, "origin");
         Objects.requireNonNull(roomName, "roomName");
         Objects.requireNonNull(roomSize, "roomSize");
-        if (settings == null) settings = PortalRoomSettings.DEFAULT;
-        if (tiling == null) tiling = PortalRoomTiling.base();
+        if (settings == null) settings = DimensionalCarriageSettings.DEFAULT;
+        if (tiling == null) tiling = DimensionalCarriageTiling.base();
         if (exitCopies == null) exitCopies = PortalExitCopies.NONE;
-        if (exitTile == null) exitTile = PortalRoomTiling.Tile.BASE;
+        if (exitTile == null) exitTile = DimensionalCarriageTiling.Tile.BASE;
         if (kind == null) kind = PortalCorridorKind.DEFAULT;
     }
 
     /** Back-compat 3-arg form — a default-mode structure with only its base room standing. */
     public PortalStructure(BlockPos origin, String roomName, Vec3i roomSize) {
-        this(origin, roomName, roomSize, PortalRoomSettings.DEFAULT, PortalRoomTiling.base(),
-            PortalExitCopies.NONE, PortalRoomTiling.Tile.BASE, PortalCorridorKind.DEFAULT);
+        this(origin, roomName, roomSize, DimensionalCarriageSettings.DEFAULT, DimensionalCarriageTiling.base(),
+            PortalExitCopies.NONE, DimensionalCarriageTiling.Tile.BASE, PortalCorridorKind.DEFAULT);
     }
 
     /** The five-part form this record was before extra corridors existed. */
     public PortalStructure(BlockPos origin, String roomName, Vec3i roomSize,
-                           PortalRoomSettings settings, PortalRoomTiling tiling) {
+                           DimensionalCarriageSettings settings, DimensionalCarriageTiling tiling) {
         this(origin, roomName, roomSize, settings, tiling, PortalExitCopies.NONE,
-            PortalRoomTiling.Tile.BASE, PortalCorridorKind.DEFAULT);
+            DimensionalCarriageTiling.Tile.BASE, PortalCorridorKind.DEFAULT);
     }
 
     /** The six-part form, before an exit could stand anywhere but directly opposite. */
     public PortalStructure(BlockPos origin, String roomName, Vec3i roomSize,
-                           PortalRoomSettings settings, PortalRoomTiling tiling,
+                           DimensionalCarriageSettings settings, DimensionalCarriageTiling tiling,
                            PortalExitCopies exitCopies) {
         this(origin, roomName, roomSize, settings, tiling, exitCopies,
-            PortalRoomTiling.Tile.BASE, PortalCorridorKind.DEFAULT);
+            DimensionalCarriageTiling.Tile.BASE, PortalCorridorKind.DEFAULT);
     }
 
     /** The seven-part form, before a pair could draw a short corridor. */
     public PortalStructure(BlockPos origin, String roomName, Vec3i roomSize,
-                           PortalRoomSettings settings, PortalRoomTiling tiling,
-                           PortalExitCopies exitCopies, PortalRoomTiling.Tile exitTile) {
+                           DimensionalCarriageSettings settings, DimensionalCarriageTiling tiling,
+                           PortalExitCopies exitCopies, DimensionalCarriageTiling.Tile exitTile) {
         this(origin, roomName, roomSize, settings, tiling, exitCopies, exitTile,
             PortalCorridorKind.DEFAULT);
     }
@@ -110,19 +110,19 @@ public record PortalStructure(BlockPos origin, String roomName, Vec3i roomSize,
      * both, which is exactly what a test asserting the null-handling does.</p>
      */
     public static PortalStructure withMode(BlockPos origin, String roomName, Vec3i roomSize,
-                                           PortalRoomMode mode, PortalRoomTiling tiling) {
+                                           DimensionalCarriageMode mode, DimensionalCarriageTiling tiling) {
         return new PortalStructure(origin, roomName, roomSize,
-            PortalRoomSettings.DEFAULT.withMode(mode), tiling, PortalExitCopies.NONE,
-            PortalRoomTiling.Tile.BASE);
+            DimensionalCarriageSettings.DEFAULT.withMode(mode), tiling, PortalExitCopies.NONE,
+            DimensionalCarriageTiling.Tile.BASE);
     }
 
     /** What this room does at its walls. */
-    public PortalRoomMode mode() {
+    public DimensionalCarriageMode mode() {
         return settings.mode();
     }
 
     /** How many extra corridors back to the train this room lays, and how far apart. */
-    public PortalRoomExits exits() {
+    public DimensionalCarriageExits exits() {
         return settings.effectiveExits();
     }
 
@@ -136,8 +136,8 @@ public record PortalStructure(BlockPos origin, String roomName, Vec3i roomSize,
      * is what makes one portal's room differ from the next's; the name stays in so two different rooms
      * at the same key still separate.</p>
      *
-     * <p>Under {@link PortalRoomCopies#EXACT} every copy shares the base room's index, so the hall is
-     * the same room repeated block for block. Under {@link PortalRoomCopies#DYNAMIC} the index mixes
+     * <p>Under {@link DimensionalCarriageCopies#EXACT} every copy shares the base room's index, so the hall is
+     * the same room repeated block for block. Under {@link DimensionalCarriageCopies#DYNAMIC} the index mixes
      * in the copy's position, so copies differ from one another.</p>
      *
      * <p><b>Still not a loot machine.</b> Both inputs are fixed for the life of the pair — the key is
@@ -146,9 +146,9 @@ public record PortalStructure(BlockPos origin, String roomName, Vec3i roomSize,
      * structure re-stamped after the train drifts, reproduces the room and the chests the player left
      * rather than a fresh roll.</p>
      */
-    public int variantIndexFor(PortalRoomTiling.Tile tile, int pairKey) {
+    public int variantIndexFor(DimensionalCarriageTiling.Tile tile, int pairKey) {
         int base = Objects.hash(roomName.hashCode(), pairKey);
-        if (settings.copies() != PortalRoomCopies.DYNAMIC) return base;
+        if (settings.copies() != DimensionalCarriageCopies.DYNAMIC) return base;
         return Objects.hash(base, tile.x(), tile.z());
     }
 
@@ -179,7 +179,7 @@ public record PortalStructure(BlockPos origin, String roomName, Vec3i roomSize,
      * Minimum corner of the exit twin corridor — <b>wherever this pair stands it</b>.
      *
      * <p>Ordinarily that is directly opposite the room a player arrives in, one corridor plus one
-     * room along. A pair whose {@link PortalRoomExits} said so stands it beside another tile
+     * room along. A pair whose {@link DimensionalCarriageExits} said so stands it beside another tile
      * entirely ({@link #exitTile}), so the far side of the arrival room is just more room and the way
      * onward is a corridor to go and find.</p>
      *
@@ -213,7 +213,7 @@ public record PortalStructure(BlockPos origin, String roomName, Vec3i roomSize,
     public BlockPos roomOrigin(CarriageDims dims, PortalCarriageLayout layout) {
         // Centred on this pair's OWN room width, not the world minimum — a wider authored room
         // still has to line its interior centre up with the corridor's doorway.
-        return PortalRoomLayout.roomOrigin(origin, dims, layout, roomSize.getZ());
+        return DimensionalCarriageLayout.roomOrigin(origin, dims, layout, roomSize.getZ());
     }
 
     /**
@@ -229,7 +229,7 @@ public record PortalStructure(BlockPos origin, String roomName, Vec3i roomSize,
 
     /** Minimum corner of the room copy standing at {@code tile}. */
     public BlockPos tileOrigin(CarriageDims dims, PortalCarriageLayout layout,
-                               PortalRoomTiling.Tile tile) {
+                               DimensionalCarriageTiling.Tile tile) {
         return roomOrigin(dims, layout)
             .offset(tile.x() * roomLength(), 0, tile.z() * roomWidth());
     }
@@ -246,34 +246,34 @@ public record PortalStructure(BlockPos origin, String roomName, Vec3i roomSize,
         // Bedrockless repeats nothing, so "five rooms out" has nothing to count. What it has instead
         // is the clearance it swept, and fogging at exactly that distance is what puts the fog where
         // the emptiness ends rather than somewhere inside it.
-        if (mode() == PortalRoomMode.BEDROCKLESS) return PortalRoomLayout.VOID_CLEARANCE;
-        return (float) PortalRoomTiling.MAX_RADIUS * Math.min(roomLength(), roomWidth());
+        if (mode() == DimensionalCarriageMode.BEDROCKLESS) return DimensionalCarriageLayout.VOID_CLEARANCE;
+        return (float) DimensionalCarriageTiling.MAX_RADIUS * Math.min(roomLength(), roomWidth());
     }
 
     /**
      * How far a player can see at the far edge of the fogged region, in blocks — the other end of
      * {@link #fogRadius}, which is what they see at the room's own walls.
      *
-     * <p>Equal to {@link #fogRadius} for every mode but {@link PortalRoomMode#BEDROCKLESS}, which is
+     * <p>Equal to {@link #fogRadius} for every mode but {@link DimensionalCarriageMode#BEDROCKLESS}, which is
      * to say: no ramp, the fog is one distance wherever you stand. That is right for the tiling
      * modes, whose room repeats — there is no "outside the room" for a ramp to measure from, and a
      * player at the edge of the stamped copies is looking at more of the same room, not at the void.
      * Bedrockless is the mode with an outside, and the walk into it is the thing worth dramatising.</p>
      */
     public float fogMinRadius() {
-        return mode() == PortalRoomMode.BEDROCKLESS ? PortalRoomLayout.VOID_FOG_MIN : fogRadius();
+        return mode() == DimensionalCarriageMode.BEDROCKLESS ? DimensionalCarriageLayout.VOID_FOG_MIN : fogRadius();
     }
 
     /**
      * How far past the room's own extent the fogged region reaches, in blocks.
      *
      * <p>Zero for every mode whose fog stops at the copies it has stamped. {@link
-     * PortalRoomMode#BEDROCKLESS} is the one that owns space it did not build in: the region has to
+     * DimensionalCarriageMode#BEDROCKLESS} is the one that owns space it did not build in: the region has to
      * cover the swept clearance, or a player who mines out through the room's shell leaves the fog
      * while still standing in the void it was hiding.</p>
      */
     public int fogPad() {
-        return mode() == PortalRoomMode.BEDROCKLESS ? PortalRoomLayout.VOID_CLEARANCE : 0;
+        return mode() == DimensionalCarriageMode.BEDROCKLESS ? DimensionalCarriageLayout.VOID_CLEARANCE : 0;
     }
 
     /** How many blocks one copy of this room occupies — what the tiling budget is measured in. */
@@ -283,7 +283,7 @@ public record PortalStructure(BlockPos origin, String roomName, Vec3i roomSize,
 
     /** How many copies of this room may stand at once. */
     public int tileBudget() {
-        return PortalRoomTiling.budgetTiles(blocksPerTile());
+        return DimensionalCarriageTiling.budgetTiles(blocksPerTile());
     }
 
     /** Lowest world X any standing copy of the room reaches. */
@@ -307,10 +307,10 @@ public record PortalStructure(BlockPos origin, String roomName, Vec3i roomSize,
     }
 
     /** Which tile a world position falls in — the grid cell, whether or not a copy stands there. */
-    public PortalRoomTiling.Tile tileAt(CarriageDims dims, PortalCarriageLayout layout,
+    public DimensionalCarriageTiling.Tile tileAt(CarriageDims dims, PortalCarriageLayout layout,
                                         double worldX, double worldZ) {
         BlockPos room = roomOrigin(dims, layout);
-        return new PortalRoomTiling.Tile(
+        return new DimensionalCarriageTiling.Tile(
             Math.floorDiv((int) Math.floor(worldX) - room.getX(), roomLength()),
             Math.floorDiv((int) Math.floor(worldZ) - room.getZ(), roomWidth()));
     }
@@ -323,12 +323,12 @@ public record PortalStructure(BlockPos origin, String roomName, Vec3i roomSize,
      * A pair re-stamped further down the track has to be the same portal a player walked out of.</p>
      */
     public PortalStructure movedTo(BlockPos newOrigin) {
-        return new PortalStructure(newOrigin, roomName, roomSize, settings, PortalRoomTiling.base(),
+        return new PortalStructure(newOrigin, roomName, roomSize, settings, DimensionalCarriageTiling.base(),
             PortalExitCopies.NONE, exitTile, kind);
     }
 
     /** The same structure with a different set of room copies standing. */
-    public PortalStructure withTiling(PortalRoomTiling newTiling) {
+    public PortalStructure withTiling(DimensionalCarriageTiling newTiling) {
         return new PortalStructure(origin, roomName, roomSize, settings, newTiling, exitCopies,
             exitTile, kind);
     }
@@ -340,7 +340,7 @@ public record PortalStructure(BlockPos origin, String roomName, Vec3i roomSize,
     }
 
     /** The same structure standing its exit beside a different tile. */
-    public PortalStructure withExitTile(PortalRoomTiling.Tile newExitTile) {
+    public PortalStructure withExitTile(DimensionalCarriageTiling.Tile newExitTile) {
         return new PortalStructure(origin, roomName, roomSize, settings, tiling, exitCopies,
             newExitTile, kind);
     }
@@ -350,7 +350,7 @@ public record PortalStructure(BlockPos origin, String roomName, Vec3i roomSize,
      * extra corridor at that tile is stamped from.
      *
      * <p>The whole of {@link PortalExitSites}' placement rule rests on one identity:
-     * {@link PortalRoomLayout#roomOrigin} derives the room from the entry origin by translation
+     * {@link DimensionalCarriageLayout#roomOrigin} derives the room from the entry origin by translation
      * alone, so a structure moved by a whole number of tiles has its room exactly on that tile, and
      * its two corridors exactly where a copy's corridors belong. {@link #origin} is then where an
      * {@link PortalCarriageRole#ENTRY} copy goes and {@link #exitOrigin} where an
@@ -367,15 +367,15 @@ public record PortalStructure(BlockPos origin, String roomName, Vec3i roomSize,
      * from where the mask says it is, in a pair that had moved its exit and nowhere else, which is
      * exactly the kind of bug that only shows up in one setting.</p>
      */
-    public PortalStructure shadowAt(PortalRoomTiling.Tile tile) {
-        PortalStructure unmoved = PortalRoomTiling.Tile.BASE.equals(exitTile)
+    public PortalStructure shadowAt(DimensionalCarriageTiling.Tile tile) {
+        PortalStructure unmoved = DimensionalCarriageTiling.Tile.BASE.equals(exitTile)
             ? this
-            : withExitTile(PortalRoomTiling.Tile.BASE);
-        if (PortalRoomTiling.Tile.BASE.equals(tile)) return unmoved;
+            : withExitTile(DimensionalCarriageTiling.Tile.BASE);
+        if (DimensionalCarriageTiling.Tile.BASE.equals(tile)) return unmoved;
         return new PortalStructure(
             origin.offset(tile.x() * roomLength(), 0, tile.z() * roomWidth()),
-            roomName, roomSize, settings, PortalRoomTiling.base(), PortalExitCopies.NONE,
-            PortalRoomTiling.Tile.BASE, kind);
+            roomName, roomSize, settings, DimensionalCarriageTiling.base(), PortalExitCopies.NONE,
+            DimensionalCarriageTiling.Tile.BASE, kind);
     }
 
     /** Minimum corner of the corridor an extra {@code role} copy anchored at {@code tile} occupies. */

@@ -31,7 +31,7 @@ final class TrackVariantBlocksCopyTest {
 
     private static final BlockPos CELL_A = new BlockPos(1, 2, 3);
     private static final BlockPos CELL_B = new BlockPos(4, 5, 6);
-    /** Deliberately outside PORTAL_ROOM's built-in box — a free-size room authors up here. */
+    /** Deliberately outside DIMENSIONAL_CARRIAGE's built-in box — a free-size room authors up here. */
     private static final BlockPos CELL_TALL = new BlockPos(2, 40, 2);
 
     @BeforeAll
@@ -47,7 +47,7 @@ final class TrackVariantBlocksCopyTest {
     }
 
     private static TrackVariantBlocks authored() {
-        TrackVariantBlocks src = TrackVariantBlocks.emptyFor(TrackKind.PORTAL_ROOM);
+        TrackVariantBlocks src = TrackVariantBlocks.emptyFor(TrackKind.DIMENSIONAL_CARRIAGE);
         src.put(CELL_A, states());
         src.put(CELL_B, states());
         src.put(CELL_TALL, states());
@@ -82,7 +82,7 @@ final class TrackVariantBlocksCopyTest {
     @Test
     @DisplayName("copyOf of a mirror-only sidecar keeps the axes and stays empty")
     void copiesMirrorOnlySidecar() {
-        TrackVariantBlocks src = TrackVariantBlocks.emptyFor(TrackKind.PORTAL_ROOM);
+        TrackVariantBlocks src = TrackVariantBlocks.emptyFor(TrackKind.DIMENSIONAL_CARRIAGE);
         src.setMirrorAxes(true, false, false);
 
         TrackVariantBlocks copy = TrackVariantBlocks.copyOf(src);
@@ -95,7 +95,7 @@ final class TrackVariantBlocksCopyTest {
     @Test
     @DisplayName("an untouched sidecar reports default mirror — the 'nothing to copy' signal")
     void untouchedSidecarIsDefault() {
-        TrackVariantBlocks src = TrackVariantBlocks.emptyFor(TrackKind.PORTAL_ROOM);
+        TrackVariantBlocks src = TrackVariantBlocks.emptyFor(TrackKind.DIMENSIONAL_CARRIAGE);
         assertTrue(src.isEmpty());
         assertTrue(src.isDefaultMirror());
         assertTrue(TrackVariantBlocks.copyOf(src).isDefaultMirror());

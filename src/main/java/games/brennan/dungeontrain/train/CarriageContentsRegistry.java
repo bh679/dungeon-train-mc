@@ -214,7 +214,7 @@ public final class CarriageContentsRegistry {
      * {@link #pick} would draw a real template rather than hitting its
      * never-leave-a-carriage-unfurnished fallback to {@link ContentsType#DEFAULT}.
      *
-     * <p>Exists because that fallback is right for a carriage and wrong for a portal room. A
+     * <p>Exists because that fallback is right for a carriage and wrong for a dimensional carriage. A
      * carriage must always spawn with a coherent interior, so an allow-list that excludes
      * everything still yields the built-in default. A room whose author switched every template off
      * means an empty room, and dropping the default into it would be the opposite of the

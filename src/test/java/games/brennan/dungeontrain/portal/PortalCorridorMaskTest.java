@@ -31,12 +31,12 @@ class PortalCorridorMaskTest {
     private static final int CORRIDOR_LENGTH = PortalCorridorSize.corridorLength(DIMS, PortalCorridorKind.LONG);
 
     private static PortalStructure structure() {
-        return structure(PortalRoomLayout.builtInSize(DIMS));
+        return structure(DimensionalCarriageLayout.builtInSize(DIMS));
     }
 
     private static PortalStructure structure(Vec3i roomSize) {
         return PortalStructure.withMode(ORIGIN, "default", roomSize,
-            PortalRoomMode.ENDLESS_REPETITION, PortalRoomTiling.base());
+            DimensionalCarriageMode.ENDLESS_REPETITION, DimensionalCarriageTiling.base());
     }
 
     private static PortalCorridorMask mask() {
@@ -151,8 +151,8 @@ class PortalCorridorMaskTest {
     @Test
     @DisplayName("A tall room's space above a corridor is free too, so its interior is not truncated")
     void leavesTheSpaceAboveACorridorFree() {
-        Vec3i tall = PortalRoomLayout.clampSize(DIMS,
-            PortalRoomLayout.builtInSize(DIMS).offset(0, 3, 0));
+        Vec3i tall = DimensionalCarriageLayout.clampSize(DIMS,
+            DimensionalCarriageLayout.builtInSize(DIMS).offset(0, 3, 0));
         PortalStructure s = structure(tall);
         PortalCorridorMask mask = mask(s);
         int z = ORIGIN.getZ() + 1;   // squarely over the corridor
@@ -235,7 +235,7 @@ class PortalCorridorMaskTest {
         PortalStructure s = structure();
         PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(DIMS, PortalCorridorKind.LONG);
         PortalCorridorMask mask = mask();
-        BlockPos neighbour = s.tileOrigin(DIMS, layout, new PortalRoomTiling.Tile(-1, 1));
+        BlockPos neighbour = s.tileOrigin(DIMS, layout, new DimensionalCarriageTiling.Tile(-1, 1));
 
         for (int dz = 0; dz < s.roomWidth(); dz++) {
             assertFalse(mask.covers(neighbour.getX() + 1, ORIGIN.getY() + 1, neighbour.getZ() + dz),
@@ -296,7 +296,7 @@ class PortalCorridorMaskTest {
     @DisplayName("An entry copy is masked on the low-X side of its tile, an exit copy on the high-X side")
     void aCopySitsBesideItsAnchorTile() {
         PortalStructure s = structure();
-        PortalRoomTiling.Tile anchor = new PortalRoomTiling.Tile(8, 0);
+        DimensionalCarriageTiling.Tile anchor = new DimensionalCarriageTiling.Tile(8, 0);
         PortalStructure shadow = s.shadowAt(anchor);
 
         // The identity the whole feature rests on: the shadow's ROOM slot is the anchor tile.
@@ -324,7 +324,7 @@ class PortalCorridorMaskTest {
     @DisplayName("A copy's mask is the pair's mask, moved — it is the same corridor somewhere else")
     void aCopyIsThePairTranslated() {
         PortalStructure s = structure();
-        PortalRoomTiling.Tile anchor = new PortalRoomTiling.Tile(3, -2);
+        DimensionalCarriageTiling.Tile anchor = new DimensionalCarriageTiling.Tile(3, -2);
         int dx = anchor.x() * s.roomLength();
         int dz = anchor.z() * s.roomWidth();
 
@@ -350,7 +350,7 @@ class PortalCorridorMaskTest {
         assertSame(entry, entry.plus(PortalCorridorMask.NONE));
         assertSame(entry, PortalCorridorMask.NONE.plus(entry));
 
-        PortalCorridorMask far = corridor(s.shadowAt(new PortalRoomTiling.Tile(6, 0)),
+        PortalCorridorMask far = corridor(s.shadowAt(new DimensionalCarriageTiling.Tile(6, 0)),
             PortalCarriageRole.EXIT);
         PortalCorridorMask both = entry.plus(far);
         int y = ORIGIN.getY() + 1;

@@ -65,7 +65,7 @@ public final class DungeonTrainNet {
         // two players either side of the midpoint can still see each other. Pushed every tick while a
         // corridor is occupied, and once empty when it clears. See portal/PortalPuppets.
         registrar.playToClient(PortalPuppetsPacket.TYPE, PortalPuppetsPacket.STREAM_CODEC, PortalPuppetsPacket::handle);
-        registrar.playToClient(PortalRoomFogPacket.TYPE, PortalRoomFogPacket.STREAM_CODEC, PortalRoomFogPacket::handle);
+        registrar.playToClient(DimensionalCarriageFogPacket.TYPE, DimensionalCarriageFogPacket.STREAM_CODEC, DimensionalCarriageFogPacket::handle);
         // …and the swap itself, which the client cannot infer from the position packet that carries it:
         // the renderer has to be told to finish its occlusion rebuild before drawing, or the first
         // frames in the twin draw nothing at all. See client/portal/ClientPortalSwap.

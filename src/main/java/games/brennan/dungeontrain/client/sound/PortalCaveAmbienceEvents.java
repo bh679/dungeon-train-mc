@@ -14,7 +14,7 @@ import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 
 /**
- * Plays cave noises in a portal room — the client side of {@link ClientPortalCaveAmbience}, and the
+ * Plays cave noises in a dimensional carriage — the client side of {@link ClientPortalCaveAmbience}, and the
  * counterpart to {@link PortalMusicEvents}, which is what makes the room quiet enough to want them.
  *
  * <p><b>The room, not the corridors.</b> The twin corridors are copies of the carriage the player
@@ -33,7 +33,7 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
  * {@code SoundSource.AMBIENT}, so the player's Ambient slider applies without us asking.</p>
  *
  * <p>Unlike vanilla we do not check the light at the block we picked — it is a direction, not a
- * candidate. A portal room is lit on purpose, and gating on darkness is precisely what leaves it
+ * candidate. A dimensional carriage is lit on purpose, and gating on darkness is precisely what leaves it
  * silent.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)

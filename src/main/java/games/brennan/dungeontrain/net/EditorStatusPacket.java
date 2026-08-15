@@ -67,18 +67,18 @@ public record EditorStatusPacket(String category, String model, String modelId, 
     public static final int NO_WEIGHT = -1;
 
     /**
-     * Sentinel for "this model has no authored size" — every category except portal rooms, whose
+     * Sentinel for "this model has no authored size" — every category except dimensional carriages, whose
      * plots are fixed by their kind rather than chosen per variant.
      */
     public static final int NO_SIZE = -1;
 
-    /** Sentinel for "this model has no mode" — everything but a portal room. */
+    /** Sentinel for "this model has no mode" — everything but a dimensional carriage. */
     public static final String NO_MODE = "";
 
     /**
      * Wire length cap on {@link #roomMode}.
      *
-     * <p>Sized for the tag rather than guessed at. {@code PortalRoomSettings} packs four settings
+     * <p>Sized for the tag rather than guessed at. {@code DimensionalCarriageSettings} packs four settings
      * into one {@code /}-separated string, and its longest form —
      * {@code endless_repetition/dynamic/tile/random:64} — is forty-one characters. The cap was 32
      * when the tag topped out at thirty-one, which left it one setting away from
@@ -110,7 +110,7 @@ public record EditorStatusPacket(String category, String model, String modelId, 
             partMenuEnabled, mirrorX, mirrorY, mirrorZ, mirrorVariants, excludedContents, "");
     }
 
-    /** Back-compat constructor for models with no authored size — everything but portal rooms. */
+    /** Back-compat constructor for models with no authored size — everything but dimensional carriages. */
     public EditorStatusPacket(String category, String model, String modelId, String modelName, boolean devmode,
                               int weight, int minLevel, int maxLevel, int phaseMask,
                               boolean partMenuEnabled, boolean mirrorX, boolean mirrorY, boolean mirrorZ,
@@ -120,7 +120,7 @@ public record EditorStatusPacket(String category, String model, String modelId, 
             NO_SIZE, NO_SIZE, NO_SIZE, NO_MODE);
     }
 
-    /** Back-compat constructor from before portal rooms carried a mode. */
+    /** Back-compat constructor from before dimensional carriages carried a mode. */
     public EditorStatusPacket(String category, String model, String modelId, String modelName, boolean devmode,
                               int weight, int minLevel, int maxLevel, int phaseMask,
                               boolean partMenuEnabled, boolean mirrorX, boolean mirrorY, boolean mirrorZ,

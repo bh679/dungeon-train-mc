@@ -1,6 +1,6 @@
 package games.brennan.dungeontrain.editor;
 
-import games.brennan.dungeontrain.portal.PortalRoomSizes;
+import games.brennan.dungeontrain.portal.DimensionalCarriageSizes;
 import games.brennan.dungeontrain.track.PillarSection;
 import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.track.variant.TrackVariantRegistry;
@@ -69,7 +69,7 @@ public final class TrackSidePlots {
     public static final int X_STAIRS = X_TUNNELS + TunnelPlacer.LENGTH + EditorLayout.GAP; // +10+5 = 19
     public static final int X_PILLARS = X_STAIRS + 3 + EditorLayout.GAP;         // +3+5 = 27 (stairs xSize=3)
     /**
-     * Portal rooms sit past the pillar column (pillar xSize = 1). Their own category, so nothing is
+     * Dimensional carriages sit past the pillar column (pillar xSize = 1). Their own category, so nothing is
      * ever stamped here at the same time as the track-side kinds — the editor clears every plot on
      * a category switch — but the column keeps the two apart when reading the layout.
      */
@@ -110,7 +110,7 @@ public final class TrackSidePlots {
      * into the next one.</p>
      *
      * <p>Only the last category's column can afford to grow on {@code +X}, which today is exactly
-     * the one kind that has groups ({@link TrackKind#PORTAL_ROOM}, at {@link #X_PORTALS}).</p>
+     * the one kind that has groups ({@link TrackKind#DIMENSIONAL_CARRIAGE}, at {@link #X_PORTALS}).</p>
      */
     private static BlockPos subVariantOrigin(TrackKind kind, String name, CarriageDims dims) {
         java.util.Optional<String> parent = TrackVariantGroupStore.findParentOf(kind, name);
@@ -138,11 +138,11 @@ public final class TrackSidePlots {
      *
      * <p>Identical to {@link #footprint(TrackKind, CarriageDims)} except for a
      * {@link TrackKind#freeSizeAboveFloor()} kind, where the size belongs to the individual variant
-     * rather than the kind — a portal room is whatever size its author made it.</p>
+     * rather than the kind — a dimensional carriage is whatever size its author made it.</p>
      */
     public static Vec3i footprint(TrackKind kind, String name, CarriageDims dims) {
         if (!kind.freeSizeAboveFloor()) return kind.dims(dims);
-        return PortalRoomSizes.sizeOf(name, dims);
+        return DimensionalCarriageSizes.sizeOf(name, dims);
     }
 
     /**
@@ -174,7 +174,7 @@ public final class TrackSidePlots {
      * Z offset of {@code name} within {@code kind}'s row. {@code default} is slot 0.
      *
      * <p>Every kind but one has a fixed per-variant footprint, so slots are a uniform stride. A
-     * {@link TrackKind#freeSizeAboveFloor()} kind does not: a portal room is as wide as its author
+     * {@link TrackKind#freeSizeAboveFloor()} kind does not: a dimensional carriage is as wide as its author
      * made it, and a uniform stride sized off the kind would let a widened room grow straight into
      * its neighbour's plot. Those rows are packed from each variant's own {@link #slotZ} instead —
      * a reserved span that only grows, in {@link #SLOT_STEP} jumps, once a room closes to within
@@ -182,7 +182,7 @@ public final class TrackSidePlots {
      *
      * <p>Callers that change a size or the registered name set must clear every plot in the row
      * <b>before</b> the change and restamp after, because the change moves the later plots — see
-     * {@code PortalRoomEditor.relayout}.</p>
+     * {@code DimensionalCarriageEditor.relayout}.</p>
      */
     public static int variantZ(TrackKind kind, String name, CarriageDims dims) {
         // Top-level names only — a sub-variant claims no Z slot of its own (it sits +X of its
@@ -255,7 +255,7 @@ public final class TrackSidePlots {
             case PILLAR_TOP -> Y_BASELINE
                 + PillarSection.BOTTOM.height() + EditorLayout.GAP
                 + PillarSection.MIDDLE.height() + EditorLayout.GAP;
-            case PORTAL_ROOM -> Y_BASELINE;
+            case DIMENSIONAL_CARRIAGE -> Y_BASELINE;
         };
     }
 
@@ -266,7 +266,7 @@ public final class TrackSidePlots {
             case TUNNEL_SECTION, TUNNEL_PORTAL -> X_TUNNELS;
             case ADJUNCT_STAIRS, ADJUNCT_STAIRS_ENTRANCE -> X_STAIRS;
             case PILLAR_TOP, PILLAR_MIDDLE, PILLAR_BOTTOM -> X_PILLARS;
-            case PORTAL_ROOM -> X_PORTALS;
+            case DIMENSIONAL_CARRIAGE -> X_PORTALS;
         };
     }
 

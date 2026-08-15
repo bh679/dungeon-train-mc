@@ -26,7 +26,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * each tick so the playing channel picks up the new gain.</p>
  *
  * <p>A third factor comes from {@link ClientPortalMusic}, which fades the soundtrack out along a
- * portal corridor so the portal room it opens onto is silent. Unlike the bands it is not keyed on
+ * portal corridor so the dimensional carriage it opens onto is silent. Unlike the bands it is not keyed on
  * world-X alone and <i>can</i> share ground with either of them — a portal structure is stamped
  * under the Overworld wherever the train happens to be. Taking the {@code min} is still the right
  * rule for that: whichever effect wants the music quietest gets it. Every factor is {@code 1.0}

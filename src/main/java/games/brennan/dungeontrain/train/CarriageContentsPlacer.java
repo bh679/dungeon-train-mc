@@ -292,17 +292,17 @@ public final class CarriageContentsPlacer {
     /**
      * Stamp a contents template's <b>blocks</b> at an explicit anchor and box, masked.
      *
-     * <p>The entry point for a furnished portal room. Everything else here derives its interior from
+     * <p>The entry point for a furnished dimensional carriage. Everything else here derives its interior from
      * a carriage — {@code carriageOrigin.offset(1,1,1)}, sized {@code dims - 2} — and a room is
      * neither: it is a larger box, and the furnishing sits at an offset inside it that
-     * {@code PortalRoomContents.anchorsIn} decides. So the anchor and the box are passed rather than
+     * {@code DimensionalCarriageContents.anchorsIn} decides. So the anchor and the box are passed rather than
      * re-derived, which is also why {@code box} here is the <b>template's</b> size and not the
      * room's: the variant sidecar and the content pools are authored against the template, so they
      * must be walked over the template's own extent wherever it happens to have landed.</p>
      *
      * <p><b>Blocks only, and no entity pass at all</b> — not even a deferred one. A room copy is
      * stamped, retired and re-stamped as the tiling window slides, so a per-copy entity spawn would
-     * be a spawner with an outlet per tile. That is the same reason {@code PortalRoomMobs} exists for
+     * be a spawner with an outlet per tile. That is the same reason {@code DimensionalCarriageMobs} exists for
      * the room's own mob entries: it pairs every spawn with a reap, and a contents template's entity
      * list has no such pairing. Corridors take the same line
      * ({@code PortalCarriageBuilder.stampCorridorContents}).</p>
@@ -323,7 +323,7 @@ public final class CarriageContentsPlacer {
         clearBakedNarrativeLecternBooks(level, anchor, box);
         applyVariantBlocks(level, anchor, box, contents, seed, carriageIndex, safeMask);
         applyContentPools(level, anchor, box, contents, seed, carriageIndex, safeMask);
-        LOGGER.info("[DungeonTrain] Placed contents {} at {} source=stored box={}x{}x{} target=portal_room",
+        LOGGER.info("[DungeonTrain] Placed contents {} at {} source=stored box={}x{}x{} target=dimensional_carriage",
             contents.id(), anchor, box.getX(), box.getY(), box.getZ());
     }
 
@@ -498,7 +498,7 @@ public final class CarriageContentsPlacer {
      * positions inside an interior.
      *
      * <p>Takes the interior {@code origin} and {@code size} outright rather than re-deriving them
-     * from a carriage, because the portal-room path anchors the same template somewhere that is not
+     * from a carriage, because the dimensional-carriage path anchors the same template somewhere that is not
      * {@code carriageOrigin.offset(1,1,1)} — see {@code placeBlocksAt}. {@code mask} is the volume
      * this pass must not write into, {@link PortalCorridorMask#NONE} for a carriage.</p>
      */
@@ -697,7 +697,7 @@ public final class CarriageContentsPlacer {
     }
 
     /**
-     * {@link #stampTemplateBlocks} that leaves every cell {@code mask} covers alone — the portal-room
+     * {@link #stampTemplateBlocks} that leaves every cell {@code mask} covers alone — the dimensional-carriage
      * path, where the box a furnishing lands in may overlap a twin corridor or an open tile's
      * suppressed interior. Applied as a template processor, the same way
      * {@code CarriagePlacer.stampTemplateAt} masks a room's own stamp.

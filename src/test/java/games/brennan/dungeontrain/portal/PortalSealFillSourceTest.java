@@ -1,6 +1,6 @@
 package games.brennan.dungeontrain.portal;
 
-import games.brennan.dungeontrain.portal.PortalRoomTiling.Tile;
+import games.brennan.dungeontrain.portal.DimensionalCarriageTiling.Tile;
 import games.brennan.dungeontrain.train.CarriageDims;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
@@ -15,7 +15,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * <p>The plane outside a corridor's mouth used to be laid in the built-in room's polished blackstone,
  * which read as a slab of somebody else's palette dropped into an authored room — fifty blocks of it
  * per corridor, and an endless room scatters corridors. It is now built from the room's own end wall,
- * the same answer {@link PortalRoomTiler#closeFace} gives at the tiling boundary.</p>
+ * the same answer {@link DimensionalCarriageTiler#closeFace} gives at the tiling boundary.</p>
  *
  * <p>The write itself needs a live level and is not tested here. The <b>choice of cell</b> is pure
  * integer geometry and is the part that can silently go wrong — one column out and a mouth copies the
@@ -25,13 +25,13 @@ class PortalSealFillSourceTest {
 
     private static final CarriageDims DIMS = CarriageDims.DEFAULT;
     private static final BlockPos ORIGIN = new BlockPos(200, -60, -30);
-    private static final Vec3i SIZE = PortalRoomLayout.builtInSize(DIMS);
+    private static final Vec3i SIZE = DimensionalCarriageLayout.builtInSize(DIMS);
     private static final PortalCarriageLayout LAYOUT = PortalCarriageBuilder.layoutFor(DIMS, PortalCorridorKind.LONG);
 
     private static PortalStructure structure(Tile exitTile) {
         return new PortalStructure(ORIGIN, "labrynth", SIZE,
-            PortalRoomSettings.DEFAULT.withMode(PortalRoomMode.ENDLESS_REPETITION),
-            PortalRoomTiling.base(), PortalExitCopies.NONE, exitTile);
+            DimensionalCarriageSettings.DEFAULT.withMode(DimensionalCarriageMode.ENDLESS_REPETITION),
+            DimensionalCarriageTiling.base(), PortalExitCopies.NONE, exitTile);
     }
 
     private static BlockPos sourceFor(PortalStructure shadow, PortalStructure base,

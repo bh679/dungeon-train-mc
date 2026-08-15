@@ -269,23 +269,23 @@ public final class AchievementEvents {
         ModAdvancementTriggers.LIFETIME_DISTANCE.get().trigger(player, lifetimeMeters);
     }
 
-    // ---------------- Portal rooms ----------------
+    // ---------------- Dimensional carriages ----------------
 
     /**
      * "Train inside a train?" — called from {@link BoardingProgressEvents} once a player has spent
      * {@link games.brennan.dungeontrain.portal.PortalTripTracker#DWELL_SCANS} consecutive scans in a
-     * portal room's body rather than in one of its corridors.
+     * dimensional carriage's body rather than in one of its corridors.
      *
      * <p>Fired every scan from then on, not once: vanilla advancement dedupe makes the repeat free,
      * and the alternative — the caller keeping an "already granted" set — is a second place for the
      * grant to be wrong. Same reasoning as every other {@code gameplay_action} marker.</p>
      */
-    public static void notifyEnteredPortalRoom(ServerPlayer player) {
-        ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "entered_portal_room");
+    public static void notifyEnteredDimensionalCarriage(ServerPlayer player) {
+        ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "entered_dimensional_carriage");
     }
 
     /**
-     * "A new way out" — called from {@code PortalCarriageEvents} when a player leaves a portal room,
+     * "A new way out" — called from {@code PortalCarriageEvents} when a player leaves a dimensional carriage,
      * with how far the corridor they left by is from the one they came in through.
      *
      * <p>Gated here rather than at the call site so the threshold and the advancement that reads it

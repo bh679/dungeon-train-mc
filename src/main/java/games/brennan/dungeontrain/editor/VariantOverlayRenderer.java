@@ -410,11 +410,11 @@ public final class VariantOverlayRenderer {
         String excludedKey = excludedContents.isEmpty()
             ? ""
             : String.join(",", new TreeSet<>(excludedContents));
-        // Authored room size — portal rooms only; every other kind's plot is fixed by its kind.
+        // Authored room size — dimensional carriages only; every other kind's plot is fixed by its kind.
         // In the key as well as the packet, or a resize would not re-send and the steppers would
         // keep reading the old numbers.
         net.minecraft.core.Vec3i roomSize = l.category() == EditorCategory.PORTALS
-            ? PortalRoomEditor.plotSize(modelName, dims)
+            ? DimensionalCarriageEditor.plotSize(modelName, dims)
             : null;
         int roomLength = roomSize == null ? EditorStatusPacket.NO_SIZE : roomSize.getX();
         int roomWidth = roomSize == null ? EditorStatusPacket.NO_SIZE : roomSize.getZ();
@@ -422,7 +422,7 @@ public final class VariantOverlayRenderer {
         // Resolved rather than passed through raw, so the row shows the mode the room will actually
         // behave as even when the tag on disk is absent or misspelt.
         String roomMode = roomSize == null ? EditorStatusPacket.NO_MODE
-            : games.brennan.dungeontrain.portal.PortalRoomSettings.of(modelName).toTag();
+            : games.brennan.dungeontrain.portal.DimensionalCarriageSettings.of(modelName).toTag();
 
         String key = l.category().name() + "|" + l.model().displayName() + "|" + devmode + "|" + weight
             + "|" + minLevel + "|" + maxLevel + "|" + phaseMask + "|" + stageId
@@ -439,8 +439,8 @@ public final class VariantOverlayRenderer {
 
     /**
      * Sidecar-driven excluded contents set for the model the player is standing in — a carriage
-     * variant ({@link CarriageVariantContentsAllowStore}) or a portal room
-     * ({@link PortalRoomContentsAllowStore}). Empty for every other kind, which has no contents
+     * variant ({@link CarriageVariantContentsAllowStore}) or a dimensional carriage
+     * ({@link DimensionalCarriageContentsAllowStore}). Empty for every other kind, which has no contents
      * pool; the client renders nothing for it there.
      */
     private static Set<String> excludedContentsFor(Template model) {
@@ -448,11 +448,11 @@ public final class VariantOverlayRenderer {
             return CarriageVariantContentsAllowStore.get(cm.variant())
                 .orElse(CarriageContentsAllowList.EMPTY).excluded();
         }
-        // Portal rooms draw from the same pool when their Contents setting is on, and steer it with
+        // Dimensional carriages draw from the same pool when their Contents setting is on, and steer it with
         // their own sidecar. The packet field is shared, so the room's Contents screen reads the
         // excluded set exactly as a carriage's does — no client-side change was needed for this.
-        if (model instanceof Template.PortalRoom pr) {
-            return PortalRoomContentsAllowStore.getOrEmpty(pr.name()).excluded();
+        if (model instanceof Template.DimensionalCarriage pr) {
+            return DimensionalCarriageContentsAllowStore.getOrEmpty(pr.name()).excluded();
         }
         return Collections.emptySet();
     }
@@ -1020,7 +1020,7 @@ public final class VariantOverlayRenderer {
         java.util.List<EditorTypeMenusPacket.Menu> baseMenus,
         ServerPlayer player, CarriageDims dims, EditorCategory category
     ) {
-        if (category == EditorCategory.PORTALS) return appendPortalRoomSubVariants(baseMenus, player, dims);
+        if (category == EditorCategory.PORTALS) return appendDimensionalCarriageSubVariants(baseMenus, player, dims);
         if (category != EditorCategory.CONTENTS) return baseMenus;
         CarriageContents active = CarriageContentsEditor.plotContaining(player.blockPosition(), dims);
         if (active == null) return baseMenus;
@@ -1099,7 +1099,7 @@ public final class VariantOverlayRenderer {
     }
 
     /**
-     * The Sub-Variants companion for the portal room plot the player is standing in — the same
+     * The Sub-Variants companion for the dimensional carriage plot the player is standing in — the same
      * panel the CONTENTS plots get, one template layer up.
      *
      * <p>Rows carry the <b>room name</b> as their {@code modelId} rather than the kind tag every
@@ -1108,12 +1108,12 @@ public final class VariantOverlayRenderer {
      * commands that take names: teleport (which reads {@code modelName}) and the group weight nudge
      * (which the input handler routes by category).</p>
      */
-    private static java.util.List<EditorTypeMenusPacket.Menu> appendPortalRoomSubVariants(
+    private static java.util.List<EditorTypeMenusPacket.Menu> appendDimensionalCarriageSubVariants(
         java.util.List<EditorTypeMenusPacket.Menu> baseMenus, ServerPlayer player, CarriageDims dims
     ) {
         games.brennan.dungeontrain.track.variant.TrackKind kind =
-            games.brennan.dungeontrain.track.variant.TrackKind.PORTAL_ROOM;
-        String active = PortalRoomEditor.plotContaining(player.blockPosition(), dims);
+            games.brennan.dungeontrain.track.variant.TrackKind.DIMENSIONAL_CARRIAGE;
+        String active = DimensionalCarriageEditor.plotContaining(player.blockPosition(), dims);
         if (active == null) return baseMenus;
 
         // Standing inside a sub-variant shows its parent's pool, so the panel reads the same from

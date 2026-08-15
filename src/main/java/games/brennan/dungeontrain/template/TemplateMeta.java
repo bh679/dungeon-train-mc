@@ -15,8 +15,8 @@ package games.brennan.dungeontrain.template;
  *
  * <p><b>{@link #mode()} is an opaque per-kind tag</b>, deliberately a raw string rather than an enum:
  * what a mode <i>means</i> is the owning kind's business, and this record is shared by every weight
- * store. Today only {@code TrackKind.PORTAL_ROOM} defines any — the portal layer resolves them with
- * {@code PortalRoomMode.parse}, and an unrecognised or absent tag falls back to that kind's default
+ * store. Today only {@code TrackKind.DIMENSIONAL_CARRIAGE} defines any — the portal layer resolves them with
+ * {@code DimensionalCarriageMode.parse}, and an unrecognised or absent tag falls back to that kind's default
  * rather than failing a load. Kinds with no modes never set it and never read it.</p>
  *
  * <p>An id with the {@link TemplateGate#DEFAULT default} gate, no stage link <b>and</b> no mode

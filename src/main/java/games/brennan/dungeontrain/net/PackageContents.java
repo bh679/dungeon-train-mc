@@ -19,7 +19,32 @@ import java.util.List;
  */
 public final class PackageContents {
 
-    public record Section(String label, String subdir, String category) {}
+    /**
+     * One row group in the contents pane.
+     *
+     * @param label        human-friendly section header
+     * @param subdir       layout slug under a package's working folder
+     * @param category     slash-command argument set for teleporting into the editor plot,
+     *                     or {@code null} when the section has no editor plot
+     * @param legacySubdir slug this section used in packages authored by an older build, or
+     *                     {@code null} when the slug has never changed. Packages are shared
+     *                     between players as zips, so one can arrive at any time carrying the
+     *                     old layout — readers check this as a fallback. Writers only ever
+     *                     emit {@link #subdir()}.
+     */
+    public record Section(String label, String subdir, String category, String legacySubdir) {
+
+        /** A section whose slug has never changed. */
+        public Section(String label, String subdir, String category) {
+            this(label, subdir, category, null);
+        }
+
+        /** True when {@code candidate} names this section under either the current or old slug. */
+        public boolean matches(String candidate) {
+            return subdir.equals(candidate)
+                || (legacySubdir != null && legacySubdir.equals(candidate));
+        }
+    }
 
     /**
      * Ordered list of sections in the contents pane. Matches the legacy
@@ -27,16 +52,16 @@ public final class PackageContents {
      * Carriages at the top, prefabs at the bottom.
      */
     public static final List<Section> SECTIONS = List.of(
-        new Section("Carriages",             "templates",              "CARRIAGES"),
-        new Section("Contents",              "contents",               "CONTENTS"),
-        new Section("Parts",                 "parts",                  "PARTS"),
-        new Section("Containers",            "containers",             null),
-        new Section("Tracks",                "tracks",                 "TRACKS"),
-        new Section("Pillars",               "pillars",                "TRACKS"),
-        new Section("Tunnels",               "tunnels",                "TRACKS"),
-        new Section("Portal Rooms",          "portals/room",           "PORTALS"),
-        new Section("Loot Prefabs",          "prefabs/loot",           null),
-        new Section("Block-Variant Prefabs", "prefabs/block_variants", null)
+        new Section("Carriages",             "templates",                    "CARRIAGES"),
+        new Section("Contents",              "contents",                     "CONTENTS"),
+        new Section("Parts",                 "parts",                        "PARTS"),
+        new Section("Containers",            "containers",                   null),
+        new Section("Tracks",                "tracks",                       "TRACKS"),
+        new Section("Pillars",               "pillars",                      "TRACKS"),
+        new Section("Tunnels",               "tunnels",                      "TRACKS"),
+        new Section("Dimensional Carriages", "portals/dimensional_carriage", "PORTALS", "portals/room"),
+        new Section("Loot Prefabs",          "prefabs/loot",                 null),
+        new Section("Block-Variant Prefabs", "prefabs/block_variants",       null)
     );
 
     private PackageContents() {}

@@ -2,7 +2,7 @@ package games.brennan.dungeontrain.portal;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.portal.PortalExitSites.Site;
-import games.brennan.dungeontrain.portal.PortalRoomTiling.Tile;
+import games.brennan.dungeontrain.portal.DimensionalCarriageTiling.Tile;
 import games.brennan.dungeontrain.train.CarriageDims;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
@@ -13,14 +13,14 @@ import java.util.Comparator;
 import java.util.Set;
 
 /**
- * Keeps an endless room's extra corridors standing — the working half of {@link PortalRoomExits},
- * beside {@link PortalRoomTiler}, which does the same job for the room copies themselves.
+ * Keeps an endless room's extra corridors standing — the working half of {@link DimensionalCarriageExits},
+ * beside {@link DimensionalCarriageTiler}, which does the same job for the room copies themselves.
  *
  * <h2>One corridor per tick, and only where a room already stands</h2>
  * <p>Candidates are drawn from the <b>resident tiles</b> rather than from the window, so a copy is
  * never laid into space that has not been built: its mouth has to open onto a room, and its seal ring
  * has to have a room cross-section to fill. That also bounds the scan — the resident set is capped by
- * {@link PortalRoomTiling#budgetTiles}.</p>
+ * {@link DimensionalCarriageTiling#budgetTiles}.</p>
  *
  * <h2>Why a copy is held long after its tile has gone</h2>
  * <p>A corridor is longer than a room ({@link PortalCorridorSize}: 13 against 11 at the default
@@ -28,7 +28,7 @@ import java.util.Set;
  * tiles were stamped <i>around</i> it through the corridor mask. Clearing a copy while one of them
  * still stands would leave a corridor-shaped pit with no floor in a room the player can walk straight
  * back into — a hole with loot in it and no way to explain it. {@link PortalExitCopies#nextToRemove}
- * therefore holds a copy until its anchor is {@link PortalRoomTiling#MAX_RADIUS} <i>plus</i>
+ * therefore holds a copy until its anchor is {@link DimensionalCarriageTiling#MAX_RADIUS} <i>plus</i>
  * {@link PortalExitSites#tileReach} away, by which point every tile it touches has left the window
  * and the erase lands in space that is already gone.</p>
  *
@@ -45,7 +45,7 @@ public final class PortalExitCopyTiler {
     /**
      * Copies erased per tick once nobody is inside.
      *
-     * <p>Matches {@code PortalRoomTiler}'s tile figure for the same reason: a structure may not be
+     * <p>Matches {@code DimensionalCarriageTiler}'s tile figure for the same reason: a structure may not be
      * re-stamped until it has drained, and the train reaching {@code TWIN_MAX_DRIFT} is what asks for
      * the re-stamp, so draining has to outpace the train.</p>
      */
@@ -126,7 +126,7 @@ public final class PortalExitCopyTiler {
      * The next copy to lay: the nearest site to {@code centre} that a standing tile owes, is inside
      * {@code radius}, is not up yet, and can be built — or {@code null}.
      *
-     * <p><b>Nearest first, explicitly.</b> {@code PortalRoomTiling} fills its window nearest-first,
+     * <p><b>Nearest first, explicitly.</b> {@code DimensionalCarriageTiling} fills its window nearest-first,
      * but its resident set is a {@code Set.copyOf} and so has no order to inherit — iterating it and
      * taking the first hit would lay a copy five rooms away before one the player is walking towards.
      * Ties break on coordinates and role so a tick's choice is deterministic rather than dependent on
@@ -134,7 +134,7 @@ public final class PortalExitCopyTiler {
      *
      * <p><b>The radius is the fix for a thrash, not a nicety.</b> "Owed by a standing tile" and
      * "inside the window" come apart the moment the window shrinks: a player who steps back onto the
-     * train drops the radius to {@link PortalRoomTiling#APPROACH_RADIUS}, while the tiles themselves
+     * train drops the radius to {@link DimensionalCarriageTiling#APPROACH_RADIUS}, while the tiles themselves
      * retire only one per tick, so distant tiles stay resident for a while. Without this check those
      * tiles kept owing copies that {@link PortalExitCopies#nextToRemove} immediately retired again —
      * observed live at one full corridor stamp and erase every tick, 113 of them at a single site in
@@ -220,7 +220,7 @@ public final class PortalExitCopyTiler {
                                     Site site, Collection<PortalStructure> neighbours) {
         BoundingBox box = copyBox(structure, dims, site);
         if (box == null) return false;
-        if (!PortalRoomTiler.chunksLoaded(level, box)) return false;
+        if (!DimensionalCarriageTiler.chunksLoaded(level, box)) return false;
         for (PortalStructure other : neighbours) {
             if (other == structure) continue;
             if (box.intersects(PortalCarriageBuilder.footprintOf(level, other, dims))) {

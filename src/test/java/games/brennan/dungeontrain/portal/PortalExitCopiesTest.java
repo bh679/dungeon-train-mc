@@ -1,7 +1,7 @@
 package games.brennan.dungeontrain.portal;
 
 import games.brennan.dungeontrain.portal.PortalExitSites.Site;
-import games.brennan.dungeontrain.portal.PortalRoomTiling.Tile;
+import games.brennan.dungeontrain.portal.DimensionalCarriageTiling.Tile;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -24,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 class PortalExitCopiesTest {
 
-    private static final int RADIUS = PortalRoomTiling.MAX_RADIUS;
+    private static final int RADIUS = DimensionalCarriageTiling.MAX_RADIUS;
     private static final int REACH = 2;
 
     private static Site exitAt(int x, int z) {
@@ -120,7 +120,7 @@ class PortalExitCopiesTest {
         // radius collapses to APPROACH_RADIUS, and the copy the player walked out of one tick ago is
         // retired before they can walk back in — so the way back always led to the original.
         PortalExitCopies standing = PortalExitCopies.NONE.with(exitAt(0, 8)).with(exitAt(0, -8));
-        int approach = PortalRoomTiling.APPROACH_RADIUS;
+        int approach = DimensionalCarriageTiling.APPROACH_RADIUS;
 
         // Unspared, both are due to go the moment the window collapses.
         assertNotNull(standing.nextToRemove(Tile.BASE, approach, REACH));

@@ -134,6 +134,11 @@ public final class UserContentImporter {
             results.add(importOne(zip, dtpacks));
         }
         if (!results.isEmpty()) {
+            // A freshly extracted package may have been authored before the
+            // portal-room -> dimensional-carriage rename, so normalise its paths
+            // before anything reads them. Server-start migration can't cover this:
+            // the zip may be dropped in long after start.
+            DimensionalCarriageRenameMigration.runOnce();
             // Brand-new package folders appeared — make the registry pick them
             // up on the next read.
             PackageRegistry.invalidate();

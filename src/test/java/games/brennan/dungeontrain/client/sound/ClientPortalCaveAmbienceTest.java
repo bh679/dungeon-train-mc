@@ -10,7 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Cave noises play in the portal room — never in the corridors, never on the tick you walk in, and
+ * Cave noises play in the dimensional carriage — never in the corridors, never on the tick you walk in, and
  * on a fresh roll each visit.
  */
 class ClientPortalCaveAmbienceTest {

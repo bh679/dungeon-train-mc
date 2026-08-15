@@ -136,7 +136,7 @@ final class TrainTransformProviderTest {
 
     // ── Frozen-tick elapsed math ───────────────────────────────────────────
     // The overload that stands a train still while somebody is inside one of its
-    // portal rooms (TrainMotionFreeze). Frozen ticks are subtracted from the
+    // dimensional carriages (TrainMotionFreeze). Frozen ticks are subtracted from the
     // elapsed count, which is the only place a position built as a pure function
     // of elapsed time can be stopped — and, because they were never counted,
     // resuming needs no code and produces no jump.

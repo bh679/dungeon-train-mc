@@ -112,7 +112,7 @@ public final class UnsavedCheckScreen implements MenuScreen {
             // first; the save command on the next packet sees the new position
             // and captures the right plot. Carriages and contents resolve by id
             // directly and don't need the teleport.
-            // PortalRoomEditor.save resolves its plot the same way the track-side editors do, so
+            // DimensionalCarriageEditor.save resolves its plot the same way the track-side editors do, so
             // it needs the same teleport-first chain.
             boolean needsTeleport = "tracks".equals(r.categoryId()) || "portals".equals(r.categoryId());
             String viewCmd = "dungeontrain editor view " + r.categoryId() + " " + r.modelId();

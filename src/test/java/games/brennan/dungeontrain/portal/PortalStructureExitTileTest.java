@@ -1,7 +1,7 @@
 package games.brennan.dungeontrain.portal;
 
 import games.brennan.dungeontrain.portal.PortalExitSites.Site;
-import games.brennan.dungeontrain.portal.PortalRoomTiling.Tile;
+import games.brennan.dungeontrain.portal.DimensionalCarriageTiling.Tile;
 import games.brennan.dungeontrain.train.CarriageDims;
 import net.minecraft.core.BlockPos;
 import org.junit.jupiter.api.DisplayName;
@@ -25,9 +25,9 @@ class PortalStructureExitTileTest {
     private static final BlockPos ORIGIN = new BlockPos(200, -60, -30);
 
     private static PortalStructure structure(Tile exitTile) {
-        return new PortalStructure(ORIGIN, "labrynth", PortalRoomLayout.builtInSize(DIMS),
-            PortalRoomSettings.DEFAULT.withMode(PortalRoomMode.ENDLESS_REPETITION),
-            PortalRoomTiling.base(), PortalExitCopies.NONE, exitTile);
+        return new PortalStructure(ORIGIN, "labrynth", DimensionalCarriageLayout.builtInSize(DIMS),
+            DimensionalCarriageSettings.DEFAULT.withMode(DimensionalCarriageMode.ENDLESS_REPETITION),
+            DimensionalCarriageTiling.base(), PortalExitCopies.NONE, exitTile);
     }
 
     @Test
@@ -37,7 +37,7 @@ class PortalStructureExitTileTest {
         assertEquals(ORIGIN.offset(s.exitTwinOffsetX(DIMS), 0, 0), s.exitOrigin(DIMS));
         // …and the no-exit-tile constructors agree with it, so nothing that predates this moved.
         assertEquals(s.exitOrigin(DIMS),
-            new PortalStructure(ORIGIN, "labrynth", PortalRoomLayout.builtInSize(DIMS))
+            new PortalStructure(ORIGIN, "labrynth", DimensionalCarriageLayout.builtInSize(DIMS))
                 .exitOrigin(DIMS));
     }
 
@@ -107,7 +107,7 @@ class PortalStructureExitTileTest {
         assertEquals(moved.exitOrigin(DIMS).offset(4096, 0, 0), elsewhere.exitOrigin(DIMS));
 
         // And the tiling withers keep it too, since they run every tick.
-        assertEquals(exitTile, moved.withTiling(PortalRoomTiling.base()).exitTile());
+        assertEquals(exitTile, moved.withTiling(DimensionalCarriageTiling.base()).exitTile());
         assertEquals(exitTile, moved.withExitCopies(PortalExitCopies.NONE).exitTile());
     }
 
