@@ -6948,6 +6948,57 @@
       "released": true,
       "released_in": "v0.556.0",
       "released_at": "2026-08-12T15:07:04Z"
+    },
+    {
+      "id": "support-page-help-translate",
+      "version": "0.557.0",
+      "type": "feat",
+      "title": "Help Translate on the Ways to Help page",
+      "summary": "If you play Dungeon Train in a language that was machine-translated, the Ways to Help page now offers you the translation editor directly - so fixing the lines that read wrong sits alongside donating, sharing and feedback as a way to help. The page also scrolls now, and its Done button stays put at the bottom instead of sliding off the edge of a small window.",
+      "highlights": [
+        "New \"Help Translate\" section on the Ways to Help page, shown when your language still has AI-translated lines nobody has reviewed",
+        "The Ways to Help page scrolls, and Done is pinned to the bottom so it can never be pushed off-screen"
+      ],
+      "pr": 964,
+      "date": "2026-08-14",
+      "released": true,
+      "released_in": "v0.557.0",
+      "released_at": "2026-08-14T12:26:13Z"
+    },
+    {
+      "id": "video-tools-menu-page",
+      "version": "0.557.0",
+      "type": "feat",
+      "title": "Video Tools page for content creators",
+      "summary": "A new Video Tools button on the title menu, for anyone filming Dungeon Train. Each of the two filming commands gets a tile playing a clip of what it actually looks like \u2014 cinematographer mode, which flies you through the train in spectator with every door swinging open ahead of you, and the intro cinematic, which you can replay from anywhere in a run. Click a tile for the full rundown. The page also points you at #streams-and-media-of-dungeontrain to share what you make, and at the dev if you need a hand with a shot.",
+      "highlights": [
+        "New Video Tools page on the title menu, with an animated tile per filming command",
+        "/dt cinematographer \u2014 spectator flight with auto-opening doors (including on the moving train), an adjustable door radius, and clear-view for shots through walls",
+        "/dt cinematic \u2014 replay the intro cinematic from anywhere, or press C in spectator",
+        "Flags that cinematographer mode puts the run into Free Play, while replaying the cinematic does not",
+        "Discord moves to a logomark button above Credits, freeing its old slot for Video Tools"
+      ],
+      "date": "2026-08-13",
+      "released": true,
+      "released_in": "v0.557.0",
+      "released_at": "2026-08-14T12:26:13Z",
+      "pr": 963
+    },
+    {
+      "id": "placed-armor-stands-ride-trains",
+      "version": "0.558.0",
+      "type": "fix",
+      "title": "Armor stands you place on a train now stay with the train",
+      "summary": "Placing an armor stand inside a carriage used to look like nothing happened \u2014 the stand really was created, but it ended up in the carriage's internal building space rather than on the train you were standing on, where nobody could ever see it. Placed stands now ride the carriage they were put on, staying put as the train moves and surviving a reload.",
+      "highlights": [
+        "Armor stands can be placed and displayed inside carriages",
+        "Placed stands stay locked to their carriage while the train moves",
+        "They survive carriage unloading and world reload"
+      ],
+      "date": "2026-08-15",
+      "released": true,
+      "released_in": "v0.558.0",
+      "released_at": "2026-08-15T01:38:28Z"
     }
   ]
 }

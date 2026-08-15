@@ -2,6 +2,9 @@ package games.brennan.dungeontrain.client.support;
 
 import games.brennan.dungeontrain.client.analytics.UiAnalytics;
 import games.brennan.dungeontrain.client.links.OfficialLinks;
+import games.brennan.dungeontrain.client.localization.LocalizationCreditRegistry;
+import games.brennan.dungeontrain.client.localization.edit.TranslationScreen;
+import games.brennan.dungeontrain.client.localization.edit.TranslationTarget;
 import games.brennan.dungeontrain.client.menu.ColorTintedButton;
 import games.brennan.dungeontrain.client.menu.DarkTintedButton;
 import net.minecraft.Util;
@@ -17,11 +20,13 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
 import net.minecraft.client.resources.language.I18n;
 import net.minecraft.util.FormattedCharSequence;
+import net.minecraft.util.Mth;
 import net.neoforged.fml.ModList;
 
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.OptionalDouble;
 
 /**
  * "Ways to Help" hub, opened from the title-screen support button (see
@@ -37,6 +42,10 @@ import java.util.List;
  *   <li><b>Share the Mod</b> — text only.</li>
  *   <li><b>Feedback &amp; Testing</b> — text only, with an inline clickable
  *       "Discord" link ("Join the Discord") to get involved.</li>
+ *   <li><b>Help Translate</b> — a button into the in-game translation editor
+ *       ({@link games.brennan.dungeontrain.client.localization.edit.TranslationScreen}), shown
+ *       only to the players it is addressed to: those running a language the mod ships
+ *       machine-translated and no human has worked through yet. See {@link #translateTarget()}.</li>
  * </ol>
  *
  * <p>Both the coloured buttons and the inline "Discord" links open their URL
@@ -74,6 +83,10 @@ public final class SupportScreen extends Screen {
     private static final int DESC_GAP   = 4;
     private static final int TOP        = 16;
     private static final int PANEL_PAD  = 10;
+    /** Pixels of canvas per wheel notch. */
+    private static final int SCROLL_STEP = 12;
+    /** Height of the pinned bottom row (Done) plus the gap above it. */
+    private static final int BOTTOM_ROW_H = 28;
 
     private static final int COLOUR_PANEL  = 0xC0101010;
     private static final int COLOUR_HEADER = 0xFFFFFFFF;
@@ -88,24 +101,51 @@ public final class SupportScreen extends Screen {
 
     private final Screen parent;
 
-    // Computed in init(), consumed in render().
+    // Computed in init(), consumed in render(). Every Y below is a CANVAS coordinate — measured
+    // from the top of the content, not the top of the screen — which is what lets the same layout
+    // serve any window height. render() turns one into a screen Y as viewportTop + canvasY - scrollY.
     private int colX;
     private int colW;
-    private int panelTop;
-    private int panelBottom;
+    private int viewportTop;
+    private int viewportBottom;
+    private int contentHeight;
+    private int scrollY;
+    private int maxScroll;
     private int subtitleY;
     private List<FormattedCharSequence> subtitleLines = List.of();
     private final List<TextBlock> textBlocks = new ArrayList<>();
+    private final List<ScrolledButton> scrolledButtons = new ArrayList<>();
 
-    /** A section's non-widget text: header line + wrapped description, with their Y positions. */
+    /** A section's non-widget text: header line + wrapped description, with their canvas Y positions. */
     private record TextBlock(Component header, int headerY, List<FormattedCharSequence> descLines, int descY) {}
+
+    /**
+     * A link button living in the scrolling canvas, with the canvas Y it was laid out at.
+     *
+     * <p>These are registered with {@link #addWidget} rather than {@code addRenderableWidget}: they
+     * are drawn by {@link #render} inside the viewport's scissor, after being moved to where the
+     * current scroll position puts them. Vanilla would otherwise draw them at a fixed position
+     * outside the clip, over the pinned Done row.</p>
+     */
+    private record ScrolledButton(Button button, int canvasY) {}
 
     /**
      * One link button in a section: label key + target URL + optional sprite tint
      * (null = default grey) + optional hover-tooltip key (null = none) + the
      * analytics target name ({@link UiAnalytics} enum) for click/confirm events.
+     *
+     * <p>{@code action} is the escape hatch for the one button that does not leave the game: when
+     * it is set the button runs it instead of opening {@code url} (which is then null), skipping
+     * the {@link ConfirmLinkScreen} that only makes sense for an outbound link. Every other row
+     * uses the five-argument constructor and behaves exactly as before.</p>
      */
-    private record LinkButton(String labelKey, String url, float[] tint, String tooltipKey, String analyticsTarget) {}
+    private record LinkButton(String labelKey, String url, float[] tint, String tooltipKey,
+                              String analyticsTarget, Runnable action) {
+
+        LinkButton(String labelKey, String url, float[] tint, String tooltipKey, String analyticsTarget) {
+            this(labelKey, url, tint, tooltipKey, analyticsTarget, null);
+        }
+    }
 
     /**
      * One row of buttons in a section, with its own height and its own share of the column width —
@@ -196,14 +236,17 @@ public final class SupportScreen extends Screen {
     @Override
     protected void init() {
         textBlocks.clear();
+        scrolledButtons.clear();
         colW = Math.min(MAX_COL_W, this.width - SIDE_MARGIN);
         colX = (this.width - colW) / 2;
         int lh = this.font.lineHeight;
 
-        int y = TOP;
-        panelTop = y - PANEL_PAD;
+        // Canvas coordinates from here down: 0 is the top of the content, wherever it happens to be
+        // scrolled to. The viewport and the pinned Done row are computed once the content's full
+        // height is known, below.
+        int y = 0;
 
-        // Title is drawn centred at TOP in render(); reserve its line here.
+        // Title is drawn centred at canvas 0 in render(); reserve its line here.
         y += lh + 6;
 
         subtitleLines = this.font.split(Component.translatable("gui.dungeontrain.support.subtitle"), colW);
@@ -229,12 +272,32 @@ public final class SupportScreen extends Screen {
                 Component.translatable(copyKey("gui.dungeontrain.support.feedback.desc"), discordLink()),
                 List.of());
 
-        panelBottom = y + (PANEL_PAD - SECTION_GAP);
+        // Translate — last, and only for the players it is addressed to (see translateTarget). Last
+        // rather than woven in among the others so the three existing headers keep their numbers,
+        // and so a language that is already reviewed simply sees the page it saw before.
+        String translateTarget = translateTarget();
+        if (!translateTarget.isEmpty()) {
+            y = addSection(y, lh,
+                    Component.translatable("gui.dungeontrain.support.translate.header"),
+                    Component.translatable(copyKey("gui.dungeontrain.support.translate.desc")),
+                    List.of(ButtonRow.primary(List.of(translateButton(translateTarget)), colW)));
+        }
 
-        // Done flows just below the content panel so it can never collide with a
-        // section's content, regardless of screen height / GUI scale.
+        contentHeight = y - SECTION_GAP;
+
+        // Done is PINNED to the bottom of the screen, outside the scrolling canvas: it used to flow
+        // below the content, which put it off the bottom edge the moment the sections outgrew the
+        // window. The viewport stops just above it, so scrolled content can never reach it.
+        int rowY = this.height - BOTTOM_ROW_H;
+        viewportTop = TOP;
+        viewportBottom = Math.max(viewportTop, rowY - PANEL_PAD);
+        maxScroll = Math.max(0, contentHeight - (viewportBottom - viewportTop));
+        // Clamped rather than reset: init() reruns on every resize, and throwing the player back to
+        // the top of the page because they nudged the window would be its own bug.
+        scrollY = Mth.clamp(scrollY, 0, maxScroll);
+
         addRenderableWidget(Button.builder(CommonComponents.GUI_DONE, b -> onClose())
-                .bounds(this.width / 2 - 100, panelBottom + 8, 200, 20)
+                .bounds(this.width / 2 - 100, rowY, 200, 20)
                 .build());
     }
 
@@ -267,7 +330,11 @@ public final class SupportScreen extends Screen {
             int each = (rowW - (n - 1) * BUTTON_GAP) / n;
             for (int i = 0; i < n; i++) {
                 int bx = rowX + i * (each + BUTTON_GAP);
-                addRenderableWidget(makeLinkButton(bx, y, each, row.height(), row.buttons().get(i)));
+                // Placed at the canvas Y for now; render() moves it to the scrolled screen Y. Added
+                // with addWidget (input only) because render() draws it inside the viewport scissor.
+                Button button = makeLinkButton(bx, y, each, row.height(), row.buttons().get(i));
+                scrolledButtons.add(new ScrolledButton(button, y));
+                addWidget(button);
             }
             y += row.height() + BUTTON_GAP;
             anyRow = true;
@@ -280,7 +347,9 @@ public final class SupportScreen extends Screen {
     /** Build a link button, tinted to {@link LinkButton#tint()} when set, else the default grey. */
     private Button makeLinkButton(int x, int y, int w, int h, LinkButton lb) {
         Component label = Component.translatable(lb.labelKey());
-        Button.OnPress onPress = b -> openLink(lb.url(), lb.analyticsTarget());
+        Button.OnPress onPress = lb.action() != null
+                ? b -> runAction(lb.action(), lb.analyticsTarget())
+                : b -> openLink(lb.url(), lb.analyticsTarget());
         float[] t = lb.tint();
         Button button = (t == null)
                 ? new DarkTintedButton(x, y, w, h, label, onPress)
@@ -342,6 +411,48 @@ public final class SupportScreen extends Screen {
         return List.of(donate, second);
     }
 
+    /**
+     * The language the Translate section should offer, or {@code ""} to leave the section out.
+     *
+     * <p>Two questions, both already answered elsewhere. {@link TranslationTarget#resolveForClient()}
+     * gives the language this client could edit at all — the player's own, or nothing on English
+     * (a dev build points at its dev target instead, which is what makes this section testable
+     * without switching the whole game to Chinese). Then {@link LocalizationCreditRegistry#aiFraction}
+     * asks whether any of it is still machine-translated with nobody having read it.</p>
+     *
+     * <p>Deliberately "more than zero", not {@link LocalizationCreditRegistry#isHumanReviewed}:
+     * that helper calls a locale reviewed at up to 10% unread, which is the right rule for filling
+     * in the logo in the language list and the wrong one here. {@code zh_cn} sits at 107 unread
+     * lines of 1152 — 9.3%, under the bar — and 107 lines is a real afternoon's work to offer
+     * someone, not a rounding error. The fraction already folds in the approvals this client has
+     * downloaded since the build was cut, so a language volunteers finish off stops advertising the
+     * section without waiting for a release.</p>
+     *
+     * <p>No counts at all (a third-party localization pack) shows the section: not knowing is not
+     * evidence that someone has read it, and offering the editor to a player who doesn't need it
+     * costs them one glance.</p>
+     */
+    private static String translateTarget() {
+        String target = TranslationTarget.resolveForClient();
+        if (target.isEmpty()) {
+            return "";
+        }
+        OptionalDouble unreviewed = LocalizationCreditRegistry.aiFraction(target);
+        return unreviewed.isPresent() && unreviewed.getAsDouble() <= 0 ? "" : target;
+    }
+
+    /**
+     * The Translate section's single button: straight into the editor for {@code target}, with this
+     * hub as its parent so closing the editor comes back here rather than to the title screen.
+     */
+    private LinkButton translateButton(String target) {
+        // Default grey, not one of the payment tints: this is the one button on the page that does
+        // not ask for money, and colouring it like the ones that do would misread.
+        return new LinkButton("gui.dungeontrain.translate.button", null, null,
+                "gui.dungeontrain.support.translate.tooltip", UiAnalytics.TARGET_TRANSLATE,
+                () -> Minecraft.getInstance().setScreen(new TranslationScreen(this, target)));
+    }
+
     /** @see PaymentLinks#donateUrl() */
     private static String revolutUrl() {
         return PaymentLinks.donateUrl();
@@ -391,6 +502,18 @@ public final class SupportScreen extends Screen {
     }
 
     /**
+     * Run an in-game button's action, recording the click. The counterpart to {@link #openLink} for
+     * the buttons that stay inside the game: no confirm prompt, because nothing is being opened
+     * outside Minecraft, and so no confirm event either — the click is the whole funnel.
+     */
+    private void runAction(Runnable action, String analyticsTarget) {
+        if (analyticsTarget != null) {
+            UiAnalytics.click(UiAnalytics.SURFACE_SUPPORT_PAGE, analyticsTarget);
+        }
+        action.run();
+    }
+
+    /**
      * Analytics target name for an inline link's URL — the two inline links are built from
      * {@link OfficialLinks}, so an exact match identifies them; anything else is untracked.
      */
@@ -401,13 +524,21 @@ public final class SupportScreen extends Screen {
         return null;
     }
 
-    /** The clickable {@link Style} under the given mouse position, or null — used for inline links. */
+    /**
+     * The clickable {@link Style} under the given mouse position, or null — used for inline links.
+     * Translates the mouse into canvas space first, so a link stays hit-testable wherever the page
+     * is scrolled to, and nothing outside the viewport is clickable at all.
+     */
     private Style styleAt(double mouseX, double mouseY) {
+        if (mouseY < viewportTop || mouseY >= viewportBottom) {
+            return null;
+        }
         int lh = this.font.lineHeight;
+        double canvasY = mouseY - viewportTop + scrollY;
         for (TextBlock tb : textBlocks) {
             for (int i = 0; i < tb.descLines().size(); i++) {
                 int lineY = tb.descY() + i * lh;
-                if (mouseY < lineY || mouseY >= lineY + lh) continue;
+                if (canvasY < lineY || canvasY >= lineY + lh) continue;
                 FormattedCharSequence line = tb.descLines().get(i);
                 if (mouseX < colX || mouseX >= colX + this.font.width(line)) continue;
                 return this.font.getSplitter().componentStyleAtWidth(line, (int) (mouseX - colX));
@@ -431,33 +562,65 @@ public final class SupportScreen extends Screen {
     }
 
     @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        if (maxScroll > 0) {
+            this.scrollY = Mth.clamp(this.scrollY - (int) (scrollY * SCROLL_STEP), 0, maxScroll);
+            return true;
+        }
+        return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
+    }
+
+    @Override
     public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
         // Blurred menu panorama (vanilla), then a translucent panel behind the
-        // content column so text stays readable over the spinning background.
+        // scrolling viewport so text stays readable over the spinning background.
         super.renderBackground(g, mouseX, mouseY, partialTick);
-        g.fill(colX - PANEL_PAD, panelTop, colX + colW + PANEL_PAD, panelBottom, COLOUR_PANEL);
+        g.fill(colX - PANEL_PAD, viewportTop - PANEL_PAD,
+                colX + colW + PANEL_PAD, viewportBottom + PANEL_PAD, COLOUR_PANEL);
     }
 
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
-        // Draws the background (with our panel) and the button widgets.
+        // Move the canvas widgets to where this scroll position puts them BEFORE anything is drawn
+        // or hit-tested: a button scrolled out of the viewport is hidden, and vanilla's
+        // AbstractWidget.mouseClicked already ignores an invisible widget, so it stops taking
+        // clicks through the pinned Done row too.
+        for (ScrolledButton sb : scrolledButtons) {
+            Button b = sb.button();
+            int drawY = viewportTop + sb.canvasY() - scrollY;
+            b.setY(drawY);
+            b.visible = drawY >= viewportTop && drawY + b.getHeight() <= viewportBottom;
+        }
+
+        // Draws the background (with our panel) and the pinned Done widget.
         super.render(g, mouseX, mouseY, partialTick);
 
         int lh = this.font.lineHeight;
-        g.drawCenteredString(this.font, this.title, this.width / 2, TOP, COLOUR_HEADER);
+        g.enableScissor(colX - PANEL_PAD, viewportTop, colX + colW + PANEL_PAD, viewportBottom);
+
+        int originY = viewportTop - scrollY;
+        g.drawCenteredString(this.font, this.title, this.width / 2, originY, COLOUR_HEADER);
 
         for (int i = 0; i < subtitleLines.size(); i++) {
             FormattedCharSequence line = subtitleLines.get(i);
             int lineX = this.width / 2 - this.font.width(line) / 2;
-            g.drawString(this.font, line, lineX, subtitleY + i * lh, COLOUR_DESC, false);
+            g.drawString(this.font, line, lineX, originY + subtitleY + i * lh, COLOUR_DESC, false);
         }
 
         for (TextBlock tb : textBlocks) {
-            g.drawString(this.font, tb.header(), colX, tb.headerY(), COLOUR_HEADER, false);
+            g.drawString(this.font, tb.header(), colX, originY + tb.headerY(), COLOUR_HEADER, false);
             for (int i = 0; i < tb.descLines().size(); i++) {
-                g.drawString(this.font, tb.descLines().get(i), colX, tb.descY() + i * lh, COLOUR_DESC, false);
+                g.drawString(this.font, tb.descLines().get(i), colX,
+                        originY + tb.descY() + i * lh, COLOUR_DESC, false);
             }
         }
+
+        for (ScrolledButton sb : scrolledButtons) {
+            if (sb.button().visible) {
+                sb.button().render(g, mouseX, mouseY, partialTick);
+            }
+        }
+        g.disableScissor();
     }
 
     @Override
