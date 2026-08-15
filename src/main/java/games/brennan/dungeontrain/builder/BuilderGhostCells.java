@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.builder;
 
+import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriagePlacer;
@@ -16,6 +17,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
+import org.slf4j.Logger;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -60,6 +62,8 @@ import java.util.Optional;
  * drop as an item. The same hazard the portal-room variant pass hit.</p>
  */
 public final class BuilderGhostCells {
+
+    private static final Logger LOGGER = LogUtils.getLogger();
 
     private static final String TAG_SHELL = "shell";
     private static final String TAG_BACK_PAD = "backPad";
@@ -116,14 +120,14 @@ public final class BuilderGhostCells {
      */
     public static Cells lift(ServerLevel level, CarriageDims dims, BuilderMode mode,
                              BuilderNewOptions.SubType subType, int carriages,
-                             BuilderGhostMode ghostMode) {
+                             BuilderGhostMode ghostMode, Cells previous) {
         if (mode == null || carriages <= 0 || ghostMode == null) {
             return Cells.EMPTY;
         }
         if (!ghostMode.lifts()) {
             // SOLID stands the whole group up for real instead — see solidify. Nothing is recorded,
             // so a world in SOLID has no ghosts to send.
-            solidify(level, dims, mode, carriages);
+            solidify(level, dims, mode, carriages, previous);
             return Cells.EMPTY;
         }
         // Leaving SOLID: the carriages it stood in the empty slots are real blocks, and the ghost
@@ -151,6 +155,11 @@ public final class BuilderGhostCells {
      */
     public static void restore(ServerLevel level, CarriageDims dims, int carriages, Cells cells) {
         if (cells == null || cells.isEmpty()) {
+            // Worth a line rather than a silent return: "Solid gave me no walls back" and "there
+            // was nothing recorded to give back" look identical in game and have entirely
+            // different causes.
+            LOGGER.info("[DungeonTrain] Builder scenery restore: nothing recorded to put back "
+                    + "({} carriage(s))", carriages);
             return;
         }
         if (carriages == 1 && !cells.shell().isEmpty()) {
@@ -158,6 +167,9 @@ public final class BuilderGhostCells {
             restoreAt(level, cells.shell(),
                     new BlockPos(parked.minX(), parked.minY(), parked.minZ()));
         }
+        LOGGER.info("[DungeonTrain] Builder scenery restore: shell {}, pads {}+{}, track {}",
+                cells.shell().size(), cells.backPad().size(), cells.frontPad().size(),
+                cells.track().size());
         List<Integer> padXs = padPositions(dims);
         if (padXs.size() == 2) {
             restoreAt(level, cells.backPad(),
@@ -186,7 +198,18 @@ public final class BuilderGhostCells {
      * is exactly the right thing for it to say, and why that wash stopped being red.</p>
      */
     private static void solidify(ServerLevel level, CarriageDims dims, BuilderMode mode,
-                                 int carriages) {
+                                 int carriages, Cells previous) {
+        // The carriage you are standing in comes first, and it comes back from what was taken —
+        // this build's parts overlay, not the base variant's.
+        //
+        // Done here rather than only on the GHOST -> SOLID transition, which is where it used to
+        // live. That arm fires exactly once and only when the mode change is observed, so any path
+        // that reached SOLID another way — a rejoin, a re-stamp, a mode already stored as SOLID with
+        // the blocks still lifted — left the walls and the deck missing with no way to get them
+        // back. Restoring on every pass into SOLID is idempotent (restoreAt only writes into air)
+        // and cannot get stuck.
+        restore(level, dims, carriages, previous);
+
         List<Integer> padXs = BuilderWorldLayout.ghostGroupCarriages(mode) <= 0
                 ? List.of()
                 : padPositions(dims);

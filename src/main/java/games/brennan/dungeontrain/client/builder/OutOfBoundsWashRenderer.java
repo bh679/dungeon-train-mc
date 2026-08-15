@@ -8,7 +8,9 @@ import games.brennan.dungeontrain.builder.BuilderMode;
 import games.brennan.dungeontrain.builder.BuilderNewOptions;
 import games.brennan.dungeontrain.builder.BuilderOpenRequest;
 import games.brennan.dungeontrain.builder.BuilderWorldLayout;
+import games.brennan.dungeontrain.builder.BuilderGhostMode;
 import games.brennan.dungeontrain.client.menu.MenuRenderStates;
+import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.train.CarriageDims;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -34,6 +36,11 @@ import java.util.List;
  * <p>Only what's inside a carriage becomes the saved build, so anything placed beyond it — out on
  * the platform, above the roof, past the flatbed pads — is scaffolding you'd otherwise only
  * discover was missing at save time. The wash makes the boundary visible while you work.</p>
+ *
+ * <p><b>In {@link BuilderGhostMode#SOLID} it covers the scenery too</b> — the carriage skin, which is
+ * inside the build volume, and the track, which is protected. Both are normally skipped and both
+ * were ghosts a moment ago; standing them up as real blocks without the wash would leave the one
+ * mode where you cannot tell the build from the things around it apart.</p>
  *
  * <p>It is a tint over a solid block, not real transparency. Making the block itself see-through
  * would mean forcing it into the translucent chunk layer from a chunk-meshing hook, and Sodium
@@ -74,8 +81,8 @@ public final class OutOfBoundsWashRenderer {
     private static final float R = 0.05F;
     private static final float G = 0.05F;
     private static final float B = 0.08F;
-    /** 15% — enough to sit the block back from the build, faint enough to read its material. */
-    private static final float A = 0.15F;
+    /** 50% — the scenery sits clearly behind the build without going black. */
+    private static final float A = 0.50F;
 
     /** Cached exposed faces, replaced wholesale so a render pass never sees a partial sweep. */
     private static volatile List<Face> faces = List.of();
@@ -120,6 +127,14 @@ public final class OutOfBoundsWashRenderer {
         // grid does: the sub type the server recorded names no carriage part.
         boolean trackBuildOpen = mode != null && !BuilderNewOptions.hasSubTypes(mode)
                 && !BuilderOpenRequest.PORTAL_ROOM_SUB_TYPE.equals(BuilderBoundsState.subTypeId());
+        // In Solid the scenery is standing as real blocks, and all of it wants the wash — that is
+        // the whole of what the wash now means. Two sets it otherwise skips: the carriage skin,
+        // which is inside the build volume, and the track, which is protected. Both were ghosts a
+        // moment ago and neither is part of what gets saved.
+        boolean solid = BuilderGhostCellsState.mode() == BuilderGhostMode.SOLID;
+        boolean shellIsScenery = solid && mode == BuilderMode.INSIDE_CARRIAGE
+                && BuilderNewOptions.SubType.CARRIAGE_ROOM.id().equals(BuilderBoundsState.subTypeId());
+        TrackGeometry track = TrackGeometry.from(dims, BuilderWorldLayout.TRAIN_Y);
         BlockPos centre = mc.player.blockPosition();
 
         int minX = centre.getX() - SCAN_RADIUS_XZ;
@@ -132,6 +147,11 @@ public final class OutOfBoundsWashRenderer {
         // so a fixed floor here would leave its bottom row out of the sweep.
         int minY = volumes.stream().mapToInt(BoundingBox::minY).min()
                 .orElse(BuilderWorldLayout.TRAIN_Y) - 1;
+        // The bed course sits a row below that, so a sweep floored on the build would wash the
+        // rails and miss the bed they lie on.
+        if (solid) {
+            minY = Math.min(minY, track.bedY());
+        }
         int maxY = volumes.stream().mapToInt(BoundingBox::maxY).max().orElse(BuilderWorldLayout.TRAIN_Y)
                 + SCAN_HEADROOM;
 
@@ -145,9 +165,17 @@ public final class OutOfBoundsWashRenderer {
                 for (int z = minZ; z <= maxZ; z++) {
                     pos.set(x, y, z);
                     if (level.getBlockState(pos).isAir()) continue;
-                    if (BuilderBounds.isInsideBuild(pos, volumes)) continue;
-                    // The platform and the track are scenery, not something the builder placed.
-                    if (BuilderWorldLayout.isProtected(pos, dims, mode, trackBuildOpen)) continue;
+                    if (BuilderBounds.isInsideBuild(pos, volumes)
+                            && !(shellIsScenery && onBuildSkin(pos, volumes))) {
+                        continue;
+                    }
+                    // The platform and the track are scenery, not something the builder placed. In
+                    // Solid the track is scenery you can see, so it gets the wash — the platform
+                    // never does, being three hundred blocks of grass nobody is judging.
+                    if (BuilderWorldLayout.isProtected(pos, dims, mode, trackBuildOpen)
+                            && !(solid && onTrackRows(pos, track))) {
+                        continue;
+                    }
 
                     for (Direction dir : Direction.values()) {
                         neighbour.set(x + dir.getStepX(), y + dir.getStepY(), z + dir.getStepZ());
@@ -159,6 +187,31 @@ public final class OutOfBoundsWashRenderer {
             }
         }
         faces = found;
+    }
+
+    /**
+     * Whether {@code pos} is on the perimeter of the build it sits in — the carriage skin.
+     *
+     * <p>The client's own version of {@code BuilderGhostCells.onSkin}: the same set of cells, judged
+     * from the volume the server already sent rather than from the dims. Only consulted for a
+     * carriage room authored from inside, which is the one build whose skin is scenery.</p>
+     */
+    private static boolean onBuildSkin(BlockPos pos, List<BoundingBox> volumes) {
+        for (BoundingBox box : volumes) {
+            if (!box.isInside(pos)) {
+                continue;
+            }
+            return pos.getX() == box.minX() || pos.getX() == box.maxX()
+                    || pos.getY() == box.minY() || pos.getY() == box.maxY()
+                    || pos.getZ() == box.minZ() || pos.getZ() == box.maxZ();
+        }
+        return false;
+    }
+
+    /** Whether {@code pos} is a bed or rail cell of the corridor, rather than the platform under it. */
+    private static boolean onTrackRows(BlockPos pos, TrackGeometry track) {
+        return (pos.getY() == track.bedY() || pos.getY() == track.railY())
+                && pos.getZ() >= track.trackZMin() && pos.getZ() <= track.trackZMax();
     }
 
     @SubscribeEvent

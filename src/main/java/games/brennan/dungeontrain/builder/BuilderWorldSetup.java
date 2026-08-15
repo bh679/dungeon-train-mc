@@ -129,13 +129,14 @@ public final class BuilderWorldSetup {
         DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
         BuilderMode mode = BuilderMode.fromId(data.builderMode()).orElse(null);
         int carriages = parkedCarriages(data);
+        BuilderGhostCells.Cells previous = BuilderGhostCells.fromTag(
+                data.builderGhostCells(), level.holderLookup(Registries.BLOCK));
         // Put the line back before reading it. A carriage-to-carriage mode switch re-stamps the
         // train but not the scenery, so without this the second lift finds the air the first one
         // left and records an empty track — see BuilderGhostCells.restoreTrack.
-        BuilderGhostCells.restoreTrack(level, dims, BuilderGhostCells.fromTag(
-                data.builderGhostCells(), level.holderLookup(Registries.BLOCK)));
+        BuilderGhostCells.restoreTrack(level, dims, previous);
         BuilderGhostCells.Cells cells = BuilderGhostCells.lift(level, dims, mode,
-                subTypeFor(mode, data), carriages, data.builderGhostMode());
+                subTypeFor(mode, data), carriages, data.builderGhostMode(), previous);
         data.setBuilderGhostCells(cells.isEmpty() ? null : BuilderGhostCells.toTag(cells));
 
         for (int i = 0; i < carriages; i++) {
@@ -163,15 +164,11 @@ public final class BuilderWorldSetup {
         if (current == mode) {
             return;
         }
-        if (current.lifts() && !mode.lifts()) {
-            BuilderGhostCells.restore(level, dims, parkedCarriages(data),
-                    BuilderGhostCells.fromTag(data.builderGhostCells(),
-                            level.holderLookup(Registries.BLOCK)));
-            data.setBuilderGhostCells(null);
-        }
         data.setBuilderGhostMode(mode);
-        // Lifts when the new mode wants it and does nothing when the blocks are already gone, so
-        // this covers SOLID -> GHOST without a second arm for it.
+        // One call for both directions. Going to SOLID it restores what was taken and stands the
+        // rest of the group up; going the other way it lifts. The record is cleared by whichever of
+        // those ran — deliberately not cleared here first, because SOLID reads it to know what to
+        // put back.
         refreshGhostCells(level, dims);
         LOGGER.info("[DungeonTrain] Builder ghost mode: '{}' -> '{}'", current.id(), mode.id());
     }
