@@ -6859,6 +6859,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "builder-menu-default-template",
+      "version": "0.552.0",
+      "type": "feat",
+      "title": "Train Builder tiles open with something already on the track",
+      "summary": "Picking a tile on the Train Builder menu now loads that mode's default template instead of dropping you into an empty sandbox \u2014 a carriage, a room, a track tile, or a portal room. Builds still start unnamed, so your first Save asks what to call it.",
+      "highlights": [
+        "Each Train Builder tile arrives with a template loaded",
+        "Train Dimensions opens a portal room rather than the tunnel mouth",
+        "Fixed a crash when a track template was open in the builder"
+      ],
+      "date": "2026-08-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
