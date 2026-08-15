@@ -178,18 +178,26 @@ public final class BlockVariantMenuController {
 
         Vec3 right = up.cross(normal).normalize();
 
+        // Liveness of every v9 reference in this cell, decided once against the
+        // plot's whole reference graph — the client can't work it out on its
+        // own, it only ever sees one cell.
+        VariantGroupRefs.Graph refGraph = plot.groupRefs().graph();
+        int cellLockId = plot.lockIdAt(localPos);
+
         List<BlockVariantSyncPacket.Entry> entries = new ArrayList<>(states.size());
         for (VariantState s : states) {
             String stateStr = BlockStateParser.serialize(s.state());
             String beNbt = s.hasBlockEntityData() ? s.blockEntityNbt().toString() : null;
             VariantRotation rot = s.rotation();
             String entityId = s.entityId() == null ? null : s.entityId().toString();
+            boolean refLive = s.isGroupRef() && refGraph.isLiveRef(cellLockId, s.groupRef());
             entries.add(new BlockVariantSyncPacket.Entry(
                 stateStr, beNbt, s.weight(),
                 (byte) rot.mode().ordinal(), (byte) rot.dirMask(),
                 s.linkedLootPrefabId(), entityId,
                 (byte) s.half().mode().ordinal(),
-                s.difficulty().min(), s.difficulty().max()));
+                s.difficulty().min(), s.difficulty().max(),
+                s.groupRef(), refLive));
         }
         return new BlockVariantSyncPacket(plot.key(), localPos, entries, lockId, anchor, right, up);
     }
@@ -246,6 +254,66 @@ public final class BlockVariantMenuController {
         switch (packet.op()) {
             case ADD -> {
                 ItemStack held = player.getMainHandItem();
+                // v9 lock-group reference branch. A variant clipboard copied
+                // from a locked cell already carries that cell's lock-id, so
+                // "copy a cell in group 1, hold it, press Add here" is the
+                // whole authoring gesture — no new item and no new button.
+                // Right-click paste keeps its existing meaning (overwrite this
+                // cell and join the group); only Add reads the clipboard as a
+                // reference.
+                if (held.getItem() instanceof VariantClipboardItem) {
+                    int refGroup = VariantClipboardItem.decodeLockId(
+                        VariantClipboardItem.readClipboardTag(held));
+                    if (refGroup <= 0) {
+                        actionBar(player, "That clipboard was copied from an unlocked cell — lock the source cell first",
+                            ChatFormatting.YELLOW);
+                        return;
+                    }
+                    if (wasEmpty) {
+                        // A reference is a second opinion, not a first one:
+                        // the cell needs its own candidate before it can
+                        // sometimes defer. Same rule the Lock button applies.
+                        actionBar(player, "Add at least one variant before adding a group reference",
+                            ChatFormatting.YELLOW);
+                        return;
+                    }
+                    int cellLock = plot.lockIdAt(localPos);
+                    if (refGroup == cellLock) {
+                        actionBar(player, "A cell cannot reference its own group (" + refGroup + ")",
+                            ChatFormatting.YELLOW);
+                        return;
+                    }
+                    List<VariantState> targetStates =
+                        plot.groupRefs().statesForLockId(refGroup);
+                    if (targetStates == null || targetStates.isEmpty()) {
+                        actionBar(player, "No cell in this template uses lock-id " + refGroup,
+                            ChatFormatting.YELLOW);
+                        return;
+                    }
+                    if (cellLock > 0 && VariantGroupRefs.reaches(plot.groupRefs(), refGroup, cellLock)) {
+                        actionBar(player, "Group " + refGroup + " already leads back to group " + cellLock
+                            + " — that would loop", ChatFormatting.YELLOW);
+                        return;
+                    }
+                    for (VariantState existing : mutated) {
+                        if (existing.groupRef() == refGroup) {
+                            actionBar(player, "This cell already references group " + refGroup,
+                                ChatFormatting.YELLOW);
+                            return;
+                        }
+                    }
+                    if (mutated.size() >= MAX_ENTRIES) {
+                        actionBar(player, "Variant cell full (max " + MAX_ENTRIES + ")", ChatFormatting.YELLOW);
+                        return;
+                    }
+                    // The placeholder is only ever the editor's icon and the
+                    // fallback if the reference is later cleared — the pick
+                    // path always follows the reference instead.
+                    mutated.add(VariantState.ofGroupRef(refGroup, targetStates.get(0).state()));
+                    actionBar(player, "Added reference to group " + refGroup, ChatFormatting.GREEN);
+                    dirty = true;
+                    break;
+                }
                 // Spawn-egg branch: add a v7 mob variant entry. The cell rolls
                 // AIR at spawn (mob entries are auto-stamped with the
                 // empty-placeholder sentinel) and a deferred entity pass
@@ -661,6 +729,12 @@ public final class BlockVariantMenuController {
      *
      * <p>Out-of-range indices and missing cells return silently; the
      * client can be slightly stale relative to the sidecar.</p>
+     *
+     * <p>A v9 reference row previews what it points at rather than its own
+     * placeholder. Any single preview is necessarily arbitrary — the
+     * referenced group rolls afresh per carriage — so it is drawn at
+     * {@code (world seed, index 0)}, which at least shows a genuinely
+     * possible outcome and shows the same one on every click.</p>
      */
     private static void previewEntry(ServerLevel level, BlockVariantPlot plot,
                                      BlockPos localPos, int entryIndex) {
@@ -668,6 +742,12 @@ public final class BlockVariantMenuController {
         if (current == null) return;
         if (entryIndex < 0 || entryIndex >= current.size()) return;
         VariantState picked = current.get(entryIndex);
+        if (picked.isGroupRef()) {
+            VariantState followed = VariantGroupRefs.follow(picked, plot.groupRefs(),
+                plot.groupRefs().graph(), level.getSeed(), 0);
+            if (followed == null) return;  // dead reference — nothing to show
+            picked = followed;
+        }
 
         int lockId = plot.lockIdAt(localPos);
         Set<BlockPos> targets = lockId > 0 ? plot.positionsWithLockId(lockId) : Set.of(localPos);

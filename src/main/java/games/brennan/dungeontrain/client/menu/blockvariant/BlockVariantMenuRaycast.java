@@ -156,8 +156,12 @@ public final class BlockVariantMenuRaycast {
 
         BlockVariantSyncPacket.Entry entry = entries.get(idx);
         BlockState parsed = BlockVariantMenu.parseState(entry.stateString());
-        boolean rotatable = parsed != null && !entry.isMob() && RotationApplier.canRotate(parsed);
-        boolean halfable = parsed != null && !entry.isMob() && RotationApplier.canFlip(parsed);
+        // A group-reference row owns none of these: rotation, half and
+        // difficulty all come from whatever entry the referenced group
+        // resolves to, so the cells collapse (matching the renderer).
+        boolean concrete = !entry.isMob() && !entry.isGroupRef();
+        boolean rotatable = parsed != null && concrete && RotationApplier.canRotate(parsed);
+        boolean halfable = parsed != null && concrete && RotationApplier.canFlip(parsed);
         VariantRotation.Mode rowMode = BlockVariantMenuRenderer.decodeMode(entry.rotMode());
         boolean showDirs = rotatable && rowMode != VariantRotation.Mode.RANDOM;
         double rotDirsCellR = weightCellL;

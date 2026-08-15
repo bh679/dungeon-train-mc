@@ -261,8 +261,12 @@ public final class BlockVariantMenuRenderer {
             // state is the COMMAND_BLOCK sentinel which IS rotatable, so
             // suppress the rotation cells explicitly to avoid an irrelevant
             // FACING editor on a mob row.
-            boolean rotatable = parsed != null && !entry.isMob() && RotationApplier.canRotate(parsed);
-            boolean halfable = parsed != null && !entry.isMob() && RotationApplier.canFlip(parsed);
+            // A group-reference row owns none of these: rotation, half and
+            // difficulty all come from whatever entry the referenced group
+            // resolves to, so the cells collapse (matching the raycaster).
+            boolean concrete = !entry.isMob() && !entry.isGroupRef();
+            boolean rotatable = parsed != null && concrete && RotationApplier.canRotate(parsed);
+            boolean halfable = parsed != null && concrete && RotationApplier.canFlip(parsed);
             VariantRotation.Mode rowMode = decodeMode(entry.rotMode());
             boolean showDirs = rotatable && rowMode != VariantRotation.Mode.RANDOM;
             double weightCellR = colXR - xCellW;
@@ -306,7 +310,17 @@ public final class BlockVariantMenuRenderer {
             String linkedId = entry.linkedLootPrefabId();
             String label;
             int labelColour;
-            if (entry.isMob()) {
+            if (entry.isGroupRef()) {
+                // v9 reference row — the block icon drawn above is only the
+                // placeholder, so the label says what the row actually means.
+                // A dead reference (group deleted, or the row was pasted into
+                // a template that has no such group) renders red, the same
+                // warning a dangling loot-prefab link gets.
+                label = "→ Group " + entry.groupRef();
+                labelColour = entry.groupRefLive()
+                    ? (nameHover ? 0xFF000000 : 0xFF7FD4FF)
+                    : (nameHover ? 0xFF660000 : 0xFFFF5555);
+            } else if (entry.isMob()) {
                 // Decorative entities (armor stands) read oddly as "(mob)", so
                 // use the bare path; living mobs keep the "(mob)" suffix.
                 boolean decorative = games.brennan.dungeontrain.editor.EntityVariantApplicator
