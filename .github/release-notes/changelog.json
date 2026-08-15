@@ -7066,6 +7066,23 @@
       "released": true,
       "released_in": "v0.562.0",
       "released_at": "2026-08-15T05:50:06Z"
+    },
+    {
+      "id": "portal-room-keeps-its-train",
+      "version": "0.563.0",
+      "type": "fix",
+      "title": "Train Dimensions: fixed rooms losing their train",
+      "summary": "Fixes the way a Train Dimension could lose the carriages it belongs to while you were still inside it, leaving you sealed in a room whose corridors led nowhere. The room now keeps hold of its part of the train for as long as you are in there \u2014 and in the unlikely event it loses it anyway, you are put back on the train instead of left with no way out.",
+      "highlights": [
+        "Fixed a room losing its train while you were inside it",
+        "Fixed being left with no way out when it happened \u2014 you are returned to the train instead",
+        "Untested in multiplayer \u2014 how this behaves with several players on one train is not yet known"
+      ],
+      "pr": 974,
+      "date": "2026-08-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

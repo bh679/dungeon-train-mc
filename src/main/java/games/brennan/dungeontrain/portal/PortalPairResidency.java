@@ -103,7 +103,11 @@ public final class PortalPairResidency {
             // live. PortalCarriageRevival is the path for one that has already gone, and it will be
             // ticketed here on the tick after it surfaces.
             if (ship == null || !ship.isResident()) continue;
-            shipyard.forceLoad(ship);
+            // PORTAL_ROOM, never the default: the appender's trailing window reconciles every tick
+            // and releases the ticket on every sub-level outside it. Sharing its type meant the
+            // window revoked this hold and Sable culled the group with a player standing in its
+            // room — the exact failure this class exists to prevent. See Shipyard.Hold.
+            shipyard.forceLoad(ship, Shipyard.Hold.PORTAL_ROOM);
             TICKETED.add(pairKey);
             LOGGER.debug("[DungeonTrain] Portal pair {} force-loaded — somebody is in its room", pairKey);
         }
@@ -113,7 +117,7 @@ public final class PortalPairResidency {
             if (occupied.contains(pairKey)) continue;
             it.remove();
             ManagedShip ship = GROUPS.get(pairKey);
-            if (ship != null) shipyard.releaseForceLoad(ship);
+            if (ship != null) shipyard.releaseForceLoad(ship, Shipyard.Hold.PORTAL_ROOM);
             LOGGER.debug("[DungeonTrain] Portal pair {} released — its room is empty", pairKey);
         }
     }

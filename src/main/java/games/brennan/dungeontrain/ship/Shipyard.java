@@ -56,14 +56,48 @@ public interface Shipyard {
      * sub-level loaded. It does not resurrect one the physics mod has already
      * culled — call this while the ship is still loaded (e.g. at spawn).</p>
      */
-    void forceLoad(ManagedShip ship);
+    default void forceLoad(ManagedShip ship) {
+        forceLoad(ship, Hold.TRAILING_SEGMENT);
+    }
 
     /**
      * Release a force-load previously added via {@link #forceLoad}. Idempotent
      * — a no-op if {@code ship} was not force-loaded. Once released, the ship
      * may be culled normally when it leaves every player's simulation bubble.
      */
-    void releaseForceLoad(ManagedShip ship);
+    default void releaseForceLoad(ManagedShip ship) {
+        releaseForceLoad(ship, Hold.TRAILING_SEGMENT);
+    }
+
+    /**
+     * Who is holding a sub-level loaded, and therefore whose release can let it go.
+     *
+     * <p><b>This exists because sharing one was a bug.</b> A force-load is a ticket, and a ticket is
+     * identified by its type — so two subsystems using the same type are the same holder: either's
+     * release drops the other's hold. That is not hypothetical. The trailing-segment window
+     * reconciles every tick and releases the ticket on every sub-level outside it; when the portal
+     * rooms began holding a carriage group by the same ticket, the window quietly revoked it, Sable
+     * culled the group while a player was standing in its room, and the room lost its train — the
+     * failure the room's hold exists to prevent, caused by the hold itself.</p>
+     *
+     * <p>One constant per reason to hold something, and each releases only its own.</p>
+     */
+    enum Hold {
+
+        /** The appender's trailing window: newly spawned carriages held until they settle. */
+        TRAILING_SEGMENT,
+
+        /** A portal pair's carriage group, held while somebody is inside its room. */
+        PORTAL_ROOM
+    }
+
+    /** Force-load {@code ship} on behalf of {@code hold}. See {@link #forceLoad(ManagedShip)}. */
+    void forceLoad(ManagedShip ship, Hold hold);
+
+    /**
+     * Release only {@code hold}'s force-load. A sub-level held for another reason stays loaded.
+     */
+    void releaseForceLoad(ManagedShip ship, Hold hold);
 
     /**
      * Release every force-load this shipyard created (Dungeon Train's own
