@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.builder.BuilderSpawn;
 import games.brennan.dungeontrain.debug.DebugFlags;
 import games.brennan.dungeontrain.editor.EditorWelcome;
 import games.brennan.dungeontrain.net.BuilderBoundsPacket;
+import games.brennan.dungeontrain.net.BuilderGhostCellsPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.VoidBandSyncPacket;
 import games.brennan.dungeontrain.net.PrefabRegistrySyncPacket;
@@ -200,6 +201,9 @@ public final class PlayerJoinEvents {
         DungeonTrainNet.sendTo(player, new VoidBandSyncPacket(bandData.dims().length(), bandData.startsWithTrain(), bandData.getTrainY()));
         // Train Builder build volumes — empty (and therefore inert) in every ordinary world.
         BuilderBoundsPacket.sendTo(player, player.serverLevel().getServer().overworld());
+        // And what that build ghosts rather than stands up. Reopening a builder world stamps
+        // nothing, so this is the only thing that puts a lifted shell back on screen.
+        BuilderGhostCellsPacket.sendTo(player, player.serverLevel().getServer().overworld());
         // Reopening a builder world: no setup packet fires for one that is already stamped, so this
         // is the only chance to leave the player hovering rather than dropping into the void.
         BuilderSpawn.startFlying(player);

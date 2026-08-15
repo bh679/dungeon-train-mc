@@ -195,6 +195,8 @@ public record BuilderOpenPacket(String modeId, String kindId, String id, String 
             }
 
             BuilderBoundsPacket.sendTo(player, level);
+            BuilderGhostCellsPacket.sendTo(player, level);
+
             DungeonTrainNet.sendTo(player, BuilderDirtyPacket.state(0));
 
             // Stand the player clear of what was just stamped — the opened template may be a

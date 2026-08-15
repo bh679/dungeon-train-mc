@@ -111,6 +111,52 @@ public final class BuilderWorldSetup {
     }
 
     /**
+     * Lift this build's ghost blocks out of the world, and re-baseline the dirty check against
+     * what is left.
+     *
+     * <p>The last thing every stamp path does, and the ordering is the point. It runs <b>after</b>
+     * the stamp so the shell it captures carries this build's parts overlay rather than the base
+     * variant's, and the baselines are re-captured <b>after</b> the erase — {@code stampTrain} and
+     * {@code overlaySelection} took theirs against a carriage that still had walls, and leaving
+     * them there would make a freshly opened build read as edited the moment it appeared.</p>
+     *
+     * <p>Unconditional, including where it lifts nothing: it is also what <em>clears</em> the
+     * record, so switching from a carriage room to a part doesn't leave the room's shell ghosting
+     * around a carriage that has its own again.</p>
+     */
+    private static void refreshGhostCells(ServerLevel level, CarriageDims dims) {
+        DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
+        BuilderMode mode = BuilderMode.fromId(data.builderMode()).orElse(null);
+        int carriages = parkedCarriages(data);
+        BuilderGhostCells.Cells cells = BuilderGhostCells.lift(level, dims, mode,
+                subTypeFor(mode, data), carriages);
+        data.setBuilderGhostCells(cells.isEmpty() ? null : BuilderGhostCells.toTag(cells));
+
+        for (int i = 0; i < carriages; i++) {
+            BlockPos origin = carriageOrigin(dims, carriages, i);
+            EditorPlotSnapshots.capture(BuilderDirtyCheck.snapshotKey(i), level, origin,
+                    dims.length(), dims.height(), dims.width());
+        }
+    }
+
+    /**
+     * What this world is authoring, for the ghost decision.
+     *
+     * <p>Falls back to the mode's default rather than to "none" when nothing has narrowed it yet.
+     * A title-screen Inside Carriage click parks a carriage and heads for a carriage room — the
+     * same reasoning {@link BuilderWorldLayout#parkedCarriages} applies to a null sub type — and
+     * answering "no sub type" there would leave that world the one place the ghosts never
+     * appear.</p>
+     */
+    private static BuilderNewOptions.SubType subTypeFor(BuilderMode mode, DungeonTrainWorldData data) {
+        if (mode == null) {
+            return null;
+        }
+        return BuilderNewOptions.SubType.fromId(data.builderSubType())
+                .orElseGet(() -> BuilderNewOptions.defaultSubTypeFor(mode));
+    }
+
+    /**
      * @param mode which builder tile the player picked — decides how much train gets parked
      * @return true if the world was stamped, false if it was already set up
      */
@@ -142,6 +188,8 @@ public final class BuilderWorldSetup {
         // a reopened builder world can't tell the client where the build bounds are.
         DungeonTrainWorldData.get(level).setBuilderMode(mode.id());
         DungeonTrainWorldData.get(level).setBuilderMirror(BuilderMirrorFlags.DEFAULT);
+
+        refreshGhostCells(level, dims);
 
         LOGGER.info("[DungeonTrain] Builder world stamped for mode '{}' ({} carriage(s)) in {} ms",
                 mode.id(), carriages, (System.nanoTime() - t0) / 1_000_000);
@@ -201,6 +249,7 @@ public final class BuilderWorldSetup {
         // prevent.
         data.setBuilderName("");
         data.setBuilderSubType("", "");
+        refreshGhostCells(level, dims);
         LOGGER.info("[DungeonTrain] Builder world re-stamped: {} carriage(s) -> '{}' ({} carriage(s)),"
                         + " scenery {}",
                 previous, mode.id(), carriages,
@@ -595,6 +644,7 @@ public final class BuilderWorldSetup {
         // A new build is a new thing to mirror — carrying the last build's axes over would apply
         // them to geometry that was never authored against them.
         data.setBuilderMirror(BuilderMirrorFlags.DEFAULT);
+        refreshGhostCells(level, dims);
         LOGGER.info("[DungeonTrain] Builder new: mode '{}' ({} carriage(s)), {} '{}' on shell '{}', stage '{}', from '{}', name '{}'",
                 mode.id(), carriages, request.subType().id(),
                 request.picked().isEmpty() ? "<none>" : request.picked(), request.shell().id(),
@@ -765,11 +815,9 @@ public final class BuilderWorldSetup {
         data.setBuilderSubType(request.subTypeToken(), request.partKindId());
         data.setBuilderMirror(open.mirror());
 
-        for (int i = 0; i < carriages; i++) {
-            BlockPos origin = carriageOrigin(dims, carriages, i);
-            EditorPlotSnapshots.capture(BuilderDirtyCheck.snapshotKey(i), level, origin,
-                    dims.length(), dims.height(), dims.width());
-        }
+        // Lifts this build's ghosts and takes the dirty baselines afterwards — which is why the
+        // per-volume capture that used to stand here is gone rather than duplicated.
+        refreshGhostCells(level, dims);
         // The carriage count is in here because it is the one thing about an open you cannot see
         // from the outcome without counting blocks — and it is decided by the browsing arm rather
         // than by anything else on this line, so a wrong count looks like a correct open.

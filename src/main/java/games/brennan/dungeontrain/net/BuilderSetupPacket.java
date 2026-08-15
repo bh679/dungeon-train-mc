@@ -94,6 +94,7 @@ public record BuilderSetupPacket(String modeId) implements CustomPacketPayload {
             // The join-time bounds packet was sent before this stamp existed, so resend now that
             // the carriages (and therefore the build volumes) are real.
             BuilderBoundsPacket.sendTo(player, level);
+            BuilderGhostCellsPacket.sendTo(player, level);
             // The template exists as of this tick and the player is stood in front of it — show
             // it to them. (The reopen path is triggered from PlayerJoinEvents instead.)
             BuilderCinematicService.playNow(player);

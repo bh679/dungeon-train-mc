@@ -68,6 +68,7 @@ public final class DungeonTrainWorldData extends SavedData {
     private static final String TAG_BUILDER_PART_KIND = "builderPartKind";
     private static final String TAG_BUILDER_TRACK_KIND = "builderTrackKind";
     private static final String TAG_BUILDER_CARRIAGES = "builderCarriages";
+    private static final String TAG_BUILDER_GHOST_CELLS = "builderGhostCells";
 
     private int trainY;
     private boolean startsWithTrain;
@@ -103,6 +104,18 @@ public final class DungeonTrainWorldData extends SavedData {
     private String builderName;
     /** Packed {@code BuilderMirrorFlags} for this build; 0 = no mirroring, which is the default. */
     private int builderMirror;
+    /**
+     * The blocks this build shows as ghosts rather than standing up — {@code BuilderGhostCells}.
+     *
+     * <p>Held as the raw blob it was written as, and resolved to block states only where a
+     * {@code HolderGetter<Block>} is to hand. {@link #load(CompoundTag)} is handed no registry
+     * access, so decoding here would mean either an unavailable lookup or a second, weaker
+     * encoding.</p>
+     *
+     * <p>Persisted rather than recomputed because the derivation is destructive: by the time
+     * anyone asks again, the shell it describes has already been erased from the world.</p>
+     */
+    private CompoundTag builderGhostCells;
     /**
      * What kind of thing this build is — {@code whole_carriage}, {@code carriage_room} or
      * {@code parts}. Save needs it: a room and a part are captured from different regions and
@@ -328,6 +341,9 @@ public final class DungeonTrainWorldData extends SavedData {
         }
         // getInt returns 0 for an absent key, which is exactly "no mirroring".
         data.builderMirror = tag.getInt(TAG_BUILDER_MIRROR);
+        if (tag.contains(TAG_BUILDER_GHOST_CELLS)) {
+            data.builderGhostCells = tag.getCompound(TAG_BUILDER_GHOST_CELLS).copy();
+        }
         if (tag.contains(TAG_BUILDER_SUB_TYPE)) {
             data.builderSubType = tag.getString(TAG_BUILDER_SUB_TYPE);
         }
@@ -382,6 +398,9 @@ public final class DungeonTrainWorldData extends SavedData {
         if (builderMirror != 0) {
             tag.putInt(TAG_BUILDER_MIRROR, builderMirror);
         }
+        if (builderGhostCells != null && !builderGhostCells.isEmpty()) {
+            tag.put(TAG_BUILDER_GHOST_CELLS, builderGhostCells.copy());
+        }
         if (builderSubType != null) {
             tag.putString(TAG_BUILDER_SUB_TYPE, builderSubType);
         }
@@ -434,6 +453,20 @@ public final class DungeonTrainWorldData extends SavedData {
 
     public void setBuilderMirror(BuilderMirrorFlags flags) {
         this.builderMirror = flags == null ? 0 : flags.pack();
+        setDirty();
+    }
+
+    /**
+     * The current build's ghost blocks, still encoded. Decode with
+     * {@code BuilderGhostCells.fromTag}; null means this build has none.
+     */
+    public CompoundTag builderGhostCells() {
+        return builderGhostCells == null ? null : builderGhostCells.copy();
+    }
+
+    /** Records what {@code BuilderGhostCells.lift} took out of the world. Null clears it. */
+    public void setBuilderGhostCells(CompoundTag cells) {
+        this.builderGhostCells = cells == null || cells.isEmpty() ? null : cells.copy();
         setDirty();
     }
 

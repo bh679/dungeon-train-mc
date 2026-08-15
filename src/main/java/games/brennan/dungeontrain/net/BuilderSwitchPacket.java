@@ -76,6 +76,7 @@ public record BuilderSwitchPacket(String modeId, boolean force) implements Custo
 
             BuilderWorldSetup.restamp(level, mode.get());
             BuilderBoundsPacket.sendTo(player, level);
+            BuilderGhostCellsPacket.sendTo(player, level);
             DungeonTrainNet.sendTo(player, BuilderDirtyPacket.state(0));
             // Put the player back on the platform: the mode they switched to may be shorter than
             // the one they were standing in, which would otherwise leave them inside solid blocks

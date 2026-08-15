@@ -127,6 +127,7 @@ public record BuilderNewPacket(String modeId, String subTypeId,
                 return;
             }
             BuilderBoundsPacket.sendTo(player, level);
+            BuilderGhostCellsPacket.sendTo(player, level);
             DungeonTrainNet.sendTo(player, BuilderDirtyPacket.state(0));
 
             // Stand the player clear of whatever was just stamped — a shorter mode would otherwise

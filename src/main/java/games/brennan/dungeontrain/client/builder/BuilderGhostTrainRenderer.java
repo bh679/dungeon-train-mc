@@ -6,16 +6,16 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.builder.BuilderGhostSlots;
 import games.brennan.dungeontrain.builder.BuilderMode;
 import games.brennan.dungeontrain.builder.BuilderWorldLayout;
-import games.brennan.dungeontrain.client.menu.MenuRenderStates;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriagePlacer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.block.BlockRenderDispatcher;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
@@ -26,68 +26,82 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.function.UnaryOperator;
 
 /**
  * Draws the rest of the train as translucent ghosts around the carriage being edited.
  *
  * <p>Opening a carriage room or a part parks a single carriage — one template is one carriage — but
- * a carriage on its own doesn't tell you how it reads in a run, which is most of the point of the
- * outside view. The rest of the group is drawn back in at {@value #A} opacity — the empty carriage
- * slots <em>and</em> the flatbed pads that cap it, since a group's silhouette is the pads' whole
- * reason for existing — so the whole train stays legible while what you can actually edit stays
- * unambiguous.</p>
+ * a carriage on its own doesn't tell you how it reads in a run. The rest of the group is drawn back
+ * in: the empty carriage slots either side, the flatbed pads that cap it, and — when you are
+ * authoring a room from inside — the shell of the carriage you are standing in, which
+ * {@code BuilderGhostCells} lifted out of the world so there is something to see through.</p>
  *
- * <p><b>Drawn, never stamped.</b> The ghosts are quads; no block is placed for them. That is what
- * keeps them out of the saved template, out of the dirty check, and out of reach of the block
- * protection rules — the alternative (stamp them and forbid editing) would have had all three of
- * those to get right, and any bug in any of them writes scenery into somebody's carriage.</p>
+ * <p><b>Textured, from each cell's own block model</b> — {@link BuilderGhostCells}, the tool the
+ * track and room ghosts already draw with. This used to emit flat quads over each exposed face at a
+ * tenth opacity, and a silhouette is the wrong answer to the question being asked here: what a
+ * builder is judging from the middle of a train is how a real carriage reads against real ones, and
+ * an abstract shape hanging in the air tells them nothing about it.</p>
  *
- * <p>The geometry comes free: a ghost carriage is a copy of the one already standing in the world,
- * so the sweep reads the parked volume out of the client's own level and the render pass draws those
- * same faces at a slot offset. Nothing has to be sent from the server, and nothing has to be kept in
- * step with it.</p>
+ * <p><b>Drawn, never stamped.</b> No block is placed for a ghost. That is what keeps them out of the
+ * saved template, out of the dirty check, and out of reach of the block protection rules — the
+ * alternative (stamp them and forbid editing) would have had all three of those to get right, and
+ * any bug in any of them writes scenery into somebody's carriage.</p>
+ *
+ * <p>The carriage geometry mostly comes free: a ghost carriage is a copy of the one already standing
+ * in the world, so the sweep reads the parked volume out of the client's own level. What it cannot
+ * read is the part that isn't there — a lifted shell, and pads a one-carriage world never stamps —
+ * and that arrives on {@code BuilderGhostCellsPacket}. The two are unioned before drawing, so a
+ * neighbouring slot still shows a whole carriage rather than a room with no walls.</p>
  *
  * <p>Deliberately the same shape as {@link OutOfBoundsWashRenderer} beside it — a cadenced sweep
- * caching exposed faces, a flat-quad pass after translucent blocks — and for the same reason: real
- * transparency would mean forcing blocks into the translucent chunk layer from a meshing hook, and
- * Sodium replaces that meshing entirely, so the effect would silently vanish for anyone running
- * it.</p>
+ * caching what to draw, a pass after translucent blocks — and for the same reason: real transparency
+ * would mean forcing blocks into the translucent chunk layer from a meshing hook, and Sodium
+ * replaces that meshing entirely, so the effect would silently vanish for anyone running it.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class BuilderGhostTrainRenderer {
 
-    private static final RenderType GHOST_QUAD = MenuRenderStates.translucentQuad(
-            DungeonTrain.MOD_ID + ":builder_ghost_train");
-
     private static final int RESCAN_INTERVAL_TICKS = 10;
-    /** Hard ceiling so a pathological build can't stall a frame. Matches the wash's. */
-    private static final int MAX_FACES = 16_384;
-
-    /** Pulls the quad just clear of the neighbouring ghost face so the two don't z-fight. */
-    private static final double EXPAND = 0.002;
-
-    private static final float R = 0.80F;
-    private static final float G = 0.86F;
-    private static final float B = 1.00F;
-    /** 10% — present enough to read the silhouette, faint enough never to be mistaken for a block. */
-    private static final float A = 0.10F;
+    /** Hard ceiling so a pathological build can't stall a frame. Matches the other two renderers'. */
+    private static final int MAX_CELLS = 40_000;
 
     /**
-     * Faces of the parked carriage in <b>local</b> coordinates, so one sweep serves every slot.
+     * Half opacity, the track ghosts' value.
+     *
+     * <p>Was a tenth while these were untextured silhouettes, where the only job was to suggest an
+     * outline. A block model at a tenth is not faint, it is invisible — there is a texture under it
+     * now, and the whole point is to be able to read the material.</p>
+     */
+    private static final float ALPHA = 0.5F;
+
+    /**
+     * Cells of the parked carriage in <b>local</b> coordinates, so one sweep serves every slot.
      * Replaced wholesale, so a render pass never sees a partial sweep.
      */
-    private static volatile List<Face> faces = List.of();
-    /** Faces of one flatbed pad, likewise local — a different shape, so it can't share the sweep. */
-    private static volatile List<Face> padFaces = List.of();
-    /** World position the local faces are measured from, and the slots to repeat them at. */
+    private static volatile Map<BlockPos, BlockState> carriage = Map.of();
+    /** World position the local cells are measured from, and the slots to repeat them at. */
     private static volatile BlockPos origin = BlockPos.ZERO;
     private static volatile BuilderGhostSlots.Ghosts ghosts =
             new BuilderGhostSlots.Ghosts(List.of(), List.of(), 0);
+    /** Whether the carriage on the track has had its shell lifted, and so needs it drawn back. */
+    private static volatile boolean shellLifted = false;
+    /**
+     * Whether to draw the <em>rest of the train</em> — the empty slots and the pads.
+     *
+     * <p>Separate from {@link #shellLifted} because the display toggle governs one and not the
+     * other. "Show the builder's ghosts" is a question about context you can take or leave; the
+     * shell of the carriage you are standing in is not context, it is the carriage, and it has been
+     * lifted out of the world. Switching the toggle off must not leave a room with no walls and
+     * nothing drawn where they were.</p>
+     */
+    private static volatile boolean drawSurroundings = false;
 
     private static int tickCounter = 0;
-
-    private record Face(BlockPos local, Direction dir) {}
 
     private BuilderGhostTrainRenderer() {}
 
@@ -103,16 +117,19 @@ public final class BuilderGhostTrainRenderer {
     @SubscribeEvent
     public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
         clear();
+        // The next world sends its own; a kept entry would ghost one build's shell into another's.
+        BuilderGhostCellsState.clear();
     }
 
     private static void clear() {
-        faces = List.of();
-        padFaces = List.of();
+        carriage = Map.of();
         ghosts = new BuilderGhostSlots.Ghosts(List.of(), List.of(), 0);
+        shellLifted = false;
+        drawSurroundings = false;
     }
 
     /**
-     * Work out which slots are empty, then cache the parked carriage's exposed faces.
+     * Work out which slots are empty, then cache what a carriage in one looks like.
      *
      * <p>Both halves of "which slots" are already on the client: {@code volumes.size()} is what is
      * parked, and the mode id says what a whole carriage would have parked. No new packet field, and
@@ -121,7 +138,10 @@ public final class BuilderGhostTrainRenderer {
     private static void rescan() {
         Minecraft mc = Minecraft.getInstance();
         List<BoundingBox> volumes = BuilderBoundsState.volumes();
-        if (volumes.isEmpty() || mc.level == null || !ClientDisplayConfig.isBuilderGhostTrainEnabled()) {
+        Map<BlockPos, BlockState> shell = BuilderGhostCellsState.shell();
+        boolean surroundings = ClientDisplayConfig.isBuilderGhostTrainEnabled();
+        // With the toggle off there is still the lifted shell to put back — see drawSurroundings.
+        if (volumes.isEmpty() || mc.level == null || (!surroundings && shell.isEmpty())) {
             clear();
             return;
         }
@@ -139,145 +159,127 @@ public final class BuilderGhostTrainRenderer {
         CarriageDims dims = new CarriageDims(length, width, height);
         BuilderGhostSlots.Ghosts slots = BuilderGhostSlots.of(parked.minX(), volumes.size(), full,
                 length, CarriagePlacer.halfPadLen(dims));
-        if (slots.isEmpty()) {
+        if (slots.isEmpty() && shell.isEmpty()) {
             clear();
             return;
         }
 
         Level level = mc.level;
         BlockPos min = new BlockPos(parked.minX(), parked.minY(), parked.minZ());
-        List<Face> found = new ArrayList<>();
+        // The shell first, so a real block in the world always wins the cell: the lifted copy is
+        // what the carriage looked like when it was stamped, and the sweep is what it looks like
+        // now. Where they disagree, now is right.
+        Map<BlockPos, BlockState> found = new LinkedHashMap<>(shell);
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-        BlockPos.MutableBlockPos neighbour = new BlockPos.MutableBlockPos();
 
         outer:
         for (int x = parked.minX(); x <= parked.maxX(); x++) {
             for (int y = parked.minY(); y <= parked.maxY(); y++) {
                 for (int z = parked.minZ(); z <= parked.maxZ(); z++) {
                     pos.set(x, y, z);
-                    if (level.getBlockState(pos).isAir()) continue;
-                    for (Direction dir : Direction.values()) {
-                        neighbour.set(x + dir.getStepX(), y + dir.getStepY(), z + dir.getStepZ());
-                        // Only faces onto air: the inside of a solid mass is invisible anyway, and
-                        // skipping it is what keeps the quad count down on a full carriage.
-                        if (!level.getBlockState(neighbour).isAir()) continue;
-                        found.add(new Face(new BlockPos(x - min.getX(), y - min.getY(), z - min.getZ()), dir));
-                        if (found.size() >= MAX_FACES) break outer;
+                    BlockState state = level.getBlockState(pos);
+                    if (state.isAir()) {
+                        continue;
+                    }
+                    found.put(new BlockPos(x - min.getX(), y - min.getY(), z - min.getZ()), state);
+                    if (found.size() >= MAX_CELLS) {
+                        break outer;
                     }
                 }
             }
         }
 
         origin = min;
-        padFaces = padSlabFaces(slots.padLength(), width);
         ghosts = slots;
-        faces = found;
-    }
-
-    /**
-     * One flatbed pad, as the flat bed it is: a single course of floor over the pad footprint.
-     *
-     * <p>Modelled rather than read, because the real pad is a half-slice of the FLATBED structure
-     * template and templates live behind {@code ServerLevel} — the client cannot see one. The shape
-     * modelled is {@code CarriagePlacer.legacyHalfFlatbedFloor}'s, which is the mod's own answer to
-     * "what is a half pad when the template is unavailable", so the ghost matches what a pad is for:
-     * the continuous bed that carries the eye across the seam.</p>
-     *
-     * <p>The honest limit of that: if the authored FLATBED template ever grows anything above its
-     * floor, the ghost will not show it. It is a silhouette aid, so under-drawing is the safe
-     * direction to be wrong in — a ghost that claimed geometry the real group doesn't have would be
-     * worse than one that stops at the floor.</p>
-     */
-    private static List<Face> padSlabFaces(int padLength, int width) {
-        List<Face> pad = new ArrayList<>();
-        if (padLength <= 0 || width <= 0) {
-            return pad;
-        }
-        for (int x = 0; x < padLength; x++) {
-            for (int z = 0; z < width; z++) {
-                for (Direction dir : Direction.values()) {
-                    int nx = x + dir.getStepX();
-                    int nz = z + dir.getStepZ();
-                    // Skip faces onto another slab cell: an interior face is invisible in a solid
-                    // pad and, at 10% alpha, a second layer of it reads as a darker stripe.
-                    boolean insideSlab = dir.getStepY() == 0
-                            && nx >= 0 && nx < padLength && nz >= 0 && nz < width;
-                    if (!insideSlab) {
-                        pad.add(new Face(new BlockPos(x, 0, z), dir));
-                    }
-                }
-            }
-        }
-        return pad;
+        shellLifted = !shell.isEmpty();
+        drawSurroundings = surroundings;
+        carriage = found;
     }
 
     @SubscribeEvent
     public static void onRenderLevelStage(RenderLevelStageEvent event) {
-        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS) return;
-        List<Face> snapshot = faces;
-        List<Face> pad = padFaces;
+        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS) {
+            return;
+        }
+        Map<BlockPos, BlockState> cells = carriage;
+        Map<BlockPos, BlockState> shell = BuilderGhostCellsState.shell();
+        Map<BlockPos, BlockState> backPad = BuilderGhostCellsState.backPad();
+        Map<BlockPos, BlockState> frontPad = BuilderGhostCellsState.frontPad();
         BuilderGhostSlots.Ghosts slots = ghosts;
-        if (slots.isEmpty() || (snapshot.isEmpty() && pad.isEmpty())) return;
+        boolean surroundings = drawSurroundings;
+        if (cells.isEmpty() || (!shellLifted && (slots.isEmpty() || !surroundings))) {
+            return;
+        }
 
         Minecraft mc = Minecraft.getInstance();
+        Level level = mc.level;
+        if (level == null) {
+            return;
+        }
+
         PoseStack ps = event.getPoseStack();
         Vec3 cam = event.getCamera().getPosition();
         MultiBufferSource.BufferSource buffer = mc.renderBuffers().bufferSource();
-        VertexConsumer vc = buffer.getBuffer(GHOST_QUAD);
+        VertexConsumer vc = buffer.getBuffer(BuilderGhostCells.GHOST);
+        BlockRenderDispatcher blocks = mc.getBlockRenderer();
+        RandomSource random = RandomSource.create();
         BlockPos base = origin;
 
         ps.pushPose();
         ps.translate(-cam.x, -cam.y, -cam.z);
-        // The empty carriage slots, each a copy of the one on the track.
-        for (int slotX : slots.carriageMinX()) {
-            for (Face face : snapshot) {
-                drawFace(ps, vc,
-                        slotX + face.local().getX(),
-                        base.getY() + face.local().getY(),
-                        base.getZ() + face.local().getZ(),
-                        face.dir());
+
+        // Nearest batch first: the shared batch writes depth, so whichever fragment lands first wins
+        // the pixel, and that is only the answer you want if the nearest one got there first. Sorted
+        // by slot rather than by cell — a handful of comparisons instead of tens of thousands.
+        List<Batch> batches = new ArrayList<>();
+        // The shell of the carriage on the track, put back where it was lifted from. Only this one:
+        // the empty slots get it as part of `cells`, and drawing it twice at the parked slot would
+        // double the blend and read as a darker carriage than its neighbours.
+        if (shellLifted) {
+            batches.add(new Batch(shell, cells, base));
+        }
+        if (surroundings) {
+            for (int slotX : slots.carriageMinX()) {
+                batches.add(new Batch(cells, cells, new BlockPos(slotX, base.getY(), base.getZ())));
+            }
+            // The flatbed pads capping the group, sitting on the train floor like the real ones. The
+            // pads are listed low-X first, which is the BACK one — the order they were captured in.
+            List<Integer> padXs = slots.padMinX();
+            for (int i = 0; i < padXs.size(); i++) {
+                Map<BlockPos, BlockState> pad = i == 0 ? backPad : frontPad;
+                if (!pad.isEmpty()) {
+                    batches.add(new Batch(pad, pad,
+                            new BlockPos(padXs.get(i), BuilderWorldLayout.TRAIN_Y, base.getZ())));
+                }
             }
         }
-        // The flatbed pads capping the group, sitting on the train floor like the real ones.
-        for (int padX : slots.padMinX()) {
-            for (Face face : pad) {
-                drawFace(ps, vc,
-                        padX + face.local().getX(),
-                        base.getY() + face.local().getY(),
-                        base.getZ() + face.local().getZ(),
-                        face.dir());
-            }
+        batches.sort(Comparator.comparingDouble(b -> b.distanceSqr(cam)));
+
+        for (Batch batch : batches) {
+            BuilderGhostCells.draw(ps, vc, blocks, level, random, batch.draw(), batch.neighbours(),
+                    UnaryOperator.identity(), batch.offset(), ALPHA);
         }
+
         ps.popPose();
-        buffer.endBatch(GHOST_QUAD);
+        buffer.endBatch(BuilderGhostCells.GHOST);
     }
 
-    /** One outset unit square on the given side of a block. */
-    private static void drawFace(PoseStack ps, VertexConsumer vc, int bx, int by, int bz, Direction dir) {
-        double x0 = bx - EXPAND;
-        double y0 = by - EXPAND;
-        double z0 = bz - EXPAND;
-        double x1 = bx + 1.0 + EXPAND;
-        double y1 = by + 1.0 + EXPAND;
-        double z1 = bz + 1.0 + EXPAND;
+    /**
+     * One repeat of one shape, at one place.
+     *
+     * @param neighbours what the face-culling test consults — the whole carriage even when
+     *                   {@code draw} is only its shell, so the shell's inward faces stay culled
+     *                   against the contents standing behind them
+     */
+    private record Batch(Map<BlockPos, BlockState> draw, Map<BlockPos, BlockState> neighbours,
+                         BlockPos offset) {
 
-        switch (dir) {
-            case DOWN -> quad(ps, vc, x0, y0, z0, x1, y0, z0, x1, y0, z1, x0, y0, z1);
-            case UP -> quad(ps, vc, x0, y1, z1, x1, y1, z1, x1, y1, z0, x0, y1, z0);
-            case NORTH -> quad(ps, vc, x1, y0, z0, x0, y0, z0, x0, y1, z0, x1, y1, z0);
-            case SOUTH -> quad(ps, vc, x0, y0, z1, x1, y0, z1, x1, y1, z1, x0, y1, z1);
-            case WEST -> quad(ps, vc, x0, y0, z0, x0, y0, z1, x0, y1, z1, x0, y1, z0);
-            case EAST -> quad(ps, vc, x1, y0, z1, x1, y0, z0, x1, y1, z0, x1, y1, z1);
+        /** Rough distance from the camera to this batch's origin, for the front-to-back ordering. */
+        double distanceSqr(Vec3 cam) {
+            double dx = offset.getX() - cam.x;
+            double dy = offset.getY() - cam.y;
+            double dz = offset.getZ() - cam.z;
+            return dx * dx + dy * dy + dz * dz;
         }
-    }
-
-    private static void quad(PoseStack ps, VertexConsumer vc,
-                             double ax, double ay, double az, double bx, double by, double bz,
-                             double cx, double cy, double cz, double dx, double dy, double dz) {
-        org.joml.Matrix4f m = ps.last().pose();
-        vc.addVertex(m, (float) ax, (float) ay, (float) az).setColor(R, G, B, A);
-        vc.addVertex(m, (float) bx, (float) by, (float) bz).setColor(R, G, B, A);
-        vc.addVertex(m, (float) cx, (float) cy, (float) cz).setColor(R, G, B, A);
-        vc.addVertex(m, (float) dx, (float) dy, (float) dz).setColor(R, G, B, A);
     }
 }

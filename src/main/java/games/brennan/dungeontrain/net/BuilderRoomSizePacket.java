@@ -65,6 +65,7 @@ public record BuilderRoomSizePacket(String axisId, int value) implements CustomP
             // both stale until this lands. Dirty state too: the restamp re-baselined the snapshot,
             // so a Save that was green for the old box should not stay green for the new one.
             BuilderBoundsPacket.sendTo(player, level);
+            BuilderGhostCellsPacket.sendTo(player, level);
             DungeonTrainNet.sendTo(player, BuilderDirtyPacket.state(0));
         });
     }
