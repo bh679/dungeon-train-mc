@@ -29,6 +29,7 @@ import games.brennan.dungeontrain.portal.PortalRoomTiling;
 import games.brennan.dungeontrain.portal.PortalSever;
 import games.brennan.dungeontrain.portal.PortalSwapDiagnostics;
 import games.brennan.dungeontrain.portal.PortalStructure;
+import games.brennan.dungeontrain.portal.PortalTrainFreeze;
 import games.brennan.dungeontrain.portal.PortalTripTracker;
 import games.brennan.dungeontrain.portal.PortalTwinLanes;
 import games.brennan.dungeontrain.net.PortalRoomFogPacket;
@@ -46,6 +47,7 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriagePlacer;
+import games.brennan.dungeontrain.train.TrainMotionFreeze;
 import games.brennan.dungeontrain.train.Trains;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.WorldFloor;
@@ -216,6 +218,23 @@ public final class PortalCarriageEvents {
      * keeping it up rather than about how fast it can be read.</p>
      */
     private static final int WAITING_MESSAGE_PERIOD_TICKS = 20;
+
+    /**
+     * How long a corridor may be waiting before the player is told anything, in ticks — two seconds.
+     *
+     * <p><b>Silence is the point here, not a nicety.</b> Since {@link PortalTrainFreeze} stops a train
+     * whose room somebody is inside, a corridor that leads nowhere for a moment is a race that should
+     * not happen and, when it does, resolves in a few ticks. Announcing it immediately turned that
+     * into the player standing in a doorway reading a message about the train — which is worse than
+     * the dead corridor it replaced, because it makes an invisible recovery into a visible wait.</p>
+     *
+     * <p>Past two seconds something is genuinely stuck, and saying so beats a portal that silently
+     * does nothing.</p>
+     */
+    private static final int WAITING_MESSAGE_DELAY_TICKS = 40;
+
+    /** Pair key → the game tick its corridors were first found inert. Cleared when they come back. */
+    private static final Map<Integer, Long> WAITING_SINCE = new HashMap<>();
 
     /** Said while the pair's carriage group is on its way back from holding. */
     private static final String WAITING_KEY_REVIVING = "chat.dungeontrain.portal.reviving";
@@ -396,6 +415,7 @@ public final class PortalCarriageEvents {
         // ticket still outstanding — only possible for a player who quit standing in a room — is
         // released by the bootstrap sweep in TrainAssembler before the train re-fills.
         LIVE_PAIRS.clear();
+        WAITING_SINCE.clear();
         PortalPairResidency.clear();
         PortalCarriageRevival.clear();
     }
@@ -406,8 +426,14 @@ public final class PortalCarriageEvents {
         if (!level.dimension().equals(Level.OVERWORLD)) return;
 
         List<ServerPlayer> players = level.players();
-        if (players.isEmpty()) return;
-        if (PortalRegistry.get(level).carriageEvery() <= PortalCarriageSelection.CARRIAGE_EVERY_OFF) return;
+        // Both of these stop the freeze rule being asked at all, so anything it stopped has to be
+        // let go here — a train held frozen by a verdict nobody is restating would sit still with
+        // nothing counting the ticks it spends doing it. Cheap: a no-op unless something is frozen.
+        if (players.isEmpty() || PortalRegistry.get(level).carriageEvery()
+                <= PortalCarriageSelection.CARRIAGE_EVERY_OFF) {
+            TrainMotionFreeze.thawAll();
+            return;
+        }
 
         CarriageDims dims = DungeonTrainWorldData.get(level).dims();
         PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims);
@@ -597,7 +623,14 @@ public final class PortalCarriageEvents {
                 "somebody is in this pair's room and no walk reached its carriage group");
         }
 
-        if (level.getGameTime() % WAITING_MESSAGE_PERIOD_TICKS != 0) return;
+        // Nothing said for the first couple of seconds — see WAITING_MESSAGE_DELAY_TICKS. The log
+        // above still carries it from the first tick, so a recovery that never surfaces to the player
+        // is still diagnosable afterwards.
+        long now = level.getGameTime();
+        long since = WAITING_SINCE.computeIfAbsent(pairKey, key -> now);
+        if (now - since < WAITING_MESSAGE_DELAY_TICKS) return;
+
+        if (now % WAITING_MESSAGE_PERIOD_TICKS != 0) return;
         AABB box = structureBox(dims, structure);
         for (ServerPlayer player : players) {
             if (!box.contains(player.getX(), player.getY(), player.getZ())) continue;
@@ -621,6 +654,9 @@ public final class PortalCarriageEvents {
             clearFogFor(players, Set.of());
             clearTrainAudioFor(players, Set.of());
             PortalPairResidency.syncTo(level, Set.of());
+            // Still called with nothing occupied: this is what un-freezes a train whose last
+            // structure has just gone, and the tick that advances a frozen train's counter.
+            PortalTrainFreeze.tick(level, players, dims, Set.of(), PortalCarriageEvents::isInRoom);
             return;
         }
 
@@ -668,6 +704,20 @@ public final class PortalCarriageEvents {
         clearTrainAudioFor(players, inStructure);
         // Take and release in one pass, so a ticket's lifetime is exactly a room's occupancy.
         PortalPairResidency.syncTo(level, occupiedPairs);
+        // And stop the trains whose rooms those are, when nobody is left outside to see it. The
+        // ticket above keeps the group loaded; this is what stops it going anywhere.
+        PortalTrainFreeze.tick(level, players, dims, occupiedPairs, PortalCarriageEvents::isInRoom);
+    }
+
+    /**
+     * Is this player inside any portal structure — the exclusion {@link PortalTrainFreeze} needs.
+     *
+     * <p>A method reference rather than the public {@link #isInsidePortalStructure} directly, because
+     * that one takes loose coordinates and the freeze rule asks about players; keeping the adapter
+     * here also keeps {@link #STRUCTURES} private.</p>
+     */
+    private static boolean isInRoom(CarriageDims dims, ServerPlayer player) {
+        return isInsidePortalStructure(dims, player.getX(), player.getY(), player.getZ());
     }
 
     /**
@@ -928,6 +978,9 @@ public final class PortalCarriageEvents {
         // swap rather than after, because a tick in which nobody happened to cross is still a tick
         // this pair was working, and tickStrandedPairs must not go looking for a train to revive.
         LIVE_PAIRS.add(pairKey);
+        // Whatever it was waiting for, it has it: the next wait starts its own clock rather than
+        // inheriting one that would have it speak immediately.
+        if (!WAITING_SINCE.isEmpty()) WAITING_SINCE.remove(pairKey);
 
         // Publish for PortalEditMirror, which needs to answer "is this block in a portal corridor?"
         // on the hot path of every sub-level block change and cannot re-derive train geometry there —
@@ -1600,6 +1653,13 @@ public final class PortalCarriageEvents {
             out.add("  its carriage group: " + (ship.isResident() ? "resident" : "CULLED")
                 + ", force-loaded by this room: " + (PortalPairResidency.holds(pairKey) ? "yes" : "no")
                 + " (" + PortalPairResidency.held() + " held in total)");
+
+            UUID trainId = PortalTrainFreeze.trainIdOf(pairKey);
+            out.add("  its train: " + (trainId == null ? "unknown" : trainId
+                + (TrainMotionFreeze.isFrozen(trainId)
+                    ? " — STOPPED while you are in here"
+                    : " — still moving (somebody is on it or near it)")
+                + ", " + TrainMotionFreeze.frozenTicks(trainId) + " ticks stopped in total"));
             out.add("  its corridors this tick: " + (LIVE_PAIRS.contains(pairKey)
                 ? "live — walking past a midpoint will swap you"
                 : "INERT — " + (ship.isResident()
