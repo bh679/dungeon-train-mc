@@ -8,6 +8,7 @@ import games.brennan.dungeontrain.difficulty.BoardingProgressData;
 import games.brennan.dungeontrain.discord.DifficultyLevelReport;
 import games.brennan.dungeontrain.net.BoardingProgressPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.portal.PortalRoomCell;
 import games.brennan.dungeontrain.net.SnapshotCue;
 import games.brennan.dungeontrain.net.SnapshotCuePacket;
 import games.brennan.dungeontrain.player.PlayerBiomeProgress;
@@ -23,6 +24,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.biome.Biome;
+import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -32,6 +34,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import org.joml.primitives.AABBdc;
 
 import javax.annotation.Nullable;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -340,6 +343,29 @@ public final class BoardingProgressEvents {
      * room, and neither the credit nor the dwell behind "Train inside a train?" should treat those
      * few blocks as having gone somewhere.</p>
      */
+    /**
+     * The THRESHOLD ride-photo cue for a player who has just arrived in a room, carrying the room
+     * copy they are standing in and the corridors inside it so their client can keep the camera out
+     * of both the copy next door and the twin corridors — see {@code PortalRoomCell}.
+     *
+     * <p>An unresolvable cell (the structure moved out from under the scan) sends the cue anyway,
+     * unframed: a photo taken from a slightly wrong spot beats no photo of arriving at all.</p>
+     */
+    private static SnapshotCuePacket thresholdCue(CarriageDims dims, ServerPlayer player) {
+        String reason = "entered a train dimension";
+        PortalRoomCell cell = PortalCarriageEvents.portalRoomCell(
+            dims, player.getX(), player.getY(), player.getZ());
+        if (cell == null) return new SnapshotCuePacket(SnapshotCue.THRESHOLD, reason);
+        List<SnapshotCuePacket.Box> exclude = new ArrayList<>(cell.corridors().size());
+        for (BoundingBox corridor : cell.corridors()) exclude.add(toBox(corridor));
+        return new SnapshotCuePacket(SnapshotCue.THRESHOLD, reason, toBox(cell.body()), exclude);
+    }
+
+    private static SnapshotCuePacket.Box toBox(BoundingBox box) {
+        return new SnapshotCuePacket.Box(
+            box.minX(), box.minY(), box.minZ(), box.maxX(), box.maxY(), box.maxZ());
+    }
+
     private static void creditPortalRoomOccupants(ServerLevel level, List<Trains.Carriage> carriages,
                                                   Map<UUID, Integer> boarded) {
         CarriageDims dims = DungeonTrainWorldData.get(level).dims();
@@ -404,8 +430,7 @@ public final class BoardingProgressEvents {
                 // itself would catch the arrival stall instead of the room. Every later scan is the
                 // same visit, and would ask for the same photo over and over.
                 if (!wasSatisfied) {
-                    PacketDistributor.sendToPlayer(player,
-                        new SnapshotCuePacket(SnapshotCue.THRESHOLD, "entered a train dimension"));
+                    PacketDistributor.sendToPlayer(player, thresholdCue(dims, player));
                 }
             }
         }

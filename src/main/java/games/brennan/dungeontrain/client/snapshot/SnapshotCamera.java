@@ -52,7 +52,7 @@ public final class SnapshotCamera {
      * Thin overload over {@link #poseFor(ClientLevel, SnapshotTag, Entity, float)}.
      */
     public static CinematicCameraController.Pose poseFor(ClientLevel level, SnapshotTag tag, LocalPlayer player, float partialTick) {
-        return poseFor(level, tag, (Entity) player, partialTick);
+        return poseFor(level, tag, (Entity) player, partialTick, SnapshotFraming.NONE);
     }
 
     /**
@@ -63,6 +63,17 @@ public final class SnapshotCamera {
      * coords).
      */
     public static CinematicCameraController.Pose poseFor(ClientLevel level, SnapshotTag tag, Entity subject, float partialTick) {
+        return poseFor(level, tag, subject, partialTick, SnapshotFraming.NONE);
+    }
+
+    /**
+     * As above, but with {@code framing} restricting where the camera may stand — used by the
+     * {@link SnapshotTag#THRESHOLD} shot to keep the lens inside the room copy the player is in and
+     * out of the twin corridors. Pass {@link SnapshotFraming#NONE} for no restriction.
+     */
+    public static CinematicCameraController.Pose poseFor(ClientLevel level, SnapshotTag tag, Entity subject,
+                                                         float partialTick, SnapshotFraming framing) {
+        if (framing == null) framing = SnapshotFraming.NONE;
         // Prefer well-lit moments (checked here, in render space, so the light sample is at the real spot).
         BlockPos eye = BlockPos.containing(subject.getX(), subject.getEyeY(), subject.getZ());
         if (level.getMaxLocalRawBrightness(eye) < MIN_LIGHT) return null;
@@ -90,6 +101,10 @@ public final class SnapshotCamera {
             // Reject this angle if it's too cramped by world geometry, or if a carriage wall
             // hides the subject's chest or head from it — only fully-clear angles can win.
             if (clear < MIN_VISIBLE_DIST) continue;
+            // …or if it stands somewhere this shot is not allowed to look from — the next copy of a
+            // tiled room, or inside a twin corridor. Nothing is in the way (clip just proved that),
+            // which is exactly why the geometry has to say so. See SnapshotFraming.
+            if (!framing.allows(adj)) continue;
             if (CarriageOcclusion.blocked(carriages, adj, from, lookTarget)) continue;
             if (clear > bestClear) {
                 bestClear = clear;
@@ -132,8 +147,11 @@ public final class SnapshotCamera {
             // Side-on first, like GEAR: a carriage interior is long and narrow, so a broadside
             // angle sees the most of what the player has changed.
             case BUILDING -> new double[][] { {0, 1}, {0, -1}, {0.7, 0.7}, {0.7, -0.7}, {-0.7, 0.7}, {-0.7, -0.7}, {1, 0} };
-            // Behind first, so the shot looks past the player INTO the room they have just entered.
-            case THRESHOLD -> new double[][] { {-1, 0}, {-0.7, 0.7}, {-0.7, -0.7}, {0, 1}, {0, -1}, {0.7, 0.7}, {0.7, -0.7} };
+            // Across the train first, then the diagonals, and only then along it. The twin corridors
+            // run along the train's axis, so a straight -X angle is the one most likely to put the
+            // camera in a corridor; SnapshotFraming would reject it, and starting side-on means we
+            // usually don't spend a candidate finding that out.
+            case THRESHOLD -> new double[][] { {0, 1}, {0, -1}, {-0.7, 0.7}, {-0.7, -0.7}, {0.7, 0.7}, {0.7, -0.7}, {-1, 0} };
             case SCENIC -> new double[][] { {-1, 0}, {-0.7, 0.7}, {-0.7, -0.7}, {0, 1}, {0, -1}, {0.7, 0.7}, {0.7, -0.7} };
         };
     }
