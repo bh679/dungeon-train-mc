@@ -128,8 +128,14 @@ public final class DimensionalCarriageRenameMigration {
         }
     }
 
-    /** Both renames for one content root. */
-    private static void migrateRoot(Path root) {
+    /**
+     * Both renames for one content root.
+     *
+     * <p>Package-private so the move / rename / skip-if-exists behaviour can be tested against a
+     * temp directory. Everything Forge-dependent is confined to {@link #contentRoots()}, which is
+     * only about <i>which</i> directories to sweep, not what the sweep does.</p>
+     */
+    static void migrateRoot(Path root) {
         migrateTemplateDir(root);
         migrateContainerFiles(root);
     }

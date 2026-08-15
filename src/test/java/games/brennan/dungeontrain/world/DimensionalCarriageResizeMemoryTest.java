@@ -6,6 +6,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
@@ -27,6 +28,33 @@ class DimensionalCarriageResizeMemoryTest {
 
     private static DimensionalCarriageResizeMemory roundTrip(DimensionalCarriageResizeMemory source) {
         return DimensionalCarriageResizeMemory.load(source.save(new CompoundTag(), null));
+    }
+
+    @Test
+    @DisplayName("The pre-rename save file is still named, so an upgraded world can be adopted")
+    void legacySaveFileNameIsPreserved() {
+        // get() adopts <world>/data/<LEGACY_NAME>.dat when that is all an upgraded world has.
+        // Losing this constant would silently orphan every pre-rename world's banked slabs, and
+        // nothing else in the build would fail — hence pinning the literal.
+        assertEquals("dungeontrain_portal_room_resize", DimensionalCarriageResizeMemory.LEGACY_NAME);
+        assertEquals("dungeontrain_dimensional_carriage_resize", DimensionalCarriageResizeMemory.NAME);
+        assertNotEquals(DimensionalCarriageResizeMemory.NAME, DimensionalCarriageResizeMemory.LEGACY_NAME);
+    }
+
+    @Test
+    @DisplayName("A row filed before the rename loads unchanged — only the filename moved")
+    void legacyPayloadLoadsWithTheSameCodec() {
+        // The rename touched the file's name, never its contents, so a tag written by a
+        // pre-rename build must come back through today's load() intact.
+        DimensionalCarriageResizeMemory legacy = new DimensionalCarriageResizeMemory();
+        legacy.put("library", DimensionalCarriageResize.Axis.LENGTH, 11, slab("l11"));
+
+        DimensionalCarriageResizeMemory adopted = roundTrip(legacy);
+
+        DimensionalCarriageResizeMemory.Slab back =
+            adopted.take("library", DimensionalCarriageResize.Axis.LENGTH, 11);
+        assertNotNull(back, "a pre-rename slab must survive into the renamed file");
+        assertEquals("l11", back.blocks().getString("marker"));
     }
 
     @Test
