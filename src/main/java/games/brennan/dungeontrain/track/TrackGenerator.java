@@ -523,16 +523,6 @@ public final class TrackGenerator {
             worldSeed, idx);
     }
 
-    private static boolean placeTrackColumn(
-        ServerLevel level,
-        int worldX,
-        int worldZ,
-        TrackGeometry g,
-        TilePaint paint
-    ) {
-        return placeTrackColumn(level, null, worldX, worldZ, g, paint);
-    }
-
     /**
      * Place the bed + rail of one track column from the authored tile {@code paint}.
      *
@@ -542,6 +532,8 @@ public final class TrackGenerator {
      *              Nether-band chunks). {@code null} keeps the worldgen / fill-render-distance behaviour
      *              ({@link SilentBlockOps#setBlockSilent}, which relights). The caller guarantees every
      *              written position lies inside {@code chunk}.
+     * @param tally optional diagnostic counters — every branch below that declines to write a cell
+     *              is otherwise invisible. See {@link PaintTally}.
      */
     private static boolean placeTrackColumn(
         ServerLevel level,
@@ -549,14 +541,18 @@ public final class TrackGenerator {
         int worldX,
         int worldZ,
         TrackGeometry g,
-        TilePaint paint
+        TilePaint paint,
+        @Nullable PaintTally tally
     ) {
         Shipyard shipyard = Shipyards.of(level);
         BlockPos bedPos = new BlockPos(worldX, g.bedY(), worldZ);
 
         // Skip ship-owned positions — never mutate voxels that belong to our
         // train or any other ship sharing this dimension.
-        if (shipyard.isInShip(bedPos)) return false;
+        if (shipyard.isInShip(bedPos)) {
+            if (tally != null) tally.bedShipSkip++;
+            return false;
+        }
 
         int zOff = worldZ - g.trackZMin();
         int xMod = Math.floorMod(worldX, TrackPlacer.TILE_LENGTH);
@@ -565,10 +561,15 @@ public final class TrackGenerator {
             ? paint.cells().get()[xMod][0][zOff]
             : TrackPalette.BED;
         bedState = paint.resolveComposite(bedState, xMod, 0, zOff, worldX, g.bedY(), worldZ);
-        if (bedState != null) {
+        if (bedState == null) {
+            if (tally != null) tally.bedNull++;
+        } else {
             BlockState existingBed = level.getBlockState(bedPos);
             if (!existingBed.is(bedState.getBlock())) {
                 writeTrackCell(level, chunk, bedPos, bedState);
+                if (tally != null) tally.bedWrites++;
+            } else if (tally != null) {
+                tally.bedAlready++;
             }
         }
 
@@ -581,12 +582,19 @@ public final class TrackGenerator {
             railState = null;
         }
         railState = paint.resolveComposite(railState, xMod, 1, zOff, worldX, g.railY(), worldZ);
-        if (railState != null) {
+        if (railState == null) {
+            if (tally != null) tally.railNull++;
+        } else {
             BlockPos railPos = new BlockPos(worldX, g.railY(), worldZ);
-            if (!shipyard.isInShip(railPos)) {
+            if (shipyard.isInShip(railPos)) {
+                if (tally != null) tally.railShipSkip++;
+            } else {
                 BlockState existingRail = level.getBlockState(railPos);
                 if (!existingRail.is(railState.getBlock())) {
                     writeTrackCell(level, chunk, railPos, railState);
+                    if (tally != null) tally.railWrites++;
+                } else if (tally != null) {
+                    tally.railAlready++;
                 }
             }
         }
@@ -2017,6 +2025,43 @@ public final class TrackGenerator {
     }
 
     /**
+     * Mutable tally of what a run of {@link #ensureTracksForChunk} calls actually did — every way
+     * the painter can decline to write a cell, counted separately.
+     *
+     * <p>Diagnostic only, and the reason it exists: the painter is silent about all of them. A
+     * corridor that comes out completely empty looks exactly like one that was already correct,
+     * which is how the builder's mode switch could restore the platform and quietly leave the
+     * track unlaid.</p>
+     */
+    public static final class PaintTally {
+        public int chunks;
+        public int notInCorridor;
+        public int notResident;
+        public int columns;
+        public int tilesWithCells;
+        public int tilesFallback;
+        public int bedShipSkip;
+        public int railShipSkip;
+        public int bedNull;
+        public int railNull;
+        public int bedAlready;
+        public int railAlready;
+        public int bedWrites;
+        public int railWrites;
+
+        @Override
+        public String toString() {
+            return "chunks=" + chunks + " notInCorridor=" + notInCorridor
+                + " notResident=" + notResident + " columns=" + columns
+                + " tiles(cells/fallback)=" + tilesWithCells + "/" + tilesFallback
+                + " shipSkip(bed/rail)=" + bedShipSkip + "/" + railShipSkip
+                + " null(bed/rail)=" + bedNull + "/" + railNull
+                + " already(bed/rail)=" + bedAlready + "/" + railAlready
+                + " wrote(bed/rail)=" + bedWrites + "/" + railWrites;
+        }
+    }
+
+    /**
      * Ensure tracks exist in the given chunk for {@code g}. Hit the provider's
      * cache first — chunks already processed exit in O(1). On miss, precompute
      * pillar positions in the chunk ± {@link #PILLAR_SCAN_MARGIN} and walk
@@ -2029,8 +2074,25 @@ public final class TrackGenerator {
         TrackGeometry g,
         Set<Long> filledChunks
     ) {
+        ensureTracksForChunk(level, chunkX, chunkZ, g, filledChunks, null);
+    }
+
+    /**
+     * As above, reporting into {@code tally} what the sweep did and every cell it declined to
+     * write. Callers that stamp a corridor they expect to see (the Train Builder) pass one so an
+     * empty result is visible; the runtime sweep passes {@code null} and behaves exactly as before.
+     */
+    public static void ensureTracksForChunk(
+        ServerLevel level,
+        int chunkX,
+        int chunkZ,
+        TrackGeometry g,
+        Set<Long> filledChunks,
+        @Nullable PaintTally tally
+    ) {
         long chunkKey = ChunkPos.asLong(chunkX, chunkZ);
         if (filledChunks.contains(chunkKey)) return;
+        if (tally != null) tally.chunks++;
 
         int chunkMinX = chunkX << 4;
         int chunkMaxX = chunkMinX + 15;
@@ -2040,6 +2102,7 @@ public final class TrackGenerator {
         // Z-corridor intersection test — mark out-of-corridor chunks as
         // processed too so we never look at them again.
         if (chunkMaxZ < g.trackZMin() || chunkMinZ > g.trackZMax()) {
+            if (tally != null) tally.notInCorridor++;
             filledChunks.add(chunkKey);
             return;
         }
@@ -2052,7 +2115,14 @@ public final class TrackGenerator {
         // spikes when flying over freshly-streaming chunks. Returning
         // here keeps the chunk in pending; the next 10-tick sweep
         // retries once it's FULL.
-        if (level.getChunkSource().getChunkNow(chunkX, chunkZ) == null) return;
+        //
+        // Expected and frequent on the runtime sweep, which is why it is silent — but a caller
+        // that forced the chunk itself and still lands here has a real problem, so it goes in the
+        // tally for that caller to report.
+        if (level.getChunkSource().getChunkNow(chunkX, chunkZ) == null) {
+            if (tally != null) tally.notResident++;
+            return;
+        }
 
         int zLo = Math.max(g.trackZMin(), chunkMinZ);
         int zHi = Math.min(g.trackZMax(), chunkMaxZ);
@@ -2080,13 +2150,18 @@ public final class TrackGenerator {
         for (int localX = 0; localX < 16; localX++) {
             int worldX = chunkMinX + localX;
             long tileIndex = Math.floorDiv((long) worldX, (long) TrackPlacer.TILE_LENGTH);
+            int knownTiles = tilePaints.size();
             TilePaint paint = tilePaints.computeIfAbsent(
                 tileIndex,
                 idx -> buildTilePaint(level, dims, worldSeed, idx, tileFootprint)
             );
+            if (tally != null && tilePaints.size() != knownTiles) {
+                if (paint.cells().isPresent()) tally.tilesWithCells++; else tally.tilesFallback++;
+            }
 
             for (int worldZ = zLo; worldZ <= zHi; worldZ++) {
-                placeTrackColumn(level, worldX, worldZ, g, paint);
+                if (tally != null) tally.columns++;
+                placeTrackColumn(level, null, worldX, worldZ, g, paint, tally);
             }
         }
 
@@ -2124,7 +2199,7 @@ public final class TrackGenerator {
                     return new TilePaint(cells, sidecar, worldSeed, idx);
                 }
             );
-            placeTrackColumn(level, chunk, worldX, worldZ, g, paint);
+            placeTrackColumn(level, chunk, worldX, worldZ, g, paint, null);
         }
     }
 

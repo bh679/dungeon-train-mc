@@ -462,13 +462,22 @@ public final class BuilderWorldSetup {
         int maxChunkX = BuilderWorldLayout.MAX_XZ >> 4;
         int minChunkZ = g.trackZMin() >> 4;
         int maxChunkZ = g.trackZMax() >> 4;
+        TrackGenerator.PaintTally tally = new TrackGenerator.PaintTally();
 
         for (int cx = minChunkX; cx <= maxChunkX; cx++) {
             for (int cz = minChunkZ; cz <= maxChunkZ; cz++) {
                 WorldgenForceGuard.forceChunk(level, cx, cz);
-                TrackGenerator.ensureTracksForChunk(level, cx, cz, g, filled);
+                TrackGenerator.ensureTracksForChunk(level, cx, cz, g, filled, tally);
             }
         }
+
+        // The painter declines cells silently, in half a dozen different ways, and this call is the
+        // one place that asked for a whole corridor and knows it should have got one — so it says
+        // what it got. A run that writes nothing is a bug, not a no-op.
+        LOGGER.info("[DungeonTrain] Builder track: bed y={} rail y={} z={}..{} over chunks x {}..{} "
+                        + "z {}..{} — {}",
+                g.bedY(), g.railY(), g.trackZMin(), g.trackZMax(), minChunkX, maxChunkX,
+                minChunkZ, maxChunkZ, tally);
     }
 
     // ---- train ----
