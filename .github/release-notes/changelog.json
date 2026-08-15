@@ -6996,9 +6996,9 @@
         "They survive carriage unloading and world reload"
       ],
       "date": "2026-08-15",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.558.0",
+      "released_at": "2026-08-15T01:38:28Z"
     }
   ]
 }
