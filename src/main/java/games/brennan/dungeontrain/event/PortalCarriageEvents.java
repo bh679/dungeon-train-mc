@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.portal.PortalCarriageBuilder;
 import games.brennan.dungeontrain.portal.PortalCarriageLayout;
+import games.brennan.dungeontrain.portal.PortalCarriageRevival;
 import games.brennan.dungeontrain.portal.PortalCarriageRole;
 import games.brennan.dungeontrain.portal.PortalCarriageSelection;
 import games.brennan.dungeontrain.portal.PortalClear;
@@ -18,6 +19,7 @@ import games.brennan.dungeontrain.portal.PortalCorridorEntities;
 import games.brennan.dungeontrain.portal.PortalEntityTransit;
 import games.brennan.dungeontrain.portal.PortalOccupants;
 import games.brennan.dungeontrain.portal.PortalPairIndex;
+import games.brennan.dungeontrain.portal.PortalPairResidency;
 import games.brennan.dungeontrain.portal.PortalPuppets;
 import games.brennan.dungeontrain.portal.PortalRegistry;
 import games.brennan.dungeontrain.portal.PortalRoomLayout;
@@ -36,6 +38,8 @@ import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.ShipAabbs;
 import games.brennan.dungeontrain.ship.sable.SableManagedShip;
 import games.brennan.dungeontrain.template.GateContext;
+import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.AABB;
@@ -193,6 +197,31 @@ public final class PortalCarriageEvents {
      * instead of filling in behind their back once they are inside.</p>
      */
     private static final Set<Integer> ACTIVE_PAIRS = new HashSet<>();
+
+    /**
+     * Pair keys whose corridors actually ran this tick, refilled from scratch each time.
+     *
+     * <p>A different question from {@link #ACTIVE_PAIRS}, which means "somebody is near". This one
+     * means "this pair's group was reached and its swap plane exists", and the gap between the two is
+     * the whole of {@link #tickStrandedPairs}: a player standing in a room is unquestionably near
+     * their pair, and the pair can still be doing nothing at all because its carriage group has been
+     * culled out from under them.</p>
+     */
+    private static final Set<Integer> LIVE_PAIRS = new HashSet<>();
+
+    /**
+     * How often somebody waiting on a revived carriage group is told so, in ticks — one second.
+     *
+     * <p>An action-bar line lingers on the client for a couple of seconds by itself, so this is about
+     * keeping it up rather than about how fast it can be read.</p>
+     */
+    private static final int WAITING_MESSAGE_PERIOD_TICKS = 20;
+
+    /** Said while the pair's carriage group is on its way back from holding. */
+    private static final String WAITING_KEY_REVIVING = "chat.dungeontrain.portal.reviving";
+
+    /** Said when it is neither resident nor in holding, so there is nothing to bring back. */
+    private static final String WAITING_KEY_NO_TRAIN = "chat.dungeontrain.portal.no_train";
 
     /**
      * Player → the fog region they were last told about, so an unchanged one is not re-sent every
@@ -362,6 +391,13 @@ public final class PortalCarriageEvents {
         // place in the next world opened, so a surviving binding would name a corridor that is not
         // there.
         PortalExitBindings.clear();
+        // Same reason again for both of these: a pair key names a different carriage in the next
+        // world, so a surviving group handle would be about somebody else's train. Any force-load
+        // ticket still outstanding — only possible for a player who quit standing in a room — is
+        // released by the bootstrap sweep in TrainAssembler before the train re-fills.
+        LIVE_PAIRS.clear();
+        PortalPairResidency.clear();
+        PortalCarriageRevival.clear();
     }
 
     @SubscribeEvent
@@ -383,6 +419,7 @@ public final class PortalCarriageEvents {
         // like the whole picture, and the second would wipe the first.
         PortalPuppets.Session puppets = PortalPuppets.begin();
         ACTIVE_PAIRS.clear();
+        LIVE_PAIRS.clear();
 
         for (UUID trainId : Trains.byTrainId(level).keySet()) {
             for (Map.Entry<Integer, ManagedShip> group : Trains.knownGroups(trainId).entrySet()) {
@@ -419,38 +456,154 @@ public final class PortalCarriageEvents {
                     continue;
                 }
 
-                for (int slot = 0; slot < groupSize; slot++) {
-                    int carriageIndex = anchorPIdx + slot;
-                    if (!PortalCarriageSelection.isPortalCarriage(level, carriageIndex)) continue;
-
-                    // A portal is one group, so both its corridors key on that group's anchor and
-                    // the role falls out of which end of the group this one is.
-                    PortalCarriageRole role = PortalCarriageRole.roleFor(carriageIndex, groupSize);
-                    int pairKey = PortalCarriageRole.entryIndexOf(carriageIndex, groupSize);
-
-                    // Group layout: [BACK pad | carriage 0 | carriage 1 | … ]. Exact doubles, so the
-                    // mapping neither lurches on a block boundary nor fights the group's jitter.
-                    //
-                    // The corridor is longer than its slot and the EXIT one is pulled back into the
-                    // cart (PortalCorridorSize), so its frame origin is NOT its slot's. This has to
-                    // match where CarriagePlacer actually stamped the blocks, or the swap plane would
-                    // sit a few blocks off the corridor the player is walking down.
-                    double originX = bb.minX() + padLen + (double) slot * dims.length()
-                        + PortalCorridorSize.originOffsetX(role, dims);
-                    double originY = bb.minY();
-                    double originZ = bb.minZ();
-
-                    handlePortalCarriage(level, players, layout, dims, carriageIndex, role, pairKey,
-                        ship, originX, originY, originZ, groupSize, puppets);
-                }
+                handleGroup(level, players, layout, dims, anchorPIdx, ship,
+                    bb.minX(), bb.minY(), bb.minZ(), groupSize, padLen, puppets);
             }
         }
+
+        // Pairs the walk above never reached, with somebody standing in their room. Before the
+        // dispatch, so a pair revived or picked up here contributes its puppets to the same snapshot —
+        // a second dispatch would look like the whole picture and wipe the first.
+        tickStrandedPairs(level, players, layout, dims, groupSize, padLen, puppets);
 
         puppets.dispatch(players);
 
         // Once per pair rather than once per carriage, and outside the loop above so it also runs for
         // pairs nobody is near any more — those are exactly the ones that need draining.
         tickRoomTiling(level, dims, layout, players);
+    }
+
+    /**
+     * Run every portal corridor in one carriage group off that group's live pose.
+     *
+     * <p>Shared by the two ways a group is reached — the walk over live trains, and
+     * {@link #tickStrandedPairs} picking up a pair the walk missed — so a corridor's origin is
+     * derived in exactly one place. Two callers deriving it separately is how a swap plane ends up
+     * sitting a few blocks off the corridor a player is actually walking down.</p>
+     *
+     * <p>The group's box arrives as three doubles rather than whole: its minimum corner is the only
+     * part a corridor origin is made of, and both callers have already had to look at the box to
+     * reject a degenerate one.</p>
+     *
+     * @param minX the group's world AABB minimum corner, already checked for degeneracy by the caller
+     */
+    private static void handleGroup(ServerLevel level, List<ServerPlayer> players,
+                                    PortalCarriageLayout layout, CarriageDims dims,
+                                    int anchorPIdx, ManagedShip ship,
+                                    double minX, double minY, double minZ,
+                                    int groupSize, int padLen, PortalPuppets.Session puppets) {
+        for (int slot = 0; slot < groupSize; slot++) {
+            int carriageIndex = anchorPIdx + slot;
+            if (!PortalCarriageSelection.isPortalCarriage(level, carriageIndex)) continue;
+
+            // A portal is one group, so both its corridors key on that group's anchor and the role
+            // falls out of which end of the group this one is.
+            PortalCarriageRole role = PortalCarriageRole.roleFor(carriageIndex, groupSize);
+            int pairKey = PortalCarriageRole.entryIndexOf(carriageIndex, groupSize);
+
+            handlePortalCarriage(level, players, layout, dims, carriageIndex, role, pairKey,
+                ship, corridorOriginX(minX, padLen, slot, dims, role), minY, minZ,
+                groupSize, puppets);
+        }
+    }
+
+    /**
+     * Where one carriage's corridor starts, in world X.
+     *
+     * <p>Group layout: {@code [BACK pad | carriage 0 | carriage 1 | … ]}. Exact doubles, so the
+     * mapping neither lurches on a block boundary nor fights the group's jitter.</p>
+     *
+     * <p>The corridor is longer than its slot and the EXIT one is pulled back into the cart
+     * ({@link PortalCorridorSize}), so its frame origin is NOT its slot's. This has to match where
+     * {@code CarriagePlacer} actually stamped the blocks, or the swap plane would sit a few blocks off
+     * the corridor the player is walking down.</p>
+     */
+    private static double corridorOriginX(double groupMinX, int padLen, int slot, CarriageDims dims,
+                                          PortalCarriageRole role) {
+        return groupMinX + padLen + (double) slot * dims.length()
+            + PortalCorridorSize.originOffsetX(role, dims);
+    }
+
+    /**
+     * Give a pair whose group the walk never reached a way of working anyway, for as long as somebody
+     * is inside its room.
+     *
+     * <p><b>What this is for.</b> Every swap — the base twin and every extra corridor an endless room
+     * scatters through its tiles — runs off the walk over live carriage groups. A player eight rooms
+     * out is nowhere near the train, so nothing holds the group in the simulation bubble; Sable culls
+     * it, the walk skips it, and <i>every corridor in the room goes inert at once</i>. An endless room
+     * repeats forever and is sealed, so there is nowhere else to walk: without this the only way out
+     * is to die. {@link PortalPairResidency} stops it happening at all in the common case, and this is
+     * what is left for the player who was already deep in the room when the group went.</p>
+     *
+     * <p>Three outcomes, and only the first does any work here. A group that is <b>resident but
+     * missed</b> — a transient {@code findAll} dropout, or a registry entry the train grouping no
+     * longer lists — is simply run, which is the same swap the walk would have done. A <b>culled</b>
+     * one is asked back from holding and the player waits a moment in the corridor
+     * ({@link PortalCarriageRevival} explains why nothing is teleported off a stale pose). One that is
+     * neither is said out loud, because there is nothing else to be done about it.</p>
+     */
+    private static void tickStrandedPairs(ServerLevel level, List<ServerPlayer> players,
+                                          PortalCarriageLayout layout, CarriageDims dims,
+                                          int groupSize, int padLen, PortalPuppets.Session puppets) {
+        if (STRUCTURES.isEmpty()) return;
+
+        // Snapshot: handlePortalCarriage can relocate a structure, which replaces the entry.
+        for (Map.Entry<Integer, PortalStructure> entry : new ArrayList<>(STRUCTURES.entrySet())) {
+            int pairKey = entry.getKey();
+            if (LIVE_PAIRS.contains(pairKey)) continue;
+            // Only for somebody who is actually in there. A pair the train has simply rolled away
+            // from is not stranding anybody, and reviving it would pin a sub-level for nothing.
+            if (!anyPlayerInStructure(players, dims, entry.getValue())) continue;
+
+            ManagedShip ship = PortalPairResidency.groupFor(pairKey);
+            PortalCarriageRevival.Status status =
+                PortalCarriageRevival.ensureLive(level, pairKey, ship);
+
+            if (status == PortalCarriageRevival.Status.LIVE) {
+                AABBdc bb = ship.worldAABB();
+                if (ShipAabbs.isDegenerate(bb)) {
+                    warnSkippedGroup(level, pairKey, PortalSwapDiagnostics.Reason.DEGENERATE_AABB);
+                    continue;
+                }
+                handleGroup(level, players, layout, dims, pairKey, ship,
+                    bb.minX(), bb.minY(), bb.minZ(), groupSize, padLen, puppets);
+                continue;
+            }
+
+            boolean reviving = status == PortalCarriageRevival.Status.REVIVING;
+            tellWaiting(level, players, dims, entry.getValue(), pairKey,
+                reviving
+                    ? PortalSwapDiagnostics.Reason.GROUP_REVIVING
+                    : PortalSwapDiagnostics.Reason.PAIR_NOT_WALKED,
+                reviving ? WAITING_KEY_REVIVING : WAITING_KEY_NO_TRAIN);
+        }
+    }
+
+    /**
+     * Tell whoever is in the room that its corridors are waiting on the train rather than broken.
+     *
+     * <p>On the action bar, because the alternative is a portal that silently does nothing — the exact
+     * experience this whole pass exists to remove. Every {@link #WAITING_MESSAGE_PERIOD_TICKS} rather
+     * than every tick: an action-bar line persists on the client for a couple of seconds on its own,
+     * so re-sending it twenty times a second is a packet per player per tick for no visible
+     * difference.</p>
+     */
+    private static void tellWaiting(ServerLevel level, List<ServerPlayer> players, CarriageDims dims,
+                                    PortalStructure structure, int pairKey,
+                                    PortalSwapDiagnostics.Reason reason, String messageKey) {
+        if (PortalSwapDiagnostics.due(level, reason, pairKey)) {
+            PortalSwapDiagnostics.refused(reason, "pair " + pairKey,
+                "somebody is in this pair's room and no walk reached its carriage group");
+        }
+
+        if (level.getGameTime() % WAITING_MESSAGE_PERIOD_TICKS != 0) return;
+        AABB box = structureBox(dims, structure);
+        for (ServerPlayer player : players) {
+            if (!box.contains(player.getX(), player.getY(), player.getZ())) continue;
+            player.displayClientMessage(
+                Component.translatable(messageKey).withStyle(ChatFormatting.GRAY), true);
+        }
     }
 
     /**
@@ -467,6 +620,7 @@ public final class PortalCarriageEvents {
         if (STRUCTURES.isEmpty()) {
             clearFogFor(players, Set.of());
             clearTrainAudioFor(players, Set.of());
+            PortalPairResidency.syncTo(level, Set.of());
             return;
         }
 
@@ -475,6 +629,7 @@ public final class PortalCarriageEvents {
         List<Map.Entry<Integer, PortalStructure>> pairs = new ArrayList<>(STRUCTURES.entrySet());
         Set<UUID> fogged = new HashSet<>();
         Set<UUID> inStructure = new HashSet<>();
+        Set<Integer> occupiedPairs = new HashSet<>();
 
         for (Map.Entry<Integer, PortalStructure> pair : pairs) {
             PortalStructure structure = pair.getValue();
@@ -490,6 +645,11 @@ public final class PortalCarriageEvents {
             // going through it, and the full window is a hundred copies of a room nobody looked at.
             // Nobody near at all is the signal to drain.
             Set<PortalRoomTiling.Tile> standingIn = occupiedTiles(players, dims, layout, structure);
+            // Somebody is in this room, so its carriage group must not be culled out from under
+            // them — that is what turns every corridor in the room, copies included, into a dead
+            // end with nowhere else to walk. Read here because the occupancy has just been measured
+            // against the same box anyPlayerInStructure uses.
+            if (!standingIn.isEmpty()) occupiedPairs.add(pair.getKey());
             int radius = PortalRoomTiling.MAX_RADIUS;
             if (standingIn.isEmpty() && ACTIVE_PAIRS.contains(pair.getKey())) {
                 standingIn = Set.of(PortalRoomTiling.Tile.BASE);
@@ -506,6 +666,8 @@ public final class PortalCarriageEvents {
 
         clearFogFor(players, fogged);
         clearTrainAudioFor(players, inStructure);
+        // Take and release in one pass, so a ticket's lifetime is exactly a room's occupancy.
+        PortalPairResidency.syncTo(level, occupiedPairs);
     }
 
     /**
@@ -649,6 +811,11 @@ public final class PortalCarriageEvents {
                                              ManagedShip ship,
                                              double originX, double originY, double originZ,
                                              int groupSize, PortalPuppets.Session puppets) {
+        // Which group this pair rides on, remembered before anything can return early — this is the
+        // only place both facts are in hand, and it is what lets the group be found again once it has
+        // been culled and dropped out of every train-side lookup. See PortalPairResidency.
+        PortalPairResidency.note(pairKey, ship);
+
         // One structure per pair, stamped from the ENTRY carriage's approach and keyed on its index,
         // so both carriages of a pair address the same room rather than building one each.
         PortalStructure structure = STRUCTURES.get(pairKey);
@@ -756,6 +923,11 @@ public final class PortalCarriageEvents {
             new PortalFrames.Origin(originX, originY, originZ),
             new PortalFrames.Origin(twinOrigin.getX(), twinOrigin.getY(), twinOrigin.getZ()),
             role);
+
+        // From here the pair has a swap plane, which is what LIVE_PAIRS means — noted before the
+        // swap rather than after, because a tick in which nobody happened to cross is still a tick
+        // this pair was working, and tickStrandedPairs must not go looking for a train to revive.
+        LIVE_PAIRS.add(pairKey);
 
         // Publish for PortalEditMirror, which needs to answer "is this block in a portal corridor?"
         // on the hot path of every sub-level block change and cannot re-derive train geometry there —
@@ -868,8 +1040,8 @@ public final class PortalCarriageEvents {
             // A corridor whose shell has been broken open past the midpoint no longer takes anyone
             // in. Only inbound: a move back to the carriage is never gated, so nobody who is already
             // in the room can be shut out of the train. See PortalSever.
-            if (move.toFrame() == PortalFrames.FRAME_TWIN
-                && PortalSever.isSevered(level, carriageIndex)) {
+            if (PortalSever.blocksMove(move.toFrame(),
+                PortalSever.isSevered(level, carriageIndex))) {
                 if (PortalSwapDiagnostics.due(level, PortalSwapDiagnostics.Reason.SEVERED, id)) {
                     PortalSwapDiagnostics.refused(PortalSwapDiagnostics.Reason.SEVERED,
                         player.getName().getString(),
