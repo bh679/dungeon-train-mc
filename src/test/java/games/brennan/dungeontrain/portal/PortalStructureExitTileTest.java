@@ -61,7 +61,7 @@ class PortalStructureExitTileTest {
     void exitShadowLinesUpWithItsTile() {
         Tile tile = new Tile(3, -2);
         PortalStructure moved = structure(tile);
-        PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(DIMS);
+        PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(DIMS, PortalCorridorKind.LONG);
 
         // The shadow's own exit is where the real one is — that is what makes stampCorridorHalf and
         // the mask land on the same blocks without either learning that exits can move.

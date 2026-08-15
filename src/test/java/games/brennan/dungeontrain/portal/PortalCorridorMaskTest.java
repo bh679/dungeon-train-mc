@@ -28,7 +28,7 @@ class PortalCorridorMaskTest {
     private static final int PLUG_DEPTH = 3;
 
     /** A corridor is longer than the carriage it stands in — 13 at the default dims, not 9. */
-    private static final int CORRIDOR_LENGTH = PortalCorridorSize.corridorLength(DIMS);
+    private static final int CORRIDOR_LENGTH = PortalCorridorSize.corridorLength(DIMS, PortalCorridorKind.LONG);
 
     private static PortalStructure structure() {
         return structure(PortalRoomLayout.builtInSize(DIMS));
@@ -45,7 +45,7 @@ class PortalCorridorMaskTest {
 
     private static PortalCorridorMask mask(PortalStructure structure) {
         return PortalCorridorMask.forStructure(
-            structure, DIMS, PortalCarriageBuilder.layoutFor(DIMS), PLUG_DEPTH);
+            structure, DIMS, PortalCarriageBuilder.layoutFor(DIMS, PortalCorridorKind.LONG), PLUG_DEPTH);
     }
 
     /** The two planes the seal ring fills — a corridor's mouth, facing the room. */
@@ -100,7 +100,7 @@ class PortalCorridorMaskTest {
     @DisplayName("Each corridor's mouth is sealed across the room's full width and height")
     void coversTheSealRing() {
         PortalStructure s = structure();
-        PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(DIMS);
+        PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(DIMS, PortalCorridorKind.LONG);
         PortalCorridorMask mask = mask();
         BlockPos room = s.roomOrigin(DIMS, layout);
 
@@ -123,7 +123,7 @@ class PortalCorridorMaskTest {
     @DisplayName("The aisles either side of a corridor are the room's to build in, not the corridor's")
     void leavesTheAislesBesideACorridorFree() {
         PortalStructure s = structure();
-        PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(DIMS);
+        PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(DIMS, PortalCorridorKind.LONG);
         PortalCorridorMask mask = mask();
         BlockPos room = s.roomOrigin(DIMS, layout);
 
@@ -170,7 +170,7 @@ class PortalCorridorMaskTest {
     @DisplayName("The base room between the corridors is NOT covered — it is the room, not a corridor")
     void leavesTheRoomAlone() {
         PortalStructure s = structure();
-        PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(DIMS);
+        PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(DIMS, PortalCorridorKind.LONG);
         PortalCorridorMask mask = mask();
         BlockPos room = s.roomOrigin(DIMS, layout);
 
@@ -184,7 +184,7 @@ class PortalCorridorMaskTest {
     @DisplayName("The room's end columns face straight into a corridor, so nothing may settle them")
     void endColumnsFaceIntoACorridor() {
         PortalStructure s = structure();
-        PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(DIMS);
+        PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(DIMS, PortalCorridorKind.LONG);
         PortalCorridorMask mask = mask();
         BlockPos room = s.roomOrigin(DIMS, layout);
         int y = ORIGIN.getY() + 1;
@@ -208,7 +208,7 @@ class PortalCorridorMaskTest {
     @DisplayName("Nothing else faces a corridor: mid-room columns and both Z walls settle as before")
     void onlyTheEndColumnsFaceIntoACorridor() {
         PortalStructure s = structure();
-        PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(DIMS);
+        PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(DIMS, PortalCorridorKind.LONG);
         PortalCorridorMask mask = mask();
         BlockPos room = s.roomOrigin(DIMS, layout);
         int y = ORIGIN.getY() + 1;
@@ -233,7 +233,7 @@ class PortalCorridorMaskTest {
     @DisplayName("A copy one room off the corridor row is untouched — only that row meets a twin")
     void leavesOtherRowsAlone() {
         PortalStructure s = structure();
-        PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(DIMS);
+        PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(DIMS, PortalCorridorKind.LONG);
         PortalCorridorMask mask = mask();
         BlockPos neighbour = s.tileOrigin(DIMS, layout, new PortalRoomTiling.Tile(-1, 1));
 
@@ -254,7 +254,7 @@ class PortalCorridorMaskTest {
         assertFalse(mask.covers(s.origin().getX() - PLUG_DEPTH - 1, y, z));
         // The exit corridor's own length, not the carriage's — the mask covers the whole corridor.
         assertFalse(mask.covers(
-            s.exitOrigin(DIMS).getX() + PortalCorridorSize.corridorLength(DIMS) + PLUG_DEPTH, y, z));
+            s.exitOrigin(DIMS).getX() + PortalCorridorSize.corridorLength(DIMS, PortalCorridorKind.LONG) + PLUG_DEPTH, y, z));
     }
 
     @Test
@@ -360,7 +360,7 @@ class PortalCorridorMaskTest {
     }
 
     private static PortalCarriageLayout layout() {
-        return PortalCarriageBuilder.layoutFor(DIMS);
+        return PortalCarriageBuilder.layoutFor(DIMS, PortalCorridorKind.LONG);
     }
 
     private static PortalCorridorMask corridor(PortalStructure structure, PortalCarriageRole role) {

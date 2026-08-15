@@ -205,14 +205,14 @@ public final class PortalExitCopyTiler {
     /** Every block this copy occupies — read off the same mask that protects it while it stands. */
     private static BoundingBox copyBox(PortalStructure structure, CarriageDims dims, Site site) {
         return PortalCorridorMask.forCorridor(
-            structure.shadowAt(site.tile()), dims, PortalCarriageBuilder.layoutFor(dims),
+            structure.shadowAt(site.tile()), dims, PortalCarriageBuilder.layoutFor(dims, structure.kind()),
             PortalCarriageBuilder.plugDepth(), site.role()).bounds();
     }
 
     /** How far, in tiles, a copy's blocks reach past the room it opens into. */
     private static int reachOf(PortalStructure structure, CarriageDims dims) {
         return PortalExitSites.tileReach(
-            PortalCorridorSize.corridorLength(dims), structure.roomLength(),
+            PortalCorridorSize.corridorLength(dims, structure.kind()), structure.roomLength(),
             PortalCarriageBuilder.plugDepth());
     }
 

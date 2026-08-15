@@ -33,20 +33,20 @@ final class PortalCentreWallTest {
     @DisplayName("the column spans the centre wall and is two blocks tall, on the walkway centre")
     void columnCoversTheWallAtDoorHeight() {
         for (CarriageDims dims : new CarriageDims[] {DEFAULT_DIMS, EVEN_DIMS}) {
-            int width = PortalCorridorSize.centreWallWidth(dims);
-            assertEquals(PortalCentreWall.minX(dims) + width, PortalCentreWall.maxXExclusive(dims),
+            int width = PortalCorridorSize.centreWallWidth(dims, PortalCorridorKind.LONG);
+            assertEquals(PortalCentreWall.minX(dims, PortalCorridorKind.LONG) + width, PortalCentreWall.maxXExclusive(dims, PortalCorridorKind.LONG),
                 "the column spans exactly the wall at length " + dims.length());
-            assertEquals(width * 2, PortalCentreWall.doorwayCells(dims).length,
+            assertEquals(width * 2, PortalCentreWall.doorwayCells(dims, PortalCorridorKind.LONG).length,
                 "two cells per wall column at length " + dims.length());
 
             // On the same line the corridors put their doors on, or the opening would meet a wall.
             PortalCarriageLayout layout =
-                new PortalCarriageLayout(PortalCorridorSize.corridorLength(dims), dims.height(), dims.width());
+                new PortalCarriageLayout(PortalCorridorSize.corridorLength(dims, PortalCorridorKind.LONG), dims.height(), dims.width());
             assertEquals(layout.doorZ(), PortalCentreWall.doorZ(dims),
                 "the column must sit on the corridors' own doorway line");
 
             // The two cells a door occupies, and not the floor beneath them.
-            for (int[] cell : PortalCentreWall.doorwayCells(dims)) {
+            for (int[] cell : PortalCentreWall.doorwayCells(dims, PortalCorridorKind.LONG)) {
                 assertTrue(cell[1] >= 1 && cell[1] <= 2, "cell at dy=" + cell[1] + " is not door height");
                 assertTrue(layout.isDoorwayCell(cell[1], cell[2]),
                     "cell (" + cell[1] + "," + cell[2] + ") is not a doorway cell of the corridor");
@@ -59,11 +59,11 @@ final class PortalCentreWallTest {
     @DisplayName("the floor and the ceiling are not part of the column")
     void floorAndCeilingStaySolid() {
         int z = PortalCentreWall.doorZ(DEFAULT_DIMS);
-        int x = PortalCentreWall.minX(DEFAULT_DIMS);
+        int x = PortalCentreWall.minX(DEFAULT_DIMS, PortalCorridorKind.LONG);
 
-        assertFalse(PortalCentreWall.isDoorwayColumn(DEFAULT_DIMS, x, 0, z), "floor");
-        assertFalse(PortalCentreWall.isDoorwayColumn(DEFAULT_DIMS, x, 3, z), "above the doorway");
-        assertFalse(PortalCentreWall.isDoorwayColumn(DEFAULT_DIMS, x, DEFAULT_DIMS.height() - 1, z),
+        assertFalse(PortalCentreWall.isDoorwayColumn(DEFAULT_DIMS, PortalCorridorKind.LONG, x, 0, z), "floor");
+        assertFalse(PortalCentreWall.isDoorwayColumn(DEFAULT_DIMS, PortalCorridorKind.LONG, x, 3, z), "above the doorway");
+        assertFalse(PortalCentreWall.isDoorwayColumn(DEFAULT_DIMS, PortalCorridorKind.LONG, x, DEFAULT_DIMS.height() - 1, z),
             "ceiling");
     }
 
@@ -73,15 +73,15 @@ final class PortalCentreWallTest {
     void onlyTheWallsOwnCells() {
         int z = PortalCentreWall.doorZ(DEFAULT_DIMS);
 
-        assertFalse(PortalCentreWall.isDoorwayColumn(DEFAULT_DIMS,
-            PortalCentreWall.minX(DEFAULT_DIMS) - 1, 1, z), "the entry corridor's overrun");
-        assertFalse(PortalCentreWall.isDoorwayColumn(DEFAULT_DIMS,
-            PortalCentreWall.maxXExclusive(DEFAULT_DIMS), 1, z), "the exit corridor's overrun");
+        assertFalse(PortalCentreWall.isDoorwayColumn(DEFAULT_DIMS, PortalCorridorKind.LONG,
+            PortalCentreWall.minX(DEFAULT_DIMS, PortalCorridorKind.LONG) - 1, 1, z), "the entry corridor's overrun");
+        assertFalse(PortalCentreWall.isDoorwayColumn(DEFAULT_DIMS, PortalCorridorKind.LONG,
+            PortalCentreWall.maxXExclusive(DEFAULT_DIMS, PortalCorridorKind.LONG), 1, z), "the exit corridor's overrun");
 
         for (int dz = 0; dz < DEFAULT_DIMS.width(); dz++) {
             if (dz == z) continue;
             assertFalse(PortalCentreWall.isDoorwayColumn(
-                DEFAULT_DIMS, PortalCentreWall.minX(DEFAULT_DIMS), 1, dz),
+                DEFAULT_DIMS, PortalCorridorKind.LONG, PortalCentreWall.minX(DEFAULT_DIMS, PortalCorridorKind.LONG), 1, dz),
                 "z=" + dz + " is wall, not doorway");
         }
     }
@@ -100,16 +100,16 @@ final class PortalCentreWallTest {
         for (CarriageDims dims : new CarriageDims[] {DEFAULT_DIMS, EVEN_DIMS}) {
             int entryOriginInGroup = 0;
             int exitOriginInGroup = 2 * dims.length() + PortalCorridorSize.originOffsetX(
-                PortalCarriageRole.EXIT, dims);
+                PortalCarriageRole.EXIT, dims, PortalCorridorKind.LONG);
 
             Set<String> fromEntry = inGroupFrame(
-                PortalCentreWall.doorwayCellsFromCorridor(dims, PortalCarriageRole.ENTRY),
+                PortalCentreWall.doorwayCellsFromCorridor(dims, PortalCorridorKind.LONG, PortalCarriageRole.ENTRY),
                 entryOriginInGroup);
             Set<String> fromExit = inGroupFrame(
-                PortalCentreWall.doorwayCellsFromCorridor(dims, PortalCarriageRole.EXIT),
+                PortalCentreWall.doorwayCellsFromCorridor(dims, PortalCorridorKind.LONG, PortalCarriageRole.EXIT),
                 exitOriginInGroup);
             // The middle slot is the second of the three, so its own origin is one length in.
-            Set<String> fromMiddle = inGroupFrame(PortalCentreWall.doorwayCells(dims), dims.length());
+            Set<String> fromMiddle = inGroupFrame(PortalCentreWall.doorwayCells(dims, PortalCorridorKind.LONG), dims.length());
 
             assertEquals(fromMiddle, fromEntry, "entry frame at length " + dims.length());
             assertEquals(fromMiddle, fromExit, "exit frame at length " + dims.length());
@@ -124,16 +124,63 @@ final class PortalCentreWallTest {
     @DisplayName("the column is outside both corridors' own bounds")
     void theColumnBelongsToNeitherCorridor() {
         for (CarriageDims dims : new CarriageDims[] {DEFAULT_DIMS, EVEN_DIMS}) {
-            int corridorLength = PortalCorridorSize.corridorLength(dims);
+            int corridorLength = PortalCorridorSize.corridorLength(dims, PortalCorridorKind.LONG);
 
-            for (int[] cell : PortalCentreWall.doorwayCellsFromCorridor(dims, PortalCarriageRole.ENTRY)) {
+            for (int[] cell : PortalCentreWall.doorwayCellsFromCorridor(dims, PortalCorridorKind.LONG, PortalCarriageRole.ENTRY)) {
                 assertTrue(cell[0] >= corridorLength,
                     "entry-local x=" + cell[0] + " is inside the entry corridor (length "
                         + corridorLength + ")");
             }
-            for (int[] cell : PortalCentreWall.doorwayCellsFromCorridor(dims, PortalCarriageRole.EXIT)) {
+            for (int[] cell : PortalCentreWall.doorwayCellsFromCorridor(dims, PortalCorridorKind.LONG, PortalCarriageRole.EXIT)) {
                 assertTrue(cell[0] < 0,
                     "exit-local x=" + cell[0] + " is inside the exit corridor");
+            }
+        }
+    }
+
+    /**
+     * The same two properties under {@link PortalCorridorKind#SHORT}, where the "wall" is the whole
+     * cart.
+     *
+     * <p>Worth its own test because the branch that stamps a short pair's cart writes a
+     * <b>sealed</b> carriage rather than a wall with a column already in it, so the opening is cut
+     * back out afterwards ({@code PortalCarriageBuilder.openSeveredColumn}) — and it can only be cut
+     * in the right place if these cells still line up with both corridors. A severed short pair that
+     * got this wrong would be three carriages of dead end, which is the outcome the whole class
+     * exists to prevent.</p>
+     */
+    @Test
+    @DisplayName("under SHORT the column runs the length of the cart, and both corridors still agree")
+    void shortKind_opensTheWholeCart() {
+        for (CarriageDims dims : new CarriageDims[] {DEFAULT_DIMS, EVEN_DIMS}) {
+            PortalCorridorKind k = PortalCorridorKind.SHORT;
+
+            assertEquals(0, PortalCentreWall.minX(dims, k));
+            assertEquals(dims.length(), PortalCentreWall.maxXExclusive(dims, k));
+            assertEquals(dims.length() * 2, PortalCentreWall.doorwayCells(dims, k).length,
+                "two cells per cart column at length " + dims.length());
+
+            // A short corridor's origin is its slot's, so the shifts are a plain carriage length
+            // either way — and the two must still name the same blocks of the group.
+            Set<String> fromEntry = inGroupFrame(
+                PortalCentreWall.doorwayCellsFromCorridor(dims, k, PortalCarriageRole.ENTRY), 0);
+            Set<String> fromExit = inGroupFrame(
+                PortalCentreWall.doorwayCellsFromCorridor(dims, k, PortalCarriageRole.EXIT),
+                2 * dims.length());
+            Set<String> fromMiddle =
+                inGroupFrame(PortalCentreWall.doorwayCells(dims, k), dims.length());
+
+            assertEquals(fromMiddle, fromEntry, "entry frame at length " + dims.length());
+            assertEquals(fromMiddle, fromExit, "exit frame at length " + dims.length());
+
+            // Still outside both corridors, so opening it mirrors into neither twin.
+            for (int[] cell : PortalCentreWall.doorwayCellsFromCorridor(
+                    dims, k, PortalCarriageRole.ENTRY)) {
+                assertTrue(cell[0] >= dims.length(), "entry-local x=" + cell[0] + " is inside it");
+            }
+            for (int[] cell : PortalCentreWall.doorwayCellsFromCorridor(
+                    dims, k, PortalCarriageRole.EXIT)) {
+                assertTrue(cell[0] < 0, "exit-local x=" + cell[0] + " is inside it");
             }
         }
     }

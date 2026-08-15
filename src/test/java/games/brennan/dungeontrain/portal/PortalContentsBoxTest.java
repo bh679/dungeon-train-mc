@@ -31,13 +31,13 @@ import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 class PortalContentsBoxTest {
 
     private static final CarriageDims DIMS = CarriageDims.DEFAULT;   // 9x7x7
-    private static final CarriageContents PORTAL = PortalCarriageBuilder.portalContents();
+    private static final CarriageContents PORTAL = PortalCarriageBuilder.portalContents(PortalCorridorKind.LONG);
     private static final CarriageContents ORDINARY = CarriageContents.custom("books");
 
     @Test
     @DisplayName("Portal contents are authored against the corridor: a 13-long box, 11x5x5 inside")
     void portalContents_useTheCorridorBox() {
-        assertEquals(PortalCorridorSize.corridorDims(DIMS),
+        assertEquals(PortalCorridorSize.corridorDims(DIMS, PortalCorridorKind.LONG),
             CarriageContentsPlacer.contentsDims(PORTAL, DIMS));
 
         Vec3i interior = CarriageContentsPlacer.interiorSizeFor(PORTAL, DIMS);
@@ -62,7 +62,7 @@ class PortalContentsBoxTest {
     void interiorTracksTheCorridorAtEveryLength() {
         for (int length = CarriageDims.MIN_LENGTH; length <= CarriageDims.MAX_LENGTH; length++) {
             CarriageDims dims = new CarriageDims(length, DIMS.width(), DIMS.height());
-            CarriageDims corridor = PortalCorridorSize.corridorDims(dims);
+            CarriageDims corridor = PortalCorridorSize.corridorDims(dims, PortalCorridorKind.LONG);
 
             assertEquals(CarriageContentsPlacer.interiorSize(corridor),
                 CarriageContentsPlacer.interiorSizeFor(PORTAL, dims),
@@ -80,7 +80,7 @@ class PortalContentsBoxTest {
 
             // A sub-variant fills the same space as its parent — sized as a carriage it would get a
             // plot four blocks short, and the template captured there is rejected on load.
-            assertEquals(PortalCorridorSize.corridorDims(DIMS),
+            assertEquals(PortalCorridorSize.corridorDims(DIMS, PortalCorridorKind.LONG),
                 CarriageContentsPlacer.contentsDims(child, DIMS));
             assertEquals(new Vec3i(11, 5, 5),
                 CarriageContentsPlacer.interiorSizeFor(child, DIMS));
@@ -99,7 +99,7 @@ class PortalContentsBoxTest {
         CarriageContentsGroupStore.injectForTesting("books",
             new CarriageContentsGroup(List.of(new CarriageContentsGroup.Member("books_rare", 1))));
         try {
-            assertEquals(PortalCorridorSize.corridorDims(DIMS),
+            assertEquals(PortalCorridorSize.corridorDims(DIMS, PortalCorridorKind.LONG),
                 CarriageContentsPlacer.contentsDims(CarriageContents.custom("portalzigzag_lit"), DIMS),
                 "a grandchild of portal is still a corridor");
             assertEquals(DIMS,
@@ -118,7 +118,7 @@ class PortalContentsBoxTest {
         CarriageContentsGroupStore.injectForTesting("portal",
             new CarriageContentsGroup(List.of(new CarriageContentsGroup.Member("portalzig", 1))));
         try {
-            CarriageVariant corridor = PortalCarriageBuilder.portalVariant();
+            CarriageVariant corridor = PortalCarriageBuilder.portalVariant(PortalCorridorKind.LONG);
 
             assertEquals(corridor, CarriageContentsEditor.shellFor(PORTAL));
             // The one that regressed: a sub-variant got the corridor-sized box but a standard

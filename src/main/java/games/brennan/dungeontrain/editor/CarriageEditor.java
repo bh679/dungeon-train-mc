@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.editor;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.portal.PortalCorridorKind;
 import games.brennan.dungeontrain.portal.PortalCorridorSize;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriagePlacer;
@@ -120,7 +121,7 @@ public final class CarriageEditor {
      * longer portal-corridor plot cannot reach its neighbour whatever order the registry is in.
      */
     private static int plotStep(CarriageDims dims) {
-        return PortalCorridorSize.corridorLength(dims) + EditorLayout.GAP;
+        return PortalCorridorSize.corridorLength(dims, PortalCorridorKind.LONG) + EditorLayout.GAP;
     }
 
     /**
@@ -282,7 +283,7 @@ public final class CarriageEditor {
         BlockState air = Blocks.AIR.defaultBlockState();
         // Erased at the widest plot size — the loop works by index and cannot know which of the
         // shifted variants was the long portal-corridor plot, and clearing extra air is harmless.
-        CarriageDims widest = PortalCorridorSize.corridorDims(dims);
+        CarriageDims widest = PortalCorridorSize.corridorDims(dims, PortalCorridorKind.LONG);
         for (int i = oldDeletedIndex; i < oldCount; i++) {
             BlockPos pos = new BlockPos(FIRST_PLOT_X + i * plotStep(dims), PLOT_Y, PLOT_Z);
             CarriagePlacer.eraseAt(level, pos, widest);

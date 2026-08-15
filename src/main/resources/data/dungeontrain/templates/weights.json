@@ -9,8 +9,9 @@
     ]
   },
   "pen": 15,
-  "portal": 0,
+  "portal": 1,
   "portal_middle": 0,
+  "portal_short": 1,
   "shared": 1,
   "standard": 19,
   "windowed": 20
