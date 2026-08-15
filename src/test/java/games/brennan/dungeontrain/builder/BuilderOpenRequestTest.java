@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.builder;
 
+import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.train.CarriagePartKind;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -128,6 +129,54 @@ final class BuilderOpenRequestTest {
                 BuilderMode.TRAIN_OUTSIDE, opened.subType()));
         assertEquals(1, BuilderWorldLayout.parkedCarriages(
                 BuilderMode.TRAIN_OUTSIDE, BuilderNewOptions.SubType.CARRIAGE_ROOM));
+    }
+
+    @Test
+    @DisplayName("What a world records round-trips back to the request that put it there")
+    void worldDataRoundTripsToTheSameRequest() {
+        // Reopening a builder world re-runs the Open the world says it is holding, so this mapping
+        // is what decides which store the reopened build — and the Save after it — belongs to.
+        for (BuilderNewOptions.SubType subType : BuilderNewOptions.SubType.values()) {
+            CarriagePartKind partKind = subType == BuilderNewOptions.SubType.PARTS
+                    ? CarriagePartKind.WALLS
+                    : null;
+            BuilderOpenRequest opened = request(subType, "thing", partKind);
+            BuilderOpenRequest reread = fromWorld(opened.id(), opened.subTypeToken(),
+                    opened.partKindId(), opened.trackKindId());
+            assertEquals(opened, reread, "did not survive the world for " + subType.id());
+        }
+    }
+
+    @Test
+    @DisplayName("A recorded room is a room and a recorded track is a track, not a carriage")
+    void worldDataKeepsTheKindsApart() {
+        BuilderOpenRequest room = BuilderOpenRequest.forPortalRoom("library");
+        assertEquals(room, fromWorld("library", room.subTypeToken(), "", ""));
+
+        // A track build records no sub type at all — the track kind is the field that names it — so
+        // the kind must be read before the sub-type token, or a track reopens as a carriage.
+        BuilderOpenRequest track = BuilderOpenRequest.forTrack(TrackKind.TILE, "mossy").orElseThrow();
+        assertEquals(track, fromWorld("mossy", "", "", TrackKind.TILE.id()));
+    }
+
+    @Test
+    @DisplayName("A world holding nothing named yields no request")
+    void draftYieldsNothing() {
+        // A New that was never saved has no name, so there is no template to reopen from — the
+        // caller stands the mode's bare scene back up instead of guessing at one.
+        assertTrue(BuilderOpenRequest.fromWorldData("", "carriage_room", "", "").isEmpty());
+        assertTrue(BuilderOpenRequest.fromWorldData(null, "carriage_room", "", "").isEmpty());
+        // And an unreadable record is a refusal, not a fallback to some other kind.
+        assertTrue(BuilderOpenRequest.fromWorldData("thing", "not_a_sub_type", "", "").isEmpty());
+        assertTrue(BuilderOpenRequest.fromWorldData("thing", "parts", "not_a_part", "").isEmpty());
+    }
+
+    private static BuilderOpenRequest fromWorld(String name, String subTypeToken, String partKindId,
+                                                String trackKindId) {
+        Optional<BuilderOpenRequest> built =
+                BuilderOpenRequest.fromWorldData(name, subTypeToken, partKindId, trackKindId);
+        assertTrue(built.isPresent(), "expected a request for recorded '" + name + "'");
+        return built.get();
     }
 
     private static BuilderOpenRequest request(BuilderNewOptions.SubType subType, String id,
