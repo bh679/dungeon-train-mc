@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.client.builder;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.builder.BuilderGhostMode;
 import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.train.CarriageDims;
 import net.minecraft.client.Minecraft;
@@ -98,7 +99,11 @@ public final class BuilderTrackGhostRenderer {
         Minecraft mc = Minecraft.getInstance();
         TrackKind kind = ClientTrackGhost.kind();
         BoundingBox plot = ClientTrackGhost.plot();
-        if (kind == null || plot == null || mc.level == null) {
+        // The same scenery control the carriage and room ghosts read. Without it the pause-menu
+        // button was inert in the one mode whose whole surroundings are ghosts: it relabelled and
+        // nothing on screen changed.
+        if (kind == null || plot == null || mc.level == null
+                || BuilderGhostCellsState.mode() != BuilderGhostMode.GHOST) {
             cells = Map.of();
             return;
         }

@@ -121,7 +121,12 @@ public final class BuilderGhostCells {
     public static Cells lift(ServerLevel level, CarriageDims dims, BuilderMode mode,
                              BuilderNewOptions.SubType subType, int carriages,
                              BuilderGhostMode ghostMode, Cells previous) {
-        if (mode == null || carriages <= 0 || ghostMode == null) {
+        // No carriage-count gate. Tracks & Tunnels and Train Dimensions park none, and gating on
+        // that made the control inert in both: the mode was stored, the button relabelled, and
+        // nothing in the world moved. Each piece below states its own requirement instead — the
+        // shell needs the one parked carriage, the pads need a mode that has a group, and the track
+        // needs a mode that has scenery at all.
+        if (mode == null || ghostMode == null) {
             return Cells.EMPTY;
         }
         if (!ghostMode.lifts()) {
@@ -133,6 +138,18 @@ public final class BuilderGhostCells {
         // Leaving SOLID: the carriages it stood in the empty slots are real blocks, and the ghost
         // that replaces them is drawn from the parked one. Left standing they would be drawn over.
         clearSolidSlots(level, dims, mode, carriages);
+        // Put the shell back before reading it, exactly as the track is restored above.
+        //
+        // Every lift is a re-read of the world, and a second one finds what the first one took: the
+        // skin is already air, the sweep records nothing, and the record — the only copy of those
+        // blocks — is replaced with an empty one. Solid then has nothing to put back, and the
+        // carriage never gets its walls again. That is a two-click path (Ghost is the default and
+        // the button cycles Ghost -> None -> Solid), so the record was being destroyed on the way
+        // to the mode that needs it.
+        //
+        // The pads never hit this because liftPad re-stamps before capturing, and the track never
+        // hits it because restoreTrack runs first. The shell was the one with neither.
+        restoreShell(level, dims, carriages, previous);
         // The pads and the track go whatever is parked; the shell only makes sense around the
         // single carriage a room is authored in. See each lift for why they answer differently.
         return new Cells(liftShell(level, dims, mode, subType, carriages),
@@ -162,11 +179,7 @@ public final class BuilderGhostCells {
                     + "({} carriage(s))", carriages);
             return;
         }
-        if (carriages == 1 && !cells.shell().isEmpty()) {
-            BoundingBox parked = BuilderBounds.buildVolumes(carriages, dims).get(0);
-            restoreAt(level, cells.shell(),
-                    new BlockPos(parked.minX(), parked.minY(), parked.minZ()));
-        }
+        restoreShell(level, dims, carriages, cells);
         LOGGER.info("[DungeonTrain] Builder scenery restore: shell {}, pads {}+{}, track {}",
                 cells.shell().size(), cells.backPad().size(), cells.frontPad().size(),
                 cells.track().size());
@@ -280,6 +293,24 @@ public final class BuilderGhostCells {
      * fixed by the platform rather than by the parked group, so it means the same place whatever the
      * carriage count has changed to.</p>
      */
+    /**
+     * Put back just the carriage skin, from what was taken.
+     *
+     * <p>The shell's counterpart to {@link #restoreTrack}, and needed for the same reason: a lift is
+     * a re-read of the world, so anything already lifted has to be standing again before the next
+     * one looks at it, or the re-read records nothing and the only copy is lost.</p>
+     *
+     * <p>Only for a one-carriage build — the shell is only ever lifted around the single carriage a
+     * room is authored in, so there is no other layout for this to be wrong about.</p>
+     */
+    public static void restoreShell(ServerLevel level, CarriageDims dims, int carriages, Cells cells) {
+        if (cells == null || carriages != 1 || cells.shell().isEmpty()) {
+            return;
+        }
+        BoundingBox parked = BuilderBounds.buildVolumes(carriages, dims).get(0);
+        restoreAt(level, cells.shell(), new BlockPos(parked.minX(), parked.minY(), parked.minZ()));
+    }
+
     public static void restoreTrack(ServerLevel level, CarriageDims dims, Cells cells) {
         if (cells != null && !cells.track().isEmpty()) {
             restoreAt(level, cells.track(), trackOrigin(dims));
@@ -427,6 +458,10 @@ public final class BuilderGhostCells {
         if (!BuilderWorldSetup.hasScenery(mode)) {
             return Map.of();
         }
+        // Never the build itself. Tracks & Tunnels authors a plot that sits *in* the corridor, so a
+        // sweep of the track rows runs straight through it — ghosting the line there would erase the
+        // template being edited, which is the one thing in the world that must not be touched.
+        List<BoundingBox> volumes = BuilderBounds.volumesFor(level);
         TrackGeometry g = TrackGeometry.from(dims, BuilderWorldLayout.TRAIN_Y);
         BlockPos origin = trackOrigin(dims);
         Map<BlockPos, BlockState> lifted = new LinkedHashMap<>();
@@ -437,7 +472,7 @@ public final class BuilderGhostCells {
                 for (int z = g.trackZMin(); z <= g.trackZMax(); z++) {
                     probe.set(x, y, z);
                     BlockState state = level.getBlockState(probe);
-                    if (state.isAir()) {
+                    if (state.isAir() || BuilderBounds.isInsideBuild(probe, volumes)) {
                         continue;
                     }
                     lifted.put(new BlockPos(x - origin.getX(), y - origin.getY(),
