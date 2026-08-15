@@ -24,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
  * <p>The corridor spent a long time not applying this file at all, so nothing — not a test, not a
  * log line — would have noticed it rotting. Now that {@code PortalCarriageBuilder} rolls it, an
  * editor re-save that drops the cells or splits a lock group changes what every portal in every
- * world looks like. Same reasoning as {@code PortalRoomMobsTest.shippedRoomStillHasItsMobs}: pin the
+ * world looks like. Same reasoning as {@code DimensionalCarriageMobsTest.shippedRoomStillHasItsMobs}: pin the
  * data, not just the code.</p>
  */
 final class PortalCorridorVariantDataTest {

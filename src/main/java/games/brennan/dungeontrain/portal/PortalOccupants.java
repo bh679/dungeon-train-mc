@@ -7,7 +7,7 @@ import java.util.Iterator;
 import java.util.Map;
 
 /**
- * Which entities have been standing in a portal room lately, so vanilla does not reap them.
+ * Which entities have been standing in a dimensional carriage lately, so vanilla does not reap them.
  *
  * <p>The portal world is at the bottom of the world with the train rolling away overhead. To
  * vanilla that is simply a mob a long way from any player, and the despawn rule takes it — a
@@ -17,7 +17,7 @@ import java.util.Map;
  * <p><b>An id registry rather than a position test.</b> The per-tick pair loop already walks the
  * structure to decide whether it is occupied, so noting what it finds there costs nothing, and
  * {@code PortalDespawnEvents} then answers with one map lookup. Asking "is this mob inside any
- * portal room?" at despawn time would instead mean testing every live room's box against every mob
+ * dimensional carriage?" at despawn time would instead mean testing every live room's box against every mob
  * in the world, on a path that runs for every mob in the game.</p>
  *
  * <p><b>Why a window rather than a flag.</b> Protection lapses on its own, so nothing has to notice
@@ -40,18 +40,18 @@ public final class PortalOccupants {
     /** Entity id → game time after which the sighting no longer counts. */
     private static final Map<Integer, Long> PROTECTED = new HashMap<>();
 
-    /** Prune when the registry has grown past anything a set of portal rooms could hold. */
+    /** Prune when the registry has grown past anything a set of dimensional carriages could hold. */
     private static final int PRUNE_THRESHOLD = 256;
 
     private PortalOccupants() {}
 
-    /** Note that this entity is in a portal room right now. */
+    /** Note that this entity is in a dimensional carriage right now. */
     public static void protect(Entity entity, long gameTime) {
         PROTECTED.put(entity.getId(), gameTime + GRACE_TICKS);
         if (PROTECTED.size() > PRUNE_THRESHOLD) prune(gameTime);
     }
 
-    /** True if this entity was in a portal room recently enough to be spared. */
+    /** True if this entity was in a dimensional carriage recently enough to be spared. */
     public static boolean isProtected(int entityId, long gameTime) {
         Long until = PROTECTED.get(entityId);
         if (until == null) return false;

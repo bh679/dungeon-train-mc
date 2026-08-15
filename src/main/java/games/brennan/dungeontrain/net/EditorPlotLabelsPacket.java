@@ -88,7 +88,7 @@ public record EditorPlotLabelsPacket(List<Entry> entries) implements CustomPacke
                 inPlot, isUser, isImported, NO_SIZE, NO_SIZE, NO_SIZE, NO_MODE);
         }
 
-        /** Back-compat shape from before portal rooms carried a mode. */
+        /** Back-compat shape from before dimensional carriages carried a mode. */
         public Entry(BlockPos worldPos, String name, int weight, String category,
                      String modelId, String modelName,
                      boolean inPlot, boolean isUser, boolean isImported,
@@ -99,12 +99,12 @@ public record EditorPlotLabelsPacket(List<Entry> entries) implements CustomPacke
     }
 
     /**
-     * Sentinel for "this model has no authored size" — every category but portal rooms, whose plot
+     * Sentinel for "this model has no authored size" — every category but dimensional carriages, whose plot
      * box the author chooses rather than the kind fixing it.
      */
     public static final int NO_SIZE = -1;
 
-    /** Sentinel for "this model has no mode row" — everything but a portal room. */
+    /** Sentinel for "this model has no mode row" — everything but a dimensional carriage. */
     public static final String NO_MODE = "";
 
     public static final Type<EditorPlotLabelsPacket> TYPE =

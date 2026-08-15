@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * What an {@link PortalRoomMode#ENDLESS_OPEN} copy is allowed to write.
+ * What an {@link DimensionalCarriageMode#ENDLESS_OPEN} copy is allowed to write.
  *
  * <p>Endless Open repeats a floor and a roof and nothing between them. It used to get there by
  * stamping the whole room and stripping the interior back out, which placed and <i>filled</i> every
@@ -29,18 +29,18 @@ class PortalOpenTileWriteMaskTest {
 
     private static final BlockPos ORIGIN = new BlockPos(200, -60, -30);
 
-    private static PortalStructure structure(PortalRoomMode mode, Vec3i roomSize) {
-        return PortalStructure.withMode(ORIGIN, "default", roomSize, mode, PortalRoomTiling.base());
+    private static PortalStructure structure(DimensionalCarriageMode mode, Vec3i roomSize) {
+        return PortalStructure.withMode(ORIGIN, "default", roomSize, mode, DimensionalCarriageTiling.base());
     }
 
     /** The room boxes worth sweeping — the built-in room, the new floors, and a tall one. */
     private static Vec3i[] roomSizes() {
         CarriageDims dims = CarriageDims.DEFAULT;
         return new Vec3i[]{
-            PortalRoomLayout.builtInSize(dims),                       // 11 x 7 x 13
-            PortalRoomLayout.minSize(dims),                           // 5 x 7 x 9 — the new width floor
-            new Vec3i(PortalRoomLayout.MIN_LENGTH, PortalRoomLayout.MIN_HEIGHT, 9),
-            new Vec3i(PortalRoomLayout.MAX_LENGTH, PortalRoomLayout.MAX_HEIGHT, 15),
+            DimensionalCarriageLayout.builtInSize(dims),                       // 11 x 7 x 13
+            DimensionalCarriageLayout.minSize(dims),                           // 5 x 7 x 9 — the new width floor
+            new Vec3i(DimensionalCarriageLayout.MIN_LENGTH, DimensionalCarriageLayout.MIN_HEIGHT, 9),
+            new Vec3i(DimensionalCarriageLayout.MAX_LENGTH, DimensionalCarriageLayout.MAX_HEIGHT, 15),
         };
     }
 
@@ -48,8 +48,8 @@ class PortalOpenTileWriteMaskTest {
     @DisplayName("Endless Open masks every interior cell out of the write, and no floor or roof cell")
     void endlessOpen_masksTheInteriorOnly() {
         for (Vec3i size : roomSizes()) {
-            PortalStructure structure = structure(PortalRoomMode.ENDLESS_OPEN, size);
-            PortalCorridorMask write = PortalRoomTiler.writeMaskFor(
+            PortalStructure structure = structure(DimensionalCarriageMode.ENDLESS_OPEN, size);
+            PortalCorridorMask write = DimensionalCarriageTiler.writeMaskFor(
                 structure, PortalCorridorMask.NONE, ORIGIN, size);
 
             for (int x = 0; x < size.getX(); x++) {
@@ -78,11 +78,11 @@ class PortalOpenTileWriteMaskTest {
     @Test
     @DisplayName("The clear mask is never widened — the interior still gets emptied of rock")
     void endlessOpen_leavesTheClearMaskAlone() {
-        Vec3i size = PortalRoomLayout.builtInSize(CarriageDims.DEFAULT);
-        PortalStructure structure = structure(PortalRoomMode.ENDLESS_OPEN, size);
+        Vec3i size = DimensionalCarriageLayout.builtInSize(CarriageDims.DEFAULT);
+        PortalStructure structure = structure(DimensionalCarriageMode.ENDLESS_OPEN, size);
 
         PortalCorridorMask clear = PortalCorridorMask.NONE;
-        PortalCorridorMask write = PortalRoomTiler.writeMaskFor(structure, clear, ORIGIN, size);
+        PortalCorridorMask write = DimensionalCarriageTiler.writeMaskFor(structure, clear, ORIGIN, size);
 
         assertTrue(clear.isEmpty(),
             "widening the clear mask would leave the copy standing in the deepslate it landed in");
@@ -92,13 +92,13 @@ class PortalOpenTileWriteMaskTest {
     @Test
     @DisplayName("Endless Open keeps masking the corridors too — the interior box is added, not substituted")
     void endlessOpen_unionsWithTheCorridorMask() {
-        Vec3i size = PortalRoomLayout.builtInSize(CarriageDims.DEFAULT);
-        PortalStructure structure = structure(PortalRoomMode.ENDLESS_OPEN, size);
+        Vec3i size = DimensionalCarriageLayout.builtInSize(CarriageDims.DEFAULT);
+        PortalStructure structure = structure(DimensionalCarriageMode.ENDLESS_OPEN, size);
 
         // A stand-in for the corridor row's mask, deliberately outside the room box so the two
         // cannot be confused for one another.
         BoundingBox corridor = new BoundingBox(0, 0, 0, 4, 4, 4);
-        PortalCorridorMask write = PortalRoomTiler.writeMaskFor(
+        PortalCorridorMask write = DimensionalCarriageTiler.writeMaskFor(
             structure, PortalCorridorMask.NONE.plus(corridor), ORIGIN, size);
 
         assertTrue(write.covers(2, 2, 2), "the corridor box must survive the union");
@@ -110,12 +110,12 @@ class PortalOpenTileWriteMaskTest {
     @Test
     @DisplayName("Every other mode writes exactly what it clears")
     void otherModes_writeMaskIsTheClearMask() {
-        Vec3i size = PortalRoomLayout.builtInSize(CarriageDims.DEFAULT);
+        Vec3i size = DimensionalCarriageLayout.builtInSize(CarriageDims.DEFAULT);
         PortalCorridorMask clear = PortalCorridorMask.NONE.plus(new BoundingBox(0, 0, 0, 4, 4, 4));
 
-        for (PortalRoomMode mode : PortalRoomMode.values()) {
-            if (mode == PortalRoomMode.ENDLESS_OPEN) continue;
-            PortalCorridorMask write = PortalRoomTiler.writeMaskFor(
+        for (DimensionalCarriageMode mode : DimensionalCarriageMode.values()) {
+            if (mode == DimensionalCarriageMode.ENDLESS_OPEN) continue;
+            PortalCorridorMask write = DimensionalCarriageTiler.writeMaskFor(
                 structure(mode, size), clear, ORIGIN, size);
             // Same object, not merely equal: nothing is added, so nothing is rebuilt.
             assertSame(clear, write, mode + " tiles the whole room and must write all of it");

@@ -4,7 +4,7 @@ import games.brennan.dungeontrain.net.PortalTrainAudioPacket;
 
 /**
  * Client-side cache of the portal structure the player is in, and the engine volume it implies —
- * the audio counterpart to {@link games.brennan.dungeontrain.client.ClientPortalRoomFog}.
+ * the audio counterpart to {@link games.brennan.dungeontrain.client.ClientDimensionalCarriageFog}.
  *
  * <p><b>The rule.</b> A twin corridor is a copy of the carriage the player just walked out of, so it
  * sounds like one: full volume, the same figure {@link TrainEngineSound} gives for being inside a
@@ -66,7 +66,7 @@ public final class ClientPortalTrainAudio {
     }
 
     /**
-     * True when the position is in the portal room — the structure minus its two twin corridors,
+     * True when the position is in the dimensional carriage — the structure minus its two twin corridors,
      * which is the room and every tiled copy of it.
      *
      * <p>The part of a portal that is somewhere else: the corridors are copies of the carriage the

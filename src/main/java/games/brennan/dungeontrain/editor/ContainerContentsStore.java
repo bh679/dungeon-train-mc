@@ -108,7 +108,7 @@ public final class ContainerContentsStore {
      * The plot key a track-side template's pool is stored under — {@code "track:<kind>:<name>"}.
      *
      * <p>Exists so the editor that <b>writes</b> a pool and the placer that <b>reads</b> it derive
-     * the key from one place. They did not, and a portal room's authored contents were being looked
+     * the key from one place. They did not, and a dimensional carriage's authored contents were being looked
      * up under a key that sanitised to a different filename, so every chest in the room rolled
      * nothing.</p>
      */
@@ -433,7 +433,7 @@ public final class ContainerContentsStore {
     /**
      * This store as the JSON text {@link #save} would write.
      *
-     * <p>Public for the same reason {@code TrackVariantBlocks.asJsonText} is: the portal-room resize
+     * <p>Public for the same reason {@code TrackVariantBlocks.asJsonText} is: the dimensional-carriage resize
      * memory carries the pools and links a shrink cropped, and the format they already round-trip
      * through is the right one to carry them in.</p>
      */

@@ -1,15 +1,15 @@
 package games.brennan.dungeontrain.portal;
 
-import games.brennan.dungeontrain.portal.PortalRoomTiling.Tile;
+import games.brennan.dungeontrain.portal.DimensionalCarriageTiling.Tile;
 
 import java.util.List;
 
 /**
- * Where an endless room's extra corridors go — the pure half of {@link PortalRoomExits}.
+ * Where an endless room's extra corridors go — the pure half of {@link DimensionalCarriageExits}.
  *
  * <p>Nothing here knows about Minecraft. A site is a tile plus a role, and the caller turns that
  * into world blocks through {@link PortalStructure#shadowAt}, the same split
- * {@link PortalRoomTiling} makes for the same reason: this is the whole of the placement rule and it
+ * {@link DimensionalCarriageTiling} makes for the same reason: this is the whole of the placement rule and it
  * unit-tests without a NeoForge bootstrap.</p>
  *
  * <h2>Where a site actually stands</h2>
@@ -27,8 +27,8 @@ import java.util.List;
  * moved when you turned your back would be worse than no extra way out at all.</p>
  *
  * <h2>Why Random is denser than On at the same X</h2>
- * <p>{@link PortalRoomExits.Kind#ON} puts a set on a lattice — one anchor per {@code X²} tiles —
- * while {@link PortalRoomExits.Kind#RANDOM} rolls every tile at one in {@code X}. At {@code X = 8}
+ * <p>{@link DimensionalCarriageExits.Kind#ON} puts a set on a lattice — one anchor per {@code X²} tiles —
+ * while {@link DimensionalCarriageExits.Kind#RANDOM} rolls every tile at one in {@code X}. At {@code X = 8}
  * that is one anchor in sixty-four against one in eight. They are deliberately different readings of
  * the same number: the lattice is a promise about the longest walk between exits, the roll is a
  * frequency. An author who wants them to feel alike sets a different {@code X} for each.</p>
@@ -50,7 +50,7 @@ public final class PortalExitSites {
         }
     }
 
-    /** Odds a {@link PortalRoomExits.Kind#RANDOM} site is measured against, as a percentage. */
+    /** Odds a {@link DimensionalCarriageExits.Kind#RANDOM} site is measured against, as a percentage. */
     private static final int PERCENT = 100;
 
     /** Keeps the "is there a site here?" roll from correlating with the "which role?" roll. */
@@ -86,7 +86,7 @@ public final class PortalExitSites {
      * <p>Never the base tile: that is where the pair's own two corridors already stand, and a copy
      * there would be stamped straight over them.</p>
      */
-    public static List<Site> owedAt(PortalRoomExits exits, Tile tile, long seed) {
+    public static List<Site> owedAt(DimensionalCarriageExits exits, Tile tile, long seed) {
         if (exits == null || tile == null || !exits.lays()) return List.of();
         if (Tile.BASE.equals(tile)) return List.of();
 
@@ -115,7 +115,7 @@ public final class PortalExitSites {
     private static List<Site> rolledAt(Tile tile, int every, long seed) {
         if (Math.floorMod(roll(seed, tile, SALT_PRESENT), every) != 0) return List.of();
         boolean entry = Math.floorMod(roll(seed, tile, SALT_ROLE), PERCENT)
-            < PortalRoomExits.ENTRY_SHARE;
+            < DimensionalCarriageExits.ENTRY_SHARE;
         return List.of(new Site(tile, entry ? PortalCarriageRole.ENTRY : PortalCarriageRole.EXIT));
     }
 
@@ -134,16 +134,16 @@ public final class PortalExitSites {
      * from scratch every time the train drifts far enough, so "decided once" has to mean "a pure
      * function of the pair" rather than "remembered".</p>
      *
-     * <p>Only under {@link PortalRoomExits.Kind#RANDOM}, and never at {@code 0}. Hiding the way
+     * <p>Only under {@link DimensionalCarriageExits.Kind#RANDOM}, and never at {@code 0}. Hiding the way
      * onward is only fair when there is something unpredictable to find; see
-     * {@link PortalRoomExits#movesApply}.</p>
+     * {@link DimensionalCarriageExits#movesApply}.</p>
      */
-    public static boolean movesExit(PortalRoomExits exits, long seed) {
+    public static boolean movesExit(DimensionalCarriageExits exits, long seed) {
         if (exits == null) return false;
         int chance = exits.effectiveMoveChance();
-        if (chance <= PortalRoomExits.MOVE_NEVER) return false;
-        if (chance >= PortalRoomExits.MOVE_ALWAYS) return true;
-        return Math.floorMod(mix(seed ^ SALT_MOVE), PortalRoomExits.MOVE_ALWAYS) < chance;
+        if (chance <= DimensionalCarriageExits.MOVE_NEVER) return false;
+        if (chance >= DimensionalCarriageExits.MOVE_ALWAYS) return true;
+        return Math.floorMod(mix(seed ^ SALT_MOVE), DimensionalCarriageExits.MOVE_ALWAYS) < chance;
     }
 
     /**
@@ -165,7 +165,7 @@ public final class PortalExitSites {
      * basement — a way out that drops you out of the world is worse than one that is simply where it
      * has always been.</p>
      */
-    public static Tile relocatedExitTile(PortalRoomExits exits, long seed, int radius) {
+    public static Tile relocatedExitTile(DimensionalCarriageExits exits, long seed, int radius) {
         if (exits == null || !movesExit(exits, seed)) return Tile.BASE;
         for (int ring = 1; ring <= radius; ring++) {
             Tile found = firstExitOnRing(exits, seed, ring);
@@ -181,7 +181,7 @@ public final class PortalExitSites {
      * <p>Ring by ring rather than a sorted sweep of the whole square: it stops at the first hit, and
      * for a densely scattered room that is almost always ring one.</p>
      */
-    private static Tile firstExitOnRing(PortalRoomExits exits, long seed, int ring) {
+    private static Tile firstExitOnRing(DimensionalCarriageExits exits, long seed, int ring) {
         for (int x = -ring; x <= ring; x++) {
             for (int z = -ring; z <= ring; z++) {
                 if (Math.max(Math.abs(x), Math.abs(z)) != ring) continue;

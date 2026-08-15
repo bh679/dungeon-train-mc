@@ -34,7 +34,7 @@ class EditorPlotLabelsRendererTest {
                                                       int weight, int length, int width, int height,
                                                       String mode) {
         return new EditorPlotLabelsPacket.Entry(
-            POS, "default", weight, category, "portal_room", "default",
+            POS, "default", weight, category, "dimensional_carriage", "default",
             inPlot, false, false, length, width, height, mode);
     }
 
@@ -49,7 +49,7 @@ class EditorPlotLabelsRendererTest {
     }
 
     @Test
-    @DisplayName("A portal room in-plot shows name, weight, L/W/H, Walls, Contents, Enter and actions")
+    @DisplayName("A dimensional carriage in-plot shows name, weight, L/W/H, Walls, Contents, Enter and actions")
     void portalInPlot_rowOrder() {
         assertArrayEquals(
             new RowKind[]{RowKind.NAME, RowKind.WEIGHT, RowKind.LENGTH, RowKind.WIDTH,
@@ -230,14 +230,14 @@ class EditorPlotLabelsRendererTest {
     }
 
     @Test
-    @DisplayName("Contents shows on every portal room, whatever the walls do — it is not a sub-mode")
+    @DisplayName("Contents shows on every dimensional carriage, whatever the walls do — it is not a sub-mode")
     void roomContentsRowIsNotGatedOnTheWalls() {
         for (String mode : new String[]{"bedrock_lock", "endless_open", "bedrockless",
                                         "endless_repetition", "endless_repetition/dynamic/tile"}) {
             EditorPlotLabelsPacket.Entry e = entry("PORTALS", true, 1, 11, 13, 7, mode);
             assertTrue(EditorPlotLabelsRenderer.hasRoomContentsRow(e), mode);
         }
-        // …but only for a portal room, and only from inside the plot — the Walls row's own rule.
+        // …but only for a dimensional carriage, and only from inside the plot — the Walls row's own rule.
         assertFalse(EditorPlotLabelsRenderer.hasRoomContentsRow(
             entry("PORTALS", true, 1, 11, 13, 7, EditorPlotLabelsPacket.NO_MODE)));
     }
@@ -261,7 +261,7 @@ class EditorPlotLabelsRendererTest {
     }
 
     @Test
-    @DisplayName("A portal room gets the Contents BUTTON only while its Contents setting is on")
+    @DisplayName("A dimensional carriage gets the Contents BUTTON only while its Contents setting is on")
     void contentsButtonFollowsTheSetting() {
         // Off — the default, and every tag written before the setting existed.
         assertFalse(EditorPlotLabelsRenderer.hasContentsButton(
@@ -360,7 +360,7 @@ class EditorPlotLabelsRendererTest {
     }
 
     @Test
-    @DisplayName("Out of the plot a portal room is just name + weight — no steppers to reach anyway")
+    @DisplayName("Out of the plot a dimensional carriage is just name + weight — no steppers to reach anyway")
     void portalOutOfPlot_hasNoDimensionRows() {
         EditorPlotLabelsPacket.Entry e = entry("PORTALS", false, 1, 11, 13, 7);
         assertArrayEquals(new RowKind[]{RowKind.NAME, RowKind.WEIGHT},
@@ -383,7 +383,7 @@ class EditorPlotLabelsRendererTest {
     @DisplayName("A PORTALS entry with no reported size gets no steppers — nothing to step")
     void portalWithoutSize_hasNoDimensionRows() {
         EditorPlotLabelsPacket.Entry e = new EditorPlotLabelsPacket.Entry(
-            POS, "default", 1, "PORTALS", "portal_room", "default", true, false, false);
+            POS, "default", 1, "PORTALS", "dimensional_carriage", "default", true, false, false);
         assertArrayEquals(new RowKind[]{RowKind.NAME, RowKind.WEIGHT, RowKind.ENTER, RowKind.ACTION},
             EditorPlotLabelsRenderer.rows(e));
     }
@@ -514,8 +514,8 @@ class EditorPlotLabelsRendererTest {
     @DisplayName("A name longer than the Walls label still wins — the widest row sets the width")
     void longNameStillWidensThePanel() {
         EditorPlotLabelsPacket.Entry longName = new EditorPlotLabelsPacket.Entry(
-            POS, "a_very_long_portal_room_variant_name_indeed", 1, "PORTALS",
-            "portal_room", "default", true, false, false, 11, 13, 7, "bedrock_lock");
+            POS, "a_very_long_dimensional_carriage_variant_name_indeed", 1, "PORTALS",
+            "dimensional_carriage", "default", true, false, false, 11, 13, 7, "bedrock_lock");
         double halfW = EditorPlotLabelsRenderer.halfWidth(longName, SIX_PX);
         assertTrue(halfW >= SIX_PX.applyAsInt(longName.name()) * 0.025 / 2.0);
     }

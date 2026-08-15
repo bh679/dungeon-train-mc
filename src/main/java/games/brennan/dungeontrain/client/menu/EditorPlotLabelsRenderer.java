@@ -142,7 +142,7 @@ public final class EditorPlotLabelsRenderer {
     }
 
     /**
-     * What this room does at its walls — portal rooms only, and only while the player is standing in
+     * What this room does at its walls — dimensional carriages only, and only while the player is standing in
      * the plot, on the same reasoning as the dimension rows.
      *
      * <p>Sits directly under them because it is the same kind of fact: a property of the room's box
@@ -155,8 +155,8 @@ public final class EditorPlotLabelsRenderer {
     }
 
     /**
-     * Length / width / height steppers — portal rooms only, and only while the player is standing
-     * in the plot. A portal room is the one plot kind whose box the author chooses, so it is the
+     * Length / width / height steppers — dimensional carriages only, and only while the player is standing
+     * in the plot. A dimensional carriage is the one plot kind whose box the author chooses, so it is the
      * only one with anything to step.
      */
     public static boolean hasDimensionRows(EditorPlotLabelsPacket.Entry entry) {
@@ -191,21 +191,21 @@ public final class EditorPlotLabelsRenderer {
      */
     public static boolean hasCopiesRow(EditorPlotLabelsPacket.Entry entry) {
         return hasModeRow(entry)
-            && games.brennan.dungeontrain.portal.PortalRoomSettings.parse(entry.roomMode())
+            && games.brennan.dungeontrain.portal.DimensionalCarriageSettings.parse(entry.roomMode())
                 .copiesApply();
     }
 
     /** What the Copies row reads, e.g. {@code "Copies: Dynamic"}. */
     public static String copiesLabel(String modeTag) {
-        return "Copies: " + games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag)
+        return "Copies: " + games.brennan.dungeontrain.portal.DimensionalCarriageSettings.parse(modeTag)
             .copies().displayName();
     }
 
     /**
-     * Whether the Contents row shows: on every portal room, unlike Copies.
+     * Whether the Contents row shows: on every dimensional carriage, unlike Copies.
      *
      * <p>Furnishing is not a property of the walls — a sealed room can take a contents template as
-     * readily as a repeating one — so it is gated on being a portal room at all, the same condition
+     * readily as a repeating one — so it is gated on being a dimensional carriage at all, the same condition
      * as the Walls row, and not on what the Walls row currently says.</p>
      */
     public static boolean hasRoomContentsRow(EditorPlotLabelsPacket.Entry entry) {
@@ -214,7 +214,7 @@ public final class EditorPlotLabelsRenderer {
 
     /** What the Contents row reads, e.g. {@code "Contents: Fit"}. */
     public static String roomContentsLabel(String modeTag) {
-        return "Contents: " + games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag)
+        return "Contents: " + games.brennan.dungeontrain.portal.DimensionalCarriageSettings.parse(modeTag)
             .contents().displayName();
     }
 
@@ -227,13 +227,13 @@ public final class EditorPlotLabelsRenderer {
      */
     public static boolean hasExitsRow(EditorPlotLabelsPacket.Entry entry) {
         return hasModeRow(entry)
-            && games.brennan.dungeontrain.portal.PortalRoomSettings.parse(entry.roomMode())
+            && games.brennan.dungeontrain.portal.DimensionalCarriageSettings.parse(entry.roomMode())
                 .exitsApply();
     }
 
     /** What the Exits row reads, e.g. {@code "Exits: Random"}. */
     public static String exitsLabel(String modeTag) {
-        return "Exits: " + games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag)
+        return "Exits: " + games.brennan.dungeontrain.portal.DimensionalCarriageSettings.parse(modeTag)
             .exits().displayName();
     }
 
@@ -246,7 +246,7 @@ public final class EditorPlotLabelsRenderer {
      */
     public static boolean hasExitEveryRow(EditorPlotLabelsPacket.Entry entry) {
         return hasExitsRow(entry)
-            && games.brennan.dungeontrain.portal.PortalRoomSettings.parse(entry.roomMode())
+            && games.brennan.dungeontrain.portal.DimensionalCarriageSettings.parse(entry.roomMode())
                 .exits().lays();
     }
 
@@ -258,9 +258,9 @@ public final class EditorPlotLabelsRenderer {
      * honest way to say which one is in force.</p>
      */
     public static String exitEveryLabel(String modeTag) {
-        games.brennan.dungeontrain.portal.PortalRoomExits exits =
-            games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag).exits();
-        return exits.kind() == games.brennan.dungeontrain.portal.PortalRoomExits.Kind.RANDOM
+        games.brennan.dungeontrain.portal.DimensionalCarriageExits exits =
+            games.brennan.dungeontrain.portal.DimensionalCarriageSettings.parse(modeTag).exits();
+        return exits.kind() == games.brennan.dungeontrain.portal.DimensionalCarriageExits.Kind.RANDOM
             ? "1 in " + exits.every()
             : "Every " + exits.every();
     }
@@ -274,25 +274,25 @@ public final class EditorPlotLabelsRenderer {
      */
     public static boolean hasExitMoveRow(EditorPlotLabelsPacket.Entry entry) {
         return hasExitsRow(entry)
-            && games.brennan.dungeontrain.portal.PortalRoomSettings.parse(entry.roomMode())
+            && games.brennan.dungeontrain.portal.DimensionalCarriageSettings.parse(entry.roomMode())
                 .exits().movesApply();
     }
 
     /** What the moved-exit stepper reads, e.g. {@code "Moved exit: 7/10"}. */
     public static String exitMoveLabel(String modeTag) {
-        return "Moved exit: " + games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag)
+        return "Moved exit: " + games.brennan.dungeontrain.portal.DimensionalCarriageSettings.parse(modeTag)
             .exits().moveChance() + "/10";
     }
 
     /**
      * What the mode row reads, e.g. {@code "Walls: Endless Open"}.
      *
-     * <p>Resolved through {@code PortalRoomMode.parse}, which is total, so a tag hand-edited into
+     * <p>Resolved through {@code DimensionalCarriageMode.parse}, which is total, so a tag hand-edited into
      * {@code weights.json} that nothing recognises shows the default the room will actually behave as
      * rather than the misspelling.</p>
      */
     public static String modeLabel(String modeTag) {
-        return "Walls: " + games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag)
+        return "Walls: " + games.brennan.dungeontrain.portal.DimensionalCarriageSettings.parse(modeTag)
             .mode().displayName();
     }
 
@@ -479,7 +479,7 @@ public final class EditorPlotLabelsRenderer {
             w = Math.max(w, measure.applyAsInt(exitsLabel(entry.roomMode())) * TEXT_SCALE + 2 * PAD_X);
         }
         if (hasExitMoveRow(entry)) {
-            // The longest of the portal-room labels after Walls — the arrows either side leave it
+            // The longest of the dimensional-carriage labels after Walls — the arrows either side leave it
             // only the middle third, so the panel has to be sized for it or it clips.
             w = Math.max(w, measure.applyAsInt(exitMoveLabel(entry.roomMode())) * 3 * TEXT_SCALE
                 + 2 * PAD_X);
@@ -525,7 +525,7 @@ public final class EditorPlotLabelsRenderer {
      * Contents button — opens the per-template allow-list. Gated on the player being inside the
      * plot, and on there being a pool for the toggles to steer.
      *
-     * <p>Carriages always have one. A portal room only has one <b>while its Contents setting is
+     * <p>Carriages always have one. A dimensional carriage only has one <b>while its Contents setting is
      * on</b>: with it Off the room draws nothing, so an allow-list would be a screen full of
      * toggles that change nothing. The setting rides in the room's own mode tag, already on the
      * entry, so the button appears and disappears as the Contents row above it is cycled.</p>
@@ -534,7 +534,7 @@ public final class EditorPlotLabelsRenderer {
         if (!entry.inPlot()) return false;
         if ("CARRIAGES".equals(entry.category())) return true;
         return hasRoomContentsRow(entry)
-            && games.brennan.dungeontrain.portal.PortalRoomSettings.parse(entry.roomMode())
+            && games.brennan.dungeontrain.portal.DimensionalCarriageSettings.parse(entry.roomMode())
                 .contents().furnishes();
     }
 
@@ -733,7 +733,7 @@ public final class EditorPlotLabelsRenderer {
                     }
                     drawCenteredText(ps, buffer, font, "×" + entry.weight(), 0, rCY, WEIGHT_COLOR);
                 }
-                // Room size — portal rooms only. Same [-] N [+] geometry as weight.
+                // Room size — dimensional carriages only. Same [-] N [+] geometry as weight.
                 case LENGTH, WIDTH, HEIGHT -> {
                     CellKind dec = switch (rowKind) {
                         case LENGTH -> CellKind.LENGTH_DEC;

@@ -31,7 +31,7 @@ final class CarriageContentsRegistryFilterTest {
         CarriageContentsRegistry.clear();
     }
 
-    // ---- anyAllowed: the question a portal room asks before pick() can answer it ----
+    // ---- anyAllowed: the question a dimensional carriage asks before pick() can answer it ----
 
     @Test
     @DisplayName("anyAllowed: EMPTY allows everything; a null list is treated as EMPTY")
@@ -67,7 +67,7 @@ final class CarriageContentsRegistryFilterTest {
         }
         // pick() still hands back the built-in default — a carriage must never spawn hollow…
         assertNotNull(CarriageContentsRegistry.pick(0L, 0, allow));
-        // …but anyAllowed reports the truth, so a portal room can decline to place it.
+        // …but anyAllowed reports the truth, so a dimensional carriage can decline to place it.
         assertFalse(CarriageContentsRegistry.anyAllowed(allow));
     }
 

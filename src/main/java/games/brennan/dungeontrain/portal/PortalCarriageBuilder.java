@@ -5,8 +5,8 @@ import games.brennan.dungeontrain.editor.CarriageTemplateStore;
 import games.brennan.dungeontrain.editor.CarriageVariantBlocks;
 import games.brennan.dungeontrain.editor.ContainerContentsPlacement;
 import games.brennan.dungeontrain.editor.ContainerContentsStore;
-import games.brennan.dungeontrain.editor.PortalRoomContentsAllowStore;
-import games.brennan.dungeontrain.editor.PortalRoomTemplateStore;
+import games.brennan.dungeontrain.editor.DimensionalCarriageContentsAllowStore;
+import games.brennan.dungeontrain.editor.DimensionalCarriageTemplateStore;
 import games.brennan.dungeontrain.editor.VariantState;
 import games.brennan.dungeontrain.track.variant.TrackVariantBlocks;
 import games.brennan.dungeontrain.track.variant.TrackKind;
@@ -114,7 +114,7 @@ public final class PortalCarriageBuilder {
     private static final BlockState POCKET_LIGHT = Blocks.SHROOMLIGHT.defaultBlockState();
     /** Solid fill behind the twin's dummy door. */
     private static final BlockState PLUG = Blocks.DEEPSLATE.defaultBlockState();
-    /** {@link PortalRoomMode#BEDROCK_LOCK}'s skin, one block outside the room box. */
+    /** {@link DimensionalCarriageMode#BEDROCK_LOCK}'s skin, one block outside the room box. */
     private static final BlockState LOCK = Blocks.BEDROCK.defaultBlockState();
     /** What a liquid found against a room's outside wall is replaced with — the rock it is cut into. */
     private static final BlockState FLUID_PLUG = Blocks.DEEPSLATE.defaultBlockState();
@@ -714,7 +714,7 @@ public final class PortalCarriageBuilder {
      * A {@code null} {@code gateCtx} skips gating entirely (editor previews / tests). The size is read
      * off the authored template, or the built-in room's when nothing has been authored.</p>
      *
-     * <p>The {@link PortalRoomSettings settings} are read here and then carried on the record rather
+     * <p>The {@link DimensionalCarriageSettings settings} are read here and then carried on the record rather
      * than looked up per tick, so an author saving a different mode while somebody is standing in the
      * room cannot change the walls around them mid-visit. The pair's
      * {@link PortalCorridorKind corridor kind} is drawn here for exactly the same reason, and it is
@@ -725,19 +725,19 @@ public final class PortalCarriageBuilder {
                                                 BlockPos entryOrigin, int pairKey,
                                                 games.brennan.dungeontrain.template.GateContext gateCtx) {
         String roomName = TrackVariantRegistry.pickName(
-            TrackKind.PORTAL_ROOM, level.getSeed(), pairKey, gateCtx);
-        PortalRoomSettings settings = PortalRoomSettings.of(roomName);
+            TrackKind.DIMENSIONAL_CARRIAGE, level.getSeed(), pairKey, gateCtx);
+        DimensionalCarriageSettings settings = DimensionalCarriageSettings.of(roomName);
         // Where this pair stands its exit, decided here with everything else about the pair and then
         // carried on the record — the same promise the mode and the room name make. Re-deciding it
         // per tick, or per re-stamp, would move a player's way out from under them.
-        PortalRoomTiling.Tile exitTile = PortalExitSites.relocatedExitTile(
+        DimensionalCarriageTiling.Tile exitTile = PortalExitSites.relocatedExitTile(
             settings.effectiveExits(),
             PortalExitSites.seedFor(level.getSeed(), pairKey, roomName),
-            PortalRoomTiling.MAX_RADIUS);
+            DimensionalCarriageTiling.MAX_RADIUS);
         return new PortalStructure(entryOrigin, roomName,
-            PortalRoomTemplateStore.sizeOf(level, roomName, dims),
+            DimensionalCarriageTemplateStore.sizeOf(level, roomName, dims),
             settings,
-            PortalRoomTiling.base(), PortalExitCopies.NONE, exitTile,
+            DimensionalCarriageTiling.base(), PortalExitCopies.NONE, exitTile,
             PortalCarriageSelection.corridorKindFor(level, pairKey));
     }
 
@@ -771,9 +771,9 @@ public final class PortalCarriageBuilder {
 
         stampRoomAt(level, roomOrigin, dims, structure.roomName(), roomSize, /*relight*/ true,
             PortalCorridorMask.NONE, PortalCorridorMask.NONE,
-            structure.variantIndexFor(PortalRoomTiling.Tile.BASE, pairKey), pairKey,
-            PortalRoomTiling.Tile.BASE,
-            PortalRoomMobs.liveCount(level, footprintOf(level, structure, dims), pairKey),
+            structure.variantIndexFor(DimensionalCarriageTiling.Tile.BASE, pairKey), pairKey,
+            DimensionalCarriageTiling.Tile.BASE,
+            DimensionalCarriageMobs.liveCount(level, footprintOf(level, structure, dims), pairKey),
             structure.settings().contents());
 
         // Before the corridors, so each mode acts on the room as it actually turned out rather than
@@ -783,12 +783,12 @@ public final class PortalCarriageBuilder {
         // PortalCorridorMask#facedBy. Bedrock Lock wraps the room; the endless modes settle its own
         // side walls, which for Endless Open means taking them away so there is somewhere to walk
         // out to. Bedrockless writes nothing around the room at all and sweeps the space instead.
-        if (structure.mode() == PortalRoomMode.BEDROCK_LOCK) {
+        if (structure.mode() == DimensionalCarriageMode.BEDROCK_LOCK) {
             bedrockSkin(level, roomOrigin, roomSize);
         } else if (structure.mode().clearsSurroundings()) {
             clearVoidAround(level, structure, dims);
         } else if (structure.mode().tiles()) {
-            PortalRoomTiler.refreshFacesAround(level, dims, structure, PortalRoomTiling.Tile.BASE);
+            DimensionalCarriageTiler.refreshFacesAround(level, dims, structure, DimensionalCarriageTiling.Tile.BASE);
         }
 
         stampCorridors(level, structure, dims, pairKey);
@@ -866,7 +866,7 @@ public final class PortalCarriageBuilder {
 
     /**
      * Lay one of an endless room's extra corridors — the way back to the train that
-     * {@link PortalRoomExits} scatters through the tiling.
+     * {@link DimensionalCarriageExits} scatters through the tiling.
      *
      * <p>Nothing here is new geometry. The site's anchor tile names a copy of the room, the shadow
      * structure puts the pair's own layout onto that copy, and one half of it is stamped: an
@@ -916,7 +916,7 @@ public final class PortalCarriageBuilder {
     }
 
     /**
-     * Wrap a room in one block of bedrock — {@link PortalRoomMode#BEDROCK_LOCK}.
+     * Wrap a room in one block of bedrock — {@link DimensionalCarriageMode#BEDROCK_LOCK}.
      *
      * <p><b>Outside the box, not instead of it.</b> The skin sits one block beyond each face, so an
      * authored room still looks like whatever its author built; the bedrock is only ever met by
@@ -962,13 +962,13 @@ public final class PortalCarriageBuilder {
     }
 
     /**
-     * The box a {@link PortalRoomMode#BEDROCKLESS} room's emptiness fills: the room grown by
-     * {@link PortalRoomLayout#VOID_CLEARANCE} on both horizontal axes, never smaller than the
+     * The box a {@link DimensionalCarriageMode#BEDROCKLESS} room's emptiness fills: the room grown by
+     * {@link DimensionalCarriageLayout#VOID_CLEARANCE} on both horizontal axes, never smaller than the
      * structure standing in it.
      *
      * <p><b>The fog is derived from the same clearance, not from this box.</b>
      * {@code PortalCarriageEvents} pads the room's own bounds by {@link PortalStructure#fogPad},
-     * which is {@link PortalRoomLayout#VOID_CLEARANCE} — the one figure both sides read, so the space
+     * which is {@link DimensionalCarriageLayout#VOID_CLEARANCE} — the one figure both sides read, so the space
      * swept and the space fogged cannot drift apart. Where they differ at all it is because this box
      * is additionally held open to the structure's footprint, which only makes the swept space the
      * larger of the two: the fog never claims ground that was not cleared.</p>
@@ -978,7 +978,7 @@ public final class PortalCarriageBuilder {
      * stopped short of them would leave the structure poking out of its own void — and, because the
      * fog reads this box too, would un-fog somebody standing in a corridor.</p>
      *
-     * <p>See {@link PortalRoomLayout#VOID_CLEARANCE} for why the clearance has no vertical term at
+     * <p>See {@link DimensionalCarriageLayout#VOID_CLEARANCE} for why the clearance has no vertical term at
      * all. What it does have is a <b>floor</b>: the sweep starts at the structure's own floor row and
      * leaves everything below it, one row shallower than {@link #footprintOf}. Two reasons, and the
      * second is the one that matters. It gives the emptiness something to stand on, so walking out of
@@ -993,7 +993,7 @@ public final class PortalCarriageBuilder {
         BlockPos roomOrigin = structure.roomOrigin(dims, layout);
         Vec3i roomSize = structure.roomSize();
         BoundingBox footprint = footprintOf(level, structure, dims);
-        int c = PortalRoomLayout.VOID_CLEARANCE;
+        int c = DimensionalCarriageLayout.VOID_CLEARANCE;
 
         return new BoundingBox(
             Math.min(footprint.minX(), roomOrigin.getX() - c),
@@ -1050,7 +1050,7 @@ public final class PortalCarriageBuilder {
     }
 
     /**
-     * Empty the space around a {@link PortalRoomMode#BEDROCKLESS} room — its answer to
+     * Empty the space around a {@link DimensionalCarriageMode#BEDROCKLESS} room — its answer to
      * {@link #bedrockSkin}.
      *
      * <p><b>Usually free.</b> Twins stand in the basement under the world's bedrock, which generation
@@ -1101,7 +1101,7 @@ public final class PortalCarriageBuilder {
      * skin sit in.
      *
      * <p><b>One definition, read by both sides.</b> {@link #eraseTwin} sweeps exactly this, and
-     * {@code PortalRoomTiler} tests candidate copies against it so no two pairs stamp into each
+     * {@code DimensionalCarriageTiler} tests candidate copies against it so no two pairs stamp into each
      * other. A structure that wrote outside its own footprint would leave blocks its erase never
      * reaches; one that claimed more than it wrote would refuse copies for no reason. Deriving both
      * from here is what stops the two drifting apart.</p>
@@ -1172,7 +1172,7 @@ public final class PortalCarriageBuilder {
      * leads out of it, which is what lets a player cross the room and rejoin the train facing the
      * same way they set off.</p>
      *
-     * <p>The authored {@code portal_room} template when one exists at exactly {@code size}, the
+     * <p>The authored {@code dimensional_carriage} template when one exists at exactly {@code size}, the
      * built-in geometry when it does not — the same arrangement {@link #stampCorridorFrom} has, and
      * what gives the editor a non-empty plot to author the first real room in. {@code size} is
      * passed rather than re-derived so the caller's seal ring and erase box cannot disagree with
@@ -1190,22 +1190,22 @@ public final class PortalCarriageBuilder {
      * {@link #stampRoomAt} plus the room's authored block-variant sidecar, rolled at
      * {@code variantIndex}.
      *
-     * <p><b>Portal rooms could always author variants and never actually got them.</b> The editor has
+     * <p><b>Dimensional carriages could always author variants and never actually got them.</b> The editor has
      * been saving a {@code .variants.json} beside every room, and nothing on the world side ever read
      * it — the template was stamped raw, so per-cell variant picks, container-contents pools and
      * linked loot prefabs all sat dead on disk. This is the read, done the same way
      * {@code TunnelPlacer} does it for tunnels.</p>
      *
      * <p>{@code variantIndex} is what makes one pair's room differ from another pair's, and what makes
-     * one copy of a room differ from another under {@link PortalRoomCopies#DYNAMIC} and identical
-     * under {@link PortalRoomCopies#EXACT} — see {@code PortalStructure.variantIndexFor}.</p>
+     * one copy of a room differ from another under {@link DimensionalCarriageCopies#DYNAMIC} and identical
+     * under {@link DimensionalCarriageCopies#EXACT} — see {@code PortalStructure.variantIndexFor}.</p>
      */
     /**
      * {@link #stampRoomAt} with the two jobs a mask does held apart.
      *
      * <p>{@code clearMask} is what must be left <b>standing</b>; {@code writeMask} is what must be
      * left <b>empty</b>. They are the same mask everywhere but an
-     * {@link PortalRoomMode#ENDLESS_OPEN} tile, which adds its own interior to the write mask so the
+     * {@link DimensionalCarriageMode#ENDLESS_OPEN} tile, which adds its own interior to the write mask so the
      * stamp lays a floor and a roof and nothing between them.</p>
      *
      * <p>They cannot be one mask. A room lands in solid rock at the world floor, so the interior has
@@ -1221,8 +1221,8 @@ public final class PortalCarriageBuilder {
     public static void stampRoomAt(ServerLevel level, BlockPos roomOrigin, CarriageDims dims,
                                    String roomName, Vec3i size, boolean relight,
                                    PortalCorridorMask clearMask, PortalCorridorMask writeMask,
-                                   int variantIndex, int pairKey, PortalRoomTiling.Tile tile,
-                                   int liveMobCount, PortalRoomContents contents) {
+                                   int variantIndex, int pairKey, DimensionalCarriageTiling.Tile tile,
+                                   int liveMobCount, DimensionalCarriageContents contents) {
         stampRoomAt(level, roomOrigin, dims, roomName, size, relight, clearMask, writeMask);
         // Contents first, the room's own authored cells second. Where the two overlap the author's
         // explicit entry is the one that should stand — and applyRoomVariants evicts a live block
@@ -1235,7 +1235,7 @@ public final class PortalCarriageBuilder {
     /**
      * Furnish a room from the ordinary contents pool, when its author asked for it.
      *
-     * <p><b>Off unless asked.</b> {@link PortalRoomContents#OFF} is the default and returns before
+     * <p><b>Off unless asked.</b> {@link DimensionalCarriageContents#OFF} is the default and returns before
      * rolling anything, so a room authored before this existed stamps exactly as it did.</p>
      *
      * <h2>What the roll is a function of</h2>
@@ -1264,8 +1264,8 @@ public final class PortalCarriageBuilder {
     private static void applyRoomContents(ServerLevel level, BlockPos roomOrigin, Vec3i size,
                                           String roomName, PortalCorridorMask writeMask,
                                           int variantIndex, int pairKey,
-                                          PortalRoomContents contents) {
-        PortalRoomContents setting = contents == null ? PortalRoomContents.DEFAULT : contents;
+                                          DimensionalCarriageContents contents) {
+        DimensionalCarriageContents setting = contents == null ? DimensionalCarriageContents.DEFAULT : contents;
         if (!setting.furnishes()) return;
 
         Vec3i interior = new Vec3i(size.getX() - 2, size.getY() - 2, size.getZ() - 2);
@@ -1274,12 +1274,12 @@ public final class PortalCarriageBuilder {
 
         // What this room is allowed to draw. Absent sidecar = everything, which is what a furnished
         // room did before authors could steer it.
-        CarriageContentsAllowList allow = PortalRoomContentsAllowStore.getOrEmpty(roomName);
+        CarriageContentsAllowList allow = DimensionalCarriageContentsAllowStore.getOrEmpty(roomName);
         // An all-excluded list means an empty room, not the built-in default. CarriageContentsRegistry
         // .pick would fall back to DEFAULT here — right for a carriage, which must never spawn
         // hollow; wrong for a room whose author turned every template off on purpose.
         if (!CarriageContentsRegistry.anyAllowed(allow)) {
-            LOGGER.info("[DungeonTrain] Portal room '{}' excludes every contents template — "
+            LOGGER.info("[DungeonTrain] Dimensional carriage '{}' excludes every contents template — "
                 + "left unfurnished.", roomName);
             return;
         }
@@ -1296,7 +1296,7 @@ public final class PortalCarriageBuilder {
         Vec3i box = template.get().getSize();
         List<BlockPos> anchors = setting.anchorsIn(interior, box);
         if (anchors.isEmpty()) {
-            LOGGER.info("[DungeonTrain] Portal room contents '{}' ({}x{}x{}) do not qualify for a "
+            LOGGER.info("[DungeonTrain] Dimensional carriage contents '{}' ({}x{}x{}) do not qualify for a "
                 + "{}x{}x{} interior under {} — room left unfurnished.",
                 picked.id(), box.getX(), box.getY(), box.getZ(),
                 interior.getX(), interior.getY(), interior.getZ(), setting.id());
@@ -1324,25 +1324,25 @@ public final class PortalCarriageBuilder {
      * through {@code ContainerContentsPlacement} so chests roll their pool and signs keep their
      * authored NBT.</p>
      *
-     * <p>Mob entries go through {@link PortalRoomMobs}, which spawns them and — just as importantly —
+     * <p>Mob entries go through {@link DimensionalCarriageMobs}, which spawns them and — just as importantly —
      * takes them away when the copy they are standing in retires. They used to be dropped with a
-     * warning, on the grounds that a portal room repeats and a mob entry spawning per copy would be a
+     * warning, on the grounds that a dimensional carriage repeats and a mob entry spawning per copy would be a
      * spawner with a hundred outlets. That was true of spawning alone; it is the paired reap that
      * makes it safe, not the spawn being clever.</p>
      */
     private static void applyRoomVariants(ServerLevel level, BlockPos roomOrigin, String roomName,
                                           Vec3i size, PortalCorridorMask mask, int variantIndex,
-                                          int pairKey, PortalRoomTiling.Tile tile,
+                                          int pairKey, DimensionalCarriageTiling.Tile tile,
                                           int liveMobCount) {
-        TrackVariantBlocks sidecar = TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, roomName, size);
+        TrackVariantBlocks sidecar = TrackVariantBlocks.loadFor(TrackKind.DIMENSIONAL_CARRIAGE, roomName, size);
         if (sidecar.isEmpty()) return;
 
         long worldSeed = level.getSeed();
         // Must be the key the EDITOR saved the pool under, or the authored contents are looked up in
         // a file that does not exist and every chest in the room rolls nothing. ContainerContentsStore
-        // takes "track:<kind>:<name>" and sanitises the colons into a filename, so a portal room's
-        // pool lives at containers/track_portal_room_<name>.contents.json.
-        String plotKey = ContainerContentsStore.trackPlotKey(TrackKind.PORTAL_ROOM, roomName);
+        // takes "track:<kind>:<name>" and sanitises the colons into a filename, so a dimensional carriage's
+        // pool lives at containers/track_dimensional_carriage_<name>.contents.json.
+        String plotKey = ContainerContentsStore.trackPlotKey(TrackKind.DIMENSIONAL_CARRIAGE, roomName);
         // Counted once for the whole stamp rather than per cell: it is an entity query over the
         // structure, and the cap only has to be approximately right — it is a backstop against a
         // badly-weighted room, not an exact quota.
@@ -1363,7 +1363,7 @@ public final class PortalCarriageBuilder {
                 // authored block left unsupported here simply stays put, which is the right trade for
                 // a room the author built.
                 SilentBlockOps.setBlockSilentNoCascade(level, world, Blocks.AIR.defaultBlockState(), null);
-                if (PortalRoomMobs.spawn(level, world, picked, pairKey, tile, worldSeed, live)) {
+                if (DimensionalCarriageMobs.spawn(level, world, picked, pairKey, tile, worldSeed, live)) {
                     live++;
                 }
                 continue;
@@ -1375,7 +1375,7 @@ public final class PortalCarriageBuilder {
             }
             // The contents pass may have put a filled chest in this cell a moment ago. Writing over a
             // live block entity runs its onRemove and sprays the loot across the floor — the same
-            // hazard PortalClear and PortalRoomTiler.stampTile were both written for. Evict first.
+            // hazard PortalClear and DimensionalCarriageTiler.stampTile were both written for. Evict first.
             //
             // The eviction, and NOT a clear to air. This used to call PortalClear.clearCell, which
             // writes AIR with UPDATE_ALL; markAndNotifyBlock strips UPDATE_SUPPRESS_DROPS out of the
@@ -1421,7 +1421,7 @@ public final class PortalCarriageBuilder {
         clearIntruders(level, roomOrigin, size);
         plugFluidsAround(level, roomOrigin, size);
 
-        Optional<StructureTemplate> stored = PortalRoomTemplateStore.get(level, roomName, dims);
+        Optional<StructureTemplate> stored = DimensionalCarriageTemplateStore.get(level, roomName, dims);
         if (stored.isEmpty()) {
             stampRoomBuiltIn(level, roomOrigin, size, relight, writeMask);
             return;
@@ -1521,7 +1521,7 @@ public final class PortalCarriageBuilder {
      * <p>Safe against the mobs a player deliberately leads in, because this only ever runs on a
      * volume that is about to be cleared to air anyway: a fresh structure, or a copy being stamped
      * into solid rock. A copy that already has somebody's villager standing in it is never
-     * re-stamped — {@code PortalRoomTiler} refuses to retire a copy anybody is in, and a structure
+     * re-stamped — {@code DimensionalCarriageTiler} refuses to retire a copy anybody is in, and a structure
      * with a player inside is pinned against re-stamping altogether.</p>
      *
      * <p><b>What DT itself placed is spared</b>, by the same contents tag the train's runway sweep
@@ -1654,8 +1654,8 @@ public final class PortalCarriageBuilder {
      * <p>The fill used to be {@link #POCKET_SHELL}, which is the built-in room's palette and belongs
      * to nothing else in an authored one. A corridor's mouth then read as a slab of polished
      * blackstone dropped into somebody else's library — roughly fifty blocks of it per corridor, and
-     * an endless room on {@link PortalRoomExits.Kind#RANDOM} scatters a corridor every few tiles.
-     * {@link PortalRoomTiler#closeFace} had exactly this problem at the tiling boundary and solved it
+     * an endless room on {@link DimensionalCarriageExits.Kind#RANDOM} scatters a corridor every few tiles.
+     * {@link DimensionalCarriageTiler#closeFace} had exactly this problem at the tiling boundary and solved it
      * the same way: what closes a face should be what the player would have seen had the room simply
      * carried on. See {@link #sealFillFor} for the three tiers.</p>
      *
@@ -1694,12 +1694,12 @@ public final class PortalCarriageBuilder {
      *       is a sculk floor, a sculk ceiling and pillars, with open sides on purpose — so it gets a
      *       plane of its own sculk rather than of a palette it has nothing to do with. This does
      *       invent a wall the author never drew, which is unavoidable: unlike
-     *       {@link PortalRoomTiler#closeFace}, this plane cannot be left open.</li>
+     *       {@link DimensionalCarriageTiler#closeFace}, this plane cannot be left open.</li>
      *   <li><b>The built-in palette</b>, exactly as before, if neither is a block that can stand in a
      *       wall. Never reached by any shipped room, and here so that no path can leave air.</li>
      * </ol>
      *
-     * <p>Each candidate is gated by {@link PortalRoomTiler#usableAsFill} — the same test the face
+     * <p>Each candidate is gated by {@link DimensionalCarriageTiler#usableAsFill} — the same test the face
      * fill uses, and for the same reasons: air closes nothing, a copied block entity plants empty
      * chests along the boundary, and a copied stair or torch keeps the facing it had and leaves a
      * hole besides.</p>
@@ -1709,11 +1709,11 @@ public final class PortalCarriageBuilder {
                                           PortalCarriageRole role, int y, int z, int floorY) {
         BlockPos wall = sealFillSource(baseRoomOrigin, roomOrigin, roomSize, role, y, z);
         BlockState wallState = level.getBlockState(wall);
-        if (PortalRoomTiler.usableAsFill(level, wall, wallState)) return wallState;
+        if (DimensionalCarriageTiler.usableAsFill(level, wall, wallState)) return wallState;
 
         BlockPos floor = wall.atY(baseRoomOrigin.getY());
         BlockState floorState = level.getBlockState(floor);
-        if (PortalRoomTiler.usableAsFill(level, floor, floorState)) return floorState;
+        if (DimensionalCarriageTiler.usableAsFill(level, floor, floorState)) return floorState;
 
         return y == floorY ? POCKET_FLOOR : POCKET_SHELL;
     }
@@ -1735,7 +1735,7 @@ public final class PortalCarriageBuilder {
      * {@code stampPairStructure} stamps the base room and <i>then</i> the corridors, so a pair whose
      * exit has moved seals against a tile the tiling has not reached yet; reading beside it would
      * copy raw basement rock. Every tile is the same room, which is the argument
-     * {@link PortalRoomTiler#closeFace} already makes, so the base room answers for all of them and
+     * {@link DimensionalCarriageTiler#closeFace} already makes, so the base room answers for all of them and
      * is the one copy guaranteed to be there. The shadow differs from it by a pure X/Z translation,
      * which is all this subtracts.</p>
      */

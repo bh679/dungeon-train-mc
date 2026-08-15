@@ -37,8 +37,8 @@ import java.util.Optional;
  *
  * <h2>Why this is generic and its callers are not</h2>
  * <p>There are two of these on disk and they differ by nothing but their directory: carriage shells
- * ({@link CarriageVariantContentsAllowStore}, {@code templates/}) and portal rooms
- * ({@link PortalRoomContentsAllowStore}, {@code portals/room/}). The loading, caching, JSON and
+ * ({@link CarriageVariantContentsAllowStore}, {@code templates/}) and dimensional carriages
+ * ({@link DimensionalCarriageContentsAllowStore}, {@code portals/room/}). The loading, caching, JSON and
  * dev-mode source-tree promote are the same problem in both, and were worth having once. The typed
  * facades stay because a {@code CarriageVariant} and a room name are not interchangeable and callers
  * should not be able to pass one where the other belongs.</p>

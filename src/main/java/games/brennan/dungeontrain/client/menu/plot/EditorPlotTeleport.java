@@ -56,7 +56,7 @@ public final class EditorPlotTeleport {
     }
 
     /**
-     * Build the slash command that steps one axis of a portal room's box in {@code dir}
+     * Build the slash command that steps one axis of a dimensional carriage's box in {@code dir}
      * ({@code "inc"} / {@code "dec"}), or {@code null} for any other category.
      *
      * <p>Position-resolved: the server reads which plot the player is standing in, so no model id
@@ -69,8 +69,8 @@ public final class EditorPlotTeleport {
     }
 
     /**
-     * Build the slash command that steps the portal room the player is standing in to its next
-     * {@code PortalRoomMode}. Null for every other category — nothing else has walls to decide about.
+     * Build the slash command that steps the dimensional carriage the player is standing in to its next
+     * {@code DimensionalCarriageMode}. Null for every other category — nothing else has walls to decide about.
      *
      * <p>Addressed by the plot the player is in rather than by name, like the dimension steppers and
      * for the same reason: the row only exists while they are standing in it.</p>
@@ -158,25 +158,25 @@ public final class EditorPlotTeleport {
     }
 
     /**
-     * {@link #groupMemberWeightCommandFor} for a portal room's sub-variants — same idea one template
+     * {@link #groupMemberWeightCommandFor} for a dimensional carriage's sub-variants — same idea one template
      * layer up, so the same companion panel drives both. {@code parentId == memberId} edits the
      * parent's own share of the draw.
      */
-    public static String portalRoomGroupWeightCommandFor(String parentId, String memberId, String dir) {
+    public static String dimensionalCarriageGroupWeightCommandFor(String parentId, String memberId, String dir) {
         return "dungeontrain editor portals group set-weight " + parentId + " " + memberId + " " + dir;
     }
 
     /**
-     * {@link #groupMemberLevelCommandFor} for a portal room's sub-variants. The room's group verbs
+     * {@link #groupMemberLevelCommandFor} for a dimensional carriage's sub-variants. The room's group verbs
      * live under {@code editor portals group …} with the kind implied, matching
-     * {@link #portalRoomGroupWeightCommandFor}.
+     * {@link #dimensionalCarriageGroupWeightCommandFor}.
      */
-    public static String portalRoomGroupLevelCommandFor(String parentId, String memberId, String sub, String dir) {
+    public static String dimensionalCarriageGroupLevelCommandFor(String parentId, String memberId, String sub, String dir) {
         return "dungeontrain editor portals group " + sub + " " + parentId + " " + memberId + " " + dir;
     }
 
-    /** {@link #groupMemberPhaseCommandFor} for a portal room's sub-variants. */
-    public static String portalRoomGroupPhaseCommandFor(String parentId, String memberId,
+    /** {@link #groupMemberPhaseCommandFor} for a dimensional carriage's sub-variants. */
+    public static String dimensionalCarriageGroupPhaseCommandFor(String parentId, String memberId,
                                                         String phaseToken, String action) {
         return "dungeontrain editor portals group phase " + parentId + " " + memberId
             + " " + phaseToken + " " + action;

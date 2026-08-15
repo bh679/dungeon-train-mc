@@ -1,13 +1,13 @@
 package games.brennan.dungeontrain.client.sound;
 
 /**
- * When the next cave noise should play in a portal room — the timer behind
+ * When the next cave noise should play in a dimensional carriage — the timer behind
  * {@link PortalCaveAmbienceEvents}, and the third rule to read the region
  * {@link ClientPortalTrainAudio} caches.
  *
  * <p><b>Why a timer of our own.</b> Vanilla's {@code BiomeAmbientSoundsHandler} builds its
  * "moodiness" only from blocks whose sky light <i>and</i> block light are both zero, and needs some
- * 6000 ticks of them to fire once. A portal room is under the bedrock, so the sky half is satisfied;
+ * 6000 ticks of them to fire once. A dimensional carriage is under the bedrock, so the sky half is satisfied;
  * the light half never is, because the rooms and corridors are deliberately lit — {@code
  * PortalBuilder} stamps ceiling lights into the shell, {@code PortalCarriageBuilder} floors the
  * crossing zone with sea lanterns. Moodiness therefore <i>falls</i> the whole time a player is down
@@ -42,7 +42,7 @@ public final class ClientPortalCaveAmbience {
     /**
      * Advance one tick and say whether a cave noise should play now.
      *
-     * @param inRoom whether the player is in a portal room this tick
+     * @param inRoom whether the player is in a dimensional carriage this tick
      * @param roll   a fresh value in {@code [0, 1)}, used to pick a gap whenever one is armed
      * @return {@code true} on the tick the gap runs out, at which point the next one is already
      *         rolled

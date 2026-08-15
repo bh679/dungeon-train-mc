@@ -116,7 +116,7 @@ public final class PortalTrainFreeze {
     }
 
     /**
-     * True when somebody outside every portal room is on this train or close enough to watch it.
+     * True when somebody outside every dimensional carriage is on this train or close enough to watch it.
      *
      * <p>The footprint test comes first and is the strict one — a rider is on the train however far
      * the carriage has drifted from anyone else — and the range test covers the ground beside the

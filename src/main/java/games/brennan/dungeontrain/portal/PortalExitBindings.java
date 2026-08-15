@@ -1,7 +1,7 @@
 package games.brennan.dungeontrain.portal;
 
 import games.brennan.dungeontrain.portal.PortalExitSites.Site;
-import games.brennan.dungeontrain.portal.PortalRoomTiling.Tile;
+import games.brennan.dungeontrain.portal.DimensionalCarriageTiling.Tile;
 import games.brennan.dungeontrain.train.CarriageDims;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
@@ -16,7 +16,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * Where each player left an endless room, so the way back in leads where they came out.
  *
  * <p>A carriage has one twin, and without this it is always the original at {@link Tile#BASE}.
- * So a player who found an extra corridor eight rooms out ({@link PortalRoomExits}) and rode it
+ * So a player who found an extra corridor eight rooms out ({@link DimensionalCarriageExits}) and rode it
  * back to the train re-entered at the start and had to walk those eight rooms again — which makes a
  * second way <i>out</i> only half of a second way <i>through</i>.</p>
  *
@@ -99,7 +99,7 @@ public final class PortalExitBindings {
      *
      * <p>What stops the sliding window pulling the rug out. The moment a player steps back onto the
      * train the room has nobody in it, so the window collapses to
-     * {@link PortalRoomTiling#APPROACH_RADIUS} and every distant copy is due to retire — including
+     * {@link DimensionalCarriageTiling#APPROACH_RADIUS} and every distant copy is due to retire — including
      * the one they just walked out of, in the very same tick. Observed live: out through the copy at
      * tile (0, 8) and back in one second later to the original twin, because by then the copy was
      * gone. Sparing a bound copy is what makes "walk back in and you are where you left" survive the
@@ -176,7 +176,7 @@ public final class PortalExitBindings {
      *
      * <p>Public because more than one thing needs to ask now. The original twin never has to — it is
      * stamped in the carriage's own chunk columns, which is the guarantee the crossing rests on — but
-     * a copy is somewhere else, and so is a pair's own exit once {@link PortalRoomExits} has stood it
+     * a copy is somewhere else, and so is a pair's own exit once {@link DimensionalCarriageExits} has stood it
      * beside another tile.</p>
      */
     public static boolean corridorLoaded(ServerLevel level, PortalFrames.Origin origin,

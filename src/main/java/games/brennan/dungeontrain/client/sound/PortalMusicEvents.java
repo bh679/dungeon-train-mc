@@ -16,9 +16,9 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.SelectMusicEvent;
 
 /**
- * Fades the soundtrack out along a portal corridor and keeps the portal room silent — the client
+ * Fades the soundtrack out along a portal corridor and keeps the dimensional carriage silent — the client
  * side of {@link ClientPortalMusic}, and the audio counterpart to
- * {@link games.brennan.dungeontrain.client.PortalRoomFogEvents}.
+ * {@link games.brennan.dungeontrain.client.DimensionalCarriageFogEvents}.
  *
  * <p><b>Two mechanisms, in order.</b> The fade is a gain scale: {@code ClientPortalMusic}'s factor
  * reaches the volume mixin, and this class re-pushes the {@code MUSIC} source volume each tick so
@@ -30,7 +30,7 @@ import net.neoforged.neoforge.client.event.SelectMusicEvent;
  *
  * <p><b>Why the restart is timed here rather than left to vanilla.</b> {@code MusicManager.tick}
  * pins {@code nextSongDelay} to {@code 0} for every tick the selected music is null, so the frame
- * after a player leaves a portal room a fresh track would start immediately — the one thing that is
+ * after a player leaves a dimensional carriage a fresh track would start immediately — the one thing that is
  * definitely wrong, since it announces the exit. So leaving the silent zone arms a deadline and the
  * silence continues until it passes: at least {@link #MIN_RESTART_TICKS}, at most the situational
  * track's own idle gap, which is the delay vanilla would have used between two tracks anyway.</p>

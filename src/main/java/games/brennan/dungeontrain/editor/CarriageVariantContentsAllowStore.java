@@ -34,8 +34,8 @@ import java.util.Optional;
  * the next build. Custom variants and production installs silently skip the source-tree step.</p>
  *
  * <p><b>A typed face over {@link ContentsAllowStore}</b>, which holds the loading, caching and
- * promote logic this shares with {@link PortalRoomContentsAllowStore}. The typing is the point: a
- * {@link CarriageVariant} and a portal room name are both strings underneath and must not be
+ * promote logic this shares with {@link DimensionalCarriageContentsAllowStore}. The typing is the point: a
+ * {@link CarriageVariant} and a dimensional carriage name are both strings underneath and must not be
  * interchangeable at a call site.</p>
  */
 public final class CarriageVariantContentsAllowStore {

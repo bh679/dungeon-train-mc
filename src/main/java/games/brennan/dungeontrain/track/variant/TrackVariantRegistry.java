@@ -198,7 +198,7 @@ public final class TrackVariantRegistry {
         GATE_EMPTY_WARNED.clear();
         GROUP_WARNED.clear();
         // Room sizes are read off templates, so they belong to the world that was just closed.
-        games.brennan.dungeontrain.portal.PortalRoomSizes.clear();
+        games.brennan.dungeontrain.portal.DimensionalCarriageSizes.clear();
     }
 
     /**
@@ -455,11 +455,11 @@ public final class TrackVariantRegistry {
                 n -> new Template.Tunnel(TunnelVariant.PORTAL, n)));
     }
 
-    private static final TemplateRegistry<Template.PortalRoom> PORTAL_ROOM_ADAPTER =
-        makeAdapter(TrackKind.PORTAL_ROOM, TemplateKind.PORTAL_ROOM, Template.PortalRoom::new);
+    private static final TemplateRegistry<Template.DimensionalCarriage> DIMENSIONAL_CARRIAGE_ADAPTER =
+        makeAdapter(TrackKind.DIMENSIONAL_CARRIAGE, TemplateKind.DIMENSIONAL_CARRIAGE, Template.DimensionalCarriage::new);
 
     public static TemplateRegistry<Template.Track> adapterForTrack() { return TRACK_ADAPTER; }
-    public static TemplateRegistry<Template.PortalRoom> adapterForPortalRoom() { return PORTAL_ROOM_ADAPTER; }
+    public static TemplateRegistry<Template.DimensionalCarriage> adapterForDimensionalCarriage() { return DIMENSIONAL_CARRIAGE_ADAPTER; }
     public static TemplateRegistry<Template.Pillar> adapterForPillar(PillarSection section) {
         return PILLAR_ADAPTERS.get(section);
     }

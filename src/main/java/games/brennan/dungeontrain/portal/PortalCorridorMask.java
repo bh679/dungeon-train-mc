@@ -36,13 +36,13 @@ import java.util.List;
  * carve still opened the way in from the copy next door, which is how a player found it. Masking the
  * three real volumes lets a copy lay its floor, its ceiling and its own outer walls around the
  * corridor, so the corridor stands as an object inside the endless room — which is what
- * {@link PortalRoomMode}'s javadoc has always said it is.</p>
+ * {@link DimensionalCarriageMode}'s javadoc has always said it is.</p>
  *
  * <p>What a player sees along the train's axis is unchanged: an endless room is broken by a wall with
  * a door in it — the way back — and the room carries on beyond it. That wall is the seal plane, and
  * it stays the room's full cross-section on purpose. It is the only thing between the room and the
  * rock when a copy cannot be stamped at all, which is normal and silent — the budget is spent, or the
- * chunks are not loaded ({@code PortalRoomTiler.canStamp}). What it is <i>made of</i> is the room's
+ * chunks are not loaded ({@code DimensionalCarriageTiler.canStamp}). What it is <i>made of</i> is the room's
  * own wall rather than a palette of its own — {@code PortalCarriageBuilder.sealFillFor} — so the
  * wall reads as the room's, and only the door in it says anything.</p>
  */
@@ -62,7 +62,7 @@ public record PortalCorridorMask(List<BoundingBox> boxes) {
     /**
      * This mask with one more box in it.
      *
-     * <p>What {@link PortalRoomMode#ENDLESS_OPEN} adds to a tile's <b>write</b> mask: the tile's
+     * <p>What {@link DimensionalCarriageMode#ENDLESS_OPEN} adds to a tile's <b>write</b> mask: the tile's
      * interior, so the stamp puts down a floor and a roof and skips everything between them. Kept a
      * union rather than a replacement because the corridor row's tile needs both boxes — the
      * corridors it must stamp around, and the interior it must not fill.</p>
@@ -190,7 +190,7 @@ public record PortalCorridorMask(List<BoundingBox> boxes) {
         Vec3i size = structure.roomSize();
 
         // The corridor's own cross-section. A room is never narrower or shorter than this
-        // (PortalRoomLayout.minWidth / minHeight), so a copy always has room either side of it.
+        // (DimensionalCarriageLayout.minWidth / minHeight), so a copy always has room either side of it.
         int corridorMinZ = corridor.getZ();
         int corridorMaxZ = corridor.getZ() + dims.width() - 1;
         int corridorMinY = corridor.getY();
@@ -199,7 +199,7 @@ public record PortalCorridorMask(List<BoundingBox> boxes) {
         // The seal ring's, which is the room's — wider and, in a tall room, taller.
         int roomMinZ = room.getZ();
         int roomMaxZ = room.getZ() + size.getZ() - 1;
-        // A room's floor is laid at the corridor's, by construction (PortalRoomLayout.roomOrigin), so
+        // A room's floor is laid at the corridor's, by construction (DimensionalCarriageLayout.roomOrigin), so
         // this is the same row corridorMinY is — read off the room anyway, since it is the room's
         // cross-section the seal fills.
         int roomMinY = room.getY();

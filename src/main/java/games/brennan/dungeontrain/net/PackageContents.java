@@ -34,7 +34,7 @@ public final class PackageContents {
         new Section("Tracks",                "tracks",                 "TRACKS"),
         new Section("Pillars",               "pillars",                "TRACKS"),
         new Section("Tunnels",               "tunnels",                "TRACKS"),
-        new Section("Portal Rooms",          "portals/room",           "PORTALS"),
+        new Section("Dimensional Carriages",          "portals/room",           "PORTALS"),
         new Section("Loot Prefabs",          "prefabs/loot",           null),
         new Section("Block-Variant Prefabs", "prefabs/block_variants", null)
     );

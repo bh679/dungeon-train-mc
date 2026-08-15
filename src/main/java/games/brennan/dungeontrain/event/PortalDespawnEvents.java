@@ -8,7 +8,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.MobDespawnEvent;
 
 /**
- * Keeps the portal room's occupants from being reaped while anyone is using the room.
+ * Keeps the dimensional carriage's occupants from being reaped while anyone is using the room.
  *
  * <p>A mob in a twin corridor is, as far as vanilla is concerned, a mob at the bottom of the world
  * with the nearest player riding a train away from it — so the distance rule discards it, and a

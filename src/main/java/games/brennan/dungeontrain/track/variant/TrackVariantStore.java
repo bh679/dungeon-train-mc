@@ -1,7 +1,7 @@
 package games.brennan.dungeontrain.track.variant;
 
 import com.mojang.logging.LogUtils;
-import games.brennan.dungeontrain.portal.PortalRoomLayout;
+import games.brennan.dungeontrain.portal.DimensionalCarriageLayout;
 import games.brennan.dungeontrain.train.CarriageDims;
 import net.minecraft.core.HolderGetter;
 import net.minecraft.core.Vec3i;
@@ -279,14 +279,14 @@ public final class TrackVariantStore {
      * The bounds a loaded template of {@code kind} is judged against — an exact size for most kinds,
      * a per-axis floor for a {@link TrackKind#freeSizeAboveFloor()} one.
      *
-     * <p>Not {@link TrackKind#dims} for the free kind. That reports the <b>built-in</b> portal room's
+     * <p>Not {@link TrackKind#dims} for the free kind. That reports the <b>built-in</b> dimensional carriage's
      * footprint, which is a real instance rather than a limit, and borrowing it here made the built-in
      * room's width the minimum every authored room had to clear — a room could be rejected for being
-     * narrower than a shell it has nothing to do with. {@code PortalRoomLayout.minSize} is the actual
+     * narrower than a shell it has nothing to do with. {@code DimensionalCarriageLayout.minSize} is the actual
      * floor: what the corridor mouth needs to stay sealed.</p>
      */
     private static Vec3i acceptableBounds(TrackKind kind, CarriageDims dims) {
-        return kind.freeSizeAboveFloor() ? PortalRoomLayout.minSize(dims) : kind.dims(dims);
+        return kind.freeSizeAboveFloor() ? DimensionalCarriageLayout.minSize(dims) : kind.dims(dims);
     }
 
     /**
@@ -295,7 +295,7 @@ public final class TrackVariantStore {
      * <p>Normally an exact match against {@link #acceptableBounds}. For a
      * {@link TrackKind#freeSizeAboveFloor()} kind those bounds are a <b>floor</b> — the author may go
      * bigger on any axis, and only undersize is rejected, because that is the case that breaks
-     * something in world (a portal room too narrow or too short to seal the corridor mouth that opens
+     * something in world (a dimensional carriage too narrow or too short to seal the corridor mouth that opens
      * into it).</p>
      */
     private static boolean boundsMatch(TrackKind kind, Vec3i size, Vec3i bounds) {

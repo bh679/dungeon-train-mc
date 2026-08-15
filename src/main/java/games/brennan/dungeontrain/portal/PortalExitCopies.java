@@ -1,7 +1,7 @@
 package games.brennan.dungeontrain.portal;
 
 import games.brennan.dungeontrain.portal.PortalExitSites.Site;
-import games.brennan.dungeontrain.portal.PortalRoomTiling.Tile;
+import games.brennan.dungeontrain.portal.DimensionalCarriageTiling.Tile;
 
 import java.util.Comparator;
 import java.util.LinkedHashSet;
@@ -9,10 +9,10 @@ import java.util.Set;
 import java.util.function.Predicate;
 
 /**
- * Which of an endless room's extra corridors are currently standing — the {@link PortalRoomTiling}
+ * Which of an endless room's extra corridors are currently standing — the {@link DimensionalCarriageTiling}
  * analogue for {@link PortalExitSites.Site sites} rather than tiles.
  *
- * <p>Nothing here knows about Minecraft, for the same reason nothing in {@link PortalRoomTiling}
+ * <p>Nothing here knows about Minecraft, for the same reason nothing in {@link DimensionalCarriageTiling}
  * does: a site is a tile and a role, and turning it into blocks is the caller's job.</p>
  *
  * <h2>Copies outlive the tiles around them, deliberately</h2>
@@ -20,7 +20,7 @@ import java.util.function.Predicate;
  * reach into the tiles either side of its anchor ({@link PortalExitSites#tileReach}), and those tiles
  * were stamped <i>around</i> it through the corridor mask. Clearing it while one of them still stands
  * would leave a corridor-shaped pit with no floor in a room the player can walk straight back into.
- * So a copy is held until its anchor is {@link PortalRoomTiling#MAX_RADIUS} <b>plus the reach</b>
+ * So a copy is held until its anchor is {@link DimensionalCarriageTiling#MAX_RADIUS} <b>plus the reach</b>
  * away, by which point every tile it touches has left the window too and the erase lands in space
  * that is already gone. See {@link #nextToRemove}.</p>
  *
@@ -89,11 +89,11 @@ public record PortalExitCopies(Set<Site> sites) {
      * rejects.
      *
      * <p>How a copy somebody is still relying on is held. When a player steps back onto the train the
-     * room has nobody in it, so the window collapses to {@link PortalRoomTiling#APPROACH_RADIUS} and
+     * room has nobody in it, so the window collapses to {@link DimensionalCarriageTiling#APPROACH_RADIUS} and
      * every distant copy falls outside it at once — the one they just walked out of included, in the
      * very same tick they walked out of it. Without this, walking back in always lands at the
      * original twin and {@link PortalExitBindings} can never do the one thing it is for. The mirror
-     * of {@link PortalRoomTiling#nextToRemove(Tile, int, java.util.function.Predicate)} sparing the
+     * of {@link DimensionalCarriageTiling#nextToRemove(Tile, int, java.util.function.Predicate)} sparing the
      * tile a player is standing in, for the same kind of reason.</p>
      */
     public Site nextToRemove(Tile centre, int radius, int reach, Predicate<Site> removable) {

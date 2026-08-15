@@ -21,17 +21,17 @@ import net.neoforged.neoforge.event.entity.living.FinalizeSpawnEvent;
  * {@code NaturalSpawner.getRandomPosWithin} draws its candidate Y from
  * {@code getMinBuildHeight()} — the bottom of the basement, not the bedrock — so about a fifth of
  * every chunk's spawn attempts start under the world. Most die for want of a solid block, but a
- * stamped portal room is solid, unlit and next to a player, which is the whole recipe.</p>
+ * stamped dimensional carriage is solid, unlit and next to a player, which is the whole recipe.</p>
  *
- * <p><b>Wider than {@link PortalRoomSpawnGuard}, and not a replacement for it.</b> That guard asks
+ * <p><b>Wider than {@link DimensionalCarriageSpawnGuard}, and not a replacement for it.</b> That guard asks
  * whether a position is inside a portal structure the pair index currently knows about; this one
  * asks only how deep it is, so it also covers a room's roof, the space beside it, and any structure
  * the index has not registered yet. The two overlap but neither contains the other — a Compatible
  * Terrain world has no basement at all, and there the portal guard is the only one that fires.</p>
  *
  * <p><b>Ambient only.</b> {@link MobSpawnType#NATURAL} and {@link MobSpawnType#CHUNK_GENERATION},
- * the pair {@code BandMobSpawnEvents} and {@code PortalRoomSpawnGuard} also treat as ambient.
- * Everything deliberate still works below the floor — a portal room's authored mobs (which spawn as
+ * the pair {@code BandMobSpawnEvents} and {@code DimensionalCarriageSpawnGuard} also treat as ambient.
+ * Everything deliberate still works below the floor — a dimensional carriage's authored mobs (which spawn as
  * {@code SPAWN_EGG}), commands, spawn eggs, breeding, conversion, a mob a player leads in.</p>
  *
  * <p><b>A no-op wherever there is no basement.</b> In Compatible Terrain mode, the nether, the end

@@ -22,7 +22,7 @@ import java.util.Random;
  *
  * <p>Storage: {@code <kind.subdir>/<parent-name>.group.json}, a sidecar alongside the parent's
  * {@code .nbt} — see {@link games.brennan.dungeontrain.editor.TrackVariantGroupStore}. Today only
- * {@link TrackKind#PORTAL_ROOM} uses it: one named portal room stands for several room designs.</p>
+ * {@link TrackKind#DIMENSIONAL_CARRIAGE} uses it: one named dimensional carriage stands for several room designs.</p>
  *
  * <p>JSON schema — deliberately identical to the contents group sidecar, so the two can be read by
  * eye against each other and {@link TemplateWeightCodec} serves both:</p>
@@ -41,8 +41,8 @@ import java.util.Random;
  * <p>{@code selfWeight} is how often the parent's <b>own</b> template is drawn against its members.
  * A parent is a real, editable variant in its own right, not just a folder.</p>
  *
- * <p>Member ids are names of the <b>same kind</b> as the parent — a portal room group's members are
- * portal rooms. Nesting is single-hop: a member that is itself a parent is treated as a leaf (and
+ * <p>Member ids are names of the <b>same kind</b> as the parent — a dimensional carriage group's members are
+ * dimensional carriages. Nesting is single-hop: a member that is itself a parent is treated as a leaf (and
  * logged), matching the contents rule.</p>
  */
 public record TrackVariantGroup(int selfWeight, List<Member> members) {

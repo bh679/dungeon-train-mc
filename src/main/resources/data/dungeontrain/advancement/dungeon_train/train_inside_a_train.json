@@ -12,7 +12,7 @@
   "criteria": {
     "entered": {
       "trigger": "dungeontrain:gameplay_action",
-      "conditions": { "actionId": "entered_portal_room" }
+      "conditions": { "actionId": "entered_dimensional_carriage" }
     }
   },
   "requirements": [["entered"]]

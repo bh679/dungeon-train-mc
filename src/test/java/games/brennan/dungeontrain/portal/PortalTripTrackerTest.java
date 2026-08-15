@@ -14,7 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * Pure-logic coverage for {@link PortalTripTracker} — the dwell behind <em>Train inside a train?</em>
  * and the entry-to-exit displacement behind <em>A new way out</em>. No Minecraft bootstrap: the
  * tracker deals only in UUIDs and coordinates, and where a player <i>is</i> (room body vs corridor)
- * is decided by {@code PortalCarriageEvents.portalRoomBodyPairKey} and verified in-game.
+ * is decided by {@code PortalCarriageEvents.dimensionalCarriageBodyPairKey} and verified in-game.
  *
  * <p>Each test uses a fresh UUID, so the tracker's static maps cannot carry state between them.</p>
  */

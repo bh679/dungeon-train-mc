@@ -30,8 +30,8 @@ public final class CarriageContentsAllowScreen implements MenuScreen {
     /** The editor subcommand a carriage's toggles dispatch to. */
     private static final String CARRIAGE_COMMAND = "carriage-contents";
 
-    /** The editor subcommand a portal room's toggles dispatch to. */
-    private static final String PORTAL_ROOM_COMMAND = "portal-room-contents";
+    /** The editor subcommand a dimensional carriage's toggles dispatch to. */
+    private static final String DIMENSIONAL_CARRIAGE_COMMAND = "dimensional-carriage-contents";
 
     private final String targetId;
     private final String command;
@@ -51,15 +51,15 @@ public final class CarriageContentsAllowScreen implements MenuScreen {
     }
 
     /**
-     * The allow-list for a portal room.
+     * The allow-list for a dimensional carriage.
      *
      * <p>Same screen, same toggles, same excluded set off the status packet — only the subcommand
      * differs, because the two write to different sidecar directories. Reached from the plot
      * panel's Contents button, which only appears while the room's Contents setting is on: with it
      * Off there is no pool for these toggles to steer.</p>
      */
-    public static CarriageContentsAllowScreen forPortalRoom(String roomName) {
-        return new CarriageContentsAllowScreen(roomName, PORTAL_ROOM_COMMAND);
+    public static CarriageContentsAllowScreen forDimensionalCarriage(String roomName) {
+        return new CarriageContentsAllowScreen(roomName, DIMENSIONAL_CARRIAGE_COMMAND);
     }
 
     @Override

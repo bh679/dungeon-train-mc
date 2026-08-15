@@ -20,9 +20,9 @@ import games.brennan.dungeontrain.editor.CarriageVariantBlocks;
 import games.brennan.dungeontrain.editor.CarriageVariantContentsAllowStore;
 import games.brennan.dungeontrain.editor.CarriageVariantPartsStore;
 import games.brennan.dungeontrain.editor.EditorCategory;
-import games.brennan.dungeontrain.editor.PortalRoomEditor;
-import games.brennan.dungeontrain.portal.PortalRoomLayout;
-import games.brennan.dungeontrain.portal.PortalRoomResize;
+import games.brennan.dungeontrain.editor.DimensionalCarriageEditor;
+import games.brennan.dungeontrain.portal.DimensionalCarriageLayout;
+import games.brennan.dungeontrain.portal.DimensionalCarriageResize;
 import games.brennan.dungeontrain.editor.EditorDevMode;
 import games.brennan.dungeontrain.editor.EditorStampedCategoryState;
 import games.brennan.dungeontrain.editor.EditorWelcome;
@@ -161,50 +161,50 @@ public final class EditorCommand {
                 builder.suggest(TUNNEL_PREFIX + v.name().toLowerCase(Locale.ROOT));
             }
             // Shared with /dt editor portals, which addresses its models the same way.
-            builder.suggest(games.brennan.dungeontrain.track.variant.TrackKind.PORTAL_ROOM.id());
+            builder.suggest(games.brennan.dungeontrain.track.variant.TrackKind.DIMENSIONAL_CARRIAGE.id());
             return builder.buildFuture();
         };
 
-    private static final SuggestionProvider<CommandSourceStack> PORTAL_ROOM_NAME_SUGGESTIONS =
+    private static final SuggestionProvider<CommandSourceStack> DIMENSIONAL_CARRIAGE_NAME_SUGGESTIONS =
         (ctx, builder) -> {
             for (String name : games.brennan.dungeontrain.track.variant.TrackVariantRegistry
-                    .namesFor(games.brennan.dungeontrain.track.variant.TrackKind.PORTAL_ROOM)) {
+                    .namesFor(games.brennan.dungeontrain.track.variant.TrackKind.DIMENSIONAL_CARRIAGE)) {
                 builder.suggest(name);
             }
             return builder.buildFuture();
         };
 
-    private static final SuggestionProvider<CommandSourceStack> PORTAL_ROOM_MODE_SUGGESTIONS =
+    private static final SuggestionProvider<CommandSourceStack> DIMENSIONAL_CARRIAGE_MODE_SUGGESTIONS =
         (ctx, builder) -> {
-            for (games.brennan.dungeontrain.portal.PortalRoomMode mode
-                    : games.brennan.dungeontrain.portal.PortalRoomMode.values()) {
+            for (games.brennan.dungeontrain.portal.DimensionalCarriageMode mode
+                    : games.brennan.dungeontrain.portal.DimensionalCarriageMode.values()) {
                 builder.suggest(mode.id());
             }
             return builder.buildFuture();
         };
 
-    private static final SuggestionProvider<CommandSourceStack> PORTAL_ROOM_COPIES_SUGGESTIONS =
+    private static final SuggestionProvider<CommandSourceStack> DIMENSIONAL_CARRIAGE_COPIES_SUGGESTIONS =
         (ctx, builder) -> {
-            for (games.brennan.dungeontrain.portal.PortalRoomCopies c
-                    : games.brennan.dungeontrain.portal.PortalRoomCopies.values()) {
+            for (games.brennan.dungeontrain.portal.DimensionalCarriageCopies c
+                    : games.brennan.dungeontrain.portal.DimensionalCarriageCopies.values()) {
                 builder.suggest(c.id());
             }
             return builder.buildFuture();
         };
 
-    private static final SuggestionProvider<CommandSourceStack> PORTAL_ROOM_CONTENTS_SUGGESTIONS =
+    private static final SuggestionProvider<CommandSourceStack> DIMENSIONAL_CARRIAGE_CONTENTS_SUGGESTIONS =
         (ctx, builder) -> {
-            for (games.brennan.dungeontrain.portal.PortalRoomContents c
-                    : games.brennan.dungeontrain.portal.PortalRoomContents.values()) {
+            for (games.brennan.dungeontrain.portal.DimensionalCarriageContents c
+                    : games.brennan.dungeontrain.portal.DimensionalCarriageContents.values()) {
                 builder.suggest(c.id());
             }
             return builder.buildFuture();
         };
 
-    private static final SuggestionProvider<CommandSourceStack> PORTAL_ROOM_EXITS_SUGGESTIONS =
+    private static final SuggestionProvider<CommandSourceStack> DIMENSIONAL_CARRIAGE_EXITS_SUGGESTIONS =
         (ctx, builder) -> {
-            for (games.brennan.dungeontrain.portal.PortalRoomExits.Kind k
-                    : games.brennan.dungeontrain.portal.PortalRoomExits.Kind.values()) {
+            for (games.brennan.dungeontrain.portal.DimensionalCarriageExits.Kind k
+                    : games.brennan.dungeontrain.portal.DimensionalCarriageExits.Kind.values()) {
                 builder.suggest(k.id());
             }
             return builder.buildFuture();
@@ -408,23 +408,23 @@ public final class EditorCommand {
                 .executes(ctx -> runEnterCategory(ctx.getSource(), EditorCategory.TRACKS))))
             // PORTALS takes the same (kind, name) variant subcommands — the pocket room is a
             // TrackKind under the hood, so weight / gate / new / reset are literally the same
-            // handlers — plus one of its own: length, the axis only a portal room may choose.
+            // handlers — plus one of its own: length, the axis only a dimensional carriage may choose.
             .then(attachTrackVariantNodes(Commands.literal("portals")
                 .executes(ctx -> runEnterCategory(ctx.getSource(), EditorCategory.PORTALS)))
                 .then(Commands.literal("enter")
                     .then(Commands.argument("name", StringArgumentType.word())
-                        .suggests(PORTAL_ROOM_NAME_SUGGESTIONS)
-                        .executes(ctx -> runPortalRoomEnter(ctx.getSource(),
+                        .suggests(DIMENSIONAL_CARRIAGE_NAME_SUGGESTIONS)
+                        .executes(ctx -> runDimensionalCarriageEnter(ctx.getSource(),
                             StringArgumentType.getString(ctx, "name")))))
-                .then(portalSizeNode("length", PortalRoomResize.Axis.LENGTH))
-                .then(portalSizeNode("width", PortalRoomResize.Axis.WIDTH))
-                .then(portalSizeNode("height", PortalRoomResize.Axis.HEIGHT))
+                .then(portalSizeNode("length", DimensionalCarriageResize.Axis.LENGTH))
+                .then(portalSizeNode("width", DimensionalCarriageResize.Axis.WIDTH))
+                .then(portalSizeNode("height", DimensionalCarriageResize.Axis.HEIGHT))
                 // All three at once, in the order the menus label them.
                 .then(Commands.literal("size")
                     .then(Commands.argument("length", IntegerArgumentType.integer(1, 512))
                         .then(Commands.argument("width", IntegerArgumentType.integer(1, 512))
                             .then(Commands.argument("height", IntegerArgumentType.integer(1, 512))
-                                .executes(ctx -> runPortalRoomSizeAll(ctx.getSource(),
+                                .executes(ctx -> runDimensionalCarriageSizeAll(ctx.getSource(),
                                     IntegerArgumentType.getInteger(ctx, "length"),
                                     IntegerArgumentType.getInteger(ctx, "width"),
                                     IntegerArgumentType.getInteger(ctx, "height")))))))
@@ -432,63 +432,63 @@ public final class EditorCommand {
                 // named forms are for typing, and for saying which one you want in one go.
                 .then(Commands.literal("mode")
                     .then(Commands.literal("next")
-                        .executes(ctx -> runPortalRoomModeCycle(ctx.getSource())))
+                        .executes(ctx -> runDimensionalCarriageModeCycle(ctx.getSource())))
                     .then(Commands.argument("mode", StringArgumentType.word())
-                        .suggests(PORTAL_ROOM_MODE_SUGGESTIONS)
-                        .executes(ctx -> runPortalRoomMode(ctx.getSource(),
+                        .suggests(DIMENSIONAL_CARRIAGE_MODE_SUGGESTIONS)
+                        .executes(ctx -> runDimensionalCarriageMode(ctx.getSource(),
                             StringArgumentType.getString(ctx, "mode")))))
                 // Whether Endless Repetition's copies are the room block for block, or each rolled
                 // afresh from its variant sidecar. Means nothing under the other modes.
                 .then(Commands.literal("copies")
                     .then(Commands.literal("next")
-                        .executes(ctx -> runPortalRoomCopiesCycle(ctx.getSource())))
+                        .executes(ctx -> runDimensionalCarriageCopiesCycle(ctx.getSource())))
                     .then(Commands.argument("copies", StringArgumentType.word())
-                        .suggests(PORTAL_ROOM_COPIES_SUGGESTIONS)
-                        .executes(ctx -> runPortalRoomCopies(ctx.getSource(),
+                        .suggests(DIMENSIONAL_CARRIAGE_COPIES_SUGGESTIONS)
+                        .executes(ctx -> runDimensionalCarriageCopies(ctx.getSource(),
                             StringArgumentType.getString(ctx, "copies")))))
                 // Whether the room is furnished from the ordinary contents pool, and how a
                 // furnishing smaller than the room is fitted into it. Off by default.
                 .then(Commands.literal("contents")
                     .then(Commands.literal("next")
-                        .executes(ctx -> runPortalRoomContentsCycle(ctx.getSource())))
+                        .executes(ctx -> runDimensionalCarriageContentsCycle(ctx.getSource())))
                     .then(Commands.argument("contents", StringArgumentType.word())
-                        .suggests(PORTAL_ROOM_CONTENTS_SUGGESTIONS)
-                        .executes(ctx -> runPortalRoomContents(ctx.getSource(),
+                        .suggests(DIMENSIONAL_CARRIAGE_CONTENTS_SUGGESTIONS)
+                        .executes(ctx -> runDimensionalCarriageContents(ctx.getSource(),
                             StringArgumentType.getString(ctx, "contents")))))
                 // How many extra ways back to the train an endless room scatters through its copies.
                 // Means nothing under the modes that do not repeat.
                 .then(Commands.literal("exits")
                     .then(Commands.literal("next")
-                        .executes(ctx -> runPortalRoomExitsCycle(ctx.getSource())))
+                        .executes(ctx -> runDimensionalCarriageExitsCycle(ctx.getSource())))
                     .then(Commands.argument("exits", StringArgumentType.word())
-                        .suggests(PORTAL_ROOM_EXITS_SUGGESTIONS)
-                        .executes(ctx -> runPortalRoomExits(ctx.getSource(),
+                        .suggests(DIMENSIONAL_CARRIAGE_EXITS_SUGGESTIONS)
+                        .executes(ctx -> runDimensionalCarriageExits(ctx.getSource(),
                             StringArgumentType.getString(ctx, "exits")))))
                 // The X both readings of Exits are measured in — every X tiles, or one tile in X.
                 .then(Commands.literal("exitevery")
                     .then(Commands.literal("inc")
-                        .executes(ctx -> runPortalRoomExitEveryStep(ctx.getSource(), +1)))
+                        .executes(ctx -> runDimensionalCarriageExitEveryStep(ctx.getSource(), +1)))
                     .then(Commands.literal("dec")
-                        .executes(ctx -> runPortalRoomExitEveryStep(ctx.getSource(), -1)))
+                        .executes(ctx -> runDimensionalCarriageExitEveryStep(ctx.getSource(), -1)))
                     .then(Commands.argument("tiles", IntegerArgumentType.integer(
-                            games.brennan.dungeontrain.portal.PortalRoomExits.MIN_EVERY,
-                            games.brennan.dungeontrain.portal.PortalRoomExits.MAX_EVERY))
-                        .executes(ctx -> runPortalRoomExitEvery(ctx.getSource(),
+                            games.brennan.dungeontrain.portal.DimensionalCarriageExits.MIN_EVERY,
+                            games.brennan.dungeontrain.portal.DimensionalCarriageExits.MAX_EVERY))
+                        .executes(ctx -> runDimensionalCarriageExitEvery(ctx.getSource(),
                             IntegerArgumentType.getInteger(ctx, "tiles")))))
                 // How often a Random room walls off the base pair's exit, so the only ways onward
                 // are the copies. 0 never, 10 always.
                 .then(Commands.literal("exitmove")
                     .then(Commands.literal("inc")
-                        .executes(ctx -> runPortalRoomExitMoveStep(ctx.getSource(), +1)))
+                        .executes(ctx -> runDimensionalCarriageExitMoveStep(ctx.getSource(), +1)))
                     .then(Commands.literal("dec")
-                        .executes(ctx -> runPortalRoomExitMoveStep(ctx.getSource(), -1)))
+                        .executes(ctx -> runDimensionalCarriageExitMoveStep(ctx.getSource(), -1)))
                     .then(Commands.argument("chance", IntegerArgumentType.integer(
-                            games.brennan.dungeontrain.portal.PortalRoomExits.MOVE_NEVER,
-                            games.brennan.dungeontrain.portal.PortalRoomExits.MOVE_ALWAYS))
-                        .executes(ctx -> runPortalRoomExitMove(ctx.getSource(),
+                            games.brennan.dungeontrain.portal.DimensionalCarriageExits.MOVE_NEVER,
+                            games.brennan.dungeontrain.portal.DimensionalCarriageExits.MOVE_ALWAYS))
+                        .executes(ctx -> runDimensionalCarriageExitMove(ctx.getSource(),
                             IntegerArgumentType.getInteger(ctx, "chance")))))
                 // Sub-variants: one named room standing for several designs, drawn by weight.
-                .then(portalRoomGroupNode()))
+                .then(dimensionalCarriageGroupNode()))
             .then(Commands.literal("architecture")
                 .executes(ctx -> runEnterCategory(ctx.getSource(), EditorCategory.ARCHITECTURE)))
             .then(Commands.literal("enter")
@@ -554,17 +554,17 @@ public final class EditorCommand {
                         .then(Commands.literal("off").executes(ctx -> runCarriageContentsAllow(ctx.getSource(),
                             StringArgumentType.getString(ctx, "variant"),
                             StringArgumentType.getString(ctx, "contents"), false))))))
-            // The same allow-list, for a portal room's furnishing pool. Reached from the plot
+            // The same allow-list, for a dimensional carriage's furnishing pool. Reached from the plot
             // panel's Contents button, which only shows while the room's Contents setting is on.
-            .then(Commands.literal("portal-room-contents")
+            .then(Commands.literal("dimensional-carriage-contents")
                 .then(Commands.argument("room", StringArgumentType.word())
-                    .suggests(PORTAL_ROOM_NAME_SUGGESTIONS)
+                    .suggests(DIMENSIONAL_CARRIAGE_NAME_SUGGESTIONS)
                     .then(Commands.argument("contents", StringArgumentType.word())
                         .suggests(TOP_LEVEL_CONTENTS_SUGGESTIONS)
-                        .then(Commands.literal("on").executes(ctx -> runPortalRoomContentsAllow(ctx.getSource(),
+                        .then(Commands.literal("on").executes(ctx -> runDimensionalCarriageContentsAllow(ctx.getSource(),
                             StringArgumentType.getString(ctx, "room"),
                             StringArgumentType.getString(ctx, "contents"), true)))
-                        .then(Commands.literal("off").executes(ctx -> runPortalRoomContentsAllow(ctx.getSource(),
+                        .then(Commands.literal("off").executes(ctx -> runDimensionalCarriageContentsAllow(ctx.getSource(),
                             StringArgumentType.getString(ctx, "room"),
                             StringArgumentType.getString(ctx, "contents"), false))))))
             .then(Commands.literal("promote")
@@ -1397,7 +1397,7 @@ public final class EditorCommand {
                                 .executes(c -> applyTrackStage(c.getSource(),
                                     StringArgumentType.getString(c, "kind"), StringArgumentType.getString(c, "name"),
                                     StringArgumentType.getString(c, "stage")))))))
-                // A track-side sub-variant (today: a portal room's). Kind-qualified like `tracks`
+                // A track-side sub-variant (today: a dimensional carriage's). Kind-qualified like `tracks`
                 // above, and a toggle like `contents-group` — a member may carry more than one link.
                 .then(Commands.literal("tracks-group")
                     .then(Commands.argument("kind", StringArgumentType.word()).suggests(TRACK_KIND_SUGGESTIONS)
@@ -2090,7 +2090,7 @@ public final class EditorCommand {
         groupMemberStageApplySuccess(source, "contents group", id, stageIds);
     }
 
-    /** As above, naming the template layer the member belongs to ({@code "contents group"}, {@code "portal_room group"}, …). */
+    /** As above, naming the template layer the member belongs to ({@code "contents group"}, {@code "dimensional_carriage group"}, …). */
     private static void groupMemberStageApplySuccess(CommandSourceStack source, String what, String id,
                                                      java.util.List<String> stageIds) {
         if (stageIds.isEmpty()) {
@@ -2819,8 +2819,8 @@ public final class EditorCommand {
                 TunnelEditor.enter(player, tm.variant());
             } else if (head instanceof Template.Track) {
                 TrackEditor.enter(player);
-            } else if (head instanceof Template.PortalRoom rm) {
-                games.brennan.dungeontrain.editor.PortalRoomEditor.enter(player, rm.name());
+            } else if (head instanceof Template.DimensionalCarriage rm) {
+                games.brennan.dungeontrain.editor.DimensionalCarriageEditor.enter(player, rm.name());
             }
             final Template firstModel = head;
             source.sendSuccess(() -> Component.literal(
@@ -2849,8 +2849,8 @@ public final class EditorCommand {
             TunnelEditor.stampPlot(overworld, tm.variant());
         } else if (model instanceof Template.Track) {
             TrackEditor.stampPlot(overworld, dims);
-        } else if (model instanceof Template.PortalRoom rm) {
-            games.brennan.dungeontrain.editor.PortalRoomEditor.stampPlot(overworld, rm.name(), dims);
+        } else if (model instanceof Template.DimensionalCarriage rm) {
+            games.brennan.dungeontrain.editor.DimensionalCarriageEditor.stampPlot(overworld, rm.name(), dims);
         }
     }
 
@@ -2945,18 +2945,18 @@ public final class EditorCommand {
                 return 0;
             }
         } else if (category == EditorCategory.PORTALS) {
-            // Same "kind.name" shape; one kind, so the prefix is always portal_room and a bare id
+            // Same "kind.name" shape; one kind, so the prefix is always dimensional_carriage and a bare id
             // means the default room.
             String prefix = id.contains(".") ? id.substring(0, id.indexOf('.')) : id;
             String name = id.contains(".")
                 ? id.substring(id.indexOf('.') + 1)
                 : games.brennan.dungeontrain.track.variant.TrackKind.DEFAULT_NAME;
-            if (!games.brennan.dungeontrain.track.variant.TrackKind.PORTAL_ROOM.id().equals(prefix)) {
+            if (!games.brennan.dungeontrain.track.variant.TrackKind.DIMENSIONAL_CARRIAGE.id().equals(prefix)) {
                 source.sendFailure(Component.literal("Unrecognised portal id '" + id + "'."));
                 return 0;
             }
-            origin = games.brennan.dungeontrain.editor.PortalRoomEditor.plotOrigin(name, dims);
-            size = games.brennan.dungeontrain.editor.PortalRoomEditor.plotSize(name, dims);
+            origin = games.brennan.dungeontrain.editor.DimensionalCarriageEditor.plotOrigin(name, dims);
+            size = games.brennan.dungeontrain.editor.DimensionalCarriageEditor.plotSize(name, dims);
         } else {
             // Resolve the model by id within the category and read its plot
             // footprint. The dispatch mirrors stampCategoryModel above —
@@ -3450,19 +3450,19 @@ public final class EditorCommand {
             }
         }
 
-        String roomName = PortalRoomEditor.plotContaining(pos, dims);
+        String roomName = DimensionalCarriageEditor.plotContaining(pos, dims);
         if (roomName != null) {
             try {
-                int cleared = PortalRoomEditor.clearEverything(overworld, roomName, dims);
+                int cleared = DimensionalCarriageEditor.clearEverything(overworld, roomName, dims);
                 final String id = roomName;
                 final int n = cleared;
                 source.sendSuccess(() -> Component.literal(
-                    "Editor: cleared all blocks in portal room '" + id + "'"
+                    "Editor: cleared all blocks in dimensional carriage '" + id + "'"
                         + (n > 0 ? " (and " + n + " authored entr" + (n == 1 ? "y" : "ies") + ")." : ".")
                 ).withStyle(ChatFormatting.GREEN), true);
                 return 1;
             } catch (Throwable t) {
-                LOGGER.error("[DungeonTrain] editor clear (portal room) failed", t);
+                LOGGER.error("[DungeonTrain] editor clear (dimensional carriage) failed", t);
                 source.sendFailure(Component.literal("clear failed: "
                     + t.getClass().getSimpleName() + ": " + t.getMessage()
                 ).withStyle(ChatFormatting.RED));
@@ -3471,7 +3471,7 @@ public final class EditorCommand {
         }
 
         source.sendFailure(Component.literal(
-            "editor clear: stand inside a carriage / contents / parts / portal room plot first."
+            "editor clear: stand inside a carriage / contents / parts / dimensional carriage plot first."
         ));
         return 0;
     }
@@ -3653,7 +3653,7 @@ public final class EditorCommand {
     }
 
     /**
-     * {@code /dt editor portal-room-contents <room> <contents> on|off} — the portal-room twin of
+     * {@code /dt editor dimensional-carriage-contents <room> <contents> on|off} — the dimensional-carriage twin of
      * {@link #runCarriageContentsAllow}, writing the room's own sidecar.
      *
      * <p>Deliberately does <b>not</b> check the room's Contents setting. The button that reaches
@@ -3661,17 +3661,17 @@ public final class EditorCommand {
      * should find the toggles they set still there — the allow-list and the on/off switch are
      * separate facts about the room, and the command is also the scripting surface.</p>
      */
-    private static int runPortalRoomContentsAllow(CommandSourceStack source, String rawRoom,
+    private static int runDimensionalCarriageContentsAllow(CommandSourceStack source, String rawRoom,
                                                   String rawContents, boolean on) {
         String room = rawRoom == null ? "" : rawRoom.trim();
         if (room.isEmpty()) {
-            source.sendFailure(Component.literal("Name a portal room."));
+            source.sendFailure(Component.literal("Name a dimensional carriage."));
             return 0;
         }
         if (!games.brennan.dungeontrain.track.variant.TrackVariantRegistry
-                .namesFor(games.brennan.dungeontrain.track.variant.TrackKind.PORTAL_ROOM)
+                .namesFor(games.brennan.dungeontrain.track.variant.TrackKind.DIMENSIONAL_CARRIAGE)
                 .contains(room)) {
-            source.sendFailure(Component.literal("Unknown portal room '" + room + "'."));
+            source.sendFailure(Component.literal("Unknown dimensional carriage '" + room + "'."));
             return 0;
         }
         CarriageContents contents = parseContents(source, rawContents);
@@ -3689,18 +3689,18 @@ public final class EditorCommand {
         }
         try {
             CarriageContentsAllowList current =
-                games.brennan.dungeontrain.editor.PortalRoomContentsAllowStore.getOrEmpty(room);
+                games.brennan.dungeontrain.editor.DimensionalCarriageContentsAllowStore.getOrEmpty(room);
             CarriageContentsAllowList updated = on
                 ? current.withAllowed(contents.id())
                 : current.withExcluded(contents.id());
-            games.brennan.dungeontrain.editor.PortalRoomContentsAllowStore.save(room, updated);
-            String summary = "Portal room '" + room + "' content '" + contents.id() + "': "
+            games.brennan.dungeontrain.editor.DimensionalCarriageContentsAllowStore.save(room, updated);
+            String summary = "Dimensional carriage '" + room + "' content '" + contents.id() + "': "
                 + (on ? "ALLOWED" : "EXCLUDED");
             source.sendSuccess(() -> Component.literal(summary)
                 .withStyle(on ? ChatFormatting.GREEN : ChatFormatting.YELLOW), true);
             return 1;
         } catch (IOException e) {
-            LOGGER.error("[DungeonTrain] editor portal-room-contents save failed for {}/{}",
+            LOGGER.error("[DungeonTrain] editor dimensional-carriage-contents save failed for {}/{}",
                 room, contents.id(), e);
             source.sendFailure(Component.literal(
                 "Failed to update contents allow-list: " + e.getMessage()
@@ -5047,116 +5047,116 @@ public final class EditorCommand {
     }
 
     /** {@code /dt editor portals enter <name>} — teleport to one room's plot. */
-    private static int runPortalRoomEnter(CommandSourceStack source, String name) {
+    private static int runDimensionalCarriageEnter(CommandSourceStack source, String name) {
         ServerPlayer player = requirePlayer(source);
         if (player == null) return 0;
         if (games.brennan.dungeontrain.track.variant.TrackVariantRegistry
-                .find(games.brennan.dungeontrain.track.variant.TrackKind.PORTAL_ROOM, name).isEmpty()) {
-            source.sendFailure(Component.literal("Unknown portal room '" + name + "'."));
+                .find(games.brennan.dungeontrain.track.variant.TrackKind.DIMENSIONAL_CARRIAGE, name).isEmpty()) {
+            source.sendFailure(Component.literal("Unknown dimensional carriage '" + name + "'."));
             return 0;
         }
-        games.brennan.dungeontrain.editor.PortalRoomEditor.enter(player, name);
-        source.sendSuccess(() -> Component.literal("Editor: entered portal room '" + name + "'."), true);
+        games.brennan.dungeontrain.editor.DimensionalCarriageEditor.enter(player, name);
+        source.sendSuccess(() -> Component.literal("Editor: entered dimensional carriage '" + name + "'."), true);
         return 1;
     }
 
-    // ---------- portal room sub-variants ----------
+    // ---------- dimensional carriage sub-variants ----------
 
-    private static final games.brennan.dungeontrain.track.variant.TrackKind PORTAL_ROOM_KIND =
-        games.brennan.dungeontrain.track.variant.TrackKind.PORTAL_ROOM;
+    private static final games.brennan.dungeontrain.track.variant.TrackKind DIMENSIONAL_CARRIAGE_KIND =
+        games.brennan.dungeontrain.track.variant.TrackKind.DIMENSIONAL_CARRIAGE;
 
     /**
-     * {@code /dt editor portals group …} — the sub-variant layer for portal rooms: one named room
+     * {@code /dt editor portals group …} — the sub-variant layer for dimensional carriages: one named room
      * that stands for several room designs, each drawn against the parent's own {@code selfWeight}.
      *
      * <p>Deliberately the same verbs as {@code /dt editor contents group …}, because it is the same
      * idea one level up the template tree.</p>
      */
-    private static LiteralArgumentBuilder<CommandSourceStack> portalRoomGroupNode() {
+    private static LiteralArgumentBuilder<CommandSourceStack> dimensionalCarriageGroupNode() {
         return Commands.literal("group")
             .then(Commands.literal("new")
                 .then(Commands.argument("parent", StringArgumentType.word())
-                    .suggests(PORTAL_ROOM_NAME_SUGGESTIONS)
+                    .suggests(DIMENSIONAL_CARRIAGE_NAME_SUGGESTIONS)
                     .then(Commands.argument("name", StringArgumentType.word())
                         // Bare form seeds from the room the player is standing in, falling back to
                         // the parent — same [source] shape as `contents group new` above.
-                        .executes(ctx -> runPortalRoomGroupNew(ctx.getSource(),
+                        .executes(ctx -> runDimensionalCarriageGroupNew(ctx.getSource(),
                             StringArgumentType.getString(ctx, "parent"),
                             StringArgumentType.getString(ctx, "name"),
                             /*sourceRaw*/ null))
                         .then(Commands.argument("source", StringArgumentType.word())
-                            .suggests(PORTAL_ROOM_NAME_SUGGESTIONS)
-                            .executes(ctx -> runPortalRoomGroupNew(ctx.getSource(),
+                            .suggests(DIMENSIONAL_CARRIAGE_NAME_SUGGESTIONS)
+                            .executes(ctx -> runDimensionalCarriageGroupNew(ctx.getSource(),
                                 StringArgumentType.getString(ctx, "parent"),
                                 StringArgumentType.getString(ctx, "name"),
                                 StringArgumentType.getString(ctx, "source")))))))
             .then(Commands.literal("add")
                 .then(Commands.argument("parent", StringArgumentType.word())
-                    .suggests(PORTAL_ROOM_NAME_SUGGESTIONS)
+                    .suggests(DIMENSIONAL_CARRIAGE_NAME_SUGGESTIONS)
                     .then(Commands.argument("child", StringArgumentType.word())
-                        .suggests(PORTAL_ROOM_NAME_SUGGESTIONS)
-                        .executes(ctx -> runPortalRoomGroupAdd(ctx.getSource(),
+                        .suggests(DIMENSIONAL_CARRIAGE_NAME_SUGGESTIONS)
+                        .executes(ctx -> runDimensionalCarriageGroupAdd(ctx.getSource(),
                             StringArgumentType.getString(ctx, "parent"),
                             StringArgumentType.getString(ctx, "child"),
                             games.brennan.dungeontrain.track.variant.TrackVariantGroup.DEFAULT_WEIGHT))
                         .then(Commands.argument("weight", IntegerArgumentType.integer(
                                 games.brennan.dungeontrain.track.variant.TrackVariantGroup.MIN_WEIGHT,
                                 games.brennan.dungeontrain.track.variant.TrackVariantGroup.MAX_WEIGHT))
-                            .executes(ctx -> runPortalRoomGroupAdd(ctx.getSource(),
+                            .executes(ctx -> runDimensionalCarriageGroupAdd(ctx.getSource(),
                                 StringArgumentType.getString(ctx, "parent"),
                                 StringArgumentType.getString(ctx, "child"),
                                 IntegerArgumentType.getInteger(ctx, "weight")))))))
             .then(Commands.literal("set-weight")
                 .then(Commands.argument("parent", StringArgumentType.word())
-                    .suggests(PORTAL_ROOM_NAME_SUGGESTIONS)
+                    .suggests(DIMENSIONAL_CARRIAGE_NAME_SUGGESTIONS)
                     .then(Commands.argument("child", StringArgumentType.word())
-                        .suggests(PORTAL_ROOM_NAME_SUGGESTIONS)
-                        .then(Commands.literal("inc").executes(ctx -> runPortalRoomGroupWeightAdjust(
+                        .suggests(DIMENSIONAL_CARRIAGE_NAME_SUGGESTIONS)
+                        .then(Commands.literal("inc").executes(ctx -> runDimensionalCarriageGroupWeightAdjust(
                             ctx.getSource(),
                             StringArgumentType.getString(ctx, "parent"),
                             StringArgumentType.getString(ctx, "child"), +1)))
-                        .then(Commands.literal("dec").executes(ctx -> runPortalRoomGroupWeightAdjust(
+                        .then(Commands.literal("dec").executes(ctx -> runDimensionalCarriageGroupWeightAdjust(
                             ctx.getSource(),
                             StringArgumentType.getString(ctx, "parent"),
                             StringArgumentType.getString(ctx, "child"), -1)))
                         .then(Commands.argument("value", IntegerArgumentType.integer(
                                 games.brennan.dungeontrain.track.variant.TrackVariantGroup.MIN_WEIGHT,
                                 games.brennan.dungeontrain.track.variant.TrackVariantGroup.MAX_WEIGHT))
-                            .executes(ctx -> runPortalRoomGroupWeightSet(ctx.getSource(),
+                            .executes(ctx -> runDimensionalCarriageGroupWeightSet(ctx.getSource(),
                                 StringArgumentType.getString(ctx, "parent"),
                                 StringArgumentType.getString(ctx, "child"),
                                 IntegerArgumentType.getInteger(ctx, "value")))))))
             // Per-member spawn gate (min/max Diff-Level + phase) — the Sub-Variants companion's gate
             // cells dispatch these, exactly as they do for a contents group member.
-            .then(minLevelTrackGroup(PORTAL_ROOM_KIND, PORTAL_ROOM_NAME_SUGGESTIONS))
-            .then(maxLevelTrackGroup(PORTAL_ROOM_KIND, PORTAL_ROOM_NAME_SUGGESTIONS))
-            .then(phaseTrackGroup(PORTAL_ROOM_KIND, PORTAL_ROOM_NAME_SUGGESTIONS))
+            .then(minLevelTrackGroup(DIMENSIONAL_CARRIAGE_KIND, DIMENSIONAL_CARRIAGE_NAME_SUGGESTIONS))
+            .then(maxLevelTrackGroup(DIMENSIONAL_CARRIAGE_KIND, DIMENSIONAL_CARRIAGE_NAME_SUGGESTIONS))
+            .then(phaseTrackGroup(DIMENSIONAL_CARRIAGE_KIND, DIMENSIONAL_CARRIAGE_NAME_SUGGESTIONS))
             .then(Commands.literal("remove")
                 .then(Commands.argument("parent", StringArgumentType.word())
-                    .suggests(PORTAL_ROOM_NAME_SUGGESTIONS)
+                    .suggests(DIMENSIONAL_CARRIAGE_NAME_SUGGESTIONS)
                     .then(Commands.argument("child", StringArgumentType.word())
-                        .suggests(PORTAL_ROOM_NAME_SUGGESTIONS)
-                        .executes(ctx -> runPortalRoomGroupRemove(ctx.getSource(),
+                        .suggests(DIMENSIONAL_CARRIAGE_NAME_SUGGESTIONS)
+                        .executes(ctx -> runDimensionalCarriageGroupRemove(ctx.getSource(),
                             StringArgumentType.getString(ctx, "parent"),
                             StringArgumentType.getString(ctx, "child"))))))
             .then(Commands.literal("list")
                 .then(Commands.argument("parent", StringArgumentType.word())
-                    .suggests(PORTAL_ROOM_NAME_SUGGESTIONS)
-                    .executes(ctx -> runPortalRoomGroupList(ctx.getSource(),
+                    .suggests(DIMENSIONAL_CARRIAGE_NAME_SUGGESTIONS)
+                    .executes(ctx -> runDimensionalCarriageGroupList(ctx.getSource(),
                         StringArgumentType.getString(ctx, "parent")))))
             .then(Commands.literal("clear")
                 .then(Commands.argument("parent", StringArgumentType.word())
-                    .suggests(PORTAL_ROOM_NAME_SUGGESTIONS)
-                    .executes(ctx -> runPortalRoomGroupClear(ctx.getSource(),
+                    .suggests(DIMENSIONAL_CARRIAGE_NAME_SUGGESTIONS)
+                    .executes(ctx -> runDimensionalCarriageGroupClear(ctx.getSource(),
                         StringArgumentType.getString(ctx, "parent")))));
     }
 
     /** Registered room name, or null after sending the failure message. */
-    private static String parsePortalRoom(CommandSourceStack source, String raw) {
+    private static String parseDimensionalCarriage(CommandSourceStack source, String raw) {
         java.util.Optional<String> found = games.brennan.dungeontrain.track.variant.TrackVariantRegistry
-            .find(PORTAL_ROOM_KIND, raw);
+            .find(DIMENSIONAL_CARRIAGE_KIND, raw);
         if (found.isEmpty()) {
-            source.sendFailure(Component.literal("Unknown portal room '" + raw + "'.")
+            source.sendFailure(Component.literal("Unknown dimensional carriage '" + raw + "'.")
                 .withStyle(ChatFormatting.RED));
             return null;
         }
@@ -5167,18 +5167,18 @@ public final class EditorCommand {
      * Persist {@code updated} for {@code parent}, restamping whatever the change moves.
      *
      * <p>Membership decides where a plot sits — a member sits beside its parent rather than in the
-     * top-level row — so every mutation goes through {@link PortalRoomEditor#relayout}, or the row
+     * top-level row — so every mutation goes through {@link DimensionalCarriageEditor#relayout}, or the row
      * fills with rooms at positions nothing will clear again.</p>
      */
-    private static int savePortalRoomGroup(CommandSourceStack source, String parent,
+    private static int saveDimensionalCarriageGroup(CommandSourceStack source, String parent,
                                            games.brennan.dungeontrain.track.variant.TrackVariantGroup updated,
                                            String message) {
         ServerLevel overworld = source.getServer().overworld();
         CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
         IOException[] failure = new IOException[1];
-        games.brennan.dungeontrain.editor.PortalRoomEditor.relayout(overworld, dims, () -> {
+        games.brennan.dungeontrain.editor.DimensionalCarriageEditor.relayout(overworld, dims, () -> {
             try {
-                games.brennan.dungeontrain.editor.TrackVariantGroupStore.save(PORTAL_ROOM_KIND, parent, updated);
+                games.brennan.dungeontrain.editor.TrackVariantGroupStore.save(DIMENSIONAL_CARRIAGE_KIND, parent, updated);
             } catch (IOException e) {
                 failure[0] = e;
             }
@@ -5195,9 +5195,9 @@ public final class EditorCommand {
 
     // ---------- track-side group members: per-member gate + Stage links ----------
     //
-    // Keyed on (kind, parent, member) rather than hardcoded to the portal room, because the sidecar,
+    // Keyed on (kind, parent, member) rather than hardcoded to the dimensional carriage, because the sidecar,
     // the gate fields and the resolver (TrackVariantRegistry.resolveGroup) are all TrackKind-generic
-    // already — the portal room is simply the only kind with a group today. The nodes below are
+    // already — the dimensional carriage is simply the only kind with a group today. The nodes below are
     // attached under `editor portals group …` with the kind bound; another kind that grows groups
     // attaches the same builders with its own kind and suggestions.
 
@@ -5363,7 +5363,7 @@ public final class EditorCommand {
 
     /**
      * Write one updated member back into its parent's sidecar. Deliberately NOT the
-     * {@link #savePortalRoomGroup} path: that relayouts the plot row because membership decides where
+     * {@link #saveDimensionalCarriageGroup} path: that relayouts the plot row because membership decides where
      * a plot sits, and a gate or Stage edit changes neither membership nor plot order.
      */
     private static void saveTrackGroupMember(games.brennan.dungeontrain.track.variant.TrackKind kind, String parent,
@@ -5379,10 +5379,10 @@ public final class EditorCommand {
      * sub-variant of another. Single-hop only, no cycles, and {@code default} may not be a member
      * (it is the synthetic fallback every kind keeps, not an authored room).
      */
-    private static int runPortalRoomGroupAdd(CommandSourceStack source, String parentRaw, String childRaw, int weight) {
-        String parent = parsePortalRoom(source, parentRaw);
+    private static int runDimensionalCarriageGroupAdd(CommandSourceStack source, String parentRaw, String childRaw, int weight) {
+        String parent = parseDimensionalCarriage(source, parentRaw);
         if (parent == null) return 0;
-        String child = parsePortalRoom(source, childRaw);
+        String child = parseDimensionalCarriage(source, childRaw);
         if (child == null) return 0;
         if (parent.equals(child)) {
             source.sendFailure(Component.literal("Cannot add '" + parent + "' as a sub-variant of itself.")
@@ -5391,18 +5391,18 @@ public final class EditorCommand {
         }
         if (games.brennan.dungeontrain.track.variant.TrackKind.DEFAULT_NAME.equals(child)) {
             source.sendFailure(Component.literal(
-                "'default' cannot be a sub-variant — it is the fallback every portal room falls back to.")
+                "'default' cannot be a sub-variant — it is the fallback every dimensional carriage falls back to.")
                 .withStyle(ChatFormatting.RED));
             return 0;
         }
-        if (games.brennan.dungeontrain.editor.TrackVariantGroupStore.exists(PORTAL_ROOM_KIND, child)) {
+        if (games.brennan.dungeontrain.editor.TrackVariantGroupStore.exists(DIMENSIONAL_CARRIAGE_KIND, child)) {
             source.sendFailure(Component.literal(
                 "'" + child + "' has sub-variants of its own — nesting is single-hop only.")
                 .withStyle(ChatFormatting.RED));
             return 0;
         }
         java.util.Optional<String> existingParent = games.brennan.dungeontrain.editor.TrackVariantGroupStore
-            .findParentOf(PORTAL_ROOM_KIND, child);
+            .findParentOf(DIMENSIONAL_CARRIAGE_KIND, child);
         if (existingParent.isPresent() && !existingParent.get().equals(parent)) {
             source.sendFailure(Component.literal(
                 "'" + child + "' is already a sub-variant of '" + existingParent.get() + "'.")
@@ -5410,7 +5410,7 @@ public final class EditorCommand {
             return 0;
         }
         if (games.brennan.dungeontrain.editor.TrackVariantGroupStore
-                .allChildIds(PORTAL_ROOM_KIND).contains(parent)) {
+                .allChildIds(DIMENSIONAL_CARRIAGE_KIND).contains(parent)) {
             source.sendFailure(Component.literal(
                 "'" + parent + "' is itself a sub-variant — making it a parent would create a cycle.")
                 .withStyle(ChatFormatting.RED));
@@ -5418,11 +5418,11 @@ public final class EditorCommand {
         }
 
         games.brennan.dungeontrain.track.variant.TrackVariantGroup updated =
-            games.brennan.dungeontrain.editor.TrackVariantGroupStore.get(PORTAL_ROOM_KIND, parent)
+            games.brennan.dungeontrain.editor.TrackVariantGroupStore.get(DIMENSIONAL_CARRIAGE_KIND, parent)
                 .orElse(games.brennan.dungeontrain.track.variant.TrackVariantGroup.EMPTY)
                 .withMember(new games.brennan.dungeontrain.track.variant.TrackVariantGroup.Member(child, weight));
-        return savePortalRoomGroup(source, parent, updated,
-            "Editor: portal room '" + parent + "' → added sub-variant '" + child + "' (weight=" + weight
+        return saveDimensionalCarriageGroup(source, parent, updated,
+            "Editor: dimensional carriage '" + parent + "' → added sub-variant '" + child + "' (weight=" + weight
                 + ", " + updated.members().size() + " sub-variant"
                 + (updated.members().size() == 1 ? "" : "s") + " + the parent itself).");
     }
@@ -5438,11 +5438,11 @@ public final class EditorCommand {
      * explicitly (what the editor's picker sends); omitted, it is resolved from the player's plot,
      * and only failing that does it fall back to the parent.</p>
      */
-    private static int runPortalRoomGroupNew(CommandSourceStack source, String parentRaw, String nameRaw,
+    private static int runDimensionalCarriageGroupNew(CommandSourceStack source, String parentRaw, String nameRaw,
                                              String sourceRaw) {
         ServerPlayer player = requirePlayer(source);
         if (player == null) return 0;
-        String parent = parsePortalRoom(source, parentRaw);
+        String parent = parseDimensionalCarriage(source, parentRaw);
         if (parent == null) return 0;
 
         String key = nameRaw == null ? "" : nameRaw.toLowerCase(Locale.ROOT);
@@ -5457,13 +5457,13 @@ public final class EditorCommand {
                 .withStyle(ChatFormatting.RED));
             return 0;
         }
-        if (games.brennan.dungeontrain.track.variant.TrackVariantRegistry.contains(PORTAL_ROOM_KIND, key)) {
-            source.sendFailure(Component.literal("Portal room '" + key + "' already exists.")
+        if (games.brennan.dungeontrain.track.variant.TrackVariantRegistry.contains(DIMENSIONAL_CARRIAGE_KIND, key)) {
+            source.sendFailure(Component.literal("Dimensional carriage '" + key + "' already exists.")
                 .withStyle(ChatFormatting.RED));
             return 0;
         }
         if (games.brennan.dungeontrain.editor.TrackVariantGroupStore
-                .allChildIds(PORTAL_ROOM_KIND).contains(parent)) {
+                .allChildIds(DIMENSIONAL_CARRIAGE_KIND).contains(parent)) {
             source.sendFailure(Component.literal(
                 "'" + parent + "' is itself a sub-variant — nesting is single-hop only.")
                 .withStyle(ChatFormatting.RED));
@@ -5474,7 +5474,7 @@ public final class EditorCommand {
         CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
 
         games.brennan.dungeontrain.track.variant.TrackVariantGroup existing =
-            games.brennan.dungeontrain.editor.TrackVariantGroupStore.get(PORTAL_ROOM_KIND, parent)
+            games.brennan.dungeontrain.editor.TrackVariantGroupStore.get(DIMENSIONAL_CARRIAGE_KIND, parent)
                 .orElse(games.brennan.dungeontrain.track.variant.TrackVariantGroup.EMPTY);
 
         // Which room the new one is seeded from. Explicit argument wins; otherwise the plot the
@@ -5482,12 +5482,12 @@ public final class EditorCommand {
         // inside a sibling sub-variant copies that sibling rather than the group's parent.
         String seed = parent;
         if (sourceRaw != null && !sourceRaw.isEmpty()) {
-            seed = parsePortalRoom(source, sourceRaw);
+            seed = parseDimensionalCarriage(source, sourceRaw);
             if (seed == null) return 0;
         } else {
             games.brennan.dungeontrain.editor.TrackPlotLocator.PlotInfo standing =
                 games.brennan.dungeontrain.editor.TrackPlotLocator.locate(player, dims);
-            if (standing != null && standing.kind() == PORTAL_ROOM_KIND) seed = standing.name();
+            if (standing != null && standing.kind() == DIMENSIONAL_CARRIAGE_KIND) seed = standing.name();
         }
         // Only the parent or one of its own sub-variants: seeding across groups would copy a room
         // whose size and variant blocks have nothing to do with this pool.
@@ -5506,7 +5506,7 @@ public final class EditorCommand {
             existing.withMember(new games.brennan.dungeontrain.track.variant.TrackVariantGroup.Member(
                 key, games.brennan.dungeontrain.track.variant.TrackVariantGroup.DEFAULT_WEIGHT));
         try {
-            games.brennan.dungeontrain.editor.TrackVariantGroupStore.save(PORTAL_ROOM_KIND, parent, updated);
+            games.brennan.dungeontrain.editor.TrackVariantGroupStore.save(DIMENSIONAL_CARRIAGE_KIND, parent, updated);
         } catch (IOException e) {
             LOGGER.error("[DungeonTrain] editor portals group new failed", e);
             source.sendFailure(Component.literal("group new failed: " + e.toString())
@@ -5516,30 +5516,30 @@ public final class EditorCommand {
 
         try {
             java.util.Optional<net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate> src =
-                games.brennan.dungeontrain.editor.PortalRoomTemplateStore.get(overworld, seedRoom, dims);
+                games.brennan.dungeontrain.editor.DimensionalCarriageTemplateStore.get(overworld, seedRoom, dims);
             if (src.isPresent()) {
                 // Save first so the freshly-registered plot stamps the seed's room rather than the
                 // built-in one, then register inside a relayout — the new slot shifts the row.
-                games.brennan.dungeontrain.editor.PortalRoomTemplateStore.save(key, src.get());
+                games.brennan.dungeontrain.editor.DimensionalCarriageTemplateStore.save(key, src.get());
                 // The geometry alone isn't the room: without the seed's variant-blocks sidecar
                 // the sub-variant stamps as a plain box, because applyRoomVariants early-outs on
                 // an empty sidecar. Inside this try so a failure rolls the membership back too.
-                copyTrackVariantSidecar(PORTAL_ROOM_KIND, seedRoom, key, dims);
+                copyTrackVariantSidecar(DIMENSIONAL_CARRIAGE_KIND, seedRoom, key, dims);
                 // Size follows the seed, not the parent: a copy of a smaller sibling that inherited
                 // the parent's box would stamp short and read back as an undersized template.
                 net.minecraft.core.Vec3i inherited =
-                    games.brennan.dungeontrain.portal.PortalRoomSizes.sizeOf(seedRoom, dims);
-                games.brennan.dungeontrain.editor.PortalRoomEditor.relayout(overworld, dims, () -> {
-                    games.brennan.dungeontrain.portal.PortalRoomSizes.pending(key, inherited);
-                    games.brennan.dungeontrain.track.variant.TrackVariantRegistry.register(PORTAL_ROOM_KIND, key);
+                    games.brennan.dungeontrain.portal.DimensionalCarriageSizes.sizeOf(seedRoom, dims);
+                games.brennan.dungeontrain.editor.DimensionalCarriageEditor.relayout(overworld, dims, () -> {
+                    games.brennan.dungeontrain.portal.DimensionalCarriageSizes.pending(key, inherited);
+                    games.brennan.dungeontrain.track.variant.TrackVariantRegistry.register(DIMENSIONAL_CARRIAGE_KIND, key);
                 });
             } else {
-                games.brennan.dungeontrain.editor.PortalRoomEditor.createFromBuiltIn(overworld, seedRoom, key, dims);
+                games.brennan.dungeontrain.editor.DimensionalCarriageEditor.createFromBuiltIn(overworld, seedRoom, key, dims);
             }
         } catch (IOException e) {
             // Roll the membership back rather than leaving a sub-variant that points at nothing.
             try {
-                games.brennan.dungeontrain.editor.TrackVariantGroupStore.save(PORTAL_ROOM_KIND, parent,
+                games.brennan.dungeontrain.editor.TrackVariantGroupStore.save(DIMENSIONAL_CARRIAGE_KIND, parent,
                     updated.withoutMember(key));
             } catch (IOException rollback) {
                 LOGGER.error("[DungeonTrain] editor portals group new: rollback failed", rollback);
@@ -5550,9 +5550,9 @@ public final class EditorCommand {
             return 0;
         }
 
-        games.brennan.dungeontrain.editor.PortalRoomEditor.enter(player, key);
+        games.brennan.dungeontrain.editor.DimensionalCarriageEditor.enter(player, key);
         source.sendSuccess(() -> Component.literal(
-            "Editor: created portal room sub-variant '" + key + "' under '" + parent
+            "Editor: created dimensional carriage sub-variant '" + key + "' under '" + parent
                 + "' (copied from '" + seedRoom + "') — teleported to its plot.")
             .withStyle(ChatFormatting.GREEN), true);
         return 1;
@@ -5563,16 +5563,16 @@ public final class EditorCommand {
      * sub-variant is drawn at. {@code parent == child} sets the parent's own share of the draw
      * ({@code selfWeight}), which is how a parent stops being picked as itself.
      */
-    private static int runPortalRoomGroupWeightSet(CommandSourceStack source, String parentRaw,
+    private static int runDimensionalCarriageGroupWeightSet(CommandSourceStack source, String parentRaw,
                                                    String childRaw, int value) {
-        String parent = parsePortalRoom(source, parentRaw);
+        String parent = parseDimensionalCarriage(source, parentRaw);
         if (parent == null) return 0;
-        String child = parsePortalRoom(source, childRaw);
+        String child = parseDimensionalCarriage(source, childRaw);
         if (child == null) return 0;
         java.util.Optional<games.brennan.dungeontrain.track.variant.TrackVariantGroup> existing =
-            games.brennan.dungeontrain.editor.TrackVariantGroupStore.get(PORTAL_ROOM_KIND, parent);
+            games.brennan.dungeontrain.editor.TrackVariantGroupStore.get(DIMENSIONAL_CARRIAGE_KIND, parent);
         if (existing.isEmpty()) {
-            source.sendFailure(Component.literal("Portal room '" + parent + "' has no sub-variants.")
+            source.sendFailure(Component.literal("Dimensional carriage '" + parent + "' has no sub-variants.")
                 .withStyle(ChatFormatting.YELLOW));
             return 0;
         }
@@ -5594,21 +5594,21 @@ public final class EditorCommand {
             stored = m.weight();
         }
         String label = isSelf ? "the parent's own share" : "'" + child + "'";
-        return savePortalRoomGroup(source, parent, updated,
-            "Editor: portal room '" + parent + "' → " + label + " weight=" + stored + ".");
+        return saveDimensionalCarriageGroup(source, parent, updated,
+            "Editor: dimensional carriage '" + parent + "' → " + label + " weight=" + stored + ".");
     }
 
     /** Read-modify-write nudge for a sub-variant's weight (or the parent's own share). */
-    private static int runPortalRoomGroupWeightAdjust(CommandSourceStack source, String parentRaw,
+    private static int runDimensionalCarriageGroupWeightAdjust(CommandSourceStack source, String parentRaw,
                                                       String childRaw, int delta) {
-        String parent = parsePortalRoom(source, parentRaw);
+        String parent = parseDimensionalCarriage(source, parentRaw);
         if (parent == null) return 0;
-        String child = parsePortalRoom(source, childRaw);
+        String child = parseDimensionalCarriage(source, childRaw);
         if (child == null) return 0;
         java.util.Optional<games.brennan.dungeontrain.track.variant.TrackVariantGroup> existing =
-            games.brennan.dungeontrain.editor.TrackVariantGroupStore.get(PORTAL_ROOM_KIND, parent);
+            games.brennan.dungeontrain.editor.TrackVariantGroupStore.get(DIMENSIONAL_CARRIAGE_KIND, parent);
         if (existing.isEmpty()) {
-            source.sendFailure(Component.literal("Portal room '" + parent + "' has no sub-variants.")
+            source.sendFailure(Component.literal("Dimensional carriage '" + parent + "' has no sub-variants.")
                 .withStyle(ChatFormatting.YELLOW));
             return 0;
         }
@@ -5625,43 +5625,43 @@ public final class EditorCommand {
             }
             current = m.get().weight();
         }
-        return runPortalRoomGroupWeightSet(source, parentRaw, childRaw, current + delta);
+        return runDimensionalCarriageGroupWeightSet(source, parentRaw, childRaw, current + delta);
     }
 
     /**
      * {@code /dt editor portals group remove <parent> <child>} — detach a sub-variant. The room
      * itself is untouched: it returns to the top-level row as a room in its own right.
      */
-    private static int runPortalRoomGroupRemove(CommandSourceStack source, String parentRaw, String childRaw) {
-        String parent = parsePortalRoom(source, parentRaw);
+    private static int runDimensionalCarriageGroupRemove(CommandSourceStack source, String parentRaw, String childRaw) {
+        String parent = parseDimensionalCarriage(source, parentRaw);
         if (parent == null) return 0;
-        String child = parsePortalRoom(source, childRaw);
+        String child = parseDimensionalCarriage(source, childRaw);
         if (child == null) return 0;
         java.util.Optional<games.brennan.dungeontrain.track.variant.TrackVariantGroup> existing =
-            games.brennan.dungeontrain.editor.TrackVariantGroupStore.get(PORTAL_ROOM_KIND, parent);
+            games.brennan.dungeontrain.editor.TrackVariantGroupStore.get(DIMENSIONAL_CARRIAGE_KIND, parent);
         if (existing.isEmpty() || existing.get().member(child).isEmpty()) {
             source.sendFailure(Component.literal(
                 "'" + child + "' is not a sub-variant of '" + parent + "'.").withStyle(ChatFormatting.YELLOW));
             return 0;
         }
-        return savePortalRoomGroup(source, parent, existing.get().withoutMember(child),
-            "Editor: portal room '" + parent + "' → removed sub-variant '" + child
+        return saveDimensionalCarriageGroup(source, parent, existing.get().withoutMember(child),
+            "Editor: dimensional carriage '" + parent + "' → removed sub-variant '" + child
                 + "' (it is a top-level room again).");
     }
 
     /** {@code /dt editor portals group list <parent>} — what a room's sub-variant pool looks like. */
-    private static int runPortalRoomGroupList(CommandSourceStack source, String parentRaw) {
-        String parent = parsePortalRoom(source, parentRaw);
+    private static int runDimensionalCarriageGroupList(CommandSourceStack source, String parentRaw) {
+        String parent = parseDimensionalCarriage(source, parentRaw);
         if (parent == null) return 0;
         java.util.Optional<games.brennan.dungeontrain.track.variant.TrackVariantGroup> existing =
-            games.brennan.dungeontrain.editor.TrackVariantGroupStore.get(PORTAL_ROOM_KIND, parent);
+            games.brennan.dungeontrain.editor.TrackVariantGroupStore.get(DIMENSIONAL_CARRIAGE_KIND, parent);
         if (existing.isEmpty() || existing.get().isEmpty()) {
             source.sendSuccess(() -> Component.literal(
-                "Portal room '" + parent + "' has no sub-variants."), false);
+                "Dimensional carriage '" + parent + "' has no sub-variants."), false);
             return 1;
         }
         games.brennan.dungeontrain.track.variant.TrackVariantGroup group = existing.get();
-        StringBuilder sb = new StringBuilder("Portal room '").append(parent).append("' sub-variants: ")
+        StringBuilder sb = new StringBuilder("Dimensional carriage '").append(parent).append("' sub-variants: ")
             .append(parent).append(" (self) = ").append(group.selfWeight());
         for (games.brennan.dungeontrain.track.variant.TrackVariantGroup.Member m : group.members()) {
             sb.append(", ").append(m.id()).append(" = ").append(m.weight());
@@ -5672,20 +5672,20 @@ public final class EditorCommand {
     }
 
     /** {@code /dt editor portals group clear <parent>} — drop the whole sidecar. Rooms are kept. */
-    private static int runPortalRoomGroupClear(CommandSourceStack source, String parentRaw) {
-        String parent = parsePortalRoom(source, parentRaw);
+    private static int runDimensionalCarriageGroupClear(CommandSourceStack source, String parentRaw) {
+        String parent = parseDimensionalCarriage(source, parentRaw);
         if (parent == null) return 0;
-        if (!games.brennan.dungeontrain.editor.TrackVariantGroupStore.exists(PORTAL_ROOM_KIND, parent)) {
-            source.sendFailure(Component.literal("Portal room '" + parent + "' has no sub-variants.")
+        if (!games.brennan.dungeontrain.editor.TrackVariantGroupStore.exists(DIMENSIONAL_CARRIAGE_KIND, parent)) {
+            source.sendFailure(Component.literal("Dimensional carriage '" + parent + "' has no sub-variants.")
                 .withStyle(ChatFormatting.YELLOW));
             return 0;
         }
         ServerLevel overworld = source.getServer().overworld();
         CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
         IOException[] failure = new IOException[1];
-        games.brennan.dungeontrain.editor.PortalRoomEditor.relayout(overworld, dims, () -> {
+        games.brennan.dungeontrain.editor.DimensionalCarriageEditor.relayout(overworld, dims, () -> {
             try {
-                games.brennan.dungeontrain.editor.TrackVariantGroupStore.delete(PORTAL_ROOM_KIND, parent);
+                games.brennan.dungeontrain.editor.TrackVariantGroupStore.delete(DIMENSIONAL_CARRIAGE_KIND, parent);
             } catch (IOException e) {
                 failure[0] = e;
             }
@@ -5697,78 +5697,78 @@ public final class EditorCommand {
             return 0;
         }
         source.sendSuccess(() -> Component.literal(
-            "Editor: portal room '" + parent + "' → sub-variants cleared (the rooms themselves are kept).")
+            "Editor: dimensional carriage '" + parent + "' → sub-variants cleared (the rooms themselves are kept).")
             .withStyle(ChatFormatting.GREEN), true);
         return 1;
     }
 
     /**
      * {@code /dt editor portals mode next} — step the room plot the player is standing in to the
-     * next {@link games.brennan.dungeontrain.portal.PortalRoomMode}.
+     * next {@link games.brennan.dungeontrain.portal.DimensionalCarriageMode}.
      *
      * <p>What the floating plot panel's Walls button sends. Three modes is few enough that cycling
      * reaches any of them in at most two clicks, and a cycle needs no keyboard.</p>
      */
-    private static int runPortalRoomModeCycle(CommandSourceStack source) {
-        String name = portalRoomPlotUnderPlayer(source);
+    private static int runDimensionalCarriageModeCycle(CommandSourceStack source) {
+        String name = dimensionalCarriagePlotUnderPlayer(source);
         if (name == null) return 0;
-        games.brennan.dungeontrain.portal.PortalRoomSettings current =
-            games.brennan.dungeontrain.portal.PortalRoomSettings.of(name);
-        return applyPortalRoomSettings(source, name, current.withMode(current.mode().next()));
+        games.brennan.dungeontrain.portal.DimensionalCarriageSettings current =
+            games.brennan.dungeontrain.portal.DimensionalCarriageSettings.of(name);
+        return applyDimensionalCarriageSettings(source, name, current.withMode(current.mode().next()));
     }
 
     /** {@code /dt editor portals copies next} — step the Copies sub-mode. */
-    private static int runPortalRoomCopiesCycle(CommandSourceStack source) {
-        String name = portalRoomPlotUnderPlayer(source);
+    private static int runDimensionalCarriageCopiesCycle(CommandSourceStack source) {
+        String name = dimensionalCarriagePlotUnderPlayer(source);
         if (name == null) return 0;
-        games.brennan.dungeontrain.portal.PortalRoomSettings current =
-            games.brennan.dungeontrain.portal.PortalRoomSettings.of(name);
-        return applyPortalRoomSettings(source, name, current.withCopies(current.copies().next()));
+        games.brennan.dungeontrain.portal.DimensionalCarriageSettings current =
+            games.brennan.dungeontrain.portal.DimensionalCarriageSettings.of(name);
+        return applyDimensionalCarriageSettings(source, name, current.withCopies(current.copies().next()));
     }
 
     /** {@code /dt editor portals contents next} — step the Contents setting. */
-    private static int runPortalRoomContentsCycle(CommandSourceStack source) {
-        String name = portalRoomPlotUnderPlayer(source);
+    private static int runDimensionalCarriageContentsCycle(CommandSourceStack source) {
+        String name = dimensionalCarriagePlotUnderPlayer(source);
         if (name == null) return 0;
-        games.brennan.dungeontrain.portal.PortalRoomSettings current =
-            games.brennan.dungeontrain.portal.PortalRoomSettings.of(name);
-        return applyPortalRoomSettings(source, name, current.withContents(current.contents().next()));
+        games.brennan.dungeontrain.portal.DimensionalCarriageSettings current =
+            games.brennan.dungeontrain.portal.DimensionalCarriageSettings.of(name);
+        return applyDimensionalCarriageSettings(source, name, current.withContents(current.contents().next()));
     }
 
     /** {@code /dt editor portals exits next} — step On → Random → Off, keeping the spacing. */
-    private static int runPortalRoomExitsCycle(CommandSourceStack source) {
-        String name = portalRoomPlotUnderPlayer(source);
+    private static int runDimensionalCarriageExitsCycle(CommandSourceStack source) {
+        String name = dimensionalCarriagePlotUnderPlayer(source);
         if (name == null) return 0;
-        games.brennan.dungeontrain.portal.PortalRoomSettings current =
-            games.brennan.dungeontrain.portal.PortalRoomSettings.of(name);
-        return applyPortalRoomSettings(source, name, current.withExits(current.exits().next()));
+        games.brennan.dungeontrain.portal.DimensionalCarriageSettings current =
+            games.brennan.dungeontrain.portal.DimensionalCarriageSettings.of(name);
+        return applyDimensionalCarriageSettings(source, name, current.withExits(current.exits().next()));
     }
 
     /** {@code /dt editor portals exits <on|random|off>} — set it outright, keeping the spacing. */
-    private static int runPortalRoomExits(CommandSourceStack source, String raw) {
-        String name = portalRoomPlotUnderPlayer(source);
+    private static int runDimensionalCarriageExits(CommandSourceStack source, String raw) {
+        String name = dimensionalCarriagePlotUnderPlayer(source);
         if (name == null) return 0;
 
-        games.brennan.dungeontrain.portal.PortalRoomExits.Kind wanted =
-            games.brennan.dungeontrain.portal.PortalRoomExits.Kind.parse(raw);
+        games.brennan.dungeontrain.portal.DimensionalCarriageExits.Kind wanted =
+            games.brennan.dungeontrain.portal.DimensionalCarriageExits.Kind.parse(raw);
         if (!wanted.id().equalsIgnoreCase(raw.trim())) {
             source.sendFailure(Component.literal(
                 "Unknown exits option '" + raw + "'. Try on, random or off."));
             return 0;
         }
-        games.brennan.dungeontrain.portal.PortalRoomSettings current =
-            games.brennan.dungeontrain.portal.PortalRoomSettings.of(name);
-        return applyPortalRoomSettings(source, name,
+        games.brennan.dungeontrain.portal.DimensionalCarriageSettings current =
+            games.brennan.dungeontrain.portal.DimensionalCarriageSettings.of(name);
+        return applyDimensionalCarriageSettings(source, name,
             current.withExits(current.exits().withKind(wanted)));
     }
 
     /** Nudge the Exits spacing of the room plot the player is standing in by {@code delta}. */
-    private static int runPortalRoomExitEveryStep(CommandSourceStack source, int delta) {
-        String name = portalRoomPlotUnderPlayer(source);
+    private static int runDimensionalCarriageExitEveryStep(CommandSourceStack source, int delta) {
+        String name = dimensionalCarriagePlotUnderPlayer(source);
         if (name == null) return 0;
-        games.brennan.dungeontrain.portal.PortalRoomSettings current =
-            games.brennan.dungeontrain.portal.PortalRoomSettings.of(name);
-        return runPortalRoomExitEvery(source, current.exits().every() + delta);
+        games.brennan.dungeontrain.portal.DimensionalCarriageSettings current =
+            games.brennan.dungeontrain.portal.DimensionalCarriageSettings.of(name);
+        return runDimensionalCarriageExitEvery(source, current.exits().every() + delta);
     }
 
     /**
@@ -5777,22 +5777,22 @@ public final class EditorCommand {
      * <p>Clamped rather than rejected, the way the size commands are: a number the author typed and
      * meant should land on the nearest legal one with the reply saying so, not vanish.</p>
      */
-    private static int runPortalRoomExitEvery(CommandSourceStack source, int tiles) {
-        String name = portalRoomPlotUnderPlayer(source);
+    private static int runDimensionalCarriageExitEvery(CommandSourceStack source, int tiles) {
+        String name = dimensionalCarriagePlotUnderPlayer(source);
         if (name == null) return 0;
-        games.brennan.dungeontrain.portal.PortalRoomSettings current =
-            games.brennan.dungeontrain.portal.PortalRoomSettings.of(name);
-        return applyPortalRoomSettings(source, name,
+        games.brennan.dungeontrain.portal.DimensionalCarriageSettings current =
+            games.brennan.dungeontrain.portal.DimensionalCarriageSettings.of(name);
+        return applyDimensionalCarriageSettings(source, name,
             current.withExits(current.exits().withEvery(tiles)));
     }
 
     /** Nudge how often the room walls off its exit, by {@code delta}. */
-    private static int runPortalRoomExitMoveStep(CommandSourceStack source, int delta) {
-        String name = portalRoomPlotUnderPlayer(source);
+    private static int runDimensionalCarriageExitMoveStep(CommandSourceStack source, int delta) {
+        String name = dimensionalCarriagePlotUnderPlayer(source);
         if (name == null) return 0;
-        games.brennan.dungeontrain.portal.PortalRoomSettings current =
-            games.brennan.dungeontrain.portal.PortalRoomSettings.of(name);
-        return runPortalRoomExitMove(source, current.exits().moveChance() + delta);
+        games.brennan.dungeontrain.portal.DimensionalCarriageSettings current =
+            games.brennan.dungeontrain.portal.DimensionalCarriageSettings.of(name);
+        return runDimensionalCarriageExitMove(source, current.exits().moveChance() + delta);
     }
 
     /**
@@ -5801,76 +5801,76 @@ public final class EditorCommand {
      *
      * <p>Clamped rather than rejected, like the other numeric portal settings.</p>
      */
-    private static int runPortalRoomExitMove(CommandSourceStack source, int chance) {
-        String name = portalRoomPlotUnderPlayer(source);
+    private static int runDimensionalCarriageExitMove(CommandSourceStack source, int chance) {
+        String name = dimensionalCarriagePlotUnderPlayer(source);
         if (name == null) return 0;
-        games.brennan.dungeontrain.portal.PortalRoomSettings current =
-            games.brennan.dungeontrain.portal.PortalRoomSettings.of(name);
-        return applyPortalRoomSettings(source, name,
+        games.brennan.dungeontrain.portal.DimensionalCarriageSettings current =
+            games.brennan.dungeontrain.portal.DimensionalCarriageSettings.of(name);
+        return applyDimensionalCarriageSettings(source, name,
             current.withExits(current.exits().withMoveChance(chance)));
     }
 
     /** {@code /dt editor portals contents <off|fit|exact|tile>} — set it outright. */
-    private static int runPortalRoomContents(CommandSourceStack source, String raw) {
-        String name = portalRoomPlotUnderPlayer(source);
+    private static int runDimensionalCarriageContents(CommandSourceStack source, String raw) {
+        String name = dimensionalCarriagePlotUnderPlayer(source);
         if (name == null) return 0;
 
-        games.brennan.dungeontrain.portal.PortalRoomContents wanted =
-            games.brennan.dungeontrain.portal.PortalRoomContents.parse(raw);
+        games.brennan.dungeontrain.portal.DimensionalCarriageContents wanted =
+            games.brennan.dungeontrain.portal.DimensionalCarriageContents.parse(raw);
         if (!wanted.id().equalsIgnoreCase(raw.trim())) {
             source.sendFailure(Component.literal(
                 "Unknown contents option '" + raw + "'. Try off, fit, exact or tile."));
             return 0;
         }
-        return applyPortalRoomSettings(source, name,
-            games.brennan.dungeontrain.portal.PortalRoomSettings.of(name).withContents(wanted));
+        return applyDimensionalCarriageSettings(source, name,
+            games.brennan.dungeontrain.portal.DimensionalCarriageSettings.of(name).withContents(wanted));
     }
 
     /** {@code /dt editor portals copies <exact|dynamic>} — set it outright. */
-    private static int runPortalRoomCopies(CommandSourceStack source, String raw) {
-        String name = portalRoomPlotUnderPlayer(source);
+    private static int runDimensionalCarriageCopies(CommandSourceStack source, String raw) {
+        String name = dimensionalCarriagePlotUnderPlayer(source);
         if (name == null) return 0;
 
-        games.brennan.dungeontrain.portal.PortalRoomCopies wanted =
-            games.brennan.dungeontrain.portal.PortalRoomCopies.parse(raw);
+        games.brennan.dungeontrain.portal.DimensionalCarriageCopies wanted =
+            games.brennan.dungeontrain.portal.DimensionalCarriageCopies.parse(raw);
         if (!wanted.id().equalsIgnoreCase(raw.trim())) {
             source.sendFailure(Component.literal(
                 "Unknown copies option '" + raw + "'. Try exact or dynamic."));
             return 0;
         }
-        return applyPortalRoomSettings(source, name,
-            games.brennan.dungeontrain.portal.PortalRoomSettings.of(name).withCopies(wanted));
+        return applyDimensionalCarriageSettings(source, name,
+            games.brennan.dungeontrain.portal.DimensionalCarriageSettings.of(name).withCopies(wanted));
     }
 
     /** {@code /dt editor portals mode <mode>} — set it outright. */
-    private static int runPortalRoomMode(CommandSourceStack source, String raw) {
-        String name = portalRoomPlotUnderPlayer(source);
+    private static int runDimensionalCarriageMode(CommandSourceStack source, String raw) {
+        String name = dimensionalCarriagePlotUnderPlayer(source);
         if (name == null) return 0;
 
-        games.brennan.dungeontrain.portal.PortalRoomMode wanted =
-            games.brennan.dungeontrain.portal.PortalRoomMode.parse(raw);
+        games.brennan.dungeontrain.portal.DimensionalCarriageMode wanted =
+            games.brennan.dungeontrain.portal.DimensionalCarriageMode.parse(raw);
         // parse is total by design, so a typo would silently set the default rather than complain.
         // Worth complaining about here: the player typed something and meant it.
         if (!wanted.id().equalsIgnoreCase(raw.trim())) {
             source.sendFailure(Component.literal(
-                "Unknown portal room mode '" + raw + "'. Try bedrock_lock, endless_repetition or endless_open."));
+                "Unknown dimensional carriage mode '" + raw + "'. Try bedrock_lock, endless_repetition or endless_open."));
             return 0;
         }
-        return applyPortalRoomSettings(source, name,
-            games.brennan.dungeontrain.portal.PortalRoomSettings.of(name).withMode(wanted));
+        return applyDimensionalCarriageSettings(source, name,
+            games.brennan.dungeontrain.portal.DimensionalCarriageSettings.of(name).withMode(wanted));
     }
 
-    private static int applyPortalRoomSettings(
+    private static int applyDimensionalCarriageSettings(
         CommandSourceStack source, String name,
-        games.brennan.dungeontrain.portal.PortalRoomSettings settings
+        games.brennan.dungeontrain.portal.DimensionalCarriageSettings settings
     ) {
         try {
             games.brennan.dungeontrain.track.variant.TrackVariantWeights.setMode(
-                games.brennan.dungeontrain.track.variant.TrackKind.PORTAL_ROOM, name,
+                games.brennan.dungeontrain.track.variant.TrackKind.DIMENSIONAL_CARRIAGE, name,
                 settings.toTag());
         } catch (IOException e) {
             source.sendFailure(Component.literal(
-                "Could not save the settings for portal room '" + name + "': " + e.getMessage()));
+                "Could not save the settings for dimensional carriage '" + name + "': " + e.getMessage()));
             return 0;
         }
         // The Copies and Exits halves are only worth reporting when they mean anything.
@@ -5883,7 +5883,7 @@ public final class EditorCommand {
                     ? ", moved exit " + settings.exits().moveChance() + "/10" : "")
             : "";
         source.sendSuccess(() -> Component.literal(
-            "Portal room '" + name + "' walls: " + settings.mode().displayName() + copies + contents
+            "Dimensional carriage '" + name + "' walls: " + settings.mode().displayName() + copies + contents
             + exits
             + ". Portals already standing keep the settings they were built with — this takes effect "
             + "on the next one the train reaches." + subVariantNote(name)
@@ -5903,7 +5903,7 @@ public final class EditorCommand {
      */
     private static String subVariantNote(String name) {
         var group = games.brennan.dungeontrain.editor.TrackVariantGroupStore.get(
-            games.brennan.dungeontrain.track.variant.TrackKind.PORTAL_ROOM, name);
+            games.brennan.dungeontrain.track.variant.TrackKind.DIMENSIONAL_CARRIAGE, name);
         if (group.isEmpty() || group.get().members().isEmpty()) return "";
         String members = group.get().members().stream()
             .map(games.brennan.dungeontrain.track.variant.TrackVariantGroup.Member::id)
@@ -5912,15 +5912,15 @@ public final class EditorCommand {
             + " own plots.";
     }
 
-    /** The portal room plot the player is standing in, or null with the reason already reported. */
-    private static String portalRoomPlotUnderPlayer(CommandSourceStack source) {
+    /** The dimensional carriage plot the player is standing in, or null with the reason already reported. */
+    private static String dimensionalCarriagePlotUnderPlayer(CommandSourceStack source) {
         ServerPlayer player = requirePlayer(source);
         if (player == null) return null;
         CarriageDims dims = DungeonTrainWorldData.get(source.getServer().overworld()).dims();
-        String name = PortalRoomEditor.plotContaining(player.blockPosition(), dims);
+        String name = DimensionalCarriageEditor.plotContaining(player.blockPosition(), dims);
         if (name == null) {
             source.sendFailure(Component.literal(
-                "Stand in a portal room plot first — /dt editor portals."));
+                "Stand in a dimensional carriage plot first — /dt editor portals."));
         }
         return name;
     }
@@ -5930,53 +5930,53 @@ public final class EditorCommand {
      *
      * <p>The bare {@code <blocks>} form takes an absolute value; {@code inc} / {@code dec} step by
      * one so the menu steppers can be tapped. All three land on
-     * {@link PortalRoomEditor#setSize}, which clamps to what this world's corridor allows.</p>
+     * {@link DimensionalCarriageEditor#setSize}, which clamps to what this world's corridor allows.</p>
      */
     private static LiteralArgumentBuilder<CommandSourceStack> portalSizeNode(
-        String literal, PortalRoomResize.Axis axis
+        String literal, DimensionalCarriageResize.Axis axis
     ) {
         return Commands.literal(literal)
-            .then(Commands.literal("inc").executes(ctx -> runPortalRoomSizeStep(ctx.getSource(), axis, +1)))
-            .then(Commands.literal("dec").executes(ctx -> runPortalRoomSizeStep(ctx.getSource(), axis, -1)))
+            .then(Commands.literal("inc").executes(ctx -> runDimensionalCarriageSizeStep(ctx.getSource(), axis, +1)))
+            .then(Commands.literal("dec").executes(ctx -> runDimensionalCarriageSizeStep(ctx.getSource(), axis, -1)))
             // Loosest floor of any axis, not the length's — this node is shared by length, width
             // and height, and a parser bound is a silent rejection where clampSize is a visible
-            // one. PortalRoomLayout.clampSize stays the single authority on what is legal.
+            // one. DimensionalCarriageLayout.clampSize stays the single authority on what is legal.
             .then(Commands.argument("blocks", IntegerArgumentType.integer(
-                    Math.min(PortalRoomLayout.MIN_LENGTH, PortalRoomLayout.MIN_HEIGHT),
-                    PortalRoomLayout.MAX_LENGTH))
-                .executes(ctx -> runPortalRoomSize(ctx.getSource(), axis,
+                    Math.min(DimensionalCarriageLayout.MIN_LENGTH, DimensionalCarriageLayout.MIN_HEIGHT),
+                    DimensionalCarriageLayout.MAX_LENGTH))
+                .executes(ctx -> runDimensionalCarriageSize(ctx.getSource(), axis,
                     IntegerArgumentType.getInteger(ctx, "blocks"))));
     }
 
     /**
      * {@code /dt editor portals size <length> <width> <height>} — set the whole box at once.
      *
-     * <p>Argument bounds are deliberately loose; {@link PortalRoomLayout#clampSize} decides what is
+     * <p>Argument bounds are deliberately loose; {@link DimensionalCarriageLayout#clampSize} decides what is
      * legal for this world and the reply says so when it had to pull a number in. A typed size that
      * is silently rejected would be worse than one that is visibly clamped.</p>
      */
-    private static int runPortalRoomSizeAll(CommandSourceStack source, int length, int width, int height) {
+    private static int runDimensionalCarriageSizeAll(CommandSourceStack source, int length, int width, int height) {
         ServerPlayer player = requirePlayer(source);
         if (player == null) return 0;
         ServerLevel overworld = source.getServer().overworld();
         CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
 
-        String name = PortalRoomEditor.plotContaining(player.blockPosition(), dims);
+        String name = DimensionalCarriageEditor.plotContaining(player.blockPosition(), dims);
         if (name == null) {
             source.sendFailure(Component.literal(
-                "Stand in a portal room plot first — /dt editor portals."));
+                "Stand in a dimensional carriage plot first — /dt editor portals."));
             return 0;
         }
 
         net.minecraft.core.Vec3i wanted = new net.minecraft.core.Vec3i(length, height, width);
-        net.minecraft.core.Vec3i applied = PortalRoomEditor.setSize(overworld, name, wanted, dims);
+        net.minecraft.core.Vec3i applied = DimensionalCarriageEditor.setSize(overworld, name, wanted, dims);
         boolean clamped = !applied.equals(wanted);
         String note = clamped
             ? " (clamped from " + length + " " + width + " " + height
                 + " — the room must still seal the corridor mouth and fit its Y lane)"
             : "";
         source.sendSuccess(() -> Component.literal(
-            "Portal room '" + name + "' is now " + applied.getX() + " long, " + applied.getZ()
+            "Dimensional carriage '" + name + "' is now " + applied.getX() + " long, " + applied.getZ()
             + " wide, " + applied.getY() + " tall" + note
             + ". What you built is still there — /dt save to keep the new size."
         ).withStyle(ChatFormatting.GREEN), true);
@@ -5991,15 +5991,15 @@ public final class EditorCommand {
      * room just opened. A shrink also says that the row is recoverable, since it no longer looks
      * like one from the world.</p>
      */
-    private static String describeFaces(CarriageDims dims, PortalRoomResize.Axis axis,
+    private static String describeFaces(CarriageDims dims, DimensionalCarriageResize.Axis axis,
                                         int before, int after) {
-        java.util.List<PortalRoomResize.Step> steps = PortalRoomResize.plan(
-            dims, axis, PortalRoomResize.with(net.minecraft.core.Vec3i.ZERO, axis, before), after);
+        java.util.List<DimensionalCarriageResize.Step> steps = DimensionalCarriageResize.plan(
+            dims, axis, DimensionalCarriageResize.with(net.minecraft.core.Vec3i.ZERO, axis, before), after);
         if (steps.isEmpty()) return "";
-        long min = steps.stream().filter(s -> s.side() == PortalRoomResize.Side.MIN).count();
+        long min = steps.stream().filter(s -> s.side() == DimensionalCarriageResize.Side.MIN).count();
         long max = steps.size() - min;
         // Height never alternates — its floor is the corridor's, so only the ceiling can move.
-        String where = axis == PortalRoomResize.Axis.HEIGHT ? "the ceiling"
+        String where = axis == DimensionalCarriageResize.Axis.HEIGHT ? "the ceiling"
             : min > 0 && max > 0 ? "both ends"
             : min > 0 ? "the near end" : "the far end";
         return steps.get(0).grow()
@@ -6008,18 +6008,18 @@ public final class EditorCommand {
     }
 
     /** Nudge one axis of the room plot the player is standing in by {@code delta}. */
-    private static int runPortalRoomSizeStep(CommandSourceStack source, PortalRoomResize.Axis axis, int delta) {
+    private static int runDimensionalCarriageSizeStep(CommandSourceStack source, DimensionalCarriageResize.Axis axis, int delta) {
         ServerPlayer player = requirePlayer(source);
         if (player == null) return 0;
         CarriageDims dims = DungeonTrainWorldData.get(source.getServer().overworld()).dims();
-        String name = PortalRoomEditor.plotContaining(player.blockPosition(), dims);
+        String name = DimensionalCarriageEditor.plotContaining(player.blockPosition(), dims);
         if (name == null) {
             source.sendFailure(Component.literal(
-                "Stand in a portal room plot first — /dt editor portals."));
+                "Stand in a dimensional carriage plot first — /dt editor portals."));
             return 0;
         }
-        int current = PortalRoomEditor.axisOf(PortalRoomEditor.plotSize(name, dims), axis);
-        return runPortalRoomSize(source, axis, current + delta);
+        int current = DimensionalCarriageEditor.axisOf(DimensionalCarriageEditor.plotSize(name, dims), axis);
+        return runDimensionalCarriageSize(source, axis, current + delta);
     }
 
     /**
@@ -6030,28 +6030,28 @@ public final class EditorCommand {
      * moves, and a shrink files the row it removes so stepping back up returns it. Nothing is written
      * to disk until the next {@code /dt save}, which is what makes the size permanent.</p>
      */
-    private static int runPortalRoomSize(CommandSourceStack source, PortalRoomResize.Axis axis, int blocks) {
+    private static int runDimensionalCarriageSize(CommandSourceStack source, DimensionalCarriageResize.Axis axis, int blocks) {
         ServerPlayer player = requirePlayer(source);
         if (player == null) return 0;
         ServerLevel overworld = source.getServer().overworld();
         CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
 
-        String name = PortalRoomEditor.plotContaining(player.blockPosition(), dims);
+        String name = DimensionalCarriageEditor.plotContaining(player.blockPosition(), dims);
         if (name == null) {
             source.sendFailure(Component.literal(
-                "Stand in a portal room plot first — /dt editor portals."));
+                "Stand in a dimensional carriage plot first — /dt editor portals."));
             return 0;
         }
 
-        int before = PortalRoomEditor.axisOf(PortalRoomEditor.plotSize(name, dims), axis);
-        net.minecraft.core.Vec3i applied = PortalRoomEditor.setSize(overworld, name, axis, blocks, dims);
-        int value = PortalRoomEditor.axisOf(applied, axis);
+        int before = DimensionalCarriageEditor.axisOf(DimensionalCarriageEditor.plotSize(name, dims), axis);
+        net.minecraft.core.Vec3i applied = DimensionalCarriageEditor.setSize(overworld, name, axis, blocks, dims);
+        int value = DimensionalCarriageEditor.axisOf(applied, axis);
         String axisName = axis.name().toLowerCase(Locale.ROOT);
         String note = value == blocks ? ""
             : " (clamped from " + blocks + " — the room must still seal the corridor mouth and fit its Y lane)";
         String faces = describeFaces(dims, axis, before, value);
         source.sendSuccess(() -> Component.literal(
-            "Portal room '" + name + "' " + axisName + " is now " + value + note + "." + faces
+            "Dimensional carriage '" + name + "' " + axisName + " is now " + value + note + "." + faces
             + " What you built is still there — /dt save to keep the new size."
         ).withStyle(ChatFormatting.GREEN), true);
         return 1;
@@ -6078,7 +6078,7 @@ public final class EditorCommand {
                 overworld, TunnelVariant.PORTAL);
             case ADJUNCT_STAIRS -> games.brennan.dungeontrain.editor.PillarEditor.stampPlot(
                 overworld, PillarAdjunct.STAIRS, dims);
-            case PORTAL_ROOM -> games.brennan.dungeontrain.editor.PortalRoomEditor.stampAllPlots(
+            case DIMENSIONAL_CARRIAGE -> games.brennan.dungeontrain.editor.DimensionalCarriageEditor.stampAllPlots(
                 overworld, dims);
         }
     }
@@ -6106,7 +6106,7 @@ public final class EditorCommand {
                 overworld, TunnelVariant.PORTAL, name);
             case ADJUNCT_STAIRS -> games.brennan.dungeontrain.editor.PillarEditor.clearPlotAdjunct(
                 overworld, PillarAdjunct.STAIRS, name, dims);
-            case PORTAL_ROOM -> games.brennan.dungeontrain.editor.PortalRoomEditor.clearPlot(
+            case DIMENSIONAL_CARRIAGE -> games.brennan.dungeontrain.editor.DimensionalCarriageEditor.clearPlot(
                 overworld, name, dims);
         }
     }
@@ -6122,7 +6122,7 @@ public final class EditorCommand {
      *
      * <p>The footprint comes from {@link games.brennan.dungeontrain.editor.TrackSidePlots#footprint(
      * games.brennan.dungeontrain.track.variant.TrackKind, String, CarriageDims)} rather than
-     * {@code kind.dims(dims)}: a portal room is whatever size its author made it, and the
+     * {@code kind.dims(dims)}: a dimensional carriage is whatever size its author made it, and the
      * kind-level box would send every cell above that floor through
      * {@code TrackVariantBlocks.parse}'s bounds check and out of the copy.</p>
      */
@@ -6183,11 +6183,11 @@ public final class EditorCommand {
             games.brennan.dungeontrain.track.variant.TrackVariantStore.get(overworld, kind, sourceName, dims);
         if (sourceTemplate.isEmpty()) {
             // A kind whose fallback is code has nothing to copy until somebody has saved one — the
-            // portal room ships no bundled nbt on purpose. Seed the new variant from the built-in
+            // dimensional carriage ships no bundled nbt on purpose. Seed the new variant from the built-in
             // geometry instead, which is the same starting point 'default' has.
             if (kind.hasBuiltInFallback()) {
                 try {
-                    games.brennan.dungeontrain.editor.PortalRoomEditor.createFromBuiltIn(
+                    games.brennan.dungeontrain.editor.DimensionalCarriageEditor.createFromBuiltIn(
                         overworld, sourceName, key, dims);
                 } catch (java.io.IOException e) {
                     source.sendFailure(Component.literal("Save failed: " + e.getMessage()));
@@ -6265,10 +6265,10 @@ public final class EditorCommand {
         // below only re-stamps registered names, so a leftover plot would
         // otherwise stay visible indefinitely.
         //
-        // For a cumulatively-packed row (portal rooms) removing a name also shifts every plot
+        // For a cumulatively-packed row (dimensional carriages) removing a name also shifts every plot
         // after it, so the whole row has to go, not just this one.
         if (kind.freeSizeAboveFloor()) {
-            PortalRoomEditor.clearAllPlots(overworld, dims);
+            DimensionalCarriageEditor.clearAllPlots(overworld, dims);
         } else {
             clearPlotForVariant(overworld, kind, name, dims);
         }
@@ -6283,7 +6283,7 @@ public final class EditorCommand {
         // Drop the removed room's cached size, or re-creating the same name later would silently
         // inherit the dead variant's dimensions.
         if (kind.hasBuiltInFallback()) {
-            games.brennan.dungeontrain.portal.PortalRoomSizes.forget(name);
+            games.brennan.dungeontrain.portal.DimensionalCarriageSizes.forget(name);
         }
         restampPlotForKind(overworld, kind, dims);
         teleportToPlot(player, overworld, kind,
@@ -6306,7 +6306,7 @@ public final class EditorCommand {
         CarriageDims dims
     ) {
         BlockPos origin = games.brennan.dungeontrain.editor.TrackSidePlots.plotOrigin(kind, name, dims);
-        // Name-aware: a portal room is as long as its author made it, and the kind-level footprint
+        // Name-aware: a dimensional carriage is as long as its author made it, and the kind-level footprint
         // would drop the player short of the centre of a longer one.
         net.minecraft.core.Vec3i fp =
             games.brennan.dungeontrain.editor.TrackSidePlots.footprint(kind, name, dims);

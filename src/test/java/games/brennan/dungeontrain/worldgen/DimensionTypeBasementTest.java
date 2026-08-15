@@ -2,7 +2,7 @@ package games.brennan.dungeontrain.worldgen;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import games.brennan.dungeontrain.portal.PortalRoomLayout;
+import games.brennan.dungeontrain.portal.DimensionalCarriageLayout;
 import games.brennan.dungeontrain.portal.PortalTwinLanes;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -77,7 +77,7 @@ final class DimensionTypeBasementTest {
             int topLane = PortalTwinLanes.twinFloorY(minY, bedrockY,
                 (PortalTwinLanes.MAX_LANES - 1) * 4, 4);
             assertTrue(PortalTwinLanes.fitsUnderWorld(
-                    minY, bedrockY, topLane, PortalRoomLayout.MAX_HEIGHT),
+                    minY, bedrockY, topLane, DimensionalCarriageLayout.MAX_HEIGHT),
                 name + ": the highest lane would push a room up through the bedrock");
         }
     }

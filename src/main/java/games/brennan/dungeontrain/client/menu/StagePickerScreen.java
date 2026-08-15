@@ -125,7 +125,7 @@ public final class StagePickerScreen implements MenuScreen {
     }
 
     /**
-     * The same multi-select picker for a <em>track-side</em> sub-variant (today: a portal room's) —
+     * The same multi-select picker for a <em>track-side</em> sub-variant (today: a dimensional carriage's) —
      * identical toggles, routed to {@code stage apply tracks-group <kind> <parent> <member> <token>}
      * instead. {@code kindId} is the {@code TrackKind} id the member's sidecar lives under.
      */

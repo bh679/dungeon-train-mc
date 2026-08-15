@@ -6,7 +6,7 @@ import games.brennan.dungeontrain.net.PortalTrainAudioPacket;
  * How loud the soundtrack should be for a position inside a portal structure — the music
  * counterpart to {@link ClientPortalTrainAudio}, reading the same cached region.
  *
- * <p><b>The rule.</b> A portal room is somewhere else. Walking the corridor towards it, the music
+ * <p><b>The rule.</b> A dimensional carriage is somewhere else. Walking the corridor towards it, the music
  * fades out over the last {@link #MUSIC_FADE_BLOCKS} blocks and is gone by the doorway; in the room
  * and every copy of it there is none. Measured as distance to the corridor's <i>room-facing</i>
  * door, which {@code PortalStructure}'s layout — {@code [plug] [entry twin] [room] [exit twin]

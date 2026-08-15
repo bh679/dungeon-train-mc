@@ -139,7 +139,7 @@ public final class CarriageContentsStore {
      * over all contents at ordinary carriage dims would otherwise take them out.</p>
      *
      * <p>The gate belongs to the caller, and there are two of them — {@link #filterForSize} for a
-     * carriage, {@link #getFitting} for a portal room.</p>
+     * carriage, {@link #getFitting} for a dimensional carriage.</p>
      */
     private static Optional<StructureTemplate> loadUngated(ServerLevel level, CarriageContents contents) {
         String key = contents.id();
@@ -158,8 +158,8 @@ public final class CarriageContentsStore {
      * {@link #get} with the size gate relaxed from "equals" to "fits inside" — the template is
      * returned whenever it is no bigger than {@code maxInterior} on any axis.
      *
-     * <p>For the one caller whose box is not a carriage interior: a portal room furnished from the
-     * contents pool ({@link games.brennan.dungeontrain.portal.PortalRoomContents}). A room interior
+     * <p>For the one caller whose box is not a carriage interior: a dimensional carriage furnished from the
+     * contents pool ({@link games.brennan.dungeontrain.portal.DimensionalCarriageContents}). A room interior
      * is larger than the carriage box these templates are authored against — 9×5×11 against 7×5×5 at
      * the default dims — so the exact gate would reject every one of them, and the room's setting is
      * precisely the author's instruction to place a smaller furnishing inside a larger space.</p>
@@ -167,7 +167,7 @@ public final class CarriageContentsStore {
      * <p><b>Not a loosening of {@link #get}.</b> A carriage must still take only a template authored
      * at its own interior, or the stamp would leave a band of the shell unfurnished and the
      * variant sidecar's entries would land at the wrong cells. Where the template goes inside the
-     * larger box is the caller's decision, not this store's — {@code PortalRoomContents.anchorsIn}
+     * larger box is the caller's decision, not this store's — {@code DimensionalCarriageContents.anchorsIn}
      * makes it.</p>
      *
      * <p>Quiet where {@link #filterForSize} warns: a template that does not fit is an ordinary

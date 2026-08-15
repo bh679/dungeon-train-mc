@@ -60,8 +60,8 @@ public final class EditorStatusHudOverlay {
     /** Current variant weight for the active model, or {@link #NO_WEIGHT} when not applicable. */
     private static int weight = NO_WEIGHT;
     /**
-     * Authored size of the portal room plot the player is in, or {@link EditorStatusPacket#NO_SIZE}
-     * for every other category — a portal room is the one plot kind whose box the author chooses.
+     * Authored size of the dimensional carriage plot the player is in, or {@link EditorStatusPacket#NO_SIZE}
+     * for every other category — a dimensional carriage is the one plot kind whose box the author chooses.
      */
     private static int roomLength = EditorStatusPacket.NO_SIZE;
     private static int roomWidth = EditorStatusPacket.NO_SIZE;
@@ -148,8 +148,8 @@ public final class EditorStatusHudOverlay {
     }
 
     /**
-     * Authored size of the portal room the player is standing in, or
-     * {@link EditorStatusPacket#NO_SIZE} for every other category — a portal room is the one plot
+     * Authored size of the dimensional carriage the player is standing in, or
+     * {@link EditorStatusPacket#NO_SIZE} for every other category — a dimensional carriage is the one plot
      * kind whose box the author chooses rather than the kind fixing it.
      */
     public static int roomLength() { return roomLength; }
@@ -157,7 +157,7 @@ public final class EditorStatusHudOverlay {
     public static int roomHeight() { return roomHeight; }
 
     /**
-     * What the portal room the player is standing in does at its walls, or
+     * What the dimensional carriage the player is standing in does at its walls, or
      * {@link EditorStatusPacket#NO_MODE} for every other category.
      */
     public static String roomMode() { return roomMode; }

@@ -48,7 +48,7 @@ public final class PortalTwinLanes {
     public static final int MAX_LANES = 6;
 
     /** Vertical spacing between lanes — no part of one structure reaches into the lane above. */
-    public static final int LANE_HEIGHT = PortalRoomLayout.TWIN_LANE_HEIGHT;
+    public static final int LANE_HEIGHT = DimensionalCarriageLayout.TWIN_LANE_HEIGHT;
 
     /**
      * How many lanes fit between the build floor and the bedrock, capped at {@link #MAX_LANES}.
@@ -62,7 +62,7 @@ public final class PortalTwinLanes {
     public static int usableLanes(int worldMinY, int bedrockY) {
         int floor = floorY(worldMinY);
         // A lane is usable only if a full-height structure in it still clears the bedrock.
-        int headroom = bedrockY - floor - PortalRoomLayout.MAX_HEIGHT;
+        int headroom = bedrockY - floor - DimensionalCarriageLayout.MAX_HEIGHT;
         if (headroom < 0) return 1;
         return Math.max(1, Math.min(MAX_LANES, headroom / LANE_HEIGHT + 1));
     }

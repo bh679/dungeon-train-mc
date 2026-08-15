@@ -3,8 +3,8 @@ package games.brennan.dungeontrain.editor;
 import games.brennan.dungeontrain.net.EditorPlotLabelsPacket;
 import games.brennan.dungeontrain.track.PillarAdjunct;
 import games.brennan.dungeontrain.track.PillarSection;
-import games.brennan.dungeontrain.portal.PortalRoomMode;
-import games.brennan.dungeontrain.portal.PortalRoomSizes;
+import games.brennan.dungeontrain.portal.DimensionalCarriageMode;
+import games.brennan.dungeontrain.portal.DimensionalCarriageSizes;
 import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.track.variant.TrackVariantRegistry;
 import games.brennan.dungeontrain.track.variant.TrackVariantWeights;
@@ -198,15 +198,15 @@ public final class EditorPlotLabels {
 
     private static List<Label> portalLabels(CarriageDims dims) {
         List<Label> out = new ArrayList<>();
-        addTrackKindLabels(out, TrackKind.PORTAL_ROOM, dims, EditorCategory.PORTALS);
-        // A portal room is the one plot whose box AND boundary the author chooses, so its label
+        addTrackKindLabels(out, TrackKind.DIMENSIONAL_CARRIAGE, dims, EditorCategory.PORTALS);
+        // A dimensional carriage is the one plot whose box AND boundary the author chooses, so its label
         // carries the live size for the [-] N [+] rows and the mode for the Walls button.
         for (int i = 0; i < out.size(); i++) {
             Label l = out.get(i);
-            Vec3i size = PortalRoomSizes.sizeOf(l.modelName(), dims);
+            Vec3i size = DimensionalCarriageSizes.sizeOf(l.modelName(), dims);
             // Resolved rather than passed through raw, so the row shows the mode the room will
             // actually behave as even when the tag on disk is absent or misspelt.
-            String mode = games.brennan.dungeontrain.portal.PortalRoomSettings
+            String mode = games.brennan.dungeontrain.portal.DimensionalCarriageSettings
                 .of(l.modelName()).toTag();
             out.set(i, new Label(l.worldPos(), l.name(), l.weight(), l.category(),
                 l.modelId(), l.modelName(), l.inPlot(), l.isUser(), l.isImported(),
@@ -222,12 +222,12 @@ public final class EditorPlotLabels {
     private static void addTrackKindLabels(List<Label> out, TrackKind kind, CarriageDims dims,
                                            EditorCategory owner) {
         String category = owner.name();
-        // The modelId is the kind tag (e.g. "tile", "pillar_bottom", "portal_room")
+        // The modelId is the kind tag (e.g. "tile", "pillar_bottom", "dimensional_carriage")
         // — that's what the existing weight commands key on. modelName is the
         // bare variant name segment.
         String modelId = kind.id();
         for (String name : TrackVariantRegistry.namesFor(kind)) {
-            // Per-name footprint: a portal room is as long as its author made it, so the label
+            // Per-name footprint: a dimensional carriage is as long as its author made it, so the label
             // anchor has to follow the individual plot rather than a kind-wide size.
             Vec3i footprint = TrackSidePlots.footprint(kind, name, dims);
             BlockPos origin = TrackSidePlots.plotOrigin(kind, name, dims);

@@ -1,7 +1,7 @@
 package games.brennan.dungeontrain.portal;
 
 import games.brennan.dungeontrain.portal.PortalExitSites.Site;
-import games.brennan.dungeontrain.portal.PortalRoomTiling.Tile;
+import games.brennan.dungeontrain.portal.DimensionalCarriageTiling.Tile;
 import games.brennan.dungeontrain.train.CarriageDims;
 import net.minecraft.core.BlockPos;
 import org.junit.jupiter.api.AfterEach;
@@ -43,9 +43,9 @@ class PortalExitBindingsTest {
     private static PortalStructure withCopies(Site... standing) {
         PortalExitCopies copies = PortalExitCopies.NONE;
         for (Site site : standing) copies = copies.with(site);
-        return new PortalStructure(ORIGIN, "labrynth", PortalRoomLayout.builtInSize(DIMS),
-            PortalRoomSettings.DEFAULT.withMode(PortalRoomMode.ENDLESS_REPETITION),
-            PortalRoomTiling.base(), copies);
+        return new PortalStructure(ORIGIN, "labrynth", DimensionalCarriageLayout.builtInSize(DIMS),
+            DimensionalCarriageSettings.DEFAULT.withMode(DimensionalCarriageMode.ENDLESS_REPETITION),
+            DimensionalCarriageTiling.base(), copies);
     }
 
     private static Site entry(Tile tile) {

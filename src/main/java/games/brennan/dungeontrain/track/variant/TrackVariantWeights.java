@@ -98,8 +98,8 @@ public final class TrackVariantWeights {
      * The raw per-kind mode tag for {@code (kind, name)}, or {@code null} when the entry sets none.
      *
      * <p>Opaque here — what a mode means belongs to the owning kind. Today only
-     * {@link TrackKind#PORTAL_ROOM} defines any; resolve one with
-     * {@code PortalRoomMode.parse(modeFor(...))}, which turns null and anything unrecognised into
+     * {@link TrackKind#DIMENSIONAL_CARRIAGE} defines any; resolve one with
+     * {@code DimensionalCarriageMode.parse(modeFor(...))}, which turns null and anything unrecognised into
      * that kind's default.</p>
      */
     public static synchronized String modeFor(TrackKind kind, String name) {
