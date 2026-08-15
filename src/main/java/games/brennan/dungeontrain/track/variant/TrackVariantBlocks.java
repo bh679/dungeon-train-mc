@@ -62,6 +62,9 @@ public final class TrackVariantBlocks {
     /** pos → lock-id (≥1 = locked, 0/missing = unlocked). See {@link CarriageVariantBlocks#lockIdAt}. */
     private final Map<BlockPos, Integer> lockIds;
 
+    /** v9 lock-group reference resolution over {@link #entries} / {@link #lockIds}. */
+    private final games.brennan.dungeontrain.editor.VariantGroupResolver groupRefs;
+
     /**
      * Per-template mirror axes, applied live while editing and as a save-time
      * backstop by {@link games.brennan.dungeontrain.editor.EditorMirror}.
@@ -85,6 +88,7 @@ public final class TrackVariantBlocks {
                                TrackKind kind, boolean mirrorX, boolean mirrorY, boolean mirrorZ, boolean mirrorVariants) {
         this.entries = entries;
         this.lockIds = lockIds;
+        this.groupRefs = new games.brennan.dungeontrain.editor.VariantGroupResolver(entries, lockIds);
         this.kind = kind;
         this.mirrorX = mirrorX;
         this.mirrorY = mirrorY;
@@ -305,10 +309,12 @@ public final class TrackVariantBlocks {
             if (s == null) throw new IllegalArgumentException("null state");
         }
         entries.put(localPos.immutable(), List.copyOf(states));
+        groupRefs.invalidate();
     }
 
     public synchronized boolean remove(BlockPos localPos) {
         lockIds.remove(localPos);
+        groupRefs.invalidate();
         return entries.remove(localPos) != null;
     }
 
@@ -323,6 +329,7 @@ public final class TrackVariantBlocks {
         if (lockId < 0) lockId = 0;
         if (lockId == 0) lockIds.remove(localPos);
         else lockIds.put(localPos.immutable(), lockId);
+        groupRefs.invalidate();
     }
 
     public synchronized java.util.Set<BlockPos> positionsWithLockId(int lockId) {
@@ -349,22 +356,17 @@ public final class TrackVariantBlocks {
     /**
      * Deterministic pick — locked cells share a single roll across the group.
      * Shares the {@link CarriageVariantBlocks#pickIndexWeighted} /
-     * {@link CarriageVariantBlocks#pickIndexFromLockGroup} mixers with the
-     * carriage path.
+     * {@link CarriageVariantBlocks#pickIndexFromLockGroup} mixers, and the v9
+     * lock-group reference filter/follow, with the carriage path.
      */
     public VariantState resolve(BlockPos localPos, long worldSeed, int tileIndex) {
-        List<VariantState> states = entries.get(localPos);
-        if (states == null || states.isEmpty()) return null;
-        int lockId = lockIdAt(localPos);
-        int idx;
-        if (lockId > 0) {
-            int[] weights = new int[states.size()];
-            for (int i = 0; i < states.size(); i++) weights[i] = states.get(i).weight();
-            idx = CarriageVariantBlocks.pickIndexFromLockGroup(lockId, worldSeed, tileIndex, weights);
-        } else {
-            idx = CarriageVariantBlocks.pickIndexWeighted(localPos, worldSeed, tileIndex, states);
-        }
-        return states.get(idx);
+        return groupRefs.resolve(localPos, lockIdAt(localPos), entries.get(localPos),
+            worldSeed, tileIndex);
+    }
+
+    /** This sidecar's lock groups, for callers that follow references themselves (e.g. the editor preview). */
+    public games.brennan.dungeontrain.editor.VariantGroupResolver groupRefs() {
+        return groupRefs;
     }
 
     public synchronized void save(TrackKind kind, String name) throws IOException {

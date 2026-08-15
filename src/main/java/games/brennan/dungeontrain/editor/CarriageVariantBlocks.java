@@ -131,9 +131,16 @@ public final class CarriageVariantBlocks {
      *       cell drops eggs whose band excludes the carriage's difficulty tier
      *       before the weighted pick. Omitted when the band is the default
      *       ({@code min 0 / max all}), so v7 entries round-trip diff-clean.</li>
+     *   <li>v9 — adds an optional per-entry {@code groupRef} (≥ 0, default 0):
+     *       a lock-group reference. When the cell's roll lands on such an
+     *       entry, the block placed is whatever the lock group with that id
+     *       resolved to, so one pool can defer to another instead of
+     *       duplicating it. Dead references (missing group, self, cycle) are
+     *       dropped from the pool before the roll. Omitted when 0, so v8
+     *       entries round-trip diff-clean. See {@link VariantGroupRefs}.</li>
      * </ul>
      */
-    public static final int CURRENT_SCHEMA_VERSION = 8;
+    public static final int CURRENT_SCHEMA_VERSION = 9;
 
     static final String SUBDIR = "templates";
     private static final String EXT = ".variants.json";
@@ -188,6 +195,9 @@ public final class CarriageVariantBlocks {
      */
     private final Map<BlockPos, Integer> lockIds;
 
+    /** v9 lock-group reference resolution over {@link #entries} / {@link #lockIds}. */
+    private final VariantGroupResolver groupRefs;
+
     /**
      * Per-template editor mirror axes, applied live and as a save-time
      * backstop by {@link EditorMirror}. Stored as the optional top-level
@@ -208,6 +218,7 @@ public final class CarriageVariantBlocks {
                                   boolean mirrorX, boolean mirrorY, boolean mirrorZ, boolean mirrorVariants) {
         this.entries = entries;
         this.lockIds = lockIds;
+        this.groupRefs = new VariantGroupResolver(entries, lockIds);
         this.mirrorX = mirrorX;
         this.mirrorY = mirrorY;
         this.mirrorZ = mirrorZ;
@@ -499,10 +510,19 @@ public final class CarriageVariantBlocks {
             VariantHalf half = parsedHalf != null
                 ? parsedHalf
                 : migrateHalfFromRotation(base.state(), rotation);
+            // v9 lock-group reference. The entry keeps its own state as the
+            // editor placeholder; the ref is what the picker follows.
+            int groupRef = 0;
+            if (obj.has("groupRef") && obj.get("groupRef").isJsonPrimitive()
+                && obj.get("groupRef").getAsJsonPrimitive().isNumber()) {
+                int rawRef = obj.get("groupRef").getAsInt();
+                groupRef = rawRef < 0 ? 0 : rawRef;
+            }
             // v3 entries had a per-entry "locked" field; v4 moved locking
             // to the cell level. Old "locked" values are silently dropped
             // on read — the file rewrites cleanly without it.
-            return new VariantState(base.state(), nbt, weight, rotation, lootPrefab, null, half);
+            return new VariantState(base.state(), nbt, weight, rotation, lootPrefab, null, half,
+                VariantDifficulty.NONE, groupRef);
         }
         LOGGER.warn("[DungeonTrain] Variant sidecar {} pos {}: unrecognized entry {}, skipping.",
             contextId, contextPos, el);
@@ -585,11 +605,13 @@ public final class CarriageVariantBlocks {
             if (s == null) throw new IllegalArgumentException("null state");
         }
         entries.put(localPos.immutable(), List.copyOf(states));
+        invalidateGroupRefCache();
     }
 
     /** Remove the entry at {@code localPos}. Returns true if one was present. */
     public synchronized boolean remove(BlockPos localPos) {
         lockIds.remove(localPos);
+        invalidateGroupRefCache();
         return entries.remove(localPos) != null;
     }
 
@@ -602,6 +624,7 @@ public final class CarriageVariantBlocks {
         int n = entries.size();
         entries.clear();
         lockIds.clear();
+        invalidateGroupRefCache();
         return n;
     }
 
@@ -625,6 +648,7 @@ public final class CarriageVariantBlocks {
         } else {
             lockIds.put(localPos.immutable(), lockId);
         }
+        invalidateGroupRefCache();
     }
 
     /**
@@ -673,18 +697,18 @@ public final class CarriageVariantBlocks {
      * Determinism contract is unchanged — same inputs → same index.</p>
      */
     public VariantState resolve(BlockPos localPos, long worldSeed, int carriageIndex) {
-        List<VariantState> states = entries.get(localPos);
-        if (states == null || states.isEmpty()) return null;
-        int lockId = lockIdAt(localPos);
-        int idx;
-        if (lockId > 0) {
-            int[] weights = new int[states.size()];
-            for (int i = 0; i < states.size(); i++) weights[i] = states.get(i).weight();
-            idx = pickIndexFromLockGroup(lockId, worldSeed, carriageIndex, weights);
-        } else {
-            idx = pickIndexWeighted(localPos, worldSeed, carriageIndex, states);
-        }
-        return states.get(idx);
+        return groupRefs.resolve(localPos, lockIdAt(localPos), entries.get(localPos),
+            worldSeed, carriageIndex);
+    }
+
+    /** This sidecar's lock groups, for callers that need to follow references themselves (e.g. the editor preview). */
+    public VariantGroupResolver groupRefs() {
+        return groupRefs;
+    }
+
+    /** Drop the reference-graph cache — called by every mutator. */
+    private void invalidateGroupRefCache() {
+        groupRefs.invalidate();
     }
 
     /**
@@ -1067,6 +1091,9 @@ public final class CarriageVariantBlocks {
         }
         if (!s.half().isDefault()) {
             sb.append(", \"half\": \"").append(halfModeName(s.half().mode())).append("\"");
+        }
+        if (s.isGroupRef()) {
+            sb.append(", \"groupRef\": ").append(s.groupRef());
         }
         sb.append("}");
     }

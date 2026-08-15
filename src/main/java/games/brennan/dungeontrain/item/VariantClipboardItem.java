@@ -97,6 +97,8 @@ public final class VariantClipboardItem extends Item {
     /** Per-entry difficulty band (v8 schema, mob entries). Absent when the default 0/all band. */
     private static final String NBT_DIFF_MIN = "dmin";
     private static final String NBT_DIFF_MAX = "dmax";
+    /** v9 per-entry lock-group reference — see {@link VariantState#groupRef}. */
+    private static final String NBT_GROUP_REF = "gref";
 
     /** Pool sub-keys, kept short for compact NBT. */
     private static final String NBT_POOL_FILL_MIN = "fmin";
@@ -281,6 +283,9 @@ public final class VariantClipboardItem extends Item {
                 entry.putInt(NBT_DIFF_MIN, s.difficulty().min());
                 entry.putInt(NBT_DIFF_MAX, s.difficulty().max());
             }
+            if (s.isGroupRef()) {
+                entry.putInt(NBT_GROUP_REF, s.groupRef());
+            }
             list.add(entry);
         }
         root.put(NBT_ROOT_KEY, list);
@@ -416,7 +421,9 @@ public final class VariantClipboardItem extends Item {
                 String raw = entry.getString(NBT_LOOT_PREFAB);
                 if (!raw.isEmpty()) lootPrefab = raw;
             }
-            out.add(new VariantState(state, beNbt, weight, rotation, lootPrefab, null, half));
+            int groupRef = entry.contains(NBT_GROUP_REF, Tag.TAG_INT) ? entry.getInt(NBT_GROUP_REF) : 0;
+            out.add(new VariantState(state, beNbt, weight, rotation, lootPrefab, null, half,
+                difficulty, groupRef));
         }
         return out;
     }
