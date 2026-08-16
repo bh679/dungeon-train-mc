@@ -20,10 +20,13 @@ import net.minecraft.world.level.levelgen.structure.BoundingBox;
  *
  * <ul>
  *   <li><b>In the corridor</b> — {@link TrackKind#TILE} and both tunnel kinds. A track tile is
- *       {@code 4 × 2 × width}, which is exactly a four-block slice of the corridor
- *       {@code BuilderWorldSetup.stampTrack} already lays down; a tunnel is the arch over it. Put
- *       them anywhere else and you would be authoring rails next to a rail line rather than the rail
- *       line itself, judging the join by memory.</li>
+ *       {@code 4 × 2 × width}, exactly a four-block slice of the line; a tunnel is the arch over
+ *       it. Put them anywhere else and you would be authoring rails next to a rail line rather than
+ *       the rail line itself, judging the join by memory.
+ *       <p>They sit at <em>different heights</em>, and that is each one's own situation rather than
+ *       an inconsistency. A tile is judged on the elevated line the pillars carry; a tunnel is where
+ *       the line runs <em>underground</em>, which the generator only ever builds at ground level,
+ *       with a shaft climbing out of it to the surface.</p></li>
  *   <li><b>Beside it, on the grass</b> — pillars and the stairs adjunct. These hang <em>below</em>
  *       the track bed in a real world, and there is nothing below it here: the builder platform is
  *       bedrock at {@link BuilderWorldLayout#Y_BEDROCK} and grass at {@link BuilderWorldLayout#Y_GRASS},
@@ -100,13 +103,21 @@ public final class BuilderTrackPlot {
     public static BlockPos origin(TrackKind kind, CarriageDims dims) {
         Vec3i size = footprint(kind, dims);
         TrackGeometry g = BuilderTrackScene.geometry(dims);
+        TrackGeometry ground = BuilderTrackScene.groundGeometry(dims);
         return switch (kind) {
-            // In the line itself, centred on the corridor: the tile is the bed's own width, and a
-            // tunnel is the arch sitting symmetrically over it.
-            case TILE, TUNNEL_SECTION, TUNNEL_PORTAL -> new BlockPos(
+            // In the line itself, centred on the corridor: the tile is the bed's own width.
+            case TILE -> new BlockPos(
                     alignedX(size.getX()),
                     BuilderTrackScene.bedY(),
                     (int) Math.round(g.trackCenterZ() - size.getZ() / 2.0 + 0.5));
+            // On the ground, not up on the bridge. A tunnel is where the line goes *underground* —
+            // that is the whole situation it belongs to, and the one the generator only ever builds
+            // at ground level. Authoring it twelve blocks up on a viaduct previewed a thing the
+            // world does not make, and put its mouth nowhere near the shaft that climbs out of it.
+            case TUNNEL_SECTION, TUNNEL_PORTAL -> new BlockPos(
+                    alignedX(size.getX()),
+                    ground.bedY(),
+                    (int) Math.round(ground.trackCenterZ() - size.getZ() / 2.0 + 0.5));
             // Its own rows of the edited column, counted the way placePillarSlice stacks them:
             // bottom from the ground up, top hanging from the cap, middles filling between.
             case PILLAR_BOTTOM -> columnOrigin(g, BuilderTrackScene.groundY());

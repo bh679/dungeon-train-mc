@@ -68,6 +68,7 @@ public final class DungeonTrainWorldData extends SavedData {
     private static final String TAG_BUILDER_PART_KIND = "builderPartKind";
     private static final String TAG_BUILDER_TRACK_KIND = "builderTrackKind";
     private static final String TAG_BUILDER_CARRIAGES = "builderCarriages";
+    private static final String TAG_BUILDER_STRUCTURE_MODE = "builderStructureMode";
 
     private int trainY;
     private boolean startsWithTrain;
@@ -140,6 +141,16 @@ public final class DungeonTrainWorldData extends SavedData {
      * the stamp used.</p>
      */
     private int builderCarriages = -1;
+    /**
+     * What the builder does with the structures around the build — {@code ghost}, {@code solid} or
+     * {@code none}. Null/empty on a world saved before the control existed, which reads as the
+     * default.
+     *
+     * <p>World state rather than a client preference, unlike the two-state ghost toggle it replaces:
+     * {@code solid} is the difference between a wall existing and not existing, which everyone in
+     * the world has to agree on. See {@code BuilderStructureMode}.</p>
+     */
+    private String builderStructureMode;
     /**
      * The Stage the builder picked when starting this build, or null/empty when they didn't pick
      * one. Held until the build is saved, at which point the written template is linked to it —
@@ -343,6 +354,12 @@ public final class DungeonTrainWorldData extends SavedData {
         if (tag.contains(TAG_BUILDER_CARRIAGES)) {
             data.builderCarriages = tag.getInt(TAG_BUILDER_CARRIAGES);
         }
+        // Absent in every builder world saved before the structure control existed. Left null, which
+        // BuilderStructureMode.orDefault reads as ghosts — those worlds must not come up with
+        // scenery stood inside a build somebody left half-finished.
+        if (tag.contains(TAG_BUILDER_STRUCTURE_MODE)) {
+            data.builderStructureMode = tag.getString(TAG_BUILDER_STRUCTURE_MODE);
+        }
         return data;
     }
 
@@ -393,6 +410,9 @@ public final class DungeonTrainWorldData extends SavedData {
         }
         if (builderCarriages >= 0) {
             tag.putInt(TAG_BUILDER_CARRIAGES, builderCarriages);
+        }
+        if (builderStructureMode != null) {
+            tag.putString(TAG_BUILDER_STRUCTURE_MODE, builderStructureMode);
         }
         return tag;
     }
@@ -486,6 +506,19 @@ public final class DungeonTrainWorldData extends SavedData {
     /** Record what was just stamped. Callers pass the count they actually laid down, including 0. */
     public void setBuilderCarriages(int carriages) {
         this.builderCarriages = Math.max(0, carriages);
+        setDirty();
+    }
+
+    /**
+     * What this world does with the structures around the build, or null/empty when it has never
+     * been told. See {@code BuilderStructureMode#orDefault}, which is what every reader goes through.
+     */
+    public String builderStructureMode() {
+        return builderStructureMode;
+    }
+
+    public void setBuilderStructureMode(String modeId) {
+        this.builderStructureMode = modeId;
         setDirty();
     }
 

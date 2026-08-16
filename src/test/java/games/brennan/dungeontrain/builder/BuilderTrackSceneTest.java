@@ -145,11 +145,14 @@ final class BuilderTrackSceneTest {
     @DisplayName("Every block of a pillar-bottom plot is the builder's to edit")
     void thePillarBottomIsFullyEditable() {
         // The bug this pins: the column stands from the bed row, so the track-row rule locked the
-        // lowest two rows of the plot and there was no way to finish the template.
+        // lowest two rows of the plot and there was no way to finish the template. The rule is gone
+        // now — the line is a structure rather than the frame — but the plot must stay editable
+        // whatever replaces it.
         BoundingBox plot = BuilderTrackPlot.volume(TrackKind.PILLAR_BOTTOM, DIMS);
         for (int y = plot.minY(); y <= plot.maxY(); y++) {
             for (int z = plot.minZ(); z <= plot.maxZ(); z++) {
-                assertFalse(BuilderWorldLayout.isProtected(new BlockPos(plot.minX(), y, z), DIMS, true),
+                assertFalse(BuilderWorldLayout.isProtected(new BlockPos(plot.minX(), y, z),
+                                BuilderMode.TRACKS_TUNNELS),
                         "locked at y=" + y + " z=" + z);
             }
         }
