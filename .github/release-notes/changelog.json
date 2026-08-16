@@ -7088,13 +7088,9 @@
       "id": "portal-room-rescue-lands-you-safely",
       "version": "0.564.0",
       "type": "fix",
-      "title": "Train Dimensions: a smoother, safer way back",
-      "summary": "Refines the rescue that puts you back on the train when a Train Dimension loses it. The return trip no longer hurts you if the train is slow to appear underneath you, and the game no longer strains to wake the whole train while it is working out where to put you.",
-      "highlights": [
-        "No more taking fall damage on the way back to the train",
-        "Less of a hitch on the server while the way back is being found",
-        "Untested in multiplayer \u2014 how this behaves with several players on one train is not yet known"
-      ],
+      "title": "Train Dimensions: improvements to the lost-train fix",
+      "summary": "Improves the recent fix for a Train Dimension losing its train: being put back on board no longer hurts you, and it asks less of the game while it finds the way back.",
+      "highlights": [],
       "date": "2026-08-15",
       "released": false,
       "released_in": null,
