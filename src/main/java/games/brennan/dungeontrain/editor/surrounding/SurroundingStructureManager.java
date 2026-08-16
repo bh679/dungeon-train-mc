@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.editor.surrounding;
 
+import com.mojang.logging.LogUtils;
 import com.mojang.serialization.MapCodec;
 import games.brennan.dungeontrain.editor.EditorCategory;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
@@ -17,6 +18,7 @@ import net.minecraft.world.level.levelgen.structure.templatesystem.StructureProc
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureProcessorType;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
 
 import java.util.ArrayList;
 import java.util.EnumMap;
@@ -46,7 +48,12 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public final class SurroundingStructureManager {
 
+    private static final Logger LOGGER = LogUtils.getLogger();
+
     private static final RenderMode DEFAULT_MODE = RenderMode.GHOST;
+
+    /** Last plot key logged per player, so the resolve summary is one line per opened build. */
+    private static final Map<UUID, String> LAST_LOGGED_PLOT = new ConcurrentHashMap<>();
 
     /** Per-player effective render mode overrides — set by {@code /dt editor surrounding} commands and
      *  seeded once from the client's synced config default on login. Missing entry ⇒ {@link #DEFAULT_MODE}. */
@@ -104,9 +111,9 @@ public final class SurroundingStructureManager {
     // ----- Reconcile -----
 
     /**
-     * Recompute every category's placements for the plot {@code player} is currently standing in (or
-     * clear everything when they've left every plot) and push/stamp the result. Call once per player
-     * per tick alongside {@link EditorCategory#locate} — see {@code VariantOverlayRenderer.onLevelTick}.
+     * Recompute every category's placements around the build the Train Builder currently has open (or
+     * clear everything when this isn't a builder world) and push/stamp the result. Called once per
+     * level per tick — see {@code VariantOverlayRenderer.onLevelTick}.
      */
     public static void reconcile(ServerPlayer player, ServerLevel level, Optional<BuilderPlot> plotOpt) {
         if (plotOpt.isEmpty()) {
@@ -117,29 +124,52 @@ public final class SurroundingStructureManager {
         BlockPos origin = plot.origin();
         String plotKey = plotKeyFor(plot);
 
+        // What each category resolved, logged once per player per opened build (not per tick) — the
+        // whole system is otherwise invisible in the log, and "nothing appeared" needs to distinguish
+        // "resolved nothing" from "resolved fine, didn't draw".
+        boolean firstForThisPlot = !plotKey.equals(LAST_LOGGED_PLOT.put(player.getUUID(), plotKey));
+        StringBuilder summary = firstForThisPlot ? new StringBuilder() : null;
+
         for (SurroundingStructureCategory category : SurroundingStructureCategory.values()) {
             RenderMode mode = effectiveMode(player, category);
             String stampKey = plotKey + "|" + category.name();
+            int resolved = -1;
             switch (mode) {
                 case SOLID -> {
                     sendGhostClearIfNeeded(player, category);
-                    handleSolid(player, level, plot, origin, category, stampKey);
+                    resolved = handleSolid(player, level, plot, origin, category, stampKey);
                 }
                 case GHOST -> {
                     revertSolidStamp(level, stampKey);
-                    handleGhost(player, level, plot, origin, category);
+                    resolved = handleGhost(player, level, plot, origin, category);
                 }
                 case NONE -> {
                     revertSolidStamp(level, stampKey);
                     sendGhostClearIfNeeded(player, category);
                 }
             }
+            if (summary != null) {
+                summary.append(' ').append(category.id()).append('=')
+                    .append(mode.name().toLowerCase(java.util.Locale.ROOT));
+                if (resolved >= 0) {
+                    summary.append('(').append(resolved).append(')');
+                }
+            }
+        }
+
+        if (summary != null) {
+            LOGGER.info("[DungeonTrain] Surrounding structures for {} — mode '{}' sub '{}' {} carriage(s) "
+                    + "at {}:{}",
+                player.getGameProfile().getName(), plot.mode().id(),
+                plot.subTypeId().isEmpty() ? "<none>" : plot.subTypeId(),
+                plot.carriages(), origin.toShortString(), summary);
         }
     }
 
     /** Called when a player leaves the editor entirely / logs out — see {@code VariantOverlayRenderer.forget}. */
     public static void forget(ServerPlayer player) {
         clearAllGhosts(player);
+        LAST_LOGGED_PLOT.remove(player.getUUID());
         Set<String> contributions = PLAYER_SOLID_CONTRIBUTIONS.remove(player.getUUID());
         if (contributions != null) {
             ServerLevel level = player.serverLevel();
@@ -152,6 +182,7 @@ public final class SurroundingStructureManager {
     /** Wipe every bit of state — call on server stop, mirroring {@code VariantOverlayRenderer.onServerStopped}. */
     public static void clearAll() {
         PLAYER_MODES.clear();
+        LAST_LOGGED_PLOT.clear();
         LAST_GHOST_KEY.clear();
         SOLID_STAMPS.clear();
         PLAYER_SOLID_CONTRIBUTIONS.clear();
@@ -159,12 +190,14 @@ public final class SurroundingStructureManager {
 
     // ----- SOLID -----
 
-    private static void handleSolid(ServerPlayer player, ServerLevel level, BuilderPlot plot,
+    /** @return how many blocks this category has stamped for the plot, for the resolve summary. */
+    private static int handleSolid(ServerPlayer player, ServerLevel level, BuilderPlot plot,
                                      BlockPos origin, SurroundingStructureCategory category,
                                      String stampKey) {
-        if (SOLID_STAMPS.containsKey(stampKey)) return; // already stamped (by this player or another)
+        List<BlockPos> already = SOLID_STAMPS.get(stampKey);
+        if (already != null) return already.size(); // already stamped (by this player or another)
         List<PlacementSpec> specs = category.resolve(level, plot);
-        if (specs.isEmpty()) return;
+        if (specs.isEmpty()) return 0;
         List<BlockPos> placed = new ArrayList<>();
         for (PlacementSpec spec : specs) {
             Optional<StructureTemplate> templateOpt = spec.templateSupplier().get();
@@ -179,10 +212,11 @@ public final class SurroundingStructureManager {
             template.placeInWorld(level, stampPos, stampPos, settings, level.getRandom(), Block.UPDATE_ALL);
             placed.addAll(capture.placed);
         }
-        if (placed.isEmpty()) return;
+        if (placed.isEmpty()) return 0;
         SOLID_STAMPS.put(stampKey, placed);
         PLAYER_SOLID_CONTRIBUTIONS.computeIfAbsent(player.getUUID(), k -> ConcurrentHashMap.newKeySet())
             .add(stampKey);
+        return placed.size();
     }
 
     private static void revertSolidStamp(ServerLevel level, String stampKey) {
@@ -231,7 +265,8 @@ public final class SurroundingStructureManager {
 
     // ----- GHOST -----
 
-    private static void handleGhost(ServerPlayer player, ServerLevel level, BuilderPlot plot,
+    /** @return how many ghost cells this category resolved, for the resolve summary. */
+    private static int handleGhost(ServerPlayer player, ServerLevel level, BuilderPlot plot,
                                      BlockPos origin, SurroundingStructureCategory category) {
         List<PlacementSpec> specs = category.resolve(level, plot);
         List<SurroundingStructureGhostPacket.Entry> entries = new ArrayList<>();
@@ -255,6 +290,7 @@ public final class SurroundingStructureManager {
             }
         }
         sendGhostSnapshot(player, category, entries);
+        return entries.size();
     }
 
     private static void sendGhostSnapshot(ServerPlayer player, SurroundingStructureCategory category,
