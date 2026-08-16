@@ -6909,6 +6909,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "builder-open-tiles-per-row",
+      "version": "0.552.0",
+      "type": "feat",
+      "title": "Set how many template tiles fill a row in the Train Builder's Open screen",
+      "summary": "The Open screen's template grid now fills your window instead of sitting in a fixed block, and a small numbered button beside the controls sets how many tiles go in a row \u2014 anywhere from two big ones to six. Left-click for more, right-click or shift-click for fewer, and it cycles round at both ends. Handy when a track kind has thirty variants under it and you know your own builds by their photos. Your choice is remembered across worlds.",
+      "highlights": [
+        "The Open screen's grid fills the window, so tiles grow with your resolution",
+        "A new button sets 2 to 6 tiles per row \u2014 left-click for more, right-click or shift-click for fewer",
+        "The setting follows you across worlds"
+      ],
+      "pr": 984,
+      "date": "2026-08-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
