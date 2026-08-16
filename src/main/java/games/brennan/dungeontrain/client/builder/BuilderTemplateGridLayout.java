@@ -9,9 +9,13 @@ package games.brennan.dungeontrain.client.builder;
  * is cheap to test here and tedious to eyeball in-game at four scales.</p>
  *
  * <p>The difference from the picker's grid is that this one holds an unknown number of items rather
- * than exactly four, so the column count responds to the width instead of being fixed at two, and
- * whatever doesn't fit scrolls. Cells keep the same 16:9 aspect as the picker tiles, because they
- * hold the same kind of picture.</p>
+ * than exactly four, so whatever doesn't fit scrolls, and the player can say how many go in a row.
+ * Cells keep the same 16:9 aspect as the picker tiles, because they hold the same kind of
+ * picture.</p>
+ *
+ * <p>The block the cells are laid into is the same width whatever the count — so asking for more
+ * per row buys them by making each one smaller, rather than by spreading the grid across the
+ * window. That keeps the screen's shape put while the thing being changed changes.</p>
  */
 record BuilderTemplateGridLayout(int columns, int cellWidth, int cellHeight,
                                  int originX, int topY, int bottomY, int gap, int maxScroll) {
@@ -19,15 +23,27 @@ record BuilderTemplateGridLayout(int columns, int cellWidth, int cellHeight,
     static final int GAP = 6;
 
     /**
-     * Three per row, always.
+     * Three per row until the player says otherwise.
      *
-     * <p>Fixed rather than responsive: the grid sits directly under the 200px-wide type controls, and
-     * a column count that changed with the window changed the cell size with it — so the same
-     * template was a different size on two machines, and resizing reflowed the whole library under
-     * the cursor. Three keeps the cells large enough to read a carriage in and the block roughly the
-     * width of the controls above it.</p>
+     * <p>Fixed rather than responsive, which is the part worth keeping: a column count that changed
+     * with the window changed the cell size with it — so the same template was a different size on
+     * two machines, and resizing reflowed the whole library under the cursor. Three keeps the cells
+     * large enough to read a carriage in and the block roughly the width of the controls above it.
+     * The count now moves, but only when asked — see {@link BuilderTilesPerRowButton}.</p>
      */
-    static final int COLUMNS = 3;
+    static final int DEFAULT_COLUMNS = 3;
+
+    /**
+     * The range the player may ask for.
+     *
+     * <p>The grid block stays the same width whatever the count, so this trades tile size against
+     * how much of a library is on screen at once. Two is as far down as that is worth going — one
+     * per row is a list, not a grid — and six is where the cell has shrunk to about the height of
+     * the caption strip it carries, so a seventh column would be captions with a sliver of picture
+     * above them.</p>
+     */
+    static final int MIN_COLUMNS = 2;
+    static final int MAX_COLUMNS = 6;
 
     /** Ceiling on the grid's width so cells don't become billboards on an ultrawide. */
     private static final int MAX_GRID_WIDTH = 480;
@@ -35,27 +51,54 @@ record BuilderTemplateGridLayout(int columns, int cellWidth, int cellHeight,
     private static final int SIDE_MARGIN = 16;
 
     /**
+     * How many columns this width can actually hold.
+     *
+     * <p>{@link #MIN_CELL_WIDTH} is a floor on the cell, not on the grid, so past a certain count
+     * the cells stop shrinking and the <em>block</em> starts growing instead — at 320 GUI pixels
+     * (scale 4 on a small window) six columns would each clamp up to 56px and lay out a 366px grid
+     * on a 320px screen. So the count saturates at whatever fits rather than running off the edge,
+     * and the button reads back the saturated value so it can't claim a column that isn't there.</p>
+     *
+     * <p>Measured against the raw screen width, not {@link #availableWidth}: the side margins are a
+     * nicety and staying on screen is the invariant, so a count that only fits by eating into them
+     * is still allowed. Taking the margins as hard here would refuse counts that visibly fit — three
+     * columns of minimum-width cells are 180px, which sits inside a 200px screen with room to
+     * spare.</p>
+     */
+    static int maxColumnsFor(int screenWidth) {
+        // n columns of floored cells span n*MIN_CELL_WIDTH + (n-1)*GAP; solve that for <= screenWidth.
+        int fits = (screenWidth + GAP) / (MIN_CELL_WIDTH + GAP);
+        return Math.max(MIN_COLUMNS, Math.min(MAX_COLUMNS, fits));
+    }
+
+    private static int availableWidth(int screenWidth) {
+        return Math.min(screenWidth - 2 * SIDE_MARGIN, MAX_GRID_WIDTH);
+    }
+
+    /**
      * @param screenWidth screen width in GUI pixels
      * @param topY        first Y the grid may occupy (below the type controls)
      * @param bottomY     first Y the grid may NOT occupy (above the Back button)
      * @param itemCount   how many templates are being shown
+     * @param columns     tiles per row the player has asked for; clamped to what the width holds
      */
-    static BuilderTemplateGridLayout of(int screenWidth, int topY, int bottomY, int itemCount) {
-        int available = Math.min(screenWidth - 2 * SIDE_MARGIN, MAX_GRID_WIDTH);
+    static BuilderTemplateGridLayout of(int screenWidth, int topY, int bottomY, int itemCount,
+                                        int columns) {
+        int available = availableWidth(screenWidth);
 
-        int columns = COLUMNS;
-        int cellWidth = Math.max(MIN_CELL_WIDTH, (available - (columns - 1) * GAP) / columns);
+        int clamped = Math.max(MIN_COLUMNS, Math.min(maxColumnsFor(screenWidth), columns));
+        int cellWidth = Math.max(MIN_CELL_WIDTH, (available - (clamped - 1) * GAP) / clamped);
         int cellHeight = Math.max(1, cellWidth * 9 / 16);
 
-        int gridWidth = columns * cellWidth + GAP * (columns - 1);
+        int gridWidth = clamped * cellWidth + GAP * (clamped - 1);
         int originX = Math.max(0, (screenWidth - gridWidth) / 2);
 
-        int rows = itemCount <= 0 ? 0 : (itemCount + columns - 1) / columns;
+        int rows = itemCount <= 0 ? 0 : (itemCount + clamped - 1) / clamped;
         int contentHeight = rows == 0 ? 0 : rows * cellHeight + (rows - 1) * GAP;
         int viewportHeight = Math.max(0, bottomY - topY);
         int maxScroll = Math.max(0, contentHeight - viewportHeight);
 
-        return new BuilderTemplateGridLayout(columns, cellWidth, cellHeight,
+        return new BuilderTemplateGridLayout(clamped, cellWidth, cellHeight,
                 originX, topY, bottomY, GAP, maxScroll);
     }
 

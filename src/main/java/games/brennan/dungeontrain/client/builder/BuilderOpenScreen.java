@@ -195,13 +195,33 @@ public final class BuilderOpenScreen extends Screen {
                         rebuild();
                     }));
         }
+        int firstRowY = y;
         y = BuilderTypeControls.layoutRows(controls, controlX, CONTROL_WIDTH, y, ROW_HEIGHT, ROW_GAP);
         controls.forEach(this::addRenderableWidget);
+
+        // The tiles-per-row chip rides in the slack beside the 200px control block, on the last row
+        // layoutRows filled — the grid is the tightest thing on this screen for vertical space, and
+        // a control this small has no business taking a whole row of it away.
+        //
+        // With no controls at all (the track modes' top level) there is no row to ride, so it takes
+        // one. That costs nothing precisely because it is the case with nothing else competing for
+        // the space.
+        int chipY;
+        if (controls.isEmpty()) {
+            chipY = firstRowY;
+            y += ROW_HEIGHT + ROW_GAP;
+        } else {
+            chipY = y - (ROW_HEIGHT + ROW_GAP);
+        }
+        this.addRenderableWidget(new BuilderTilesPerRowButton(
+                controlX + CONTROL_WIDTH + ROW_GAP, chipY, ROW_HEIGHT, this.width,
+                this::onTilesPerRowChanged));
 
         int backY = this.height - BACK_BUTTON_BOTTOM_MARGIN;
         int gridTop = y + GRID_TOP_GAP;
         int gridBottom = Math.max(gridTop, backY - STATUS_GAP);
-        this.grid = BuilderTemplateGridLayout.of(this.width, gridTop, gridBottom, entries.size());
+        this.grid = BuilderTemplateGridLayout.of(this.width, gridTop, gridBottom, entries.size(),
+                BuilderTilesPerRowButton.effectiveColumns(this.width));
         this.scrollY = grid.clampScroll(scrollY);
 
         this.addRenderableWidget(Button.builder(CommonComponents.GUI_BACK, b -> this.onClose())
@@ -212,6 +232,20 @@ public final class BuilderOpenScreen extends Screen {
     private void rebuild() {
         this.clearWidgets();
         this.init();
+    }
+
+    /**
+     * Relay out the grid at the new tiles-per-row count.
+     *
+     * <p>Scroll is kept and clamped rather than reset, unlike every other rebuild on this screen.
+     * Those all change <em>which list</em> is showing, where an inherited offset would land
+     * mid-nowhere; this one shows the same list the player was already looking at, so throwing them
+     * back to the top would lose the place they were keeping. The reflow moves rows around under
+     * them either way — {@code init}'s {@code clampScroll} handles the case where fewer rows now
+     * means there is less to scroll through.</p>
+     */
+    private void onTilesPerRowChanged() {
+        rebuild();
     }
 
     /**
