@@ -2,7 +2,6 @@ package games.brennan.dungeontrain.event;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.builder.BuilderMode;
-import games.brennan.dungeontrain.builder.BuilderTrackBuild;
 import games.brennan.dungeontrain.builder.BuilderWorldLayout;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
@@ -14,13 +13,13 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.level.BlockEvent;
 
 /**
- * Makes the Train Builder world's scenery read-only: the grass platform you stand on and the
- * track the train sits on can't be broken or built over.
+ * Makes the Train Builder world's ground read-only: the bedrock floor and the grass on it can't be
+ * broken or built over.
  *
- * <p>They're the frame, not the work. A build shouldn't be able to start by accidentally
- * knocking a hole in the floor or pulling up a rail, and neither is something the builder is
- * meant to author here — the track has its own mode. Everything from the train floor up
- * ({@code y >= }{@link BuilderWorldLayout#TRAIN_Y}) stays fully editable.</p>
+ * <p>They're the frame, not the work — you stand on them while deciding what everything else should
+ * be, and a hole in the world floor of a builder dimension is not a recoverable mistake. Everything
+ * above them stays fully editable, including the line: that is a <em>structure</em> now, drawn rather
+ * than stamped unless somebody asks for Solid, and nothing saves it.</p>
  *
  * <p>Only ever active in a {@code dungeontrain:builder} dimension; every other world, including
  * the technical editor's, is untouched. Creative players still fire
@@ -54,7 +53,6 @@ public final class BuilderProtectionEvents {
         }
         DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
         BuilderMode mode = BuilderMode.fromId(data.builderMode()).orElse(null);
-        return BuilderWorldLayout.isProtected(pos, data.dims(), mode,
-                BuilderTrackBuild.isActive(level));
+        return BuilderWorldLayout.isProtected(pos, mode);
     }
 }

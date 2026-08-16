@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.editor.EditorPlotEntityClearer;
 import games.brennan.dungeontrain.editor.EditorPlotSnapshots;
 import games.brennan.dungeontrain.editor.EditorStageSelection;
 import games.brennan.dungeontrain.editor.EditorTemplateLists;
+import games.brennan.dungeontrain.builder.structure.BuilderEnvironment;
 import games.brennan.dungeontrain.editor.WholeCarriageTemplateStore;
 import games.brennan.dungeontrain.ship.sable.WorldgenForceGuard;
 import games.brennan.dungeontrain.track.TrackGenerator;
@@ -140,7 +141,7 @@ public final class BuilderWorldSetup {
         // The same reconcile every other entry point runs. A world this fresh has nothing to wipe,
         // but going through one door means a fresh world and a switched one are stamped by the same
         // code — which is what stops them from drifting apart again.
-        resetScene(level, data, dims, mode, /*corridor*/ true);
+        resetScene(level, data, dims, mode);
         // Then the mode's default template, through the Open path. Its own resetScene re-runs over
         // the scene this one just stood up, which is redundant rather than wrong — and cheap, since
         // the sweep skips all-air sections a section at a time.
@@ -154,6 +155,7 @@ public final class BuilderWorldSetup {
         LOGGER.info("[DungeonTrain] Builder world stamped for mode '{}' ({} carriage(s)) in {} ms",
                 mode.id(), parkedCarriages(DungeonTrainWorldData.get(level)),
                 (System.nanoTime() - t0) / 1_000_000);
+        BuilderStructureStamp.apply(level);
         return true;
     }
 
@@ -297,7 +299,7 @@ public final class BuilderWorldSetup {
         // shell it was last stamped from — the same thing setupIfNeeded stands up for a fresh world.
         String recorded = data.builderName();
         int carriages = BuilderWorldLayout.parkedCarriages(mode, null);
-        resetScene(level, data, dims, mode, /*corridor*/ true);
+        resetScene(level, data, dims, mode);
         if (carriages > 0) {
             stampTrain(level, dims, carriages);
         }
@@ -307,6 +309,7 @@ public final class BuilderWorldSetup {
                         + "stood mode '{}' back up with {} carriage(s) in {} ms",
                 recorded == null || recorded.isEmpty() ? "<draft>" : "'" + recorded + "'",
                 mode.id(), carriages, (System.nanoTime() - t0) / 1_000_000);
+        BuilderStructureStamp.apply(level);
         return true;
     }
 
@@ -332,7 +335,7 @@ public final class BuilderWorldSetup {
 
         // Everything standing goes — the parked train, whatever room was up, the track plot, and any
         // stray build on the platform — and the scenery comes back as this mode wants it.
-        resetScene(level, data, dims, mode, /*corridor*/ true);
+        resetScene(level, data, dims, mode);
 
         // A mode switch changes the mode, not what is being authored: a build that stood alone
         // stays alone, and one that was a full run stays a full run, scaled to the new mode.
@@ -350,8 +353,11 @@ public final class BuilderWorldSetup {
         data.setBuilderName("");
         data.setBuilderSubType("", "");
         LOGGER.info("[DungeonTrain] Builder world re-stamped: {} carriage(s) -> '{}' ({} carriage(s)),"
-                        + " scenery {}",
-                previous, mode.id(), carriages, hasScenery(mode) ? "platform + line" : "void");
+                        + " environment {}",
+                previous, mode.id(), carriages, BuilderEnvironment.forMode(mode));
+        // The structures a mode wants are not the ones the last mode wanted, and the switch is the
+        // one moment where standing the old set down matters as much as putting the new one up.
+        BuilderStructureStamp.apply(level);
     }
 
     /**
@@ -382,21 +388,18 @@ public final class BuilderWorldSetup {
      * and the store is per-server: a builder world is a builder world, so there is no Train Editor
      * plot open somewhere else whose baseline this would take with it.</p>
      *
-     * <p>Ends by reconciling the scenery for {@code mode} ({@link #applyScenery}), so every caller
+     * <p>Ends by reconciling the ground for {@code mode} ({@link #applyScenery}), so every caller
      * gets a world that matches the mode it is about to stamp into rather than whatever the last
-     * mode left behind. <b>Order matters and is the reason the scenery is done here rather than by
-     * the callers afterwards:</b> {@link BuilderWorldLayout#Y_TRACK_BED} is 2, which is also
-     * {@link BuilderWorldLayout#Y_STAND}, the row a portal room's floor sits on — reconciling after
-     * the build was stamped would take the floor out from under it.</p>
+     * mode left behind. <b>Order matters and is the reason it is done here rather than by the
+     * callers afterwards:</b> the grass is one row below {@link BuilderWorldLayout#Y_STAND}, which is
+     * where a portal room's floor sits — reconciling after the build was stamped would mean laying
+     * ground into the space the room had just been put in.</p>
      *
-     * @param mode     the mode being stamped into — decides whether this world ends up with a
-     *                 platform and a line under it, or open void
-     * @param corridor put the shared corridor back. False for a track open, which wants the corridor
-     *                 gone on purpose so the line can be drawn as ghosts — a ghost that is also a
-     *                 real block can be broken, stood on, and saved into the wrong template.
+     * @param mode the mode being stamped into — decides whether this world ends up with a platform
+     *             under it, or open void
      */
     private static void resetScene(ServerLevel level, DungeonTrainWorldData data, CarriageDims dims,
-                                   BuilderMode mode, boolean corridor) {
+                                   BuilderMode mode) {
         BlockState air = Blocks.AIR.defaultBlockState();
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         int minChunk = BuilderWorldLayout.MIN_XZ >> 4;
@@ -449,11 +452,11 @@ public final class BuilderWorldSetup {
         // The plot went with everything else, so the world is no longer holding a track build.
         data.setBuilderTrackKind("");
 
-        applyScenery(level, dims, mode, corridor);
+        applyScenery(level, mode);
     }
 
     /**
-     * Bring the platform and the line to what {@code mode} wants, from whatever is there now.
+     * Bring the ground to what {@code mode} wants, from whatever is there now.
      *
      * <p>The one place that decides what the ground under a build looks like. It used to be decided
      * in four places that each knew about a different part of it — {@code setupIfNeeded} stamped it
@@ -463,28 +466,31 @@ public final class BuilderWorldSetup {
      * left a carriage floating in void. Reconciling unconditionally is both the fix and the reason
      * there is nothing left to keep in sync.</p>
      *
+     * <p><b>The line is not laid here any more</b>, and the {@code corridor} flag every caller used
+     * to pass has gone with it. A track open wanted the corridor gone so the line could be drawn
+     * instead, every other caller wanted it back, and the flag was how those two arguments were
+     * carried through five call sites. The line is a structure now — always drawn, only stood up on
+     * request — so there is no longer a disagreement to carry.</p>
+     *
      * <p>Cheap to call when it has nothing to do: both arms skip cells that already hold what they
-     * would write, so the common case (the scenery is already right) is a pass of palette reads
+     * would write, so the common case (the ground is already right) is a pass of palette reads
      * rather than 180 000 writes and their client updates.</p>
      */
-    private static void applyScenery(ServerLevel level, CarriageDims dims, BuilderMode mode,
-                                     boolean corridor) {
+    private static void applyScenery(ServerLevel level, BuilderMode mode) {
         if (!hasScenery(mode)) {
             clearScenery(level);
             return;
         }
         stampPlatform(level);
-        if (corridor) {
-            stampTrack(level, dims);
-        }
     }
 
     /**
      * Strip the platform and the track back to air, for a mode that builds in void.
      *
-     * <p>The exact inverse of {@link #stampPlatform} plus {@link #stampTrack}, and written the same
-     * way — section-local over the same 300 × 300 box. Clears the track rows as well as the two
-     * platform courses, because the track sits above the grass rather than in it.</p>
+     * <p>The exact inverse of {@link #stampPlatform}, and written the same way — section-local over
+     * the same 300 × 300 box. Clears the track rows as well as the two platform courses: the line is
+     * a structure rather than ground now, but a world that was in Solid before the switch still has
+     * one standing there, and it sits above the grass rather than in it.</p>
      *
      * <p>Cells already air are read and skipped. This runs on every entry into a void mode, and in
      * a world that is already void that is the entire box — 360 000 no-op writes, each with its own
@@ -528,14 +534,19 @@ public final class BuilderWorldSetup {
 
 
     /**
-     * Whether the mode wants the platform and the track under it.
+     * Whether the mode wants a platform under it.
      *
-     * <p>False for Train Dimensions alone. Everything else is a train being looked at from
-     * somewhere, and needs a floor to stand on and a line for the train to sit on; a portal room is
-     * the whole scene.</p>
+     * <p>Kept as the name the rest of the builder already calls this by; the rule itself lives in
+     * {@link BuilderEnvironment}, which is where "grass or void" is one question with one answer
+     * rather than a negation four call sites each had to remember.</p>
+     *
+     * <p><b>The line is no longer part of the answer.</b> It used to be stamped here alongside the
+     * grass; it is a <em>structure</em> now, declared by {@code BuilderStructureNeeds} and put in the
+     * world only when somebody asks for Solid. The platform is not, and that separation is the point:
+     * you stand on the platform while deciding what the structures should be.</p>
      */
     public static boolean hasScenery(BuilderMode mode) {
-        return mode != BuilderMode.TRAIN_DIMENSIONS;
+        return BuilderEnvironment.forMode(mode).hasPlatform();
     }
 
     /**
@@ -614,49 +625,19 @@ public final class BuilderWorldSetup {
         return 1;
     }
 
-    // ---- track ----
-
-    /**
-     * A straight run the full width of the platform, using the same authored track templates and
-     * per-tile variant picks the real line uses — {@link TrackGenerator#ensureTracksForChunk} is
-     * the runtime painter, so the builder's track looks exactly like the one in a real world.
-     *
-     * <p>It bails on chunks that aren't FULL yet, hence the force pass first.</p>
-     */
-    private static void stampTrack(ServerLevel level, CarriageDims dims) {
-        TrackGeometry g = TrackGeometry.from(dims, BuilderWorldLayout.TRAIN_Y);
-        Set<Long> filled = new HashSet<>();
-        int minChunkX = BuilderWorldLayout.MIN_XZ >> 4;
-        int maxChunkX = BuilderWorldLayout.MAX_XZ >> 4;
-        int minChunkZ = g.trackZMin() >> 4;
-        int maxChunkZ = g.trackZMax() >> 4;
-        TrackGenerator.PaintTally tally = new TrackGenerator.PaintTally();
-
-        for (int cx = minChunkX; cx <= maxChunkX; cx++) {
-            for (int cz = minChunkZ; cz <= maxChunkZ; cz++) {
-                WorldgenForceGuard.forceChunk(level, cx, cz);
-                TrackGenerator.ensureTracksForChunk(level, cx, cz, g, filled, tally);
-            }
-        }
-
-        // The painter declines cells silently, in half a dozen different ways, and this call is the
-        // one place that asked for a whole corridor and knows it should have got one — so it says
-        // what it got. A run that writes nothing is a bug, not a no-op.
-        LOGGER.info("[DungeonTrain] Builder track: bed y={} rail y={} z={}..{} over chunks x {}..{} "
-                        + "z {}..{} — {}",
-                g.bedY(), g.railY(), g.trackZMin(), g.trackZMax(), minChunkX, maxChunkX,
-                minChunkZ, maxChunkZ, tally);
-    }
-
     // ---- train ----
 
     /**
      * Park an empty train on the track, centred on the origin.
      *
-     * <p>A run of more than one carriage is wrapped in half-flatbed pads the way
-     * {@code TrainAssembler.spawnGroup} wraps a group, so the silhouette matches what the game
-     * actually produces. Contents are never applied — the 4-arg {@code placeAt} stamps shell and
-     * parts only, which is precisely "an empty carriage".</p>
+     * <p>Contents are never applied — the 4-arg {@code placeAt} stamps shell and parts only, which
+     * is precisely "an empty carriage".</p>
+     *
+     * <p><b>The half-flatbed pads capping the run are no longer stamped here.</b> They frame the
+     * silhouette and are not part of the build — {@code BuilderBounds} already left them out of the
+     * save volume — so they are declared as structures and appear according to the structure control
+     * like everything else around the build. Which also means a one-carriage world now shows the
+     * pads it never had.</p>
      */
     private static void stampTrain(ServerLevel level, CarriageDims dims, int carriages) {
         Optional<CarriageVariant> variant = currentSource(level).or(BuilderWorldSetup::defaultVariant);
@@ -686,9 +667,6 @@ public final class BuilderWorldSetup {
         Optional<CarriageVariant> variant = Optional.of(source);
 
         int startX = BuilderWorldLayout.trainStartX(carriages, dims);
-        int halfPad = CarriagePlacer.halfPadLen(dims);
-        boolean pads = BuilderWorldLayout.usesPads(carriages);
-        int enclosedX = pads ? startX + halfPad : startX;
 
         // Force every chunk the train touches before stamping — placeAt reads and writes block
         // states directly and would otherwise sync-load mid-stamp.
@@ -697,15 +675,6 @@ public final class BuilderWorldSetup {
             for (int cz = 0; cz <= (dims.width() - 1) >> 4; cz++) {
                 WorldgenForceGuard.forceChunk(level, cx, cz);
             }
-        }
-
-        if (pads) {
-            CarriagePlacer.placeHalfFlatbedPad(level,
-                    new BlockPos(startX, BuilderWorldLayout.TRAIN_Y, 0),
-                    CarriagePlacer.HalfPadSide.BACK, dims);
-            CarriagePlacer.placeHalfFlatbedPad(level,
-                    new BlockPos(enclosedX + carriages * dims.length(), BuilderWorldLayout.TRAIN_Y, 0),
-                    CarriagePlacer.HalfPadSide.FRONT, dims);
         }
 
         // Remember where the blocks came from, so a mode switch re-stamps this carriage rather than
@@ -743,7 +712,7 @@ public final class BuilderWorldSetup {
         // The whole scene, the same as Open — and for the same reason. Erasing only the volumes
         // about to be stamped into left everything an author had put *outside* them standing: a
         // tower on the platform, a block over the train, a mob that wandered in. New means new.
-        resetScene(level, data, dims, mode, /*corridor*/ true);
+        resetScene(level, data, dims, mode);
         data.setBuilderMode(mode.id());
 
         // A stage doesn't name a carriage — it decides which parts get stamped onto one. Selecting
@@ -777,6 +746,7 @@ public final class BuilderWorldSetup {
                 request.stageId().isEmpty() ? "<none>" : request.stageId(),
                 request.wholeCarriageId().isEmpty() ? "<blank>" : request.wholeCarriageId(),
                 request.name().isEmpty() ? "<draft>" : request.name());
+        BuilderStructureStamp.apply(level);
         return true;
     }
 
@@ -911,7 +881,7 @@ public final class BuilderWorldSetup {
 
         // The whole scene, not just the carriage footprint: an Open hands back the template you
         // opened, and anything left standing beside it came from a build you already left.
-        resetScene(level, data, dims, mode, /*corridor*/ true);
+        resetScene(level, data, dims, mode);
         data.setBuilderMode(mode.id());
 
         // Before the stamp, for the same reason applyNew does it: CarriagePlacer.placeAt reads
@@ -956,6 +926,7 @@ public final class BuilderWorldSetup {
                 open.shell().id(),
                 stageId.isEmpty() ? "<none>" : stageId,
                 shownStage.isEmpty() ? "<none>" : shownStage);
+        BuilderStructureStamp.apply(level);
         return true;
     }
 
@@ -969,8 +940,8 @@ public final class BuilderWorldSetup {
      * point at the file — so a failed open can never arm a Save that overwrites what it failed to
      * load.</p>
      *
-     * <p>What it does <em>not</em> do is re-lay the corridor around the plot. The track outside the
-     * plot is scenery that every mode shares and {@code stampTrack} already put there; a track tile
+     * <p>What it does <em>not</em> do is lay the line around the plot. That is a structure, declared
+     * by {@code BuilderStructureNeeds} and shown according to the structure control; a track tile
      * opened at the tile grid lines up with it by construction (see {@link BuilderTrackPlot}).</p>
      */
     private static boolean applyOpenTrack(ServerLevel level, BuilderMode mode,
@@ -992,7 +963,7 @@ public final class BuilderWorldSetup {
         // blocks: everything outside the plot is drawn as ghosts (BuilderTrackGhostShape), and a
         // ghost that is also a real block is not a ghost — it can be broken, walked on, and saved
         // into the wrong template. The wipe is what makes the drawn version the only version.
-        resetScene(level, data, dims, mode, /*corridor*/ false);
+        resetScene(level, data, dims, mode);
         data.setBuilderMode(mode.id());
 
         BlockPos origin = BuilderTrackPlot.origin(kind, dims);
@@ -1013,6 +984,7 @@ public final class BuilderWorldSetup {
                 size.getX(), size.getY(), size.getZ());
         LOGGER.info("[DungeonTrain] Builder open: track {} '{}' into mode '{}' at {}",
                 kind.id(), name, mode.id(), origin);
+        BuilderStructureStamp.apply(level);
         return true;
     }
 
@@ -1121,7 +1093,7 @@ public final class BuilderWorldSetup {
         // to leave the old shell around it), and any stray build on the platform. It also resets
         // builderTrackKind, which is what stops a track template opened earlier from being written
         // over this room by Save — BuilderSave tests that field before the portal-room token.
-        resetScene(level, data, dims, mode, /*corridor*/ true);
+        resetScene(level, data, dims, mode);
         data.setBuilderMode(mode.id());
 
         BlockPos origin = BuilderWorldLayout.portalRoomOrigin(size);
@@ -1144,6 +1116,7 @@ public final class BuilderWorldSetup {
                 size.getX(), size.getY(), size.getZ());
         LOGGER.info("[DungeonTrain] Builder open: portal room '{}' into mode '{}' at {} ({}x{}x{})",
                 name, mode.id(), origin, size.getX(), size.getY(), size.getZ());
+        BuilderStructureStamp.apply(level);
         return true;
     }
 

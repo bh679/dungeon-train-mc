@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.builder;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.builder.structure.BuilderEnvironment;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriagePlacer;
 import net.minecraft.core.BlockPos;
@@ -141,64 +142,34 @@ public final class BuilderWorldLayout {
     }
 
     /**
-     * The scenery is not yours to edit: the platform you stand on and the track the train sits on
-     * are fixed, so a build can't accidentally start by digging a hole in the floor or pulling up
-     * a rail. Everything from the train floor up stays editable — that is the build.
+     * The two courses the environment owns: the bedrock world floor and the grass on top of it.
      *
-     * <p><b>The mode is not optional, and used not to be asked.</b> Train Dimensions has no scenery
-     * at all — a portal room stands in open void — and the rows this protects overlap the room
-     * itself: {@link #Y_TRACK_BED} is 2, which is also {@link #Y_STAND}, the row a room's floor sits
-     * on, and {@link #inCorridor} spans {@code z ∈ [0, width)}, which a room centred on the origin
-     * straddles. Without the mode, part of an open room's own floor is unbreakable and the author
-     * cannot edit the thing they opened.</p>
+     * <p>They are not the build and they are not scenery either — you stand on them while deciding
+     * what the scenery should be, which is exactly why they cannot be something a control can take
+     * away. A hole in the world floor of a builder dimension is also not a recoverable mistake.</p>
+     *
+     * <p><b>The track rows used to be protected too, and are not any more.</b> They stopped being
+     * fixed the moment the line became a structure: it is drawn rather than stamped unless somebody
+     * asks for Solid, nothing saves it, and {@code BuilderStructureStamp} puts it back on the next
+     * reconcile — so locking those rows would defend a thing that no longer needs defending, while
+     * locking the bottom of every pillar column somebody tries to author.</p>
+     *
+     * <p><b>The mode is not optional.</b> Train Dimensions builds in open void, and {@link #Y_STAND}
+     * — the row a portal room's floor sits on — is one block above a floor that in that mode does
+     * not exist. Without the mode, part of an open room's own surroundings would be unbreakable.</p>
+     *
+     * @param mode the builder mode, or null when it isn't known — which protects, since dropping
+     *             somebody through the bottom of the world is the worse failure of the two
      */
-    public static boolean isProtected(BlockPos pos, CarriageDims dims) {
-        return isProtected(pos, dims, null, false);
-    }
-
-    /**
-     * As above, for a world that may be holding a track-side build or building in void.
-     *
-     * <p>Two ways the track rows stop being protected, and they are different reasons:</p>
-     * <ul>
-     *   <li><b>A track build is open.</b> By then those rows are not the track — opening a track
-     *       template erases the corridor so the line can be drawn as ghosts, and the build itself
-     *       goes down there; a pillar column stands from {@link #Y_STAND}, which is the bed row.
-     *       Protecting them defends nothing and locks the bottom of every column being authored.</li>
-     *   <li><b>The mode has no scenery at all.</b> Train Dimensions builds in open void, and
-     *       {@link #Y_TRACK_BED} is also {@link #Y_STAND}, the row a portal room's floor sits on,
-     *       over a z-range a room centred on the origin straddles — so part of an open room's own
-     *       floor was unbreakable.</li>
-     * </ul>
-     *
-     * <p>The floor and the grass stay protected in the track case. Nothing is ever authored there,
-     * and a hole in the world floor of a builder dimension is not a recoverable mistake — but in a
-     * void mode there is no floor to hole.</p>
-     *
-     * @param mode           the builder mode, or null when it isn't known
-     * @param trackBuildOpen whether a track-side template is currently open in this world
-     */
-    /** As above, for a caller that knows about a track build but not about the mode. */
-    public static boolean isProtected(BlockPos pos, CarriageDims dims, boolean trackBuildOpen) {
-        return isProtected(pos, dims, null, trackBuildOpen);
-    }
-
-    public static boolean isProtected(BlockPos pos, CarriageDims dims, BuilderMode mode,
-                                      boolean trackBuildOpen) {
-        if (mode != null && !BuilderWorldSetup.hasScenery(mode)) {
+    public static boolean isProtected(BlockPos pos, BuilderMode mode) {
+        if (!BuilderEnvironment.forMode(mode).hasPlatform()) {
             return false;   // nothing there to protect
         }
-        int y = pos.getY();
         if (!inPlatform(pos.getX(), pos.getZ())) {
             return false;
         }
-        if (y == Y_BEDROCK || y == Y_GRASS) {
-            return true;
-        }
-        if (trackBuildOpen) {
-            return false;
-        }
-        return (y == Y_TRACK_BED || y == Y_TRACK_RAIL) && inCorridor(pos.getZ(), dims);
+        int y = pos.getY();
+        return y == Y_BEDROCK || y == Y_GRASS;
     }
 
     /**

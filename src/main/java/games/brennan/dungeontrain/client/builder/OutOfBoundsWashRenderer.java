@@ -5,11 +5,8 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.builder.BuilderBounds;
 import games.brennan.dungeontrain.builder.BuilderMode;
-import games.brennan.dungeontrain.builder.BuilderNewOptions;
-import games.brennan.dungeontrain.builder.BuilderOpenRequest;
 import games.brennan.dungeontrain.builder.BuilderWorldLayout;
 import games.brennan.dungeontrain.client.menu.MenuRenderStates;
-import games.brennan.dungeontrain.train.CarriageDims;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
@@ -105,12 +102,7 @@ public final class OutOfBoundsWashRenderer {
         }
 
         Level level = mc.level;
-        CarriageDims dims = CarriageDims.DEFAULT; // only used for the protection test's corridor width
         BuilderMode mode = BuilderMode.fromId(BuilderBoundsState.modeId()).orElse(null);
-        // A track build unlocks the track rows, and the client knows it is in one the same way the
-        // grid does: the sub type the server recorded names no carriage part.
-        boolean trackBuildOpen = mode != null && !BuilderNewOptions.hasSubTypes(mode)
-                && !BuilderOpenRequest.PORTAL_ROOM_SUB_TYPE.equals(BuilderBoundsState.subTypeId());
         BlockPos centre = mc.player.blockPosition();
 
         int minX = centre.getX() - SCAN_RADIUS_XZ;
@@ -137,8 +129,12 @@ public final class OutOfBoundsWashRenderer {
                     pos.set(x, y, z);
                     if (level.getBlockState(pos).isAir()) continue;
                     if (BuilderBounds.isInsideBuild(pos, volumes)) continue;
-                    // The platform and the track are scenery, not something the builder placed.
-                    if (BuilderWorldLayout.isProtected(pos, dims, mode, trackBuildOpen)) continue;
+                    // The ground is the environment's, not something the builder placed.
+                    if (BuilderWorldLayout.isProtected(pos, mode)) continue;
+                    // Nor is scenery the structure control put there. Without this, setting the
+                    // structures Solid would wash the whole line, the pads and the rest of the train
+                    // red — telling a builder that the thing they just asked for is a mistake.
+                    if (BuilderStructureScan.isStructure(pos.immutable())) continue;
 
                     for (Direction dir : Direction.values()) {
                         neighbour.set(x + dir.getStepX(), y + dir.getStepY(), z + dir.getStepZ());
