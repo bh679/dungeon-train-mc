@@ -28,7 +28,7 @@ import java.util.function.UnaryOperator;
  * <p>The one tool the builder's three ghost renderers share — the line around an open track tile
  * ({@link BuilderTrackGhostRenderer}), a portal room repeating at its walls
  * ({@link BuilderRoomGhostRenderer}), and the rest of the train around a parked carriage
- * ({@link BuilderGhostTrainRenderer}). All three answer the same question — "what would be here,
+ * ({@link BuilderSurroundingsRenderer}). All three answer the same question — "what would be here,
  * that isn't?" — and a flat silhouette answers it badly: what a builder is judging is a real join
  * against real blocks, and an abstract shape hanging in the air tells them nothing about it.</p>
  *

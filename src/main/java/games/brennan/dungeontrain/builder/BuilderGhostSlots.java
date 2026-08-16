@@ -11,7 +11,7 @@ import java.util.List;
  * to <em>look at</em>: a carriage on its own tells you nothing about how it reads in a run, which is
  * most of why anyone opens the outside view at all. The rest of the group — the other carriages and
  * the flatbed pads that cap it — is therefore drawn as translucent ghosts; see
- * {@code BuilderGhostTrainRenderer}.</p>
+ * {@code BuilderSurroundings}.</p>
  *
  * <p><b>Drawn, never stamped.</b> Nothing here touches the world, so a ghost cannot be edited, cannot
  * be saved into a template, and cannot confuse the dirty check — which is exactly why this is a

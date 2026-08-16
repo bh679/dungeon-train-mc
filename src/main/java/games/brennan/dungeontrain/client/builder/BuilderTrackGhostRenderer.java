@@ -41,7 +41,7 @@ import java.util.function.UnaryOperator;
  *
  * <p><b>Drawn, never stamped</b> — the corridor is erased on the way into a track build
  * ({@code BuilderWorldSetup.applyOpenTrack}), so a ghost cannot be broken, walked on, or saved into
- * the template, because there is nothing there. The same choice {@code BuilderGhostTrainRenderer}
+ * the template, because there is nothing there. The same choice {@code BuilderSurroundingsRenderer}
  * makes for the rest of the carriage group.</p>
  *
  * <p>Textured, from each cell's own block model, which is why the cells carry a {@link BlockState}.
