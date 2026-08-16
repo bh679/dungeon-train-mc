@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.client.render;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.editor.surrounding.SurroundingStructureCategory;
 import games.brennan.dungeontrain.net.SurroundingStructureGhostPacket;
@@ -9,7 +10,15 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.block.BlockRenderDispatcher;
+import net.minecraft.client.renderer.block.model.BakedQuad;
+import net.minecraft.client.renderer.texture.OverlayTexture;
+import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.inventory.InventoryMenu;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
@@ -17,88 +26,225 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
+import net.neoforged.neoforge.client.model.data.ModelData;
+import org.slf4j.Logger;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.EnumMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 /**
- * Client-side renderer for the Surrounding Structures GHOST preview. Caches the last
- * {@link SurroundingStructureGhostPacket} snapshot per {@link SurroundingStructureCategory} and draws
- * a translucent wireframe box over every entry each frame.
+ * Draws the structures around the template you're editing, as textured ghosts.
  *
- * <p>First-version rendering: a colored line-box outline per ghost block via
- * {@link LevelRenderer#renderLineBox} rather than a full translucent block model — simple, guaranteed
- * to compile against every block's render shape, and reads clearly as "preview, not real" without
- * needing per-block model/texture lookups. A solid translucent fill can replace this later without
- * touching the packet or manager.</p>
+ * <p>What the server resolved for each {@link SurroundingStructureCategory} arrives over
+ * {@link SurroundingStructureGhostPacket} and is cached here per category; the render pass only
+ * replays it. Nothing is stamped — that is what keeps these out of the saved template, out of the
+ * dirty check, and out of reach of the block protection. The SOLID mode is the one that writes real
+ * blocks, and it does so server-side.</p>
+ *
+ * <p><b>Textured, from each cell's own block model</b>, the same way {@link
+ * games.brennan.dungeontrain.client.builder.BuilderRoomGhostRenderer} draws a room's repeats: a track
+ * ghosts as its own rails and sleepers, a pillar as its own stone. What you are judging is how the
+ * template you're building sits against real neighbouring structures, and flat silhouette boxes read
+ * as abstract shapes hanging in the air instead. Two rules keep a mass of them legible:</p>
+ * <ul>
+ *   <li>a face is drawn only when the neighbouring cell of the <em>same category</em> is absent, so a
+ *       run of track contributes its outer shell rather than every internal face stacked through it;</li>
+ *   <li>the batch is culled and depth-writing ({@link RenderType#entityTranslucentCull}) and cells are
+ *       drawn nearest-first, so the closest surface wins the pixel.</li>
+ * </ul>
+ *
+ * <p>Each category carries its own tint so overlapping previews — track below, pillars beside it —
+ * stay tellable apart while still showing their own texture underneath.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class SurroundingStructureGhostRenderer {
 
-    private static final Map<SurroundingStructureCategory, List<SurroundingStructureGhostPacket.Entry>> CACHE =
-        new EnumMap<>(SurroundingStructureCategory.class);
+    private static final Logger LOGGER = LogUtils.getLogger();
 
-    /** One RGB per category so overlapping previews (e.g. TRACK below, PILLAR beside) are distinguishable. */
-    private static float[] colorFor(SurroundingStructureCategory category) {
-        return switch (category) {
-            case TRACK -> new float[]{0.35f, 0.75f, 1.0f};
-            case PILLAR -> new float[]{0.75f, 0.55f, 1.0f};
-            case DIMENSION_REPEAT -> new float[]{1.0f, 0.65f, 0.35f};
-            case FLATBED_END -> new float[]{1.0f, 0.9f, 0.3f};
-            case CARRIAGE_SHELL -> new float[]{0.4f, 1.0f, 0.55f};
-            case CARRIAGE_INTERIOR_WALL -> new float[]{1.0f, 0.4f, 0.6f};
-        };
-    }
+    /** Textured, translucent, culled and depth-writing — see the class note. */
+    private static final RenderType GHOST = RenderType.entityTranslucentCull(InventoryMenu.BLOCK_ATLAS);
+
+    /**
+     * Hard ceiling on the cells drawn for a frame, across every category.
+     *
+     * <p>A dimension-transition band repeats a tunnel segment a long way down the line, so an
+     * unbounded resolve is six figures of block models. The server chunks what it sends; this is the
+     * client-side backstop under it.</p>
+     */
+    private static final int MAX_CELLS = 40_000;
+
+    /** Opacity — enough to read the block's own texture, light enough to never be mistaken for real. */
+    private static final float ALPHA = 0.65F;
+
+    /**
+     * Cached per category, keyed by position so it serves both the draw and the face-culling lookup.
+     * Written from the network thread, read from the render thread — replaced wholesale rather than
+     * mutated in place, so a frame always sees one complete snapshot.
+     */
+    private static volatile Map<SurroundingStructureCategory, Map<BlockPos, BlockState>> cache =
+            new EnumMap<>(SurroundingStructureCategory.class);
+
+    private static volatile boolean loggedCap = false;
 
     private SurroundingStructureGhostRenderer() {}
 
+    /** One RGB tint per category so overlapping previews are distinguishable through their own texture. */
+    private static float[] tintFor(SurroundingStructureCategory category) {
+        return switch (category) {
+            case TRACK -> new float[]{0.62f, 0.82f, 1.00f};
+            case PILLAR -> new float[]{0.82f, 0.72f, 1.00f};
+            case DIMENSION_REPEAT -> new float[]{1.00f, 0.82f, 0.62f};
+            case FLATBED_END -> new float[]{1.00f, 0.96f, 0.64f};
+            case CARRIAGE_SHELL -> new float[]{0.70f, 1.00f, 0.78f};
+            case CARRIAGE_INTERIOR_WALL -> new float[]{1.00f, 0.72f, 0.82f};
+        };
+    }
+
+    /**
+     * Fold a received snapshot into the cache.
+     *
+     * <p>{@code replace} marks the first packet of a category's snapshot; the chunks that follow
+     * append to it, which is how a resolve larger than one packet arrives intact.</p>
+     */
     public static void applySnapshot(SurroundingStructureGhostPacket packet) {
-        if (packet.entries().isEmpty() && packet.replace()) {
-            CACHE.remove(packet.category());
-            return;
-        }
+        Map<SurroundingStructureCategory, Map<BlockPos, BlockState>> next = new EnumMap<>(cache);
         if (packet.replace()) {
-            CACHE.put(packet.category(), new java.util.ArrayList<>(packet.entries()));
+            if (packet.entries().isEmpty()) {
+                next.remove(packet.category());
+                cache = next;
+                return;
+            }
+            next.put(packet.category(), toMap(packet.entries(), null));
         } else {
-            CACHE.computeIfAbsent(packet.category(), k -> new java.util.ArrayList<>())
-                .addAll(packet.entries());
+            next.put(packet.category(), toMap(packet.entries(), next.get(packet.category())));
         }
+        cache = next;
+    }
+
+    private static Map<BlockPos, BlockState> toMap(List<SurroundingStructureGhostPacket.Entry> entries,
+                                                   Map<BlockPos, BlockState> existing) {
+        Map<BlockPos, BlockState> out =
+                existing == null ? new LinkedHashMap<>() : new LinkedHashMap<>(existing);
+        for (SurroundingStructureGhostPacket.Entry entry : entries) {
+            if (entry.state().isAir()) {
+                continue;
+            }
+            out.put(entry.pos(), entry.state());
+        }
+        return out;
     }
 
     @SubscribeEvent
     public static void onLoggedOut(ClientPlayerNetworkEvent.LoggingOut event) {
-        CACHE.clear();
+        cache = new EnumMap<>(SurroundingStructureCategory.class);
+        loggedCap = false;
     }
 
     @SubscribeEvent
     public static void onRenderLevelStage(RenderLevelStageEvent event) {
-        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS) return;
-        if (CACHE.isEmpty()) return;
-
+        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS) {
+            return;
+        }
+        Map<SurroundingStructureCategory, Map<BlockPos, BlockState>> snapshot = cache;
+        if (snapshot.isEmpty()) {
+            return;
+        }
         Minecraft mc = Minecraft.getInstance();
+        Level level = mc.level;
+        if (level == null) {
+            return;
+        }
+
         PoseStack ps = event.getPoseStack();
         Vec3 cam = event.getCamera().getPosition();
         MultiBufferSource.BufferSource buffer = mc.renderBuffers().bufferSource();
-        VertexConsumer consumer = buffer.getBuffer(RenderType.lines());
+        VertexConsumer vc = buffer.getBuffer(GHOST);
+        BlockRenderDispatcher blocks = mc.getBlockRenderer();
+        RandomSource random = RandomSource.create();
 
-        for (Map.Entry<SurroundingStructureCategory, List<SurroundingStructureGhostPacket.Entry>> catEntry
-                : CACHE.entrySet()) {
-            float[] color = colorFor(catEntry.getKey());
-            for (SurroundingStructureGhostPacket.Entry entry : catEntry.getValue()) {
-                BlockState state = entry.state();
-                if (state.isAir()) continue;
-                BlockPos pos = entry.pos();
-                double minX = pos.getX() - cam.x;
-                double minY = pos.getY() - cam.y;
-                double minZ = pos.getZ() - cam.z;
-                LevelRenderer.renderLineBox(ps, consumer,
-                    minX + 0.02, minY + 0.02, minZ + 0.02,
-                    minX + 0.98, minY + 0.98, minZ + 0.98,
-                    color[0], color[1], color[2], 0.55f);
+        ps.pushPose();
+        ps.translate(-cam.x, -cam.y, -cam.z);
+
+        int drawn = 0;
+        boolean capped = false;
+        for (Map.Entry<SurroundingStructureCategory, Map<BlockPos, BlockState>> catEntry
+                : snapshot.entrySet()) {
+            Map<BlockPos, BlockState> cells = catEntry.getValue();
+            if (cells.isEmpty()) {
+                continue;
+            }
+            float[] tint = tintFor(catEntry.getKey());
+
+            // Nearest first: the batch writes depth, so whichever fragment lands first wins the pixel.
+            // Sorted per frame because the ordering is the camera's, not the world's.
+            List<BlockPos> ordered = new ArrayList<>(cells.keySet());
+            ordered.sort(Comparator.comparingDouble(p -> p.distToCenterSqr(cam)));
+
+            for (BlockPos pos : ordered) {
+                if (drawn >= MAX_CELLS) {
+                    capped = true;
+                    break;
+                }
+                drawn++;
+                ps.pushPose();
+                ps.translate(pos.getX(), pos.getY(), pos.getZ());
+                drawGhost(ps, vc, blocks, cells.get(pos), pos, cells,
+                        LevelRenderer.getLightColor(level, pos), random, tint);
+                ps.popPose();
+            }
+            if (capped) {
+                break;
             }
         }
 
-        buffer.endBatch(RenderType.lines());
+        ps.popPose();
+        buffer.endBatch(GHOST);
+
+        // Never silently: a truncated draw shows neighbouring structures with holes in them, and a
+        // builder would read that as the structure having holes rather than the ghost giving up.
+        if (capped && !loggedCap) {
+            LOGGER.info("[DungeonTrain] Surrounding structure ghosts hit the {}-cell cap — "
+                    + "the preview is drawn partially", MAX_CELLS);
+            loggedCap = true;
+        } else if (!capped) {
+            loggedCap = false;
+        }
+    }
+
+    /**
+     * One ghost block, from its own model.
+     *
+     * <p>The unculled quads always go in — that is where a non-cube keeps its geometry, so a rail or a
+     * lantern drawn without them would be nothing at all. The per-face quads go in only where the
+     * neighbouring cell is absent, which is what keeps the inside of a mass from being drawn.</p>
+     */
+    private static void drawGhost(PoseStack ps, VertexConsumer vc, BlockRenderDispatcher blocks,
+                                  BlockState state, BlockPos pos, Map<BlockPos, BlockState> neighbours,
+                                  int light, RandomSource random, float[] tint) {
+        BakedModel model = blocks.getBlockModel(state);
+        long seed = state.getSeed(pos);
+
+        random.setSeed(seed);
+        putQuads(ps, vc, model.getQuads(state, null, random, ModelData.EMPTY, null), light, tint);
+
+        for (Direction dir : Direction.values()) {
+            if (neighbours.containsKey(pos.relative(dir))) {
+                continue;
+            }
+            random.setSeed(seed);
+            putQuads(ps, vc, model.getQuads(state, dir, random, ModelData.EMPTY, null), light, tint);
+        }
+    }
+
+    private static void putQuads(PoseStack ps, VertexConsumer vc, List<BakedQuad> quads,
+                                 int light, float[] tint) {
+        for (BakedQuad quad : quads) {
+            vc.putBulkData(ps.last(), quad, tint[0], tint[1], tint[2], ALPHA, light,
+                    OverlayTexture.NO_OVERLAY);
+        }
     }
 }
