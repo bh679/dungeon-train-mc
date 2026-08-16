@@ -13,8 +13,9 @@ import java.util.Locale;
  *
  * <h2>What each mode does</h2>
  * <ul>
- *   <li>{@link #BEDROCK_LOCK} — a one-block bedrock skin outside the room box. No repetition. The
- *       default, and the closest to how every room behaved before this existed.</li>
+ *   <li>{@link #BEDROCK_LOCK} — a one-block bedrock skin outside the whole structure: the room box,
+ *       the two corridors standing off its ends, and the plugs beyond their outer doors. No
+ *       repetition. The default, and the closest to how every room behaved before this existed.</li>
  *   <li>{@link #ENDLESS_REPETITION} — the whole room repeats as a grid of copies around the base
  *       tile, seams between neighbours carved open, tiles appended as the player approaches an
  *       edge.</li>
@@ -116,6 +117,25 @@ public enum PortalRoomMode {
      */
     public boolean clearsSurroundings() {
         return this == BEDROCKLESS;
+    }
+
+    /**
+     * True when the two corridors standing off the room's ±X ends are sealed along with it — a
+     * bedrock skin around each, and bedrock rather than ordinary rock in the plug behind its dead
+     * outer door.
+     *
+     * <p>The room's own skin stops at those ends, because they are the corridor door planes. So a
+     * room "sealed in unbreakable rock" used to have two corridors of ordinary stone brick hanging
+     * off it, each backed by three blocks of deepslate — a player could mine sideways through a
+     * corridor wall, or straight through the plug, and walk out of the lock. The whole structure is
+     * wrapped now, not the room alone.</p>
+     *
+     * <p>A predicate of its own rather than the complement of {@link #clearsSurroundings}: the two
+     * endless modes seal nothing at all — their boundary is the next copy of the room — and their
+     * corridors stay as they are.</p>
+     */
+    public boolean sealsCorridors() {
+        return this == BEDROCK_LOCK;
     }
 
     /**
