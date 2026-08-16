@@ -150,6 +150,11 @@ public final class BuilderStructureScan {
         LongSet templateCells = templateCells(level, volumes);
 
         List<Batch> found = new ArrayList<>(placements.size());
+        // Two sets, because they answer different questions. `claimed` is every cell some placement
+        // owns, air included, and settles overlaps. `occupied` is only the cells that end up holding
+        // a block, which is what the wash needs — a carved cell is claimed and empty, and reporting
+        // it as scenery would have the wash skip whatever the builder later puts there.
+        LongSet claimed = new LongOpenHashSet();
         LongSet occupied = new LongOpenHashSet();
         int total = 0;
         boolean capped = false;
@@ -177,11 +182,19 @@ public final class BuilderStructureScan {
                 if (!BuilderStructureNeeds.allows(placement.kind(), world, volumes, templateCells)) {
                     continue;
                 }
-                // Doubles as the claim set: false means a later placement already owns this cell.
-                if (!occupied.add(world.asLong())) {
+                if (!claimed.add(world.asLong())) {
+                    continue;   // a later placement owns this cell
+                }
+                // An air cell is a structure *taking a cell away* — the shaft carved through a
+                // tunnel wall. Claiming it is the whole job: that is what stops the tunnel drawing
+                // there. It is not something standing in the world, so it stays out of the occupied
+                // set the wash reads, and there is nothing to draw for it either.
+                if (cell.getValue().isAir()) {
                     continue;
                 }
-                if (!stamps) {
+                if (stamps) {
+                    occupied.add(world.asLong());
+                } else {
                     visible.put(cell.getKey(), cell.getValue());
                 }
             }

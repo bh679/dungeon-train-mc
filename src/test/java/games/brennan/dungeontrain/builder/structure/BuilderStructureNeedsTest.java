@@ -215,6 +215,26 @@ final class BuilderStructureNeedsTest {
     }
 
     @Test
+    @DisplayName("The shaft is declared after the tunnel, so its carve wins the wall it cuts through")
+    void theShaftCarveOutranksTheTunnelItCutsThrough() {
+        // The generator does not stamp a staircase into a tunnel — it carves the shaft out first,
+        // walls and ceiling included, and stamps the stairs into the carve. The carve travels with
+        // the flight as air cells (BuilderStructureCells.stairs), and air only takes a cell away if
+        // it is claimed *after* whatever it is taking it from.
+        List<BuilderStructure.Placement> out =
+                BuilderStructureNeeds.around(track(TrackKind.TUNNEL_SECTION));
+        assertTrue(firstIndexOf(out, BuilderStructure.Kind.StairsFlight.class)
+                > lastIndexOf(out, BuilderStructure.Kind.TunnelSection.class),
+                "the tunnel would close over the way out");
+
+        // Same for the entrance, whose whole subject is the shaft coming out of the tunnel.
+        List<BuilderStructure.Placement> entrance =
+                BuilderStructureNeeds.around(track(TrackKind.ADJUNCT_STAIRS_ENTRANCE));
+        assertTrue(firstIndexOf(entrance, BuilderStructure.Kind.StairsFlight.class)
+                > lastIndexOf(entrance, BuilderStructure.Kind.TunnelSection.class));
+    }
+
+    @Test
     @DisplayName("A staircase is mirrored to the side it stands on, or it climbs into the wall")
     void staircasesFaceTheWayTheGeneratorFacesThem() {
         // The generator puts a flight on either side of the line and stamps the +Z one with

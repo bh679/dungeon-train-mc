@@ -303,6 +303,17 @@ public final class BuilderStructureCells {
      * {@code Mirror.LEFT_RIGHT} does to this template where the generator applies it. It is not
      * decoration: a staircase has a front and a back, and the unmirrored copy on the {@code +Z} side
      * climbs into the wall rather than out of it.</p>
+     *
+     * <p><b>The shaft is a hole, and the hole is part of the flight.</b> Every cell of the footprint
+     * the stair template does not fill comes back as explicit air, because the generator does not
+     * stamp a staircase into a tunnel — it <em>carves</em> the shaft out first, walls and ceiling
+     * included, and stamps the stairs into the carve. That carve is what opens the doorway from the
+     * corridor into the stairwell. Declaring only the stair blocks would leave the tunnel wall
+     * standing in every cell between them, which is a staircase sealed inside a wall.</p>
+     *
+     * <p>Air is not a no-op here: it claims its cell, so a tunnel declared earlier loses it. That is
+     * the same "later wins" rule everything else in the scene is ordered by, used to take something
+     * away instead of to put something down.</p>
      */
     private static Map<BlockPos, BlockState> stairs(int centreX, int height, boolean mirrorZ,
                                                     Sources src) {
@@ -311,8 +322,20 @@ public final class BuilderStructureCells {
             return Map.of();
         }
         int stamp = BuilderStructureNeeds.stairsStampHeight();
+        int width = PillarAdjunct.STAIRS.xSize();
         int depth = PillarAdjunct.STAIRS.zSize();
+
+        // The carve first, so a stair block laid over it simply replaces the air.
+        BlockState air = Blocks.AIR.defaultBlockState();
         Map<BlockPos, BlockState> out = new LinkedHashMap<>();
+        for (int x = 0; x < width; x++) {
+            for (int y = 0; y < height; y++) {
+                for (int z = 0; z < depth; z++) {
+                    out.put(new BlockPos(x, y, z), air);
+                }
+            }
+        }
+
         for (int top = height - 1; top >= 0; top -= stamp) {
             int base = top - stamp + 1;
             for (Map.Entry<BlockPos, BlockState> e : template.entrySet()) {
