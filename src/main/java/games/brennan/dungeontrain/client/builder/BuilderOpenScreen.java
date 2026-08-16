@@ -133,20 +133,23 @@ public final class BuilderOpenScreen extends Screen {
         int controlX = this.width / 2 - CONTROL_WIDTH / 2;
         int y = TITLE_TOP + this.font.lineHeight + ROW_GAP;
 
+        // Every mode at once, not one at a time. The mode decides which wall of photos the rest of
+        // the screen is, and behind a cycling tile it was the only thing here you couldn't see —
+        // reaching a particular one meant clicking blind through the others.
+        //
         // The mode's own art, not a template preview: the grid below is already showing every
         // template's photo, so a second picture of one of them would just compete with it.
-        this.addRenderableWidget(BuilderTypeControls.mode(controlX, y, CONTROL_WIDTH, mode,
-                () -> null,
-                value -> {
-                    mode = value;
-                    // A mode that can't author what was selected has to land somewhere it can —
-                    // Whole Carriage means nothing once you're inside the carriage.
-                    subType = BuilderNewOptions.clampSubType(value, subType);
-                    group = "";
-                    scrollY = 0;   // a different mode is a different list; keeping the offset would land mid-nowhere
-                    rebuild();
-                }));
-        y += BuilderTypeControls.ART_HEIGHT + ROW_GAP;
+        BuilderModeStripLayout strip = BuilderModeStripLayout.of(this.width, y,
+                CONTROL_WIDTH, BuilderTypeControls.ART_HEIGHT);
+        BuilderMode[] modes = BuilderMode.values();
+        for (int slot = 0; slot < BuilderModeStripLayout.SLOTS; slot++) {
+            BuilderMode tileMode = modes[BuilderModeStripLayout.rotatedIndex(slot, mode.ordinal())];
+            boolean isSelected = strip.isSelected(slot);
+            this.addRenderableWidget(new BuilderTileButton(
+                    strip.xFor(slot), strip.yFor(slot), strip.widthFor(slot), strip.heightFor(slot),
+                    tileMode, isSelected, isSelected, b -> selectMode(tileMode)));
+        }
+        y += strip.height() + ROW_GAP;
 
         List<AbstractWidget> controls = new ArrayList<>();
         // The chosen type comes back out the same way a group does, and sits in the same row — so
@@ -208,6 +211,29 @@ public final class BuilderOpenScreen extends Screen {
     private void rebuild() {
         this.clearWidgets();
         this.init();
+    }
+
+    /**
+     * Switch which mode's library is on show.
+     *
+     * <p>Everything below the strip belongs to the mode that offered it, so all of it is dropped:
+     * the sub type is clamped rather than cleared because every mode has one, but the levels drilled
+     * into are gone. {@link #trackGroup} especially — it is only ever offered by Tracks &amp;
+     * Tunnels, and a stale one left a "Tunnels" button sitting above a list of carriages, still
+     * offering to take you back out of a place you were no longer in.</p>
+     */
+    private void selectMode(BuilderMode value) {
+        if (value == mode) {
+            return;   // the big tile is the one you're already looking at
+        }
+        mode = value;
+        // A mode that can't author what was selected has to land somewhere it can — Whole Carriage
+        // means nothing once you're inside the carriage.
+        subType = BuilderNewOptions.clampSubType(value, subType);
+        trackGroup = null;
+        group = "";
+        scrollY = 0;   // a different mode is a different list; keeping the offset would land mid-nowhere
+        rebuild();
     }
 
     // ---- what the grid shows ----
