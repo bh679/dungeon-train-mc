@@ -19,7 +19,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "51";
+    public static final String PROTOCOL_VERSION = "52";
 
     private DungeonTrainNet() {}
 
@@ -201,6 +201,11 @@ public final class DungeonTrainNet {
 
         // Per-part editor-grid visibility (hidden set) — S2C mirror for the part-list ☑/☐ glyphs.
         registrar.playToClient(PartVisibilityPacket.TYPE, PartVisibilityPacket.STREAM_CODEC, PartVisibilityPacket::handle);
+
+        // Surrounding Structures editor preview: client's resolved per-category render-mode default
+        // (C2S, login + config change), and the GHOST block snapshots it drives (S2C).
+        registrar.playToServer(SurroundingStructureModePacket.TYPE, SurroundingStructureModePacket.STREAM_CODEC, SurroundingStructureModePacket::handle);
+        registrar.playToClient(SurroundingStructureGhostPacket.TYPE, SurroundingStructureGhostPacket.STREAM_CODEC, SurroundingStructureGhostPacket::handle);
     }
 
     /** Convenience: send a payload to the server (client → server). */

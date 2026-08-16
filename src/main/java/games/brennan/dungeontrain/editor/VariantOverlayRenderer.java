@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.editor;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.editor.surrounding.SurroundingStructureManager;
 import games.brennan.dungeontrain.net.BlockVariantLockIdsPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.EditorPlotLabelsPacket;
@@ -159,6 +160,7 @@ public final class VariantOverlayRenderer {
         LAST_TYPE_MENUS_KEY.clear();
         LAST_STAGE_STRIPS_KEY.clear();
         LAST_PART_VIS_KEY.clear();
+        SurroundingStructureManager.clearAll();
     }
 
     /** Toggle the overlay for {@code player}. {@code on == true} resumes rendering. */
@@ -193,6 +195,7 @@ public final class VariantOverlayRenderer {
         clearTypeMenusIfStale(player);
         clearStageStripsIfStale(player);
         clearPartVisibilityIfStale(player);
+        SurroundingStructureManager.forget(player);
     }
 
     /**
@@ -238,6 +241,7 @@ public final class VariantOverlayRenderer {
             pushTypeMenusSnapshot(player, dims);
             pushStageStripsSnapshot(player, level);
             pushPartVisibilitySnapshot(player);
+            SurroundingStructureManager.reconcile(player, level, dims, EditorCategory.locate(player, dims));
 
             if (!isEnabled(player)) {
                 clearHoverIfStale(player);

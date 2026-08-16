@@ -1,12 +1,16 @@
 package games.brennan.dungeontrain.config;
 
 import games.brennan.dungeontrain.client.FramerateThrottle;
+import games.brennan.dungeontrain.editor.surrounding.RenderMode;
+import games.brennan.dungeontrain.editor.surrounding.SurroundingStructureCategory;
 import net.neoforged.neoforge.common.ModConfigSpec;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -112,6 +116,24 @@ public final class ClientDisplayConfig {
         OFF
     }
 
+    /**
+     * Config-only render mode for the Train Builder's Surrounding Structures preview — a superset of
+     * {@link RenderMode} that adds {@link #INHERIT} for the per-category override slots, meaning "use
+     * {@link #SURROUNDING_STRUCTURE_DEFAULT_MODE} instead". {@link #SURROUNDING_STRUCTURE_DEFAULT_MODE}
+     * itself is never stored as {@code INHERIT} — {@link #setSurroundingStructureDefaultMode} rejects it.
+     */
+    public enum SurroundingStructureMode {
+        /** Per-category override only: fall back to the global default. */
+        INHERIT,
+        GHOST,
+        SOLID,
+        NONE
+    }
+
+    public static final ModConfigSpec.EnumValue<SurroundingStructureMode> SURROUNDING_STRUCTURE_DEFAULT_MODE;
+    public static final Map<SurroundingStructureCategory, ModConfigSpec.EnumValue<SurroundingStructureMode>>
+        SURROUNDING_STRUCTURE_CATEGORY_MODES;
+
     static {
         Pair<Holder, ModConfigSpec> pair = new ModConfigSpec.Builder()
                 .configure(ClientDisplayConfig::build);
@@ -145,6 +167,8 @@ public final class ClientDisplayConfig {
         DEATH_SCREEN_LAST_NPS = pair.getLeft().deathScreenLastNps;
         POLITICAL_FILTER = pair.getLeft().politicalFilter;
         CONTENT_MODE = pair.getLeft().contentMode;
+        SURROUNDING_STRUCTURE_DEFAULT_MODE = pair.getLeft().surroundingStructureDefaultMode;
+        SURROUNDING_STRUCTURE_CATEGORY_MODES = pair.getLeft().surroundingStructureCategoryModes;
     }
 
     private ClientDisplayConfig() {}
@@ -296,6 +320,27 @@ public final class ClientDisplayConfig {
                 .defineEnum("politicalFilter", PoliticalFilter.UNSET);
         b.pop();
 
+        b.push("surroundingStructures");
+        ModConfigSpec.EnumValue<SurroundingStructureMode> surroundingStructureDefaultMode = b
+                .comment("Global default render mode for the Train Builder editor's Surrounding Structures",
+                         "preview (tracks, pillars, dimension-band repeats, flatbed ends, carriage shell",
+                         "walls/floor, carriage interior walls) around whichever plot you're currently",
+                         "editing. GHOST = translucent client-only preview (default). SOLID = real stamped",
+                         "blocks with collision, shared per-plot with other players editing the same plot.",
+                         "NONE = nothing. Each category below can override this. Set in-game via",
+                         "/dt editor surrounding <ghost|solid|none>.")
+                .defineEnum("defaultMode", SurroundingStructureMode.GHOST);
+        Map<SurroundingStructureCategory, ModConfigSpec.EnumValue<SurroundingStructureMode>>
+                surroundingStructureCategoryModes = new EnumMap<>(SurroundingStructureCategory.class);
+        for (SurroundingStructureCategory category : SurroundingStructureCategory.values()) {
+            ModConfigSpec.EnumValue<SurroundingStructureMode> v = b
+                    .comment("Override for the " + category.id() + " category. INHERIT uses defaultMode above.",
+                             "Set in-game via /dt editor surrounding " + category.id() + " <ghost|solid|none>.")
+                    .defineEnum(category.id() + "Mode", SurroundingStructureMode.INHERIT);
+            surroundingStructureCategoryModes.put(category, v);
+        }
+        b.pop();
+
         return new Holder(allScale, worldspaceChannel, hudChannel, developerPopupShownBefore, developerPopupOptedOut, freePlayConfirmOptedOut,
                 devConsentGranted, devConsentGrantSession, devConsentLastMsgToDev, openedAdvancementsBefore,
                 rideSnapshotsEnabled, rideSnapshotIntervalSeconds, rideSnapshotMaxStored, rideSnapshotChatLog,
@@ -304,7 +349,8 @@ public final class ClientDisplayConfig {
                 rideSnapshotMaxResolution,
                 framerateThrottleEnabled, framerateThrottleFps, deleteWorldOnReboard,
                 builderGhostTrain, sharedBooksRead,
-                deathScreenLastNps, politicalFilter, contentMode);
+                deathScreenLastNps, politicalFilter, contentMode,
+                surroundingStructureDefaultMode, surroundingStructureCategoryModes);
     }
 
     /**
@@ -758,6 +804,66 @@ public final class ClientDisplayConfig {
             ModConfigSpec.ConfigValue<List<? extends String>> sharedBooksRead,
             ModConfigSpec.IntValue deathScreenLastNps,
             ModConfigSpec.EnumValue<PoliticalFilter> politicalFilter,
-            ModConfigSpec.EnumValue<ContentMode> contentMode
+            ModConfigSpec.EnumValue<ContentMode> contentMode,
+            ModConfigSpec.EnumValue<SurroundingStructureMode> surroundingStructureDefaultMode,
+            Map<SurroundingStructureCategory, ModConfigSpec.EnumValue<SurroundingStructureMode>>
+                surroundingStructureCategoryModes
     ) {}
+
+    // ----- Surrounding Structures (Train Builder editor preview) -----
+
+    /** Global default render mode. Defaults to {@link SurroundingStructureMode#GHOST}, including pre-load. */
+    public static SurroundingStructureMode getSurroundingStructureDefaultMode() {
+        return isLoaded() ? SURROUNDING_STRUCTURE_DEFAULT_MODE.get() : SurroundingStructureMode.GHOST;
+    }
+
+    /** Persist the global default. {@code INHERIT} is rejected — it only makes sense as a per-category override. */
+    public static void setSurroundingStructureDefaultMode(SurroundingStructureMode mode) {
+        if (!isLoaded() || mode == null || mode == SurroundingStructureMode.INHERIT) return;
+        if (SURROUNDING_STRUCTURE_DEFAULT_MODE.get() == mode) return;
+        SURROUNDING_STRUCTURE_DEFAULT_MODE.set(mode);
+        SURROUNDING_STRUCTURE_DEFAULT_MODE.save();
+    }
+
+    /** Raw per-category override, {@link SurroundingStructureMode#INHERIT} pre-load or when unset. */
+    public static SurroundingStructureMode getSurroundingStructureCategoryMode(SurroundingStructureCategory category) {
+        if (!isLoaded() || category == null) return SurroundingStructureMode.INHERIT;
+        ModConfigSpec.EnumValue<SurroundingStructureMode> v = SURROUNDING_STRUCTURE_CATEGORY_MODES.get(category);
+        return v == null ? SurroundingStructureMode.INHERIT : v.get();
+    }
+
+    /** Persist a per-category override ({@code INHERIT} clears it back to following the global default). */
+    public static void setSurroundingStructureCategoryMode(SurroundingStructureCategory category, SurroundingStructureMode mode) {
+        if (!isLoaded() || category == null || mode == null) return;
+        ModConfigSpec.EnumValue<SurroundingStructureMode> v = SURROUNDING_STRUCTURE_CATEGORY_MODES.get(category);
+        if (v == null || v.get() == mode) return;
+        v.set(mode);
+        v.save();
+    }
+
+    /**
+     * Every category's effective {@link RenderMode} — {@code INHERIT} overrides resolved against the
+     * global default, mapped down from the config-only {@link SurroundingStructureMode} to the runtime
+     * {@link RenderMode} the server-side manager understands. Sent to the server via
+     * {@code SurroundingStructureModePacket} on login and whenever this config changes.
+     */
+    public static EnumMap<SurroundingStructureCategory, RenderMode> effectiveSurroundingStructureModes() {
+        EnumMap<SurroundingStructureCategory, RenderMode> out = new EnumMap<>(SurroundingStructureCategory.class);
+        SurroundingStructureMode fallback = getSurroundingStructureDefaultMode();
+        for (SurroundingStructureCategory category : SurroundingStructureCategory.values()) {
+            SurroundingStructureMode raw = getSurroundingStructureCategoryMode(category);
+            SurroundingStructureMode resolved = raw == SurroundingStructureMode.INHERIT ? fallback : raw;
+            out.put(category, toRenderMode(resolved));
+        }
+        return out;
+    }
+
+    private static RenderMode toRenderMode(SurroundingStructureMode mode) {
+        return switch (mode) {
+            case SOLID -> RenderMode.SOLID;
+            case NONE -> RenderMode.NONE;
+            // GHOST, and the degenerate case of the global default itself somehow reading INHERIT.
+            default -> RenderMode.GHOST;
+        };
+    }
 }

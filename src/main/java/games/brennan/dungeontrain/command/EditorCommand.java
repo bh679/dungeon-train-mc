@@ -26,6 +26,9 @@ import games.brennan.dungeontrain.editor.EditorDevMode;
 import games.brennan.dungeontrain.editor.EditorStampedCategoryState;
 import games.brennan.dungeontrain.editor.EditorWelcome;
 import games.brennan.dungeontrain.editor.PillarEditor;
+import games.brennan.dungeontrain.editor.surrounding.RenderMode;
+import games.brennan.dungeontrain.editor.surrounding.SurroundingStructureCategory;
+import games.brennan.dungeontrain.editor.surrounding.SurroundingStructureManager;
 import games.brennan.dungeontrain.template.Template;
 import games.brennan.dungeontrain.template.TemplateGate;
 import games.brennan.dungeontrain.worldgen.TrainPhase;
@@ -790,7 +793,8 @@ public final class EditorCommand {
             .then(maxLevelSingle(CARRIAGE_VARIANT_SUGGESTIONS, EditorCommand::applyCarriageGate))
             .then(phaseSingle(CARRIAGE_VARIANT_SUGGESTIONS, EditorCommand::applyCarriageGate))
             .then(buildStageSubtree())
-            .then(buildVariantSubtree(buildContext));
+            .then(buildVariantSubtree(buildContext))
+            .then(buildSurroundingSubtree());
     }
 
     /**
@@ -2432,6 +2436,76 @@ public final class EditorCommand {
             .then(Commands.literal("overlay")
                 .then(Commands.literal("on").executes(ctx -> runVariantOverlay(ctx.getSource(), true)))
                 .then(Commands.literal("off").executes(ctx -> runVariantOverlay(ctx.getSource(), false))));
+    }
+
+    /**
+     * {@code /dungeontrain editor surrounding ...} — Surrounding Structures preview controls (see
+     * {@link SurroundingStructureManager}): tracks, pillars, dimension-band repeats, flatbed ends,
+     * carriage shell walls/floor, and carriage interior walls rendered around the plot the player is
+     * currently editing, as GHOST / SOLID / NONE.
+     *
+     * <p>These commands are server-dispatched per {@code ServerPlayer} — unlike a client Options row,
+     * they cannot write back to the issuing player's {@code dungeontrain-client.toml}. Rather than
+     * plumb a command-to-client round trip, they mutate
+     * {@link SurroundingStructureManager}'s server-side per-player mode map directly for the rest of
+     * the session; the client config is only ever the <em>seed</em> value pushed once at login (see
+     * {@code SurroundingStructureModePacket}). A relog picks the client config back up unless the
+     * player issues these commands again.</p>
+     */
+    private static LiteralArgumentBuilder<CommandSourceStack> buildSurroundingSubtree() {
+        LiteralArgumentBuilder<CommandSourceStack> root = Commands.literal("surrounding")
+            .then(Commands.literal("ghost").executes(ctx -> runSurroundingAll(ctx.getSource(), RenderMode.GHOST)))
+            .then(Commands.literal("solid").executes(ctx -> runSurroundingAll(ctx.getSource(), RenderMode.SOLID)))
+            .then(Commands.literal("none").executes(ctx -> runSurroundingAll(ctx.getSource(), RenderMode.NONE)))
+            .then(Commands.literal("reset").executes(ctx -> runSurroundingReset(ctx.getSource())));
+        for (SurroundingStructureCategory category : SurroundingStructureCategory.values()) {
+            root.then(Commands.literal(category.id())
+                .then(Commands.literal("ghost").executes(ctx -> runSurroundingCategory(ctx.getSource(), category, RenderMode.GHOST)))
+                .then(Commands.literal("solid").executes(ctx -> runSurroundingCategory(ctx.getSource(), category, RenderMode.SOLID)))
+                .then(Commands.literal("none").executes(ctx -> runSurroundingCategory(ctx.getSource(), category, RenderMode.NONE))));
+        }
+        return root;
+    }
+
+    private static int runSurroundingAll(CommandSourceStack source, RenderMode mode) {
+        ServerPlayer player = requirePlayer(source);
+        if (player == null) return 0;
+        SurroundingStructureManager.setAllModes(player, mode);
+        reconcileSurroundingNow(source, player);
+        source.sendSuccess(() -> Component.literal(
+            "Editor: surrounding structures set to " + mode.name().toLowerCase(java.util.Locale.ROOT)
+                + " for every category."
+        ).withStyle(ChatFormatting.GREEN), false);
+        return 1;
+    }
+
+    private static int runSurroundingCategory(CommandSourceStack source, SurroundingStructureCategory category, RenderMode mode) {
+        ServerPlayer player = requirePlayer(source);
+        if (player == null) return 0;
+        SurroundingStructureManager.setMode(player, category, mode);
+        reconcileSurroundingNow(source, player);
+        source.sendSuccess(() -> Component.literal(
+            "Editor: surrounding " + category.id() + " set to " + mode.name().toLowerCase(java.util.Locale.ROOT) + "."
+        ).withStyle(ChatFormatting.GREEN), false);
+        return 1;
+    }
+
+    private static int runSurroundingReset(CommandSourceStack source) {
+        ServerPlayer player = requirePlayer(source);
+        if (player == null) return 0;
+        SurroundingStructureManager.resetModes(player);
+        reconcileSurroundingNow(source, player);
+        source.sendSuccess(() -> Component.literal(
+            "Editor: surrounding structure overrides reset to your config default."
+        ).withStyle(ChatFormatting.GREEN), false);
+        return 1;
+    }
+
+    /** Re-run the surrounding-structures resolve immediately after a mode change so the player sees it without waiting a tick. */
+    private static void reconcileSurroundingNow(CommandSourceStack source, ServerPlayer player) {
+        ServerLevel level = source.getServer().overworld();
+        CarriageDims dims = DungeonTrainWorldData.get(level).dims();
+        SurroundingStructureManager.reconcile(player, level, dims, EditorCategory.locate(player, dims));
     }
 
     /** Resolve the (plot variant, local pos) the player is currently targeting, or null with an error sent. */
