@@ -479,16 +479,24 @@ public final class BuilderStructureNeeds {
      * Whether a placement may be drawn or stood up at all.
      *
      * <p>One rule in one place, consulted by both the renderer and the materialiser: nothing outside
-     * the platform, and nothing inside a build volume. The second half is what keeps the structures
-     * off the template — a ghost over a real block shows it twice, and a solid one over it would
-     * overwrite work.</p>
+     * the platform, nothing in the two courses the environment owns, and nothing inside a build
+     * volume. The last is what keeps the structures off the template — a ghost over a real block
+     * shows it twice, and a solid one over it would overwrite work.</p>
      *
-     * <p>The carriage shell is the deliberate exception: it shares the build's volume by construction
-     * and is already restricted to the complement of what a room saves
+     * <p>The bedrock and grass rows are excluded for the reason {@link BuilderEnvironment} exists:
+     * you stand on them while deciding what the structures should be, so the structure control must
+     * not be able to take them away — and a hole in the floor of a builder world is not a recoverable
+     * mistake.</p>
+     *
+     * <p>The carriage shell is the deliberate exception to the volume rule: it shares the build's
+     * volume by construction and is already restricted to the complement of what a room saves
      * ({@link BuilderStructure#onSkin}), so filtering it here would remove the whole thing.</p>
      */
     public static boolean allows(BuilderStructure.Kind kind, BlockPos pos,
                                  List<BoundingBox> buildVolumes) {
+        if (pos.getY() <= BuilderWorldLayout.Y_GRASS) {
+            return false;
+        }
         if (kind instanceof BuilderStructure.Kind.CarriageShell) {
             return true;
         }
