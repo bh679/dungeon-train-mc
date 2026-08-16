@@ -92,7 +92,17 @@ public final class BuilderStructureNeeds {
                           String buildName, CarriageDims dims, int parked,
                           PortalRoomMode roomMode, Vec3i roomSize, String variantId) {}
 
-    /** What surrounds this build. Empty is an ordinary answer, not a failure. */
+    /**
+     * What surrounds this build. Empty is an ordinary answer, not a failure.
+     *
+     * <p><b>The order is load-bearing where two structures overlap: later wins.</b> It is the
+     * generator's own order — columns and their arch, then the line laid over them, then the
+     * staircases, then the tunnel around all of it — and it decides who owns a cell at the seams,
+     * of which the arch meeting the bed is the obvious one. Both consumers honour it, so a ghosted
+     * seam and a solid seam are the same blocks; a consumer that iterated in any other order would
+     * show a scene the world would never build, and would show a <em>different</em> one from the
+     * other consumer.</p>
+     */
     public static List<BuilderStructure.Placement> around(Context ctx) {
         if (ctx == null || ctx.mode() == null || ctx.dims() == null) {
             return List.of();
@@ -196,6 +206,7 @@ public final class BuilderStructureNeeds {
     private static void tunnels(List<BuilderStructure.Placement> out, Context ctx, TrackKind open) {
         CarriageDims dims = ctx.dims();
         elevatedTrack(out, dims);
+        stairsFlight(out, dims);
 
         TrackGeometry g = BuilderTrackScene.geometry(dims);
         TunnelGeometry tg = TunnelGeometry.from(g);
@@ -216,8 +227,6 @@ public final class BuilderStructureNeeds {
             tunnelPortal(out, plotMinX - 2 * len, y, z, false);
             tunnelPortal(out, plotMinX + 2 * len, y, z, true);
         }
-
-        stairsFlight(out, dims);
     }
 
     /**
@@ -229,8 +238,8 @@ public final class BuilderStructureNeeds {
      * how it meets the top — with the section itself removed by the build-volume filter.</p>
      */
     private static void pillars(List<BuilderStructure.Placement> out, Context ctx) {
-        elevatedTrack(out, ctx.dims());
         pillarColumns(out, ctx.dims());
+        elevatedTrack(out, ctx.dims());
     }
 
     /**
@@ -242,8 +251,8 @@ public final class BuilderStructureNeeds {
      * judge. The open stamp's own rows come out again with the build volume.</p>
      */
     private static void stairs(List<BuilderStructure.Placement> out, Context ctx) {
-        elevatedTrack(out, ctx.dims());
         pillarColumns(out, ctx.dims());
+        elevatedTrack(out, ctx.dims());
         stairsFlight(out, ctx.dims());
     }
 

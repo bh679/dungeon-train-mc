@@ -153,7 +153,12 @@ public final class BuilderStructureScan {
         int total = 0;
         boolean capped = false;
 
-        for (BuilderStructure.Placement placement : placements) {
+        // Backwards, because the declaration's order is "later wins where two structures overlap"
+        // and this claims each world position for the first placement to reach it. Walking forwards
+        // would give the cell to the arch where the generator gives it to the bed — and, at ghost
+        // alpha, keeping both would draw the seam twice and darken it into a visible stripe.
+        for (int i = placements.size() - 1; i >= 0; i--) {
+            BuilderStructure.Placement placement = placements.get(i);
             Map<BlockPos, BlockState> cells = BuilderStructureCells.of(placement.kind(), sources);
             if (cells.isEmpty()) {
                 continue;
@@ -171,9 +176,11 @@ public final class BuilderStructureScan {
                 if (!BuilderStructureNeeds.allows(placement.kind(), world, volumes)) {
                     continue;
                 }
-                if (stamps) {
-                    occupied.add(world.asLong());
-                } else {
+                // Doubles as the claim set: false means a later placement already owns this cell.
+                if (!occupied.add(world.asLong())) {
+                    continue;
+                }
+                if (!stamps) {
                     visible.put(cell.getKey(), cell.getValue());
                 }
             }
@@ -194,6 +201,8 @@ public final class BuilderStructureScan {
             loggedCap = false;
         }
         batches = List.copyOf(found);
+        // The claim set *is* the occupied set once every placement has been walked. Kept only while
+        // the structures are solid, since that is the one state in which they hold world positions.
         solidCells = stamps ? occupied : LongSets.EMPTY_SET;
     }
 

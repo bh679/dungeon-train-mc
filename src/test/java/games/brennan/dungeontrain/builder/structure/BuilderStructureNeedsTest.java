@@ -331,6 +331,55 @@ final class BuilderStructureNeedsTest {
     }
 
     @Test
+    @DisplayName("Where two structures overlap, the generator's own order decides who wins")
+    void overlappingStructuresAreDeclaredInTheGeneratorsOrder() {
+        // Both consumers read the list as "later wins", so this ordering *is* the seam behaviour.
+        // The obvious seam is the arch meeting the bed: the generator lays columns and their arch
+        // first and the line over them, so the line has to come second here or the arch would own
+        // cells the world gives to the track — and the ghosted seam would disagree with the solid
+        // one, since only one of the two consumers would have been fixed.
+        for (TrackKind kind : new TrackKind[]{TrackKind.PILLAR_MIDDLE, TrackKind.ADJUNCT_STAIRS}) {
+            List<BuilderStructure.Placement> out = BuilderStructureNeeds.around(track(kind));
+            int lastColumn = lastIndexOf(out, BuilderStructure.Kind.PillarColumn.class);
+            int firstLine = firstIndexOf(out, BuilderStructure.Kind.TrackRun.class);
+            assertTrue(lastColumn >= 0 && firstLine > lastColumn,
+                    kind.id() + ": the line must be declared after the columns it rests on");
+        }
+
+        // And the staircase after the line it arrives at, for the same reason.
+        List<BuilderStructure.Placement> stairs =
+                BuilderStructureNeeds.around(track(TrackKind.ADJUNCT_STAIRS));
+        assertTrue(firstIndexOf(stairs, BuilderStructure.Kind.StairsFlight.class)
+                > lastIndexOf(stairs, BuilderStructure.Kind.TrackRun.class));
+
+        // A tunnel wraps everything, so it is declared last of all.
+        List<BuilderStructure.Placement> tunnel =
+                BuilderStructureNeeds.around(track(TrackKind.TUNNEL_SECTION));
+        assertTrue(firstIndexOf(tunnel, BuilderStructure.Kind.TunnelSection.class)
+                > lastIndexOf(tunnel, BuilderStructure.Kind.StairsFlight.class));
+    }
+
+    private static int firstIndexOf(List<BuilderStructure.Placement> out,
+                                    Class<? extends BuilderStructure.Kind> type) {
+        for (int i = 0; i < out.size(); i++) {
+            if (type.isInstance(out.get(i).kind())) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    private static int lastIndexOf(List<BuilderStructure.Placement> out,
+                                   Class<? extends BuilderStructure.Kind> type) {
+        for (int i = out.size() - 1; i >= 0; i--) {
+            if (type.isInstance(out.get(i).kind())) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    @Test
     @DisplayName("Recomputing gives the same answer, so a second pass cannot destroy the first")
     void recomputingIsIdempotent() {
         // The old mechanism read the world to find its surroundings, so a second read found what the
