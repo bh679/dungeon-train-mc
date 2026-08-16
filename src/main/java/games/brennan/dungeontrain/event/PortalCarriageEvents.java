@@ -514,6 +514,7 @@ public final class PortalCarriageEvents {
         WAITING_SINCE.clear();
         PortalPairResidency.clear();
         PortalCarriageRevival.clear();
+        PortalRoomRescue.clear();
     }
 
     @SubscribeEvent
@@ -528,6 +529,12 @@ public final class PortalCarriageEvents {
         if (players.isEmpty() || PortalRegistry.get(level).carriageEvery()
                 <= PortalCarriageSelection.CARRIAGE_EVERY_OFF) {
             TrainMotionFreeze.thawAll();
+            // The rooms' force-load tickets have to go the same way, and for the same reason: nobody
+            // is in a room, so nothing should be holding a carriage group loaded on their behalf.
+            // Reached by the last player quitting while standing in one — the only way a ticket is
+            // ever live with no player to release it — and the ticket is DT's own type now, so no
+            // other subsystem's reconcile will sweep it. Free when nothing is held.
+            PortalPairResidency.syncTo(level, Set.of());
             return;
         }
 
@@ -742,23 +749,42 @@ public final class PortalCarriageEvents {
     /**
      * Put everybody in this room back on the train.
      *
+     * <p>The occupants are gathered before any of them is moved. {@code players} is the level's live
+     * list, and a teleport is exactly the kind of thing that has no business happening while
+     * something is walking it — it holds today only because the destination is the same level, which
+     * is a fact about the train, not about this loop.</p>
+     *
      * @return true if anybody was moved — false when there is no settled carriage anywhere to land
      *         on, which is the one case where saying so is still all that can be done
      */
     private static boolean rescueOccupants(ServerLevel level, List<ServerPlayer> players,
                                            CarriageDims dims, PortalStructure structure, int pairKey) {
         AABB box = structureBox(dims, structure);
-        boolean any = false;
+        List<ServerPlayer> occupants = new ArrayList<>();
         for (ServerPlayer player : players) {
-            if (!box.contains(player.getX(), player.getY(), player.getZ())) continue;
-            if (!PortalRoomRescue.returnToTrain(level, player, structure, pairKey)) return false;
-            // Landing on a deck must not be read as walking into a corridor on the tick they arrive.
-            COOLDOWNS.put(player.getUUID(), level.getGameTime() + SWAP_COOLDOWN_TICKS);
-            any = true;
+            if (box.contains(player.getX(), player.getY(), player.getZ())) occupants.add(player);
         }
         // Nobody in the box is not a failure — the caller only reaches here with somebody inside, but
         // they can leave between the two tests, and there is nothing left to tell them either way.
-        return any;
+        if (occupants.isEmpty()) return false;
+
+        for (ServerPlayer player : occupants) {
+            // The deck lookup does not depend on the player, so this fails for all of them or none —
+            // the first refusal ends the pass with nobody half-moved.
+            if (!PortalRoomRescue.returnToTrain(level, player, structure, pairKey)) return false;
+            // Landing on a deck must not be read as walking into a corridor on the tick they arrive.
+            COOLDOWNS.put(player.getUUID(), level.getGameTime() + SWAP_COOLDOWN_TICKS);
+            // The trip they were on ends here rather than at a way out, so it is not a trip any more:
+            // a remembered entry point would be measured against whichever corridor they use next.
+            PortalTripTracker.forget(player.getUUID());
+        }
+
+        // Same reasoning as the recovery path in handlePortalCarriage: whatever this pair was waiting
+        // for, the waiting is over. Left behind, the clock would have a later stranding skip the whole
+        // grace and teleport on its first tick, and the wake budget would still be spent.
+        WAITING_SINCE.remove(pairKey);
+        PortalRoomRescue.forget(pairKey);
+        return true;
     }
 
     /**
@@ -1138,8 +1164,10 @@ public final class PortalCarriageEvents {
         // this pair was working, and tickStrandedPairs must not go looking for a train to revive.
         LIVE_PAIRS.add(pairKey);
         // Whatever it was waiting for, it has it: the next wait starts its own clock rather than
-        // inheriting one that would have it speak immediately.
+        // inheriting one that would have it speak immediately — and its own escalation budget rather
+        // than one a previous stranding already spent.
         if (!WAITING_SINCE.isEmpty()) WAITING_SINCE.remove(pairKey);
+        PortalRoomRescue.forget(pairKey);
 
         // Publish for PortalEditMirror, which needs to answer "is this block in a portal corridor?"
         // on the hot path of every sub-level block change and cannot re-derive train geometry there —
