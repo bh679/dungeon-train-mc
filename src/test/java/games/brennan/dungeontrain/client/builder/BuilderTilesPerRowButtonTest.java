@@ -42,24 +42,63 @@ final class BuilderTilesPerRowButtonTest {
         }
     }
 
+    /** What {@code step} resolves to, minus the config write it can't do without a client. */
+    private static int stepped(int screenWidth, int current, int delta) {
+        int min = BuilderTemplateGridLayout.MIN_COLUMNS;
+        int max = BuilderTemplateGridLayout.maxColumnsFor(screenWidth);
+        return min + Math.floorMod(current - min + delta, max - min + 1);
+    }
+
     @Test
-    @DisplayName("Stepping walks the range and stops at both ends")
-    void steppingStopsAtTheEnds() {
+    @DisplayName("The count cycles round at both ends")
+    void steppingCyclesAtBothEnds() {
         int width = 1920;   // roomy enough to hold the whole range
-        assertEquals(BuilderTemplateGridLayout.MAX_COLUMNS,
-                BuilderTemplateGridLayout.maxColumnsFor(width));
+        int min = BuilderTemplateGridLayout.MIN_COLUMNS;
+        int max = BuilderTemplateGridLayout.MAX_COLUMNS;
+        assertEquals(max, BuilderTemplateGridLayout.maxColumnsFor(width));
 
-        int at = effective(width, BuilderTemplateGridLayout.MIN_COLUMNS);
-        for (int i = 0; i < 20; i++) {
-            at = effective(width, at + 1);
-        }
-        assertEquals(BuilderTemplateGridLayout.MAX_COLUMNS, at, "counting up should stop at the top");
+        assertEquals(min, stepped(width, max, +1), "past the top should wrap to the bottom");
+        assertEquals(max, stepped(width, min, -1), "below the bottom should wrap to the top");
 
-        for (int i = 0; i < 20; i++) {
-            at = effective(width, at - 1);
+        // Every step in between is an ordinary one.
+        for (int at = min; at < max; at++) {
+            assertEquals(at + 1, stepped(width, at, +1));
+            assertEquals(at, stepped(width, at + 1, -1));
         }
-        assertEquals(BuilderTemplateGridLayout.MIN_COLUMNS, at,
-                "counting down should stop at the bottom");
+    }
+
+    @Test
+    @DisplayName("A full lap returns to where it started, both ways")
+    void aFullLapIsIdentity() {
+        for (int width : WIDTHS) {
+            int span = BuilderTemplateGridLayout.maxColumnsFor(width)
+                    - BuilderTemplateGridLayout.MIN_COLUMNS + 1;
+            for (int start = BuilderTemplateGridLayout.MIN_COLUMNS;
+                 start <= BuilderTemplateGridLayout.maxColumnsFor(width); start++) {
+                int up = start;
+                int down = start;
+                for (int i = 0; i < span; i++) {
+                    up = stepped(width, up, +1);
+                    down = stepped(width, down, -1);
+                }
+                assertEquals(start, up, "a lap up from " + start + " at width " + width);
+                assertEquals(start, down, "a lap down from " + start + " at width " + width);
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("Cycling stays inside what the window can actually draw")
+    void cyclingNeverLeavesTheUsableRange() {
+        for (int width : WIDTHS) {
+            int max = BuilderTemplateGridLayout.maxColumnsFor(width);
+            int at = BuilderTemplateGridLayout.MIN_COLUMNS;
+            for (int i = 0; i < 40; i++) {
+                at = stepped(width, at, i % 3 == 0 ? -1 : +1);
+                assertTrue(at >= BuilderTemplateGridLayout.MIN_COLUMNS && at <= max,
+                        "stepped to " + at + " at width " + width + ", which holds at most " + max);
+            }
+        }
     }
 
     @Test

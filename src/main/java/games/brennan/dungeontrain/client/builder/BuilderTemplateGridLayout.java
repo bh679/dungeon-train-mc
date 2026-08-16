@@ -13,9 +13,9 @@ package games.brennan.dungeontrain.client.builder;
  * Cells keep the same 16:9 aspect as the picker tiles, because they hold the same kind of
  * picture.</p>
  *
- * <p>The block the cells are laid into is the same width whatever the count — so asking for more
- * per row buys them by making each one smaller, rather than by spreading the grid across the
- * window. That keeps the screen's shape put while the thing being changed changes.</p>
+ * <p>The grid spreads across the whole window bar its margins, so the cells grow with the screen
+ * rather than sitting in a fixed block on a large monitor. Within that width, the tiles-per-row
+ * count trades cell size against how much of a library is on screen at once.</p>
  */
 record BuilderTemplateGridLayout(int columns, int cellWidth, int cellHeight,
                                  int originX, int topY, int bottomY, int gap, int maxScroll) {
@@ -25,28 +25,24 @@ record BuilderTemplateGridLayout(int columns, int cellWidth, int cellHeight,
     /**
      * Three per row until the player says otherwise.
      *
-     * <p>Fixed rather than responsive, which is the part worth keeping: a column count that changed
-     * with the window changed the cell size with it — so the same template was a different size on
-     * two machines, and resizing reflowed the whole library under the cursor. Three keeps the cells
-     * large enough to read a carriage in and the block roughly the width of the controls above it.
-     * The count now moves, but only when asked — see {@link BuilderTilesPerRowButton}.</p>
+     * <p>Never responsive, which is the part worth keeping: a column count that moved with the
+     * window would reflow the whole library under the cursor on every resize. The width responds to
+     * the screen; the count only ever moves when asked — see {@link BuilderTilesPerRowButton}.</p>
      */
     static final int DEFAULT_COLUMNS = 3;
 
     /**
      * The range the player may ask for.
      *
-     * <p>The grid block stays the same width whatever the count, so this trades tile size against
-     * how much of a library is on screen at once. Two is as far down as that is worth going — one
-     * per row is a list, not a grid — and six is where the cell has shrunk to about the height of
-     * the caption strip it carries, so a seventh column would be captions with a sliver of picture
-     * above them.</p>
+     * <p>Two is as far down as this is worth going — one per row is a list, not a grid. Six is the
+     * top for now rather than for a reason that survived: it was set when the grid was a fixed 480px
+     * block, where a seventh column would have been caption strip with a sliver of picture above it.
+     * Now that the grid fills the window there is room for more on a large monitor, and the real
+     * floor is {@link #MIN_CELL_WIDTH} by way of {@link #maxColumnsFor}.</p>
      */
     static final int MIN_COLUMNS = 2;
     static final int MAX_COLUMNS = 6;
 
-    /** Ceiling on the grid's width so cells don't become billboards on an ultrawide. */
-    private static final int MAX_GRID_WIDTH = 480;
     private static final int MIN_CELL_WIDTH = 56;
     private static final int SIDE_MARGIN = 16;
 
@@ -71,8 +67,17 @@ record BuilderTemplateGridLayout(int columns, int cellWidth, int cellHeight,
         return Math.max(MIN_COLUMNS, Math.min(MAX_COLUMNS, fits));
     }
 
+    /**
+     * The width the grid may spread into: the whole window bar its margins.
+     *
+     * <p>Uncapped, so the grid fills the screen and the cells grow with the resolution. It used to
+     * stop at 480px, which kept a template the same size on every machine — but that ceiling made
+     * the tiles-per-row choice trade tile size against itself inside a fixed block, and left most of
+     * a large monitor empty on a screen whose whole job is showing photographs. Filling the window
+     * and then choosing how many go in a row is the trade worth offering.</p>
+     */
     private static int availableWidth(int screenWidth) {
-        return Math.min(screenWidth - 2 * SIDE_MARGIN, MAX_GRID_WIDTH);
+        return Math.max(0, screenWidth - 2 * SIDE_MARGIN);
     }
 
     /**
@@ -85,9 +90,14 @@ record BuilderTemplateGridLayout(int columns, int cellWidth, int cellHeight,
     static BuilderTemplateGridLayout of(int screenWidth, int topY, int bottomY, int itemCount,
                                         int columns) {
         int available = availableWidth(screenWidth);
+        int viewportHeight = Math.max(0, bottomY - topY);
 
         int clamped = Math.max(MIN_COLUMNS, Math.min(maxColumnsFor(screenWidth), columns));
         int cellWidth = Math.max(MIN_CELL_WIDTH, (available - (clamped - 1) * GAP) / clamped);
+        // A wide, short window would otherwise work out a cell taller than the strip it scrolls in,
+        // so no row would ever be fully visible and the grid would be all scrollbar and no picture.
+        // Unreachable while the width was capped at 480; removing that cap is what opens it up.
+        cellWidth = Math.min(cellWidth, Math.max(MIN_CELL_WIDTH, viewportHeight * 16 / 9));
         int cellHeight = Math.max(1, cellWidth * 9 / 16);
 
         int gridWidth = clamped * cellWidth + GAP * (clamped - 1);
@@ -95,7 +105,6 @@ record BuilderTemplateGridLayout(int columns, int cellWidth, int cellHeight,
 
         int rows = itemCount <= 0 ? 0 : (itemCount + clamped - 1) / clamped;
         int contentHeight = rows == 0 ? 0 : rows * cellHeight + (rows - 1) * GAP;
-        int viewportHeight = Math.max(0, bottomY - topY);
         int maxScroll = Math.max(0, contentHeight - viewportHeight);
 
         return new BuilderTemplateGridLayout(clamped, cellWidth, cellHeight,

@@ -713,7 +713,7 @@
   "gui.dungeontrain.builder.open.portal_mode.bedrockless": "Void",
   "gui.dungeontrain.builder.open.portal_mode.endless_open": "Endless",
   "gui.dungeontrain.builder.open.portal_mode.endless_repetition": "Repeating",
-  "gui.dungeontrain.builder.open.tiles_per_row.tooltip": "Tiles per row. Left-click for more and smaller, right-click for fewer and bigger.",
+  "gui.dungeontrain.builder.open.tiles_per_row.tooltip": "Tiles per row. Left-click for more and smaller; right-click or shift-click for fewer and bigger.",
   "gui.dungeontrain.builder.open.empty": "Nothing here yet — make something with New and save it.",
   "gui.dungeontrain.builder.open.not_buildable": "Shown for reference — these can't be edited here yet.",
   "gui.dungeontrain.builder.saved": "Saved %1$s.",

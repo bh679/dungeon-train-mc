@@ -99,49 +99,62 @@ final class BuilderTemplateGridLayoutTest {
     }
 
     @Test
-    @DisplayName("The default lays out exactly the grid it always did")
-    void defaultGeometryIsUnchanged() {
-        // The numbers below are what the fixed-three grid produced before the count was settable,
-        // pinned so the feature can't quietly restyle the screen for everyone who never uses it:
-        // a 480px block at the width cap, three 156px cells with two 6px gaps.
-        BuilderTemplateGridLayout wide =
-                BuilderTemplateGridLayout.of(1920, TOP, BOTTOM, 24, COLUMNS);
-        assertEquals(3, wide.columns());
-        assertEquals(156, wide.cellWidth());
-        assertEquals(87, wide.cellHeight());
-        assertEquals(720, wide.originX(), "the 480px block is centred on a 1920px screen");
-
-        // And on a small one, where the side margins bite before the cap does.
-        BuilderTemplateGridLayout narrow =
-                BuilderTemplateGridLayout.of(480, TOP, BOTTOM, 24, COLUMNS);
-        assertEquals(3, narrow.columns());
-        assertEquals(145, narrow.cellWidth());
-        assertEquals(81, narrow.cellHeight());
+    @DisplayName("The grid fills the window it is given")
+    void gridSpansTheAvailableWidth() {
+        // A tall viewport, so the cell-height cap doesn't bite and width is the only constraint.
+        int bottom = TOP + 2000;
+        for (int[] size : VIEWPORTS) {
+            BuilderTemplateGridLayout layout =
+                    BuilderTemplateGridLayout.of(size[0], TOP, bottom, 24, COLUMNS);
+            int right = layout.xFor(layout.columns() - 1) + layout.cellWidth();
+            int spanned = right - layout.originX();
+            // Within a column's worth of integer truncation of the whole usable width.
+            assertTrue(spanned >= size[0] - 32 - layout.columns(),
+                    "the grid leaves " + (size[0] - spanned) + "px unused at width " + size[0]);
+            assertTrue(spanned <= size[0], "the grid overruns the window at width " + size[0]);
+        }
     }
 
     @Test
-    @DisplayName("More per row means smaller tiles, not a wider grid")
-    void higherCountsShrinkCellsWithinTheSameBlock() {
+    @DisplayName("More per row means smaller tiles, within the same full-width grid")
+    void higherCountsShrinkCells() {
+        int bottom = TOP + 2000;
         int previousWidth = Integer.MAX_VALUE;
         int blockWidth = -1;
         for (int columns : COLUMN_COUNTS) {
             BuilderTemplateGridLayout layout =
-                    BuilderTemplateGridLayout.of(1920, TOP, BOTTOM, 24, columns);
+                    BuilderTemplateGridLayout.of(1920, TOP, bottom, 24, columns);
             assertEquals(columns, layout.columns(), "1920px holds every count in the range");
 
             assertTrue(layout.cellWidth() < previousWidth,
                     "cells should shrink as the count rises, at " + columns + " per row");
             previousWidth = layout.cellWidth();
 
-            // The block the cells sit in stays put — that is the whole trade this control makes.
+            // The count divides the window; it does not change how much of it the grid uses.
             int right = layout.xFor(layout.columns() - 1) + layout.cellWidth();
             int width = right - layout.originX();
             if (blockWidth < 0) {
                 blockWidth = width;
             } else {
-                assertTrue(Math.abs(width - blockWidth) <= 2,
-                        "the grid block moved at " + columns + " per row: " + width
+                assertTrue(Math.abs(width - blockWidth) <= COLUMN_COUNTS.length,
+                        "the grid's span moved at " + columns + " per row: " + width
                                 + " vs " + blockWidth);
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("A cell never grows taller than the strip it scrolls in")
+    void cellsNeverExceedTheViewport() {
+        // The case removing the width cap opened up: a wide, short window. Without the height cap
+        // the cell works out taller than the viewport and no row is ever fully visible.
+        for (int height : new int[]{40, 80, 160, 280, 600}) {
+            for (int columns : COLUMN_COUNTS) {
+                BuilderTemplateGridLayout layout =
+                        BuilderTemplateGridLayout.of(3440, TOP, TOP + height, 24, columns);
+                assertTrue(layout.cellHeight() <= height || layout.cellWidth() == 56,
+                        "cell of " + layout.cellHeight() + "px in a " + height
+                                + "px viewport at " + columns + " per row");
             }
         }
     }
@@ -179,13 +192,15 @@ final class BuilderTemplateGridLayoutTest {
     }
 
     @Test
-    @DisplayName("Cell size is stable once the grid hits its width cap")
-    void cellSizeIsStableOnWideViewports() {
-        // The point of the fixed column count: the same template is the same size on any wide
-        // window, and resizing doesn't reflow the library under the cursor.
-        int at1920 = BuilderTemplateGridLayout.of(1920, TOP, BOTTOM, 24, COLUMNS).cellWidth();
-        int at3440 = BuilderTemplateGridLayout.of(3440, TOP, BOTTOM, 24, COLUMNS).cellWidth();
-        assertEquals(at1920, at3440, "cell width should be capped, not grow with the window");
+    @DisplayName("Cells grow with the window rather than stopping at a cap")
+    void cellSizeGrowsWithTheWindow() {
+        // A tall viewport so the height cap doesn't mask the width behaviour under test.
+        int bottom = TOP + 2000;
+        int at640 = BuilderTemplateGridLayout.of(640, TOP, bottom, 24, COLUMNS).cellWidth();
+        int at1920 = BuilderTemplateGridLayout.of(1920, TOP, bottom, 24, COLUMNS).cellWidth();
+        int at3440 = BuilderTemplateGridLayout.of(3440, TOP, bottom, 24, COLUMNS).cellWidth();
+        assertTrue(at640 < at1920, "cells should grow from 640 to 1920");
+        assertTrue(at1920 < at3440, "cells should keep growing on an ultrawide, not cap out");
     }
 
     @Test
