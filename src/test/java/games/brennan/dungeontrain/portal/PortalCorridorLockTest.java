@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.portal;
 
 import games.brennan.dungeontrain.train.CarriageDims;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Vec3i;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -102,6 +103,74 @@ class PortalCorridorLockTest {
                 for (int z = zLo; z <= zHi; z++) {
                     assertTrue(covered(boxes, x, above, z), role + " roof open at " + x + "," + z);
                     assertTrue(covered(boxes, x, below, z), role + " floor open at " + x + "," + z);
+                }
+            }
+        }
+    }
+
+    /**
+     * The room the corridors stand against: one corridor along in X, wide enough and tall enough to
+     * contain the corridor's cross-section, which {@code PortalRoomLayout.minWidth}/{@code minHeight}
+     * guarantee.
+     */
+    private static final BlockPos ROOM_ORIGIN =
+        new BlockPos(ORIGIN.getX() + LENGTH, ORIGIN.getY(), ORIGIN.getZ() - 2);
+    private static final Vec3i ROOM_SIZE = new Vec3i(15, 9, DIMS.width() + 4);
+
+    private static List<BoundingBox> cap(PortalCarriageRole role) {
+        BlockPos corridor = role == PortalCarriageRole.ENTRY
+            ? ORIGIN
+            : new BlockPos(ROOM_ORIGIN.getX() + ROOM_SIZE.getX(), ORIGIN.getY(), ORIGIN.getZ());
+        return PortalCarriageBuilder.roomEndCapBoxes(
+            corridor, DIMS, role, ROOM_ORIGIN, ROOM_SIZE, WORLD_MIN_Y);
+    }
+
+    /**
+     * The cap stands one column beyond the seal plane, never in it. The seal plane is the room's own
+     * wall carried on — bedrock there is bedrock inside somebody's authored room.
+     */
+    @Test
+    @DisplayName("The end cap clears the seal plane, and the room box behind it")
+    void capStandsOutsideTheSealPlane() {
+        for (BoundingBox box : cap(PortalCarriageRole.ENTRY)) {
+            assertEquals(ROOM_ORIGIN.getX() - 2, box.minX());
+            assertEquals(ROOM_ORIGIN.getX() - 2, box.maxX());
+        }
+        for (BoundingBox box : cap(PortalCarriageRole.EXIT)) {
+            assertEquals(ROOM_ORIGIN.getX() + ROOM_SIZE.getX() + 1, box.minX());
+            assertEquals(ROOM_ORIGIN.getX() + ROOM_SIZE.getX() + 1, box.maxX());
+        }
+    }
+
+    /**
+     * The whole face, minus the hole the corridor runs through — the hole is the geometry a twin
+     * shares with its carriage, and a cell of it overwritten is a seam in the crossing.
+     */
+    @Test
+    @DisplayName("The end cap covers the room's face exactly once, and never the corridor")
+    void capFramesTheCorridor() {
+        for (PortalCarriageRole role : PortalCarriageRole.values()) {
+            List<BoundingBox> boxes = cap(role);
+            BlockPos corridor = role == PortalCarriageRole.ENTRY
+                ? ORIGIN
+                : new BlockPos(ROOM_ORIGIN.getX() + ROOM_SIZE.getX(), ORIGIN.getY(), ORIGIN.getZ());
+            int planeX = boxes.get(0).minX();
+            int below = PortalCarriageBuilder.lowestWritableY(WORLD_MIN_Y, ORIGIN.getY());
+
+            for (int y = below; y <= ROOM_ORIGIN.getY() + ROOM_SIZE.getY(); y++) {
+                for (int z = ROOM_ORIGIN.getZ() - 1; z <= ROOM_ORIGIN.getZ() + ROOM_SIZE.getZ(); z++) {
+                    boolean inCorridor = z >= corridor.getZ()
+                        && z < corridor.getZ() + DIMS.width()
+                        && y >= corridor.getY() && y < corridor.getY() + DIMS.height();
+                    int hits = 0;
+                    for (BoundingBox box : boxes) {
+                        if (planeX >= box.minX() && planeX <= box.maxX()
+                            && y >= box.minY() && y <= box.maxY()
+                            && z >= box.minZ() && z <= box.maxZ()) {
+                            hits++;
+                        }
+                    }
+                    assertEquals(inCorridor ? 0 : 1, hits, role + " cell " + y + "," + z);
                 }
             }
         }

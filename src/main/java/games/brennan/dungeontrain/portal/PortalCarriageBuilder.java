@@ -803,9 +803,10 @@ public final class PortalCarriageBuilder {
         // re-stamps that corridor's box on its way past. Writing it first would be writing it into
         // a volume that is about to be swept.
         if (structure.mode().sealsCorridors()) {
-            bedrockSkinCorridor(level, structure.origin(), dims, layout, PortalCarriageRole.ENTRY);
+            bedrockSkinCorridor(level, structure.origin(), dims, layout, PortalCarriageRole.ENTRY,
+                roomOrigin, roomSize);
             bedrockSkinCorridor(level, structure.exitOrigin(dims), dims, layout,
-                PortalCarriageRole.EXIT);
+                PortalCarriageRole.EXIT, roomOrigin, roomSize);
         }
     }
 
@@ -941,11 +942,14 @@ public final class PortalCarriageBuilder {
      * somebody digging through that. A room whose own shell was replaced with bedrock would read as
      * a vault regardless of what was authored, which is a different feature.</p>
      *
-     * <p><b>Four faces, not six.</b> The room's ±X ends are the two corridors' door planes — the way
-     * back to the train, and the one part of a twin that is block-identical to its carriage. Skinning
-     * those would either wall the player in or break that identity, so the lock covers the sides, the
-     * ceiling and the floor and leaves the doors alone. What stands off those two ends is wrapped by
-     * {@link #bedrockSkinCorridor} instead, and the two shells meet to enclose the whole structure.
+     * <p><b>Four faces here; the other two are further out.</b> The room's ±X ends are the two
+     * corridors' door planes — the way back to the train, and the one part of a twin that is
+     * block-identical to its carriage. Skinning them at the box would wall the player in, and the
+     * column just outside is the seal plane, which is the room's own wall carried on
+     * ({@link #sealFillFor}) and in view from inside a room with open sides. So this covers the
+     * sides, the ceiling and the floor, and the ends are capped one column further out still by
+     * {@link #roomEndCapBoxes}, where only the basement can see them. The two shells meet at the
+     * corner to enclose the whole structure.
      *
      * <p><b>One column further out in ±X than the room, and that is what makes them meet.</b> The
      * column just outside each room end is the seal plane {@link #sealCorridorMouth} writes: solid
@@ -989,12 +993,14 @@ public final class PortalCarriageBuilder {
     }
 
     /**
-     * Wrap one corridor and its plug in bedrock — the half of {@link PortalRoomMode#BEDROCK_LOCK}'s
-     * shell that is not the room, laid once the corridor is standing.
+     * Wrap one corridor and its plug in bedrock, and cap the room end it stands against — the half of
+     * {@link PortalRoomMode#BEDROCK_LOCK}'s shell that is not the room box, laid once the corridor is
+     * standing.
      *
-     * <p>The room's skin covers the room; this covers what hangs off it. Without it a player walks
-     * out of a sealed room into a corridor of ordinary stone brick and mines through the wall
-     * sideways, which is the way out the lock was supposed to not have.</p>
+     * <p>The room's skin covers the room's four long faces; this covers what hangs off the other two.
+     * Without the corridor ring a player walks out of a sealed room into a corridor of ordinary stone
+     * brick and mines through the wall sideways; without the end cap the room's ±X faces are left
+     * showing their seal plane to the basement, which is ordinary rock too.</p>
      *
      * <p><b>Outside the corridor, and so outside the carriage it mirrors.</b> The corridor's own
      * geometry is shared with the carriage on the train and cannot move by a block; every cell
@@ -1003,10 +1009,17 @@ public final class PortalCarriageBuilder {
      */
     private static void bedrockSkinCorridor(ServerLevel level, BlockPos corridorOrigin,
                                             CarriageDims dims, PortalCarriageLayout layout,
-                                            PortalCarriageRole role) {
+                                            PortalCarriageRole role, BlockPos roomOrigin,
+                                            Vec3i roomSize) {
+        int worldMinY = level.getMinBuildHeight();
+        fill(level, corridorLockBoxes(corridorOrigin, dims, layout.length(), role, worldMinY));
+        fill(level, roomEndCapBoxes(corridorOrigin, dims, role, roomOrigin, roomSize, worldMinY));
+    }
+
+    /** Write {@link #LOCK} into every cell of every box. */
+    private static void fill(ServerLevel level, List<BoundingBox> boxes) {
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-        for (BoundingBox box : corridorLockBoxes(corridorOrigin, dims, layout.length(), role,
-                level.getMinBuildHeight())) {
+        for (BoundingBox box : boxes) {
             for (int x = box.minX(); x <= box.maxX(); x++) {
                 for (int y = box.minY(); y <= box.maxY(); y++) {
                     for (int z = box.minZ(); z <= box.maxZ(); z++) {
@@ -1018,15 +1031,65 @@ public final class PortalCarriageBuilder {
     }
 
     /**
+     * The room's own ±X face, skinned: a bedrock plane across the room's cross-section with the
+     * corridor passing through it, standing one column beyond the seal plane.
+     *
+     * <p><b>Why this is not the seal plane itself.</b> {@link #sealCorridorMouth} fills the column
+     * immediately outside the room in the <i>room's own blocks</i>, precisely so the boundary stops
+     * being visible as one — for a room with open sides it is the end wall the player sees. Bedrock
+     * written there would put a bedrock wall inside somebody's authored room. So the cap goes one
+     * column further out, where nothing can see it but the basement, and the seal plane keeps its
+     * authored look with unbreakable rock immediately behind it.</p>
+     *
+     * <p><b>A frame, not a plane.</b> The corridor runs through this column, and its blocks are the
+     * ones shared with the carriage — so the cap is the cross-section <i>minus</i> the corridor box,
+     * as up to four disjoint slabs. Carving it geometrically rather than testing each cell is the
+     * same choice {@link #voidSlabs} makes, and for the same reason: the corridor cannot be reached
+     * however its layout changes.</p>
+     *
+     * <p>Sized to the room grown by one block on each axis, so its edges land exactly on
+     * {@link #bedrockSkin}'s side walls and its floor and ceiling planes — the two shells meet at the
+     * corner rather than leaving a slot along it. The column it stands in is the last one
+     * {@link #corridorLockBoxes} rings, so the corridor's own shell meets it too.</p>
+     */
+    static List<BoundingBox> roomEndCapBoxes(BlockPos corridorOrigin, CarriageDims dims,
+                                             PortalCarriageRole role, BlockPos roomOrigin,
+                                             Vec3i roomSize, int worldMinY) {
+        boolean entry = role == PortalCarriageRole.ENTRY;
+        // One column beyond the seal plane, which itself is one column beyond the room box.
+        int planeX = entry ? roomOrigin.getX() - 2 : roomOrigin.getX() + roomSize.getX() + 1;
+
+        int zLo = roomOrigin.getZ() - 1;
+        int zHi = roomOrigin.getZ() + roomSize.getZ();
+        int floorY = corridorOrigin.getY();
+        int belowY = lowestWritableY(worldMinY, floorY);
+        int aboveY = roomOrigin.getY() + roomSize.getY();
+
+        // The hole: the corridor's own box in this column.
+        int holeZLo = corridorOrigin.getZ();
+        int holeZHi = corridorOrigin.getZ() + dims.width() - 1;
+        int holeYHi = floorY + dims.height() - 1;
+
+        List<BoundingBox> boxes = new ArrayList<>(4);
+        // Under and over the corridor, full width, so the corners belong to them.
+        if (belowY < floorY) boxes.add(new BoundingBox(planeX, belowY, zLo, planeX, floorY - 1, zHi));
+        boxes.add(new BoundingBox(planeX, holeYHi + 1, zLo, planeX, aboveY, zHi));
+        // Either side of it, only as tall as the corridor.
+        boxes.add(new BoundingBox(planeX, floorY, zLo, planeX, holeYHi, holeZLo - 1));
+        boxes.add(new BoundingBox(planeX, floorY, holeZHi + 1, planeX, holeYHi, zHi));
+        return boxes;
+    }
+
+    /**
      * The slabs {@link #bedrockSkinCorridor} fills: the two side walls, the roof and — where there
      * is a row to write — the floor, each one block outside the corridor box, run the length of the
      * corridor and its plug.
      *
      * <p><b>Never the seal plane.</b> The X span stops one column short of the corridor's mouth,
-     * which is the column {@link #sealCorridorMouth} fills across the room's cross-section. Bedrock
-     * there would be a ring around the doorway, visible from inside the room, and it is not needed:
-     * the seal fill is solid out to the room's outer face, where {@link #bedrockSkin}'s extra column
-     * caps it. The two shells meet at that plane rather than overlapping in it.</p>
+     * which is the column {@link #sealCorridorMouth} fills across the room's cross-section in the
+     * room's own blocks. Bedrock there would show inside the room. The column the span does end on is
+     * the one {@link #roomEndCapBoxes} caps the room's face in, so the ring meets the cap and the
+     * seal plane keeps unbreakable rock immediately behind it either way.</p>
      *
      * <p><b>Nothing beyond the plug, either.</b> The dead end is already three blocks of {@link #LOCK}
      * under this mode ({@link PortalRoomMode#sealsCorridors}), so a cap there would be bedrock
