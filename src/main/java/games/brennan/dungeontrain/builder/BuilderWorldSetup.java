@@ -977,6 +977,12 @@ public final class BuilderWorldSetup {
         }
 
         data.setBuilderName(name);
+        // Nothing is parked on the track any more, and saying so is what makes BuilderBounds answer
+        // with *this plot* rather than with the carriage boxes of whatever was open before. Every
+        // consumer of that answer treats it as "the build": leaving a stale count behind meant the
+        // wash painted the template red, the structure reconcile cleared it as though it were
+        // scenery, and a structure could be laid straight through it.
+        data.setBuilderCarriages(0);
         data.setBuilderTrackKind(kind.id());
         data.setBuilderStage("");
         data.setBuilderMirror(trackMirrorOf(kind, name, size));
@@ -1106,6 +1112,9 @@ public final class BuilderWorldSetup {
         }
 
         data.setBuilderName(name);
+        // As on the track arm: a room parks no train, and a stale count would have BuilderBounds
+        // hand every consumer the last build's carriage boxes as though they were this room.
+        data.setBuilderCarriages(0);
         data.setBuilderStage("");
         data.setBuilderSubType(request.subTypeToken(), request.partKindId());
         // A room's mirroring is authored in its own sidecar, not in the builder's flags; carrying

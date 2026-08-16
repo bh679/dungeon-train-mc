@@ -147,6 +147,7 @@ public final class BuilderStructureScan {
         HolderGetter<Block> blocks = level.registryAccess().lookupOrThrow(Registries.BLOCK);
         BuilderStructureCells.Sources sources = sourcesFor(blocks);
         List<BoundingBox> volumes = BuilderBoundsState.volumes();
+        LongSet templateCells = templateCells(level, volumes);
 
         List<Batch> found = new ArrayList<>(placements.size());
         LongSet occupied = new LongOpenHashSet();
@@ -173,7 +174,7 @@ public final class BuilderStructureScan {
                     break;
                 }
                 BlockPos world = placement.origin().offset(cell.getKey());
-                if (!BuilderStructureNeeds.allows(placement.kind(), world, volumes)) {
+                if (!BuilderStructureNeeds.allows(placement.kind(), world, volumes, templateCells)) {
                     continue;
                 }
                 // Doubles as the claim set: false means a later placement already owns this cell.
@@ -225,6 +226,34 @@ public final class BuilderStructureScan {
         BoundingBox box = volumes.get(0);
         return new BuilderStructureCells.Sources(blocks, BuilderBoundsState.dims(), seed,
                 liveCells(box), BuilderBounds.sizeOf(box));
+    }
+
+    /**
+     * Every block the open template is holding, packed.
+     *
+     * <p>The build volumes say where a template <em>should</em> be; this says where it actually is.
+     * The two differ where a stamp reaches past its plot — a tunnel is laid by {@code TunnelPlacer}
+     * rather than cut to the box, so its walls can. Without this, a ghost would be drawn through one
+     * of those blocks, and in Solid a structure would replace it.</p>
+     */
+    private static LongSet templateCells(Level level, List<BoundingBox> volumes) {
+        if (volumes.isEmpty()) {
+            return LongSets.EMPTY_SET;
+        }
+        LongSet out = new LongOpenHashSet();
+        BlockPos.MutableBlockPos probe = new BlockPos.MutableBlockPos();
+        for (BoundingBox box : volumes) {
+            for (int y = box.minY(); y <= box.maxY(); y++) {
+                for (int x = box.minX(); x <= box.maxX(); x++) {
+                    for (int z = box.minZ(); z <= box.maxZ(); z++) {
+                        if (!level.getBlockState(probe.set(x, y, z)).isAir()) {
+                            out.add(probe.asLong());
+                        }
+                    }
+                }
+            }
+        }
+        return out;
     }
 
     /**

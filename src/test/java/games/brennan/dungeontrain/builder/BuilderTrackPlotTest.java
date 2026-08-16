@@ -41,6 +41,24 @@ final class BuilderTrackPlotTest {
     }
 
     @Test
+    @DisplayName("A tile is authored on the viaduct; a tunnel is authored on the ground")
+    void tunnelsAreOnTheGroundAndTilesAreNot() {
+        // Both wrap the line, and they are still at different heights, because each is the height its
+        // own situation happens at: a tile runs over the pillars, and a tunnel is where the line goes
+        // *underground* — which the generator only builds at ground level, with a shaft climbing out.
+        // Previewing a tunnel up on the viaduct put its mouth on a bridge and its staircase
+        // descending into open air.
+        assertEquals(BuilderTrackScene.bedY(),
+                BuilderTrackPlot.origin(TrackKind.TILE, DIMS).getY());
+
+        int groundBedY = BuilderTrackScene.groundGeometry(DIMS).bedY();
+        for (TrackKind kind : new TrackKind[]{TrackKind.TUNNEL_SECTION, TrackKind.TUNNEL_PORTAL}) {
+            assertEquals(groundBedY, BuilderTrackPlot.origin(kind, DIMS).getY(), kind.id());
+        }
+        assertTrue(groundBedY < BuilderTrackScene.bedY(), "the ground line is under the viaduct");
+    }
+
+    @Test
     @DisplayName("Corridor kinds are the ones that sit in the line")
     void onlyTrackWrappingKindsGoInTheCorridor() {
         assertTrue(BuilderTrackPlot.inCorridor(TrackKind.TILE));

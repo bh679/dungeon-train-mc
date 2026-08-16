@@ -14,6 +14,8 @@ import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriagePlacer;
 import games.brennan.dungeontrain.tunnel.TunnelGeometry;
 import games.brennan.dungeontrain.tunnel.TunnelPlacer;
+import it.unimi.dsi.fastutil.longs.LongSet;
+import it.unimi.dsi.fastutil.longs.LongSets;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
@@ -181,19 +183,24 @@ public final class BuilderStructureNeeds {
     }
 
     /**
-     * <b>Other tracks.</b>
+     * <b>Other tracks</b>, and the line they run on: the columns under it and a staircase up to it.
      *
-     * <p>The whole question a tile answers is whether it joins the next one, so the run either side
-     * of it is the entire structure it needs. Each tile in the run rolls its own variant the way the
-     * generator rolls it — a line of one repeated tile would preview something the game never
-     * builds.</p>
+     * <p>The first question a tile answers is whether it joins the next one, so the run either side
+     * of it is the structure it most needs — each tile rolling its own variant the way the generator
+     * rolls it, since a line of one repeated tile would preview something the game never builds.</p>
+     *
+     * <p>The columns and the staircase are the same scene Pillars and Stairs get, and for the same
+     * reason: a tile is authored <em>on the elevated line</em>, so without them it hangs in the air
+     * over a drop, which is not where the thing being judged actually lives.</p>
      */
     private static void tracks(List<BuilderStructure.Placement> out, Context ctx) {
+        pillarColumns(out, ctx.dims());
         elevatedTrack(out, ctx.dims());
+        stairsFlight(out, ctx.dims());
     }
 
     /**
-     * <b>Tracks, tunnels either side, and one staircase going up.</b>
+     * <b>Tracks on the ground, tunnels either side, and one staircase climbing out to the surface.</b>
      *
      * <p>A tunnel is only ever seen as part of a run, and what you are judging is the seam between
      * consecutive sections and the mouth you come out of. So a <b>section</b> gets
@@ -202,13 +209,19 @@ public final class BuilderStructureNeeds {
      * <p>A <b>portal</b> gets tunnel on <em>one</em> side, because that is what a portal is: the
      * mouth. Tunnel behind it, open air in front. Running tunnel both sides would draw the one thing
      * the piece exists to deny.</p>
+     *
+     * <p><b>All of it at ground level, with the stairs going up.</b> A tunnel is where the line runs
+     * underground; the generator's own answer to "how do you get out of one" is a shaft climbing
+     * from the tunnel deck to the surface, which is what {@link #shaftStairs} declares. Previewing
+     * this against the elevated line instead would put the mouth on a viaduct and the staircase
+     * descending from a bridge into open air — a picture of nothing the world builds.</p>
      */
     private static void tunnels(List<BuilderStructure.Placement> out, Context ctx, TrackKind open) {
         CarriageDims dims = ctx.dims();
-        elevatedTrack(out, dims);
-        stairsFlight(out, dims);
+        groundTrack(out, dims);
+        shaftStairs(out, dims);
 
-        TrackGeometry g = BuilderTrackScene.geometry(dims);
+        TrackGeometry g = BuilderTrackScene.groundGeometry(dims);
         TunnelGeometry tg = TunnelGeometry.from(g);
         int y = tg.floorY();
         int z = tg.wallMinZ() + 1;
@@ -258,22 +271,27 @@ public final class BuilderStructureNeeds {
 
     /**
      * A stairs <em>entrance</em> is the one track-side piece that does not belong to the elevated
-     * line: it caps a shaft climbing out of a line that runs underground.
+     * line: it is the pavilion capping a shaft climbing out of a line that runs underground.
      *
-     * <p>So it gets the ground-level version of the Stairs row — the corridor where the line actually
-     * is, and the flight climbing out of it — rather than a bridge it would never be built on.</p>
+     * <p>So it gets the situation that produces one — the ground-level line, <b>the tunnel around
+     * it</b>, and the flight climbing out — rather than a bridge it would never be built on. The
+     * tunnel is not decoration here: it is the thing the shaft comes out of, and an entrance judged
+     * without it is an entrance to nowhere.</p>
      */
     private static void stairsEntrance(List<BuilderStructure.Placement> out, Context ctx) {
         CarriageDims dims = ctx.dims();
         groundTrack(out, dims);
+        shaftStairs(out, dims);
 
-        int centreX = BuilderTrackPlot.editedColumnCentreX();
-        int floorY = BuilderTrackScene.shaftFloorY(dims);
-        int topY = BuilderTrackScene.shaftTopY(dims);
-        out.add(new BuilderStructure.Placement(
-                new BuilderStructure.Kind.StairsFlight(centreX, topY - floorY + 1),
-                new BlockPos(BuilderTrackScene.shaftMinX(centreX), floorY,
-                        BuilderTrackScene.shaftMinZ(dims))));
+        // A run either side of the shaft, since a way out only exists where there is tunnel to come
+        // out of. Centred on the shaft rather than on a plot, because the plot here is the pavilion
+        // up at the surface rather than anything down on the line.
+        TunnelGeometry tg = TunnelGeometry.from(BuilderTrackScene.groundGeometry(dims));
+        int len = TunnelPlacer.LENGTH;
+        int shaftX = BuilderTrackPlot.editedColumnCentreX();
+        for (int repeat = -1; repeat <= 1; repeat++) {
+            tunnelSection(out, shaftX - len / 2 + repeat * len, tg.floorY(), tg.wallMinZ() + 1);
+        }
     }
 
     // ---- Dimensional Carriages ----
@@ -414,6 +432,24 @@ public final class BuilderStructureNeeds {
         }
     }
 
+    /**
+     * The staircase climbing a shaft out of an underground line, to the surface.
+     *
+     * <p>The generator's own down-stairs geometry, through {@link BuilderTrackScene}'s wrappers —
+     * the shaft floor is the tunnel deck, and the top is one row under the surface. Distinct from
+     * {@link #stairsFlight}, which is the flight <em>up the side of a column</em> to an elevated
+     * deck: same template, opposite situation, and neither position is derivable from the other.</p>
+     */
+    private static void shaftStairs(List<BuilderStructure.Placement> out, CarriageDims dims) {
+        int centreX = BuilderTrackPlot.editedColumnCentreX();
+        int floorY = BuilderTrackScene.shaftFloorY(dims);
+        int topY = BuilderTrackScene.shaftTopY(dims);
+        out.add(new BuilderStructure.Placement(
+                new BuilderStructure.Kind.StairsFlight(centreX, topY - floorY + 1),
+                new BlockPos(BuilderTrackScene.shaftMinX(centreX), floorY,
+                        BuilderTrackScene.shaftMinZ(dims))));
+    }
+
     /** The staircase beside the edited column, running from deck height down to the ground. */
     private static void stairsFlight(List<BuilderStructure.Placement> out, CarriageDims dims) {
         int centreX = BuilderTrackPlot.editedColumnCentreX();
@@ -503,11 +539,35 @@ public final class BuilderStructureNeeds {
      */
     public static boolean allows(BuilderStructure.Kind kind, BlockPos pos,
                                  List<BoundingBox> buildVolumes) {
+        return allows(kind, pos, buildVolumes, LongSets.EMPTY_SET);
+    }
+
+    /**
+     * As above, and <b>the template wins wherever it holds a block</b>.
+     *
+     * <p>The box rule alone trusts a template to stay inside its declared footprint, and they do not
+     * always: a tunnel is stamped by {@code TunnelPlacer} rather than cut to {@link BoundingBox}, so
+     * its walls can reach past the plot. A structure landing on one of those blocks would be drawn
+     * through it, and in Solid would <em>replace</em> it — which is the template losing to its own
+     * scenery.</p>
+     *
+     * @param templateCells packed positions ({@link BlockPos#asLong}) the open template occupies.
+     *                      Empty is the honest answer when nothing has read the build yet, and
+     *                      degrades to the box rule alone
+     */
+    public static boolean allows(BuilderStructure.Kind kind, BlockPos pos,
+                                 List<BoundingBox> buildVolumes, LongSet templateCells) {
         if (pos.getY() <= BuilderWorldLayout.Y_GRASS) {
             return false;
         }
+        // Before the template rule, not after it. The shell's own blocks sit inside the build volume
+        // and are therefore *in* {@code templateCells} — checking that first would refuse the shell
+        // everywhere, so it could never be cleared and Ghost would leave it standing for ever.
         if (kind instanceof BuilderStructure.Kind.CarriageShell) {
             return true;
+        }
+        if (templateCells.contains(pos.asLong())) {
+            return false;
         }
         if (!BuilderWorldLayout.inPlatform(pos.getX(), pos.getZ())) {
             return false;

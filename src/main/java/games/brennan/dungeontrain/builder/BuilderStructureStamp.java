@@ -11,6 +11,9 @@ import games.brennan.dungeontrain.ship.sable.WorldgenForceGuard;
 import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
+import it.unimi.dsi.fastutil.longs.LongSet;
+import it.unimi.dsi.fastutil.longs.LongSets;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.core.registries.Registries;
@@ -89,6 +92,7 @@ public final class BuilderStructureStamp {
 
         List<BoundingBox> volumes = BuilderBounds.volumesFor(level);
         BuilderStructureCells.Sources sources = sourcesOf(level, data, volumes);
+        LongSet templateCells = templateCells(level, volumes);
         long t0 = System.nanoTime();
         int moved = 0;
         boolean capped = false;
@@ -103,7 +107,7 @@ public final class BuilderStructureStamp {
                 }
                 BlockPos local = cell.getKey();
                 BlockPos pos = placement.origin().offset(local);
-                if (!BuilderStructureNeeds.allows(placement.kind(), pos, volumes)) {
+                if (!BuilderStructureNeeds.allows(placement.kind(), pos, volumes, templateCells)) {
                     continue;
                 }
                 if (pos.getY() < level.getMinBuildHeight() || pos.getY() >= level.getMaxBuildHeight()) {
@@ -192,6 +196,34 @@ public final class BuilderStructureStamp {
                             probe.set(min.getX() + x, min.getY() + y, min.getZ() + z));
                     if (!state.isAir()) {
                         out.put(new BlockPos(x, y, z), state);
+                    }
+                }
+            }
+        }
+        return out;
+    }
+
+    /**
+     * Every block the open template is holding, packed.
+     *
+     * <p>The build volumes say where a template <em>should</em> be; this says where it actually is.
+     * The two differ where a stamp reaches past its plot — a tunnel is laid by {@code TunnelPlacer}
+     * rather than cut to the box, so its walls can. Without this, a structure landing on one of
+     * those blocks would replace it, which is the template losing to its own scenery.</p>
+     */
+    private static LongSet templateCells(ServerLevel level, List<BoundingBox> volumes) {
+        if (volumes.isEmpty()) {
+            return LongSets.EMPTY_SET;
+        }
+        LongSet out = new LongOpenHashSet();
+        BlockPos.MutableBlockPos probe = new BlockPos.MutableBlockPos();
+        for (BoundingBox box : volumes) {
+            for (int y = box.minY(); y <= box.maxY(); y++) {
+                for (int x = box.minX(); x <= box.maxX(); x++) {
+                    for (int z = box.minZ(); z <= box.maxZ(); z++) {
+                        if (!level.getBlockState(probe.set(x, y, z)).isAir()) {
+                            out.add(probe.asLong());
+                        }
                     }
                 }
             }

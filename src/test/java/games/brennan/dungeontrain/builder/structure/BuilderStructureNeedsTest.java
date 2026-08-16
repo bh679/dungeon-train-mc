@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.builder.structure;
 
+import games.brennan.dungeontrain.builder.BuilderBounds;
 import games.brennan.dungeontrain.builder.BuilderMode;
 import games.brennan.dungeontrain.builder.BuilderNewOptions;
 import games.brennan.dungeontrain.builder.BuilderTrackPlot;
@@ -10,8 +11,11 @@ import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.train.CarriageContentsPlacer;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.tunnel.TunnelPlacer;
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
+import it.unimi.dsi.fastutil.longs.LongSet;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
+import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -143,13 +147,17 @@ final class BuilderStructureNeedsTest {
     // ---- Tracks ----
 
     @Test
-    @DisplayName("Tracks need other tracks, and nothing else")
-    void tracksNeedOtherTracksOnly() {
+    @DisplayName("Tracks need other tracks, and the line they run on")
+    void tracksNeedOtherTracksAndTheLineTheyRunOn() {
         List<BuilderStructure.Placement> out = BuilderStructureNeeds.around(track(TrackKind.TILE));
 
-        assertEquals(EnumSet.of(BuilderStructure.Category.TRACKS), categories(out));
-        // Up on the line, where a tile is authored — not on the ground corridor.
-        assertEquals(BuilderTrackScene.bedY(), out.get(0).origin().getY());
+        // A tile is authored up on the elevated line, so the columns holding it there and the way up
+        // to it are part of what it is judged against — without them it hangs over a drop.
+        assertEquals(EnumSet.of(BuilderStructure.Category.TRACKS, BuilderStructure.Category.PILLARS,
+                BuilderStructure.Category.STAIRS), categories(out));
+        List<BuilderStructure.Placement> line = of(out, BuilderStructure.Kind.TrackRun.class);
+        assertEquals(1, line.size());
+        assertEquals(BuilderTrackScene.bedY(), line.get(0).origin().getY());
     }
 
     // ---- Tunnels ----
@@ -191,6 +199,39 @@ final class BuilderStructureNeedsTest {
         int plotMinX = BuilderTrackPlot.origin(TrackKind.TUNNEL_PORTAL, DIMS).getX();
         assertTrue(sections.stream().allMatch(p -> p.origin().getX() >= plotMinX + TunnelPlacer.LENGTH),
                 "every section runs away from the mouth on +X");
+    }
+
+    @Test
+    @DisplayName("A tunnel is judged on the ground, with its staircase climbing out to the surface")
+    void tunnelsSitOnTheGroundAndTheirStairsClimbUp() {
+        // A tunnel is where the line runs *underground*, which the generator only builds at ground
+        // level. On the elevated line the mouth would be on a viaduct and the staircase would
+        // descend from a bridge into open air — a picture of nothing the world makes.
+        for (TrackKind kind : new TrackKind[]{TrackKind.TUNNEL_SECTION, TrackKind.TUNNEL_PORTAL}) {
+            List<BuilderStructure.Placement> out = BuilderStructureNeeds.around(track(kind));
+            int lineY = of(out, BuilderStructure.Kind.TrackRun.class).get(0).origin().getY();
+            assertEquals(BuilderTrackScene.groundGeometry(DIMS).bedY(), lineY, kind.id());
+            assertNotEquals(BuilderTrackScene.bedY(), lineY, kind.id() + " is not on the viaduct");
+
+            // The flight starts on the tunnel deck and reaches the surface, not the column's cap.
+            BuilderStructure.Placement flight = of(out, BuilderStructure.Kind.StairsFlight.class).get(0);
+            assertEquals(BuilderTrackScene.shaftFloorY(DIMS), flight.origin().getY(), kind.id());
+            assertTrue(((BuilderStructure.Kind.StairsFlight) flight.kind()).height()
+                    == BuilderTrackScene.shaftTopY(DIMS) - BuilderTrackScene.shaftFloorY(DIMS) + 1);
+            // Climbing: the top of the flight is above where it starts.
+            assertTrue(BuilderTrackScene.shaftTopY(DIMS) > BuilderTrackScene.shaftFloorY(DIMS));
+        }
+    }
+
+    @Test
+    @DisplayName("A stairs entrance is judged against the tunnel its shaft comes out of")
+    void stairsEntranceNeedsItsTunnel() {
+        // An entrance without one is an entrance to nowhere.
+        List<BuilderStructure.Placement> out =
+                BuilderStructureNeeds.around(track(TrackKind.ADJUNCT_STAIRS_ENTRANCE));
+        assertTrue(categories(out).contains(BuilderStructure.Category.TUNNELS));
+        assertEquals(3, of(out, BuilderStructure.Kind.TunnelSection.class).size(),
+                "a run either side of the shaft, and the length the shaft drops through");
     }
 
     // ---- Pillars ----
@@ -377,6 +418,55 @@ final class BuilderStructureNeedsTest {
             }
         }
         return -1;
+    }
+
+    @Test
+    @DisplayName("The template wins wherever it holds a block, whatever a structure wants")
+    void theTemplateOutranksEveryStructure() {
+        // The box rule alone trusts a template to stay inside its plot, and a tunnel does not — it is
+        // stamped by TunnelPlacer rather than cut to the box, so its walls reach past. A structure
+        // landing on one of those blocks would be drawn through it, and in Solid would replace it.
+        BlockPos taken = new BlockPos(20, 20, 3);
+        LongSet template = new LongOpenHashSet(new long[]{taken.asLong()});
+
+        assertFalse(BuilderStructureNeeds.allows(
+                new BuilderStructure.Kind.StairsFlight(0, 8), taken, List.of(), template));
+        // …and nothing changes anywhere the template isn't.
+        assertTrue(BuilderStructureNeeds.allows(
+                new BuilderStructure.Kind.StairsFlight(0, 8), taken.above(), List.of(), template));
+    }
+
+    @Test
+    @DisplayName("The carriage shell outranks the template rule, or it could never be cleared")
+    void theShellIsExemptFromTheTemplateRule() {
+        // The shell's own blocks sit inside the build volume, so they *are* template cells. Checking
+        // that first would refuse the shell everywhere — it could never be taken down, and Ghost
+        // would leave it standing for ever.
+        BlockPos inside = new BlockPos(0, BuilderWorldLayout.TRAIN_Y, 0);
+        LongSet template = new LongOpenHashSet(new long[]{inside.asLong()});
+        BoundingBox volume = BuilderBounds.buildVolumes(1, DIMS).get(0);
+
+        assertTrue(BuilderStructureNeeds.allows(
+                new BuilderStructure.Kind.CarriageShell(VARIANT), inside, List.of(volume), template));
+        // Every other kind is refused in that same spot, which is the rule the shell is exempt from.
+        assertFalse(BuilderStructureNeeds.allows(
+                new BuilderStructure.Kind.Carriage(VARIANT), inside, List.of(volume), template));
+    }
+
+    @Test
+    @DisplayName("A tunnel's own run never lands on the plot it surrounds")
+    void tunnelRunClearsTheOpenPlot() {
+        for (TrackKind kind : new TrackKind[]{TrackKind.TUNNEL_SECTION, TrackKind.TUNNEL_PORTAL}) {
+            BoundingBox plot = BuilderTrackPlot.volume(kind, DIMS);
+            for (BuilderStructure.Placement p :
+                    of(BuilderStructureNeeds.around(track(kind)),
+                            BuilderStructure.Kind.TunnelSection.class)) {
+                int from = p.origin().getX();
+                int to = from + TunnelPlacer.LENGTH - 1;
+                assertTrue(to < plot.minX() || from > plot.maxX(),
+                        kind.id() + ": a run section overlaps the plot on X");
+            }
+        }
     }
 
     @Test
