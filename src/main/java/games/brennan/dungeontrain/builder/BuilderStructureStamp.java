@@ -96,8 +96,16 @@ public final class BuilderStructureStamp {
         long t0 = System.nanoTime();
         int moved = 0;
         boolean capped = false;
+        // Claimed cells, so an overlap is written once by the placement that owns it rather than
+        // twice. Backwards for the same reason the client sweep goes backwards: the declaration's
+        // order is "later wins", so the first claim reaching a cell is the right one. Getting this
+        // wrong was never visibly broken — the last write still won, and clearing still cleared —
+        // but it double-wrote every seam, and it made the block counts a lie: laying reported the
+        // overlaps twice and clearing reported them once, so a symmetric pass looked lopsided.
+        LongSet claimed = new LongOpenHashSet();
 
-        for (BuilderStructure.Placement placement : placements) {
+        for (int i = placements.size() - 1; i >= 0; i--) {
+            BuilderStructure.Placement placement = placements.get(i);
             Map<BlockPos, BlockState> cells =
                     BuilderStructureCells.of(placement.kind(), sources);
             for (Map.Entry<BlockPos, BlockState> cell : cells.entrySet()) {
@@ -109,6 +117,9 @@ public final class BuilderStructureStamp {
                 BlockPos pos = placement.origin().offset(local);
                 if (!BuilderStructureNeeds.allows(placement.kind(), pos, volumes, templateCells)) {
                     continue;
+                }
+                if (!claimed.add(pos.asLong())) {
+                    continue;   // a later placement owns this cell
                 }
                 if (pos.getY() < level.getMinBuildHeight() || pos.getY() >= level.getMaxBuildHeight()) {
                     continue;
