@@ -7105,9 +7105,9 @@
       "highlights": [],
       "pr": 978,
       "date": "2026-08-16",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.565.0",
+      "released_at": "2026-08-16T06:19:01Z"
     }
   ]
 }
