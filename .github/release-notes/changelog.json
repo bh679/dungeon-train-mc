@@ -6892,6 +6892,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "builder-open-mode-strip",
+      "version": "0.552.0",
+      "type": "feat",
+      "title": "Train Builder's Open screen shows every mode at once",
+      "summary": "The Open screen used to lead with a single tile you clicked to cycle between Train Outside, Inside Carriage, Tracks & Tunnels and Train Dimensions \u2014 so only one was ever on screen, and getting to the one you wanted meant clicking blind through the rest. All four now sit in a row along the top. The one you're browsing is the large captioned tile; the others are small thumbnails that name themselves when you hover them. Click a thumbnail and it grows where it already sits, so a mode is always where you last left it.",
+      "highlights": [
+        "All four builder modes visible at once on the Open screen",
+        "Pick a mode directly instead of cycling through the others to reach it",
+        "Switching modes no longer leaves a stale track-group button above an unrelated list"
+      ],
+      "pr": 981,
+      "date": "2026-08-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
