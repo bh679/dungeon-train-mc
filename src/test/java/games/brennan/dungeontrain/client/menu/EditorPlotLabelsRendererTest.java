@@ -49,13 +49,13 @@ class EditorPlotLabelsRendererTest {
     }
 
     @Test
-    @DisplayName("A portal room in-plot shows name, weight, L/W/H, Walls, Contents, Enter and actions")
+    @DisplayName("A portal room in-plot shows name, weight, L/W/H, Walls, Contents, Books, Enter and actions")
     void portalInPlot_rowOrder() {
         assertArrayEquals(
             new RowKind[]{RowKind.NAME, RowKind.WEIGHT, RowKind.LENGTH, RowKind.WIDTH,
-                RowKind.HEIGHT, RowKind.MODE, RowKind.ROOM_CONTENTS, RowKind.ENTER, RowKind.ACTION},
+                RowKind.HEIGHT, RowKind.MODE, RowKind.ROOM_CONTENTS, RowKind.ROOM_BOOKS, RowKind.ENTER, RowKind.ACTION},
             EditorPlotLabelsRenderer.rows(portalInPlot()));
-        assertEquals(9, EditorPlotLabelsRenderer.rowCount(portalInPlot()));
+        assertEquals(10, EditorPlotLabelsRenderer.rowCount(portalInPlot()));
     }
 
     @Test
@@ -103,7 +103,7 @@ class EditorPlotLabelsRendererTest {
         // spacing stepper as well as Copies.
         assertArrayEquals(
             new RowKind[]{RowKind.NAME, RowKind.WEIGHT, RowKind.LENGTH, RowKind.WIDTH,
-                RowKind.HEIGHT, RowKind.MODE, RowKind.COPIES, RowKind.ROOM_CONTENTS,
+                RowKind.HEIGHT, RowKind.MODE, RowKind.COPIES, RowKind.ROOM_CONTENTS, RowKind.ROOM_BOOKS,
                 RowKind.EXITS, RowKind.EXIT_EVERY, RowKind.ENTER, RowKind.ACTION},
             EditorPlotLabelsRenderer.rows(
                 entry("PORTALS", true, 1, 11, 13, 7, "endless_repetition")));
@@ -112,14 +112,14 @@ class EditorPlotLabelsRendererTest {
         // spacing stepper with it. It still makes no whole-room copies, so no Copies row.
         assertArrayEquals(
             new RowKind[]{RowKind.NAME, RowKind.WEIGHT, RowKind.LENGTH, RowKind.WIDTH,
-                RowKind.HEIGHT, RowKind.MODE, RowKind.ROOM_CONTENTS, RowKind.EXITS,
+                RowKind.HEIGHT, RowKind.MODE, RowKind.ROOM_CONTENTS, RowKind.ROOM_BOOKS, RowKind.EXITS,
                 RowKind.ENTER, RowKind.ACTION},
             EditorPlotLabelsRenderer.rows(entry("PORTALS", true, 1, 11, 13, 7, "endless_open")));
 
         // Bedrock Lock repeats nothing, so it has neither.
         assertArrayEquals(
             new RowKind[]{RowKind.NAME, RowKind.WEIGHT, RowKind.LENGTH, RowKind.WIDTH,
-                RowKind.HEIGHT, RowKind.MODE, RowKind.ROOM_CONTENTS, RowKind.ENTER,
+                RowKind.HEIGHT, RowKind.MODE, RowKind.ROOM_CONTENTS, RowKind.ROOM_BOOKS, RowKind.ENTER,
                 RowKind.ACTION},
             EditorPlotLabelsRenderer.rows(entry("PORTALS", true, 1, 11, 13, 7, "bedrock_lock")));
     }
@@ -188,7 +188,7 @@ class EditorPlotLabelsRendererTest {
             entry("PORTALS", true, 1, 11, 13, 7, "endless_repetition/dynamic/off/random:4:6");
         assertArrayEquals(
             new RowKind[]{RowKind.NAME, RowKind.WEIGHT, RowKind.LENGTH, RowKind.WIDTH,
-                RowKind.HEIGHT, RowKind.MODE, RowKind.COPIES, RowKind.ROOM_CONTENTS,
+                RowKind.HEIGHT, RowKind.MODE, RowKind.COPIES, RowKind.ROOM_CONTENTS, RowKind.ROOM_BOOKS,
                 RowKind.EXITS, RowKind.EXIT_EVERY, RowKind.EXIT_MOVE, RowKind.ENTER, RowKind.ACTION},
             EditorPlotLabelsRenderer.rows(random));
         assertEquals("Moved exit: 6/10", EditorPlotLabelsRenderer.exitMoveLabel(random.roomMode()));
@@ -296,7 +296,7 @@ class EditorPlotLabelsRendererTest {
         EditorPlotLabelsPacket.Entry on = entry("PORTALS", true, 1, 11, 13, 7, "bedrock_lock/exact/fit");
         assertArrayEquals(
             new RowKind[]{RowKind.NAME, RowKind.WEIGHT, RowKind.LENGTH, RowKind.WIDTH,
-                RowKind.HEIGHT, RowKind.MODE, RowKind.ROOM_CONTENTS, RowKind.ENTER,
+                RowKind.HEIGHT, RowKind.MODE, RowKind.ROOM_CONTENTS, RowKind.ROOM_BOOKS, RowKind.ENTER,
                 RowKind.ACTION, RowKind.CONTENTS},
             EditorPlotLabelsRenderer.rows(on));
 

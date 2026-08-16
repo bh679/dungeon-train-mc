@@ -93,6 +93,8 @@ public final class EditorPlotLabelsRenderer {
         COPIES_CYCLE,
         /** The furnishing row — whether the room takes a contents template, and how it is fitted. */
         ROOM_CONTENTS_CYCLE,
+        /** The author-lock row — whether every book in the room is by one person, and which one. */
+        ROOM_BOOKS_CYCLE,
         /** The extra-corridors row — only shown while the walls repeat. */
         EXITS_CYCLE,
         /** The stepper for how far apart those extra corridors go. */
@@ -114,8 +116,8 @@ public final class EditorPlotLabelsRenderer {
      * {@link #rows} now, so the three cannot drift.</p>
      */
     public enum RowKind {
-        NAME, WEIGHT, LENGTH, WIDTH, HEIGHT, MODE, COPIES, ROOM_CONTENTS, EXITS, EXIT_EVERY,
-        EXIT_MOVE, ENTER, ACTION, CONTENTS
+        NAME, WEIGHT, LENGTH, WIDTH, HEIGHT, MODE, COPIES, ROOM_CONTENTS, ROOM_BOOKS, EXITS,
+        EXIT_EVERY, EXIT_MOVE, ENTER, ACTION, CONTENTS
     }
 
     /** The rows {@code entry} shows, top to bottom. */
@@ -132,6 +134,7 @@ public final class EditorPlotLabelsRenderer {
         if (hasModeRow(entry)) buf[n++] = RowKind.MODE;
         if (hasCopiesRow(entry)) buf[n++] = RowKind.COPIES;
         if (hasRoomContentsRow(entry)) buf[n++] = RowKind.ROOM_CONTENTS;
+        if (hasRoomBooksRow(entry)) buf[n++] = RowKind.ROOM_BOOKS;
         if (hasExitsRow(entry)) buf[n++] = RowKind.EXITS;
         if (hasExitEveryRow(entry)) buf[n++] = RowKind.EXIT_EVERY;
         if (hasExitMoveRow(entry)) buf[n++] = RowKind.EXIT_MOVE;
@@ -216,6 +219,23 @@ public final class EditorPlotLabelsRenderer {
     public static String roomContentsLabel(String modeTag) {
         return "Contents: " + games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag)
             .contents().displayName();
+    }
+
+    /**
+     * Whether the Books row shows: on every portal room, on the same reasoning as Contents.
+     *
+     * <p>Not gated on the room being furnished. A room can hold books without drawing a contents
+     * template — its own {@code .nbt} may have shelves stamped into it — so gating on Contents would
+     * hide the control on exactly the hand-authored libraries most likely to want it.</p>
+     */
+    public static boolean hasRoomBooksRow(EditorPlotLabelsPacket.Entry entry) {
+        return hasModeRow(entry);
+    }
+
+    /** What the Books row reads, e.g. {@code "Books: Random Signature"}. */
+    public static String roomBooksLabel(String modeTag) {
+        return "Books: " + games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag)
+            .books().displayName();
     }
 
     /**
@@ -602,6 +622,7 @@ public final class EditorPlotLabelsRenderer {
             case MODE -> CellKind.MODE_CYCLE;
             case COPIES -> CellKind.COPIES_CYCLE;
             case ROOM_CONTENTS -> CellKind.ROOM_CONTENTS_CYCLE;
+            case ROOM_BOOKS -> CellKind.ROOM_BOOKS_CYCLE;
             case EXITS -> CellKind.EXITS_CYCLE;
             case EXIT_EVERY -> stepperCell(hitX, halfW,
                 CellKind.EXIT_EVERY_DEC, CellKind.EXIT_EVERY_INC, CellKind.EXIT_EVERY_TYPE);
@@ -782,6 +803,12 @@ public final class EditorPlotLabelsRenderer {
                     int bg = hovered == CellKind.ROOM_CONTENTS_CYCLE ? HOVER_COLOR : BUTTON_BG;
                     drawQuad(ps, buffer, -halfW + 0.01, rBot + 0.005, halfW - 0.01, rTop - 0.005, bg);
                     drawCenteredText(ps, buffer, font, roomContentsLabel(entry.roomMode()), 0, rCY, WEIGHT_COLOR);
+                }
+                // Books — whether every book found in this room is by one author. Off by default.
+                case ROOM_BOOKS -> {
+                    int bg = hovered == CellKind.ROOM_BOOKS_CYCLE ? HOVER_COLOR : BUTTON_BG;
+                    drawQuad(ps, buffer, -halfW + 0.01, rBot + 0.005, halfW - 0.01, rTop - 0.005, bg);
+                    drawCenteredText(ps, buffer, font, roomBooksLabel(entry.roomMode()), 0, rCY, WEIGHT_COLOR);
                 }
                 // Exits — how many extra ways back to the train this room scatters through its
                 // copies. Only an endless room has anywhere to put one.

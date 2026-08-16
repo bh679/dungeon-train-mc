@@ -210,6 +210,15 @@ public final class EditorCommand {
             return builder.buildFuture();
         };
 
+    private static final SuggestionProvider<CommandSourceStack> PORTAL_ROOM_BOOKS_SUGGESTIONS =
+        (ctx, builder) -> {
+            for (games.brennan.dungeontrain.portal.PortalRoomBooks b
+                    : games.brennan.dungeontrain.portal.PortalRoomBooks.values()) {
+                builder.suggest(b.id());
+            }
+            return builder.buildFuture();
+        };
+
     private static final SuggestionProvider<CommandSourceStack> CONTENTS_SUGGESTIONS =
         (ctx, builder) -> {
             for (CarriageContents c : CarriageContentsRegistry.allContents()) {
@@ -487,6 +496,15 @@ public final class EditorCommand {
                             games.brennan.dungeontrain.portal.PortalRoomExits.MOVE_ALWAYS))
                         .executes(ctx -> runPortalRoomExitMove(ctx.getSource(),
                             IntegerArgumentType.getInteger(ctx, "chance")))))
+                // Whether every book found in the room is by one author, and how that author is
+                // picked. Off by default — the ordinary mixed community pool.
+                .then(Commands.literal("books")
+                    .then(Commands.literal("next")
+                        .executes(ctx -> runPortalRoomBooksCycle(ctx.getSource())))
+                    .then(Commands.argument("books", StringArgumentType.word())
+                        .suggests(PORTAL_ROOM_BOOKS_SUGGESTIONS)
+                        .executes(ctx -> runPortalRoomBooks(ctx.getSource(),
+                            StringArgumentType.getString(ctx, "books")))))
                 // Sub-variants: one named room standing for several designs, drawn by weight.
                 .then(portalRoomGroupNode()))
             .then(Commands.literal("architecture")
@@ -5842,6 +5860,31 @@ public final class EditorCommand {
             games.brennan.dungeontrain.portal.PortalRoomSettings.of(name).withCopies(wanted));
     }
 
+    /** {@code /dt editor portals books next} — step the author lock. */
+    private static int runPortalRoomBooksCycle(CommandSourceStack source) {
+        String name = portalRoomPlotUnderPlayer(source);
+        if (name == null) return 0;
+        games.brennan.dungeontrain.portal.PortalRoomSettings current =
+            games.brennan.dungeontrain.portal.PortalRoomSettings.of(name);
+        return applyPortalRoomSettings(source, name, current.withBooks(current.books().next()));
+    }
+
+    /** {@code /dt editor portals books <off|self|player|signature>} — set it outright. */
+    private static int runPortalRoomBooks(CommandSourceStack source, String raw) {
+        String name = portalRoomPlotUnderPlayer(source);
+        if (name == null) return 0;
+
+        games.brennan.dungeontrain.portal.PortalRoomBooks wanted =
+            games.brennan.dungeontrain.portal.PortalRoomBooks.parse(raw);
+        if (!wanted.id().equalsIgnoreCase(raw.trim())) {
+            source.sendFailure(Component.literal(
+                "Unknown books option '" + raw + "'. Try off, self, player or signature."));
+            return 0;
+        }
+        return applyPortalRoomSettings(source, name,
+            games.brennan.dungeontrain.portal.PortalRoomSettings.of(name).withBooks(wanted));
+    }
+
     /** {@code /dt editor portals mode <mode>} — set it outright. */
     private static int runPortalRoomMode(CommandSourceStack source, String raw) {
         String name = portalRoomPlotUnderPlayer(source);
@@ -5882,9 +5925,13 @@ public final class EditorCommand {
                 + (settings.exits().effectiveMoveChance() > 0
                     ? ", moved exit " + settings.exits().moveChance() + "/10" : "")
             : "";
+        // Only worth a word when the room actually locks: "books: Off" on every message would be
+        // noise on the four rooms out of five that never touch this.
+        String books = settings.books().locks()
+            ? ", books: " + settings.books().displayName() : "";
         source.sendSuccess(() -> Component.literal(
             "Portal room '" + name + "' walls: " + settings.mode().displayName() + copies + contents
-            + exits
+            + exits + books
             + ". Portals already standing keep the settings they were built with — this takes effect "
             + "on the next one the train reaches." + subVariantNote(name)
         ).withStyle(ChatFormatting.GREEN), true);
