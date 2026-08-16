@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.editor.PillarTemplateStore;
 import games.brennan.dungeontrain.editor.TrackTemplateStore;
 import games.brennan.dungeontrain.template.Template;
 import games.brennan.dungeontrain.track.PillarSection;
+import games.brennan.dungeontrain.track.TrackGenerator;
 import games.brennan.dungeontrain.track.TrackPlacer;
 import games.brennan.dungeontrain.train.CarriagePartAssignment;
 import games.brennan.dungeontrain.train.CarriagePartKind;
@@ -35,7 +36,6 @@ import java.util.Optional;
 public enum SurroundingStructureCategory {
     TRACK,
     PILLAR,
-    DIMENSION_REPEAT,
     FLATBED_END,
     CARRIAGE_SHELL,
     CARRIAGE_INTERIOR_WALL;
@@ -63,7 +63,6 @@ public enum SurroundingStructureCategory {
         return switch (this) {
             case TRACK -> resolveTrack(level, dims);
             case PILLAR -> resolvePillar(level, dims);
-            case DIMENSION_REPEAT -> resolveDimensionRepeat(level, dims, located);
             case FLATBED_END -> resolveFlatbedEnd(level, dims, located);
             case CARRIAGE_SHELL -> resolveCarriageShell(level, dims, located);
             case CARRIAGE_INTERIOR_WALL -> resolveCarriageInteriorWall(level, dims, located);
@@ -71,51 +70,50 @@ public enum SurroundingStructureCategory {
     }
 
     /**
-     * A single representative track tile directly beneath the plot, sourced from
-     * {@link TrackTemplateStore} — the same store {@link Template.Track#restampPlot} uses.
+     * The track beneath the plot, tiled the way a real run lays it: one
+     * {@link TrackTemplateStore} tile every {@link TrackPlacer#TILE_LENGTH} blocks of X for the
+     * plot's whole length, rather than a single representative tile.
      *
-     * <p>TODO(surrounding-structures): a real train re-stamps this tile every
-     * {@link TrackPlacer#TILE_LENGTH} blocks for the whole run (see {@code TrackGenerator}); this
-     * preview shows one tile rather than tiling across the plot's full length.</p>
+     * <p>Tiling from offset 0 lands on the same grid the runtime painter uses — a track plot's origin
+     * is already aligned to {@code TILE_LENGTH} by {@code BuilderTrackPlot}, and the painter re-stamps
+     * on {@code worldX mod TILE_LENGTH} — so these ghosts sit exactly where the real tiles would.</p>
      */
     private static List<PlacementSpec> resolveTrack(ServerLevel level, CarriageDims dims) {
-        BlockPos offset = new BlockPos(0, -TrackPlacer.HEIGHT, 0);
-        return List.of(new PlacementSpec(TRACK, offset, Mirror.NONE,
-            () -> TrackTemplateStore.get(level, dims)));
-    }
-
-    /**
-     * A default-variant pillar column (bottom → middle → top, matching {@link PillarSection}'s own
-     * ground-up stacking order) just outside the plot's own footprint on Z, sourced from
-     * {@link PillarTemplateStore} — the same store {@link Template.Pillar#restampPlot} uses.
-     */
-    private static List<PlacementSpec> resolvePillar(ServerLevel level, CarriageDims dims) {
-        List<PlacementSpec> out = new ArrayList<>(3);
-        int zOffset = dims.width() + 1;
-        int y = -TrackPlacer.HEIGHT
-            - PillarSection.BOTTOM.height() - PillarSection.MIDDLE.height() - PillarSection.TOP.height();
-        for (PillarSection section : new PillarSection[]{
-                PillarSection.BOTTOM, PillarSection.MIDDLE, PillarSection.TOP}) {
-            int sectionY = y;
-            y += section.height();
-            out.add(new PlacementSpec(PILLAR, new BlockPos(0, sectionY, zOffset), Mirror.NONE,
-                () -> PillarTemplateStore.get(level, section, dims)));
+        List<PlacementSpec> out = new ArrayList<>();
+        for (int x = 0; x < dims.length(); x += TrackPlacer.TILE_LENGTH) {
+            out.add(new PlacementSpec(TRACK, new BlockPos(x, -TrackPlacer.HEIGHT, 0), Mirror.NONE,
+                () -> TrackTemplateStore.get(level, dims)));
         }
         return out;
     }
 
     /**
-     * TODO(surrounding-structures): the repeat cadence for dimension-band decoration (nether / void
-     * band transitions) lives deep in {@code TrainAssembler} / {@code TrainCarriageAppender}'s
-     * real-train assembly pipeline, keyed off live train state (carriage index, current dimension
-     * phase) that doesn't exist for an editor plot in isolation. Extracting it cleanly is out of scope
-     * for this pass — ship as a no-op category rather than block the rest of the feature. Revisit once
-     * there is a standalone "band cadence for position N" query to call into.
+     * Default-variant pillar columns just outside the plot's footprint on Z, sourced from
+     * {@link PillarTemplateStore} — the same store {@link Template.Pillar#restampPlot} uses — and
+     * repeated along the plot's length at the generator's own cadence
+     * ({@link TrackGenerator#BASE_PILLAR_SPACING}), so a long plot shows the run of pillars it will
+     * actually stand on rather than a single post at one end.
+     *
+     * <p>Each column stacks bottom → middle → top, matching {@link PillarSection}'s own ground-up
+     * order. A builder world is flat, so the generator's height-scaled spacing never kicks in and the
+     * base spacing is the correct one to mirror here.</p>
      */
-    private static List<PlacementSpec> resolveDimensionRepeat(
-        ServerLevel level, CarriageDims dims, EditorCategory.Located located
-    ) {
-        return List.of();
+    private static List<PlacementSpec> resolvePillar(ServerLevel level, CarriageDims dims) {
+        List<PlacementSpec> out = new ArrayList<>();
+        int zOffset = dims.width() + 1;
+        int baseY = -TrackPlacer.HEIGHT
+            - PillarSection.BOTTOM.height() - PillarSection.MIDDLE.height() - PillarSection.TOP.height();
+        for (int x = 0; x < dims.length(); x += TrackGenerator.BASE_PILLAR_SPACING) {
+            int y = baseY;
+            for (PillarSection section : new PillarSection[]{
+                    PillarSection.BOTTOM, PillarSection.MIDDLE, PillarSection.TOP}) {
+                int sectionY = y;
+                y += section.height();
+                out.add(new PlacementSpec(PILLAR, new BlockPos(x, sectionY, zOffset), Mirror.NONE,
+                    () -> PillarTemplateStore.get(level, section, dims)));
+            }
+        }
+        return out;
     }
 
     /**

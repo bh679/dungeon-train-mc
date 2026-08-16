@@ -94,8 +94,15 @@ public final class TrackGenerator {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    /** Base spacing on X for short pillars — matches legacy behaviour. */
-    private static final int BASE_PILLAR_SPACING = 8;
+    /**
+     * Base spacing on X for short pillars — matches legacy behaviour.
+     *
+     * <p>Public so the editor's surrounding-structure preview
+     * ({@code SurroundingStructureCategory#PILLAR}) can space its ghost columns the way the real
+     * generator does, instead of carrying a second copy of the number that could drift from this one.
+     * A builder world is flat, so it always lands in the {@code height < 5} branch this describes.</p>
+     */
+    public static final int BASE_PILLAR_SPACING = 8;
 
     /** Heights at or above this threshold switch on height-scaled spacing + arches. */
     private static final int TALL_PILLAR_HEIGHT_THRESHOLD = 5;

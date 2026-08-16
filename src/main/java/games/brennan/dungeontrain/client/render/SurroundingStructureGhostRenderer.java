@@ -97,7 +97,6 @@ public final class SurroundingStructureGhostRenderer {
         return switch (category) {
             case TRACK -> new float[]{0.62f, 0.82f, 1.00f};
             case PILLAR -> new float[]{0.82f, 0.72f, 1.00f};
-            case DIMENSION_REPEAT -> new float[]{1.00f, 0.82f, 0.62f};
             case FLATBED_END -> new float[]{1.00f, 0.96f, 0.64f};
             case CARRIAGE_SHELL -> new float[]{0.70f, 1.00f, 0.78f};
             case CARRIAGE_INTERIOR_WALL -> new float[]{1.00f, 0.72f, 0.82f};
