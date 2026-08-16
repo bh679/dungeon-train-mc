@@ -7108,6 +7108,22 @@
       "released": true,
       "released_in": "v0.565.0",
       "released_at": "2026-08-16T06:19:01Z"
+    },
+    {
+      "id": "train-dimension-room-loot-stats",
+      "version": "0.566.0",
+      "type": "fix",
+      "title": "Train Dimension loot now matches its carriage",
+      "summary": "Chests inside a Train Dimension now roll their loot to the stage of the portal carriage you walked in through, so they're worth what a carriage's chests are worth at that point in the run. Which room you get, and how it is built, is unchanged.",
+      "highlights": [
+        "Train Dimension room loot now scales to the portal carriage you entered from",
+        "Enchantment levels in those rooms are capped to the run's progression again"
+      ],
+      "pr": 977,
+      "date": "2026-08-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
