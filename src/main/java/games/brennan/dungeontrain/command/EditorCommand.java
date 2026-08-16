@@ -26,6 +26,7 @@ import games.brennan.dungeontrain.editor.EditorDevMode;
 import games.brennan.dungeontrain.editor.EditorStampedCategoryState;
 import games.brennan.dungeontrain.editor.EditorWelcome;
 import games.brennan.dungeontrain.editor.PillarEditor;
+import games.brennan.dungeontrain.editor.surrounding.BuilderPlot;
 import games.brennan.dungeontrain.editor.surrounding.RenderMode;
 import games.brennan.dungeontrain.editor.surrounding.SurroundingStructureCategory;
 import games.brennan.dungeontrain.editor.surrounding.SurroundingStructureManager;
@@ -2440,9 +2441,9 @@ public final class EditorCommand {
 
     /**
      * {@code /dungeontrain editor surrounding ...} — Surrounding Structures preview controls (see
-     * {@link SurroundingStructureManager}): tracks, pillars, dimension-band repeats, flatbed ends,
-     * carriage shell walls/floor, and carriage interior walls rendered around the plot the player is
-     * currently editing, as GHOST / SOLID / NONE.
+     * {@link SurroundingStructureManager}): tracks, pillars, flatbed ends, carriage shell
+     * walls/floor, and carriage interior walls rendered around the plot the player is currently
+     * editing, as GHOST / SOLID / NONE. Each category tiles across the plot's own dimensions.
      *
      * <p>These commands are server-dispatched per {@code ServerPlayer} — unlike a client Options row,
      * they cannot write back to the issuing player's {@code dungeontrain-client.toml}. Rather than
@@ -2503,9 +2504,10 @@ public final class EditorCommand {
 
     /** Re-run the surrounding-structures resolve immediately after a mode change so the player sees it without waiting a tick. */
     private static void reconcileSurroundingNow(CommandSourceStack source, ServerPlayer player) {
-        ServerLevel level = source.getServer().overworld();
-        CarriageDims dims = DungeonTrainWorldData.get(level).dims();
-        SurroundingStructureManager.reconcile(player, level, dims, EditorCategory.locate(player, dims));
+        // The player's own level, not the overworld: a Train Builder world is its own dimension, and
+        // resolving against the overworld would read a builder plot that isn't the one they're in.
+        ServerLevel level = player.serverLevel();
+        SurroundingStructureManager.reconcile(player, level, BuilderPlot.of(level));
     }
 
     /** Resolve the (plot variant, local pos) the player is currently targeting, or null with an error sent. */

@@ -8,11 +8,10 @@ import java.util.Optional;
 import java.util.function.Supplier;
 
 /**
- * One stamp a {@link SurroundingStructureCategory} wants placed relative to the plot currently being
- * edited. {@link #worldOffset()} is <b>relative to the located plot's own editor-origin</b> (i.e. add
- * it to {@code located.model().editorPlotOrigin(level, dims)} to get the absolute world position) —
+ * One stamp a {@link SurroundingStructureCategory} wants placed around the build the Train Builder
+ * currently has open. {@link #worldOffset()} is <b>relative to {@link BuilderPlot#origin()}</b> —
  * documented here rather than switching to absolute positions so a category's resolver doesn't need
- * the plot origin threaded through every call site, and so the same spec list is reusable for both the
+ * the origin threaded through every call site, and so the same spec list is reusable for both the
  * SOLID stamp and the GHOST capture pass.
  *
  * <p>{@link #templateSupplier()} is a {@link Supplier} rather than a plain {@link StructureTemplate} so
@@ -25,4 +24,11 @@ public record PlacementSpec(
     Mirror mirror,
     Supplier<Optional<StructureTemplate>> templateSupplier
 ) {
+
+    /** The same stamp shifted {@code dx} blocks along the train — how one carriage's worth of specs
+     *  is repeated across every parked carriage without re-resolving the templates. */
+    public PlacementSpec offsetBy(int dx) {
+        if (dx == 0) return this;
+        return new PlacementSpec(category, worldOffset.offset(dx, 0, 0), mirror, templateSupplier);
+    }
 }

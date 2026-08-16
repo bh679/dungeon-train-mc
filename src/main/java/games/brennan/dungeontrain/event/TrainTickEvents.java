@@ -194,6 +194,10 @@ public final class TrainTickEvents {
     public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
         if (event.getEntity() instanceof net.minecraft.server.level.ServerPlayer sp) {
             VariantOverlayRenderer.forget(sp);
+            // Reverts any SOLID surrounding-structure blocks this player caused to be stamped, and
+            // drops their ghost state. Kept here rather than inside forget() because that also runs
+            // every tick from the editor's y-gate — see the note there.
+            games.brennan.dungeontrain.editor.surrounding.SurroundingStructureManager.forget(sp);
         }
     }
 

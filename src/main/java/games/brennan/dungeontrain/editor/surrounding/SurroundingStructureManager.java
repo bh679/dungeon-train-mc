@@ -108,19 +108,14 @@ public final class SurroundingStructureManager {
      * clear everything when they've left every plot) and push/stamp the result. Call once per player
      * per tick alongside {@link EditorCategory#locate} — see {@code VariantOverlayRenderer.onLevelTick}.
      */
-    public static void reconcile(ServerPlayer player, ServerLevel level, CarriageDims dims,
-                                  Optional<EditorCategory.Located> locatedOpt) {
-        if (locatedOpt.isEmpty()) {
+    public static void reconcile(ServerPlayer player, ServerLevel level, Optional<BuilderPlot> plotOpt) {
+        if (plotOpt.isEmpty()) {
             clearAllGhosts(player);
             return;
         }
-        EditorCategory.Located located = locatedOpt.get();
-        BlockPos origin = located.model().editorPlotOrigin(level, dims);
-        if (origin == null) {
-            clearAllGhosts(player);
-            return;
-        }
-        String plotKey = plotKeyFor(located);
+        BuilderPlot plot = plotOpt.get();
+        BlockPos origin = plot.origin();
+        String plotKey = plotKeyFor(plot);
 
         for (SurroundingStructureCategory category : SurroundingStructureCategory.values()) {
             RenderMode mode = effectiveMode(player, category);
@@ -128,11 +123,11 @@ public final class SurroundingStructureManager {
             switch (mode) {
                 case SOLID -> {
                     sendGhostClearIfNeeded(player, category);
-                    handleSolid(player, level, dims, located, origin, category, stampKey);
+                    handleSolid(player, level, plot, origin, category, stampKey);
                 }
                 case GHOST -> {
                     revertSolidStamp(level, stampKey);
-                    handleGhost(player, level, dims, located, origin, category);
+                    handleGhost(player, level, plot, origin, category);
                 }
                 case NONE -> {
                     revertSolidStamp(level, stampKey);
@@ -164,11 +159,11 @@ public final class SurroundingStructureManager {
 
     // ----- SOLID -----
 
-    private static void handleSolid(ServerPlayer player, ServerLevel level, CarriageDims dims,
-                                     EditorCategory.Located located, BlockPos origin,
-                                     SurroundingStructureCategory category, String stampKey) {
+    private static void handleSolid(ServerPlayer player, ServerLevel level, BuilderPlot plot,
+                                     BlockPos origin, SurroundingStructureCategory category,
+                                     String stampKey) {
         if (SOLID_STAMPS.containsKey(stampKey)) return; // already stamped (by this player or another)
-        List<PlacementSpec> specs = category.resolve(level, dims, located);
+        List<PlacementSpec> specs = category.resolve(level, plot);
         if (specs.isEmpty()) return;
         List<BlockPos> placed = new ArrayList<>();
         for (PlacementSpec spec : specs) {
@@ -199,8 +194,11 @@ public final class SurroundingStructureManager {
         }
     }
 
-    private static String plotKeyFor(EditorCategory.Located located) {
-        return located.category().name() + "|" + located.model().id() + "|" + located.model().variantName();
+    /** Identity of the open build — SOLID stamps are keyed by it so reopening a different template
+     *  reverts the previous one's blocks instead of leaving them behind. */
+    private static String plotKeyFor(BuilderPlot plot) {
+        return plot.mode().id() + "|" + plot.subTypeId() + "|" + plot.partKindId()
+            + "|" + plot.carriages() + "|" + plot.origin().toShortString();
     }
 
     /** Non-mutating placeInWorld processor: records the resolved positions of every real block a SOLID stamp touches. */
@@ -233,10 +231,9 @@ public final class SurroundingStructureManager {
 
     // ----- GHOST -----
 
-    private static void handleGhost(ServerPlayer player, ServerLevel level, CarriageDims dims,
-                                     EditorCategory.Located located, BlockPos origin,
-                                     SurroundingStructureCategory category) {
-        List<PlacementSpec> specs = category.resolve(level, dims, located);
+    private static void handleGhost(ServerPlayer player, ServerLevel level, BuilderPlot plot,
+                                     BlockPos origin, SurroundingStructureCategory category) {
+        List<PlacementSpec> specs = category.resolve(level, plot);
         List<SurroundingStructureGhostPacket.Entry> entries = new ArrayList<>();
         for (PlacementSpec spec : specs) {
             Optional<StructureTemplate> templateOpt = spec.templateSupplier().get();

@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.editor;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.editor.surrounding.BuilderPlot;
 import games.brennan.dungeontrain.editor.surrounding.SurroundingStructureManager;
 import games.brennan.dungeontrain.net.BlockVariantLockIdsPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
@@ -195,7 +196,10 @@ public final class VariantOverlayRenderer {
         clearTypeMenusIfStale(player);
         clearStageStripsIfStale(player);
         clearPartVisibilityIfStale(player);
-        SurroundingStructureManager.forget(player);
+        // NOT SurroundingStructureManager.forget here: this runs every tick for anyone below
+        // EDITOR_Y_MIN, which in a Train Builder world is everyone (the build sits at TRAIN_Y), so
+        // clearing here would wipe the ghosts the moment they were pushed. Its cleanup hangs off the
+        // real logout hook instead — see TrainTickEvents.onPlayerLoggedOut.
     }
 
     /**
@@ -220,6 +224,17 @@ public final class VariantOverlayRenderer {
 
         CarriageDims dims = DungeonTrainWorldData.get(level).dims();
 
+        // Surrounding structures are a Train Builder feature, and a builder world's build sits on the
+        // platform at BuilderWorldLayout.TRAIN_Y — far below the EDITOR_Y_MIN gate below, which exists
+        // for the legacy sky editor's plots at y=250. So this is resolved per level, before that gate,
+        // and is empty (one null-string check) in every world that isn't a builder world.
+        Optional<BuilderPlot> builderPlot = BuilderPlot.of(level);
+        if (builderPlot.isPresent()) {
+            for (ServerPlayer player : players) {
+                SurroundingStructureManager.reconcile(player, level, builderPlot);
+            }
+        }
+
         // Refresh any open Stage Blocks panels when the stage-blocks index moved (part saves,
         // sidecar edits, chat-command replaces/duplicates) — generation-guarded, so steady-state
         // ticks are one long comparison.
@@ -241,7 +256,6 @@ public final class VariantOverlayRenderer {
             pushTypeMenusSnapshot(player, dims);
             pushStageStripsSnapshot(player, level);
             pushPartVisibilitySnapshot(player);
-            SurroundingStructureManager.reconcile(player, level, dims, EditorCategory.locate(player, dims));
 
             if (!isEnabled(player)) {
                 clearHoverIfStale(player);
