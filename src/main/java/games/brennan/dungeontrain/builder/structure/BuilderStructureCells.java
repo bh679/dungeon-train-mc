@@ -55,9 +55,17 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public final class BuilderStructureCells {
 
-    /** Session-scoped. Dropped on logout and on a resource reload — see {@link #clear}. */
-    private static final Map<BuilderStructure.Kind, Map<BlockPos, BlockState>> CACHE =
-            new ConcurrentHashMap<>();
+    /**
+     * Session-scoped. Dropped on logout and on a resource reload — see {@link #clear}.
+     *
+     * <p>Keyed on the world's seed and dimensions as well as the kind, because neither is part of a
+     * {@link BuilderStructure.Kind} and both change what it resolves to: the seed decides which
+     * variant each tile rolls, and the dimensions decide how wide a slice is. Without them, opening
+     * a second builder world in the same session would serve it the first one's line.</p>
+     */
+    private record CacheKey(BuilderStructure.Kind kind, long worldSeed, CarriageDims dims) {}
+
+    private static final Map<CacheKey, Map<BlockPos, BlockState>> CACHE = new ConcurrentHashMap<>();
 
     private BuilderStructureCells() {}
 
@@ -98,7 +106,8 @@ public final class BuilderStructureCells {
         if (kind instanceof BuilderStructure.Kind.RoomBedrock) {
             return bedrockSkin(src.openSize());
         }
-        return CACHE.computeIfAbsent(kind, k -> resolve(k, src));
+        return CACHE.computeIfAbsent(new CacheKey(kind, src.worldSeed(), src.dims()),
+                k -> resolve(k.kind(), src));
     }
 
     private static Map<BlockPos, BlockState> resolve(BuilderStructure.Kind kind, Sources src) {

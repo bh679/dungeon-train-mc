@@ -1,6 +1,9 @@
 package games.brennan.dungeontrain.client.builder;
 
 import com.mojang.logging.LogUtils;
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
+import it.unimi.dsi.fastutil.longs.LongSet;
+import it.unimi.dsi.fastutil.longs.LongSets;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.builder.BuilderBounds;
 import games.brennan.dungeontrain.builder.structure.BuilderStructure;
@@ -25,11 +28,9 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * Resolves the structures around the build to blocks, once a tick, for everything that needs them.
@@ -73,7 +74,14 @@ public final class BuilderStructureScan {
     }
 
     private static volatile List<Batch> batches = List.of();
-    private static volatile Set<BlockPos> solidCells = Set.of();
+    /**
+     * Packed positions ({@link BlockPos#asLong}) the structures occupy while they are solid.
+     *
+     * <p>Packed rather than a {@code Set<BlockPos>}: this is rebuilt every sweep and can hold tens of
+     * thousands of entries, and the wash asks it once per block of its own sweep. A set of objects
+     * would be that much garbage every five ticks, for a lookup that is a {@code long} compare.</p>
+     */
+    private static volatile LongSet solidCells = LongSets.EMPTY_SET;
 
     private static int tickCounter = 0;
     private static volatile boolean loggedCap = false;
@@ -92,7 +100,7 @@ public final class BuilderStructureScan {
      * world positions at all. Always false otherwise, so the wash keeps painting stray blocks red.</p>
      */
     public static boolean isStructure(BlockPos pos) {
-        return solidCells.contains(pos);
+        return solidCells.contains(pos.asLong());
     }
 
     @SubscribeEvent
@@ -107,7 +115,7 @@ public final class BuilderStructureScan {
     @SubscribeEvent
     public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
         batches = List.of();
-        solidCells = Set.of();
+        solidCells = LongSets.EMPTY_SET;
         loggedCap = false;
         // Template cells are only valid for the world that produced them.
         BuilderStructureCells.clear();
@@ -126,13 +134,13 @@ public final class BuilderStructureScan {
         boolean stamps = BuilderBoundsState.structureMode().stamps();
         if (level == null || !(draws || stamps)) {
             batches = List.of();
-            solidCells = Set.of();
+            solidCells = LongSets.EMPTY_SET;
             return;
         }
         List<BuilderStructure.Placement> placements = BuilderBoundsState.structures();
         if (placements.isEmpty()) {
             batches = List.of();
-            solidCells = Set.of();
+            solidCells = LongSets.EMPTY_SET;
             return;
         }
 
@@ -141,7 +149,7 @@ public final class BuilderStructureScan {
         List<BoundingBox> volumes = BuilderBoundsState.volumes();
 
         List<Batch> found = new ArrayList<>(placements.size());
-        Set<BlockPos> occupied = stamps ? new HashSet<>() : Set.of();
+        LongSet occupied = new LongOpenHashSet();
         int total = 0;
         boolean capped = false;
 
@@ -164,7 +172,7 @@ public final class BuilderStructureScan {
                     continue;
                 }
                 if (stamps) {
-                    occupied.add(world);
+                    occupied.add(world.asLong());
                 } else {
                     visible.put(cell.getKey(), cell.getValue());
                 }
@@ -186,7 +194,7 @@ public final class BuilderStructureScan {
             loggedCap = false;
         }
         batches = List.copyOf(found);
-        solidCells = stamps ? Set.copyOf(occupied) : Set.of();
+        solidCells = stamps ? occupied : LongSets.EMPTY_SET;
     }
 
     /**
@@ -200,7 +208,9 @@ public final class BuilderStructureScan {
         MinecraftServer server = Minecraft.getInstance().getSingleplayerServer();
         long seed = server == null ? 0L : server.overworld().getSeed();
         List<BoundingBox> volumes = BuilderBoundsState.volumes();
-        if (volumes.isEmpty()) {
+        // Only a room needs the build read back, and only a room should pay for it: this walks the
+        // whole build volume, which for the largest room is 25 000 block lookups a sweep.
+        if (volumes.isEmpty() || !BuilderBoundsState.isRoomOpen()) {
             return new BuilderStructureCells.Sources(blocks, BuilderBoundsState.dims(), seed);
         }
         BoundingBox box = volumes.get(0);

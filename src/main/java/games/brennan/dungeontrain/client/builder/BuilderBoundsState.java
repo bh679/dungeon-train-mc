@@ -126,7 +126,7 @@ public final class BuilderBoundsState {
         if (mode == null || !structureMode.draws() && !structureMode.stamps()) {
             return List.of();
         }
-        boolean room = BuilderOpenRequest.PORTAL_ROOM_SUB_TYPE.equals(subTypeId);
+        boolean room = isRoomOpen();
         return BuilderStructureNeeds.around(new BuilderStructureNeeds.Context(
                 mode,
                 BuilderNewOptions.SubType.fromId(subTypeId).orElse(null),
@@ -135,6 +135,17 @@ public final class BuilderBoundsState {
                 room ? roomMode() : null,
                 room && !volumes.isEmpty() ? BuilderBounds.sizeOf(volumes.get(0)) : null,
                 variantId));
+    }
+
+    /**
+     * Whether what is open is a portal room.
+     *
+     * <p>The one question that decides whether anything needs the build's <em>live</em> blocks: a
+     * room's copies are copies of the room you are building, and nothing else around any other build
+     * is made of the build.</p>
+     */
+    public static boolean isRoomOpen() {
+        return BuilderOpenRequest.PORTAL_ROOM_SUB_TYPE.equals(subTypeId);
     }
 
     /** The authored mode for the open room, defaulting the way every other reader of the tag does. */
