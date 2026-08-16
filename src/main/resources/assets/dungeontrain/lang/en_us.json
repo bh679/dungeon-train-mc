@@ -703,8 +703,6 @@
   "gui.dungeontrain.builder.track_kind.adjunct_stairs": "Stairs",
   "gui.dungeontrain.builder.track_kind.adjunct_stairs_entrance": "Stairs Entrance",
   "gui.dungeontrain.builder.open.title": "Open",
-  "gui.dungeontrain.builder.open.empty": "Nothing here yet \u2014 make something with New and save it.",
-  "gui.dungeontrain.builder.open.not_buildable": "Shown for reference \u2014 these can't be edited here yet.",
   "gui.dungeontrain.builder.room_size.tooltip": "%s of the room. Left-click to add a block, right-click to take one away.",
   "gui.dungeontrain.builder.room_size.axis.length": "Length",
   "gui.dungeontrain.builder.room_size.axis.height": "Height",
