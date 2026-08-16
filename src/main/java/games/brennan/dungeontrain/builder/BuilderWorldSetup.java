@@ -6,6 +6,7 @@ import games.brennan.dungeontrain.editor.CarriageVariantBlocks;
 import games.brennan.dungeontrain.editor.EditorPlotEntityClearer;
 import games.brennan.dungeontrain.editor.EditorPlotSnapshots;
 import games.brennan.dungeontrain.editor.EditorStageSelection;
+import games.brennan.dungeontrain.editor.EditorTemplateLists;
 import games.brennan.dungeontrain.editor.WholeCarriageTemplateStore;
 import games.brennan.dungeontrain.ship.sable.WorldgenForceGuard;
 import games.brennan.dungeontrain.track.TrackGenerator;
@@ -19,6 +20,7 @@ import games.brennan.dungeontrain.train.CarriageContents;
 import games.brennan.dungeontrain.train.CarriageContentsPlacer;
 import games.brennan.dungeontrain.editor.PortalRoomEditor;
 import games.brennan.dungeontrain.editor.PortalRoomTemplateStore;
+import games.brennan.dungeontrain.portal.PortalRoomMode;
 import games.brennan.dungeontrain.portal.PortalRoomSizes;
 import games.brennan.dungeontrain.train.CarriageContentsRegistry;
 import games.brennan.dungeontrain.train.CarriageDims;
@@ -139,6 +141,91 @@ public final class BuilderWorldSetup {
         // but going through one door means a fresh world and a switched one are stamped by the same
         // code — which is what stops them from drifting apart again.
         resetScene(level, data, dims, mode, /*corridor*/ true);
+        // Then the mode's default template, through the Open path. Its own resetScene re-runs over
+        // the scene this one just stood up, which is redundant rather than wrong — and cheap, since
+        // the sweep skips all-air sections a section at a time.
+        if (!openDefaultTemplate(level, mode)) {
+            stampBareTrain(level, dims, mode);
+        }
+        // This world is now stood up for this run, so a second player joining it goes down
+        // {@link #reopen}'s already-done arm instead of restarting it under the first.
+        REOPENED.put(level, Boolean.TRUE);
+
+        LOGGER.info("[DungeonTrain] Builder world stamped for mode '{}' ({} carriage(s)) in {} ms",
+                mode.id(), parkedCarriages(DungeonTrainWorldData.get(level)),
+                (System.nanoTime() - t0) / 1_000_000);
+        return true;
+    }
+
+    /**
+     * Load the mode's default template into the freshly-stamped world, the way <b>Open</b> would.
+     *
+     * <p>A picker tile names a kind of work rather than a template, and for as long as that was all
+     * it did the world came up holding the bare default shell — and, for the two track modes,
+     * nothing at all. Routing the tile through {@link #applyOpen} is what puts a real thing on the
+     * track: the carriage arrives with its interior, the room arrives as a room, and the track modes
+     * arrive with a template on the plot instead of an empty corridor.</p>
+     *
+     * <p><b>The name is then cleared, and that is deliberate.</b> {@code applyOpen} points
+     * {@code builderName} at what it loaded so Save writes back to it — right when a builder went to
+     * the library and chose that template, wrong for a tile everyone lands on, where the first Save
+     * would overwrite a built-in. Blanking it leaves the build a draft, which is what a title-screen
+     * click has always produced, and a draft Save asks for a name instead.</p>
+     *
+     * @return true if a template was loaded; false to fall back to the bare stamp
+     */
+    private static boolean openDefaultTemplate(ServerLevel level, BuilderMode mode) {
+        Optional<BuilderOpenRequest> request = BuilderDefaultOpen.requestFor(mode,
+                EditorTemplateLists.wholeCarriages(),
+                EditorTemplateLists.carriages(),
+                EditorTemplateLists.contents(),
+                defaultPortalRooms());
+        if (request.isEmpty()) {
+            return false;   // nothing registered to open — the bare stamp is the whole world
+        }
+        // The tile has no browsing arm behind it, so the mode's own default sub type is what decides
+        // how much train to park. Null for the track modes, which branch inside applyOpen before it
+        // is read.
+        BuilderNewOptions.SubType viewSubType = BuilderNewOptions.hasSubTypes(mode)
+                ? BuilderNewOptions.defaultSubTypeFor(mode)
+                : null;
+        if (!applyOpen(level, mode, request.get(), "", viewSubType)) {
+            LOGGER.warn("[DungeonTrain] Builder world: could not open default {} '{}' for mode '{}'"
+                            + " — falling back to a bare stamp",
+                    request.get().kind().id(), request.get().id(), mode.id());
+            return false;
+        }
+        DungeonTrainWorldData.get(level).setBuilderName("");
+        return true;
+    }
+
+    /**
+     * Portal rooms in the order the Open grid would reach them.
+     *
+     * <p>The grid asks for the room <em>mode</em> first — what a room does at its own walls — so
+     * there is no one flat list to take a first entry from. Walking the modes in the grid's own
+     * order and taking the first that has anything in it lands the tile on the same room a builder
+     * would reach by clicking the leftmost tile twice, and survives a mode whose rooms have all been
+     * deleted.</p>
+     */
+    private static List<String> defaultPortalRooms() {
+        for (PortalRoomMode roomMode : BuilderOpenOptions.PORTAL_ROOM_MODE_ORDER) {
+            List<String> rooms = EditorTemplateLists.portalRooms(roomMode);
+            if (!rooms.isEmpty()) {
+                return rooms;
+            }
+        }
+        return List.of();
+    }
+
+    /**
+     * The world as it was stamped before there was a default template to load: the mode's own count
+     * of empty shells, and nothing pointed at anything on disk.
+     *
+     * <p>Still the answer whenever {@link #openDefaultTemplate} has nothing to offer — a stock
+     * install has no saved whole carriages, and a track template can be missing.</p>
+     */
+    private static void stampBareTrain(ServerLevel level, CarriageDims dims, BuilderMode mode) {
         // No sub type yet — this is the title-screen click, before New or Open has narrowed it —
         // so the mode's own count stands.
         int carriages = BuilderWorldLayout.parkedCarriages(mode, null);
@@ -151,13 +238,6 @@ public final class BuilderWorldSetup {
         // a reopened builder world can't tell the client where the build bounds are.
         DungeonTrainWorldData.get(level).setBuilderMode(mode.id());
         DungeonTrainWorldData.get(level).setBuilderMirror(BuilderMirrorFlags.DEFAULT);
-        // This world is now stood up for this run, so a second player joining it goes down
-        // {@link #reopen}'s already-done arm instead of restarting it under the first.
-        REOPENED.put(level, Boolean.TRUE);
-
-        LOGGER.info("[DungeonTrain] Builder world stamped for mode '{}' ({} carriage(s)) in {} ms",
-                mode.id(), carriages, (System.nanoTime() - t0) / 1_000_000);
-        return true;
     }
 
     /**

@@ -125,6 +125,14 @@ public final class BuilderGhostTrainRenderer {
             clear();
             return;
         }
+        // A track build has no train to imply one around, and the single volume it does send is the
+        // plot — a rail tile is two blocks tall, so reading it as a carriage below throws out of
+        // CarriageDims' own range check and takes the client's tick loop with it. The line is drawn
+        // by BuilderTrackGhostRenderer instead, off this same volume.
+        if (ClientTrackGhost.isActive()) {
+            clear();
+            return;
+        }
 
         BoundingBox parked = volumes.get(0);
         // How much train to draw, not how much is parked — Inside Carriage parks one by definition,
