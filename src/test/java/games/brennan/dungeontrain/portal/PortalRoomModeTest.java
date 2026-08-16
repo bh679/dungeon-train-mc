@@ -108,6 +108,22 @@ final class PortalRoomModeTest {
             "a new mode must decide for itself whether it fogs — add it to this test");
     }
 
+    /**
+     * Stated per mode rather than as {@code == BEDROCK_LOCK}, for the reason {@link #fogging} is:
+     * the room's own skin stops at its ±X ends, so this is the only thing closing off the two
+     * corridors that stand off them, and a mode added later has to answer it deliberately.
+     */
+    @Test
+    @DisplayName("Bedrock Lock alone seals its corridors — every other mode leaves them as they are")
+    void corridorSealing() {
+        assertTrue(PortalRoomMode.BEDROCK_LOCK.sealsCorridors());
+        assertFalse(PortalRoomMode.ENDLESS_REPETITION.sealsCorridors());
+        assertFalse(PortalRoomMode.ENDLESS_OPEN.sealsCorridors());
+        assertFalse(PortalRoomMode.BEDROCKLESS.sealsCorridors());
+        assertEquals(4, PortalRoomMode.values().length,
+            "a new mode must decide for itself whether it seals its corridors — add it to this test");
+    }
+
     @Test
     @DisplayName("next() cycles through every mode and returns to where it started")
     void nextCycles() {

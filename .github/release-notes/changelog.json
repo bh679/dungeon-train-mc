@@ -7092,13 +7092,26 @@
       "summary": "Improves the recent fix for a Train Dimension losing its train: being put back on board no longer hurts you, and it asks less of the game while it finds the way back.",
       "highlights": [],
       "date": "2026-08-15",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.564.0",
+      "released_at": "2026-08-16T04:13:12Z"
+    },
+    {
+      "id": "bedrock-lock-sealed-all-round",
+      "version": "0.565.0",
+      "type": "fix",
+      "title": "Sealed Train Dimensions are properly sealed",
+      "summary": "The bedrock around a sealed Train Dimension now covers its hallways and end faces too, instead of stopping at the room \u2014 so there is no longer a wall you can mine through to get out.",
+      "highlights": [],
+      "pr": 978,
+      "date": "2026-08-16",
+      "released": true,
+      "released_in": "v0.565.0",
+      "released_at": "2026-08-16T06:19:01Z"
     },
     {
       "id": "train-dimension-room-loot-stats",
-      "version": "0.565.0",
+      "version": "0.566.0",
       "type": "fix",
       "title": "Train Dimension loot now matches its carriage",
       "summary": "Chests inside a Train Dimension now roll their loot to the stage of the portal carriage you walked in through, so they're worth what a carriage's chests are worth at that point in the run. Which room you get, and how it is built, is unchanged.",
