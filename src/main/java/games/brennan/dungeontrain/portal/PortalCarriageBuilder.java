@@ -116,7 +116,8 @@ public final class PortalCarriageBuilder {
     private static final BlockState PLUG = Blocks.DEEPSLATE.defaultBlockState();
     /**
      * {@link PortalRoomMode#BEDROCK_LOCK}'s unbreakable rock: the skin one block outside the room
-     * box, and the plug behind each twin's outer door — see {@link PortalRoomMode#locksPlug}.
+     * box and outside each corridor, and the plug behind each twin's outer door — see
+     * {@link PortalRoomMode#sealsCorridors}.
      */
     private static final BlockState LOCK = Blocks.BEDROCK.defaultBlockState();
     /** What a liquid found against a room's outside wall is replaced with — the rock it is cut into. */
@@ -783,7 +784,8 @@ public final class PortalCarriageBuilder {
         // as it was asked for. It does not follow that the corridors repair whatever a mode wrote at
         // a door plane — they are stamped over their own volume only, and never over the room's end
         // column one block inside it, which is why nothing may write there in the first place; see
-        // PortalCorridorMask#facedBy. Bedrock Lock wraps the room; the endless modes settle its own
+        // PortalCorridorMask#facedBy. Bedrock Lock wraps the room here and its two corridors once
+        // they are down, which is the other half of the same shell; the endless modes settle its own
         // side walls, which for Endless Open means taking them away so there is somewhere to walk
         // out to. Bedrockless writes nothing around the room at all and sweeps the space instead.
         if (structure.mode() == PortalRoomMode.BEDROCK_LOCK) {
@@ -795,6 +797,16 @@ public final class PortalCarriageBuilder {
         }
 
         stampCorridors(level, structure, dims, pairKey);
+
+        // After the corridors, unlike the room's own skin, and necessarily so: this shell sits one
+        // block outside a corridor rather than around the room, and stampCorridors clears and
+        // re-stamps that corridor's box on its way past. Writing it first would be writing it into
+        // a volume that is about to be swept.
+        if (structure.mode().sealsCorridors()) {
+            bedrockSkinCorridor(level, structure.origin(), dims, layout, PortalCarriageRole.ENTRY);
+            bedrockSkinCorridor(level, structure.exitOrigin(dims), dims, layout,
+                PortalCarriageRole.EXIT);
+        }
     }
 
     /**
@@ -867,7 +879,7 @@ public final class PortalCarriageBuilder {
         BlockPos plugFrom = entry
             ? corridorOrigin.offset(-PLUG_DEPTH, 0, 0)
             : corridorOrigin.offset(layout.length(), 0, 0);
-        plugBeyond(level, plugFrom, PLUG_DEPTH, dims, base.mode().locksPlug() ? LOCK : PLUG);
+        plugBeyond(level, plugFrom, PLUG_DEPTH, dims, base.mode().sealsCorridors() ? LOCK : PLUG);
     }
 
     /**
@@ -932,15 +944,22 @@ public final class PortalCarriageBuilder {
      * <p><b>Four faces, not six.</b> The room's ±X ends are the two corridors' door planes — the way
      * back to the train, and the one part of a twin that is block-identical to its carriage. Skinning
      * those would either wall the player in or break that identity, so the lock covers the sides, the
-     * ceiling and the floor and leaves the doors alone. What stands off those two ends is closed off
-     * instead by the corridors' own plugs, which this mode fills with {@link #LOCK} — see
-     * {@link PortalRoomMode#locksPlug}. It follows that a determined player can still dig out
-     * sideways through a corridor's own wall; sealing that would mean changing corridor geometry,
-     * which is shared with the carriage and cannot move.</p>
+     * ceiling and the floor and leaves the doors alone. What stands off those two ends is wrapped by
+     * {@link #bedrockSkinCorridor} instead, and the two shells meet to enclose the whole structure.
+     *
+     * <p><b>One column further out in ±X than the room, and that is what makes them meet.</b> The
+     * column just outside each room end is the seal plane {@link #sealCorridorMouth} writes: solid
+     * from the corridor's own walls out to the room's outer face and up to its ceiling, and made of
+     * ordinary room wall. A skin that stopped at the room box would leave it as a ring of mineable
+     * rock with the basement on the other side — the one gap between the room's shell and a
+     * corridor's. Every cell the extra column adds lies <i>outside</i> that seal fill's
+     * cross-section, so nothing authored is overwritten and none of it is in view from inside the
+     * room. The corridor's own ring stops one column short of the same plane for the mirror-image
+     * reason: bedrock there would frame the doorway.</p>
      */
     private static void bedrockSkin(ServerLevel level, BlockPos roomOrigin, Vec3i size) {
-        int x0 = roomOrigin.getX();
-        int x1 = x0 + size.getX() - 1;
+        int x0 = roomOrigin.getX() - 1;
+        int x1 = roomOrigin.getX() + size.getX();
         int z0 = roomOrigin.getZ();
         int z1 = z0 + size.getZ() - 1;
         int floorY = roomOrigin.getY();
@@ -967,6 +986,84 @@ public final class PortalCarriageBuilder {
                 if (belowY < floorY) level.setBlock(pos.set(x, belowY, z), LOCK, Block.UPDATE_ALL);
             }
         }
+    }
+
+    /**
+     * Wrap one corridor and its plug in bedrock — the half of {@link PortalRoomMode#BEDROCK_LOCK}'s
+     * shell that is not the room, laid once the corridor is standing.
+     *
+     * <p>The room's skin covers the room; this covers what hangs off it. Without it a player walks
+     * out of a sealed room into a corridor of ordinary stone brick and mines through the wall
+     * sideways, which is the way out the lock was supposed to not have.</p>
+     *
+     * <p><b>Outside the corridor, and so outside the carriage it mirrors.</b> The corridor's own
+     * geometry is shared with the carriage on the train and cannot move by a block; every cell
+     * written here is one block beyond it, so the two copies stay identical and a player inside sees
+     * exactly what they saw before.</p>
+     */
+    private static void bedrockSkinCorridor(ServerLevel level, BlockPos corridorOrigin,
+                                            CarriageDims dims, PortalCarriageLayout layout,
+                                            PortalCarriageRole role) {
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        for (BoundingBox box : corridorLockBoxes(corridorOrigin, dims, layout.length(), role,
+                level.getMinBuildHeight())) {
+            for (int x = box.minX(); x <= box.maxX(); x++) {
+                for (int y = box.minY(); y <= box.maxY(); y++) {
+                    for (int z = box.minZ(); z <= box.maxZ(); z++) {
+                        level.setBlock(pos.set(x, y, z), LOCK, Block.UPDATE_ALL);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * The slabs {@link #bedrockSkinCorridor} fills: the two side walls, the roof and — where there
+     * is a row to write — the floor, each one block outside the corridor box, run the length of the
+     * corridor and its plug.
+     *
+     * <p><b>Never the seal plane.</b> The X span stops one column short of the corridor's mouth,
+     * which is the column {@link #sealCorridorMouth} fills across the room's cross-section. Bedrock
+     * there would be a ring around the doorway, visible from inside the room, and it is not needed:
+     * the seal fill is solid out to the room's outer face, where {@link #bedrockSkin}'s extra column
+     * caps it. The two shells meet at that plane rather than overlapping in it.</p>
+     *
+     * <p><b>Nothing beyond the plug, either.</b> The dead end is already three blocks of {@link #LOCK}
+     * under this mode ({@link PortalRoomMode#sealsCorridors}), so a cap there would be bedrock
+     * against bedrock — and it would fall outside {@link #footprintOf}, which reaches exactly one
+     * plug depth past the corridor. Everything here is inside that box, so the erase sweep reaches
+     * every block written.</p>
+     *
+     * <p>Pure integer geometry with no level, so the covering can be unit-tested: no slab touches the
+     * corridor's own box or the seal plane, and together they close all four lateral sides.</p>
+     */
+    static List<BoundingBox> corridorLockBoxes(BlockPos corridorOrigin, CarriageDims dims,
+                                               int length, PortalCarriageRole role, int worldMinY) {
+        int oz = corridorOrigin.getZ();
+        int floorY = corridorOrigin.getY();
+        int belowY = lowestWritableY(worldMinY, floorY);
+        int aboveY = floorY + dims.height();
+        int zLo = oz - 1;
+        int zHi = oz + dims.width();
+
+        // The mouth is the far end of an entry corridor and the near end of an exit one — the same
+        // rule stampCorridorHalf plugs the other end by. The span runs from the plug's outer face to
+        // the column before the mouth.
+        boolean entry = role == PortalCarriageRole.ENTRY;
+        int xLo = entry ? corridorOrigin.getX() - PLUG_DEPTH : corridorOrigin.getX() + 1;
+        int xHi = entry
+            ? corridorOrigin.getX() + length - 2
+            : corridorOrigin.getX() + length - 1 + PLUG_DEPTH;
+
+        List<BoundingBox> boxes = new ArrayList<>(4);
+        // Sides, the full height of the shell so their corners meet the roof and floor planes.
+        boxes.add(new BoundingBox(xLo, belowY, zLo, xHi, aboveY, zLo));
+        boxes.add(new BoundingBox(xLo, belowY, zHi, xHi, aboveY, zHi));
+        // Roof, and the floor only where there is genuinely a row below to write — in the lowest
+        // lane there is not, and the world's own bedrock is already doing the job.
+        boxes.add(new BoundingBox(xLo, aboveY, zLo, xHi, aboveY, zHi));
+        if (belowY < floorY) boxes.add(new BoundingBox(xLo, belowY, zLo, xHi, belowY, zHi));
+        return boxes;
     }
 
     /**
@@ -1161,8 +1258,9 @@ public final class PortalCarriageBuilder {
      * or visible through it if it is ever forced open.
      *
      * <p>{@code fill} is the caller's, because "not reachable" is a stronger claim for some rooms
-     * than others: a {@link PortalRoomMode#BEDROCK_LOCK} room plugs with {@link #LOCK} so its two
-     * corridors cannot be dug out of, every other mode with ordinary {@link #PLUG} rock.</p>
+     * than others: a {@link PortalRoomMode#BEDROCK_LOCK} room plugs with {@link #LOCK}, which is the
+     * end cap of the shell {@link #bedrockSkinCorridor} runs down the corridor's sides, every other
+     * mode with ordinary {@link #PLUG} rock.</p>
      */
     private static void plugBeyond(ServerLevel level, BlockPos from, int depth, CarriageDims dims,
                                    BlockState fill) {
