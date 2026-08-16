@@ -7095,6 +7095,22 @@
       "released": true,
       "released_in": "v0.564.0",
       "released_at": "2026-08-16T04:13:12Z"
+    },
+    {
+      "id": "bedrock-lock-sealed-all-round",
+      "version": "0.565.0",
+      "type": "fix",
+      "title": "Sealed Train Dimensions are sealed all the way round",
+      "summary": "A sealed Train Dimension is a room you are meant to be shut inside \u2014 but only the room itself was ever lined with bedrock. The hallway you walked in through was ordinary stone with a wall you could mine straight through, and the room's own end faces were no better. Now the bedrock carries on around the hallways at both ends and across the faces they stand against, so the whole place is closed in. Nothing about the room you are standing in has changed: the walls are still whatever they were built as, and the hallway looks exactly the same from the inside.",
+      "highlights": [
+        "Sealed Train Dimensions can no longer be mined out of through the hallway",
+        "The bedrock now wraps the hallways and the room's end faces, not just the room"
+      ],
+      "pr": 978,
+      "date": "2026-08-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
