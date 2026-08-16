@@ -4,6 +4,8 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.cheat.CheatModListFetcher;
 import games.brennan.dungeontrain.client.analytics.UiAnalytics;
+import games.brennan.dungeontrain.client.builder.TrainBuilderMenuButton;
+import games.brennan.dungeontrain.client.builder.TrainBuilderScreen;
 import games.brennan.dungeontrain.client.links.OfficialLinks;
 import games.brennan.dungeontrain.client.menu.DarkTintedButton;
 import games.brennan.dungeontrain.client.videotools.VideoToolsScreen;
@@ -149,9 +151,13 @@ public final class TitleScreenLayoutHandler {
         quit.setY(rowY);
         quit.setWidth(thirdW);
 
-        DarkTintedButton editor = new DarkTintedButton(slotX, slotY, halfW, slotH,
-                EDITOR_LABEL, b -> openEditor(titleScreen));
-        event.addListener(editor);
+        // Train Builder by default; on a dev build, holding Shift swaps this same widget to the old
+        // Train Editor. One widget rather than two because the slot is only half a row wide — Video
+        // Tools has the other half — so a separate Editor button would not fit beside it.
+        TrainBuilderMenuButton builder = new TrainBuilderMenuButton(slotX, slotY, halfW, slotH,
+                () -> openBuilder(titleScreen),
+                () -> openEditor(titleScreen));
+        event.addListener(builder);
 
         // Video Tools — the filming guide for content creators. Holds the slot Discord used to
         // occupy; Discord itself now rides the icon column above Credits (TitleScreenCreditsButton),
@@ -170,6 +176,11 @@ public final class TitleScreenLayoutHandler {
             }
         }
         return null;
+    }
+
+    private static void openBuilder(Screen parent) {
+        LOGGER.info("TitleScreenLayout: Train Builder button clicked — opening the builder picker");
+        Minecraft.getInstance().setScreen(new TrainBuilderScreen(parent));
     }
 
     private static void openEditor(Screen parent) {
