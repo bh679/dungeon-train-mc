@@ -1329,6 +1329,16 @@ public final class PortalCarriageBuilder {
      * warning, on the grounds that a portal room repeats and a mob entry spawning per copy would be a
      * spawner with a hundred outlets. That was true of spawning alone; it is the paired reap that
      * makes it safe, not the spawn being clever.</p>
+     *
+     * <p><b>Two frames, held apart.</b> A chest's contents are rolled against {@code variantIndex} —
+     * the pair-and-copy identity ({@code PortalStructure.variantIndexFor}), which is what makes one
+     * portal's loot differ from the next's and an Exact copy agree with its siblings. Its difficulty
+     * is read from {@code pairKey}, the entry corridor's real carriage index, the same frame
+     * {@link #applyRoomContents} and {@link PortalRoomMobs} already roll in. {@code variantIndex} is
+     * an {@code Objects.hash} and not a position at all, so feeding it to the difficulty frame — as
+     * this pass did — asked {@code DifficultyProgression.positionTier} for the tier "a few tens of
+     * millions of carriages out" and handed every room chest AIS stats to match. Same trap, same
+     * fix, as the tunnel-chest world-X frame: see {@code TunnelPlacer.diffIndexForTile}.</p>
      */
     private static void applyRoomVariants(ServerLevel level, BlockPos roomOrigin, String roomName,
                                           Vec3i size, PortalCorridorMask mask, int variantIndex,
@@ -1391,7 +1401,8 @@ public final class PortalCarriageBuilder {
             // the eviction here — a freshly stamped chest's NBT has not been promoted yet.
             SilentBlockOps.evictBlockEntity(level.getChunkAt(world), world);
             ContainerContentsPlacement.place(level, world, picked.state(), picked.blockEntityNbt(),
-                plotKey, local, worldSeed, variantIndex, picked.linkedLootPrefabId());
+                plotKey, local, worldSeed, variantIndex, /*diffIndex*/ pairKey,
+                picked.linkedLootPrefabId());
         }
     }
 
