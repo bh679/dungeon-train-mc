@@ -188,8 +188,14 @@ public final class BuilderStructure {
          * <p>The height is content because a flight is one 8-tall template stamped over and over
          * until it reaches the floor — that repeat is how one template becomes a staircase of any
          * height, and a preview that drew a single stamp would show a flight ending in mid-air.</p>
+         *
+         * <p>{@code mirrorZ} is which way the steps face. The generator puts a staircase on either
+         * side of the line and mirrors the {@code +Z} one across its own footprint
+         * ({@code TrackGenerator.stampStairsDescendingWorldgen} sets {@code Mirror.LEFT_RIGHT} for
+         * exactly that side), so a flight drawn without it climbs into the wall instead of out of
+         * it — the same blocks, facing backwards.</p>
          */
-        record StairsFlight(int centreX, int height) implements Kind {
+        record StairsFlight(int centreX, int height, boolean mirrorZ) implements Kind {
             @Override
             public Category category() {
                 return Category.STAIRS;

@@ -98,12 +98,16 @@ public final class BuilderStructureNeeds {
      * What surrounds this build. Empty is an ordinary answer, not a failure.
      *
      * <p><b>The order is load-bearing where two structures overlap: later wins.</b> It is the
-     * generator's own order — columns and their arch, then the line laid over them, then the
-     * staircases, then the tunnel around all of it — and it decides who owns a cell at the seams,
+     * generator's own order of operations, not a preference — columns and their arch, then the line
+     * laid over them, then a staircase up the side of one. It decides who owns a cell at the seams,
      * of which the arch meeting the bed is the obvious one. Both consumers honour it, so a ghosted
      * seam and a solid seam are the same blocks; a consumer that iterated in any other order would
-     * show a scene the world would never build, and would show a <em>different</em> one from the
-     * other consumer.</p>
+     * show a scene the world would never build, and a <em>different</em> one from its counterpart.</p>
+     *
+     * <p>The one that looks like an exception and isn't: down in a tunnel, the shaft is declared
+     * <em>after</em> the tunnel it passes through. The generator carves that shaft out of the
+     * tunnel — walls and ceiling included — and stamps the stairs into the carve, so the stairs
+     * winning there is the same rule reading the same sequence of operations.</p>
      */
     public static List<BuilderStructure.Placement> around(Context ctx) {
         if (ctx == null || ctx.mode() == null || ctx.dims() == null) {
@@ -215,11 +219,17 @@ public final class BuilderStructureNeeds {
      * from the tunnel deck to the surface, which is what {@link #shaftStairs} declares. Previewing
      * this against the elevated line instead would put the mouth on a viaduct and the staircase
      * descending from a bridge into open air — a picture of nothing the world builds.</p>
+     *
+     * <p><b>Where the staircase goes, and when there isn't one.</b> A shaft is cut through a tunnel
+     * section, so it belongs in one of the <em>neighbouring</em> sections rather than in the piece
+     * being edited — dropping it through the open template would be the preview knocking a hole in
+     * the thing you are authoring. And a <b>portal</b> gets none at all: a mouth is where the line
+     * comes out into the open, so a shaft climbing to the surface beside it is answering a question
+     * the piece has already answered.</p>
      */
     private static void tunnels(List<BuilderStructure.Placement> out, Context ctx, TrackKind open) {
         CarriageDims dims = ctx.dims();
         groundTrack(out, dims);
-        shaftStairs(out, dims);
 
         TrackGeometry g = BuilderTrackScene.groundGeometry(dims);
         TunnelGeometry tg = TunnelGeometry.from(g);
@@ -233,13 +243,20 @@ public final class BuilderStructureNeeds {
             // unmirrored at the low-X end of a run, so the tunnel runs away from it on +X.
             tunnelSection(out, plotMinX + len, y, z);
             tunnelSection(out, plotMinX + 2 * len, y, z);
-        } else {
-            tunnelSection(out, plotMinX - len, y, z);
-            tunnelSection(out, plotMinX + len, y, z);
-            // Entrance at the low-X mouth, exit at the high-X one — mirrored, as the generator has it.
-            tunnelPortal(out, plotMinX - 2 * len, y, z, false);
-            tunnelPortal(out, plotMinX + 2 * len, y, z, true);
+            return;
         }
+
+        tunnelSection(out, plotMinX - len, y, z);
+        tunnelSection(out, plotMinX + len, y, z);
+        // Entrance at the low-X mouth, exit at the high-X one — mirrored, as the generator has it.
+        tunnelPortal(out, plotMinX - 2 * len, y, z, false);
+        tunnelPortal(out, plotMinX + 2 * len, y, z, true);
+        // The shaft last, so it wins the cells it shares with the tunnel. That is the generator's
+        // own precedence rather than a preference: it *carves* the shaft through the tunnel — walls
+        // and ceiling included — and stamps the stairs into the carve, which is what opens the
+        // doorway from the corridor into the stairwell. Declared the other way round, the tunnel
+        // wall would close over the way out.
+        shaftStairs(out, dims, plotMinX + len + len / 2);
     }
 
     /**
@@ -281,7 +298,6 @@ public final class BuilderStructureNeeds {
     private static void stairsEntrance(List<BuilderStructure.Placement> out, Context ctx) {
         CarriageDims dims = ctx.dims();
         groundTrack(out, dims);
-        shaftStairs(out, dims);
 
         // A run either side of the shaft, since a way out only exists where there is tunnel to come
         // out of. Centred on the shaft rather than on a plot, because the plot here is the pavilion
@@ -292,6 +308,10 @@ public final class BuilderStructureNeeds {
         for (int repeat = -1; repeat <= 1; repeat++) {
             tunnelSection(out, shaftX - len / 2 + repeat * len, tg.floorY(), tg.wallMinZ() + 1);
         }
+        // Last, so the shaft wins the tunnel cells it passes through — the carve the generator makes
+        // before stamping the stairs into it. This is the flight the open pavilion caps, so unlike
+        // the tunnel arms it belongs directly under the plot rather than off in a neighbour.
+        shaftStairs(out, dims, shaftX);
     }
 
     // ---- Dimensional Carriages ----
@@ -440,12 +460,14 @@ public final class BuilderStructureNeeds {
      * {@link #stairsFlight}, which is the flight <em>up the side of a column</em> to an elevated
      * deck: same template, opposite situation, and neither position is derivable from the other.</p>
      */
-    private static void shaftStairs(List<BuilderStructure.Placement> out, CarriageDims dims) {
-        int centreX = BuilderTrackPlot.editedColumnCentreX();
+    private static void shaftStairs(List<BuilderStructure.Placement> out, CarriageDims dims,
+                                    int centreX) {
         int floorY = BuilderTrackScene.shaftFloorY(dims);
         int topY = BuilderTrackScene.shaftTopY(dims);
         out.add(new BuilderStructure.Placement(
-                new BuilderStructure.Kind.StairsFlight(centreX, topY - floorY + 1),
+                // Mirrored, because BuilderTrackScene.shaftMinZ asks downStairsOriginZ for the +Z
+                // side, and that is the side the generator stamps with Mirror.LEFT_RIGHT.
+                new BuilderStructure.Kind.StairsFlight(centreX, topY - floorY + 1, /*mirrorZ*/ true),
                 new BlockPos(BuilderTrackScene.shaftMinX(centreX), floorY,
                         BuilderTrackScene.shaftMinZ(dims))));
     }
@@ -456,7 +478,9 @@ public final class BuilderStructureNeeds {
         int floorY = BuilderTrackScene.groundY();
         int topY = BuilderTrackScene.stairsTopY();
         out.add(new BuilderStructure.Placement(
-                new BuilderStructure.Kind.StairsFlight(centreX, topY - floorY + 1),
+                // Mirrored for the same reason as the shaft: stairsMinZ(false, …) is the +Z side,
+                // which is the one the generator stamps with Mirror.LEFT_RIGHT.
+                new BuilderStructure.Kind.StairsFlight(centreX, topY - floorY + 1, /*mirrorZ*/ true),
                 new BlockPos(centreX - 1, floorY, BuilderTrackScene.stairsMinZ(false, dims))));
     }
 

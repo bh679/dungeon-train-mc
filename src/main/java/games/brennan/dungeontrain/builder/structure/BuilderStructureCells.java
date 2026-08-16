@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.builder.structure;
 import games.brennan.dungeontrain.builder.BuilderTrackScene;
 import games.brennan.dungeontrain.editor.CarriageTemplateStore;
 import games.brennan.dungeontrain.editor.TemplateCells;
+import games.brennan.dungeontrain.track.PillarAdjunct;
 import games.brennan.dungeontrain.track.PillarSection;
 import games.brennan.dungeontrain.track.TrackPlacer;
 import games.brennan.dungeontrain.track.variant.TrackKind;
@@ -123,7 +124,8 @@ public final class BuilderStructureCells {
             case BuilderStructure.Kind.TunnelPortal t ->
                     mirroredX(track(TrackKind.TUNNEL_PORTAL, t.name(), src), t.mirrorX(),
                             TunnelPlacer.LENGTH);
-            case BuilderStructure.Kind.StairsFlight s -> stairs(s.centreX(), s.height(), src);
+            case BuilderStructure.Kind.StairsFlight s ->
+                    stairs(s.centreX(), s.height(), s.mirrorZ(), src);
             // Handled live above; unreachable, and stated rather than defaulted so adding a kind
             // stays a compile error here.
             case BuilderStructure.Kind.RoomTile ignored -> Map.of();
@@ -296,13 +298,20 @@ public final class BuilderStructureCells {
      * the floor, which is how one template becomes a staircase of any height — so a flight drawn as a
      * single stamp would end in mid-air. The last repeat runs past the bottom and is clipped, exactly
      * as the generator clips it.</p>
+     *
+     * <p>{@code mirrorZ} negates local Z within the footprint, which is what
+     * {@code Mirror.LEFT_RIGHT} does to this template where the generator applies it. It is not
+     * decoration: a staircase has a front and a back, and the unmirrored copy on the {@code +Z} side
+     * climbs into the wall rather than out of it.</p>
      */
-    private static Map<BlockPos, BlockState> stairs(int centreX, int height, Sources src) {
+    private static Map<BlockPos, BlockState> stairs(int centreX, int height, boolean mirrorZ,
+                                                    Sources src) {
         Map<BlockPos, BlockState> template = picked(TrackKind.ADJUNCT_STAIRS, centreX, src);
         if (template.isEmpty() || height <= 0) {
             return Map.of();
         }
         int stamp = BuilderStructureNeeds.stairsStampHeight();
+        int depth = PillarAdjunct.STAIRS.zSize();
         Map<BlockPos, BlockState> out = new LinkedHashMap<>();
         for (int top = height - 1; top >= 0; top -= stamp) {
             int base = top - stamp + 1;
@@ -312,7 +321,8 @@ public final class BuilderStructureCells {
                 if (y < 0 || y > top) {
                     continue;
                 }
-                out.put(new BlockPos(p.getX(), y, p.getZ()), e.getValue());
+                int z = mirrorZ ? depth - 1 - p.getZ() : p.getZ();
+                out.put(new BlockPos(p.getX(), y, z), e.getValue());
             }
         }
         return out;

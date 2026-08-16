@@ -183,7 +183,56 @@ final class BuilderStructureNeedsTest {
     }
 
     @Test
-    @DisplayName("A tunnel portal is a mouth, so it gets tunnel on one side only")
+    @DisplayName("A tunnel portal is a mouth, so it gets no staircase at all")
+    void tunnelPortalNeedsNoStairs() {
+        // A mouth is where the line comes out into the open. A shaft climbing to the surface beside
+        // it answers a question the piece has already answered.
+        assertTrue(of(BuilderStructureNeeds.around(track(TrackKind.TUNNEL_PORTAL)),
+                BuilderStructure.Kind.StairsFlight.class).isEmpty());
+    }
+
+    @Test
+    @DisplayName("A tunnel section's shaft is cut through a neighbour, never through the plot")
+    void tunnelSectionShaftAvoidsTheOpenTemplate() {
+        // A shaft is a hole cut through a tunnel section. Putting it through the open one would be
+        // the preview knocking a hole in the thing being authored.
+        List<BuilderStructure.Placement> out =
+                BuilderStructureNeeds.around(track(TrackKind.TUNNEL_SECTION));
+        BoundingBox plot = BuilderTrackPlot.volume(TrackKind.TUNNEL_SECTION, DIMS);
+
+        List<BuilderStructure.Placement> flights =
+                of(out, BuilderStructure.Kind.StairsFlight.class);
+        assertEquals(1, flights.size());
+        int shaftX = flights.get(0).origin().getX();
+        assertTrue(shaftX > plot.maxX() || shaftX < plot.minX(),
+                "the shaft is cut through the plot being edited");
+
+        // And it is declared after the tunnel, so it wins the wall cells it passes through — that is
+        // the carve the generator makes before stamping the stairs into it. The other way round, the
+        // tunnel wall would close over the way out.
+        assertTrue(firstIndexOf(out, BuilderStructure.Kind.StairsFlight.class)
+                > lastIndexOf(out, BuilderStructure.Kind.TunnelSection.class));
+    }
+
+    @Test
+    @DisplayName("A staircase is mirrored to the side it stands on, or it climbs into the wall")
+    void staircasesFaceTheWayTheGeneratorFacesThem() {
+        // The generator puts a flight on either side of the line and stamps the +Z one with
+        // Mirror.LEFT_RIGHT. Every flight declared here is on that side, so every one is mirrored;
+        // an unmirrored copy is the same blocks facing backwards.
+        for (TrackKind kind : new TrackKind[]{TrackKind.TILE, TrackKind.ADJUNCT_STAIRS,
+                TrackKind.TUNNEL_SECTION, TrackKind.ADJUNCT_STAIRS_ENTRANCE}) {
+            for (BuilderStructure.Placement p :
+                    of(BuilderStructureNeeds.around(track(kind)),
+                            BuilderStructure.Kind.StairsFlight.class)) {
+                assertTrue(((BuilderStructure.Kind.StairsFlight) p.kind()).mirrorZ(),
+                        kind.id() + ": a flight on the +Z side must be mirrored");
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("A tunnel portal still gets tunnel on one side only")
     void tunnelPortalNeedsRunOnOneSideOnly() {
         List<BuilderStructure.Placement> out =
                 BuilderStructureNeeds.around(track(TrackKind.TUNNEL_PORTAL));
@@ -212,15 +261,18 @@ final class BuilderStructureNeedsTest {
             int lineY = of(out, BuilderStructure.Kind.TrackRun.class).get(0).origin().getY();
             assertEquals(BuilderTrackScene.groundGeometry(DIMS).bedY(), lineY, kind.id());
             assertNotEquals(BuilderTrackScene.bedY(), lineY, kind.id() + " is not on the viaduct");
-
-            // The flight starts on the tunnel deck and reaches the surface, not the column's cap.
-            BuilderStructure.Placement flight = of(out, BuilderStructure.Kind.StairsFlight.class).get(0);
-            assertEquals(BuilderTrackScene.shaftFloorY(DIMS), flight.origin().getY(), kind.id());
-            assertTrue(((BuilderStructure.Kind.StairsFlight) flight.kind()).height()
-                    == BuilderTrackScene.shaftTopY(DIMS) - BuilderTrackScene.shaftFloorY(DIMS) + 1);
-            // Climbing: the top of the flight is above where it starts.
-            assertTrue(BuilderTrackScene.shaftTopY(DIMS) > BuilderTrackScene.shaftFloorY(DIMS));
         }
+
+        // Only a section has a way out to show — a portal *is* the way out. The flight starts on the
+        // tunnel deck and reaches the surface, rather than hanging off a column's cap.
+        BuilderStructure.Placement flight =
+                of(BuilderStructureNeeds.around(track(TrackKind.TUNNEL_SECTION)),
+                        BuilderStructure.Kind.StairsFlight.class).get(0);
+        assertEquals(BuilderTrackScene.shaftFloorY(DIMS), flight.origin().getY());
+        assertEquals(BuilderTrackScene.shaftTopY(DIMS) - BuilderTrackScene.shaftFloorY(DIMS) + 1,
+                ((BuilderStructure.Kind.StairsFlight) flight.kind()).height());
+        // Climbing, not descending: the top of the shaft is above the deck it starts from.
+        assertTrue(BuilderTrackScene.shaftTopY(DIMS) > BuilderTrackScene.shaftFloorY(DIMS));
     }
 
     @Test
@@ -393,11 +445,15 @@ final class BuilderStructureNeedsTest {
         assertTrue(firstIndexOf(stairs, BuilderStructure.Kind.StairsFlight.class)
                 > lastIndexOf(stairs, BuilderStructure.Kind.TrackRun.class));
 
-        // A tunnel wraps everything, so it is declared last of all.
+        // The shaft, though, is declared *after* the tunnel it passes through, and that is not an
+        // exception to the rule — it is the rule applied to what the generator actually does. It
+        // carves the shaft out of the tunnel, walls and ceiling included, and stamps the stairs into
+        // the carve; the tunnel winning there would close the way out. Pinned in
+        // tunnelSectionShaftAvoidsTheOpenTemplate, and stated here so the two orders read as one.
         List<BuilderStructure.Placement> tunnel =
                 BuilderStructureNeeds.around(track(TrackKind.TUNNEL_SECTION));
-        assertTrue(firstIndexOf(tunnel, BuilderStructure.Kind.TunnelSection.class)
-                > lastIndexOf(tunnel, BuilderStructure.Kind.StairsFlight.class));
+        assertTrue(firstIndexOf(tunnel, BuilderStructure.Kind.StairsFlight.class)
+                > lastIndexOf(tunnel, BuilderStructure.Kind.TunnelSection.class));
     }
 
     private static int firstIndexOf(List<BuilderStructure.Placement> out,
@@ -430,10 +486,10 @@ final class BuilderStructureNeedsTest {
         LongSet template = new LongOpenHashSet(new long[]{taken.asLong()});
 
         assertFalse(BuilderStructureNeeds.allows(
-                new BuilderStructure.Kind.StairsFlight(0, 8), taken, List.of(), template));
+                new BuilderStructure.Kind.StairsFlight(0, 8, true), taken, List.of(), template));
         // …and nothing changes anywhere the template isn't.
         assertTrue(BuilderStructureNeeds.allows(
-                new BuilderStructure.Kind.StairsFlight(0, 8), taken.above(), List.of(), template));
+                new BuilderStructure.Kind.StairsFlight(0, 8, true), taken.above(), List.of(), template));
     }
 
     @Test
