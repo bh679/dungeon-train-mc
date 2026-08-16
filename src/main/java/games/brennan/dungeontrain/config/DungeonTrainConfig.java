@@ -173,6 +173,20 @@ public final class DungeonTrainConfig {
     public static final int MIN_SHARED_BOOK_REPEAT_GROUPS = 1;
     public static final int MAX_SHARED_BOOK_REPEAT_GROUPS = 64;
 
+    /**
+     * How many approved books an author must have written for a portal room to lock to them.
+     *
+     * <p>A room wants a catalogue, not a shelf. Locking to somebody with two books hands those two out
+     * over and over, so the Random Player and Random Signature settings draw only from authors above
+     * this bar. The Current Player setting has no bar — finding your OWN two books in a room is the
+     * point of it — and rotates to a random author for a player who has written nothing.</p>
+     *
+     * <p>Strictly more than, not at least: 10 means an author needs an eleventh book to qualify.</p>
+     */
+    public static final int DEFAULT_PORTAL_ROOM_AUTHOR_MIN_BOOKS = 10;
+    public static final int MIN_PORTAL_ROOM_AUTHOR_MIN_BOOKS = 0;
+    public static final int MAX_PORTAL_ROOM_AUTHOR_MIN_BOOKS = 1000;
+
     /** Default master for serving approved player-written narrative series back on narrative lecterns. */
     public static final boolean DEFAULT_DISCOVER_NARRATIVES_ENABLED = true;
 
@@ -252,6 +266,7 @@ public final class DungeonTrainConfig {
     public static final ModConfigSpec.BooleanValue LETTERS_ENABLED;
     public static final ModConfigSpec.DoubleValue SHARED_BOOK_LOOT_MAX_CHANCE;
     public static final ModConfigSpec.IntValue SHARED_BOOK_REPEAT_GROUPS;
+    public static final ModConfigSpec.IntValue PORTAL_ROOM_AUTHOR_MIN_BOOKS;
     public static final ModConfigSpec.BooleanValue SHARED_CARRIAGES_ENABLED;
     public static final ModConfigSpec.DoubleValue SHARED_CARRIAGE_POOL_CHANCE;
     public static final ModConfigSpec.DoubleValue SHARED_CARRIAGE_OWN_CHANCE;
@@ -303,6 +318,7 @@ public final class DungeonTrainConfig {
         LETTERS_ENABLED = pair.getLeft().lettersEnabled;
         SHARED_BOOK_LOOT_MAX_CHANCE = pair.getLeft().sharedBookLootMaxChance;
         SHARED_BOOK_REPEAT_GROUPS = pair.getLeft().sharedBookRepeatGroups;
+        PORTAL_ROOM_AUTHOR_MIN_BOOKS = pair.getLeft().portalRoomAuthorMinBooks;
         SHARED_CARRIAGES_ENABLED = pair.getLeft().sharedCarriagesEnabled;
         SHARED_CARRIAGE_POOL_CHANCE = pair.getLeft().sharedCarriagePoolChance;
         SHARED_CARRIAGE_OWN_CHANCE = pair.getLeft().sharedCarriageOwnChance;
@@ -459,6 +475,16 @@ public final class DungeonTrainConfig {
                         "pickups, so a nearly-exhausted pool could hand back a book they had just received.")
                 .defineInRange("sharedBookRepeatGroups", DEFAULT_SHARED_BOOK_REPEAT_GROUPS,
                         MIN_SHARED_BOOK_REPEAT_GROUPS, MAX_SHARED_BOOK_REPEAT_GROUPS);
+        ModConfigSpec.IntValue portalRoomAuthorMinBooks = b
+                .comment("How many approved community books an author must have written before a portal room whose Books",
+                        "setting is `player` or `signature` will lock to them. Strictly MORE than this, so 10 means an",
+                        "eleventh book is needed to qualify. A room wants a catalogue rather than a shelf: locking to",
+                        "somebody with two books hands those two out over and over. The `self` setting ignores this — finding",
+                        "your own books in a room is the point of it — and falls back to a random qualifying author for the",
+                        "many players who have written nothing. Lower this on a small or private server where nobody has",
+                        "written ten books yet; 0 lets any author with a single book fill a room.")
+                .defineInRange("portalRoomAuthorMinBooks", DEFAULT_PORTAL_ROOM_AUTHOR_MIN_BOOKS,
+                        MIN_PORTAL_ROOM_AUTHOR_MIN_BOOKS, MAX_PORTAL_ROOM_AUTHOR_MIN_BOOKS);
         ModConfigSpec.BooleanValue discoverNarrativesEnabled = b
                 .comment("Serve approved player-written narrative series back on narrative lecterns. When true, a lectern",
                         "may (weighted + tapered like shared-book loot, at LETTER granularity) lock to a player's narrative",
@@ -579,7 +605,7 @@ public final class DungeonTrainConfig {
                 freePlayNoticeToDiscord, devMessageConsentToDiscord, echoEncounterToDiscord, worldJoinReportToDiscord,
                 worldInfoToRelay, shareBooksEnabled, discoverSharedBooksEnabled, deathNotesEnabled,
                 loveNotesEnabled, lettersEnabled,
-                sharedBookLootMaxChance, sharedBookRepeatGroups, discoverNarrativesEnabled, narrativeDiscoveryRampThreshold,
+                sharedBookLootMaxChance, sharedBookRepeatGroups, portalRoomAuthorMinBooks, discoverNarrativesEnabled, narrativeDiscoveryRampThreshold,
                 difficultyLevelNoticeToDiscord, introCinematicEnabled, introCinematicDurationTicks,
                 introCinematicChunkPreloadEnabled, sharedCarriagesEnabled, sharedCarriagePoolChance,
                 sharedCarriageOwnChance);
@@ -801,6 +827,12 @@ public final class DungeonTrainConfig {
         return Math.max(MIN_SHARED_BOOK_REPEAT_GROUPS, Math.min(MAX_SHARED_BOOK_REPEAT_GROUPS, v));
     }
 
+    /** Approved books an author needs before a Random Player / Random Signature room will lock to them. */
+    public static int getPortalRoomAuthorMinBooks() {
+        int v = isLoaded() ? PORTAL_ROOM_AUTHOR_MIN_BOOKS.get() : DEFAULT_PORTAL_ROOM_AUTHOR_MIN_BOOKS;
+        return Math.max(MIN_PORTAL_ROOM_AUTHOR_MIN_BOOKS, Math.min(MAX_PORTAL_ROOM_AUTHOR_MIN_BOOKS, v));
+    }
+
     /**
      * The repeat threshold in CARRIAGES — {@link #getSharedBookRepeatGroups()} × {@link #getGroupSize()}.
      * The selector compares raw carriage indices, so the group-based setting is resolved here rather than
@@ -984,6 +1016,7 @@ public final class DungeonTrainConfig {
             ModConfigSpec.BooleanValue lettersEnabled,
             ModConfigSpec.DoubleValue sharedBookLootMaxChance,
             ModConfigSpec.IntValue sharedBookRepeatGroups,
+            ModConfigSpec.IntValue portalRoomAuthorMinBooks,
             ModConfigSpec.BooleanValue discoverNarrativesEnabled,
             ModConfigSpec.DoubleValue narrativeDiscoveryRampThreshold,
             ModConfigSpec.BooleanValue difficultyLevelNoticeToDiscord,

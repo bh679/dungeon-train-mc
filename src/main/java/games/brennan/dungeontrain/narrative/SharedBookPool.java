@@ -338,8 +338,14 @@ public final class SharedBookPool {
                 merged.size(), Math.max(0, added));
     }
 
-    /** Materialise one pool entry; returns {@code null} if it lacks the required fields. */
-    private static PoolBook parseBook(JsonObject o) {
+    /**
+     * Materialise one pool entry; returns {@code null} if it lacks the required fields.
+     *
+     * <p>Package-private rather than private so {@link AuthorBookPool} can reuse it: an
+     * author-locked room's books come off the same endpoint in the same shape, and parsing them
+     * twice in two places is how the two would eventually disagree about an optional field.</p>
+     */
+    static PoolBook parseBook(JsonObject o) {
         if (!o.has("id")) return null;
         int id = o.get("id").getAsInt();
         String title = o.has("title") && !o.get("title").isJsonNull() ? o.get("title").getAsString() : "";
