@@ -149,6 +149,40 @@ public record BuilderOpenRequest(BuilderPhotoPaths.Kind kind, String id, Carriag
         };
     }
 
+    /**
+     * The build a builder world is already holding, read back off the world, or empty when it is
+     * holding nothing named.
+     *
+     * <p>Reopening a saved builder world re-runs the Open that put the build there
+     * ({@code BuilderWorldSetup.reopen}), so that a world always comes back up as the scene its mode
+     * describes rather than as whatever mixture the last session left in the blocks. This is the
+     * inverse of the three writes that record it — {@code setBuilderSubType},
+     * {@code setBuilderTrackKind} and {@code setBuilderName} — and has to stay their exact mirror:
+     * the token it reads is the same one {@code BuilderSave} routes on, so a wrong answer here
+     * reopens the world as the wrong kind of build.</p>
+     *
+     * <p>Empty for a draft (a New that was never saved has no name), which the caller answers by
+     * standing the mode's bare scene back up instead.</p>
+     */
+    public static Optional<BuilderOpenRequest> fromWorldData(String name, String subTypeToken,
+                                                             String partKindId,
+                                                             String trackKindId) {
+        if (name == null || name.isEmpty()) {
+            return Optional.empty();
+        }
+        // A track build records no sub type — the kind is the field that names it — so it is asked
+        // first, exactly as BuilderSave does before it reads the portal-room token.
+        if (trackKindId != null && !trackKindId.isEmpty()) {
+            return forTrack(TrackKind.fromId(trackKindId), name);
+        }
+        if (PORTAL_ROOM_SUB_TYPE.equals(subTypeToken)) {
+            return Optional.of(forPortalRoom(name));
+        }
+        return BuilderNewOptions.SubType.fromId(subTypeToken)
+                .flatMap(subType ->
+                        forSelection(subType, name, CarriagePartKind.fromId(partKindId)));
+    }
+
     /** Whether this request is for a portal room rather than something on a carriage. */
     public boolean isPortalRoom() {
         return kind == BuilderPhotoPaths.Kind.PORTAL_ROOM;

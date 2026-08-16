@@ -6861,6 +6861,23 @@
       "released_at": null
     },
     {
+      "id": "builder-scene-matches-its-mode",
+      "version": "0.552.0",
+      "type": "fix",
+      "title": "The Train Builder world always matches the mode you are in",
+      "summary": "Switching between building a carriage and building a dimensional carriage now rebuilds the world around you. Coming out of Train Dimensions puts the grass platform and the track back \u2014 the track used to stay missing, leaving the train parked on nothing \u2014 and going into it clears them away, so a portal room stands in empty space instead of on a lawn. The same is true whichever way you get there: New, Open, a mode switch, or reopening a saved builder world all leave you with a world the mode can explain. Reopening a builder world now reloads the build from the template it was saved as, so anything built since your last Save is not kept.",
+      "highlights": [
+        "Leaving Train Dimensions puts the platform and the track back under the train.",
+        "Entering Train Dimensions clears the platform, so a portal room stands in open space.",
+        "New, Open, mode switches and reopening a world all reset the scene the same way.",
+        "Reopening a builder world reloads the saved template \u2014 unsaved changes are not kept."
+      ],
+      "date": "2026-08-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "builder-menu-default-template",
       "version": "0.552.0",
       "type": "feat",
