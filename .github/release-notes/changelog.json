@@ -7100,8 +7100,8 @@
       "id": "train-dimension-room-loot-stats",
       "version": "0.565.0",
       "type": "fix",
-      "title": "Train Dimension loot is worth what it should be, not a million",
-      "summary": "Chests inside a Train Dimension were handing out weapons and armour with numbers in the millions. The room was reading its difficulty off the wrong thing entirely \u2014 an internal id, not where on the train you actually are. Loot in there is now rolled to the stage of the portal carriage you walked in through, so a room's chests are worth what a carriage's chests are worth at that point in the run. Which room you get, and how it is built, is unchanged.",
+      "title": "Train Dimension loot now matches its carriage",
+      "summary": "Chests inside a Train Dimension now roll their loot to the stage of the portal carriage you walked in through, so they're worth what a carriage's chests are worth at that point in the run. Which room you get, and how it is built, is unchanged.",
       "highlights": [
         "Train Dimension room loot now scales to the portal carriage you entered from",
         "Enchantment levels in those rooms are capped to the run's progression again"
