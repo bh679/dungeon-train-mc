@@ -108,6 +108,22 @@ final class PortalRoomModeTest {
             "a new mode must decide for itself whether it fogs — add it to this test");
     }
 
+    /**
+     * Stated per mode rather than as {@code == BEDROCK_LOCK}, for the reason {@link #fogging} is:
+     * the plug is the only thing closing off the two corridors that stand off the room's ±X ends,
+     * which the skin never covers, so a mode added later has to answer this one deliberately.
+     */
+    @Test
+    @DisplayName("Bedrock Lock alone plugs with bedrock — every other mode seals nothing")
+    void plugLocking() {
+        assertTrue(PortalRoomMode.BEDROCK_LOCK.locksPlug());
+        assertFalse(PortalRoomMode.ENDLESS_REPETITION.locksPlug());
+        assertFalse(PortalRoomMode.ENDLESS_OPEN.locksPlug());
+        assertFalse(PortalRoomMode.BEDROCKLESS.locksPlug());
+        assertEquals(4, PortalRoomMode.values().length,
+            "a new mode must decide for itself whether it locks its plug — add it to this test");
+    }
+
     @Test
     @DisplayName("next() cycles through every mode and returns to where it started")
     void nextCycles() {

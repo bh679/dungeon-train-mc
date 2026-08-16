@@ -114,7 +114,10 @@ public final class PortalCarriageBuilder {
     private static final BlockState POCKET_LIGHT = Blocks.SHROOMLIGHT.defaultBlockState();
     /** Solid fill behind the twin's dummy door. */
     private static final BlockState PLUG = Blocks.DEEPSLATE.defaultBlockState();
-    /** {@link PortalRoomMode#BEDROCK_LOCK}'s skin, one block outside the room box. */
+    /**
+     * {@link PortalRoomMode#BEDROCK_LOCK}'s unbreakable rock: the skin one block outside the room
+     * box, and the plug behind each twin's outer door — see {@link PortalRoomMode#locksPlug}.
+     */
     private static final BlockState LOCK = Blocks.BEDROCK.defaultBlockState();
     /** What a liquid found against a room's outside wall is replaced with — the rock it is cut into. */
     private static final BlockState FLUID_PLUG = Blocks.DEEPSLATE.defaultBlockState();
@@ -857,11 +860,14 @@ public final class PortalCarriageBuilder {
         sealCorridorMouth(level, sealX, corridorOrigin, dims, roomOrigin, roomSize,
             base.roomOrigin(dims, layout), role);
 
-        // Dead space behind the door that leads nowhere, at the other end.
+        // Dead space behind the door that leads nowhere, at the other end. Unbreakable under Bedrock
+        // Lock: the room's own skin stops at its ±X ends, so the plugs are what closes off the two
+        // corridors standing off them. Read off `base` rather than `structure` — the mode is the
+        // same on a shadow, but the pair's own structure is the thing that has one.
         BlockPos plugFrom = entry
             ? corridorOrigin.offset(-PLUG_DEPTH, 0, 0)
             : corridorOrigin.offset(layout.length(), 0, 0);
-        plugBeyond(level, plugFrom, PLUG_DEPTH, dims);
+        plugBeyond(level, plugFrom, PLUG_DEPTH, dims, base.mode().locksPlug() ? LOCK : PLUG);
     }
 
     /**
@@ -926,9 +932,11 @@ public final class PortalCarriageBuilder {
      * <p><b>Four faces, not six.</b> The room's ±X ends are the two corridors' door planes — the way
      * back to the train, and the one part of a twin that is block-identical to its carriage. Skinning
      * those would either wall the player in or break that identity, so the lock covers the sides, the
-     * ceiling and the floor and leaves the doors alone. It follows that a determined player can still
-     * dig out sideways through a corridor's own wall and its plug; sealing that would mean changing
-     * corridor geometry, which is shared with the carriage and cannot move.</p>
+     * ceiling and the floor and leaves the doors alone. What stands off those two ends is closed off
+     * instead by the corridors' own plugs, which this mode fills with {@link #LOCK} — see
+     * {@link PortalRoomMode#locksPlug}. It follows that a determined player can still dig out
+     * sideways through a corridor's own wall; sealing that would mean changing corridor geometry,
+     * which is shared with the carriage and cannot move.</p>
      */
     private static void bedrockSkin(ServerLevel level, BlockPos roomOrigin, Vec3i size) {
         int x0 = roomOrigin.getX();
@@ -1151,14 +1159,19 @@ public final class PortalCarriageBuilder {
      * Solid rock filling {@code depth} blocks from {@code from} along +X, across the corridor's
      * cross-section — the dead space behind a twin's door that leads nowhere, so nothing is reachable
      * or visible through it if it is ever forced open.
+     *
+     * <p>{@code fill} is the caller's, because "not reachable" is a stronger claim for some rooms
+     * than others: a {@link PortalRoomMode#BEDROCK_LOCK} room plugs with {@link #LOCK} so its two
+     * corridors cannot be dug out of, every other mode with ordinary {@link #PLUG} rock.</p>
      */
-    private static void plugBeyond(ServerLevel level, BlockPos from, int depth, CarriageDims dims) {
+    private static void plugBeyond(ServerLevel level, BlockPos from, int depth, CarriageDims dims,
+                                   BlockState fill) {
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         for (int dx = 0; dx < depth; dx++) {
             for (int dz = -1; dz <= dims.width(); dz++) {
                 for (int dy = 0; dy < dims.height(); dy++) {
                     pos.set(from.getX() + dx, from.getY() + dy, from.getZ() + dz);
-                    level.setBlock(pos, PLUG, Block.UPDATE_ALL);
+                    level.setBlock(pos, fill, Block.UPDATE_ALL);
                 }
             }
         }

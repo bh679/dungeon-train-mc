@@ -13,8 +13,9 @@ import java.util.Locale;
  *
  * <h2>What each mode does</h2>
  * <ul>
- *   <li>{@link #BEDROCK_LOCK} — a one-block bedrock skin outside the room box. No repetition. The
- *       default, and the closest to how every room behaved before this existed.</li>
+ *   <li>{@link #BEDROCK_LOCK} — a one-block bedrock skin outside the room box, and bedrock rather
+ *       than ordinary rock in the plugs beyond both twins' outer doors. No repetition. The default,
+ *       and the closest to how every room behaved before this existed.</li>
  *   <li>{@link #ENDLESS_REPETITION} — the whole room repeats as a grid of copies around the base
  *       tile, seams between neighbours carved open, tiles appended as the player approaches an
  *       edge.</li>
@@ -116,6 +117,22 @@ public enum PortalRoomMode {
      */
     public boolean clearsSurroundings() {
         return this == BEDROCKLESS;
+    }
+
+    /**
+     * True when the dead space behind a twin's outer door is unbreakable rather than ordinary rock.
+     *
+     * <p>The skin wraps the room box and stops at its ±X ends, because those are the corridor door
+     * planes — so a room sealed on four faces still had two corridors of ordinary stone brick
+     * standing off either end of it, each backed by three blocks of deepslate a player could mine
+     * straight through and walk out of the lock. Locking the plug closes the ends of that.</p>
+     *
+     * <p>A predicate of its own rather than the complement of {@link #clearsSurroundings}: the two
+     * endless modes seal nothing at all — their boundary is the next copy of the room — and must
+     * keep the plug they have.</p>
+     */
+    public boolean locksPlug() {
+        return this == BEDROCK_LOCK;
     }
 
     /**
