@@ -80,7 +80,8 @@ final class BuilderTileButton extends Button {
 
         BuilderTileArt.render(g, mode, textureAvailable, x, y, w, h, this.alpha);
 
-        // Dim the whole tile slightly until it's hovered, so the focused option pops.
+        // Dim the whole tile slightly until it's hovered — or, on the strip, until it's the one
+        // chosen — so the live option pops out of the row.
         if (!lit) {
             g.fill(x, y, x + w, y + h, IDLE_DIM);
         }

@@ -135,15 +135,16 @@ public final class BuilderOpenScreen extends Screen {
 
         // Every mode at once, not one at a time. The mode decides which wall of photos the rest of
         // the screen is, and behind a cycling tile it was the only thing here you couldn't see —
-        // reaching a particular one meant clicking blind through the others.
+        // reaching a particular one meant clicking blind through the others. Each keeps its place
+        // in the row and the chosen one simply grows, so a mode is always where you last saw it.
         //
         // The mode's own art, not a template preview: the grid below is already showing every
         // template's photo, so a second picture of one of them would just compete with it.
-        BuilderModeStripLayout strip = BuilderModeStripLayout.of(this.width, y,
+        BuilderModeStripLayout strip = BuilderModeStripLayout.of(this.width, y, mode.ordinal(),
                 CONTROL_WIDTH, BuilderTypeControls.ART_HEIGHT);
         BuilderMode[] modes = BuilderMode.values();
         for (int slot = 0; slot < BuilderModeStripLayout.SLOTS; slot++) {
-            BuilderMode tileMode = modes[BuilderModeStripLayout.rotatedIndex(slot, mode.ordinal())];
+            BuilderMode tileMode = modes[slot];
             boolean isSelected = strip.isSelected(slot);
             this.addRenderableWidget(new BuilderTileButton(
                     strip.xFor(slot), strip.yFor(slot), strip.widthFor(slot), strip.heightFor(slot),

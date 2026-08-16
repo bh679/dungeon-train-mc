@@ -16,24 +16,19 @@ import games.brennan.dungeontrain.builder.BuilderMode;
  * see. Showing all of them costs the row nothing vertically — {@link #height()} is the selected
  * tile's height, exactly what the cycling tile occupied — so the template grid below keeps its
  * full budget.</p>
+ *
+ * <p>Slot order <em>is</em> menu order: slot {@code n} is always {@code BuilderMode.values()[n]}.
+ * The selection expands where it already sits rather than moving to a fixed middle, so a mode stays
+ * where you last saw it and only its size changes. The row's outer bounds hold still while that
+ * happens — one large tile and the rest small comes to the same {@link #stripWidth()} whichever one
+ * is chosen — so the strip doesn't jump on the screen as the big tile slides along it.</p>
  */
-record BuilderModeStripLayout(int originX, int topY, int selectedWidth, int selectedHeight,
+record BuilderModeStripLayout(int originX, int topY, int selectedSlot,
+                              int selectedWidth, int selectedHeight,
                               int smallWidth, int smallHeight, int gap) {
 
     /** One slot per mode. Derived so a fifth mode joins the strip rather than falling off it. */
     static final int SLOTS = BuilderMode.values().length;
-
-    /**
-     * Where the large tile sits, with the others rotating around it in menu order.
-     *
-     * <p>A fixed slot rather than "wherever the selected mode falls in the enum": the first and last
-     * modes would then have nothing on one side, and the row would visibly lurch as you clicked
-     * along it. Here the big tile never moves and only the pictures either side change.</p>
-     *
-     * <p>The middle of an odd count, and the left of the two middles on an even one — which for
-     * today's four modes is one thumbnail on the left and two on the right.</p>
-     */
-    static final int SELECTED_SLOT = (SLOTS - 1) / 2;
 
     static final int GAP = 4;
 
@@ -50,11 +45,13 @@ record BuilderModeStripLayout(int originX, int topY, int selectedWidth, int sele
     /**
      * @param screenWidth    screen width in GUI pixels
      * @param topY           first Y the strip may occupy
+     * @param selectedSlot   which slot is expanded — the selected mode's own place in the menu order
      * @param selectedWidth  how wide the large tile wants to be — the width of the controls below it
      * @param selectedHeight the row's height, which never changes: the grid underneath is budgeted
      *                       against it, so a strip that grew would push the grid down
      */
-    static BuilderModeStripLayout of(int screenWidth, int topY, int selectedWidth, int selectedHeight) {
+    static BuilderModeStripLayout of(int screenWidth, int topY, int selectedSlot,
+                                     int selectedWidth, int selectedHeight) {
         int smalls = Math.max(0, SLOTS - 1);
         int gaps = GAP * Math.max(0, SLOTS - 1);
         int content = Math.max(1, screenWidth - 2 * SIDE_MARGIN - gaps);
@@ -79,23 +76,22 @@ record BuilderModeStripLayout(int originX, int topY, int selectedWidth, int sele
         int stripWidth = selected + smalls * smallWidth + gaps;
         int originX = Math.max(0, (screenWidth - stripWidth) / 2);
 
-        return new BuilderModeStripLayout(originX, topY, selected, selectedHeight,
-                smallWidth, smallHeight, GAP);
+        return new BuilderModeStripLayout(originX, topY, clampSlot(selectedSlot), selected,
+                selectedHeight, smallWidth, smallHeight, GAP);
     }
 
     /**
-     * Which mode belongs in {@code slot} when {@code selectedIndex} is showing.
+     * Keep the expanded slot inside the row.
      *
-     * <p>A rotation rather than a reshuffle: the modes keep their menu order, read cyclically from
-     * whichever one lands in {@link #SELECTED_SLOT}. So the strip is always the same four pictures
-     * in the same sequence, just wound round to put the current one under the caption.</p>
+     * <p>An out-of-range slot would otherwise mean no tile grows and the strip silently comes out
+     * all-thumbnails — a wrong picture rather than a crash, which is the harder kind to notice.</p>
      */
-    static int rotatedIndex(int slot, int selectedIndex) {
-        return Math.floorMod(selectedIndex - SELECTED_SLOT + slot, SLOTS);
+    private static int clampSlot(int slot) {
+        return Math.max(0, Math.min(slot, SLOTS - 1));
     }
 
     boolean isSelected(int slot) {
-        return slot == SELECTED_SLOT;
+        return slot == selectedSlot;
     }
 
     int widthFor(int slot) {
