@@ -5,8 +5,11 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.builder.BuilderCinematicService;
 import games.brennan.dungeontrain.builder.BuilderMode;
 import games.brennan.dungeontrain.builder.BuilderSpawn;
+import games.brennan.dungeontrain.builder.BuilderTrackBuild;
+import games.brennan.dungeontrain.builder.BuilderTrackPlot;
 import games.brennan.dungeontrain.builder.BuilderWorldLayout;
 import games.brennan.dungeontrain.builder.BuilderWorldSetup;
+import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.core.BlockPos;
@@ -77,10 +80,15 @@ public record BuilderSetupPacket(String modeId) implements CustomPacketPayload {
             // so on a fresh builder world the player is currently in mid-air over the void.
             DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
             CarriageDims dims = data.dims();
-            // Far enough back that the whole run fits on screen — a three-carriage train seen
-            // from the old fixed margin was a wall of hull. Read back off the world rather than
-            // off the mode, so the framing follows whatever setupIfNeeded actually parked.
-            BlockPos spawn = BuilderSpawn.forLevel(level);
+            // A track plot gets its own standoff, and everything else goes through BuilderSpawn —
+            // the same split BuilderOpenPacket makes, for the same reason. BuilderSpawn sizes the
+            // train standoff off what is actually parked (and answers the portal room itself), but
+            // a track build has no train at all: it would stand you back off an empty corridor with
+            // the plot somewhere behind you.
+            TrackKind trackKind = BuilderTrackBuild.kindOf(data);
+            BlockPos spawn = trackKind != null
+                ? BuilderTrackPlot.viewPos(trackKind, dims)
+                : BuilderSpawn.forLevel(level);
             // Facing the template, not vanilla's yaw 0 — the spawn sits on the +Z side of the
             // train, so yaw 0 (straight down +Z) would put the build squarely behind them.
             float[] facing = BuilderCinematicService.facingFrom(

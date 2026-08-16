@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.builder;
 
+import games.brennan.dungeontrain.portal.PortalRoomMode;
 import games.brennan.dungeontrain.track.variant.TrackKind;
 
 import java.util.List;
@@ -24,6 +25,22 @@ import java.util.List;
 public final class BuilderOpenOptions {
 
     private BuilderOpenOptions() {}
+
+    /**
+     * The four room modes in menu order, most enclosed first.
+     *
+     * <p>Sealed in rock, then sealed in nothing, then a floor that runs out of sight, then the room
+     * itself repeating forever — a reader going along the row is walking the walls outwards. Not
+     * {@link PortalRoomMode#values()}, whose order is the order the modes were written and puts
+     * Repeating second, between the two sealed ones.</p>
+     *
+     * <p>Here rather than in the Open screen because the Builder Menu tile reads it too, to land on
+     * the same room clicking the leftmost tile twice would reach — and a second copy of an order
+     * that is a judgement about reading, not a derivation, is a copy that drifts.</p>
+     */
+    public static final List<PortalRoomMode> PORTAL_ROOM_MODE_ORDER = List.of(
+            PortalRoomMode.BEDROCK_LOCK, PortalRoomMode.BEDROCKLESS,
+            PortalRoomMode.ENDLESS_OPEN, PortalRoomMode.ENDLESS_REPETITION);
 
     /** Which store the grid lists — and therefore what a clicked id means to the server. */
     public enum OpenSource {

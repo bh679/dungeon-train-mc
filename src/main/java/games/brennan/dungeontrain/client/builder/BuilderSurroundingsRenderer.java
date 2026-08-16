@@ -124,6 +124,15 @@ public final class BuilderSurroundingsRenderer {
             batches = List.of();
             return;
         }
+        // A track build has no train to imply one around, and the single volume it does send is the
+        // plot — a rail tile is two blocks tall, so reading it as a carriage below is nonsense, and
+        // asking CarriageDims for one outside its range throws and takes the client's tick loop with
+        // it. The line is drawn by BuilderTrackGhostRenderer instead, off this same volume. Carried
+        // from #971, which found this the hard way.
+        if (ClientTrackGhost.isActive()) {
+            batches = List.of();
+            return;
+        }
 
         BuilderSurroundings.Context ctx = context(volumes);
         if (ctx == null) {

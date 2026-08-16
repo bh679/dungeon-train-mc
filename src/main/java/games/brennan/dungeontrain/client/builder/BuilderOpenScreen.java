@@ -248,17 +248,13 @@ public final class BuilderOpenScreen extends Screen {
     }
 
     /**
-     * The four room modes as the ids the grid carries around, most enclosed first.
-     *
-     * <p>Sealed in rock, then sealed in nothing, then a floor that runs out of sight, then the room
-     * itself repeating forever — a reader going along the row is walking the walls outwards. Not
-     * {@code PortalRoomMode.values()}, whose order is the order the modes were written and puts
-     * Repeating second, between the two sealed ones.</p>
+     * The four room modes as the ids the grid carries around, in menu order — the reasoning for
+     * that order, and why it isn't {@code PortalRoomMode.values()}, is on
+     * {@link BuilderOpenOptions#PORTAL_ROOM_MODE_ORDER}, which the Builder Menu tile reads too.
      */
     private static List<String> portalRoomModeIds() {
         List<String> out = new ArrayList<>();
-        for (PortalRoomMode m : List.of(PortalRoomMode.BEDROCK_LOCK, PortalRoomMode.BEDROCKLESS,
-                PortalRoomMode.ENDLESS_OPEN, PortalRoomMode.ENDLESS_REPETITION)) {
+        for (PortalRoomMode m : BuilderOpenOptions.PORTAL_ROOM_MODE_ORDER) {
             out.add(m.id());
         }
         return out;
