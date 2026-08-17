@@ -7130,9 +7130,10 @@
       "version": "0.567.0",
       "type": "feat",
       "title": "Portal rooms can be one author's library",
-      "summary": "A portal room can now be set to serve books by a single community author, so every book you find inside it is by the same person. The room announces whose library you have walked into, and the author can be your own writing, a random player who has written more than ten books, or a random pen name that has.",
+      "summary": "A portal room can now be set to serve books by a single community author, so every book you find inside it is by the same person. The room announces whose library you have walked into, and the author can be your own writing, a random player who has written more than ten books, a random pen name that has \u2014 or a weighted mix of the three, rolled per room.",
       "highlights": [
-        "New Books setting on portal rooms in the editor: Off, Current Player, Random Player or Random Signature.",
+        "New Books setting on portal rooms in the editor: Off, Current Player, Random Player, Random Signature, or Random Mix.",
+      "Random Mix rolls one of the three per room, and each room sets its own odds \u2014 a study can lean toward your own writing while a great hall leans toward strangers.",
         "Every book in a locked room comes from that author \u2014 built-in books are replaced too, not just community ones.",
         "Player and signature are separate choices: one account can write under several pen names, and several accounts can share one.",
         "Written nothing yourself? A Current Player room quietly picks somebody else rather than standing empty.",

@@ -95,6 +95,16 @@ public final class EditorPlotLabelsRenderer {
         ROOM_CONTENTS_CYCLE,
         /** The author-lock row — whether every book in the room is by one person, and which one. */
         ROOM_BOOKS_CYCLE,
+        /** The three shares of a Random room's roll — only shown while Books is Random. */
+        BOOKS_SELF_DEC,
+        BOOKS_SELF_INC,
+        BOOKS_SELF_TYPE,
+        BOOKS_PLAYER_DEC,
+        BOOKS_PLAYER_INC,
+        BOOKS_PLAYER_TYPE,
+        BOOKS_SIGNATURE_DEC,
+        BOOKS_SIGNATURE_INC,
+        BOOKS_SIGNATURE_TYPE,
         /** The extra-corridors row — only shown while the walls repeat. */
         EXITS_CYCLE,
         /** The stepper for how far apart those extra corridors go. */
@@ -116,7 +126,8 @@ public final class EditorPlotLabelsRenderer {
      * {@link #rows} now, so the three cannot drift.</p>
      */
     public enum RowKind {
-        NAME, WEIGHT, LENGTH, WIDTH, HEIGHT, MODE, COPIES, ROOM_CONTENTS, ROOM_BOOKS, EXITS,
+        NAME, WEIGHT, LENGTH, WIDTH, HEIGHT, MODE, COPIES, ROOM_CONTENTS, ROOM_BOOKS,
+        BOOKS_SELF, BOOKS_PLAYER, BOOKS_SIGNATURE, EXITS,
         EXIT_EVERY, EXIT_MOVE, ENTER, ACTION, CONTENTS
     }
 
@@ -135,6 +146,11 @@ public final class EditorPlotLabelsRenderer {
         if (hasCopiesRow(entry)) buf[n++] = RowKind.COPIES;
         if (hasRoomContentsRow(entry)) buf[n++] = RowKind.ROOM_CONTENTS;
         if (hasRoomBooksRow(entry)) buf[n++] = RowKind.ROOM_BOOKS;
+        if (hasBookWeightRows(entry)) {
+            buf[n++] = RowKind.BOOKS_SELF;
+            buf[n++] = RowKind.BOOKS_PLAYER;
+            buf[n++] = RowKind.BOOKS_SIGNATURE;
+        }
         if (hasExitsRow(entry)) buf[n++] = RowKind.EXITS;
         if (hasExitEveryRow(entry)) buf[n++] = RowKind.EXIT_EVERY;
         if (hasExitMoveRow(entry)) buf[n++] = RowKind.EXIT_MOVE;
@@ -236,6 +252,49 @@ public final class EditorPlotLabelsRenderer {
     public static String roomBooksLabel(String modeTag) {
         return "Books: " + games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag)
             .books().displayName();
+    }
+
+    /**
+     * Whether the three weight steppers show: only while Books is Random, since that is the only
+     * value that rolls and so the only one with shares to divide.
+     */
+    public static boolean hasBookWeightRows(EditorPlotLabelsPacket.Entry entry) {
+        return hasRoomBooksRow(entry)
+            && games.brennan.dungeontrain.portal.PortalRoomSettings.parse(entry.roomMode())
+                .books().weightsApply();
+    }
+
+    /** The weight a book-share row edits, or {@code -1} when {@code kind} is not one of them. */
+    public static int bookWeightValue(String modeTag, RowKind kind) {
+        games.brennan.dungeontrain.portal.PortalRoomBooks books =
+            games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag).books();
+        return switch (kind) {
+            case BOOKS_SELF -> books.selfWeight();
+            case BOOKS_PLAYER -> books.playerWeight();
+            case BOOKS_SIGNATURE -> books.signatureWeight();
+            default -> -1;
+        };
+    }
+
+    /** Command token for a book-share row — {@code booksself} / {@code booksplayer} / … */
+    public static String bookWeightCommand(RowKind kind) {
+        return switch (kind) {
+            case BOOKS_SELF -> "booksself";
+            case BOOKS_PLAYER -> "booksplayer";
+            case BOOKS_SIGNATURE -> "bookssignature";
+            default -> "";
+        };
+    }
+
+    /** What a book-share row reads, e.g. {@code "Self: 2"}. */
+    public static String bookWeightLabel(String modeTag, RowKind kind) {
+        String name = switch (kind) {
+            case BOOKS_SELF -> "Self";
+            case BOOKS_PLAYER -> "Player";
+            case BOOKS_SIGNATURE -> "Signature";
+            default -> "";
+        };
+        return name + ": " + bookWeightValue(modeTag, kind);
     }
 
     /**
@@ -623,6 +682,12 @@ public final class EditorPlotLabelsRenderer {
             case COPIES -> CellKind.COPIES_CYCLE;
             case ROOM_CONTENTS -> CellKind.ROOM_CONTENTS_CYCLE;
             case ROOM_BOOKS -> CellKind.ROOM_BOOKS_CYCLE;
+            case BOOKS_SELF -> stepperCell(hitX, halfW,
+                CellKind.BOOKS_SELF_DEC, CellKind.BOOKS_SELF_INC, CellKind.BOOKS_SELF_TYPE);
+            case BOOKS_PLAYER -> stepperCell(hitX, halfW,
+                CellKind.BOOKS_PLAYER_DEC, CellKind.BOOKS_PLAYER_INC, CellKind.BOOKS_PLAYER_TYPE);
+            case BOOKS_SIGNATURE -> stepperCell(hitX, halfW,
+                CellKind.BOOKS_SIGNATURE_DEC, CellKind.BOOKS_SIGNATURE_INC, CellKind.BOOKS_SIGNATURE_TYPE);
             case EXITS -> CellKind.EXITS_CYCLE;
             case EXIT_EVERY -> stepperCell(hitX, halfW,
                 CellKind.EXIT_EVERY_DEC, CellKind.EXIT_EVERY_INC, CellKind.EXIT_EVERY_TYPE);
@@ -809,6 +874,34 @@ public final class EditorPlotLabelsRenderer {
                     int bg = hovered == CellKind.ROOM_BOOKS_CYCLE ? HOVER_COLOR : BUTTON_BG;
                     drawQuad(ps, buffer, -halfW + 0.01, rBot + 0.005, halfW - 0.01, rTop - 0.005, bg);
                     drawCenteredText(ps, buffer, font, roomBooksLabel(entry.roomMode()), 0, rCY, WEIGHT_COLOR);
+                }
+                // The three shares of a Random room's roll. Same [-] N [+] geometry as every other
+                // stepper, drawn from one branch because the rows differ only in which share they
+                // name — three copies of this is three places for the geometry to drift.
+                case BOOKS_SELF, BOOKS_PLAYER, BOOKS_SIGNATURE -> {
+                    CellKind dec = switch (rowKind) {
+                        case BOOKS_SELF -> CellKind.BOOKS_SELF_DEC;
+                        case BOOKS_PLAYER -> CellKind.BOOKS_PLAYER_DEC;
+                        default -> CellKind.BOOKS_SIGNATURE_DEC;
+                    };
+                    CellKind inc = switch (rowKind) {
+                        case BOOKS_SELF -> CellKind.BOOKS_SELF_INC;
+                        case BOOKS_PLAYER -> CellKind.BOOKS_PLAYER_INC;
+                        default -> CellKind.BOOKS_SIGNATURE_INC;
+                    };
+                    CellKind type = switch (rowKind) {
+                        case BOOKS_SELF -> CellKind.BOOKS_SELF_TYPE;
+                        case BOOKS_PLAYER -> CellKind.BOOKS_PLAYER_TYPE;
+                        default -> CellKind.BOOKS_SIGNATURE_TYPE;
+                    };
+                    drawStepperArrows(ps, buffer, font, halfW, rTop, rBot, rCY, hovered, dec, inc);
+                    if (hovered == type) {
+                        double third = (halfW * 2.0) / 3.0;
+                        drawQuad(ps, buffer, -halfW + third + 0.005, rBot + 0.005,
+                            halfW - third - 0.005, rTop - 0.005, HOVER_COLOR);
+                    }
+                    drawCenteredText(ps, buffer, font, bookWeightLabel(entry.roomMode(), rowKind),
+                        0, rCY, WEIGHT_COLOR);
                 }
                 // Exits — how many extra ways back to the train this room scatters through its
                 // copies. Only an endless room has anywhere to put one.

@@ -17,6 +17,10 @@
     "weight": 1,
     "mode": "bedrockless"
   },
+  "biggerlibrary": {
+    "weight": 1,
+    "mode": "bedrock_lock"
+  },
   "blocks": {
     "weight": 1,
     "mode": "endless_repetition"

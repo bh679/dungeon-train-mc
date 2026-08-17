@@ -49,19 +49,22 @@ public final class PortalLibraryGreeter {
         Integer last = GREETED.get(player.getUUID());
         if (last != null && last == pairKey) return;
 
-        PortalRoomBooks mode = PortalCarriageEvents.portalRoomBooksFor(pairKey);
-        if (!mode.locks()) {
+        PortalRoomBooks books = PortalCarriageEvents.portalRoomBooksFor(pairKey);
+        if (!books.locks()) {
             // Not a library. Forget the last one so walking out of a locked room and back in later
             // announces again — the map holds "the library you are currently in", not a history.
             GREETED.remove(player.getUUID());
             return;
         }
         Optional<BookAuthorsClient.Author> author =
-            PortalRoomAuthorLocks.authorFor(player, pairKey, mode, ContentModeMirror.isKid(player));
+            PortalRoomAuthorLocks.authorFor(player, pairKey, books, ContentModeMirror.isKid(player));
         if (author.isEmpty()) return;    // still resolving, or nobody to name — try again next scan
 
         GREETED.put(player.getUUID(), pairKey);
-        boolean mine = mode.startsFromSelf() && isOwn(player, author.get());
+        // The ROLLED kind, not the setting: a Random room that came up Self should still say "you
+        // wrote these" rather than name the reader as a stranger to their own shelves.
+        boolean mine = PortalRoomAuthorLocks.effectiveKind(pairKey, books).startsFromSelf()
+            && isOwn(player, author.get());
         player.sendSystemMessage(
             PortalLibraryMessage.random(player.getRandom(), author.get().name(), mine));
     }

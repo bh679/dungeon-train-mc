@@ -110,8 +110,9 @@ public final class PortalRoomAuthorLocks {
      * is better than one that shows none.</p>
      */
     public static Optional<BookAuthorsClient.Author> authorFor(ServerPlayer player, int pairKey,
-                                                              PortalRoomBooks mode, boolean kidSafe) {
-        if (player == null || mode == null || !mode.locks()) return Optional.empty();
+                                                              PortalRoomBooks books, boolean kidSafe) {
+        if (player == null || books == null || !books.locks()) return Optional.empty();
+        PortalRoomBooks.Kind mode = effectiveKind(pairKey, books);
         Key key = keyFor(pairKey, player, mode);
 
         BookAuthorsClient.Author held = LOCKS.get(key);
@@ -150,20 +151,35 @@ public final class PortalRoomAuthorLocks {
     }
 
     /**
+     * The kind a room actually serves — itself for the three plain locks, and a weighted roll for
+     * {@link PortalRoomBooks.Kind#RANDOM}.
+     *
+     * <p><b>Seeded from the pair key, not from chance.</b> The roll has to be stable for the room's
+     * life or a player would meet three different libraries in one room, and deriving it rather than
+     * remembering it means a relocation, a re-stamp or a restart all land on the same answer — the
+     * same "a pair rolls its room ONCE" property {@code ensureStructure} already relies on for which
+     * room a pair gets in the first place.</p>
+     */
+    public static PortalRoomBooks.Kind effectiveKind(int pairKey, PortalRoomBooks books) {
+        return books == null ? PortalRoomBooks.Kind.OFF : books.resolveKind(pairKey);
+    }
+
+    /**
      * The next author worth trying for {@code key}, or empty when the directory has nothing to offer
      * yet (a fetch is kicked in that case, so a later pickup finds it warm).
      *
-     * <p>Under {@link PortalRoomBooks#SELF} the holder's own entry comes first and the random-player
-     * directory is the rotation behind it — which is what makes Self work for the many players who
-     * have written nothing, rather than leaving their rooms unlocked.</p>
+     * <p>Under {@link PortalRoomBooks.Kind#SELF} the holder's own entry comes first and the
+     * random-player directory is the rotation behind it — which is what makes Self work for the many
+     * players who have written nothing, rather than leaving their rooms unlocked.</p>
      */
     private static Optional<BookAuthorsClient.Author> nextCandidate(ServerPlayer player, Key key,
-                                                                   PortalRoomBooks mode, boolean kidSafe) {
+                                                                   PortalRoomBooks.Kind mode, boolean kidSafe) {
         if (mode.startsFromSelf()) {
             Optional<BookAuthorsClient.Author> self = pick("self", key, player, kidSafe);
             if (self.isPresent()) return self;
         }
-        String kind = mode.startsFromSelf() ? PortalRoomBooks.PLAYER.directoryKind() : mode.directoryKind();
+        String kind = mode.startsFromSelf()
+            ? PortalRoomBooks.Kind.PLAYER.directoryKind() : mode.directoryKind();
         return pick(kind, key, player, kidSafe);
     }
 
@@ -246,7 +262,7 @@ public final class PortalRoomAuthorLocks {
     }
 
     /** Self is per player; the other two give one room one author for everybody standing in it. */
-    private static Key keyFor(int pairKey, ServerPlayer player, PortalRoomBooks mode) {
+    private static Key keyFor(int pairKey, ServerPlayer player, PortalRoomBooks.Kind mode) {
         return new Key(pairKey, mode.startsFromSelf() ? player.getUUID() : null);
     }
 

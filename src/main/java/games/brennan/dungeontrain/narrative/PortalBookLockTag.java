@@ -14,8 +14,9 @@ import net.minecraft.world.item.component.CustomData;
  * <p>Carries the room's {@link PortalRoomBooks} value — how the author is chosen — and NOT the author
  * itself. Which person that resolves to is decided at pickup and memoised per room, because at stamp
  * time the relay's author directory may not have warmed yet (the same cold start
- * {@link PlayerBookPendingTag} exists for), and because {@link PortalRoomBooks#SELF} has no answer
- * until somebody picks the book up.</p>
+ * {@link PlayerBookPendingTag} exists for), and because {@link PortalRoomBooks.Kind#SELF} has no
+ * answer until somebody picks the book up. A room set to {@link PortalRoomBooks.Kind#RANDOM} stamps
+ * its weights too, so the same roll is re-derived wherever the stack is resolved.</p>
  *
  * <p>Always accompanied by {@link PlayerBookPendingTag}: the lock is a modifier on the pending
  * upgrade, not a second mechanism. A stack carrying this but no pending marker has already been
@@ -38,17 +39,17 @@ public final class PortalBookLockTag {
     }
 
     /**
-     * The lock on {@code stack}, or {@link PortalRoomBooks#OFF} when it carries none.
+     * The lock on {@code stack}, or the unlocked default when it carries none.
      *
      * <p>Reads through {@link PortalRoomBooks#parse}, which is total — a stack whose tag was hand-edited
      * to something unrecognised resolves as an ordinary book rather than throwing on a hot pickup path.</p>
      */
     public static PortalRoomBooks of(ItemStack stack) {
-        if (stack == null || stack.isEmpty()) return PortalRoomBooks.OFF;
+        if (stack == null || stack.isEmpty()) return PortalRoomBooks.DEFAULT;
         CustomData cd = stack.get(DataComponents.CUSTOM_DATA);
-        if (cd == null || cd.isEmpty()) return PortalRoomBooks.OFF;
+        if (cd == null || cd.isEmpty()) return PortalRoomBooks.DEFAULT;
         CompoundTag tag = cd.copyTag();
-        if (!tag.contains(NBT_LOCK, Tag.TAG_STRING)) return PortalRoomBooks.OFF;
+        if (!tag.contains(NBT_LOCK, Tag.TAG_STRING)) return PortalRoomBooks.DEFAULT;
         return PortalRoomBooks.parse(tag.getString(NBT_LOCK));
     }
 
