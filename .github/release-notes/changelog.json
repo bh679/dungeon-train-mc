@@ -7130,14 +7130,14 @@
       "version": "0.567.0",
       "type": "feat",
       "title": "Portal rooms can be one author's library",
-      "summary": "A portal room can now be set to serve books by a single community author, so every book you find inside it is by the same person. The room announces whose library you have walked into, and the author can be your own writing, a random player who has written more than ten books, a random pen name that has \u2014 or a weighted mix of the three, rolled per room.",
+      "summary": "A portal room can now be a single community author's library. Its bookshelves are stocked with that person's whole catalogue and every shelf past the end of it is left empty, so a hall of bare shelves with a dozen books in it tells you exactly how much they wrote. The room announces whose library you have walked into.",
       "highlights": [
-        "New Books setting on portal rooms in the editor: Off, Current Player, Random Player, Random Signature, or Random Mix.",
-      "Random Mix rolls one of the three per room, and each room sets its own odds \u2014 a study can lean toward your own writing while a great hall leans toward strangers.",
-        "Every book in a locked room comes from that author \u2014 built-in books are replaced too, not just community ones.",
+        "New Books setting on portal rooms in the editor: off, or an author mix.",
+        "The room rolls between your own writing, a random player and a random pen name \u2014 and each room sets its own odds, so a study can lean toward your own shelves while a great hall leans toward strangers.",
+        "Rooms can ask for a particular kind of author: at least this many books written, and at most that many, so a modest private collection stays modest.",
         "Player and signature are separate choices: one account can write under several pen names, and several accounts can share one.",
-        "Written nothing yourself? A Current Player room quietly picks somebody else rather than standing empty.",
-        "Rooms fall back to ordinary books when no author can be reached, so a locked room is never a bookless one."
+        "Written nothing yourself? The room quietly picks somebody else rather than standing empty.",
+        "Chests in a library room still roll their ordinary loot \u2014 it is a library, not a themed dungeon."
       ],
       "date": "2026-08-16",
       "released": false,
