@@ -161,15 +161,6 @@ public final class EditorPlotPanelInputHandler {
             case EXIT_MOVE_DEC -> dispatchExitMove(entry, "dec");
             case EXIT_MOVE_INC -> dispatchExitMove(entry, "inc");
             case EXIT_MOVE_TYPE -> openExitMoveEntry(entry);
-            case BOOKS_SELF_DEC -> dispatchBookWeight(entry, EditorPlotLabelsRenderer.RowKind.BOOKS_SELF, "dec");
-            case BOOKS_SELF_INC -> dispatchBookWeight(entry, EditorPlotLabelsRenderer.RowKind.BOOKS_SELF, "inc");
-            case BOOKS_SELF_TYPE -> openBookWeightEntry(entry, EditorPlotLabelsRenderer.RowKind.BOOKS_SELF, "Self");
-            case BOOKS_PLAYER_DEC -> dispatchBookWeight(entry, EditorPlotLabelsRenderer.RowKind.BOOKS_PLAYER, "dec");
-            case BOOKS_PLAYER_INC -> dispatchBookWeight(entry, EditorPlotLabelsRenderer.RowKind.BOOKS_PLAYER, "inc");
-            case BOOKS_PLAYER_TYPE -> openBookWeightEntry(entry, EditorPlotLabelsRenderer.RowKind.BOOKS_PLAYER, "Player");
-            case BOOKS_SIGNATURE_DEC -> dispatchBookWeight(entry, EditorPlotLabelsRenderer.RowKind.BOOKS_SIGNATURE, "dec");
-            case BOOKS_SIGNATURE_INC -> dispatchBookWeight(entry, EditorPlotLabelsRenderer.RowKind.BOOKS_SIGNATURE, "inc");
-            case BOOKS_SIGNATURE_TYPE -> openBookWeightEntry(entry, EditorPlotLabelsRenderer.RowKind.BOOKS_SIGNATURE, "Signature");
             case ACTION_SAVE -> dispatchAction(entry, EditorPlotActionPacket.Action.SAVE);
             case ACTION_RESET -> dispatchAction(entry, EditorPlotActionPacket.Action.RESET);
             case ACTION_CLEAR -> dispatchAction(entry, EditorPlotActionPacket.Action.CLEAR);
@@ -265,28 +256,6 @@ public final class EditorPlotPanelInputHandler {
             .exits().every();
         CommandMenuState.openAt(new games.brennan.dungeontrain.client.menu.PortalRoomAxisScreen(
             "exitevery", "Exits", "tiles", current));
-    }
-
-    /**
-     * Nudge one share of a Random room's author roll.
-     *
-     * <p>One method for all three rows: which share is carried by {@code row}, and the command token
-     * comes from the renderer that drew the row — so the click and the label cannot disagree about
-     * which weight is being edited.</p>
-     */
-    private static void dispatchBookWeight(EditorPlotLabelsPacket.Entry entry, EditorPlotLabelsRenderer.RowKind row, String dir) {
-        String cmd = EditorPlotTeleport.bookWeightCommandFor(
-            entry.category(), EditorPlotLabelsRenderer.bookWeightCommand(row), dir);
-        if (cmd == null) return;
-        CommandRunner.run(cmd);
-    }
-
-    /** Open the typing field for one share, showing the number the row itself is displaying. */
-    private static void openBookWeightEntry(EditorPlotLabelsPacket.Entry entry, EditorPlotLabelsRenderer.RowKind row, String label) {
-        if (!"PORTALS".equals(entry.category())) return;
-        int current = EditorPlotLabelsRenderer.bookWeightValue(entry.roomMode(), row);
-        CommandMenuState.openAt(new games.brennan.dungeontrain.client.menu.PortalRoomAxisScreen(
-            EditorPlotLabelsRenderer.bookWeightCommand(row), label, "0-99", current));
     }
 
     /** Nudge how often the room walls off the base pair's exit. */

@@ -104,18 +104,6 @@ public final class EditorPlotTeleport {
         return "dungeontrain editor portals books next";
     }
 
-    /**
-     * As {@link #dimensionCommandFor}, for one share of a Random room's author roll.
-     *
-     * <p>{@code which} is the command token from
-     * {@code EditorPlotLabelsRenderer.bookWeightCommand} — the three rows differ only in that, so
-     * they share one builder.</p>
-     */
-    public static String bookWeightCommandFor(String category, String which, String dir) {
-        if (!"PORTALS".equals(category) || which == null || which.isEmpty()) return null;
-        return "dungeontrain editor portals " + which + " " + dir;
-    }
-
     /** As {@link #dimensionCommandFor}, for the spacing those extra corridors are laid at. */
     public static String exitEveryCommandFor(String category, String dir) {
         if (!"PORTALS".equals(category)) return null;

@@ -112,8 +112,8 @@ public final class PortalRoomAuthorLocks {
     public static Optional<BookAuthorsClient.Author> authorFor(ServerPlayer player, int pairKey,
                                                               PortalRoomBooks books, boolean kidSafe) {
         if (player == null || books == null || !books.locks()) return Optional.empty();
-        PortalRoomBooks.Kind mode = effectiveKind(pairKey, books);
-        Key key = keyFor(pairKey, player, mode);
+        PortalRoomBooks.Share share = effectiveShare(pairKey, books);
+        Key key = keyFor(pairKey, player, share);
 
         BookAuthorsClient.Author held = LOCKS.get(key);
         if (held != null) {
@@ -129,7 +129,8 @@ public final class PortalRoomAuthorLocks {
         }
 
         for (int attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
-            Optional<BookAuthorsClient.Author> candidate = nextCandidate(player, key, mode, kidSafe);
+            Optional<BookAuthorsClient.Author> candidate =
+                nextCandidate(player, key, share, books, kidSafe);
             if (candidate.isEmpty()) return Optional.empty();   // nothing to try — fetch kicked, if any
             BookAuthorsClient.Author author = candidate.get();
             if (!AuthorBookPool.isFetched(author.token())) {
@@ -151,36 +152,39 @@ public final class PortalRoomAuthorLocks {
     }
 
     /**
-     * The kind a room actually serves — itself for the three plain locks, and a weighted roll for
-     * {@link PortalRoomBooks.Kind#RANDOM}.
+     * Which of the three ways of naming an author this room came up with.
      *
      * <p><b>Seeded from the pair key, not from chance.</b> The roll has to be stable for the room's
-     * life or a player would meet three different libraries in one room, and deriving it rather than
+     * life or its shelves would be restocked from a different person, and deriving it rather than
      * remembering it means a relocation, a re-stamp or a restart all land on the same answer — the
      * same "a pair rolls its room ONCE" property {@code ensureStructure} already relies on for which
      * room a pair gets in the first place.</p>
      */
-    public static PortalRoomBooks.Kind effectiveKind(int pairKey, PortalRoomBooks books) {
-        return books == null ? PortalRoomBooks.Kind.OFF : books.resolveKind(pairKey);
+    public static PortalRoomBooks.Share effectiveShare(int pairKey, PortalRoomBooks books) {
+        return books == null ? PortalRoomBooks.Share.PLAYER : books.resolveShare(pairKey);
     }
 
     /**
      * The next author worth trying for {@code key}, or empty when the directory has nothing to offer
      * yet (a fetch is kicked in that case, so a later pickup finds it warm).
      *
-     * <p>Under {@link PortalRoomBooks.Kind#SELF} the holder's own entry comes first and the
+     * <p>Under {@link PortalRoomBooks.Share#SELF} the reader's own entry comes first and the
      * random-player directory is the rotation behind it — which is what makes Self work for the many
-     * players who have written nothing, rather than leaving their rooms unlocked.</p>
+     * players who have written nothing, rather than leaving their rooms bare.</p>
      */
     private static Optional<BookAuthorsClient.Author> nextCandidate(ServerPlayer player, Key key,
-                                                                   PortalRoomBooks.Kind mode, boolean kidSafe) {
-        if (mode.startsFromSelf()) {
-            Optional<BookAuthorsClient.Author> self = pick("self", key, player, kidSafe);
+                                                                   PortalRoomBooks.Share share,
+                                                                   PortalRoomBooks books, boolean kidSafe) {
+        if (share.isSelf()) {
+            // The reader's own shelf is exempt from the room's range: finding YOUR two books in a
+            // room is the point of the Self share, and a floor meant for strangers should not veto it.
+            Optional<BookAuthorsClient.Author> self =
+                pick(PortalRoomBooks.Share.SELF.directoryKind(), key, player, books, kidSafe, false);
             if (self.isPresent()) return self;
         }
-        String kind = mode.startsFromSelf()
-            ? PortalRoomBooks.Kind.PLAYER.directoryKind() : mode.directoryKind();
-        return pick(kind, key, player, kidSafe);
+        String kind = share.isSelf()
+            ? PortalRoomBooks.Share.PLAYER.directoryKind() : share.directoryKind();
+        return pick(kind, key, player, books, kidSafe, true);
     }
 
     /**
@@ -188,12 +192,26 @@ public final class PortalRoomAuthorLocks {
      * just served. Kicks a fetch and returns empty when the directory is cold or exhausted.
      */
     private static Optional<BookAuthorsClient.Author> pick(String kind, Key key, ServerPlayer player,
-                                                           boolean kidSafe) {
-        String cacheKey = "self".equals(kind) ? kind + ':' + player.getUUID() : kind;
+                                                           PortalRoomBooks books, boolean kidSafe,
+                                                           boolean applyRange) {
+        // The range is part of the cache key: two rooms asking for different bands of author are
+        // asking the relay two different questions, and one answer must not stand in for the other.
+        String cacheKey = "self".equals(kind)
+            ? kind + ':' + player.getUUID()
+            : kind + ':' + books.minBooks() + ':' + books.maxBooks();
         List<BookAuthorsClient.Author> candidates = DIRECTORY.get(cacheKey);
         if (candidates == null) {
-            fetchDirectory(kind, cacheKey, player, kidSafe);
+            fetchDirectory(kind, cacheKey, player, books, kidSafe);
             return Optional.empty();
+        }
+        // Belt and braces over the relay's own filter: a cached page outliving an edit to the range
+        // must not hand back somebody the room has since stopped accepting.
+        if (applyRange) {
+            List<BookAuthorsClient.Author> inRange = new ArrayList<>();
+            for (BookAuthorsClient.Author a : candidates) {
+                if (books.accepts(a.count())) inRange.add(a);
+            }
+            candidates = inRange;
         }
         Set<String> rejected = REJECTED.getOrDefault(key, Set.of());
         synchronized (PortalRoomAuthorLocks.class) {
@@ -228,10 +246,11 @@ public final class PortalRoomAuthorLocks {
     }
 
     /** Pull a directory page for {@code kind}, once at a time. Caches an empty page as "asked, nothing". */
-    private static void fetchDirectory(String kind, String cacheKey, ServerPlayer player, boolean kidSafe) {
+    private static void fetchDirectory(String kind, String cacheKey, ServerPlayer player,
+                                       PortalRoomBooks books, boolean kidSafe) {
         if (!DIRECTORY_IN_FLIGHT.add(cacheKey)) return;
         UUID uuid = "self".equals(kind) ? player.getUUID() : null;
-        BookAuthorsClient.fetch(kind, DungeonTrainConfig.getPortalRoomAuthorMinBooks(), uuid, kidSafe,
+        BookAuthorsClient.fetch(kind, books.minBooks(), books.maxBooks(), uuid, kidSafe,
             authors -> {
                 try {
                     DIRECTORY.put(cacheKey, List.copyOf(authors));
@@ -262,8 +281,8 @@ public final class PortalRoomAuthorLocks {
     }
 
     /** Self is per player; the other two give one room one author for everybody standing in it. */
-    private static Key keyFor(int pairKey, ServerPlayer player, PortalRoomBooks.Kind mode) {
-        return new Key(pairKey, mode.startsFromSelf() ? player.getUUID() : null);
+    private static Key keyFor(int pairKey, ServerPlayer player, PortalRoomBooks.Share share) {
+        return new Key(pairKey, share.isSelf() ? player.getUUID() : null);
     }
 
     /**

@@ -61,9 +61,9 @@ public final class PortalLibraryGreeter {
         if (author.isEmpty()) return;    // still resolving, or nobody to name — try again next scan
 
         GREETED.put(player.getUUID(), pairKey);
-        // The ROLLED kind, not the setting: a Random room that came up Self should still say "you
-        // wrote these" rather than name the reader as a stranger to their own shelves.
-        boolean mine = PortalRoomAuthorLocks.effectiveKind(pairKey, books).startsFromSelf()
+        // The ROLLED share, not the setting: a room that came up Self should still say "you wrote
+        // these" rather than name the reader as a stranger to their own shelves.
+        boolean mine = PortalRoomAuthorLocks.effectiveShare(pairKey, books).isSelf()
             && isOwn(player, author.get());
         player.sendSystemMessage(
             PortalLibraryMessage.random(player.getRandom(), author.get().name(), mine));

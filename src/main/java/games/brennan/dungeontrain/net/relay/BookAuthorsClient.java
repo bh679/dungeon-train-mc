@@ -61,18 +61,21 @@ public final class BookAuthorsClient {
     public record Author(String token, String name, int count) {}
 
     /**
-     * Fetch the authors with more than {@code minBooks} approved books and hand the list to
+     * Fetch the authors within this room's book range and hand the list to
      * {@code callback} (invoked on the HTTP completion thread — the caller must hop back to the server
      * thread before touching game state). No-throw: a failed / slow / malformed / non-2xx fetch calls
      * back with an empty list rather than not at all, so a caller waiting on it is never left hanging.
      *
      * @param kind     {@code "player"}, {@code "signature"} or {@code "self"} — see
-     *                 {@link games.brennan.dungeontrain.portal.PortalRoomBooks#directoryKind()}
+     *                 {@link games.brennan.dungeontrain.portal.PortalRoomBooks.Share#directoryKind()}
+     * @param maxBooks upper bound on an author's approved count, or
+     *                 {@link games.brennan.dungeontrain.portal.PortalRoomBooks#NO_MAXIMUM} for none —
+     *                 a room built to feel like a modest private collection wants a modest author
      * @param uuid     required by {@code kind=self}, ignored otherwise; may be {@code null}
      * @param kidSafe  narrow to books the relay judged fit for a young child, so a Kid-mode world can
      *                 never be handed an author whose whole catalogue it is not allowed to see
      */
-    public static void fetch(String kind, int minBooks, UUID uuid, boolean kidSafe,
+    public static void fetch(String kind, int minBooks, int maxBooks, UUID uuid, boolean kidSafe,
                              Consumer<List<Author>> callback) {
         try {
             StringBuilder url = new StringBuilder(DungeonTrain.relayBaseUrl())
@@ -80,6 +83,7 @@ public final class BookAuthorsClient {
                     .append(URLEncoder.encode(kind, StandardCharsets.UTF_8))
                     .append("&min=").append(Math.max(0, minBooks))
                     .append("&limit=").append(DIRECTORY_LIMIT);
+            if (maxBooks > 0) url.append("&max=").append(maxBooks);
             if (uuid != null) {
                 url.append("&uuid=").append(uuid.toString().replace("-", ""));
             }

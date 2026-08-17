@@ -499,6 +499,7 @@ public final class PortalCarriageEvents {
         // like everything else here, so the same stale-record hazard applies: the next world's pair 12
         // is a different room and must not inherit this one's library.
         games.brennan.dungeontrain.portal.PortalRoomAuthorLocks.clear();
+        games.brennan.dungeontrain.portal.PortalRoomLibrarian.clear();
         games.brennan.dungeontrain.narrative.PortalLibraryGreeter.clear();
         ACTIVE_PAIRS.clear();
         LAST_FOG.clear();
@@ -897,6 +898,10 @@ public final class PortalCarriageEvents {
         // And stop the trains whose rooms those are, when nobody is left outside to see it. The
         // ticket above keeps the group loaded; this is what stops it going anywhere.
         PortalTrainFreeze.tick(level, players, dims, occupiedPairs, PortalCarriageEvents::isInRoom);
+        // Stock any library room still waiting on its author. Costs one map check on a world where
+        // every library has been filled, which is every world after the first few seconds: a room
+        // leaves the pending set the moment its shelves are dealt.
+        games.brennan.dungeontrain.portal.PortalRoomLibrarian.tick(level, players);
     }
 
     /**

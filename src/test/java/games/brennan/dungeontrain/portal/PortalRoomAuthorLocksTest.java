@@ -74,41 +74,29 @@ class PortalRoomAuthorLocksTest {
     // ---- which kind a Random room turns out to be ----
 
     @Test
-    @DisplayName("A plain lock is its own kind whatever room it stands in")
-    void plainKindsAreThemselves() {
-        for (PortalRoomBooks.Kind kind : new PortalRoomBooks.Kind[]{
-                PortalRoomBooks.Kind.SELF, PortalRoomBooks.Kind.PLAYER, PortalRoomBooks.Kind.SIGNATURE}) {
-            PortalRoomBooks books = new PortalRoomBooks(kind);
-            for (int pair = 0; pair < 20; pair++) {
-                assertEquals(kind, PortalRoomAuthorLocks.effectiveKind(pair, books));
-            }
-        }
-        // A null setting reads as no lock rather than throwing on a pickup path.
-        assertEquals(PortalRoomBooks.Kind.OFF, PortalRoomAuthorLocks.effectiveKind(1, null));
-    }
-
-    @Test
-    @DisplayName("A Random room settles on one kind and keeps it — a room is not three libraries")
-    void theRolledKindIsStablePerRoom() {
-        PortalRoomBooks books = new PortalRoomBooks(PortalRoomBooks.Kind.RANDOM, 2, 3, 4);
+    @DisplayName("A room settles on one share and keeps it — a room is not three libraries")
+    void theRolledShareIsStablePerRoom() {
+        PortalRoomBooks books = new PortalRoomBooks(PortalRoomBooks.Kind.MIX, 2, 3, 4,
+            10, PortalRoomBooks.NO_MAXIMUM);
         for (int pair = 0; pair < 40; pair++) {
-            PortalRoomBooks.Kind first = PortalRoomAuthorLocks.effectiveKind(pair, books);
-            assertTrue(first.locks(), "pair " + pair + " rolled " + first);
+            PortalRoomBooks.Share first = PortalRoomAuthorLocks.effectiveShare(pair, books);
             // Asked again — after a relocation, a re-stamp or a restart, all of which re-derive
             // rather than remember — the room is the same library it was.
             for (int again = 0; again < 5; again++) {
-                assertEquals(first, PortalRoomAuthorLocks.effectiveKind(pair, books));
+                assertEquals(first, PortalRoomAuthorLocks.effectiveShare(pair, books));
             }
         }
+        // A null setting still answers rather than throwing on the stocking pass.
+        assertEquals(PortalRoomBooks.Share.PLAYER, PortalRoomAuthorLocks.effectiveShare(1, null));
     }
 
     @Test
     @DisplayName("Different rooms roll differently — a world is not one author's shelves throughout")
     void differentRoomsRollDifferently() {
-        PortalRoomBooks books = new PortalRoomBooks(PortalRoomBooks.Kind.RANDOM);
-        Set<PortalRoomBooks.Kind> seen = new java.util.HashSet<>();
+        PortalRoomBooks books = new PortalRoomBooks(PortalRoomBooks.Kind.MIX);
+        Set<PortalRoomBooks.Share> seen = new java.util.HashSet<>();
         for (int pair = 0; pair < 60; pair++) {
-            seen.add(PortalRoomAuthorLocks.effectiveKind(pair, books));
+            seen.add(PortalRoomAuthorLocks.effectiveShare(pair, books));
         }
         assertEquals(3, seen.size(), "an even three-way roll should reach all three across 60 rooms");
     }

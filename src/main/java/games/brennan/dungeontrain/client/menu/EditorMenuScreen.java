@@ -194,13 +194,8 @@ public final class EditorMenuScreen implements MenuScreen {
             if (contentsRow != null) out.add(contentsRow);
             CommandMenuEntry booksRow = roomBooksRowFor(EditorStatusHudOverlay.roomMode());
             if (booksRow != null) out.add(booksRow);
-            for (EditorPlotLabelsRenderer.RowKind share : new EditorPlotLabelsRenderer.RowKind[]{
-                    EditorPlotLabelsRenderer.RowKind.BOOKS_SELF,
-                    EditorPlotLabelsRenderer.RowKind.BOOKS_PLAYER,
-                    EditorPlotLabelsRenderer.RowKind.BOOKS_SIGNATURE}) {
-                CommandMenuEntry shareRow = bookWeightTripleFor(EditorStatusHudOverlay.roomMode(), share);
-                if (shareRow != null) out.add(shareRow);
-            }
+            CommandMenuEntry booksEdit = roomBooksEditFor(EditorStatusHudOverlay.roomMode());
+            if (booksEdit != null) out.add(booksEdit);
             CommandMenuEntry exitsRow = exitsRowFor(EditorStatusHudOverlay.roomMode());
             if (exitsRow != null) out.add(exitsRow);
             CommandMenuEntry exitEveryRow = exitEveryTripleFor(EditorStatusHudOverlay.roomMode());
@@ -420,26 +415,19 @@ public final class EditorMenuScreen implements MenuScreen {
     }
 
     /**
-     * One share of a Random room's author roll, or null unless Books is Random.
+     * The Edit button under the Books row, or null unless the room stocks an author.
      *
-     * <p>Parameterised rather than written out three times: Self, Player and Signature are the same
-     * stepper pointed at a different weight, and three copies would be three places for the command
-     * prefix or the gate to drift apart.</p>
+     * <p>A drilldown rather than five more rows in this list: the weights and the author band only
+     * mean something once a room has an author at all, and the Books row above already says the part
+     * worth seeing at a glance.</p>
      */
-    static CommandMenuEntry bookWeightTripleFor(String currentMode,
-                                                EditorPlotLabelsRenderer.RowKind share) {
+    static CommandMenuEntry roomBooksEditFor(String currentMode) {
         if (currentMode == null || EditorStatusPacket.NO_MODE.equals(currentMode)) return null;
         if (!games.brennan.dungeontrain.portal.PortalRoomSettings.parse(currentMode)
                 .books().weightsApply()) {
             return null;
         }
-        String prefix = "dungeontrain editor portals "
-            + EditorPlotLabelsRenderer.bookWeightCommand(share);
-        CommandMenuEntry minus = new CommandMenuEntry.Stay("-", prefix + " dec");
-        CommandMenuEntry middle = new CommandMenuEntry.TypeArg(
-            EditorPlotLabelsRenderer.bookWeightLabel(currentMode, share), "0-99", prefix);
-        CommandMenuEntry plus = new CommandMenuEntry.Stay("+", prefix + " inc");
-        return new CommandMenuEntry.Triple(minus, middle, plus, 0.10, 0.90);
+        return new CommandMenuEntry.DrillIn("  Edit mix \u25be", new PortalRoomBooksScreen(currentMode));
     }
 
     /**

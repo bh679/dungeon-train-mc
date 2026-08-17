@@ -1405,9 +1405,9 @@ public final class PortalCarriageBuilder {
         applyRoomContents(level, roomOrigin, size, roomName, writeMask, variantIndex, pairKey, contents);
         applyRoomVariants(level, roomOrigin, roomName, size, writeMask, variantIndex, pairKey, tile,
             liveMobCount);
-        // Last, so it sees every container both passes left standing — the furnishing's chests AND
-        // the room's own authored ones. No-op unless the room locks its books to an author.
-        PortalRoomBookLockStamper.stampRoom(level, roomOrigin, size, books);
+        // Last, and only a registration: the shelves are stocked by PortalRoomLibrarian on a later
+        // tick, because the relay has not said who has written what by the time a room is stamped.
+        PortalRoomLibrarian.register(pairKey, roomOrigin, size, books);
     }
 
     /**

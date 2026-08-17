@@ -216,9 +216,10 @@ public final class EditorCommand {
                     : games.brennan.dungeontrain.portal.PortalRoomBooks.Kind.values()) {
                 builder.suggest(k.id());
             }
-            // The weighted form, so the compound spelling is discoverable from the command line
-            // rather than only from the three stepper rows.
-            builder.suggest("random:2:1:1");
+            // The compound form, so the whole setting is reachable from the command line rather than
+            // only from the edit screen: weights then the band of author.
+            builder.suggest("mix:2:1:1");
+            builder.suggest("mix:2:1:1:10:50");
             return builder.buildFuture();
         };
 
@@ -508,14 +509,17 @@ public final class EditorCommand {
                         .suggests(PORTAL_ROOM_BOOKS_SUGGESTIONS)
                         .executes(ctx -> runPortalRoomBooks(ctx.getSource(),
                             StringArgumentType.getString(ctx, "books")))))
-                // The three shares of a Random room's roll. Mean nothing under the other values,
-                // which is why the editor only shows their rows while Books is Random.
+                // The three shares of the author roll, and the band of author a room will accept.
+                // All five mean nothing while Books is Off, which is why the edit screen is only
+                // reachable from a room that stocks an author at all.
                 .then(portalRoomBookWeightNode("booksself",
-                    games.brennan.dungeontrain.portal.PortalRoomBooks.Kind.SELF))
+                    games.brennan.dungeontrain.portal.PortalRoomBooks.Share.SELF))
                 .then(portalRoomBookWeightNode("booksplayer",
-                    games.brennan.dungeontrain.portal.PortalRoomBooks.Kind.PLAYER))
+                    games.brennan.dungeontrain.portal.PortalRoomBooks.Share.PLAYER))
                 .then(portalRoomBookWeightNode("bookssignature",
-                    games.brennan.dungeontrain.portal.PortalRoomBooks.Kind.SIGNATURE))
+                    games.brennan.dungeontrain.portal.PortalRoomBooks.Share.SIGNATURE))
+                .then(portalRoomBookBoundNode("booksmin", true))
+                .then(portalRoomBookBoundNode("booksmax", false))
                 // Sub-variants: one named room standing for several designs, drawn by weight.
                 .then(portalRoomGroupNode()))
             .then(Commands.literal("architecture")
@@ -5893,8 +5897,8 @@ public final class EditorCommand {
         // weight steppers themselves send.
         if (!wanted.kind().id().equalsIgnoreCase(kindOf(raw))) {
             source.sendFailure(Component.literal(
-                "Unknown books option '" + raw + "'. Try off, self, player, signature, random, "
-                + "or random:<self>:<player>:<signature>."));
+                "Unknown books option '" + raw + "'. Try off, mix, "
+                + "mix:<self>:<player>:<signature>, or mix:<self>:<player>:<signature>:<min>:<max>."));
             return 0;
         }
         return applyPortalRoomSettings(source, name,
@@ -5916,7 +5920,7 @@ public final class EditorCommand {
      * copies of this would be three places for the clamp or the plot lookup to drift apart.</p>
      */
     private static int runPortalRoomBookWeight(CommandSourceStack source,
-                                               games.brennan.dungeontrain.portal.PortalRoomBooks.Kind which,
+                                               games.brennan.dungeontrain.portal.PortalRoomBooks.Share which,
                                                int delta, Integer exact) {
         String name = portalRoomPlotUnderPlayer(source);
         if (name == null) return 0;
@@ -5972,9 +5976,12 @@ public final class EditorCommand {
         // noise on the four rooms out of five that never touch this.
         String books = settings.books().locks()
             ? ", books: " + settings.books().displayName()
-                + (settings.books().weightsApply()
-                    ? " (" + settings.books().selfWeight() + "/" + settings.books().playerWeight()
-                        + "/" + settings.books().signatureWeight() + ")" : "")
+                + " (" + settings.books().selfWeight() + "/" + settings.books().playerWeight()
+                + "/" + settings.books().signatureWeight() + ")"
+                + ", authors with " + settings.books().minBooks() + "+"
+                + (settings.books().maxBooks() == games.brennan.dungeontrain.portal.PortalRoomBooks.NO_MAXIMUM
+                    ? "" : "\u2013" + settings.books().maxBooks())
+                + " books"
             : "";
         source.sendSuccess(() -> Component.literal(
             "Portal room '" + name + "' walls: " + settings.mode().displayName() + copies + contents
@@ -6034,7 +6041,7 @@ public final class EditorCommand {
      * Player and Signature here is which share the number lands on.</p>
      */
     private static LiteralArgumentBuilder<CommandSourceStack> portalRoomBookWeightNode(
-        String literal, games.brennan.dungeontrain.portal.PortalRoomBooks.Kind which
+        String literal, games.brennan.dungeontrain.portal.PortalRoomBooks.Share which
     ) {
         return Commands.literal(literal)
             .then(Commands.literal("inc")
@@ -6046,6 +6053,41 @@ public final class EditorCommand {
                     games.brennan.dungeontrain.portal.PortalRoomBooks.MAX_WEIGHT))
                 .executes(ctx -> runPortalRoomBookWeight(ctx.getSource(), which, 0,
                     IntegerArgumentType.getInteger(ctx, "weight"))));
+    }
+
+    /**
+     * One end of the band of author a room accepts — {@code inc}, {@code dec} or an outright number.
+     *
+     * <p>Same shape as the weight node next to it: the only difference is which number it lands on,
+     * so both go through one handler rather than four near-copies.</p>
+     */
+    private static LiteralArgumentBuilder<CommandSourceStack> portalRoomBookBoundNode(
+        String literal, boolean minimum
+    ) {
+        return Commands.literal(literal)
+            .then(Commands.literal("inc")
+                .executes(ctx -> runPortalRoomBookBound(ctx.getSource(), minimum, +1, null)))
+            .then(Commands.literal("dec")
+                .executes(ctx -> runPortalRoomBookBound(ctx.getSource(), minimum, -1, null)))
+            .then(Commands.argument("books", IntegerArgumentType.integer(
+                    games.brennan.dungeontrain.portal.PortalRoomBooks.MIN_BOOK_BOUND,
+                    games.brennan.dungeontrain.portal.PortalRoomBooks.MAX_BOOK_BOUND))
+                .executes(ctx -> runPortalRoomBookBound(ctx.getSource(), minimum, 0,
+                    IntegerArgumentType.getInteger(ctx, "books"))));
+    }
+
+    /** {@code /dt editor portals books<min|max> <inc|dec|N>} — the band of author this room accepts. */
+    private static int runPortalRoomBookBound(CommandSourceStack source, boolean minimum,
+                                              int delta, Integer exact) {
+        String name = portalRoomPlotUnderPlayer(source);
+        if (name == null) return 0;
+        games.brennan.dungeontrain.portal.PortalRoomSettings current =
+            games.brennan.dungeontrain.portal.PortalRoomSettings.of(name);
+        games.brennan.dungeontrain.portal.PortalRoomBooks books = current.books();
+        int at = minimum ? books.minBooks() : books.maxBooks();
+        int wanted = exact != null ? exact : at + delta;
+        return applyPortalRoomSettings(source, name, current.withBooks(
+            minimum ? books.withMinBooks(wanted) : books.withMaxBooks(wanted)));
     }
 
     private static LiteralArgumentBuilder<CommandSourceStack> portalSizeNode(

@@ -44,8 +44,15 @@ public final class AuthorBookPool {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    /** Max books requested per author. The relay caps this at 20; an author above it is sampled. */
-    static final int POOL_LIMIT = 20;
+    /**
+     * Max books requested per author.
+     *
+     * <p>Far above the ordinary pool's twenty-book loot window, and deliberately: a library room
+     * deals this catalogue across its shelves and leaves the rest empty, so a short fetch would make
+     * every prolific author look like they had written twenty books. The relay raises its own ceiling
+     * for author-scoped queries to match (see {@code MAX_AUTHOR_POOL_LIMIT}).</p>
+     */
+    static final int POOL_LIMIT = 200;
 
     /**
      * How many authors' catalogues are kept at once. A player meets one room at a time and rooms

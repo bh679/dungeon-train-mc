@@ -125,66 +125,6 @@ class EditorPlotLabelsRendererTest {
     }
 
     @Test
-    @DisplayName("The three book-share steppers show only while Books is Random")
-    void bookWeightRowsOnlyUnderRandom() {
-        // Off, and the three plain locks: no shares to divide, so no rows.
-        for (String books : new String[]{"off", "self", "player", "signature"}) {
-            EditorPlotLabelsPacket.Entry e =
-                entry("PORTALS", true, 1, 11, 13, 7, "bedrock_lock/exact/off/off/" + books);
-            assertFalse(EditorPlotLabelsRenderer.hasBookWeightRows(e), books);
-        }
-        // A row that is not a share row has no weight to report, whatever the setting says.
-        assertEquals(-1, EditorPlotLabelsRenderer.bookWeightValue(
-            "bedrock_lock/exact/off/off/random:2:3:4", RowKind.EXITS));
-
-        // Random: three rows, straight under the Books row and above Exits, displacing nothing.
-        EditorPlotLabelsPacket.Entry random =
-            entry("PORTALS", true, 1, 11, 13, 7, "bedrock_lock/exact/off/off/random:2:3:4");
-        assertTrue(EditorPlotLabelsRenderer.hasBookWeightRows(random));
-        assertArrayEquals(
-            new RowKind[]{RowKind.NAME, RowKind.WEIGHT, RowKind.LENGTH, RowKind.WIDTH,
-                RowKind.HEIGHT, RowKind.MODE, RowKind.ROOM_CONTENTS, RowKind.ROOM_BOOKS,
-                RowKind.BOOKS_SELF, RowKind.BOOKS_PLAYER, RowKind.BOOKS_SIGNATURE,
-                RowKind.ENTER, RowKind.ACTION},
-            EditorPlotLabelsRenderer.rows(random));
-    }
-
-    @Test
-    @DisplayName("Each book-share row reads and edits its own weight")
-    void bookWeightRowsAddressTheirOwnShare() {
-        String mode = "bedrock_lock/exact/off/off/random:2:3:4";
-        assertEquals(2, EditorPlotLabelsRenderer.bookWeightValue(mode, RowKind.BOOKS_SELF));
-        assertEquals(3, EditorPlotLabelsRenderer.bookWeightValue(mode, RowKind.BOOKS_PLAYER));
-        assertEquals(4, EditorPlotLabelsRenderer.bookWeightValue(mode, RowKind.BOOKS_SIGNATURE));
-
-        assertEquals("booksself", EditorPlotLabelsRenderer.bookWeightCommand(RowKind.BOOKS_SELF));
-        assertEquals("booksplayer", EditorPlotLabelsRenderer.bookWeightCommand(RowKind.BOOKS_PLAYER));
-        assertEquals("bookssignature", EditorPlotLabelsRenderer.bookWeightCommand(RowKind.BOOKS_SIGNATURE));
-
-        assertEquals("Self: 2", EditorPlotLabelsRenderer.bookWeightLabel(mode, RowKind.BOOKS_SELF));
-        assertEquals("Signature: 4", EditorPlotLabelsRenderer.bookWeightLabel(mode, RowKind.BOOKS_SIGNATURE));
-    }
-
-    @Test
-    @DisplayName("A click inside a book-share row hits that row's own stepper, not its neighbour's")
-    void bookWeightRowsHitTheirOwnCells() {
-        EditorPlotLabelsPacket.Entry e =
-            entry("PORTALS", true, 1, 11, 13, 7, "bedrock_lock/exact/off/off/random:2:3:4");
-        RowKind[] rows = EditorPlotLabelsRenderer.rows(e);
-        double halfW = EditorPlotLabelsRenderer.MIN_HALF_W;
-
-        assertEquals(CellKind.BOOKS_SELF_TYPE, EditorPlotLabelsRenderer.cellAt(e, halfW, 0.0,
-            rowCentreY(e, indexOf(rows, RowKind.BOOKS_SELF))));
-        assertEquals(CellKind.BOOKS_PLAYER_TYPE, EditorPlotLabelsRenderer.cellAt(e, halfW, 0.0,
-            rowCentreY(e, indexOf(rows, RowKind.BOOKS_PLAYER))));
-        assertEquals(CellKind.BOOKS_SIGNATURE_DEC, EditorPlotLabelsRenderer.cellAt(e, halfW, -halfW + 0.05,
-            rowCentreY(e, indexOf(rows, RowKind.BOOKS_SIGNATURE))));
-        // ...and the row above them is still itself.
-        assertEquals(CellKind.ROOM_BOOKS_CYCLE, EditorPlotLabelsRenderer.cellAt(e, halfW, 0.0,
-            rowCentreY(e, indexOf(rows, RowKind.ROOM_BOOKS))));
-    }
-
-    @Test
     @DisplayName("Exits shows for both endless modes and neither sealed one — getting lost is not a wall property")
     void exitsRowFollowsTheEndlessModes() {
         for (String mode : new String[]{"endless_repetition", "endless_open"}) {

@@ -455,16 +455,6 @@ public final class NarrativeBookEvents {
         PlayerRunState run = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
         java.util.UUID uuid = player.getUUID();
 
-        // A book out of an author-locked portal room first, and BEFORE the empty-pool guard below: a
-        // locked room draws from its own author's catalogue, so it works whether or not the world's
-        // mixed pool has warmed. An unresolved lock falls through to the ordinary path, which is what
-        // makes a locked room degrade into a normal one rather than an empty one.
-        Optional<SharedBookPool.PoolBook> locked =
-            PortalBookLockResolver.select(player, stack, run, seedFor(ow, uuid, stack));
-        if (locked.isPresent()) {
-            applyResolvedBook(player, stack, locked.get(), run);
-            return true;
-        }
         if (SharedBookPool.isEmpty()) return false;
 
         // Window exhausted for this player? Pull the relay's next weight tier BEFORE selecting, and if
@@ -542,7 +532,6 @@ public final class NarrativeBookEvents {
         stack.set(DataComponents.WRITTEN_BOOK_CONTENT, shared.get(DataComponents.WRITTEN_BOOK_CONTENT));
         RandomBookTag.clearIdentity(stack);   // drop stale dt_random_book* keys (incl. any held marker)
         PlayerBookPendingTag.clear(stack);    // resolved — no longer pending
-        PortalBookLockTag.clear(stack);       // ...and no longer waiting on a room's author
         SharedBookFoundTag.stamp(stack);      // it's now a discovered player book
         SharedBookReadTag.stampId(stack, book.id());
         // If this stack is being resolved while ALREADY in a hand slot (equipment-change path, or the

@@ -245,7 +245,8 @@ class PortalRoomSettingsTest {
         for (PortalRoomBooks.Kind kind : PortalRoomBooks.Kind.values()) {
             out.add(new PortalRoomBooks(kind));
             out.add(new PortalRoomBooks(kind, PortalRoomBooks.MAX_WEIGHT,
-                PortalRoomBooks.MAX_WEIGHT, PortalRoomBooks.MAX_WEIGHT));
+                PortalRoomBooks.MAX_WEIGHT, PortalRoomBooks.MAX_WEIGHT,
+                PortalRoomBooks.MAX_BOOK_BOUND, PortalRoomBooks.MAX_BOOK_BOUND));
         }
         return out;
     }
@@ -260,9 +261,9 @@ class PortalRoomSettingsTest {
 
         // Set, and the earlier segments appear in front of it as placeholders — including an Exits
         // segment the author never chose, because a positional segment cannot be skipped.
-        assertEquals("bedrock_lock/exact/off/off/signature",
+        assertEquals("bedrock_lock/exact/off/off/mix",
             PortalRoomSettings.parse("bedrock_lock")
-                .withBooks(new PortalRoomBooks(PortalRoomBooks.Kind.SIGNATURE)).toTag());
+                .withBooks(new PortalRoomBooks(PortalRoomBooks.Kind.MIX)).toTag());
     }
 
     @Test
@@ -300,7 +301,7 @@ class PortalRoomSettingsTest {
     @Test
     @DisplayName("A misspelt Books segment leaves the room unlocked without losing the rest")
     void booksParseIsTotal() {
-        PortalRoomSettings s = PortalRoomSettings.parse("endless_repetition/dynamic/tile/on/signatre");
+        PortalRoomSettings s = PortalRoomSettings.parse("endless_repetition/dynamic/tile/on/mixx");
         assertSame(PortalRoomMode.ENDLESS_REPETITION, s.mode());
         assertSame(PortalRoomCopies.DYNAMIC, s.copies());
         assertSame(PortalRoomContents.TILE, s.contents());
@@ -316,15 +317,15 @@ class PortalRoomSettingsTest {
             .withCopies(PortalRoomCopies.DYNAMIC)
             .withContents(PortalRoomContents.TILE)
             .withExits(new PortalRoomExits(PortalRoomExits.Kind.RANDOM, 9));
-        PortalRoomSettings after = before.withBooks(new PortalRoomBooks(PortalRoomBooks.Kind.PLAYER));
+        PortalRoomSettings after = before.withBooks(new PortalRoomBooks(PortalRoomBooks.Kind.MIX));
 
         assertSame(before.mode(), after.mode());
         assertSame(before.copies(), after.copies());
         assertSame(before.contents(), after.contents());
         assertEquals(before.exits(), after.exits());
-        assertSame(PortalRoomBooks.Kind.PLAYER, after.books().kind());
+        assertSame(PortalRoomBooks.Kind.MIX, after.books().kind());
         // ...and it survives a walls change, which re-derives Exits but has no opinion on books.
-        assertSame(PortalRoomBooks.Kind.PLAYER,
+        assertSame(PortalRoomBooks.Kind.MIX,
             after.withMode(PortalRoomMode.BEDROCK_LOCK).books().kind());
     }
 
