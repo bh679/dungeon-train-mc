@@ -154,6 +154,7 @@ public final class EditorPlotPanelInputHandler {
             case COPIES_CYCLE -> dispatchCopiesCycle(entry);
             case ROOM_CONTENTS_CYCLE -> dispatchRoomContentsCycle(entry);
             case ROOM_BOOKS_CYCLE -> dispatchRoomBooksCycle(entry);
+            case ROOM_BOOKS_EDIT -> openBookMix(entry);
             case EXITS_CYCLE -> dispatchExitsCycle(entry);
             case EXIT_EVERY_DEC -> dispatchExitEvery(entry, "dec");
             case EXIT_EVERY_INC -> dispatchExitEvery(entry, "inc");
@@ -227,6 +228,18 @@ public final class EditorPlotPanelInputHandler {
         String cmd = EditorPlotTeleport.roomBooksCycleCommandFor(entry.category());
         if (cmd == null) return;
         CommandRunner.run(cmd);
+    }
+
+    /**
+     * Open the weights-and-band editor for the room the player is standing in.
+     *
+     * <p>The world panel has no typing of its own, so the Edit half of the Books row hands off to the
+     * keyboard menu — the same route the number between a stepper's arrows already takes.</p>
+     */
+    private static void openBookMix(EditorPlotLabelsPacket.Entry entry) {
+        if (!"PORTALS".equals(entry.category())) return;
+        CommandMenuState.openAt(
+            new games.brennan.dungeontrain.client.menu.PortalRoomBooksScreen(entry.roomMode()));
     }
 
     /** Step the portal room the player is standing in to the next Exits value. */

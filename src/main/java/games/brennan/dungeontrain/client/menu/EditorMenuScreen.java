@@ -194,8 +194,6 @@ public final class EditorMenuScreen implements MenuScreen {
             if (contentsRow != null) out.add(contentsRow);
             CommandMenuEntry booksRow = roomBooksRowFor(EditorStatusHudOverlay.roomMode());
             if (booksRow != null) out.add(booksRow);
-            CommandMenuEntry booksEdit = roomBooksEditFor(EditorStatusHudOverlay.roomMode());
-            if (booksEdit != null) out.add(booksEdit);
             CommandMenuEntry exitsRow = exitsRowFor(EditorStatusHudOverlay.roomMode());
             if (exitsRow != null) out.add(exitsRow);
             CommandMenuEntry exitEveryRow = exitEveryTripleFor(EditorStatusHudOverlay.roomMode());
@@ -409,25 +407,19 @@ public final class EditorMenuScreen implements MenuScreen {
      */
     static CommandMenuEntry roomBooksRowFor(String currentMode) {
         if (currentMode == null || EditorStatusPacket.NO_MODE.equals(currentMode)) return null;
-        return new CommandMenuEntry.Stay(
+        CommandMenuEntry cycle = new CommandMenuEntry.Stay(
             EditorPlotLabelsRenderer.roomBooksLabel(currentMode),
             "dungeontrain editor portals books next");
-    }
-
-    /**
-     * The Edit button under the Books row, or null unless the room stocks an author.
-     *
-     * <p>A drilldown rather than five more rows in this list: the weights and the author band only
-     * mean something once a room has an author at all, and the Books row above already says the part
-     * worth seeing at a glance.</p>
-     */
-    static CommandMenuEntry roomBooksEditFor(String currentMode) {
-        if (currentMode == null || EditorStatusPacket.NO_MODE.equals(currentMode)) return null;
+        // Off has no dials, so the row is the value alone. Once the room stocks an author the Edit
+        // button rides beside it rather than taking a row of its own — the weights and the author band
+        // belong to the value next to them.
         if (!games.brennan.dungeontrain.portal.PortalRoomSettings.parse(currentMode)
                 .books().weightsApply()) {
-            return null;
+            return cycle;
         }
-        return new CommandMenuEntry.DrillIn("  Edit mix \u25be", new PortalRoomBooksScreen(currentMode));
+        return new CommandMenuEntry.Split(cycle,
+            new CommandMenuEntry.DrillIn("Edit", new PortalRoomBooksScreen(currentMode)),
+            0.72);
     }
 
     /**

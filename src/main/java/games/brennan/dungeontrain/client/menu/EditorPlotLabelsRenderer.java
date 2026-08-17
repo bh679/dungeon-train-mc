@@ -93,8 +93,10 @@ public final class EditorPlotLabelsRenderer {
         COPIES_CYCLE,
         /** The furnishing row — whether the room takes a contents template, and how it is fitted. */
         ROOM_CONTENTS_CYCLE,
-        /** The author-lock row — whether every book in the room is by one person, and which one. */
+        /** The author-lock row — whether the room stocks its shelves from one person. */
         ROOM_BOOKS_CYCLE,
+        /** The Edit half of that row — the weights and the band, which only a stocking room has. */
+        ROOM_BOOKS_EDIT,
         /** The extra-corridors row — only shown while the walls repeat. */
         EXITS_CYCLE,
         /** The stepper for how far apart those extra corridors go. */
@@ -119,6 +121,13 @@ public final class EditorPlotLabelsRenderer {
         NAME, WEIGHT, LENGTH, WIDTH, HEIGHT, MODE, COPIES, ROOM_CONTENTS, ROOM_BOOKS, EXITS,
         EXIT_EVERY, EXIT_MOVE, ENTER, ACTION, CONTENTS
     }
+
+    /**
+     * How much of the Books row the value keeps when an Edit button shares it. Wide enough for
+     * "Books: Author Mix" at the panel's text scale, leaving a button that is still comfortably
+     * clickable.
+     */
+    private static final double BOOKS_CYCLE_SHARE = 0.72;
 
     /** The rows {@code entry} shows, top to bottom. */
     public static RowKind[] rows(EditorPlotLabelsPacket.Entry entry) {
@@ -622,7 +631,7 @@ public final class EditorPlotLabelsRenderer {
             case MODE -> CellKind.MODE_CYCLE;
             case COPIES -> CellKind.COPIES_CYCLE;
             case ROOM_CONTENTS -> CellKind.ROOM_CONTENTS_CYCLE;
-            case ROOM_BOOKS -> CellKind.ROOM_BOOKS_CYCLE;
+            case ROOM_BOOKS -> roomBooksRowCell(entry, hitX, halfW);
             case EXITS -> CellKind.EXITS_CYCLE;
             case EXIT_EVERY -> stepperCell(hitX, halfW,
                 CellKind.EXIT_EVERY_DEC, CellKind.EXIT_EVERY_INC, CellKind.EXIT_EVERY_TYPE);
@@ -649,6 +658,30 @@ public final class EditorPlotLabelsRenderer {
         if (hitX < -halfW + third) return dec;
         if (hitX > halfW - third) return inc;
         return middle;
+    }
+
+    /**
+     * The Books row is one button while the room stocks nothing, and two once it does — the value on
+     * the left, an Edit button on the right for the weights and the author band.
+     *
+     * <p>Inline rather than a row of its own: the dials belong to the value beside them, and a room
+     * that stocks nothing should not grow a row for settings that mean nothing.</p>
+     */
+    private static CellKind roomBooksRowCell(EditorPlotLabelsPacket.Entry entry, double hitX, double halfW) {
+        if (!hasBookEditButton(entry)) return CellKind.ROOM_BOOKS_CYCLE;
+        return hitX < booksEditLeft(halfW) ? CellKind.ROOM_BOOKS_CYCLE : CellKind.ROOM_BOOKS_EDIT;
+    }
+
+    /** Where the Edit half of the Books row starts. */
+    private static double booksEditLeft(double halfW) {
+        return -halfW + BOOKS_CYCLE_SHARE * (halfW * 2.0);
+    }
+
+    /** True when the Books row carries its Edit button — only a room that stocks an author has dials. */
+    public static boolean hasBookEditButton(EditorPlotLabelsPacket.Entry entry) {
+        return hasRoomBooksRow(entry)
+            && games.brennan.dungeontrain.portal.PortalRoomSettings.parse(entry.roomMode())
+                .books().weightsApply();
     }
 
     private static CellKind actionRowCell(double hitX, double halfW) {
@@ -804,11 +837,24 @@ public final class EditorPlotLabelsRenderer {
                     drawQuad(ps, buffer, -halfW + 0.01, rBot + 0.005, halfW - 0.01, rTop - 0.005, bg);
                     drawCenteredText(ps, buffer, font, roomContentsLabel(entry.roomMode()), 0, rCY, WEIGHT_COLOR);
                 }
-                // Books — whether every book found in this room is by one author. Off by default.
+                // Books — whether this room stocks its shelves from one author. Off by default, and
+                // once it is not, the row carries an Edit button for the weights and the author band.
                 case ROOM_BOOKS -> {
-                    int bg = hovered == CellKind.ROOM_BOOKS_CYCLE ? HOVER_COLOR : BUTTON_BG;
-                    drawQuad(ps, buffer, -halfW + 0.01, rBot + 0.005, halfW - 0.01, rTop - 0.005, bg);
-                    drawCenteredText(ps, buffer, font, roomBooksLabel(entry.roomMode()), 0, rCY, WEIGHT_COLOR);
+                    if (hasBookEditButton(entry)) {
+                        double split = booksEditLeft(halfW);
+                        int valueBg = hovered == CellKind.ROOM_BOOKS_CYCLE ? HOVER_COLOR : BUTTON_BG;
+                        int editBg = hovered == CellKind.ROOM_BOOKS_EDIT ? HOVER_COLOR : BUTTON_BG;
+                        drawQuad(ps, buffer, -halfW + 0.01, rBot + 0.005, split - 0.005, rTop - 0.005, valueBg);
+                        drawQuad(ps, buffer, split + 0.005, rBot + 0.005, halfW - 0.01, rTop - 0.005, editBg);
+                        drawCenteredText(ps, buffer, font, roomBooksLabel(entry.roomMode()),
+                            (-halfW + split) / 2.0, rCY, WEIGHT_COLOR);
+                        drawCenteredText(ps, buffer, font, "Edit",
+                            (split + halfW) / 2.0, rCY, BUTTON_TEXT_COLOR);
+                    } else {
+                        int bg = hovered == CellKind.ROOM_BOOKS_CYCLE ? HOVER_COLOR : BUTTON_BG;
+                        drawQuad(ps, buffer, -halfW + 0.01, rBot + 0.005, halfW - 0.01, rTop - 0.005, bg);
+                        drawCenteredText(ps, buffer, font, roomBooksLabel(entry.roomMode()), 0, rCY, WEIGHT_COLOR);
+                    }
                 }
                 // Exits — how many extra ways back to the train this room scatters through its
                 // copies. Only an endless room has anywhere to put one.
