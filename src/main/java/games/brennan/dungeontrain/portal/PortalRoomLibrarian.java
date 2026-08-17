@@ -85,16 +85,32 @@ public final class PortalRoomLibrarian {
             ServerPlayer reader = readerFor(players, pending.origin());
             if (reader == null) continue;
 
-            Optional<BookAuthorsClient.Author> author = PortalRoomAuthorLocks.authorFor(
+            PortalRoomAuthorLocks.Resolution resolved = PortalRoomAuthorLocks.resolve(
                 reader, pairKey, pending.books(), ContentModeMirror.isKid(reader));
-            if (author.isEmpty()) continue;          // still resolving — try again next pass
+            if (resolved.outcome() == PortalRoomAuthorLocks.Outcome.PENDING) continue;  // ask again
 
+            if (resolved.outcome() == PortalRoomAuthorLocks.Outcome.NONE) {
+                // The directory answered and nobody is inside this room's band. Said out loud and at
+                // INFO, because from in-game this is indistinguishable from a broken feature: the
+                // room simply stands there empty. Naming the band is what turns it back into a
+                // setting the author can change.
+                LOGGER.info("[DungeonTrain] Portal room {} found no author with {}-{} books — "
+                        + "its shelves stay empty. Widen the room's Books range, or the corpus has "
+                        + "nobody that prolific yet.",
+                    pairKey, pending.books().minBooks() + 1,
+                    pending.books().maxBooks() == PortalRoomBooks.NO_MAXIMUM
+                        ? "any" : String.valueOf(pending.books().maxBooks()));
+                PENDING.remove(pairKey);
+                continue;
+            }
+
+            BookAuthorsClient.Author author = resolved.author();
             int placed = PortalRoomLibrary.stock(level, pending.origin(), pending.size(),
-                AuthorBookPool.booksFor(author.get().token()), pairKey);
+                AuthorBookPool.booksFor(author.token()), pairKey, author.name());
             if (placed <= 0 && !PortalRoomLibrary.hasShelves(level, pending.origin(), pending.size())) {
                 // No shelves to stock: the room is set to stock an author but was never built to hold
                 // books. Drop it rather than asking again forever.
-                LOGGER.debug("[DungeonTrain] Portal room {} stocks an author but has no bookshelves",
+                LOGGER.info("[DungeonTrain] Portal room {} stocks an author but has no bookshelves",
                     pairKey);
             }
             PENDING.remove(pairKey);

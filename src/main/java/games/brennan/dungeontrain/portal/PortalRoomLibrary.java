@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.portal;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.editor.ChiseledBookshelfSync;
+import games.brennan.dungeontrain.narrative.PortalLibraryTribute;
 import games.brennan.dungeontrain.narrative.SharedBookFoundTag;
 import games.brennan.dungeontrain.narrative.SharedBookPool;
 import games.brennan.dungeontrain.narrative.SharedBookReadTag;
@@ -9,8 +10,12 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.LecternBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.ChiseledBookShelfBlockEntity;
+import net.minecraft.world.level.block.entity.LecternBlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
@@ -50,10 +55,13 @@ public final class PortalRoomLibrary {
      * resolved should look like.</p>
      */
     public static int stock(ServerLevel level, BlockPos origin, Vec3i size,
-                            List<SharedBookPool.PoolBook> catalogue, int pairKey) {
+                            List<SharedBookPool.PoolBook> catalogue, int pairKey, String authorName) {
         if (level == null || origin == null || size == null || catalogue == null || catalogue.isEmpty()) {
             return 0;
         }
+        // The note that says what the room is, before any shelf does. Placed even when the catalogue
+        // is short — a room with two books on its shelves is exactly the room the note explains.
+        dressLecterns(level, origin, size, authorName, pairKey);
         List<BlockPos> shelves = shelvesIn(level, origin, size);
         if (shelves.isEmpty()) return 0;
 
@@ -81,6 +89,40 @@ public final class PortalRoomLibrary {
         LOGGER.info("[DungeonTrain] Portal room {} stocked {} of {} book(s) across {} shelves",
             pairKey, placed, order.size(), shelves.size());
         return placed;
+    }
+
+    /**
+     * Put the tribute note on every lectern in the room.
+     *
+     * <p>A lectern is where a library keeps its explanation, and the shelves cannot give one: a
+     * player has to open two books and notice the same name twice before the pattern is visible at
+     * all. One lectern says it outright.</p>
+     *
+     * <p>A lectern the template already stood a book on is left alone — an author who put something
+     * there meant it, and this note is not more important than what they wrote.</p>
+     */
+    private static void dressLecterns(ServerLevel level, BlockPos origin, Vec3i size,
+                                      String authorName, int pairKey) {
+        BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
+        for (int dy = 0; dy < size.getY(); dy++) {
+            for (int dz = 0; dz < size.getZ(); dz++) {
+                for (int dx = 0; dx < size.getX(); dx++) {
+                    cursor.set(origin.getX() + dx, origin.getY() + dy, origin.getZ() + dz);
+                    if (!level.getBlockState(cursor).hasBlockEntity()) continue;
+                    if (!(level.getBlockEntity(cursor) instanceof LecternBlockEntity lectern)) continue;
+                    if (lectern.hasBook()) continue;
+                    lectern.setBook(PortalLibraryTribute.buildStack(authorName, pairKey));
+                    lectern.setChanged();
+                    // Vanilla only flips HAS_BOOK from the player-interaction path, exactly like the
+                    // chiseled bookshelf's slot-occupied properties — so an undressed lectern would
+                    // hold a book nobody could see or open.
+                    BlockState state = level.getBlockState(cursor);
+                    if (state.hasProperty(LecternBlock.HAS_BOOK)) {
+                        level.setBlock(cursor, state.setValue(LecternBlock.HAS_BOOK, true), Block.UPDATE_ALL);
+                    }
+                }
+            }
+        }
     }
 
     /** True when this room has anywhere to put an author's books at all. */

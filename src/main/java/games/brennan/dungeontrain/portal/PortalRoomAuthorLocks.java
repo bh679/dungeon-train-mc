@@ -98,6 +98,37 @@ public final class PortalRoomAuthorLocks {
     /** What a lock is remembered against: the room instance, and the holder only where it varies. */
     private record Key(int pairKey, UUID holder) {}
 
+    /**
+     * How an author request turned out.
+     *
+     * <p>Three answers, not two, because "not yet" and "not ever" want opposite things from the
+     * caller. A room still waiting on a fetch should ask again next tick; a room whose band nobody in
+     * the corpus falls inside should stop asking and say so — otherwise it sits empty and silent, and
+     * the operator has no way to tell a slow relay from a band nothing matches.</p>
+     */
+    public enum Outcome {
+        /** An author was found; {@link Resolution#author()} is present. */
+        RESOLVED,
+        /** A fetch is on its way. Ask again. */
+        PENDING,
+        /** The directory has answered and nobody in it qualifies. Asking again will not help. */
+        NONE
+    }
+
+    /** {@link Outcome} plus the author, when there is one. */
+    public record Resolution(Outcome outcome, BookAuthorsClient.Author author) {
+        static final Resolution PENDING = new Resolution(Outcome.PENDING, null);
+        static final Resolution NONE = new Resolution(Outcome.NONE, null);
+
+        static Resolution of(BookAuthorsClient.Author author) {
+            return new Resolution(Outcome.RESOLVED, author);
+        }
+
+        public boolean isResolved() {
+            return outcome == Outcome.RESOLVED && author != null;
+        }
+    }
+
     private PortalRoomAuthorLocks() {}
 
     /**
@@ -111,7 +142,15 @@ public final class PortalRoomAuthorLocks {
      */
     public static Optional<BookAuthorsClient.Author> authorFor(ServerPlayer player, int pairKey,
                                                               PortalRoomBooks books, boolean kidSafe) {
-        if (player == null || books == null || !books.locks()) return Optional.empty();
+        return Optional.ofNullable(resolve(player, pairKey, books, kidSafe).author());
+    }
+
+    /**
+     * As {@link #authorFor}, but saying WHY when there is no author — see {@link Outcome}.
+     */
+    public static Resolution resolve(ServerPlayer player, int pairKey,
+                                     PortalRoomBooks books, boolean kidSafe) {
+        if (player == null || books == null || !books.locks()) return Resolution.NONE;
         PortalRoomBooks.Share share = effectiveShare(pairKey, books);
         Key key = keyFor(pairKey, player, share);
 
@@ -121,9 +160,9 @@ public final class PortalRoomAuthorLocks {
             // room has to move on rather than serve nothing for as long as it stands.
             if (!AuthorBookPool.isFetched(held.token())) {
                 AuthorBookPool.refreshAsync(held.token(), hostLocaleOf(player), kidSafe);
-                return Optional.empty();                       // in flight; the next pickup has it
+                return Resolution.PENDING;                     // in flight; the next pass has it
             }
-            if (!AuthorBookPool.booksFor(held.token()).isEmpty()) return Optional.of(held);
+            if (!AuthorBookPool.booksFor(held.token()).isEmpty()) return Resolution.of(held);
             reject(key, held.token());
             LOCKS.remove(key);
         }
@@ -131,11 +170,15 @@ public final class PortalRoomAuthorLocks {
         for (int attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
             Optional<BookAuthorsClient.Author> candidate =
                 nextCandidate(player, key, share, books, kidSafe);
-            if (candidate.isEmpty()) return Optional.empty();   // nothing to try — fetch kicked, if any
+            if (candidate.isEmpty()) {
+                // Nothing to try. Which of the two that is depends on whether the pages it would have
+                // consulted have actually come back yet.
+                return directoriesAnswered(player, share, books) ? Resolution.NONE : Resolution.PENDING;
+            }
             BookAuthorsClient.Author author = candidate.get();
             if (!AuthorBookPool.isFetched(author.token())) {
                 AuthorBookPool.refreshAsync(author.token(), hostLocaleOf(player), kidSafe);
-                return Optional.empty();                        // in flight; the next pickup has it
+                return Resolution.PENDING;                      // in flight; the next pass has it
             }
             if (AuthorBookPool.booksFor(author.token()).isEmpty()) {
                 // Counted in the directory, servable to nobody here. Try somebody else.
@@ -146,9 +189,29 @@ public final class PortalRoomAuthorLocks {
             remember(author.token());
             LOGGER.info("[DungeonTrain] Portal room {} locked to author '{}' ({} book(s))",
                 pairKey, author.name(), author.count());
-            return Optional.of(author);
+            return Resolution.of(author);
         }
-        return Optional.empty();
+        // Every attempt found a candidate whose catalogue turned out to be empty. Not "wait" — the
+        // room has been through the directory and come out the other side.
+        return Resolution.NONE;
+    }
+
+    /**
+     * Whether every directory page this room would consult has come back.
+     *
+     * <p>This is what separates "the relay has not answered yet" from "the relay answered and nobody
+     * is inside this room's band" — the two look identical at the call site and want opposite
+     * things.</p>
+     */
+    private static boolean directoriesAnswered(ServerPlayer player, PortalRoomBooks.Share share,
+                                               PortalRoomBooks books) {
+        if (share.isSelf()
+                && !DIRECTORY.containsKey(PortalRoomBooks.Share.SELF.directoryKind() + ':' + player.getUUID())) {
+            return false;
+        }
+        String kind = share.isSelf()
+            ? PortalRoomBooks.Share.PLAYER.directoryKind() : share.directoryKind();
+        return DIRECTORY.containsKey(kind + ':' + books.minBooks() + ':' + books.maxBooks());
     }
 
     /**
