@@ -274,6 +274,12 @@ public final class BuilderProfileScreen extends Screen {
         if ("flagged".equals(entry.flag()) || "rejected".equals(entry.flag())) {
             return Component.translatable("gui.dungeontrain.builder.profile.withheld");
         }
+        // A carriage is only placed into a stage it belongs to, and a build authored without one
+        // belongs to none — so it can be submitted and still never appear anywhere. Said here because
+        // "on the train and never seen" is indistinguishable from a broken feature otherwise.
+        if (BuilderRelayKinds.canJoinTheTrain(entry.kind()) && entry.stage().isEmpty()) {
+            return Component.translatable("gui.dungeontrain.builder.profile.no_stage");
+        }
         return null;
     }
 
