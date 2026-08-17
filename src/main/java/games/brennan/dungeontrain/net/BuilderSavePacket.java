@@ -8,6 +8,7 @@ import games.brennan.dungeontrain.builder.BuilderPhotoRequest;
 import games.brennan.dungeontrain.builder.BuilderTrackBuild;
 import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.builder.BuilderSave;
+import games.brennan.dungeontrain.builder.relay.BuilderRelayUpload;
 import games.brennan.dungeontrain.train.CarriagePartKind;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.ChatFormatting;
@@ -56,6 +57,10 @@ public record BuilderSavePacket() implements CustomPacketPayload {
                 // Snapshots were re-baselined by the save, so the client's green Save can clear.
                 DungeonTrainNet.sendTo(player, BuilderDirtyPacket.state(0));
                 requestPhoto(player, level, result.variantId());
+                // …and, when the player has opted in, the build goes to their relay profile. After the
+                // local write, never instead of it: the file on disk is the build, and an upload that
+                // can't happen costs the player nothing.
+                BuilderRelayUpload.afterSave(player, level, result.written());
             } else {
                 player.sendSystemMessage(Component.translatable(
                         "gui.dungeontrain.builder.save_failed", result.failure())

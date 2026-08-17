@@ -87,6 +87,7 @@ public final class BuilderPauseMenuHandler {
     private static final Component SAVE = Component.translatable("gui.dungeontrain.builder.save");
     private static final Component NEW = Component.translatable("gui.dungeontrain.builder.new");
     private static final Component OPEN = Component.translatable("gui.dungeontrain.builder.open");
+    private static final Component MY_BUILDS = Component.translatable("gui.dungeontrain.builder.profile");
 
     /** Save turns green while there's work to keep — the same signal the editor's SaveAction uses. */
     private static final float SAVE_DIRTY_R = 0.35F;
@@ -285,6 +286,12 @@ public final class BuilderPauseMenuHandler {
 
         event.addListener(new BuilderSaveButton(x, y, width, height, SAVE,
                 b -> save(screen)));
+        y += rowStride;
+
+        // …and what keeping it added up to: everything this player has uploaded, and the one button
+        // that puts a build on the train. Directly under Save because that is what fills it.
+        event.addListener(new DarkTintedButton(x, y, width, height, MY_BUILDS,
+                b -> Minecraft.getInstance().setScreen(new BuilderProfileScreen(screen))));
         y += rowStride + BuilderPauseMenuLayout.GROUP_GAP;
 
         // Undo — both discard work, so both ask first when there is any.
