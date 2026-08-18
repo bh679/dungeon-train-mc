@@ -73,6 +73,11 @@
     "maxLevel": 40,
     "mode": "endless_open"
   },
+  "trap": {
+    "weight": 1,
+    "minLevel": 10,
+    "mode": "bedrock_lock"
+  },
   "window": {
     "weight": 1,
     "maxLevel": 10,
