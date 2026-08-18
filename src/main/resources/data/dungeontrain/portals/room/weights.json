@@ -58,6 +58,11 @@
     "weight": 1,
     "mode": "bedrockless"
   },
+  "parkour": {
+    "weight": 1,
+    "minLevel": 10,
+    "mode": "bedrockless"
+  },
   "paths": {
     "weight": 1,
     "mode": "endless_repetition/dynamic"
