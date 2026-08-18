@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.editor.CarriageEditor;
 import games.brennan.dungeontrain.editor.CarriageTemplateStore;
 import games.brennan.dungeontrain.editor.CarriageContentsStore;
+import games.brennan.dungeontrain.editor.CarriageGroupTemplateStore;
 import games.brennan.dungeontrain.editor.CarriagePartRegistry;
 import games.brennan.dungeontrain.editor.CarriagePartTemplateStore;
 import games.brennan.dungeontrain.editor.CarriageVariantBlocks;
@@ -22,6 +23,9 @@ import games.brennan.dungeontrain.train.CarriageContents;
 import games.brennan.dungeontrain.train.CarriageContentsPlacer;
 import games.brennan.dungeontrain.train.CarriageContentsRegistry;
 import games.brennan.dungeontrain.train.CarriageDims;
+import games.brennan.dungeontrain.train.CarriageGroup;
+import games.brennan.dungeontrain.train.CarriageGroupPlacer;
+import games.brennan.dungeontrain.train.CarriageGroupRegistry;
 import games.brennan.dungeontrain.train.CarriagePartKind;
 import games.brennan.dungeontrain.train.CarriageVariant;
 import games.brennan.dungeontrain.train.CarriageVariantRegistry;
@@ -72,26 +76,13 @@ public final class BuilderSave {
      * wrong — the part arm's origin is offset into the kind's first placement, and a portal room's size
      * is the author's rather than {@link CarriageDims}.</p>
      */
-    public record Result(boolean saved, String variantId, String failure, List<Written> written) {
-        public Result {
-            written = written == null ? List.of() : List.copyOf(written);
-        }
-
+    public record Result(boolean saved, String variantId, String failure, Written written) {
         static Result ok(String variantId, Written written) {
-            return new Result(true, variantId, null, List.of(written));
-        }
-
-        static Result ok(String variantId, List<Written> written) {
             return new Result(true, variantId, null, written);
         }
 
         static Result failed(String failure) {
-            return new Result(false, null, failure, List.of());
-        }
-
-        /** How many templates this save wrote — more than one only for a family (see {@link #save}). */
-        public int count() {
-            return written.size();
+            return new Result(false, null, failure, null);
         }
     }
 
@@ -128,8 +119,7 @@ public final class BuilderSave {
         }
         List<BoundingBox> volumes = BuilderBounds.volumesFor(level);
 
-        List<Integer> targets = volumesToSave(volumes.size(), BuilderDirtyCheck.dirtyCarriages(level));
-        if (targets.isEmpty()) {
+        if (volumes.isEmpty()) {
             return Result.failed("nothing to save");
         }
         // A draft has no template to write to. The client asks for a name before getting here;
@@ -149,9 +139,15 @@ public final class BuilderSave {
         boolean carriageFromOutside = subType == BuilderNewOptions.SubType.CARRIAGE_ROOM
                 && mode == BuilderMode.TRAIN_OUTSIDE;
 
-        BoundingBox box = volumes.get(targets.get(0));
+        BoundingBox box = volumes.get(0);
         BlockPos origin = BuilderBounds.originOf(box);
-        List<Written> written = new java.util.ArrayList<>(targets.size());
+        // More than one parked carriage means the build IS the run: Train Outside authors a stretch of
+        // train, and only its Whole Carriage arm parks more than one (BuilderWorldLayout.parkedCarriages
+        // answers 1 for every other sub type). Saving that as one template per carriage would keep the
+        // blocks and lose the composition — which carriage followed which, and that they were made to
+        // be seen together.
+        boolean group = volumes.size() > 1 && subType == BuilderNewOptions.SubType.WHOLE_CARRIAGE;
+        Written written;
         try {
             if (portalRoom) {
                 Vec3i roomSize = BuilderBounds.sizeOf(box);
@@ -164,28 +160,26 @@ public final class BuilderSave {
                 mirrorBeforeCapture(level, origin, roomSize,
                         new BlockVariantPlot.TrackPlot(TrackKind.PORTAL_ROOM, name, origin, roomSize));
                 savePortalRoom(level, origin, roomSize, name);
-                written.add(new Written(BuilderPhotoPaths.Kind.PORTAL_ROOM, name, "", origin, roomSize));
-            } else {
-                // One template per carriage the builder actually worked in — a family (see
-                // BuilderFamilyNames). Only the carriage arms can have more than one volume to write:
-                // every other sub type parks exactly one, so their loop runs once and writes the bare
-                // name, exactly as before.
-                for (int slot = 0; slot < targets.size(); slot++) {
-                    int index = targets.get(slot);
-                    BlockPos slotOrigin = BuilderBounds.originOf(volumes.get(index));
-                    String slotName = BuilderFamilyNames.memberName(name, index);
-                    // Mirror first, capture second — the same order every editor save() uses. Without
-                    // it a build with mirroring on saves only the half that was actually placed by hand.
-                    mirrorBeforeCapture(level, slotOrigin, dims);
-                    written.add(switch (subType) {
-                        case CARRIAGE_ROOM -> carriageFromOutside
-                                ? saveWholeCarriage(level, slotOrigin, dims, slotName, data.builderStage())
-                                : saveContents(level, slotOrigin, dims, slotName);
-                        case PARTS -> savePart(level, slotOrigin, dims, slotName, data.builderPartKind());
-                        case WHOLE_CARRIAGE ->
-                                saveWholeCarriage(level, slotOrigin, dims, slotName, data.builderStage());
-                    });
+                written = new Written(BuilderPhotoPaths.Kind.PORTAL_ROOM, name, "", origin, roomSize);
+            } else if (group) {
+                // Mirror every carriage first, then capture the run in one pass — the same order a
+                // single-carriage save uses, applied to each volume because the mirror works on one
+                // carriage plot at a time.
+                for (BoundingBox volume : volumes) {
+                    mirrorBeforeCapture(level, BuilderBounds.originOf(volume), dims);
                 }
+                written = saveCarriageGroup(level, origin, dims, name, volumes.size());
+            } else {
+                // Mirror first, capture second — the same order every editor save() uses. Without it
+                // a build with mirroring on saves only the half that was actually placed by hand.
+                mirrorBeforeCapture(level, origin, dims);
+                written = switch (subType) {
+                    case CARRIAGE_ROOM -> carriageFromOutside
+                            ? saveWholeCarriage(level, origin, dims, name, data.builderStage())
+                            : saveContents(level, origin, dims, name);
+                    case PARTS -> savePart(level, origin, dims, name, data.builderPartKind());
+                    case WHOLE_CARRIAGE -> saveWholeCarriage(level, origin, dims, name, data.builderStage());
+                };
             }
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] Builder save failed for {}", name, t);
@@ -201,9 +195,10 @@ public final class BuilderSave {
             EditorPlotSnapshots.capture(BuilderDirtyCheck.snapshotKey(i), level,
                     BuilderBounds.originOf(b), size.getX(), size.getY(), size.getZ());
         }
-        LOGGER.info("[DungeonTrain] Builder save: wrote {} x{} '{}' from volume(s) {}",
-                portalRoom ? BuilderOpenRequest.PORTAL_ROOM_SUB_TYPE : subType.id(),
-                written.size(), name, targets);
+        LOGGER.info("[DungeonTrain] Builder save: wrote {} '{}' over {} volume(s)",
+                portalRoom ? BuilderOpenRequest.PORTAL_ROOM_SUB_TYPE
+                        : (group ? "carriage_group" : subType.id()),
+                name, group ? volumes.size() : 1);
         return Result.ok(name, written);
     }
 
@@ -322,6 +317,34 @@ public final class BuilderSave {
     }
 
     /**
+     * The build is a run of carriages: capture the whole run as one template.
+     *
+     * <p>One write, unlike {@link #saveWholeCarriage}'s two. A whole carriage is written twice because
+     * the spawn pool only knows about carriage <em>shells</em>, so a build has to exist as one to keep
+     * appearing in trains. A group has no such second home — nothing places a group on a train yet —
+     * and writing its whole run into the shell store would register a template three carriages long
+     * where every reader expects one, which the shell store's own footprint gate would then refuse on
+     * every read.</p>
+     *
+     * <p>The carriage count lives in the footprint rather than beside it: {@code carriages × length}
+     * is the box, so a group cannot claim to be a size it isn't. See {@code CarriageGroupTemplateStore}.</p>
+     */
+    private static Written saveCarriageGroup(ServerLevel level, BlockPos origin, CarriageDims dims,
+                                             String name, int carriages) throws IOException {
+        CarriageGroup group = CarriageGroup.of(name);
+        StructureTemplate template = CarriageGroupPlacer.captureTemplate(level, origin, dims, carriages);
+        // File first, registry second: a reload landing between the two would otherwise leave a
+        // registered id with nothing on disk.
+        CarriageGroupTemplateStore.save(group, template);
+        if (CarriageGroupRegistry.register(group)) {
+            LOGGER.info("[DungeonTrain] Builder save: registered new carriage group '{}' ({} carriages)",
+                    name, carriages);
+        }
+        return new Written(BuilderPhotoPaths.Kind.CARRIAGE_GROUP, name, "", origin,
+                CarriageGroupPlacer.sizeOf(dims, carriages));
+    }
+
+    /**
      * The build is what's <em>inside</em> the carriage.
      *
      * <p>{@code CarriageContentsPlacer.captureTemplate} takes the carriage origin and offsets to the
@@ -427,33 +450,6 @@ public final class BuilderSave {
         }
         CarriageWeights.setStage(variantId, stageId);
         LOGGER.info("[DungeonTrain] Builder save: linked carriage {} to stage {}", variantId, stageId);
-    }
-
-    /**
-     * Which carriages the save writes, in slot order.
-     *
-     * <p><b>Every carriage the builder actually worked in.</b> Train Outside parks a whole group and
-     * all of it is editable, so writing only one of them — which is what this did — silently dropped
-     * two thirds of a group build. Each chosen volume becomes its own template under a family name
-     * (see {@link BuilderFamilyNames}).</p>
-     *
-     * <p>Dirty rather than all, because "parked" is not "authored": a group where only the middle
-     * carriage was touched must not also write two copies of the untouched stamped shell over its
-     * siblings' templates. When nothing is dirty at all the first volume still saves, so a Save click
-     * with no changes writes the build rather than looking broken.</p>
-     *
-     * <p>Pure, so the choice is testable without a level.</p>
-     */
-    public static List<Integer> volumesToSave(int volumeCount, List<Integer> dirtyIndices) {
-        if (volumeCount <= 0) {
-            return List.of();
-        }
-        List<Integer> targets = dirtyIndices.stream()
-                .filter(i -> i != null && i >= 0 && i < volumeCount)
-                .distinct()
-                .sorted()
-                .toList();
-        return targets.isEmpty() ? List.of(0) : targets;
     }
 
     /**

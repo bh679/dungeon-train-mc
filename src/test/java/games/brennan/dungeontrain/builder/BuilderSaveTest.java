@@ -1,64 +1,57 @@
 package games.brennan.dungeontrain.builder;
 
+import games.brennan.dungeontrain.train.CarriageDims;
+import games.brennan.dungeontrain.editor.CarriageGroupTemplateStore;
+import net.minecraft.core.Vec3i;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Which carriages back the saved templates.
+ * What a builder save treats as "the build".
  *
- * <p>Train Outside parks a whole group and every carriage in it is editable, so "which one is the
- * build?" was the wrong question: the answer used to be one carriage, and two thirds of a group build
- * went silently unwritten. It is now every carriage actually worked in — but not the untouched ones,
- * or a save would put copies of the stamped shell over its siblings' templates.</p>
+ * <p>Train Outside parks a whole run and every carriage in it is editable, so the build is the run —
+ * saved as one carriage-group template rather than one template per carriage. The gate that keeps that
+ * honest is the footprint: a group's carriage count IS its length, so a template cannot claim to be a
+ * size it isn't, and a world whose train is a different length refuses it rather than stamping it
+ * short.</p>
  */
 final class BuilderSaveTest {
 
+    /** The shipped default: 9 long, 7 high, 7 wide. */
+    private static final CarriageDims DIMS = new CarriageDims(9, 7, 7);
+
     @Test
-    @DisplayName("Every edited carriage is saved, in slot order")
-    void everyDirtyCarriageIsSaved() {
-        assertEquals(List.of(0, 1, 2), BuilderSave.volumesToSave(3, List.of(2, 0, 1)));
-        assertEquals(List.of(1, 2), BuilderSave.volumesToSave(3, List.of(1, 2)));
+    @DisplayName("A run of carriages is recognised by its length")
+    void wholeRunsAreCounted() {
+        assertEquals(1, CarriageGroupTemplateStore.carriageCount(new Vec3i(9, 7, 7), DIMS));
+        assertEquals(3, CarriageGroupTemplateStore.carriageCount(new Vec3i(27, 7, 7), DIMS));
+        assertEquals(16, CarriageGroupTemplateStore.carriageCount(new Vec3i(144, 7, 7), DIMS));
     }
 
     @Test
-    @DisplayName("Only the edited ones — an untouched carriage keeps its own template")
-    void untouchedCarriagesAreLeftAlone() {
-        assertEquals(List.of(1), BuilderSave.volumesToSave(3, List.of(1)),
-                "writing 0 and 2 as well would overwrite them with the stamped shell");
+    @DisplayName("A length that isn't a whole number of carriages is not a group")
+    void partialRunsAreRefused() {
+        // One block short of two carriages is not "nearly two" — it is a template that would be
+        // stamped into the wrong space.
+        assertEquals(0, CarriageGroupTemplateStore.carriageCount(new Vec3i(17, 7, 7), DIMS));
+        assertEquals(0, CarriageGroupTemplateStore.carriageCount(new Vec3i(0, 7, 7), DIMS));
     }
 
     @Test
-    @DisplayName("Nothing edited still saves the first carriage rather than looking broken")
-    void cleanSavesTheFirst() {
-        assertEquals(List.of(0), BuilderSave.volumesToSave(3, List.of()));
-        assertEquals(List.of(0), BuilderSave.volumesToSave(1, List.of()));
+    @DisplayName("A group authored at other carriage dimensions is refused outright")
+    void otherDimensionsAreRefused() {
+        // Height and width must match exactly: a taller carriage is a different carriage, and its
+        // group cannot be laid into this train at all.
+        assertEquals(0, CarriageGroupTemplateStore.carriageCount(new Vec3i(27, 8, 7), DIMS));
+        assertEquals(0, CarriageGroupTemplateStore.carriageCount(new Vec3i(27, 7, 5), DIMS));
     }
 
     @Test
-    @DisplayName("No carriages means nothing to save")
-    void noVolumesMeansNothingToSave() {
-        assertTrue(BuilderSave.volumesToSave(0, List.of()).isEmpty());
-        assertTrue(BuilderSave.volumesToSave(0, List.of(0)).isEmpty(),
-                "a stale dirty index can't conjure a volume");
-    }
-
-    @Test
-    @DisplayName("A dirty index outside the current volumes is ignored, not trusted")
-    void staleDirtyIndexIsIgnored() {
-        // Switching modes shrinks the train; a leftover index from the old shape must not be used
-        // to look up a volume that no longer exists.
-        assertEquals(List.of(0), BuilderSave.volumesToSave(1, List.of(2)));
-        assertEquals(List.of(0), BuilderSave.volumesToSave(2, List.of(0, 5)));
-    }
-
-    @Test
-    @DisplayName("A repeated index is one carriage, not two saves of it")
-    void duplicatesCollapse() {
-        assertEquals(List.of(1), BuilderSave.volumesToSave(3, List.of(1, 1)));
+    @DisplayName("Nonsense in, zero out — never a guess")
+    void nullsAreNotGroups() {
+        assertEquals(0, CarriageGroupTemplateStore.carriageCount(null, DIMS));
+        assertEquals(0, CarriageGroupTemplateStore.carriageCount(new Vec3i(27, 7, 7), null));
     }
 }

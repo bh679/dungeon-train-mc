@@ -232,6 +232,7 @@ public final class BuilderProfileScreen extends Screen {
     /** Which local store to draw this build's tile from — the mirror of {@link BuilderRelayKinds#idOf}. */
     private static BuilderPhotoPaths.Kind photoKindOf(BuilderProfilePacket.Entry entry) {
         return switch (entry.kind()) {
+            case BuilderRelayKinds.CARRIAGE_GROUP -> BuilderPhotoPaths.Kind.CARRIAGE_GROUP;
             case BuilderRelayKinds.CONTENTS -> BuilderPhotoPaths.Kind.CONTENTS;
             case BuilderRelayKinds.PART -> BuilderPhotoPaths.Kind.PART;
             case BuilderRelayKinds.TRACK -> BuilderPhotoPaths.Kind.TRACK;

@@ -741,7 +741,6 @@
   "gui.dungeontrain.builder.open.empty": "Nothing here yet — make something with New and save it.",
   "gui.dungeontrain.builder.open.not_buildable": "Shown for reference — these can't be edited here yet.",
   "gui.dungeontrain.builder.saved": "Saved %1$s.",
-  "gui.dungeontrain.builder.saved_family": "Saved %1$s — %2$s carriages.",
   "gui.dungeontrain.builder.save_failed": "Could not save: %1$s",
   "gui.dungeontrain.builder.open_failed": "Could not open %1$s.",
   "gui.dungeontrain.builder.open_unsaved": "You have unsaved changes — save or discard them first.",

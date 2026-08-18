@@ -16,6 +16,18 @@
   "shared": 3,
   "shop": 10,
   "standard": 18,
+  "test_build": {
+    "weight": 1,
+    "stage": "stone"
+  },
+  "test_build_2": {
+    "weight": 1,
+    "stage": "stone"
+  },
+  "test_build_3": {
+    "weight": 1,
+    "stage": "stone"
+  },
   "test_cabin": {
     "weight": 1,
     "stage": "stone"

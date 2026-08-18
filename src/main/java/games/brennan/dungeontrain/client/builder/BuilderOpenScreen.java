@@ -426,6 +426,11 @@ public final class BuilderOpenScreen extends Screen {
         for (String id : EditorTemplateLists.stages()) {
             out.add(BuilderNewOptions.tagStage(id));
         }
+        // Groups before single carriages: from the platform a group is what this mode authors, so a
+        // builder's own runs are the first saved thing they see.
+        for (String id : EditorTemplateLists.carriageGroups()) {
+            out.add(BuilderNewOptions.tagCarriageGroup(id));
+        }
         for (String id : EditorTemplateLists.wholeCarriages()) {
             out.add(BuilderNewOptions.tagWholeCarriage(id));
         }
@@ -807,6 +812,14 @@ public final class BuilderOpenScreen extends Screen {
             return () -> DungeonTrainNet.sendToServer(new BuilderOpenPacket(mode.id(),
                     BuilderPhotoPaths.Kind.CARRIAGE.id(), carriageId, "", force, stageId,
                     subType.id()));
+        }
+        // A saved group is opened as a group: one template over the whole run, not a carriage stamped
+        // into every slot. Its own arm because forSelection reads the SUB TYPE, and both kinds of
+        // saved build share one — Whole Carriage — so only the tile's own tag can tell them apart.
+        if (source == BuilderOpenOptions.OpenSource.STAGES && BuilderOpenOptions.isSavedGroup(value)) {
+            String groupId = BuilderOpenOptions.bareId(source, value);
+            return () -> DungeonTrainNet.sendToServer(new BuilderOpenPacket(mode.id(),
+                    BuilderPhotoPaths.Kind.CARRIAGE_GROUP.id(), groupId, "", force));
         }
         BuilderOpenRequest request = BuilderOpenRequest
                 .forSelection(subType, BuilderOpenOptions.bareId(source, value), partKindValue())

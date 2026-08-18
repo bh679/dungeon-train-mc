@@ -60,6 +60,16 @@ public final class EditorTemplateLists {
     }
 
     /**
+     * Every saved carriage group, alphabetical — a whole run of carriages saved as one build.
+     *
+     * <p>Always user-authored, like {@link #wholeCarriages()}: the mod ships none, so this is empty
+     * until someone saves a build from the platform.</p>
+     */
+    public static List<String> carriageGroups() {
+        return games.brennan.dungeontrain.train.CarriageGroupRegistry.ids();
+    }
+
+    /**
      * Top-level contents only: a group's members are reached through their parent, never listed
      * beside it. Matches the spawn-time pick in {@code CarriageContentsRegistry.buildPickContext}
      * and the allow-list screen, so what you can choose is what the game can roll.

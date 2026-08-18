@@ -178,7 +178,14 @@ public final class BuilderNewOptions {
         /** A named gate preset from {@code StageStore}. */
         STAGE,
         /** A saved whole carriage from {@code WholeCarriageRegistry}. */
-        WHOLE_CARRIAGE
+        WHOLE_CARRIAGE,
+        /**
+         * A saved carriage group from {@code CarriageGroupRegistry} — a whole run of carriages in one
+         * template. Its own kind for the same reason whole carriages have one: the ids live in
+         * separate stores and do collide, so an untagged value coming back from the client would be
+         * genuinely ambiguous and guessing wrong stamps the wrong thing.
+         */
+        CARRIAGE_GROUP
     }
 
     /** One resolved picker value: which list it came from, and the bare id within that list. */
@@ -193,6 +200,7 @@ public final class BuilderNewOptions {
     }
 
     private static final String WHOLE_CARRIAGE_TAG = "whole:";
+    private static final String CARRIAGE_GROUP_TAG = "group:";
 
     /**
      * Tag {@code id} as a saved whole carriage for transport through the picker and the New packet.
@@ -205,6 +213,11 @@ public final class BuilderNewOptions {
      */
     public static String tagWholeCarriage(String id) {
         return WHOLE_CARRIAGE_TAG + id;
+    }
+
+    /** Tag {@code id} as a saved carriage group. See {@link #tagWholeCarriage} for why tags exist. */
+    public static String tagCarriageGroup(String id) {
+        return CARRIAGE_GROUP_TAG + id;
     }
 
     /** Tag {@code id} as a Stage. Stages are the untagged default — this exists for symmetry. */
@@ -225,6 +238,9 @@ public final class BuilderNewOptions {
         }
         if (raw.startsWith(WHOLE_CARRIAGE_TAG)) {
             return new Pick(PickKind.WHOLE_CARRIAGE, raw.substring(WHOLE_CARRIAGE_TAG.length()));
+        }
+        if (raw.startsWith(CARRIAGE_GROUP_TAG)) {
+            return new Pick(PickKind.CARRIAGE_GROUP, raw.substring(CARRIAGE_GROUP_TAG.length()));
         }
         return new Pick(PickKind.STAGE, raw);
     }

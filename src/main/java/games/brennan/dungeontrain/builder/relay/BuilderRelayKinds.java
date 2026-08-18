@@ -14,6 +14,14 @@ public final class BuilderRelayKinds {
 
     /** The only kind a train can be assembled from — see {@link #canJoinTheTrain}. */
     public static final String CARRIAGE = "carriage";
+    /**
+     * A whole run of carriages saved as one build.
+     *
+     * <p>Not submittable to the train <em>yet</em>: nothing places a group on a train, and the relay
+     * only ever leases a {@code carriage}. It still uploads, because a builder's profile is the record
+     * of what they have made and a group is the thing Train Outside actually authors.</p>
+     */
+    public static final String CARRIAGE_GROUP = "carriage_group";
     public static final String CONTENTS = "contents";
     public static final String PART = "part";
     public static final String TRACK = "track";
@@ -26,6 +34,7 @@ public final class BuilderRelayKinds {
         if (kind == null) return CARRIAGE;
         return switch (kind) {
             case CARRIAGE -> CARRIAGE;
+            case CARRIAGE_GROUP -> CARRIAGE_GROUP;
             case CONTENTS -> CONTENTS;
             case PART -> PART;
             case TRACK -> TRACK;

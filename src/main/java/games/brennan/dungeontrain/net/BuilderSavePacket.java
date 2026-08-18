@@ -47,22 +47,16 @@ public record BuilderSavePacket() implements CustomPacketPayload {
 
             BuilderSave.Result result = BuilderSave.save(level);
             if (result.saved()) {
-                // A group build writes one template per carriage worked in, so say how many when it
-                // was more than one — "Saved: cabin" alone would understate a save that wrote three.
-                player.sendSystemMessage((result.count() > 1
-                        ? Component.translatable("gui.dungeontrain.builder.saved_family",
-                                result.variantId(), result.count())
-                        : Component.translatable("gui.dungeontrain.builder.saved", result.variantId()))
+                player.sendSystemMessage(Component.translatable(
+                        "gui.dungeontrain.builder.saved", result.variantId())
                         .withStyle(ChatFormatting.GREEN));
                 // Snapshots were re-baselined by the save, so the client's green Save can clear.
                 DungeonTrainNet.sendTo(player, BuilderDirtyPacket.state(0));
-                requestPhoto(player, level, result.written().get(0));
-                // …and, when the player has opted in, every template written goes to their relay
-                // profile. After the local write, never instead of it: the file on disk is the build,
-                // and an upload that can't happen costs the player nothing.
-                for (BuilderSave.Written written : result.written()) {
-                    BuilderRelayUpload.afterSave(player, level, written);
-                }
+                requestPhoto(player, level, result.written());
+                // …and, when the player has opted in, the build goes to their relay profile. After the
+                // local write, never instead of it: the file on disk is the build, and an upload that
+                // can't happen costs the player nothing.
+                BuilderRelayUpload.afterSave(player, level, result.written());
             } else {
                 player.sendSystemMessage(Component.translatable(
                         "gui.dungeontrain.builder.save_failed", result.failure())

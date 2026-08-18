@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.client.builder;
 
 import games.brennan.dungeontrain.builder.BuilderPhotoPaths;
 import games.brennan.dungeontrain.editor.CarriageContentsStore;
+import games.brennan.dungeontrain.editor.CarriageGroupTemplateStore;
 import games.brennan.dungeontrain.editor.CarriagePartTemplateStore;
 import games.brennan.dungeontrain.editor.CarriageTemplateStore;
 import games.brennan.dungeontrain.editor.TemplateCells;
@@ -85,6 +86,7 @@ final class BuilderTileTemplates {
         }
         return switch (kind) {
             case CARRIAGE -> CarriageTemplateStore.rawTag(id);
+            case CARRIAGE_GROUP -> CarriageGroupTemplateStore.rawTag(id);
             case CONTENTS -> CarriageContentsStore.rawTag(id);
             case PART -> partKind == null
                     ? Optional.empty()

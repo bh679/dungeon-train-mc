@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.builder;
 
 import games.brennan.dungeontrain.editor.CarriageContentsStore;
+import games.brennan.dungeontrain.editor.CarriageGroupTemplateStore;
 import games.brennan.dungeontrain.editor.CarriagePartTemplateStore;
 import games.brennan.dungeontrain.editor.CarriageTemplateStore;
 import games.brennan.dungeontrain.track.variant.TrackKind;
@@ -23,6 +24,12 @@ public final class BuilderPhotoPaths {
     /** Which store owns the template, as it travels on the wire. */
     public enum Kind {
         CARRIAGE("carriage"),
+        /**
+         * A whole run of carriages saved as one template — what Train Outside authors, where the
+         * composition (which carriage follows which) is part of the build rather than an accident of
+         * how three separate templates happened to be listed.
+         */
+        CARRIAGE_GROUP("carriage_group"),
         CONTENTS("contents"),
         PART("part"),
         /**
@@ -85,6 +92,7 @@ public final class BuilderPhotoPaths {
         }
         return switch (kind) {
             case CARRIAGE -> Optional.of(withPng(CarriageTemplateStore.fileForId(id)));
+            case CARRIAGE_GROUP -> Optional.of(withPng(CarriageGroupTemplateStore.fileForId(id)));
             case CONTENTS -> Optional.of(withPng(CarriageContentsStore.fileForId(id)));
             case PART -> partKind == null
                     ? Optional.empty()
@@ -112,6 +120,10 @@ public final class BuilderPhotoPaths {
             case CARRIAGE -> CarriageTemplateStore.sourceTreeAvailable()
                     ? Optional.of(withPng(CarriageTemplateStore.sourceFileForId(id)))
                     : Optional.empty();
+            // No source-tree twin: groups are authored in a builder world and the mod ships none, so
+            // there is no bundled copy for a photo to sit beside. Same answer CONTENTS gives when its
+            // own source tree is absent.
+            case CARRIAGE_GROUP -> Optional.empty();
             case CONTENTS -> CarriageContentsStore.sourceTreeAvailable()
                     ? Optional.of(withPng(CarriageContentsStore.sourceFileForId(id)))
                     : Optional.empty();
