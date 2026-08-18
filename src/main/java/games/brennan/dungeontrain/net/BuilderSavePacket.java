@@ -1,16 +1,12 @@
 package games.brennan.dungeontrain.net;
 
 import games.brennan.dungeontrain.DungeonTrain;
-import games.brennan.dungeontrain.builder.BuilderNewOptions;
-import games.brennan.dungeontrain.builder.BuilderOpenRequest;
 import games.brennan.dungeontrain.builder.BuilderPhotoPaths;
 import games.brennan.dungeontrain.builder.BuilderPhotoRequest;
-import games.brennan.dungeontrain.builder.BuilderTrackBuild;
 import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.builder.BuilderSave;
 import games.brennan.dungeontrain.builder.relay.BuilderRelayUpload;
 import games.brennan.dungeontrain.train.CarriagePartKind;
-import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
@@ -51,16 +47,22 @@ public record BuilderSavePacket() implements CustomPacketPayload {
 
             BuilderSave.Result result = BuilderSave.save(level);
             if (result.saved()) {
-                player.sendSystemMessage(Component.translatable(
-                        "gui.dungeontrain.builder.saved", result.variantId())
+                // A group build writes one template per carriage worked in, so say how many when it
+                // was more than one — "Saved: cabin" alone would understate a save that wrote three.
+                player.sendSystemMessage((result.count() > 1
+                        ? Component.translatable("gui.dungeontrain.builder.saved_family",
+                                result.variantId(), result.count())
+                        : Component.translatable("gui.dungeontrain.builder.saved", result.variantId()))
                         .withStyle(ChatFormatting.GREEN));
                 // Snapshots were re-baselined by the save, so the client's green Save can clear.
                 DungeonTrainNet.sendTo(player, BuilderDirtyPacket.state(0));
-                requestPhoto(player, level, result.variantId());
-                // …and, when the player has opted in, the build goes to their relay profile. After the
-                // local write, never instead of it: the file on disk is the build, and an upload that
-                // can't happen costs the player nothing.
-                BuilderRelayUpload.afterSave(player, level, result.written());
+                requestPhoto(player, level, result.written().get(0));
+                // …and, when the player has opted in, every template written goes to their relay
+                // profile. After the local write, never instead of it: the file on disk is the build,
+                // and an upload that can't happen costs the player nothing.
+                for (BuilderSave.Written written : result.written()) {
+                    BuilderRelayUpload.afterSave(player, level, written);
+                }
             } else {
                 player.sendSystemMessage(Component.translatable(
                         "gui.dungeontrain.builder.save_failed", result.failure())
@@ -72,38 +74,25 @@ public record BuilderSavePacket() implements CustomPacketPayload {
     /**
      * Photograph what was just saved.
      *
-     * <p>The id is the saved template's own name, not the shell it came from — a save writes the
-     * build, so that's what the picture is of. {@code onlyIfMissing} is false: an explicit save
-     * always re-photographs, because what was just written is by definition not what an existing
-     * picture shows.</p>
+     * <p>Read straight off the {@link BuilderSave.Written} record rather than re-derived from the
+     * world's sub type. The save has already decided which store it wrote to, and that decision is
+     * not always what the sub type alone implies — from outside the wall a Carriage Room build is a
+     * <em>carriage</em>, so re-deriving filed its picture in the contents directory where the tile
+     * showing it would never look. One answer, from the thing that made it.</p>
+     *
+     * <p>The first written template when a save wrote a family: its name is the build's name, so its
+     * picture is the one the library tile shows. {@code onlyIfMissing} is false because an explicit
+     * save always re-photographs — what was just written is by definition not what an existing picture
+     * shows.</p>
      */
-    private static void requestPhoto(ServerPlayer player, ServerLevel level, String id) {
-        DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
-        // The track kind first, because it is the branch BuilderSave itself takes first: a track
-        // build has no sub type at all, so asking kindOf about it would answer CARRIAGE and file a
-        // tunnel's photo in the carriage directory.
-        TrackKind trackKind = BuilderTrackBuild.kindOf(data);
-        BuilderPhotoRequest request = trackKind != null
-                ? BuilderPhotoRequest.forTrack(trackKind, id).orElse(null)
-                : new BuilderPhotoRequest(kindOf(data.builderSubType()), id,
-                        CarriagePartKind.fromId(data.builderPartKind()));
+    private static void requestPhoto(ServerPlayer player, ServerLevel level, BuilderSave.Written written) {
+        BuilderPhotoRequest request = written.kind() == BuilderPhotoPaths.Kind.TRACK
+                ? BuilderPhotoRequest.forTrack(TrackKind.fromId(written.subKind()), written.id()).orElse(null)
+                : new BuilderPhotoRequest(written.kind(), written.id(),
+                        CarriagePartKind.fromId(written.subKind()));
         if (request == null) {
             return;
         }
         BuilderPhotoPacket.send(player, level, request, false);
-    }
-
-    /** Which store the save wrote to — the same branch {@code BuilderSave} took. */
-    private static BuilderPhotoPaths.Kind kindOf(String subTypeId) {
-        if (BuilderNewOptions.SubType.CARRIAGE_ROOM.id().equals(subTypeId)) {
-            return BuilderPhotoPaths.Kind.CONTENTS;
-        }
-        if (BuilderNewOptions.SubType.PARTS.id().equals(subTypeId)) {
-            return BuilderPhotoPaths.Kind.PART;
-        }
-        if (BuilderOpenRequest.PORTAL_ROOM_SUB_TYPE.equals(subTypeId)) {
-            return BuilderPhotoPaths.Kind.PORTAL_ROOM;
-        }
-        return BuilderPhotoPaths.Kind.CARRIAGE;
     }
 }

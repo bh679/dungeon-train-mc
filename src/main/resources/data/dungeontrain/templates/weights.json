@@ -16,5 +16,9 @@
   "shared": 3,
   "shop": 10,
   "standard": 18,
+  "test_cabin": {
+    "weight": 1,
+    "stage": "stone"
+  },
   "windowed": 20
 }

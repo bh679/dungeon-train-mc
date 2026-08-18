@@ -1254,8 +1254,16 @@ public final class BuilderWorldSetup {
             BlockPos origin = carriageOrigin(dims, carriages, i);
             switch (request.kind()) {
                 case CARRIAGE -> {
-                    if (open.wholeCarriage().isPresent()
-                            && !WholeCarriagePlacer.placeAt(level, origin, open.wholeCarriage().get(), dims)) {
+                    // A family: slot 1 gets `cabin_2`, slot 2 `cabin_3`, and slot 0 the base name.
+                    // Without this a group build reopens as three copies of its first carriage — and
+                    // the next Save writes those copies straight over the members they replaced.
+                    // A missing member is the ordinary case (a single-carriage build, an older save),
+                    // and falls back to the opened template, which is exactly the old behaviour.
+                    Optional<WholeCarriage> member = i == 0
+                            ? open.wholeCarriage()
+                            : familyMember(level, dims, request.id(), i).or(open::wholeCarriage);
+                    if (member.isPresent()
+                            && !WholeCarriagePlacer.placeAt(level, origin, member.get(), dims)) {
                         return false;
                     }
                     // No whole carriage: stampTrain already laid down the shell, which *is* the build.
@@ -1279,6 +1287,25 @@ public final class BuilderWorldSetup {
             }
         }
         return true;
+    }
+
+    /**
+     * The {@code index}-th carriage of {@code base}'s family, when one was saved and this world can
+     * read it.
+     *
+     * <p>Empty covers every ordinary build: a single carriage saved under a bare name has no members,
+     * and a family authored at other {@link CarriageDims} is refused by the store's footprint gate
+     * rather than stamped at the wrong size. Both leave the caller placing the opened template, which
+     * is what opening a carriage has always done.</p>
+     */
+    private static Optional<WholeCarriage> familyMember(ServerLevel level, CarriageDims dims,
+                                                        String base, int index) {
+        String memberName = BuilderFamilyNames.memberName(base, index);
+        if (memberName.isEmpty() || memberName.equals(base)) {
+            return Optional.empty();
+        }
+        return WholeCarriageRegistry.find(memberName)
+                .filter(member -> WholeCarriageTemplateStore.get(level, member, dims).isPresent());
     }
 
     /**

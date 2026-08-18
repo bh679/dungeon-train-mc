@@ -72,13 +72,26 @@ public final class BuilderSave {
      * wrong — the part arm's origin is offset into the kind's first placement, and a portal room's size
      * is the author's rather than {@link CarriageDims}.</p>
      */
-    public record Result(boolean saved, String variantId, String failure, Written written) {
+    public record Result(boolean saved, String variantId, String failure, List<Written> written) {
+        public Result {
+            written = written == null ? List.of() : List.copyOf(written);
+        }
+
         static Result ok(String variantId, Written written) {
+            return new Result(true, variantId, null, List.of(written));
+        }
+
+        static Result ok(String variantId, List<Written> written) {
             return new Result(true, variantId, null, written);
         }
 
         static Result failed(String failure) {
-            return new Result(false, null, failure, null);
+            return new Result(false, null, failure, List.of());
+        }
+
+        /** How many templates this save wrote — more than one only for a family (see {@link #save}). */
+        public int count() {
+            return written.size();
         }
     }
 
@@ -115,8 +128,8 @@ public final class BuilderSave {
         }
         List<BoundingBox> volumes = BuilderBounds.volumesFor(level);
 
-        Optional<Integer> target = saveTarget(volumes.size(), BuilderDirtyCheck.dirtyCarriages(level));
-        if (target.isEmpty()) {
+        List<Integer> targets = volumesToSave(volumes.size(), BuilderDirtyCheck.dirtyCarriages(level));
+        if (targets.isEmpty()) {
             return Result.failed("nothing to save");
         }
         // A draft has no template to write to. The client asks for a name before getting here;
@@ -125,12 +138,20 @@ public final class BuilderSave {
         if (name == null || name.isEmpty()) {
             return Result.failed("this build has no name yet");
         }
-        BoundingBox box = volumes.get(target.get());
-        BlockPos origin = BuilderBounds.originOf(box);
         String subTypeToken = data.builderSubType();
         boolean portalRoom = BuilderOpenRequest.PORTAL_ROOM_SUB_TYPE.equals(subTypeToken);
         BuilderNewOptions.SubType subType = subTypeOf(subTypeToken);
-        Written written;
+        // From outside the wall, a Carriage Room names the CARRIAGE the room is in — that is what the
+        // Open screen browsed and handed over (BuilderOpenScreen sends Kind.CARRIAGE for the
+        // stage-drilled list). Writing contents for it would file a carriage's blocks in the contents
+        // store under a carriage's name, where nothing would ever look for them.
+        BuilderMode mode = BuilderMode.fromId(data.builderMode()).orElse(null);
+        boolean carriageFromOutside = subType == BuilderNewOptions.SubType.CARRIAGE_ROOM
+                && mode == BuilderMode.TRAIN_OUTSIDE;
+
+        BoundingBox box = volumes.get(targets.get(0));
+        BlockPos origin = BuilderBounds.originOf(box);
+        List<Written> written = new java.util.ArrayList<>(targets.size());
         try {
             if (portalRoom) {
                 Vec3i roomSize = BuilderBounds.sizeOf(box);
@@ -143,16 +164,28 @@ public final class BuilderSave {
                 mirrorBeforeCapture(level, origin, roomSize,
                         new BlockVariantPlot.TrackPlot(TrackKind.PORTAL_ROOM, name, origin, roomSize));
                 savePortalRoom(level, origin, roomSize, name);
-                written = new Written(BuilderPhotoPaths.Kind.PORTAL_ROOM, name, "", origin, roomSize);
+                written.add(new Written(BuilderPhotoPaths.Kind.PORTAL_ROOM, name, "", origin, roomSize));
             } else {
-                // Mirror first, capture second — the same order every editor save() uses. Without it
-                // a build with mirroring on saves only the half that was actually placed by hand.
-                mirrorBeforeCapture(level, origin, dims);
-                written = switch (subType) {
-                    case CARRIAGE_ROOM -> saveContents(level, origin, dims, name);
-                    case PARTS -> savePart(level, origin, dims, name, data.builderPartKind());
-                    case WHOLE_CARRIAGE -> saveWholeCarriage(level, origin, dims, name, data.builderStage());
-                };
+                // One template per carriage the builder actually worked in — a family (see
+                // BuilderFamilyNames). Only the carriage arms can have more than one volume to write:
+                // every other sub type parks exactly one, so their loop runs once and writes the bare
+                // name, exactly as before.
+                for (int slot = 0; slot < targets.size(); slot++) {
+                    int index = targets.get(slot);
+                    BlockPos slotOrigin = BuilderBounds.originOf(volumes.get(index));
+                    String slotName = BuilderFamilyNames.memberName(name, index);
+                    // Mirror first, capture second — the same order every editor save() uses. Without
+                    // it a build with mirroring on saves only the half that was actually placed by hand.
+                    mirrorBeforeCapture(level, slotOrigin, dims);
+                    written.add(switch (subType) {
+                        case CARRIAGE_ROOM -> carriageFromOutside
+                                ? saveWholeCarriage(level, slotOrigin, dims, slotName, data.builderStage())
+                                : saveContents(level, slotOrigin, dims, slotName);
+                        case PARTS -> savePart(level, slotOrigin, dims, slotName, data.builderPartKind());
+                        case WHOLE_CARRIAGE ->
+                                saveWholeCarriage(level, slotOrigin, dims, slotName, data.builderStage());
+                    });
+                }
             }
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] Builder save failed for {}", name, t);
@@ -168,9 +201,9 @@ public final class BuilderSave {
             EditorPlotSnapshots.capture(BuilderDirtyCheck.snapshotKey(i), level,
                     BuilderBounds.originOf(b), size.getX(), size.getY(), size.getZ());
         }
-        LOGGER.info("[DungeonTrain] Builder save: wrote {} '{}' from volume {}",
+        LOGGER.info("[DungeonTrain] Builder save: wrote {} x{} '{}' from volume(s) {}",
                 portalRoom ? BuilderOpenRequest.PORTAL_ROOM_SUB_TYPE : subType.id(),
-                name, target.get());
+                written.size(), name, targets);
         return Result.ok(name, written);
     }
 
@@ -397,20 +430,30 @@ public final class BuilderSave {
     }
 
     /**
-     * Which carriage backs the template.
+     * Which carriages the save writes, in slot order.
      *
-     * <p>The edited one, when there is one — a mode parks the same variant several times, and the
-     * builder worked in whichever they walked into. Falling back to the first when nothing is
-     * dirty keeps Save from looking broken on a click that simply had nothing new to write.</p>
+     * <p><b>Every carriage the builder actually worked in.</b> Train Outside parks a whole group and
+     * all of it is editable, so writing only one of them — which is what this did — silently dropped
+     * two thirds of a group build. Each chosen volume becomes its own template under a family name
+     * (see {@link BuilderFamilyNames}).</p>
+     *
+     * <p>Dirty rather than all, because "parked" is not "authored": a group where only the middle
+     * carriage was touched must not also write two copies of the untouched stamped shell over its
+     * siblings' templates. When nothing is dirty at all the first volume still saves, so a Save click
+     * with no changes writes the build rather than looking broken.</p>
      *
      * <p>Pure, so the choice is testable without a level.</p>
      */
-    public static Optional<Integer> saveTarget(int volumeCount, List<Integer> dirtyIndices) {
+    public static List<Integer> volumesToSave(int volumeCount, List<Integer> dirtyIndices) {
         if (volumeCount <= 0) {
-            return Optional.empty();
+            return List.of();
         }
-        return dirtyIndices.stream().filter(i -> i >= 0 && i < volumeCount).findFirst()
-                .or(() -> Optional.of(0));
+        List<Integer> targets = dirtyIndices.stream()
+                .filter(i -> i != null && i >= 0 && i < volumeCount)
+                .distinct()
+                .sorted()
+                .toList();
+        return targets.isEmpty() ? List.of(0) : targets;
     }
 
     /**
