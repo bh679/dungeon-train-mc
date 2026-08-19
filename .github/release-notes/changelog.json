@@ -7239,13 +7239,9 @@
     {
       "id": "nether-band-lava-flowrate",
       "version": "0.574.0",
-      "type": "feat",
-      "title": "Lava in the Nether band now flows like Nether lava",
-      "summary": "Lava in the heart of the Nether band no longer creeps along at overworld pace. It spreads seven blocks from a source instead of three, and advances three times faster \u2014 the same flow the real Nether has. Water is unchanged, and lava still can't pour into the void bands.",
-      "highlights": [
-        "Lava reaches 7 blocks from a source in the Nether band core (was 3)",
-        "Lava flows three times faster there, matching the Nether"
-      ],
+      "type": "fix",
+      "title": "Nether lava fix",
+      "summary": "Lava in the Nether band now behaves the way it should.",
       "date": "2026-08-19",
       "released": false,
       "released_in": null,
