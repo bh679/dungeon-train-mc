@@ -7235,6 +7235,17 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "nether-band-lava-flowrate",
+      "version": "0.574.0",
+      "type": "fix",
+      "title": "Nether lava fix",
+      "summary": "Lava in the Nether band now behaves the way it should.",
+      "date": "2026-08-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
