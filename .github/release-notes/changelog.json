@@ -7186,6 +7186,23 @@
       "released": true,
       "released_in": "v0.570.0",
       "released_at": "2026-08-19T05:49:57Z"
+    },
+    {
+      "id": "portal-room-author-library",
+      "version": "0.571.0",
+      "type": "feat",
+      "title": "Portal rooms can be one author's library",
+      "summary": "A portal room can now be a single community author's library. Its bookshelves are stocked with that person's whole catalogue and every shelf past the end of it is left empty, so a hall of bare shelves with a dozen books in it tells you exactly how much they wrote. The room announces whose library you have walked into.",
+      "highlights": [
+        "New Books setting on portal rooms in the editor: off, or an author mix.",
+        "The room rolls between your own writing and somebody else's, and each room sets its own odds \u2014 a study can lean toward your own shelves while a great hall leans toward strangers.",
+        "Rooms can ask for a particular kind of author: at least this many books written, and at most that many, so a modest private collection stays modest.",
+        "Written nothing yourself? The room quietly picks somebody else rather than standing empty."
+      ],
+      "date": "2026-08-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

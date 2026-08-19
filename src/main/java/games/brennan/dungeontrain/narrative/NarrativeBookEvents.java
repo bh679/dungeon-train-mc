@@ -449,11 +449,13 @@ public final class NarrativeBookEvents {
     }
 
     private static boolean resolvePending(ServerPlayer player, ItemStack stack) {
-        if (!SharedBookGate.canDiscover() || SharedBookPool.isEmpty()) return false;
+        if (!SharedBookGate.canDiscover()) return false;
         ServerLevel ow = overworldOf(player);
         if (ow == null) return false;
         PlayerRunState run = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
         java.util.UUID uuid = player.getUUID();
+
+        if (SharedBookPool.isEmpty()) return false;
 
         // Window exhausted for this player? Pull the relay's next weight tier BEFORE selecting, and if
         // that fetch is in flight, defer rather than resolving — otherwise the selector can only relax
@@ -496,15 +498,36 @@ public final class NarrativeBookEvents {
             // THIS holder's political-filter answer, for the same reason as the locale above: the pool
             // is shared, the preference is not.
             PoliticalFilterMirror.isEnabled(player));
-        // Vary the seed per stack as well as per tick: a sweep resolving several placeholders in the SAME
-        // tick would otherwise feed the selector an identical seed and hand out the same book for each.
-        long seed = ow.getGameTime() ^ uuid.getLeastSignificantBits() ^ (System.identityHashCode(stack) * 0x9E3779B9L);
-        Optional<SharedBookPool.PoolBook> chosen = SharedBookSelector.select(SharedBookPool.snapshot(), ctx, seed);
+        Optional<SharedBookPool.PoolBook> chosen =
+            SharedBookSelector.select(SharedBookPool.snapshot(), ctx, seedFor(ow, uuid, stack));
         // Defensive only. The selector relaxes its per-life dedup on exhaustion, so it yields a book
         // whenever the pool has one — the built-in placeholder therefore survives ONLY when the relay is
         // unreachable / has no approved books, never merely because this player has already seen everything.
         if (chosen.isEmpty()) return false;
-        SharedBookPool.PoolBook book = chosen.get();
+        applyResolvedBook(player, stack, chosen.get(), run);
+
+        // Serving that book may have just drained the window — pull the next tier now so the NEXT pickup
+        // already has fresh content waiting (the pre-select guard above then has nothing to wait for).
+        // Throttled on the SAME budget as that guard: ungated, this fired once per pickup for as long
+        // as the window stayed exhausted. See claimRefreshSlot.
+        if (windowExhaustedFor(run) && claimRefreshSlot(System.currentTimeMillis())) {
+            SharedBookPool.refreshAsync(WorldLanguage.hostLocale(player.getServer()),
+                    WorldLanguage.hostUuidConsented(player.getServer()),
+                    WorldLanguage.hostFetchesKidSafeBooks(player.getServer()));
+        }
+        return true;
+    }
+
+    /**
+     * Turn a resolved placeholder into the community book {@code book}, and record that it was served.
+     *
+     * <p>Shared by both resolution paths — the ordinary mixed pool and an author-locked portal room —
+     * so a locked book carries exactly the same identity, burn and read-tracking markers an ordinary
+     * one does. Anything only one path did would show up later as a book that cannot burn, or one the
+     * author-stats line never recognises.</p>
+     */
+    private static void applyResolvedBook(ServerPlayer player, ItemStack stack,
+                                          SharedBookPool.PoolBook book, PlayerRunState run) {
         ItemStack shared = SharedBookPool.buildStack(book);
         stack.set(DataComponents.WRITTEN_BOOK_CONTENT, shared.get(DataComponents.WRITTEN_BOOK_CONTENT));
         RandomBookTag.clearIdentity(stack);   // drop stale dt_random_book* keys (incl. any held marker)
@@ -520,17 +543,17 @@ public final class NarrativeBookEvents {
         run.markServed(book.id(), run.travelledCarriageIndex()); // per-life dedup + far-behind escape
         LOGGER.info("[DungeonTrain] PlayerBook: resolved pending placeholder to community book {} (for {})",
             book.id(), player.getName().getString());
+    }
 
-        // Serving that book may have just drained the window — pull the next tier now so the NEXT pickup
-        // already has fresh content waiting (the pre-select guard above then has nothing to wait for).
-        // Throttled on the SAME budget as that guard: ungated, this fired once per pickup for as long
-        // as the window stayed exhausted. See claimRefreshSlot.
-        if (windowExhaustedFor(run) && claimRefreshSlot(System.currentTimeMillis())) {
-            SharedBookPool.refreshAsync(WorldLanguage.hostLocale(player.getServer()),
-                    WorldLanguage.hostUuidConsented(player.getServer()),
-                    WorldLanguage.hostFetchesKidSafeBooks(player.getServer()));
-        }
-        return true;
+    /**
+     * The selection seed for one pickup.
+     *
+     * <p>Varies per stack as well as per tick: a sweep resolving several placeholders in the SAME tick
+     * would otherwise feed the selector an identical seed and hand out the same book for each.</p>
+     */
+    private static long seedFor(ServerLevel ow, java.util.UUID uuid, ItemStack stack) {
+        return ow.getGameTime() ^ uuid.getLeastSignificantBits()
+            ^ (System.identityHashCode(stack) * 0x9E3779B9L);
     }
 
     /** True when {@code run} has been served every book in the current pool window — nothing new is left to offer. */

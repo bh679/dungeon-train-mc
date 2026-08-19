@@ -3,16 +3,12 @@
   "selfWeight": 1,
   "variants": [
     {
-      "id": "default2",
+      "id": "smalllibrary",
       "weight": 1
     },
     {
-      "id": "biggerlibrary",
+      "id": "midlibrary",
       "weight": 1
-    },
-    {
-      "id": "authorlibrary",
-      "weight": 0
     }
   ]
 }

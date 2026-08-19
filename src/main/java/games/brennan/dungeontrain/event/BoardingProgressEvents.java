@@ -402,6 +402,11 @@ public final class BoardingProgressEvents {
             if (player == null) continue;
             int pairKey = entry.getValue();
 
+            // Whose library is this? Silent for every room that does not lock its books, which is
+            // almost all of them. Rides this scan rather than adding one: the occupancy question it
+            // needs — which player is in which room body — has just been answered above.
+            games.brennan.dungeontrain.narrative.PortalLibraryGreeter.tick(player, pairKey);
+
             // Lifetime train-time — same gating as the boarded path: frozen for a cheated run and
             // while dead, so a death screen in a portal room racks up no more than one on the train.
             if (player.isAlive() && !RunIntegrity.isCheated(player)) {

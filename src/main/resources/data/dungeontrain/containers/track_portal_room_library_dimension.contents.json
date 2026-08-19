@@ -594,6 +594,15 @@
         { "id": "dungeontrain:random_book", "count": 1, "weight": 10, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "dungeontrain:random_playerbook", "count": 1, "weight": 100, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
       ]
+    },
+    "7,1,4": {
+      "fillMax": 6,
+      "entries": [
+        { "id": "minecraft:writable_book", "count": 1, "weight": 20, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:book", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "dungeontrain:random_book", "count": 1, "weight": 10, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "dungeontrain:random_playerbook", "count": 1, "weight": 100, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
+      ]
     }
   },
   "links": {
@@ -653,7 +662,6 @@
     "5,3,2": "bookshelf",
     "4,3,2": "bookshelf",
     "3,3,2": "bookshelf",
-    "7,1,4": "bookshelf",
     "6,1,4": "bookshelf",
     "4,1,4": "bookshelf",
     "3,1,4": "bookshelf",

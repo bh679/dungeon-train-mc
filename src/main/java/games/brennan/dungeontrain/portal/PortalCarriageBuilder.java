@@ -778,7 +778,7 @@ public final class PortalCarriageBuilder {
             structure.variantIndexFor(PortalRoomTiling.Tile.BASE, pairKey), pairKey,
             PortalRoomTiling.Tile.BASE,
             PortalRoomMobs.liveCount(level, footprintOf(level, structure, dims), pairKey),
-            structure.settings().contents());
+            structure.settings().contents(), structure.settings().books());
 
         // Before the corridors, so each mode acts on the room as it actually turned out rather than
         // as it was asked for. It does not follow that the corridors repair whatever a mode wrote at
@@ -1396,7 +1396,8 @@ public final class PortalCarriageBuilder {
                                    String roomName, Vec3i size, boolean relight,
                                    PortalCorridorMask clearMask, PortalCorridorMask writeMask,
                                    int variantIndex, int pairKey, PortalRoomTiling.Tile tile,
-                                   int liveMobCount, PortalRoomContents contents) {
+                                   int liveMobCount, PortalRoomContents contents,
+                                   PortalRoomBooks books) {
         stampRoomAt(level, roomOrigin, dims, roomName, size, relight, clearMask, writeMask);
         // Contents first, the room's own authored cells second. Where the two overlap the author's
         // explicit entry is the one that should stand — and applyRoomVariants evicts a live block
@@ -1404,6 +1405,9 @@ public final class PortalCarriageBuilder {
         applyRoomContents(level, roomOrigin, size, roomName, writeMask, variantIndex, pairKey, contents);
         applyRoomVariants(level, roomOrigin, roomName, size, writeMask, variantIndex, pairKey, tile,
             liveMobCount);
+        // Last, and only a registration: the shelves are stocked by PortalRoomLibrarian on a later
+        // tick, because the relay has not said who has written what by the time a room is stamped.
+        PortalRoomLibrarian.register(pairKey, roomOrigin, size, books);
     }
 
     /**

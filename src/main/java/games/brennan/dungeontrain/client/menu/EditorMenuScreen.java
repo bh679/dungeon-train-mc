@@ -192,6 +192,8 @@ public final class EditorMenuScreen implements MenuScreen {
             if (copiesRow != null) out.add(copiesRow);
             CommandMenuEntry contentsRow = roomContentsRowFor(EditorStatusHudOverlay.roomMode());
             if (contentsRow != null) out.add(contentsRow);
+            CommandMenuEntry booksRow = roomBooksRowFor(EditorStatusHudOverlay.roomMode());
+            if (booksRow != null) out.add(booksRow);
             CommandMenuEntry exitsRow = exitsRowFor(EditorStatusHudOverlay.roomMode());
             if (exitsRow != null) out.add(exitsRow);
             CommandMenuEntry exitEveryRow = exitEveryTripleFor(EditorStatusHudOverlay.roomMode());
@@ -393,6 +395,31 @@ public final class EditorMenuScreen implements MenuScreen {
         return new CommandMenuEntry.Stay(
             EditorPlotLabelsRenderer.roomContentsLabel(currentMode),
             "dungeontrain editor portals contents next");
+    }
+
+    /**
+     * The Books row — whether every book found in the room is by one author, and how that author is
+     * chosen.
+     *
+     * <p>Shown for every portal room, on the same reasoning as Contents, and deliberately NOT gated
+     * on the room being furnished: a room can hold books without drawing a contents template, since
+     * its own template may have shelves stamped into it.</p>
+     */
+    static CommandMenuEntry roomBooksRowFor(String currentMode) {
+        if (currentMode == null || EditorStatusPacket.NO_MODE.equals(currentMode)) return null;
+        CommandMenuEntry cycle = new CommandMenuEntry.Stay(
+            EditorPlotLabelsRenderer.roomBooksLabel(currentMode),
+            "dungeontrain editor portals books next");
+        // Off has no dials, so the row is the value alone. Once the room stocks an author the Edit
+        // button rides beside it rather than taking a row of its own — the weights and the author band
+        // belong to the value next to them.
+        if (!games.brennan.dungeontrain.portal.PortalRoomSettings.parse(currentMode)
+                .books().weightsApply()) {
+            return cycle;
+        }
+        return new CommandMenuEntry.Split(cycle,
+            new CommandMenuEntry.DrillIn("Edit", new PortalRoomBooksScreen(currentMode)),
+            0.72);
     }
 
     /**
