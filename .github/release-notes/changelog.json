@@ -6926,6 +6926,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "builder-relay-profiles",
+      "version": "0.552.0",
+      "type": "feat",
+      "title": "Your Train Builder creations follow you",
+      "summary": "Builds you make in the Train Builder are now saved to your own profile, so they travel with you between worlds instead of living on one machine. A new My Builds screen shows everything you've made, and lets you submit a carriage to the train so it can turn up in anyone's run.",
+      "highlights": [
+        "Saving in the Train Builder uploads the build to your profile \u2014 carriages, rooms, parts, track, tunnels and portal rooms alike",
+        "My Builds, from the builder's pause menu: every build you've made, with the ones already on the train marked",
+        "Submit to the Train puts a carriage of yours into the shared pool, and you can take it back off again",
+        "Building the outside of a train now saves the whole run as one build, instead of keeping only the carriage you last touched"
+      ],
+      "pr": 992,
+      "date": "2026-08-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
