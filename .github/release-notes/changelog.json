@@ -7246,6 +7246,19 @@
       "released": true,
       "released_in": "v0.574.0",
       "released_at": "2026-08-19T15:32:25Z"
+    },
+    {
+      "id": "translation-submission-original",
+      "version": "0.575.0",
+      "type": "feat",
+      "title": "Better review for player translation fixes",
+      "summary": "When you correct a machine-translated string in the in-game translation editor, your client now also reports the AI text you replaced. The reviewer sees your fix side by side with the original instead of on its own, so genuine corrections are easier to tell apart and quicker to approve.",
+      "highlights": [],
+      "pr": 995,
+      "date": "2026-08-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

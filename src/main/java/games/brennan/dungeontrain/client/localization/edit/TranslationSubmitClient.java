@@ -49,8 +49,18 @@ public final class TranslationSubmitClient {
         static final SendResult POISON = new SendResult(false, false, 0);
     }
 
-    /** One unit as the relay's {@code normaliseUnit} expects it. */
-    public record Unit(String type, String namespace, String id, String source, String value) {}
+    /**
+     * One unit as the relay's {@code normaliseUnit} expects it.
+     *
+     * <p>{@code shipped} is what the jar translated this string to BEFORE the player's override —
+     * the machine translation they were correcting. The relay stores it untouched so the review
+     * page can show the submission as the change it actually is; without it a three-word fix and a
+     * wholesale replacement look identical to a reviewer who cannot read the language. It is not
+     * part of the relay's dedupe hash, so a locale file changing underneath a resubmitted fix
+     * cannot turn a retry into a second row.</p>
+     */
+    public record Unit(String type, String namespace, String id, String source, String shipped,
+                       String value) {}
 
     /**
      * The {@code /translations/submit} body. Package-private so the shape can be tested without a
@@ -70,6 +80,7 @@ public final class TranslationSubmitClient {
                 u.addProperty("namespace", unit.namespace() == null ? "" : unit.namespace());
                 u.addProperty("id", unit.id());
                 u.addProperty("source", unit.source() == null ? "" : unit.source());
+                u.addProperty("shipped", unit.shipped() == null ? "" : unit.shipped());
                 u.addProperty("value", unit.value());
                 arr.add(u);
             }

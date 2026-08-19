@@ -211,7 +211,7 @@ public final class TranslationSubmitScreen extends Screen {
                 continue;
             }
             units.add(new TranslationSubmitClient.Unit(book ? "book" : "lang",
-                unit.namespace(), unit.id(), unit.source(), value));
+                unit.namespace(), unit.id(), unit.source(), unit.shipped(), value));
             sending = book ? sending.withBook(unit.id(), value) : sending.withLang(unit.id(), value);
         }
         return new Outgoing(units, sending);
