@@ -47,6 +47,8 @@
   },
   "house": {
     "weight": 1,
+    "minLevel": 16,
+    "maxLevel": 17,
     "mode": "bedrock_lock"
   },
   "labrynth": {
