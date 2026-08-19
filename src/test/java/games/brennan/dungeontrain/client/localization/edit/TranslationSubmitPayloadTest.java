@@ -25,9 +25,9 @@ class TranslationSubmitPayloadTest {
     private static JsonObject payload() {
         return TranslationSubmitClient.buildPayload(UUID, "老本願", "de_de", List.of(
             new TranslationSubmitClient.Unit("lang", "dungeontrain", "gui.dungeontrain.x",
-                "Depart", "Abfahren"),
+                "Depart", "Abfahrt", "Abfahren"),
             new TranslationSubmitClient.Unit("book", "dungeontrain", "random_books/x#title",
-                "Death Note", "Todesnotiz")));
+                "Death Note", "Todesnotizbuch", "Todesnotiz")));
     }
 
     @Test
@@ -45,6 +45,9 @@ class TranslationSubmitPayloadTest {
         assertEquals("dungeontrain", first.get("namespace").getAsString());
         assertEquals("gui.dungeontrain.x", first.get("id").getAsString());
         assertEquals("Depart", first.get("source").getAsString());
+        // The machine translation the player was correcting. The review page shows the submission
+        // AGAINST this, so a missing `shipped` would quietly cost every reviewer the comparison.
+        assertEquals("Abfahrt", first.get("shipped").getAsString());
         assertEquals("Abfahren", first.get("value").getAsString());
     }
 
@@ -54,6 +57,7 @@ class TranslationSubmitPayloadTest {
         JsonObject second = payload().getAsJsonArray("units").get(1).getAsJsonObject();
         assertEquals("book", second.get("type").getAsString());
         assertEquals("random_books/x#title", second.get("id").getAsString());
+        assertEquals("Todesnotizbuch", second.get("shipped").getAsString());
     }
 
     @Test
@@ -65,6 +69,20 @@ class TranslationSubmitPayloadTest {
         assertFalse(body.has("flag"));
         assertFalse(body.has("moderation"));
         assertFalse(body.has("approvedBy"));
+    }
+
+    @Test
+    @DisplayName("a unit with no shipped text sends an empty string, never a JSON null")
+    void shippedNullIsEmptyString() {
+        // Reachable for a sibling mod's key the catalog found no locale text for. The relay's
+        // clamp() would cope either way, but a JSON null in a string field is the kind of thing a
+        // future stricter parse chokes on.
+        JsonObject body = TranslationSubmitClient.buildPayload(UUID, "", "de_de", List.of(
+            new TranslationSubmitClient.Unit("lang", "adventureitemnames", "item.ain.x",
+                "", null, "Abfahren")));
+        JsonObject unit = body.getAsJsonArray("units").get(0).getAsJsonObject();
+        assertTrue(unit.get("shipped").isJsonPrimitive());
+        assertEquals("", unit.get("shipped").getAsString());
     }
 
     @Test
