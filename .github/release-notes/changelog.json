@@ -7203,6 +7203,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "trap-parkour-portal-rooms",
+      "version": "0.572.0",
+      "type": "content",
+      "title": "Two new Train Dimension rooms",
+      "summary": "Two more rooms can turn up behind a Train Dimension portal. One is a trap room, sealed on every side in bedrock. The other is a parkour room with nothing around it at all - no walls, no shell, just empty space out past the fog. Both start showing up from level 10, and both are uncommon, so the rooms you already know still make up most of what you walk into.",
+      "highlights": [
+        "New trap room, sealed all the way round in bedrock",
+        "New parkour room, hanging in open space with no shell around it",
+        "Both appear from level 10 onward"
+      ],
+      "pr": 989,
+      "date": "2026-08-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

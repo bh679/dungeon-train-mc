@@ -72,6 +72,11 @@
     "weight": 1,
     "mode": "bedrockless"
   },
+  "parkour": {
+    "weight": 1,
+    "minLevel": 10,
+    "mode": "bedrockless"
+  },
   "paths": {
     "weight": 1,
     "mode": "endless_repetition/dynamic"
@@ -90,6 +95,11 @@
   "smalllibrary": {
     "weight": 1,
     "mode": "bedrock_lock/exact/off/off/mix:3:1:1:10:24"
+  },
+  "trap": {
+    "weight": 1,
+    "minLevel": 10,
+    "mode": "bedrock_lock"
   },
   "window": {
     "weight": 1,
