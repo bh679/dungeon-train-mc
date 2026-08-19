@@ -4,6 +4,7 @@ import games.brennan.discordpresence.client.NetworkConsentScreen;
 import games.brennan.discordpresence.config.DiscordPresenceClientConfig;
 import games.brennan.dungeontrain.client.localization.edit.TranslationScreen;
 import games.brennan.dungeontrain.client.localization.edit.TranslationTarget;
+import games.brennan.dungeontrain.client.sound.TrainVolumeOption;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.config.ContentMode;
 import net.minecraft.client.gui.components.Button;
@@ -63,6 +64,14 @@ public final class DungeonTrainClientOptionsScreen extends Screen {
                         b -> this.minecraft.setScreen(new DungeonTrainEditorSettingsScreen(this)))
                 .bounds(left, y, ROW_W, ROW_H).build())
                 .setTooltip(tip("gui.dungeontrain.options.editor_settings.tip"));
+        y += ROW_GAP;
+
+        // Train engine volume. Literally the same widget vanilla's Music & Sounds screen carries
+        // (put there by SoundOptionsScreenTrainVolumeMixin) — one OptionInstance definition over
+        // one config accessor, so a player who came looking here rather than there finds the same
+        // control at the same value. Its tooltip is baked into the option, not set here.
+        addRenderableWidget(TrainVolumeOption.forModScreen()
+                .createButton(this.minecraft.options, left, y, ROW_W));
         y += ROW_GAP;
 
         // Translation editor. Shown only when there is a language to edit — on en_us in a release

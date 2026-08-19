@@ -7140,6 +7140,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "train-engine-volume",
+      "version": "0.567.0",
+      "type": "feat",
+      "title": "Train engine volume slider",
+      "summary": "The train's engine loop now has its own volume, so you can turn the train down without turning the whole world's ambience down with it. It sits in Options > Music & Sounds beside the other volumes, and is repeated in Options > Dungeon Train and the in-world X menu. Sliding it to OFF stops the engine entirely; everything else about how the sound behaves - loudest in a carriage, fading out as you walk away, quiet in a Train Dimension room - is unchanged, just quieter or louder overall.",
+      "highlights": [
+        "New Dungeon Train Engine volume slider in Options > Music & Sounds",
+        "Separate from the Ambient slider, so cave and mob sounds keep their own level",
+        "OFF silences the engine completely"
+      ],
+      "pr": 986,
+      "date": "2026-08-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

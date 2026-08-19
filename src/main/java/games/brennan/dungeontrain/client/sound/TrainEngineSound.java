@@ -5,6 +5,7 @@ import dev.ryanhcode.sable.api.sublevel.SubLevelContainer;
 import dev.ryanhcode.sable.companion.math.BoundingBox3dc;
 import dev.ryanhcode.sable.sublevel.ClientSubLevel;
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.registry.ModSounds;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -30,6 +31,9 @@ import org.slf4j.Logger;
  *       instead: full in the twin corridor, fading out just past its mouth. The corridor is
  *       stamped world blocks rather than a sub-level, so the curve above has nothing to
  *       measure there.</li>
+ *   <li>Whichever of those spoke is then scaled by the player's <b>Train Engine Volume</b>
+ *       setting — see {@link TrainEngineVolume}. At the default it is a no-op; at zero
+ *       {@link TrainSoundManager} stops the sound rather than ticking it silently.</li>
  * </ul>
  *
  * <p>Carriages are discovered through the same Sable client-API path used by
@@ -104,7 +108,7 @@ public final class TrainEngineSound extends AbstractTickableSoundInstance {
         // Tiny non-zero so SoundEngine.play() doesn't immediately skip the
         // instance (vanilla bails when volume*categoryVolume <= 0 unless
         // canStartSilent() also returns true — we belt-and-braces both).
-        this.volume = 0.0001f;
+        this.volume = TrainEngineVolume.KEEP_ALIVE_FLOOR;
         this.pitch = 1.0f;
         this.x = 0.0;
         this.y = 0.0;
@@ -137,10 +141,15 @@ public final class TrainEngineSound extends AbstractTickableSoundInstance {
             return;
         }
 
+        // One read per tick: every branch below reports the volume its own rule wants, and the
+        // player's setting scales whichever of them answers.
+        double setting = ClientDisplayConfig.getTrainEngineVolume();
+
         // Death screen owns the volume directly: full on the first page, fading
         // by page (and rising on back), independent of where the player died.
         if (deathScreenActive) {
-            this.volume = Math.max(0.0001f, deathFade);
+            this.volume = TrainEngineVolume.scale(
+                Math.max(TrainEngineVolume.KEEP_ALIVE_FLOOR, deathFade), setting);
             return;
         }
 
@@ -152,7 +161,8 @@ public final class TrainEngineSound extends AbstractTickableSoundInstance {
         // well inside MAX_RANGE.
         float portal = ClientPortalTrainAudio.volumeAt(player.getX(), player.getY(), player.getZ());
         if (portal != ClientPortalTrainAudio.NOT_APPLICABLE) {
-            this.volume = Math.max(0.0001f, portal);
+            this.volume = TrainEngineVolume.scale(
+                Math.max(TrainEngineVolume.KEEP_ALIVE_FLOOR, portal), setting);
             return;
         }
 
@@ -197,14 +207,16 @@ public final class TrainEngineSound extends AbstractTickableSoundInstance {
             if (dSq < minDistSq) minDistSq = dSq;
         }
 
+        float curve;
         if (insideAny) {
-            this.volume = 1.0f;
+            curve = 1.0f;
         } else if (Double.isInfinite(minDistSq)) {
-            this.volume = 0.0001f;
+            curve = TrainEngineVolume.KEEP_ALIVE_FLOOR;
         } else {
             float dist = (float) Math.sqrt(minDistSq);
-            this.volume = Mth.clamp(1.0f - (dist / MAX_RANGE), 0.0001f, 1.0f);
+            curve = Mth.clamp(1.0f - (dist / MAX_RANGE), TrainEngineVolume.KEEP_ALIVE_FLOOR, 1.0f);
         }
+        this.volume = TrainEngineVolume.scale(curve, setting);
         // (Death-screen volume is handled by the deathScreenActive branch above.)
 
         // Log once per 5s (100 ticks) so we can verify the volume curve
@@ -213,8 +225,9 @@ public final class TrainEngineSound extends AbstractTickableSoundInstance {
         // the empty-world case stays silent.
         if (++tickCounter % 100 == 0 && carriageCount > 0) {
             double dist = insideAny ? 0.0 : Math.sqrt(minDistSq);
-            LOGGER.info("[DungeonTrain] TrainEngineSound: carriages={} inside={} dist={} volume={}",
-                carriageCount, insideAny, String.format("%.2f", dist), String.format("%.3f", this.volume));
+            LOGGER.info("[DungeonTrain] TrainEngineSound: carriages={} inside={} dist={} setting={} volume={}",
+                carriageCount, insideAny, String.format("%.2f", dist),
+                String.format("%.1f", setting), String.format("%.3f", this.volume));
         }
     }
 }

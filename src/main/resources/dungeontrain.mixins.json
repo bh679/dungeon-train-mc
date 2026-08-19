@@ -55,6 +55,7 @@
     "client.AdvancementWidgetHideDescMixin",
     "client.AdvancementsCompactLayoutMixin",
     "client.DeathScreenMoveTextMixin",
+    "client.SoundOptionsScreenTrainVolumeMixin",
     "client.CameraCinematicMixin",
     "client.GameRendererSnapshotMixin",
     "client.LevelRendererVoidSkyMixin",
