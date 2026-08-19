@@ -17,6 +17,10 @@
     "weight": 1,
     "mode": "bedrockless"
   },
+  "biggerlibrary": {
+    "weight": 1,
+    "mode": "bedrock_lock"
+  },
   "blocks": {
     "weight": 1,
     "mode": "endless_repetition"
@@ -45,6 +49,12 @@
     "minLevel": 1,
     "mode": "endless_repetition/dynamic"
   },
+  "house": {
+    "weight": 1,
+    "minLevel": 16,
+    "maxLevel": 17,
+    "mode": "bedrock_lock"
+  },
   "labrynth": {
     "weight": 3,
     "mode": "endless_repetition/dynamic"
@@ -53,6 +63,10 @@
     "weight": 2,
     "minLevel": 5,
     "mode": "endless_repetition/dynamic"
+  },
+  "midlibrary": {
+    "weight": 1,
+    "mode": "bedrock_lock/exact/off/off/mix:3:1:1:24:120"
   },
   "nobeam": {
     "weight": 1,
@@ -77,6 +91,10 @@
     "minLevel": 2,
     "maxLevel": 40,
     "mode": "endless_open"
+  },
+  "smalllibrary": {
+    "weight": 1,
+    "mode": "bedrock_lock/exact/off/off/mix:3:1:1:10:24"
   },
   "trap": {
     "weight": 1,

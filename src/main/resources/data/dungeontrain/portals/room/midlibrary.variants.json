@@ -1,0 +1,6 @@
+{
+  "schemaVersion": 9,
+  "variants": {
+    "4,1,4": ["minecraft:crafting_table", {"state": "minecraft:command_block[conditional=false,facing=north]", "rotation": {"mode": "lock", "dirs": ["north"]}}, {"state": "minecraft:oak_planks", "rotation": {"mode": "lock", "dirs": ["north"]}}]
+  }
+}

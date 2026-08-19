@@ -6,22 +6,23 @@ import games.brennan.dungeontrain.track.variant.TrackVariantWeights;
 /**
  * Everything a {@code portal_room} variant says about its own boundary: what it does at its walls,
  * — for {@link PortalRoomMode#ENDLESS_REPETITION} — whether the copies it makes are identical or
- * rolled afresh, whether the room is furnished from the ordinary contents pool, and — for either
- * endless mode — how many extra ways back to the train it scatters through its copies.
+ * rolled afresh, whether the room is furnished from the ordinary contents pool, for either
+ * endless mode how many extra ways back to the train it scatters through its copies, and whether
+ * every book inside it is by one author.
  *
- * <h2>All four live in the one {@code mode} tag</h2>
- * <p>On disk that reads {@code "mode": "endless_repetition/dynamic/fit/random:12"}, or just
- * {@code "mode": "endless_repetition"} when the three trailing settings are at their defaults.
+ * <h2>All five live in the one {@code mode} tag</h2>
+ * <p>On disk that reads {@code "mode": "endless_repetition/dynamic/fit/random:12/signature"}, or just
+ * {@code "mode": "endless_repetition"} when the four trailing settings are at their defaults.
  * {@code TemplateMeta.mode} is documented as an <i>opaque per-kind tag</i> — what it contains is the
  * owning kind's business — so encoding several settings in it is exactly what that field is for, and
  * it keeps a record shared by carriages and contents from growing fields only portal rooms will ever
  * read.</p>
  *
- * <p>They are still separate controls in the editor: a Walls row, a Contents row, and — when the
- * walls repeat — a Copies row and an Exits row. Only the storage is shared.</p>
+ * <p>They are still separate controls in the editor: a Walls row, a Contents row, a Books row, and —
+ * when the walls repeat — a Copies row and an Exits row. Only the storage is shared.</p>
  *
- * <p><b>Trailing segments are optional on the way in.</b> Every tag written before Contents or Exits
- * existed has one, two or three segments and still parses, to a room that behaves exactly as it
+ * <p><b>Trailing segments are optional on the way in.</b> Every tag written before Contents, Exits
+ * or Books existed has one to four segments and still parses, to a room that behaves exactly as it
  * did.</p>
  *
  * <h2>Exits is the one setting whose default depends on another</h2>
@@ -35,15 +36,18 @@ import games.brennan.dungeontrain.track.variant.TrackVariantWeights;
  * @param copies   what its copies are, when it makes any
  * @param contents whether it is furnished from the contents pool, and how
  * @param exits    how many extra corridors back to the train it lays, and how far apart
+ * @param books    whether every book found inside is by one author, and how that author is picked
  */
 public record PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
-                                 PortalRoomContents contents, PortalRoomExits exits) {
+                                 PortalRoomContents contents, PortalRoomExits exits,
+                                 PortalRoomBooks books) {
 
     /** Separates the mode from the settings that follow it in the stored tag. */
     private static final String SEPARATOR = "/";
 
     public static final PortalRoomSettings DEFAULT = new PortalRoomSettings(
-        PortalRoomMode.DEFAULT, PortalRoomCopies.DEFAULT, PortalRoomContents.DEFAULT, null);
+        PortalRoomMode.DEFAULT, PortalRoomCopies.DEFAULT, PortalRoomContents.DEFAULT, null,
+        PortalRoomBooks.DEFAULT);
 
     public PortalRoomSettings {
         if (mode == null) mode = PortalRoomMode.DEFAULT;
@@ -52,17 +56,24 @@ public record PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
         // After the mode has been settled, never before: a null here means "this room said nothing
         // about its exits", and what that resolves to is the mode's business.
         if (exits == null) exits = mode.defaultExits();
+        if (books == null) books = PortalRoomBooks.DEFAULT;
     }
 
     /** The boundary settings alone, unfurnished — the pair this record was before Contents existed. */
     public PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies) {
-        this(mode, copies, PortalRoomContents.DEFAULT, null);
+        this(mode, copies, PortalRoomContents.DEFAULT, null, PortalRoomBooks.DEFAULT);
     }
 
     /** The three settings this record carried before Exits existed, at the mode's own default. */
     public PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
                               PortalRoomContents contents) {
-        this(mode, copies, contents, null);
+        this(mode, copies, contents, null, PortalRoomBooks.DEFAULT);
+    }
+
+    /** The four settings this record carried before Books existed, with no author lock. */
+    public PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
+                              PortalRoomContents contents, PortalRoomExits exits) {
+        this(mode, copies, contents, exits, PortalRoomBooks.DEFAULT);
     }
 
     /**
@@ -81,7 +92,8 @@ public record PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
             PortalRoomContents.parse(segment(parts, 2)),
             // Null rather than PortalRoomExits.parse(null): an absent segment must reach the
             // constructor as "unsaid" so the mode's default applies, not as a value of its own.
-            exitsSegment == null ? null : PortalRoomExits.parse(exitsSegment));
+            exitsSegment == null ? null : PortalRoomExits.parse(exitsSegment),
+            PortalRoomBooks.parse(segment(parts, 4)));
     }
 
     /** Segment {@code index} of a split tag, or null when the tag is shorter than that. */
@@ -112,6 +124,13 @@ public record PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
     public String toTag() {
         PortalRoomCopies effectiveCopies = copiesApply() ? copies : PortalRoomCopies.DEFAULT;
         PortalRoomExits effectiveExits = effectiveExits();
+        if (books != PortalRoomBooks.DEFAULT) {
+            // Exits is written out as whatever it effectively is, even when that is the mode's own
+            // default: a later segment cannot be written without the earlier ones in front of it,
+            // and parse reads that placeholder back as the same value it stood in for.
+            return mode.id() + SEPARATOR + effectiveCopies.id() + SEPARATOR + contents.id()
+                + SEPARATOR + effectiveExits.id() + SEPARATOR + books.id();
+        }
         if (!effectiveExits.equals(mode.defaultExits())) {
             return mode.id() + SEPARATOR + effectiveCopies.id() + SEPARATOR + contents.id()
                 + SEPARATOR + effectiveExits.id();
@@ -157,18 +176,22 @@ public record PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
      */
     public PortalRoomSettings withMode(PortalRoomMode newMode) {
         boolean inherited = exits.equals(mode.defaultExits());
-        return new PortalRoomSettings(newMode, copies, contents, inherited ? null : exits);
+        return new PortalRoomSettings(newMode, copies, contents, inherited ? null : exits, books);
     }
 
     public PortalRoomSettings withCopies(PortalRoomCopies newCopies) {
-        return new PortalRoomSettings(mode, newCopies, contents, exits);
+        return new PortalRoomSettings(mode, newCopies, contents, exits, books);
     }
 
     public PortalRoomSettings withContents(PortalRoomContents newContents) {
-        return new PortalRoomSettings(mode, copies, newContents, exits);
+        return new PortalRoomSettings(mode, copies, newContents, exits, books);
     }
 
     public PortalRoomSettings withExits(PortalRoomExits newExits) {
-        return new PortalRoomSettings(mode, copies, contents, newExits);
+        return new PortalRoomSettings(mode, copies, contents, newExits, books);
+    }
+
+    public PortalRoomSettings withBooks(PortalRoomBooks newBooks) {
+        return new PortalRoomSettings(mode, copies, contents, exits, newBooks);
     }
 }

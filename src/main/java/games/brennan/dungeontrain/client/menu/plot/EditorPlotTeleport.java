@@ -98,6 +98,12 @@ public final class EditorPlotTeleport {
         return "dungeontrain editor portals exits next";
     }
 
+    /** As {@link #modeCycleCommandFor}, for whether every book in the room is by one author. */
+    public static String roomBooksCycleCommandFor(String category) {
+        if (!"PORTALS".equals(category)) return null;
+        return "dungeontrain editor portals books next";
+    }
+
     /** As {@link #dimensionCommandFor}, for the spacing those extra corridors are laid at. */
     public static String exitEveryCommandFor(String category, String dir) {
         if (!"PORTALS".equals(category)) return null;

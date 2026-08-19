@@ -7170,13 +7170,43 @@
       ],
       "pr": 987,
       "date": "2026-08-19",
+      "released": true,
+      "released_in": "v0.570.0",
+      "released_at": "2026-08-19T05:49:57Z"
+    },
+    {
+      "id": "house-portal-room",
+      "version": "0.569.0",
+      "type": "content",
+      "title": "The house \u2014 a player-built room",
+      "summary": "Built in the Train Editor by Twitch streamer xxx606xxx_, and the first player-made package to ship with Dungeon Train.",
+      "highlights": [],
+      "pr": 988,
+      "date": "2026-08-19",
+      "released": true,
+      "released_in": "v0.570.0",
+      "released_at": "2026-08-19T05:49:57Z"
+    },
+    {
+      "id": "portal-room-author-library",
+      "version": "0.571.0",
+      "type": "feat",
+      "title": "Portal rooms can be one author's library",
+      "summary": "A portal room can now be a single community author's library. Its bookshelves are stocked with that person's whole catalogue and every shelf past the end of it is left empty, so a hall of bare shelves with a dozen books in it tells you exactly how much they wrote. The room announces whose library you have walked into.",
+      "highlights": [
+        "New Books setting on portal rooms in the editor: off, or an author mix.",
+        "The room rolls between your own writing and somebody else's, and each room sets its own odds \u2014 a study can lean toward your own shelves while a great hall leans toward strangers.",
+        "Rooms can ask for a particular kind of author: at least this many books written, and at most that many, so a modest private collection stays modest.",
+        "Written nothing yourself? The room quietly picks somebody else rather than standing empty."
+      ],
+      "date": "2026-08-19",
       "released": false,
       "released_in": null,
       "released_at": null
     },
     {
       "id": "trap-parkour-portal-rooms",
-      "version": "0.569.0",
+      "version": "0.572.0",
       "type": "content",
       "title": "Two new Train Dimension rooms",
       "summary": "Two more rooms can turn up behind a Train Dimension portal. One is a trap room, sealed on every side in bedrock. The other is a parkour room with nothing around it at all - no walls, no shell, just empty space out past the fog. Both start showing up from level 10, and both are uncommon, so the rooms you already know still make up most of what you walk into.",

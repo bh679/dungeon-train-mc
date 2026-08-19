@@ -234,6 +234,124 @@ class PortalRoomSettingsTest {
         assertEquals(PortalRoomExits.Kind.OFF, offMode.effectiveExits().kind());
     }
 
+    // ---- the author lock ----
+
+    /**
+     * Every Books value worth sweeping: each kind at its default weights, plus the widest weighting
+     * Random can carry — which is what makes the longest-tag assertion below a real worst case.
+     */
+    private static java.util.List<PortalRoomBooks> everyBooksValue() {
+        java.util.List<PortalRoomBooks> out = new java.util.ArrayList<>();
+        for (PortalRoomBooks.Kind kind : PortalRoomBooks.Kind.values()) {
+            out.add(new PortalRoomBooks(kind));
+            out.add(new PortalRoomBooks(kind, PortalRoomBooks.MAX_WEIGHT,
+                PortalRoomBooks.MAX_WEIGHT, PortalRoomBooks.MAX_WEIGHT,
+                PortalRoomBooks.MAX_BOOK_BOUND, PortalRoomBooks.MAX_BOOK_BOUND));
+        }
+        return out;
+    }
+
+    @Test
+    @DisplayName("Books is only written when a room actually locks its books")
+    void booksOnlyWrittenWhenSet() {
+        // Off is the default, so every tag written before this setting existed is re-written unchanged.
+        assertEquals("bedrock_lock", PortalRoomSettings.parse("bedrock_lock").toTag());
+        assertEquals("endless_repetition/dynamic/fit",
+            PortalRoomSettings.parse("endless_repetition/dynamic/fit").toTag());
+
+        // Set, and the earlier segments appear in front of it as placeholders — including an Exits
+        // segment the author never chose, because a positional segment cannot be skipped.
+        assertEquals("bedrock_lock/exact/off/off/mix",
+            PortalRoomSettings.parse("bedrock_lock")
+                .withBooks(new PortalRoomBooks(PortalRoomBooks.Kind.MIX)).toTag());
+    }
+
+    @Test
+    @DisplayName("Every five-part settings tag round-trips")
+    void booksRoundTrip() {
+        for (PortalRoomMode mode : PortalRoomMode.values()) {
+            for (PortalRoomContents contents : PortalRoomContents.values()) {
+                for (PortalRoomBooks books : everyBooksValue()) {
+                    PortalRoomSettings original = PortalRoomSettings.DEFAULT.withMode(mode)
+                        .withContents(contents).withBooks(books);
+                    PortalRoomSettings back = PortalRoomSettings.parse(original.toTag());
+                    assertEquals(mode, back.mode(), original.toTag());
+                    assertEquals(contents, back.contents(), original.toTag());
+                    assertEquals(books.kind(), back.books().kind(), original.toTag());
+                    // Weights survive only where they mean something — off Random they are not
+                    // written at all, so that a tag from before Random existed needs no migration.
+                    if (books.weightsApply()) {
+                        assertEquals(books, back.books(), original.toTag());
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("Tags written before Books existed still read, as rooms that lock nothing")
+    void tagsWithoutBooksReadAsUnlocked() {
+        assertSame(PortalRoomBooks.Kind.OFF, PortalRoomSettings.parse("bedrock_lock").books().kind());
+        assertSame(PortalRoomBooks.Kind.OFF, PortalRoomSettings.parse("endless_repetition/dynamic").books().kind());
+        assertSame(PortalRoomBooks.Kind.OFF, PortalRoomSettings.parse("endless_repetition/dynamic/fit").books().kind());
+        assertSame(PortalRoomBooks.Kind.OFF,
+            PortalRoomSettings.parse("endless_repetition/dynamic/fit/random:12").books().kind());
+    }
+
+    @Test
+    @DisplayName("A misspelt Books segment leaves the room unlocked without losing the rest")
+    void booksParseIsTotal() {
+        PortalRoomSettings s = PortalRoomSettings.parse("endless_repetition/dynamic/tile/on/mixx");
+        assertSame(PortalRoomMode.ENDLESS_REPETITION, s.mode());
+        assertSame(PortalRoomCopies.DYNAMIC, s.copies());
+        assertSame(PortalRoomContents.TILE, s.contents());
+        assertEquals(PortalRoomExits.Kind.ON, s.exits().kind());
+        assertSame(PortalRoomBooks.Kind.OFF, s.books().kind());
+    }
+
+    @Test
+    @DisplayName("Setting the author lock leaves every other control alone")
+    void withBooksLeavesTheRestAlone() {
+        PortalRoomSettings before = PortalRoomSettings.DEFAULT
+            .withMode(PortalRoomMode.ENDLESS_REPETITION)
+            .withCopies(PortalRoomCopies.DYNAMIC)
+            .withContents(PortalRoomContents.TILE)
+            .withExits(new PortalRoomExits(PortalRoomExits.Kind.RANDOM, 9));
+        PortalRoomSettings after = before.withBooks(new PortalRoomBooks(PortalRoomBooks.Kind.MIX));
+
+        assertSame(before.mode(), after.mode());
+        assertSame(before.copies(), after.copies());
+        assertSame(before.contents(), after.contents());
+        assertEquals(before.exits(), after.exits());
+        assertSame(PortalRoomBooks.Kind.MIX, after.books().kind());
+        // ...and it survives a walls change, which re-derives Exits but has no opinion on books.
+        assertSame(PortalRoomBooks.Kind.MIX,
+            after.withMode(PortalRoomMode.BEDROCK_LOCK).books().kind());
+    }
+
+    @Test
+    @DisplayName("The longest tag any room can write still fits the editor status packet")
+    void longestTagFitsThePacket() {
+        // The packet caps this string, and a fifth segment eats into that cap — so the worst case is
+        // asserted here rather than reasoned about, and a future sixth setting fails this test first
+        // instead of failing a writeUtf on a live server.
+        String longest = "";
+        for (PortalRoomMode mode : PortalRoomMode.values()) {
+            for (PortalRoomCopies copies : PortalRoomCopies.values()) {
+                for (PortalRoomContents contents : PortalRoomContents.values()) {
+                    for (PortalRoomBooks books : everyBooksValue()) {
+                        PortalRoomExits widest = new PortalRoomExits(PortalRoomExits.Kind.RANDOM,
+                            PortalRoomExits.MAX_EVERY, PortalRoomExits.MOVE_ALWAYS);
+                        String tag = new PortalRoomSettings(mode, copies, contents, widest, books).toTag();
+                        if (tag.length() > longest.length()) longest = tag;
+                    }
+                }
+            }
+        }
+        assertTrue(longest.length() <= games.brennan.dungeontrain.net.EditorStatusPacket.MODE_TAG_MAX,
+            "longest room tag '" + longest + "' is " + longest.length() + " chars, over the packet cap");
+    }
+
     @Test
     @DisplayName("Only Endless Repetition makes copies, so only it has a Copies control")
     void copiesApplyOnlyToRepetition() {

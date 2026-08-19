@@ -212,6 +212,10 @@ public final class PlayerJoinEvents {
             PoliticalFilterMirror.forget(player.getUUID());
             ContentModeMirror.forget(player.getUUID());
             SharedBookReadMirror.forget(player.getUUID());
+            // Which library they were last told about. Dropped so somebody who logs out inside a
+            // locked room is greeted again when they come back — the line is the only thing that
+            // says whose books these are, and a rejoin is exactly when it is worth repeating.
+            games.brennan.dungeontrain.narrative.PortalLibraryGreeter.forget(player.getUUID());
         }
     }
 

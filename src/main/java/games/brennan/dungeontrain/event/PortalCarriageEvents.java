@@ -495,6 +495,12 @@ public final class PortalCarriageEvents {
     @SubscribeEvent
     public static void onServerStopped(ServerStoppedEvent event) {
         STRUCTURES.clear();
+        // The author each locked room settled on, and the catalogues behind them. Keyed by pair key
+        // like everything else here, so the same stale-record hazard applies: the next world's pair 12
+        // is a different room and must not inherit this one's library.
+        games.brennan.dungeontrain.portal.PortalRoomAuthorLocks.clear();
+        games.brennan.dungeontrain.portal.PortalRoomLibrarian.clear();
+        games.brennan.dungeontrain.narrative.PortalLibraryGreeter.clear();
         ACTIVE_PAIRS.clear();
         LAST_FOG.clear();
         LAST_TRAIN_AUDIO.clear();
@@ -892,6 +898,10 @@ public final class PortalCarriageEvents {
         // And stop the trains whose rooms those are, when nobody is left outside to see it. The
         // ticket above keeps the group loaded; this is what stops it going anywhere.
         PortalTrainFreeze.tick(level, players, dims, occupiedPairs, PortalCarriageEvents::isInRoom);
+        // Stock any library room still waiting on its author. Costs one map check on a world where
+        // every library has been filled, which is every world after the first few seconds: a room
+        // leaves the pending set the moment its shelves are dealt.
+        games.brennan.dungeontrain.portal.PortalRoomLibrarian.tick(level, players);
     }
 
     /**
@@ -903,6 +913,21 @@ public final class PortalCarriageEvents {
      */
     private static boolean isInRoom(CarriageDims dims, ServerPlayer player) {
         return isInsidePortalStructure(dims, player.getX(), player.getY(), player.getZ());
+    }
+
+    /**
+     * Whether the room standing at {@code pairKey} locks its books to an author, and how it picks one.
+     *
+     * <p>Reads the STANDING structure's settings rather than a fresh lookup of the room variant, so it
+     * agrees with what the room was actually stamped with — the same promise every other consumer of
+     * {@link PortalStructure#settings()} relies on. An unknown pair (retired, or never stamped) reads
+     * as unlocked. Another adapter that keeps {@link #STRUCTURES} private, like {@link #isInRoom}.</p>
+     */
+    public static games.brennan.dungeontrain.portal.PortalRoomBooks portalRoomBooksFor(int pairKey) {
+        PortalStructure structure = STRUCTURES.get(pairKey);
+        return structure == null
+            ? games.brennan.dungeontrain.portal.PortalRoomBooks.DEFAULT
+            : structure.settings().books();
     }
 
     /**

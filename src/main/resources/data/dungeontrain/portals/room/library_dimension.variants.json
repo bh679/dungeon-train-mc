@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 8,
+  "schemaVersion": 9,
   "mirror": { "x": false, "y": false, "z": false, "v": true },
   "variants": {
     "6,1,6": { "lockId": 1, "states": ["minecraft:bookshelf", "minecraft:air"] },
@@ -63,7 +63,6 @@
     "10,5,10": { "lockId": 8, "states": ["minecraft:bookshelf", {"state": "minecraft:command_block[conditional=false,facing=north]", "rotation": {"mode": "lock", "dirs": ["north"]}}] },
     "10,5,1": { "lockId": 9, "states": ["minecraft:bookshelf", {"state": "minecraft:command_block[conditional=false,facing=south]", "rotation": {"mode": "lock", "dirs": ["south"]}}] },
     "2,1,1": { "lockId": 11, "states": ["minecraft:bookshelf", {"state": "minecraft:command_block[conditional=false,facing=south]", "rotation": {"mode": "lock", "dirs": ["south"]}}] },
-    "2,5,1": { "lockId": 8, "states": ["minecraft:bookshelf", {"state": "minecraft:command_block[conditional=false,facing=south]", "rotation": {"mode": "lock", "dirs": ["south"]}}] },
     "10,2,1": { "lockId": 9, "states": ["minecraft:bookshelf", {"state": "minecraft:command_block[conditional=false,facing=south]", "rotation": {"mode": "lock", "dirs": ["south"]}}] },
     "10,4,1": { "lockId": 9, "states": ["minecraft:bookshelf", {"state": "minecraft:command_block[conditional=false,facing=south]", "rotation": {"mode": "lock", "dirs": ["south"]}}] },
     "10,3,1": { "lockId": 9, "states": ["minecraft:bookshelf", {"state": "minecraft:command_block[conditional=false,facing=south]", "rotation": {"mode": "lock", "dirs": ["south"]}}] },
@@ -143,6 +142,10 @@
     "9,2,3": { "lockId": 2, "states": ["minecraft:bookshelf", "minecraft:air"] },
     "9,3,3": { "lockId": 2, "states": ["minecraft:bookshelf", "minecraft:air"] },
     "9,4,3": { "lockId": 2, "states": ["minecraft:bookshelf", "minecraft:air"] },
-    "9,5,3": { "lockId": 2, "states": ["minecraft:bookshelf", "minecraft:air"] }
+    "9,5,3": { "lockId": 2, "states": ["minecraft:bookshelf", "minecraft:air"] },
+    "2,5,1": { "lockId": 11, "states": ["minecraft:bookshelf", {"state": "minecraft:command_block[conditional=false,facing=south]", "rotation": {"mode": "lock", "dirs": ["south"]}}] },
+    "11,1,10": ["minecraft:soul_lantern[hanging=false,waterlogged=false]", "minecraft:lantern[hanging=false,waterlogged=false]", {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 50, "rotation": {"mode": "lock", "dirs": ["north"]}}],
+    "8,1,10": [{"state": "minecraft:chiseled_bookshelf[facing=north,slot_0_occupied=false,slot_1_occupied=false,slot_2_occupied=false,slot_3_occupied=false,slot_4_occupied=false,slot_5_occupied=false]", "nbt": "{Items:[],last_interacted_slot:-1}", "weight": 51, "rotation": {"mode": "lock", "dirs": ["north"]}}, {"state": "minecraft:chest[facing=north,type=single,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["north"]}, "lootPrefab": "librarian"}, {"state": "minecraft:barrel[facing=north,open=false]", "rotation": {"mode": "lock", "dirs": ["north"]}, "lootPrefab": "enchantbarrel"}, {"state": "minecraft:barrel[facing=north,open=false]", "rotation": {"mode": "lock", "dirs": ["north"]}, "lootPrefab": "fish"}, {"state": "minecraft:chest[facing=north,type=single,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["north"]}, "lootPrefab": "loot"}, {"state": "minecraft:chest[facing=north,type=single,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["north"]}, "lootPrefab": "loot_irongold"}, {"state": "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["north"]}, "lootPrefab": "pot"}, {"state": "minecraft:chest[facing=north,type=single,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["north"]}, "lootPrefab": "starter"}, {"state": "minecraft:chest[facing=north,type=single,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["north"]}, "lootPrefab": "villager"}],
+    "7,1,4": [{"state": "minecraft:chiseled_bookshelf[facing=north,slot_0_occupied=false,slot_1_occupied=false,slot_2_occupied=false,slot_3_occupied=false,slot_4_occupied=false,slot_5_occupied=false]", "nbt": "{Items:[],last_interacted_slot:-1}", "weight": 51, "rotation": {"mode": "lock", "dirs": ["north"]}}, {"state": "minecraft:chest[facing=north,type=single,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["north"]}, "lootPrefab": "librarian"}, {"state": "minecraft:barrel[facing=north,open=false]", "rotation": {"mode": "lock", "dirs": ["north"]}, "lootPrefab": "enchantbarrel"}, {"state": "minecraft:barrel[facing=north,open=false]", "rotation": {"mode": "lock", "dirs": ["north"]}, "lootPrefab": "fish"}, {"state": "minecraft:chest[facing=north,type=single,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["north"]}, "lootPrefab": "loot"}, {"state": "minecraft:chest[facing=north,type=single,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["north"]}, "lootPrefab": "loot_irongold"}, {"state": "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["north"]}, "lootPrefab": "pot"}, {"state": "minecraft:chest[facing=north,type=single,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["north"]}, "lootPrefab": "starter"}, {"state": "minecraft:chest[facing=north,type=single,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["north"]}, "lootPrefab": "villager"}]
   }
 }
