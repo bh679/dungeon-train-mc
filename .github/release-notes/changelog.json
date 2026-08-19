@@ -7126,6 +7126,22 @@
       "released_at": "2026-08-16T07:12:21Z"
     },
     {
+      "id": "x-menu-creative-only",
+      "version": "0.567.0",
+      "type": "fix",
+      "title": "Debug command menu is creative-only",
+      "summary": "The X debug/command menu no longer opens outside creative mode. Shift+X previously bypassed the creative gate and opened it in survival; that override is gone, and the menu now closes itself if you drop out of creative while it is open.",
+      "highlights": [
+        "X and Shift+X no longer open the debug menu in survival",
+        "The menu closes automatically when you leave creative"
+      ],
+      "pr": 985,
+      "date": "2026-08-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "train-engine-volume",
       "version": "0.567.0",
       "type": "feat",
@@ -7136,7 +7152,8 @@
         "Separate from the Ambient slider, so cave and mob sounds keep their own level",
         "OFF silences the engine completely"
       ],
-      "date": "2026-08-18",
+      "pr": 986,
+      "date": "2026-08-19",
       "released": false,
       "released_in": null,
       "released_at": null

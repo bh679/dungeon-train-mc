@@ -2,7 +2,6 @@ package games.brennan.dungeontrain.client.menu;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screens.Screen;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -46,14 +45,24 @@ public final class CommandMenuToggleHandler {
             CommandMenuState.close();
         }
 
+        // The menu is a creative-only tool. If the player drops out of
+        // creative while it is up — the editor exit path restores the
+        // pre-session game mode — close it rather than leave a creative
+        // menu floating in survival.
+        if (CommandMenuState.isOpen()
+                && (mc.player == null || !mc.player.isCreative())) {
+            CommandMenuState.close();
+        }
+
         while (CommandMenuKeyBindings.TOGGLE.consumeClick()) {
             if (CommandMenuState.isOpen()) {
                 CommandMenuState.close();
                 continue;
             }
-            // Plain X opens only in creative; Shift+X overrides for any mode.
-            boolean creative = mc.player != null && mc.player.isCreative();
-            if (!creative && !Screen.hasShiftDown()) continue;
+            // Creative only. Survival, adventure and spectator get nothing —
+            // closing above stays mode-independent so an already-open menu can
+            // always be dismissed.
+            if (mc.player == null || !mc.player.isCreative()) continue;
             tryOpen(mc);
         }
 
