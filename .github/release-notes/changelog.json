@@ -7157,6 +7157,22 @@
       "released": true,
       "released_in": "v0.567.0",
       "released_at": "2026-08-19T03:21:52Z"
+    },
+    {
+      "id": "unsigned-book-shelf-message",
+      "version": "0.568.0",
+      "type": "feat",
+      "title": "The train tells you when a book went unsigned",
+      "summary": "Shelve a book & quill you wrote in but never signed, and a quiet line tells you the train won't carry it. Signing is what sends a book out into the world \u2014 an unsigned one just sits on the shelf, and now the game says so instead of leaving you guessing.",
+      "highlights": [
+        "Putting a written-in but unsigned book & quill into a chiseled bookshelf shows one of five lines",
+        "Nothing else changes: the book still goes on the shelf and can be taken back out"
+      ],
+      "pr": 987,
+      "date": "2026-08-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
