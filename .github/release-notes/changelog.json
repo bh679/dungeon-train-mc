@@ -7170,9 +7170,9 @@
       ],
       "pr": 987,
       "date": "2026-08-19",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.570.0",
+      "released_at": "2026-08-19T05:49:57Z"
     },
     {
       "id": "house-portal-room",
@@ -7183,9 +7183,9 @@
       "highlights": [],
       "pr": 988,
       "date": "2026-08-19",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.570.0",
+      "released_at": "2026-08-19T05:49:57Z"
     }
   ]
 }
