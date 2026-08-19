@@ -7220,6 +7220,21 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "dimensional-carriages-lil-detective-crunch",
+      "version": "0.573.0",
+      "type": "feat",
+      "title": "New dimensional carriages by Lil Detective Crunch",
+      "summary": "Two new dimensional carriages built by Lil Detective Crunch now ride the train, one of them stocked with nether-themed loot and mobs.",
+      "highlights": [
+        "Two new dimensional carriages by Lil Detective Crunch"
+      ],
+      "pr": 993,
+      "date": "2026-08-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

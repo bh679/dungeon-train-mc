@@ -4,7 +4,7 @@
     "mode": "endless_repetition/dynamic"
   },
   "beam": {
-    "weight": 2,
+    "weight": 4,
     "minLevel": 1,
     "maxLevel": 20,
     "mode": "bedrockless"
@@ -26,7 +26,7 @@
     "mode": "endless_repetition"
   },
   "book": {
-    "weight": 2,
+    "weight": 4,
     "minLevel": 3,
     "mode": "endless_repetition"
   },
@@ -35,7 +35,7 @@
     "mode": "endless_repetition"
   },
   "default": {
-    "weight": 1,
+    "weight": 2,
     "phases": [
       "OVERWORLD",
       "NETHER",
@@ -45,14 +45,12 @@
     "mode": "bedrock_lock"
   },
   "distantenemies": {
-    "weight": 1,
+    "weight": 2,
     "minLevel": 1,
     "mode": "endless_repetition/dynamic"
   },
   "house": {
     "weight": 1,
-    "minLevel": 16,
-    "maxLevel": 17,
     "mode": "bedrock_lock"
   },
   "labrynth": {
@@ -60,7 +58,7 @@
     "mode": "endless_repetition/dynamic"
   },
   "library_dimension": {
-    "weight": 2,
+    "weight": 3,
     "minLevel": 5,
     "mode": "endless_repetition/dynamic"
   },
@@ -87,7 +85,7 @@
     "mode": "endless_repetition"
   },
   "singlepillar": {
-    "weight": 2,
+    "weight": 4,
     "minLevel": 2,
     "maxLevel": 40,
     "mode": "endless_open"
@@ -102,7 +100,7 @@
     "mode": "bedrock_lock"
   },
   "window": {
-    "weight": 1,
+    "weight": 2,
     "maxLevel": 10,
     "mode": "bedrockless"
   },
