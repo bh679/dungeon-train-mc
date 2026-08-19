@@ -7220,6 +7220,25 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "evil-house-medieval-house-rooms",
+      "version": "0.573.0",
+      "type": "feat",
+      "title": "Evil house and medieval house portal rooms",
+      "summary": "The house portal room now has two siblings. The evil house is built from nether brick over netherrack, stalked by endermen, hoglins, wither skeletons, piglins and blazes, and hides a chest of nether plunder \u2014 diamonds, netherite scrap, blaze rods and a rib armour trim. The medieval house is a far larger hall that opens up from Diff-Level 12. Portal room odds have been retuned across the pool, and tunnel sections now carry fewer chest spots.",
+      "highlights": [
+        "New evil house portal room, with nether-themed loot and mobs",
+        "New medieval house portal room \u2014 a much larger hall",
+        "The house room is no longer restricted to Diff-Level 16-17",
+        "Retuned how often each portal room appears",
+        "Fewer chest spots in tunnel sections"
+      ],
+      "pr": 993,
+      "date": "2026-08-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
