@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "states": [
+    {"entity": "minecraft:wither_skeleton", "difficulty": {"min": 20, "max": "all"}},
+    {"entity": "minecraft:piglin", "difficulty": {"min": 5, "max": "all"}}
+  ]
+}
