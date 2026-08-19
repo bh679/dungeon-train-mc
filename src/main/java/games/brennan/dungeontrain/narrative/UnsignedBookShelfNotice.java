@@ -54,7 +54,8 @@ public final class UnsignedBookShelfNotice {
     public static void onBookShelved(Player player, ItemStack stack) {
         if (!(player instanceof ServerPlayer serverPlayer) || player.level().isClientSide()) return;
 
-        // Item check before any component read: every other book type, and every non-book, stops here.
+        // One component read settles it: no other book type carries WRITABLE_BOOK_CONTENT, signed ones least
+        // of all — vanilla signing swaps the component out for WRITTEN_BOOK_CONTENT.
         WritableBookContent content = stack.get(DataComponents.WRITABLE_BOOK_CONTENT);
         if (content == null || !hasWriting(content)) return;
 
