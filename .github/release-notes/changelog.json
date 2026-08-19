@@ -7200,9 +7200,9 @@
         "Written nothing yourself? The room quietly picks somebody else rather than standing empty."
       ],
       "date": "2026-08-19",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.574.0",
+      "released_at": "2026-08-19T15:32:25Z"
     },
     {
       "id": "trap-parkour-portal-rooms",
@@ -7217,9 +7217,9 @@
       ],
       "pr": 989,
       "date": "2026-08-19",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.574.0",
+      "released_at": "2026-08-19T15:32:25Z"
     },
     {
       "id": "dimensional-carriages-lil-detective-crunch",
@@ -7232,9 +7232,20 @@
       ],
       "pr": 993,
       "date": "2026-08-19",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.574.0",
+      "released_at": "2026-08-19T15:32:25Z"
+    },
+    {
+      "id": "nether-band-lava-flowrate",
+      "version": "0.574.0",
+      "type": "fix",
+      "title": "Nether lava fix",
+      "summary": "Lava in the Nether band now behaves the way it should.",
+      "date": "2026-08-19",
+      "released": true,
+      "released_in": "v0.574.0",
+      "released_at": "2026-08-19T15:32:25Z"
     }
   ]
 }
