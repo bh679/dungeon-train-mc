@@ -7195,9 +7195,8 @@
       "summary": "A portal room can now be a single community author's library. Its bookshelves are stocked with that person's whole catalogue and every shelf past the end of it is left empty, so a hall of bare shelves with a dozen books in it tells you exactly how much they wrote. The room announces whose library you have walked into.",
       "highlights": [
         "New Books setting on portal rooms in the editor: off, or an author mix.",
-        "The room rolls between your own writing, a random player and a random pen name \u2014 and each room sets its own odds, so a study can lean toward your own shelves while a great hall leans toward strangers.",
+        "The room rolls between your own writing and somebody else's, and each room sets its own odds \u2014 a study can lean toward your own shelves while a great hall leans toward strangers.",
         "Rooms can ask for a particular kind of author: at least this many books written, and at most that many, so a modest private collection stays modest.",
-        "Player and signature are separate choices: one account can write under several pen names, and several accounts can share one.",
         "Written nothing yourself? The room quietly picks somebody else rather than standing empty.",
         "Chests in a library room still roll their ordinary loot \u2014 it is a library, not a themed dungeon."
       ],
