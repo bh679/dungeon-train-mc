@@ -7173,6 +7173,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "house-portal-room",
+      "version": "0.569.0",
+      "type": "content",
+      "title": "The house portal room",
+      "summary": "A new room waits on the other side of the portal: a small house standing alone in a sealed chamber, its walls painted in shifting white and blue. A sign at the door tells you not to turn around. The one behind you admits it lied. Somewhere inside, a block of something valuable \u2014 or a chest, if you are luckier.",
+      "highlights": [
+        "New 'house' portal room, found on Diff-Levels 16-17",
+        "Ore blocks and an iron-and-gold chest roll among its fittings"
+      ],
+      "pr": 988,
+      "date": "2026-08-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
