@@ -45,6 +45,10 @@
     "minLevel": 1,
     "mode": "endless_repetition/dynamic"
   },
+  "house": {
+    "weight": 1,
+    "mode": "bedrock_lock"
+  },
   "labrynth": {
     "weight": 3,
     "mode": "endless_repetition/dynamic"
