@@ -17,6 +17,11 @@ import java.util.Locale;
  *       debug labels.</li>
  *   <li><b>HUD</b> — base scale for the top-left version line and
  *       top-centre editor status bar.</li>
+ *   <li><b>Train Volume</b> — how loud the train engine loop plays. The odd one out: not a
+ *       display scale, and the third view of a setting that is also a slider on vanilla's
+ *       Music &amp; Sounds screen and on the Dungeon Train options screen. A worldspace panel
+ *       can't host a vanilla widget, so it appears here as a stepper — on the same
+ *       {@link ClientDisplayConfig#STEP}, so the three surfaces can't disagree about a step.</li>
  * </ul>
  *
  * <p>Layout mirrors the editor weight stepper at
@@ -43,6 +48,7 @@ public final class OptionsMenuScreen implements MenuScreen {
             scaleStepper("HUD", ClientDisplayConfig.getHudChannel(),
                 () -> ClientDisplayConfig.setHudChannel(ClientDisplayConfig.getHudChannel() - ClientDisplayConfig.STEP),
                 () -> ClientDisplayConfig.setHudChannel(ClientDisplayConfig.getHudChannel() + ClientDisplayConfig.STEP)),
+            trainVolumeStepper(),
             snapshotChatLogRow(),
             snapshotMaxResolutionRow(),
             new CommandMenuEntry.Back("< Back")
@@ -87,8 +93,26 @@ public final class OptionsMenuScreen implements MenuScreen {
             () -> ClientDisplayConfig.setRideSnapshotChatLog(!ClientDisplayConfig.isRideSnapshotChatLogEnabled()));
     }
 
+    /**
+     * Train engine volume as a percentage, reading {@code OFF} at zero the way the sliders on the
+     * other two surfaces do. Steps the same stored value they set, by the same {@code STEP}.
+     */
+    private static CommandMenuEntry trainVolumeStepper() {
+        double current = ClientDisplayConfig.getTrainEngineVolume();
+        String value = current <= 0.0 ? "OFF" : Math.round(current * 100) + "%";
+        return stepper("Train Volume: " + value,
+            () -> ClientDisplayConfig.setTrainEngineVolume(
+                ClientDisplayConfig.getTrainEngineVolume() - ClientDisplayConfig.STEP),
+            () -> ClientDisplayConfig.setTrainEngineVolume(
+                ClientDisplayConfig.getTrainEngineVolume() + ClientDisplayConfig.STEP));
+    }
+
     private static CommandMenuEntry scaleStepper(String name, double currentValue, Runnable onMinus, Runnable onPlus) {
-        String label = name + ": " + String.format(Locale.ROOT, "%.1f", currentValue);
+        return stepper(name + ": " + String.format(Locale.ROOT, "%.1f", currentValue), onMinus, onPlus);
+    }
+
+    /** The shared {@code [-] / label / [+]} row: each {@code ±} a client action, so the menu stays open. */
+    private static CommandMenuEntry stepper(String label, Runnable onMinus, Runnable onPlus) {
         CommandMenuEntry minus  = new CommandMenuEntry.ClientAction("-", onMinus);
         CommandMenuEntry middle = new CommandMenuEntry.ClientAction(label, () -> {});
         CommandMenuEntry plus   = new CommandMenuEntry.ClientAction("+", onPlus);
