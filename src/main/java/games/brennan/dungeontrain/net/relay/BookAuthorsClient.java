@@ -63,8 +63,17 @@ public final class BookAuthorsClient {
     /**
      * Fetch the authors within this room's book range and hand the list to
      * {@code callback} (invoked on the HTTP completion thread — the caller must hop back to the server
-     * thread before touching game state). No-throw: a failed / slow / malformed / non-2xx fetch calls
-     * back with an empty list rather than not at all, so a caller waiting on it is never left hanging.
+     * thread before touching game state).
+     *
+     * <h3>Null is not the same as empty</h3>
+     * <p>{@code callback} receives {@code null} when the fetch FAILED — unreachable relay, non-2xx,
+     * unparseable body — and an empty list only when the relay genuinely answered with no authors.
+     * Collapsing the two (which this did until a library room went bare against a stopped relay and
+     * blamed its own settings for it) makes "we could not ask" indistinguishable from "the answer is
+     * nobody", and every caller that caches the answer then caches a failure.</p>
+     *
+     * <p>No-throw either way, and the callback always runs, so a caller's in-flight guard is never
+     * left held.</p>
      *
      * @param kind     {@code "player"}, {@code "signature"} or {@code "self"} — see
      *                 {@link games.brennan.dungeontrain.portal.PortalRoomBooks.Share#directoryKind()}
@@ -95,7 +104,7 @@ public final class BookAuthorsClient {
                     .build();
             HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString())
                     .whenComplete((resp, err) -> {
-                        List<Author> out = List.of();
+                        List<Author> out = null;   // null = could not ask; empty = asked, nobody
                         try {
                             if (err != null) {
                                 LOGGER.debug("[DungeonTrain] book-authors fetch failed: {}", err.toString());
@@ -116,23 +125,30 @@ public final class BookAuthorsClient {
                     });
         } catch (Throwable t) {
             // Building the request failed synchronously — still call back, so the caller's in-flight
-            // guard is released and the next attempt can run.
+            // guard is released and the next attempt can run. Null: this is a failure, not an answer.
             LOGGER.debug("[DungeonTrain] book-authors fetch failed to start: {}", t.toString());
             try {
-                callback.accept(List.of());
+                callback.accept(null);
             } catch (Throwable ignored) {
                 // nothing left to do
             }
         }
     }
 
-    /** Parse {@code {ok, authors:[{token,name,count}]}}; anything malformed yields an empty list. */
+    /**
+     * Parse {@code {ok, authors:[{token,name,count}]}}.
+     *
+     * <p>Returns {@code null} for a body that is not a well-formed answer at all — not an object, not
+     * {@code ok}, no {@code authors} array — because none of those tell us the corpus has nobody in
+     * range; they tell us we did not get an answer. A well-formed answer with an empty array returns
+     * an empty list, which is a real fact about the corpus.</p>
+     */
     static List<Author> parse(String body) {
         JsonElement root = JsonParser.parseString(body);
-        if (!root.isJsonObject()) return List.of();
+        if (!root.isJsonObject()) return null;
         JsonObject obj = root.getAsJsonObject();
-        if (!obj.has("ok") || !obj.get("ok").getAsBoolean()) return List.of();
-        if (!obj.has("authors") || !obj.get("authors").isJsonArray()) return List.of();
+        if (!obj.has("ok") || !obj.get("ok").getAsBoolean()) return null;
+        if (!obj.has("authors") || !obj.get("authors").isJsonArray()) return null;
         List<Author> out = new ArrayList<>();
         for (JsonElement el : obj.getAsJsonArray("authors")) {
             if (!el.isJsonObject()) continue;

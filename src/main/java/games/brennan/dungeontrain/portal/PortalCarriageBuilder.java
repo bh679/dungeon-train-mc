@@ -728,8 +728,12 @@ public final class PortalCarriageBuilder {
     public static PortalStructure planStructure(ServerLevel level, CarriageDims dims,
                                                 BlockPos entryOrigin, int pairKey,
                                                 games.brennan.dungeontrain.template.GateContext gateCtx) {
+        // A room that stocks its shelves from a community author is only drawable once the relay has
+        // said who the authors are — otherwise the player meets a hall of bare shelves. Asking here
+        // rather than at stamp time means the half-built version never exists.
         String roomName = TrackVariantRegistry.pickName(
-            TrackKind.PORTAL_ROOM, level.getSeed(), pairKey, gateCtx);
+            TrackKind.PORTAL_ROOM, level.getSeed(), pairKey, gateCtx,
+            PortalLibraryReadiness::canStamp);
         PortalRoomSettings settings = PortalRoomSettings.of(roomName);
         // Where this pair stands its exit, decided here with everything else about the pair and then
         // carried on the record — the same promise the mode and the room name make. Re-deciding it

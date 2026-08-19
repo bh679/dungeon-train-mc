@@ -223,6 +223,27 @@ public final class TrackVariantRegistry {
      * {@code null} skips gating.
      */
     public static String pickName(TrackKind kind, long worldSeed, long tileIndex, GateContext gateCtx) {
+        return pickName(kind, worldSeed, tileIndex, gateCtx, null);
+    }
+
+    /**
+     * As {@link #pickName(TrackKind, long, long, GateContext)}, with an optional {@code eligible}
+     * predicate applied on top of the gate.
+     *
+     * <p>The gate answers "does this variant belong at this point on the track". {@code eligible}
+     * answers a different and more temporary question — "could this variant actually be built right
+     * now" — which is what a portal room stocking a community author needs: it cannot be built until
+     * the relay has said who the authors are. See {@code PortalLibraryReadiness}.</p>
+     *
+     * <p>Applied to the top-level pool AND, inside {@link #resolveGroup}, to a group's members. A
+     * setting that lives on the member cannot be judged from the parent's name.</p>
+     *
+     * <p><b>It never empties the pool.</b> Like the gate before it, filtering everything out falls
+     * back to the unfiltered set: a portal with no room at all is a structural failure, while a room
+     * that cannot fill its shelves is merely a disappointing one.</p>
+     */
+    public static String pickName(TrackKind kind, long worldSeed, long tileIndex, GateContext gateCtx,
+                                  java.util.function.Predicate<String> eligible) {
         // Sub-variants are reached through their parent, never beside it — a member in the top-level
         // pool would be drawn twice over, once on its own and once through the group.
         List<String> pool = games.brennan.dungeontrain.editor.TrackVariantGroupStore.topLevelNames(kind);
@@ -241,6 +262,16 @@ public final class TrackVariantRegistry {
                 warnGateEmptyOnce(kind);
             }
         }
+        if (eligible != null) {
+            List<String> ready = new ArrayList<>(effective.size());
+            for (String name : effective) {
+                // A group stands in for its members, so it survives while ANY member could be built.
+                // Judging a group by its own (usually unset) settings would keep the whole group out
+                // over a decision its members carry.
+                if (groupOrSelfEligible(kind, name, eligible)) ready.add(name);
+            }
+            if (!ready.isEmpty()) effective = ready;
+        }
 
         int en = effective.size();
         int[] cumulative = new int[en];
@@ -255,13 +286,13 @@ public final class TrackVariantRegistry {
         Random rng = new Random(mixed);
         if (total <= 0) {
             warnAllZeroOnce(kind);
-            return resolveGroup(kind, effective.get(rng.nextInt(en)), rng, gateCtx);
+            return resolveGroup(kind, effective.get(rng.nextInt(en)), rng, gateCtx, eligible);
         }
         int r = rng.nextInt(total);
         for (int i = 0; i < en; i++) {
-            if (r < cumulative[i]) return resolveGroup(kind, effective.get(i), rng, gateCtx);
+            if (r < cumulative[i]) return resolveGroup(kind, effective.get(i), rng, gateCtx, eligible);
         }
-        return resolveGroup(kind, effective.get(en - 1), rng, gateCtx);
+        return resolveGroup(kind, effective.get(en - 1), rng, gateCtx, eligible);
     }
 
     /**
@@ -277,7 +308,25 @@ public final class TrackVariantRegistry {
      * <p>Single-hop only: a member that is itself a parent is treated as a leaf and logged, matching
      * {@code CarriageContentsRegistry}. Anything unresolvable falls back to {@code picked}.</p>
      */
-    private static String resolveGroup(TrackKind kind, String picked, Random rng, GateContext gateCtx) {
+    /**
+     * True when {@code name} itself is eligible, or is a group holding at least one eligible member.
+     *
+     * <p>A group with nothing buildable in it falls through to judging the parent on its own terms —
+     * the parent is a real variant, not only a container.</p>
+     */
+    private static boolean groupOrSelfEligible(TrackKind kind, String name,
+                                               java.util.function.Predicate<String> eligible) {
+        Optional<TrackVariantGroup> group =
+            games.brennan.dungeontrain.editor.TrackVariantGroupStore.get(kind, name);
+        if (group.isEmpty() || group.get().isEmpty()) return eligible.test(name);
+        for (TrackVariantGroup.Member m : group.get().members()) {
+            if (eligible.test(m.id())) return true;
+        }
+        return eligible.test(name);
+    }
+
+    private static String resolveGroup(TrackKind kind, String picked, Random rng, GateContext gateCtx,
+                                       java.util.function.Predicate<String> readyFilter) {
         Optional<TrackVariantGroup> groupOpt =
             games.brennan.dungeontrain.editor.TrackVariantGroupStore.get(kind, picked);
         if (groupOpt.isEmpty() || groupOpt.get().isEmpty()) return picked;
@@ -296,6 +345,16 @@ public final class TrackVariantRegistry {
                 return picked;
             }
             eligible = gated;
+        }
+        if (readyFilter != null) {
+            List<TrackVariantGroup.Member> ready = new ArrayList<>(eligible.size());
+            for (TrackVariantGroup.Member m : eligible) {
+                if (readyFilter.test(m.id())) ready.add(m);
+            }
+            // Nothing in the group can be built right now. The parent stands in, exactly as it does
+            // when every member is gated out.
+            if (ready.isEmpty()) return picked;
+            eligible = ready;
         }
 
         TrackVariantGroup.Member chosen = group.pick(rng, eligible);

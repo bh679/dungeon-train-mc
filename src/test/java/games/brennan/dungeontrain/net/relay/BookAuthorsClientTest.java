@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -60,12 +61,14 @@ class BookAuthorsClientTest {
     }
 
     @Test
-    @DisplayName("A not-ok, malformed or empty reply yields no authors instead of blowing up")
-    void badRepliesAreEmpty() {
-        assertTrue(BookAuthorsClient.parse("{\"ok\":false}").isEmpty());
-        assertTrue(BookAuthorsClient.parse("{\"ok\":true}").isEmpty());
-        assertTrue(BookAuthorsClient.parse("{\"ok\":true,\"authors\":\"nope\"}").isEmpty());
-        assertTrue(BookAuthorsClient.parse("[]").isEmpty());
-        assertTrue(BookAuthorsClient.parse("\"just a string\"").isEmpty());
+    @DisplayName("A not-ok or malformed reply is null — no answer, as distinct from an empty answer")
+    void badRepliesAreNull() {
+        // See BookAuthorsClientFailureTest for why this is null rather than an empty list: a caller
+        // that caches the answer must not cache a failure.
+        assertNull(BookAuthorsClient.parse("{\"ok\":false}"));
+        assertNull(BookAuthorsClient.parse("{\"ok\":true}"));
+        assertNull(BookAuthorsClient.parse("{\"ok\":true,\"authors\":\"nope\"}"));
+        assertNull(BookAuthorsClient.parse("[]"));
+        assertNull(BookAuthorsClient.parse("\"just a string\""));
     }
 }

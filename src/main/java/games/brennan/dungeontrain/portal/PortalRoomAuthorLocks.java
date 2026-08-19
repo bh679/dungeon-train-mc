@@ -316,7 +316,11 @@ public final class PortalRoomAuthorLocks {
         BookAuthorsClient.fetch(kind, books.minBooks(), books.maxBooks(), uuid, kidSafe,
             authors -> {
                 try {
-                    DIRECTORY.put(cacheKey, List.copyOf(authors));
+                    // Null means the fetch FAILED, and a failure is not an answer worth remembering:
+                    // caching it would leave every room that consults this page permanently unable to
+                    // fill, for the whole session, over one unreachable moment. Leaving the key absent
+                    // is what makes the next attempt retry.
+                    if (authors != null) DIRECTORY.put(cacheKey, List.copyOf(authors));
                 } finally {
                     DIRECTORY_IN_FLIGHT.remove(cacheKey);
                 }
@@ -346,6 +350,77 @@ public final class PortalRoomAuthorLocks {
     /** Self is per player; the other two give one room one author for everybody standing in it. */
     private static Key keyFor(int pairKey, ServerPlayer player, PortalRoomBooks.Share share) {
         return new Key(pairKey, share.isSelf() ? player.getUUID() : null);
+    }
+
+    /**
+     * Which directory pages a room's weights can actually reach.
+     *
+     * <p>A room weighted {@code 0:1:0} never consults the signature page, so waiting on one it will
+     * never ask for would hold the room back forever. Self is excluded: it is answered per player and
+     * cannot be warmed before anybody has joined, and a Self roll falls through to the player page
+     * anyway when the reader has written nothing.</p>
+     */
+    public static List<String> directoryKindsFor(PortalRoomBooks books) {
+        if (books == null || !books.locks()) return List.of();
+        List<String> kinds = new ArrayList<>(2);
+        // Self rolls fall back to the player directory, so any weight on Self needs that page too.
+        if (books.selfWeight() > 0 || books.playerWeight() > 0) {
+            kinds.add(PortalRoomBooks.Share.PLAYER.directoryKind());
+        }
+        if (books.signatureWeight() > 0) {
+            kinds.add(PortalRoomBooks.Share.SIGNATURE.directoryKind());
+        }
+        // All three weights zero rolls evenly, so every page is in play.
+        if (kinds.isEmpty()) {
+            kinds.add(PortalRoomBooks.Share.PLAYER.directoryKind());
+            kinds.add(PortalRoomBooks.Share.SIGNATURE.directoryKind());
+        }
+        return kinds;
+    }
+
+    /** The cache key one directory page for {@code books} is held under. */
+    static String directoryKey(String kind, PortalRoomBooks books) {
+        return kind + ':' + books.minBooks() + ':' + books.maxBooks();
+    }
+
+    /**
+     * Whether this room could actually be filled right now: every page its weights can reach has been
+     * answered, and at least one of them holds an author inside its band.
+     *
+     * <p>Answered is the operative word — a page whose fetch failed leaves no key, so this reads false
+     * and the room is left alone until the relay comes back. That is the whole point: a room nobody
+     * can fill should not be drawn in the first place.</p>
+     */
+    public static boolean canFill(PortalRoomBooks books) {
+        if (books == null || !books.locks()) return true;
+        boolean anyCandidate = false;
+        for (String kind : directoryKindsFor(books)) {
+            List<BookAuthorsClient.Author> page = DIRECTORY.get(directoryKey(kind, books));
+            if (page == null) return false;                     // never answered — not ready
+            for (BookAuthorsClient.Author a : page) {
+                if (books.accepts(a.count())) {
+                    anyCandidate = true;
+                    break;
+                }
+            }
+        }
+        return anyCandidate;
+    }
+
+    /**
+     * Ask for every directory page {@code books} needs and does not have.
+     *
+     * <p>Idempotent: a page already answered or already in flight is skipped, so this can be called on
+     * a timer without stacking requests. {@code player} only supplies the random source and the host
+     * locale — no page fetched here is player-specific.</p>
+     */
+    public static void warm(ServerPlayer player, PortalRoomBooks books, boolean kidSafe) {
+        if (player == null || books == null || !books.locks()) return;
+        for (String kind : directoryKindsFor(books)) {
+            String key = directoryKey(kind, books);
+            if (DIRECTORY.containsKey(key)) continue;
+            fetchDirectory(kind, key, player, books, kidSafe);
+        }
     }
 
     /**

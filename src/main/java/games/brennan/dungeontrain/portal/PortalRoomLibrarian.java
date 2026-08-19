@@ -90,13 +90,13 @@ public final class PortalRoomLibrarian {
             if (resolved.outcome() == PortalRoomAuthorLocks.Outcome.PENDING) continue;  // ask again
 
             if (resolved.outcome() == PortalRoomAuthorLocks.Outcome.NONE) {
-                // The directory answered and nobody is inside this room's band. Said out loud and at
-                // INFO, because from in-game this is indistinguishable from a broken feature: the
-                // room simply stands there empty. Naming the band is what turns it back into a
-                // setting the author can change.
-                LOGGER.info("[DungeonTrain] Portal room {} found no author with {}-{} books — "
-                        + "its shelves stay empty. Widen the room's Books range, or the corpus has "
-                        + "nobody that prolific yet.",
+                // Rare now: a room is only DRAWN once its range has candidates, so reaching here
+                // means the corpus moved under it between the pick and the stamp — an author's
+                // catalogue came back empty, or every candidate was tried and none had books to
+                // give. Said at INFO because an empty library looks like a broken feature from
+                // inside, and this is the only thing that explains it.
+                LOGGER.info("[DungeonTrain] Portal room {} had no author left to stock from "
+                        + "(wanted {}-{} books) — its shelves stay empty.",
                     pairKey, pending.books().minBooks() + 1,
                     pending.books().maxBooks() == PortalRoomBooks.NO_MAXIMUM
                         ? "any" : String.valueOf(pending.books().maxBooks()));
