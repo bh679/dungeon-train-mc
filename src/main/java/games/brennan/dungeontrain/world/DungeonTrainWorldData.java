@@ -69,6 +69,7 @@ public final class DungeonTrainWorldData extends SavedData {
     private static final String TAG_BUILDER_TRACK_KIND = "builderTrackKind";
     private static final String TAG_BUILDER_CARRIAGES = "builderCarriages";
     private static final String TAG_BUILDER_STRUCTURE_MODE = "builderStructureMode";
+    private static final String TAG_BUILDER_RELAY_BUILDS = "builderRelayBuilds";
 
     private int trainY;
     private boolean startsWithTrain;
@@ -193,6 +194,14 @@ public final class DungeonTrainWorldData extends SavedData {
      */
     private final games.brennan.dungeontrain.train.UsedCarriageIds usedCarriageIds =
             new games.brennan.dungeontrain.train.UsedCarriageIds();
+
+    /**
+     * What a Train Builder world has uploaded to the relay — one record per saved template. Empty in
+     * every ordinary world. Its credentials cannot be re-derived, which is why they are saved rather
+     * than held in memory; see {@link games.brennan.dungeontrain.builder.relay.BuilderRelayBuilds}.
+     */
+    private final games.brennan.dungeontrain.builder.relay.BuilderRelayBuilds builderRelayBuilds =
+            new games.brennan.dungeontrain.builder.relay.BuilderRelayBuilds();
 
     private DungeonTrainWorldData(int trainY, boolean startsWithTrain, CarriageDims dims, long generationSeed, StartingDimension startingDimension) {
         this.trainY = trainY;
@@ -324,6 +333,9 @@ public final class DungeonTrainWorldData extends SavedData {
         // getIntArray returns an empty array for an absent key, so worlds saved before shared carriages
         // simply start having placed nothing.
         data.usedCarriageIds.loadFrom(tag.getIntArray(TAG_USED_CARRIAGE_IDS));
+        // Absent in every world that has never uploaded a build, which is every non-builder world.
+        data.builderRelayBuilds.loadFrom(
+                tag.getList(TAG_BUILDER_RELAY_BUILDS, net.minecraft.nbt.Tag.TAG_COMPOUND));
         // Absent in every non-builder world (and in builder worlds saved before the stamp ran).
         if (tag.contains(TAG_BUILDER_MODE)) {
             data.builderMode = tag.getString(TAG_BUILDER_MODE);
@@ -384,6 +396,9 @@ public final class DungeonTrainWorldData extends SavedData {
         }
         tag.putBoolean(TAG_JOIN_REPORT_POSTED, joinReportPosted);
         tag.putIntArray(TAG_USED_CARRIAGE_IDS, usedCarriageIds.toIntArray());
+        if (!builderRelayBuilds.isEmpty()) {
+            tag.put(TAG_BUILDER_RELAY_BUILDS, builderRelayBuilds.toTag());
+        }
         if (builderMode != null) {
             tag.putString(TAG_BUILDER_MODE, builderMode);
         }
@@ -692,6 +707,20 @@ public final class DungeonTrainWorldData extends SavedData {
     /** Relay ids this world has already placed, newest first and capped at {@code limit}. */
     public java.util.List<Integer> recentUsedCarriageIds(int limit) {
         return usedCarriageIds.recent(limit);
+    }
+
+    /**
+     * This builder world's relay uploads. Handed out live rather than copied, because every caller
+     * that reads it is about to change it — callers must {@link #markBuilderRelayBuildsDirty()} after
+     * a write, which is the same contract {@code readyMirrorChunks} has.
+     */
+    public games.brennan.dungeontrain.builder.relay.BuilderRelayBuilds builderRelayBuilds() {
+        return builderRelayBuilds;
+    }
+
+    /** Persist a change made through {@link #builderRelayBuilds()}. */
+    public void markBuilderRelayBuildsDirty() {
+        setDirty();
     }
 
     /**

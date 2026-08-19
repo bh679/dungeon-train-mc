@@ -205,7 +205,13 @@ public final class BuilderOpenOptions {
     public static BuilderPhotoPaths.Kind photoKindFor(OpenSource source, String value,
                                                       boolean insideGroup) {
         return switch (source) {
-            case STAGES -> isSavedBuild(value) ? BuilderPhotoPaths.Kind.CARRIAGE : null;
+            // Three kinds of tile in one list: a Stage is not a template and has no picture, a saved
+            // group's is in the group store, a saved carriage's in the carriage store.
+            case STAGES -> switch (BuilderNewOptions.parsePick(value).kind()) {
+                case WHOLE_CARRIAGE -> BuilderPhotoPaths.Kind.CARRIAGE;
+                case CARRIAGE_GROUP -> BuilderPhotoPaths.Kind.CARRIAGE_GROUP;
+                case STAGE -> null;
+            };
             case CONTENTS -> BuilderPhotoPaths.Kind.CONTENTS;
             case CARRIAGES_BY_STAGE -> insideGroup ? BuilderPhotoPaths.Kind.CARRIAGE : null;
             case PARTS -> BuilderPhotoPaths.Kind.PART;
@@ -238,7 +244,14 @@ public final class BuilderOpenOptions {
      * must never set {@code builderName}.</p>
      */
     public static boolean isSavedBuild(String value) {
-        return BuilderNewOptions.parsePick(value).kind() == BuilderNewOptions.PickKind.WHOLE_CARRIAGE;
+        BuilderNewOptions.PickKind kind = BuilderNewOptions.parsePick(value).kind();
+        return kind == BuilderNewOptions.PickKind.WHOLE_CARRIAGE
+                || kind == BuilderNewOptions.PickKind.CARRIAGE_GROUP;
+    }
+
+    /** Whether this Whole Carriage entry is a saved run of carriages rather than a single one. */
+    public static boolean isSavedGroup(String value) {
+        return BuilderNewOptions.parsePick(value).kind() == BuilderNewOptions.PickKind.CARRIAGE_GROUP;
     }
 
     /** Whether the part-kind control belongs on the screen for this selection. */

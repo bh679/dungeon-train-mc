@@ -113,7 +113,10 @@ public record BuilderOpenRequest(BuilderPhotoPaths.Kind kind, String id, Carriag
      */
     public String subTypeToken() {
         return switch (kind) {
-            case CARRIAGE -> BuilderNewOptions.SubType.WHOLE_CARRIAGE.id();
+            // A group records the same sub type as a single carriage: both are "the whole carriage",
+            // and how many of them there are is the mode's answer, not the sub type's. What tells a
+            // later Save the two apart is the number of build volumes it finds — see BuilderSave.
+            case CARRIAGE, CARRIAGE_GROUP -> BuilderNewOptions.SubType.WHOLE_CARRIAGE.id();
             case CONTENTS -> BuilderNewOptions.SubType.CARRIAGE_ROOM.id();
             case PART -> BuilderNewOptions.SubType.PARTS.id();
             case PORTAL_ROOM -> PORTAL_ROOM_SUB_TYPE;
@@ -142,7 +145,7 @@ public record BuilderOpenRequest(BuilderPhotoPaths.Kind kind, String id, Carriag
      */
     public BuilderNewOptions.SubType subType() {
         return switch (kind) {
-            case CARRIAGE -> BuilderNewOptions.SubType.WHOLE_CARRIAGE;
+            case CARRIAGE, CARRIAGE_GROUP -> BuilderNewOptions.SubType.WHOLE_CARRIAGE;
             case CONTENTS -> BuilderNewOptions.SubType.CARRIAGE_ROOM;
             case PART -> BuilderNewOptions.SubType.PARTS;
             case TRACK, PORTAL_ROOM -> null;

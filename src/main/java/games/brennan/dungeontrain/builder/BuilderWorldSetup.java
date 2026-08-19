@@ -8,6 +8,7 @@ import games.brennan.dungeontrain.editor.EditorPlotSnapshots;
 import games.brennan.dungeontrain.editor.EditorStageSelection;
 import games.brennan.dungeontrain.editor.EditorTemplateLists;
 import games.brennan.dungeontrain.builder.structure.BuilderEnvironment;
+import games.brennan.dungeontrain.editor.CarriageGroupTemplateStore;
 import games.brennan.dungeontrain.editor.WholeCarriageTemplateStore;
 import games.brennan.dungeontrain.ship.sable.WorldgenForceGuard;
 import games.brennan.dungeontrain.track.TrackGenerator;
@@ -32,6 +33,9 @@ import games.brennan.dungeontrain.train.CarriageVariantRegistry;
 import games.brennan.dungeontrain.train.CarriageWeights;
 import games.brennan.dungeontrain.train.WholeCarriage;
 import games.brennan.dungeontrain.train.WholeCarriagePlacer;
+import games.brennan.dungeontrain.train.CarriageGroup;
+import games.brennan.dungeontrain.train.CarriageGroupPlacer;
+import games.brennan.dungeontrain.train.CarriageGroupRegistry;
 import games.brennan.dungeontrain.train.WholeCarriageRegistry;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.SilentBlockOps;
@@ -871,7 +875,7 @@ public final class BuilderWorldSetup {
             return false;
         }
 
-        Optional<Resolved> resolved = resolveOpen(level, dims, request);
+        Optional<Resolved> resolved = resolveOpen(level, dims, carriages, request);
         if (resolved.isEmpty()) {
             LOGGER.warn("[DungeonTrain] Builder open: could not resolve {} '{}' — world left alone",
                     request.kind().id(), request.id());
@@ -1140,7 +1144,18 @@ public final class BuilderWorldSetup {
      * @param mirror       the mirror axes the template was authored with
      */
     private record Resolved(CarriageVariant shell, Optional<WholeCarriage> wholeCarriage,
-                            String stageId, BuilderMirrorFlags mirror) {}
+                            Optional<CarriageGroup> carriageGroup,
+                            String stageId, BuilderMirrorFlags mirror) {
+        Resolved {
+            carriageGroup = carriageGroup == null ? Optional.empty() : carriageGroup;
+        }
+
+        /** The four-arg form every arm but the group one builds: no group, just a carriage. */
+        Resolved(CarriageVariant shell, Optional<WholeCarriage> wholeCarriage,
+                 String stageId, BuilderMirrorFlags mirror) {
+            this(shell, wholeCarriage, Optional.empty(), stageId, mirror);
+        }
+    }
 
     /**
      * Look the request up in full, or answer empty.
@@ -1152,10 +1167,11 @@ public final class BuilderWorldSetup {
      * {@code applyNew}'s overlay discards. Checking the same gate here, up front, is what turns a
      * silent bare shell into a refusal.</p>
      */
-    private static Optional<Resolved> resolveOpen(ServerLevel level, CarriageDims dims,
+    private static Optional<Resolved> resolveOpen(ServerLevel level, CarriageDims dims, int carriages,
                                                   BuilderOpenRequest request) {
         return switch (request.kind()) {
             case CARRIAGE -> resolveCarriage(level, dims, request.id());
+            case CARRIAGE_GROUP -> resolveCarriageGroup(level, dims, carriages, request.id());
             case CONTENTS -> CarriageContentsRegistry.find(request.id()).isPresent()
                     ? shellOnly(level)
                     : Optional.empty();
@@ -1168,6 +1184,29 @@ public final class BuilderWorldSetup {
             // than a throw — a refusal is what every other unresolvable arm answers.
             case TRACK, PORTAL_ROOM -> Optional.empty();
         };
+    }
+
+    /**
+     * Opening a carriage group: the saved run, refused outright when this world's train can't hold it.
+     *
+     * <p>Refused rather than trimmed. A group is a composition — these carriages, in this order — so a
+     * three-carriage group opened into a two-carriage train is not the build with one carriage missing,
+     * it is a different build. The store's footprint gate answers that question (see
+     * {@code CarriageGroupTemplateStore.get}), and an empty answer here becomes a refusal rather than
+     * a bare stamp, exactly as an unreadable whole carriage does.</p>
+     */
+    private static Optional<Resolved> resolveCarriageGroup(ServerLevel level, CarriageDims dims,
+                                                           int carriages, String id) {
+        Optional<CarriageGroup> group = CarriageGroupRegistry.find(id);
+        if (group.isEmpty()) {
+            return Optional.empty();
+        }
+        if (CarriageGroupTemplateStore.get(level, group.get(), dims, carriages).isEmpty()) {
+            LOGGER.warn("[DungeonTrain] Builder open: carriage group '{}' does not fit this train — refusing", id);
+            return Optional.empty();
+        }
+        return defaultVariant().map(shell ->
+                new Resolved(shell, Optional.empty(), group, "", BuilderMirrorFlags.DEFAULT));
     }
 
     /**
@@ -1250,6 +1289,13 @@ public final class BuilderWorldSetup {
      */
     private static boolean overlayOpen(ServerLevel level, CarriageDims dims, int carriages,
                                        BuilderOpenRequest request, Resolved open) {
+        // A group is one template over the whole run, so it is stamped once from the first carriage's
+        // origin rather than per slot. Its carriages are not interchangeable — that composition is the
+        // build — so a per-slot stamp would put its first carriage in every position.
+        if (open.carriageGroup().isPresent()) {
+            return CarriageGroupPlacer.placeAt(level, carriageOrigin(dims, carriages, 0),
+                    open.carriageGroup().get(), dims, carriages);
+        }
         for (int i = 0; i < carriages; i++) {
             BlockPos origin = carriageOrigin(dims, carriages, i);
             switch (request.kind()) {
@@ -1259,6 +1305,11 @@ public final class BuilderWorldSetup {
                         return false;
                     }
                     // No whole carriage: stampTrain already laid down the shell, which *is* the build.
+                }
+                case CARRIAGE_GROUP -> {
+                    // Placed once, over the whole run — see the loop guard above. A group's carriages
+                    // are not interchangeable with each other, so stamping it per slot would put its
+                    // first carriage in every position.
                 }
                 case CONTENTS -> {
                     Optional<CarriageContents> contents = CarriageContentsRegistry.find(request.id());

@@ -139,6 +139,12 @@ public final class DungeonTrainConfig {
      */
     public static final boolean DEFAULT_SHARED_CARRIAGES_ENABLED = true;
     /**
+     * Train Builder profiles ship OFF. Uploading is already gated on the player's own network consent,
+     * but a builder save is deliberate authored work rather than incidental play capture, so the server
+     * opts in to sending it anywhere before the first one leaves the machine.
+     */
+    public static final boolean DEFAULT_BUILDER_PROFILE_ENABLED = false;
+    /**
      * A shared-carriage slot splits three ways: a relay build by anyone (pool), a relay build by a
      * player in this world (own), and a fresh unbuilt template (the remainder). Defaults are
      * 65% / 30% / 5% — most slots show the community's work, a healthy share hands players their own
@@ -250,6 +256,7 @@ public final class DungeonTrainConfig {
     public static final ModConfigSpec.DoubleValue SHARED_BOOK_LOOT_MAX_CHANCE;
     public static final ModConfigSpec.IntValue SHARED_BOOK_REPEAT_GROUPS;
     public static final ModConfigSpec.BooleanValue SHARED_CARRIAGES_ENABLED;
+    public static final ModConfigSpec.BooleanValue BUILDER_PROFILE_ENABLED;
     public static final ModConfigSpec.DoubleValue SHARED_CARRIAGE_POOL_CHANCE;
     public static final ModConfigSpec.DoubleValue SHARED_CARRIAGE_OWN_CHANCE;
     public static final ModConfigSpec.BooleanValue DISCOVER_NARRATIVES_ENABLED;
@@ -300,6 +307,7 @@ public final class DungeonTrainConfig {
         SHARED_BOOK_LOOT_MAX_CHANCE = pair.getLeft().sharedBookLootMaxChance;
         SHARED_BOOK_REPEAT_GROUPS = pair.getLeft().sharedBookRepeatGroups;
         SHARED_CARRIAGES_ENABLED = pair.getLeft().sharedCarriagesEnabled;
+        BUILDER_PROFILE_ENABLED = pair.getLeft().builderProfileEnabled;
         SHARED_CARRIAGE_POOL_CHANCE = pair.getLeft().sharedCarriagePoolChance;
         SHARED_CARRIAGE_OWN_CHANCE = pair.getLeft().sharedCarriageOwnChance;
         DISCOVER_NARRATIVES_ENABLED = pair.getLeft().discoverNarrativesEnabled;
@@ -494,6 +502,14 @@ public final class DungeonTrainConfig {
                         "share is trimmed to fit, and no slot is ever left without something to place.")
                 .defineInRange("sharedCarriageOwnChance", DEFAULT_SHARED_CARRIAGE_OWN_CHANCE,
                         MIN_SHARED_CARRIAGE_OWN_CHANCE, MAX_SHARED_CARRIAGE_OWN_CHANCE);
+        ModConfigSpec.BooleanValue builderProfileEnabled = b
+                .comment("Train Builder profiles \u2014 when true, saving in the Train Builder also uploads the build to the",
+                        "Dungeon Train relay under the player's name, so their builds follow them between worlds and can be",
+                        "submitted to the train for everyone. Every kind the builder authors is uploaded (carriages, rooms,",
+                        "parts, track, tunnels, portal rooms), but only a whole carriage can be submitted to the train \u2014 the",
+                        "rest simply live in the player's profile. Uploading also requires the player's client to have granted",
+                        "network consent, and a build stays private to its author until they submit it. Default false.")
+                .define("builderProfileEnabled", DEFAULT_BUILDER_PROFILE_ENABLED);
         b.pop();
         b.push("discord");
         ModConfigSpec.BooleanValue deathReportToDiscord = b
@@ -575,7 +591,7 @@ public final class DungeonTrainConfig {
                 sharedBookLootMaxChance, sharedBookRepeatGroups, discoverNarrativesEnabled, narrativeDiscoveryRampThreshold,
                 difficultyLevelNoticeToDiscord, introCinematicEnabled, introCinematicDurationTicks,
                 introCinematicChunkPreloadEnabled, sharedCarriagesEnabled, sharedCarriagePoolChance,
-                sharedCarriageOwnChance);
+                sharedCarriageOwnChance, builderProfileEnabled);
     }
 
     /**
@@ -590,6 +606,11 @@ public final class DungeonTrainConfig {
     /** Master toggle for the shared-carriage feature (relay-sourced carriages). */
     public static boolean isSharedCarriagesEnabled() {
         return isLoaded() ? SHARED_CARRIAGES_ENABLED.get() : DEFAULT_SHARED_CARRIAGES_ENABLED;
+    }
+
+    /** Whether a Train Builder save also uploads the build to the player's relay profile. */
+    public static boolean isBuilderProfileEnabled() {
+        return isLoaded() ? BUILDER_PROFILE_ENABLED.get() : DEFAULT_BUILDER_PROFILE_ENABLED;
     }
 
     /** Probability a shared-carriage slot leases a build by any author from the relay pool. */
@@ -970,6 +991,7 @@ public final class DungeonTrainConfig {
             ModConfigSpec.BooleanValue introCinematicChunkPreloadEnabled,
             ModConfigSpec.BooleanValue sharedCarriagesEnabled,
             ModConfigSpec.DoubleValue sharedCarriagePoolChance,
-            ModConfigSpec.DoubleValue sharedCarriageOwnChance
+            ModConfigSpec.DoubleValue sharedCarriageOwnChance,
+            ModConfigSpec.BooleanValue builderProfileEnabled
     ) {}
 }

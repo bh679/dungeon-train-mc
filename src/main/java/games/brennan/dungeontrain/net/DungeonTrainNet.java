@@ -164,6 +164,13 @@ public final class DungeonTrainNet {
         registrar.playToClient(BuilderPhotoPacket.TYPE, BuilderPhotoPacket.STREAM_CODEC, BuilderPhotoPacket::handle);
         registrar.playToClient(BuilderCinematicPacket.TYPE, BuilderCinematicPacket.STREAM_CODEC, BuilderCinematicPacket::handle);
 
+        // Train Builder profile ("My Builds"): the client asks, the server fetches from the relay and
+        // pushes the list back; the action packet publishes one build to the train or withdraws it.
+        // The relay client is server-side, so the screen can only ever ask through here.
+        registrar.playToServer(BuilderProfileRequestPacket.TYPE, BuilderProfileRequestPacket.STREAM_CODEC, BuilderProfileRequestPacket::handle);
+        registrar.playToClient(BuilderProfilePacket.TYPE, BuilderProfilePacket.STREAM_CODEC, BuilderProfilePacket::handle);
+        registrar.playToServer(BuilderProfileActionPacket.TYPE, BuilderProfileActionPacket.STREAM_CODEC, BuilderProfileActionPacket::handle);
+
         // Remote-echo encounter screenshot: server → player at first eye-contact to frame + capture the
         // echo; client → server with the resulting PNG, buffered on the encounter journal for its story embed.
         registrar.playToClient(CaptureEchoPacket.TYPE, CaptureEchoPacket.STREAM_CODEC, CaptureEchoPacket::handle);
