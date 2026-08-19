@@ -48,6 +48,13 @@ public final class ClientDisplayConfig {
     /** Step applied per click of the menu's {@code [-]} / {@code [+]} buttons. */
     public static final double STEP = 0.10;
 
+    /** Silent. A real setting, not a "not configured" sentinel — see {@link #getTrainEngineVolume()}. */
+    public static final double MIN_TRAIN_ENGINE_VOLUME = 0.0;
+    /** The engine at the volume the distance curve computes, unscaled. */
+    public static final double MAX_TRAIN_ENGINE_VOLUME = 1.0;
+    /** Ships unscaled — the curve in {@code TrainEngineSound} is the intended mix. */
+    public static final double DEFAULT_TRAIN_ENGINE_VOLUME = 1.0;
+
     public static final ModConfigSpec SPEC;
     public static final ModConfigSpec.DoubleValue ALL_SCALE;
     public static final ModConfigSpec.DoubleValue WORLDSPACE_CHANNEL;
@@ -72,6 +79,7 @@ public final class ClientDisplayConfig {
     public static final ModConfigSpec.IntValue RIDE_SNAPSHOT_MAX_RESOLUTION;
     public static final ModConfigSpec.BooleanValue FRAMERATE_THROTTLE_ENABLED;
     public static final ModConfigSpec.IntValue FRAMERATE_THROTTLE_FPS;
+    public static final ModConfigSpec.DoubleValue TRAIN_ENGINE_VOLUME;
     public static final ModConfigSpec.BooleanValue DELETE_WORLD_ON_REBOARD;
     /**
      * Relay pool ids of community (player-written) books this player has read, stored as decimal strings.
@@ -138,6 +146,7 @@ public final class ClientDisplayConfig {
         RIDE_SNAPSHOT_MAX_RESOLUTION = pair.getLeft().rideSnapshotMaxResolution;
         FRAMERATE_THROTTLE_ENABLED = pair.getLeft().framerateThrottleEnabled;
         FRAMERATE_THROTTLE_FPS = pair.getLeft().framerateThrottleFps;
+        TRAIN_ENGINE_VOLUME = pair.getLeft().trainEngineVolume;
         DELETE_WORLD_ON_REBOARD = pair.getLeft().deleteWorldOnReboard;
         SHARED_BOOKS_READ = pair.getLeft().sharedBooksRead;
         DEATH_SCREEN_LAST_NPS = pair.getLeft().deathScreenLastNps;
@@ -239,6 +248,13 @@ public final class ClientDisplayConfig {
                         FramerateThrottle.MIN_THROTTLE_FPS, FramerateThrottle.MAX_THROTTLE_FPS);
         b.pop();
 
+        b.push("sound");
+        ModConfigSpec.DoubleValue trainEngineVolume = b
+                .comment("How loud the train engine loop plays, 0.0 (off) to 1.0 (unscaled). Multiplies the volume Dungeon Train already computes from your distance to the nearest carriage, so the falloff and the in-carriage maximum keep their shape - this only scales the whole curve. Separate from vanilla's Ambient slider, which also moves cave sounds and mob ambience. 0.0 stops the sound outright rather than looping it silently. Also settable in Options -> Music & Sounds, in Options -> Dungeon Train..., and in the X menu -> Options.")
+                .defineInRange("trainEngineVolume", DEFAULT_TRAIN_ENGINE_VOLUME,
+                        MIN_TRAIN_ENGINE_VOLUME, MAX_TRAIN_ENGINE_VOLUME);
+        b.pop();
+
         b.push("world");
         ModConfigSpec.BooleanValue deleteWorldOnReboard = b
                 .comment("Delete the old world's save folder when reboarding (creating a fresh world) from the death screen. Dungeon Train is designed around a new world per run, so this defaults on to keep the world list and disk clean. Only auto-generated \"<prefix> <timestamp>\" saves (Dungeon Train / Dev World / World) are ever deleted — renamed or hand-made worlds and editor worlds are always kept. Toggleable in-game via the trash icon next to the reboard button.")
@@ -294,7 +310,7 @@ public final class ClientDisplayConfig {
                 rideSnapshotMinFps, rideSnapshotMinTps,
                 rideSnapshotDiskOffload, rideSnapshotFlushMinFps, rideSnapshotFlushMinTps, rideSnapshotMaxOnDisk,
                 rideSnapshotMaxResolution,
-                framerateThrottleEnabled, framerateThrottleFps, deleteWorldOnReboard, sharedBooksRead,
+                framerateThrottleEnabled, framerateThrottleFps, trainEngineVolume, deleteWorldOnReboard, sharedBooksRead,
                 deathScreenLastNps, politicalFilter, contentMode);
     }
 
@@ -607,6 +623,40 @@ public final class ClientDisplayConfig {
         FRAMERATE_THROTTLE_FPS.save();
     }
 
+    // ----- Train engine volume (see client/sound/TrainEngineVolume) -----
+
+    /**
+     * How loud the train engine loop plays: {@code 0.0} (off) to {@code 1.0} (the computed curve,
+     * unscaled). Multiplies what {@code TrainEngineSound} works out from the player's distance to the
+     * nearest carriage.
+     *
+     * <p>Defaults to {@link #DEFAULT_TRAIN_ENGINE_VOLUME} ({@code 1.0}) <b>including pre-load</b>, and
+     * that direction matters: {@code 0.0} is a real setting meaning silence, so a config that hasn't
+     * loaded yet must read as full rather than accidentally muting the engine for the first ticks of a
+     * world. The opposite fail-safe to {@link #isFramerateThrottleEnabled()}, for the same reason it is
+     * the opposite there — a missing config should leave behaviour alone, and here "alone" is loud.</p>
+     */
+    public static double getTrainEngineVolume() {
+        return isLoaded() ? snapToTenth(TRAIN_ENGINE_VOLUME.get()) : DEFAULT_TRAIN_ENGINE_VOLUME;
+    }
+
+    /**
+     * Persist the engine volume, clamped and snapped to a tenth like the display scales.
+     *
+     * <p>Idempotent, and here that is load-bearing rather than tidiness: the vanilla-style slider on
+     * the sound screen calls this continuously while it is dragged. Snapping to tenths bounds a whole
+     * drag to eleven distinct values, and skipping the unchanged write bounds it to eleven TOML
+     * writes.</p>
+     */
+    public static void setTrainEngineVolume(double value) {
+        if (!isLoaded()) return;
+        double snapped = snapToTenth(Math.max(MIN_TRAIN_ENGINE_VOLUME,
+                Math.min(MAX_TRAIN_ENGINE_VOLUME, value)));
+        if (TRAIN_ENGINE_VOLUME.get() == snapped) return;
+        TRAIN_ENGINE_VOLUME.set(snapped);
+        TRAIN_ENGINE_VOLUME.save();
+    }
+
     // ----- Delete old world on reboard (death-screen trash toggle) -----
 
     /**
@@ -723,6 +773,7 @@ public final class ClientDisplayConfig {
             ModConfigSpec.IntValue rideSnapshotMaxResolution,
             ModConfigSpec.BooleanValue framerateThrottleEnabled,
             ModConfigSpec.IntValue framerateThrottleFps,
+            ModConfigSpec.DoubleValue trainEngineVolume,
             ModConfigSpec.BooleanValue deleteWorldOnReboard,
             ModConfigSpec.ConfigValue<List<? extends String>> sharedBooksRead,
             ModConfigSpec.IntValue deathScreenLastNps,
