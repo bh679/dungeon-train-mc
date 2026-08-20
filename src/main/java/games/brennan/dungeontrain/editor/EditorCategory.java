@@ -231,7 +231,7 @@ public enum EditorCategory {
     /**
      * Erase every known editor plot in every category — footprints + barrier
      * cages all go back to air. Called when the player exits the editor and
-     * when switching categories so stale models don't pile up at Y=250. Cheap
+     * when switching categories so stale models don't pile up at the plot floor. Cheap
      * — the total is a handful of plots ({@code CarriageVariantRegistry} size
      * + 3 pillars + 2 tunnels).
      */

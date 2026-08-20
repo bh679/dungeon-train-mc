@@ -30,7 +30,7 @@ import java.util.UUID;
  * alongside the carriage plots so {@code /dt editor carriages} shows every
  * author-able part at a glance.
  *
- * <p>Grid layout (overworld, {@code Y=250}) — everything packs tightly with
+ * <p>Grid layout (overworld, {@link EditorLayout#PLOT_Y}) — everything packs tightly with
  * a {@link #PLOT_GAP}-block gap between consecutive plot footprints:
  * <ul>
  *   <li>The first row ({@link CarriagePartKind#FLOOR}) starts at
@@ -61,7 +61,7 @@ public final class CarriagePartEditor {
     /** First X slot on any kind row. */
     private static final int FIRST_PLOT_X = 0;
 
-    private static final int PLOT_Y = 250;
+    private static final int PLOT_Y = EditorLayout.PLOT_Y;
 
     /**
      * First Z row — sourced from {@link EditorLayout#PARTS_FIRST_Z}.

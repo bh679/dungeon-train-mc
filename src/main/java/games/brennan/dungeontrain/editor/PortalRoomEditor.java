@@ -553,12 +553,13 @@ public final class PortalRoomEditor {
     /**
      * {@code size} with its height held to what a plot can actually show.
      *
-     * <p>Plots sit in the sky at {@link TrackSidePlots#Y_BASELINE}, so the world's build ceiling is
-     * nearer than {@link PortalRoomLayout#MAX_HEIGHT} — 70 blocks of it in a stock DT world against
-     * an authoring ceiling of 80. Without this a stepper would happily report a height the plot
-     * cannot hold, the rows above the ceiling would go nowhere, and a save would bake them back as
-     * air. The room a player is looking at is the template, so the number has to be one the plot can
-     * stand up.</p>
+     * <p>Plots sit in the sky at {@link TrackSidePlots#Y_BASELINE}, which leaves 90 blocks under a
+     * stock DT world's build ceiling — enough for the whole of {@link PortalRoomLayout#MAX_HEIGHT},
+     * so in an ordinary world this holds nothing back. It is not dead code: the plot floor is what
+     * sets the room ceiling, and at the floor's old height (250) it was 70. Without it a stepper
+     * would report a height the plot cannot hold, the rows above the ceiling would go nowhere, and a
+     * save would bake them back as air. The room a player is looking at is the template, so the
+     * number has to be one the plot can stand up.</p>
      *
      * <p>Only the editor's own ceiling. What a <b>stamped</b> room is held to is a different and
      * lower number in most worlds — the basement's, via

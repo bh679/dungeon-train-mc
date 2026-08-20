@@ -6136,7 +6136,7 @@ public final class EditorCommand {
         boolean clamped = !applied.equals(wanted);
         String note = clamped
             ? " (clamped from " + length + " " + width + " " + height
-                + " — the room must still seal the corridor mouth and fit its Y lane)"
+                + " — the room must still seal the corridor mouth, and fit under the sky)"
             : "";
         source.sendSuccess(() -> Component.literal(
             "Portal room '" + name + "' is now " + applied.getX() + " long, " + applied.getZ()
@@ -6211,7 +6211,7 @@ public final class EditorCommand {
         int value = PortalRoomEditor.axisOf(applied, axis);
         String axisName = axis.name().toLowerCase(Locale.ROOT);
         String note = value == blocks ? ""
-            : " (clamped from " + blocks + " — the room must still seal the corridor mouth and fit its Y lane)";
+            : " (clamped from " + blocks + " — the room must still seal the corridor mouth, and fit under the sky)";
         String faces = describeFaces(dims, axis, before, value);
         source.sendSuccess(() -> Component.literal(
             "Portal room '" + name + "' " + axisName + " is now " + value + note + "." + faces

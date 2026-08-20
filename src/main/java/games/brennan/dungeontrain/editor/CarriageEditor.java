@@ -42,7 +42,7 @@ public final class CarriageEditor {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    private static final int PLOT_Y = 250;
+    private static final int PLOT_Y = EditorLayout.PLOT_Y;
     private static final int PLOT_Z = 0;
     private static final int FIRST_PLOT_X = 0;
 
