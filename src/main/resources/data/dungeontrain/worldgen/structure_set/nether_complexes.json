@@ -1,12 +1,18 @@
 {
   "structures": [
-    { "structure": "dungeontrain:nether_fortress", "weight": 2 },
-    { "structure": "dungeontrain:bastion_remnant", "weight": 3 }
+    {
+      "structure": "dungeontrain:nether_fortress",
+      "weight": 2
+    },
+    {
+      "structure": "dungeontrain:bastion_remnant",
+      "weight": 3
+    }
   ],
   "placement": {
     "type": "minecraft:random_spread",
-    "spacing": 27,
-    "separation": 4,
+    "spacing": 71,
+    "separation": 11,
     "salt": 30084232
   }
 }

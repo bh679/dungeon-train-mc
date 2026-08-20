@@ -4,11 +4,16 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.util.LogFirstN;
 import games.brennan.dungeontrain.worldgen.structure.ModStructureTypes;
 import net.minecraft.server.level.WorldGenRegion;
+import net.minecraft.tags.BlockTags;
+import net.minecraft.tags.FluidTags;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.WorldGenLevel;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.level.levelgen.structure.StructurePiece;
 import net.minecraft.world.level.levelgen.structure.StructureStart;
+import net.neoforged.neoforge.common.Tags;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
@@ -23,11 +28,17 @@ import java.util.List;
  * alone it would bury a fortress it had no idea was there. The End band never had this problem — its core
  * generates empty, so {@code DisintegrationFeature} can simply stamp around whatever is already standing.
  * The Nether core is full of the overworld mountain it is about to replace, so "is this block occupied" says
- * nothing; the piece bounding boxes are the only honest answer.</p>
+ * nothing — the structures' own pieces have to say where they are.</p>
  *
  * <p>Pieces, not whole structures: a fortress's overall bounding box is mostly empty air between bridges,
  * and protecting that would leave a large netherrack-free void around it. Protecting each piece leaves the
  * fill to pack netherrack right up against the walls, which is what the real Nether looks like.</p>
+ *
+ * <p>And within a piece, blocks rather than the box — see {@link #preserves}. A piece's box is not the same
+ * thing as the piece: a bastion's templates claim their whole footprint but write {@code structure_void}
+ * over every cell they don't own (courtyards, the gaps between wings), and a {@code structure_void} cell
+ * leaves whatever was already there. Skipping the box wholesale therefore left the raised overworld
+ * mountain standing inside it, and bastions generated cased in stone.</p>
  *
  * <p>Cross-chunk pieces are covered because the chunk's structure <em>references</em> are, by definition,
  * every start whose box reaches this chunk — including starts that began in a neighbour and were written
@@ -49,10 +60,47 @@ final class BandStructureGuard {
         this.pieces = pieces;
     }
 
+    /**
+     * True if this block must survive the core fill: either a block one of the band's structures actually
+     * placed, or air it carved. False for the untouched overworld terrain that a piece's
+     * {@code structure_void} cells left sitting inside its bounding box — that is exactly what the fill
+     * should be turning into netherrack, lava or air.
+     *
+     * <p>The <em>replaceable</em> side is the one enumerated, deliberately. A block missing from this list
+     * leaves a stray stone block inside a fortress — cosmetic. A block missing from the opposite list would
+     * delete part of a bastion.</p>
+     *
+     * <p>Gravel and sand are left out even though they are genuine overworld terrain: nether ruined portals
+     * scatter gravel as part of their own design, and eating it would damage every portal to tidy a rarer
+     * blemish.</p>
+     */
+    static boolean preserves(BlockState state) {
+        if (state.isAir()) return true;              // carved by the structure — never fill it back in
+        return !isNaturalOverworldTerrain(state);
+    }
+
+    /** Terrain the overworld generator, its surface rules, its ores and its vegetation produced. */
+    private static boolean isNaturalOverworldTerrain(BlockState state) {
+        return state.is(BlockTags.BASE_STONE_OVERWORLD)      // stone, granite, diorite, andesite, tuff, deepslate
+            || state.is(BlockTags.DIRT)                      // dirt, grass block, podzol, mycelium, mud, moss
+            || state.is(BlockTags.TERRACOTTA)
+            || state.is(Tags.Blocks.ORES)
+            || state.is(Blocks.CLAY)
+            || state.is(BlockTags.SNOW)
+            || state.is(Blocks.SNOW_BLOCK)
+            || state.is(BlockTags.ICE)
+            || state.is(Blocks.POWDER_SNOW)
+            || state.getFluidState().is(FluidTags.WATER)
+            || NetherTransitionFeature.isStrippableFoliage(state);
+    }
+
     /** One column's protected Y range(s). */
     @FunctionalInterface
     interface Column {
-        /** True if this Y belongs to a band structure and must be left exactly as it is. */
+        /**
+         * True if this Y is inside one of the band's structure pieces. The caller still asks
+         * {@link #preserves} about the block itself — a piece's box covers terrain it never touched.
+         */
         boolean protects(int y);
     }
 

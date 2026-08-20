@@ -753,8 +753,10 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
             // rests pillars on the netherrack floor, and the tunnel only qualifies where rock sits above the bed.
             //
             // A band structure's own block is left exactly as its piece placed it — the fill packs
-            // netherrack right up to the walls instead of through them.
-            if (structureGuard.protects(y)) continue;
+            // netherrack right up to the walls instead of through them. Inside a piece's box the block
+            // itself decides: overworld terrain the piece never touched (its structure_void cells) is
+            // still ours to replace, or the structure ends up cased in stone.
+            if (structureGuard.protects(y) && BandStructureGuard.preserves(w.state(dx, y, dz))) continue;
             double d = density.densityAt(y);
             if (Double.isNaN(d)) continue;   // outside the sampled cell rows — leave the block untouched
             BlockState target;
@@ -786,7 +788,8 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
                 } else if (!nr) {
                     depth = SURFACE_SKIN_DEPTH;      // air/lava/other ends the skin run
                 }
-                if (nr && depth < SURFACE_SKIN_DEPTH && !structureGuard.protects(y)) {
+                if (nr && depth < SURFACE_SKIN_DEPTH
+                        && !(structureGuard.protects(y) && BandStructureGuard.preserves(w.state(dx, y, dz)))) {
                     double noise = Disintegration.coherentNoise(seed ^ NETHER_SURFACE_SKIN_SALT, worldX, y, worldZ);
                     BlockState surf = NetherSurfacePalette.surfaceBlock(coreBiome, depth, noise);
                     if (!w.isSame(dx, y, dz, surf)) { w.set(dx, y, dz, surf); changed = true; }
@@ -884,6 +887,12 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
         boolean isAir(int dx, int y, int dz) {
             if (!ensure(y)) return false;
             return section.getBlockState(dx, y - baseY, dz).isAir();
+        }
+
+        /** The block currently in this cell, or air when the Y is outside the chunk's sections. */
+        BlockState state(int dx, int y, int dz) {
+            if (!ensure(y)) return AIR;
+            return section.getBlockState(dx, y - baseY, dz);
         }
 
         /** Water (source, flowing, or waterlogged) — the cells the crossfade drains to air. */
