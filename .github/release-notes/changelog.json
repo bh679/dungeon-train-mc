@@ -7309,6 +7309,24 @@
       "released": true,
       "released_in": "v0.578.0",
       "released_at": "2026-08-20T12:54:15Z"
+    },
+    {
+      "id": "portal-room-height-80",
+      "version": "0.579.0",
+      "type": "feat",
+      "title": "Portal rooms can be built up to 80 blocks tall",
+      "summary": "The room between a portal's two corridors was capped at 11 blocks tall \u2014 not because rooms wanted to be short, but because every portal pair was parked on a Y lane a fixed 12 blocks apart. Lanes are now sized to the room standing in them, so height and lane spread trade against each other: an ordinary room keeps the full spread it always had, and a cathedral-sized one spends some of it to stand up. The editor's build platform moved down 20 blocks to make room for the taller end of the range.",
+      "highlights": [
+        "Portal rooms can be authored up to 80 blocks tall, against 11 before",
+        "Rooms shorter than 12 blocks keep exactly the collision spread they had",
+        "A room authored taller than a world can hold is now built as tall as it fits, instead of leaving that portal with nowhere to cross to",
+        "Typing a portal room size above 48 no longer bounces off the command parser"
+      ],
+      "pr": 1000,
+      "date": "2026-08-20",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
