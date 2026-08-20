@@ -130,14 +130,27 @@ public final class BakedItemStats {
     public static CompoundTag repair(ServerLevel level, BlockPos pos, CompoundTag beNbt) {
         if (level == null || beNbt == null || !containsCorrupt(beNbt)) return beNbt;
 
-        int carriageLength = Math.max(1, DungeonTrainWorldData.get(level).dims().length());
-        int tier = DifficultyProgression.levelAtWorldX(pos.getX(), carriageLength);
-        CompoundTag repaired = repairIn(beNbt, level.registryAccess(), level.getSeed(), pos, tier);
-        LOGGER.warn("[DungeonTrain] Repaired baked item stats at {} — a saved template held gear with"
-                + " impossible values (over {}). Rerolled at the tier for this position ({})."
-                + " The template itself still holds the bad values; this is the read-side repair.",
-            pos, MAX_SANE_MODIFIER, tier);
-        return repaired;
+        // Everything past this point runs only on corrupt data, which means it runs approximately
+        // never — and therefore gets approximately no exercise in play. It also sits on the template
+        // stamping path, where a throw would not spoil one chest but abort placing the structure
+        // around it. So a fault here degrades to "leave the tag alone": the player sees the silly
+        // item the template already held, which is the bug we were already living with, rather than
+        // a room that fails to build. Logged at error because a fault here is still a fault.
+        try {
+            int carriageLength = Math.max(1, DungeonTrainWorldData.get(level).dims().length());
+            int tier = DifficultyProgression.levelAtWorldX(pos.getX(), carriageLength);
+            CompoundTag repaired = repairIn(beNbt, level.registryAccess(), level.getSeed(), pos, tier);
+            LOGGER.warn("[DungeonTrain] Repaired baked item stats at {} — a saved template held gear"
+                    + " with impossible values (over {}). Rerolled at the tier for this position ({})."
+                    + " The template itself still holds the bad values; this is the read-side repair.",
+                pos, MAX_SANE_MODIFIER, tier);
+            return repaired;
+        } catch (Throwable t) {
+            LOGGER.error("[DungeonTrain] Could not repair baked item stats at {} — leaving the tag as"
+                    + " saved so the stamp still completes. The container will hold gear with"
+                    + " impossible values.", pos, t);
+            return beNbt;
+        }
     }
 
     /** Recursive half of {@link #repair}, on a tag already known to need work. */
