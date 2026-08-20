@@ -1,4 +1,8 @@
 {
+  "abandonedroom": {
+    "weight": 6,
+    "mode": "bedrock_lock"
+  },
   "backrooms": {
     "weight": 1,
     "mode": "endless_repetition/dynamic"
@@ -100,6 +104,10 @@
     "minLevel": 5,
     "mode": "endless_repetition"
   },
+  "sanemaze": {
+    "weight": 1,
+    "mode": "bedrock_lock"
+  },
   "singlepillar": {
     "weight": 4,
     "minLevel": 2,
@@ -113,6 +121,10 @@
   "trap": {
     "weight": 1,
     "minLevel": 10,
+    "mode": "bedrock_lock"
+  },
+  "upsidedown": {
+    "weight": 10,
     "mode": "bedrock_lock"
   },
   "window": {
