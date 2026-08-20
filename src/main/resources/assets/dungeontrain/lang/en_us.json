@@ -762,6 +762,7 @@
   "gui.dungeontrain.prefab_save.cancel": "Cancel",
   "subtitles.dungeontrain.train_engine": "Train engine chugs",
   "block.dungeontrain.narrative_lectern": "Narrative Lectern",
+  "block.dungeontrain.skybox_block": "Skybox Block",
   "gui.dungeontrain.developer_popup.title": "A message from the developer",
   "gui.dungeontrain.developer_popup.author": "Brennan — Dev",
   "gui.dungeontrain.developer_popup.message": "Hey! What do you think of the game? I'd love to chat with you in Discord about what you think it needs :)",

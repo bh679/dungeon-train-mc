@@ -1,13 +1,17 @@
 package games.brennan.dungeontrain.registry;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.block.SkyboxBlock;
 import games.brennan.dungeontrain.narrative.block.NarrativeLecternBlock;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
+import net.minecraft.world.level.material.MapColor;
+import net.minecraft.world.level.material.PushReaction;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -49,6 +53,36 @@ public final class ModBlocks {
         () -> new BlockItem(NARRATIVE_LECTERN.get(), new Item.Properties())
     );
 
+    /**
+     * The skybox_block: a solid, unmineable cube you see the sky through. See
+     * {@link SkyboxBlock} for the rendering technique.
+     *
+     * <p>{@code strength(-1, 3600000.8)} is vanilla's bedrock/barrier pair —
+     * negative destroy time makes it unmineable in survival (creative can still
+     * break it) and the resistance makes it blast-proof. Deliberately <b>no</b>
+     * {@code noOcclusion()}: we want vanilla to treat it as opaque so it culls
+     * neighbouring faces and whole sections behind the hole.</p>
+     */
+    public static final DeferredBlock<SkyboxBlock> SKYBOX_BLOCK = BLOCKS.register(
+        "skybox_block",
+        () -> new SkyboxBlock(
+            BlockBehaviour.Properties.of()
+                .mapColor(MapColor.COLOR_LIGHT_BLUE)
+                .strength(-1.0F, 3600000.8F)
+                .noLootTable()
+                .noTerrainParticles()
+                .isValidSpawn((state, level, pos, type) -> false)
+                .pushReaction(PushReaction.BLOCK)
+                .sound(SoundType.GLASS)
+        )
+    );
+
+    /** Matching {@link BlockItem} so the block can be placed from the creative tab. */
+    public static final DeferredItem<BlockItem> SKYBOX_BLOCK_ITEM = BLOCK_ITEMS.register(
+        "skybox_block",
+        () -> new BlockItem(SKYBOX_BLOCK.get(), new Item.Properties())
+    );
+
     private ModBlocks() {}
 
     /** Call from the mod constructor to attach both registers to the mod-event bus. */
@@ -58,13 +92,14 @@ public final class ModBlocks {
     }
 
     /**
-     * Add the narrative_lectern to the FUNCTIONAL_BLOCKS creative tab so OP
-     * playtesters can grab it next to vanilla lectern.
+     * Add DT's blocks to the FUNCTIONAL_BLOCKS creative tab so OP playtesters can
+     * grab them next to their vanilla counterparts.
      */
     @SubscribeEvent
     public static void onBuildCreativeTabs(BuildCreativeModeTabContentsEvent event) {
         if (event.getTabKey() == CreativeModeTabs.FUNCTIONAL_BLOCKS) {
             event.accept(NARRATIVE_LECTERN_ITEM.get());
+            event.accept(SKYBOX_BLOCK_ITEM.get());
         }
     }
 }
