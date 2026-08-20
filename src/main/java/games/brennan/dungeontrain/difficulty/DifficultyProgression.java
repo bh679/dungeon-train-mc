@@ -159,6 +159,26 @@ public final class DifficultyProgression {
     /** Bound on {@link #REPORTED_IMPLAUSIBLE} — a diagnostic must never become the leak it reports. */
     private static final int MAX_REPORTED_SITES = 64;
 
+    /** How far down to look for the offending frame. Deep enough to clear lambda and stream noise. */
+    private static final int MAX_WALK_DEPTH = 24;
+
+    /** This package — the frames doing the asking, never the ones holding the bug. */
+    private static final String DIFFICULTY_PACKAGE = "games.brennan.dungeontrain.difficulty.";
+
+    /** Whether {@code className} is this package's own plumbing. Pure, for unit tests. */
+    static boolean isDifficultyFrame(String className) {
+        return className.startsWith(DIFFICULTY_PACKAGE);
+    }
+
+    /**
+     * Whether a frame is worth naming as the culprit: the mod's own code, outside this package.
+     * Everything else on the stack — JDK stream internals, a test harness, a lambda trampoline —
+     * is scaffolding between the real call site and here. Pure, for unit tests.
+     */
+    static boolean isAttributableFrame(String className) {
+        return className.startsWith("games.brennan.") && !isDifficultyFrame(className);
+    }
+
     /**
      * Say — loudly, and once per call site — that something handed the difficulty frame a number
      * that is not a position.
@@ -173,14 +193,28 @@ public final class DifficultyProgression {
      * <p>The {@link StackWalker} is the whole point: the number alone says a frame is wrong, not
      * which one. It runs only on the failure branch — {@link #tierForTravelled} is called millions
      * of times a session, and the plausibility test in front of this is two comparisons.</p>
+     *
+     * <p>Package-private rather than private so a test can prove it does not throw. It runs only on
+     * the failure branch, which is the one moment a fault in it would be most expensive: a
+     * diagnostic that raises turns a loot bug into a crash.</p>
      */
-    private static void reportImplausiblePosition(int index) {
-        String caller = StackWalker.getInstance()
-            .walk(frames -> frames
-                .filter(f -> !f.getClassName().startsWith("games.brennan.dungeontrain.difficulty."))
+    static void reportImplausiblePosition(int index) {
+        String caller = StackWalker.getInstance().walk(frames -> {
+            // Everything below this frame, minus this package — the frames that could hold the bug.
+            java.util.List<StackWalker.StackFrame> outside = frames
+                .filter(f -> !isDifficultyFrame(f.getClassName()))
+                .limit(MAX_WALK_DEPTH)
+                .toList();
+            // Prefer the nearest frame that is OUR code: the immediate caller is often a lambda, a
+            // stream internal or a test-harness wrapper, and naming one of those would defeat the
+            // point of walking the stack at all.
+            return outside.stream()
+                .filter(f -> isAttributableFrame(f.getClassName()))
                 .findFirst()
+                .or(() -> outside.stream().findFirst())
                 .map(f -> f.getClassName() + "." + f.getMethodName() + ":" + f.getLineNumber())
-                .orElse("unknown"));
+                .orElse("unknown");
+        });
         // Racy against the size check, which is fine: the cap is a leak guard, not a quota.
         if (REPORTED_IMPLAUSIBLE.size() >= MAX_REPORTED_SITES || !REPORTED_IMPLAUSIBLE.add(caller)) {
             return;

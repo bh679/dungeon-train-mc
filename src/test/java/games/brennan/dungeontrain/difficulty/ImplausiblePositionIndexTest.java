@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Objects;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -77,6 +78,44 @@ final class ImplausiblePositionIndexTest {
             assertTrue(DifficultyProgression.isPlausiblePosition(index),
                 "a real carriage index must never be rejected: " + index);
         }
+    }
+
+    @Test
+    @DisplayName("the reporter survives being called — including from a stack it cannot attribute")
+    void reporter_doesNotThrow() {
+        // This runs only on the failure branch, so a fault in it would surface at the one moment it
+        // is least affordable: a diagnostic that raises turns a loot bug into a crash. Exercises the
+        // StackWalker walk, the caller-frame de-duplication and the log call's argument arity.
+        assertDoesNotThrow(() -> DifficultyProgression.reportImplausiblePosition(886_697_640));
+        // Second call for the same site takes the de-duplicated path instead.
+        assertDoesNotThrow(() -> DifficultyProgression.reportImplausiblePosition(886_697_640));
+        assertDoesNotThrow(() -> DifficultyProgression.reportImplausiblePosition(Integer.MIN_VALUE));
+    }
+
+    @Test
+    @DisplayName("the culprit named is the mod's own frame, not the scaffolding around it")
+    void attribution_prefersModFrames() {
+        // The real call sites: what the log should point at.
+        assertTrue(DifficultyProgression.isAttributableFrame(
+            "games.brennan.dungeontrain.editor.ContainerContentsRoller"));
+        assertTrue(DifficultyProgression.isAttributableFrame(
+            "games.brennan.dungeontrain.portal.PortalCarriageBuilder"));
+
+        // The frames between it and here, which would be useless to name.
+        assertFalse(DifficultyProgression.isAttributableFrame(
+            "org.junit.jupiter.api.AssertDoesNotThrow"));
+        assertFalse(DifficultyProgression.isAttributableFrame(
+            "java.util.stream.ReferencePipeline"));
+
+        // This package is doing the asking, so it is never the answer.
+        assertFalse(DifficultyProgression.isAttributableFrame(
+            "games.brennan.dungeontrain.difficulty.DifficultyProgression"));
+        assertTrue(DifficultyProgression.isDifficultyFrame(
+            "games.brennan.dungeontrain.difficulty.DifficultyApplier"));
+
+        // Which is also why the ERROR line this suite emits names a JUnit frame: the test class
+        // itself lives in the difficulty package, so it is filtered out before the preference runs.
+        // In play the nearest frame outside this package IS the mod code that passed the bad index.
     }
 
     @Test
