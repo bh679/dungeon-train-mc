@@ -385,8 +385,8 @@ public final class PortalRoomEditor {
     public static Vec3i setSize(ServerLevel overworld, String name, PortalRoomResize.Axis axis,
                                 int value, CarriageDims dims) {
         Vec3i current = plotSize(name, dims);
-        Vec3i clamped = PortalRoomLayout.clampSize(dims,
-            PortalRoomResize.with(current, axis, value));
+        Vec3i clamped = heldUnderTheSky(overworld, dims, PortalRoomLayout.clampSize(dims,
+            PortalRoomResize.with(current, axis, value)));
         applySteps(overworld, name, dims, PortalRoomResize.plan(dims, axis, current,
             PortalRoomResize.of(clamped, axis)));
 
@@ -541,13 +541,35 @@ public final class PortalRoomEditor {
      * @return the size actually applied, after clamping to what this world's corridor allows
      */
     public static Vec3i setSize(ServerLevel overworld, String name, Vec3i wanted, CarriageDims dims) {
-        Vec3i clamped = PortalRoomLayout.clampSize(dims, wanted);
+        Vec3i clamped = heldUnderTheSky(overworld, dims, PortalRoomLayout.clampSize(dims, wanted));
         applySteps(overworld, name, dims,
             PortalRoomResize.plan(dims, plotSize(name, dims), clamped));
         LOGGER.info("[DungeonTrain] Portal room '{}' plot restamped at {}x{}x{} (typed {}x{}x{})",
             name, clamped.getX(), clamped.getY(), clamped.getZ(),
             wanted.getX(), wanted.getY(), wanted.getZ());
         return clamped;
+    }
+
+    /**
+     * {@code size} with its height held to what a plot can actually show.
+     *
+     * <p>Plots sit in the sky at {@link TrackSidePlots#Y_BASELINE}, so the world's build ceiling is
+     * nearer than {@link PortalRoomLayout#MAX_HEIGHT} — 70 blocks of it in a stock DT world against
+     * an authoring ceiling of 80. Without this a stepper would happily report a height the plot
+     * cannot hold, the rows above the ceiling would go nowhere, and a save would bake them back as
+     * air. The room a player is looking at is the template, so the number has to be one the plot can
+     * stand up.</p>
+     *
+     * <p>Only the editor's own ceiling. What a <b>stamped</b> room is held to is a different and
+     * lower number in most worlds — the basement's, via
+     * {@link games.brennan.dungeontrain.portal.PortalTwinLanes#maxStructureHeight}.</p>
+     */
+    private static Vec3i heldUnderTheSky(ServerLevel overworld, CarriageDims dims, Vec3i size) {
+        int ceiling = Math.max(PortalRoomLayout.minHeight(dims),
+            overworld.getMaxBuildHeight() - TrackSidePlots.Y_BASELINE);
+        return size.getY() <= ceiling
+            ? size
+            : new Vec3i(size.getX(), ceiling, size.getZ());
     }
 
     /** Current value of {@code axis} for {@code name}. */

@@ -114,14 +114,25 @@ class PortalRoomLayoutTest {
     @Test
     @DisplayName("Height can never reach the next portal pair's Y lane")
     void maxHeight_staysClearOfTheLaneAbove() {
-        // eraseTwin sweeps one row past the structure's top, so a room of exactly TWIN_LANE_HEIGHT
-        // would erase the floor of the lane above it.
-        assertTrue(PortalRoomLayout.MAX_HEIGHT < PortalRoomLayout.TWIN_LANE_HEIGHT,
-            "MAX_HEIGHT " + PortalRoomLayout.MAX_HEIGHT
-                + " must stay under TWIN_LANE_HEIGHT " + PortalRoomLayout.TWIN_LANE_HEIGHT);
+        // eraseTwin sweeps one row past the structure's top, so a lane of exactly the room's height
+        // would erase the floor of the lane above it. The spacing is a function of the room now, so
+        // the guarantee is per height rather than against one constant.
+        for (int h = PortalRoomLayout.MIN_HEIGHT; h <= PortalRoomLayout.MAX_HEIGHT; h++) {
+            assertTrue(PortalTwinLanes.laneHeight(h) > h,
+                "a room of " + h + " must not reach the lane above it");
+        }
         // Even a world whose carriages are taller than a lane cannot produce an illegal floor.
         CarriageDims veryTall = CarriageDims.clamp(9, 7, CarriageDims.MAX_HEIGHT);
         assertTrue(PortalRoomLayout.minHeight(veryTall) <= PortalRoomLayout.MAX_HEIGHT);
+    }
+
+    @Test
+    @DisplayName("The authoring ceiling is what a stock world can very nearly stand up")
+    void maxHeight_isTheAuthoringCeiling() {
+        assertEquals(80, PortalRoomLayout.MAX_HEIGHT);
+        // What a stock DT preset (basement 80, floor -48, bedrock 32) actually holds. A room asked
+        // for taller than this is stamped at this instead — see PortalCarriageBuilder.
+        assertEquals(77, PortalTwinLanes.maxStructureHeight(-48, 32));
     }
 
     @Test
