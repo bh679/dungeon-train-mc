@@ -416,7 +416,9 @@ public final class EditorCommand {
                 .then(mirrorAxisNode("x"))
                 .then(mirrorAxisNode("y"))
                 .then(mirrorAxisNode("z"))
-                .then(mirrorAxisNode("v")))
+                .then(mirrorAxisNode("v"))
+                .then(Commands.literal("rebuild")
+                    .executes(ctx -> runMirrorRebuild(ctx.getSource()))))
             .then(attachTrackVariantNodes(Commands.literal("tracks")
                 .executes(ctx -> runEnterCategory(ctx.getSource(), EditorCategory.TRACKS))))
             // PORTALS takes the same (kind, name) variant subcommands — the pocket room is a
@@ -1014,6 +1016,45 @@ public final class EditorCommand {
             ).withStyle(ChatFormatting.RED));
             return 0;
         }
+    }
+
+    /**
+     * Re-mirror the plot the player is standing in from its authored master
+     * octant — {@code /dungeontrain editor mirror rebuild}, also the X-menu's
+     * Mirror → Rebuild row.
+     *
+     * <p>This used to happen implicitly inside every editor {@code save()},
+     * which made saving destructive: deliberate asymmetry (and anything placed
+     * by a path the live mirror handlers never see — clipboard paste,
+     * {@code /fill}, edits made before the axis was toggled on) was silently
+     * overwritten from the master. Saving now captures the plot as it stands,
+     * and the rebuild happens only when asked for here.</p>
+     *
+     * <p>World-only: the author still hits Save to capture the result.</p>
+     */
+    private static int runMirrorRebuild(CommandSourceStack source) {
+        ServerPlayer player = source.getPlayer();
+        if (player == null) {
+            source.sendFailure(Component.literal("This command must be run by a player."));
+            return 0;
+        }
+        CarriageDims dims = DungeonTrainWorldData.get(player.serverLevel()).dims();
+        games.brennan.dungeontrain.editor.BlockVariantPlot plot =
+            games.brennan.dungeontrain.editor.BlockVariantPlot.resolveAt(player, dims);
+        if (plot == null) {
+            source.sendFailure(Component.literal("Stand inside an editor plot to rebuild its mirror.")
+                .withStyle(ChatFormatting.RED));
+            return 0;
+        }
+        if (!games.brennan.dungeontrain.editor.EditorMirrorRebuild.run(player.serverLevel(), plot)) {
+            source.sendFailure(Component.literal(
+                "Editor: no mirror axis is on for this plot — turn on X, Y or Z first.")
+                .withStyle(ChatFormatting.RED));
+            return 0;
+        }
+        source.sendSuccess(() -> Component.literal("Editor: mirrored " + plot.key() + " from master")
+            .withStyle(ChatFormatting.GREEN), true);
+        return 1;
     }
 
     /** Brigadier subtree: {@code <axis> on|off} → {@link #runMirrorAtPosition} (position-resolved). */
@@ -6096,12 +6137,17 @@ public final class EditorCommand {
         return Commands.literal(literal)
             .then(Commands.literal("inc").executes(ctx -> runPortalRoomSizeStep(ctx.getSource(), axis, +1)))
             .then(Commands.literal("dec").executes(ctx -> runPortalRoomSizeStep(ctx.getSource(), axis, -1)))
-            // Loosest floor of any axis, not the length's — this node is shared by length, width
-            // and height, and a parser bound is a silent rejection where clampSize is a visible
-            // one. PortalRoomLayout.clampSize stays the single authority on what is legal.
+            // Loosest floor AND ceiling of any axis, not the length's — this node is shared by
+            // length, width and height, and a parser bound is a silent rejection where clampSize is
+            // a visible one. PortalRoomLayout.clampSize stays the single authority on what is legal.
+            //
+            // The ceiling was MAX_LENGTH (48), which was fine while every axis capped there; height
+            // now goes to MAX_HEIGHT (80), and `portals height 70` was refused by the parser with
+            // "Integer must not be more than 48" before the clamp could say anything.
             .then(Commands.argument("blocks", IntegerArgumentType.integer(
                     Math.min(PortalRoomLayout.MIN_LENGTH, PortalRoomLayout.MIN_HEIGHT),
-                    PortalRoomLayout.MAX_LENGTH))
+                    Math.max(PortalRoomLayout.MAX_LENGTH,
+                        Math.max(PortalRoomLayout.MAX_WIDTH, PortalRoomLayout.MAX_HEIGHT))))
                 .executes(ctx -> runPortalRoomSize(ctx.getSource(), axis,
                     IntegerArgumentType.getInteger(ctx, "blocks"))));
     }
@@ -6131,7 +6177,7 @@ public final class EditorCommand {
         boolean clamped = !applied.equals(wanted);
         String note = clamped
             ? " (clamped from " + length + " " + width + " " + height
-                + " — the room must still seal the corridor mouth and fit its Y lane)"
+                + " — the room must still seal the corridor mouth, and fit under the sky)"
             : "";
         source.sendSuccess(() -> Component.literal(
             "Portal room '" + name + "' is now " + applied.getX() + " long, " + applied.getZ()
@@ -6206,7 +6252,7 @@ public final class EditorCommand {
         int value = PortalRoomEditor.axisOf(applied, axis);
         String axisName = axis.name().toLowerCase(Locale.ROOT);
         String note = value == blocks ? ""
-            : " (clamped from " + blocks + " — the room must still seal the corridor mouth and fit its Y lane)";
+            : " (clamped from " + blocks + " — the room must still seal the corridor mouth, and fit under the sky)";
         String faces = describeFaces(dims, axis, before, value);
         source.sendSuccess(() -> Component.literal(
             "Portal room '" + name + "' " + axisName + " is now " + value + note + "." + faces

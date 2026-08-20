@@ -54,6 +54,35 @@ public final class PortalRoomSizes {
             : PortalRoomLayout.builtInSize(dims);
     }
 
+    /**
+     * The tallest room this world knows how to stamp, in blocks — what {@link PortalTwinLanes} sizes
+     * its lanes on.
+     *
+     * <p>Deliberately the tallest rather than each pair's own. A lane is only a lane if every pair
+     * agrees where it is, so the spacing has to be one number for the world, and the only safe one is
+     * the largest room any pair could roll. A world of short rooms therefore keeps every lane it had;
+     * one that authors a tall room spends lanes on it, for its short rooms too.</p>
+     *
+     * <p>Floored at the built-in room, which is what a name with no entry would stamp.</p>
+     *
+     * <p>It can grow mid-session: sizes land here as templates load, so a taller room coming into
+     * view widens the spacing and moves every lane under it. Structures already stamped at the old
+     * spacing are left where they are — under the bedrock, where nothing can see or reach them — and
+     * the train stamps correct ones as it drifts. That is the accepted cost of not pinning the
+     * spacing to a constant.</p>
+     */
+    public static int tallestKnown(CarriageDims dims) {
+        int tallest = PortalRoomLayout.builtInSize(dims).getY();
+        for (Map.Entry<String, Vec3i> e : SIZES.entrySet()) {
+            if (PENDING.containsKey(e.getKey())) continue;
+            tallest = Math.max(tallest, PortalRoomLayout.clampSize(dims, e.getValue()).getY());
+        }
+        for (Vec3i pending : PENDING.values()) {
+            tallest = Math.max(tallest, PortalRoomLayout.clampSize(dims, pending).getY());
+        }
+        return tallest;
+    }
+
     /** Editor override — the plot restamps at this size until the next save bakes it in. */
     public static void pending(String name, Vec3i size) {
         if (name == null || size == null) return;

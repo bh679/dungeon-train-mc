@@ -22,9 +22,10 @@ import java.util.List;
  *   <li>{@link #mirrorEditLive} — live, as the author adds / removes a variant
  *       (called from {@link VariantBlockInteractions} and
  *       {@link VariantBlockBreakHandler}); and</li>
- *   <li>{@link #rebuildFromMaster} — a save-time backstop run from each editor's
- *       {@code save()} that makes the far half's pools an exact reflection of
- *       the authored low-octant master, regardless of edit history.</li>
+ *   <li>{@link #rebuildFromMaster} — an on-demand rebuild run from
+ *       {@link EditorMirrorRebuild} (the {@code editor mirror rebuild} command)
+ *       that makes the far half's pools an exact reflection of the authored
+ *       low-octant master, regardless of edit history.</li>
  * </ul>
  *
  * <p>Both are gated on {@code plot.mirrorVariants() && (mirrorX|Y|Z)} — with the
@@ -80,7 +81,7 @@ public final class EditorVariantMirror {
 
     /**
      * Rebuild the far-half variant pools from the authored low-octant master,
-     * reflecting across the enabled axes. Run from each editor's {@code save()}
+     * reflecting across the enabled axes. Run from {@link EditorMirrorRebuild}
      * <em>before</em> the structural {@link EditorMirror#rebuildFromMaster}: it
      * writes (or clears) the far cells' pools + base blocks, after which the
      * caller recomputes its marker set so the structural pass skips the

@@ -6,6 +6,7 @@ import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.EndIslandGeometry;
+import games.brennan.dungeontrain.worldgen.NetherCoreGeometry;
 import games.brennan.dungeontrain.worldgen.NetherBand;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import games.brennan.dungeontrain.worldgen.density.EndCoreBiomes;
@@ -107,9 +108,15 @@ public final class NetherBandContextEvents {
             // stamps, and what BandEndCityStructure stands its End cities on. Null with no End dimension.
             EndIslandGeometry.Source endIslands = EndIslandGeometry.Source.resolve(server, bedY);
 
+            // The Nether's terrain density translated onto track level — the netherrack/lava/air shape the
+            // Nether band's core stamps, and what the Band*Structure classes site fortresses, bastions,
+            // fossils and ruined portals into. Null with no Nether dimension.
+            NetherCoreGeometry.Source netherCore = NetherCoreGeometry.Source.resolve(server, bedY);
+
             NetherBandContext.publish(new NetherBandContext(
                     enabled, data.getGenerationSeed(), seaLevel, worldCeiling, netherTop, baseRelief, cycle,
-                    overworldBiomeSource, highlandBiomes, netherCoreBiomes, endCoreBiomes, endIslands));
+                    overworldBiomeSource, highlandBiomes, netherCoreBiomes, endCoreBiomes, endIslands,
+                    netherCore));
             // Intermediate per-dimension-load republishes log at debug to avoid 3+ identical
             // info lines per start; the ServerStarted refresh logs the final snapshot at info.
             if (logInfo) {

@@ -21,6 +21,7 @@ import games.brennan.dungeontrain.train.CarriagePlacer;
 import games.brennan.dungeontrain.train.TrainMembership;
 import games.brennan.dungeontrain.train.CarriageVariant;
 import games.brennan.dungeontrain.worldgen.SilentBlockOps;
+import games.brennan.dungeontrain.worldgen.WorldFloor;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Vec3i;
@@ -739,10 +740,30 @@ public final class PortalCarriageBuilder {
             PortalExitSites.seedFor(level.getSeed(), pairKey, roomName),
             PortalRoomTiling.MAX_RADIUS);
         return new PortalStructure(entryOrigin, roomName,
-            PortalRoomTemplateStore.sizeOf(level, roomName, dims),
+            heldUnderTheWorld(level, PortalRoomTemplateStore.sizeOf(level, roomName, dims)),
             settings,
             PortalRoomTiling.base(), PortalExitCopies.NONE, exitTile,
             PortalCarriageSelection.corridorKindFor(level, pairKey));
+    }
+
+    /**
+     * {@code size} with its height held down to what this world's basement can stand up.
+     *
+     * <p>A template's size is validated as a <b>floor</b> — {@code TrackKind.freeSizeAboveFloor} —
+     * so nothing upstream stops a room being authored taller than the world it is loaded into can
+     * hold, and an unheld one would fail {@code ensureStructure}'s fit check and leave the pair with
+     * no twin at all: a portal carriage that looks ordinary and never crosses. Held here instead, it
+     * stamps as tall as the world allows and the crossing works.</p>
+     *
+     * <p>Held on the way onto the record, not at stamp time, so {@code eraseTwin} reads back the
+     * same box that was written.</p>
+     */
+    private static Vec3i heldUnderTheWorld(ServerLevel level, Vec3i size) {
+        int ceiling = PortalTwinLanes.maxStructureHeight(
+            level.getMinBuildHeight(), WorldFloor.bedrockY(level));
+        return size.getY() <= ceiling
+            ? size
+            : new Vec3i(size.getX(), ceiling, size.getZ());
     }
 
     /**

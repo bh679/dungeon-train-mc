@@ -19,6 +19,13 @@ package games.brennan.dungeontrain.portal;
  * any more. Spreading pairs over {@link #MAX_LANES} heights makes a collision need both the same
  * lane and overlapping X.</p>
  *
+ * <p><b>How many lanes is a question about the room and the dimension, not a constant.</b> Spacing
+ * used to be a fixed twelve blocks, which capped an authored room at eleven — the ceiling was really
+ * "whatever fits under the next lane". {@link #laneHeight} sizes a lane to the structure instead and
+ * {@link #usableLanes} divides the basement the current dimension actually has by it, so the same
+ * eighty blocks give a default room the six lanes it always had and a very tall room one. Height and
+ * lanes are the two ends of one budget, and this is where they trade.</p>
+ *
  * <p>Lanes go in Y rather than Z deliberately: the whole loading guarantee is that a twin sits in its
  * carriage's <b>chunk columns</b>, and Y is the one axis that cannot take it out of them.</p>
  *
@@ -47,24 +54,58 @@ public final class PortalTwinLanes {
     /** Distinct heights pairs are spread over, when the basement is deep enough to hold them all. */
     public static final int MAX_LANES = 6;
 
-    /** Vertical spacing between lanes — no part of one structure reaches into the lane above. */
-    public static final int LANE_HEIGHT = PortalRoomLayout.TWIN_LANE_HEIGHT;
+    /**
+     * Vertical spacing between lanes for a structure of {@code structureHeight} — one block more than
+     * the structure itself, so no part of one reaches into the lane above.
+     *
+     * <p>The spare row is not slack: {@code eraseTwin} sweeps one row past a structure's top, so a
+     * spacing of exactly {@code structureHeight} would have each lane's erase take the floor out of
+     * the lane above it.</p>
+     */
+    public static int laneHeight(int structureHeight) {
+        return structureHeight + 1;
+    }
 
     /**
-     * How many lanes fit between the build floor and the bedrock, capped at {@link #MAX_LANES}.
+     * The tallest structure this world's basement can stand up, in blocks.
+     *
+     * <p>The bottom lane's floor is {@link #floorY} and the structure has to stay strictly under the
+     * bedrock ({@link #fitsUnderWorld}), so the basement's depth less the floor margin and that one
+     * row is the whole of it — 77 in every stock DT preset, which keeps 80 blocks of basement.
+     * Capped at {@link PortalRoomLayout#MAX_HEIGHT} so a deeper dimension does not exceed what an
+     * author can express.</p>
+     *
+     * <p>A world with no basement — Compatible Terrain runs vanilla's dimension type, whose floor and
+     * bedrock are the same row — has nothing to measure, so it gets the authoring ceiling and the
+     * caller's other fit checks (clear of the train, clear of the build ceiling) decide alone, which
+     * is exactly what those worlds did before the basement existed.</p>
+     */
+    public static int maxStructureHeight(int worldMinY, int bedrockY) {
+        int floor = floorY(worldMinY);
+        if (bedrockY <= floor) return PortalRoomLayout.MAX_HEIGHT;
+        return Math.max(1, Math.min(PortalRoomLayout.MAX_HEIGHT, bedrockY - floor - 1));
+    }
+
+    /**
+     * How many lanes a structure of {@code structureHeight} fits between the build floor and the
+     * bedrock, capped at {@link #MAX_LANES}.
      *
      * <p>Measured against the <b>bedrock</b> rather than the train, so no lane can put a structure
      * up through the world's floor and into terrain a player is standing on. A world with no
      * basement — Compatible Terrain mode runs vanilla's dimension type, whose floor and bedrock are
      * the same row — yields one lane at the old height, which is exactly the behaviour those worlds
      * had before the basement existed.</p>
+     *
+     * <p>{@code structureHeight} is the tallest structure the <b>world</b> may stamp rather than the
+     * one pair's own, because a lane is only a lane if every pair agrees where it is; see
+     * {@code PortalRoomSizes.tallestKnown}.</p>
      */
-    public static int usableLanes(int worldMinY, int bedrockY) {
+    public static int usableLanes(int worldMinY, int bedrockY, int structureHeight) {
         int floor = floorY(worldMinY);
         // A lane is usable only if a full-height structure in it still clears the bedrock.
-        int headroom = bedrockY - floor - PortalRoomLayout.MAX_HEIGHT;
+        int headroom = bedrockY - floor - structureHeight;
         if (headroom < 0) return 1;
-        return Math.max(1, Math.min(MAX_LANES, headroom / LANE_HEIGHT + 1));
+        return Math.max(1, Math.min(MAX_LANES, headroom / laneHeight(structureHeight) + 1));
     }
 
     /** Floor of the lowest lane. */
@@ -75,16 +116,21 @@ public final class PortalTwinLanes {
     /**
      * The floor height for a pair's structure.
      *
+     * <p>{@code structureHeight} sizes the lanes — see {@link #usableLanes} for why it is the
+     * world's tallest room rather than this pair's.</p>
+     *
      * <p>The lane comes from the <b>group ordinal</b>, not the raw pair key. A pair is keyed on its
      * group's anchor, which is always a multiple of the group size — so keying the lane on it
      * directly would give every pair in the world the same remainder, land them all in lane 0, and
      * reinstate the overlapping-structures bug the lanes exist to prevent. Dividing first makes
      * consecutive portal groups take consecutive lanes, which is what the spread wants.</p>
      */
-    public static int twinFloorY(int worldMinY, int bedrockY, int pairKey, int groupSize) {
+    public static int twinFloorY(int worldMinY, int bedrockY, int pairKey, int groupSize,
+                                 int structureHeight) {
         long lane = Math.floorDiv((long) pairKey, Math.max(1, groupSize));
-        int lanes = usableLanes(worldMinY, bedrockY);
-        return floorY(worldMinY) + (int) Math.floorMod(lane, (long) lanes) * LANE_HEIGHT;
+        int lanes = usableLanes(worldMinY, bedrockY, structureHeight);
+        return floorY(worldMinY)
+            + (int) Math.floorMod(lane, (long) lanes) * laneHeight(structureHeight);
     }
 
     /**

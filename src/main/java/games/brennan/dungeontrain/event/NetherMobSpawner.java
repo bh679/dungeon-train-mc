@@ -19,7 +19,10 @@ import net.minecraft.world.level.biome.Biomes;
 import net.minecraft.world.phys.AABB;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import games.brennan.dungeontrain.worldgen.structure.BandStructureSpawns;
+import net.minecraft.world.entity.MobCategory;
 import net.neoforged.neoforge.event.entity.living.FinalizeSpawnEvent;
+import net.neoforged.neoforge.event.entity.living.MobSpawnEvent;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
 
 import java.util.List;
@@ -207,7 +210,32 @@ public final class NetherMobSpawner {
         if (!level.dimension().equals(Level.OVERWORLD)) return;
         int x = (int) Math.floor(event.getX());
         if (NetherBand.heightRampAt(level, x) > 0.0 && DisintegrationBand.middleRampAt(level, x) <= 0.0) {
+            // A Nether fortress runs its own roster through its spawn_overrides, exactly as it does in the
+            // Nether. Blanket-cancelling the band would eat those too, and the fortresses would stand empty.
+            BlockPos pos = BlockPos.containing(event.getX(), event.getY(), event.getZ());
+            if (BandStructureSpawns.inMonsterSpawningStructure(level, pos)) return;
             event.setSpawnCancelled(true);
+        }
+    }
+
+    /**
+     * Inside a band structure that defines its own monster spawns, let the placement check pass the way it
+     * would in the Nether.
+     *
+     * <p>Wither skeletons and skeletons spawn through {@code Monster.checkMonsterSpawnRules}, which refuses
+     * under sky light. The real Nether has none, so the rule never bites there; the band core lies under the
+     * overworld sky, so without this the open half of a fortress stays empty all day while the enclosed half
+     * fills up. The spawn <em>list</em> is still the fortress's own, so allowing the check can only admit
+     * the mobs that belong there.</p>
+     */
+    @SubscribeEvent
+    public static void onSpawnPlacementCheck(MobSpawnEvent.SpawnPlacementCheck event) {
+        MobSpawnType type = event.getSpawnType();
+        if (type != MobSpawnType.NATURAL && type != MobSpawnType.CHUNK_GENERATION) return;
+        if (event.getEntityType().getCategory() != MobCategory.MONSTER) return;
+        ServerLevel level = event.getLevel().getLevel();
+        if (BandStructureSpawns.inMonsterSpawningStructure(level, event.getPos())) {
+            event.setResult(MobSpawnEvent.SpawnPlacementCheck.Result.SUCCEED);
         }
     }
 

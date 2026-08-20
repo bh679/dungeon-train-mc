@@ -47,6 +47,7 @@ pack must list them explicitly. Everything else is a manifest file with a `requi
 | Mouse Tweaks | `60089` | off (opt-in) | Inventory QoL (shift-drag / scroll-to-move). **Pinned**. |
 | Distant Horizons | `508933` | off (opt-in) | LOD render distance. **Use 2.x** — 3.0.x crashes the JVM on DT world entry. **Pinned** to a 2.x file. |
 | Tectonic | `686836` | off (opt-in) | Terrain generator. Needs **Compatible Terrain** ON in DT settings to take effect; its **Lithostitched** dependency ships enabled (above). **Pinned**. |
+| Effortless Building | `302113` | off (opt-in) | Client-side building QoL (multi-block placement modes, mirror / array / radial). No dependencies. **Pinned** (4.2 — one multi-loader jar covers Fabric + NeoForge). |
 
 …plus NeoForge as the modloader (`neoforge-<neo_version>`) and the Minecraft version,
 both read from `gradle.properties`.
@@ -88,7 +89,7 @@ flag straight into the manifest:
   (CreativeCore — AmbientSounds is on; Iceberg — AP is on) and so enabling an opt-in stays
   one-click (Lithostitched — Tectonic is off, but its lib is already present).
 - **Bundled but off by default (`required:false`)** — Mouse Tweaks, Distant Horizons,
-  Tectonic. Shipped in the pack so a player can flip them on with one click, but inert until they
+  Tectonic, Effortless Building. Shipped in the pack so a player can flip them on with one click, but inert until they
   do. (DT itself + Sable are hardcoded `required:true` in the builder.)
 
 ## Declared dependencies (CurseForge "Relations")
