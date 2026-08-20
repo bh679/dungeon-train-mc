@@ -7259,6 +7259,21 @@
       "released": true,
       "released_in": "v0.575.0",
       "released_at": "2026-08-19T16:00:27Z"
+    },
+    {
+      "id": "impossible-item-stats-guard",
+      "version": "0.576.0",
+      "type": "fix",
+      "title": "Loot can no longer roll items with impossible stats",
+      "summary": "A chest could hand you gear with absurd stat values \u2014 a diamond chestplate with over four million armour. The difficulty scaling behind item stats now rejects any position that could not exist on the track, so loot rolls at the tier of where you actually are. Gear you find deep in a run still scales exactly as it did.",
+      "highlights": [
+        "Items can no longer generate with impossible stat values",
+        "Loot difficulty is read from your real position on the track"
+      ],
+      "date": "2026-08-20",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
