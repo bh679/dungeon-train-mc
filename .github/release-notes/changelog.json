@@ -7294,6 +7294,21 @@
       "released": true,
       "released_in": "v0.577.0",
       "released_at": "2026-08-20T11:59:47Z"
+    },
+    {
+      "id": "effortless-building-optional",
+      "version": "0.578.0",
+      "type": "chore",
+      "title": "Effortless Building now bundled in the modpack (off by default)",
+      "summary": "The Dungeon Train modpack now ships Effortless Building alongside the rest of the pack, switched off. Flip it on in the launcher's mod list if you want its building tools \u2014 multi-block placement, mirrors and arrays \u2014 while you build out your train.",
+      "highlights": [
+        "Effortless Building included in the pack, disabled by default \u2014 one click to enable"
+      ],
+      "pr": 999,
+      "date": "2026-08-20",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
