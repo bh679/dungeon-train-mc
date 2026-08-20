@@ -7264,11 +7264,12 @@
       "id": "impossible-item-stats-guard",
       "version": "0.576.0",
       "type": "fix",
-      "title": "Loot can no longer roll items with impossible stats",
-      "summary": "A chest could hand you gear with absurd stat values \u2014 a diamond chestplate with over four million armour. The difficulty scaling behind item stats now rejects any position that could not exist on the track, so loot rolls at the tier of where you actually are. Gear you find deep in a run still scales exactly as it did.",
+      "title": "Portal room chests no longer hold gear with impossible stats",
+      "summary": "A Train Dimension room could hand you gear with absurd stat values \u2014 a diamond chestplate with over four million armour. The items were stored inside the room itself, so they turned up for everyone who found that chest. Affected rooms are repaired, and any room still holding such an item now rolls it again at the difficulty of where you found it, so it arrives as ordinary loot. Gear you find deep in a run still scales exactly as it did.",
       "highlights": [
-        "Items can no longer generate with impossible stat values",
-        "Loot difficulty is read from your real position on the track"
+        "Fixed a Train Dimension room that held gear with impossible stat values",
+        "Rooms still holding such an item now reroll it as ordinary loot",
+        "Items can no longer be generated with impossible stats in the first place"
       ],
       "date": "2026-08-20",
       "released": false,
