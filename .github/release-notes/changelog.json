@@ -7273,9 +7273,9 @@
       ],
       "pr": 996,
       "date": "2026-08-20",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.576.0",
+      "released_at": "2026-08-20T10:57:57Z"
     },
     {
       "id": "nether-band-structures",
