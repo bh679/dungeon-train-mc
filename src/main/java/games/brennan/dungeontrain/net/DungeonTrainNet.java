@@ -156,6 +156,7 @@ public final class DungeonTrainNet {
         registrar.playToServer(BuilderDirtyRequestPacket.TYPE, BuilderDirtyRequestPacket.STREAM_CODEC, BuilderDirtyRequestPacket::handle);
         registrar.playToServer(BuilderRoomSizePacket.TYPE, BuilderRoomSizePacket.STREAM_CODEC, BuilderRoomSizePacket::handle);
         registrar.playToServer(BuilderStructureModePacket.TYPE, BuilderStructureModePacket.STREAM_CODEC, BuilderStructureModePacket::handle);
+        registrar.playToServer(BuilderStructureRefreshPacket.TYPE, BuilderStructureRefreshPacket.STREAM_CODEC, BuilderStructureRefreshPacket::handle);
         registrar.playToClient(BuilderDirtyPacket.TYPE, BuilderDirtyPacket.STREAM_CODEC, BuilderDirtyPacket::handle);
         registrar.playToServer(BuilderSavePacket.TYPE, BuilderSavePacket.STREAM_CODEC, BuilderSavePacket::handle);
         registrar.playToServer(BuilderNewPacket.TYPE, BuilderNewPacket.STREAM_CODEC, BuilderNewPacket::handle);

@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.builder.BuilderTrackBuild;
 import games.brennan.dungeontrain.builder.BuilderWorldLayout;
 import games.brennan.dungeontrain.builder.BuilderWorldSetup;
 import games.brennan.dungeontrain.builder.structure.BuilderStructureMode;
+import games.brennan.dungeontrain.builder.structure.BuilderStructureRefresh;
 import games.brennan.dungeontrain.client.builder.BuilderBoundsState;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriageVariantRegistry;
@@ -63,8 +64,8 @@ import java.util.List;
 public record BuilderBoundsPacket(List<BoundingBox> volumes, String modeId, String buildName,
                                   int mirrorMask, String subTypeId, String partKindId,
                                   String stageId, int weight, String trackKindId,
-                                  String structureModeId, int parked, String variantId,
-                                  CarriageDims dims)
+                                  String structureModeId, String structureRefreshId,
+                                  int parked, String variantId, CarriageDims dims)
         implements CustomPacketPayload {
 
     /** Guards against a malformed or hostile payload allocating an unbounded list. */
@@ -84,6 +85,7 @@ public record BuilderBoundsPacket(List<BoundingBox> volumes, String modeId, Stri
                 buf.writeUtf(packet.stageId, 32);
                 buf.writeUtf(packet.trackKindId, 32);
                 buf.writeUtf(packet.structureModeId, 16);
+                buf.writeUtf(packet.structureRefreshId, 16);
                 buf.writeUtf(packet.variantId, 64);
                 buf.writeVarInt(Math.max(0, packet.parked));
                 buf.writeVarInt(packet.dims.length());
@@ -106,6 +108,7 @@ public record BuilderBoundsPacket(List<BoundingBox> volumes, String modeId, Stri
                 String stageId = buf.readUtf(32);
                 String trackKindId = buf.readUtf(32);
                 String structureModeId = buf.readUtf(16);
+                String structureRefreshId = buf.readUtf(16);
                 String variantId = buf.readUtf(64);
                 int parked = buf.readVarInt();
                 // Clamped, not trusted: these size every loop the structure renderer runs, and a
@@ -122,7 +125,7 @@ public record BuilderBoundsPacket(List<BoundingBox> volumes, String modeId, Stri
                 }
                 return new BuilderBoundsPacket(boxes, modeId, buildName, mirrorMask,
                         subTypeId, partKindId, stageId, weight, trackKindId,
-                        structureModeId, parked, variantId, dims);
+                        structureModeId, structureRefreshId, parked, variantId, dims);
             }
         );
 
@@ -138,7 +141,8 @@ public record BuilderBoundsPacket(List<BoundingBox> volumes, String modeId, Stri
             // only ever placeholder — but it has to be a *valid* placeholder, since the codec reads
             // it back on the other side.
             return new BuilderBoundsPacket(List.of(), "", "", 0, "", "", "", -1, "",
-                    BuilderStructureMode.DEFAULT.id(), 0, "", CarriageDims.DEFAULT);
+                    BuilderStructureMode.DEFAULT.id(), BuilderStructureRefresh.DEFAULT.id(),
+                    0, "", CarriageDims.DEFAULT);
         }
         DungeonTrainWorldData data = DungeonTrainWorldData.get(overworld);
         String modeId = data.builderMode() == null ? "" : data.builderMode();
@@ -153,6 +157,7 @@ public record BuilderBoundsPacket(List<BoundingBox> volumes, String modeId, Stri
                 orEmpty(data.builderSubType()), orEmpty(data.builderPartKind()),
                 orEmpty(data.builderStage()), weightOf(data), orEmpty(data.builderTrackKind()),
                 BuilderStructureMode.orDefault(data.builderStructureMode()).id(),
+                BuilderStructureRefresh.orDefault(data.builderStructureRefresh()).id(),
                 BuilderWorldSetup.parkedCarriages(data), orEmpty(data.builderVariant()),
                 data.dims());
     }

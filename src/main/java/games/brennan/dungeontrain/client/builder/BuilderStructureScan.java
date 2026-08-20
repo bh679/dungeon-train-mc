@@ -6,6 +6,7 @@ import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.longs.LongSets;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.builder.BuilderBounds;
+import games.brennan.dungeontrain.builder.structure.BuilderOpenTemplate;
 import games.brennan.dungeontrain.builder.structure.BuilderStructure;
 import games.brennan.dungeontrain.builder.structure.BuilderStructureCells;
 import games.brennan.dungeontrain.builder.structure.BuilderStructureNeeds;
@@ -16,6 +17,7 @@ import net.minecraft.core.Vec3i;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.Level;
+import games.brennan.dungeontrain.train.CarriageDims;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
@@ -231,14 +233,29 @@ public final class BuilderStructureScan {
         MinecraftServer server = Minecraft.getInstance().getSingleplayerServer();
         long seed = server == null ? 0L : server.overworld().getSeed();
         List<BoundingBox> volumes = BuilderBoundsState.volumes();
-        // Only a room needs the build read back, and only a room should pay for it: this walks the
-        // whole build volume, which for the largest room is 25 000 block lookups a sweep.
-        if (volumes.isEmpty() || !BuilderBoundsState.isRoomOpen()) {
-            return new BuilderStructureCells.Sources(blocks, BuilderBoundsState.dims(), seed);
+        CarriageDims dims = BuilderBoundsState.dims();
+        if (volumes.isEmpty()) {
+            return new BuilderStructureCells.Sources(blocks, dims, seed);
         }
         BoundingBox box = volumes.get(0);
-        return new BuilderStructureCells.Sources(blocks, BuilderBoundsState.dims(), seed,
-                liveCells(box), BuilderBounds.sizeOf(box));
+        // A room's copies are copies of the room, and always have been — no control gates them.
+        if (BuilderBoundsState.isRoomOpen()) {
+            return new BuilderStructureCells.Sources(blocks, dims, seed,
+                    liveCells(box), BuilderBounds.sizeOf(box));
+        }
+        BuilderOpenTemplate open =
+                BuilderStructureNeeds.openTemplateFor(BuilderBoundsState.context());
+        if (open == null) {
+            return new BuilderStructureCells.Sources(blocks, dims, seed);
+        }
+        // Identity always, live blocks only when something is going to read them: the walk is the
+        // cost, and name-locking a run needs the name rather than the blocks.
+        boolean substitute = volumes.size() == 1
+                && BuilderBoundsState.structureRefresh().substitutes();
+        return new BuilderStructureCells.Sources(blocks, dims, seed,
+                substitute ? liveCells(box) : Map.of(),
+                substitute ? BuilderBounds.sizeOf(box) : Vec3i.ZERO,
+                open, substitute);
     }
 
     /**

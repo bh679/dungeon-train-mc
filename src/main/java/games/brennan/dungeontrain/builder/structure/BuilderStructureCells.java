@@ -64,9 +64,27 @@ public final class BuilderStructureCells {
      * variant each tile rolls, and the dimensions decide how wide a slice is. Without them, opening
      * a second builder world in the same session would serve it the first one's line.</p>
      */
-    private record CacheKey(BuilderStructure.Kind kind, long worldSeed, CarriageDims dims) {}
+    private record CacheKey(BuilderStructure.Kind kind, long worldSeed, CarriageDims dims,
+                           BuilderOpenTemplate open) {}
 
     private static final Map<CacheKey, Map<BlockPos, BlockState>> CACHE = new ConcurrentHashMap<>();
+
+    /**
+     * One stored template, by the store and name it was read from.
+     *
+     * <p>A second cache under {@link #CACHE}, and it exists because of instant updates. While the
+     * open build is standing in for its own template, a composite kind can no longer be cached whole
+     * — a run of tiles has to be reassembled every sweep in case one of them is the open one. Without
+     * this, that would mean an NBT read and a {@link StructureTemplate#load} per tile at 4 Hz on the
+     * client tick thread. With it, the reassembly is map copies over templates read once.</p>
+     *
+     * <p>Not keyed on the seed or the dimensions: unlike a {@link BuilderStructure.Kind}, a stored
+     * template is the bytes on disk and neither of those changes what {@code load} makes of them.</p>
+     */
+    private record TemplateKey(TrackKind trackKind, String name) {}
+
+    private static final Map<TemplateKey, Map<BlockPos, BlockState>> TEMPLATES =
+            new ConcurrentHashMap<>();
 
     private BuilderStructureCells() {}
 
@@ -83,16 +101,54 @@ public final class BuilderStructureCells {
      * @param openSize  that volume's extent
      */
     public record Sources(HolderGetter<Block> blocks, CarriageDims dims, long worldSeed,
-                          Map<BlockPos, BlockState> openBuild, Vec3i openSize) {
+                          Map<BlockPos, BlockState> openBuild, Vec3i openSize,
+                          BuilderOpenTemplate open, boolean substitute) {
 
         public Sources(HolderGetter<Block> blocks, CarriageDims dims, long worldSeed) {
-            this(blocks, dims, worldSeed, Map.of(), Vec3i.ZERO);
+            this(blocks, dims, worldSeed, Map.of(), Vec3i.ZERO, null, false);
+        }
+
+        /** The room shape: a live build with no stored template behind it. */
+        public Sources(HolderGetter<Block> blocks, CarriageDims dims, long worldSeed,
+                       Map<BlockPos, BlockState> openBuild, Vec3i openSize) {
+            this(blocks, dims, worldSeed, openBuild, openSize, null, false);
+        }
+
+        /**
+         * The name a rolled slot should use instead of rolling, or null to roll as usual.
+         *
+         * <p><b>What the scene is made of, which is not the same question as how fresh it is.</b> A
+         * line rolls a variant per tile because that is the line the world builds — right up until
+         * one of those tiles is the tile you have open, at which point a lottery is the wrong answer:
+         * what you are judging is whether <em>your</em> tile joins the next one, and three times in
+         * four the seed would hand you somebody else's to judge it against. So while a track template
+         * is open, every slot of its kind is it.</p>
+         *
+         * <p>Independent of the refresh setting on purpose. Whether the run shows the stored tile or
+         * the one you are editing is the control's business; whether the run is made of your tile at
+         * all is the scene's, and it should not change under you when you cycle Updates.</p>
+         */
+        String lockedName(TrackKind kind) {
+            return open instanceof BuilderOpenTemplate.OpenTrack track && track.kind() == kind
+                    ? track.name()
+                    : null;
+        }
+
+        /** Whether a read for this carriage should answer from the open build instead of the store. */
+        boolean substitutesCarriage(String variantId) {
+            return substitute && open != null && open.matchesCarriage(variantId);
+        }
+
+        /** Whether a read for this track template should answer from the open build. */
+        boolean substitutesTrack(TrackKind kind, String name) {
+            return substitute && open != null && open.matchesTrack(kind, name);
         }
     }
 
     /** Forget every cached template. Cheap to call; the next resolve re-reads. */
     public static void clear() {
         CACHE.clear();
+        TEMPLATES.clear();
     }
 
     /** The blocks of one kind, local to its own origin. Empty is an ordinary answer. */
@@ -107,7 +163,16 @@ public final class BuilderStructureCells {
         if (kind instanceof BuilderStructure.Kind.RoomBedrock) {
             return bedrockSkin(src.openSize());
         }
-        return CACHE.computeIfAbsent(new CacheKey(kind, src.worldSeed(), src.dims()),
+        // While the open build stands in for its own template, a kind cannot be cached whole: a run
+        // of tiles is reassembled every sweep because one of them may be the tile being edited, and
+        // a cached run would pin the moment it was first resolved. The per-template cache under this
+        // is what keeps that affordable. Everything else caches exactly as it always did.
+        if (src.substitute()) {
+            return resolve(kind, src);
+        }
+        // Keyed on the open template as well, because it decides which slots are name-locked: the
+        // same run under a different open tile is a different run.
+        return CACHE.computeIfAbsent(new CacheKey(kind, src.worldSeed(), src.dims(), src.open()),
                 k -> resolve(k.kind(), src));
     }
 
@@ -136,9 +201,16 @@ public final class BuilderStructureCells {
     // ---- carriages ----
 
     private static Map<BlockPos, BlockState> carriage(String variantId, Sources src) {
-        return variantId == null || variantId.isEmpty()
-                ? Map.of()
-                : load(CarriageTemplateStore.rawTag(variantId), src);
+        if (variantId == null || variantId.isEmpty()) {
+            return Map.of();
+        }
+        // The open build is this carriage, so the blocks in front of the player are a better answer
+        // than the ones on disk. Uncached by construction — that is the whole point of it.
+        if (src.substitutesCarriage(variantId)) {
+            return src.openBuild();
+        }
+        return TEMPLATES.computeIfAbsent(new TemplateKey(null, variantId),
+                k -> load(CarriageTemplateStore.rawTag(k.name()), src));
     }
 
     /**
@@ -408,12 +480,40 @@ public final class BuilderStructureCells {
 
     /** The blocks of whichever variant the world would roll for this kind at this index. */
     private static Map<BlockPos, BlockState> picked(TrackKind kind, long index, Sources src) {
-        return track(kind, TrackVariantRegistry.pickName(kind, src.worldSeed(), index), src);
+        String locked = src.lockedName(kind);
+        return track(kind, locked != null
+                ? locked
+                : TrackVariantRegistry.pickName(kind, src.worldSeed(), index), src);
     }
 
     private static Map<BlockPos, BlockState> track(TrackKind kind, String name, Sources src) {
         String resolved = name == null || name.isEmpty() ? TrackKind.DEFAULT_NAME : name;
-        return load(TrackVariantStore.rawTag(kind, resolved), src);
+        if (src.substitutesTrack(kind, resolved)) {
+            return openTrackCells(kind, src);
+        }
+        return TEMPLATES.computeIfAbsent(new TemplateKey(kind, resolved),
+                k -> load(TrackVariantStore.rawTag(k.trackKind(), k.name()), src));
+    }
+
+    /**
+     * The open track build, read back the way its own capture would read it.
+     *
+     * <p>A tunnel is captured against {@code STRUCTURE_VOID} rather than air — the void cells are the
+     * template saying "nothing here", and they are absent from what {@code load} returns. A live read
+     * of the world only drops air, so without this the void would come back as a real block and every
+     * neighbouring tunnel in the run would be drawn filled in.</p>
+     */
+    private static Map<BlockPos, BlockState> openTrackCells(TrackKind kind, Sources src) {
+        if (kind != TrackKind.TUNNEL_SECTION && kind != TrackKind.TUNNEL_PORTAL) {
+            return src.openBuild();
+        }
+        Map<BlockPos, BlockState> out = new LinkedHashMap<>();
+        src.openBuild().forEach((pos, state) -> {
+            if (!state.is(Blocks.STRUCTURE_VOID)) {
+                out.put(pos, state);
+            }
+        });
+        return out;
     }
 
     /**

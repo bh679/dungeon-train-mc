@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.builder.BuilderNewOptions;
 import games.brennan.dungeontrain.builder.BuilderOpenRequest;
 import games.brennan.dungeontrain.builder.structure.BuilderStructure;
 import games.brennan.dungeontrain.builder.structure.BuilderStructureMode;
+import games.brennan.dungeontrain.builder.structure.BuilderStructureRefresh;
 import games.brennan.dungeontrain.builder.structure.BuilderStructureNeeds;
 import games.brennan.dungeontrain.net.BuilderBoundsPacket;
 import games.brennan.dungeontrain.portal.PortalRoomMode;
@@ -50,6 +51,8 @@ public final class BuilderBoundsState {
 
     /** What this world does with the structures around the build — the pause-menu control's state. */
     private static volatile BuilderStructureMode structureMode = BuilderStructureMode.DEFAULT;
+    /** When those structures re-read the template they are made of — the second control's state. */
+    private static volatile BuilderStructureRefresh structureRefresh = BuilderStructureRefresh.DEFAULT;
     /** Carriages actually on the track, which decides whether the rest of the group is declared. */
     private static volatile int parked = 0;
     /** The variant a neighbouring slot, and the shell you stand in, are made of. */
@@ -70,6 +73,7 @@ public final class BuilderBoundsState {
         trackKindId = orEmpty(packet.trackKindId());
         weight = packet.weight();
         structureMode = BuilderStructureMode.orDefault(packet.structureModeId());
+        structureRefresh = BuilderStructureRefresh.orDefault(packet.structureRefreshId());
         parked = packet.parked();
         variantId = orEmpty(packet.variantId());
         dims = packet.dims();
@@ -104,6 +108,11 @@ public final class BuilderBoundsState {
         return structureMode;
     }
 
+    /** What the pause-menu refresh control is showing — the server's answer, never a local guess. */
+    public static BuilderStructureRefresh structureRefresh() {
+        return structureRefresh;
+    }
+
     public static CarriageDims dims() {
         return dims;
     }
@@ -122,19 +131,34 @@ public final class BuilderBoundsState {
      * construction — the same thing the Open grid already relies on.</p>
      */
     public static List<BuilderStructure.Placement> structures() {
-        BuilderMode mode = BuilderMode.fromId(modeId).orElse(null);
-        if (mode == null || !structureMode.draws() && !structureMode.stamps()) {
+        BuilderStructureNeeds.Context ctx = context();
+        if (ctx == null || !structureMode.draws() && !structureMode.stamps()) {
             return List.of();
         }
+        return BuilderStructureNeeds.around(ctx);
+    }
+
+    /**
+     * This build, as the declaration table wants to be asked about it — or null outside one.
+     *
+     * <p>Pulled out of {@link #structures} because the resolver's inputs need it too: which stored
+     * template the open build <em>is</em> is a question about the same fields, and answering it from
+     * a second hand-assembled context is how the two would come to disagree.</p>
+     */
+    public static BuilderStructureNeeds.Context context() {
+        BuilderMode mode = BuilderMode.fromId(modeId).orElse(null);
+        if (mode == null) {
+            return null;
+        }
         boolean room = isRoomOpen();
-        return BuilderStructureNeeds.around(new BuilderStructureNeeds.Context(
+        return new BuilderStructureNeeds.Context(
                 mode,
                 BuilderNewOptions.SubType.fromId(subTypeId).orElse(null),
                 TrackKind.fromId(trackKindId),
                 buildName, dims, parked,
                 room ? roomMode() : null,
                 room && !volumes.isEmpty() ? BuilderBounds.sizeOf(volumes.get(0)) : null,
-                variantId));
+                variantId);
     }
 
     /**
@@ -212,6 +236,7 @@ public final class BuilderBoundsState {
         trackKindId = "";
         weight = -1;
         structureMode = BuilderStructureMode.DEFAULT;
+        structureRefresh = BuilderStructureRefresh.DEFAULT;
         parked = 0;
         variantId = "";
         dims = CarriageDims.DEFAULT;

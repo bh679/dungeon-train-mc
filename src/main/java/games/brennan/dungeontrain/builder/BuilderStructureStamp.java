@@ -1,10 +1,12 @@
 package games.brennan.dungeontrain.builder;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.builder.structure.BuilderOpenTemplate;
 import games.brennan.dungeontrain.builder.structure.BuilderStructure;
 import games.brennan.dungeontrain.builder.structure.BuilderStructureCells;
 import games.brennan.dungeontrain.builder.structure.BuilderStructureMode;
 import games.brennan.dungeontrain.builder.structure.BuilderStructureNeeds;
+import games.brennan.dungeontrain.builder.structure.BuilderStructureRefresh;
 import games.brennan.dungeontrain.portal.PortalRoomMode;
 import games.brennan.dungeontrain.portal.PortalRoomSettings;
 import games.brennan.dungeontrain.ship.sable.WorldgenForceGuard;
@@ -176,16 +178,68 @@ public final class BuilderStructureStamp {
     private static BuilderStructureCells.Sources sourcesOf(ServerLevel level,
                                                            DungeonTrainWorldData data,
                                                            List<BoundingBox> volumes) {
-        boolean room = BuilderOpenRequest.PORTAL_ROOM_SUB_TYPE.equals(data.builderSubType());
-        if (!room || volumes.isEmpty()) {
-            return new BuilderStructureCells.Sources(
-                    level.registryAccess().lookupOrThrow(Registries.BLOCK), data.dims(),
-                    level.getSeed());
+        var blocks = level.registryAccess().lookupOrThrow(Registries.BLOCK);
+        if (volumes.isEmpty()) {
+            return new BuilderStructureCells.Sources(blocks, data.dims(), level.getSeed());
         }
         BoundingBox box = volumes.get(0);
-        return new BuilderStructureCells.Sources(
-                level.registryAccess().lookupOrThrow(Registries.BLOCK), data.dims(), level.getSeed(),
-                liveCells(level, box), BuilderBounds.sizeOf(box));
+        boolean room = BuilderOpenRequest.PORTAL_ROOM_SUB_TYPE.equals(data.builderSubType());
+        // A room's copies are copies of the room, and always have been — no control gates them.
+        if (room) {
+            return new BuilderStructureCells.Sources(blocks, data.dims(), level.getSeed(),
+                    liveCells(level, box), BuilderBounds.sizeOf(box));
+        }
+        BuilderOpenTemplate open = BuilderStructureNeeds.openTemplateFor(contextOf(level, data));
+        if (open == null) {
+            return new BuilderStructureCells.Sources(blocks, data.dims(), level.getSeed());
+        }
+        boolean substitute = substitutes(data, volumes);
+        return new BuilderStructureCells.Sources(blocks, data.dims(), level.getSeed(),
+                substitute ? liveCells(level, box) : Map.of(),
+                substitute ? BuilderBounds.sizeOf(box) : Vec3i.ZERO,
+                open, substitute);
+    }
+
+    /**
+     * Whether the open build's blocks stand in for the template they came from.
+     *
+     * <p>The geometry half of the rule, and the reason it is here rather than with the identity: the
+     * live read is {@code volumes.get(0)}, so it can only speak for a template when there is exactly
+     * one volume to be. A carriage group parks three and no single one of them is the build.</p>
+     *
+     * <p>{@code BuilderStructureScan} asks the same two things in the same order, and has to: the
+     * client's solid-cell set is what the out-of-bounds wash reads, so a client resolving live
+     * against a server that resolved from disk would paint real scenery red.</p>
+     */
+    private static boolean substitutes(DungeonTrainWorldData data, List<BoundingBox> volumes) {
+        return volumes.size() == 1
+                && BuilderStructureRefresh.orDefault(data.builderStructureRefresh()).substitutes();
+    }
+
+    /**
+     * The build volume whose blocks the standing scenery is currently made of, or null.
+     *
+     * <p>Non-null only when all three of the things that have to be true are: the structures are
+     * <em>solid</em>, so they occupy the world at all; the refresh setting says they follow the open
+     * build; and the open build is a whole stored template that some of them are resolved from.
+     * That is the exact condition under which re-stamping as the player edits changes anything, and
+     * {@code BuilderStructureRestampTicker} asks it rather than re-deriving it — the two disagreeing
+     * would mean either a ticker walking a volume for nothing, or scenery quietly not following.</p>
+     */
+    public static BoundingBox trackedOpenBuild(ServerLevel level) {
+        if (!level.dimensionTypeRegistration().is(BuilderWorldLayout.BUILDER_DIMENSION_TYPE)) {
+            return null;
+        }
+        DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
+        if (!BuilderStructureMode.orDefault(data.builderStructureMode()).stamps()) {
+            return null;
+        }
+        List<BoundingBox> volumes = BuilderBounds.volumesFor(level);
+        if (!substitutes(data, volumes)
+                || BuilderStructureNeeds.openTemplateFor(contextOf(level, data)) == null) {
+            return null;
+        }
+        return volumes.get(0);
     }
 
     /**

@@ -6944,6 +6944,25 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "builder-structure-updates",
+      "version": "0.552.0",
+      "type": "feat",
+      "title": "The scenery around your build keeps up with it",
+      "summary": "In the Train Builder, the carriages either side of you, the line running away from a track tile and the tunnels flanking a tunnel section are all built from the template you have open \u2014 so now they follow it as you build. Place a block and the copies gain it. A new Updates control in the Esc menu, under Structures, chooses between Instant, On Save and Never.",
+      "highlights": [
+        "Instant by default: the surrounds redraw about four times a second as you place and break blocks",
+        "On Save shows the last version you committed, for comparing what you have against what you kept",
+        "Never holds the version you opened, to keep the original beside the one you are making",
+        "Works whether the structures are ghosts or solid blocks",
+        "Editing a track tile now shows a line made of that tile, instead of whatever the world seed rolled"
+      ],
+      "pr": 998,
+      "date": "2026-08-20",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

@@ -5,6 +5,10 @@ import games.brennan.dungeontrain.builder.BuilderPhotoPaths;
 import games.brennan.dungeontrain.builder.BuilderPhotoRequest;
 import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.builder.BuilderSave;
+import games.brennan.dungeontrain.builder.BuilderStructureStamp;
+import games.brennan.dungeontrain.builder.structure.BuilderStructureCells;
+import games.brennan.dungeontrain.builder.structure.BuilderStructureRefresh;
+import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.builder.relay.BuilderRelayUpload;
 import games.brennan.dungeontrain.train.CarriagePartKind;
 import net.minecraft.ChatFormatting;
@@ -52,6 +56,7 @@ public record BuilderSavePacket() implements CustomPacketPayload {
                         .withStyle(ChatFormatting.GREEN));
                 // Snapshots were re-baselined by the save, so the client's green Save can clear.
                 DungeonTrainNet.sendTo(player, BuilderDirtyPacket.state(0));
+                refreshStructures(level);
                 requestPhoto(player, level, result.written());
                 // …and, when the player has opted in, the build goes to their relay profile. After the
                 // local write, never instead of it: the file on disk is the build, and an upload that
@@ -63,6 +68,32 @@ public record BuilderSavePacket() implements CustomPacketPayload {
                         .withStyle(ChatFormatting.RED));
             }
         });
+    }
+
+    /**
+     * Point the structures at what was just written.
+     *
+     * <p>The store now holds a different template than it did a moment ago, and anything resolved
+     * from it is cached under the assumption that it doesn't change. Dropping the cache is what makes
+     * <em>Update on save</em> mean anything; it is skipped only for <em>Don't update</em>, which is
+     * the setting whose whole content is "keep showing me what I opened".</p>
+     *
+     * <p>A direct call rather than a packet: a builder world is single-player by construction — the
+     * same thing {@code BuilderStructureCells} already rests on to reach the template stores from the
+     * client — so there is one process holding one static cache, and clearing it here reaches both
+     * sides. The client picks the change up on its next sweep, within a quarter of a second.</p>
+     *
+     * <p>Here rather than inside {@code BuilderSave.save}, which is also reached from commands: what
+     * a cache of drawn scenery should do is not the saver's business.</p>
+     */
+    private static void refreshStructures(ServerLevel level) {
+        DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
+        if (!BuilderStructureRefresh.orDefault(data.builderStructureRefresh()).refreshesOnSave()) {
+            return;
+        }
+        BuilderStructureCells.clear();
+        // Only does anything while the structures are solid; cheap and idempotent otherwise.
+        BuilderStructureStamp.apply(level);
     }
 
     /**
