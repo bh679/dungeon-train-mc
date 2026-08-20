@@ -6096,12 +6096,17 @@ public final class EditorCommand {
         return Commands.literal(literal)
             .then(Commands.literal("inc").executes(ctx -> runPortalRoomSizeStep(ctx.getSource(), axis, +1)))
             .then(Commands.literal("dec").executes(ctx -> runPortalRoomSizeStep(ctx.getSource(), axis, -1)))
-            // Loosest floor of any axis, not the length's — this node is shared by length, width
-            // and height, and a parser bound is a silent rejection where clampSize is a visible
-            // one. PortalRoomLayout.clampSize stays the single authority on what is legal.
+            // Loosest floor AND ceiling of any axis, not the length's — this node is shared by
+            // length, width and height, and a parser bound is a silent rejection where clampSize is
+            // a visible one. PortalRoomLayout.clampSize stays the single authority on what is legal.
+            //
+            // The ceiling was MAX_LENGTH (48), which was fine while every axis capped there; height
+            // now goes to MAX_HEIGHT (80), and `portals height 70` was refused by the parser with
+            // "Integer must not be more than 48" before the clamp could say anything.
             .then(Commands.argument("blocks", IntegerArgumentType.integer(
                     Math.min(PortalRoomLayout.MIN_LENGTH, PortalRoomLayout.MIN_HEIGHT),
-                    PortalRoomLayout.MAX_LENGTH))
+                    Math.max(PortalRoomLayout.MAX_LENGTH,
+                        Math.max(PortalRoomLayout.MAX_WIDTH, PortalRoomLayout.MAX_HEIGHT))))
                 .executes(ctx -> runPortalRoomSize(ctx.getSource(), axis,
                     IntegerArgumentType.getInteger(ctx, "blocks"))));
     }
