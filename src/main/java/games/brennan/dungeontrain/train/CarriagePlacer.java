@@ -246,6 +246,21 @@ public final class CarriagePlacer {
         CarriageDims dims, CarriageGenerationConfig config, int carriageIndex,
         boolean applyContents, boolean flatbedAtBack, boolean flatbedAtFront, int groupAnchorWorldX
     ) {
+        // Held for the whole stamp so a template cell can't be deleted by a state the carriage
+        // merely passes through on its way to being finished — the shell is written section-local
+        // (no light computed yet) and the very next pass cascades, which is what was popping saved
+        // crops out of farm carriages. See CarriageStampGuard. Nesting-safe: TrainAssembler holds
+        // the same guard across the wider place/assemble/contents sequence.
+        return CarriageStampGuard.call(() -> placeAtGuarded(
+            level, origin, variant, dims, config, carriageIndex,
+            applyContents, flatbedAtBack, flatbedAtFront, groupAnchorWorldX));
+    }
+
+    private static Set<BlockPos> placeAtGuarded(
+        ServerLevel level, BlockPos origin, CarriageVariant variant,
+        CarriageDims dims, CarriageGenerationConfig config, int carriageIndex,
+        boolean applyContents, boolean flatbedAtBack, boolean flatbedAtFront, int groupAnchorWorldX
+    ) {
         // Portal carriages replace the whole carriage with a hallway-portal corridor
         // (games.brennan.dungeontrain.portal). Returning here deliberately skips the parts overlay,
         // the variant-block sidecar and the contents pass: the corridor's geometry IS the carriage,

@@ -28,6 +28,7 @@
     "ChiseledBookShelfBlockUnsignedBookMixin",
     "SpreadingSnowyDirtBlockUpsideDownMixin",
     "SnowLayerBlockUpsideDownMixin",
+    "CropBlockCarriageSurviveMixin",
     "FlowingFluidUpsideDownMixin",
     "FlowingFluidChuncksMixin",
     "FlowingFluidDisintegrationMixin",

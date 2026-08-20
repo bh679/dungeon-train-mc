@@ -375,6 +375,16 @@ public final class TrainAssembler {
      * @param trainId      UUID shared by every group in the same train
      */
     public static ManagedShip spawnGroup(ServerLevel level, BlockPos origin, Vector3dc velocity, int anchorPIdx, int groupSize, CarriageDims dims, UUID trainId) {
+        // Guard the WHOLE place -> assemble -> contents sequence, not just the stamp: Sable's
+        // moveBlocks re-writes every lifted block with a flag-3 cascade, one block at a time, so a
+        // template crop can fail canSurvive on its farmland simply because the farmland hasn't been
+        // moved yet. Both that and the pre-lift dark-interior window are our own scaffolding, not
+        // real gameplay states. See CarriageStampGuard.
+        return CarriageStampGuard.call(() ->
+            spawnGroupGuarded(level, origin, velocity, anchorPIdx, groupSize, dims, trainId));
+    }
+
+    private static ManagedShip spawnGroupGuarded(ServerLevel level, BlockPos origin, Vector3dc velocity, int anchorPIdx, int groupSize, CarriageDims dims, UUID trainId) {
         if (groupSize < 1) {
             throw new IllegalArgumentException("groupSize must be ≥ 1, got " + groupSize);
         }
