@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 3,
+  "pools": {
+    "10,8,1": {
+      "entries": [
+        { "id": "minecraft:white_banner", "count": 16, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:light_blue_banner", "count": 16, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:white_banner", "count": 16, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:red_banner", "count": 16, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:orange_banner", "count": 16, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:green_banner", "count": 16, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
+      ]
+    }
+  },
+  "links": {
+    "14,3,10": "twobasicarmor",
+    "13,3,11": "twobasicarmor",
+    "9,3,10": "twobasicarmor",
+    "10,3,11": "twobasicarmor"
+  }
+}
