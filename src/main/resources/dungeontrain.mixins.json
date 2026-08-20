@@ -40,7 +40,14 @@
     "RapierPipelineFreezeMixin",
     "LevelAcceleratorNoSyncLoadMixin",
     "SubLevelEntityCollisionNoLoadMixin",
-    "SableBlockChangeGuardMixin"
+    "SableBlockChangeGuardMixin",
+    "NetherFortressStructureMixin",
+    "NetherFossilStructureMixin",
+    "JigsawStructureMixin",
+    "RuinedPortalStructureMixin",
+    "StructureBandBiomeFilterMixin",
+    "JigsawStructureAccessor",
+    "RuinedPortalStructureAccessor"
   ],
   "client": [
     "client.BookViewScreenAccessor",

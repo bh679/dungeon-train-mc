@@ -235,15 +235,6 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
             NetherCoreGeometry coreGeom = netherCoreSource == null ? null : netherCoreSource.open(minY, worldTop);
             if (coreGeom != null && !coreGeom.isUsable()) coreGeom = null;
 
-            // The band's own Nether structures were placed at an EARLIER decoration step, so their pieces
-            // are already standing in this chunk. Collect them once and stamp around them — otherwise the
-            // core fill, which replaces whole columns, would quietly bury every fortress and bastion it
-            // generated. (The train still punches through: clearCorridorClearance runs after this and is
-            // deliberately left unguarded.)
-            //
-            // Resolved lazily on the first core column: most in-band chunks are mountain or crossfade,
-            // which no Nether structure can reach, and those should not pay for a structure-reference walk.
-            BandStructureGuard structureGuard = null;
 
             // Per-column edge-waved X, computed once here for all 256 columns and reused by
             // clearCorridorClearance below (which otherwise recomputes the 4-octave wavyX noise for the
@@ -284,11 +275,10 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
 
                     boolean colChanged;
                     if (core) {
-                        if (structureGuard == null) structureGuard = BandStructureGuard.collect(level, cp);
                         ResourceKey<Biome> coreBiome = coreBiomeKeyAt(bandCtx, worldX, worldZ);
                         long coreT0 = GenProfiler.t0();       // real-Nether router sampling — the confirmed DT hotspot
                         colChanged = fillNetherColumn(chunk, dx, dz, worldX, worldZ, bedY, railY, zMin, zMax, tg,
-                                sampleX, coreGeom, seed, coreBiome, structureGuard.column(worldX, worldZ));
+                                sampleX, coreGeom, seed, coreBiome);
                         GenProfiler.add(GenProfiler.Bucket.CORE_REPLACE, coreT0);
                     } else if (inBeachSpan) {
                         colChanged = fillShoreColumn(chunk, dx, dz, worldX, worldZ, bedY, railY, zMin, zMax, tg,
@@ -732,8 +722,7 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
     private boolean fillNetherColumn(ChunkAccess chunk, int dx, int dz, int worldX, int worldZ,
                                      int bedY, int railY, int zMin, int zMax, TunnelGeometry tg,
                                      int sampleX, NetherCoreGeometry coreGeom,
-                                     long seed, ResourceKey<Biome> coreBiome,
-                                     BandStructureGuard.Column structureGuard) {
+                                     long seed, ResourceKey<Biome> coreBiome) {
         int yLo = coreGeom.minCoreY();
         int yHi = coreGeom.maxCoreY();
         if (yLo > yHi) return false;
@@ -751,12 +740,6 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
             // solid envelope. track_bed runs after this and tunnels through the solid netherrack while
             // pillaring across the open lava lakes / caverns: its ground probe treats lava as passable and
             // rests pillars on the netherrack floor, and the tunnel only qualifies where rock sits above the bed.
-            //
-            // A band structure's own block is left exactly as its piece placed it — the fill packs
-            // netherrack right up to the walls instead of through them. Inside a piece's box the block
-            // itself decides: overworld terrain the piece never touched (its structure_void cells) is
-            // still ours to replace, or the structure ends up cased in stone.
-            if (structureGuard.protects(y) && BandStructureGuard.preserves(w.state(dx, y, dz))) continue;
             double d = density.densityAt(y);
             if (Double.isNaN(d)) continue;   // outside the sampled cell rows — leave the block untouched
             BlockState target;
@@ -788,8 +771,7 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
                 } else if (!nr) {
                     depth = SURFACE_SKIN_DEPTH;      // air/lava/other ends the skin run
                 }
-                if (nr && depth < SURFACE_SKIN_DEPTH
-                        && !(structureGuard.protects(y) && BandStructureGuard.preserves(w.state(dx, y, dz)))) {
+                if (nr && depth < SURFACE_SKIN_DEPTH) {
                     double noise = Disintegration.coherentNoise(seed ^ NETHER_SURFACE_SKIN_SALT, worldX, y, worldZ);
                     BlockState surf = NetherSurfacePalette.surfaceBlock(coreBiome, depth, noise);
                     if (!w.isSame(dx, y, dz, surf)) { w.set(dx, y, dz, surf); changed = true; }

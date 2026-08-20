@@ -1,7 +1,7 @@
 {
   "structures": [
     {
-      "structure": "dungeontrain:ruined_portal_nether",
+      "structure": "minecraft:ruined_portal_nether",
       "weight": 1
     }
   ],

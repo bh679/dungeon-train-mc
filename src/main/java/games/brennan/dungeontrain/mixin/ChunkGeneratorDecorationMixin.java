@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.mixin;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.worldgen.ChuncksBand;
 import games.brennan.dungeontrain.worldgen.DisintegrationBand;
+import games.brennan.dungeontrain.worldgen.feature.DeferredStructurePlacement;
 import games.brennan.dungeontrain.worldgen.feature.ModFeatures;
 import games.brennan.dungeontrain.worldgen.structure.ModStructureTypes;
 import net.minecraft.core.BlockPos;
@@ -61,9 +62,18 @@ public abstract class ChunkGeneratorDecorationMixin {
     @Unique
     private static final ThreadLocal<Boolean> dungeontrain$skipDecoration = ThreadLocal.withInitial(() -> Boolean.FALSE);
 
+    /**
+     * Per-decoration-call flag: true while decorating a chunk whose structure pieces must wait for the
+     * Nether core fill (see {@link DeferredStructurePlacement}). Same lifecycle and thread-safety argument
+     * as the flag above — set at the head of every {@code applyBiomeDecoration}, read by the redirect below.
+     */
+    @Unique
+    private static final ThreadLocal<Boolean> dungeontrain$deferStructures = ThreadLocal.withInitial(() -> Boolean.FALSE);
+
     @Inject(method = "applyBiomeDecoration", at = @At("HEAD"))
     private void dungeontrain$computeSkip(WorldGenLevel level, ChunkAccess chunk, StructureManager structureManager, CallbackInfo ci) {
         dungeontrain$skipDecoration.set(dungeontrain$isFullyErodedBandChunk(level, chunk));
+        dungeontrain$deferStructures.set(DeferredStructurePlacement.isDeferred(level, chunk.getPos()));
     }
 
     @Redirect(
@@ -88,6 +98,11 @@ public abstract class ChunkGeneratorDecorationMixin {
      * <p>Redirecting the per-structure {@code startsForStructure} lookup (rather than the
      * {@code shouldGenerateStructures()} guard around the whole loop) is what makes that distinction
      * possible: an empty start list places nothing, exactly as before, for every other structure.</p>
+     *
+     * <p>The same seam also <b>defers</b> placement on Nether-core chunks —
+     * {@link DeferredStructurePlacement} — so those pieces are written by
+     * {@code NetherStructuresFeature} once the core terrain exists rather than against the overworld
+     * mountain the fill replaces.</p>
      */
     @Redirect(
         method = "applyBiomeDecoration",
@@ -95,6 +110,12 @@ public abstract class ChunkGeneratorDecorationMixin {
             target = "Lnet/minecraft/world/level/StructureManager;startsForStructure(Lnet/minecraft/core/SectionPos;Lnet/minecraft/world/level/levelgen/structure/Structure;)Ljava/util/List;"))
     private List<StructureStart> dungeontrain$filterStructure(StructureManager structureManager,
                                                               SectionPos sectionPos, Structure structure) {
+        // Nether core: every structure here waits for NetherStructuresFeature, which runs after the core
+        // terrain is stamped. Placing now would build a fortress against the overworld mountain that the
+        // fill is about to replace — which is how they came out with no supports under them.
+        if (dungeontrain$deferStructures.get()) {
+            return List.of();
+        }
         if (dungeontrain$skipDecoration.get() && !dungeontrain$isDtStructure(structure)) {
             return List.of();
         }

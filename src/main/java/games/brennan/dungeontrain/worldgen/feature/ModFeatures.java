@@ -43,6 +43,11 @@ public final class ModFeatures {
         NetherTransitionFeature::new
     );
 
+    public static final DeferredHolder<Feature<?>, Feature<NoneFeatureConfiguration>> NETHER_STRUCTURES = FEATURES.register(
+        "nether_structures",
+        NetherStructuresFeature::new
+    );
+
     private ModFeatures() {}
 
     /** Call from the mod constructor to attach the {@link DeferredRegister} to the mod-event bus. */

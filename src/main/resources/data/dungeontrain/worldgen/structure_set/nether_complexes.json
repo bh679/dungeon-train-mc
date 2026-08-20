@@ -1,11 +1,11 @@
 {
   "structures": [
     {
-      "structure": "dungeontrain:nether_fortress",
+      "structure": "minecraft:fortress",
       "weight": 2
     },
     {
-      "structure": "dungeontrain:bastion_remnant",
+      "structure": "minecraft:bastion_remnant",
       "weight": 3
     }
   ],

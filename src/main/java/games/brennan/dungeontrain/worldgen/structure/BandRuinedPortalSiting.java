@@ -1,21 +1,19 @@
 package games.brennan.dungeontrain.worldgen.structure;
 
 import com.mojang.logging.LogUtils;
-import com.mojang.serialization.MapCodec;
-import com.mojang.serialization.codecs.RecordCodecBuilder;
 import games.brennan.dungeontrain.util.LogFirstN;
 import games.brennan.dungeontrain.worldgen.NetherCoreGeometry;
 import net.minecraft.Util;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.HolderSet;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.util.ExtraCodecs;
 import net.minecraft.util.Mth;
+import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.levelgen.WorldgenRandom;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.level.levelgen.structure.Structure;
-import net.minecraft.world.level.levelgen.structure.StructureType;
 import net.minecraft.world.level.levelgen.structure.structures.RuinedPortalPiece;
 import net.minecraft.world.level.levelgen.structure.structures.RuinedPortalStructure;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
@@ -25,27 +23,17 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Ruined portals in the Nether band's core — vanilla's nether-variant portals, blackstone and all,
+ * Where a Nether ruined portal stands in the band — vanilla's nether-variant portals, blackstone and all,
  * anchored in the band's own netherrack.
  *
  * <p>Vanilla's own {@code in_nether} rule already ignores terrain height when it picks a Y: it rolls one
- * from a fixed Nether-space range (27–100, or 32–100 when the portal gets an air pocket) and then walks
- * <em>down</em> until three of the footprint's four corners are solid. Only that walk needs replacing —
+ * from a fixed Nether-space range (27-100, or 32-100 when the portal gets an air pocket) and then walks
+ * <em>down</em> until three of the footprint's four corners are solid. Only that walk needs replacing --
  * vanilla reads it from the chunk generator's noise columns, which in the band describe the overworld
  * mountain the core replaces, so it reads {@link NetherCoreGeometry} instead. The roll, the template
  * choice, the rotation, the mirror and the piece are vanilla's.</p>
- *
- * <p>Only the Nether placements are supported: a setup asking for any other vertical placement is declined
- * rather than mis-sited, because the band's core is Nether and nothing else.</p>
  */
-public class BandRuinedPortalStructure extends Structure {
-
-    public static final MapCodec<BandRuinedPortalStructure> CODEC = RecordCodecBuilder.mapCodec(
-            instance -> instance.group(
-                    settingsCodec(instance),
-                    ExtraCodecs.nonEmptyList(RuinedPortalStructure.Setup.CODEC.listOf())
-                            .fieldOf("setups").forGetter(s -> s.setups)
-            ).apply(instance, BandRuinedPortalStructure::new));
+public final class BandRuinedPortalSiting {
 
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final LogFirstN SITE_ERRORS = new LogFirstN(5);
@@ -67,27 +55,27 @@ public class BandRuinedPortalStructure extends Structure {
     private static final int OPEN_MIN_NETHER_Y = 29;
     private static final int MAX_NETHER_Y = 100;
 
-    /** Corners of the footprint that must be solid for the portal to rest there — vanilla's rule. */
+    /** Corners of the footprint that must be solid for the portal to rest there -- vanilla's rule. */
     private static final int REQUIRED_SOLID_CORNERS = 3;
 
     /** A portal is a single template; it stays close to its own chunk. */
     private static final int FOOTPRINT_RADIUS = 32;
 
-    private final List<RuinedPortalStructure.Setup> setups;
+    private BandRuinedPortalSiting() {}
 
-    public BandRuinedPortalStructure(StructureSettings settings, List<RuinedPortalStructure.Setup> setups) {
-        super(settings);
-        this.setups = setups;
-    }
-
-    @Override
-    protected Optional<GenerationStub> findGenerationPoint(GenerationContext context) {
+    /**
+     * The band's generation point for a Nether ruined portal, or {@link Optional#empty()} to let vanilla's
+     * own siting run -- which is what happens everywhere outside the band core, including the real Nether.
+     */
+    public static Optional<Structure.GenerationStub> site(Structure.GenerationContext context,
+                                                          List<RuinedPortalStructure.Setup> setups,
+                                                          HolderSet<Biome> biomes) {
         try {
-            BandNetherStructures.Site site = BandNetherStructures.open(context, FOOTPRINT_RADIUS);
-            if (site == null) return Optional.empty();
+            BandNetherStructures.Site band = BandNetherStructures.open(context, FOOTPRINT_RADIUS);
+            if (band == null) return Optional.empty();
 
             WorldgenRandom random = context.random();
-            RuinedPortalStructure.Setup setup = pickSetup(random);
+            RuinedPortalStructure.Setup setup = pickSetup(setups, random);
             if (setup.placement() != RuinedPortalPiece.VerticalPlacement.IN_NETHER) return Optional.empty();
 
             RuinedPortalPiece.Properties properties = new RuinedPortalPiece.Properties();
@@ -109,43 +97,44 @@ public class BandRuinedPortalStructure extends Structure {
             BlockPos chunkOrigin = context.chunkPos().getWorldPosition();
             BoundingBox box = template.getBoundingBox(chunkOrigin, rotation, pivot, mirror);
 
-            if (!site.biomeAllows(this.biomes(), box.getCenter().getX(), box.getCenter().getZ())) {
+            if (!band.biomeAllows(biomes, box.getCenter().getX(), box.getCenter().getZ())) {
                 return Optional.empty();
             }
 
-            int y = findSuitableY(random, site, properties.airPocket, box);
+            int y = findSuitableY(random, band, properties.airPocket, box);
             BlockPos start = new BlockPos(chunkOrigin.getX(), y, chunkOrigin.getZ());
-            return Optional.of(new GenerationStub(start, builder -> builder.addPiece(
+            return Optional.of(new Structure.GenerationStub(start, builder -> builder.addPiece(
                     new RuinedPortalPiece(context.structureTemplateManager(), start, setup.placement(),
                             properties, templateId, template, rotation, mirror, pivot))));
         } catch (Throwable t) {
-            SITE_ERRORS.error(LOGGER, "[DungeonTrain] Ruined-portal siting failed; skipping this portal", t);
+            SITE_ERRORS.error(LOGGER, "[DungeonTrain] Ruined-portal siting failed; leaving it to vanilla", t);
             return Optional.empty();
         }
     }
 
     /** Vanilla's weighted setup draw. */
-    private RuinedPortalStructure.Setup pickSetup(WorldgenRandom random) {
-        if (this.setups.size() == 1) return this.setups.get(0);
+    private static RuinedPortalStructure.Setup pickSetup(List<RuinedPortalStructure.Setup> setups,
+                                                         WorldgenRandom random) {
+        if (setups.size() == 1) return setups.get(0);
         float total = 0.0F;
-        for (RuinedPortalStructure.Setup setup : this.setups) {
+        for (RuinedPortalStructure.Setup setup : setups) {
             total += setup.weight();
         }
         float roll = random.nextFloat();
-        for (RuinedPortalStructure.Setup setup : this.setups) {
+        for (RuinedPortalStructure.Setup setup : setups) {
             roll -= setup.weight() / total;
             if (roll < 0.0F) return setup;
         }
-        return this.setups.get(this.setups.size() - 1);
+        return setups.get(setups.size() - 1);
     }
 
     /**
-     * Vanilla's {@code in_nether} height rule, with the corner probe reading the band's core terrain: roll
-     * a Nether-space Y, translate it onto the band, then walk down until three of the footprint's four
-     * corners are solid. If the whole column is open — a lava lake or a cavern — the walk bottoms out at
-     * the base of the core slab, exactly as vanilla's bottoms out at its own minimum.
+     * Vanilla's {@code in_nether} height rule, with the corner probe reading the band's core terrain: roll a
+     * Nether-space Y, translate it onto the band, then walk down until three of the footprint's four corners
+     * are solid. If the whole column is open -- a lava lake or a cavern -- the walk bottoms out at the base
+     * of the core slab, exactly as vanilla's bottoms out at its own minimum.
      */
-    private static int findSuitableY(WorldgenRandom random, BandNetherStructures.Site site,
+    private static int findSuitableY(WorldgenRandom random, BandNetherStructures.Site band,
                                      boolean airPocket, BoundingBox box) {
         int netherY;
         if (airPocket) {
@@ -157,14 +146,14 @@ public class BandRuinedPortalStructure extends Structure {
         }
 
         NetherCoreGeometry.Column[] corners = {
-            site.column(box.minX(), box.minZ()),
-            site.column(box.maxX(), box.minZ()),
-            site.column(box.minX(), box.maxZ()),
-            site.column(box.maxX(), box.maxZ())
+            band.column(box.minX(), box.minZ()),
+            band.column(box.maxX(), box.minZ()),
+            band.column(box.minX(), box.maxZ()),
+            band.column(box.maxX(), box.maxZ())
         };
 
-        int floor = site.geometry().minCoreY();
-        for (int y = site.bandYInCore(netherY); y > floor; y--) {
+        int floor = band.geometry().minCoreY();
+        for (int y = band.bandYInCore(netherY); y > floor; y--) {
             int solid = 0;
             for (NetherCoreGeometry.Column corner : corners) {
                 if (corner.isSolid(y) && ++solid == REQUIRED_SOLID_CORNERS) return y;
@@ -176,20 +165,5 @@ public class BandRuinedPortalStructure extends Structure {
     private static boolean sample(WorldgenRandom random, float threshold) {
         if (threshold == 0.0F) return false;
         return threshold == 1.0F || random.nextFloat() < threshold;
-    }
-
-    /**
-     * Vanilla's biome filter, deliberately skipped — {@link #findGenerationPoint} already applied the
-     * Nether biome rule against the real Nether's own biome source, which is exact regardless of what the
-     * overworld biome source reports for a column this far below sea level.
-     */
-    @Override
-    public Optional<GenerationStub> findValidGenerationPoint(GenerationContext context) {
-        return this.findGenerationPoint(context);
-    }
-
-    @Override
-    public StructureType<?> type() {
-        return ModStructureTypes.RUINED_PORTAL_NETHER.get();
     }
 }
