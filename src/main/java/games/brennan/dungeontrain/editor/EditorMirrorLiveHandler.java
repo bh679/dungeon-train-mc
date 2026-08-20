@@ -18,10 +18,10 @@ import java.util.Set;
 /**
  * Live editor mirroring: as an author places or breaks a structural block
  * inside an editor plot whose sidecar has any mirror axis enabled, the change
- * is reflected immediately into the mirror-image cells. The save-time pass
- * ({@link EditorMirror#rebuildFromMaster}, called from each editor's
- * {@code save()}) remains the authority and corrects anything live mirroring
- * can't reach (multi-block placements, axis toggled on after earlier edits).
+ * is reflected immediately into the mirror-image cells. This is the mechanism —
+ * {@code save()} captures the plot as it stands. Anything live mirroring can't
+ * reach (an axis toggled on after earlier edits, clipboard pastes, {@code /fill})
+ * is fixed up on demand by {@link EditorMirrorRebuild}, never implicitly at save.
  *
  * <p>Plot resolution reuses the same {@link BlockVariantPlot#resolveAt}
  * cascade as {@link VariantBlockBreakHandler}, so all editor categories

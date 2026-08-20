@@ -441,17 +441,8 @@ public final class CarriagePartEditor {
         BlockPos origin = plotOrigin(kind, name, dims);
         if (origin == null) origin = nextFreePlotOrigin(kind, dims);
 
-        // Editor mirror save-time backstop to live mirroring — symmetric capture
-        // per the sidecar's enabled axes. No-op when all axes are off (default).
         Vec3i partSize = kind.dims(dims);
         CarriagePartVariantBlocks sidecar = CarriagePartVariantBlocks.loadFor(kind, name, partSize);
-        // "V" toggle: mirror the variant pools first so the structural pass below
-        // sees (and preserves) the freshly-reflected far cells via markersOf.
-        EditorVariantMirror.rebuildFromMaster(overworld,
-            new BlockVariantPlot.PartPlot(kind, name, origin, partSize));
-        EditorMirror.rebuildFromMaster(overworld, origin, partSize,
-            sidecar.mirrorX(), sidecar.mirrorY(), sidecar.mirrorZ(),
-            EditorMirror.markersOf(sidecar.entries()));
 
         StructureTemplate template = captureTemplate(overworld, origin, kind, dims);
         CarriagePartTemplateStore.save(kind, name, template);

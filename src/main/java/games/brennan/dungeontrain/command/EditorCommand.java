@@ -416,7 +416,9 @@ public final class EditorCommand {
                 .then(mirrorAxisNode("x"))
                 .then(mirrorAxisNode("y"))
                 .then(mirrorAxisNode("z"))
-                .then(mirrorAxisNode("v")))
+                .then(mirrorAxisNode("v"))
+                .then(Commands.literal("rebuild")
+                    .executes(ctx -> runMirrorRebuild(ctx.getSource()))))
             .then(attachTrackVariantNodes(Commands.literal("tracks")
                 .executes(ctx -> runEnterCategory(ctx.getSource(), EditorCategory.TRACKS))))
             // PORTALS takes the same (kind, name) variant subcommands — the pocket room is a
@@ -1014,6 +1016,45 @@ public final class EditorCommand {
             ).withStyle(ChatFormatting.RED));
             return 0;
         }
+    }
+
+    /**
+     * Re-mirror the plot the player is standing in from its authored master
+     * octant — {@code /dungeontrain editor mirror rebuild}, also the X-menu's
+     * Mirror → Rebuild row.
+     *
+     * <p>This used to happen implicitly inside every editor {@code save()},
+     * which made saving destructive: deliberate asymmetry (and anything placed
+     * by a path the live mirror handlers never see — clipboard paste,
+     * {@code /fill}, edits made before the axis was toggled on) was silently
+     * overwritten from the master. Saving now captures the plot as it stands,
+     * and the rebuild happens only when asked for here.</p>
+     *
+     * <p>World-only: the author still hits Save to capture the result.</p>
+     */
+    private static int runMirrorRebuild(CommandSourceStack source) {
+        ServerPlayer player = source.getPlayer();
+        if (player == null) {
+            source.sendFailure(Component.literal("This command must be run by a player."));
+            return 0;
+        }
+        CarriageDims dims = DungeonTrainWorldData.get(player.serverLevel()).dims();
+        games.brennan.dungeontrain.editor.BlockVariantPlot plot =
+            games.brennan.dungeontrain.editor.BlockVariantPlot.resolveAt(player, dims);
+        if (plot == null) {
+            source.sendFailure(Component.literal("Stand inside an editor plot to rebuild its mirror.")
+                .withStyle(ChatFormatting.RED));
+            return 0;
+        }
+        if (!games.brennan.dungeontrain.editor.EditorMirrorRebuild.run(player.serverLevel(), plot)) {
+            source.sendFailure(Component.literal(
+                "Editor: no mirror axis is on for this plot — turn on X, Y or Z first.")
+                .withStyle(ChatFormatting.RED));
+            return 0;
+        }
+        source.sendSuccess(() -> Component.literal("Editor: mirrored " + plot.key() + " from master")
+            .withStyle(ChatFormatting.GREEN), true);
+        return 1;
     }
 
     /** Brigadier subtree: {@code <axis> on|off} → {@link #runMirrorAtPosition} (position-resolved). */
