@@ -254,6 +254,10 @@ public final class EditorMenuScreen implements MenuScreen {
      * structural blocks across an axis; the {@code V} toggle additionally mirrors
      * the per-cell variant pools (opt-in — off by default). Toggle state (and the
      * green on-tint) is the server-pushed {@link EditorStatusHudOverlay} mirror flags.
+     *
+     * <p>The trailing {@code Rebuild} row runs {@code editor mirror rebuild}, which
+     * re-mirrors the plot from its master octant on demand — saving no longer does
+     * that implicitly.</p>
      */
     private static void addMirrorToggles(List<CommandMenuEntry> out) {
         out.add(new CommandMenuEntry.Label("Mirror"));
@@ -267,6 +271,9 @@ public final class EditorMenuScreen implements MenuScreen {
         CommandMenuEntry v = new CommandMenuEntry.Toggle("V", EditorStatusHudOverlay.mirrorVariants(),
             "dungeontrain editor mirror v on", "dungeontrain editor mirror v off", false);
         out.add(new CommandMenuEntry.Quad(x, y, z, v, 0.25, 0.50, 0.75));
+        // Explicit re-mirror. Saving no longer rebuilds the far half from the
+        // master octant, so this is the (deliberate) way to force it.
+        out.add(new CommandMenuEntry.Run("Rebuild", "dungeontrain editor mirror rebuild"));
     }
 
     /**
