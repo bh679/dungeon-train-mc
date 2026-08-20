@@ -7276,6 +7276,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "nether-band-structures",
+      "version": "0.577.0",
+      "type": "feat",
+      "title": "Fortresses and bastions in the Nether",
+      "summary": "The Nether crossing is no longer empty country. Nether fortresses, bastion remnants, nether fossils and ruined portals now generate out there \u2014 the real ones, with their own loot, their blaze spawners and wither skeleton halls, their piglin brutes and Pigstep. Fortresses stand on their own bridge supports over the lava, and where one happens to lie across the line, the train tunnels straight through it.",
+      "highlights": [
+        "Nether fortresses generate in the Nether crossing, with blazes, wither skeletons and their loot",
+        "Bastion remnants, complete with piglin brutes, treasure rooms and the netherite upgrade template",
+        "Nether fossils in soul sand valleys, and ruined portals with their blackstone and loot",
+        "Ride straight through a fortress that lands across the tracks"
+      ],
+      "pr": 997,
+      "date": "2026-08-20",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
