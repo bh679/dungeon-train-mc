@@ -1,49 +1,40 @@
 package games.brennan.dungeontrain.train;
 
 /**
- * Marks the current thread as being inside a Dungeon Train <b>carriage stamp or lift</b> — the
- * window that runs from the first template write, through the Sable assemble, to the end of the
- * contents pass.
+ * Marks the current thread as being inside a Dungeon Train <b>carriage stamp</b> — a template being
+ * written into the world, whether for a spawning train carriage or an editor preview plot.
  *
- * <p><b>Why:</b> a template is authoritative. Whatever the author saved into the {@code .nbt} is
- * what should stand in the carriage. But the placement sequence writes a carriage's cells one at a
- * time, through several passes with different flags, and vanilla blocks that check their own
- * surroundings ({@code BlockBehaviour.canSurvive}) see those half-finished intermediate states and
- * delete themselves. Crops are the case that bit us: {@code CropBlock.canSurvive} demands farmland
- * below <em>and</em> {@code getRawBrightness(pos, 0) >= 8}, and {@code BushBlock.updateShape}
- * replaces the crop with air the moment either fails. Two distinct moments during placement fail
- * it:</p>
+ * <p><b>Why:</b> a template is authoritative. Whatever the author saved into the {@code .nbt} is what
+ * should stand in the carriage. But a carriage is written a cell at a time across several passes, and
+ * vanilla blocks that check their surroundings ({@code BlockBehaviour.canSurvive}) see those
+ * half-finished intermediate states and delete themselves. Crops are the case that bit us:
+ * {@code CropBlock.canSurvive} demands {@code getRawBrightness(pos, 0) >= 8}, and
+ * {@code BushBlock.updateShape} replaces the crop with air the moment that fails. The shell is stamped
+ * section-local ({@code relight=false}), so the light engine has not yet processed the carriage's own
+ * lanterns when the very next pass — {@code applyVariantBlocks}, writing with
+ * {@code UPDATE_CLIENTS | UPDATE_SUPPRESS_DROPS} — runs the neighbour-shape cascade over them. The
+ * interior reads dark at that instant and every crop in it pops. That is not a real gameplay state; it
+ * is our own construction scaffolding, visible to nobody.</p>
  *
- * <ol>
- *   <li><b>Source world, pre-lift.</b> {@link CarriagePlacer#placeAt} stamps the shell and parts
- *       section-local ({@code relight=false}), so the light engine never processes the carriage's
- *       own lanterns; the very next pass, {@code applyVariantBlocks}, writes with
- *       {@code UPDATE_CLIENTS | UPDATE_SUPPRESS_DROPS}, which <em>does</em> run the neighbour-shape
- *       cascade. The interior reads dark at that instant and every crop in it pops. (Which is why
- *       the bug looked intermittent: a carriage spawning under open daylight passed the light check
- *       and survived; one spawning in a tunnel or at night did not.)</li>
- *   <li><b>The Sable lift.</b> {@code TrainAssembler.spawnGroup} calls {@code assemble}, and Sable's
- *       {@code moveBlocks} re-writes every block through {@code LevelChunk.setBlockState} with
- *       {@code markAndNotifyBlock(..., 3, 512)} — a flag-3 cascade per block, one block at a time.
- *       Here a crop can fail on <em>soil</em> as well as light, if it happens to be moved before the
- *       farmland beneath it has arrived.</li>
- * </ol>
+ * <p><b>Scope.</b> This guard exists for stamps happening at <b>ordinary world coordinates</b>, which
+ * is the one window {@code CropBlockCarriageSurviveMixin}'s shipyard-coordinate test cannot see:
+ * the pre-lift spawn stamp in the source world, and the editor preview plots (which sit near the
+ * origin at y≈250 and are never lifted at all — without this, a saved wheat template came back empty
+ * the next time its author opened it). Everything at shipyard coordinates — the Sable lift and the
+ * carriage's entire subsequent life — is covered by the position test instead and needs no guard.
+ * Note the lift is <i>not</i> a soil-ordering hazard: {@code moveBlocks} writes every destination cell
+ * before it cascades over any of them, so the farmland is always already there. See that mixin's
+ * javadoc for the bytecode reference.</p>
  *
- * <p>Neither window is a real gameplay event: they are our own construction scaffolding, visible to
- * nobody. {@code CropBlockCarriageSurviveMixin} reads {@link #isActive()} and lets a crop survive
- * unconditionally while the flag is held, so a cell the author saved cannot be deleted by a state
- * the carriage passes through on its way to being finished. Once the guard drops, vanilla rules
- * resume — see that mixin for the separate, permanent shipyard rule that outlives placement.</p>
- *
- * <p><b>Scope and safety.</b> The flag is a <b>thread-local depth counter</b>, mirroring
+ * <p><b>Safety.</b> The flag is a <b>thread-local depth counter</b>, mirroring
  * {@link games.brennan.dungeontrain.ship.sable.WorldgenForceGuard}. It is set only from server-thread
- * placement call sites, so only that thread ever sees {@code isActive() == true}; worldgen workers
- * and the client keep their own (zero) count and are unaffected. The guard is held at two nesting
- * levels — around {@code spawnGroup}'s whole place/assemble/contents sequence and again inside
- * {@code placeAt} for callers that stamp a carriage on their own — so the counter, rather than a
- * boolean, is what makes re-entry correct. Every acquire/release pair is a {@code try/finally}: an
- * exception mid-stamp must not leave the flag stuck on, because a stuck flag would suppress crop
- * survival checks for the rest of the server's life.</p>
+ * placement call sites, so only that thread ever sees {@code isActive() == true}; worldgen workers and
+ * the client keep their own (zero) count. The counter rather than a boolean is what makes re-entry
+ * correct: {@code TrainAssembler.spawnGroup} holds the guard and then calls
+ * {@code CarriagePlacer.placeAt}, which holds it again. Every acquire/release pair is a
+ * {@code try/finally}, and callers must go through {@link #run} / {@link #call} rather than touch the
+ * counter directly — a stuck flag would suppress the crop light check for every crop on the server
+ * thread for the rest of the process's life, which is the one catastrophic failure mode here.</p>
  */
 public final class CarriageStampGuard {
 

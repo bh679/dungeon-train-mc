@@ -375,11 +375,11 @@ public final class TrainAssembler {
      * @param trainId      UUID shared by every group in the same train
      */
     public static ManagedShip spawnGroup(ServerLevel level, BlockPos origin, Vector3dc velocity, int anchorPIdx, int groupSize, CarriageDims dims, UUID trainId) {
-        // Guard the WHOLE place -> assemble -> contents sequence, not just the stamp: Sable's
-        // moveBlocks re-writes every lifted block with a flag-3 cascade, one block at a time, so a
-        // template crop can fail canSurvive on its farmland simply because the farmland hasn't been
-        // moved yet. Both that and the pre-lift dark-interior window are our own scaffolding, not
-        // real gameplay states. See CarriageStampGuard.
+        // Guard the whole place -> assemble -> contents sequence rather than just the stamp, so the
+        // window is one contiguous span with no gap between passes for a cascade to land in. What it
+        // protects is the pre-lift work in the SOURCE world, at ordinary coordinates the mixin's
+        // shipyard test can't see; once blocks are at shipyard coords the position test takes over.
+        // See CarriageStampGuard.
         return CarriageStampGuard.call(() ->
             spawnGroupGuarded(level, origin, velocity, anchorPIdx, groupSize, dims, trainId));
     }
