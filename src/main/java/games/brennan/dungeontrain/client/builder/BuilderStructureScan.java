@@ -243,32 +243,19 @@ public final class BuilderStructureScan {
             return new BuilderStructureCells.Sources(blocks, dims, seed,
                     liveCells(box), BuilderBounds.sizeOf(box));
         }
-        BuilderOpenTemplate open = openTemplate(volumes);
+        BuilderOpenTemplate open =
+                BuilderStructureNeeds.openTemplateFor(BuilderBoundsState.context());
         if (open == null) {
             return new BuilderStructureCells.Sources(blocks, dims, seed);
         }
+        // Identity always, live blocks only when something is going to read them: the walk is the
+        // cost, and name-locking a run needs the name rather than the blocks.
+        boolean substitute = volumes.size() == 1
+                && BuilderBoundsState.structureRefresh().substitutes();
         return new BuilderStructureCells.Sources(blocks, dims, seed,
-                liveCells(box), BuilderBounds.sizeOf(box), open);
-    }
-
-    /**
-     * Which stored template the open build may stand in for, or null to read the stores as usual.
-     *
-     * <p>Two questions, deliberately answered in different places. <b>Identity</b> — is this build a
-     * whole stored template, and which one — is {@code BuilderStructureNeeds}', because it is the
-     * same question as what the scene declares. <b>Geometry</b> is this one's: the live read is
-     * {@code volumes.get(0)}, so it can only speak for a template when there is exactly one volume
-     * to be. A carriage group parks three and no single one of them is the build.</p>
-     *
-     * <p>The server asks the same two things in the same order in {@code BuilderStructureStamp}, and
-     * has to: the client's solid-cell set is what the out-of-bounds wash reads, so a client resolving
-     * live against a server that resolved from disk would paint real scenery red.</p>
-     */
-    private static BuilderOpenTemplate openTemplate(List<BoundingBox> volumes) {
-        if (volumes.size() != 1 || !BuilderBoundsState.structureRefresh().substitutes()) {
-            return null;
-        }
-        return BuilderStructureNeeds.openTemplateFor(BuilderBoundsState.context());
+                substitute ? liveCells(box) : Map.of(),
+                substitute ? BuilderBounds.sizeOf(box) : Vec3i.ZERO,
+                open, substitute);
     }
 
     /**

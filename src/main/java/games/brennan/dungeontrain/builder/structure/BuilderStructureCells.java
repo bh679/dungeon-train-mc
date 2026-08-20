@@ -64,7 +64,8 @@ public final class BuilderStructureCells {
      * variant each tile rolls, and the dimensions decide how wide a slice is. Without them, opening
      * a second builder world in the same session would serve it the first one's line.</p>
      */
-    private record CacheKey(BuilderStructure.Kind kind, long worldSeed, CarriageDims dims) {}
+    private record CacheKey(BuilderStructure.Kind kind, long worldSeed, CarriageDims dims,
+                           BuilderOpenTemplate open) {}
 
     private static final Map<CacheKey, Map<BlockPos, BlockState>> CACHE = new ConcurrentHashMap<>();
 
@@ -101,26 +102,46 @@ public final class BuilderStructureCells {
      */
     public record Sources(HolderGetter<Block> blocks, CarriageDims dims, long worldSeed,
                           Map<BlockPos, BlockState> openBuild, Vec3i openSize,
-                          BuilderOpenTemplate open) {
+                          BuilderOpenTemplate open, boolean substitute) {
 
         public Sources(HolderGetter<Block> blocks, CarriageDims dims, long worldSeed) {
-            this(blocks, dims, worldSeed, Map.of(), Vec3i.ZERO, null);
+            this(blocks, dims, worldSeed, Map.of(), Vec3i.ZERO, null, false);
         }
 
         /** The room shape: a live build with no stored template behind it. */
         public Sources(HolderGetter<Block> blocks, CarriageDims dims, long worldSeed,
                        Map<BlockPos, BlockState> openBuild, Vec3i openSize) {
-            this(blocks, dims, worldSeed, openBuild, openSize, null);
+            this(blocks, dims, worldSeed, openBuild, openSize, null, false);
+        }
+
+        /**
+         * The name a rolled slot should use instead of rolling, or null to roll as usual.
+         *
+         * <p><b>What the scene is made of, which is not the same question as how fresh it is.</b> A
+         * line rolls a variant per tile because that is the line the world builds — right up until
+         * one of those tiles is the tile you have open, at which point a lottery is the wrong answer:
+         * what you are judging is whether <em>your</em> tile joins the next one, and three times in
+         * four the seed would hand you somebody else's to judge it against. So while a track template
+         * is open, every slot of its kind is it.</p>
+         *
+         * <p>Independent of the refresh setting on purpose. Whether the run shows the stored tile or
+         * the one you are editing is the control's business; whether the run is made of your tile at
+         * all is the scene's, and it should not change under you when you cycle Updates.</p>
+         */
+        String lockedName(TrackKind kind) {
+            return open instanceof BuilderOpenTemplate.OpenTrack track && track.kind() == kind
+                    ? track.name()
+                    : null;
         }
 
         /** Whether a read for this carriage should answer from the open build instead of the store. */
         boolean substitutesCarriage(String variantId) {
-            return open != null && open.matchesCarriage(variantId);
+            return substitute && open != null && open.matchesCarriage(variantId);
         }
 
         /** Whether a read for this track template should answer from the open build. */
         boolean substitutesTrack(TrackKind kind, String name) {
-            return open != null && open.matchesTrack(kind, name);
+            return substitute && open != null && open.matchesTrack(kind, name);
         }
     }
 
@@ -146,10 +167,12 @@ public final class BuilderStructureCells {
         // of tiles is reassembled every sweep because one of them may be the tile being edited, and
         // a cached run would pin the moment it was first resolved. The per-template cache under this
         // is what keeps that affordable. Everything else caches exactly as it always did.
-        if (src.open() != null) {
+        if (src.substitute()) {
             return resolve(kind, src);
         }
-        return CACHE.computeIfAbsent(new CacheKey(kind, src.worldSeed(), src.dims()),
+        // Keyed on the open template as well, because it decides which slots are name-locked: the
+        // same run under a different open tile is a different run.
+        return CACHE.computeIfAbsent(new CacheKey(kind, src.worldSeed(), src.dims(), src.open()),
                 k -> resolve(k.kind(), src));
     }
 
@@ -457,7 +480,10 @@ public final class BuilderStructureCells {
 
     /** The blocks of whichever variant the world would roll for this kind at this index. */
     private static Map<BlockPos, BlockState> picked(TrackKind kind, long index, Sources src) {
-        return track(kind, TrackVariantRegistry.pickName(kind, src.worldSeed(), index), src);
+        String locked = src.lockedName(kind);
+        return track(kind, locked != null
+                ? locked
+                : TrackVariantRegistry.pickName(kind, src.worldSeed(), index), src);
     }
 
     private static Map<BlockPos, BlockState> track(TrackKind kind, String name, Sources src) {

@@ -189,12 +189,31 @@ public final class BuilderStructureStamp {
             return new BuilderStructureCells.Sources(blocks, data.dims(), level.getSeed(),
                     liveCells(level, box), BuilderBounds.sizeOf(box));
         }
-        BuilderOpenTemplate open = openTemplate(level, data, volumes);
+        BuilderOpenTemplate open = BuilderStructureNeeds.openTemplateFor(contextOf(level, data));
         if (open == null) {
             return new BuilderStructureCells.Sources(blocks, data.dims(), level.getSeed());
         }
+        boolean substitute = substitutes(data, volumes);
         return new BuilderStructureCells.Sources(blocks, data.dims(), level.getSeed(),
-                liveCells(level, box), BuilderBounds.sizeOf(box), open);
+                substitute ? liveCells(level, box) : Map.of(),
+                substitute ? BuilderBounds.sizeOf(box) : Vec3i.ZERO,
+                open, substitute);
+    }
+
+    /**
+     * Whether the open build's blocks stand in for the template they came from.
+     *
+     * <p>The geometry half of the rule, and the reason it is here rather than with the identity: the
+     * live read is {@code volumes.get(0)}, so it can only speak for a template when there is exactly
+     * one volume to be. A carriage group parks three and no single one of them is the build.</p>
+     *
+     * <p>{@code BuilderStructureScan} asks the same two things in the same order, and has to: the
+     * client's solid-cell set is what the out-of-bounds wash reads, so a client resolving live
+     * against a server that resolved from disk would paint real scenery red.</p>
+     */
+    private static boolean substitutes(DungeonTrainWorldData data, List<BoundingBox> volumes) {
+        return volumes.size() == 1
+                && BuilderStructureRefresh.orDefault(data.builderStructureRefresh()).substitutes();
     }
 
     /**
@@ -216,28 +235,11 @@ public final class BuilderStructureStamp {
             return null;
         }
         List<BoundingBox> volumes = BuilderBounds.volumesFor(level);
-        return openTemplate(level, data, volumes) == null ? null : volumes.get(0);
-    }
-
-    /**
-     * Which stored template the open build may stand in for, or null to read the stores as usual.
-     *
-     * <p><b>The same two questions, in the same order, as {@code BuilderStructureScan.openTemplate}
-     * — and they must stay that way.</b> The client's solid-cell set is what the out-of-bounds wash
-     * reads to know which real blocks are scenery; a server that stamped from disk while the client
-     * resolved live would have the wash painting real structure red.</p>
-     *
-     * <p>The geometry half is this side's, as it is over there: the live read is
-     * {@code volumes.get(0)}, so it can only speak for a template when there is exactly one volume
-     * to be. A carriage group parks three and no single one of them is the build.</p>
-     */
-    private static BuilderOpenTemplate openTemplate(ServerLevel level, DungeonTrainWorldData data,
-                                                    List<BoundingBox> volumes) {
-        if (volumes.size() != 1
-                || !BuilderStructureRefresh.orDefault(data.builderStructureRefresh()).substitutes()) {
+        if (!substitutes(data, volumes)
+                || BuilderStructureNeeds.openTemplateFor(contextOf(level, data)) == null) {
             return null;
         }
-        return BuilderStructureNeeds.openTemplateFor(contextOf(level, data));
+        return volumes.get(0);
     }
 
     /**

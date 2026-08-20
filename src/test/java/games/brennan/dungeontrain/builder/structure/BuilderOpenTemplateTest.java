@@ -120,6 +120,53 @@ final class BuilderOpenTemplateTest {
     }
 
     @Test
+    @DisplayName("While a track template is open, every slot of its kind is it rather than a roll")
+    void anOpenTrackKindLocksItsSlots() {
+        // The bug this exists to fix. The line rolls a variant per tile off the world seed, and four
+        // tile variants ship — so with a tile open, three slots in four were somebody else's
+        // template and correctly refused to follow the edit. Pillars only looked fine because one
+        // variant of each ships, so every roll already came back as the one being edited.
+        BuilderStructureCells.Sources locked = sources(
+                new BuilderOpenTemplate.OpenTrack(TrackKind.TILE, "sleepside"), false);
+
+        assertEquals("sleepside", locked.lockedName(TrackKind.TILE));
+        assertNull(locked.lockedName(TrackKind.PILLAR_TOP),
+                "a kind you are not editing still rolls, which is the line the world builds");
+    }
+
+    @Test
+    @DisplayName("The lock is the scene's business, so cycling Updates does not change it")
+    void theLockIsIndependentOfTheRefreshSetting() {
+        // Whether the run shows the stored tile or the one being edited is the control's question.
+        // Whether the run is made of that tile at all is not, and must not shift under the player
+        // when they cycle Updates.
+        BuilderOpenTemplate open = new BuilderOpenTemplate.OpenTrack(TrackKind.TILE, "sleepside");
+
+        assertEquals("sleepside", sources(open, true).lockedName(TrackKind.TILE));
+        assertEquals("sleepside", sources(open, false).lockedName(TrackKind.TILE));
+        // Substitution, though, is exactly the control's question.
+        assertTrue(sources(open, true).substitutesTrack(TrackKind.TILE, "sleepside"));
+        assertFalse(sources(open, false).substitutesTrack(TrackKind.TILE, "sleepside"));
+    }
+
+    @Test
+    @DisplayName("A carriage build locks nothing — a carriage has no rolled slots to lock")
+    void aCarriageBuildLocksNoTrackSlots() {
+        BuilderStructureCells.Sources src =
+                sources(new BuilderOpenTemplate.OpenCarriage(VARIANT), true);
+        for (TrackKind kind : TrackKind.values()) {
+            assertNull(src.lockedName(kind));
+        }
+        assertNull(sources(null, false).lockedName(TrackKind.TILE));
+    }
+
+    private static BuilderStructureCells.Sources sources(BuilderOpenTemplate open,
+                                                         boolean substitute) {
+        return new BuilderStructureCells.Sources(null, DIMS, 1234L, java.util.Map.of(),
+                Vec3i.ZERO, open, substitute);
+    }
+
+    @Test
     @DisplayName("A carriage identity never matches a track read, and the reverse")
     void identitiesDoNotCrossOver() {
         BuilderOpenTemplate carriage = new BuilderOpenTemplate.OpenCarriage(VARIANT);
