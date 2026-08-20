@@ -240,7 +240,10 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
             // core fill, which replaces whole columns, would quietly bury every fortress and bastion it
             // generated. (The train still punches through: clearCorridorClearance runs after this and is
             // deliberately left unguarded.)
-            BandStructureGuard structureGuard = BandStructureGuard.collect(level, cp);
+            //
+            // Resolved lazily on the first core column: most in-band chunks are mountain or crossfade,
+            // which no Nether structure can reach, and those should not pay for a structure-reference walk.
+            BandStructureGuard structureGuard = null;
 
             // Per-column edge-waved X, computed once here for all 256 columns and reused by
             // clearCorridorClearance below (which otherwise recomputes the 4-octave wavyX noise for the
@@ -281,6 +284,7 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
 
                     boolean colChanged;
                     if (core) {
+                        if (structureGuard == null) structureGuard = BandStructureGuard.collect(level, cp);
                         ResourceKey<Biome> coreBiome = coreBiomeKeyAt(bandCtx, worldX, worldZ);
                         long coreT0 = GenProfiler.t0();       // real-Nether router sampling — the confirmed DT hotspot
                         colChanged = fillNetherColumn(chunk, dx, dz, worldX, worldZ, bedY, railY, zMin, zMax, tg,
