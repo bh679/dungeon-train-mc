@@ -308,6 +308,12 @@ public final class BuilderPauseMenuHandler {
         // View, under the shape toggles it behaves like — the one control here that changes what
         // you see rather than what you're building. Its own label, because its label is its state.
         event.addListener(new BuilderStructureButton(x, y, width, height));
+        y += rowStride;
+
+        // …and how current the structures made from the open template are. Directly under the
+        // control it qualifies, inside the same group, because on its own the row says nothing —
+        // it is the second half of one thought about what is around the build.
+        event.addListener(new BuilderStructureRefreshButton(x, y, width, height));
         y += rowStride + BuilderPauseMenuLayout.GROUP_GAP;
 
         // Size, for the one thing the builder edits that has one worth changing. Added only when a

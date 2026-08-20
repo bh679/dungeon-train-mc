@@ -157,13 +157,78 @@ public final class BuilderStructureNeeds {
         groundTrack(out, ctx.dims());
         carriageGroup(out, ctx);
 
-        if (ctx.subType() != BuilderNewOptions.SubType.CARRIAGE_ROOM || ctx.parked() != 1) {
+        if (!declaresShell(ctx)) {
             return;
         }
         out.add(new BuilderStructure.Placement(
                 new BuilderStructure.Kind.CarriageShell(ctx.variantId()),
                 new BlockPos(BuilderWorldLayout.trainStartX(1, ctx.dims()),
                         BuilderWorldLayout.TRAIN_Y, 0)));
+    }
+
+    /**
+     * Which stored template the open build is, when its own blocks may stand in for that template.
+     *
+     * <p>Null means "read the store as usual", and is the ordinary answer for anything that is not a
+     * whole stored template — a portal room (whose copies are already resolved live by their own
+     * kinds) and anything with no name yet.</p>
+     *
+     * <h2>The carriage rule is about the shell, not the sub type</h2>
+     *
+     * <p>Every carriage build volume is {@code dims}-sized whatever the sub type, so a Carriage Room
+     * or a Part build reads back as a whole carriage and can stand in for one. The case that cannot
+     * is the one where a {@link BuilderStructure.Kind.CarriageShell} is declared — see
+     * {@link #insideCarriage}. That shell is exempted from the build-volume filter by
+     * {@link #allows}, which means the materialiser <em>clears it out of the world</em> whenever the
+     * structures are not solid. Read the volume back then and there is no shell in it, so a carriage
+     * resolved from it would be a carriage with no walls — and, since the shell resolves from the
+     * carriage, a shell with no cells, which is a hole that re-opens itself every sweep.</p>
+     *
+     * <p>Excluded in every structure mode rather than only the ones that clear it. In Solid the shell
+     * is real and the read would be sound, but a substitution that silently switches source when you
+     * toggle Ghost to Solid is a worse thing to own than the one case it would buy.</p>
+     *
+     * <p><b>Where "the open template" is a slight lie.</b> For a Carriage Room or a Part the match
+     * key is the variant the world was <em>stamped from</em>, which is not the name the build saves
+     * as. What the player sees is the carriage they are standing in following their edits, which is
+     * the thing they asked for; the template they are authoring is a piece of it.</p>
+     */
+    public static BuilderOpenTemplate openTemplateFor(Context ctx) {
+        if (ctx == null || ctx.mode() == null) {
+            return null;
+        }
+        return switch (ctx.mode()) {
+            case TRACKS_TUNNELS -> openTrack(ctx);
+            case TRAIN_OUTSIDE, INSIDE_CARRIAGE -> openCarriage(ctx);
+            // A room's copies are RoomTile/RoomBedrock, which read the open build directly and have
+            // never gone through a store at all. Nothing here to redirect.
+            case TRAIN_DIMENSIONS -> null;
+        };
+    }
+
+    private static BuilderOpenTemplate openTrack(Context ctx) {
+        return ctx.trackKind() == null || ctx.buildName() == null || ctx.buildName().isEmpty()
+                ? null
+                : new BuilderOpenTemplate.OpenTrack(ctx.trackKind(), ctx.buildName());
+    }
+
+    private static BuilderOpenTemplate openCarriage(Context ctx) {
+        if (ctx.variantId() == null || ctx.variantId().isEmpty() || declaresShell(ctx)) {
+            return null;
+        }
+        return new BuilderOpenTemplate.OpenCarriage(ctx.variantId());
+    }
+
+    /**
+     * Whether this scene puts a {@link BuilderStructure.Kind.CarriageShell} around the player.
+     *
+     * <p>The condition {@link #insideCarriage} branches on, named once and read from both places, so
+     * "is a shell declared" and "may the volume stand in for a carriage" cannot answer differently.</p>
+     */
+    private static boolean declaresShell(Context ctx) {
+        return ctx.mode() == BuilderMode.INSIDE_CARRIAGE
+                && ctx.subType() == BuilderNewOptions.SubType.CARRIAGE_ROOM
+                && ctx.parked() == 1;
     }
 
     // ---- Tracks & Tunnels ----
@@ -241,16 +306,16 @@ public final class BuilderStructureNeeds {
         if (open == TrackKind.TUNNEL_PORTAL) {
             // Behind the mouth only. The plot is the entrance portal, which the generator stamps
             // unmirrored at the low-X end of a run, so the tunnel runs away from it on +X.
-            tunnelSection(out, plotMinX + len, y, z);
-            tunnelSection(out, plotMinX + 2 * len, y, z);
+            tunnelSection(out, ctx, plotMinX + len, y, z);
+            tunnelSection(out, ctx, plotMinX + 2 * len, y, z);
             return;
         }
 
-        tunnelSection(out, plotMinX - len, y, z);
-        tunnelSection(out, plotMinX + len, y, z);
+        tunnelSection(out, ctx, plotMinX - len, y, z);
+        tunnelSection(out, ctx, plotMinX + len, y, z);
         // Entrance at the low-X mouth, exit at the high-X one — mirrored, as the generator has it.
-        tunnelPortal(out, plotMinX - 2 * len, y, z, false);
-        tunnelPortal(out, plotMinX + 2 * len, y, z, true);
+        tunnelPortal(out, ctx, plotMinX - 2 * len, y, z, false);
+        tunnelPortal(out, ctx, plotMinX + 2 * len, y, z, true);
         // The shaft last, so it wins the cells it shares with the tunnel. That is the generator's
         // own precedence rather than a preference: it *carves* the shaft through the tunnel — walls
         // and ceiling included — and stamps the stairs into the carve, which is what opens the
@@ -306,7 +371,7 @@ public final class BuilderStructureNeeds {
         int len = TunnelPlacer.LENGTH;
         int shaftX = BuilderTrackPlot.editedColumnCentreX();
         for (int repeat = -1; repeat <= 1; repeat++) {
-            tunnelSection(out, shaftX - len / 2 + repeat * len, tg.floorY(), tg.wallMinZ() + 1);
+            tunnelSection(out, ctx, shaftX - len / 2 + repeat * len, tg.floorY(), tg.wallMinZ() + 1);
         }
         // Last, so the shaft wins the tunnel cells it passes through — the carve the generator makes
         // before stamping the stairs into it. This is the flight the open pavilion caps, so unlike
@@ -484,16 +549,38 @@ public final class BuilderStructureNeeds {
                 new BlockPos(centreX - 1, floorY, BuilderTrackScene.stairsMinZ(false, dims))));
     }
 
-    private static void tunnelSection(List<BuilderStructure.Placement> out, int x, int y, int z) {
+    /**
+     * The name the tunnel arms build their neighbours from.
+     *
+     * <p>Unlike the line, a tunnel run is not rolled per tile — {@code TunnelPlacer} lays one named
+     * variant along a run, so the neighbours of the piece you are editing are copies of it rather
+     * than a lottery. Naming the open template here is therefore what the generator would do, and it
+     * is also the only way the arms can ever show your work: hard-coded to {@code default}, a tunnel
+     * authored under any other name would sit in a run of somebody else's tunnel for ever.</p>
+     *
+     * <p>Falls back to {@code default} when the open build is not a tunnel of this kind — a stairs
+     * entrance declares tunnel around its shaft, and the run there belongs to no template in
+     * particular.</p>
+     */
+    private static String tunnelName(Context ctx, TrackKind kind) {
+        return ctx.trackKind() == kind && ctx.buildName() != null && !ctx.buildName().isEmpty()
+                ? ctx.buildName()
+                : TrackKind.DEFAULT_NAME;
+    }
+
+    private static void tunnelSection(List<BuilderStructure.Placement> out, Context ctx,
+                                      int x, int y, int z) {
         out.add(new BuilderStructure.Placement(
-                new BuilderStructure.Kind.TunnelSection(TrackKind.DEFAULT_NAME, false),
+                new BuilderStructure.Kind.TunnelSection(
+                        tunnelName(ctx, TrackKind.TUNNEL_SECTION), false),
                 new BlockPos(x, y, z)));
     }
 
-    private static void tunnelPortal(List<BuilderStructure.Placement> out, int x, int y, int z,
-                                     boolean mirrorX) {
+    private static void tunnelPortal(List<BuilderStructure.Placement> out, Context ctx,
+                                     int x, int y, int z, boolean mirrorX) {
         out.add(new BuilderStructure.Placement(
-                new BuilderStructure.Kind.TunnelPortal(TrackKind.DEFAULT_NAME, mirrorX),
+                new BuilderStructure.Kind.TunnelPortal(
+                        tunnelName(ctx, TrackKind.TUNNEL_PORTAL), mirrorX),
                 new BlockPos(x, y, z)));
     }
 

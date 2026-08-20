@@ -69,6 +69,7 @@ public final class DungeonTrainWorldData extends SavedData {
     private static final String TAG_BUILDER_TRACK_KIND = "builderTrackKind";
     private static final String TAG_BUILDER_CARRIAGES = "builderCarriages";
     private static final String TAG_BUILDER_STRUCTURE_MODE = "builderStructureMode";
+    private static final String TAG_BUILDER_STRUCTURE_REFRESH = "builderStructureRefresh";
     private static final String TAG_BUILDER_RELAY_BUILDS = "builderRelayBuilds";
 
     private int trainY;
@@ -152,6 +153,14 @@ public final class DungeonTrainWorldData extends SavedData {
      * the world has to agree on. See {@code BuilderStructureMode}.</p>
      */
     private String builderStructureMode;
+    /**
+     * When the structures around the build re-read the template they are made of, or null when this
+     * world has never been told. See {@code BuilderStructureRefresh}.
+     *
+     * <p>World state for the same reason the mode is: while the structures are solid, refreshing
+     * them is the server rewriting blocks rather than a client redrawing a ghost.</p>
+     */
+    private String builderStructureRefresh;
     /**
      * The Stage the builder picked when starting this build, or null/empty when they didn't pick
      * one. Held until the build is saved, at which point the written template is linked to it —
@@ -372,6 +381,12 @@ public final class DungeonTrainWorldData extends SavedData {
         if (tag.contains(TAG_BUILDER_STRUCTURE_MODE)) {
             data.builderStructureMode = tag.getString(TAG_BUILDER_STRUCTURE_MODE);
         }
+        // Absent in every world saved before the refresh control existed. Left null, which
+        // BuilderStructureRefresh.orDefault reads as instant — the room copies were live before
+        // there was a control, and loading an old world must not quietly stop them being.
+        if (tag.contains(TAG_BUILDER_STRUCTURE_REFRESH)) {
+            data.builderStructureRefresh = tag.getString(TAG_BUILDER_STRUCTURE_REFRESH);
+        }
         return data;
     }
 
@@ -428,6 +443,9 @@ public final class DungeonTrainWorldData extends SavedData {
         }
         if (builderStructureMode != null) {
             tag.putString(TAG_BUILDER_STRUCTURE_MODE, builderStructureMode);
+        }
+        if (builderStructureRefresh != null) {
+            tag.putString(TAG_BUILDER_STRUCTURE_REFRESH, builderStructureRefresh);
         }
         return tag;
     }
@@ -534,6 +552,19 @@ public final class DungeonTrainWorldData extends SavedData {
 
     public void setBuilderStructureMode(String modeId) {
         this.builderStructureMode = modeId;
+        setDirty();
+    }
+
+    /**
+     * When the structures re-read their template, or null/empty when never told. See
+     * {@code BuilderStructureRefresh#orDefault}, which is what every reader goes through.
+     */
+    public String builderStructureRefresh() {
+        return builderStructureRefresh;
+    }
+
+    public void setBuilderStructureRefresh(String refreshId) {
+        this.builderStructureRefresh = refreshId;
         setDirty();
     }
 

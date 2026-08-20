@@ -6,6 +6,7 @@ import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.longs.LongSets;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.builder.BuilderBounds;
+import games.brennan.dungeontrain.builder.structure.BuilderOpenTemplate;
 import games.brennan.dungeontrain.builder.structure.BuilderStructure;
 import games.brennan.dungeontrain.builder.structure.BuilderStructureCells;
 import games.brennan.dungeontrain.builder.structure.BuilderStructureNeeds;
@@ -16,6 +17,7 @@ import net.minecraft.core.Vec3i;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.Level;
+import games.brennan.dungeontrain.train.CarriageDims;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
@@ -231,14 +233,42 @@ public final class BuilderStructureScan {
         MinecraftServer server = Minecraft.getInstance().getSingleplayerServer();
         long seed = server == null ? 0L : server.overworld().getSeed();
         List<BoundingBox> volumes = BuilderBoundsState.volumes();
-        // Only a room needs the build read back, and only a room should pay for it: this walks the
-        // whole build volume, which for the largest room is 25 000 block lookups a sweep.
-        if (volumes.isEmpty() || !BuilderBoundsState.isRoomOpen()) {
-            return new BuilderStructureCells.Sources(blocks, BuilderBoundsState.dims(), seed);
+        CarriageDims dims = BuilderBoundsState.dims();
+        if (volumes.isEmpty()) {
+            return new BuilderStructureCells.Sources(blocks, dims, seed);
         }
         BoundingBox box = volumes.get(0);
-        return new BuilderStructureCells.Sources(blocks, BuilderBoundsState.dims(), seed,
-                liveCells(box), BuilderBounds.sizeOf(box));
+        // A room's copies are copies of the room, and always have been — no control gates them.
+        if (BuilderBoundsState.isRoomOpen()) {
+            return new BuilderStructureCells.Sources(blocks, dims, seed,
+                    liveCells(box), BuilderBounds.sizeOf(box));
+        }
+        BuilderOpenTemplate open = openTemplate(volumes);
+        if (open == null) {
+            return new BuilderStructureCells.Sources(blocks, dims, seed);
+        }
+        return new BuilderStructureCells.Sources(blocks, dims, seed,
+                liveCells(box), BuilderBounds.sizeOf(box), open);
+    }
+
+    /**
+     * Which stored template the open build may stand in for, or null to read the stores as usual.
+     *
+     * <p>Two questions, deliberately answered in different places. <b>Identity</b> — is this build a
+     * whole stored template, and which one — is {@code BuilderStructureNeeds}', because it is the
+     * same question as what the scene declares. <b>Geometry</b> is this one's: the live read is
+     * {@code volumes.get(0)}, so it can only speak for a template when there is exactly one volume
+     * to be. A carriage group parks three and no single one of them is the build.</p>
+     *
+     * <p>The server asks the same two things in the same order in {@code BuilderStructureStamp}, and
+     * has to: the client's solid-cell set is what the out-of-bounds wash reads, so a client resolving
+     * live against a server that resolved from disk would paint real scenery red.</p>
+     */
+    private static BuilderOpenTemplate openTemplate(List<BoundingBox> volumes) {
+        if (volumes.size() != 1 || !BuilderBoundsState.structureRefresh().substitutes()) {
+            return null;
+        }
+        return BuilderStructureNeeds.openTemplateFor(BuilderBoundsState.context());
     }
 
     /**
