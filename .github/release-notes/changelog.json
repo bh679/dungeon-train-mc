@@ -7259,6 +7259,23 @@
       "released": true,
       "released_in": "v0.575.0",
       "released_at": "2026-08-19T16:00:27Z"
+    },
+    {
+      "id": "editor-save-no-mirror-rebuild",
+      "version": "0.576.0",
+      "type": "fix",
+      "title": "Saving in the editor no longer re-mirrors your build",
+      "summary": "Hitting Save in an in-game editor used to rebuild the mirrored half of the plot from the master octant first, quietly overwriting anything you had deliberately made asymmetric \u2014 and anything placed by a route the live mirror doesn't watch, like a clipboard paste or an edit made before you turned the axis on. Save now captures the plot exactly as you left it. When you do want the far half rebuilt from the master, ask for it: the new Mirror -> Rebuild button in the editor menu, or /dungeontrain editor mirror rebuild.",
+      "highlights": [
+        "Save captures the plot as it stands \u2014 mirroring no longer runs behind your back",
+        "New on-demand re-mirror: Mirror -> Rebuild in the editor menu, or /dungeontrain editor mirror rebuild",
+        "Live mirroring while you build is unchanged"
+      ],
+      "pr": 996,
+      "date": "2026-08-20",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
