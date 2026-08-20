@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.worldgen;
 
+import games.brennan.dungeontrain.difficulty.BakedItemStats;
 import games.brennan.dungeontrain.editor.ChiseledBookshelfSync;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
@@ -101,7 +102,9 @@ public final class SilentBlockOps {
         // Stamp the BE's coordinate fields so load() doesn't overwrite the
         // freshly-placed position. Vanilla BlockEntity.load reads x/y/z from
         // the tag if present, so we set them to match the target pos.
-        CompoundTag positioned = beNbt.copy();
+        // Baked author NBT from a variant sidecar reaches this line, and a sidecar can hold gear with
+        // impossible stats exactly as a template can — see BakedItemStats. No-op on clean NBT.
+        CompoundTag positioned = BakedItemStats.repair(level, pos, beNbt).copy();
         positioned.putInt("x", pos.getX());
         positioned.putInt("y", pos.getY());
         positioned.putInt("z", pos.getZ());
@@ -222,7 +225,7 @@ public final class SilentBlockOps {
         if (beNbt == null || !newState.hasBlockEntity()) return;
         BlockEntity be = level.getBlockEntity(pos);
         if (be == null) return;
-        CompoundTag positioned = beNbt.copy();
+        CompoundTag positioned = BakedItemStats.repair(level, pos, beNbt).copy();
         positioned.putInt("x", pos.getX());
         positioned.putInt("y", pos.getY());
         positioned.putInt("z", pos.getZ());
