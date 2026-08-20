@@ -17,9 +17,12 @@ import net.minecraft.core.Vec3i;
  *       that mouth and the twin structure opens into the surrounding rock. Growing past the floor is
  *       free — {@code structureBox}'s slack and {@code eraseTwin}'s bounds are both derived from the
  *       live room size, not from a constant.</li>
- *   <li><b>Height has a ceiling too.</b> Portal pairs are spread over Y lanes
- *       {@link #TWIN_LANE_HEIGHT} apart; a room taller than that reaches into the next pair's lane,
- *       which is the collision the lanes exist to prevent.</li>
+ *   <li><b>Height has a ceiling too.</b> {@link #MAX_HEIGHT} is what an author may ask for; what a
+ *       given world can actually stand up is decided by
+ *       {@link PortalTwinLanes#maxStructureHeight}, because a twin structure has to fit between the
+ *       basement floor and the bedrock. Portal pairs are spread over Y lanes sized to the room
+ *       itself — see {@link PortalTwinLanes#laneHeight} — so a taller room costs lanes rather than
+ *       being refused.</li>
  *   <li><b>Length has no floor beyond legibility.</b> It is the distance a player walks underneath,
  *       and the whole point of the portal is that this differs from the two carriages the same walk
  *       covers on the train.</li>
@@ -45,29 +48,14 @@ public final class PortalRoomLayout {
     private static final int BUILT_IN_INTERIOR_HEIGHT = 5;
 
     /**
-     * Vertical spacing between the Y lanes portal pairs are spread over.
-     *
-     * <p>Lives here rather than with the tick loop that applies it because it is really a statement
-     * about how tall a structure may be, and that is room geometry: {@link #MAX_HEIGHT} is derived
-     * from it so the two cannot drift apart.</p>
-     *
-     * <p>Every structure used to be stamped at the same height, and two pairs were observed landing
-     * four blocks apart — near-total overlap, each overwriting the other's corridor so neither
-     * matched its carriage any more. Lanes make a collision need both the same lane and overlapping
-     * X. Lanes go in Y rather than Z deliberately: the loading guarantee is that a twin sits in its
-     * carriage's <b>chunk columns</b>, and Y is the one axis that cannot take it out of them.</p>
-     */
-    public static final int TWIN_LANE_HEIGHT = 12;
-
-    /**
      * How far {@link PortalRoomMode#BEDROCKLESS} sweeps the space around a room, in blocks, on each
      * horizontal axis.
      *
      * <p><b>Horizontal only.</b> There is no vertical counterpart and there must not be one:
-     * {@link #TWIN_LANE_HEIGHT} is the whole distance to the next pair's structure, so a clearance of
-     * this size in Y would delete it. A Bedrockless room's emptiness is a flat void the height of the
-     * structure that sits in it, and the fog — drawn at this same distance — is what keeps its
-     * ceiling out of view.</p>
+     * {@link PortalTwinLanes#laneHeight} is the whole distance to the next pair's structure, and it
+     * is only one block more than the structure's own height, so a clearance of this size in Y would
+     * delete it. A Bedrockless room's emptiness is a flat void the height of the structure that sits
+     * in it, and the fog — drawn at this same distance — is what keeps its ceiling out of view.</p>
      *
      * <p>Chosen against the fog rather than against the world: it is the radius
      * {@code PortalStructure.fogRadius} reports for the mode, so the space that was cleared and the
@@ -119,12 +107,20 @@ public final class PortalRoomLayout {
     public static final int MAX_WIDTH = 48;
 
     /**
-     * Tallest room: one block clear of the lane above.
+     * Tallest room an author may ask for — the ceiling on the editor's stepper and on a template.
      *
-     * <p>{@code eraseTwin} sweeps one row past the structure's top, so a room of exactly
-     * {@link #TWIN_LANE_HEIGHT} would erase the floor of the next lane's structure.</p>
+     * <p><b>Not on its own a promise that a world can stand one up.</b> A twin structure lives in
+     * the basement between the build floor and the bedrock, and a DT preset keeps 80 blocks of it;
+     * {@link PortalTwinLanes#maxStructureHeight} is what that leaves for a structure in a given
+     * world (77 in every stock preset), and {@code PortalCarriageBuilder.planStructure} clamps to it.
+     * A deeper dimension reaches the whole number.</p>
+     *
+     * <p>This used to be {@code TWIN_LANE_HEIGHT - 1} (11) — the lane spacing was a constant, so the
+     * tallest room was whatever fitted under it. The spacing is a function of the room now
+     * ({@link PortalTwinLanes#laneHeight}), which turns the trade around: a taller room costs lanes,
+     * and lanes are only a collision-avoidance spread, not a correctness requirement.</p>
      */
-    public static final int MAX_HEIGHT = TWIN_LANE_HEIGHT - 1;
+    public static final int MAX_HEIGHT = 80;
 
     private PortalRoomLayout() {}
 

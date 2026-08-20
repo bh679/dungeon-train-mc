@@ -33,14 +33,15 @@ import java.util.Locale;
  * which is what makes it hold in a Compatible Terrain world, where the basement does not exist and a
  * twin sits inside solid rock.</p>
  *
- * <p>The clearance is horizontal only. Pairs are spread over Y lanes
- * {@link PortalRoomLayout#TWIN_LANE_HEIGHT} apart, so clearing the same distance vertically would
- * empty the lane above and below — the collision the lanes exist to prevent. What a player sees is a
+ * <p>The clearance is horizontal only. Pairs are spread over Y lanes only
+ * {@link PortalTwinLanes#laneHeight} apart — one block more than the structure itself — so clearing
+ * the same distance vertically would empty the lane above and below — the collision the lanes exist to prevent. What a player sees is a
  * flat void, and with the fog at the same distance its ceiling is never in view.</p>
  *
  * <h2>Why the tiling grid is X and Z but never Y</h2>
- * <p>Portal pairs are spread over Y lanes {@link PortalRoomLayout#TWIN_LANE_HEIGHT} apart, and
- * {@code PortalCarriageBuilder.eraseTwin} sweeps one row past a structure's top. Vertical repetition
+ * <p>Portal pairs are spread over Y lanes {@link PortalTwinLanes#laneHeight} apart — one block more
+ * than the structure itself — and {@code PortalCarriageBuilder.eraseTwin} sweeps one row past a
+ * structure's top. Vertical repetition
  * would reach into the lane above, which is the collision the lanes exist to prevent. Keeping the
  * grid horizontal makes that safe by construction rather than by a check that could drift.</p>
  *

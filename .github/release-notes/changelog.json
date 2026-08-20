@@ -7309,6 +7309,19 @@
       "released": true,
       "released_in": "v0.578.0",
       "released_at": "2026-08-20T12:54:15Z"
+    },
+    {
+      "id": "portal-room-height-80",
+      "version": "0.579.0",
+      "type": "feat",
+      "title": "Dimensional carriages can be built up to 80 blocks tall",
+      "summary": "The room inside a dimensional carriage was capped at 11 blocks tall. It can now be built up to 80.",
+      "highlights": [],
+      "pr": 1000,
+      "date": "2026-08-20",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

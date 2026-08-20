@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.worldgen;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import games.brennan.dungeontrain.portal.PortalRoomLayout;
+import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.portal.PortalTwinLanes;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -41,6 +42,9 @@ final class DimensionTypeBasementTest {
     /** Every DT preset builds to the same sky ceiling; the basement is added below, not stolen above. */
     private static final int DT_SKY_TOP = 320;
 
+    /** The default carriage size, which is what the built-in room is measured against. */
+    private static final CarriageDims DEFAULT_DIMS = CarriageDims.DEFAULT;
+
     @Test
     @DisplayName("every DT dimension type is a legal one vanilla will load")
     void dimensionTypesAreLegal() throws IOException {
@@ -64,6 +68,12 @@ final class DimensionTypeBasementTest {
     @Test
     @DisplayName("every preset's basement is deep enough for all six twin lanes")
     void basementHoldsEveryLane() throws IOException {
+        // Measured at the built-in room's height, not at PortalRoomLayout.MAX_HEIGHT: lane spacing
+        // follows the room now (PortalTwinLanes.laneHeight), so the six-lane guarantee is about the
+        // room a world stamps when nothing taller has been authored. A world that does author a
+        // taller room knowingly spends lanes on it.
+        int builtIn = PortalRoomLayout.builtInSize(DEFAULT_DIMS).getY();
+
         for (Path f : dimensionTypes()) {
             String name = f.getFileName().toString();
             int minY = read(f).get("min_y").getAsInt();
@@ -71,14 +81,33 @@ final class DimensionTypeBasementTest {
 
             assertTrue(bedrockY > minY,
                 name + ": dimension type must run below its noise settings, or there is no basement");
-            assertEquals(PortalTwinLanes.MAX_LANES, PortalTwinLanes.usableLanes(minY, bedrockY),
+            assertEquals(PortalTwinLanes.MAX_LANES,
+                PortalTwinLanes.usableLanes(minY, bedrockY, builtIn),
                 name + ": basement holds " + (bedrockY - minY) + " blocks, too few for every lane");
 
             int topLane = PortalTwinLanes.twinFloorY(minY, bedrockY,
-                (PortalTwinLanes.MAX_LANES - 1) * 4, 4);
-            assertTrue(PortalTwinLanes.fitsUnderWorld(
-                    minY, bedrockY, topLane, PortalRoomLayout.MAX_HEIGHT),
+                (PortalTwinLanes.MAX_LANES - 1) * 4, 4, builtIn);
+            assertTrue(PortalTwinLanes.fitsUnderWorld(minY, bedrockY, topLane, builtIn),
                 name + ": the highest lane would push a room up through the bedrock");
+        }
+    }
+
+    @Test
+    @DisplayName("every preset can stand up a room taller than the built-in one")
+    void basementLeavesHeadroomToAuthorInto() throws IOException {
+        int builtIn = PortalRoomLayout.builtInSize(DEFAULT_DIMS).getY();
+
+        for (Path f : dimensionTypes()) {
+            String name = f.getFileName().toString();
+            int minY = read(f).get("min_y").getAsInt();
+            int bedrockY = read(noiseFor(f)).getAsJsonObject("noise").get("min_y").getAsInt();
+            int tallest = PortalTwinLanes.maxStructureHeight(minY, bedrockY);
+
+            assertTrue(tallest > builtIn,
+                name + ": holds only " + tallest + " blocks, no taller than the built-in room");
+            assertTrue(PortalTwinLanes.fitsUnderWorld(
+                    minY, bedrockY, PortalTwinLanes.floorY(minY), tallest),
+                name + ": its own tallest structure would reach the bedrock");
         }
     }
 

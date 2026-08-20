@@ -6137,12 +6137,17 @@ public final class EditorCommand {
         return Commands.literal(literal)
             .then(Commands.literal("inc").executes(ctx -> runPortalRoomSizeStep(ctx.getSource(), axis, +1)))
             .then(Commands.literal("dec").executes(ctx -> runPortalRoomSizeStep(ctx.getSource(), axis, -1)))
-            // Loosest floor of any axis, not the length's — this node is shared by length, width
-            // and height, and a parser bound is a silent rejection where clampSize is a visible
-            // one. PortalRoomLayout.clampSize stays the single authority on what is legal.
+            // Loosest floor AND ceiling of any axis, not the length's — this node is shared by
+            // length, width and height, and a parser bound is a silent rejection where clampSize is
+            // a visible one. PortalRoomLayout.clampSize stays the single authority on what is legal.
+            //
+            // The ceiling was MAX_LENGTH (48), which was fine while every axis capped there; height
+            // now goes to MAX_HEIGHT (80), and `portals height 70` was refused by the parser with
+            // "Integer must not be more than 48" before the clamp could say anything.
             .then(Commands.argument("blocks", IntegerArgumentType.integer(
                     Math.min(PortalRoomLayout.MIN_LENGTH, PortalRoomLayout.MIN_HEIGHT),
-                    PortalRoomLayout.MAX_LENGTH))
+                    Math.max(PortalRoomLayout.MAX_LENGTH,
+                        Math.max(PortalRoomLayout.MAX_WIDTH, PortalRoomLayout.MAX_HEIGHT))))
                 .executes(ctx -> runPortalRoomSize(ctx.getSource(), axis,
                     IntegerArgumentType.getInteger(ctx, "blocks"))));
     }
@@ -6172,7 +6177,7 @@ public final class EditorCommand {
         boolean clamped = !applied.equals(wanted);
         String note = clamped
             ? " (clamped from " + length + " " + width + " " + height
-                + " — the room must still seal the corridor mouth and fit its Y lane)"
+                + " — the room must still seal the corridor mouth, and fit under the sky)"
             : "";
         source.sendSuccess(() -> Component.literal(
             "Portal room '" + name + "' is now " + applied.getX() + " long, " + applied.getZ()
@@ -6247,7 +6252,7 @@ public final class EditorCommand {
         int value = PortalRoomEditor.axisOf(applied, axis);
         String axisName = axis.name().toLowerCase(Locale.ROOT);
         String note = value == blocks ? ""
-            : " (clamped from " + blocks + " — the room must still seal the corridor mouth and fit its Y lane)";
+            : " (clamped from " + blocks + " — the room must still seal the corridor mouth, and fit under the sky)";
         String faces = describeFaces(dims, axis, before, value);
         source.sendSuccess(() -> Component.literal(
             "Portal room '" + name + "' " + axisName + " is now " + value + note + "." + faces
