@@ -18,11 +18,14 @@ class PortalCarriageBuilderBoundsTest {
     /** What {@code PortalCarriageEvents.TWIN_FLOOR_MARGIN} puts the lowest lane's floor at. */
     private static final int FLOOR_MARGIN = 1;
 
+    /** The height lanes are spaced on in a world that has authored nothing taller. */
+    private static final int BUILT_IN_ROOM_HEIGHT = 7;
+
     @Test
     @DisplayName("An ordinary lane writes the row under its floor")
     void higherLanesWriteBelowTheFloor() {
         int worldMin = -64;
-        int laneFloor = worldMin + FLOOR_MARGIN + PortalRoomLayout.TWIN_LANE_HEIGHT;
+        int laneFloor = worldMin + FLOOR_MARGIN + PortalTwinLanes.laneHeight(BUILT_IN_ROOM_HEIGHT);
         assertEquals(laneFloor - 1, PortalCarriageBuilder.lowestWritableY(worldMin, laneFloor));
     }
 

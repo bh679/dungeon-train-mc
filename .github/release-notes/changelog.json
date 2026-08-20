@@ -7309,6 +7309,35 @@
       "released": true,
       "released_in": "v0.578.0",
       "released_at": "2026-08-20T12:54:15Z"
+    },
+    {
+      "id": "portal-room-height-80",
+      "version": "0.579.0",
+      "type": "feat",
+      "title": "Dimensional carriages can be built up to 80 blocks tall",
+      "summary": "The room inside a dimensional carriage was capped at 11 blocks tall. It can now be built up to 80.",
+      "highlights": [],
+      "pr": 1000,
+      "date": "2026-08-20",
+      "released": true,
+      "released_in": "v0.579.0",
+      "released_at": "2026-08-20T13:13:59Z"
+    },
+    {
+      "id": "impossible-item-stats-guard",
+      "version": "0.580.0",
+      "type": "fix",
+      "title": "Portal room chests no longer hold gear with impossible stats",
+      "summary": "A Train Dimension room could hand you gear with absurd stat values \u2014 a diamond chestplate with over four million armour. The items were stored inside the room itself, so they turned up for everyone who found that chest. Affected rooms are repaired, and any room still holding such an item now rolls it again at the difficulty of where you found it, so it arrives as ordinary loot. Gear you find deep in a run still scales exactly as it did.",
+      "highlights": [
+        "Fixed a Train Dimension room that held gear with impossible stat values",
+        "Rooms still holding such an item now reroll it as ordinary loot",
+        "Items can no longer be generated with impossible stats in the first place"
+      ],
+      "date": "2026-08-20",
+      "released": true,
+      "released_in": "v0.580.0",
+      "released_at": "2026-08-20T13:28:18Z"
     }
   ]
 }

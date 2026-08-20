@@ -55,7 +55,19 @@ public final class ContainerContentsLinkPropagator {
         // this fan-out get a fresh, mutually-consistent roll. Different from
         // both the placement-time roll (carriageIndex=0) and any prior
         // propagation, so the items visibly change.
+        //
+        // SEED FRAME ONLY. This is a nanoTime draw in the full positive int range, and the
+        // collapsed-frame roll() overload would forward it as the DIFFICULTY frame too — so
+        // DifficultyProgression.positionTier would read ~1e9 as "a billion carriages out" and hand
+        // every propagated item an AIS stat bonus in the millions. Same trap as the portal-room
+        // variantIndex hash (see PortalCarriageBuilder.applyRoomVariants) and the tunnel world-X
+        // frame. The split-frame overload below keeps the salt as the seed and states the
+        // difficulty frame separately.
         int rollSalt = (int) (System.nanoTime() & 0x7FFFFFFFL);
+        // These containers stand in EDITOR PLOTS (BlockVariantPlot.resolveByKey), not on the train,
+        // so there is no position to scale against — the editor-preview sentinel is the established
+        // "nowhere in particular" answer and yields tier 0, exactly as a preview stamp does.
+        int diffIndex = games.brennan.dungeontrain.train.CarriageContentsPlacer.EDITOR_SENTINEL_PIDX;
 
         int touched = 0;
         for (String plotKey : ContainerContentsStore.allKnownPlotKeys()) {
@@ -82,7 +94,8 @@ public final class ContainerContentsLinkPropagator {
                 BlockState state = level.getBlockState(worldPos);
                 CompoundTag baseNbt = be.saveWithFullMetadata(level.registryAccess());
                 CompoundTag rolled = ContainerContentsRoller.roll(
-                    pool, state, localPos, worldSeed, rollSalt, baseNbt, level.registryAccess(), level);
+                    pool, state, localPos, worldSeed, rollSalt, diffIndex, baseNbt,
+                    level.registryAccess(), level);
                 if (rolled == null) continue;
                 be.loadCustomOnly(rolled, level.registryAccess());
                 be.setChanged();

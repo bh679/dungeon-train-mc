@@ -197,14 +197,16 @@ public final class VariantOverlayRenderer {
 
     /**
      * Minimum player Y for the editor overlay to do any work. Every editor plot
-     * sits in the sky at {@code PLOT_Y = 250} (see {@link EditorLayout}); gameplay
-     * and trains run far below. A player under this line can't be at a plot, so the
-     * per-player {@code plotContaining} locate cascade is skipped entirely for them.
+     * sits in the sky at {@link EditorLayout#PLOT_Y}; gameplay and trains run far
+     * below. A player under this line can't be at a plot, so the per-player
+     * {@code plotContaining} locate cascade is skipped entirely for them.
      * That cascade used to run every tick for every player even during normal play
      * with the editor closed (~9ms/tick on a long train — the profiler's "overlay"
-     * cost). Set a few blocks below 250 for standing-on-the-plot-floor margin.
+     * cost). A few blocks below the floor for standing-on-the-plot-floor margin —
+     * derived rather than written out, because a gate left ABOVE the plot floor
+     * would silently disable labels and menus for a player standing on their plot.
      */
-    private static final int EDITOR_Y_MIN = 245;
+    private static final int EDITOR_Y_MIN = EditorLayout.PLOT_Y - 5;
 
     /**
      * Call once per server level tick. Cheap when no players are up at the editor
@@ -223,7 +225,7 @@ public final class VariantOverlayRenderer {
         StagePanelController.resyncIfStale(level.getServer());
 
         for (ServerPlayer player : players) {
-            // Editor plots live in the sky at PLOT_Y=250; trains run far below. Skip the whole
+            // Editor plots live in the sky at EditorLayout.PLOT_Y; trains run far below. Skip the whole
             // editor-overlay locate cascade for anyone not up at the build area — this is the
             // ~9ms/tick the profiler flagged, which ran unconditionally during normal play.
             // forget() clears any lingering editor HUD once on the way out, then no-ops (cheap

@@ -47,7 +47,7 @@ import java.util.List;
 public final class TrackSidePlots {
 
     /** Shared baseline Y for all track-side editor plots. */
-    public static final int Y_BASELINE = 250;
+    public static final int Y_BASELINE = EditorLayout.PLOT_Y;
 
     /**
      * Z baseline for the track-side row — sourced from {@link
