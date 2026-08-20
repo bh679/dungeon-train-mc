@@ -80,8 +80,10 @@ public abstract class ChunkGeneratorDecorationMixin {
 
     /**
      * Skip vanilla structure piece placement in the eroded core — pointless in the void, and it would be
-     * erased by the erosion pass anyway. The band's own End cities are the exception: they are the point
-     * of the floating End islands, so their pieces are let through.
+     * erased by the erosion pass anyway. The band's own structures are the exception: the End cities are
+     * the point of the floating End islands, so their pieces are let through. (The Nether band's
+     * structures never meet this path — its core chunks carry real terrain and are not eroded — but they
+     * are whitelisted with the cities so the rule stays "DT's own structures survive".)
      *
      * <p>Redirecting the per-structure {@code startsForStructure} lookup (rather than the
      * {@code shouldGenerateStructures()} guard around the whole loop) is what makes that distinction
@@ -99,11 +101,11 @@ public abstract class ChunkGeneratorDecorationMixin {
         return structureManager.startsForStructure(sectionPos, structure);
     }
 
-    /** The band's End city is the only structure kept in the eroded core. */
+    /** The band's own structures are the only ones kept in the eroded core. */
     @Unique
     private static boolean dungeontrain$isDtStructure(Structure structure) {
         try {
-            return structure.type() == ModStructureTypes.END_CITY.get();
+            return ModStructureTypes.isBandStructure(structure.type());
         } catch (Throwable t) {
             return false; // unclassifiable → treat as vanilla (the pre-existing behaviour: skip it)
         }

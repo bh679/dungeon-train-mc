@@ -1,0 +1,12 @@
+{
+  "type": "dungeontrain:nether_fossil",
+  "biomes": "#minecraft:has_structure/nether_fossil",
+  "height": {
+    "type": "minecraft:uniform",
+    "min_inclusive": { "absolute": 32 },
+    "max_inclusive": { "absolute": 118 }
+  },
+  "spawn_overrides": {},
+  "step": "underground_decoration",
+  "terrain_adaptation": "none"
+}
