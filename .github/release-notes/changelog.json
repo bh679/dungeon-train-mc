@@ -7259,6 +7259,56 @@
       "released": true,
       "released_in": "v0.575.0",
       "released_at": "2026-08-19T16:00:27Z"
+    },
+    {
+      "id": "editor-save-no-mirror-rebuild",
+      "version": "0.576.0",
+      "type": "fix",
+      "title": "Saving in the editor no longer re-mirrors your build",
+      "summary": "Hitting Save in an in-game editor used to rebuild the mirrored half of the plot from the master octant first, quietly overwriting anything you had deliberately made asymmetric \u2014 and anything placed by a route the live mirror doesn't watch, like a clipboard paste or an edit made before you turned the axis on. Save now captures the plot exactly as you left it. When you do want the far half rebuilt from the master, ask for it: the new Mirror -> Rebuild button in the editor menu, or /dungeontrain editor mirror rebuild.",
+      "highlights": [
+        "Save captures the plot as it stands \u2014 mirroring no longer runs behind your back",
+        "New on-demand re-mirror: Mirror -> Rebuild in the editor menu, or /dungeontrain editor mirror rebuild",
+        "Live mirroring while you build is unchanged"
+      ],
+      "pr": 996,
+      "date": "2026-08-20",
+      "released": true,
+      "released_in": "v0.576.0",
+      "released_at": "2026-08-20T10:57:57Z"
+    },
+    {
+      "id": "nether-band-structures",
+      "version": "0.577.0",
+      "type": "feat",
+      "title": "Fortresses and bastions in the Nether",
+      "summary": "The Nether crossing is no longer empty country. Nether fortresses, bastion remnants, nether fossils and ruined portals now generate out there \u2014 the real ones, with their own loot, their blaze spawners and wither skeleton halls, their piglin brutes and Pigstep. Fortresses stand on their own bridge supports over the lava, and where one happens to lie across the line, the train tunnels straight through it.",
+      "highlights": [
+        "Nether fortresses generate in the Nether crossing, with blazes, wither skeletons and their loot",
+        "Bastion remnants, complete with piglin brutes, treasure rooms and the netherite upgrade template",
+        "Nether fossils in soul sand valleys, and ruined portals with their blackstone and loot",
+        "Ride straight through a fortress that lands across the tracks"
+      ],
+      "pr": 997,
+      "date": "2026-08-20",
+      "released": true,
+      "released_in": "v0.577.0",
+      "released_at": "2026-08-20T11:59:47Z"
+    },
+    {
+      "id": "effortless-building-optional",
+      "version": "0.578.0",
+      "type": "chore",
+      "title": "Effortless Building now bundled in the modpack (off by default)",
+      "summary": "The Dungeon Train modpack now ships Effortless Building alongside the rest of the pack, switched off. Flip it on in the launcher's mod list if you want its building tools \u2014 multi-block placement, mirrors and arrays \u2014 while you build out your train.",
+      "highlights": [
+        "Effortless Building included in the pack, disabled by default \u2014 one click to enable"
+      ],
+      "pr": 999,
+      "date": "2026-08-20",
+      "released": true,
+      "released_in": "v0.578.0",
+      "released_at": "2026-08-20T12:54:15Z"
     }
   ]
 }

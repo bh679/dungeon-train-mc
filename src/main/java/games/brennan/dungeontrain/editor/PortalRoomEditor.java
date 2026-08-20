@@ -605,15 +605,6 @@ public final class PortalRoomEditor {
         BlockPos origin = plotOrigin(name, dims);
         Vec3i size = plotSize(name, dims);
 
-        // Author edits one master octant; rebuild the rest in-world before capture, so the stored
-        // template (and every room stamped from it) matches what the author sees.
-        TrackVariantBlocks sidecar = TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, name, size);
-        EditorVariantMirror.rebuildFromMaster(overworld,
-            new BlockVariantPlot.TrackPlot(TrackKind.PORTAL_ROOM, name, origin, size));
-        EditorMirror.rebuildFromMaster(overworld, origin, size,
-            sidecar.mirrorX(), sidecar.mirrorY(), sidecar.mirrorZ(),
-            EditorMirror.markersOf(sidecar.entries()));
-
         StructureTemplate template = new StructureTemplate();
         template.fillFromWorld(overworld, origin, size, false, Blocks.STRUCTURE_VOID);
 

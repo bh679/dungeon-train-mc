@@ -117,6 +117,8 @@ public final class DungeonTrainCommonConfig {
     public static final int MIN_NETHER_CORE_HOLD_BLOCKS = 0;
     public static final int MAX_NETHER_CORE_HOLD_BLOCKS = 100_000_000;
     public static final int DEFAULT_NETHER_CORE_HOLD_BLOCKS = 5000;
+    /** Nether structures in the band core (vanilla spacing + biome rules) are on by default. */
+    public static final boolean DEFAULT_NETHER_STRUCTURES = true;
 
     /**
      * Upside-down band — a third looping phase (parallel to the disintegration/End and nether bands),
@@ -282,6 +284,7 @@ public final class DungeonTrainCommonConfig {
     public static final ModConfigSpec.IntValue NETHER_MOUNTAIN_HOLD_BLOCKS;
     public static final ModConfigSpec.IntValue NETHER_CORE_FADE_BLOCKS;
     public static final ModConfigSpec.IntValue NETHER_CORE_HOLD_BLOCKS;
+    public static final ModConfigSpec.BooleanValue NETHER_STRUCTURES;
     public static final ModConfigSpec.IntValue DISINTEGRATION_FIRST_OVERWORLD_BLOCKS;
     public static final ModConfigSpec.IntValue DISINTEGRATION_SKY_FADE_OFFSET_BLOCKS;
     public static final ModConfigSpec.BooleanValue UPSIDE_DOWN_ENABLED;
@@ -328,6 +331,7 @@ public final class DungeonTrainCommonConfig {
         NETHER_MOUNTAIN_HOLD_BLOCKS = pair.getLeft().netherMountainHoldBlocks;
         NETHER_CORE_FADE_BLOCKS = pair.getLeft().netherCoreFadeBlocks;
         NETHER_CORE_HOLD_BLOCKS = pair.getLeft().netherCoreHoldBlocks;
+        NETHER_STRUCTURES = pair.getLeft().netherStructures;
         DISINTEGRATION_FIRST_OVERWORLD_BLOCKS = pair.getLeft().disintegrationFirstOverworldBlocks;
         DISINTEGRATION_SKY_FADE_OFFSET_BLOCKS = pair.getLeft().disintegrationSkyFadeOffsetBlocks;
         UPSIDE_DOWN_ENABLED = pair.getLeft().upsideDownEnabled;
@@ -507,6 +511,12 @@ public final class DungeonTrainCommonConfig {
                         "band. Default 5000.")
                 .defineInRange("netherCoreHoldBlocks", DEFAULT_NETHER_CORE_HOLD_BLOCKS,
                         MIN_NETHER_CORE_HOLD_BLOCKS, MAX_NETHER_CORE_HOLD_BLOCKS);
+        ModConfigSpec.BooleanValue netherStructures = b
+                .comment("Generate Nether structures in the band core, the way the real Nether does — same spacing,",
+                        "same biome restrictions, and the real fortresses, bastion remnants, nether fossils and",
+                        "ruined portals, with their own mobs and loot. Turn off for a bare Nether crossing.",
+                        "Default true.")
+                .define("netherStructures", DEFAULT_NETHER_STRUCTURES);
 
         ModConfigSpec.BooleanValue upsideDownEnabled = b
                 .comment("Upside-down phase — part of the single repeating world-gen cycle, appended after the End",
@@ -632,6 +642,7 @@ public final class DungeonTrainCommonConfig {
                 disintegrationOverworldHoldBlocks,
                 netherTransitionEnabled, netherStageBlocks, netherStageMultipliers, netherBaseReliefBlocks,
                 netherBeachBlocks, netherMountainHoldBlocks, netherCoreFadeBlocks, netherCoreHoldBlocks,
+                netherStructures,
                 disintegrationFirstOverworldBlocks, disintegrationSkyFadeOffsetBlocks,
                 upsideDownEnabled, upsideDownFadeBlocks, upsideDownHoldBlocks, upsideDownExitGapBlocks,
                 upsideDownExitFadeBlocks, upsideDownMirrorPlaneOffset, upsideDownCeilingGap, upsideDownFloorGap,
@@ -796,6 +807,11 @@ public final class DungeonTrainCommonConfig {
         return isLoaded() ? NETHER_CORE_HOLD_BLOCKS.get() : DEFAULT_NETHER_CORE_HOLD_BLOCKS;
     }
 
+    /** Nether structures in the band core; falls back to the hardcoded default pre-load. */
+    public static boolean isNetherStructuresEnabled() {
+        return isLoaded() ? NETHER_STRUCTURES.get() : DEFAULT_NETHER_STRUCTURES;
+    }
+
     /** Overworld stretch (blocks) before the first band; falls back to the hardcoded default pre-load. */
     public static int getDisintegrationFirstOverworldBlocks() {
         return isLoaded() ? DISINTEGRATION_FIRST_OVERWORLD_BLOCKS.get() : DEFAULT_DISINTEGRATION_FIRST_OVERWORLD_BLOCKS;
@@ -933,6 +949,7 @@ public final class DungeonTrainCommonConfig {
                           ModConfigSpec.IntValue netherMountainHoldBlocks,
                           ModConfigSpec.IntValue netherCoreFadeBlocks,
                           ModConfigSpec.IntValue netherCoreHoldBlocks,
+                          ModConfigSpec.BooleanValue netherStructures,
                           ModConfigSpec.IntValue disintegrationFirstOverworldBlocks,
                           ModConfigSpec.IntValue disintegrationSkyFadeOffsetBlocks,
                           ModConfigSpec.BooleanValue upsideDownEnabled,
