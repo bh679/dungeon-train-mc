@@ -27,8 +27,9 @@ import java.util.Set;
  * <ul>
  *   <li>{@link EditorMirrorLiveHandler} — live, per-block mirroring as the
  *       author places / breaks blocks ({@link #mirrorEditLive}); and</li>
- *   <li>each editor's {@code save()} — a full-region rebuild backstop so the
- *       captured template is symmetric regardless of editing history
+ *   <li>{@link EditorMirrorRebuild} — the on-demand
+ *       {@code /dungeontrain editor mirror rebuild} command, a full-region
+ *       rebuild from the master octant regardless of editing history
  *       ({@link #rebuildFromMaster}).</li>
  * </ul>
  *
@@ -267,10 +268,10 @@ public final class EditorMirror {
 
     /**
      * Rebuild the non-master region of a plot from the authored low-octant
-     * master, reflecting across the enabled axes. Runs in-world immediately
-     * before a {@code save()} captures the region, so the stored template — and
-     * therefore every generated structure — is unchanged; only the authoring
-     * workflow differs. No-op when all axes are disabled.
+     * master, reflecting across the enabled axes. Runs in-world, on demand, from
+     * {@link EditorMirrorRebuild} — <em>not</em> from {@code save()}, which
+     * captures the plot exactly as the author left it. No-op when all axes are
+     * disabled.
      *
      * <p>Marker cells (sidecar entries such as the tunnel section chest) are the
      * intentional asymmetry: a marker on the source side becomes air at the
