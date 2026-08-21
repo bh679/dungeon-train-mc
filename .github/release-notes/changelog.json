@@ -7371,8 +7371,23 @@
       "released_at": null
     },
     {
-      "id": "carriage-crops-stay-planted",
+      "id": "drifting-carriage-chat-limit",
       "version": "0.583.0",
+      "type": "fix",
+      "title": "Drifting-carriage messages no longer flood chat",
+      "summary": "Walking a run of drifting carriages used to fill chat with a new gray line every few seconds. Those messages are now capped at three per ten seconds, so the train still tells you when you have stepped into someone else's carriage without burying everything else you were reading.",
+      "highlights": [
+        "Drifting-carriage entry messages capped at 3 per 10 seconds"
+      ],
+      "pr": 1005,
+      "date": "2026-08-21",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "carriage-crops-stay-planted",
+      "version": "0.584.0",
       "type": "fix",
       "title": "Crops saved into carriage templates stay planted",
       "summary": "Wheat, carrots, potatoes and beetroot saved into a carriage template no longer break the moment the carriage appears \u2014 farm carriages now ride the train intact. Crops inside a carriage no longer need light to stay planted, so an unlit farm carriage keeps its crops at the age you saved them. They still need light to grow, and still need farmland underneath: break the soil and the crop pops just like anywhere else. Also fixes saved crops vanishing from the carriage editor when you reopened a template.",
