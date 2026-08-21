@@ -65,6 +65,14 @@ class CheatModListTest {
     }
 
     @Test
+    @DisplayName("curated baked IDs are present in effective()")
+    void bakedCurationPresent() {
+        Set<String> eff = CheatModList.effective();
+        assertTrue(eff.contains("clientcommands"), "clientcommands is blacklisted");
+        assertTrue(eff.contains("baritone"), "baritone is blacklisted");
+    }
+
+    @Test
     @DisplayName("toJson -> parse round-trips a mod-ID set")
     void jsonRoundTrip() {
         Set<String> ids = Set.of("xray", "freecam", "baritone");

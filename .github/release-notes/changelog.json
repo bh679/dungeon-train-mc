@@ -7542,6 +7542,20 @@
       "date": "2026-08-21",
       "released": false,
       "released_in": null,
-      "released_at": null    }
+      "released_at": null
+    },
+    {
+      "id": "clientcommands-cheat-blacklist",
+      "version": "0.594.0",
+      "type": "feat",
+      "title": "clientcommands counts as a cheat mod",
+      "summary": "Playing with clientcommands installed now puts the session into Free Play.",
+      "highlights": [],
+      "pr": 1018,
+      "date": "2026-08-21",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    }
   ]
 }
