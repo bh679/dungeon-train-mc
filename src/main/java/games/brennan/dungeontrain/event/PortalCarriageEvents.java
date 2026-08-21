@@ -38,6 +38,8 @@ import games.brennan.dungeontrain.portal.PortalStructure;
 import games.brennan.dungeontrain.portal.PortalTrainFreeze;
 import games.brennan.dungeontrain.portal.PortalTripTracker;
 import games.brennan.dungeontrain.portal.PortalTwinLanes;
+import games.brennan.dungeontrain.portal.PortalTwinRegion;
+import games.brennan.dungeontrain.portal.PortalTwinSpace;
 import games.brennan.dungeontrain.net.PortalRoomFogPacket;
 import games.brennan.dungeontrain.net.PortalSwapPacket;
 import games.brennan.dungeontrain.net.PortalTrainAudioPacket;
@@ -58,10 +60,12 @@ import games.brennan.dungeontrain.train.Trains;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.WorldFloor;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.SectionPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.RelativeMovement;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -136,8 +140,12 @@ public final class PortalCarriageEvents {
      */
     private static final double TWIN_MAX_DRIFT = 24.0;
 
-    /** Keep the twin this far below the build ceiling. */
-    private static final int CEILING_MARGIN = 4;
+    /**
+     * Keep the twin this far below the build ceiling. Shared with {@link PortalTwinSpace}, which folds
+     * the same margin into the attic region's ceiling — one number, so the lane allocator cannot hand
+     * out a lane this gate then refuses.
+     */
+    private static final int CEILING_MARGIN = PortalTwinSpace.CEILING_MARGIN;
 
     /**
      * ENTRY carriage index → world origin of that pair's structure. Carriage indices are global
@@ -1161,15 +1169,18 @@ public final class PortalCarriageEvents {
             if (anyPlayerInCorridor(players, layout, originX, originY, originZ)
                 && PortalSwapDiagnostics.due(level,
                     PortalSwapDiagnostics.Reason.NO_TWIN_STRUCTURE, carriageIndex)) {
-                int bedrockY = WorldFloor.bedrockY(level);
+                PortalTwinRegion region = PortalTwinSpace.regionFor(
+                    level, Mth.floor(originX), tallestWanted(dims));
                 PortalSwapDiagnostics.refused(PortalSwapDiagnostics.Reason.NO_TWIN_STRUCTURE,
                     "carriage " + carriageIndex,
                     "pair=" + pairKey + " lane=" + PortalTwinLanes.twinFloorY(
-                        level.getMinBuildHeight(), bedrockY, pairKey, groupSize,
-                        laneStructureHeight(level, dims, bedrockY))
-                        + " worldMinY=" + level.getMinBuildHeight() + " bedrockY=" + bedrockY
+                        region.base(), region.ceiling(), pairKey, groupSize,
+                        laneStructureHeight(dims, region))
+                        + " region=" + (PortalTwinSpace.isAttic(level, region)
+                            ? "attic (upside-down band)" : "basement")
+                        + " floor=" + region.base() + " ceiling=" + region.ceiling()
                         + " carriageY=" + fmt(originY)
-                        + " — the pair's room does not fit between the basement floor and the train");
+                        + " — the pair's room does not fit between that floor and that ceiling");
             }
             PortalPuppets.forget(carriageIndex);
             return;
@@ -1443,10 +1454,59 @@ public final class PortalCarriageEvents {
      * <p>The corridor floors it: a twin is a room <b>and</b> two corridors, so a world whose
      * carriages are taller than every authored room still spaces its lanes on the corridor.</p>
      */
-    private static int laneStructureHeight(ServerLevel level, CarriageDims dims, int bedrockY) {
+    private static int laneStructureHeight(CarriageDims dims, PortalTwinRegion region) {
         return Math.min(
-            PortalTwinLanes.maxStructureHeight(level.getMinBuildHeight(), bedrockY),
-            Math.max(dims.height(), PortalRoomSizes.tallestKnown(dims)));
+            PortalTwinLanes.maxStructureHeight(region.base(), region.ceiling()),
+            tallestWanted(dims));
+    }
+
+    /**
+     * The tallest structure this world would stamp given a region deep enough for it — the lane
+     * spacing before any region holds it down.
+     *
+     * <p>Asked before a region is chosen, because choosing one means asking whether it can stand this
+     * up: an attic too shallow for a full-height structure would hand out lanes that every pair then
+     * failed the fit gate on. See {@link PortalTwinSpace#regionFor}.</p>
+     */
+    private static int tallestWanted(CarriageDims dims) {
+        return Math.max(dims.height(), PortalRoomSizes.tallestKnown(dims));
+    }
+
+    /**
+     * Whether a structure standing on {@code twinY} keeps clear of the train — which is a different
+     * question at each end of the world.
+     *
+     * <p>In the basement the twin is under the carriage and must stay under it. In the attic it is
+     * over the carriage, above a bedrock lid the train runs beneath, and must clear the carriage's own
+     * roof. The point either way is that a player crossing meets the structure and never the train.</p>
+     */
+    private static boolean clearOfTheTrain(PortalTwinRegion region, int twinY, int structureTop,
+                                           double carriageY, CarriageDims dims) {
+        boolean overhead = twinY >= carriageY;
+        return overhead ? twinY > carriageY + dims.height() : structureTop < carriageY;
+    }
+
+    /**
+     * Whether any chunk column {@code planned} would occupy still has an upside-down mirror plan
+     * queued against it.
+     *
+     * <p>The plan is computed from a pristine snapshot of the column and replayed later, so it does
+     * not merge with anything written in between — it simply restates what the column held before the
+     * structure arrived. Stamping ahead of one loses the room.</p>
+     */
+    private static boolean mirrorPending(ServerLevel level, PortalStructure planned,
+                                         CarriageDims dims) {
+        java.util.Set<Long> pending = DungeonTrainWorldData.get(level).pendingMirrorChunks();
+        if (pending.isEmpty()) return false;
+        BoundingBox box = PortalCarriageBuilder.footprintOf(level, planned, dims);
+        for (int cx = SectionPos.blockToSectionCoord(box.minX());
+             cx <= SectionPos.blockToSectionCoord(box.maxX()); cx++) {
+            for (int cz = SectionPos.blockToSectionCoord(box.minZ());
+                 cz <= SectionPos.blockToSectionCoord(box.maxZ()); cz++) {
+                if (pending.contains(ChunkPos.asLong(cx, cz))) return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -1459,13 +1519,16 @@ public final class PortalCarriageEvents {
                                                    int groupSize) {
         PortalStructure existing = STRUCTURES.get(pairKey);
 
-        // Same chunk columns as the carriage — that is what keeps the destination loaded — but in
-        // the basement under the world's bedrock rather than a fixed height above the train, and on
-        // a per-pair Y lane so two pairs cannot stamp into each other.
-        int worldMinY = level.getMinBuildHeight();
-        int bedrockY = WorldFloor.bedrockY(level);
-        int laneOf = laneStructureHeight(level, dims, bedrockY);
-        int twinY = PortalTwinLanes.twinFloorY(worldMinY, bedrockY, pairKey, groupSize, laneOf);
+        // Same chunk columns as the carriage — that is what keeps the destination loaded — but in the
+        // sealed space outside the world rather than a fixed height above the train, and on a per-pair
+        // Y lane so two pairs cannot stamp into each other. Which sealed space depends on where the
+        // carriage is: the basement under the bedrock ordinarily, the attic over the inverted lid
+        // inside the upside-down band, where the basement is the half of the world that hangs open.
+        PortalTwinRegion region =
+            PortalTwinSpace.regionFor(level, Mth.floor(originX), tallestWanted(dims));
+        int laneOf = laneStructureHeight(dims, region);
+        int twinY = PortalTwinLanes.twinFloorY(
+            region.base(), region.ceiling(), pairKey, groupSize, laneOf);
         BlockPos wanted = BlockPos.containing(originX, twinY, originZ);
 
         // Which room this pair rolls, and how big it is.
@@ -1478,7 +1541,7 @@ public final class PortalCarriageEvents {
         // keeps the room and the mode it was built with and only moves them.
         PortalStructure planned = existing != null
             ? existing.movedTo(wanted)
-            : PortalCarriageBuilder.planStructure(level, dims, wanted, pairKey,
+            : PortalCarriageBuilder.planStructure(level, dims, wanted, pairKey, region,
                 GateContext.forCarriageAtWorldX(level, Mth.floor(originX), pairKey, dims.length()));
 
         // A world too shallow to hold the structure between its floor and the carriage gets no twin,
@@ -1493,20 +1556,35 @@ public final class PortalCarriageEvents {
         // planning put the template's size in PortalRoomSizes on its way past.
         if (structureHeight > laneOf) {
             twinY = PortalTwinLanes.twinFloorY(
-                worldMinY, bedrockY, pairKey, groupSize, structureHeight);
+                region.base(), region.ceiling(), pairKey, groupSize, structureHeight);
             wanted = BlockPos.containing(originX, twinY, originZ);
             planned = planned.movedTo(wanted);
         }
 
         int structureTop = twinY + structureHeight;
-        if (structureTop >= originY
+        if (!clearOfTheTrain(region, twinY, structureTop, originY, dims)
             || structureTop > level.getMaxBuildHeight() - CEILING_MARGIN
-            || !PortalTwinLanes.fitsUnderWorld(worldMinY, bedrockY, twinY, structureHeight)) {
+            || !PortalTwinLanes.fitsUnderWorld(
+                region.base(), region.ceiling(), twinY, structureHeight)) {
             return existing;
         }
 
+        // Horizontal drift alone used to decide this, back when every twin in a world shared one
+        // height. A carriage crossing into (or out of) the upside-down band changes regions without
+        // moving an inch horizontally, and a structure left in the old region is a structure hanging
+        // in the open — so a lane change is as good a reason to re-stamp as a drift.
         if (existing != null
+            && existing.origin().getY() == wanted.getY()
             && horizontalDistance(existing.origin(), originX, originZ) <= TWIN_MAX_DRIFT) {
+            return existing;
+        }
+
+        // Not into a chunk whose mirror is still queued. The upside-down mirror defers its plan until
+        // a chunk's 3×3 is complete, and applying one clears everything above the lid — including a
+        // structure stamped in between. The plan was computed off a pristine snapshot, so it would
+        // overwrite rather than merge. Waiting costs a few ticks; the alternative is a room that
+        // silently evaporates. Same shape as the tiler wait below.
+        if (PortalTwinSpace.isAttic(level, region) && mirrorPending(level, planned, dims)) {
             return existing;
         }
 

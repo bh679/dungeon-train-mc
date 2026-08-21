@@ -182,6 +182,30 @@ public final class UpsideDownBand {
         return Math.min(roofY, mirror + ceilingGap + maxCeilingHeight + 1);
     }
 
+    /**
+     * World-Y of this level's in-band inverted bedrock lid — {@link #bedrockRoofY} with the
+     * ceiling-height cap ({@link #cappedRoofY}) already applied, resolved from the world's train Y and
+     * the live config.
+     *
+     * <p>The single answer to "where is the lid", shared by the mirror that stamps it
+     * ({@code UpsideDownMirror}) and the portal system that stands its twin structures on top of it
+     * ({@link games.brennan.dungeontrain.portal.PortalTwinSpace}). Those two must not be able to
+     * disagree: a structure standing one block under the lid is a structure inside the world.</p>
+     *
+     * <p>Says nothing about whether a lid is actually stamped — that is
+     * {@link games.brennan.dungeontrain.config.DungeonTrainCommonConfig#isUpsideDownBedrockRoof()},
+     * and it is the caller's to check — only where one would go.</p>
+     */
+    public static int roofY(ServerLevel overworld) {
+        int mirror = DungeonTrainWorldData.get(overworld).getTrainY()
+            + DungeonTrainCommonConfig.getUpsideDownMirrorPlaneOffset();
+        int ceilingGap = Math.max(0, DungeonTrainCommonConfig.getUpsideDownCeilingGap());
+        int roofY = bedrockRoofY(mirror, ceilingGap, WorldFloor.bedrockY(overworld),
+            overworld.getMaxBuildHeight());
+        return cappedRoofY(roofY, mirror, ceilingGap,
+            DungeonTrainCommonConfig.getUpsideDownMaxCeilingHeight());
+    }
+
     // ---- exit-crossfade noise-skip predicates -------------------------------
     // The exit fade samples Disintegration.coherentNoise (∈ [0,1)) up to twice per block, gated on the
     // per-COLUMN ramps exitDisperse/exitReveal. Near the saturated ends of those ramps the gate outcome

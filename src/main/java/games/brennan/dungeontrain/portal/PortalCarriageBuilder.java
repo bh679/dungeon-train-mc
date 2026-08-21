@@ -21,7 +21,6 @@ import games.brennan.dungeontrain.train.CarriagePlacer;
 import games.brennan.dungeontrain.train.TrainMembership;
 import games.brennan.dungeontrain.train.CarriageVariant;
 import games.brennan.dungeontrain.worldgen.SilentBlockOps;
-import games.brennan.dungeontrain.worldgen.WorldFloor;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Vec3i;
@@ -728,6 +727,7 @@ public final class PortalCarriageBuilder {
      */
     public static PortalStructure planStructure(ServerLevel level, CarriageDims dims,
                                                 BlockPos entryOrigin, int pairKey,
+                                                PortalTwinRegion region,
                                                 games.brennan.dungeontrain.template.GateContext gateCtx) {
         String roomName = TrackVariantRegistry.pickName(
             TrackKind.PORTAL_ROOM, level.getSeed(), pairKey, gateCtx);
@@ -740,27 +740,31 @@ public final class PortalCarriageBuilder {
             PortalExitSites.seedFor(level.getSeed(), pairKey, roomName),
             PortalRoomTiling.MAX_RADIUS);
         return new PortalStructure(entryOrigin, roomName,
-            heldUnderTheWorld(level, PortalRoomTemplateStore.sizeOf(level, roomName, dims)),
+            heldInRegion(region, PortalRoomTemplateStore.sizeOf(level, roomName, dims)),
             settings,
             PortalRoomTiling.base(), PortalExitCopies.NONE, exitTile,
             PortalCarriageSelection.corridorKindFor(level, pairKey));
     }
 
     /**
-     * {@code size} with its height held down to what this world's basement can stand up.
+     * {@code size} with its height held down to what {@code region} can stand up.
      *
      * <p>A template's size is validated as a <b>floor</b> — {@code TrackKind.freeSizeAboveFloor} —
      * so nothing upstream stops a room being authored taller than the world it is loaded into can
      * hold, and an unheld one would fail {@code ensureStructure}'s fit check and leave the pair with
      * no twin at all: a portal carriage that looks ordinary and never crosses. Held here instead, it
-     * stamps as tall as the world allows and the crossing works.</p>
+     * stamps as tall as the region allows and the crossing works.</p>
+     *
+     * <p>Against the region the pair is actually being stamped into rather than the basement, since
+     * the two are not the same size: an attic over the upside-down band's bedrock lid is usually the
+     * roomier of the two, and holding an in-band room down to the basement's budget would shorten it
+     * for no reason. See {@link PortalTwinSpace}.</p>
      *
      * <p>Held on the way onto the record, not at stamp time, so {@code eraseTwin} reads back the
      * same box that was written.</p>
      */
-    private static Vec3i heldUnderTheWorld(ServerLevel level, Vec3i size) {
-        int ceiling = PortalTwinLanes.maxStructureHeight(
-            level.getMinBuildHeight(), WorldFloor.bedrockY(level));
+    private static Vec3i heldInRegion(PortalTwinRegion region, Vec3i size) {
+        int ceiling = PortalTwinLanes.maxStructureHeight(region.base(), region.ceiling());
         return size.getY() <= ceiling
             ? size
             : new Vec3i(size.getX(), ceiling, size.getZ());
@@ -956,6 +960,21 @@ public final class PortalCarriageBuilder {
     }
 
     /**
+     * Highest Y a structure may write to: one row over its ceiling, but never past the world's top.
+     *
+     * <p>The mirror image of {@link #lowestWritableY}, and it exists for the same reason. A structure
+     * in the <b>attic</b> — the sealed space over the upside-down band's inverted bedrock lid, see
+     * {@link PortalTwinSpace} — has the build ceiling above it where a basement structure has the
+     * bedrock below, and {@code setBlock} out of range is a silent no-op: the skin would quietly drop
+     * its lid while {@link PortalClear} (which already clamps at {@code getMaxBuildHeight() - 1})
+     * swept a row that never existed. The fit gate keeps a margin that should make this unreachable;
+     * this is what makes "should" not matter.</p>
+     */
+    static int highestWritableY(int worldMaxY, int structureCeilingY) {
+        return Math.min(worldMaxY - 1, structureCeilingY + 1);
+    }
+
+    /**
      * Wrap a room in one block of bedrock — {@link PortalRoomMode#BEDROCK_LOCK}.
      *
      * <p><b>Outside the box, not instead of it.</b> The skin sits one block beyond each face, so an
@@ -990,7 +1009,7 @@ public final class PortalCarriageBuilder {
         int floorY = roomOrigin.getY();
         int ceilingY = floorY + size.getY() - 1;
         int belowY = lowestWritableY(level.getMinBuildHeight(), floorY);
-        int aboveY = ceilingY + 1;
+        int aboveY = highestWritableY(level.getMaxBuildHeight(), ceilingY);
 
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
 
@@ -1033,8 +1052,11 @@ public final class PortalCarriageBuilder {
                                             PortalCarriageRole role, BlockPos roomOrigin,
                                             Vec3i roomSize) {
         int worldMinY = level.getMinBuildHeight();
-        fill(level, corridorLockBoxes(corridorOrigin, dims, layout.length(), role, worldMinY));
-        fill(level, roomEndCapBoxes(corridorOrigin, dims, role, roomOrigin, roomSize, worldMinY));
+        int worldMaxY = level.getMaxBuildHeight();
+        fill(level, corridorLockBoxes(
+            corridorOrigin, dims, layout.length(), role, worldMinY, worldMaxY));
+        fill(level, roomEndCapBoxes(
+            corridorOrigin, dims, role, roomOrigin, roomSize, worldMinY, worldMaxY));
     }
 
     /** Write {@link #LOCK} into every cell of every box. */
@@ -1075,7 +1097,7 @@ public final class PortalCarriageBuilder {
      */
     static List<BoundingBox> roomEndCapBoxes(BlockPos corridorOrigin, CarriageDims dims,
                                              PortalCarriageRole role, BlockPos roomOrigin,
-                                             Vec3i roomSize, int worldMinY) {
+                                             Vec3i roomSize, int worldMinY, int worldMaxY) {
         boolean entry = role == PortalCarriageRole.ENTRY;
         // One column beyond the seal plane, which itself is one column beyond the room box.
         int planeX = entry ? roomOrigin.getX() - 2 : roomOrigin.getX() + roomSize.getX() + 1;
@@ -1084,7 +1106,7 @@ public final class PortalCarriageBuilder {
         int zHi = roomOrigin.getZ() + roomSize.getZ();
         int floorY = corridorOrigin.getY();
         int belowY = lowestWritableY(worldMinY, floorY);
-        int aboveY = roomOrigin.getY() + roomSize.getY();
+        int aboveY = highestWritableY(worldMaxY, roomOrigin.getY() + roomSize.getY() - 1);
 
         // The hole: the corridor's own box in this column.
         int holeZLo = corridorOrigin.getZ();
@@ -1122,11 +1144,11 @@ public final class PortalCarriageBuilder {
      * corridor's own box or the seal plane, and together they close all four lateral sides.</p>
      */
     static List<BoundingBox> corridorLockBoxes(BlockPos corridorOrigin, CarriageDims dims,
-                                               int length, PortalCarriageRole role, int worldMinY) {
+                                               int length, PortalCarriageRole role, int worldMinY, int worldMaxY) {
         int oz = corridorOrigin.getZ();
         int floorY = corridorOrigin.getY();
         int belowY = lowestWritableY(worldMinY, floorY);
-        int aboveY = floorY + dims.height();
+        int aboveY = highestWritableY(worldMaxY, floorY + dims.height() - 1);
         int zLo = oz - 1;
         int zHi = oz + dims.width();
 

@@ -1,7 +1,10 @@
 package games.brennan.dungeontrain.client;
 
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
+import games.brennan.dungeontrain.worldgen.UpsideDownBand;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
 
 /**
  * Client-side cache for the <b>upside-down band</b>'s atmosphere, mirroring {@link ClientNetherBand}.
@@ -12,25 +15,32 @@ import games.brennan.dungeontrain.worldgen.WorldGenCycle;
  * a resync.
  *
  * <p>Pure-logic only (no rendering imports); the ramp math is shared with the server via
- * {@link WorldGenCycle#upsideDownRamp}.</p>
+ * {@link WorldGenCycle#upsideDownRamp}, and the lid height with {@link UpsideDownBand#roofY} via the
+ * same two pure helpers the server calls.</p>
  */
 public final class ClientUpsideDownBand {
 
     private static volatile boolean startsWithTrain = false;
     private static volatile int trainY = 0;
+    private static volatile int bedrockY = Integer.MIN_VALUE;
 
     private ClientUpsideDownBand() {}
 
-    /** Apply a server sync (whether this world has the train system, and the carriage height). */
-    public static void update(boolean starts, int trainYIn) {
+    /**
+     * Apply a server sync: whether this world has the train system, the carriage height, and the
+     * world's terrain floor (which lives on the chunk generator, so the client cannot work it out).
+     */
+    public static void update(boolean starts, int trainYIn, int bedrockYIn) {
         startsWithTrain = starts;
         trainY = trainYIn;
+        bedrockY = bedrockYIn;
     }
 
     /** Reset on disconnect so a band never leaks into the next world. */
     public static void reset() {
         startsWithTrain = false;
         trainY = 0;
+        bedrockY = Integer.MIN_VALUE;
     }
 
     /**
@@ -65,6 +75,42 @@ public final class ClientUpsideDownBand {
      */
     public static int plane() {
         return trainY + DungeonTrainCommonConfig.getUpsideDownMirrorPlaneOffset();
+    }
+
+    /**
+     * World-Y of the in-band inverted bedrock lid — the client's copy of
+     * {@code UpsideDownBand.roofY}, from the synced {@code trainY} and {@code bedrockY} plus COMMON
+     * config. {@link Integer#MAX_VALUE} before a sync has landed, so nothing is treated as attic.
+     */
+    private static int roofY() {
+        ClientLevel level = Minecraft.getInstance().level;
+        if (level == null || bedrockY == Integer.MIN_VALUE) return Integer.MAX_VALUE;
+        int mirror = plane();
+        int ceilingGap = Math.max(0, DungeonTrainCommonConfig.getUpsideDownCeilingGap());
+        int roofY = UpsideDownBand.bedrockRoofY(
+            mirror, ceilingGap, bedrockY, level.getMaxBuildHeight());
+        return UpsideDownBand.cappedRoofY(roofY, mirror, ceilingGap,
+            DungeonTrainCommonConfig.getUpsideDownMaxCeilingHeight());
+    }
+
+    /**
+     * True for a block in <b>twin space</b> — the sealed world outside the terrain that the portal
+     * system stamps its twin corridors and rooms into: under the terrain floor, or over the band's
+     * inverted bedrock lid.
+     *
+     * <p><b>Why the render flip must skip it.</b> A twin corridor is block-identical to the carriage
+     * it stands in for, and that is the whole trick: a player crossing the midpoint is teleported
+     * between the two and cannot tell. The band flips every world block but deliberately excludes the
+     * train (Sable sub-levels, see {@code ModelBlockRendererUpsideDownMixin}) — so a flipped twin
+     * against an upright carriage would make the swap plainly visible. The rooms are hidden inside a
+     * sealed shell either way, so nothing is lost by leaving that space upright.</p>
+     *
+     * <p>Both ends are tested, not just the one the band would stamp into today: a twin stamped in
+     * the basement outlives the train's crossing into the band, and would flip in the meantime.</p>
+     */
+    public static boolean isInTwinSpace(int y) {
+        if (bedrockY == Integer.MIN_VALUE) return false;
+        return y < bedrockY || y > roofY();
     }
 
     /**
