@@ -153,6 +153,9 @@ public final class DungeonTrainConfig {
     public static final double MIN_SHARED_CARRIAGE_POOL_CHANCE = 0.0;
     public static final double MAX_SHARED_CARRIAGE_POOL_CHANCE = 1.0;
     /** Default probability a shared-carriage slot places a build authored by a player in this world. */
+    public static final int DEFAULT_SHARED_CARRIAGE_MAX_ENTITIES = 64;
+    public static final int MIN_SHARED_CARRIAGE_MAX_ENTITIES = 0;
+    public static final int MAX_SHARED_CARRIAGE_MAX_ENTITIES = 512;
     public static final double DEFAULT_SHARED_CARRIAGE_OWN_CHANCE = 0.30;
     public static final double MIN_SHARED_CARRIAGE_OWN_CHANCE = 0.0;
     public static final double MAX_SHARED_CARRIAGE_OWN_CHANCE = 1.0;
@@ -274,6 +277,7 @@ public final class DungeonTrainConfig {
     public static final ModConfigSpec.BooleanValue SHARED_CARRIAGES_ENABLED;
     public static final ModConfigSpec.DoubleValue SHARED_CARRIAGE_POOL_CHANCE;
     public static final ModConfigSpec.DoubleValue SHARED_CARRIAGE_OWN_CHANCE;
+    public static final ModConfigSpec.IntValue SHARED_CARRIAGE_MAX_ENTITIES;
     public static final ModConfigSpec.BooleanValue DISCOVER_NARRATIVES_ENABLED;
     public static final ModConfigSpec.DoubleValue NARRATIVE_DISCOVERY_RAMP_THRESHOLD;
     public static final ModConfigSpec.BooleanValue DIFFICULTY_LEVEL_NOTICE_TO_DISCORD;
@@ -327,6 +331,7 @@ public final class DungeonTrainConfig {
         SHARED_CARRIAGES_ENABLED = pair.getLeft().sharedCarriagesEnabled;
         SHARED_CARRIAGE_POOL_CHANCE = pair.getLeft().sharedCarriagePoolChance;
         SHARED_CARRIAGE_OWN_CHANCE = pair.getLeft().sharedCarriageOwnChance;
+        SHARED_CARRIAGE_MAX_ENTITIES = pair.getLeft().sharedCarriageMaxEntities;
         DISCOVER_NARRATIVES_ENABLED = pair.getLeft().discoverNarrativesEnabled;
         NARRATIVE_DISCOVERY_RAMP_THRESHOLD = pair.getLeft().narrativeDiscoveryRampThreshold;
         DIFFICULTY_LEVEL_NOTICE_TO_DISCORD = pair.getLeft().difficultyLevelNoticeToDiscord;
@@ -531,6 +536,14 @@ public final class DungeonTrainConfig {
                         "relay is unreachable, the slot silently falls back — to an own build if one is ready, else fresh.")
                 .defineInRange("sharedCarriagePoolChance", DEFAULT_SHARED_CARRIAGE_POOL_CHANCE,
                         MIN_SHARED_CARRIAGE_POOL_CHANCE, MAX_SHARED_CARRIAGE_POOL_CHANCE);
+        ModConfigSpec.IntValue sharedCarriageMaxEntities = b
+                .comment("How many free ENTITIES (armor stands, item frames, paintings, mobs) a shared carriage may carry",
+                        "into the community pool. They are captured with the build, drawn in the web preview, and spawned",
+                        "back when another world leases it. The cap bounds both the upload size and what a single build can",
+                        "release into someone else's world; anything past it is left behind with a warning. Default 64.",
+                        "0 disables entity capture entirely — shared builds then travel as bare blocks, as they did before.")
+                .defineInRange("sharedCarriageMaxEntities", DEFAULT_SHARED_CARRIAGE_MAX_ENTITIES,
+                        MIN_SHARED_CARRIAGE_MAX_ENTITIES, MAX_SHARED_CARRIAGE_MAX_ENTITIES);
         ModConfigSpec.DoubleValue sharedCarriageOwnChance = b
                 .comment("The probability a shared-carriage slot leases back a build authored by a player currently in this",
                         "world — so you meet the rooms you made, rather than losing them into a pool of thousands. A build is",
@@ -620,7 +633,7 @@ public final class DungeonTrainConfig {
                 sharedBookLootMaxChance, sharedBookRepeatGroups, portalRoomAuthorMinBooks, discoverNarrativesEnabled, narrativeDiscoveryRampThreshold,
                 difficultyLevelNoticeToDiscord, introCinematicEnabled, introCinematicDurationTicks,
                 introCinematicChunkPreloadEnabled, sharedCarriagesEnabled, sharedCarriagePoolChance,
-                sharedCarriageOwnChance, edibleBackpackLootChance);
+                sharedCarriageOwnChance, sharedCarriageMaxEntities, edibleBackpackLootChance);
     }
 
     /**
@@ -652,6 +665,11 @@ public final class DungeonTrainConfig {
         double v = isLoaded() ? SHARED_CARRIAGE_OWN_CHANCE.get() : DEFAULT_SHARED_CARRIAGE_OWN_CHANCE;
         double own = Math.max(MIN_SHARED_CARRIAGE_OWN_CHANCE, Math.min(MAX_SHARED_CARRIAGE_OWN_CHANCE, v));
         return Math.min(own, 1.0 - getSharedCarriagePoolChance());
+    }
+
+    /** How many entities a shared carriage may carry into (and out of) the community pool. */
+    public static int getSharedCarriageMaxEntities() {
+        return isLoaded() ? SHARED_CARRIAGE_MAX_ENTITIES.get() : DEFAULT_SHARED_CARRIAGE_MAX_ENTITIES;
     }
 
     public static int getNumCarriages() {
@@ -1044,6 +1062,7 @@ public final class DungeonTrainConfig {
             ModConfigSpec.BooleanValue sharedCarriagesEnabled,
             ModConfigSpec.DoubleValue sharedCarriagePoolChance,
             ModConfigSpec.DoubleValue sharedCarriageOwnChance,
+            ModConfigSpec.IntValue sharedCarriageMaxEntities,
             ModConfigSpec.DoubleValue edibleBackpackLootChance
     ) {}
 }

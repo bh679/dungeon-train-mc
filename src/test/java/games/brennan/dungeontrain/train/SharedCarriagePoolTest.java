@@ -26,7 +26,8 @@ class SharedCarriagePoolTest {
 
     private static PoolLease lease(int id) {
         return new PoolLease(id, "tok" + id, "BLOB", DIMS.length(), DIMS.height(), DIMS.width(),
-                0, List.of(), "author" + id, SharedCarriageClient.Credits.EMPTY);
+                0, List.of(), "author" + id, SharedCarriageClient.Credits.EMPTY,
+                SharedCarriageClient.Deaths.EMPTY);
     }
 
     @Test
