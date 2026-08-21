@@ -7369,6 +7369,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "carriage-crops-stay-planted",
+      "version": "0.583.0",
+      "type": "fix",
+      "title": "Crops saved into carriage templates stay planted",
+      "summary": "Wheat, carrots, potatoes and beetroot saved into a carriage template no longer break the moment the carriage appears \u2014 farm carriages now ride the train intact. Crops inside a carriage no longer need light to stay planted, so an unlit farm carriage keeps its crops at the age you saved them. They still need light to grow, and still need farmland underneath: break the soil and the crop pops just like anywhere else. Also fixes saved crops vanishing from the carriage editor when you reopened a template.",
+      "highlights": [
+        "Wheat and other crops saved into carriage templates stay planted",
+        "Crops in an unlit carriage keep their saved growth stage (they still need light to grow)",
+        "Crops no longer vanish from a template when reopened in the carriage editor"
+      ],
+      "pr": 1004,
+      "date": "2026-08-21",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
