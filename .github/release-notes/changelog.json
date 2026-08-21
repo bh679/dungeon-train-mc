@@ -7603,6 +7603,7 @@
     },
     {
       "id": "drifting-carriage-death-log",
+      "pr": 1020,
       "version": "0.597.0",
       "type": "feat",
       "title": "Drifting carriages remember who died in them",
