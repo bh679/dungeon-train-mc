@@ -7548,12 +7548,9 @@
       "id": "clientcommands-cheat-blacklist",
       "version": "0.594.0",
       "type": "feat",
-      "title": "clientcommands now counts as a cheat mod",
-      "summary": "Playing with clientcommands installed puts the session into Free Play. It provides enchantment and RNG seed cracking, ore and entity finding, and item manipulation commands, so like x-ray and Baritone it now switches the run to Free Play \u2014 you can still play normally, your stats and advancements just don't count toward your cross-world profile for that session. Remove the mod and normal play returns on the next launch.",
-      "highlights": [
-        "clientcommands added to the cheat-mod list",
-        "Session-only \u2014 nothing is written to your world or player"
-      ],
+      "title": "clientcommands counts as a cheat mod",
+      "summary": "Playing with clientcommands installed now puts the session into Free Play.",
+      "highlights": [],
       "pr": 1018,
       "date": "2026-08-21",
       "released": false,
