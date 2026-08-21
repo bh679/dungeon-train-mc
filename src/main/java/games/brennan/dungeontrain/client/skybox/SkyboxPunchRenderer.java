@@ -12,8 +12,10 @@ import dev.ryanhcode.sable.api.sublevel.SubLevelContainer;
 import dev.ryanhcode.sable.companion.math.Pose3dc;
 import dev.ryanhcode.sable.sublevel.ClientSubLevel;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.block.SkyboxSky;
 import games.brennan.dungeontrain.client.GraphicsCapabilities;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
+import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.GameRenderer;
@@ -29,50 +31,53 @@ import org.joml.Matrix4f;
 import org.joml.Vector3d;
 import org.lwjgl.opengl.GL11;
 
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
 /**
- * Turns every {@code skybox_block} into a hole showing the sky, by writing its cube
- * faces into the depth buffer — with colour writes masked off — in the one-line gap
- * vanilla leaves between drawing the sky and drawing the world.
+ * Turns every skybox block into a hole showing its own sky.
  *
- * <h2>Why this works</h2>
- * <p>Verified against the decompiled {@code LevelRenderer#renderLevel} for this
- * NeoForge build:</p>
+ * <h2>Why this hook</h2>
+ * <p>Verified against the decompiled {@code LevelRenderer#renderLevel} for this NeoForge
+ * build:</p>
  * <pre>
- *   957  RenderSystem.clear(...)                    colour AND depth cleared
+ *   957  RenderSystem.clear(...)                    colour AND depth cleared (never stencil)
+ *   961  setupFog(FOG_SKY)
+ *   962  setShader(positionShader)
  *   963  renderSky(...)                             draws sky, never writes depth
- *   964  dispatchRenderStage(AFTER_SKY, ...)   &lt;-- we run here
+ *   964  dispatchRenderStage(AFTER_SKY, ...)   &lt;-- both our passes run here
+ *   966  setupFog(FOG_TERRAIN)                      re-arms fog right after us
  *   972  renderSectionLayer(solid) ... cutout
  *   977  level.effects().constantAmbientLight() &lt;-- Sable draws sub-levels here
  *  1219  renderClouds / renderSnowAndRain
  * </pre>
- * <p>At our hook the depth buffer is empty and the sky is already painted. Writing
- * the cube's depth means terrain behind it fails the {@code LEQUAL} test and never
- * covers the sky, while anything in front is nearer and draws normally. Because
- * Sable's sub-level pass is also downstream of this hook, the punch works on
- * carriage geometry too — including one carriage occluding another.</p>
+ * <p>At our hook the depth buffer is empty and the sky is already painted. Writing each
+ * cube's depth means terrain behind it fails the {@code LEQUAL} test and never covers the
+ * sky, while anything in front is nearer and draws normally. Because Sable's sub-level pass
+ * is also downstream of this hook, it works on carriage geometry too — including one carriage
+ * occluding another.</p>
+ *
+ * <h2>Two passes</h2>
+ * <p>The mask pass punches depth and stamps each cube with its variant's stencil id. The sky
+ * pass then draws each variant's sky restricted to its own id — see {@link SkyboxStencil}.
+ * Without a stencil buffer only the mask pass runs, which reveals the live sky: right for
+ * {@link SkyboxSky#SURFACE} above ground, wrong but coherent for the rest.</p>
  *
  * <h2>Consequences worth knowing</h2>
  * <ul>
- *   <li>Clouds and rain draw <em>after</em> the punch and are depth-tested against
- *       it, so they are culled inside the hole. You see sun, moon, stars and the sky
- *       gradient, but no clouds and no weather. No ordering can fix this — the punch
- *       must precede terrain — so the hole reads as a void window rather than a pane
- *       of glass.</li>
- *   <li>The sky is drawn before terrain fog is configured, so the hole is unfogged:
- *       a distant skybox block stays crisp in fog.</li>
- *   <li>Underwater / blindness / lava make vanilla skip the sky entirely; the hole
- *       then shows the flat clear colour instead. Harmless.</li>
+ *   <li>Clouds and rain draw <em>after</em> the punch and are depth-tested against it, so they
+ *       are culled inside the hole. No ordering can fix this — the punch must precede terrain —
+ *       so a hole reads as a void window rather than a pane of glass.</li>
+ *   <li>The hole is unfogged, so a distant skybox block stays crisp in fog.</li>
  * </ul>
  *
  * <h2>Shader packs</h2>
- * <p>Iris shades a deferred gbuffer. A colour-masked depth write leaves the albedo
- * and normal attachments untouched, so the composite pass would shade those pixels
- * from cleared gbuffer data — black, not sky. Rather than ship a known-wrong image
- * we disable the punch under a shader pack, leaving the block simply invisible.</p>
+ * <p>Iris shades a deferred gbuffer. A colour-masked depth write leaves the albedo and normal
+ * attachments untouched, so the composite pass would shade those pixels from cleared gbuffer
+ * data — black, not sky. Rather than ship a known-wrong image we disable everything under a
+ * shader pack, leaving the blocks simply invisible.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class SkyboxPunchRenderer {
@@ -87,9 +92,10 @@ public final class SkyboxPunchRenderer {
         ClientLevel level = mc.level;
         if (level == null) return;
 
-        Vec3 cam = event.getCamera().getPosition();
-        // Feed the indexer even when the punch itself is disabled: it costs nothing
-        // and means re-enabling mid-session has a warm index on the next sweep.
+        Camera camera = event.getCamera();
+        Vec3 cam = camera.getPosition();
+        // Feed the indexer even when the effect is disabled: it costs nothing and means
+        // re-enabling mid-session has a warm index on the next sweep.
         SkyboxBlockIndex.reportCamera(cam);
 
         if (!ClientDisplayConfig.isSkyboxPunchEnabled()) return;
@@ -102,26 +108,50 @@ public final class SkyboxPunchRenderer {
         Frustum frustum = event.getFrustum();
         float partialTick = event.getPartialTick().getGameTimeDeltaPartialTick(false);
 
-        BufferBuilder builder = Tesselator.getInstance()
-            .begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION);
+        Map<UUID, ClientSubLevel> subLevels = indexSubLevels(level, snapshot);
+        boolean stencil = SkyboxStencil.isAvailable();
+        EnumSet<SkyboxSky> painted = EnumSet.noneOf(SkyboxSky.class);
 
-        int quads = emitMainWorld(builder, frustumMatrix, frustum, cam, snapshot);
-        quads += emitSubLevels(builder, frustumMatrix, frustum, cam, level, snapshot, partialTick);
+        try {
+            if (stencil) SkyboxStencil.beginMaskPass();
+            beginMaskState();
 
-        // Always build: it is what closes the Tesselator's building state. Returns
-        // null when nothing was emitted, in which case there is nothing to draw and
-        // nothing to close.
-        MeshData mesh = builder.build();
-        if (mesh == null || quads == 0) {
-            if (mesh != null) mesh.close();
-            return;
+            // Build and draw one variant at a time. Tesselator.getInstance() is a single
+            // shared buffer, so holding several MeshData at once would let them overwrite
+            // each other — each mesh is consumed before the next is begun.
+            for (SkyboxSky sky : SkyboxSky.values()) {
+                MeshData mesh = buildMesh(sky, snapshot, subLevels, frustumMatrix, frustum, cam, partialTick);
+                if (mesh == null) continue;
+                if (stencil) SkyboxStencil.maskRef(sky.stencilRef());
+                BufferUploader.drawWithShader(mesh); // closes the mesh
+                painted.add(sky);
+            }
+            endMaskState();
+
+            if (stencil && !painted.isEmpty()) {
+                SkyboxStencil.beginSkyPass();
+                for (SkyboxSky sky : painted) {
+                    SkyboxStencil.skyRef(sky.stencilRef());
+                    SkyboxStencil.drawSky(sky, frustumMatrix, event.getProjectionMatrix(), camera, partialTick);
+                }
+            }
+        } finally {
+            if (stencil) SkyboxStencil.endStencil();
+            // The sky sources set their own blend/shader state; hand the terrain pass on the
+            // next line exactly what it expects.
+            RenderSystem.colorMask(true, true, true, true);
+            RenderSystem.enableCull();
+            RenderSystem.enableDepthTest();
+            RenderSystem.depthMask(true);
+            RenderSystem.depthFunc(GL11.GL_LEQUAL);
+            RenderSystem.disableBlend();
+            RenderSystem.defaultBlendFunc();
+            RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
         }
-
-        drawDepthOnly(mesh);
     }
 
-    /** The actual punch: depth writes with colour writes masked off, then full restore. */
-    private static void drawDepthOnly(MeshData mesh) {
+    /** Depth-only writes: the mask must shape the depth buffer without touching colour. */
+    private static void beginMaskState() {
         RenderSystem.setShader(GameRenderer::getPositionShader);
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
         RenderSystem.disableBlend();
@@ -129,25 +159,57 @@ public final class SkyboxPunchRenderer {
         RenderSystem.depthFunc(GL11.GL_LEQUAL);
         RenderSystem.depthMask(true);
         RenderSystem.colorMask(false, false, false, false);
-        // Culling off makes the punch immune to winding under an arbitrary carriage
-        // pose, and keeps it correct when the camera is inside the cube (front faces
-        // clip against the near plane; back faces still write depth).
+        // Culling off makes the mask immune to winding under an arbitrary carriage pose, and
+        // keeps it correct when the camera is inside a cube (front faces clip against the near
+        // plane; back faces still write depth).
         RenderSystem.disableCull();
+    }
 
-        BufferUploader.drawWithShader(mesh);
-
-        // Restore exactly what the terrain pass on the next line expects.
+    private static void endMaskState() {
         RenderSystem.colorMask(true, true, true, true);
         RenderSystem.enableCull();
-        RenderSystem.depthMask(true);
-        RenderSystem.depthFunc(GL11.GL_LEQUAL);
-        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+    }
+
+    /**
+     * The mesh for one variant's visible cubes, or {@code null} if it has none on screen.
+     * Ownership passes to the caller — {@code BufferUploader.drawWithShader} closes it.
+     */
+    private static MeshData buildMesh(SkyboxSky sky, SkyboxBlockIndex.Snapshot snapshot,
+                                      Map<UUID, ClientSubLevel> subLevels, Matrix4f frustumMatrix,
+                                      Frustum frustum, Vec3 cam, float partialTick) {
+        BufferBuilder builder = Tesselator.getInstance()
+            .begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION);
+
+        int quads = emitMainWorld(builder, frustumMatrix, frustum, cam, snapshot.main().get(sky));
+        quads += emitSubLevels(builder, frustumMatrix, frustum, cam, snapshot, subLevels, sky, partialTick);
+
+        // Always build: it is what closes the Tesselator's building state. Returns null when
+        // nothing was emitted, in which case there is nothing to draw or to close.
+        MeshData mesh = builder.build();
+        if (mesh == null) return null;
+        if (quads == 0) {
+            mesh.close();
+            return null;
+        }
+        return mesh;
+    }
+
+    private static Map<UUID, ClientSubLevel> indexSubLevels(ClientLevel level, SkyboxBlockIndex.Snapshot snapshot) {
+        if (snapshot.subLevels().isEmpty()) return Map.of();
+        ClientSubLevelContainer container = SubLevelContainer.getContainer(level);
+        if (container == null) return Map.of();
+        Map<UUID, ClientSubLevel> byUuid = new HashMap<>();
+        for (ClientSubLevel sub : container.getAllSubLevels()) {
+            byUuid.put(sub.getUniqueId(), sub);
+        }
+        return byUuid;
     }
 
     private static int emitMainWorld(BufferBuilder builder, Matrix4f frustumMatrix, Frustum frustum,
-                                     Vec3 cam, SkyboxBlockIndex.Snapshot snapshot) {
-        long[] positions = snapshot.mainPositions();
-        byte[] masks = snapshot.mainFaceMasks();
+                                     Vec3 cam, SkyboxBlockIndex.CubeSet cubes) {
+        if (cubes == null) return 0;
+        long[] positions = cubes.positions();
+        byte[] masks = cubes.faceMasks();
         double[] cx = new double[8];
         double[] cy = new double[8];
         double[] cz = new double[8];
@@ -173,23 +235,15 @@ public final class SkyboxPunchRenderer {
 
     /**
      * Carriage cubes. Each corner goes through the sub-level's
-     * {@link ClientSubLevel#renderPose(float) renderPose} — the very transform Sable
-     * draws that carriage's blocks with this frame — so the hole stays welded to the
-     * wall at speed instead of swimming against it. The pose is a rigid transform, so
-     * transforming the eight corners keeps the faces planar and stays correct if a
-     * carriage is ever allowed to rotate.
+     * {@link ClientSubLevel#renderPose(float) renderPose} — the very transform Sable draws
+     * that carriage's blocks with this frame — so the hole stays welded to the wall at speed
+     * instead of swimming against it. The pose is a rigid transform, so transforming the eight
+     * corners keeps the faces planar and stays correct if a carriage is ever allowed to rotate.
      */
     private static int emitSubLevels(BufferBuilder builder, Matrix4f frustumMatrix, Frustum frustum,
-                                     Vec3 cam, ClientLevel level,
-                                     SkyboxBlockIndex.Snapshot snapshot, float partialTick) {
-        if (snapshot.subLevels().isEmpty()) return 0;
-        ClientSubLevelContainer container = SubLevelContainer.getContainer(level);
-        if (container == null) return 0;
-
-        Map<UUID, ClientSubLevel> byUuid = new HashMap<>();
-        for (ClientSubLevel sub : container.getAllSubLevels()) {
-            byUuid.put(sub.getUniqueId(), sub);
-        }
+                                     Vec3 cam, SkyboxBlockIndex.Snapshot snapshot,
+                                     Map<UUID, ClientSubLevel> subLevels, SkyboxSky sky, float partialTick) {
+        if (subLevels.isEmpty()) return 0;
 
         Vector3d local = new Vector3d();
         Vector3d world = new Vector3d();
@@ -198,8 +252,10 @@ public final class SkyboxPunchRenderer {
         double[] cz = new double[8];
         int quads = 0;
 
-        for (SkyboxBlockIndex.SubLevelCubes cubes : snapshot.subLevels()) {
-            ClientSubLevel sub = byUuid.get(cubes.subLevelId());
+        for (SkyboxBlockIndex.SubLevelCubes entry : snapshot.subLevels()) {
+            SkyboxBlockIndex.CubeSet cubes = entry.byVariant().get(sky);
+            if (cubes == null) continue;
+            ClientSubLevel sub = subLevels.get(entry.subLevelId());
             if (sub == null) continue;
             Pose3dc pose = sub.renderPose(partialTick);
             if (pose == null) continue;

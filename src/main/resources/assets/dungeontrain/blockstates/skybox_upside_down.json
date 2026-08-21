@@ -1,0 +1,5 @@
+{
+  "variants": {
+    "": { "model": "dungeontrain:block/skybox_upside_down" }
+  }
+}

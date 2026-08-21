@@ -6,6 +6,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModList;
 import net.neoforged.fml.common.EventBusSubscriber;
+import games.brennan.dungeontrain.client.skybox.SkyboxStencil;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
 
@@ -31,5 +32,11 @@ public final class DungeonTrainClient {
         // Route bug-report answers submitted from DP's on-demand survey (/bug, /feedback) into
         // the same log-collection path the death screen uses.
         SurveySubmitClientHook.register(BugLogReporter::maybeReport);
+
+        // Skybox blocks mask each variant's sky with the stencil buffer, which Minecraft's
+        // main render target does not allocate by default. Must be requested here, before
+        // that target's buffers are built — later is too late, and the blocks then fall back
+        // to revealing the live sky.
+        SkyboxStencil.requestStencil();
     }
 }

@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.registry;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.block.SkyboxBlock;
+import games.brennan.dungeontrain.block.SkyboxSky;
 import games.brennan.dungeontrain.narrative.block.NarrativeLecternBlock;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.CreativeModeTabs;
@@ -54,34 +55,57 @@ public final class ModBlocks {
     );
 
     /**
-     * The skybox_block: a solid, unmineable cube you see the sky through. See
-     * {@link SkyboxBlock} for the rendering technique.
+     * Shared properties for every skybox variant.
      *
-     * <p>{@code strength(-1, 3600000.8)} is vanilla's bedrock/barrier pair —
-     * negative destroy time makes it unmineable in survival (creative can still
-     * break it) and the resistance makes it blast-proof. Deliberately <b>no</b>
-     * {@code noOcclusion()}: we want vanilla to treat it as opaque so it culls
-     * neighbouring faces and whole sections behind the hole.</p>
+     * <p>{@code strength(-1, 3600000.8)} is vanilla's bedrock/barrier pair — negative destroy
+     * time makes it unmineable in survival (creative can still break it) and the resistance
+     * makes it blast-proof. Deliberately <b>no</b> {@code noOcclusion()}: we want vanilla to
+     * treat it as opaque so it culls neighbouring faces and whole sections behind the hole.</p>
      */
+    private static BlockBehaviour.Properties skyboxProperties(MapColor color) {
+        return BlockBehaviour.Properties.of()
+            .mapColor(color)
+            .strength(-1.0F, 3600000.8F)
+            .noLootTable()
+            .noTerrainParticles()
+            .isValidSpawn((state, level, pos, type) -> false)
+            .pushReaction(PushReaction.BLOCK)
+            .sound(SoundType.GLASS);
+    }
+
+    /** The above-ground overworld sky, correct at any Y. See {@link SkyboxSky#SURFACE}. */
     public static final DeferredBlock<SkyboxBlock> SKYBOX_BLOCK = BLOCKS.register(
-        "skybox_block",
-        () -> new SkyboxBlock(
-            BlockBehaviour.Properties.of()
-                .mapColor(MapColor.COLOR_LIGHT_BLUE)
-                .strength(-1.0F, 3600000.8F)
-                .noLootTable()
-                .noTerrainParticles()
-                .isValidSpawn((state, level, pos, type) -> false)
-                .pushReaction(PushReaction.BLOCK)
-                .sound(SoundType.GLASS)
-        )
+        SkyboxSky.SURFACE.blockName(),
+        () -> new SkyboxBlock(SkyboxSky.SURFACE, skyboxProperties(MapColor.COLOR_LIGHT_BLUE))
     );
 
-    /** Matching {@link BlockItem} so the block can be placed from the creative tab. */
-    public static final DeferredItem<BlockItem> SKYBOX_BLOCK_ITEM = BLOCK_ITEMS.register(
-        "skybox_block",
-        () -> new BlockItem(SKYBOX_BLOCK.get(), new Item.Properties())
+    /** The End starfield. */
+    public static final DeferredBlock<SkyboxBlock> SKYBOX_END = BLOCKS.register(
+        SkyboxSky.END.blockName(),
+        () -> new SkyboxBlock(SkyboxSky.END, skyboxProperties(MapColor.COLOR_BLACK))
     );
+
+    /** The Nether sky. */
+    public static final DeferredBlock<SkyboxBlock> SKYBOX_NETHER = BLOCKS.register(
+        SkyboxSky.NETHER.blockName(),
+        () -> new SkyboxBlock(SkyboxSky.NETHER, skyboxProperties(MapColor.COLOR_RED))
+    );
+
+    /** The upside-down band's sky, sun and moon orbiting the horizon. */
+    public static final DeferredBlock<SkyboxBlock> SKYBOX_UPSIDE_DOWN = BLOCKS.register(
+        SkyboxSky.UPSIDE_DOWN.blockName(),
+        () -> new SkyboxBlock(SkyboxSky.UPSIDE_DOWN, skyboxProperties(MapColor.COLOR_LIGHT_BLUE))
+    );
+
+    /** Matching {@link BlockItem}s so the blocks can be placed from the creative tab. */
+    public static final DeferredItem<BlockItem> SKYBOX_BLOCK_ITEM = BLOCK_ITEMS.register(
+        SkyboxSky.SURFACE.blockName(), () -> new BlockItem(SKYBOX_BLOCK.get(), new Item.Properties()));
+    public static final DeferredItem<BlockItem> SKYBOX_END_ITEM = BLOCK_ITEMS.register(
+        SkyboxSky.END.blockName(), () -> new BlockItem(SKYBOX_END.get(), new Item.Properties()));
+    public static final DeferredItem<BlockItem> SKYBOX_NETHER_ITEM = BLOCK_ITEMS.register(
+        SkyboxSky.NETHER.blockName(), () -> new BlockItem(SKYBOX_NETHER.get(), new Item.Properties()));
+    public static final DeferredItem<BlockItem> SKYBOX_UPSIDE_DOWN_ITEM = BLOCK_ITEMS.register(
+        SkyboxSky.UPSIDE_DOWN.blockName(), () -> new BlockItem(SKYBOX_UPSIDE_DOWN.get(), new Item.Properties()));
 
     private ModBlocks() {}
 
@@ -100,6 +124,9 @@ public final class ModBlocks {
         if (event.getTabKey() == CreativeModeTabs.FUNCTIONAL_BLOCKS) {
             event.accept(NARRATIVE_LECTERN_ITEM.get());
             event.accept(SKYBOX_BLOCK_ITEM.get());
+            event.accept(SKYBOX_END_ITEM.get());
+            event.accept(SKYBOX_NETHER_ITEM.get());
+            event.accept(SKYBOX_UPSIDE_DOWN_ITEM.get());
         }
     }
 }

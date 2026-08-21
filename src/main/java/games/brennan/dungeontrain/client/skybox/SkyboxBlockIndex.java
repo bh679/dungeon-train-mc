@@ -7,14 +7,14 @@ import dev.ryanhcode.sable.sublevel.ClientSubLevel;
 import dev.ryanhcode.sable.sublevel.plot.LevelPlot;
 import dev.ryanhcode.sable.sublevel.plot.PlotChunkHolder;
 import games.brennan.dungeontrain.DungeonTrain;
-import games.brennan.dungeontrain.registry.ModBlocks;
+import games.brennan.dungeontrain.block.SkyboxBlock;
+import games.brennan.dungeontrain.block.SkyboxSky;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.SectionPos;
 import net.minecraft.world.level.ChunkPos;
-import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
@@ -29,6 +29,7 @@ import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -91,21 +92,25 @@ public final class SkyboxBlockIndex {
      */
     private static final double SUB_LEVEL_SCAN_MARGIN = SCAN_CHUNK_RADIUS * 16.0;
 
-    /** One carriage's skybox blocks, in that carriage's plot-space coordinates. */
-    public record SubLevelCubes(UUID subLevelId, long[] positions, byte[] faceMasks) {}
-
     /**
-     * An immutable frame of index state. {@code positions} hold
+     * The cubes of one variant in one coordinate space. {@code positions} hold
      * {@link BlockPos#asLong} values; {@code faceMasks} hold one bit per
-     * {@link Direction#get3DDataValue()} that is set when that face should be
-     * drawn (i.e. the neighbour is not itself a skybox block).
+     * {@link Direction#get3DDataValue()}, set when that face should be drawn (i.e. the
+     * neighbour is not itself a skybox block of any variant — a face shared with another
+     * skybox block is interior and never visible).
      */
-    public record Snapshot(long[] mainPositions, byte[] mainFaceMasks, List<SubLevelCubes> subLevels) {
+    public record CubeSet(long[] positions, byte[] faceMasks) {}
 
-        public static final Snapshot EMPTY = new Snapshot(new long[0], new byte[0], List.of());
+    /** One carriage's skybox blocks, per variant, in that carriage's plot-space coordinates. */
+    public record SubLevelCubes(UUID subLevelId, Map<SkyboxSky, CubeSet> byVariant) {}
+
+    /** An immutable frame of index state. */
+    public record Snapshot(Map<SkyboxSky, CubeSet> main, List<SubLevelCubes> subLevels) {
+
+        public static final Snapshot EMPTY = new Snapshot(Map.of(), List.of());
 
         public boolean isEmpty() {
-            return mainPositions.length == 0 && subLevels.isEmpty();
+            return main.isEmpty() && subLevels.isEmpty();
         }
     }
 
@@ -157,23 +162,35 @@ public final class SkyboxBlockIndex {
     }
 
     private static Snapshot rebuild(ClientLevel level, Vec3 camera) {
-        Block skybox = ModBlocks.SKYBOX_BLOCK.get();
         SubLevelContainer container = SubLevelContainer.getContainer(level);
 
-        List<Long> mainHits = new ArrayList<>();
-        scanMainWorld(level, camera, skybox, container, mainHits);
+        Map<SkyboxSky, List<Long>> mainHits = new EnumMap<>(SkyboxSky.class);
+        scanMainWorld(level, camera, container, mainHits);
+        Map<SkyboxSky, CubeSet> main = pack(mainHits, level::getBlockState);
 
-        long[] mainPositions = new long[mainHits.size()];
-        for (int i = 0; i < mainPositions.length; i++) mainPositions[i] = mainHits.get(i);
-        byte[] mainMasks = new byte[mainPositions.length];
+        return new Snapshot(main, scanSubLevels(level, camera));
+    }
+
+    /**
+     * Turn per-variant hit lists into immutable {@link CubeSet}s, computing each cube's face
+     * mask from live neighbour reads through {@code lookup}.
+     */
+    private static Map<SkyboxSky, CubeSet> pack(Map<SkyboxSky, List<Long>> hits,
+                                                java.util.function.Function<BlockPos, BlockState> lookup) {
+        if (hits.isEmpty()) return Map.of();
+        Map<SkyboxSky, CubeSet> out = new EnumMap<>(SkyboxSky.class);
         BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
-        for (int i = 0; i < mainPositions.length; i++) {
-            mainMasks[i] = faceMask(mainPositions[i], skybox, cursor,
-                (pos) -> level.getBlockState(pos));
+        for (Map.Entry<SkyboxSky, List<Long>> entry : hits.entrySet()) {
+            List<Long> list = entry.getValue();
+            long[] positions = new long[list.size()];
+            byte[] masks = new byte[list.size()];
+            for (int i = 0; i < positions.length; i++) {
+                positions[i] = list.get(i);
+                masks[i] = faceMask(positions[i], cursor, lookup);
+            }
+            out.put(entry.getKey(), new CubeSet(positions, masks));
         }
-
-        List<SubLevelCubes> subs = scanSubLevels(level, camera, skybox);
-        return new Snapshot(mainPositions, mainMasks, subs);
+        return out;
     }
 
     /**
@@ -181,8 +198,8 @@ public final class SkyboxBlockIndex {
      * are handled by {@link #scanSubLevels}, which pairs each block with the
      * carriage transform it must be drawn through.
      */
-    private static void scanMainWorld(ClientLevel level, Vec3 camera, Block skybox,
-                                      SubLevelContainer container, List<Long> out) {
+    private static void scanMainWorld(ClientLevel level, Vec3 camera,
+                                      SubLevelContainer container, Map<SkyboxSky, List<Long>> out) {
         int centreX = SectionPos.blockToSectionCoord((int) Math.floor(camera.x));
         int centreZ = SectionPos.blockToSectionCoord((int) Math.floor(camera.z));
 
@@ -191,7 +208,7 @@ public final class SkyboxBlockIndex {
                 if (container != null && container.inBounds(new ChunkPos(cx, cz))) continue;
                 ChunkAccess chunk = level.getChunkSource().getChunkNow(cx, cz);
                 if (chunk == null) continue;
-                collectFromChunk(chunk, skybox, out);
+                collectFromChunk(chunk, out);
             }
         }
     }
@@ -201,7 +218,7 @@ public final class SkyboxBlockIndex {
      * plot space; the renderer transforms them through
      * {@link ClientSubLevel#renderPose(float)} at draw time.
      */
-    private static List<SubLevelCubes> scanSubLevels(ClientLevel level, Vec3 camera, Block skybox) {
+    private static List<SubLevelCubes> scanSubLevels(ClientLevel level, Vec3 camera) {
         ClientSubLevelContainer container = SubLevelContainer.getContainer(level);
         if (container == null) return List.of();
 
@@ -223,24 +240,16 @@ public final class SkyboxBlockIndex {
             // live in the plot's own holder. Gather them into a map and read through
             // it, the same way CarriageOcclusion does for its render-time ray casts.
             Map<Long, LevelChunk> chunks = new HashMap<>();
-            List<Long> hits = new ArrayList<>();
+            Map<SkyboxSky, List<Long>> hits = new EnumMap<>(SkyboxSky.class);
             for (PlotChunkHolder holder : plot.getLoadedChunks()) {
                 LevelChunk chunk = holder.getChunk();
                 if (chunk == null) continue;
                 chunks.put(chunk.getPos().toLong(), chunk);
-                collectFromChunk(chunk, skybox, hits);
+                collectFromChunk(chunk, hits);
             }
             if (hits.isEmpty()) continue;
 
-            long[] positions = new long[hits.size()];
-            for (int i = 0; i < positions.length; i++) positions[i] = hits.get(i);
-            byte[] masks = new byte[positions.length];
-            BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
-            for (int i = 0; i < positions.length; i++) {
-                masks[i] = faceMask(positions[i], skybox, cursor,
-                    pos -> plotBlockState(chunks, pos));
-            }
-            out.add(new SubLevelCubes(sub.getUniqueId(), positions, masks));
+            out.add(new SubLevelCubes(sub.getUniqueId(), pack(hits, pos -> plotBlockState(chunks, pos))));
         }
         return List.copyOf(out);
     }
@@ -252,7 +261,7 @@ public final class SkyboxBlockIndex {
     }
 
     /** Palette-test each section, then walk only the sections that can contain a hit. */
-    private static void collectFromChunk(ChunkAccess chunk, Block skybox, List<Long> out) {
+    private static void collectFromChunk(ChunkAccess chunk, Map<SkyboxSky, List<Long>> out) {
         LevelChunkSection[] sections = chunk.getSections();
         int minSectionY = chunk.getMinSection();
         int baseX = chunk.getPos().getMinBlockX();
@@ -261,15 +270,15 @@ public final class SkyboxBlockIndex {
         for (int i = 0; i < sections.length; i++) {
             LevelChunkSection section = sections[i];
             if (section == null || section.hasOnlyAir()) continue;
-            if (!section.maybeHas(state -> state.is(skybox))) continue;
+            if (!section.maybeHas(state -> state.getBlock() instanceof SkyboxBlock)) continue;
 
             int baseY = (minSectionY + i) << 4;
             for (int y = 0; y < 16; y++) {
                 for (int z = 0; z < 16; z++) {
                     for (int x = 0; x < 16; x++) {
-                        BlockState state = section.getBlockState(x, y, z);
-                        if (state.is(skybox)) {
-                            out.add(BlockPos.asLong(baseX + x, baseY + y, baseZ + z));
+                        if (section.getBlockState(x, y, z).getBlock() instanceof SkyboxBlock block) {
+                            out.computeIfAbsent(block.sky(), k -> new ArrayList<>())
+                                .add(BlockPos.asLong(baseX + x, baseY + y, baseZ + z));
                         }
                     }
                 }
@@ -287,7 +296,7 @@ public final class SkyboxBlockIndex {
      * up to one rebuild interval — harmless in the "extra interior face" direction
      * (depth-only writes, nearest wins) and self-correcting on the next sweep.</p>
      */
-    private static byte faceMask(long packed, Block skybox, BlockPos.MutableBlockPos cursor,
+    private static byte faceMask(long packed, BlockPos.MutableBlockPos cursor,
                                  java.util.function.Function<BlockPos, BlockState> lookup) {
         int x = BlockPos.getX(packed);
         int y = BlockPos.getY(packed);
@@ -295,7 +304,7 @@ public final class SkyboxBlockIndex {
         int mask = 0;
         for (Direction dir : Direction.values()) {
             cursor.set(x + dir.getStepX(), y + dir.getStepY(), z + dir.getStepZ());
-            if (!lookup.apply(cursor).is(skybox)) {
+            if (!(lookup.apply(cursor).getBlock() instanceof SkyboxBlock)) {
                 mask |= 1 << dir.get3DDataValue();
             }
         }

@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.block;
 
 import com.mojang.serialization.MapCodec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.block.Block;
@@ -30,10 +31,23 @@ import net.minecraft.world.level.block.state.BlockState;
  */
 public class SkyboxBlock extends Block {
 
-    public static final MapCodec<SkyboxBlock> CODEC = simpleCodec(SkyboxBlock::new);
+    public static final MapCodec<SkyboxBlock> CODEC = RecordCodecBuilder.mapCodec(
+        instance -> instance.group(
+            SkyboxSky.CODEC.fieldOf("sky").forGetter(SkyboxBlock::sky),
+            propertiesCodec()
+        ).apply(instance, SkyboxBlock::new)
+    );
 
-    public SkyboxBlock(BlockBehaviour.Properties properties) {
+    private final SkyboxSky sky;
+
+    public SkyboxBlock(SkyboxSky sky, BlockBehaviour.Properties properties) {
         super(properties);
+        this.sky = sky;
+    }
+
+    /** Which sky this block's hole shows. Drives its stencil ref at render time. */
+    public SkyboxSky sky() {
+        return sky;
     }
 
     @Override
