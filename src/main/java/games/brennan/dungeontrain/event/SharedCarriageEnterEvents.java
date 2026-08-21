@@ -29,8 +29,9 @@ import java.util.concurrent.ConcurrentHashMap;
  * {@link SharedCarriageMessage}.
  *
  * <p>Detection polls each player's footing on a coarse cadence ({@link #CHECK_INTERVAL_TICKS}) and fires
- * only on a TRANSITION onto a new shared carriage (keyed by sub-level + carriage index), with a short
- * per-player cooldown so hopping a group boundary can't spam. Server-side only.</p>
+ * only on a TRANSITION onto a new shared carriage (keyed by sub-level + carriage index), rate-limited to
+ * {@link #MESSAGE_BURST} announcements per {@link #MESSAGE_WINDOW_MS} per player so walking a train of
+ * shared carriages can't fill chat. Server-side only.</p>
  *
  * <p>A leased carriage adds a second line crediting its contributors, held back
  * {@link #CREDIT_DELAY_TICKS} so it reads as an afterthought rather than arriving in the same instant
@@ -41,7 +42,13 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class SharedCarriageEnterEvents {
 
     private static final int CHECK_INTERVAL_TICKS = 10;   // ~0.5 s
-    private static final long MESSAGE_COOLDOWN_MS = 3000L;
+    /**
+     * Sliding-window rate limit on the entry announcement: at most {@link #MESSAGE_BURST} of them in any
+     * {@link #MESSAGE_WINDOW_MS}, per player. A flavour line plus its credit line count as ONE, since
+     * they announce a single entry.
+     */
+    private static final int MESSAGE_BURST = 3;
+    private static final long MESSAGE_WINDOW_MS = 10_000L;
     /** Beat between the flavour line and the credit line, so they land as two thoughts, not one block. */
     private static final int CREDIT_DELAY_TICKS = 50;     // 2.5 s
     /**
@@ -53,7 +60,8 @@ public final class SharedCarriageEnterEvents {
 
     /** Per-player key ("subLevelId:pIdx") of the shared carriage they were last found standing on. */
     private static final Map<UUID, String> LAST_KEY = new ConcurrentHashMap<>();
-    private static final Map<UUID, Long> LAST_MSG_MS = new ConcurrentHashMap<>();
+    /** Send times of each player's last {@link #MESSAGE_BURST} announcements, oldest first. */
+    private static final Map<UUID, long[]> RECENT_MSG_MS = new ConcurrentHashMap<>();
     /** Consecutive polls each player has been off every shared carriage (saturates at the grace). */
     private static final Map<UUID, Integer> OFF_POLLS = new ConcurrentHashMap<>();
     /** Credit lines waiting out {@link #CREDIT_DELAY_TICKS} before they are sent. */
@@ -115,11 +123,9 @@ public final class SharedCarriageEnterEvents {
         if (key.equals(LAST_KEY.get(id))) return; // still on the same carriage
         LAST_KEY.put(id, key);
 
-        long now = System.currentTimeMillis();
-        Long last = LAST_MSG_MS.get(id);
-        if (last != null && now - last < MESSAGE_COOLDOWN_MS) return;
-        LAST_MSG_MS.put(id, now);
-
+        // Triggered before the rate limit: a milestone the player earned shouldn't hinge on how chatty the
+        // last ten seconds were.
+        //
         // "You built this" wins over "someone's been here" — it's the more specific fact, and it's the
         // one the player can verify by looking around.
         // "The rails brought your own build back" — the milestone the own-build lease exists to create.
@@ -130,6 +136,14 @@ public final class SharedCarriageEnterEvents {
             games.brennan.dungeontrain.advancement.ModAdvancementTriggers.GAMEPLAY_ACTION.get()
                     .trigger(player, "drift_own_return");
         }
+
+        if (!admit(id, System.currentTimeMillis())) {
+            // Nothing announces this carriage, so an earlier carriage's credit line must not arrive now and
+            // appear to describe it.
+            PENDING_CREDIT.remove(id);
+            return;
+        }
+
         player.sendSystemMessage(own
                 ? SharedCarriageMessage.ownCarriage(level.getRandom())
                 : leased
@@ -152,6 +166,26 @@ public final class SharedCarriageEnterEvents {
         }
     }
 
+    /**
+     * Whether this player may be sent an announcement now, recording it when so. The window is full while
+     * the OLDEST of the retained send times is still inside it. Timestamps are replaced with a fresh array
+     * rather than shifted in place, so a concurrent reader never sees a half-shifted window.
+     */
+    private static boolean admit(UUID id, long now) {
+        long[] stamps = RECENT_MSG_MS.get(id);
+        if (stamps == null) {
+            RECENT_MSG_MS.put(id, new long[] {now});
+            return true;
+        }
+        if (stamps.length >= MESSAGE_BURST && now - stamps[0] < MESSAGE_WINDOW_MS) return false;
+        int keep = Math.min(stamps.length, MESSAGE_BURST - 1);
+        long[] next = new long[keep + 1];
+        System.arraycopy(stamps, stamps.length - keep, next, 0, keep);
+        next[keep] = now;
+        RECENT_MSG_MS.put(id, next);
+        return true;
+    }
+
     /** Send a player's held-back credit line once its beat has elapsed. */
     private static void releaseDueCredit(ServerPlayer player) {
         PendingCredit pending = PENDING_CREDIT.get(player.getUUID());
@@ -164,7 +198,7 @@ public final class SharedCarriageEnterEvents {
     public static void onLogout(PlayerEvent.PlayerLoggedOutEvent event) {
         UUID id = event.getEntity().getUUID();
         LAST_KEY.remove(id);
-        LAST_MSG_MS.remove(id);
+        RECENT_MSG_MS.remove(id);
         OFF_POLLS.remove(id);
         // Drop any undelivered credit line — tickCount resets on rejoin, and a Dungeon Train death starts
         // a whole new world, so a line held here would otherwise surface in a run it has nothing to do with.
