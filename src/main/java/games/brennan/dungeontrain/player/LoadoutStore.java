@@ -96,6 +96,19 @@ public final class LoadoutStore {
             fromPartition, toPartition, player.getName().getString());
     }
 
+    /**
+     * Whether {@code uuid} has anything saved under {@code partition} — i.e. whether switching to
+     * that difficulty would restore a loadout or start them from nothing. Read-only as far as the
+     * stored data goes; it warms the same cache entry {@link #swap} would.
+     */
+    public static boolean has(UUID uuid, String partition) {
+        CompoundTag root = CACHE.computeIfAbsent(uuid, k -> {
+            CompoundTag loaded = loadFromDisk(k);
+            return loaded != null ? loaded : new CompoundTag();
+        });
+        return root.contains(partition, Tag.TAG_COMPOUND);
+    }
+
     /** Snapshot {@code player}'s inventory + XP as one partition's tag. */
     private static CompoundTag capture(ServerPlayer player) {
         HolderLookup.Provider registries = player.registryAccess();
