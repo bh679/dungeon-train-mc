@@ -39,7 +39,7 @@
     "mode": "endless_repetition"
   },
   "cvspharmacy": {
-    "weight": 1,
+    "weight": 0,
     "minLevel": 131,
     "phases": [
       "OVERWORLD",
@@ -105,7 +105,7 @@
     "mode": "endless_repetition"
   },
   "randomized": {
-    "weight": 1,
+    "weight": 0,
     "mode": "endless_repetition/dynamic/fit"
   },
   "sanemaze": {

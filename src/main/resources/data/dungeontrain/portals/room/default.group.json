@@ -13,10 +13,6 @@
     {
       "id": "authorlibrary",
       "weight": 0
-    },
-    {
-      "id": "end",
-      "weight": 1
     }
   ]
 }

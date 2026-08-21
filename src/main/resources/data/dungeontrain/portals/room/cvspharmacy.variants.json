@@ -1,5 +1,6 @@
 {
   "schemaVersion": 9,
+  "mirror": { "x": true, "y": false, "z": false, "v": false },
   "variants": {
   }
 }
