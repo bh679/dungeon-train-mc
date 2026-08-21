@@ -72,7 +72,7 @@ public final class EditorVariantMirror {
                     EditorMirror.reflectStates(updatedOrNull, img.flipX(), img.flipY(), img.flipZ());
                 plot.put(img.local(), reflected);
                 plot.setLockId(img.local(), srcLockId); // 0 clears — mirrors the source's lock state
-                SilentBlockOps.setBlockSilent(level, tgtWorld, reflected.get(0).state());
+                stampMirrorBase(level, tgtWorld, reflected.get(0).state());
             }
             changed = true;
         }
@@ -116,7 +116,7 @@ public final class EditorVariantMirror {
                             plot.setLockId(img.local(), masterLockId); // join the master's lock group
                             BlockPos tgtWorld = origin.offset(
                                 img.local().getX(), img.local().getY(), img.local().getZ());
-                            SilentBlockOps.setBlockSilent(level, tgtWorld, reflected.get(0).state());
+                            stampMirrorBase(level, tgtWorld, reflected.get(0).state());
                         }
                         changed = true;
                     }
@@ -124,6 +124,22 @@ public final class EditorVariantMirror {
             }
         }
         if (changed) trySave(plot);
+    }
+
+    /**
+     * Stamp a mirrored cell's cosmetic base block, skipping liquids.
+     *
+     * <p>The reflected pool is written to the sidecar either way — this only governs the block the
+     * author sees in the plot. A liquid stamped from <i>here</i> would flow: this path goes through
+     * {@code setBlockSilent}, so {@code LiquidBlock.onPlace} schedules a fluid tick, and spread
+     * water would be baked into the saved template. {@link VariantEditorPreviewTicker} stamps
+     * liquids section-local instead, which schedules nothing — so leave the cell to its next 1 Hz
+     * pass. Costs at most a second of delay.</p>
+     */
+    private static void stampMirrorBase(ServerLevel level, BlockPos tgtWorld,
+                                        net.minecraft.world.level.block.state.BlockState state) {
+        if (VariantLiquids.isLiquid(state)) return;
+        SilentBlockOps.setBlockSilent(level, tgtWorld, state);
     }
 
     private static void trySave(BlockVariantPlot plot) {

@@ -101,7 +101,18 @@ public final class VariantEditorPreviewTicker {
             BlockPos worldPos = plot.origin().offset(localPos);
             BlockState existing = level.getBlockState(worldPos);
             if (!existing.equals(toShow)) {
-                SilentBlockOps.setBlockSilentNoCascade(level, worldPos, toShow, picked.blockEntityNbt());
+                if (VariantLiquids.isLiquid(toShow)) {
+                    // Liquids go in section-local, which is the whole reason a previewed source
+                    // sits still: a section write never reaches LevelChunk.setBlockState, so
+                    // LiquidBlock.onPlace never runs and no fluid tick is ever scheduled. That
+                    // matters because an editor plot's world blocks ARE the template until the
+                    // author saves — spread water would be baked in as authored water. Liquids
+                    // have no block entity, which is this path's one precondition, and the plot
+                    // the author is standing in is loaded FULL (see SilentBlockOps).
+                    SilentBlockOps.setBlockSectionLocal(level, worldPos, toShow);
+                } else {
+                    SilentBlockOps.setBlockSilentNoCascade(level, worldPos, toShow, picked.blockEntityNbt());
+                }
             }
         }
     }

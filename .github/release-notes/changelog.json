@@ -7469,6 +7469,22 @@
       "released": true,
       "released_in": "v0.589.0",
       "released_at": "2026-08-21T07:33:45Z"
+    },
+    {
+      "id": "liquids-in-carriages",
+      "version": "0.590.0",
+      "type": "feat",
+      "title": "Water and lava in carriages",
+      "summary": "Carriages can now feature water and lava. Train builders can drop a liquid into a block variant, so a carriage might roll a flooded floor, a lava channel, or stay dry \u2014 and the liquid always arrives as a proper source block rather than a puddle that drains away.",
+      "highlights": [
+        "Water and lava can be used as block variants in carriages.",
+        "Liquids always place as full source blocks, so they don't drain away."
+      ],
+      "pr": 1011,
+      "date": "2026-08-21",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

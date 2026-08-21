@@ -416,6 +416,7 @@ public final class BlockVariantMenuController {
                 BlockState capturedState;
                 CompoundTag itemBeNbt;
                 String linkedPrefabId = null;
+                BlockState bucketSource = VariantLiquids.sourceStateFrom(held);
                 if (held.isEmpty()) {
                     // Empty hand → add the empty-placeholder sentinel.
                     // CarriageVariantBlocks.isEmptyPlaceholder translates this
@@ -423,8 +424,16 @@ public final class BlockVariantMenuController {
                     // "leave this position empty in the rolled carriage".
                     capturedState = net.minecraft.world.level.block.Blocks.COMMAND_BLOCK.defaultBlockState();
                     itemBeNbt = null;
+                } else if (bucketSource != null) {
+                    // Filled bucket → add the fluid's SOURCE state. A bucket is
+                    // not a BlockItem so it would otherwise fall into the reject
+                    // below, and only level=0 survives placement: a flowing state
+                    // has nothing feeding it in a carriage and drains to air.
+                    // Buckets carry no block-entity or loot-prefab payload.
+                    capturedState = bucketSource;
+                    itemBeNbt = null;
                 } else if (!(held.getItem() instanceof BlockItem blockItem)) {
-                    actionBar(player, "Hold a block, spawn egg, or empty hand to add a variant",
+                    actionBar(player, "Hold a block, bucket, spawn egg, or empty hand to add a variant",
                         ChatFormatting.YELLOW);
                     return;
                 } else {
@@ -957,9 +966,13 @@ public final class BlockVariantMenuController {
     /**
      * Capture the current world block as a {@link VariantState} for ADD-on-empty-cell
      * seeding.
+     *
+     * <p>A liquid base is normalised to its source state — a captured {@code level=3} flow has
+     * nothing feeding it once stamped into a carriage and would drain to air.</p>
      */
-    private static @Nullable VariantState captureBaseVariant(ServerLevel level, BlockPos clicked, BlockState baseState) {
-        if (baseState.isAir()) return null;
+    private static @Nullable VariantState captureBaseVariant(ServerLevel level, BlockPos clicked, BlockState rawBaseState) {
+        if (rawBaseState.isAir()) return null;
+        BlockState baseState = VariantLiquids.toSource(rawBaseState);
         CompoundTag beNbt = null;
         if (baseState.hasBlockEntity()) {
             BlockEntity be = level.getBlockEntity(clicked);
