@@ -12,7 +12,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Pure-math unit tests for {@link PortalTwinLanes} — where a portal pair's twin structure is stamped
- * in the basement under the world. No NeoForge bootstrap.
+ * in the sealed world outside the terrain. No NeoForge bootstrap.
+ *
+ * <p>Most cases are framed on the basement under the world, which is where twins go outside the
+ * upside-down band. The lane arithmetic itself knows nothing about which end of the world it is
+ * working in — see {@link PortalTwinRegion} — and {@link #atticLanesAreTheSameArithmetic} is what
+ * holds it to that.</p>
  */
 final class PortalTwinLanesTest {
 
@@ -25,6 +30,10 @@ final class PortalTwinLanesTest {
     private static final int VANILLA_BEDROCK_Y = -64;
 
     private static final int GROUP_SIZE = 4;
+
+    /** The attic over the band's inverted lid at stock settings: lid at 111, ceiling 320 less 4. */
+    private static final int ATTIC_BASE = 111;
+    private static final int ATTIC_CEILING = 316;
 
     /**
      * The height the lanes are sized on in these tests — the built-in room's, which is what a world
@@ -187,5 +196,36 @@ final class PortalTwinLanesTest {
         assertFalse(PortalTwinLanes.fitsUnderWorld(
             DT_MIN_Y, DT_BEDROCK_Y, top, DT_BEDROCK_Y - top),
             "a structure whose top reaches the bedrock row must not be stamped");
+    }
+
+    @Test
+    @DisplayName("The attic over the band's lid runs the same lane arithmetic, just upward")
+    void atticLanesAreTheSameArithmetic() {
+        // Same spacing, same count, same guarantee that the top lane stays inside the region — the
+        // only thing that changed is which two numbers bound it.
+        assertEquals(PortalTwinLanes.MAX_LANES,
+            PortalTwinLanes.usableLanes(ATTIC_BASE, ATTIC_CEILING, ROOM_H));
+        assertEquals(PortalTwinLanes.laneHeight(ROOM_H),
+            PortalTwinLanes.twinFloorY(ATTIC_BASE, ATTIC_CEILING, GROUP_SIZE, GROUP_SIZE, ROOM_H)
+                - PortalTwinLanes.twinFloorY(ATTIC_BASE, ATTIC_CEILING, 0, GROUP_SIZE, ROOM_H));
+
+        Set<Integer> heights = new HashSet<>();
+        for (int group = 0; group < PortalTwinLanes.MAX_LANES; group++) {
+            int twinY = PortalTwinLanes.twinFloorY(
+                ATTIC_BASE, ATTIC_CEILING, group * GROUP_SIZE, GROUP_SIZE, ROOM_H);
+            heights.add(twinY);
+            assertTrue(twinY > ATTIC_BASE, "lane " + group + " must stand ON the lid, not in it");
+            assertTrue(PortalTwinLanes.fitsUnderWorld(ATTIC_BASE, ATTIC_CEILING, twinY, ROOM_H),
+                "lane " + group + " at " + twinY);
+        }
+        assertEquals(PortalTwinLanes.MAX_LANES, heights.size(), "lanes must not collide");
+    }
+
+    @Test
+    @DisplayName("An attic holds a taller room than the basement it replaces")
+    void atticStandsTallerRooms() {
+        assertTrue(PortalTwinLanes.maxStructureHeight(ATTIC_BASE, ATTIC_CEILING)
+                >= PortalTwinLanes.maxStructureHeight(DT_MIN_Y, DT_BEDROCK_Y),
+            "entering the band must not shorten a room");
     }
 }

@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 4,
+  "block": "minecraft:chest",
+  "category": "loot",
+  "fillMin": 4,
+  "fillMax": 10,
+  "entries": [
+    { "id": "minecraft:diamond_sword", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 50 },
+    { "id": "minecraft:diamond_leggings", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 50 },
+    { "id": "minecraft:diamond_chestplate", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 50 },
+    { "id": "minecraft:diamond_boots", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 50 },
+    { "id": "minecraft:crossbow", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 50 },
+    { "id": "minecraft:diamond", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:iron_ingot", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:gold_ingot", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:diamond_horse_armor", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:spectral_arrow", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:tipped_arrow", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:bow", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 50 },
+    { "id": "minecraft:end_crystal", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:ender_eye", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:ender_pearl", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:ender_chest", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:golden_apple", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:golden_carrot", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:splash_potion", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:shulker_box", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
+  ]
+}

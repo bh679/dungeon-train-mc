@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 3,
+  "pools": {
+  },
+  "links": {
+    "6,1,21": "upsidedown",
+    "6,1,22": "upsidedown",
+    "6,1,23": "mining2"
+  }
+}

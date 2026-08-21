@@ -193,8 +193,13 @@ public final class PlayerJoinEvents {
         DebugFlags.sendSnapshotTo(player);
         // Sync the disintegration-band geometry (per-world carriage length + train
         // flag) so the client can fade the sky/fog toward the End across the band.
-        DungeonTrainWorldData bandData = DungeonTrainWorldData.get(player.serverLevel().getServer().overworld());
-        DungeonTrainNet.sendTo(player, new VoidBandSyncPacket(bandData.dims().length(), bandData.startsWithTrain(), bandData.getTrainY()));
+        ServerLevel bandLevel = player.serverLevel().getServer().overworld();
+        DungeonTrainWorldData bandData = DungeonTrainWorldData.get(bandLevel);
+        // bedrockY comes off the overworld's chunk generator, which the client has no access to; it
+        // bounds the sealed space portal twins stand in, and the band's block-render flip has to
+        // leave that space alone. See ClientUpsideDownBand#isInTwinSpace.
+        DungeonTrainNet.sendTo(player, new VoidBandSyncPacket(bandData.dims().length(),
+                bandData.startsWithTrain(), bandData.getTrainY(), WorldFloor.bedrockY(bandLevel)));
         // If the intro cinematic will play, open the loading screen + freeze the
         // player from world-entry so they don't fall while the train settles.
         CinematicIntroService.armPreloadIfNeeded(player);

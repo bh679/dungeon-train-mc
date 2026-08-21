@@ -172,8 +172,9 @@ public final class UpsideDownMirror {
         int floorGuard = minY;                          // never read or write the bedrock row
 
         boolean roofInvert = DungeonTrainCommonConfig.isUpsideDownBedrockRoof();
-        int roofY = UpsideDownBand.bedrockRoofY(mirror, ceilingGap, minY, maxY);
-        roofY = UpsideDownBand.cappedRoofY(roofY, mirror, ceilingGap, maxCeilingHeight);
+        // Same lid the portal system stands its in-band twin structures on — one definition, so a
+        // structure can never be planted inside the world by half a block.
+        int roofY = UpsideDownBand.roofY(level);
         int floorSectionIdx = chunk.getSectionIndex(minY);
         int floorLocalY = minY - SectionPos.sectionToBlockCoord(chunk.getSectionYFromSectionIndex(floorSectionIdx));
 

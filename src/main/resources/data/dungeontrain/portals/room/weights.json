@@ -1,4 +1,8 @@
 {
+  "abandonedroom": {
+    "weight": 6,
+    "mode": "bedrock_lock"
+  },
   "backrooms": {
     "weight": 1,
     "mode": "endless_repetition/dynamic"
@@ -34,6 +38,18 @@
     "weight": 1,
     "mode": "endless_repetition"
   },
+  "cvspharmacy": {
+    "weight": 0,
+    "minLevel": 131,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "END",
+      "UPSIDE_DOWN",
+      "CHUNCKS"
+    ],
+    "mode": "bedrock_lock"
+  },
   "default": {
     "weight": 2,
     "phases": [
@@ -48,6 +64,10 @@
     "weight": 2,
     "minLevel": 1,
     "mode": "endless_repetition/dynamic"
+  },
+  "end": {
+    "weight": 1,
+    "mode": "bedrockless"
   },
   "house": {
     "weight": 1,
@@ -84,6 +104,14 @@
     "minLevel": 5,
     "mode": "endless_repetition"
   },
+  "randomized": {
+    "weight": 0,
+    "mode": "endless_repetition/dynamic/fit"
+  },
+  "sanemaze": {
+    "weight": 1,
+    "mode": "bedrock_lock"
+  },
   "singlepillar": {
     "weight": 4,
     "minLevel": 2,
@@ -97,6 +125,10 @@
   "trap": {
     "weight": 1,
     "minLevel": 10,
+    "mode": "bedrock_lock"
+  },
+  "upsidedown": {
+    "weight": 10,
     "mode": "bedrock_lock"
   },
   "window": {

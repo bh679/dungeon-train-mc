@@ -7426,8 +7426,53 @@
       "released_at": "2026-08-21T05:05:55Z"
     },
     {
-      "id": "liquids-in-carriages",
+      "id": "passenger-log-short-run-filter",
       "version": "0.587.0",
+      "type": "feat",
+      "title": "Fewer trivial runs in the passenger log",
+      "summary": "The public passenger log now only carries runs that got somewhere. A run that ends before carriage 100 stays off the feed \u2014 whether you died, quit, or abandoned it \u2014 so the log fills with journeys instead of false starts. The one exception: if another player's echo strikes you down, your run is posted however early it happened.",
+      "highlights": [
+        "Runs ending before carriage 100 no longer post to the public passenger log",
+        "Being killed by an echo always posts, at any carriage count"
+      ],
+      "pr": 1010,
+      "date": "2026-08-21",
+      "released": true,
+      "released_in": "v0.587.0",
+      "released_at": "2026-08-21T06:22:32Z"
+    },
+    {
+      "id": "upside-down-portal-rooms-above-bedrock",
+      "version": "0.588.0",
+      "type": "fix",
+      "title": "Improving dimensional carriages in the Upside Down",
+      "summary": "Improving dimensional carriages in the Upside Down.",
+      "date": "2026-08-21",
+      "released": true,
+      "released_in": "v0.589.0",
+      "released_at": "2026-08-21T07:33:45Z",
+      "pr": 1012
+    },
+    {
+      "id": "player-portal-rooms-house",
+      "version": "0.589.0",
+      "type": "content",
+      "title": "Six player-built portal rooms",
+      "summary": "Six new portal rooms, designed and built by players in the in-game editor \u2014 thanks to Autistic Mime, General Efficiency and Lil Detective Crunch. Which one you find depends on how far down the line you are, so the further you ride the stranger they get.",
+      "highlights": [
+        "Built by Autistic Mime, General Efficiency and Lil Detective Crunch",
+        "Six new rooms, each gated by distance",
+        "New loot: an End-themed chest, a gambling chest, and a mixed-blocks chest",
+        "Their chests were rebuilt clean \u2014 the authors' worlds had baked in gear with impossible stats"
+      ],
+      "date": "2026-08-21",
+      "released": true,
+      "released_in": "v0.589.0",
+      "released_at": "2026-08-21T07:33:45Z"
+    },
+    {
+      "id": "liquids-in-carriages",
+      "version": "0.590.0",
       "type": "feat",
       "title": "Water and lava in carriages",
       "summary": "Carriages can now feature water and lava. Train builders can drop a liquid into a block variant, so a carriage might roll a flooded floor, a lava channel, or stay dry \u2014 and the liquid always arrives as a proper source block rather than a puddle that drains away.",
