@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.client.skybox;
 
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.logging.LogUtils;
 import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.BufferUploader;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
@@ -30,6 +31,7 @@ import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import org.joml.Matrix4f;
 import org.joml.Vector3d;
 import org.lwjgl.opengl.GL11;
+import org.slf4j.Logger;
 
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -82,6 +84,14 @@ import java.util.UUID;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class SkyboxPunchRenderer {
 
+    private static final Logger LOGGER = LogUtils.getLogger();
+
+    /**
+     * Last reported set of on-screen variants, so the diagnostic below logs on change rather
+     * than every frame. Purely observational; never read by the render path.
+     */
+    private static String lastPaintedReport = "";
+
     private SkyboxPunchRenderer() {}
 
     @SubscribeEvent
@@ -133,6 +143,8 @@ public final class SkyboxPunchRenderer {
             }
             endMaskState();
 
+            reportPainted(painted, stencil);
+
             if (stencil) {
                 SkyboxStencil.beginSkyPass();
                 for (SkyboxSky sky : painted) {
@@ -154,6 +166,27 @@ public final class SkyboxPunchRenderer {
             RenderSystem.defaultBlendFunc();
             RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
         }
+    }
+
+    /**
+     * Log which variants are on screen, and with which stencil refs, whenever that set
+     * changes.
+     *
+     * <p>Diagnostic rather than decorative: a variant showing the wrong sky and a variant
+     * whose blocks were never indexed look identical through the hole, and this is what tells
+     * those two apart. Logs on change only, so it is quiet in steady state.</p>
+     */
+    private static void reportPainted(EnumSet<SkyboxSky> painted, boolean stencil) {
+        StringBuilder sb = new StringBuilder();
+        for (SkyboxSky sky : painted) {
+            if (sb.length() > 0) sb.append(", ");
+            sb.append(sky.name()).append("=ref").append(sky.stencilRef());
+            if (!sky.hasOwnSky()) sb.append("(reveal-only)");
+        }
+        String report = sb + (stencil ? " [stencil on]" : " [stencil OFF - all reveal live sky]");
+        if (report.equals(lastPaintedReport)) return;
+        lastPaintedReport = report;
+        LOGGER.info("[DungeonTrain] Skybox variants on screen: {}", report);
     }
 
     /** Depth-only writes: the mask must shape the depth buffer without touching colour. */
