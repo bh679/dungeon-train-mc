@@ -33,7 +33,7 @@
     {
       "id": "cvspharmacy",
       "weight": 1,
-      "minLevel": 79
+      "minLevel": 80
     },
     {
       "id": "abandonedroom",
@@ -52,7 +52,8 @@
     },
     {
       "id": "randomized",
-      "weight": 0
+      "weight": 1,
+      "minLevel": 70
     }
   ]
 }
