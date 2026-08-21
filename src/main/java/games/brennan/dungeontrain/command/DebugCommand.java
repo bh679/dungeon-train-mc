@@ -14,6 +14,8 @@ import games.brennan.dungeontrain.editor.ContainerContentsPool;
 import games.brennan.dungeontrain.editor.ContainerContentsRoller;
 import games.brennan.dungeontrain.editor.LootPrefabStore;
 import games.brennan.dungeontrain.ship.ManagedShip;
+import games.brennan.dungeontrain.train.CarriageContentsPlacer;
+import games.brennan.dungeontrain.train.Trains;
 import games.brennan.dungeontrain.ship.Shipyards;
 import games.brennan.dungeontrain.ship.sable.PhysicsFreezeController;
 import games.brennan.dungeontrain.ship.sable.SableManagedShip;
@@ -479,11 +481,24 @@ public final class DebugCommand {
         // Distinct salt per command invocation so re-rolling the same chest
         // twice produces fresh contents rather than re-deriving the prior
         // roll's items.
+        //
+        // SEED FRAME ONLY — see the diffIndex passed alongside it below. A nanoTime draw spans the
+        // whole positive int range, and the collapsed-frame roll() overload would forward it as the
+        // difficulty frame as well, asking DifficultyProgression.positionTier for the tier "a
+        // billion carriages out" and rerolling every chest with AIS stats in the millions.
         int salt = (int) (System.nanoTime() & 0x7FFFFFFFL);
 
         MinecraftServer server = source.getServer();
         for (ServerLevel level : server.getAllLevels()) {
             long worldSeed = level.getSeed();
+            // These are LIVE carriages, so unlike the editor-plot propagator each one has a real
+            // position to scale against — reroll must reproduce the tier that carriage's loot was
+            // rolled at, not flatten it. Resolved per ship up front; a block entity in a ship that
+            // is not a train carriage has no position and falls back to the editor sentinel (tier 0).
+            java.util.Map<ManagedShip, Integer> pIdxByShip = new java.util.HashMap<>();
+            for (Trains.Carriage carriage : Trains.allCarriages(level)) {
+                pIdxByShip.put(carriage.ship(), carriage.provider().getPIdx());
+            }
             for (ManagedShip ship : Shipyards.of(level).findAll()) {
                 ships++;
                 // Sable stores each ship's blocks in a LevelPlot inside the
@@ -507,8 +522,10 @@ public final class DebugCommand {
                         if (!state.is(sourceBlock)) continue;
                         matched++;
                         CompoundTag baseNbt = be.saveWithFullMetadata(level.registryAccess());
+                        int diffIndex = pIdxByShip.getOrDefault(
+                            ship, CarriageContentsPlacer.EDITOR_SENTINEL_PIDX);
                         CompoundTag rolled = ContainerContentsRoller.roll(
-                            pool, state, pos, worldSeed, salt, baseNbt,
+                            pool, state, pos, worldSeed, salt, diffIndex, baseNbt,
                             level.registryAccess(), level);
                         if (rolled == null) continue;
                         be.loadCustomOnly(rolled, level.registryAccess());

@@ -30,7 +30,7 @@ import java.util.UUID;
  * alongside the carriage plots so {@code /dt editor carriages} shows every
  * author-able part at a glance.
  *
- * <p>Grid layout (overworld, {@code Y=250}) — everything packs tightly with
+ * <p>Grid layout (overworld, {@link EditorLayout#PLOT_Y}) — everything packs tightly with
  * a {@link #PLOT_GAP}-block gap between consecutive plot footprints:
  * <ul>
  *   <li>The first row ({@link CarriagePartKind#FLOOR}) starts at
@@ -61,7 +61,7 @@ public final class CarriagePartEditor {
     /** First X slot on any kind row. */
     private static final int FIRST_PLOT_X = 0;
 
-    private static final int PLOT_Y = 250;
+    private static final int PLOT_Y = EditorLayout.PLOT_Y;
 
     /**
      * First Z row — sourced from {@link EditorLayout#PARTS_FIRST_Z}.
@@ -441,17 +441,8 @@ public final class CarriagePartEditor {
         BlockPos origin = plotOrigin(kind, name, dims);
         if (origin == null) origin = nextFreePlotOrigin(kind, dims);
 
-        // Editor mirror save-time backstop to live mirroring — symmetric capture
-        // per the sidecar's enabled axes. No-op when all axes are off (default).
         Vec3i partSize = kind.dims(dims);
         CarriagePartVariantBlocks sidecar = CarriagePartVariantBlocks.loadFor(kind, name, partSize);
-        // "V" toggle: mirror the variant pools first so the structural pass below
-        // sees (and preserves) the freshly-reflected far cells via markersOf.
-        EditorVariantMirror.rebuildFromMaster(overworld,
-            new BlockVariantPlot.PartPlot(kind, name, origin, partSize));
-        EditorMirror.rebuildFromMaster(overworld, origin, partSize,
-            sidecar.mirrorX(), sidecar.mirrorY(), sidecar.mirrorZ(),
-            EditorMirror.markersOf(sidecar.entries()));
 
         StructureTemplate template = captureTemplate(overworld, origin, kind, dims);
         CarriagePartTemplateStore.save(kind, name, template);

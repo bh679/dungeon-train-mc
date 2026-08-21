@@ -118,8 +118,8 @@ public final class ClientPortalRoomFog {
      * of the walk on both axes and should see the far end of the ramp, not {@code √2} past it.</p>
      *
      * <p><b>Y is not in it</b>, for the same reason the clearance has no vertical term — the lanes
-     * pairs are spread over are {@code TWIN_LANE_HEIGHT} apart, so there is no vertical emptiness to
-     * ramp across. A Bedrockless room's void is flat, and the distance worth measuring is the walk.</p>
+     * pairs are spread over are one block taller than a structure, so there is no vertical emptiness
+     * to ramp across. A Bedrockless room's void is flat, and the distance worth measuring is the walk.</p>
      */
     private static float radiusAt(double x, double z) {
         PortalRoomFogPacket r = region;

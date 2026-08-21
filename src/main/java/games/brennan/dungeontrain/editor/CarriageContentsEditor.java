@@ -42,7 +42,7 @@ public final class CarriageContentsEditor {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    private static final int PLOT_Y = 250;
+    private static final int PLOT_Y = EditorLayout.PLOT_Y;
     /**
      * Contents row Z-origin — sourced from {@link
      * EditorLayout#CONTENTS_FIRST_Z}. Sits in its own Z range past the
@@ -358,23 +358,6 @@ public final class CarriageContentsEditor {
         CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
         BlockPos origin = plotOrigin(contents, dims);
         if (origin == null) throw new IOException("Unknown contents '" + contents.id() + "'.");
-
-        // Editor mirror save-time backstop to live mirroring — runs on the
-        // interior region (origin+1, interior size), matching the sidecar's
-        // interior-relative cells. No-op when all axes are off (default).
-        {
-            BlockPos mirrorOrigin = origin.offset(1, 1, 1);
-            net.minecraft.core.Vec3i mirrorSize = CarriageContentsPlacer.interiorSizeFor(contents, dims);
-            CarriageContentsVariantBlocks mirrorSidecar =
-                CarriageContentsVariantBlocks.loadFor(contents, mirrorSize);
-            // "V" toggle: mirror the variant pools first so the structural pass
-            // below preserves the freshly-reflected far cells via markersOf.
-            EditorVariantMirror.rebuildFromMaster(overworld,
-                new BlockVariantPlot.ContentsPlot(contents, mirrorOrigin, mirrorSize));
-            EditorMirror.rebuildFromMaster(overworld, mirrorOrigin, mirrorSize,
-                mirrorSidecar.mirrorX(), mirrorSidecar.mirrorY(), mirrorSidecar.mirrorZ(),
-                EditorMirror.markersOf(mirrorSidecar.entries()));
-        }
 
         // The contents' own box — captures the whole corridor interior for the portal contents
         // rather than its first seven blocks, which the size gate would then reject on load.

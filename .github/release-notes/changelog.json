@@ -7259,6 +7259,171 @@
       "released": true,
       "released_in": "v0.575.0",
       "released_at": "2026-08-19T16:00:27Z"
+    },
+    {
+      "id": "editor-save-no-mirror-rebuild",
+      "version": "0.576.0",
+      "type": "fix",
+      "title": "Saving in the editor no longer re-mirrors your build",
+      "summary": "Hitting Save in an in-game editor used to rebuild the mirrored half of the plot from the master octant first, quietly overwriting anything you had deliberately made asymmetric \u2014 and anything placed by a route the live mirror doesn't watch, like a clipboard paste or an edit made before you turned the axis on. Save now captures the plot exactly as you left it. When you do want the far half rebuilt from the master, ask for it: the new Mirror -> Rebuild button in the editor menu, or /dungeontrain editor mirror rebuild.",
+      "highlights": [
+        "Save captures the plot as it stands \u2014 mirroring no longer runs behind your back",
+        "New on-demand re-mirror: Mirror -> Rebuild in the editor menu, or /dungeontrain editor mirror rebuild",
+        "Live mirroring while you build is unchanged"
+      ],
+      "pr": 996,
+      "date": "2026-08-20",
+      "released": true,
+      "released_in": "v0.576.0",
+      "released_at": "2026-08-20T10:57:57Z"
+    },
+    {
+      "id": "nether-band-structures",
+      "version": "0.577.0",
+      "type": "feat",
+      "title": "Fortresses and bastions in the Nether",
+      "summary": "The Nether crossing is no longer empty country. Nether fortresses, bastion remnants, nether fossils and ruined portals now generate out there \u2014 the real ones, with their own loot, their blaze spawners and wither skeleton halls, their piglin brutes and Pigstep. Fortresses stand on their own bridge supports over the lava, and where one happens to lie across the line, the train tunnels straight through it.",
+      "highlights": [
+        "Nether fortresses generate in the Nether crossing, with blazes, wither skeletons and their loot",
+        "Bastion remnants, complete with piglin brutes, treasure rooms and the netherite upgrade template",
+        "Nether fossils in soul sand valleys, and ruined portals with their blackstone and loot",
+        "Ride straight through a fortress that lands across the tracks"
+      ],
+      "pr": 997,
+      "date": "2026-08-20",
+      "released": true,
+      "released_in": "v0.577.0",
+      "released_at": "2026-08-20T11:59:47Z"
+    },
+    {
+      "id": "effortless-building-optional",
+      "version": "0.578.0",
+      "type": "chore",
+      "title": "Effortless Building now bundled in the modpack (off by default)",
+      "summary": "The Dungeon Train modpack now ships Effortless Building alongside the rest of the pack, switched off. Flip it on in the launcher's mod list if you want its building tools \u2014 multi-block placement, mirrors and arrays \u2014 while you build out your train.",
+      "highlights": [
+        "Effortless Building included in the pack, disabled by default \u2014 one click to enable"
+      ],
+      "pr": 999,
+      "date": "2026-08-20",
+      "released": true,
+      "released_in": "v0.578.0",
+      "released_at": "2026-08-20T12:54:15Z"
+    },
+    {
+      "id": "portal-room-height-80",
+      "version": "0.579.0",
+      "type": "feat",
+      "title": "Dimensional carriages can be built up to 80 blocks tall",
+      "summary": "The room inside a dimensional carriage was capped at 11 blocks tall. It can now be built up to 80.",
+      "highlights": [],
+      "pr": 1000,
+      "date": "2026-08-20",
+      "released": true,
+      "released_in": "v0.579.0",
+      "released_at": "2026-08-20T13:13:59Z"
+    },
+    {
+      "id": "impossible-item-stats-guard",
+      "version": "0.580.0",
+      "type": "fix",
+      "title": "Portal room chests no longer hold gear with impossible stats",
+      "summary": "A Train Dimension room could hand you gear with absurd stat values \u2014 a diamond chestplate with over four million armour. The items were stored inside the room itself, so they turned up for everyone who found that chest. Affected rooms are repaired, and any room still holding such an item now rolls it again at the difficulty of where you found it, so it arrives as ordinary loot. Gear you find deep in a run still scales exactly as it did.",
+      "highlights": [
+        "Fixed a Train Dimension room that held gear with impossible stat values",
+        "Rooms still holding such an item now reroll it as ordinary loot",
+        "Items can no longer be generated with impossible stats in the first place"
+      ],
+      "date": "2026-08-20",
+      "released": true,
+      "released_in": "v0.580.0",
+      "released_at": "2026-08-20T13:28:18Z"
+    },
+    {
+      "id": "ain-0-48",
+      "version": "0.581.0",
+      "type": "chore",
+      "title": "New supporter names and the Archivist",
+      "summary": "Twelve more Discord supporters join the item name pool, along with the Archivist Society and Archivist and Detective titles.",
+      "highlights": [
+        "Requires Adventure Item Names 0.48.0"
+      ],
+      "pr": 1002,
+      "date": "2026-08-20",
+      "released": true,
+      "released_in": "v0.581.0",
+      "released_at": "2026-08-21T01:16:10Z"
+    },
+    {
+      "id": "nether-band-dimensional-carriage-spawns",
+      "version": "0.582.0",
+      "type": "fix",
+      "title": "Nether band mobs no longer spawn in dimensional carriages",
+      "summary": "Ghasts, zombified piglins and magma cubes could spawn inside a dimensional carriage while the train crossed the Nether band. They no longer do.",
+      "highlights": [],
+      "pr": 1003,
+      "date": "2026-08-21",
+      "released": true,
+      "released_in": "v0.584.0",
+      "released_at": "2026-08-21T03:12:02Z"
+    },
+    {
+      "id": "drifting-carriage-chat-limit",
+      "version": "0.583.0",
+      "type": "fix",
+      "title": "Drifting-carriage messages no longer flood chat",
+      "summary": "Walking a run of drifting carriages used to fill chat with a new gray line every few seconds. Those messages are now capped at three per ten seconds, so the train still tells you when you have stepped into someone else's carriage without burying everything else you were reading.",
+      "highlights": [
+        "Drifting-carriage entry messages capped at 3 per 10 seconds"
+      ],
+      "pr": 1005,
+      "date": "2026-08-21",
+      "released": true,
+      "released_in": "v0.584.0",
+      "released_at": "2026-08-21T03:12:02Z"
+    },
+    {
+      "id": "carriage-crops-stay-planted",
+      "version": "0.584.0",
+      "type": "fix",
+      "title": "Crops saved into carriage templates stay planted",
+      "summary": "Wheat, carrots, potatoes and beetroot saved into a carriage template no longer break the moment the carriage appears \u2014 farm carriages now ride the train intact. Crops inside a carriage no longer need light to stay planted, so an unlit farm carriage keeps its crops at the age you saved them. They still need light to grow, and still need farmland underneath: break the soil and the crop pops just like anywhere else. Also fixes saved crops vanishing from the carriage editor when you reopened a template.",
+      "highlights": [
+        "Wheat and other crops saved into carriage templates stay planted",
+        "Crops in an unlit carriage keep their saved growth stage (they still need light to grow)",
+        "Crops no longer vanish from a template when reopened in the carriage editor"
+      ],
+      "pr": 1004,
+      "date": "2026-08-21",
+      "released": true,
+      "released_in": "v0.584.0",
+      "released_at": "2026-08-21T03:12:02Z"
+    },
+    {
+      "id": "end-city-rarity-tuning",
+      "version": "0.585.0",
+      "type": "content",
+      "title": "End city adjustments",
+      "summary": "End city adjustments.",
+      "highlights": [
+        "End city adjustments."
+      ],
+      "date": "2026-08-21",
+      "released": true,
+      "released_in": "v0.585.0",
+      "released_at": "2026-08-21T04:21:37Z"
+    },
+    {
+      "id": "skybox-blocks",
+      "version": "0.586.0",
+      "type": "feat",
+      "title": "More skies for dimensions",
+      "summary": "New sky options for dimensions.",
+      "highlights": [],
+      "date": "2026-08-21",
+      "released": true,
+      "released_in": "v0.586.0",
+      "released_at": "2026-08-21T05:05:55Z"
     }
   ]
 }

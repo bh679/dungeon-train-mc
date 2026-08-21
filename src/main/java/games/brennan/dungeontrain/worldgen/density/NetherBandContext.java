@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.worldgen.density;
 
 import games.brennan.dungeontrain.worldgen.EndIslandGeometry;
+import games.brennan.dungeontrain.worldgen.NetherCoreGeometry;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import net.minecraft.world.level.biome.BiomeSource;
 
@@ -37,12 +38,19 @@ import net.minecraft.world.level.biome.BiomeSource;
  *                       islands are. Lets {@code BandEndCityStructure} site End cities on the islands
  *                       during structure-start creation, off the worldgen thread pool, without touching
  *                       the server. {@code null} when the world has no End dimension (⇒ no cities).
+ * @param netherCore     the real Nether's terrain density translated onto track level - the netherrack /
+ *                       lava / air shape the Nether band's core stamps, and what the {@code Band*Structure}
+ *                       classes site fortresses, bastions, fossils and ruined portals into. On the snapshot
+ *                       for the same reason as {@code endIslands}: structure-start creation runs on the
+ *                       worldgen thread pool and must not touch the server. {@code null} when the world has
+ *                       no Nether dimension (so no core terrain, and no structures).
  */
 public record NetherBandContext(boolean enabled, long generationSeed, int seaLevel, int worldCeiling,
                                 int netherTop, int baseRelief, WorldGenCycle cycle,
                                 BiomeSource overworldBiomeSource, NetherBandBiomeSet highlandBiomes,
                                 NetherCoreBiomes netherCoreBiomes, EndCoreBiomes endCoreBiomes,
-                                EndIslandGeometry.Source endIslands) {
+                                EndIslandGeometry.Source endIslands,
+                                NetherCoreGeometry.Source netherCore) {
 
     private static volatile NetherBandContext current;
 

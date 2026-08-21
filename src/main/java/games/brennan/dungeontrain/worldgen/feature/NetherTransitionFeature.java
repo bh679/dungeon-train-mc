@@ -10,6 +10,7 @@ import games.brennan.dungeontrain.worldgen.DisintegrationBand;
 import games.brennan.dungeontrain.worldgen.GenDeterminismLog;
 import games.brennan.dungeontrain.worldgen.GenProfiler;
 import games.brennan.dungeontrain.worldgen.NetherBand;
+import games.brennan.dungeontrain.worldgen.NetherCoreGeometry;
 import games.brennan.dungeontrain.worldgen.NetherMountainTerrain;
 import games.brennan.dungeontrain.worldgen.WorldFloor;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
@@ -36,12 +37,8 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.ChunkGenerator;
-import net.minecraft.world.level.levelgen.DensityFunction;
 import net.minecraft.world.level.levelgen.Heightmap;
-import net.minecraft.world.level.levelgen.NoiseBasedChunkGenerator;
 import net.minecraft.world.level.levelgen.RandomState;
-import net.minecraft.world.level.levelgen.NoiseGeneratorSettings;
-import net.minecraft.world.level.levelgen.NoiseSettings;
 import net.minecraft.world.level.levelgen.VerticalAnchor;
 import net.minecraft.world.level.levelgen.WorldgenRandom;
 import net.minecraft.world.level.levelgen.XoroshiroRandomSource;
@@ -56,11 +53,9 @@ import org.slf4j.Logger;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 /**
@@ -100,10 +95,10 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
         new games.brennan.dungeontrain.util.LogFirstN(5);
 
     /** Nether-space Y mapped onto the track bed (the open Nether layer sits around here). */
-    private static final int NETHER_CENTER_Y = 40;
+    private static final int NETHER_CENTER_Y = NetherCoreGeometry.NETHER_CENTER_Y;
     /** Nether-space Y rows to sample for the core terrain. */
-    private static final int NETHER_SAMPLE_Y_MIN = 8;
-    private static final int NETHER_SAMPLE_Y_MAX = 120;
+    private static final int NETHER_SAMPLE_Y_MIN = NetherCoreGeometry.NETHER_Y_SAMPLE_MIN;
+    private static final int NETHER_SAMPLE_Y_MAX = NetherCoreGeometry.NETHER_Y_SAMPLE_MAX;
     /** X offset into the Nether so successive bands sample different (but continuous) terrain. Shared with
      *  the biome sampler ({@link NetherCoreBiomes#SAMPLE_OFFSET_X}) so terrain + biome + surface align. */
     private static final int NETHER_SAMPLE_OFFSET_X = NetherCoreBiomes.SAMPLE_OFFSET_X;
@@ -227,28 +222,19 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
             // Nether-less world — then the core stays single-biome (nether_wastes / netherrack).
             NetherBandContext bandCtx = NetherBandContext.current();
 
-            // Real-Nether density router (sampled like the End feature samples the End).
-            DensityFunction netherDensity = null;
-            int cellW = 4;
-            int cellH = 8;
-            int netherSeaLevel = 32;
-            ServerLevel nether = server.getLevel(Level.NETHER);
-            if (nether != null) {
-                netherDensity = nether.getChunkSource().randomState().router().finalDensity();
-                if (nether.getChunkSource().getGenerator() instanceof NoiseBasedChunkGenerator nbg) {
-                    NoiseGeneratorSettings gs = nbg.generatorSettings().value();
-                    NoiseSettings ns = gs.noiseSettings();
-                    cellW = ns.getCellWidth();
-                    cellH = ns.getCellHeight();
-                    netherSeaLevel = gs.seaLevel();
-                }
-            }
-
-            // Per-chunk cache of real-Nether density profiles keyed by corner column (x,z). The core
-            // columns share their 4 XZ cell corners across the whole chunk, so caching collapses the
+            // Real-Nether density router (sampled like the End feature samples the End), translated onto
+            // track level by the shared NetherCoreGeometry — the same geometry the band's Nether structures
+            // site themselves into, so what we stamp and where a fortress stands can never disagree.
+            //
+            // The geometry owns the per-chunk cache of density profiles keyed by corner column (x,z): the
+            // core columns share their 4 XZ cell corners across the whole chunk, so caching collapses the
             // ~16k router evaluations/chunk to the few hundred distinct corners — the dominant
             // Nether-crossing gen cost (see GenProfiler CORE_REPLACE). Scoped to this place() call.
-            Map<Long, double[]> netherCornerCache = new HashMap<>();
+            ServerLevel nether = server.getLevel(Level.NETHER);
+            NetherCoreGeometry.Source netherCoreSource = NetherCoreGeometry.Source.resolve(server, bedY);
+            NetherCoreGeometry coreGeom = netherCoreSource == null ? null : netherCoreSource.open(minY, worldTop);
+            if (coreGeom != null && !coreGeom.isUsable()) coreGeom = null;
+
 
             // Per-column edge-waved X, computed once here for all 256 columns and reused by
             // clearCorridorClearance below (which otherwise recomputes the 4-octave wavyX noise for the
@@ -269,7 +255,7 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
                     if (endBandActive && cycle.endMiddleRamp(wx) > 0.0) continue;
 
                     double n = cycle.netherRamp(wx);
-                    boolean core = n >= CORE_THRESHOLD && netherDensity != null;
+                    boolean core = n >= CORE_THRESHOLD && coreGeom != null;
                     boolean inBeachSpan = !core && cycle.isNetherBeachStage(wx);
                     // The beach stage exists ONLY where the band emerges from an ocean biome; otherwise it is
                     // SKIPPED — those columns stay natural overworld and the noise mountains pick up after the span.
@@ -285,15 +271,14 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
                             && oceanEntrance && cycle.netherMountainFeather(wx) < 1.0;
                     if (!core && !inBeachSpan && !crossfade && !shoreSkin) continue;
                     double beachProgress = inBeachSpan ? cycle.netherBeachProgress(wx) : 0.0;
-                    int sampleX = wx + NETHER_SAMPLE_OFFSET_X;
+                    int sampleX = NetherCoreGeometry.sampleX(wx);
 
                     boolean colChanged;
                     if (core) {
                         ResourceKey<Biome> coreBiome = coreBiomeKeyAt(bandCtx, worldX, worldZ);
                         long coreT0 = GenProfiler.t0();       // real-Nether router sampling — the confirmed DT hotspot
                         colChanged = fillNetherColumn(chunk, dx, dz, worldX, worldZ, bedY, railY, zMin, zMax, tg,
-                                minY, worldTop, sampleX, netherDensity, cellW, cellH, netherSeaLevel,
-                                seed, coreBiome, netherCornerCache);
+                                sampleX, coreGeom, seed, coreBiome);
                         GenProfiler.add(GenProfiler.Bucket.CORE_REPLACE, coreT0);
                     } else if (inBeachSpan) {
                         colChanged = fillShoreColumn(chunk, dx, dz, worldX, worldZ, bedY, railY, zMin, zMax, tg,
@@ -312,7 +297,7 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
             // springs, ores, mushrooms). Only chunks whose every column is core get it — the core biome
             // is nether_wastes there (so each feature's biome filter passes) and the terrain is netherrack
             // (so the features land correctly).
-            boolean fullCore = isFullCoreChunk(cycle, netherDensity, chunkMinX, endBandActive);
+            boolean fullCore = isFullCoreChunk(cycle, coreGeom, chunkMinX, endBandActive);
 
             // Determinism tripwire — should be unreachable since #818 publishes the band context on
             // LevelEvent.Load (before any chunk gen). If a band chunk ever generates while the
@@ -416,9 +401,9 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
      * vanilla Nether feature pass, so decoration never bleeds onto the netherrack crossfade or the
      * green mountains flanking the core.
      */
-    private static boolean isFullCoreChunk(WorldGenCycle cycle, DensityFunction netherDensity,
+    private static boolean isFullCoreChunk(WorldGenCycle cycle, NetherCoreGeometry coreGeom,
                                            int chunkMinX, boolean endBandActive) {
-        if (netherDensity == null) return false;
+        if (coreGeom == null) return false;
         // The core boundary is edge-waved per Z (NetherMountainTerrain#wavyX, ±maxEdgeShift), so require the
         // core to extend a wave-margin past the chunk on both X sides — then EVERY column's waved X is core,
         // and the vanilla Nether decoration never bleeds onto the crossfade/mountains.
@@ -736,30 +721,16 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
      */
     private boolean fillNetherColumn(ChunkAccess chunk, int dx, int dz, int worldX, int worldZ,
                                      int bedY, int railY, int zMin, int zMax, TunnelGeometry tg,
-                                     int minY, int worldTop, int sampleX, DensityFunction netherDensity,
-                                     int cellW, int cellH, int netherSeaLevel,
-                                     long seed, ResourceKey<Biome> coreBiome, Map<Long, double[]> cornerCache) {
-        int yLo = Math.max(minY, bedY + (NETHER_SAMPLE_Y_MIN - NETHER_CENTER_Y));
-        int yHi = Math.min(worldTop, bedY + (NETHER_SAMPLE_Y_MAX - NETHER_CENTER_Y));
+                                     int sampleX, NetherCoreGeometry coreGeom,
+                                     long seed, ResourceKey<Biome> coreBiome) {
+        int yLo = coreGeom.minCoreY();
+        int yHi = coreGeom.maxCoreY();
         if (yLo > yHi) return false;
 
-        // Density at the four XZ cell corners across the sampled Y rows (world-anchored, like the End).
-        int x0 = Math.floorDiv(sampleX, cellW) * cellW;
-        int x1 = x0 + cellW;
-        double fx = (double) (sampleX - x0) / cellW;
-        int z0 = Math.floorDiv(worldZ, cellW) * cellW;
-        int z1 = z0 + cellW;
-        double fz = (double) (worldZ - z0) / cellW;
-        int netherYLo = NETHER_CENTER_Y + (yLo - bedY);
-        int cellRowBase = Math.floorDiv(netherYLo, cellH);
-        int rows = Math.floorDiv(NETHER_CENTER_Y + (yHi - bedY), cellH) - cellRowBase + 2;
-        // Corner profiles are cached per (cornerX, cornerZ) for this chunk — cellRowBase/rows/cellH are
-        // constant across every column of the chunk, so a corner's profile is identical wherever it is
-        // referenced. This collapses the per-block-column re-sampling of the shared corners.
-        double[] c00 = cornerProfile(cornerCache, netherDensity, x0, z0, cellRowBase, rows, cellH);
-        double[] c10 = cornerProfile(cornerCache, netherDensity, x1, z0, cellRowBase, rows, cellH);
-        double[] c01 = cornerProfile(cornerCache, netherDensity, x0, z1, cellRowBase, rows, cellH);
-        double[] c11 = cornerProfile(cornerCache, netherDensity, x1, z1, cellRowBase, rows, cellH);
+        // One column view over the four shared XZ cell corners across the sampled Y rows (world-anchored,
+        // like the End) — opened once here rather than per block, so the corner memo is hit four times per
+        // column instead of four times per block on the hottest path in Nether generation.
+        NetherCoreGeometry.Column density = coreGeom.column(sampleX, worldZ);
 
         ColumnWriter w = new ColumnWriter(chunk);
         boolean changed = false;
@@ -769,17 +740,12 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
             // solid envelope. track_bed runs after this and tunnels through the solid netherrack while
             // pillaring across the open lava lakes / caverns: its ground probe treats lava as passable and
             // rests pillars on the netherrack floor, and the tunnel only qualifies where rock sits above the bed.
-            int netherY = NETHER_CENTER_Y + (y - bedY);
-            int r = Math.floorDiv(netherY, cellH) - cellRowBase;
-            if (r < 0 || r + 1 >= rows) continue;
-            double fy = (double) (netherY - (cellRowBase + r) * cellH) / cellH;
-            double bot = bilerp(c00[r], c10[r], c01[r], c11[r], fx, fz);
-            double top = bilerp(c00[r + 1], c10[r + 1], c01[r + 1], c11[r + 1], fx, fz);
-            double d = bot + (top - bot) * fy;
+            double d = density.densityAt(y);
+            if (Double.isNaN(d)) continue;   // outside the sampled cell rows — leave the block untouched
             BlockState target;
             if (d > 0.0) {
                 target = NETHERRACK;
-            } else if (netherY < netherSeaLevel) {
+            } else if (coreGeom.isLavaLevel(y)) {
                 target = Blocks.LAVA.defaultBlockState();
             } else {
                 target = AIR;
@@ -815,34 +781,6 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
             }
         }
         return changed;
-    }
-
-    /**
-     * The real-Nether density profile of one corner column {@code (cornerX, cornerZ)} — the {@code rows}
-     * samples {@code netherDensity.compute(cornerX, (cellRowBase+r)*cellH, cornerZ)} — memoised in
-     * {@code cache} for the duration of a single chunk's {@code place()}. Every core block-column shares
-     * its 4 XZ cell corners with its neighbours in the same {@code cellW} cell / Z-row, so the same corner
-     * was previously re-evaluated once per block-column (~16k router walks/chunk); caching evaluates each
-     * distinct corner exactly once (a few hundred/chunk). Byte-identical — a pure memo of the pure
-     * {@code compute}, removing only duplicate evaluations.
-     *
-     * <p>Correctness rests on {@code cellRowBase}, {@code rows} and {@code cellH} being constant across
-     * every column of the chunk (they derive from {@code bedY}/{@code minY}/{@code worldTop}, not the
-     * column), so a corner's profile is independent of which column requests it. Package-private + static
-     * so it is unit-testable with a stub {@link DensityFunction}.</p>
-     */
-    static double[] cornerProfile(Map<Long, double[]> cache, DensityFunction netherDensity,
-                                  int cornerX, int cornerZ, int cellRowBase, int rows, int cellH) {
-        long key = (((long) cornerX) << 32) ^ (cornerZ & 0xFFFFFFFFL);
-        double[] cached = cache.get(key);
-        if (cached != null) return cached;
-        double[] profile = new double[rows];
-        for (int r = 0; r < rows; r++) {
-            int by = (cellRowBase + r) * cellH;
-            profile[r] = netherDensity.compute(new DensityFunction.SinglePointContext(cornerX, by, cornerZ));
-        }
-        cache.put(key, profile);
-        return profile;
     }
 
     /** True for the stone-brick bed and the two rail blocks — never overwritten so the train keeps its track. */
@@ -889,12 +827,6 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
                 || state.is(BlockTags.TALL_FLOWERS);
     }
 
-    private static double bilerp(double x0z0, double x1z0, double x0z1, double x1z1, double fx, double fz) {
-        double z0 = x0z0 + (x1z0 - x0z0) * fx;
-        double z1 = x0z1 + (x1z1 - x0z1) * fx;
-        return z0 + (z1 - z0) * fz;
-    }
-
     /**
      * Section-cached raw writer for one chunk column — fetches the owning
      * {@link net.minecraft.world.level.chunk.LevelChunkSection} only when crossing a
@@ -937,6 +869,12 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
         boolean isAir(int dx, int y, int dz) {
             if (!ensure(y)) return false;
             return section.getBlockState(dx, y - baseY, dz).isAir();
+        }
+
+        /** The block currently in this cell, or air when the Y is outside the chunk's sections. */
+        BlockState state(int dx, int y, int dz) {
+            if (!ensure(y)) return AIR;
+            return section.getBlockState(dx, y - baseY, dz);
         }
 
         /** Water (source, flowing, or waterlogged) — the cells the crossfade drains to air. */

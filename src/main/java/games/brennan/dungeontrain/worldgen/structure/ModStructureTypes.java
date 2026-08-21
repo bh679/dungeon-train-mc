@@ -16,9 +16,14 @@ import net.neoforged.neoforge.registries.DeferredRegister;
  * {@link games.brennan.dungeontrain.worldgen.feature.ModFeatures}, attached to the mod-event bus from the
  * mod constructor.
  *
- * <p>Registers {@link BandEndCityStructure} under {@code dungeontrain:end_city}, which the datapack JSONs
- * in {@code data/dungeontrain/worldgen/structure/end_city.json} and
- * {@code .../structure_set/end_city.json} reference.</p>
+ * <p>Registers {@link BandEndCityStructure} under {@code dungeontrain:end_city}, referenced by the datapack
+ * JSONs in {@code data/dungeontrain/worldgen/structure/end_city.json} and {@code .../structure_set/}. The
+ * Nether band needs no such type: it re-sites the <b>vanilla</b> Nether structures in place (see
+ * {@code BandNetherStructures}), so they keep their own ids, loot and spawn overrides.</p>
+ *
+ * <p>{@link #isBandStructure} exists because the overworld's biome source never lists the End biomes DT
+ * forces onto band columns at generation time, so {@code ChunkGeneratorStructureStateMixin} has to keep the
+ * set alive by type rather than by biome.</p>
  */
 public final class ModStructureTypes {
 
@@ -39,6 +44,23 @@ public final class ModStructureTypes {
      */
     public static final ResourceKey<StructureSet> END_CITY_SET_KEY = ResourceKey.create(
         Registries.STRUCTURE_SET, ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "end_city"));
+
+    /**
+     * True for any structure this mod registers — currently just the band's End city.
+     *
+     * <p>Both {@code ChunkGeneratorStructureStateMixin} (which keeps their structure sets from being
+     * filtered out of the overworld generator) and {@code ChunkGeneratorDecorationMixin} (which lets their
+     * pieces through on chunks whose vanilla decoration is skipped) ask this. Registry lookups can throw
+     * before registration completes, so an unresolvable type answers {@code false} — the pre-existing
+     * "treat as vanilla" behaviour — rather than propagating out of a mixin.</p>
+     */
+    public static boolean isBandStructure(StructureType<?> type) {
+        try {
+            return type == END_CITY.get();
+        } catch (Throwable t) {
+            return false;
+        }
+    }
 
     private ModStructureTypes() {}
 

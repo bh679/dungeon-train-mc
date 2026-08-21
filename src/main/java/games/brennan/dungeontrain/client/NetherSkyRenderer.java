@@ -45,6 +45,20 @@ public final class NetherSkyRenderer {
         draw(frustumMatrix, (float) Math.min(1.0, n), rgb);
     }
 
+    /**
+     * Draw the Nether sky fill unconditionally at full opacity, as a <em>sky source</em> for a
+     * skybox block rather than a band overlay. Keeps the fog-matched colour lookup so the
+     * hole agrees with the Nether fog tint the band would use at this position.
+     *
+     * <p>Deliberately bypasses {@link #renderOverlay}, which returns early on zero band
+     * intensity — see {@link VoidSkyRenderer#renderAsSkySource}.</p>
+     */
+    public static void renderAsSkySource(Matrix4f frustumMatrix, Camera camera) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.level == null) return;
+        draw(frustumMatrix, 1.0F, NetherFogEvents.netherTargetColor(mc.level, camera.getBlockPosition()));
+    }
+
     private static void draw(Matrix4f frustumMatrix, float alpha, int rgb) {
         int a = Math.max(1, Math.min(255, Math.round(alpha * 255.0F)));
         int color = (a << 24) | (rgb & 0xFFFFFF);
