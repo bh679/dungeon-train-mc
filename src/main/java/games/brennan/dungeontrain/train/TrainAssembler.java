@@ -549,7 +549,7 @@ public final class TrainAssembler {
                     carriageShipyardOrigin, dims, variant.id(), true, pick.authoredHere(), lease.owner(),
                     lease.id(), lease.token(),
                     leaseSeqSeed(lease), // seq floor = max(baseSeq, delta seqs) so our edits clear the relay watermark
-                    stageBySlot[slot], lease.credits());
+                    stageBySlot[slot], lease.credits(), lease.deaths());
                 inst.stampContact(System.currentTimeMillis()); // fresh lease → no immediate heartbeat needed
                 continue;
             }
@@ -574,10 +574,12 @@ public final class TrainAssembler {
                     && SharedCarriageFlags.isSharedVariant(variant.id())
                     && !PortalCarriageSelection.isPortalPart(level, carriagePIdx)
                     && stageBySlot[slot] != null && !stageBySlot[slot].isEmpty()) {
-                // No credits: nobody has contributed to a brand-new local build yet.
+                // No credits and no deaths: nobody has contributed to — or died in — a brand-new local
+                // build yet.
                 SharedCarriageRegistry.register(level, ship.subLevelId(), trainId, carriagePIdx,
                         carriageShipyardOrigin, dims, variant.id(), false, false, "", null, null, 0,
-                        stageBySlot[slot], SharedCarriageClient.Credits.EMPTY);
+                        stageBySlot[slot], SharedCarriageClient.Credits.EMPTY,
+                        SharedCarriageClient.Deaths.EMPTY);
             }
         }
         long tAfterContents = System.nanoTime();

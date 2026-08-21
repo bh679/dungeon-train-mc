@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.train;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.net.relay.SharedCarriageClient.Credits;
+import games.brennan.dungeontrain.net.relay.SharedCarriageClient.Deaths;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import org.slf4j.Logger;
@@ -78,6 +79,17 @@ public final class SharedCarriageRegistry {
          * local build (nobody has contributed yet) and for a relay too old to send them.
          */
         public final Credits credits;
+        /**
+         * Who has died aboard this carriage, as of the lease that placed it — relay-resolved for the same
+         * reason {@link #credits} are. {@link Deaths#EMPTY} for a fresh local build and for a relay too
+         * old to send them.
+         *
+         * <p>Not final: a death that happens HERE is folded in straight away (see
+         * {@link #addLocalDeath}), so a player who dies and somehow walks back aboard is told about it
+         * rather than being told this carriage has a clean record. Replaced wholesale, never mutated —
+         * {@link Deaths} is an immutable record.</p>
+         */
+        private volatile Deaths deaths;
 
         /** Relay row id once this carriage exists on the relay (via submit or lease); null until then. */
         private volatile Integer relayId;
@@ -107,7 +119,7 @@ public final class SharedCarriageRegistry {
         Instance(ServerLevel level, UUID subLevelId, UUID trainId, int pIdx, BlockPos shipyardOrigin,
                  CarriageDims dims, String variantId, boolean leasedFromPool, boolean authoredHere,
                  String authorUuid, Integer relayId, String leaseToken, int seqSeed, String stageId,
-                 Credits credits) {
+                 Credits credits, Deaths deaths) {
             this.level = level;
             this.subLevelId = subLevelId;
             this.trainId = trainId;
@@ -123,6 +135,28 @@ public final class SharedCarriageRegistry {
             this.seq = new AtomicInteger(Math.max(0, seqSeed));
             this.stageId = stageId;
             this.credits = credits == null ? Credits.EMPTY : credits;
+            this.deaths = deaths == null ? Deaths.EMPTY : deaths;
+        }
+
+        /** Who died aboard this carriage — the lease's log plus anything that has happened here since. */
+        public Deaths deaths() { return deaths; }
+
+        /**
+         * Fold a death that just happened in THIS world into the log, so it counts immediately rather
+         * than only after the build has travelled on and been leased back. The name is dropped when the
+         * player has no network consent — exactly what the relay does with the same death — and it goes
+         * to the FRONT, because the log reads newest-first.
+         */
+        public void addLocalDeath(String name) {
+            Deaths cur = deaths;
+            java.util.List<String> names = cur.names();
+            if (name != null && !name.isEmpty()) {
+                java.util.List<String> next = new java.util.ArrayList<>(names.size() + 1);
+                next.add(name);
+                for (String n : names) if (!n.equals(name)) next.add(n); // one traveller, named once
+                names = java.util.List.copyOf(next);
+            }
+            deaths = new Deaths(names, cur.total() + 1);
         }
 
         /** Whether shipyard-space (x,y,z) falls inside this carriage's footprint. */
@@ -212,16 +246,17 @@ public final class SharedCarriageRegistry {
      * Register a freshly-placed shared carriage. {@code seqSeed} is the delta-sequence floor tied to the
      * relay carriage — 0 for a fresh local build, or {@code max(baseSeq, maxDeltaSeq)} for one leased from
      * the pool (so its first upload's seq clears the relay's drop-watermark). {@code credits} is who built
-     * it, off the lease; pass {@link Credits#EMPTY} for a fresh local build. {@code authorUuid} is the
+     * it, off the lease; pass {@link Credits#EMPTY} for a fresh local build, and {@code deaths} is who
+     * has died aboard it ({@link Deaths#EMPTY} likewise). {@code authorUuid} is the
      * lease's owner uuid ("" when the build is fresh or the lease carried none).
      */
     public static Instance register(ServerLevel level, UUID subLevelId, UUID trainId, int pIdx,
                                     BlockPos shipyardOrigin, CarriageDims dims, String variantId,
                                     boolean leasedFromPool, boolean authoredHere, String authorUuid,
                                     Integer relayId, String leaseToken, int seqSeed,
-                                    String stageId, Credits credits) {
+                                    String stageId, Credits credits, Deaths deaths) {
         Instance inst = new Instance(level, subLevelId, trainId, pIdx, shipyardOrigin, dims, variantId,
-                leasedFromPool, authoredHere, authorUuid, relayId, leaseToken, seqSeed, stageId, credits);
+                leasedFromPool, authoredHere, authorUuid, relayId, leaseToken, seqSeed, stageId, credits, deaths);
         BY_SUBLEVEL.computeIfAbsent(subLevelId, k -> new CopyOnWriteArrayList<>()).add(inst);
         LOGGER.debug("[DungeonTrain] Registered shared carriage variant={} pIdx={} subLevel={} leased={} own={} stage={}.",
                 variantId, pIdx, subLevelId, leasedFromPool, authoredHere, stageId);

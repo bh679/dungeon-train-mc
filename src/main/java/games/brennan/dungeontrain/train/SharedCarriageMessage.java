@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.train;
 
 import games.brennan.dungeontrain.net.relay.SharedCarriageClient.Credits;
+import games.brennan.dungeontrain.net.relay.SharedCarriageClient.Deaths;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
@@ -28,6 +29,10 @@ import java.util.List;
  * chosen noun ({@code room / carriage / cart / space}), so every message reads a little differently and
  * the client renders it in its own language. Keys: {@code chat.dungeontrain.shared_carriage.new.1..N},
  * {@code .seen.1..N}, and the nouns {@code .noun.1..4}.</p>
+ *
+ * <p>{@link #deathLine} adds an optional THIRD line, naming travellers who died aboard. It has the same
+ * null contract as {@link #creditLine} and for the same reason: a carriage nobody has died in must read
+ * exactly as it always has, with no line and no pause where one would have been.</p>
  *
  * <p>{@link #creditLine} adds an optional SECOND, dimmer line naming who built the carriage. It is
  * deliberately separate from the flavour lines above: a list of names doesn't fold gracefully into six
@@ -128,5 +133,52 @@ public final class SharedCarriageMessage {
     /** One contributor's name. Unstyled on purpose — it inherits the line's colour like any other word. */
     private static Component name(String raw) {
         return Component.literal(raw);
+    }
+
+    /** Ways to name a single traveller who died here, keyed {@code ….deaths.one.1..N}. */
+    private static final int DEATH_ONE_LINES = 4;
+    /** Ways to name several, keyed {@code ….deaths.few.1..N}. */
+    private static final int DEATH_FEW_LINES = 4;
+    /** Ways to say deaths happened with nobody to name, keyed {@code ….deaths.unnamed.1..N}. */
+    private static final int DEATH_UNNAMED_LINES = 3;
+
+    /**
+     * The "N travellers ended here" line, or {@code null} when this carriage has no deaths on record —
+     * a fresh build, a relay too old to send them, or simply a carriage everyone walked back out of.
+     * Callers send it only when non-null, so a clean carriage keeps exactly the message it showed before
+     * the death log existed.
+     *
+     * <p>Three phrasing families, by what there is to say:</p>
+     * <ul>
+     *   <li>one named traveller — the specific, and the bleakest;</li>
+     *   <li>several — names up to five, the rest collapsing into "and N others besides", reusing the
+     *       credit line's {@code .more} wrapper;</li>
+     *   <li>deaths but no names — every one of them was a player without network consent, so the count
+     *       is all that can honestly be said.</li>
+     * </ul>
+     *
+     * <p>Note the count is the RELAY's uncapped total, not the length of the name list: a carriage that
+     * has outlived its own trail still reports how many died, and only names who it can.</p>
+     */
+    @Nullable
+    public static Component deathLine(Deaths deaths, RandomSource rng) {
+        if (deaths == null || !deaths.hasAny()) return null;
+        List<String> names = deaths.names();
+        int total = deaths.total();
+        if (names.isEmpty()) {
+            return Component.translatable(
+                    "chat.dungeontrain.shared_carriage.deaths.unnamed." + (rng.nextInt(DEATH_UNNAMED_LINES) + 1),
+                    total).withStyle(ChatFormatting.GRAY);
+        }
+        // "one" is only honest when exactly one death is on record — a single NAME with a higher total
+        // means the others simply couldn't be named, which is the plural case wearing one name.
+        if (total == 1) {
+            return Component.translatable(
+                    "chat.dungeontrain.shared_carriage.deaths.one." + (rng.nextInt(DEATH_ONE_LINES) + 1),
+                    name(names.get(0))).withStyle(ChatFormatting.GRAY);
+        }
+        return Component.translatable(
+                "chat.dungeontrain.shared_carriage.deaths.few." + (rng.nextInt(DEATH_FEW_LINES) + 1),
+                total, editorList(names, total)).withStyle(ChatFormatting.GRAY);
     }
 }
