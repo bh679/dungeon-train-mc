@@ -93,6 +93,9 @@ public final class ContainerContentsRoller {
     private static final long SALT_RANDOM_BOOK = 0xB0011AB1ECAFEBE0L;
     /** Salt for the "shared vs local pool" coin-flip on a placeholder book roll. */
     private static final long SALT_SHARED_BOOK_CHANCE = 0x5A1EDB00C0FFEE12L;
+
+    /** Salt for the edible-backpack loot substitution coin-flip. */
+    private static final long SALT_EDIBLE_BACKPACK = 0xEDB1EBACC0FFEE77L;
     /** Salt for the procedural name composer (naturally-spawned items). */
     private static final long SALT_NAME        = 0x4E414D4544585742L;
     /** Salt for the AIS Gaussian stat roller (naturally-spawned items). */
@@ -848,6 +851,21 @@ public final class ContainerContentsRoller {
         Item item = resolveItem(picked.itemId());
         if (item == null) return ItemStack.EMPTY;
 
+        // Edible Backpacks bundle: a small deterministic per-slot chance that this
+        // rolled item is instead an edible backpack (+1 permanent storage slot when
+        // eaten). Same seeded idiom as the shared-book substitution so a given chest
+        // slot always makes the same choice for a given world seed. Config
+        // edibleBackpackLootChance (0 disables). Never replaces the narrative
+        // placeholders below — books stay books.
+        if (item != ModItems.RANDOM_BOOK.get() && item != ModItems.RANDOM_PLAYERBOOK.get()) {
+            double backpackChance = DungeonTrainConfig.getEdibleBackpackLootChance();
+            if (backpackChance > 0.0 && rollDoubleChance(backpackChance, localPos, worldSeed,
+                    carriageIndex, slot, SALT_EDIBLE_BACKPACK)) {
+                return new ItemStack(
+                    games.brennan.ediblebackpacks.registry.ModItems.EDIBLE_BACKPACK.get());
+            }
+        }
+
         // Editor-only placeholder dungeontrain:random_book — substitute a
         // stamped vanilla WRITTEN_BOOK rolled from RandomBookRegistry. Pool
         // empty → return EMPTY so the slot stays empty rather than dropping
@@ -1304,11 +1322,21 @@ public final class ContainerContentsRoller {
      */
     private static boolean rollSharedBookChance(double chance, BlockPos localPos, long worldSeed,
                                                 int carriageIndex, int slot) {
+        return rollDoubleChance(chance, localPos, worldSeed, carriageIndex, slot, SALT_SHARED_BOOK_CHANCE);
+    }
+
+    /** Generalised fractional-probability variant of {@link #rollChance} — salt-parameterised. */
+    private static boolean rollDoubleChance(double chance, BlockPos localPos, long worldSeed,
+                                            int carriageIndex, int slot, long salt) {
         if (chance <= 0.0) return false;
         if (chance >= 1.0) return true;
-        long state = mix(localPos, worldSeed, carriageIndex, slot, SALT_SHARED_BOOK_CHANCE);
-        // Map the 63-bit magnitude to [0,1): divide by 2^63.
-        double roll = (state & 0x7FFFFFFFFFFFFFFFL) / (double) (1L << 63);
+        long state = mix(localPos, worldSeed, carriageIndex, slot, salt);
+        // Map the 63-bit magnitude to [0,1): scale by 2^-63. (The previous
+        // `/ (double) (1L << 63)` divided by Long.MIN_VALUE — a NEGATIVE 2^63 —
+        // making the roll always negative and the check always true, so the
+        // shared-book substitution fired on every eligible roll regardless of
+        // the configured chance.)
+        double roll = (state & 0x7FFFFFFFFFFFFFFFL) * 0x1p-63;
         return roll < chance;
     }
 
