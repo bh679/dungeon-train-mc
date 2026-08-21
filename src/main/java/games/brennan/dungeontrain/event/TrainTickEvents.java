@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.event;
 
+import games.brennan.dungeontrain.compat.DistantHorizonsLod;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.editor.VariantOverlayRenderer;
@@ -394,6 +395,10 @@ public final class TrainTickEvents {
         // nearest-first drain of streaming scenery, so the ~7 ms/chunk mirror is spread across ticks
         // instead of spiking the generation tick. See WorldUpsideDownEvents / project_upside_down_perf.
         drainPendingMirrors(level, trainsById);   // self-logs [ud-drain]; timed below for [stuck.timing]
+        // Release a few of the freshly mirrored chunks to Distant Horizons. Rate-limited because each one
+        // makes DH rebuild the LOD render buffer covering it, and doing that for every chunk as the train
+        // streams terrain flashed the sky where those buffers were briefly undrawn.
+        DistantHorizonsLod.drain(level, DH_LOD_REFRESH_PER_TICK);
         long tAfterMirror = System.nanoTime();
 
         // Tunnel runtime drain removed — tunnels are now generated entirely
@@ -432,6 +437,14 @@ public final class TrainTickEvents {
      * Each applied chunk clears its {@code NEEDS_UPSIDE_DOWN_MIRROR} marker and is resent to trackers.
      * Returns the number of chunks applied this tick (for the timing line).
      */
+    /**
+     * Chunks handed to Distant Horizons per tick after being mirrored (~40/s). Low on purpose: each one
+     * costs DH an LOD render-buffer rebuild, and nothing reads the refreshed LOD until the chunk is far
+     * enough away for DH to draw it, so there is no reason to hurry. A/B live with
+     * {@code /dungeontrain debug dh-lod-refresh}.
+     */
+    private static final int DH_LOD_REFRESH_PER_TICK = 2;
+
     private static int drainPendingMirrors(ServerLevel level, Map<UUID, List<Trains.Carriage>> trainsById) {
         long t0 = System.nanoTime();
         DungeonTrainWorldData data = DungeonTrainWorldData.get(level);

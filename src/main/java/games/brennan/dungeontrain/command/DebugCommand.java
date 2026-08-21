@@ -7,6 +7,7 @@ import com.mojang.logging.LogUtils;
 import dev.ryanhcode.sable.sublevel.ServerSubLevel;
 import dev.ryanhcode.sable.sublevel.plot.LevelPlot;
 import dev.ryanhcode.sable.sublevel.plot.PlotChunkHolder;
+import games.brennan.dungeontrain.compat.DistantHorizonsLod;
 import games.brennan.dungeontrain.debug.CarriageDebug;
 import games.brennan.dungeontrain.debug.DebugFlags;
 import games.brennan.dungeontrain.editor.ChiseledBookshelfSync;
@@ -91,6 +92,15 @@ public final class DebugCommand {
                 .then(Commands.literal("ready").executes(ctx -> setMirrorDrainLegacy(ctx.getSource(), false)))
                 .then(Commands.literal("legacy").executes(ctx -> setMirrorDrainLegacy(ctx.getSource(), true)))
                 .then(Commands.literal("status").executes(ctx -> mirrorDrainStatus(ctx.getSource()))))
+            // /dungeontrain debug dh-lod-refresh <throttled|instant|off|status> — how mirrored chunks are
+            // handed to Distant Horizons. `throttled` (default) releases a few per tick; `instant` notifies
+            // inline (each DH LOD rebuild leaves its area briefly undrawn, so streaming flashes the sky);
+            // `off` never notifies (DH keeps its un-mirrored copy — upright slabs in the band).
+            .then(Commands.literal("dh-lod-refresh")
+                .then(Commands.literal("throttled").executes(ctx -> setDhLodRefresh(ctx.getSource(), DistantHorizonsLod.Mode.THROTTLED)))
+                .then(Commands.literal("instant").executes(ctx -> setDhLodRefresh(ctx.getSource(), DistantHorizonsLod.Mode.INSTANT)))
+                .then(Commands.literal("off").executes(ctx -> setDhLodRefresh(ctx.getSource(), DistantHorizonsLod.Mode.OFF)))
+                .then(Commands.literal("status").executes(ctx -> dhLodRefreshStatus(ctx.getSource()))))
             // /dungeontrain debug band-earlyout <on|off|status> — toggles the worldgen band
             // early-outs (off-band skips in the density raise, biome forcing, track-bed reject).
             // OFF = pre-change code paths, byte-identical output — drives the Gate 2 matched-toggle
@@ -233,6 +243,25 @@ public final class DebugCommand {
     private static int mirrorDrainStatus(CommandSourceStack source) {
         source.sendSuccess(() -> Component.literal("[DungeonTrain] Upside-down mirror drain: "
             + (games.brennan.dungeontrain.event.TrainTickEvents.mirrorDrainLegacy ? "LEGACY" : "READY (fix)")), false);
+        return 1;
+    }
+
+    private static int setDhLodRefresh(CommandSourceStack source, DistantHorizonsLod.Mode mode) {
+        DistantHorizonsLod.mode = mode;
+        if (mode != DistantHorizonsLod.Mode.THROTTLED) DistantHorizonsLod.clear();
+        source.sendSuccess(() -> Component.literal(
+            "[DungeonTrain] Distant Horizons LOD refresh: " + switch (mode) {
+                case THROTTLED -> "THROTTLED (default — a few chunks per tick)";
+                case INSTANT -> "INSTANT (notify as each chunk is mirrored — expect the sky to flash)";
+                case OFF -> "OFF (DH keeps its un-mirrored copy — expect upright terrain in the band)";
+            }
+        ).withStyle(mode == DistantHorizonsLod.Mode.THROTTLED ? ChatFormatting.GREEN : ChatFormatting.YELLOW), true);
+        return 1;
+    }
+
+    private static int dhLodRefreshStatus(CommandSourceStack source) {
+        source.sendSuccess(() -> Component.literal("[DungeonTrain] Distant Horizons LOD refresh: "
+            + DistantHorizonsLod.mode + " (" + DistantHorizonsLod.pendingCount() + " chunks queued)"), false);
         return 1;
     }
 

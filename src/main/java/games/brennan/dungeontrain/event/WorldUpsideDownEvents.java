@@ -135,6 +135,7 @@ public final class WorldUpsideDownEvents {
     public static void onLevelUnload(LevelEvent.Unload event) {
         if (event.getLevel() instanceof ServerLevel level && level.dimension().equals(Level.OVERWORLD)) {
             MirrorPlanCache.clear();
+            DistantHorizonsLod.clear();   // queued LOD refreshes must never cross into the next world
         }
     }
 
