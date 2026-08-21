@@ -19,6 +19,7 @@
     "MultiNoiseBiomeSourceMixin",
     "NoiseBasedChunkGeneratorMixin",
     "ChunkGeneratorDecorationMixin",
+    "ChunkGeneratorDhLodMirrorMixin",
     "ChunkGeneratorStructureStateMixin",
     "WorldGenRegionFloorMixin",
     "StructureBasementMixin",
