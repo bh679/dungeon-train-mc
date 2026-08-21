@@ -44,8 +44,10 @@ pack must list them explicitly. Everything else is a manifest file with a `requi
 | Jade | `324717` | **enabled** | Block/item tooltip HUD. Formerly opt-in because tooltips didn't render for blocks **on the moving train** (Sable sub-level) — that limitation is now **resolved** by the bundled **Jade Sable Compat** (below), so Jade ships on by default. **Pinned** (15.10.5 — the build Sable's bundled Jade compat is verified against). |
 | Jade Sable Compat | `1530988` | **enabled** | Client-only compat mod (`sablejade`, MIT). Gives Jade a Sable-aware retrace path so tooltips resolve the **correct** block on Sable sub-levels / moving trains. Requires **Jade** (shipped enabled, above). `server_side=unsupported` — auto-skipped on dedicated servers. **Pinned** (1.2.1). |
 | Mouse Tweaks | `60089` | off (opt-in) | Inventory QoL (shift-drag / scroll-to-move). **Pinned**. |
+| Nemo's Inventory Sorting | `1148320` | off (opt-in) | Client-side inventory sorting buttons (`server_side=unsupported`). No dependencies. **Pinned** (1.8.2.1). |
 | Distant Horizons | `508933` | off (opt-in) | LOD render distance. **Use 2.x** — 3.0.x crashes the JVM on DT world entry. **Pinned** to a 2.x file. |
 | Effortless Building | `302113` | off (opt-in) | Client-side building QoL (multi-block placement modes, mirror / array / radial). No dependencies. **Pinned** (4.2 — one multi-loader jar covers Fabric + NeoForge). |
+| Punchy! | `1374153` | off (opt-in) | First-person animation overhaul (swing/movement animations, visible hands with held items). Client-only render (`server_side=unsupported`, auto-skipped on dedicated servers), no dependencies. ARR licence, but the author explicitly permits modpack inclusion. **Pinned** (2.7d). |
 
 …plus NeoForge as the modloader (`neoforge-<neo_version>`) and the Minecraft version,
 both read from `gradle.properties`.
@@ -85,8 +87,8 @@ flag straight into the manifest:
   **CreativeCore** (AmbientSounds) and **Iceberg** (Advancement Plaques). The libraries ship
   enabled so their dependent loads on a default install (CreativeCore — AmbientSounds is on;
   Iceberg — AP is on).
-- **Bundled but off by default (`required:false`)** — Mouse Tweaks, Distant Horizons,
-  Effortless Building. Shipped in the pack so a player can flip them on with one click, but inert until they
+- **Bundled but off by default (`required:false`)** — Mouse Tweaks, Nemo's Inventory Sorting,
+  Distant Horizons, Effortless Building, Punchy!. Shipped in the pack so a player can flip them on with one click, but inert until they
   do. (DT itself + Sable are hardcoded `required:true` in the builder.)
 
 ## Declared dependencies (CurseForge "Relations")
@@ -296,9 +298,9 @@ Each `optional_mods` entry (and `sable`) carries `modrinth_project` (slug) + `mo
 (the version id), pinned to the **same build the CurseForge pack ships**. The DT mod is the only
 un-pinned reference: its Modrinth version id is passed in per release. Refresh a pin the same way
 as a CurseForge pin — open `https://modrinth.com/mod/<slug>/versions`, filter to **NeoForge
-1.21.1**, and copy the version id from the version URL (`/version/<id>`). Two slugs differ from
-their CurseForge slug: **FerriteCore** is `ferrite-core` and **Distant Horizons** is
-`distanthorizons` on Modrinth.
+1.21.1**, and copy the version id from the version URL (`/version/<id>`). Three slugs differ from
+their CurseForge slug: **FerriteCore** is `ferrite-core`, **Distant Horizons** is
+`distanthorizons`, and **Punchy!** is `punchy-fpa` on Modrinth.
 
 CI guards the pins: `build-mrpack.py --check-config` (in the `modpack-checks` job) fails the build
 if any mod is missing its `modrinth_project`/`modrinth_version`, so a new companion can't silently

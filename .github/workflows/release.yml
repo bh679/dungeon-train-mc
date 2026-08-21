@@ -262,6 +262,7 @@ jobs:
             advancement-plaques(optional)
             iceberg(optional)
             distant-horizons(optional)
+            nemos-inventory-sorting(optional)
             mouse-tweaks(optional)
             jade(optional)
             jade-sable-compat(optional)
@@ -275,6 +276,7 @@ jobs:
             overloaded-armor-bar(optional)
             kinetic-hosting-integration(optional)
             effortless-building(optional)
+            punchy(optional)
           java: 21
           retry-attempts: 2
           retry-delay: 10000
