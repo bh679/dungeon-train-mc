@@ -61,7 +61,9 @@ import java.util.function.Function;
  * the paginated "the Dungeon Train asks" recap — on Dungeon Train worlds. In
  * singleplayer, dying ends the run: the narrative screen offers "Board anew" (a
  * fresh world) and "Leave the line" (the title screen), with no respawn-in-place,
- * so hardcore worlds get the same treatment.
+ * so hardcore worlds get the same treatment. When the {@code doImmediateRespawn}
+ * game rule is on there is no screen to press a button on, so
+ * {@link InstantRespawnReboard} fires the same fresh-world reboard automatically.
  *
  * <p>This class also owns the world-transition plumbing the narrative screen
  * calls: {@link #launchWorld} creates a fresh save (carrying forward the current

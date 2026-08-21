@@ -68,6 +68,7 @@
     "client.AdvancementWidgetHideDescMixin",
     "client.AdvancementsCompactLayoutMixin",
     "client.DeathScreenMoveTextMixin",
+    "client.ClientPacketListenerInstantRespawnMixin",
     "client.SoundOptionsScreenTrainVolumeMixin",
     "client.CameraCinematicMixin",
     "client.GameRendererSnapshotMixin",

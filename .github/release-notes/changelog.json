@@ -7741,6 +7741,22 @@
       "released": true,
       "released_in": "v0.604.0",
       "released_at": "2026-08-21T15:55:41Z"
+    },
+    {
+      "id": "instant-respawn-new-world",
+      "version": "0.605.0",
+      "type": "feat",
+      "title": "Immediate Respawn now rolls straight into a new run",
+      "summary": "Turn on Minecraft's Immediate Respawn game rule and dying skips the death screen entirely \u2014 the world is discarded and a fresh Dungeon Train run starts on the spot, the same reboard the death screen's \"Board anew\" button performs. Previously the rule dropped you back into the world you had just died in, the one way a run could outlive your death. Multiplayer is unchanged: on a server you do not host, Immediate Respawn still respawns you as vanilla does.",
+      "highlights": [
+        "Immediate Respawn ends the run and starts a new world, no button press",
+        "Holding Shift while you die keeps the current game mode, as on the reboard chip",
+        "Remote servers keep vanilla Immediate Respawn behaviour"
+      ],
+      "date": "2026-08-21",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
