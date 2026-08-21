@@ -7421,9 +7421,9 @@
       "summary": "New sky options for dimensions.",
       "highlights": [],
       "date": "2026-08-21",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.586.0",
+      "released_at": "2026-08-21T05:05:55Z"
     }
   ]
 }
