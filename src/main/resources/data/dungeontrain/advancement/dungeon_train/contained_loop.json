@@ -1,0 +1,19 @@
+{
+  "parent": "dungeontrain:dungeon_train/carts_1000",
+  "display": {
+    "icon": { "id": "minecraft:ender_chest" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.contained_loop.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.contained_loop.description" },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "action": {
+      "trigger": "dungeontrain:gameplay_action",
+      "conditions": { "actionId": "contained_loop" }
+    }
+  },
+  "requirements": [["action"]]
+}

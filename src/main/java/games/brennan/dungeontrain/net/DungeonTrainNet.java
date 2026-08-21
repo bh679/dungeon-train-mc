@@ -101,6 +101,10 @@ public final class DungeonTrainNet {
         // close; server consent-gates + enriches narrative fields + reports to the relay's Books explorer.
         registrar.playToServer(BookReadClosedPacket.TYPE, BookReadClosedPacket.STREAM_CODEC, BookReadClosedPacket::handle);
 
+        // Client-only actions the server can't see (currently: the train engine volume setting
+        // changing). Allowlisted server-side — see ClientActionPacket.
+        registrar.playToServer(ClientActionPacket.TYPE, ClientActionPacket.STREAM_CODEC, ClientActionPacket::handle);
+
         // Book vote: client casts 👍/👎 from the virtual vote page (buttons or Y/N hotkeys); server
         // re-validates the held stack's identity, stamps dt_book_vote (offline burn color), and
         // consent-gates the relay POST.

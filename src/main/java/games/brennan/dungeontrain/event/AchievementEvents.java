@@ -42,9 +42,11 @@ import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.block.BarrelBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.ChestBlock;
+import net.minecraft.world.level.block.EnderChestBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.player.AdvancementEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
@@ -69,8 +71,15 @@ import java.util.UUID;
  *   <li>{@link PlayerInteractEvent.RightClickBlock} (chest/trapped/barrel) →
  *       update {@link PlayerRunState#uniqueChests}, fire
  *       {@link ModAdvancementTriggers#UNIQUE_CHESTS_OPENED}.</li>
+ *   <li>{@link PlayerInteractEvent.RightClickBlock} (chest/barrel) → break the
+ *       "no container opened" streak by stamping
+ *       {@link ModDataAttachments#CARTS_AT_LAST_CONTAINER_OPEN}; (ender chest) →
+ *       set {@link ModDataAttachments#OPENED_ENDER_CHEST_THIS_LIFE}.</li>
+ *   <li>{@link LivingDeathEvent} → grant {@code contained_loop} for a life of
+ *       1000+ carriages that never opened an ender chest.</li>
  *   <li>{@link PlayerEvent.PlayerRespawnEvent} → reset
- *       {@link PlayerRunState} (both streak set and cart counter).</li>
+ *       {@link PlayerRunState} (both streak set and cart counter), plus the
+ *       per-life container/ender-chest markers.</li>
  *   <li>{@link PlayerEvent.PlayerLoggedInEvent} → grant the multiplayer-join
  *       advancement when applicable, absorb this world's already-earned
  *       advancements into the sidecar, then read the sidecar and replay any
@@ -104,6 +113,13 @@ public final class AchievementEvents {
      */
     private static final int CHEST_CLICK_DEBOUNCE_TICKS = 10;
 
+    /** Carriages travelled since the last chest/barrel open for "Not My Chest". */
+    private static final int NO_CONTAINER_CARTS_TIER_1 = 100;
+    /** Carriages travelled since the last chest/barrel open for "Still Not My Chest". */
+    private static final int NO_CONTAINER_CARTS_TIER_2 = 1000;
+    /** Carriages that must be exceeded in one life for "Contained Loop". */
+    private static final int CONTAINED_LOOP_CARTS = 1000;
+
     /** Per-player last-right-clicked chest pos + tick, for debouncing only. */
     private static final Map<UUID, BlockPos> LAST_CHEST_POS = new HashMap<>();
     private static final Map<UUID, Long> LAST_CHEST_TICK = new HashMap<>();
@@ -130,6 +146,15 @@ public final class AchievementEvents {
         BlockPos pos = event.getPos();
         BlockState state = event.getLevel().getBlockState(pos);
         Block block = state.getBlock();
+        // Ender chests are their own thing: they never break the no-container
+        // streak (that one is about train loot), they only disqualify this life
+        // from "Contained Loop". Handled before the chest/barrel gate below,
+        // which EnderChestBlock does not match.
+        if (block instanceof EnderChestBlock) {
+            if (player.isShiftKeyDown() && event.getItemStack().getItem() instanceof BlockItem) return;
+            player.setData(ModDataAttachments.OPENED_ENDER_CHEST_THIS_LIFE.get(), Boolean.TRUE);
+            return;
+        }
         // ChestBlock covers both regular chests and trapped chests
         // (TrappedChestBlock extends ChestBlock in vanilla 1.21.1).
         if (!(block instanceof ChestBlock || block instanceof BarrelBlock)) return;
@@ -151,6 +176,11 @@ public final class AchievementEvents {
         // position. Decorated-pot breaks feed the same counter from
         // RunStatsEvents.onPotBreak.
         run.incrementContainersOpened();
+        // Break the "no chest or barrel" streak: the next milestone is measured
+        // from this carriage reading onward. Decorated pots never reach here —
+        // vases are allowed (their breaks feed containersOpened from RunStatsEvents).
+        player.setData(ModDataAttachments.CARTS_AT_LAST_CONTAINER_OPEN.get(),
+            effectiveTravelled(run));
         boolean added = run.addChestPos(pos);
         if (!added) {
             // Streak broken — duplicate open. Reset and start fresh from this chest.
@@ -211,6 +241,45 @@ public final class AchievementEvents {
         // "Pacifist" chain — same travelled-carriage counter as carts_100 but
         // requires zero damage dealt this life at each threshold.
         PacifistAdvancement.checkAndGrant(player, effectiveTravelled, run.damageDealt());
+        // "Not My Chest" / "Still Not My Chest" — carriages travelled since the
+        // last chest/barrel open this life. The admin difficulty offset is in
+        // both terms, so it cancels in the subtraction.
+        int sinceContainer = effectiveTravelled
+            - player.getData(ModDataAttachments.CARTS_AT_LAST_CONTAINER_OPEN.get());
+        if (sinceContainer >= NO_CONTAINER_CARTS_TIER_1) {
+            ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "no_container_100_carts");
+        }
+        if (sinceContainer >= NO_CONTAINER_CARTS_TIER_2) {
+            ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "no_container_1000_carts");
+        }
+    }
+
+    /**
+     * The travelled-carriage reading the milestone advancements use: absolute
+     * progress including the admin difficulty offset, exactly as
+     * {@link #notifyCartAdvance} feeds {@link ModAdvancementTriggers#CARTS_IN_RUN}.
+     */
+    private static int effectiveTravelled(PlayerRunState run) {
+        return Math.abs(DifficultyProgression.effectiveTravelled(run.travelledCarriageIndex()));
+    }
+
+    // ---------------- Contained Loop (death-granted) ----------------
+
+    /**
+     * "Contained Loop" — die having travelled more than
+     * {@link #CONTAINED_LOOP_CARTS} carriages in this life without opening an
+     * ender chest even once. Granted at death because that is the moment the
+     * "whole life" claim becomes true: the ender-chest stash is the one store
+     * that survives dying (EnderChestPersistence), so the achievement is about
+     * having run the entire life self-contained.
+     */
+    @SubscribeEvent
+    public static void onPlayerDeath(LivingDeathEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        if (player.getData(ModDataAttachments.OPENED_ENDER_CHEST_THIS_LIFE.get())) return;
+        PlayerRunState run = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
+        if (effectiveTravelled(run) <= CONTAINED_LOOP_CARTS) return;
+        ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "contained_loop");
     }
 
     // ---------------- Biome-diversity milestones ----------------
@@ -699,6 +768,11 @@ public final class AchievementEvents {
         // Exploration progress is per-life too — clear distinct biomes so the
         // count tiers (and "Terra Omnia") restart for the new run.
         player.getData(ModDataAttachments.PLAYER_BIOME_PROGRESS.get()).clear();
+        // Per-life container markers. Neither attachment is copyOnDeath, so the
+        // respawn clone already starts clean — cleared explicitly for the same
+        // defensive reason PlayerRunState is.
+        player.setData(ModDataAttachments.CARTS_AT_LAST_CONTAINER_OPEN.get(), 0);
+        player.setData(ModDataAttachments.OPENED_ENDER_CHEST_THIS_LIFE.get(), Boolean.FALSE);
         // Per-life travelled-carriage-index is now 0; push the HUD packet
         // immediately so the overlay reflects the reset without waiting for
         // the next 10-tick BoardingProgressEvents scan.
