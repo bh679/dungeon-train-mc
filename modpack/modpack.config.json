@@ -24,6 +24,7 @@
     { "name": "CreativeCore", "slug": "creativecore", "project_id": 257814, "file_id": 8190065, "required": true, "modrinth_project": "creativecore", "modrinth_version": "nLLornod" },
     { "name": "Advancement Plaques", "slug": "advancement-plaques", "project_id": 499826, "file_id": 5905995, "required": true, "modrinth_project": "advancement-plaques", "modrinth_version": "OWylG33I" },
     { "name": "Iceberg", "slug": "iceberg", "project_id": 520110, "file_id": 6423863, "required": true, "modrinth_project": "iceberg", "modrinth_version": "IMssx9du" },
+    { "name": "Nemo's Inventory Sorting", "slug": "nemos-inventory-sorting", "project_id": 1148320, "file_id": 6487633, "required": false, "modrinth_project": "nemos-inventory-sorting", "modrinth_version": "Foc0173y" },
     { "name": "Mouse Tweaks", "slug": "mouse-tweaks", "project_id": 60089, "file_id": 5637846, "required": false, "modrinth_project": "mouse-tweaks", "modrinth_version": "9I21YYxf" },
     { "name": "Jade", "slug": "jade", "project_id": 324717, "file_id": 7545219, "required": true, "modrinth_project": "jade", "modrinth_version": "yd8FKCmx" },
     { "name": "Jade Sable Compat", "slug": "jade-sable-compat", "project_id": 1530988, "file_id": 8269260, "required": true, "modrinth_project": "jade-sable-compat", "modrinth_version": "7HFg7hFp" },

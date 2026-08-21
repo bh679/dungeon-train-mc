@@ -262,6 +262,7 @@ jobs:
             advancement-plaques(optional)
             iceberg(optional)
             distant-horizons(optional)
+            nemos-inventory-sorting(optional)
             mouse-tweaks(optional)
             jade(optional)
             jade-sable-compat(optional)
