@@ -7363,9 +7363,9 @@
       "highlights": [],
       "pr": 1003,
       "date": "2026-08-21",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.584.0",
+      "released_at": "2026-08-21T03:12:02Z"
     },
     {
       "id": "drifting-carriage-chat-limit",
@@ -7378,9 +7378,9 @@
       ],
       "pr": 1005,
       "date": "2026-08-21",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.584.0",
+      "released_at": "2026-08-21T03:12:02Z"
     },
     {
       "id": "carriage-crops-stay-planted",
@@ -7395,9 +7395,9 @@
       ],
       "pr": 1004,
       "date": "2026-08-21",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.584.0",
+      "released_at": "2026-08-21T03:12:02Z"
     }
   ]
 }
