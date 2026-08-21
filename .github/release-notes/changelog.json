@@ -7569,6 +7569,37 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "new-advancements-batch",
+      "version": "0.596.0",
+      "type": "feat",
+      "title": "Seven new advancements",
+      "summary": "Three chase the bundled Edible Backpacks: eat one, craft the compressed nine-slot version, then unlock every backpack slot there is. Two reward riding past 100 and 1,000 carriages without opening a single chest or barrel (vases don't count). One is granted when you die more than 1,000 carriages into a life that never touched an ender chest. And one is for finding the train engine volume slider.",
+      "highlights": [
+        "Apples? / Hungry for Apples / Got Apples \u2014 the edible backpack chain",
+        "Not My Chest / Still Not My Chest \u2014 100 and 1,000 carriages without looting a chest or barrel",
+        "Contained Loop \u2014 a 1,000+ carriage life that never opened an ender chest",
+        "Sound Check \u2014 change the train engine volume"
+      ],
+      "pr": 1019,
+      "date": "2026-08-21",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "raveroom-content",
+      "version": "0.596.0",
+      "type": "content",
+      "title": "Rave room",
+      "summary": "A new carriage room stocked with music discs \u2014 the full vanilla set, occasionally worn or enchanted.",
+      "highlights": [],
+      "pr": 1019,
+      "date": "2026-08-21",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

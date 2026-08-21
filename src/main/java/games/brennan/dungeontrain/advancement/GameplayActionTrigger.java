@@ -36,6 +36,15 @@ import java.util.Optional;
  *   <li>{@code used_tunnel_stairs} — entered a tunnel stairwell (surface entrance or shaft)</li>
  *   <li>{@code entered_portal_room} — stood in a portal room's body, past its corridor, for 5s</li>
  *   <li>{@code distant_portal_exit} — left a portal room by a corridor far from the way in</li>
+ *   <li>{@code ate_edible_backpack} — ate an edible backpack (either size)</li>
+ *   <li>{@code crafted_upgraded_backpack} — crafted the 3×3 compressed backpack</li>
+ *   <li>{@code maxed_backpack_slots} — unlocked every backpack slot the config allows</li>
+ *   <li>{@code no_container_100_carts} / {@code no_container_1000_carts} — carriages
+ *       travelled since the last chest/barrel open (decorated pots don't count)</li>
+ *   <li>{@code contained_loop} — died 1000+ carriages into a life that never opened an
+ *       ender chest (fired from the death hook, not a live scan)</li>
+ *   <li>{@code changed_engine_volume} — changed the train engine volume setting; the only
+ *       id fired from a client report ({@code ClientActionPacket}) rather than server detection</li>
  * </ul>
  *
  * <p>JSON shape:

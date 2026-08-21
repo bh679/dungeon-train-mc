@@ -663,6 +663,10 @@ public final class ClientDisplayConfig {
         if (TRAIN_ENGINE_VOLUME.get() == snapped) return;
         TRAIN_ENGINE_VOLUME.set(snapped);
         TRAIN_ENGINE_VOLUME.save();
+        // "Sound Check" — the server can't see a client-config change, so tell it.
+        // Loaded lazily here: this setter only ever runs on a client (the spec is a
+        // CLIENT config), so a dedicated server never touches the client class.
+        games.brennan.dungeontrain.client.sound.TrainVolumeAdvancement.onVolumeChanged();
     }
 
     // ----- Delete old world on reboard (death-screen trash toggle) -----
