@@ -7717,8 +7717,21 @@
       "released_at": "2026-08-21T15:39:10Z"
     },
     {
-      "id": "difficulty-change-confirmation",
+      "id": "veinminer-freeplay-blacklist",
       "version": "0.603.0",
+      "type": "feat",
+      "title": "Vein miner mods now trigger Free Play",
+      "summary": "Playing with a vein miner installed runs the session in Free Play.",
+      "highlights": [],
+      "pr": 1027,
+      "date": "2026-08-21",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "difficulty-change-confirmation",
+      "version": "0.604.0",
       "type": "feat",
       "title": "Difficulty changes now ask first",
       "summary": "Changing difficulty swaps your gear, XP and Ender Chest. It now warns you before it does \u2014 and the gear you leave behind is no longer lost.",

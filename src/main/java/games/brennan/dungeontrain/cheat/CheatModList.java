@@ -71,7 +71,33 @@ public final class CheatModList {
         // client-side command toolkits — enchantment/RNG seed cracking (/cenchant, /ccrackrng),
         // ore + entity finding (/cfind), and item/world manipulation helpers. Client-only, so it
         // is caught in single-player (shared JVM) but not on a dedicated server.
-        "clientcommands"
+        "clientcommands",
+        // vein miners / chain mining — one swing breaks the whole ore vein (or the whole tree),
+        // which multiplies resource income well past what DT's loot and difficulty curves assume.
+        // Every ID below was read out of that mod's own neoforge.mods.toml/mods.toml (slugs and
+        // display names are NOT mod IDs); library and dependency IDs were stripped so no innocent
+        // mod can be caught by association. Excluded on purpose: worldgen mods that merely place
+        // bigger veins, and AoE-hammer content mods — neither is one-swing chain mining.
+        "veinminer", "veinminer_client", "veinminer_enchantment", "veinmining", "veinminermod",
+        "veinminerplusplus", "veinminerrevived", "oreexcavation", "oreharvester", "ftbultimine",
+        "ultimine_rewind", "liteminer", "onekeyminer", "vein_vantage", "vein_mine", "excavein",
+        "chainvein", "simple_vein_miner", "tethermine", "quickmine", "svmm",
+        "all_in_one_veinminer", "multiveinminer", "universalveinminer", "advancedveinminer",
+        "archveinminer_neof", "shiftingveinminer", "exoveinmine", "dh_s_veinminer",
+        "ore_veinminer", "vyvern_mine", "tinkers_vein_miner", "collectall",
+        // …same category, but the mod ID is an ordinary English word. Verified against the real
+        // jars, and accepted with eyes open: if some unrelated mod ever ships one of these IDs it
+        // would false-trip Free Play. Cheap to undo (Free Play is session-only, nothing is written
+        // to the world), so the coverage is worth the small risk.
+        "burst", "shatter", "excavate", "viner", "azmine", "vpx_data",
+        // tree-fellers / treecapitators — the same one-swing-many-blocks deal, for wood.
+        "treefeller", "treetimberneo", "heavyaxxe_",
+        // Modrinth "mr_*" wrappers — vein-miner datapacks republished as loadable mods, so they
+        // show up in ModList under these generated IDs.
+        "mr_vein_miner", "mr_ore_veinminer", "mr_tree_veinminer", "mr_the_veinminer",
+        "mr_custom_vm", "mr_coconite_coolveinminer", "mr_ly_veinminerenchantment",
+        "mr_ore_veinminerenchant", "mr_ks_veinminerenchantment", "mr_tree_veinminerenchant",
+        "mr_tree_miner_leaf_decay", "mr_veinmine_autosmeltenchantments"
     );
 
     /** Cache file under the loader config dir; written on each successful relay fetch. */
