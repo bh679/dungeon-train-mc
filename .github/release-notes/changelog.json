@@ -7600,6 +7600,23 @@
       "released": true,
       "released_in": "v0.596.0",
       "released_at": "2026-08-21T12:31:57Z"
+    },
+    {
+      "id": "punchy-modpack-optin",
+      "version": "0.597.0",
+      "type": "feat",
+      "title": "Punchy! now in the modpack (off by default)",
+      "summary": "The Dungeon Train modpack now ships Punchy!, a first-person animation mod that adds weight and personality to swinging, mining and movement. It's included but switched off \u2014 flip it on in your launcher's mod list if you want it.",
+      "highlights": [
+        "Punchy! 2.7d bundled in both the CurseForge and Modrinth packs",
+        "Disabled by default \u2014 enable it with one click, no extra download",
+        "Client-side only, so it's skipped on dedicated servers"
+      ],
+      "pr": 1024,
+      "date": "2026-08-21",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
