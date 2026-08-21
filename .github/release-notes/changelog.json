@@ -7519,13 +7519,9 @@
       "id": "remove-tectonic-from-modpack",
       "version": "0.593.0",
       "type": "chore",
-      "title": "Tectonic removed from the Dungeon Train modpack",
-      "summary": "The Dungeon Train modpack no longer bundles Tectonic (or Lithostitched, the worldgen library it needed). Tectonic was an opt-in extra that only did anything with Compatible Terrain switched on, and dropping it keeps the pack leaner for everyone else. Dungeon Train itself still works with Tectonic - if you want it, install it yourself and it will behave exactly as before. Heads up if you had opted in: the launcher removes mods that leave the pack, so Tectonic will disappear on your next pack update and terrain generated beyond your current frontier will look vanilla.",
-      "highlights": [
-        "Tectonic and Lithostitched are no longer bundled with the modpack",
-        "Dungeon Train still supports Tectonic if you install it yourself",
-        "Opted in already? Tectonic goes away on the next pack update - new terrain will generate vanilla"
-      ],
+      "title": "Tectonic removed from the modpack",
+      "summary": "The modpack no longer bundles Tectonic or Lithostitched. Dungeon Train still works with Tectonic if you install it yourself; if you had it switched on, it goes away on your next pack update.",
+      "highlights": [],
       "pr": 1017,
       "date": "2026-08-21",
       "released": false,
