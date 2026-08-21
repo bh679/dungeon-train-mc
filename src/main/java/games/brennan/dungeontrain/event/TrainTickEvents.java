@@ -399,6 +399,7 @@ public final class TrainTickEvents {
         // makes DH rebuild the LOD render buffer covering it, and doing that for every chunk as the train
         // streams terrain flashed the sky where those buffers were briefly undrawn.
         DistantHorizonsLod.drain(level, DH_LOD_REFRESH_PER_TICK);
+        if (tickCounter % 200 == 0) DistantHorizonsLod.logSummary();   // [dh-lod] every ~10s, only when it moved
         long tAfterMirror = System.nanoTime();
 
         // Tunnel runtime drain removed — tunnels are now generated entirely

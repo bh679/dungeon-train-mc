@@ -62,6 +62,13 @@ public final class DistantHorizonsLod {
     /** One-shot log so the first notify (or first failure) is visible without spamming per chunk. */
     private static volatile boolean loggedOutcome = false;
 
+    // Counters behind the [dh-lod] summary line. Every path a chunk can take is counted, so a silent
+    // no-op is visible as a count that doesn't add up rather than as an absence of logs.
+    private static int statEnqueued = 0;
+    private static int statFlushMatched = 0;
+    private static int statSent = 0;
+    private static int statLastSummaryEnqueued = -1;
+
     /**
      * Chunk keys waiting to be handed to DH, coalesced (re-mirroring a chunk doesn't queue it twice) and
      * in insertion order — which is roughly nearest-first, since the mirror drain that fills this is.
@@ -97,7 +104,9 @@ public final class DistantHorizonsLod {
         switch (mode) {
             case OFF -> { }
             case INSTANT -> notifyChunk(level, chunk);
-            case UNLOAD, THROTTLED -> pending.add(chunk.getPos().toLong());
+            case UNLOAD, THROTTLED -> {
+                if (pending.add(chunk.getPos().toLong())) statEnqueued++;
+            }
         }
     }
 
@@ -133,6 +142,7 @@ public final class DistantHorizonsLod {
     public static void flushOnUnload(ServerLevel level, ChunkAccess chunk) {
         if (pending.isEmpty()) return;
         if (pending.remove(chunk.getPos().toLong())) {
+            statFlushMatched++;
             notifyChunk(level, chunk);
         }
     }
@@ -140,6 +150,18 @@ public final class DistantHorizonsLod {
     /** Drop anything queued, so a chunk from one world can never be sent against the next. */
     public static void clear() {
         pending.clear();
+    }
+
+    /**
+     * Log a {@code [dh-lod]} line when anything has moved since the last one. Counts every path a chunk
+     * can take — queued, matched at unload, actually handed to DH — so a silent no-op shows up as
+     * numbers that don't add up, rather than as no log at all.
+     */
+    public static void logSummary() {
+        if (statEnqueued == statLastSummaryEnqueued) return;
+        statLastSummaryEnqueued = statEnqueued;
+        LOGGER.info("[dh-lod] mode={} enqueued={} flushMatched={} sent={} queued={}",
+                mode, statEnqueued, statFlushMatched, statSent, pending.size());
     }
 
     /** Queue depth, for debug readouts. */
@@ -155,19 +177,32 @@ public final class DistantHorizonsLod {
     private static void notifyChunk(ServerLevel level, ChunkAccess chunk) {
         try {
             resolve();
-            if (overwriteChunkDataAsync == null) return;
+            if (overwriteChunkDataAsync == null) {
+                logOnce("[DungeonTrain] DH LOD refresh idle: API not reachable", null);
+                return;
+            }
 
             Object worldProxy = worldProxyField.get(null);
             Object terrainRepo = terrainRepoField.get(null);
-            if (worldProxy == null || terrainRepo == null) return;      // DH not initialised yet
-            if (!(worldLoaded.invoke(worldProxy) instanceof Boolean loaded) || !loaded) return;
+            if (worldProxy == null || terrainRepo == null) {
+                logOnce("[DungeonTrain] DH LOD refresh idle: DH not initialised yet", null);
+                return;
+            }
+            if (!(worldLoaded.invoke(worldProxy) instanceof Boolean loaded) || !loaded) {
+                logOnce("[DungeonTrain] DH LOD refresh idle: DH reports no world loaded", null);
+                return;
+            }
 
             Object levelWrapper = getSinglePlayerLevel.invoke(worldProxy);
-            if (levelWrapper == null) return;
+            if (levelWrapper == null) {
+                logOnce("[DungeonTrain] DH LOD refresh idle: DH has no single-player level", null);
+                return;
+            }
 
             // DH expects {ChunkAccess, ServerLevel} — see IDhApiWorldGenerator#generateChunks. DH warns
             // these are Minecraft-version dependent, hence the catch-all below.
             overwriteChunkDataAsync.invoke(terrainRepo, levelWrapper, new Object[]{chunk, level});
+            statSent++;
             logOnce("[DungeonTrain] Distant Horizons notified of mirrored chunks", null);
         } catch (Throwable t) {
             logOnce("[DungeonTrain] Distant Horizons LOD notify unavailable; in-band LODs may render upright", t);
