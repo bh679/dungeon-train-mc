@@ -7511,9 +7511,9 @@
         "Dying costs you the backpack: both its contents and the space itself"
       ],
       "date": "2026-08-21",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.592.0",
+      "released_at": "2026-08-21T11:09:14Z"
     }
   ]
 }
