@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.train;
 
 import games.brennan.dungeontrain.net.relay.SharedCarriageClient.Credits;
+import games.brennan.dungeontrain.net.relay.SharedCarriageClient.Deaths;
 import net.minecraft.core.BlockPos;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -29,8 +30,8 @@ class SharedCarriageRegistryTest {
         UUID sub = UUID.randomUUID();
         UUID train = UUID.randomUUID();
         // Two carriages packed into one sub-level (grouped train): x-origins 0 and 9.
-        SharedCarriageRegistry.register(null, sub, train, 0, new BlockPos(0, 64, 0), DIMS, "shared", false, false, "", null, null, 0, "stone", Credits.EMPTY);
-        SharedCarriageRegistry.register(null, sub, train, 1, new BlockPos(9, 64, 0), DIMS, "shared", false, false, "", null, null, 0, "stone", Credits.EMPTY);
+        SharedCarriageRegistry.register(null, sub, train, 0, new BlockPos(0, 64, 0), DIMS, "shared", false, false, "", null, null, 0, "stone", Credits.EMPTY, Deaths.EMPTY);
+        SharedCarriageRegistry.register(null, sub, train, 1, new BlockPos(9, 64, 0), DIMS, "shared", false, false, "", null, null, 0, "stone", Credits.EMPTY, Deaths.EMPTY);
 
         assertTrue(SharedCarriageRegistry.hasSubLevel(sub));
         assertEquals(2, SharedCarriageRegistry.bySubLevel(sub).size());
@@ -48,7 +49,7 @@ class SharedCarriageRegistryTest {
     void removeDropsTheInstanceAndItsEmptySubLevel() {
         UUID sub = UUID.randomUUID();
         SharedCarriageRegistry.Instance inst = SharedCarriageRegistry.register(
-            null, sub, UUID.randomUUID(), 0, new BlockPos(0, 0, 0), DIMS, "shared", false, false, "", null, null, 0, "stone", Credits.EMPTY);
+            null, sub, UUID.randomUUID(), 0, new BlockPos(0, 0, 0), DIMS, "shared", false, false, "", null, null, 0, "stone", Credits.EMPTY, Deaths.EMPTY);
         assertTrue(SharedCarriageRegistry.hasSubLevel(sub));
         SharedCarriageRegistry.remove(inst);
         assertFalse(SharedCarriageRegistry.hasSubLevel(sub));
@@ -57,7 +58,7 @@ class SharedCarriageRegistryTest {
     @Test
     void outboxEnqueueDrainAndReenqueue() {
         SharedCarriageRegistry.Instance inst = SharedCarriageRegistry.register(
-            null, UUID.randomUUID(), UUID.randomUUID(), 0, new BlockPos(0, 0, 0), DIMS, "shared", false, false, "", null, null, 0, "stone", Credits.EMPTY);
+            null, UUID.randomUUID(), UUID.randomUUID(), 0, new BlockPos(0, 0, 0), DIMS, "shared", false, false, "", null, null, 0, "stone", Credits.EMPTY, Deaths.EMPTY);
         assertFalse(inst.hasPending());
         inst.enqueue(new BlockPos(1, 2, 3));
         inst.enqueue(new BlockPos(1, 2, 3)); // deduped by pos
@@ -77,7 +78,7 @@ class SharedCarriageRegistryTest {
     @Test
     void enqueueIsANoOpOnceCulled() {
         SharedCarriageRegistry.Instance inst = SharedCarriageRegistry.register(
-            null, UUID.randomUUID(), UUID.randomUUID(), 0, new BlockPos(0, 0, 0), DIMS, "shared", false, false, "", null, null, 0, "stone", Credits.EMPTY);
+            null, UUID.randomUUID(), UUID.randomUUID(), 0, new BlockPos(0, 0, 0), DIMS, "shared", false, false, "", null, null, 0, "stone", Credits.EMPTY, Deaths.EMPTY);
         inst.markCulled();
         assertTrue(inst.isCulled());
         inst.enqueue(new BlockPos(1, 1, 1));
@@ -88,7 +89,7 @@ class SharedCarriageRegistryTest {
     void seqIsMonotonicAndSeededFromRelayIdentity() {
         // Fresh local build: seqSeed 0 → first delta seq is 1.
         SharedCarriageRegistry.Instance fresh = SharedCarriageRegistry.register(
-            null, UUID.randomUUID(), UUID.randomUUID(), 0, new BlockPos(0, 0, 0), DIMS, "shared", false, false, "", null, null, 0, "stone", Credits.EMPTY);
+            null, UUID.randomUUID(), UUID.randomUUID(), 0, new BlockPos(0, 0, 0), DIMS, "shared", false, false, "", null, null, 0, "stone", Credits.EMPTY, Deaths.EMPTY);
         assertEquals(0, fresh.currentSeq());
         assertEquals(1, fresh.nextSeq());
         assertEquals(2, fresh.nextSeq());
@@ -96,7 +97,7 @@ class SharedCarriageRegistryTest {
 
         // Pooled lease seeded from max(baseSeq, delta seqs) = 7 → next delta clears the relay watermark.
         SharedCarriageRegistry.Instance pooled = SharedCarriageRegistry.register(
-            null, UUID.randomUUID(), UUID.randomUUID(), 0, new BlockPos(0, 0, 0), DIMS, "shared", true, false, "", 42, "tok", 7, "stone", Credits.EMPTY);
+            null, UUID.randomUUID(), UUID.randomUUID(), 0, new BlockPos(0, 0, 0), DIMS, "shared", true, false, "", 42, "tok", 7, "stone", Credits.EMPTY, Deaths.EMPTY);
         assertEquals(7, pooled.currentSeq());
         assertEquals(8, pooled.nextSeq());
     }
@@ -104,7 +105,7 @@ class SharedCarriageRegistryTest {
     @Test
     void leaseAndRebaselineStateTransitions() {
         SharedCarriageRegistry.Instance inst = SharedCarriageRegistry.register(
-            null, UUID.randomUUID(), UUID.randomUUID(), 0, new BlockPos(0, 0, 0), DIMS, "shared", false, false, "", null, null, 0, "stone", Credits.EMPTY);
+            null, UUID.randomUUID(), UUID.randomUUID(), 0, new BlockPos(0, 0, 0), DIMS, "shared", false, false, "", null, null, 0, "stone", Credits.EMPTY, Deaths.EMPTY);
         assertFalse(inst.isOnRelay());
         inst.onRelayLease(5, "tok");
         assertTrue(inst.isOnRelay());
@@ -118,5 +119,38 @@ class SharedCarriageRegistryTest {
         assertTrue(inst.needsRebaseline());
         inst.clearRebaseline();
         assertFalse(inst.needsRebaseline());
+    }
+
+    @Test
+    void aDeathHereCountsImmediatelyRatherThanWaitingForTheBuildToTravel() {
+        SharedCarriageRegistry.Instance inst = SharedCarriageRegistry.register(
+            null, UUID.randomUUID(), UUID.randomUUID(), 0, new BlockPos(0, 0, 0), DIMS, "shared", true, false, "",
+            42, "tok", 0, "stone", Credits.EMPTY, new Deaths(java.util.List.of("Ann"), 1));
+
+        inst.addLocalDeath("Bo");
+        assertEquals(2, inst.deaths().total());
+        assertEquals(java.util.List.of("Bo", "Ann"), inst.deaths().names(), "newest first");
+    }
+
+    @Test
+    void aTravellerWhoDiesTwiceInTheSameCarriageIsNamedOnce() {
+        SharedCarriageRegistry.Instance inst = SharedCarriageRegistry.register(
+            null, UUID.randomUUID(), UUID.randomUUID(), 0, new BlockPos(0, 0, 0), DIMS, "shared", true, false, "",
+            42, "tok", 0, "stone", Credits.EMPTY, new Deaths(java.util.List.of("Ann"), 1));
+
+        inst.addLocalDeath("Ann");
+        assertEquals(2, inst.deaths().total(), "both deaths counted");
+        assertEquals(java.util.List.of("Ann"), inst.deaths().names(), "but one name");
+    }
+
+    @Test
+    void anUnconsentedDeathIsCountedWithoutNamingAnyone() {
+        SharedCarriageRegistry.Instance inst = SharedCarriageRegistry.register(
+            null, UUID.randomUUID(), UUID.randomUUID(), 0, new BlockPos(0, 0, 0), DIMS, "shared", true, false, "",
+            42, "tok", 0, "stone", Credits.EMPTY, Deaths.EMPTY);
+
+        inst.addLocalDeath("");
+        assertEquals(1, inst.deaths().total());
+        assertTrue(inst.deaths().names().isEmpty());
     }
 }
