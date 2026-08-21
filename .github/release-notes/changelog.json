@@ -7369,6 +7369,21 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "drifting-carriage-chat-limit",
+      "version": "0.583.0",
+      "type": "fix",
+      "title": "Drifting-carriage messages no longer flood chat",
+      "summary": "Walking a run of drifting carriages used to fill chat with a new gray line every few seconds. Those messages are now capped at three per ten seconds, so the train still tells you when you have stepped into someone else's carriage without burying everything else you were reading.",
+      "highlights": [
+        "Drifting-carriage entry messages capped at 3 per 10 seconds"
+      ],
+      "pr": 1005,
+      "date": "2026-08-21",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
