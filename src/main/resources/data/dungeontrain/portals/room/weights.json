@@ -104,6 +104,10 @@
     "minLevel": 5,
     "mode": "endless_repetition"
   },
+  "randomized": {
+    "weight": 1,
+    "mode": "endless_repetition/dynamic/fit"
+  },
   "sanemaze": {
     "weight": 1,
     "mode": "bedrock_lock"
