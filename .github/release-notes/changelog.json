@@ -7715,6 +7715,19 @@
       "released": true,
       "released_in": "v0.602.0",
       "released_at": "2026-08-21T15:39:10Z"
+    },
+    {
+      "id": "veinminer-freeplay-blacklist",
+      "version": "0.603.0",
+      "type": "feat",
+      "title": "Vein miner mods now trigger Free Play",
+      "summary": "Playing with a vein miner installed runs the session in Free Play.",
+      "highlights": [],
+      "pr": 1027,
+      "date": "2026-08-21",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
