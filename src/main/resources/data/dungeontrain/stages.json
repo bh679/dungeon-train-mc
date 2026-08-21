@@ -6,7 +6,6 @@
     "phases": [
       "OVERWORLD",
       "VOID",
-      "END",
       "UPSIDE_DOWN",
       "CHUNCKS"
     ]
@@ -18,7 +17,6 @@
     "phases": [
       "OVERWORLD",
       "VOID",
-      "END",
       "UPSIDE_DOWN",
       "CHUNCKS"
     ]
@@ -30,7 +28,6 @@
     "phases": [
       "OVERWORLD",
       "VOID",
-      "END",
       "UPSIDE_DOWN",
       "CHUNCKS"
     ]
@@ -42,7 +39,6 @@
     "phases": [
       "OVERWORLD",
       "VOID",
-      "END",
       "UPSIDE_DOWN",
       "CHUNCKS"
     ]
@@ -61,7 +57,6 @@
     "phases": [
       "OVERWORLD",
       "VOID",
-      "END",
       "UPSIDE_DOWN",
       "CHUNCKS"
     ]
@@ -73,7 +68,6 @@
     "phases": [
       "OVERWORLD",
       "VOID",
-      "END",
       "UPSIDE_DOWN",
       "CHUNCKS"
     ]
@@ -84,7 +78,6 @@
     "phases": [
       "OVERWORLD",
       "VOID",
-      "END",
       "UPSIDE_DOWN",
       "CHUNCKS"
     ]
@@ -95,7 +88,6 @@
     "phases": [
       "OVERWORLD",
       "VOID",
-      "END",
       "UPSIDE_DOWN",
       "CHUNCKS"
     ]

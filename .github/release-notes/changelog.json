@@ -7309,6 +7309,109 @@
       "released": true,
       "released_in": "v0.578.0",
       "released_at": "2026-08-20T12:54:15Z"
+    },
+    {
+      "id": "portal-room-height-80",
+      "version": "0.579.0",
+      "type": "feat",
+      "title": "Dimensional carriages can be built up to 80 blocks tall",
+      "summary": "The room inside a dimensional carriage was capped at 11 blocks tall. It can now be built up to 80.",
+      "highlights": [],
+      "pr": 1000,
+      "date": "2026-08-20",
+      "released": true,
+      "released_in": "v0.579.0",
+      "released_at": "2026-08-20T13:13:59Z"
+    },
+    {
+      "id": "impossible-item-stats-guard",
+      "version": "0.580.0",
+      "type": "fix",
+      "title": "Portal room chests no longer hold gear with impossible stats",
+      "summary": "A Train Dimension room could hand you gear with absurd stat values \u2014 a diamond chestplate with over four million armour. The items were stored inside the room itself, so they turned up for everyone who found that chest. Affected rooms are repaired, and any room still holding such an item now rolls it again at the difficulty of where you found it, so it arrives as ordinary loot. Gear you find deep in a run still scales exactly as it did.",
+      "highlights": [
+        "Fixed a Train Dimension room that held gear with impossible stat values",
+        "Rooms still holding such an item now reroll it as ordinary loot",
+        "Items can no longer be generated with impossible stats in the first place"
+      ],
+      "date": "2026-08-20",
+      "released": true,
+      "released_in": "v0.580.0",
+      "released_at": "2026-08-20T13:28:18Z"
+    },
+    {
+      "id": "ain-0-48",
+      "version": "0.581.0",
+      "type": "chore",
+      "title": "New supporter names and the Archivist",
+      "summary": "Twelve more Discord supporters join the item name pool, along with the Archivist Society and Archivist and Detective titles.",
+      "highlights": [
+        "Requires Adventure Item Names 0.48.0"
+      ],
+      "pr": 1002,
+      "date": "2026-08-20",
+      "released": true,
+      "released_in": "v0.581.0",
+      "released_at": "2026-08-21T01:16:10Z"
+    },
+    {
+      "id": "nether-band-dimensional-carriage-spawns",
+      "version": "0.582.0",
+      "type": "fix",
+      "title": "Nether band mobs no longer spawn in dimensional carriages",
+      "summary": "Ghasts, zombified piglins and magma cubes could spawn inside a dimensional carriage while the train crossed the Nether band. They no longer do.",
+      "highlights": [],
+      "pr": 1003,
+      "date": "2026-08-21",
+      "released": true,
+      "released_in": "v0.584.0",
+      "released_at": "2026-08-21T03:12:02Z"
+    },
+    {
+      "id": "drifting-carriage-chat-limit",
+      "version": "0.583.0",
+      "type": "fix",
+      "title": "Drifting-carriage messages no longer flood chat",
+      "summary": "Walking a run of drifting carriages used to fill chat with a new gray line every few seconds. Those messages are now capped at three per ten seconds, so the train still tells you when you have stepped into someone else's carriage without burying everything else you were reading.",
+      "highlights": [
+        "Drifting-carriage entry messages capped at 3 per 10 seconds"
+      ],
+      "pr": 1005,
+      "date": "2026-08-21",
+      "released": true,
+      "released_in": "v0.584.0",
+      "released_at": "2026-08-21T03:12:02Z"
+    },
+    {
+      "id": "carriage-crops-stay-planted",
+      "version": "0.584.0",
+      "type": "fix",
+      "title": "Crops saved into carriage templates stay planted",
+      "summary": "Wheat, carrots, potatoes and beetroot saved into a carriage template no longer break the moment the carriage appears \u2014 farm carriages now ride the train intact. Crops inside a carriage no longer need light to stay planted, so an unlit farm carriage keeps its crops at the age you saved them. They still need light to grow, and still need farmland underneath: break the soil and the crop pops just like anywhere else. Also fixes saved crops vanishing from the carriage editor when you reopened a template.",
+      "highlights": [
+        "Wheat and other crops saved into carriage templates stay planted",
+        "Crops in an unlit carriage keep their saved growth stage (they still need light to grow)",
+        "Crops no longer vanish from a template when reopened in the carriage editor"
+      ],
+      "pr": 1004,
+      "date": "2026-08-21",
+      "released": true,
+      "released_in": "v0.584.0",
+      "released_at": "2026-08-21T03:12:02Z"
+    },
+    {
+      "id": "end-city-rarity-tuning",
+      "version": "0.585.0",
+      "type": "content",
+      "title": "End city adjustments",
+      "summary": "End city adjustments.",
+      "highlights": [
+        "End city adjustments."
+      ],
+      "date": "2026-08-21",
+      "released": true,
+      "released_in": "v0.585.0",
+      "released_at": "2026-08-21T04:21:37Z"
     }
   ]
 }

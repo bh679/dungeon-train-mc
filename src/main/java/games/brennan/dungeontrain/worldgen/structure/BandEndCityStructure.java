@@ -32,10 +32,18 @@ import java.util.Optional;
  *
  * <p>The pieces are vanilla's: {@link EndCityPieces#startHouseTower} builds the same towers, bridges,
  * ships, loot chests and shulkers as {@code minecraft:end_city}, and the structure set that drives this
- * (see {@code data/dungeontrain/worldgen/structure_set/end_city.json}) carries vanilla's spacing,
- * separation and salt. Only the <b>siting</b> differs, and only because it has to: the band lives in the
- * overworld, where the chunk generator's surface height describes terrain that the band erodes to void.
- * Vanilla's {@code EndCityStructure} would read that height and drop cities nowhere near an island.</p>
+ * (see {@code data/dungeontrain/worldgen/structure_set/end_city.json}) carries vanilla's salt. What differs
+ * is the <b>siting</b> and the <b>spacing</b>.</p>
+ *
+ * <p>Siting differs because it has to: the band lives in the overworld, where the chunk generator's surface
+ * height describes terrain that the band erodes to void. Vanilla's {@code EndCityStructure} would read that
+ * height and drop cities nowhere near an island.</p>
+ *
+ * <p>Spacing differs as a balance call. The set uses {@code spacing 40 / separation 15} against vanilla's
+ * {@code 20 / 11} — a quarter the candidate density. The band is not the real End: its core is a ~5000-block
+ * strip the train drives straight down the middle of, so a player sweeps a long thin corridor of the
+ * placement grid rather than wandering a whole dimension, and vanilla's grid made cities read as furniture
+ * rather than a find.</p>
  *
  * <p>So {@link #findGenerationPoint} keeps vanilla's rule — random rotation, the 5×5 box offset 7 blocks,
  * take the <em>lowest</em> corner, reject if too low — but reads its heights from

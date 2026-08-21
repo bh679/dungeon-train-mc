@@ -29,6 +29,7 @@ import games.brennan.dungeontrain.portal.PortalRegistry;
 import games.brennan.dungeontrain.portal.PortalRoomLayout;
 import games.brennan.dungeontrain.portal.PortalRoomMobs;
 import games.brennan.dungeontrain.portal.PortalRoomRescue;
+import games.brennan.dungeontrain.portal.PortalRoomSizes;
 import games.brennan.dungeontrain.portal.PortalRoomTiler;
 import games.brennan.dungeontrain.portal.PortalRoomTiling;
 import games.brennan.dungeontrain.portal.PortalSever;
@@ -1164,7 +1165,8 @@ public final class PortalCarriageEvents {
                 PortalSwapDiagnostics.refused(PortalSwapDiagnostics.Reason.NO_TWIN_STRUCTURE,
                     "carriage " + carriageIndex,
                     "pair=" + pairKey + " lane=" + PortalTwinLanes.twinFloorY(
-                        level.getMinBuildHeight(), bedrockY, pairKey, groupSize)
+                        level.getMinBuildHeight(), bedrockY, pairKey, groupSize,
+                        laneStructureHeight(level, dims, bedrockY))
                         + " worldMinY=" + level.getMinBuildHeight() + " bedrockY=" + bedrockY
                         + " carriageY=" + fmt(originY)
                         + " — the pair's room does not fit between the basement floor and the train");
@@ -1431,6 +1433,23 @@ public final class PortalCarriageEvents {
     }
 
     /**
+     * The height the world's twin lanes are spaced on.
+     *
+     * <p>The lane has to be picked before the structure is planned — it is where the plan gets
+     * stamped — so this cannot be the pair's own room. It is the tallest room the world knows how to
+     * stamp instead, held down to what the basement can stand up, which is the one number every pair
+     * can agree on. See {@code PortalRoomSizes.tallestKnown} for what a taller room costs.</p>
+     *
+     * <p>The corridor floors it: a twin is a room <b>and</b> two corridors, so a world whose
+     * carriages are taller than every authored room still spaces its lanes on the corridor.</p>
+     */
+    private static int laneStructureHeight(ServerLevel level, CarriageDims dims, int bedrockY) {
+        return Math.min(
+            PortalTwinLanes.maxStructureHeight(level.getMinBuildHeight(), bedrockY),
+            Math.max(dims.height(), PortalRoomSizes.tallestKnown(dims)));
+    }
+
+    /**
      * The twin for this carriage, stamping it if there is none yet or the carriage has rolled out of
      * the chunk columns the old one sits in — which is the condition the crossing's seamlessness
      * depends on, so it is also exactly when a fresh one is worth the block writes.
@@ -1445,7 +1464,8 @@ public final class PortalCarriageEvents {
         // a per-pair Y lane so two pairs cannot stamp into each other.
         int worldMinY = level.getMinBuildHeight();
         int bedrockY = WorldFloor.bedrockY(level);
-        int twinY = PortalTwinLanes.twinFloorY(worldMinY, bedrockY, pairKey, groupSize);
+        int laneOf = laneStructureHeight(level, dims, bedrockY);
+        int twinY = PortalTwinLanes.twinFloorY(worldMinY, bedrockY, pairKey, groupSize, laneOf);
         BlockPos wanted = BlockPos.containing(originX, twinY, originZ);
 
         // Which room this pair rolls, and how big it is.
@@ -1465,6 +1485,19 @@ public final class PortalCarriageEvents {
         // rather than one stamped through the train — or, in a world with a basement, one that would
         // push up through the bedrock into terrain a player could walk into.
         int structureHeight = Math.max(dims.height(), planned.roomSize().getY());
+
+        // Planning is what loads the room's template, so a room taller than anything seen so far can
+        // only be measured now — after its lane was picked on the spacing that room had not yet
+        // widened. Re-pick on what it actually turned out to be, or this one structure stands in the
+        // floor of the lane above. Every pair chosen after this one already spaces on the new height:
+        // planning put the template's size in PortalRoomSizes on its way past.
+        if (structureHeight > laneOf) {
+            twinY = PortalTwinLanes.twinFloorY(
+                worldMinY, bedrockY, pairKey, groupSize, structureHeight);
+            wanted = BlockPos.containing(originX, twinY, originZ);
+            planned = planned.movedTo(wanted);
+        }
+
         int structureTop = twinY + structureHeight;
         if (structureTop >= originY
             || structureTop > level.getMaxBuildHeight() - CEILING_MARGIN

@@ -42,7 +42,7 @@ public final class CarriageContentsEditor {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    private static final int PLOT_Y = 250;
+    private static final int PLOT_Y = EditorLayout.PLOT_Y;
     /**
      * Contents row Z-origin — sourced from {@link
      * EditorLayout#CONTENTS_FIRST_Z}. Sits in its own Z range past the
