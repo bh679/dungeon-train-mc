@@ -7445,13 +7445,8 @@
       "id": "upside-down-portal-rooms-above-bedrock",
       "version": "0.588.0",
       "type": "fix",
-      "title": "Portal rooms move above the bedrock in the Upside Down",
-      "summary": "In the Upside Down the world is turned over — the bedrock floor is gone and a bedrock ceiling hangs overhead instead — so the hidden rooms behind portal carriages, which normally sit in sealed space under the world, were left hanging in the open air beneath you. They now sit above the bedrock ceiling instead, where nothing can reach them. Portal corridors also stopped rendering upside-down while everything else in the band inverts, which had made the walk through a portal visibly jump.",
-      "highlights": [
-        "Portal rooms are hidden above the bedrock ceiling inside the Upside Down, not below the missing floor",
-        "Rooms move with the train as it enters and leaves the band",
-        "Portal corridors stay the right way up in the Upside Down, so the crossing is seamless again"
-      ],
+      "title": "Improving dimensional carriages in the Upside Down",
+      "summary": "Improving dimensional carriages in the Upside Down.",
       "date": "2026-08-21",
       "released": false,
       "released_in": null,
