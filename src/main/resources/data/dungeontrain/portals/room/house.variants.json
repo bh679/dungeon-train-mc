@@ -1,7 +1,6 @@
 {
   "schemaVersion": 9,
   "variants": {
-    "1,5,5": ["minecraft:diamond_block", "minecraft:gold_block", "minecraft:iron_block", "minecraft:emerald_block", "minecraft:lapis_block", {"state": "minecraft:chest[facing=north,type=single,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["north"]}, "lootPrefab": "loot_irongold"}],
     "2,4,0": { "lockId": 1, "states": ["minecraft:white_concrete", {"state": "minecraft:light_blue_concrete", "groupRef": 11}] },
     "1,4,0": { "lockId": 1, "states": ["minecraft:white_concrete", {"state": "minecraft:light_blue_concrete", "groupRef": 11}] },
     "1,5,0": { "lockId": 1, "states": ["minecraft:white_concrete", {"state": "minecraft:light_blue_concrete", "groupRef": 11}] },
@@ -287,6 +286,7 @@
     "5,1,2": { "lockId": 16, "states": ["minecraft:grass_block[snowy=false]", {"state": "minecraft:command_block[conditional=false,facing=north]", "rotation": {"mode": "lock", "dirs": ["north"]}}] },
     "5,2,1": { "lockId": 16, "states": ["minecraft:grass_block[snowy=false]", {"state": "minecraft:command_block[conditional=false,facing=north]", "rotation": {"mode": "lock", "dirs": ["north"]}}] },
     "4,1,2": { "lockId": 16, "states": ["minecraft:grass_block[snowy=false]", {"state": "minecraft:command_block[conditional=false,facing=north]", "rotation": {"mode": "lock", "dirs": ["north"]}}] },
-    "6,1,2": { "lockId": 16, "states": ["minecraft:grass_block[snowy=false]", {"state": "minecraft:command_block[conditional=false,facing=north]", "rotation": {"mode": "lock", "dirs": ["north"]}}] }
+    "6,1,2": { "lockId": 16, "states": ["minecraft:grass_block[snowy=false]", {"state": "minecraft:command_block[conditional=false,facing=north]", "rotation": {"mode": "lock", "dirs": ["north"]}}] },
+    "1,4,5": ["minecraft:diamond_block", "minecraft:gold_block", "minecraft:iron_block", "minecraft:emerald_block", "minecraft:lapis_block", {"state": "minecraft:chest[facing=north,type=single,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["east"]}, "lootPrefab": "loot_irongold"}]
   }
 }
