@@ -109,8 +109,13 @@ public final class SkyboxPunchRenderer {
         float partialTick = event.getPartialTick().getGameTimeDeltaPartialTick(false);
 
         Map<UUID, ClientSubLevel> subLevels = indexSubLevels(level, snapshot);
-        boolean stencil = SkyboxStencil.isAvailable();
         EnumSet<SkyboxSky> painted = EnumSet.noneOf(SkyboxSky.class);
+
+        // Only variants that draw their own sky need the mask. A view containing nothing but
+        // LIVE blocks does no stencil work at all — that variant is satisfied by the punch.
+        boolean wantsStencil = snapshot.main().keySet().stream().anyMatch(SkyboxSky::hasOwnSky)
+            || snapshot.subLevels().stream().anyMatch(e -> e.byVariant().keySet().stream().anyMatch(SkyboxSky::hasOwnSky));
+        boolean stencil = wantsStencil && SkyboxStencil.isAvailable();
 
         try {
             if (stencil) SkyboxStencil.beginMaskPass();
@@ -128,9 +133,10 @@ public final class SkyboxPunchRenderer {
             }
             endMaskState();
 
-            if (stencil && !painted.isEmpty()) {
+            if (stencil) {
                 SkyboxStencil.beginSkyPass();
                 for (SkyboxSky sky : painted) {
+                    if (!sky.hasOwnSky()) continue; // LIVE: the punch already revealed the real sky
                     SkyboxStencil.skyRef(sky.stencilRef());
                     SkyboxStencil.drawSky(sky, frustumMatrix, event.getProjectionMatrix(), camera, partialTick);
                 }

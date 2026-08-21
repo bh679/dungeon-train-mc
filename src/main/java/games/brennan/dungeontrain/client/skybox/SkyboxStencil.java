@@ -58,17 +58,33 @@ public final class SkyboxStencil {
     private SkyboxStencil() {}
 
     /**
-     * Ask for a stencil attachment on the main render target. Must run before the target's
-     * buffers are built, i.e. at client setup — NeoForge's {@code enableStencil()} sets a flag
-     * that the next buffer creation honours.
+     * Ask for a stencil attachment on the main render target.
+     *
+     * <p>NeoForge's {@code enableStencil()} re-creates the target's attachments immediately
+     * (it calls {@code resize} itself), swapping the depth texture for a combined
+     * {@code DEPTH32F_STENCIL8} one — so this is GL work and <b>must run on the render
+     * thread</b>. Callers on a mod-loading thread have to enqueue it.</p>
      */
     public static void requestStencil() {
         RenderTarget target = Minecraft.getInstance().getMainRenderTarget();
-        if (target != null) target.enableStencil();
+        if (target == null) {
+            LOGGER.warn("[DungeonTrain] No main render target at skybox stencil setup; "
+                + "per-variant skies will fall back to the live sky.");
+            return;
+        }
+        target.enableStencil();
+        LOGGER.info("[DungeonTrain] Skybox stencil requested; enabled={}", target.isStencilEnabled());
     }
 
     /**
      * Did we actually get a stencil buffer? Checked per frame; cheap.
+     *
+     * <p>Note this reports what NeoForge was <em>asked</em> for, not what the driver
+     * delivered: {@code isStencilEnabled()} returns the flag {@code enableStencil()} set, and
+     * a framebuffer that failed to allocate stencil bits would still answer true (the failure
+     * shows up as a framebuffer-completeness error in the log instead). Combined
+     * depth-stencil is universally supported in practice, so this is a caveat rather than an
+     * expected failure.</p>
      *
      * <p>Logged once, because the answer silently decides whether the non-surface variants
      * show their own sky or quietly fall back to the live one — a difference that is easy to
@@ -150,6 +166,8 @@ public final class SkyboxStencil {
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
 
         switch (sky) {
+            // LIVE draws nothing: the depth punch already left vanilla's own sky showing.
+            case LIVE -> { }
             case SURFACE -> drawSurfaceSky(frustumMatrix, projectionMatrix, camera, partialTick);
             case END -> VoidSkyRenderer.renderAsSkySource(frustumMatrix);
             case NETHER -> NetherSkyRenderer.renderAsSkySource(frustumMatrix, camera);

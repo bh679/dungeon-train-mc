@@ -73,8 +73,14 @@ public final class ModBlocks {
             .sound(SoundType.GLASS);
     }
 
-    /** The above-ground overworld sky, correct at any Y. See {@link SkyboxSky#SURFACE}. */
+    /** Reveals whatever sky vanilla drew this frame. See {@link SkyboxSky#LIVE}. */
     public static final DeferredBlock<SkyboxBlock> SKYBOX_BLOCK = BLOCKS.register(
+        SkyboxSky.LIVE.blockName(),
+        () -> new SkyboxBlock(SkyboxSky.LIVE, skyboxProperties(MapColor.COLOR_LIGHT_BLUE))
+    );
+
+    /** The above-ground overworld sky, correct at any Y. See {@link SkyboxSky#SURFACE}. */
+    public static final DeferredBlock<SkyboxBlock> SKYBOX_SURFACE = BLOCKS.register(
         SkyboxSky.SURFACE.blockName(),
         () -> new SkyboxBlock(SkyboxSky.SURFACE, skyboxProperties(MapColor.COLOR_LIGHT_BLUE))
     );
@@ -99,7 +105,9 @@ public final class ModBlocks {
 
     /** Matching {@link BlockItem}s so the blocks can be placed from the creative tab. */
     public static final DeferredItem<BlockItem> SKYBOX_BLOCK_ITEM = BLOCK_ITEMS.register(
-        SkyboxSky.SURFACE.blockName(), () -> new BlockItem(SKYBOX_BLOCK.get(), new Item.Properties()));
+        SkyboxSky.LIVE.blockName(), () -> new BlockItem(SKYBOX_BLOCK.get(), new Item.Properties()));
+    public static final DeferredItem<BlockItem> SKYBOX_SURFACE_ITEM = BLOCK_ITEMS.register(
+        SkyboxSky.SURFACE.blockName(), () -> new BlockItem(SKYBOX_SURFACE.get(), new Item.Properties()));
     public static final DeferredItem<BlockItem> SKYBOX_END_ITEM = BLOCK_ITEMS.register(
         SkyboxSky.END.blockName(), () -> new BlockItem(SKYBOX_END.get(), new Item.Properties()));
     public static final DeferredItem<BlockItem> SKYBOX_NETHER_ITEM = BLOCK_ITEMS.register(
@@ -124,6 +132,7 @@ public final class ModBlocks {
         if (event.getTabKey() == CreativeModeTabs.FUNCTIONAL_BLOCKS) {
             event.accept(NARRATIVE_LECTERN_ITEM.get());
             event.accept(SKYBOX_BLOCK_ITEM.get());
+            event.accept(SKYBOX_SURFACE_ITEM.get());
             event.accept(SKYBOX_END_ITEM.get());
             event.accept(SKYBOX_NETHER_ITEM.get());
             event.accept(SKYBOX_UPSIDE_DOWN_ITEM.get());

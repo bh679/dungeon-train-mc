@@ -20,32 +20,46 @@ import net.minecraft.util.StringRepresentable;
 public enum SkyboxSky implements StringRepresentable {
 
     /**
-     * The overworld sky as it looks from above ground, at any Y. Vanilla's own
-     * {@code renderSky} re-run with its void plane suppressed — see
-     * {@link SkyboxStencil} for why that one suppression is the whole difference.
+     * No sky of its own: the hole simply <em>reveals</em> the sky vanilla already drew this
+     * frame. The original, cheapest variant — the depth punch is its entire implementation, so
+     * it needs neither a stencil ref nor a sky pass.
+     *
+     * <p>Because it shows the live sky, it inherits vanilla's behaviour exactly, including the
+     * black void plane below the horizon. Underground it shows sky looking up and black
+     * looking down. That is faithful rather than broken — use {@link #SURFACE} when you want
+     * the above-ground sky regardless of depth.</p>
      */
-    SURFACE("skybox_block", 1),
+    LIVE("skybox_block", 1, false),
+
+    /**
+     * The overworld sky as it looks from above ground, at any Y. Vanilla's own
+     * {@code renderSky} re-run with its void plane suppressed — see {@code SkyboxStencil}
+     * for why that one suppression is the whole difference.
+     */
+    SURFACE("skybox_surface", 2, true),
 
     /** The End starfield, from {@link games.brennan.dungeontrain.client.VoidSkyRenderer}. */
-    END("skybox_end", 2),
+    END("skybox_end", 3, true),
 
     /** The Nether fog-colour fill, from {@link games.brennan.dungeontrain.client.NetherSkyRenderer}. */
-    NETHER("skybox_nether", 3),
+    NETHER("skybox_nether", 4, true),
 
     /**
      * The upside-down band's sky — day-blue dome with the sun and moon orbiting the horizon,
      * from {@link games.brennan.dungeontrain.client.UpsideDownSkyRenderer}.
      */
-    UPSIDE_DOWN("skybox_upside_down", 4);
+    UPSIDE_DOWN("skybox_upside_down", 5, true);
 
     public static final Codec<SkyboxSky> CODEC = StringRepresentable.fromEnum(SkyboxSky::values);
 
     private final String blockName;
     private final int stencilRef;
+    private final boolean ownSky;
 
-    SkyboxSky(String blockName, int stencilRef) {
+    SkyboxSky(String blockName, int stencilRef, boolean ownSky) {
         this.blockName = blockName;
         this.stencilRef = stencilRef;
+        this.ownSky = ownSky;
     }
 
     /** Registry path of the block that shows this sky. */
@@ -56,6 +70,14 @@ public enum SkyboxSky implements StringRepresentable {
     /** Stencil value marking this variant's holes. Never 0. */
     public int stencilRef() {
         return stencilRef;
+    }
+
+    /**
+     * Does this variant draw a sky of its own, needing a stencil mask and a sky pass?
+     * {@code false} for {@link #LIVE}, which is satisfied by the depth punch alone.
+     */
+    public boolean hasOwnSky() {
+        return ownSky;
     }
 
     @Override

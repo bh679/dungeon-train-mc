@@ -34,9 +34,9 @@ public final class DungeonTrainClient {
         SurveySubmitClientHook.register(BugLogReporter::maybeReport);
 
         // Skybox blocks mask each variant's sky with the stencil buffer, which Minecraft's
-        // main render target does not allocate by default. Must be requested here, before
-        // that target's buffers are built — later is too late, and the blocks then fall back
-        // to revealing the live sky.
-        SkyboxStencil.requestStencil();
+        // main render target does not allocate by default. enqueueWork because this setup
+        // event runs on a parallel mod-loading thread while enableStencil() re-creates the
+        // framebuffer's attachments — GL work that must happen on the render thread.
+        event.enqueueWork(SkyboxStencil::requestStencil);
     }
 }

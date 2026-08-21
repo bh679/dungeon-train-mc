@@ -763,6 +763,7 @@
   "subtitles.dungeontrain.train_engine": "Train engine chugs",
   "block.dungeontrain.narrative_lectern": "Narrative Lectern",
   "block.dungeontrain.skybox_block": "Skybox Block",
+  "block.dungeontrain.skybox_surface": "Surface Skybox Block",
   "block.dungeontrain.skybox_end": "End Skybox Block",
   "block.dungeontrain.skybox_nether": "Nether Skybox Block",
   "block.dungeontrain.skybox_upside_down": "Upside-Down Skybox Block",
