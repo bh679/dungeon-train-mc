@@ -7721,12 +7721,8 @@
       "version": "0.603.0",
       "type": "feat",
       "title": "Difficulty changes now ask first",
-      "summary": "Switching difficulty hands you that difficulty's own gear, XP and Ender Chest \u2014 and a difficulty you have never played starts you with nothing. It now asks before it happens, from the Options screen and from /difficulty, and tells you exactly what you are about to hand over. Also fixes a bug where the gear you left behind on the old difficulty was overwritten, so it never came back when you switched back.",
-      "highlights": [
-        "Confirmation prompt before any difficulty change, with a clear warning about what you lose",
-        "Warns when the difficulty you are switching to has no stash at all",
-        "Fixed: gear left on the old difficulty was destroyed instead of kept"
-      ],
+      "summary": "Changing difficulty swaps your gear, XP and Ender Chest. It now warns you before it does \u2014 and the gear you leave behind is no longer lost.",
+      "highlights": [],
       "pr": 1028,
       "date": "2026-08-21",
       "released": false,
