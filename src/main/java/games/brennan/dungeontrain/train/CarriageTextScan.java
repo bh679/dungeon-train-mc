@@ -5,6 +5,10 @@ import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.network.Filterable;
 import net.minecraft.world.Container;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.decoration.ItemFrame;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.WrittenBookContent;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -16,7 +20,9 @@ import net.minecraft.world.level.block.entity.SignText;
  * Pulls the player-authored, human-readable text out of a shared carriage's block-entities so the
  * relay can run it through moderation (see {@code CarriageBlockSnapshot.capture}). This is the "serve
  * now, scan text" half of shared-carriage moderation — the blocks themselves are opaque, but signs,
- * lecterns, named items and books carry free text a player could abuse.
+ * lecterns, named items and books carry free text a player could abuse. {@link #appendEntity} covers the
+ * same ground for a carriage's ENTITIES: a named armor stand and a book in an item frame are exactly as
+ * authored, and as abusable, as a sign.
  *
  * <p>Only <b>authored</b> text is collected — sign lines, book pages (book &amp; quill and signed
  * written books, incl. the title), and item <b>custom</b> names ({@link DataComponents#CUSTOM_NAME}).
@@ -56,6 +62,35 @@ public final class CarriageTextScan {
             }
         } catch (Throwable ignored) {
             // Best-effort: a single weird block-entity must never break a whole carriage's capture.
+        }
+    }
+
+    /**
+     * Append every authored text string carried by {@code entity} to {@code sb}: its custom name, the
+     * items it holds or wears, and the contents of an entity container (a chest minecart). Anything the
+     * carriage's blocks would have been scanned for, an entity can carry too — capturing entities without
+     * this would open an unscanned channel straight past moderation. Never throws.
+     */
+    public static void appendEntity(Entity entity, StringBuilder sb) {
+        if (entity == null) return;
+        try {
+            Component custom = entity.getCustomName();
+            if (custom != null) append(sb, custom.getString());
+
+            if (entity instanceof ItemEntity item) appendItem(item.getItem(), sb);
+            if (entity instanceof ItemFrame frame) appendItem(frame.getItem(), sb);
+            // Armour + hands for anything that wears gear; an armor stand's whole content is its outfit.
+            if (entity instanceof LivingEntity living) {
+                for (ItemStack stack : living.getAllSlots()) appendItem(stack, sb);
+            }
+            if (entity instanceof Container container) {
+                int size = container.getContainerSize();
+                for (int i = 0; i < size; i++) appendItem(container.getItem(i), sb);
+            }
+            // A vehicle's riders are captured inside it, so their text belongs to the same carriage.
+            for (Entity passenger : entity.getPassengers()) appendEntity(passenger, sb);
+        } catch (Throwable ignored) {
+            // Best-effort: one weird entity must never break a whole carriage's capture.
         }
     }
 
