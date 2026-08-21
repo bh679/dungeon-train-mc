@@ -7683,6 +7683,22 @@
       "released": true,
       "released_in": "v0.601.0",
       "released_at": "2026-08-21T15:14:13Z"
+    },
+    {
+      "id": "edible-backpack-rarity",
+      "version": "0.602.0",
+      "type": "chore",
+      "title": "Edible backpacks are rarer",
+      "summary": "The edible backpack turned up in almost every other chest. Its odds are now cut across the general, iron/gold and pot loot pools, and it no longer appears in the starter chest \u2014 so finding one feels like a find again.",
+      "highlights": [
+        "Edible backpack far less common in chests",
+        "No longer handed out in the starter chest"
+      ],
+      "pr": 1025,
+      "date": "2026-08-21",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
