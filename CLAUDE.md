@@ -266,9 +266,9 @@ On top of those, `modpack.config.json` → `optional_mods[]` bundles the sibling
 ⚠️ In the CurseForge app `required:false` ships a mod **OFF** (opt-in), not on — a companion
 that should be **on by default must be `required:true`**. See `modpack/README.md` §"Enabled vs
 disabled by default" for the two-tier roster (enabled: AppleSkin/FerriteCore/ModernFix/
-Advancement Plaques + inert library deps Iceberg & Lithostitched; opt-in: Mouse Tweaks/Jade/
-Distant Horizons/Tectonic). Library deps of a bundled mod ship `required:true` so the dependent
-loads (Advancement Plaques needs Iceberg; Tectonic needs Lithostitched).
+Advancement Plaques + inert library dep Iceberg; opt-in: Mouse Tweaks/Distant Horizons/
+Effortless Building). Library deps of a bundled mod ship `required:true` so the dependent
+loads (Advancement Plaques needs Iceberg).
 
 - Source + config live in `modpack/` (see `modpack/README.md`); CurseForge upload uses
   `CURSEFORGE_TOKEN`, Modrinth upload reuses `MODRINTH_TOKEN`.
