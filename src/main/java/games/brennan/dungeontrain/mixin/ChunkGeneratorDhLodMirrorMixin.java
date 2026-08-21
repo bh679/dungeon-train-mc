@@ -70,6 +70,10 @@ public abstract class ChunkGeneratorDhLodMirrorMixin {
     @Unique
     private static final Map<Class<?>, Boolean> dungeontrain$dhRegionClasses = new ConcurrentHashMap<>();
 
+    /** One-shot marker so a log can confirm DH's generator actually reaches us. */
+    @Unique
+    private static volatile boolean dungeontrain$loggedFirstDhChunk = false;
+
     @Inject(method = "applyBiomeDecoration", at = @At("TAIL"))
     private void dungeontrain$mirrorDhLodChunk(
             WorldGenLevel level, ChunkAccess chunk, StructureManager structureManager, CallbackInfo ci) {
@@ -77,6 +81,10 @@ public abstract class ChunkGeneratorDhLodMirrorMixin {
             if (!dungeontrain$isDistantHorizonsRegion(level)) return;
             if (!level.getLevel().dimension().equals(Level.OVERWORLD)) return; // band is overworld-only
             UpsideDownMirror.mirror(level.getLevel(), chunk);
+            if (!dungeontrain$loggedFirstDhChunk) {
+                dungeontrain$loggedFirstDhChunk = true;                        // one line, not one per chunk
+                LOGGER.info("[DungeonTrain] mirroring Distant Horizons world-gen chunks (first at {})", chunk.getPos());
+            }
         } catch (Throwable t) {
             // Never break generation — a DH LOD that renders upright is the worst outcome.
             LOGGER.error("[DungeonTrain] upside-down mirror failed on a Distant Horizons chunk at {}",

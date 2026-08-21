@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.event;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.compat.DistantHorizonsLod;
 import games.brennan.dungeontrain.registry.ModDataAttachments;
 import games.brennan.dungeontrain.track.TrackGenerator;
 import games.brennan.dungeontrain.track.TrackGeometry;
@@ -195,7 +196,13 @@ public final class WorldUpsideDownEvents {
         boolean changed = applyMirror(level, chunk);
         chunk.removeData(ModDataAttachments.NEEDS_UPSIDE_DOWN_MIRROR.get());  // exactly-once: clear even on a no-op self-heal
         chunk.setUnsaved(true);                                               // persist the cleared marker (applyMirror only sets it when changed)
-        if (changed) resendChunk(level, chunk);
+        if (changed) {
+            resendChunk(level, chunk);
+            // Distant Horizons has usually already ingested this chunk un-mirrored (the writes above fire
+            // no block-change events), so ask it to re-read — otherwise the band grows upright LOD slabs
+            // under the mirrored ceiling. No-op without DH.
+            DistantHorizonsLod.chunkChanged(level, chunk);
+        }
     }
 
     /**
