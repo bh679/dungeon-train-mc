@@ -29,9 +29,12 @@ class PortalCorridorLockTest {
     private static final BlockPos ORIGIN = new BlockPos(37, -50, -12);
     private static final int LENGTH = 13;
     private static final int WORLD_MIN_Y = -64;
+    /** Far enough above the fixtures that the top clamp never binds — the basement case. */
+    private static final int WORLD_MAX_Y = 320;
 
     private static List<BoundingBox> boxes(PortalCarriageRole role) {
-        return PortalCarriageBuilder.corridorLockBoxes(ORIGIN, DIMS, LENGTH, role, WORLD_MIN_Y);
+        return PortalCarriageBuilder.corridorLockBoxes(
+            ORIGIN, DIMS, LENGTH, role, WORLD_MIN_Y, WORLD_MAX_Y);
     }
 
     private static boolean covered(List<BoundingBox> boxes, int x, int y, int z) {
@@ -122,7 +125,7 @@ class PortalCorridorLockTest {
             ? ORIGIN
             : new BlockPos(ROOM_ORIGIN.getX() + ROOM_SIZE.getX(), ORIGIN.getY(), ORIGIN.getZ());
         return PortalCarriageBuilder.roomEndCapBoxes(
-            corridor, DIMS, role, ROOM_ORIGIN, ROOM_SIZE, WORLD_MIN_Y);
+            corridor, DIMS, role, ROOM_ORIGIN, ROOM_SIZE, WORLD_MIN_Y, WORLD_MAX_Y);
     }
 
     /**
@@ -187,7 +190,7 @@ class PortalCorridorLockTest {
         BlockPos lowest = new BlockPos(ORIGIN.getX(), WORLD_MIN_Y + 1, ORIGIN.getZ());
         for (PortalCarriageRole role : PortalCarriageRole.values()) {
             List<BoundingBox> lanes = PortalCarriageBuilder.corridorLockBoxes(
-                lowest, DIMS, LENGTH, role, WORLD_MIN_Y);
+                lowest, DIMS, LENGTH, role, WORLD_MIN_Y, WORLD_MAX_Y);
             // Two sides and a roof — no floor slab, because that row is the world's own bedrock.
             assertEquals(3, lanes.size(), role.toString());
             for (BoundingBox box : lanes) {

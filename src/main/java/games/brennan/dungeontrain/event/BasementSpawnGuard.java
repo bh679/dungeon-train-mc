@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.event;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.portal.PortalTwinSpace;
 import games.brennan.dungeontrain.worldgen.WorldFloor;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
@@ -54,7 +55,10 @@ public final class BasementSpawnGuard {
         // own and asking it for a terrain generator's floor means nothing.
         if (!level.dimension().equals(Level.OVERWORLD)) return;
 
-        if (WorldFloor.isBelowFloor(Mth.floor(event.getY()), WorldFloor.bedrockY(level))) {
+        // Twin space rather than depth: inside the upside-down band the sealed space a portal room
+        // stands in is the attic over the inverted bedrock lid, not the basement — which the mirror
+        // has opened onto void. A room there would otherwise be the one that got ambient spawns.
+        if (PortalTwinSpace.isInside(level, Mth.floor(event.getX()), event.getY())) {
             event.setSpawnCancelled(true);
         }
     }

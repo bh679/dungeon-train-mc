@@ -7,8 +7,9 @@ import games.brennan.dungeontrain.advancement.PlayerMobSocialTracker;
 import games.brennan.dungeontrain.compat.EchoIdentity;
 import games.brennan.dungeontrain.ship.CarriageDeck;
 import games.brennan.dungeontrain.train.Trains;
-import games.brennan.dungeontrain.worldgen.WorldFloor;
+import games.brennan.dungeontrain.portal.PortalTwinSpace;
 import games.brennan.playermob.entity.PlayerMobEntity;
+import net.minecraft.util.Mth;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -54,10 +55,11 @@ import java.util.UUID;
  *       state.</li>
  * </ul>
  *
- * <p><b>Below the bedrock, Reboarder does not count.</b> The hallway-portal system builds its rooms
- * in the empty basement under a DT overworld's bedrock, so a PlayerMob that follows a player through
- * a portal reads as off the carriage deck and credits a shove nobody made. {@link #step} drops any
- * hit on a mob under {@link WorldFloor#bedrockY(ServerLevel)}.</p>
+ * <p><b>Inside twin space, Reboarder does not count.</b> The hallway-portal system builds its rooms
+ * in the sealed world outside the terrain — under the bedrock ordinarily, over the inverted lid in
+ * the upside-down band — so a PlayerMob that follows a player through a portal reads as off the
+ * carriage deck and credits a shove nobody made. {@link #step} drops any hit on a mob inside
+ * {@link games.brennan.dungeontrain.portal.PortalTwinSpace}.</p>
  *
  * <p><b>Into the Void is deliberately exempt.</b> It is earned by an echo dying
  * {@code FELL_OUT_OF_WORLD}, which is always below the bedrock — the same rule applied there would
@@ -178,7 +180,6 @@ public final class PlayerMobAdvancementEvents {
         pruneEchoStrikes(now);
         if (RECENT_HITS.isEmpty()) return;
 
-        int bedrockY = WorldFloor.bedrockY(level);
         List<Trains.Carriage> carriages = Trains.allCarriages(level);
         // Snapshot so we can mutate the map while iterating.
         for (Map.Entry<UUID, ReboarderHit> entry : new ArrayList<>(RECENT_HITS.entrySet())) {
@@ -191,7 +192,10 @@ public final class PlayerMobAdvancementEvents {
             // null ⇒ unloaded or dead (no live position); otherwise its support.
             Boolean onDeck = (mob != null && mob.isAlive())
                 ? CarriageDeck.isOnCarriageDeck(carriages, mob) : null;
-            boolean belowBedrock = mob != null && mob.isAlive() && mob.getY() < bedrockY;
+            // Twin space, not depth: in the upside-down band a portal room is over the inverted
+            // bedrock lid rather than under the world. See PortalTwinSpace.
+            boolean belowBedrock = mob != null && mob.isAlive()
+                && PortalTwinSpace.isInside(level, Mth.floor(mob.getX()), mob.getY());
 
             ReboarderStep outcome = step(hit, onDeck, dead, expired, belowBedrock);
             if (LOGGER.isDebugEnabled()) {
