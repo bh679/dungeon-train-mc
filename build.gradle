@@ -317,6 +317,13 @@ dependencies {
     implementation "bh679:tradeeverything:${tradeeverything_version}"
     jarJar(group: 'bh679', name: 'tradeeverything', version: tradeeverything_version)
 
+    // EdibleBackpacks — eat a backpack for +1 persistent backpack slot. TEMPORARILY
+    // jarJar-bundled (like DiscordPresence/TradeEverything) until its Modrinth/CurseForge
+    // listings are approved; then flip to the external-required-dep contract + modpack
+    // entry. DT compiles against EdibleBackpacksApi to opt DT worlds into reset-on-death.
+    implementation "bh679:ediblebackpacks:${ediblebackpacks_version}"
+    jarJar(group: 'bh679', name: 'ediblebackpacks', version: ediblebackpacks_version)
+
     // Compile against the companion math types extracted from Sable's
     // jar-in-jar bundle. compileOnly because at runtime the companion is
     // loaded by NeoForge from Sable's own jarJar — we don't ship it.
@@ -399,6 +406,7 @@ tasks.register('generateModMetadata', ProcessResources) {
         discordpresence_version          : discordpresence_version,
         enderchestpersistence_version    : enderchestpersistence_version,
         tradeeverything_version          : tradeeverything_version,
+        ediblebackpacks_version          : ediblebackpacks_version,
         // Declared-minimum floors for the five EXTERNAL sibling deps. Deliberately
         // separate from the *_version values above (which the auto-release cascade
         // bumps freely) — see gradle.properties for the rationale.

@@ -79,6 +79,15 @@ logoFile="logo.png"
     ordering="AFTER"
     side="BOTH"
 
+# Edible Backpacks is jarJar'd INSIDE this jar (like DiscordPresence/TradeEverything),
+# so the shipped version is always exactly ediblebackpacks_version — no floor indirection.
+[[dependencies.${mod_id}]]
+    modId="ediblebackpacks"
+    type="required"
+    versionRange="[${ediblebackpacks_version},)"
+    ordering="AFTER"
+    side="BOTH"
+
 [[dependencies.${mod_id}]]
     modId="neoforge"
     type="required"
