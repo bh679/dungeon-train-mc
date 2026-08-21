@@ -50,7 +50,7 @@
     "mode": "endless_repetition/dynamic"
   },
   "house": {
-    "weight": 51,
+    "weight": 1,
     "mode": "bedrock_lock"
   },
   "labrynth": {
