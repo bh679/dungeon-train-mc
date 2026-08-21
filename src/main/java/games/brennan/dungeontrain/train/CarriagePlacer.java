@@ -152,6 +152,14 @@ public final class CarriagePlacer {
      * preview is stable across re-entries.</p>
      */
     public static Set<BlockPos> placeAt(ServerLevel level, BlockPos origin, CarriageVariant variant, CarriageDims dims) {
+        // Guarded like the spawn path: this stamps with relight=true (flag 3), so the cascade runs
+        // over a carriage interior whose light engine has not caught up, and it runs at ordinary
+        // coordinates near the origin where the mixin's shipyard test cannot see it. Without this a
+        // saved wheat template came back empty the next time its author opened it in the editor.
+        return CarriageStampGuard.call(() -> placeAtPreviewGuarded(level, origin, variant, dims));
+    }
+
+    private static Set<BlockPos> placeAtPreviewGuarded(ServerLevel level, BlockPos origin, CarriageVariant variant, CarriageDims dims) {
         // Editor preview: no group context, so end-mode tags fall back to BOTH-behaviour and the
         // dimension gate uses the pIdx-formula fallback (no real placed world-X here).
         // relight=true: editor previews are permanent overworld blocks that are NEVER lifted into a
@@ -242,6 +250,22 @@ public final class CarriagePlacer {
      * {@link GateContext#WORLDX_FROM_PIDX} for the formula fallback (editor / templates / tests).
      */
     public static Set<BlockPos> placeAt(
+        ServerLevel level, BlockPos origin, CarriageVariant variant,
+        CarriageDims dims, CarriageGenerationConfig config, int carriageIndex,
+        boolean applyContents, boolean flatbedAtBack, boolean flatbedAtFront, int groupAnchorWorldX
+    ) {
+        // Held for the whole stamp: this runs in the SOURCE world at ordinary track coordinates,
+        // the one window the mixin's shipyard test cannot see. The shell is written section-local
+        // (so the carriage's own lanterns aren't in the light engine yet) and the very next pass
+        // cascades over it, which is what was popping saved crops out of farm carriages. See
+        // CarriageStampGuard. Nesting-safe: TrainAssembler holds the same guard across the wider
+        // place/assemble/contents sequence.
+        return CarriageStampGuard.call(() -> placeAtGuarded(
+            level, origin, variant, dims, config, carriageIndex,
+            applyContents, flatbedAtBack, flatbedAtFront, groupAnchorWorldX));
+    }
+
+    private static Set<BlockPos> placeAtGuarded(
         ServerLevel level, BlockPos origin, CarriageVariant variant,
         CarriageDims dims, CarriageGenerationConfig config, int carriageIndex,
         boolean applyContents, boolean flatbedAtBack, boolean flatbedAtFront, int groupAnchorWorldX
