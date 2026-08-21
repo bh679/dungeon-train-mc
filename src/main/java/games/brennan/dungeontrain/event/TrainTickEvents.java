@@ -444,7 +444,7 @@ public final class TrainTickEvents {
      * enough away for DH to draw it, so there is no reason to hurry. A/B live with
      * {@code /dungeontrain debug dh-lod-refresh}.
      */
-    private static final int DH_LOD_REFRESH_PER_TICK = 2;
+    private static final int DH_LOD_REFRESH_PER_TICK = 4;
 
     private static int drainPendingMirrors(ServerLevel level, Map<UUID, List<Trains.Carriage>> trainsById) {
         long t0 = System.nanoTime();

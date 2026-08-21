@@ -1,7 +1,9 @@
 package games.brennan.dungeontrain.compat;
 
 import com.mojang.logging.LogUtils;
+import net.minecraft.core.SectionPos;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.neoforged.fml.ModList;
@@ -79,20 +81,26 @@ public final class DistantHorizonsLod {
     /** How the notify behaves. Flip live with {@code /dungeontrain debug dh-lod-refresh}. */
     public enum Mode {
         /**
-         * Default: tell DH when the chunk unloads — the moment its LOD stops being hidden behind real
-         * geometry and becomes what you actually see. Rebuilds then happen at the view-distance boundary
-         * the player is riding away from, rather than in the terrain streaming in ahead of them.
+         * Default: hold each mirrored chunk until it falls outside every player's vanilla render distance,
+         * then tell DH. Inside that radius the chunk's LOD is hidden behind real geometry, so refreshing it
+         * there buys nothing and only puts a rebuild in view; outside it, DH's copy is what you actually
+         * see, so it has to be right. Rate-limited so a burst leaving the radius at once still trickles.
          */
-        UNLOAD,
-        /** {@link #UNLOAD} plus a trickle of early refreshes for chunks that stay loaded a long time. */
-        THROTTLED,
+        VIEW_EXIT,
         /** Notify inline the moment a chunk is mirrored — the white-flash behaviour, kept for A/B. */
         INSTANT,
         /** Never notify: DH keeps whatever it ingested, so in-band LODs can render upright. */
         OFF
     }
 
-    public static volatile Mode mode = Mode.UNLOAD;
+    public static volatile Mode mode = Mode.VIEW_EXIT;
+
+    /** Chunks past the view radius before we bother DH — one ring of slack, so a player idling on the
+     *  boundary doesn't make chunks flip back and forth across the test. */
+    private static final int VIEW_EXIT_MARGIN_CHUNKS = 1;
+
+    /** Cap on queue entries examined per tick, so a long backlog can't turn the scan into tick cost. */
+    private static final int MAX_SCAN_PER_TICK = 512;
 
     private DistantHorizonsLod() {}
 
@@ -104,7 +112,7 @@ public final class DistantHorizonsLod {
         switch (mode) {
             case OFF -> { }
             case INSTANT -> notifyChunk(level, chunk);
-            case UNLOAD, THROTTLED -> {
+            case VIEW_EXIT -> {
                 if (pending.add(chunk.getPos().toLong())) statEnqueued++;
             }
         }
@@ -116,21 +124,46 @@ public final class DistantHorizonsLod {
      * Call on the server thread, once per level tick.
      */
     public static void drain(ServerLevel level, int maxPerTick) {
-        if (pending.isEmpty() || mode != Mode.THROTTLED) return;
+        if (pending.isEmpty() || mode != Mode.VIEW_EXIT) return;
+
+        int viewChunks = level.getServer().getPlayerList().getViewDistance() + VIEW_EXIT_MARGIN_CHUNKS;
+        long viewSqr = (long) viewChunks * viewChunks;
+
         int sent = 0;
+        int scanned = 0;
         Iterator<Long> it = pending.iterator();
-        while (it.hasNext() && sent < maxPerTick) {
+        while (it.hasNext() && sent < maxPerTick && scanned < MAX_SCAN_PER_TICK) {
             long key = it.next();
+            scanned++;
+            if (!beyondViewDistance(level, key, viewSqr)) continue;   // still hidden behind real geometry
+
             it.remove();
             ChunkAccess chunk = level.getChunkSource().getChunkNow(ChunkPos.getX(key), ChunkPos.getZ(key));
             if (chunk == null) {
-                // Should be unreachable — flushOnUnload takes chunks out of the queue as they unload.
-                LOGGER.debug("[DungeonTrain] DH LOD refresh: chunk {} unloaded before its flush", new ChunkPos(key));
+                // Unloaded between leaving the view radius and being drained; flushOnUnload normally
+                // catches this first, and DH re-reads from its own data source either way.
+                LOGGER.debug("[DungeonTrain] DH LOD refresh: chunk {} unloaded before its turn", new ChunkPos(key));
                 continue;
             }
             notifyChunk(level, chunk);
             sent++;
         }
+    }
+
+    /**
+     * True when {@code key} is outside {@code viewSqr} (in chunks, squared) of every player — i.e. no
+     * player is rendering it as real geometry any more, so DH's LOD for it is now what's on screen.
+     * A level with no players trivially qualifies.
+     */
+    private static boolean beyondViewDistance(ServerLevel level, long key, long viewSqr) {
+        int cx = ChunkPos.getX(key);
+        int cz = ChunkPos.getZ(key);
+        for (ServerPlayer player : level.players()) {
+            long dx = cx - SectionPos.blockToSectionCoord(player.getBlockX());
+            long dz = cz - SectionPos.blockToSectionCoord(player.getBlockZ());
+            if (dx * dx + dz * dz <= viewSqr) return false;
+        }
+        return true;
     }
 
     /**
