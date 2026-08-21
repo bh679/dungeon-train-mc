@@ -136,6 +136,10 @@
     {
       "id": "well",
       "weight": 1
+    },
+    {
+      "id": "raveroom",
+      "weight": 1
     }
   ]
 }
