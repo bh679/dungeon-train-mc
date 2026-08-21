@@ -96,6 +96,11 @@ public final class VariantEditorPreviewTicker {
             // cycle lands on the empty entry. Showing an air-equivalent
             // would lose the marker until the next entry slot.
             if (CarriageVariantBlocks.isEmptyPlaceholder(picked.state())) continue;
+            // Same skip for liquid candidates, for a blunter reason: a source
+            // stamped into the plot flows across the author's build and lava
+            // burns it. The candidate is still visible and editable as a menu
+            // row — it just never animates in-world.
+            if (VariantLiquids.isLiquid(picked.state())) continue;
 
             BlockState toShow = computePreviewState(picked, previewTick);
             BlockPos worldPos = plot.origin().offset(localPos);

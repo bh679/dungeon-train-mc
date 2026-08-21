@@ -749,6 +749,13 @@ public final class BlockVariantMenuRenderer {
         BlockState state = BlockVariantMenu.parseState(stateString);
         if (state == null) return;
         Item item = state.getBlock().asItem();
+        // Liquids have no item form at all (WATER.asItem() is AIR), so without
+        // this they would every one of them read as the BARRIER fallback. The
+        // fluid's own bucket is the icon players already associate with it.
+        if (item == null || item == Items.AIR) {
+            Item bucket = games.brennan.dungeontrain.editor.VariantLiquids.bucketIcon(state);
+            if (bucket != null) item = bucket;
+        }
         ItemStack stack = (item == null || item == Items.AIR)
             ? new ItemStack(Items.BARRIER)
             : new ItemStack(item);

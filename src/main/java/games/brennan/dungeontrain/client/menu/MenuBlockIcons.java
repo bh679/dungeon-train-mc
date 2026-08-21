@@ -59,6 +59,13 @@ public final class MenuBlockIcons {
         Block block = loc == null ? null : BuiltInRegistries.BLOCK.getOptional(loc).orElse(null);
         if (block == null || block == Blocks.AIR) return new ItemStack(Items.BARRIER);
         Item item = block.asItem();
+        if (item == null || item == Items.AIR) {
+            // Liquids have no item form — fall back to the fluid's bucket
+            // rather than BARRIER. Mirrors BlockVariantMenuRenderer.drawBlockIcon.
+            Item bucket = games.brennan.dungeontrain.editor.VariantLiquids.bucketIcon(
+                block.defaultBlockState());
+            if (bucket != null) item = bucket;
+        }
         return (item == null || item == Items.AIR) ? new ItemStack(Items.BARRIER) : new ItemStack(item);
     }
 }
