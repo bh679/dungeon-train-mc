@@ -7344,11 +7344,9 @@
       "version": "0.581.0",
       "type": "chore",
       "title": "New supporter names and the Archivist",
-      "summary": "Adventure Item Names updates to 0.48.0, bringing twelve more Discord supporters into the pool of names your loot can be christened with, plus a new Archivist Society to hail from and Archivist and Detective titles to earn. Dungeon Train now requires Adventure Item Names 0.48.0 or newer \u2014 if you install mods yourself rather than through the modpack, update Adventure Item Names alongside this build or the game will tell you it is out of date. Modpack players get it automatically.",
+      "summary": "Twelve more Discord supporters join the item name pool, along with the Archivist Society and Archivist and Detective titles.",
       "highlights": [
-        "Twelve more Discord supporters added to the item name pool",
-        "New Archivist Society place, and Archivist and Detective titles",
-        "Now requires Adventure Item Names 0.48.0 \u2014 update it if you install mods manually"
+        "Requires Adventure Item Names 0.48.0"
       ],
       "pr": 1002,
       "date": "2026-08-20",
