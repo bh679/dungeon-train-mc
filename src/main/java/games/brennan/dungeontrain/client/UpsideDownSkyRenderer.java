@@ -56,7 +56,25 @@ public final class UpsideDownSkyRenderer {
         if (mc.level == null || !mc.level.dimension().equals(Level.OVERWORLD)) return;
         double t = ClientUpsideDownBand.upsideDownIntensityAt(camera.getPosition().x);
         if (t <= 0.0) return;
-        float alpha = (float) Math.min(1.0, t);
+        drawAll(frustumMatrix, partialTick, (float) Math.min(1.0, t));
+    }
+
+    /**
+     * Draw the upside-down sky unconditionally at full opacity, as a <em>sky source</em> for a
+     * skybox block rather than a band overlay.
+     *
+     * <p>Deliberately bypasses {@link #renderOverlay}, which returns early on zero band
+     * intensity — see {@link VoidSkyRenderer#renderAsSkySource}.</p>
+     */
+    public static void renderAsSkySource(Matrix4f frustumMatrix, float partialTick) {
+        if (Minecraft.getInstance().level == null) return;
+        drawAll(frustumMatrix, partialTick, 1.0F);
+    }
+
+    /** Dome fill plus the horizon-orbiting sun and moon, at the given opacity. */
+    private static void drawAll(Matrix4f frustumMatrix, float partialTick, float alpha) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.level == null) return;
 
         fillDome(frustumMatrix, alpha);
 

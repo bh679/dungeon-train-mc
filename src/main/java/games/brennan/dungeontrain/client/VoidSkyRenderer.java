@@ -46,6 +46,18 @@ public final class VoidSkyRenderer {
         draw(frustumMatrix, (float) Math.min(1.0, t));
     }
 
+    /**
+     * Draw the End starfield unconditionally at full opacity, as a <em>sky source</em> for a
+     * skybox block rather than a band overlay.
+     *
+     * <p>Deliberately bypasses {@link #renderOverlay}: that path returns early whenever the
+     * band intensity is zero, which is always in a world that doesn't start with a train — a
+     * skybox block must show its sky regardless of where the train is.</p>
+     */
+    public static void renderAsSkySource(Matrix4f frustumMatrix) {
+        draw(frustumMatrix, 1.0F);
+    }
+
     private static void draw(Matrix4f frustumMatrix, float alpha) {
         int a = Math.max(1, Math.min(255, Math.round(alpha * 255.0F)));
         int color = (a << 24) | END_SKY_RGB;

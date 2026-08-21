@@ -8,6 +8,7 @@ import games.brennan.dungeontrain.client.ClientVoidBand;
 import games.brennan.dungeontrain.client.NetherSkyRenderer;
 import games.brennan.dungeontrain.client.UpsideDownSkyRenderer;
 import games.brennan.dungeontrain.client.VoidSkyRenderer;
+import games.brennan.dungeontrain.client.skybox.SkyboxStencil;
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
@@ -36,6 +37,13 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  *   <li>{@code renderSnowAndRain} HEAD → cancel falling rain/snow over the Nether
  *       core, so storms don't rain on the hellscape (the Nether has no weather).</li>
  * </ul>
+ *
+ * <p>Two of these hooks also guard the <b>re-entrant</b> {@code renderSky} call that
+ * {@link SkyboxStencil} makes to paint the above-ground sky inside a
+ * {@code skybox_block}'s hole — see {@link SkyboxStencil#isDrawingSurfaceSky()}. During that
+ * second call the band overlays must not paint again (they already did, in the real sky pass),
+ * and vanilla's black void plane must be skipped, since showing the sky as it looks from above
+ * ground is the entire point of that variant.</p>
  */
 @Mixin(LevelRenderer.class)
 public abstract class LevelRendererVoidSkyMixin {
@@ -49,9 +57,43 @@ public abstract class LevelRendererVoidSkyMixin {
     )
     private void dungeontrain$bandSkyOverlay(Matrix4f frustumMatrix, Matrix4f projectionMatrix, float partialTick,
                                              Camera camera, boolean isFoggy, Runnable skyFogSetup, CallbackInfo ci) {
+        // Re-entrant call from the skybox stencil pass: the band overlays already painted
+        // during the real sky pass, and repainting them would stack their alpha.
+        if (SkyboxStencil.isDrawingSurfaceSky()) return;
         VoidSkyRenderer.renderOverlay(frustumMatrix, camera, isFoggy);
         NetherSkyRenderer.renderOverlay(frustumMatrix, camera, isFoggy);
         UpsideDownSkyRenderer.renderOverlay(frustumMatrix, camera, partialTick, isFoggy);
+    }
+
+    /**
+     * Suppress vanilla's black void plane while the skybox stencil pass is drawing the
+     * above-ground sky.
+     *
+     * <p>This is the single line that makes {@code skybox_block} work underground. Vanilla's
+     * {@code renderSky} is entirely Y-independent <em>except</em> for its final block, which
+     * draws {@code darkBuffer} — an opaque black dome over the lower hemisphere — whenever the
+     * player's eye is below the level's horizon height. Left in, a skybox block below y=63
+     * shows sky and stars looking up but solid black looking level or down.</p>
+     *
+     * <p>Implemented by driving the horizon height the comparison subtracts to negative
+     * infinity, so {@code eyeY - horizon} is positive and the branch is not taken. That is the
+     * smallest possible intervention: the ordinary sky pass is untouched, so the rest of the
+     * world still gets its normal void plane.</p>
+     */
+    @ModifyExpressionValue(
+            method = "renderSky(Lorg/joml/Matrix4f;Lorg/joml/Matrix4f;FLnet/minecraft/client/Camera;ZLjava/lang/Runnable;)V",
+            at = @At(
+                    value = "INVOKE",
+                    // Owner is the CONCRETE type, not LevelData: ClientLevel#getLevelData()
+                    // is declared to return ClientLevelData, so javac emits an invokevirtual
+                    // against that class and Mixin matches on the emitted owner.
+                    target = "Lnet/minecraft/client/multiplayer/ClientLevel$ClientLevelData;getHorizonHeight(Lnet/minecraft/world/level/LevelHeightAccessor;)D"
+            )
+    )
+    private double dungeontrain$suppressVoidPlaneForSkybox(double original) {
+        // Horizon height is only read to compute `eyeY - horizon < 0`. Returning negative
+        // infinity makes that difference positive, so the dark dome is skipped.
+        return SkyboxStencil.isDrawingSurfaceSky() ? Double.NEGATIVE_INFINITY : original;
     }
 
     @Inject(
