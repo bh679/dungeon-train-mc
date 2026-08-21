@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.event;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.net.relay.SharedCarriageClient.Credits;
+import games.brennan.dungeontrain.net.relay.SharedCarriageClient.Deaths;
 import games.brennan.dungeontrain.ship.CarriageDeck;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.train.SharedCarriageMessage;
@@ -17,6 +18,7 @@ import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import org.joml.Vector3d;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -35,8 +37,10 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * <p>A leased carriage adds a second line crediting its contributors, held back
  * {@link #CREDIT_DELAY_TICKS} so it reads as an afterthought rather than arriving in the same instant
- * as the flavour line. That beat is why the pending queue is drained every tick while the footing poll
- * stays coarse.</p>
+ * as the flavour line — and, if anyone has died aboard, a third line naming them a further
+ * {@link #DEATH_DELAY_TICKS} after that. Those beats are why the pending queue is drained every tick
+ * while the footing poll stays coarse. Both later lines are optional and independently so: a carriage
+ * with nobody to credit and nobody to mourn sends the flavour line alone, exactly as it always has.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class SharedCarriageEnterEvents {
@@ -52,6 +56,12 @@ public final class SharedCarriageEnterEvents {
     /** Beat between the flavour line and the credit line, so they land as two thoughts, not one block. */
     private static final int CREDIT_DELAY_TICKS = 50;     // 2.5 s
     /**
+     * Beat between the credit line and the death line. Measured from the CREDIT beat, not from entry, so
+     * the death line keeps its own pause in front of it whether or not a credit line preceded it — on a
+     * carriage with nobody to credit it simply arrives that much sooner after the flavour line.
+     */
+    private static final int DEATH_DELAY_TICKS = 45;      // ~2.25 s
+    /**
      * Consecutive polls a player must be off every shared carriage before we forget which one they were
      * on. Footing needs a block at the feet, so a JUMP reads as "left the carriage" for a poll or two —
      * without this grace, landing again counted as a fresh entry and re-sent the whole message.
@@ -64,11 +74,32 @@ public final class SharedCarriageEnterEvents {
     private static final Map<UUID, long[]> RECENT_MSG_MS = new ConcurrentHashMap<>();
     /** Consecutive polls each player has been off every shared carriage (saturates at the grace). */
     private static final Map<UUID, Integer> OFF_POLLS = new ConcurrentHashMap<>();
-    /** Credit lines waiting out {@link #CREDIT_DELAY_TICKS} before they are sent. */
-    private static final Map<UUID, PendingCredit> PENDING_CREDIT = new ConcurrentHashMap<>();
+    /**
+     * Lines waiting out their beat before being sent, in due order, per player. A list rather than one
+     * slot because a leased carriage can have two of them (credit, then deaths) on separate beats; it is
+     * only ever replaced wholesale, never appended to across carriages, so a line can't outlive the entry
+     * that queued it.
+     */
+    private static final Map<UUID, List<PendingLine>> PENDING = new ConcurrentHashMap<>();
 
-    /** A credit line held back until {@code dueTick} (the player's own tickCount). */
-    private record PendingCredit(Component line, int dueTick) {}
+    /** A line held back until {@code dueTick} (the player's own tickCount). */
+    record PendingLine(Component line, int dueTick) {}
+
+    /**
+     * How many of {@code pending} have come due at {@code tick} — the leading run of them, stopping at
+     * the first that has not. The queue is built in due order, so a later line can never jump ahead of
+     * one still waiting out its beat. Pure, and package-private only so it can be tested without a
+     * server player to hang ticks off.
+     */
+    static int dueCount(List<PendingLine> pending, int tick) {
+        if (pending == null) return 0;
+        int n = 0;
+        for (PendingLine p : pending) {
+            if (tick < p.dueTick()) break;
+            n++;
+        }
+        return n;
+    }
 
     private SharedCarriageEnterEvents() {}
 
@@ -77,9 +108,9 @@ public final class SharedCarriageEnterEvents {
         Player p = event.getEntity();
         if (p.level().isClientSide() || !(p instanceof ServerPlayer player)) return;
         if (!SharedCarriageGate.canDiscover()) return;
-        // Before the coarse footing poll: the credit beat needs tick resolution, and the poll only
+        // Before the coarse footing poll: the held beats need tick resolution, and the poll only
         // runs every CHECK_INTERVAL_TICKS.
-        releaseDueCredit(player);
+        releaseDueLines(player);
         if (player.tickCount % CHECK_INTERVAL_TICKS != 0) return;
         if (!(player.level() instanceof ServerLevel level)) return;
 
@@ -89,6 +120,7 @@ public final class SharedCarriageEnterEvents {
         // Whether the relay credits THIS player (not merely someone in this world) with building it.
         boolean ownByThisPlayer = false;
         Credits credits = Credits.EMPTY;
+        Deaths deaths = Deaths.EMPTY;
         List<Trains.Carriage> carriages = Trains.allCarriages(level);
         if (!carriages.isEmpty()) {
             Trains.Carriage c = CarriageDeck.carriageUnder(carriages, player);
@@ -105,6 +137,7 @@ public final class SharedCarriageEnterEvents {
                     own = inst.authoredHere;
                     ownByThisPlayer = inst.isAuthoredBy(player.getUUID());
                     credits = inst.credits;
+                    deaths = inst.deaths();
                 }
             }
         }
@@ -138,9 +171,9 @@ public final class SharedCarriageEnterEvents {
         }
 
         if (!admit(id, System.currentTimeMillis())) {
-            // Nothing announces this carriage, so an earlier carriage's credit line must not arrive now and
+            // Nothing announces this carriage, so an earlier carriage's held lines must not arrive now and
             // appear to describe it.
-            PENDING_CREDIT.remove(id);
+            PENDING.remove(id);
             return;
         }
 
@@ -158,12 +191,19 @@ public final class SharedCarriageEnterEvents {
         // theirs, so naming them again reads as a bug. What is genuinely news there is who has changed it
         // while it was away — which is exactly the credit's stand-alone editor phrasing.
         Credits shown = own ? new Credits("", credits.editors(), credits.editorCount()) : credits;
+        List<PendingLine> queue = new ArrayList<>(2);
+        int due = player.tickCount + CREDIT_DELAY_TICKS;
         Component credit = SharedCarriageMessage.creditLine(shown, level.getRandom());
-        if (credit != null) {
-            PENDING_CREDIT.put(id, new PendingCredit(credit, player.tickCount + CREDIT_DELAY_TICKS));
-        } else {
-            PENDING_CREDIT.remove(id); // a previous carriage's credit must not trail into this one
-        }
+        if (credit != null) queue.add(new PendingLine(credit, due));
+        // Third line: who died aboard. Independent of the credit line — a carriage can have deaths and no
+        // named builder, or the reverse — but it always sits a beat BEHIND wherever the credit beat fell,
+        // so the two never land together when both are present.
+        Component died = SharedCarriageMessage.deathLine(deaths, level.getRandom());
+        if (died != null) queue.add(new PendingLine(died, due + DEATH_DELAY_TICKS));
+        // Replaced, never appended: whatever the last carriage was still holding has been overtaken and
+        // must not trail into this one.
+        if (queue.isEmpty()) PENDING.remove(id);
+        else PENDING.put(id, List.copyOf(queue));
     }
 
     /**
@@ -186,12 +226,20 @@ public final class SharedCarriageEnterEvents {
         return true;
     }
 
-    /** Send a player's held-back credit line once its beat has elapsed. */
-    private static void releaseDueCredit(ServerPlayer player) {
-        PendingCredit pending = PENDING_CREDIT.get(player.getUUID());
-        if (pending == null || player.tickCount < pending.dueTick()) return;
-        PENDING_CREDIT.remove(player.getUUID());
-        player.sendSystemMessage(pending.line());
+    /**
+     * Send whichever of a player's held-back lines have come due, in order, and keep the rest. The queue
+     * is built in due order, so the first entry not yet due ends the drain — nothing can jump ahead of a
+     * line still waiting.
+     */
+    private static void releaseDueLines(ServerPlayer player) {
+        UUID id = player.getUUID();
+        List<PendingLine> pending = PENDING.get(id);
+        if (pending == null || pending.isEmpty()) return;
+        int sent = dueCount(pending, player.tickCount);
+        if (sent == 0) return;
+        for (int i = 0; i < sent; i++) player.sendSystemMessage(pending.get(i).line());
+        if (sent >= pending.size()) PENDING.remove(id);
+        else PENDING.put(id, List.copyOf(pending.subList(sent, pending.size())));
     }
 
     @SubscribeEvent
@@ -200,8 +248,8 @@ public final class SharedCarriageEnterEvents {
         LAST_KEY.remove(id);
         RECENT_MSG_MS.remove(id);
         OFF_POLLS.remove(id);
-        // Drop any undelivered credit line — tickCount resets on rejoin, and a Dungeon Train death starts
-        // a whole new world, so a line held here would otherwise surface in a run it has nothing to do with.
-        PENDING_CREDIT.remove(id);
+        // Drop any undelivered lines — tickCount resets on rejoin, and a Dungeon Train death starts a
+        // whole new world, so a line held here would otherwise surface in a run it has nothing to do with.
+        PENDING.remove(id);
     }
 }
