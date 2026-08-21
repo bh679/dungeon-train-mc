@@ -1,13 +1,16 @@
 package games.brennan.dungeontrain.difficulty;
 
+import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.player.PlayerRunState;
 import games.brennan.dungeontrain.registry.ModDataAttachments;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import org.slf4j.Logger;
 
 import java.util.Locale;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Shared difficulty-progression math: how far the current run has progressed,
@@ -16,6 +19,8 @@ import java.util.Set;
  * group spawner scale off the same value ("same difficulty scale as mobs").
  */
 public final class DifficultyProgression {
+
+    private static final Logger LOGGER = LogUtils.getLogger();
 
     /** Loot prefab id handed out in place of the rich treasure prefabs during the first band. */
     private static final String STARTER_LOOT_PREFAB_ID = "starter";
@@ -120,9 +125,105 @@ public final class DifficultyProgression {
      * one (delayed) formula.
      */
     public static int tierForTravelled(int travelled) {
+        if (!isPlausiblePosition(travelled)) {
+            reportImplausiblePosition(travelled);
+            return 0;
+        }
         return effectiveTier(travelled,
                 DungeonTrainConfig.getCarriagesPerTier(),
                 DungeonTrainConfig.getProgressionLevelDelay());
+    }
+
+    /**
+     * Largest magnitude any real carriage index — or carriage-equivalent position — can have.
+     *
+     * <p>Minecraft's world border sits at 29,999,984 blocks, and a carriage is at least one block
+     * long, so no position on the track can exceed this however far a run goes. It is a bound on
+     * what the world can physically contain, not a difficulty ceiling: a legitimately deep run is
+     * never touched by it.</p>
+     */
+    public static final int MAX_PLAUSIBLE_POSITION_INDEX = 30_000_000;
+
+    /**
+     * Whether {@code index} could be a position on the track at all. Pure (params in) so it is
+     * unit-testable without a NeoForge bootstrap, like {@link #rawTier} and {@link #shiftedPosition}.
+     */
+    static boolean isPlausiblePosition(int index) {
+        // Not Math.abs: abs(Integer.MIN_VALUE) is itself negative, which would pass the test.
+        return index >= -MAX_PLAUSIBLE_POSITION_INDEX && index <= MAX_PLAUSIBLE_POSITION_INDEX;
+    }
+
+    /** Call sites already reported, so one bad frame logs once rather than once per rolled item. */
+    private static final Set<String> REPORTED_IMPLAUSIBLE = ConcurrentHashMap.newKeySet();
+
+    /** Bound on {@link #REPORTED_IMPLAUSIBLE} — a diagnostic must never become the leak it reports. */
+    private static final int MAX_REPORTED_SITES = 64;
+
+    /** How far down to look for the offending frame. Deep enough to clear lambda and stream noise. */
+    private static final int MAX_WALK_DEPTH = 24;
+
+    /** This package — the frames doing the asking, never the ones holding the bug. */
+    private static final String DIFFICULTY_PACKAGE = "games.brennan.dungeontrain.difficulty.";
+
+    /** Whether {@code className} is this package's own plumbing. Pure, for unit tests. */
+    static boolean isDifficultyFrame(String className) {
+        return className.startsWith(DIFFICULTY_PACKAGE);
+    }
+
+    /**
+     * Whether a frame is worth naming as the culprit: the mod's own code, outside this package.
+     * Everything else on the stack — JDK stream internals, a test harness, a lambda trampoline —
+     * is scaffolding between the real call site and here. Pure, for unit tests.
+     */
+    static boolean isAttributableFrame(String className) {
+        return className.startsWith("games.brennan.") && !isDifficultyFrame(className);
+    }
+
+    /**
+     * Say — loudly, and once per call site — that something handed the difficulty frame a number
+     * that is not a position.
+     *
+     * <p><b>Why this exists.</b> Three separate bugs have now been one shape: a hash, a world-X or a
+     * {@code nanoTime} salt reaching {@link #positionTier}, which read it as a distance travelled and
+     * returned a tier in the millions. {@code ItemStatLevelScaling} then added a multi-million flat
+     * bonus to the item's primary AIS stat — a diamond chestplate with four million armour — and
+     * {@code EnchantLevelCap}'s progression clamp went inert. Each was found by reading code
+     * backwards from a screenshot. This makes the next one announce itself instead.</p>
+     *
+     * <p>The {@link StackWalker} is the whole point: the number alone says a frame is wrong, not
+     * which one. It runs only on the failure branch — {@link #tierForTravelled} is called millions
+     * of times a session, and the plausibility test in front of this is two comparisons.</p>
+     *
+     * <p>Package-private rather than private so a test can prove it does not throw. It runs only on
+     * the failure branch, which is the one moment a fault in it would be most expensive: a
+     * diagnostic that raises turns a loot bug into a crash.</p>
+     */
+    static void reportImplausiblePosition(int index) {
+        String caller = StackWalker.getInstance().walk(frames -> {
+            // Everything below this frame, minus this package — the frames that could hold the bug.
+            java.util.List<StackWalker.StackFrame> outside = frames
+                .filter(f -> !isDifficultyFrame(f.getClassName()))
+                .limit(MAX_WALK_DEPTH)
+                .toList();
+            // Prefer the nearest frame that is OUR code: the immediate caller is often a lambda, a
+            // stream internal or a test-harness wrapper, and naming one of those would defeat the
+            // point of walking the stack at all.
+            return outside.stream()
+                .filter(f -> isAttributableFrame(f.getClassName()))
+                .findFirst()
+                .or(() -> outside.stream().findFirst())
+                .map(f -> f.getClassName() + "." + f.getMethodName() + ":" + f.getLineNumber())
+                .orElse("unknown");
+        });
+        // Racy against the size check, which is fine: the cap is a leak guard, not a quota.
+        if (REPORTED_IMPLAUSIBLE.size() >= MAX_REPORTED_SITES || !REPORTED_IMPLAUSIBLE.add(caller)) {
+            return;
+        }
+        LOGGER.error("[DungeonTrain] Difficulty frame got {} from {}, which cannot be a position on"
+                + " the track (max {}). Treating it as tier 0 so nothing rolls impossible stats."
+                + " This is a bug at that call site: it is passing a seed, a hash or a world-X where"
+                + " a carriage index belongs. Reported once per call site.",
+            index, caller, MAX_PLAUSIBLE_POSITION_INDEX);
     }
 
     /**
@@ -163,6 +264,15 @@ public final class DifficultyProgression {
      * reload-reproducible level.
      */
     public static int positionTier(int positionIndex) {
+        // Tested on the RAW index, not on the shifted result. shiftedPosition adds the admin offset
+        // to an abs(), which for a garbage index near the int ceiling overflows to a negative and is
+        // then floored at 0 — so the value reaching tierForTravelled would be a perfectly plausible
+        // tier 0 and the tripwire below would never fire. Checking here also means the log names the
+        // number the CALLER passed, which is the one whose frame is wrong.
+        if (!isPlausiblePosition(positionIndex)) {
+            reportImplausiblePosition(positionIndex);
+            return 0;
+        }
         return tierForTravelled(shiftedPosition(positionIndex, DungeonTrainConfig.getDifficultyTravelledOffset()));
     }
 

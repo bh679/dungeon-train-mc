@@ -1367,6 +1367,8 @@ public final class CarriagePlacer {
      */
     static void stampTemplateSectionLocal(ServerLevel level, BlockPos stampPos,
                                           StructureTemplate template, StructurePlaceSettings settings) {
+        // Before the capture processor, which returns null for every cell and so ends the chain.
+        settings.addProcessor(new BakedItemStatsProcessor(level));
         settings.addProcessor(new SectionLocalStampProcessor(level));
         // Flags are moot — the capture processor drops every cell, so placeInWorld
         // places nothing itself; it only drives the palette/geometry/processor chain.
@@ -1388,6 +1390,9 @@ public final class CarriagePlacer {
      */
     static void stampTemplateRelit(ServerLevel level, BlockPos stampPos,
                                    StructureTemplate template, StructurePlaceSettings settings) {
+        // The portal room's own path. Vanilla loads each block entity from the processed tag here, so
+        // this is where a template that was saved holding impossible gear gets it rolled again.
+        settings.addProcessor(new BakedItemStatsProcessor(level));
         template.placeInWorld(level, stampPos, stampPos, settings, level.getRandom(), Block.UPDATE_ALL);
     }
 
