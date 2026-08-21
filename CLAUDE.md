@@ -257,8 +257,8 @@ After every successful mod upload (real releases AND the ~22 auto-release cascad
 approve the new DT file) and **`release-modpack-modrinth.yml`** (Modrinth — no wait), each
 gated on that platform's mod upload having produced a file/version id. Both bundle that release's
 DT file + Sable + the pinned sibling and companion mods. Core entries are
-**Dungeon Train + Sable** (DT jarJars only DiscordPresence + joml-primitives); the sibling mods
-**AIN/AIS/PMOB/ECP are un-bundled required downloads**, declared `<slug>(required)` so the
+**Dungeon Train + Sable** (DT jarJars only DiscordPresence + EdibleBackpacks + joml-primitives);
+the sibling mods **AIN/AIS/PMOB/ECP/TE are un-bundled required downloads**, declared `<slug>(required)` so the
 CurseForge/Modrinth apps auto-install them and each sibling's own page gets the download credit.
 On top of those, `modpack.config.json` → `optional_mods[]` bundles the siblings (each carrying
 `dependency_type: required` + a `gradle_property` floor) and the companions, each with a
@@ -275,7 +275,7 @@ loads (Advancement Plaques needs Iceberg).
 - **Sable-pin coupling:** when you bump `sable_version` in `gradle.properties`, also update
   `modpack/modpack.config.json` → `sable.file_id` (CurseForge) **and** `sable.modrinth_version`
   (Modrinth) — both modpacks pin Sable to the tested version. Flagged in `gradle.properties`.
-- **Sibling-mod floors:** AIN/AIS/PMOB/ECP each have TWO versions in `gradle.properties`.
+- **Sibling-mod floors:** AIN/AIS/PMOB/ECP/TE each have TWO versions in `gradle.properties`.
   `<mod>_version` is what DT compiles/dev-runs against and the auto-release cascade bumps it every
   tick; `<mod>_min_version` is the floor end users must clear, rendered into `neoforge.mods.toml`
   as `[x,)`. They are separate on purpose — if mods.toml tracked `<mod>_version`, every cascade

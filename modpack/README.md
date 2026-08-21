@@ -71,9 +71,9 @@ Each non-core mod is an entry in `modpack.config.json` → `optional_mods[]` car
 `"required"` boolean. [`build-manifest.py`](../scripts/modpack/build-manifest.py) copies that
 flag straight into the manifest:
 
-- **Enabled by default, and mandatory (`required:true`)** — the four sibling mods **Adventure
-  Item Names**, **Adventure Item Stats**, **Interactive Player Mobs** and **Ender Chest
-  Persistence**. These are not companions: DT declares them as hard dependencies and will not
+- **Enabled by default, and mandatory (`required:true`)** — the five sibling mods **Adventure
+  Item Names**, **Adventure Item Stats**, **Interactive Player Mobs**, **Ender Chest
+  Persistence** and **Trade Everything**. These are not companions: DT declares them as hard dependencies and will not
   load without them, so shipping any of them `required:false` (i.e. switched OFF) would break
   the pack outright.
 - **Enabled by default (`required:true`)** — AppleSkin, FerriteCore, ModernFix, **Sodium**
@@ -121,7 +121,7 @@ The declared type is **`optional` by default** — regardless of whether the pac
 enabled (`required:true`) or off (`required:false`), the mod's relationship to a companion is
 "optional" either way, because DT runs fine without it.
 
-The exception is the four sibling mods, which DT genuinely cannot run without. They carry
+The exception is the five sibling mods, which DT genuinely cannot run without. They carry
 `"dependency_type": "required"` in `modpack.config.json` and are declared `<slug>(required)` in
 `release.yml`. That `required` declaration is what makes the CurseForge and Modrinth apps
 auto-install them — the whole point of un-bundling.
@@ -246,7 +246,7 @@ Keep the two in sync so both packs ship the same build. A stale pin just ships a
 
 | File | Purpose |
 |---|---|
-| `modpack.config.json` | Editable config (drives **both** packs): pack name/author, DT project IDs, the pinned Sable project/file/version + `modrinth_project`/`modrinth_version`, `optional_mods` (every non-core bundled mod, each with a `slug` for the consistency guard, a `required` flag — `true` = enabled by default, `false` = shipped-but-off opt-in — and a `modrinth_project`/`modrinth_version` pin; the four sibling mods additionally carry `dependency_type: required` plus `version` + `gradle_property` for the floor guard), and `curseforge_relations` (sable only). |
+| `modpack.config.json` | Editable config (drives **both** packs): pack name/author, DT project IDs, the pinned Sable project/file/version + `modrinth_project`/`modrinth_version`, `optional_mods` (every non-core bundled mod, each with a `slug` for the consistency guard, a `required` flag — `true` = enabled by default, `false` = shipped-but-off opt-in — and a `modrinth_project`/`modrinth_version` pin; the five sibling mods additionally carry `dependency_type: required` plus `version` + `gradle_property` for the floor guard), and `curseforge_relations` (sable only). |
 | `overrides/` | Config files copied verbatim into the player's instance on install (shared by both packs). Currently ships `config/smoothswapping.json` (tuned Smooth Swapping) and `config/khi.toml` (the Kinetic Hosting affiliate URL + banner text, so every install gets the partner link pre-filled), plus the localization compat packs — see below. |
 | `overrides/resourcepacks/DungeonTrain-zh_cn-compat.zip` | zh_cn translations for the bundled **companion** mods (Jade, Distant Horizons, Controlling, ModernFix, CreativeCore, Sable). The shipped zips also still carry legacy `tectonic` keys from when the pack bundled Tectonic — inert now that it is gone (a lang overlay for an absent mod does nothing), and left in place so the zips stay byte-identical. Dungeon Train's own namespaces (+ AIN/PlayerMob/DiscordPresence) ship their zh_cn `lang/` inside the mod jar, so they're not in here. **Auto-enabled by a client-side one-shot** in the mod (`CompanionResourcePackAutoEnabler`) — it selects this pack the first time it's found and writes a marker so it never fights a player who later disables it. This replaces a shipped `options.txt` (which a launcher would copy wholesale and reset the player's other options); the hook only ever touches the resource-pack selection. |
 | `../scripts/modpack/build-manifest.py` | CurseForge: renders `manifest.json` from this config + `gradle.properties` + the release's DT file ID. |
