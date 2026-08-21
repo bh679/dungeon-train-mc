@@ -68,16 +68,12 @@ public final class VariantEditorPreviewTicker {
         long previewTick = gameTime / TICK_PERIOD;
 
         CarriageDims dims = DungeonTrainWorldData.get(level).dims();
-        // Rebuilt whole every pass, then published in one shot: a plot the author has walked away
-        // from simply isn't collected, so its flow veto lapses without any explicit teardown.
-        java.util.Set<Long> previewLiquids = new java.util.HashSet<>();
         for (ServerPlayer player : level.players()) {
             if (!player.hasPermissions(2)) continue;
             BlockVariantPlot plot = BlockVariantPlot.resolveAt(player, dims);
             if (plot == null) continue;
-            updatePlot(level, plot, previewTick, previewLiquids);
+            updatePlot(level, plot, previewTick);
         }
-        EditorPreviewLiquids.replace(level.dimension(), previewLiquids);
     }
 
     /**
@@ -86,8 +82,7 @@ public final class VariantEditorPreviewTicker {
      * the second-and-later visits — first visit sets the initial state for
      * LOCK entries, subsequent ticks no-op.
      */
-    private static void updatePlot(ServerLevel level, BlockVariantPlot plot, long previewTick,
-                                   java.util.Set<Long> previewLiquids) {
+    private static void updatePlot(ServerLevel level, BlockVariantPlot plot, long previewTick) {
         java.util.Map<BlockPos, java.util.List<VariantState>> snapshot = collectCells(plot);
         for (java.util.Map.Entry<BlockPos, java.util.List<VariantState>> e : snapshot.entrySet()) {
             BlockPos localPos = e.getKey();
@@ -104,14 +99,20 @@ public final class VariantEditorPreviewTicker {
 
             BlockState toShow = computePreviewState(picked, previewTick);
             BlockPos worldPos = plot.origin().offset(localPos);
-            // Register before the write, and whether or not the write happens — the cell holds a
-            // liquid either way, and the veto has to cover the pass where nothing changed. The
-            // editor plot's blocks are the template until the author saves, so a source allowed to
-            // spread would be baked in as authored water (or, for lava, burn the build first).
-            if (VariantLiquids.isLiquid(toShow)) previewLiquids.add(worldPos.asLong());
             BlockState existing = level.getBlockState(worldPos);
             if (!existing.equals(toShow)) {
-                SilentBlockOps.setBlockSilentNoCascade(level, worldPos, toShow, picked.blockEntityNbt());
+                if (VariantLiquids.isLiquid(toShow)) {
+                    // Liquids go in section-local, which is the whole reason a previewed source
+                    // sits still: a section write never reaches LevelChunk.setBlockState, so
+                    // LiquidBlock.onPlace never runs and no fluid tick is ever scheduled. That
+                    // matters because an editor plot's world blocks ARE the template until the
+                    // author saves — spread water would be baked in as authored water. Liquids
+                    // have no block entity, which is this path's one precondition, and the plot
+                    // the author is standing in is loaded FULL (see SilentBlockOps).
+                    SilentBlockOps.setBlockSectionLocal(level, worldPos, toShow);
+                } else {
+                    SilentBlockOps.setBlockSilentNoCascade(level, worldPos, toShow, picked.blockEntityNbt());
+                }
             }
         }
     }

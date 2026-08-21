@@ -130,10 +130,11 @@ public final class EditorVariantMirror {
      * Stamp a mirrored cell's cosmetic base block, skipping liquids.
      *
      * <p>The reflected pool is written to the sidecar either way — this only governs the block the
-     * author sees in the plot. A liquid stamped from here would be an <i>untracked</i> source: the
-     * flow veto keyed by {@link EditorPreviewLiquids} only covers cells the preview ticker stamped,
-     * so this one would spread and be baked into the saved template. Leaving it to the ticker's
-     * next 1 Hz pass costs at most a second of delay and keeps every previewed liquid frozen.</p>
+     * author sees in the plot. A liquid stamped from <i>here</i> would flow: this path goes through
+     * {@code setBlockSilent}, so {@code LiquidBlock.onPlace} schedules a fluid tick, and spread
+     * water would be baked into the saved template. {@link VariantEditorPreviewTicker} stamps
+     * liquids section-local instead, which schedules nothing — so leave the cell to its next 1 Hz
+     * pass. Costs at most a second of delay.</p>
      */
     private static void stampMirrorBase(ServerLevel level, BlockPos tgtWorld,
                                         net.minecraft.world.level.block.state.BlockState state) {
