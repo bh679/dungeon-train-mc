@@ -25,6 +25,7 @@
     "ChunkStatusSpawnMixin",
     "RandomStateMixin",
     "ServerGamePacketListenerImplSignBookMixin",
+    "ServerGamePacketListenerImplDifficultyMixin",
     "ChiseledBookShelfBlockUnsignedBookMixin",
     "SpreadingSnowyDirtBlockUpsideDownMixin",
     "SnowLayerBlockUpsideDownMixin",
