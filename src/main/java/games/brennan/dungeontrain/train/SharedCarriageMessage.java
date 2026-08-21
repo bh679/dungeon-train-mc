@@ -139,8 +139,14 @@ public final class SharedCarriageMessage {
     private static final int DEATH_ONE_LINES = 4;
     /** Ways to name several, keyed {@code ….deaths.few.1..N}. */
     private static final int DEATH_FEW_LINES = 4;
-    /** Ways to say deaths happened with nobody to name, keyed {@code ….deaths.unnamed.1..N}. */
+    /** Ways to say SEVERAL deaths happened with nobody to name, keyed {@code ….deaths.unnamed.1..N}. */
     private static final int DEATH_UNNAMED_LINES = 3;
+    /**
+     * The same for exactly one, keyed {@code ….deaths.unnamed_one.1..N}. Its own family because the
+     * plural lines take a count argument and read "1 travellers" at one — a count of one is better said
+     * in words than substituted into a sentence built for many.
+     */
+    private static final int DEATH_UNNAMED_ONE_LINES = 3;
 
     /**
      * The "N travellers ended here" line, or {@code null} when this carriage has no deaths on record —
@@ -154,7 +160,8 @@ public final class SharedCarriageMessage {
      *   <li>several — names up to five, the rest collapsing into "and N others besides", reusing the
      *       credit line's {@code .more} wrapper;</li>
      *   <li>deaths but no names — every one of them was a player without network consent, so the count
-     *       is all that can honestly be said.</li>
+     *       is all that can honestly be said. Exactly one gets its own family, since the plural lines
+     *       substitute a number and would read "1 travellers".</li>
      * </ul>
      *
      * <p>Note the count is the RELAY's uncapped total, not the length of the name list: a carriage that
@@ -166,9 +173,11 @@ public final class SharedCarriageMessage {
         List<String> names = deaths.names();
         int total = deaths.total();
         if (names.isEmpty()) {
-            return Component.translatable(
-                    "chat.dungeontrain.shared_carriage.deaths.unnamed." + (rng.nextInt(DEATH_UNNAMED_LINES) + 1),
-                    total).withStyle(ChatFormatting.GRAY);
+            return total == 1
+                    ? Component.translatable("chat.dungeontrain.shared_carriage.deaths.unnamed_one."
+                            + (rng.nextInt(DEATH_UNNAMED_ONE_LINES) + 1)).withStyle(ChatFormatting.GRAY)
+                    : Component.translatable("chat.dungeontrain.shared_carriage.deaths.unnamed."
+                            + (rng.nextInt(DEATH_UNNAMED_LINES) + 1), total).withStyle(ChatFormatting.GRAY);
         }
         // "one" is only honest when exactly one death is on record — a single NAME with a higher total
         // means the others simply couldn't be named, which is the plural case wearing one name.

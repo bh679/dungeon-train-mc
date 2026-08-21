@@ -60,6 +60,15 @@ class SharedCarriageDeathMessageTest {
     }
 
     @Test
+    void aSingleUnnameableDeathIsSaidInWordsNotAsACountOfOne() {
+        // The plural line substitutes the number and would read "1 travellers have died in here".
+        Component line = SharedCarriageMessage.deathLine(new Deaths(List.of(), 1), rng());
+        TranslatableContents t = contents(assertNotNullAndReturn(line));
+        assertTrue(t.getKey().startsWith("chat.dungeontrain.shared_carriage.deaths.unnamed_one."), t.getKey());
+        assertEquals(0, t.getArgs().length, "nothing to substitute — the count is in the words");
+    }
+
+    @Test
     void deathsWithNobodyToNameFallBackToTheCountAlone() {
         Component line = SharedCarriageMessage.deathLine(new Deaths(List.of(), 3), rng());
         TranslatableContents t = contents(assertNotNullAndReturn(line));
