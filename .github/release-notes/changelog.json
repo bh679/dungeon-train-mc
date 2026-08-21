@@ -7499,8 +7499,25 @@
       "released_at": "2026-08-21T09:13:18Z"
     },
     {
-      "id": "ain-0-49",
+      "id": "edible-backpacks",
       "version": "0.592.0",
+      "type": "feat",
+      "title": "Edible Backpacks",
+      "summary": "Apple packs now turn up in train loot. Eat one and you gain an extra backpack slot for the rest of your run \u2014 storage that lives in two panels either side of your inventory screen, growing a column at a time as you eat more. Golden apple packs are worth nine slots in a single bite, and nine ordinary packs craft into one. Die and the backpack goes with you, space and all, so what you carry in it is a real bet.",
+      "highlights": [
+        "Eat an apple pack for an extra inventory slot that lasts the rest of your run (up to 108)",
+        "Storage panels sit either side of the inventory screen and hide with the recipe book",
+        "Golden apple packs grant nine slots at once; craft one from nine ordinary packs",
+        "Dying costs you the backpack: both its contents and the space itself"
+      ],
+      "date": "2026-08-21",
+      "released": true,
+      "released_in": "v0.592.0",
+      "released_at": "2026-08-21T11:09:14Z"
+    },
+    {
+      "id": "ain-0-49",
+      "version": "0.593.0",
       "type": "chore",
       "title": "Three more supporter names",
       "summary": "Three more Discord supporters join the item name pool: mel, banguela, and morpheus the 3 feeted cat.",
@@ -7514,7 +7531,7 @@
     },
     {
       "id": "tradeeverything-0-5-0-bump",
-      "version": "0.592.0",
+      "version": "0.593.0",
       "type": "feat",
       "title": "Refill the Trade Anything slot with one key",
       "summary": "Updated the bundled Trade Everything mod. Tap space over a villager's Trade Anything slot to top it back up from your inventory instead of dragging stacks in one at a time, and obsidian now has a set trade value.",
@@ -7525,7 +7542,6 @@
       "date": "2026-08-21",
       "released": false,
       "released_in": null,
-      "released_at": null
-    }
+      "released_at": null    }
   ]
 }

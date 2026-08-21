@@ -1,6 +1,6 @@
 {
   "abandonedroom": {
-    "weight": 6,
+    "weight": 1,
     "mode": "bedrock_lock"
   },
   "backrooms": {
@@ -39,7 +39,7 @@
     "mode": "endless_repetition"
   },
   "cvspharmacy": {
-    "weight": 0,
+    "weight": 1,
     "minLevel": 131,
     "phases": [
       "OVERWORLD",
@@ -128,7 +128,7 @@
     "mode": "bedrock_lock"
   },
   "upsidedown": {
-    "weight": 10,
+    "weight": 1,
     "mode": "bedrock_lock"
   },
   "window": {
