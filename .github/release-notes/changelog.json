@@ -7600,6 +7600,23 @@
       "released": true,
       "released_in": "v0.596.0",
       "released_at": "2026-08-21T12:31:57Z"
+    },
+    {
+      "id": "shared-carriage-entities",
+      "version": "0.597.0",
+      "type": "feat",
+      "title": "Shared carriages bring their furnishings with them",
+      "summary": "A community carriage used to travel as bare blocks: the armor stands, item frames, paintings and animals someone decorated their room with were left behind when the build shipped to another world. Now they come too \u2014 a shared carriage arrives furnished, exactly as its builder left it.",
+      "highlights": [
+        "Armor stands, item frames, paintings, end crystals and mobs inside a shared carriage are saved with the build and placed back when another world receives it.",
+        "They ride the moving train with the carriage, rather than being left standing on the tracks.",
+        "The carriage browser's 3D preview now shows them, labelled by type and custom name, with a toggle to hide the labels.",
+        "Server owners can cap how many travel per carriage (sharedCarriageMaxEntities, default 64) or turn the whole thing off with 0."
+      ],
+      "date": "2026-08-21",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
