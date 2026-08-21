@@ -67,7 +67,11 @@ public final class CheatModList {
         "enchantmentlevelbreak", "betterenchants", "limitlessenchantments",
         "noenchantmentcaplevel", "noenchantcap",
         // generic cheat utilities
-        "meteor-client", "wurst", "aristois", "impact"
+        "meteor-client", "wurst", "aristois", "impact",
+        // client-side command toolkits — enchantment/RNG seed cracking (/cenchant, /ccrackrng),
+        // ore + entity finding (/cfind), and item/world manipulation helpers. Client-only, so it
+        // is caught in single-player (shared JVM) but not on a dedicated server.
+        "clientcommands"
     );
 
     /** Cache file under the loader config dir; written on each successful relay fetch. */

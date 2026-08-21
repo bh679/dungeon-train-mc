@@ -106,8 +106,8 @@ def build_manifest(
     #   required=True  → installed & ENABLED by default (QoL/perf/cosmetic companions:
     #                    AppleSkin, FerriteCore, ModernFix, Advancement Plaques).
     #   required=False → bundled but DISABLED by default; the CurseForge launcher offers them
-    #                    as opt-in at install (Mouse Tweaks, Jade, Distant Horizons, Tectonic,
-    #                    Lithostitched). NOTE: in the CurseForge app required=False means the
+    #                    as opt-in at install (Mouse Tweaks, Distant Horizons, Effortless
+    #                    Building). NOTE: in the CurseForge app required=False means the
     #                    mod ships OFF — see modpack/README.md. Pins maintained like Sable.
     for opt in config.get("optional_mods", []):
         files.append(

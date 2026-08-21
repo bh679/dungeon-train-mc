@@ -144,8 +144,8 @@ def test_real_config_ships_qol_mods_enabled_by_default():
 
     Renders the *real* repo config so these can't be silently dropped or flipped off. In the
     CurseForge app required:false ships OFF, so on-by-default companions MUST be required:true.
-    Iceberg (Advancement Plaques' required dep) and Lithostitched (Tectonic's) ship required:true
-    too — inert when unused, but always present so their dependent loads whenever it's enabled.
+    Iceberg (Advancement Plaques' required dep) ships required:true too — inert on its own, but
+    always present so its dependent loads.
     """
     files = _render_real_config()
     assert {"projectID": 248787, "fileID": 7854442, "required": True} in files, files  # AppleSkin
@@ -153,7 +153,6 @@ def test_real_config_ships_qol_mods_enabled_by_default():
     assert {"projectID": 790626, "fileID": 8255560, "required": True} in files, files  # ModernFix
     assert {"projectID": 499826, "fileID": 5905995, "required": True} in files, files  # Advancement Plaques
     assert {"projectID": 520110, "fileID": 6423863, "required": True} in files, files  # Iceberg (AP dep)
-    assert {"projectID": 936015, "fileID": 8158004, "required": True} in files, files  # Lithostitched (Tectonic dep)
 
 
 def test_real_config_ships_ambientsounds_enabled_by_default():
@@ -169,7 +168,7 @@ def test_real_config_ships_ambientsounds_enabled_by_default():
 
 
 def test_real_config_ships_optins_disabled_by_default():
-    """Guard: Mouse Tweaks / Distant Horizons / Tectonic ship OFF by default (opt-in).
+    """Guard: Mouse Tweaks / Distant Horizons ship OFF by default (opt-in).
 
     Distant Horizons is pinned to a 2.x file (file 7350266) — 3.x crashes on DT world entry.
     Jade is no longer opt-in — see test_real_config_ships_jade_with_sable_compat_enabled.
@@ -177,7 +176,6 @@ def test_real_config_ships_optins_disabled_by_default():
     files = _render_real_config()
     assert {"projectID": 60089, "fileID": 5637846, "required": False} in files, files   # Mouse Tweaks
     assert {"projectID": 508933, "fileID": 7350266, "required": False} in files, files  # Distant Horizons 2.x
-    assert {"projectID": 686836, "fileID": 7903156, "required": False} in files, files  # Tectonic
 
 
 def test_real_config_ships_jade_with_sable_compat_enabled():

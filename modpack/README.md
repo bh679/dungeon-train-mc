@@ -41,12 +41,10 @@ pack must list them explicitly. Everything else is a manifest file with a `requi
 | CreativeCore | `257814` | **enabled** (library) | AmbientSounds' required dependency. Inert library — enabled so AmbientSounds loads on a default install. **Pinned**. |
 | Advancement Plaques | `499826` | **enabled** | Replaces vanilla advancement toasts with fancy plaques. Client-side toast render only — safe with Sable. Requires **Iceberg**. **Pinned**. |
 | Iceberg | `520110` | **enabled** (library) | Advancement Plaques' required dependency (`[1.2.2,)`). Inert UI library — enabled so AP loads on a default install. **Pinned**. |
-| Lithostitched | `936015` | **enabled** (library) | Tectonic's required dependency (`[1.6.0,)`). Inert worldgen library — enabled so enabling Tectonic stays one-click (no separate lib to toggle). **Pinned**. |
 | Jade | `324717` | **enabled** | Block/item tooltip HUD. Formerly opt-in because tooltips didn't render for blocks **on the moving train** (Sable sub-level) — that limitation is now **resolved** by the bundled **Jade Sable Compat** (below), so Jade ships on by default. **Pinned** (15.10.5 — the build Sable's bundled Jade compat is verified against). |
 | Jade Sable Compat | `1530988` | **enabled** | Client-only compat mod (`sablejade`, MIT). Gives Jade a Sable-aware retrace path so tooltips resolve the **correct** block on Sable sub-levels / moving trains. Requires **Jade** (shipped enabled, above). `server_side=unsupported` — auto-skipped on dedicated servers. **Pinned** (1.2.1). |
 | Mouse Tweaks | `60089` | off (opt-in) | Inventory QoL (shift-drag / scroll-to-move). **Pinned**. |
 | Distant Horizons | `508933` | off (opt-in) | LOD render distance. **Use 2.x** — 3.0.x crashes the JVM on DT world entry. **Pinned** to a 2.x file. |
-| Tectonic | `686836` | off (opt-in) | Terrain generator. Needs **Compatible Terrain** ON in DT settings to take effect; its **Lithostitched** dependency ships enabled (above). **Pinned**. |
 | Effortless Building | `302113` | off (opt-in) | Client-side building QoL (multi-block placement modes, mirror / array / radial). No dependencies. **Pinned** (4.2 — one multi-loader jar covers Fabric + NeoForge). |
 
 …plus NeoForge as the modloader (`neoforge-<neo_version>`) and the Minecraft version,
@@ -84,12 +82,11 @@ flag straight into the manifest:
   (block/item tooltip HUD) paired with **Jade Sable Compat** (the client-only mod that fixes Jade's
   tooltips on the moving train — the reason Jade is no longer opt-in), **Kinetic
   Hosting Integration** (partner banner on the multiplayer menu), plus their inert library deps
-  **CreativeCore** (AmbientSounds), **Iceberg** (Advancement Plaques) and **Lithostitched**
-  (Tectonic). The libraries ship enabled so their dependent loads on a default install
-  (CreativeCore — AmbientSounds is on; Iceberg — AP is on) and so enabling an opt-in stays
-  one-click (Lithostitched — Tectonic is off, but its lib is already present).
+  **CreativeCore** (AmbientSounds) and **Iceberg** (Advancement Plaques). The libraries ship
+  enabled so their dependent loads on a default install (CreativeCore — AmbientSounds is on;
+  Iceberg — AP is on).
 - **Bundled but off by default (`required:false`)** — Mouse Tweaks, Distant Horizons,
-  Tectonic, Effortless Building. Shipped in the pack so a player can flip them on with one click, but inert until they
+  Effortless Building. Shipped in the pack so a player can flip them on with one click, but inert until they
   do. (DT itself + Sable are hardcoded `required:true` in the builder.)
 
 ## Declared dependencies (CurseForge "Relations")
@@ -107,10 +104,9 @@ un-bundled, each is a manifest `files` entry, and CurseForge auto-creates the re
 manifest — so listing them here too would duplicate it (see the rule in the paragraph below).
 
 Everything in `optional_mods[]` (AppleSkin, FerriteCore, ModernFix, Advancement Plaques, Iceberg,
-Lithostitched, Mouse Tweaks, Jade, Jade Sable Compat, Distant Horizons, Tectonic) is a manifest **file**, so
+Mouse Tweaks, Jade, Jade Sable Compat, Distant Horizons) is a manifest **file**, so
 CurseForge auto-creates its relation from the manifest — these must therefore **not** be repeated
-in `curseforge_relations`. (Iceberg is bundled as Advancement Plaques' library dependency;
-Lithostitched as Tectonic's.)
+in `curseforge_relations`. (Iceberg is bundled as Advancement Plaques' library dependency.)
 
 ### Bundled mods must be mod dependencies
 
@@ -143,7 +139,7 @@ This is enforced in CI by **`scripts/modpack/check-relations.py`** (the `modpack
 a bundled mod is missing its `<slug>(optional)` relation — the gap that shipped AppleSkin
 undeclared in PR #390. So each `optional_mods` entry **must carry a `slug`** (its CurseForge URL
 slug). The library deps are bundled too, so they are likewise declared `iceberg(optional)` (for
-Advancement Plaques) and `lithostitched(optional)` (for Tectonic).
+Advancement Plaques).
 
 ## How it deploys (15 min after every mod release)
 
@@ -243,8 +239,6 @@ Keep the two in sync so both packs ship the same build. A stale pin just ships a
   AmbientSounds works on a default install. (AmbientSounds' jar is large — ~81 MB of bundled audio.)
 - **Advancement Plaques ↔ Iceberg.** AP requires Iceberg `[1.2.2,)` (not jarJar'd inside AP) —
   keep the bundled Iceberg at or above that. Both ship `required:true` so AP works on a default install.
-- **Tectonic ↔ Lithostitched.** Tectonic requires Lithostitched `[1.6.0,)`; keep the bundled
-  Lithostitched file at or above that. Bumping Tectonic? Re-check its `mods.toml` dependency range.
 
 ## Files
 
@@ -252,7 +246,7 @@ Keep the two in sync so both packs ship the same build. A stale pin just ships a
 |---|---|
 | `modpack.config.json` | Editable config (drives **both** packs): pack name/author, DT project IDs, the pinned Sable project/file/version + `modrinth_project`/`modrinth_version`, `optional_mods` (every non-core bundled mod, each with a `slug` for the consistency guard, a `required` flag — `true` = enabled by default, `false` = shipped-but-off opt-in — and a `modrinth_project`/`modrinth_version` pin; the four sibling mods additionally carry `dependency_type: required` plus `version` + `gradle_property` for the floor guard), and `curseforge_relations` (sable only). |
 | `overrides/` | Config files copied verbatim into the player's instance on install (shared by both packs). Currently ships `config/smoothswapping.json` (tuned Smooth Swapping) and `config/khi.toml` (the Kinetic Hosting affiliate URL + banner text, so every install gets the partner link pre-filled), plus the localization compat packs — see below. |
-| `overrides/resourcepacks/DungeonTrain-zh_cn-compat.zip` | zh_cn translations for the bundled **companion** mods (Jade, Tectonic, Distant Horizons, Controlling, ModernFix, CreativeCore, Sable). Dungeon Train's own namespaces (+ AIN/PlayerMob/DiscordPresence) ship their zh_cn `lang/` inside the mod jar, so they're not in here. **Auto-enabled by a client-side one-shot** in the mod (`CompanionResourcePackAutoEnabler`) — it selects this pack the first time it's found and writes a marker so it never fights a player who later disables it. This replaces a shipped `options.txt` (which a launcher would copy wholesale and reset the player's other options); the hook only ever touches the resource-pack selection. |
+| `overrides/resourcepacks/DungeonTrain-zh_cn-compat.zip` | zh_cn translations for the bundled **companion** mods (Jade, Distant Horizons, Controlling, ModernFix, CreativeCore, Sable). The shipped zips also still carry legacy `tectonic` keys from when the pack bundled Tectonic — inert now that it is gone (a lang overlay for an absent mod does nothing), and left in place so the zips stay byte-identical. Dungeon Train's own namespaces (+ AIN/PlayerMob/DiscordPresence) ship their zh_cn `lang/` inside the mod jar, so they're not in here. **Auto-enabled by a client-side one-shot** in the mod (`CompanionResourcePackAutoEnabler`) — it selects this pack the first time it's found and writes a marker so it never fights a player who later disables it. This replaces a shipped `options.txt` (which a launcher would copy wholesale and reset the player's other options); the hook only ever touches the resource-pack selection. |
 | `../scripts/modpack/build-manifest.py` | CurseForge: renders `manifest.json` from this config + `gradle.properties` + the release's DT file ID. |
 | `../scripts/modpack/build-mrpack.py` | Modrinth: renders `modrinth.index.json` from this config + `gradle.properties` + the release's DT Modrinth version (resolving each pin's URL/hashes from the Modrinth API). `--check-config` validates pins with no network (CI). |
 | `../scripts/modpack/check-relations.py` | CI guard: every `optional_mods` entry must also be an `<slug>(optional)` dependency of the mod in `release.yml`. Run by the `modpack-checks` job. |
@@ -317,9 +311,9 @@ instead of CurseForge's single `required` flag. `build-mrpack.py` derives it
 
 - **client** is always `required` (bundled-enabled) or `optional` (opt-in) — never `unsupported`.
   The pack mirrors CurseForge (every bundled mod is in the player's single-player-capable instance).
-  We deliberately ignore a mod's own `client_side=unsupported`: some libraries (e.g. **Lithostitched**,
-  a worldgen lib) declare it yet are needed by the integrated server in single-player, and dropping
-  them would break the one-click opt-ins that depend on them (Tectonic needs Lithostitched).
+  We deliberately ignore a mod's own `client_side=unsupported`: a worldgen library can declare it
+  yet still be needed by the integrated server in single-player, and dropping it would break
+  whichever bundled mod depends on it.
 - **server** respects `server_side=unsupported`, so genuinely client-only mods (AmbientSounds'
   ~84 MB of audio, the inventory/HUD QoL mods) are skipped on dedicated servers.
 

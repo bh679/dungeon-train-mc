@@ -7545,8 +7545,34 @@
       "released_at": null
     },
     {
-      "id": "new-advancements-batch",
+      "id": "clientcommands-cheat-blacklist",
       "version": "0.594.0",
+      "type": "feat",
+      "title": "clientcommands counts as a cheat mod",
+      "summary": "Playing with clientcommands installed now puts the session into Free Play.",
+      "highlights": [],
+      "pr": 1018,
+      "date": "2026-08-21",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "remove-tectonic-from-modpack",
+      "version": "0.595.0",
+      "type": "chore",
+      "title": "Tectonic removed from the modpack",
+      "summary": "The modpack no longer bundles Tectonic or Lithostitched. Dungeon Train still works with Tectonic if you install it yourself; if you had it switched on, it goes away on your next pack update.",
+      "highlights": [],
+      "pr": 1017,
+      "date": "2026-08-21",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "new-advancements-batch",
+      "version": "0.596.0",
       "type": "feat",
       "title": "Seven new advancements",
       "summary": "Three chase the bundled Edible Backpacks: eat one, craft the compressed nine-slot version, then unlock every backpack slot there is. Two reward riding past 100 and 1,000 carriages without opening a single chest or barrel (vases don't count). One is granted when you die more than 1,000 carriages into a life that never touched an ender chest. And one is for finding the train engine volume slider.",
@@ -7564,7 +7590,7 @@
     },
     {
       "id": "raveroom-content",
-      "version": "0.594.0",
+      "version": "0.596.0",
       "type": "content",
       "title": "Rave room",
       "summary": "A new carriage room stocked with music discs \u2014 the full vanilla set, occasionally worn or enchanted.",

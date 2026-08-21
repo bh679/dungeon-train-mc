@@ -60,8 +60,9 @@ def test_env_server_unsupported_is_respected():
 
 
 def test_env_client_unsupported_is_ignored():
-    # Lithostitched declares client_side=unsupported but is needed by the integrated server in
-    # single-player; the pack keeps it present client-side (mirrors the CurseForge pack).
+    # A worldgen library may declare client_side=unsupported yet still be needed by the
+    # integrated server in single-player; the pack keeps it present client-side (mirrors
+    # the CurseForge pack).
     assert bm.compute_env(required=True, client_side="unsupported", server_side="required") == {
         "client": "required", "server": "required",
     }
