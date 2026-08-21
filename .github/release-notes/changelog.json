@@ -7685,8 +7685,40 @@
       "released_at": "2026-08-21T15:14:13Z"
     },
     {
-      "id": "veinminer-freeplay-blacklist",
+      "id": "edible-backpack-rarity",
       "version": "0.602.0",
+      "type": "chore",
+      "title": "Edible backpacks are rarer",
+      "summary": "The edible backpack turned up in almost every other chest. Its odds are now cut across the general, iron/gold and pot loot pools, and it no longer appears in the starter chest \u2014 so finding one feels like a find again.",
+      "highlights": [
+        "Edible backpack far less common in chests",
+        "No longer handed out in the starter chest"
+      ],
+      "pr": 1025,
+      "date": "2026-08-21",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "miniword-portal-room",
+      "version": "0.602.0",
+      "type": "content",
+      "title": "Miniword \u2014 a new House portal room",
+      "summary": "Step through a portal into Miniword, a hand-built world in a box and by far the largest portal room in the game at 48x30x48. It turns up as a House room from Diff-Level 12 onward.",
+      "highlights": [
+        "New Miniword portal room \u2014 a 48x30x48 build, the biggest room in Dungeon Train",
+        "Appears among the House portal rooms from Diff-Level 12"
+      ],
+      "pr": 1026,
+      "date": "2026-08-21",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "veinminer-freeplay-blacklist",
+      "version": "0.603.0",
       "type": "feat",
       "title": "Vein miner mods now trigger Free Play",
       "summary": "Playing with a vein miner installed runs the session in Free Play.",
