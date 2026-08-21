@@ -7417,15 +7417,9 @@
       "id": "skybox-blocks",
       "version": "0.586.0",
       "type": "feat",
-      "title": "Skybox blocks \u2014 solid blocks you see the sky through",
-      "summary": "Five new blocks that read as a hole punched through the world: look at one and you see sky, even with terrain or a carriage wall directly behind it. Each variant shows a different sky \u2014 the live sky, the surface sky at any depth, the End's starfield, the Nether, or the upside-down band's rotating sun and moon. They are solid to stand on and cannot be mined. The Train Dimension's house and evilhouse rooms now use them for windows and a sky ceiling.",
-      "highlights": [
-        "Five skybox blocks, each showing a different sky",
-        "Surface variant shows the above-ground sky at any depth, even deep underground",
-        "Works on moving carriages \u2014 the hole stays welded to the wall",
-        "Solid and unmineable; placeable in creative",
-        "House and evilhouse portal rooms now feature sky windows and a Nether sky ceiling"
-      ],
+      "title": "Skybox blocks",
+      "summary": "New blocks that show the sky.",
+      "highlights": [],
       "date": "2026-08-21",
       "released": false,
       "released_in": null,
