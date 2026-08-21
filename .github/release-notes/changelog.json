@@ -7741,6 +7741,23 @@
       "released": true,
       "released_in": "v0.604.0",
       "released_at": "2026-08-21T15:55:41Z"
+    },
+    {
+      "id": "trade-everything-separate-download",
+      "version": "0.605.0",
+      "type": "feat",
+      "title": "Trade Everything is now its own download",
+      "summary": "Trade Everything \u2014 the mod that gives every villager a \"Trade Anything\" slot \u2014 used to ride along inside Dungeon Train's own file. It now installs alongside Dungeon Train as its own mod, so it shows up in your mod list and gets credited for its own downloads. The CurseForge and Modrinth apps fetch it for you automatically; if you install by hand, grab Trade Everything (0.7.0 or newer) with Dungeon Train.",
+      "highlights": [
+        "The CurseForge and Modrinth apps install Trade Everything for you \u2014 nothing to do.",
+        "Installing manually? Add Trade Everything 0.7.0+ next to Dungeon Train, or the game will tell you it's missing on launch.",
+        "Villager payouts fixed: selling no longer hands back emerald blocks priced as ordinary goods.",
+        "Bookshelves are now valued at 3 per emerald."
+      ],
+      "date": "2026-08-21",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
