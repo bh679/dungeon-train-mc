@@ -7696,9 +7696,9 @@
       ],
       "pr": 1025,
       "date": "2026-08-21",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.602.0",
+      "released_at": "2026-08-21T15:39:10Z"
     },
     {
       "id": "miniword-portal-room",
@@ -7712,9 +7712,9 @@
       ],
       "pr": 1026,
       "date": "2026-08-21",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.602.0",
+      "released_at": "2026-08-21T15:39:10Z"
     },
     {
       "id": "difficulty-change-confirmation",
