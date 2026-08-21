@@ -5,6 +5,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.narrative.BookSafeText;
 import org.slf4j.Logger;
 
 import java.net.URI;
@@ -140,7 +141,10 @@ public final class BookAuthorsClient {
             if (!o.has("token") || o.get("token").isJsonNull()) continue;
             String token = o.get("token").getAsString();
             if (token.isBlank()) continue;
-            String name = o.has("name") && !o.get("name").isJsonNull() ? o.get("name").getAsString() : "";
+            // Sanitized at the parse boundary: this name reaches chat lines and lectern tribute
+            // pages that do NOT pass through BookFactory, so it has no other guard.
+            String name = BookSafeText.sanitize(
+                o.has("name") && !o.get("name").isJsonNull() ? o.get("name").getAsString() : "", false);
             int count = 0;
             if (o.has("count") && o.get("count").isJsonPrimitive()) {
                 try {

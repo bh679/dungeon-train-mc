@@ -423,17 +423,26 @@ public final class BookFactory {
      * @param pages  source page strings in order; {@code null}/empty → one blank page
      */
     public static ItemStack buildPlainBook(String title, String author, List<String> pages) {
-        String safeTitle = title == null || title.isBlank() ? "Untitled" : title;
-        String safeAuthor = author == null || author.isBlank() ? "Anonymous" : author;
+        // Sanitize BEFORE the blank check. Book text is untrusted on both paths into here — the
+        // relay pool and the client's sign-book packet — and a title made entirely of control
+        // characters would otherwise pass the isBlank() test, skip the "Untitled" fallback, and
+        // ship as an invisible name. See BookSafeText for what is stripped and why.
+        String cleanTitle = BookSafeText.sanitize(title, false);
+        String cleanAuthor = BookSafeText.sanitize(author, false);
+        String safeTitle = cleanTitle.isBlank() ? "Untitled" : cleanTitle;
+        String safeAuthor = cleanAuthor.isBlank() ? "Anonymous" : cleanAuthor;
 
         List<String> pageStrings = new ArrayList<>();
         if (pages != null) {
             for (String page : pages) {
                 if (page == null) continue;
+                // Pages keep their newlines — paginate() splits on blank lines, so line structure
+                // is load-bearing in a way it is not for a title.
+                String cleanPage = BookSafeText.sanitize(page, true);
                 // Re-flow each contributed page through the shared paginator so an
                 // overlong page is split across multiple book pages rather than
                 // silently clipped by the client's page renderer.
-                pageStrings.addAll(paginate(page));
+                pageStrings.addAll(paginate(cleanPage));
             }
         }
         if (pageStrings.size() > MAX_PAGES) {
@@ -487,13 +496,13 @@ public final class BookFactory {
     }
 
     private static String clampTitle(String s) {
-        return s.length() <= MAX_TITLE_CHARS ? s : s.substring(0, MAX_TITLE_CHARS);
+        return BookSafeText.clampCp(s, MAX_TITLE_CHARS);
     }
 
     private static String clampAuthor(String s) {
         // Author has no codec-enforced cap, but keep it short for the
         // tooltip line. 32 mirrors the title cap.
-        return s.length() <= MAX_TITLE_CHARS ? s : s.substring(0, MAX_TITLE_CHARS);
+        return BookSafeText.clampCp(s, MAX_TITLE_CHARS);
     }
 
     /**
@@ -603,9 +612,12 @@ public final class BookFactory {
                 if (current.length() > 0) { out.add(current.toString()); current.setLength(0); }
                 int idx = 0;
                 while (idx < word.length()) {
-                    int end = Math.min(word.length(), idx + MAX_CHARS_PER_PAGE);
-                    out.add(word.substring(idx, end));
-                    idx = end;
+                    // clampCp on the remainder rather than a raw substring: a hard split landing
+                    // between the halves of an astral character would orphan a surrogate.
+                    String chunk = BookSafeText.clampCp(word.substring(idx), MAX_CHARS_PER_PAGE);
+                    if (chunk.isEmpty()) break; // single astral char wider than the cap — can't split
+                    out.add(chunk);
+                    idx += chunk.length();
                 }
                 continue;
             }

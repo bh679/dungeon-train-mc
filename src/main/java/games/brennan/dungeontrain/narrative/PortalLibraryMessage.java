@@ -43,7 +43,11 @@ public final class PortalLibraryMessage {
      */
     public static MutableComponent random(RandomSource random, String author, boolean mine) {
         if (mine) return Component.translatable(SELF_KEY).withStyle(ChatFormatting.GRAY);
-        String name = author == null || author.isBlank() ? "someone" : author;
+        // This name is relay-supplied and lands in a CHAT component, the one renderer that really
+        // does interpret §. Sanitize before the blank check so a name of pure control characters
+        // falls back to "someone" rather than rendering as nothing.
+        String clean = BookSafeText.sanitize(author, false).trim();
+        String name = clean.isBlank() ? "someone" : clean;
         int variant = 1 + random.nextInt(VARIANTS);
         return Component.translatable(KEY + variant, Component.literal(name))
             .withStyle(ChatFormatting.GRAY);

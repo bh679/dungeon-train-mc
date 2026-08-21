@@ -219,23 +219,13 @@ public final class AinBackerOverlay {
      * it to {@code maxLen}. Pure — unit-tested without Minecraft.
      *
      * <p>AIN applies NO validation on the programmatic path (its 256-char cap covers only the JSON
-     * config path), so this is the only guard. Removes the section sign, Minecraft's legacy
-     * formatting escape: {@code Component.literal} does not interpret it, but several downstream
-     * renderers and chat paths do. Removes every other control character too — a newline would
-     * split item lore onto extra lines and put a literal control character in an item name.</p>
+     * config path), so this is the only guard. Delegates to {@link BookSafeText}, which strips the
+     * same section sign and control characters this method always has, plus the bidi overrides,
+     * zero-width characters and lone surrogates it used to let through — and, unlike the old
+     * char-based clamp here, truncates without ever splitting a surrogate pair.</p>
      */
     public static String sanitize(String raw, int maxLen) {
-        if (raw == null) return "";
-        StringBuilder stripped = new StringBuilder(raw.length());
-        raw.codePoints().forEach(cp -> {
-            if (cp == '§' || cp < 0x20 || cp == 0x7f) return;
-            stripped.appendCodePoint(cp);
-        });
-        // Trim BEFORE clamping so leading whitespace can't eat the length budget, and again after
-        // in case the clamp landed mid-space.
-        String trimmed = stripped.toString().trim();
-        if (trimmed.length() > maxLen) trimmed = trimmed.substring(0, maxLen);
-        return trimmed.trim();
+        return BookSafeText.sanitizeAndClamp(raw, maxLen, false);
     }
 
     /** Tests only: how many segment overrides are currently installed. */
