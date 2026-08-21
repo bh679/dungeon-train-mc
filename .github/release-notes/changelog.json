@@ -7355,15 +7355,12 @@
       "released_at": "2026-08-21T01:16:10Z"
     },
     {
-      "id": "nether-band-portal-room-spawns",
+      "id": "nether-band-dimensional-carriage-spawns",
       "version": "0.582.0",
       "type": "fix",
-      "title": "Nether band mobs no longer invade portal rooms",
-      "summary": "Stepping through a portal while the train was crossing the Nether band used to fill the room with ghasts, zombified piglins and magma cubes \u2014 spawning below the bedrock, in a space that is supposed to hold authored content only. The band now stays out of portal rooms and out of the world's basement entirely.",
-      "highlights": [
-        "Nether band mobs no longer spawn inside portal rooms or below bedrock",
-        "Band spawning on the surface is unchanged \u2014 same density, roster and ghast escalation"
-      ],
+      "title": "Nether band mobs no longer spawn in dimensional carriages",
+      "summary": "Ghasts, zombified piglins and magma cubes could spawn inside a dimensional carriage while the train crossed the Nether band. They no longer do.",
+      "highlights": [],
       "pr": 1003,
       "date": "2026-08-21",
       "released": false,
