@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.ship;
 
+import org.jetbrains.annotations.Nullable;
 import org.joml.Quaterniondc;
 import org.joml.Vector3dc;
 
@@ -53,4 +54,33 @@ public interface KinematicDriver {
      * current state.
      */
     TickOutput nextTransform(TickInput input);
+
+    /**
+     * The model-space pivot this driver pins its ship to, or {@code null} if it has none
+     * (or has not captured one yet).
+     *
+     * <p>Exists so {@code ship.sable.CarriagePivotPin} can re-pin a sub-level's
+     * {@code Pose3d.rotationPoint} from the block-change path, where there is no
+     * {@link TickOutput} to read {@link TickOutput#positionInModel()} from. Returning it
+     * through the driver interface keeps {@code ship.sable} free of a {@code train.*}
+     * cast.</p>
+     *
+     * <p>Default {@code null} — a driver that does not pin a pivot opts out, and the pin
+     * becomes a no-op for its ship.</p>
+     */
+    @Nullable
+    default Vector3dc lockedPositionInModel() {
+        return null;
+    }
+
+    /**
+     * Called when something outside this driver changed the ship's mass distribution and
+     * the pivot had to be corrected for it — see {@code CarriagePivotPin}.
+     *
+     * <p>Diagnostics only; drivers may ignore it. Fires only when the pivot had
+     * <em>actually</em> drifted, not on every block change, so it stays a meaningful
+     * signal rather than per-tick noise.</p>
+     */
+    default void onExternalMassChange() {
+    }
 }
