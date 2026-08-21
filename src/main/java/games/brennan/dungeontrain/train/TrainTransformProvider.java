@@ -642,6 +642,24 @@ public final class TrainTransformProvider implements KinematicDriver {
      * shouldn't happen since {@code placedSuccessfully} flips one-way, but
      * defensive) sees {@code null} and skips.
      */
+    /**
+     * Leased (relay) carriages' entity spawns, stashed and fired at exactly the same settle point as
+     * {@link #pendingContentsEntitySpawns}. Separate from that array on purpose — see
+     * {@link PendingRelayEntitySpawn}'s javadoc.
+     */
+    private volatile PendingRelayEntitySpawn[] pendingRelayEntitySpawns = null;
+
+    public void setPendingRelayEntitySpawns(PendingRelayEntitySpawn[] pending) {
+        this.pendingRelayEntitySpawns = pending;
+    }
+
+    /** Atomically take the pending relay entity spawns, so the settle branch fires them exactly once. */
+    public PendingRelayEntitySpawn[] takePendingRelayEntitySpawns() {
+        PendingRelayEntitySpawn[] snapshot = pendingRelayEntitySpawns;
+        pendingRelayEntitySpawns = null;
+        return snapshot;
+    }
+
     public PendingContentsEntitySpawn[] takePendingContentsEntitySpawns() {
         PendingContentsEntitySpawn[] snapshot = pendingContentsEntitySpawns;
         pendingContentsEntitySpawns = null;

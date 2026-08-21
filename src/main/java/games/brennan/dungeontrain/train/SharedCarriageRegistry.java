@@ -224,6 +224,31 @@ public final class SharedCarriageRegistry {
 
         public void markAttributed() { this.attributed = true; }
 
+        /**
+         * Fingerprint of the DECOR entities (armor stands, item frames, paintings, end crystals) as of
+         * this carriage's last successful upload, plus when the sweep last looked. Together they are how
+         * an entity-only edit gets noticed: hanging an item frame changes no block, so no position is ever
+         * enqueued for it and nothing else would trigger an upload. Mobs are excluded from the
+         * fingerprint on purpose — see {@code CarriageEntitySnapshot.decorFingerprint}.
+         */
+        private volatile long entitySig;
+        private volatile long lastEntityScanMs;
+
+        public long entitySig() { return entitySig; }
+
+        public void setEntitySig(long sig) { this.entitySig = sig; }
+
+        /**
+         * True at most once per {@code intervalMs} — the scan walks live entities, so it must not run on
+         * the flusher's half-second cadence. Stamps as it answers, so a caller cannot poll it into
+         * running every pass.
+         */
+        public boolean dueForEntityScan(long nowMs, long intervalMs) {
+            if (nowMs - lastEntityScanMs < intervalMs) return false;
+            lastEntityScanMs = nowMs;
+            return true;
+        }
+
         public boolean needsRebaseline() { return rebaseline; }
         /** Ask the flusher to re-baseline (full save) — the relay's delta log is near/at full. */
         public void markRebaseline() { this.rebaseline = true; }

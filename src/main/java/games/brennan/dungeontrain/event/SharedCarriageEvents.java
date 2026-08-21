@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.event;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.net.relay.SharedCarriageClient;
 import games.brennan.dungeontrain.net.relay.SharedCarriageClient.CallStatus;
 import games.brennan.dungeontrain.net.relay.SharedCarriageClient.DeltaResult;
@@ -10,6 +11,7 @@ import games.brennan.dungeontrain.ship.Shipyards;
 import games.brennan.dungeontrain.ship.sable.SableManagedShip;
 import games.brennan.dungeontrain.train.CarriageBlockSnapshot;
 import games.brennan.dungeontrain.train.CarriageDims;
+import games.brennan.dungeontrain.train.CarriageEntitySnapshot;
 import games.brennan.dungeontrain.train.SharedCarriagePool;
 import games.brennan.dungeontrain.train.SharedCarriageRegistry;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
@@ -59,6 +61,12 @@ public final class SharedCarriageEvents {
     private static final int FLUSH_INTERVAL_TICKS = 10;     // ~0.5 s — coalescing delta flush cadence
     /** Re-heartbeat a leased carriage this long after the last contact (well under the relay's ~1h TTL). */
     private static final long HEARTBEAT_INTERVAL_MS = 300_000L; // 5 min
+    /**
+     * How often a leased carriage's live entities are re-scanned for an entity-only edit. Block edits
+     * still upload sub-second off the change hook; this is the slower net that catches the edits no block
+     * change accompanies, and it walks entities, so it deliberately does not run on the flusher cadence.
+     */
+    private static final long ENTITY_SCAN_INTERVAL_MS = 30_000L;
     /** Max base64 blob we'll upload (must stay under the relay's CARRIAGES_MAX_CHARS). */
     private static final int MAX_BLOB_CHARS = 700_000;
     /**
@@ -184,8 +192,18 @@ public final class SharedCarriageEvents {
             return;
         }
         if (inst.hasPending()) {
-            if (inst.isOnRelay()) flushDelta(inst);      // leased/submitted → stream only the changed cells
-            else submitFresh(inst);                      // never uploaded → one-time full submit
+            if (inst.isOnRelay()) flushDelta(inst, false); // leased/submitted → stream only the changed cells
+            else submitFresh(inst);                       // never uploaded → one-time full submit
+            return;
+        }
+        // Entity-only edits reach the pool here. Hanging an item frame or posing an armor stand changes no
+        // block, so nothing is ever enqueued for it; the sweep instead compares a live decor fingerprint
+        // against the one last uploaded. Only for carriages ALREADY on the relay: a fresh carriage still
+        // needs a block edit to earn its place in the pool, or the contents mobs a blank shared slot spawns
+        // with would upload it untouched.
+        if (inst.isOnRelay() && inst.dueForEntityScan(System.currentTimeMillis(), ENTITY_SCAN_INTERVAL_MS)
+                && entitiesChanged(inst)) {
+            flushDelta(inst, true);
             return;
         }
         // One-shot attribution: a lease claimed during world-load spawn reached the relay with no uuid
@@ -199,6 +217,18 @@ public final class SharedCarriageEvents {
         if (inst.isOnRelay() && System.currentTimeMillis() - inst.lastContactMs() > HEARTBEAT_INTERVAL_MS) {
             heartbeatLeased(inst);                        // idle leased → keep the lock alive
         }
+    }
+
+    /**
+     * Has a builder changed this carriage's decor entities since its last successful upload? Walks the
+     * live carriage (no serialisation) and compares fingerprints. False whenever the sub-level isn't
+     * resident — there is nothing to read, and "unreadable" must never be mistaken for "emptied".
+     */
+    private static boolean entitiesChanged(SharedCarriageRegistry.Instance inst) {
+        SableManagedShip ship = liveShip(inst.level, inst);
+        if (ship == null) return false;
+        long live = CarriageEntitySnapshot.liveDecorFingerprint(ship, inst.level, inst.shipyardOrigin, inst.dims);
+        return live != inst.entitySig();
     }
 
     /** Upload a fresh, changed carriage for the first time (full submit, gated on a consenting player). */
@@ -233,6 +263,7 @@ public final class SharedCarriageEvents {
                             SharedCarriageClient.LeaseResult r = result.get();
                             inst.onRelayLease(r.id(), r.token()); // baseSeq=0 on the fresh row; seq stays 0 → first delta seq 1
                             inst.stampContact(now);
+                            inst.setEntitySig(blob.entitySig());
                             LOGGER.info("[DungeonTrain] Uploaded fresh shared carriage variant={} → relay id={} (leased).",
                                     inst.variantId, r.id());
                         } else if (err == null && result != null && result.isPresent()) {
@@ -247,19 +278,31 @@ public final class SharedCarriageEvents {
                 });
     }
 
-    /** Capture + upload only the queued (changed) cells of a leased carriage as one delta. */
-    private static void flushDelta(SharedCarriageRegistry.Instance inst) {
+    /**
+     * Capture + upload only the queued (changed) cells of a leased carriage as one delta.
+     *
+     * @param entitiesOnly upload even with no changed cells, because the carriage's ENTITIES changed —
+     *                     every delta carries the whole current entity list, so an empty-cell delta is a
+     *                     perfectly good carrier for one
+     */
+    private static void flushDelta(SharedCarriageRegistry.Instance inst, boolean entitiesOnly) {
         SableManagedShip ship = liveShip(inst.level, inst);
         if (ship == null) return; // sub-level not resident → leave queued, retry later
         Set<BlockPos> drained = inst.drainPending();
-        if (drained.isEmpty()) return;
+        if (drained.isEmpty() && !entitiesOnly) return;
         int seq = inst.nextSeq();
         String cells, text;
+        long sig;
         try {
             CarriageBlockSnapshot.Captured cap =
-                    CarriageBlockSnapshot.captureCells(ship, inst.shipyardOrigin, inst.dims, drained, inst.level.registryAccess());
+                    CarriageBlockSnapshot.captureCells(ship, inst.level, inst.shipyardOrigin, inst.dims, drained,
+                            DungeonTrainConfig.getSharedCarriageMaxEntities());
             cells = CarriageBlockSnapshot.encode(cap.tag());
             text = cap.text();
+            // The fingerprint of what this upload actually carries — recorded only once the POST lands, so
+            // a failed upload is re-tried rather than mistaken for "the relay already has these entities".
+            sig = CarriageEntitySnapshot.decorFingerprint(
+                    cap.tag().getList("ents", net.minecraft.nbt.Tag.TAG_COMPOUND));
         } catch (Throwable tErr) {
             inst.reenqueue(drained); // capture failed → retry
             LOGGER.debug("[DungeonTrain] shared-carriage delta capture failed for pIdx={}: {}", inst.pIdx, tErr.toString());
@@ -279,6 +322,7 @@ public final class SharedCarriageEvents {
                             inst.reenqueue(drained);                 // transport error → retry these cells
                         } else if (res.status() == CallStatus.OK) {
                             inst.stampContact(now);
+                            inst.setEntitySig(sig);
                             if (res.compactNeeded()) inst.markRebaseline(); // proactive re-baseline
                             // drained stays dropped — successfully uploaded
                         } else if (res.status() == CallStatus.ERROR && res.mustCompact()) {
@@ -314,6 +358,7 @@ public final class SharedCarriageEvents {
                     try {
                         if (status == CallStatus.OK) {
                             inst.stampContact(now);
+                            inst.setEntitySig(blob.entitySig());
                             inst.clearRebaseline();
                         } else if (status == CallStatus.FORBIDDEN || status == CallStatus.UNKNOWN) {
                             inst.clearRelayLease();
@@ -375,15 +420,22 @@ public final class SharedCarriageEvents {
         return captured;
     }
 
-    /** A captured carriage ready for the relay: the base64 blob + its scraped moderation text. */
-    private record CapturedBlob(String base64, String text) {}
+    /**
+     * A captured carriage ready for the relay: the base64 blob, its scraped moderation text, and the
+     * decor fingerprint of the entities it carries — recorded on the instance once the upload lands, so
+     * the sweep can tell a later entity-only edit from the state the relay already holds.
+     */
+    private record CapturedBlob(String base64, String text, long entitySig) {}
 
     /** Full-footprint capture + encode of a live carriage (with moderation text), or null on failure. */
     private static CapturedBlob captureFull(SableManagedShip ship, SharedCarriageRegistry.Instance inst) {
         try {
             CarriageBlockSnapshot.Captured cap =
-                    CarriageBlockSnapshot.capture(ship, inst.shipyardOrigin, inst.dims, inst.level.registryAccess());
-            return new CapturedBlob(CarriageBlockSnapshot.encode(cap.tag()), cap.text());
+                    CarriageBlockSnapshot.capture(ship, inst.level, inst.shipyardOrigin, inst.dims,
+                            DungeonTrainConfig.getSharedCarriageMaxEntities());
+            long sig = CarriageEntitySnapshot.decorFingerprint(
+                    cap.tag().getList("ents", net.minecraft.nbt.Tag.TAG_COMPOUND));
+            return new CapturedBlob(CarriageBlockSnapshot.encode(cap.tag()), cap.text(), sig);
         } catch (Throwable t) {
             LOGGER.debug("[DungeonTrain] shared-carriage full capture failed for pIdx={}: {}", inst.pIdx, t.toString());
             return null;

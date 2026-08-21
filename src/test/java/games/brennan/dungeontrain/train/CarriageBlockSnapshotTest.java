@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.train;
 
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.DoubleTag;
 import net.minecraft.nbt.IntArrayTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
@@ -150,5 +151,68 @@ class CarriageBlockSnapshotTest {
             CarriageBlockSnapshot.applyDeltaCells(base, seq2), seq1);
         assertEquals("B", markerAt(outOfOrder, 0, 0, 0));
         assertEquals("X", markerAt(outOfOrder, 1, 0, 0));
+    }
+
+    // ---- entities (blob v2) ----
+
+    /** One blob entity entry, in the shape {@code CarriageEntitySnapshot} writes. */
+    private static CompoundTag ent(String id, double x, double y, double z) {
+        CompoundTag e = new CompoundTag();
+        e.putString("id", id);
+        ListTag p = new ListTag();
+        p.add(DoubleTag.valueOf(x));
+        p.add(DoubleTag.valueOf(y));
+        p.add(DoubleTag.valueOf(z));
+        e.put("p", p);
+        return e;
+    }
+
+    private static ListTag ents(CompoundTag... entries) {
+        ListTag list = new ListTag();
+        for (CompoundTag e : entries) list.add(e);
+        return list;
+    }
+
+    private static java.util.List<String> entIdsOf(CompoundTag snap) {
+        return CarriageEntitySnapshot.idsOf(snap.getList("ents", Tag.TAG_COMPOUND));
+    }
+
+    @Test
+    void applyDeltaCellsReplacesTheEntityListWhenTheDeltaCarriesOne() {
+        CompoundTag base = baseTag(9, 7, 7);
+        base.put("ents", ents(ent("minecraft:armor_stand", 1, 0, 1)));
+        CompoundTag delta = deltaTag();
+        delta.put("ents", ents(ent("minecraft:villager", 2, 0, 2), ent("minecraft:item_frame", 0, 2, 0)));
+
+        CompoundTag out = CarriageBlockSnapshot.applyDeltaCells(base, delta);
+        assertEquals(java.util.List.of("minecraft:villager", "minecraft:item_frame"), entIdsOf(out));
+        // The base is never mutated — the fold must be safe to apply to a cached snapshot.
+        assertEquals(java.util.List.of("minecraft:armor_stand"), entIdsOf(base));
+    }
+
+    @Test
+    void applyDeltaCellsKeepsTheBaseEntitiesWhenTheDeltaHasNone() {
+        CompoundTag base = baseTag(9, 7, 7);
+        base.put("ents", ents(ent("minecraft:armor_stand", 1, 0, 1)));
+
+        // A v1 delta (captured before entities existed) has no `ents` key at all: "unchanged", not "gone".
+        CompoundTag out = CarriageBlockSnapshot.applyDeltaCells(base, deltaTag());
+        assertEquals(java.util.List.of("minecraft:armor_stand"), entIdsOf(out));
+    }
+
+    @Test
+    void applyDeltaCellsCanEmptyTheEntityListWithAnExplicitEmptyOne() {
+        CompoundTag base = baseTag(9, 7, 7);
+        base.put("ents", ents(ent("minecraft:armor_stand", 1, 0, 1)));
+        CompoundTag delta = deltaTag();
+        delta.put("ents", new ListTag()); // the builder removed every entity
+
+        assertEquals(java.util.List.of(), entIdsOf(CarriageBlockSnapshot.applyDeltaCells(base, delta)));
+    }
+
+    @Test
+    void applyDeltaCellsLeavesAV1BaseWithoutEntitiesAlone() {
+        CompoundTag out = CarriageBlockSnapshot.applyDeltaCells(baseTag(9, 7, 7), deltaTag());
+        assertEquals(java.util.List.of(), entIdsOf(out));
     }
 }
