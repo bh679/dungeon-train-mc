@@ -71,7 +71,13 @@ public final class DistantHorizonsLod {
 
     /** How the notify behaves. Flip live with {@code /dungeontrain debug dh-lod-refresh}. */
     public enum Mode {
-        /** Default: queue, and release a few chunks per tick. */
+        /**
+         * Default: tell DH when the chunk unloads — the moment its LOD stops being hidden behind real
+         * geometry and becomes what you actually see. Rebuilds then happen at the view-distance boundary
+         * the player is riding away from, rather than in the terrain streaming in ahead of them.
+         */
+        UNLOAD,
+        /** {@link #UNLOAD} plus a trickle of early refreshes for chunks that stay loaded a long time. */
         THROTTLED,
         /** Notify inline the moment a chunk is mirrored — the white-flash behaviour, kept for A/B. */
         INSTANT,
@@ -79,7 +85,7 @@ public final class DistantHorizonsLod {
         OFF
     }
 
-    public static volatile Mode mode = Mode.THROTTLED;
+    public static volatile Mode mode = Mode.UNLOAD;
 
     private DistantHorizonsLod() {}
 
@@ -91,7 +97,7 @@ public final class DistantHorizonsLod {
         switch (mode) {
             case OFF -> { }
             case INSTANT -> notifyChunk(level, chunk);
-            case THROTTLED -> pending.add(chunk.getPos().toLong());
+            case UNLOAD, THROTTLED -> pending.add(chunk.getPos().toLong());
         }
     }
 
@@ -109,11 +115,25 @@ public final class DistantHorizonsLod {
             it.remove();
             ChunkAccess chunk = level.getChunkSource().getChunkNow(ChunkPos.getX(key), ChunkPos.getZ(key));
             if (chunk == null) {
-                LOGGER.debug("[DungeonTrain] skipping DH LOD refresh for unloaded chunk {}", new ChunkPos(key));
+                // Should be unreachable — flushOnUnload takes chunks out of the queue as they unload.
+                LOGGER.debug("[DungeonTrain] DH LOD refresh: chunk {} unloaded before its flush", new ChunkPos(key));
                 continue;
             }
             notifyChunk(level, chunk);
             sent++;
+        }
+    }
+
+    /**
+     * Last chance to tell DH about a chunk: it is unloading, so this is both the final moment its blocks
+     * are readable and the moment DH's LOD becomes the only thing representing it on screen. Without this
+     * a queued chunk would simply be dropped when it unloaded — which is exactly how a rate-limited queue
+     * silently let the band go back to rendering upright in the distance.
+     */
+    public static void flushOnUnload(ServerLevel level, ChunkAccess chunk) {
+        if (pending.isEmpty()) return;
+        if (pending.remove(chunk.getPos().toLong())) {
+            notifyChunk(level, chunk);
         }
     }
 

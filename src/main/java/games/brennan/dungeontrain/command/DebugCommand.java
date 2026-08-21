@@ -92,11 +92,13 @@ public final class DebugCommand {
                 .then(Commands.literal("ready").executes(ctx -> setMirrorDrainLegacy(ctx.getSource(), false)))
                 .then(Commands.literal("legacy").executes(ctx -> setMirrorDrainLegacy(ctx.getSource(), true)))
                 .then(Commands.literal("status").executes(ctx -> mirrorDrainStatus(ctx.getSource()))))
-            // /dungeontrain debug dh-lod-refresh <throttled|instant|off|status> — how mirrored chunks are
-            // handed to Distant Horizons. `throttled` (default) releases a few per tick; `instant` notifies
-            // inline (each DH LOD rebuild leaves its area briefly undrawn, so streaming flashes the sky);
-            // `off` never notifies (DH keeps its un-mirrored copy — upright slabs in the band).
+            // /dungeontrain debug dh-lod-refresh <unload|throttled|instant|off|status> — how mirrored chunks
+            // are handed to Distant Horizons. `unload` (default) notifies as each chunk unloads; `throttled`
+            // adds a trickle of early refreshes; `instant` notifies inline (each DH LOD rebuild leaves its
+            // area briefly undrawn, so streaming flashes the sky); `off` never notifies (DH keeps its
+            // un-mirrored copy — upright terrain in the band).
             .then(Commands.literal("dh-lod-refresh")
+                .then(Commands.literal("unload").executes(ctx -> setDhLodRefresh(ctx.getSource(), DistantHorizonsLod.Mode.UNLOAD)))
                 .then(Commands.literal("throttled").executes(ctx -> setDhLodRefresh(ctx.getSource(), DistantHorizonsLod.Mode.THROTTLED)))
                 .then(Commands.literal("instant").executes(ctx -> setDhLodRefresh(ctx.getSource(), DistantHorizonsLod.Mode.INSTANT)))
                 .then(Commands.literal("off").executes(ctx -> setDhLodRefresh(ctx.getSource(), DistantHorizonsLod.Mode.OFF)))
@@ -248,14 +250,15 @@ public final class DebugCommand {
 
     private static int setDhLodRefresh(CommandSourceStack source, DistantHorizonsLod.Mode mode) {
         DistantHorizonsLod.mode = mode;
-        if (mode != DistantHorizonsLod.Mode.THROTTLED) DistantHorizonsLod.clear();
+        if (mode == DistantHorizonsLod.Mode.INSTANT || mode == DistantHorizonsLod.Mode.OFF) DistantHorizonsLod.clear();
         source.sendSuccess(() -> Component.literal(
             "[DungeonTrain] Distant Horizons LOD refresh: " + switch (mode) {
-                case THROTTLED -> "THROTTLED (default — a few chunks per tick)";
+                case UNLOAD -> "UNLOAD (default — notify as each mirrored chunk unloads)";
+                case THROTTLED -> "THROTTLED (unload flush + a few chunks per tick)";
                 case INSTANT -> "INSTANT (notify as each chunk is mirrored — expect the sky to flash)";
                 case OFF -> "OFF (DH keeps its un-mirrored copy — expect upright terrain in the band)";
             }
-        ).withStyle(mode == DistantHorizonsLod.Mode.THROTTLED ? ChatFormatting.GREEN : ChatFormatting.YELLOW), true);
+        ).withStyle(mode == DistantHorizonsLod.Mode.UNLOAD ? ChatFormatting.GREEN : ChatFormatting.YELLOW), true);
         return 1;
     }
 

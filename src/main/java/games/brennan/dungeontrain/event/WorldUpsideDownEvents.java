@@ -128,6 +128,18 @@ public final class WorldUpsideDownEvents {
     }
 
     /**
+     * Tell Distant Horizons about a mirrored chunk as it unloads — see
+     * {@link DistantHorizonsLod#flushOnUnload}. Costs one set-emptiness check per chunk unload when DH is
+     * absent or nothing is queued (the common case).
+     */
+    @SubscribeEvent
+    public static void onChunkUnload(ChunkEvent.Unload event) {
+        if (!(event.getLevel() instanceof ServerLevel level)) return;
+        if (!level.dimension().equals(Level.OVERWORLD)) return;
+        DistantHorizonsLod.flushOnUnload(level, event.getChunk());
+    }
+
+    /**
      * Drop any pending precomputed plans when the overworld unloads, so a stale plan from a previous
      * world can never be applied to a same-positioned chunk in a newly loaded one.
      */
