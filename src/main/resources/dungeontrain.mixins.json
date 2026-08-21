@@ -8,6 +8,8 @@
     "PlayerFudgeSpawnMixin",
     "LightningBoltVisualOnlyMixin",
     "FlowingFluidExternalWaterMixin",
+    "FlowingFluidEditorPreviewMixin",
+    "LavaFluidEditorPreviewMixin",
     "AdvancementVisibilityEvaluatorMixin",
     "BedBlockMixin",
     "EnderChestBlockLabelMixin",
