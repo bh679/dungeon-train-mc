@@ -16,7 +16,6 @@ import games.brennan.dungeontrain.discord.RunSummaryReporter;
 import games.brennan.dungeontrain.discord.DeathManifestFormat;
 import games.brennan.dungeontrain.discord.DeathReportFormat;
 import games.brennan.dungeontrain.narrative.DeathLoreStore;
-import games.brennan.dungeontrain.net.AbandonRunPacket;
 import games.brennan.dungeontrain.net.DeathNarrative;
 import games.brennan.dungeontrain.net.DeathStatsPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
@@ -102,12 +101,13 @@ public final class RunStatsEvents {
      */
     private static final float MAX_TRACKED_DAMAGE = 1_000_000.0f;
     /**
-     * An abandoned run (pause-menu "Abandon This Run") that reached fewer than this many
-     * carriages is kept OFF the public death feed — a player who steps off after a handful
-     * of carriages shouldn't broadcast a trivial "Run Ended" manifest. See
-     * {@link #suppressPublicAbandon(boolean, int)}.
+     * A run that ended before reaching this many carriages is kept OFF the public death feed —
+     * however it ended. A handful of carriages isn't a story worth broadcasting as a "Run Ended"
+     * manifest, and short runs are what fill the channel. The one exception is a death at the
+     * hands of an echo, which posts at any length. See
+     * {@link #suppressPublicShortRun(int, boolean)}.
      */
-    private static final int MIN_CARRIAGES_FOR_PUBLIC_ABANDON = 20;
+    private static final int MIN_CARRIAGES_FOR_PUBLIC_FEED = 100;
 
     private RunStatsEvents() {}
 
@@ -315,16 +315,18 @@ public final class RunStatsEvents {
         // the basic threaded report above. Dev/test builds DO post Free Play runs (to the dev channel)
         // so the report stays testable in creative — see DungeonTrain.isDevBuild().
         //
-        // Short abandoned runs are ALSO withheld from the public feed: a player who taps "Abandon This
-        // Run" before reaching MIN_CARRIAGES_FOR_PUBLIC_ABANDON carriages shouldn't broadcast a trivial
-        // manifest. The threaded report above still posts. Applies on dev + release — noise in either.
-        boolean shortAbandon = suppressPublicAbandon(
-                AbandonRunPacket.isAbandonCause(source), packet.cartsTravelled());
-        if (shortAbandon) {
-            LOGGER.debug("[DungeonTrain] {} abandoned at {} carriages (< {}) — skipping public death feed",
-                    player.getGameProfile().getName(), packet.cartsTravelled(), MIN_CARRIAGES_FOR_PUBLIC_ABANDON);
+        // Short runs are ALSO withheld from the public feed, however they ended (abandoned, died,
+        // quit): under MIN_CARRIAGES_FOR_PUBLIC_FEED carriages there is no story worth broadcasting,
+        // and those runs are what fill the channel. EXCEPT when an echo did the killing — a
+        // cross-player kill is exactly what the feed is for, so it posts at any carriage count.
+        // The threaded report above always posts. Applies on dev + release — noise in either.
+        boolean slainByEcho = EchoIdentity.sourcePlayer(source.getEntity()).isPresent();
+        boolean shortRun = suppressPublicShortRun(packet.cartsTravelled(), slainByEcho);
+        if (shortRun) {
+            LOGGER.debug("[DungeonTrain] {} ended at {} carriages (< {}, no echo kill) — skipping public death feed",
+                    player.getGameProfile().getName(), packet.cartsTravelled(), MIN_CARRIAGES_FOR_PUBLIC_FEED);
         }
-        if ((!cheated || DungeonTrain.isDevBuild()) && !shortAbandon) {
+        if ((!cheated || DungeonTrain.isDevBuild()) && !shortRun) {
             List<String> advTitles = resolveAdvancementTitles(player, packet.earnedAdvancements());
             String manifestTitle = DeathManifestFormat.title(
                     player.getGameProfile().getName(), packet.cartsTravelled());
@@ -345,13 +347,15 @@ public final class RunStatsEvents {
 
     /**
      * Whether this run's public ("manifest") death report should be withheld because it was a
-     * <em>short abandoned run</em>: the player ended it via the pause-menu "Abandon This Run"
-     * ({@code abandoned}) before reaching {@link #MIN_CARRIAGES_FOR_PUBLIC_ABANDON} carriages.
+     * <em>short run</em>: it ended before reaching {@link #MIN_CARRIAGES_FOR_PUBLIC_FEED}
+     * carriages, regardless of how it ended (abandoned via the pause menu, died, or quit).
+     * {@code slainByEcho} overrides the cutoff — a player struck down by another player's echo
+     * always reaches the feed, however early it happened.
      * Pure (no Minecraft types) so it is unit-testable; the threaded per-player report is
      * unaffected — only the public feed gates on this.
      */
-    static boolean suppressPublicAbandon(boolean abandoned, int cartsTravelled) {
-        return abandoned && cartsTravelled < MIN_CARRIAGES_FOR_PUBLIC_ABANDON;
+    static boolean suppressPublicShortRun(int cartsTravelled, boolean slainByEcho) {
+        return !slainByEcho && cartsTravelled < MIN_CARRIAGES_FOR_PUBLIC_FEED;
     }
 
     /**
