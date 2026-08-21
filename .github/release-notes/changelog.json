@@ -7600,6 +7600,22 @@
       "released": true,
       "released_in": "v0.596.0",
       "released_at": "2026-08-21T12:31:57Z"
+    },
+    {
+      "id": "nemos-inventory-sorting-modpack",
+      "version": "0.597.0",
+      "type": "chore",
+      "title": "Nemo's Inventory Sorting available in the modpack",
+      "summary": "The Dungeon Train modpack now offers Nemo's Inventory Sorting as an optional add-on. Turn it on in the launcher's optional-mods list to get one-click sort buttons on your inventory and any chest \u2014 handy when a loot run leaves your carriage storage a mess. It's off by default, so nothing changes unless you opt in.",
+      "highlights": [
+        "New opt-in companion mod: Nemo's Inventory Sorting (client-side, 1.8.2.1)",
+        "Adds sort buttons to inventory and container screens",
+        "Ships switched off \u2014 enable it in the launcher's optional mods list"
+      ],
+      "date": "2026-08-21",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
