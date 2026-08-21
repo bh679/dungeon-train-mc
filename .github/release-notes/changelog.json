@@ -7424,6 +7424,22 @@
       "released": true,
       "released_in": "v0.586.0",
       "released_at": "2026-08-21T05:05:55Z"
+    },
+    {
+      "id": "passenger-log-short-run-filter",
+      "version": "0.587.0",
+      "type": "feat",
+      "title": "Fewer trivial runs in the passenger log",
+      "summary": "The public passenger log now only carries runs that got somewhere. A run that ends before carriage 100 stays off the feed \u2014 whether you died, quit, or abandoned it \u2014 so the log fills with journeys instead of false starts. The one exception: if another player's echo strikes you down, your run is posted however early it happened.",
+      "highlights": [
+        "Runs ending before carriage 100 no longer post to the public passenger log",
+        "Being killed by an echo always posts, at any carriage count"
+      ],
+      "pr": 1010,
+      "date": "2026-08-21",
+      "released": true,
+      "released_in": "v0.587.0",
+      "released_at": "2026-08-21T06:22:32Z"
     }
   ]
 }
