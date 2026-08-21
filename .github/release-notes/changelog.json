@@ -7398,6 +7398,22 @@
       "released": true,
       "released_in": "v0.584.0",
       "released_at": "2026-08-21T03:12:02Z"
+    },
+    {
+      "id": "end-city-rarity-tuning",
+      "version": "0.585.0",
+      "type": "content",
+      "title": "End cities are rarer on the End band",
+      "summary": "End cities on the End band's islands now generate about four times further apart. The band's End core is a long strip the train drives straight through, so at the real End's spacing you passed city after city on a single crossing. Now a city is something you spot and go out of your way for.",
+      "highlights": [
+        "End cities on the End band are roughly four times rarer.",
+        "Nothing else about them changed \u2014 same towers, ships, shulkers and loot, same end_highlands/end_midlands islands.",
+        "Already-generated chunks keep the cities they have; the new spacing applies to newly generated End band."
+      ],
+      "date": "2026-08-21",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
