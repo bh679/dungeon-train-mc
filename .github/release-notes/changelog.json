@@ -7663,6 +7663,55 @@
         "Ships switched off \u2014 enable it in the launcher's optional mods list"
       ],
       "date": "2026-08-21",
+      "released": true,
+      "released_in": "v0.600.0",
+      "released_at": "2026-08-21T15:05:53Z"
+    },
+    {
+      "id": "punchy-modpack-optin",
+      "version": "0.601.0",
+      "type": "feat",
+      "title": "Punchy! now in the modpack (off by default)",
+      "summary": "The Dungeon Train modpack now ships Punchy!, a first-person animation mod that adds weight and personality to swinging, mining and movement. It's included but switched off \u2014 flip it on in your launcher's mod list if you want it.",
+      "highlights": [
+        "Punchy! 2.7d bundled in both the CurseForge and Modrinth packs",
+        "Disabled by default \u2014 enable it with one click, no extra download",
+        "Client-side only, so it's skipped on dedicated servers"
+      ],
+      "pr": 1024,
+      "date": "2026-08-21",
+      "released": true,
+      "released_in": "v0.601.0",
+      "released_at": "2026-08-21T15:14:13Z"
+    },
+    {
+      "id": "edible-backpack-rarity",
+      "version": "0.602.0",
+      "type": "chore",
+      "title": "Edible backpacks are rarer",
+      "summary": "The edible backpack turned up in almost every other chest. Its odds are now cut across the general, iron/gold and pot loot pools, and it no longer appears in the starter chest \u2014 so finding one feels like a find again.",
+      "highlights": [
+        "Edible backpack far less common in chests",
+        "No longer handed out in the starter chest"
+      ],
+      "pr": 1025,
+      "date": "2026-08-21",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "miniword-portal-room",
+      "version": "0.602.0",
+      "type": "content",
+      "title": "Miniword \u2014 a new House portal room",
+      "summary": "Step through a portal into Miniword, a hand-built world in a box and by far the largest portal room in the game at 48x30x48. It turns up as a House room from Diff-Level 12 onward.",
+      "highlights": [
+        "New Miniword portal room \u2014 a 48x30x48 build, the biggest room in Dungeon Train",
+        "Appears among the House portal rooms from Diff-Level 12"
+      ],
+      "pr": 1026,
+      "date": "2026-08-21",
       "released": false,
       "released_in": null,
       "released_at": null
