@@ -46,13 +46,14 @@ repositories {
         }
     }
 
-    // AdventureItemNames is GitHub-Releases-only until Modrinth/CurseForge
-    // approval lands. Ivy patternLayout maps the coordinates
-    // bh679:adventureitemnames:<v> to the release asset URL
-    // https://github.com/bh679/adventureitemnames-mc/releases/download/v<v>/adventureitemnames-neoforge-<v>.jar.
+    // Flat-named bh679 sibling releases. Ivy patternLayout maps the coordinates
+    // bh679:<module>:<v> to the release asset URL
+    // https://github.com/bh679/<module>-mc/releases/download/v<v>/<module>-neoforge-<v>.jar.
     // metadataSources { artifact() } lets Gradle resolve directly from the jar
     // (no ivy.xml exists at the URL). content { includeGroup } scopes probes to
     // bh679 only so Gradle won't hit GitHub for every dependency.
+    // Siblings that ship multi-MC-version releases (suffixed asset names) are excluded
+    // here and get their own repo below.
     ivy {
         name = 'GitHubReleases'
         url = 'https://github.com/'
@@ -63,7 +64,25 @@ repositories {
         content {
             includeGroup 'bh679'
             excludeModule('bh679', 'playermob')
+            excludeModule('bh679', 'adventureitemnames')
         }
+    }
+
+    // adventureitemnames-mc 0.46.0+ added Minecraft 1.20.1 builds, so its NeoForge asset name
+    // gained a `+<mcversion>` suffix (adventureitemnames-neoforge-0.48.0+1.21.1.jar) instead of
+    // the flat adventureitemnames-neoforge-<v>.jar of 0.45.0 and earlier — same break PlayerMob
+    // hit at its 0.48.0. This is why the auto-release cascade sat on AIN 0.45.0 from 0.46.0's
+    // release (2026-06-23) until this repo was added: every tick's verification build failed to
+    // resolve the bumped coordinate and reverted itself, silently and without a diff.
+    // Separate ivy repo, scoped to just the adventureitemnames module, pinned to DT's MC version.
+    ivy {
+        name = 'GitHubReleasesAdventureItemNames'
+        url = 'https://github.com/'
+        patternLayout {
+            artifact "[organization]/[module]-mc/releases/download/v[revision]/[module]-neoforge-[revision]+${minecraft_version}.[ext]"
+        }
+        metadataSources { artifact() }
+        content { includeModule('bh679', 'adventureitemnames') }
     }
 
     // playermob-mc 0.48.0+ ships builds for multiple MC versions per release, so its

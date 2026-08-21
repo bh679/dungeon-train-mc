@@ -7338,6 +7338,21 @@
       "released": true,
       "released_in": "v0.580.0",
       "released_at": "2026-08-20T13:28:18Z"
+    },
+    {
+      "id": "ain-0-48",
+      "version": "0.581.0",
+      "type": "chore",
+      "title": "New supporter names and the Archivist",
+      "summary": "Twelve more Discord supporters join the item name pool, along with the Archivist Society and Archivist and Detective titles.",
+      "highlights": [
+        "Requires Adventure Item Names 0.48.0"
+      ],
+      "pr": 1002,
+      "date": "2026-08-20",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
