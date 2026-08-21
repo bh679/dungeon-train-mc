@@ -86,6 +86,10 @@
     "weight": 1,
     "mode": "bedrock_lock/exact/off/off/mix:3:1:1:24:120"
   },
+  "miniword": {
+    "weight": 1,
+    "mode": "endless_open"
+  },
   "nobeam": {
     "weight": 1,
     "mode": "bedrockless"

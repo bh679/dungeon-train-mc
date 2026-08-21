@@ -54,6 +54,10 @@
       "id": "randomized",
       "weight": 1,
       "minLevel": 70
+    },
+    {
+      "id": "miniword",
+      "weight": 1
     }
   ]
 }
