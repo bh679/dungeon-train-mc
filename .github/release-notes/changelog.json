@@ -7452,6 +7452,23 @@
       "released_in": null,
       "released_at": null,
       "pr": 1012
+    },
+    {
+      "id": "player-portal-rooms-house",
+      "version": "0.589.0",
+      "type": "content",
+      "title": "Six player-built portal rooms",
+      "summary": "Six new portal rooms, designed and built by players in the in-game editor — thanks to Autistic Mime, General Efficiency and Lil Detective Crunch. Which one you find depends on how far down the line you are, so the further you ride the stranger they get.",
+      "highlights": [
+        "Built by Autistic Mime, General Efficiency and Lil Detective Crunch",
+        "Six new rooms, each gated by distance",
+        "New loot: an End-themed chest, a gambling chest, and a mixed-blocks chest",
+        "Their chests were rebuilt clean — the authors' worlds had baked in gear with impossible stats"
+      ],
+      "date": "2026-08-21",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

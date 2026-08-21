@@ -18,6 +18,42 @@
       "id": "medievalhouse",
       "weight": 1,
       "minLevel": 12
+    },
+    {
+      "id": "end",
+      "weight": 1,
+      "minLevel": 7,
+      "phases": [
+        "OVERWORLD",
+        "NETHER",
+        "UPSIDE_DOWN",
+        "CHUNCKS"
+      ]
+    },
+    {
+      "id": "cvspharmacy",
+      "weight": 1,
+      "minLevel": 80
+    },
+    {
+      "id": "abandonedroom",
+      "weight": 1
+    },
+    {
+      "id": "sanemaze",
+      "weight": 1,
+      "minLevel": 35,
+      "maxLevel": 41
+    },
+    {
+      "id": "upsidedown",
+      "weight": 1,
+      "minLevel": 15
+    },
+    {
+      "id": "randomized",
+      "weight": 1,
+      "minLevel": 70
     }
   ]
 }

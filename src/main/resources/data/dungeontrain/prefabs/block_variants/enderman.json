@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "states": [
+    {"entity": "minecraft:endermite", "difficulty": {"min": 36, "max": "all"}},
+    {"entity": "minecraft:enderman", "difficulty": {"min": 45, "max": "all"}}
+  ]
+}
