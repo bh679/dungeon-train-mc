@@ -7600,6 +7600,21 @@
       "released": true,
       "released_in": "v0.596.0",
       "released_at": "2026-08-21T12:31:57Z"
+    },
+    {
+      "id": "emerald-block-trade-balance",
+      "version": "0.597.0",
+      "type": "fix",
+      "title": "Emerald blocks trade at their real value",
+      "summary": "Villagers could hand you a whole emerald block (worth 9 emeralds) for a stack of cheap goods once their trade list included an emerald-block price. The Trade Anything slot now treats emerald blocks as currency rather than tradeable goods, and pays out in emeralds when a payout block would be worth more than everything you put in. Genuinely valuable items \u2014 netherite gear and the like \u2014 still pay out in blocks.",
+      "highlights": [
+        "A stack of wheat now pays out in emeralds instead of minting an emerald block.",
+        "High-value items still pay out in emerald blocks, at nine emeralds per block."
+      ],
+      "date": "2026-08-21",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
