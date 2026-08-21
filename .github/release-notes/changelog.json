@@ -7485,6 +7485,18 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "skybox-survival-targeting",
+      "version": "0.591.0",
+      "type": "feat",
+      "title": "Sky block and portal room tweaks",
+      "summary": "Small adjustments to sky blocks and portal rooms.",
+      "highlights": [],
+      "date": "2026-08-21",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
