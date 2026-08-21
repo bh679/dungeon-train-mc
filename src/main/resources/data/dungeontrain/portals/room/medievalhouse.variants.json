@@ -1,6 +1,0 @@
-{
-  "schemaVersion": 9,
-  "variants": {
-    "2,1,9": [{"state": "minecraft:spruce_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["north"]}}, {"state": "minecraft:water[level=0]", "rotation": {"mode": "lock", "dirs": ["north"]}}]
-  }
-}
