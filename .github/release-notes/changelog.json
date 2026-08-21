@@ -7663,9 +7663,9 @@
         "Ships switched off \u2014 enable it in the launcher's optional mods list"
       ],
       "date": "2026-08-21",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.600.0",
+      "released_at": "2026-08-21T15:05:53Z"
     }
   ]
 }
