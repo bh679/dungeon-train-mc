@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 9,
+  "variants": {
+    "7,4,9": [{"state": "minecraft:lantern[hanging=true,waterlogged=false]", "weight": 10}, "minecraft:soul_lantern[hanging=false,waterlogged=false]"],
+    "5,1,8": [{"state": "minecraft:spruce_log[axis=y]", "rotation": {"mode": "lock", "dirs": ["west"]}}, {"state": "minecraft:spruce_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["south"]}, "half": "top"}],
+    "14,2,4": { "lockId": 1, "states": [{"state": "minecraft:spruce_log[axis=y]", "rotation": {"mode": "lock", "dirs": ["up"]}}, {"state": "minecraft:acacia_log[axis=y]", "rotation": {"mode": "lock", "dirs": ["up"]}}] },
+    "14,1,4": { "lockId": 1, "states": [{"state": "minecraft:spruce_log[axis=y]", "rotation": {"mode": "lock", "dirs": ["up"]}}, {"state": "minecraft:acacia_log[axis=y]", "rotation": {"mode": "lock", "dirs": ["up"]}}] },
+    "14,3,4": { "lockId": 1, "states": [{"state": "minecraft:spruce_log[axis=y]", "rotation": {"mode": "lock", "dirs": ["up"]}}, {"state": "minecraft:acacia_log[axis=y]", "rotation": {"mode": "lock", "dirs": ["up"]}}] },
+    "14,4,4": { "lockId": 2, "states": [{"state": "minecraft:spruce_log[axis=y]", "rotation": {"mode": "lock", "dirs": ["up"]}}, {"state": "minecraft:acacia_log[axis=y]", "rotation": {"mode": "lock", "dirs": ["up"]}}, {"state": "minecraft:command_block[conditional=false,facing=up]", "rotation": {"mode": "lock", "dirs": ["up"]}}] },
+    "14,5,4": { "lockId": 1, "states": [{"state": "minecraft:spruce_log[axis=y]", "rotation": {"mode": "lock", "dirs": ["up"]}}, {"state": "minecraft:acacia_log[axis=y]", "rotation": {"mode": "lock", "dirs": ["up"]}}] },
+    "10,1,8": { "lockId": 1, "states": [{"state": "minecraft:spruce_log[axis=y]", "rotation": {"mode": "lock", "dirs": ["up"]}}, {"state": "minecraft:acacia_log[axis=y]", "rotation": {"mode": "lock", "dirs": ["up"]}}] },
+    "10,2,8": { "lockId": 1, "states": [{"state": "minecraft:spruce_log[axis=y]", "rotation": {"mode": "lock", "dirs": ["up"]}}, {"state": "minecraft:acacia_log[axis=y]", "rotation": {"mode": "lock", "dirs": ["up"]}}] },
+    "10,3,8": { "lockId": 1, "states": [{"state": "minecraft:spruce_log[axis=y]", "rotation": {"mode": "lock", "dirs": ["up"]}}, {"state": "minecraft:acacia_log[axis=y]", "rotation": {"mode": "lock", "dirs": ["up"]}}] },
+    "10,4,8": { "lockId": 1, "states": [{"state": "minecraft:spruce_log[axis=y]", "rotation": {"mode": "lock", "dirs": ["up"]}}, {"state": "minecraft:acacia_log[axis=y]", "rotation": {"mode": "lock", "dirs": ["up"]}}] },
+    "15,5,4": { "lockId": 1, "states": [{"state": "minecraft:spruce_log[axis=y]", "rotation": {"mode": "lock", "dirs": ["up"]}}, {"state": "minecraft:acacia_log[axis=y]", "rotation": {"mode": "lock", "dirs": ["up"]}}] },
+    "16,5,4": { "lockId": 1, "states": [{"state": "minecraft:spruce_log[axis=y]", "rotation": {"mode": "lock", "dirs": ["up"]}}, {"state": "minecraft:acacia_log[axis=y]", "rotation": {"mode": "lock", "dirs": ["up"]}}] },
+    "17,5,4": { "lockId": 1, "states": [{"state": "minecraft:spruce_log[axis=y]", "rotation": {"mode": "lock", "dirs": ["up"]}}, {"state": "minecraft:acacia_log[axis=y]", "rotation": {"mode": "lock", "dirs": ["up"]}}] }
+  }
+}
