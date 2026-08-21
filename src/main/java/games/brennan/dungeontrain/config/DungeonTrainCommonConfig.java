@@ -60,7 +60,7 @@ public final class DungeonTrainCommonConfig {
     public static final int MIN_DISINTEGRATION_END_HOLD_BLOCKS = 0;
     public static final int MAX_DISINTEGRATION_END_HOLD_BLOCKS = 100_000_000;
     public static final int DEFAULT_DISINTEGRATION_END_HOLD_BLOCKS = 5000;
-    /** End cities on the End-band islands (vanilla spacing + biome rules) are on by default. */
+    /** End cities on the End-band islands (vanilla biome rules, DT's own sparser spacing) are on by default. */
     public static final boolean DEFAULT_DISINTEGRATION_END_CITIES = true;
     /** Blocks of normal overworld between repeats of the band (the cycle repeats forever). */
     public static final int MIN_DISINTEGRATION_OVERWORLD_HOLD_BLOCKS = 0;
@@ -434,8 +434,9 @@ public final class DungeonTrainCommonConfig {
                 .defineInRange("disintegrationEndHoldBlocks", DEFAULT_DISINTEGRATION_END_HOLD_BLOCKS,
                         MIN_DISINTEGRATION_END_HOLD_BLOCKS, MAX_DISINTEGRATION_END_HOLD_BLOCKS);
         ModConfigSpec.BooleanValue disintegrationEndCities = b
-                .comment("Generate End cities on the End islands, the way the real End does — same spacing, same",
-                        "end_highlands/end_midlands restriction, same towers, ships, shulkers and loot. Turn off",
+                .comment("Generate End cities on the End islands, the way the real End does — same",
+                        "end_highlands/end_midlands restriction, same towers, ships, shulkers and loot, but spaced",
+                        "out about four times further apart than the real End so a city stays a find. Turn off",
                         "for empty islands. Default true.")
                 .define("disintegrationEndCities", DEFAULT_DISINTEGRATION_END_CITIES);
         ModConfigSpec.IntValue disintegrationOverworldHoldBlocks = b

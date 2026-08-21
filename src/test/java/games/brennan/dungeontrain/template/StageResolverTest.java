@@ -66,14 +66,37 @@ final class StageResolverTest {
         assertEquals("wood_oak", at(131, TrainPhase.OVERWORLD));
     }
 
+    /**
+     * The End band is deliberately not an overworld band with void under it: the 8 overworld stages no
+     * longer list END, leaving the unbounded {@code nether} stage as the only one eligible there. So a
+     * shared slot in the End draws Nether-styled content at every level rather than tracking the
+     * level-appropriate overworld tier.
+     */
     @Test
-    @DisplayName("the END overlap prefers the narrow level band over the unbounded nether stage")
-    void endOverlapPrefersTheSpecificStage() {
-        // `nether` has no level bounds and lists END, so it is eligible everywhere in the End; a
-        // first-eligible scan would return whichever the map yielded first. The narrower band wins.
-        assertEquals("stone", at(5, TrainPhase.END));
-        assertEquals("desert", at(20, TrainPhase.END));
-        assertEquals("wood_oak", at(140, TrainPhase.END));
+    @DisplayName("the END phase resolves to nether at every level — no overworld tier reaches the End")
+    void endPhaseResolvesToNether() {
+        assertEquals("nether", at(5, TrainPhase.END));
+        assertEquals("nether", at(20, TrainPhase.END));
+        assertEquals("nether", at(140, TrainPhase.END));
+    }
+
+    /**
+     * The resolver's tie-break, guarded on a synthetic set because the shipped bands no longer overlap
+     * anywhere: an unbounded stage and a narrow level band that both list a phase must resolve to the
+     * narrow one, not to whichever the iteration order yielded first. Nothing in {@code stages.json}
+     * exercises this today, but the rule is what keeps a future unbounded stage from swallowing a band.
+     */
+    @Test
+    @DisplayName("a narrow level band beats an unbounded stage that lists the same phase")
+    void narrowBandBeatsUnboundedStage() {
+        List<Stage> synthetic = List.of(
+                Stage.fromJson("catch_all", JsonParser.parseString(
+                        "{\"name\":\"Catch All\",\"phases\":[\"END\"]}")),
+                Stage.fromJson("narrow", JsonParser.parseString(
+                        "{\"name\":\"Narrow\",\"minLevel\":10,\"maxLevel\":20,\"phases\":[\"END\"]}")));
+        assertEquals("narrow", StageResolver.stageIdFor(15, TrainPhase.END, synthetic));
+        // Outside the narrow band the unbounded stage is the only eligible one.
+        assertEquals("catch_all", StageResolver.stageIdFor(50, TrainPhase.END, synthetic));
     }
 
     @Test
@@ -94,8 +117,8 @@ final class StageResolverTest {
     void aboveAllBandsResolvesToTheTopStage() {
         assertEquals("wood_oak", at(201, TrainPhase.OVERWORLD));
         assertEquals("wood_oak", at(5000, TrainPhase.OVERWORLD));
-        // Still preferred over the unbounded `nether` stage in the phases both cover.
-        assertEquals("wood_oak", at(5000, TrainPhase.END));
+        // The top band runs open-ended in every phase it lists — but not END, which it no longer lists.
+        assertEquals("wood_oak", at(5000, TrainPhase.CHUNCKS));
     }
 
     /** The chuncks band is on by default; a slot there must belong to its level's stage, not to nothing. */

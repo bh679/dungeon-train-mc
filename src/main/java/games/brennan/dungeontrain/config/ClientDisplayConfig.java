@@ -81,6 +81,7 @@ public final class ClientDisplayConfig {
     public static final ModConfigSpec.IntValue FRAMERATE_THROTTLE_FPS;
     public static final ModConfigSpec.DoubleValue TRAIN_ENGINE_VOLUME;
     public static final ModConfigSpec.BooleanValue DELETE_WORLD_ON_REBOARD;
+    public static final ModConfigSpec.BooleanValue SKYBOX_PUNCH_ENABLED;
     /**
      * Relay pool ids of community (player-written) books this player has read, stored as decimal strings.
      * GLOBAL client-side read history — persists across worlds and servers (unlike the retired per-world
@@ -148,6 +149,7 @@ public final class ClientDisplayConfig {
         FRAMERATE_THROTTLE_FPS = pair.getLeft().framerateThrottleFps;
         TRAIN_ENGINE_VOLUME = pair.getLeft().trainEngineVolume;
         DELETE_WORLD_ON_REBOARD = pair.getLeft().deleteWorldOnReboard;
+        SKYBOX_PUNCH_ENABLED = pair.getLeft().skyboxPunchEnabled;
         SHARED_BOOKS_READ = pair.getLeft().sharedBooksRead;
         DEATH_SCREEN_LAST_NPS = pair.getLeft().deathScreenLastNps;
         POLITICAL_FILTER = pair.getLeft().politicalFilter;
@@ -255,6 +257,12 @@ public final class ClientDisplayConfig {
                         MIN_TRAIN_ENGINE_VOLUME, MAX_TRAIN_ENGINE_VOLUME);
         b.pop();
 
+        b.push("skybox");
+        ModConfigSpec.BooleanValue skyboxPunchEnabled = b
+                .comment("Let Skybox Blocks show the real sky through them. The effect writes the block's shape into the depth buffer just after the sky is drawn, so whatever sits behind it is never drawn over the sky. Set false to turn Skybox Blocks into plain invisible solid blocks instead - the escape hatch if the effect misbehaves with your graphics setup. Automatically off while a shader pack is loaded, which needs its own handling.")
+                .define("punchEnabled", true);
+        b.pop();
+
         b.push("world");
         ModConfigSpec.BooleanValue deleteWorldOnReboard = b
                 .comment("Delete the old world's save folder when reboarding (creating a fresh world) from the death screen. Dungeon Train is designed around a new world per run, so this defaults on to keep the world list and disk clean. Only auto-generated \"<prefix> <timestamp>\" saves (Dungeon Train / Dev World / World) are ever deleted — renamed or hand-made worlds and editor worlds are always kept. Toggleable in-game via the trash icon next to the reboard button.")
@@ -310,7 +318,7 @@ public final class ClientDisplayConfig {
                 rideSnapshotMinFps, rideSnapshotMinTps,
                 rideSnapshotDiskOffload, rideSnapshotFlushMinFps, rideSnapshotFlushMinTps, rideSnapshotMaxOnDisk,
                 rideSnapshotMaxResolution,
-                framerateThrottleEnabled, framerateThrottleFps, trainEngineVolume, deleteWorldOnReboard, sharedBooksRead,
+                framerateThrottleEnabled, framerateThrottleFps, trainEngineVolume, skyboxPunchEnabled, deleteWorldOnReboard, sharedBooksRead,
                 deathScreenLastNps, politicalFilter, contentMode);
     }
 
@@ -660,6 +668,15 @@ public final class ClientDisplayConfig {
     // ----- Delete old world on reboard (death-screen trash toggle) -----
 
     /**
+     * Should Skybox Blocks punch a hole to the sky? Defaults to {@code true}, and to
+     * {@code true} pre-load as well — the block is inert without it, so the safe
+     * fallback is the effect being on.
+     */
+    public static boolean isSkyboxPunchEnabled() {
+        return !isLoaded() || SKYBOX_PUNCH_ENABLED.get();
+    }
+
+    /**
      * Delete the old world's save when reboarding? Defaults to {@code true} (also pre-load) —
      * Dungeon Train is a new-world-per-run game, so abandoned run saves are cleaned up unless
      * the player opts out via the death screen's trash toggle. The delete path itself carries
@@ -774,6 +791,7 @@ public final class ClientDisplayConfig {
             ModConfigSpec.BooleanValue framerateThrottleEnabled,
             ModConfigSpec.IntValue framerateThrottleFps,
             ModConfigSpec.DoubleValue trainEngineVolume,
+            ModConfigSpec.BooleanValue skyboxPunchEnabled,
             ModConfigSpec.BooleanValue deleteWorldOnReboard,
             ModConfigSpec.ConfigValue<List<? extends String>> sharedBooksRead,
             ModConfigSpec.IntValue deathScreenLastNps,
