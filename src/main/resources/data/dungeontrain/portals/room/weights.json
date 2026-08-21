@@ -105,7 +105,7 @@
     "mode": "endless_repetition"
   },
   "randomized": {
-    "weight": 0,
+    "weight": 1,
     "mode": "endless_repetition/dynamic/fit"
   },
   "sanemaze": {
