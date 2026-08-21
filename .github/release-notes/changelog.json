@@ -7497,6 +7497,23 @@
       "released": true,
       "released_in": "v0.591.0",
       "released_at": "2026-08-21T09:13:18Z"
+    },
+    {
+      "id": "edible-backpacks",
+      "version": "0.592.0",
+      "type": "feat",
+      "title": "Edible Backpacks",
+      "summary": "Apple packs now turn up in train loot. Eat one and you gain an extra backpack slot for the rest of your run \u2014 storage that lives in two panels either side of your inventory screen, growing a column at a time as you eat more. Golden apple packs are worth nine slots in a single bite, and nine ordinary packs craft into one. Die and the backpack goes with you, space and all, so what you carry in it is a real bet.",
+      "highlights": [
+        "Eat an apple pack for an extra inventory slot that lasts the rest of your run (up to 108)",
+        "Storage panels sit either side of the inventory screen and hide with the recipe book",
+        "Golden apple packs grant nine slots at once; craft one from nine ordinary packs",
+        "Dying costs you the backpack: both its contents and the space itself"
+      ],
+      "date": "2026-08-21",
+      "released": true,
+      "released_in": "v0.592.0",
+      "released_at": "2026-08-21T11:09:14Z"
     }
   ]
 }

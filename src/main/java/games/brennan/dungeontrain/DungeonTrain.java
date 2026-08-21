@@ -220,6 +220,12 @@ public class DungeonTrain {
     public DungeonTrain(IEventBus modBus, ModContainer modContainer) {
         modBus.addListener(this::commonSetup);
 
+        // Bundled Edible Backpacks: in Dungeon Train, backpack space resets on
+        // death (the standalone mod's default is persist-through-death). This
+        // only steers the sibling's `resetOnDeath = DEFAULT` config value — a
+        // server operator's explicit ON/OFF still wins.
+        games.brennan.ediblebackpacks.EdibleBackpacksApi.setHostDefaultResetOnDeath(true);
+
         // First DeferredRegister in the project — wires the variant
         // clipboard item produced by the block-variant menu's Copy button.
         ModItems.register(modBus);
