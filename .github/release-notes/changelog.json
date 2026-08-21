@@ -7398,6 +7398,20 @@
       "released": true,
       "released_in": "v0.584.0",
       "released_at": "2026-08-21T03:12:02Z"
+    },
+    {
+      "id": "end-city-rarity-tuning",
+      "version": "0.585.0",
+      "type": "content",
+      "title": "End city adjustments",
+      "summary": "End city adjustments.",
+      "highlights": [
+        "End city adjustments."
+      ],
+      "date": "2026-08-21",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
