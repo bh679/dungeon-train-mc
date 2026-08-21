@@ -7688,13 +7688,9 @@
       "id": "veinminer-freeplay-blacklist",
       "version": "0.602.0",
       "type": "feat",
-      "title": "Vein miner mods now put a run into Free Play",
-      "summary": "Vein miners break a whole ore vein \u2014 or a whole tree \u2014 in one swing, which hands out far more loot than Dungeon Train's difficulty and drop rates are built around. Playing with one installed now runs the session in Free Play, so those runs no longer count toward your cross-world stats and advancements. Nothing is written to your world: pull the mod out and the next launch is a normal run again, and the login notice tells you exactly which mod tripped it.",
-      "highlights": [
-        "Covers 54 vein miner, chain mining and tree-feller mods \u2014 VeinMiner, Vein Mining, Ore Excavation, FTB Ultimine, Liteminer and the rest",
-        "Session-only: remove the mod and your next launch is a normal run",
-        "The login notice names the mod that flipped you into Free Play"
-      ],
+      "title": "Vein miner mods now trigger Free Play",
+      "summary": "Playing with a vein miner installed runs the session in Free Play.",
+      "highlights": [],
       "pr": 1027,
       "date": "2026-08-21",
       "released": false,
