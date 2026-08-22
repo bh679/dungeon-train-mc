@@ -7774,6 +7774,40 @@
       "released": true,
       "released_in": "v0.606.0",
       "released_at": "2026-08-22T03:15:31Z"
+    },
+    {
+      "id": "remove-backpack-loot-substitution",
+      "version": "0.607.0",
+      "type": "fix",
+      "title": "Edible backpacks come from loot tables only",
+      "summary": "Edible backpacks were being swapped into 1.5% of every loot slot in the game, on top of the chests and pots that were meant to carry them. That global substitution is gone \u2014 backpacks now turn up only where the loot tables actually list them, so finding one means something again.",
+      "highlights": [
+        "Edible backpacks no longer replace random items in unrelated containers",
+        "Backpacks still appear in the loot chests, iron/gold chests and decorated pots that list them"
+      ],
+      "pr": 1032,
+      "date": "2026-08-22",
+      "released": true,
+      "released_in": "v0.607.0",
+      "released_at": "2026-08-22T04:56:27Z"
+    },
+    {
+      "id": "book-text-sanitization",
+      "version": "0.608.0",
+      "type": "fix",
+      "title": "Community books can't break your game \u2014 and can still be styled",
+      "summary": "Books written by other players are now cleaned up before they reach you. Certain characters could previously hide text on a page or stack accent marks until it overflowed, and an emoji landing in exactly the wrong spot in a long title could crash the game outright. That's all handled now, on the server and in the mod. Colour codes and right-to-left writing still work exactly as they did \u2014 the cleanup is aimed at characters that do nothing but cause trouble. Ordinary books are unaffected.",
+      "highlights": [
+        "Colour and style codes still work in your book's pages \u2014 they're only stripped from titles and author names, where they leaked out into chat and tooltips",
+        "Invisible padding characters are removed from titles, authors and pages; right-to-left writing and emoji sequences are left alone",
+        "An emoji in a long title or a full page can no longer crash the game",
+        "Books already in the community pool are cleaned as they're handed out \u2014 nothing needed re-uploading"
+      ],
+      "pr": 1033,
+      "date": "2026-08-22",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
