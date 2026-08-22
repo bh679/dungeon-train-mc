@@ -77,6 +77,17 @@ def version_key(version):
         return (0,)
 
 
+def curseforge_is_authoritative():
+    """True when we read CurseForge's own API rather than the cfwidget mirror.
+
+    Only an authoritative source can prove a version is ABSENT. cfwidget caches, and
+    observably lags by many minutes — during the 2026-08-22 live test it still reported
+    260 files / v0.592.0 while curseforge.com already listed 261 / v0.613.0. Treating
+    that lag as "not published" would fail perfectly good releases.
+    """
+    return bool(os.environ.get("CURSEFORGE_API_KEY"))
+
+
 def curseforge_versions():
     """Publicly listed pack versions on CurseForge, newest-first."""
     key = os.environ.get("CURSEFORGE_API_KEY")
@@ -117,11 +128,25 @@ def github_releases():
 PLATFORMS = {"curseforge": curseforge_versions, "modrinth": modrinth_versions}
 
 
+PUBLISHED = "published"
+MISSING = "missing"
+INCONCLUSIVE = "inconclusive"
+
+
 def verify(platform, version, timeout_minutes, poll_seconds):
-    """Poll until `version` is publicly listed. Returns True if it appeared."""
+    """Poll until `version` is publicly listed.
+
+    Returns PUBLISHED, MISSING, or INCONCLUSIVE. INCONCLUSIVE means we could not see the
+    version but our only source was a cache that cannot prove absence — the caller must
+    not treat that as a failure.
+    """
     want = normalize(version)
     fetch = PLATFORMS[platform]
     deadline = time.monotonic() + timeout_minutes * 60
+    authoritative = platform != "curseforge" or curseforge_is_authoritative()
+    if not authoritative:
+        print("Note: reading the cfwidget mirror (CURSEFORGE_API_KEY unset). It lags behind "
+              "curseforge.com, so a negative result here is inconclusive rather than a failure.")
     attempt = 0
     while True:
         attempt += 1
@@ -132,14 +157,22 @@ def verify(platform, version, timeout_minutes, poll_seconds):
             published = set()
         if want in published:
             print(f"✓ {platform}: {want} is publicly listed (after {attempt} check(s))")
-            return True
+            return PUBLISHED
         if time.monotonic() >= deadline:
+            if not authoritative:
+                print(f"::warning::{platform}: {want} is not visible via the cfwidget mirror "
+                      f"after {timeout_minutes} minutes, but the mirror is cached and cannot "
+                      "prove absence — NOT failing the release on it.")
+                print("::warning::Confirm by hand at "
+                      "https://www.curseforge.com/minecraft/modpacks/dungeon-train/files , and "
+                      "set the CURSEFORGE_API_KEY secret to make this check authoritative.")
+                return INCONCLUSIVE
             print(f"::error::{platform}: {want} was uploaded but is STILL not publicly listed "
                   f"after {timeout_minutes} minutes.")
             print("::error::The upload was accepted but the platform did not publish it — "
                   "most likely rejected during validation. Check the project's file list in "
                   "the author dashboard for a rejection reason.")
-            return False
+            return MISSING
         print(f"  {platform}: {want} not listed yet; re-checking in {poll_seconds}s…")
         time.sleep(poll_seconds)
 
@@ -157,6 +190,9 @@ def drift_report(fail_if_stale_hours):
         except RuntimeError as exc:
             print(f"::warning::{name}: could not fetch listing: {exc}")
             continue
+        if name == "curseforge" and not curseforge_is_authoritative():
+            print("\n(CurseForge figures come from the cached cfwidget mirror — set "
+                  "CURSEFORGE_API_KEY for live data.)")
         newest, newest_date = versions[0] if versions else ("none", "")
         published = {v for v, _ in versions}
         missing = [v for v, _ in releases if v not in published]
@@ -216,8 +252,8 @@ def main(argv=None):
     args = ap.parse_args(argv)
 
     if args.verify:
-        ok = verify(args.platform, args.verify, args.timeout_minutes, args.poll_seconds)
-        return 0 if ok else 1
+        outcome = verify(args.platform, args.verify, args.timeout_minutes, args.poll_seconds)
+        return 1 if outcome == MISSING else 0
     return drift_report(args.fail_if_stale_hours)
 
 

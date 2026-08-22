@@ -178,6 +178,13 @@ simply missing from the pack. In Aug 2026 this silently cost 13 consecutive rele
 (the pack sat on v0.592.0 while the mod shipped v0.613.0) and 86 versions that exist on
 Modrinth have no CurseForge counterpart.
 
+**What it actually was (2026-08-22).** Re-uploading the *identical* manifest for v0.613.0 a day
+later was **accepted** — the pack went from 260 to 261 files. Every one of the 33
+project/file ids in that manifest resolves to a real public file, and the only config change
+across the accept→reject boundary was a pin bump plus the removal of two mods. So the rejections
+were a **transient CurseForge-side fault**, not a bad manifest on our side. Missing versions can
+therefore be recovered by simply re-uploading them.
+
 Two guards now cover it:
 
 | Guard | Where | What it catches |
@@ -191,9 +198,18 @@ Check drift yourself at any time:
 python3 scripts/modpack/reconcile.py
 ```
 
-Reads the official CurseForge API when `CURSEFORGE_API_KEY` is set, otherwise the
-keyless cfwidget mirror. `CURSEFORGE_TOKEN` is an *upload* credential and cannot read
-listings.
+### ⚠️ Set `CURSEFORGE_API_KEY` to make verification authoritative
+
+`reconcile.py` reads CurseForge's own API when the `CURSEFORGE_API_KEY` secret is set, and
+otherwise falls back to the keyless **cfwidget** mirror. (`CURSEFORGE_TOKEN` is an *upload*
+credential and cannot read listings.)
+
+**cfwidget caches and lags badly.** During the 2026-08-22 live test it still reported 260 files
+/ v0.592.0 for a full 30 minutes after curseforge.com already listed 261 / v0.613.0. A cache
+cannot prove absence, so without an API key `--verify` downgrades a negative result to
+`INCONCLUSIVE`: it prints a warning with a link to check by hand and **does not fail the
+release**. Set the secret and the check becomes authoritative — a genuine rejection then fails
+the run, which is the whole point.
 
 If verification fails, open the pack's file list in CurseForge Studio — a rejected file
 shows the reason inline. A rejection with a `500` body is CurseForge-side; the manifest

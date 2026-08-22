@@ -302,6 +302,11 @@ loads (Advancement Plaques needs Iceberg).
   now polls the public listing after uploading (`scripts/modpack/reconcile.py --verify`) and fails
   the run if the version never appears. `modpack-reconcile.yml` re-checks every 6h as a backstop.
   Run the drift report any time with `python3 scripts/modpack/reconcile.py`.
+  A 2026-08-22 re-upload of the identical rejected manifest was **accepted**, so those rejections
+  were a transient CurseForge fault — missing versions can be recovered by re-uploading.
+  ⚠️ **Set the `CURSEFORGE_API_KEY` secret.** Without it the check reads the cached cfwidget
+  mirror, which lagged 30+ min in testing; a cache can't prove absence, so `--verify` reports
+  INCONCLUSIVE and won't fail the run. With the key it is authoritative.
 - Both publish scripts retry transient 5xx/transport failures via
   `scripts/modpack/lib/upload-retry.sh` (never 4xx — a bad payload stays bad).
 - Manual test: `gh workflow run release-modpack.yml --ref <branch> -f tag=v<ver>

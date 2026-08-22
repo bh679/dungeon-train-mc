@@ -43,22 +43,54 @@ def test_version_key_tolerates_junk():
     assert reconcile.version_key("not-a-version") == (0,)
 
 
-def test_verify_passes_when_version_is_listed(monkeypatched=None):
+def _verify(version, authoritative):
+    """Run verify() with the CurseForge source forced to API (authoritative) or mirror."""
+    if authoritative:
+        os.environ["CURSEFORGE_API_KEY"] = "test-key"
+    else:
+        os.environ.pop("CURSEFORGE_API_KEY", None)
+    try:
+        return reconcile.verify("curseforge", version, timeout_minutes=0, poll_seconds=0)
+    finally:
+        os.environ.pop("CURSEFORGE_API_KEY", None)
+
+
+def test_verify_passes_when_version_is_listed():
     reconcile.PLATFORMS["curseforge"] = lambda: [("0.613.0", hours_ago(1))]
-    assert reconcile.verify("curseforge", "v0.613.0", timeout_minutes=0, poll_seconds=0) is True
+    assert _verify("v0.613.0", authoritative=True) == reconcile.PUBLISHED
+    assert _verify("v0.613.0", authoritative=False) == reconcile.PUBLISHED
 
 
-def test_verify_fails_when_version_never_appears():
+def test_verify_reports_missing_only_from_an_authoritative_source():
     reconcile.PLATFORMS["curseforge"] = lambda: [("0.592.0", hours_ago(20))]
-    assert reconcile.verify("curseforge", "v0.613.0", timeout_minutes=0, poll_seconds=0) is False
+    assert _verify("v0.613.0", authoritative=True) == reconcile.MISSING
+
+
+def test_verify_is_inconclusive_when_only_the_cached_mirror_says_missing():
+    # Regression guard for the 2026-08-22 live test: cfwidget still showed 260 files /
+    # v0.592.0 while curseforge.com already listed v0.613.0. A cache cannot prove absence,
+    # so this must NOT fail the release.
+    reconcile.PLATFORMS["curseforge"] = lambda: [("0.592.0", hours_ago(20))]
+    assert _verify("v0.613.0", authoritative=False) == reconcile.INCONCLUSIVE
+
+
+def test_only_missing_exits_nonzero():
+    reconcile.PLATFORMS["curseforge"] = lambda: [("0.592.0", hours_ago(20))]
+    os.environ.pop("CURSEFORGE_API_KEY", None)
+    assert reconcile.main(["--verify", "v0.613.0", "--timeout-minutes", "0"]) == 0
+    os.environ["CURSEFORGE_API_KEY"] = "test-key"
+    try:
+        assert reconcile.main(["--verify", "v0.613.0", "--timeout-minutes", "0"]) == 1
+    finally:
+        os.environ.pop("CURSEFORGE_API_KEY", None)
 
 
 def test_verify_survives_a_listing_fetch_error():
     def boom():
         raise RuntimeError("cfwidget down")
     reconcile.PLATFORMS["curseforge"] = boom
-    # Must report failure rather than raising — a flaky listing is not a crash.
-    assert reconcile.verify("curseforge", "v0.1.0", timeout_minutes=0, poll_seconds=0) is False
+    # Must report rather than raising — a flaky listing is not a crash.
+    assert _verify("v0.1.0", authoritative=True) == reconcile.MISSING
 
 
 def _stub_sources(cf, mr, releases):
