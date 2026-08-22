@@ -7868,6 +7868,23 @@
       "released": true,
       "released_in": "v0.612.0",
       "released_at": "2026-08-22T06:52:30Z"
+    },
+    {
+      "id": "deserter-hall",
+      "version": "0.613.0",
+      "type": "content",
+      "title": "The deserter's hall",
+      "summary": "Behind a house portal door you may now find the deserter's hall \u2014 a lamplit spruce hall left behind by someone who walked off the train, with their journal still tucked away inside.",
+      "highlights": [
+        "New deserter's hall portal room, found through house portal doors",
+        "Four-page journal telling the deserter's story",
+        "Floor lighting rerolls as the hall repeats"
+      ],
+      "pr": 1038,
+      "date": "2026-08-22",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
