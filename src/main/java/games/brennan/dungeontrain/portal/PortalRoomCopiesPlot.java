@@ -17,8 +17,8 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * {@link PortalRoomCopiesVariant} presented as a {@link BlockVariantPlot} with exactly one cell, so
- * the Block Variant menu can author it.
+ * One plane of a {@link PortalRoomCopiesVariant} presented as a {@link BlockVariantPlot} with
+ * exactly one cell, so the Block Variant menu can author it.
  *
  * <h2>Why a plot and not a menu of its own</h2>
  * <p>The menu, its sync and edit packets, the clipboard item and the loot-prefab links all talk to
@@ -27,6 +27,13 @@ import java.util.Set;
  * surface (Copy / Add / Remove / Clear, per-row weights, rotation modes, difficulty bands) at the
  * cost of the handful of one-liners below, and it means a variant copied here pastes onto an
  * ordinary cell and back.</p>
+ *
+ * <h2>One plane per plot, not one plot with two cells</h2>
+ * <p>{@code BlockVariantMenuController.openForCopies} anchors its panel on a <b>single</b> cell and
+ * the panel has no way to walk to another one, so a two-cell plot would leave the roof unreachable.
+ * The plane goes in the plot's identity instead: {@link #key()} is {@code copies:<plane>:<room>},
+ * and each editor row opens the plot for its own plane. Keys live in the menu's session map and in
+ * its edit packets, never on disk, so there is nothing to migrate.</p>
  *
  * <h2>One cell, at the origin</h2>
  * <p>The footprint is {@code 1×1×1} and the only address is {@link BlockPos#ZERO}. The plot is not
@@ -47,17 +54,23 @@ public final class PortalRoomCopiesPlot implements BlockVariantPlot {
     /** Key prefix, alongside {@code carriage:} / {@code contents:} / {@code part:} / {@code track:}. */
     public static final String KEY_PREFIX = "copies:";
 
+    /** Separates the plane from the room inside a copies key: {@code copies:roof:deserter}. */
+    private static final String KEY_SEPARATOR = ":";
+
     /** The one address this plot has. */
     public static final BlockPos CELL = BlockPos.ZERO;
 
     private static final Vec3i FOOTPRINT = new Vec3i(1, 1, 1);
 
     private final String roomName;
+    private final PortalRoomCopiesVariant.Plane plane;
     private final BlockPos origin;
     private PortalRoomCopiesVariant variant;
 
-    public PortalRoomCopiesPlot(String roomName, BlockPos origin, PortalRoomCopiesVariant variant) {
+    public PortalRoomCopiesPlot(String roomName, PortalRoomCopiesVariant.Plane plane,
+                                BlockPos origin, PortalRoomCopiesVariant variant) {
         this.roomName = roomName;
+        this.plane = plane == null ? PortalRoomCopiesVariant.Plane.FLOOR : plane;
         this.origin = origin;
         this.variant = variant;
     }
@@ -67,20 +80,47 @@ public final class PortalRoomCopiesPlot implements BlockVariantPlot {
         return roomName;
     }
 
+    /** Which of the room's two planes this plot authors. */
+    public PortalRoomCopiesVariant.Plane plane() {
+        return plane;
+    }
+
     /** True when {@code key} addresses a copies plot; {@link #roomOf} names which. */
     public static boolean isCopiesKey(String key) {
         return key != null && key.startsWith(KEY_PREFIX);
     }
 
-    /** The room named by a copies key, or null when {@code key} is not one. */
+    /**
+     * The room named by a copies key, or null when {@code key} is not one.
+     *
+     * <p>A key written before the planes were split — {@code copies:<room>} — names the room and no
+     * plane, and reads back here as that room. {@link #planeOf} answers Floor for it, which is the
+     * plane such a key always meant.</p>
+     */
     @Nullable
     public static String roomOf(String key) {
-        return isCopiesKey(key) ? key.substring(KEY_PREFIX.length()) : null;
+        if (!isCopiesKey(key)) return null;
+        String rest = key.substring(KEY_PREFIX.length());
+        int cut = rest.indexOf(KEY_SEPARATOR);
+        if (cut < 0) return rest;
+        return PortalRoomCopiesVariant.Plane.parse(rest.substring(0, cut)) == null
+            ? rest : rest.substring(cut + KEY_SEPARATOR.length());
+    }
+
+    /** The plane a copies key addresses — Floor for a key that names none, and for a non-key. */
+    public static PortalRoomCopiesVariant.Plane planeOf(String key) {
+        if (!isCopiesKey(key)) return PortalRoomCopiesVariant.Plane.FLOOR;
+        String rest = key.substring(KEY_PREFIX.length());
+        int cut = rest.indexOf(KEY_SEPARATOR);
+        if (cut < 0) return PortalRoomCopiesVariant.Plane.FLOOR;
+        PortalRoomCopiesVariant.Plane parsed =
+            PortalRoomCopiesVariant.Plane.parse(rest.substring(0, cut));
+        return parsed == null ? PortalRoomCopiesVariant.Plane.FLOOR : parsed;
     }
 
     @Override
     public String key() {
-        return KEY_PREFIX + roomName;
+        return KEY_PREFIX + plane.id() + KEY_SEPARATOR + roomName;
     }
 
     @Override
@@ -96,20 +136,22 @@ public final class PortalRoomCopiesPlot implements BlockVariantPlot {
     @Override
     @Nullable
     public List<VariantState> statesAt(BlockPos localPos) {
-        if (!CELL.equals(localPos) || variant.isEmpty()) return null;
-        return variant.states();
+        if (!CELL.equals(localPos) || variant.isEmpty(plane)) return null;
+        return variant.states(plane);
     }
 
     @Override
     public void put(BlockPos localPos, List<VariantState> states) {
         if (!CELL.equals(localPos)) return;
-        variant = variant.withStates(states);
+        variant = variant.withStates(plane, states);
     }
 
     @Override
     public boolean remove(BlockPos localPos) {
-        if (!CELL.equals(localPos) || variant.isEmpty()) return false;
-        variant = PortalRoomCopiesVariant.empty();
+        if (!CELL.equals(localPos) || variant.isEmpty(plane)) return false;
+        // This plane only. Clearing the roof must leave the floor standing, or an author tidying one
+        // row would unbuild the plain.
+        variant = variant.withStates(plane, List.of());
         return true;
     }
 
@@ -172,7 +214,7 @@ public final class PortalRoomCopiesPlot implements BlockVariantPlot {
 
     @Override
     public Set<BlockPos> allFlaggedPositions() {
-        return variant.isEmpty() ? Set.of() : Set.of(CELL);
+        return variant.isEmpty(plane) ? Set.of() : Set.of(CELL);
     }
 
     /**
@@ -185,7 +227,7 @@ public final class PortalRoomCopiesPlot implements BlockVariantPlot {
     @Override
     public VariantGroupResolver groupRefs() {
         Map<BlockPos, List<VariantState>> entries = new LinkedHashMap<>();
-        if (!variant.isEmpty()) entries.put(CELL, variant.states());
+        if (!variant.isEmpty(plane)) entries.put(CELL, variant.states(plane));
         return new VariantGroupResolver(entries, new LinkedHashMap<>());
     }
 }

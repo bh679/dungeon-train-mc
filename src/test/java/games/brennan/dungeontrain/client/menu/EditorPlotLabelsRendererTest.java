@@ -38,11 +38,16 @@ class EditorPlotLabelsRendererTest {
             inPlot, false, false, length, width, height, mode);
     }
 
-    /** A portal-room entry whose Copies block is {@code block}. */
+    /** A portal-room entry whose two Copies palettes both show {@code block}. */
     private static EditorPlotLabelsPacket.Entry entryWithBlock(String mode, String block) {
+        return entryWithBlocks(mode, block, block);
+    }
+
+    /** A portal-room entry whose floor and roof icons differ. */
+    private static EditorPlotLabelsPacket.Entry entryWithBlocks(String mode, String floor, String roof) {
         return new EditorPlotLabelsPacket.Entry(
             POS, "default", 1, "PORTALS", "portal_room", "default",
-            true, false, false, 11, 13, 7, mode, block);
+            true, false, false, 11, 13, 7, mode, floor, roof);
     }
 
     private static EditorPlotLabelsPacket.Entry portalInPlot() {
@@ -124,12 +129,14 @@ class EditorPlotLabelsRendererTest {
                 RowKind.ROOM_BOOKS, RowKind.EXITS, RowKind.ENTER, RowKind.ACTION},
             EditorPlotLabelsRenderer.rows(entry("PORTALS", true, 1, 11, 13, 7, "endless_open")));
 
-        // Single adds a Block row directly under Copies, because that is the one Copies value with a
-        // block to name. The rows either side of it must not shift — the row walk is shared by the
-        // count, the hit test and the draw, so an insert in the wrong place lands clicks elsewhere.
+        // Single adds a Floor row and a Roof row directly under Copies, because that is the one
+        // Copies value with blocks to name. The rows either side of them must not shift — the row
+        // walk is shared by the count, the hit test and the draw, so an insert in the wrong place
+        // lands clicks elsewhere.
         assertArrayEquals(
             new RowKind[]{RowKind.NAME, RowKind.WEIGHT, RowKind.LENGTH, RowKind.WIDTH,
-                RowKind.HEIGHT, RowKind.MODE, RowKind.COPIES, RowKind.COPIES_BLOCK,
+                RowKind.HEIGHT, RowKind.MODE, RowKind.COPIES, RowKind.COPIES_FLOOR,
+                RowKind.COPIES_ROOF,
                 RowKind.ROOM_CONTENTS, RowKind.ROOM_BOOKS, RowKind.EXITS, RowKind.ENTER,
                 RowKind.ACTION},
             EditorPlotLabelsRenderer.rows(
@@ -406,11 +413,19 @@ class EditorPlotLabelsRendererTest {
         assertTrue(EditorPlotLabelsRenderer.copiesBlockHitIsEdit(halfW, halfW - 0.05));
 
         RowKind[] rows = EditorPlotLabelsRenderer.rows(e);
-        double y = rowCentreY(e, indexOf(rows, RowKind.COPIES_BLOCK));
-        assertEquals(CellKind.COPIES_BLOCK_HELD,
+        double y = rowCentreY(e, indexOf(rows, RowKind.COPIES_FLOOR));
+        assertEquals(CellKind.COPIES_FLOOR_HELD,
             EditorPlotLabelsRenderer.cellAt(e, halfW, -halfW + 0.05, y));
-        assertEquals(CellKind.COPIES_BLOCK_EDIT,
+        assertEquals(CellKind.COPIES_FLOOR_EDIT,
             EditorPlotLabelsRenderer.cellAt(e, halfW, halfW - 0.05, y));
+
+        // The Roof row is the same two halves, one row down — and a click on it must not report the
+        // floor's cells, or authoring the roof would quietly rewrite the ground.
+        double roofY = rowCentreY(e, indexOf(rows, RowKind.COPIES_ROOF));
+        assertEquals(CellKind.COPIES_ROOF_HELD,
+            EditorPlotLabelsRenderer.cellAt(e, halfW, -halfW + 0.05, roofY));
+        assertEquals(CellKind.COPIES_ROOF_EDIT,
+            EditorPlotLabelsRenderer.cellAt(e, halfW, halfW - 0.05, roofY));
 
         // And the rows either side of it still land where they did.
         assertEquals(CellKind.COPIES_CYCLE, EditorPlotLabelsRenderer.cellAt(e, halfW, 0.0,
@@ -440,9 +455,40 @@ class EditorPlotLabelsRendererTest {
 
         assertEquals("Copies: Single",
             EditorPlotLabelsRenderer.copiesLabel("endless_open/single:minecraft:sandstone"));
-        // The Blocks row names the gesture, not the value: the palette is a variant of up to
+        // The plane rows name the gesture, not the value: each palette is a variant of up to
         // MAX_ENTRIES candidates that lives server-side, and the plot panel draws it as icons.
-        assertEquals("Block: + held", EditorPlotLabelsRenderer.copiesBlockLabel());
+        assertEquals("Floor: + held", EditorPlotLabelsRenderer.copiesBlockLabel(
+            games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane.FLOOR));
+        assertEquals("Roof: + held", EditorPlotLabelsRenderer.copiesBlockLabel(
+            games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane.ROOF));
+    }
+
+    @Test
+    @DisplayName("The air sentinel is recognised by id, so a plane set to air reads as nothing")
+    void airSentinelIsRecognised() {
+        // All three command-block kinds are the empty-placeholder sentinel, and the row is only
+        // ever sent an id — so the check has to work off the id alone.
+        assertTrue(EditorPlotLabelsRenderer.isAirSentinelId("minecraft:command_block"));
+        assertTrue(EditorPlotLabelsRenderer.isAirSentinelId("minecraft:chain_command_block"));
+        assertTrue(EditorPlotLabelsRenderer.isAirSentinelId("minecraft:repeating_command_block"));
+
+        // An ordinary block is not, and neither is the unset case — those are three distinct
+        // things the row draws differently: an icon, the word "nothing", and the "hold one" hint.
+        assertFalse(EditorPlotLabelsRenderer.isAirSentinelId("minecraft:stone"));
+        assertFalse(EditorPlotLabelsRenderer.isAirSentinelId(""));
+        assertFalse(EditorPlotLabelsRenderer.isAirSentinelId(null));
+    }
+
+    @Test
+    @DisplayName("One plane set to air leaves the other's icon alone")
+    void planesCarryTheirOwnIcons() {
+        EditorPlotLabelsPacket.Entry e = entryWithBlocks(
+            "endless_open/single", "minecraft:stone", "minecraft:command_block");
+
+        assertEquals("minecraft:stone", e.copiesFloorBlock());
+        assertTrue(EditorPlotLabelsRenderer.isAirSentinelId(e.copiesRoofBlock()));
+        assertFalse(EditorPlotLabelsRenderer.isAirSentinelId(e.copiesFloorBlock()),
+            "a roof of air must not read back as a floor of air");
     }
 
     @Test

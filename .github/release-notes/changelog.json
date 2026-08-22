@@ -8055,6 +8055,34 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "single-copies-floor-roof",
+      "version": "0.622.0",
+      "type": "feat",
+      "title": "Endless plains can have a different floor and roof",
+      "summary": "A repeating plain's floor and roof are now set separately in the editor, and either one can be air.",
+      "highlights": [],
+      "pr": 1051,
+      "date": "2026-08-22",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "deserter-hall",
+      "version": "0.622.0",
+      "type": "content",
+      "title": "The deserter's hall by MacaroniWithTheMayonnaise",
+      "summary": "A new portal room behind house doors: a spruce hall built by MacaroniWithTheMayonnaise, with the deserter's journal still inside.",
+      "highlights": [
+        "Built by MacaroniWithTheMayonnaise"
+      ],
+      "pr": 1051,
+      "date": "2026-08-22",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

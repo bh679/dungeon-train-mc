@@ -59,6 +59,10 @@
       "id": "miniword",
       "weight": 1,
       "minLevel": 12
+    },
+    {
+      "id": "deserter",
+      "weight": 1
     }
   ]
 }
