@@ -8008,6 +8008,41 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "sable-205-physics-update",
+      "version": "0.621.0",
+      "type": "chore",
+      "title": "Sable physics updated to 2.0.5",
+      "summary": "Dungeon Train now runs on Sable 2.0.5, picking up three upstream releases' worth of crash fixes. The big one for launcher users: Sable no longer panics when you close the CurseForge or Modrinth launcher before entering a world. Also fixed upstream \u2014 a crash when a train sub-level splits, sub-levels occasionally failing to load, carriages not being lit correctly with Iris shaders installed, and a couple of Create-related server crashes. Sable is a required download, so update it alongside Dungeon Train.",
+      "highlights": [
+        "No more Rapier crash from closing the launcher before joining a world",
+        "Fixed an upstream crash when a train sub-level splits",
+        "Carriages now shade correctly with Iris shaders",
+        "Requires Sable 2.0.5 \u2014 the modpack updates it for you"
+      ],
+      "pr": 1050,
+      "date": "2026-08-22",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "carriage-pivot-pin",
+      "version": "0.621.0",
+      "type": "fix",
+      "title": "Carriages no longer shift when their blocks change",
+      "summary": "Blowing up or mining blocks on a carriage could visibly shove the whole carriage sideways, and the shift stuck around after saving and reloading. Beds in the Nether and End were the loudest case, but anything that removes carriage blocks did it \u2014 creepers riding along, the TNT in trap carriages, ghasts later in a lap, or you just mining a wall. Carriages now hold their position no matter what happens to their blocks.",
+      "highlights": [
+        "Beds exploding in the Nether/End no longer shove the carriage",
+        "Creepers, trap TNT, ghasts and ordinary mining are all covered",
+        "The shift no longer survives a save and reload"
+      ],
+      "pr": 1050,
+      "date": "2026-08-22",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
