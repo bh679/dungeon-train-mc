@@ -183,6 +183,26 @@ class CommandAllowlistTest {
     }
 
     @Test
+    @DisplayName("WorldEdit's // commands taint — the modpack's map editor needs no special case")
+    void worldEditCommandsTaint() {
+        // WorldEdit registers into the vanilla dispatcher (CommandWrapper -> Commands.literal),
+        // so CommandEvent fires and the deny-by-default allowlist covers it with no WorldEdit
+        // -specific code. These pin that down: an allowlist edit must not silently un-gate it.
+        assertTrue(CommandAllowlist.taints("//set stone"));
+        assertTrue(CommandAllowlist.taints("//replace dirt stone"));
+        assertTrue(CommandAllowlist.taints("//brush sphere stone 5"));
+        assertTrue(CommandAllowlist.taints("//paste"));
+        assertTrue(CommandAllowlist.taints("//undo"));
+        // Selection / info commands taint too — the prompt lands the moment WorldEdit is touched.
+        assertTrue(CommandAllowlist.taints("//wand"));
+        assertTrue(CommandAllowlist.taints("//pos1"));
+        assertTrue(CommandAllowlist.taints("//size"));
+        // …as do the non-slash-prefixed roots.
+        assertTrue(CommandAllowlist.taints("worldedit reload"));
+        assertTrue(CommandAllowlist.taints("we reload"));
+    }
+
+    @Test
     @DisplayName("Empty / blank input never taints")
     void emptyNeverTaints() {
         assertFalse(CommandAllowlist.taints(""));
