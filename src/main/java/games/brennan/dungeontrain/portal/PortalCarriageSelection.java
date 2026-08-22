@@ -372,13 +372,13 @@ public final class PortalCarriageSelection {
 
     /** True if this carriage is one of a portal's two corridors. */
     public static boolean isPortalCarriage(ServerLevel level, int carriageIndex) {
-        return isPortalCarriage(carriageIndex, DungeonTrainConfig.getGroupSize(), rateFor(level), seed(level),
+        return isPortalCarriage(carriageIndex, DungeonTrainConfig.getGroupSize(), rateFor(level), generationSeed(level),
                 firstEligibleGroup());
     }
 
     /** True if this carriage is the cart between a portal's two corridors. */
     public static boolean isPortalMiddle(ServerLevel level, int carriageIndex) {
-        return isPortalMiddle(carriageIndex, DungeonTrainConfig.getGroupSize(), rateFor(level), seed(level),
+        return isPortalMiddle(carriageIndex, DungeonTrainConfig.getGroupSize(), rateFor(level), generationSeed(level),
                 firstEligibleGroup());
     }
 
@@ -391,7 +391,7 @@ public final class PortalCarriageSelection {
      * match its twin block-for-block, and the cart between two corridors is sealed space.</p>
      */
     public static boolean isPortalPart(ServerLevel level, int carriageIndex) {
-        return isPortalPart(carriageIndex, DungeonTrainConfig.getGroupSize(), rateFor(level), seed(level),
+        return isPortalPart(carriageIndex, DungeonTrainConfig.getGroupSize(), rateFor(level), generationSeed(level),
                 firstEligibleGroup());
     }
 
@@ -407,7 +407,7 @@ public final class PortalCarriageSelection {
      * marches along the train and walks itself into the corridor regardless.</p>
      */
     public static boolean isPortalGroup(ServerLevel level, int carriageIndex) {
-        return isPortalGroup(carriageIndex, DungeonTrainConfig.getGroupSize(), rateFor(level), seed(level),
+        return isPortalGroup(carriageIndex, DungeonTrainConfig.getGroupSize(), rateFor(level), generationSeed(level),
                 firstEligibleGroup());
     }
 
@@ -501,7 +501,7 @@ public final class PortalCarriageSelection {
      * for every pair on the next start.</p>
      */
     public static synchronized PortalCorridorKind corridorKindFor(ServerLevel level, int pairKey) {
-        long worldSeed = seed(level);
+        long worldSeed = generationSeed(level);
         if (kindSeed == null || kindSeed != worldSeed) {
             KIND_PICKS.clear();
             kindSeed = worldSeed;
@@ -536,8 +536,14 @@ public final class PortalCarriageSelection {
     /**
      * The world's persisted generation seed — the same one the rest of DT's generation draws from,
      * so the lottery differs between worlds and survives a reload rather than being re-drawn.
+     *
+     * <p>Public because it is not only the lottery's seed: it is <b>the train's seed</b>, the same
+     * value every ordinary carriage rolls its contents against ({@code CarriageGenerationConfig.seed},
+     * built from this in {@code DungeonTrainWorldData.getGenerationConfig}). A portal corridor is a
+     * carriage, so {@code PortalCarriageBuilder} rolls its shell and its contents here too rather
+     * than against the raw {@code level.getSeed()} — which is a different, undecorrelated frame.</p>
      */
-    private static long seed(ServerLevel level) {
+    public static long generationSeed(ServerLevel level) {
         return DungeonTrainWorldData.get(level).getGenerationSeed();
     }
 }
