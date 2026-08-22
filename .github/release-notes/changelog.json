@@ -7825,6 +7825,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "endless-open-copies-control",
+      "version": "0.610.0",
+      "type": "feat",
+      "title": "Endless Open portal rooms can vary their floor",
+      "summary": "Endless Open portal rooms \u2014 the ones that read as an open plain rather than a hall of rooms \u2014 now take the same Copies setting the repeating rooms have. Set it to Dynamic and the floor and ceiling reroll for every tile as you walk out across the plain, instead of repeating one identical pattern to the horizon. Exact stays the default, so every existing room looks exactly as it did.",
+      "highlights": [
+        "Endless Open rooms take a Copies setting (Exact / Dynamic)",
+        "Dynamic rerolls an open plain's floor and ceiling per tile",
+        "Existing rooms are unchanged \u2014 Exact is still the default"
+      ],
+      "pr": 1036,
+      "date": "2026-08-22",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
