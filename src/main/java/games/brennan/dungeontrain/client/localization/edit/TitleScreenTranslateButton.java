@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.DungeonTrain;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.SpriteIconButton;
+import net.minecraft.client.gui.components.toasts.SystemToast;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.network.chat.Component;
@@ -96,6 +97,32 @@ public final class TitleScreenTranslateButton {
         button.setTooltip(Tooltip.create(
             Component.translatable("gui.dungeontrain.translate.button.tooltip", target)));
         event.addListener(button);
+
+        // A reviewer answering a translator is the one thing in this feature somebody is waiting
+        // on the PLAYER for, and the editor is three clicks away — so it is said here, once, where
+        // they already are. The fetch is once per session like the rest; when it lands the button
+        // is usually already on screen, hence the callback rather than a read at init time.
+        TranslationReviewNotes.fetchOnce(() -> announceReplies(mc, button, target));
+    }
+
+    /**
+     * Point at unread replies: the button's own tooltip, and one toast.
+     *
+     * <p>Toast only when there is something unread — {@link TranslationReviewNotes} clears that on
+     * the editor opening, so this fires once per reply rather than on every title screen.</p>
+     */
+    private static void announceReplies(Minecraft mc, SpriteIconButton button, String target) {
+        int unread = TranslationReviewNotes.unreadCount();
+        if (unread <= 0 || mc == null) {
+            return;
+        }
+        Component title = Component.translatable("gui.dungeontrain.translate.replies.toast");
+        Component detail = Component.translatable("gui.dungeontrain.translate.replies.detail", unread);
+        button.setTooltip(Tooltip.create(
+            Component.translatable("gui.dungeontrain.translate.button.tooltip", target)
+                .copy().append("\n").append(detail)));
+        mc.getToasts().addToast(new SystemToast(
+            SystemToast.SystemToastId.PERIODIC_NOTIFICATION, title, detail));
     }
 
     private static AbstractWidget findWidget(ScreenEvent.Init.Post event, Component message) {

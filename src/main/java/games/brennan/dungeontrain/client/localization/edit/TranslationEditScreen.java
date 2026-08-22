@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.client.localization.edit;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.MultiLineEditBox;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
@@ -30,8 +31,12 @@ public final class TranslationEditScreen extends Screen {
     private static final int SOURCE_COLOUR = 0xFFFFFFFF;
     private static final int NOTE_COLOUR = 0xFFD8A657;
     private static final int AI_COLOUR = 0xFF5B9BD5;
+    /** The reviewer's reply — the explorer's own note colour, and the list widget's ● tag. */
+    private static final int REPLY_COLOUR = 0xFFE8A33D;
     /** Lines of English shown before it is truncated; the longest shipped string is ~314 chars. */
     private static final int MAX_SOURCE_LINES = 6;
+    /** Lines of a reviewer's reply shown before it is truncated; the relay caps one at 1000 chars. */
+    private static final int MAX_REPLY_LINES = 4;
 
     private final TranslationScreen parent;
     private final String locale;
@@ -39,6 +44,11 @@ public final class TranslationEditScreen extends Screen {
 
     private MultiLineEditBox editor;
     private List<FormattedCharSequence> sourceLines = List.of();
+    /** The reviewer's reply about this string, wrapped; empty when nobody has written one. */
+    private List<FormattedCharSequence> replyLines = List.of();
+    private Component replyBy = CommonComponents.EMPTY;
+    /** Flips between "good as is" and "put it back"; relabelled in place, never rebuilt. */
+    private Button dismissButton;
 
     public TranslationEditScreen(TranslationScreen parent, String locale, TranslationUnit unit) {
         super(Component.literal(unit.label()));
@@ -57,7 +67,25 @@ public final class TranslationEditScreen extends Screen {
             sourceLines = sourceLines.subList(0, MAX_SOURCE_LINES);
         }
 
-        int editorTop = TOP + font.lineHeight * (sourceLines.size() + 2) + GAP * 3;
+        // A reviewer's reply about this exact string, if there is one. It goes ABOVE the box the
+        // player is about to type in, because it is the reason they are here — a rejection they
+        // could not otherwise explain (see TranslationReviewNotes).
+        TranslationSubmissionsClient.ReviewNote reply = TranslationReviewNotes.forUnit(unit);
+        if (reply != null) {
+            replyLines = font.split(FormattedText.of(reply.note()), contentWidth);
+            if (replyLines.size() > MAX_REPLY_LINES) {
+                replyLines = replyLines.subList(0, MAX_REPLY_LINES);
+            }
+            replyBy = Component.translatable("gui.dungeontrain.translate.edit.reply",
+                reply.noteBy() == null || reply.noteBy().isBlank() ? "admin" : reply.noteBy());
+        } else {
+            replyLines = List.of();
+            replyBy = CommonComponents.EMPTY;
+        }
+
+        int replyHeight = replyLines.isEmpty() ? 0
+            : font.lineHeight * (replyLines.size() + 1) + GAP * 2;
+        int editorTop = TOP + font.lineHeight * (sourceLines.size() + 2) + GAP * 3 + replyHeight;
         int bottomRow = height - MARGIN - ROW_H;
         int noteHeight = unit.type() == TranslationUnit.Type.BOOK
             || !TranslationOverrides.isLive(locale) ? font.lineHeight + GAP : 0;
@@ -71,7 +99,10 @@ public final class TranslationEditScreen extends Screen {
         addRenderableWidget(editor);
         setInitialFocus(editor);
 
-        int buttons = 3;
+        // Four now: the fourth is the answer this screen never had for the commonest case, which
+        // is a machine translation that is already correct. Without it the only way out of the
+        // AI queue was to rewrite a line that needed nothing.
+        int buttons = 4;
         int buttonWidth = (contentWidth - GAP * (buttons - 1)) / buttons;
         int x = MARGIN;
         addRenderableWidget(Button.builder(
@@ -82,8 +113,40 @@ public final class TranslationEditScreen extends Screen {
             Component.translatable("gui.dungeontrain.translate.edit.revert"), b -> revert())
             .bounds(x, bottomRow, buttonWidth, ROW_H).build());
         x += buttonWidth + GAP;
+        dismissButton = addRenderableWidget(Button.builder(dismissLabel(), b -> toggleDismissed())
+            .bounds(x, bottomRow, buttonWidth, ROW_H).build());
+        dismissButton.setTooltip(Tooltip.create(
+            Component.translatable("gui.dungeontrain.translate.edit.good_as_is.tip")));
+        x += buttonWidth + GAP;
         addRenderableWidget(Button.builder(CommonComponents.GUI_CANCEL, b -> onClose())
             .bounds(x, bottomRow, buttonWidth, ROW_H).build());
+    }
+
+    private boolean isDismissed() {
+        return TranslationDismissals.isDismissed(locale, unit);
+    }
+
+    private Component dismissLabel() {
+        return Component.translatable(isDismissed()
+            ? "gui.dungeontrain.translate.edit.good_as_is.undo"
+            : "gui.dungeontrain.translate.edit.good_as_is");
+    }
+
+    /**
+     * Mark this string good as is, or put it back in the queue.
+     *
+     * <p>Stays on the screen rather than closing: dismissing is not a decision about the text in
+     * the box, and a player who mis-clicks has to be able to undo it where they did it. The relay
+     * is told only when the stored state actually changed, and only for a dismissal — un-dismissing
+     * is this client's business alone.</p>
+     */
+    private void toggleDismissed() {
+        boolean next = !isDismissed();
+        if (TranslationDismissals.set(locale, unit, next) && next) {
+            TranslationDismissClient.send(locale, unit);
+        }
+        dismissButton.setMessage(dismissLabel());
+        parent.onEditsChanged();
     }
 
     /** What the box opens with: this player's override if any, else the shipped translation. */
@@ -133,6 +196,16 @@ public final class TranslationEditScreen extends Screen {
         for (FormattedCharSequence line : sourceLines) {
             g.drawString(font, line, MARGIN, y, SOURCE_COLOUR, false);
             y += font.lineHeight;
+        }
+
+        if (!replyLines.isEmpty()) {
+            y += GAP;
+            g.drawString(font, replyBy, MARGIN, y, REPLY_COLOUR, false);
+            y += font.lineHeight;
+            for (FormattedCharSequence line : replyLines) {
+                g.drawString(font, line, MARGIN, y, SOURCE_COLOUR, false);
+                y += font.lineHeight;
+            }
         }
 
         Component note = null;

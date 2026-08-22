@@ -42,6 +42,12 @@ public final class TranslationListWidget extends AbstractWidget {
     /** The same blue the language list's AI-fraction ring uses. */
     private static final int AI_COLOUR = 0xFF5B9BD5;
     private static final String AI_TAG = "AI";
+    /** A reviewer has written back about this string — see TranslationReviewNotes. */
+    private static final String NOTE_TAG = "\u25CF";
+    private static final int NOTE_COLOUR = 0xFFE8A33D;
+    /** This player has read the machine translation and let it stand. */
+    private static final String DISMISSED_TAG = "\u2713";
+    private static final int DISMISSED_COLOUR = 0xFF7F7F7F;
 
     private final Font font;
     private final Consumer<TranslationUnit> onSelect;
@@ -51,6 +57,10 @@ public final class TranslationListWidget extends AbstractWidget {
     private TranslationEdits edits = TranslationEdits.empty("");
     /** Just the relay-approved slice of the above — what the AI badge is decided against. */
     private TranslationEdits approved = TranslationEdits.empty("");
+    /** Which rows this player has marked good as is; never null, defaults to "none". */
+    private java.util.function.Predicate<TranslationUnit> dismissed = (u) -> false;
+    /** Which rows carry a reviewer's reply; never null. */
+    private java.util.function.Predicate<TranslationUnit> hasNote = (u) -> false;
     private int scroll;
 
     public TranslationListWidget(Font font, int x, int y, int width, int height,
@@ -72,6 +82,20 @@ public final class TranslationListWidget extends AbstractWidget {
      */
     public void setApproved(TranslationEdits newApproved) {
         this.approved = newApproved == null ? TranslationEdits.empty("") : newApproved;
+    }
+
+    /**
+     * The rows this player has retired as good as is. They keep their place in the list — the
+     * point is that the AI badge comes off, not that the string disappears — so an unfiltered
+     * browse still shows what was dismissed, marked as dismissed.
+     */
+    public void setDismissed(java.util.function.Predicate<TranslationUnit> predicate) {
+        this.dismissed = predicate == null ? (u) -> false : predicate;
+    }
+
+    /** Which rows a reviewer has replied about — the one mark here the player did not make. */
+    public void setNoted(java.util.function.Predicate<TranslationUnit> predicate) {
+        this.hasNote = predicate == null ? (u) -> false : predicate;
     }
 
     /** Replace the visible rows, keeping the scroll position where it still makes sense. */
@@ -138,11 +162,24 @@ public final class TranslationListWidget extends AbstractWidget {
         int textX = getX() + PAD;
         int lineY = rowY + PAD;
 
-        // Line 1: the key, plus the AI badge right-aligned so the eye can scan a column of them.
-        g.drawString(font, font.plainSubstrByWidth(unit.label(), textWidth - 16),
+        // Line 1: the key, plus the row's badges right-aligned so the eye can scan a column of
+        // them. Right to left, in the order they matter: a reviewer's reply is the one thing here
+        // somebody is waiting on the player for, so it sits outermost.
+        g.drawString(font, font.plainSubstrByWidth(unit.label(), textWidth - 32),
             textX, lineY, KEY_COLOUR, false);
-        if (TranslationFilters.needsHuman(unit, approved)) {
-            int tagX = getX() + width - SCROLLBAR_W - 3 - font.width(AI_TAG);
+        int tagX = getX() + width - SCROLLBAR_W - 3;
+        if (hasNote.test(unit)) {
+            tagX -= font.width(NOTE_TAG);
+            g.drawString(font, NOTE_TAG, tagX, lineY, NOTE_COLOUR, false);
+            tagX -= PAD;
+        }
+        if (dismissed.test(unit)) {
+            // Not "AI" any more: this player has read it and let it stand, which is the whole
+            // point of the mark — the queue must stop offering it.
+            tagX -= font.width(DISMISSED_TAG);
+            g.drawString(font, DISMISSED_TAG, tagX, lineY, DISMISSED_COLOUR, false);
+        } else if (TranslationFilters.needsHuman(unit, approved)) {
+            tagX -= font.width(AI_TAG);
             g.drawString(font, AI_TAG, tagX, lineY, AI_COLOUR, false);
         }
         lineY += font.lineHeight;

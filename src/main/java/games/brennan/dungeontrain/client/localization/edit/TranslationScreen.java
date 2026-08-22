@@ -206,6 +206,10 @@ public final class TranslationScreen extends Screen {
         // title screen's fetch is once per session, which would mean a translator who just had a
         // string approved kept being asked to fix it until they restarted the game.
         ApprovedTranslationsFetcher.fetchAsync(locale);
+        // And whatever a reviewer has written back. Opening the editor is the moment those stop
+        // being unread — this is the screen they can actually be acted on from — so the count on
+        // the way in clears here rather than the next time the player looks at the title screen.
+        TranslationReviewNotes.fetchOnce(this::onNotesLoaded);
         // One row of controls, not three tiers of them. Search and the two narrowing cycles sit
         // together because they do the same job — cutting down what is in front of you — and giving
         // the cycles a tier of their own made them read as top-level navigation, which the column
@@ -601,6 +605,12 @@ public final class TranslationScreen extends Screen {
         this.statusTicks = STATUS_TICKS;
     }
 
+    /** Replies landed (or were already held): mark them read and show their markers. */
+    private void onNotesLoaded() {
+        TranslationReviewNotes.markAllSeen();
+        refresh();
+    }
+
     /**
      * Re-read the approved layer and repaint — called when a pool fetch lands while this screen is
      * open, so a string approved a moment ago on the review page leaves the queue without the
@@ -619,6 +629,8 @@ public final class TranslationScreen extends Screen {
         }
         list.setEdits(TranslationOverrides.mergedFor(locale));
         list.setApproved(TranslationOverrides.approvedFor(locale));
+        list.setDismissed(this::isDismissed);
+        list.setNoted((unit) -> TranslationReviewNotes.forUnit(unit) != null);
         list.setUnits(visibleUnits());
     }
 
@@ -660,10 +672,18 @@ public final class TranslationScreen extends Screen {
                                  TranslationEdits approved) {
         return switch (stateFilter) {
             case ALL -> true;
-            case TODO -> TranslationFilters.needsHuman(unit, approved) && overrideOf(unit, edits) == null;
-            case AI_UNREVIEWED -> TranslationFilters.needsHuman(unit, approved);
+            // Both work queues drop a string this player has marked good as is — that IS the
+            // review they were being asked for, and asking again is what the mark exists to stop.
+            // ALL still shows it (tagged ✓), so a dismissal is never a way to lose a string.
+            case TODO -> TranslationFilters.needsHuman(unit, approved, this::isDismissed)
+                && overrideOf(unit, edits) == null;
+            case AI_UNREVIEWED -> TranslationFilters.needsHuman(unit, approved, this::isDismissed);
             case EDITED -> overrideOf(unit, edits) != null;
         };
+    }
+
+    private boolean isDismissed(TranslationUnit unit) {
+        return TranslationDismissals.isDismissed(locale, unit);
     }
 
     static String overrideOf(TranslationUnit unit, TranslationEdits edits) {
