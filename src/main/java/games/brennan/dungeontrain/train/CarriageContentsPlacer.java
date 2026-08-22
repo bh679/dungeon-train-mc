@@ -252,6 +252,8 @@ public final class CarriageContentsPlacer {
             contents, seed, carriageIndex, PortalCorridorMask.NONE);
         applyContentPools(level, interiorOrigin(carriageOrigin), interiorSizeFor(contents, dims),
             contents, seed, carriageIndex, PortalCorridorMask.NONE);
+        applyHeadSkins(level, interiorOrigin(carriageOrigin), interiorSizeFor(contents, dims),
+            seed, carriageIndex, PortalCorridorMask.NONE);
     }
 
     /**
@@ -262,6 +264,9 @@ public final class CarriageContentsPlacer {
      * placement-tracker correlation logic."
      */
     public static final int EDITOR_SENTINEL_PIDX = -1;
+
+    /** How many carriages ahead {@link #applyHeadSkins} warms the death-skin pool for. */
+    private static final int PREFETCH_CARRIAGES_AHEAD = 2;
 
     /**
      * Train-spawn helper — stamp the contents BLOCKS at {@code carriageOrigin}
@@ -287,6 +292,8 @@ public final class CarriageContentsPlacer {
             contents, seed, carriageIndex, PortalCorridorMask.NONE);
         applyContentPools(level, interiorOrigin(carriageOrigin), interiorSizeFor(contents, dims),
             contents, seed, carriageIndex, PortalCorridorMask.NONE);
+        applyHeadSkins(level, interiorOrigin(carriageOrigin), interiorSizeFor(contents, dims),
+            seed, carriageIndex, PortalCorridorMask.NONE);
     }
 
     /**
@@ -663,6 +670,56 @@ public final class CarriageContentsPlacer {
         be.loadCustomOnly(rolled, level.registryAccess());
         be.setChanged();
         games.brennan.dungeontrain.editor.ChiseledBookshelfSync.syncIfNeeded(level, worldPos);
+    }
+
+    /**
+     * Dress every generated {@code player_head} in this carriage with the skin of a player who died
+     * at this same carriage index (see {@link DeathHeadSkins}).
+     *
+     * <p>Heads reach a carriage as ordinary weighted decoration in the contents variant tables —
+     * {@code campire}, {@code trimming}, {@code cake} and friends all offer one — and until this pass
+     * ran, every one of them rendered as the default Steve head. The skin is written to the block
+     * entity's real owner profile rather than tinted at render time, which is what makes it survive
+     * being mined: vanilla's {@code blocks/player_head} loot table copies the
+     * {@code minecraft:profile} component off the block entity onto the dropped item, and placing
+     * that item back writes it into the new block entity.</p>
+     *
+     * <p>Its own pass rather than a branch inside {@link #applyContentPools}: that method's two loops
+     * deliberately skip cells owned by a variant entry, and a head IS a variant entry — the loot
+     * passes and this one are looking for opposite things in the same volume.</p>
+     *
+     * <p>A head that already carries an owner is left alone: an author who put a specific face in a
+     * template meant that face. Nothing here runs for a drifting shared carriage — those are stamped
+     * from their relay blob by {@code CarriageBlockSnapshot.place} and never reach the contents
+     * placer — which also keeps a dead player's skin from being uploaded onward inside a shared
+     * build's block-entity NBT.</p>
+     */
+    private static void applyHeadSkins(ServerLevel level, BlockPos origin, Vec3i size,
+                                       long seed, int carriageIndex, PortalCorridorMask mask) {
+        // Warm the pools for the carriages just ahead of this one. The fetch is off-thread and a miss
+        // costs nothing but a fallback skin, so the point is only that a run walking up the train
+        // finds each index already resolved by the time it is generated.
+        for (int ahead = 1; ahead <= PREFETCH_CARRIAGES_AHEAD; ahead++) {
+            DeathHeadSkins.prefetch(carriageIndex + ahead);
+        }
+        for (int x = 0; x < size.getX(); x++) {
+            for (int y = 0; y < size.getY(); y++) {
+                for (int z = 0; z < size.getZ(); z++) {
+                    BlockPos localPos = new BlockPos(x, y, z);
+                    BlockPos worldPos = origin.offset(localPos);
+                    if (mask.covers(worldPos)) continue;
+                    net.minecraft.world.level.block.state.BlockState state = level.getBlockState(worldPos);
+                    if (!state.is(Blocks.PLAYER_HEAD) && !state.is(Blocks.PLAYER_WALL_HEAD)) continue;
+                    if (!(level.getBlockEntity(worldPos)
+                            instanceof net.minecraft.world.level.block.entity.SkullBlockEntity skull)) continue;
+                    if (skull.getOwnerProfile() != null) continue; // authored face wins
+                    DeathHeadSkins.pick(carriageIndex, seed, localPos).ifPresent(profile -> {
+                        skull.setOwner(profile);
+                        skull.setChanged();
+                    });
+                }
+            }
+        }
     }
 
     /**
