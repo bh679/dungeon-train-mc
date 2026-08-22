@@ -50,6 +50,20 @@ public final class TranslationReviewNotes {
         return byUnit.get((unit.type() == TranslationUnit.Type.BOOK ? "book|" : "lang|") + unit.id());
     }
 
+    /**
+     * The reply on {@code unit} as one line of text — {@code <reviewer>: <what they wrote>} — or
+     * null. What the list draws under a row, so the reply is readable where the translator is
+     * looking at what they sent rather than only inside the editor.
+     */
+    public static synchronized String textFor(TranslationUnit unit) {
+        TranslationSubmissionsClient.ReviewNote note = forUnit(unit);
+        if (note == null) {
+            return null;
+        }
+        String who = note.noteBy() == null || note.noteBy().isBlank() ? "admin" : note.noteBy();
+        return who + ": " + note.note();
+    }
+
     /** How many replies are newer than the last the player was shown. */
     public static synchronized int unreadCount() {
         long seen = seenUpTo();

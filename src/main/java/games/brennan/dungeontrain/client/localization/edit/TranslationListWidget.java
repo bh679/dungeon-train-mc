@@ -23,6 +23,12 @@ import java.util.function.Consumer;
  * <p>Three lines per row, in the order a translator reads them: the key (what to look up), the
  * English (what it means), and the current translation (what to fix). Anything shorter forces
  * the translator into the edit screen just to find out which string a row is.</p>
+ *
+ * <p>A fourth line appears when any visible row carries a reviewer's reply — the whole list grows
+ * by a line rather than individual rows doing so, because the virtualised layout here depends on
+ * every row being the same height. That is the price of showing the reply where the translator is
+ * looking at what they sent, and it is worth paying: a rejection they cannot read the reason for
+ * is the thing this feature exists to stop.</p>
  */
 public final class TranslationListWidget extends AbstractWidget {
 
@@ -59,8 +65,10 @@ public final class TranslationListWidget extends AbstractWidget {
     private TranslationEdits approved = TranslationEdits.empty("");
     /** Which rows this player has marked good as is; never null, defaults to "none". */
     private java.util.function.Predicate<TranslationUnit> dismissed = (u) -> false;
-    /** Which rows carry a reviewer's reply; never null. */
-    private java.util.function.Predicate<TranslationUnit> hasNote = (u) -> false;
+    /** A row's reviewer reply, or null/blank when there is none; never null itself. */
+    private java.util.function.Function<TranslationUnit, String> noteText = (u) -> null;
+    /** True while any VISIBLE row has a reply — recomputed in {@link #setUnits}. */
+    private boolean showingNotes;
     private int scroll;
 
     public TranslationListWidget(Font font, int x, int y, int width, int height,
@@ -93,15 +101,30 @@ public final class TranslationListWidget extends AbstractWidget {
         this.dismissed = predicate == null ? (u) -> false : predicate;
     }
 
-    /** Which rows a reviewer has replied about — the one mark here the player did not make. */
-    public void setNoted(java.util.function.Predicate<TranslationUnit> predicate) {
-        this.hasNote = predicate == null ? (u) -> false : predicate;
+    /**
+     * What a reviewer replied about each row — the one mark here the player did not make. Set
+     * before {@link #setUnits}, which decides from it whether the list needs its fourth line.
+     */
+    public void setNoteText(java.util.function.Function<TranslationUnit, String> lookup) {
+        this.noteText = lookup == null ? (u) -> null : lookup;
     }
 
     /** Replace the visible rows, keeping the scroll position where it still makes sense. */
     public void setUnits(List<TranslationUnit> newUnits) {
         this.units = newUnits == null ? List.of() : newUnits;
+        this.showingNotes = false;
+        for (TranslationUnit unit : units) {
+            if (hasNote(unit)) {
+                this.showingNotes = true;
+                break;
+            }
+        }
         this.scroll = Mth.clamp(scroll, 0, maxScroll());
+    }
+
+    private boolean hasNote(TranslationUnit unit) {
+        String note = noteText.apply(unit);
+        return note != null && !note.isBlank();
     }
 
     public int rowCount() {
@@ -109,7 +132,7 @@ public final class TranslationListWidget extends AbstractWidget {
     }
 
     private int rowHeight() {
-        return font.lineHeight * ROW_LINES + PAD * 2;
+        return font.lineHeight * (showingNotes ? ROW_LINES + 1 : ROW_LINES) + PAD * 2;
     }
 
     private int totalHeight() {
@@ -168,7 +191,7 @@ public final class TranslationListWidget extends AbstractWidget {
         g.drawString(font, font.plainSubstrByWidth(unit.label(), textWidth - 32),
             textX, lineY, KEY_COLOUR, false);
         int tagX = getX() + width - SCROLLBAR_W - 3;
-        if (hasNote.test(unit)) {
+        if (hasNote(unit)) {
             tagX -= font.width(NOTE_TAG);
             g.drawString(font, NOTE_TAG, tagX, lineY, NOTE_COLOUR, false);
             tagX -= PAD;
@@ -196,6 +219,18 @@ public final class TranslationListWidget extends AbstractWidget {
         String current = edited ? override : unit.shipped();
         g.drawString(font, oneLine(current, textWidth), textX, lineY,
             edited ? EDITED_COLOUR : SHIPPED_COLOUR, false);
+
+        // Line 4: what a reviewer said about it. Only ever present while the list is showing
+        // notes at all, so the row heights this layout assumes stay uniform.
+        if (!showingNotes) {
+            return;
+        }
+        lineY += font.lineHeight;
+        String note = noteText.apply(unit);
+        if (note != null && !note.isBlank()) {
+            g.drawString(font, oneLine(NOTE_TAG + " " + note, textWidth), textX, lineY,
+                NOTE_COLOUR, false);
+        }
     }
 
     /** Collapse newlines so a multi-paragraph book variant still occupies exactly one line. */

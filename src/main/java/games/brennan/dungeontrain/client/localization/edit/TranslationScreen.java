@@ -206,10 +206,11 @@ public final class TranslationScreen extends Screen {
         // title screen's fetch is once per session, which would mean a translator who just had a
         // string approved kept being asked to fix it until they restarted the game.
         ApprovedTranslationsFetcher.fetchAsync(locale);
-        // And whatever a reviewer has written back. Opening the editor is the moment those stop
-        // being unread — this is the screen they can actually be acted on from — so the count on
-        // the way in clears here rather than the next time the player looks at the title screen.
-        TranslationReviewNotes.fetchOnce(this::onNotesLoaded);
+        // And whatever a reviewer has written back — asked again on every open, for the same
+        // reason the approvals fetch above is: a reply written while the game was running would
+        // otherwise wait for a restart. Opening the editor is also the moment those replies stop
+        // being unread, since this is the screen they can be acted on from.
+        TranslationReviewNotes.refresh(this::onNotesLoaded);
         // One row of controls, not three tiers of them. Search and the two narrowing cycles sit
         // together because they do the same job — cutting down what is in front of you — and giving
         // the cycles a tier of their own made them read as top-level navigation, which the column
@@ -630,7 +631,7 @@ public final class TranslationScreen extends Screen {
         list.setEdits(TranslationOverrides.mergedFor(locale));
         list.setApproved(TranslationOverrides.approvedFor(locale));
         list.setDismissed(this::isDismissed);
-        list.setNoted((unit) -> TranslationReviewNotes.forUnit(unit) != null);
+        list.setNoteText(TranslationReviewNotes::textFor);
         list.setUnits(visibleUnits());
     }
 
