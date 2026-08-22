@@ -128,9 +128,6 @@ public final class DungeonTrainConfig {
      * as the world reads more community books, so late-game loot settles at an even distribution across
      * all books instead of staying community-heavy. Default 0.75.
      */
-    public static final double DEFAULT_EDIBLE_BACKPACK_LOOT_CHANCE = 0.015;
-    public static final double MIN_EDIBLE_BACKPACK_LOOT_CHANCE = 0.0;
-    public static final double MAX_EDIBLE_BACKPACK_LOOT_CHANCE = 1.0;
     public static final double DEFAULT_SHARED_BOOK_LOOT_MAX_CHANCE = 0.75;
     public static final double MIN_SHARED_BOOK_LOOT_CHANCE = 0.0;
     public static final double MAX_SHARED_BOOK_LOOT_CHANCE = 1.0;
@@ -271,7 +268,6 @@ public final class DungeonTrainConfig {
     public static final ModConfigSpec.BooleanValue LOVE_NOTES_ENABLED;
     public static final ModConfigSpec.BooleanValue LETTERS_ENABLED;
     public static final ModConfigSpec.DoubleValue SHARED_BOOK_LOOT_MAX_CHANCE;
-    public static final ModConfigSpec.DoubleValue EDIBLE_BACKPACK_LOOT_CHANCE;
     public static final ModConfigSpec.IntValue SHARED_BOOK_REPEAT_GROUPS;
     public static final ModConfigSpec.IntValue PORTAL_ROOM_AUTHOR_MIN_BOOKS;
     public static final ModConfigSpec.BooleanValue SHARED_CARRIAGES_ENABLED;
@@ -325,7 +321,6 @@ public final class DungeonTrainConfig {
         LOVE_NOTES_ENABLED = pair.getLeft().loveNotesEnabled;
         LETTERS_ENABLED = pair.getLeft().lettersEnabled;
         SHARED_BOOK_LOOT_MAX_CHANCE = pair.getLeft().sharedBookLootMaxChance;
-        EDIBLE_BACKPACK_LOOT_CHANCE = pair.getLeft().edibleBackpackLootChance;
         SHARED_BOOK_REPEAT_GROUPS = pair.getLeft().sharedBookRepeatGroups;
         PORTAL_ROOM_AUTHOR_MIN_BOOKS = pair.getLeft().portalRoomAuthorMinBooks;
         SHARED_CARRIAGES_ENABLED = pair.getLeft().sharedCarriagesEnabled;
@@ -474,13 +469,6 @@ public final class DungeonTrainConfig {
                         "is empty or the relay is unreachable, the roll silently falls back to the local pool regardless.")
                 .defineInRange("sharedBookLootMaxChance", DEFAULT_SHARED_BOOK_LOOT_MAX_CHANCE,
                         MIN_SHARED_BOOK_LOOT_CHANCE, MAX_SHARED_BOOK_LOOT_CHANCE);
-        ModConfigSpec.DoubleValue edibleBackpackLootChance = b
-                .comment("Per-slot chance that a rolled train-container item is replaced by an Edible Backpack",
-                        "(eat it for +1 permanent backpack storage slot — see the bundled Edible Backpacks mod).",
-                        "Deterministic per chest slot for a given world seed, like every other loot roll.",
-                        "Default 0.015 (1.5%). Set 0.0 to keep edible backpacks out of train loot.")
-                .defineInRange("edibleBackpackLootChance", DEFAULT_EDIBLE_BACKPACK_LOOT_CHANCE,
-                        MIN_EDIBLE_BACKPACK_LOOT_CHANCE, MAX_EDIBLE_BACKPACK_LOOT_CHANCE);
         ModConfigSpec.IntValue sharedBookRepeatGroups = b
                 .comment("How far behind (in whole CARRIAGE GROUPS) a community book's loot carriage must scroll before",
                         "the same book can appear again for a player in the same life. The shared-book loot selector never",
@@ -633,7 +621,7 @@ public final class DungeonTrainConfig {
                 sharedBookLootMaxChance, sharedBookRepeatGroups, portalRoomAuthorMinBooks, discoverNarrativesEnabled, narrativeDiscoveryRampThreshold,
                 difficultyLevelNoticeToDiscord, introCinematicEnabled, introCinematicDurationTicks,
                 introCinematicChunkPreloadEnabled, sharedCarriagesEnabled, sharedCarriagePoolChance,
-                sharedCarriageOwnChance, sharedCarriageMaxEntities, edibleBackpackLootChance);
+                sharedCarriageOwnChance, sharedCarriageMaxEntities);
     }
 
     /**
@@ -851,12 +839,6 @@ public final class DungeonTrainConfig {
         return Math.max(MIN_SHARED_BOOK_LOOT_CHANCE, Math.min(MAX_SHARED_BOOK_LOOT_CHANCE, v));
     }
 
-    /** Per-slot chance a rolled train-container item is replaced by an Edible Backpack. Clamped [0,1]. */
-    public static double getEdibleBackpackLootChance() {
-        double v = isLoaded() ? EDIBLE_BACKPACK_LOOT_CHANCE.get() : DEFAULT_EDIBLE_BACKPACK_LOOT_CHANCE;
-        return Math.max(MIN_EDIBLE_BACKPACK_LOOT_CHANCE, Math.min(MAX_EDIBLE_BACKPACK_LOOT_CHANCE, v));
-    }
-
     /** Whole carriage-GROUPS a book's carriage must scroll behind before it may repeat (while unread) this life. */
     public static int getSharedBookRepeatGroups() {
         int v = isLoaded() ? SHARED_BOOK_REPEAT_GROUPS.get() : DEFAULT_SHARED_BOOK_REPEAT_GROUPS;
@@ -1062,7 +1044,6 @@ public final class DungeonTrainConfig {
             ModConfigSpec.BooleanValue sharedCarriagesEnabled,
             ModConfigSpec.DoubleValue sharedCarriagePoolChance,
             ModConfigSpec.DoubleValue sharedCarriageOwnChance,
-            ModConfigSpec.IntValue sharedCarriageMaxEntities,
-            ModConfigSpec.DoubleValue edibleBackpackLootChance
+            ModConfigSpec.IntValue sharedCarriageMaxEntities
     ) {}
 }
