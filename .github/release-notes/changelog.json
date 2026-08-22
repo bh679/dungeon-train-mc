@@ -7860,11 +7860,9 @@
       "version": "0.612.0",
       "type": "feat",
       "title": "Using a creative mod asks first",
-      "summary": "WorldEdit and Effortless Building are in the modpack for people who want to build. Using either now asks whether you want to enter Free Play, the same way switching to Creative does \u2014 and you can say no, in which case nothing happens and your run carries on untouched. Just having the mods installed changes nothing, and ordinary block-by-block building with Effortless Building is still normal play.",
+      "summary": "Using WorldEdit or Effortless Building now asks whether you want to enter Free Play, the same way switching to Creative does. Decline and nothing happens. Having them installed changes nothing on its own.",
       "highlights": [
-        "Any WorldEdit command, and Effortless Building's build modes, mirrors and arrays, ask before they change your run",
-        "Decline and the action is cancelled \u2014 no blocks placed, run untouched",
-        "Having the mods installed is not enough to trip it; only using them is"
+        "Ordinary building with Effortless Building is still normal play"
       ],
       "date": "2026-08-22",
       "released": false,
