@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.client;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.builder.BuilderMode;
+import games.brennan.dungeontrain.builder.BuilderQuietRules;
 import games.brennan.dungeontrain.builder.BuilderWorldLayout;
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
@@ -243,8 +244,10 @@ public final class DevQuickWorldHandler {
      *       train in view, and generating one is pure cost.</li>
      *   <li><b>One dimension, 100 blocks tall, void</b> apart from a 300×300 platform — see
      *       {@link #DT_BUILDER_PRESET}.</li>
-     *   <li><b>Always noon</b> (fixed in the dimension type) and <b>no natural mob spawning</b>,
-     *       so nothing wanders into a build and the light never changes under it.</li>
+     *   <li><b>Always noon</b> (fixed in the dimension type) and <b>no clock, weather or natural
+     *       mob spawning</b> — see {@link BuilderQuietRules}, which
+     *       {@code BuilderQuietRuleEvents} re-applies on every start of a builder world, so this
+     *       creation-time bake is the default rather than the only enforcement.</li>
      *   <li>Random seed — unlike the perf world, nothing here benefits from an identical
      *       world every run.</li>
      * </ul>
@@ -267,9 +270,7 @@ public final class DevQuickWorldHandler {
                 DungeonTrainConfig.DEFAULT_GROUP_SIZE);
 
         GameRules rules = new GameRules();
-        rules.getRule(GameRules.RULE_DOMOBSPAWNING).set(false, null);
-        rules.getRule(GameRules.RULE_WEATHER_CYCLE).set(false, null);
-        rules.getRule(GameRules.RULE_DAYLIGHT).set(false, null);
+        BuilderQuietRules.apply(rules, null);   // no server yet — world is still being created
 
         LevelSettings settings = new LevelSettings(
                 name,
