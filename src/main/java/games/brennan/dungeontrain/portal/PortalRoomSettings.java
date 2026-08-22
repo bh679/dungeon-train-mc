@@ -121,7 +121,7 @@ public record PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
      * mode already says, and writing it out would put a segment in every such tag for nothing.</p>
      */
     public String toTag() {
-        PortalRoomCopies effectiveCopies = copiesApply() ? copies : PortalRoomCopies.DEFAULT;
+        PortalRoomCopies effectiveCopies = effectiveCopies();
         PortalRoomExits effectiveExits = effectiveExits();
         if (books != PortalRoomBooks.DEFAULT) {
             // Exits is written out as whatever it effectively is, even when that is the mode's own
@@ -137,13 +137,48 @@ public record PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
         if (contents != PortalRoomContents.DEFAULT) {
             return mode.id() + SEPARATOR + effectiveCopies.id() + SEPARATOR + contents.id();
         }
-        if (effectiveCopies == PortalRoomCopies.DEFAULT) return mode.id();
+        if (effectiveCopies.equals(PortalRoomCopies.DEFAULT)) return mode.id();
         return mode.id() + SEPARATOR + effectiveCopies.id();
     }
 
     /** True when the Copies control applies at all — either endless mode appends tiles to roll. */
     public boolean copiesApply() {
         return mode.copiesApply();
+    }
+
+    /**
+     * What this room actually does about its copies: {@link #copies} where every part of it applies,
+     * and {@link PortalRoomCopies#DEFAULT} where it does not.
+     *
+     * <p>Read this rather than {@link #copies} anywhere the answer drives block writes, for the same
+     * reason {@link #effectiveExits} exists: a room carries whatever setting it was last given, and
+     * honouring one the current walls cannot use writes the wrong blocks.</p>
+     *
+     * <p>Two ways for it not to apply. A room that appends no tiles at all has nothing for the
+     * setting to describe. And {@link PortalRoomCopies.Kind#SINGLE} is
+     * {@link PortalRoomMode#ENDLESS_OPEN}'s alone — under Endless Repetition it would append solid
+     * cubes where rooms should be, so it reads back as Exact there.</p>
+     */
+    public PortalRoomCopies effectiveCopies() {
+        if (!copiesApply()) return PortalRoomCopies.DEFAULT;
+        boolean singleHere = !copies.repeatsOneBlock() || mode.singleCopiesApply();
+        return singleHere ? copies : PortalRoomCopies.DEFAULT;
+    }
+
+    /**
+     * The same settings at the next Copies value — what the editor's one cycling button steps to.
+     *
+     * <p>Asked of the settings rather than of {@link PortalRoomCopies} directly because the list of
+     * available values depends on the walls, and the walls live here. Single is skipped under a mode
+     * that cannot use it, so the button never stops on an option that means nothing.</p>
+     */
+    public PortalRoomSettings nextCopies() {
+        return withCopies(copies.next(mode.singleCopiesApply()));
+    }
+
+    /** The same settings with {@link PortalRoomCopies.Kind#SINGLE}'s block set to {@code blockId}. */
+    public PortalRoomSettings withCopiesBlock(String blockId) {
+        return withCopies(copies.withBlock(blockId));
     }
 
     /** True when the Exits control applies at all — only an endless room has anywhere to put one. */

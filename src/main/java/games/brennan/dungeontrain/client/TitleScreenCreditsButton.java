@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.client.analytics.UiAnalytics;
 import games.brennan.dungeontrain.client.chat.MenuChatButtonHandler;
 import games.brennan.dungeontrain.client.credits.CreditsScreen;
 import games.brennan.dungeontrain.client.links.OfficialLinks;
+import games.brennan.dungeontrain.client.menu.BilibiliIconButton;
 import games.brennan.dungeontrain.client.menu.CreditsIconButton;
 import games.brennan.dungeontrain.client.menu.DiscordIconButton;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
@@ -45,6 +46,12 @@ import java.net.URI;
  * added its widget, making the "above the chat icon when present" decision reliable
  * despite otherwise-unspecified {@code Init.Post} handler order.</p>
  *
+ * <p>A third icon — the <b>Bilibili</b> logomark — rides one slot above Discord, and only on a
+ * Chinese-language client ({@link ClientLanguage#isChinese()}). Discord is blocked in mainland
+ * China, so for those players the Discord mark below it is a dead end; Bilibili is the community
+ * link that actually opens. It is added rather than substituted, because the gate is language and
+ * not location.</p>
+ *
  * <p>If the accessibility button can't be found (e.g. another mod removed it), the
  * icon falls back to the top-right corner so Credits is always reachable. No-ops on
  * any non-{@link TitleScreen}.</p>
@@ -57,6 +64,9 @@ public final class TitleScreenCreditsButton {
 
     private static final Component DISCORD_NARRATION =
             Component.translatable("gui.dungeontrain.discord_button");
+
+    private static final Component BILIBILI_NARRATION =
+            Component.translatable("gui.dungeontrain.bilibili_button");
 
     /** Vanilla accessibility button narration (iconOnly TitleScreen variant) — our anchor. */
     private static final Component ACCESSIBILITY_KEY = Component.translatable("options.accessibility");
@@ -110,6 +120,32 @@ public final class TitleScreenCreditsButton {
                 MenuChatButtonHandler::hasUnreadPulse);
         discord.setTooltip(Tooltip.create(DISCORD_NARRATION));
         event.addListener(discord);
+
+        // Bilibili, one slot further up — but only on a Chinese-language client. Discord is blocked
+        // in mainland China, so for those players the icon directly below this one leads nowhere;
+        // this is the community link that actually opens. Above rather than instead of Discord: the
+        // gate is the client's LANGUAGE, not its location (Minecraft exposes no country), so a
+        // Chinese-language client outside China would lose a working link if this replaced it.
+        if (ClientLanguage.isChinese()) {
+            BilibiliIconButton bilibili = new BilibiliIconButton(x, y - 2 * (SIZE + GAP), SIZE,
+                    BILIBILI_NARRATION, b -> openBilibili(titleScreen));
+            bilibili.setTooltip(Tooltip.create(BILIBILI_NARRATION));
+            event.addListener(bilibili);
+        }
+    }
+
+    /** Open the Bilibili channel through the vanilla confirm screen, returning to the title screen. */
+    private static void openBilibili(Screen parent) {
+        UiAnalytics.click(UiAnalytics.SURFACE_TITLE_SCREEN, UiAnalytics.TARGET_BILIBILI);
+        // Read at click time so a relay-served rotation still applies after the menu was built.
+        String bilibiliUrl = OfficialLinks.bilibili();
+        Minecraft.getInstance().setScreen(new ConfirmLinkScreen(yes -> {
+            UiAnalytics.confirm(UiAnalytics.SURFACE_TITLE_SCREEN, UiAnalytics.TARGET_BILIBILI, yes);
+            if (yes) {
+                Util.getPlatform().openUri(URI.create(bilibiliUrl));
+            }
+            Minecraft.getInstance().setScreen(parent);
+        }, bilibiliUrl, true));
     }
 
     /** Open the Discord invite through the vanilla confirm screen, returning to the title screen. */

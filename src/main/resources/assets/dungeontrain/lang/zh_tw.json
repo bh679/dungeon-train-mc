@@ -595,6 +595,7 @@
   "death.attack.dungeontrain.walked_away.player": "%1$s 走離了線路",
   "gui.dungeontrain.death.leave_line": "離開線路",
   "gui.dungeontrain.discord_button": "Discord",
+  "gui.dungeontrain.bilibili_button": "嗶哩嗶哩",
   "gui.dungeontrain.support.button": "支持模組作者",
   "gui.dungeontrain.support.title": "支持方式",
   "gui.dungeontrain.support.subtitle": "Dungeon Train目前僅由一位作者開發，如果力所能及的話，通過以下方式便可協助到我的開發工作",

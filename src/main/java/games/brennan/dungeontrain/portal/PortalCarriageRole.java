@@ -57,4 +57,24 @@ public enum PortalCarriageRole {
     public static int entryIndexOf(int carriageIndex, int groupSize) {
         return PortalCarriageSelection.groupAnchorOf(carriageIndex, groupSize);
     }
+
+    /**
+     * The real carriage index of the corridor filling {@code role} in the group anchored at
+     * {@code pairKey} — the key {@code PortalCarriageBuilder} rolls a corridor's shell and contents
+     * against.
+     *
+     * <p>{@code pairKey} comes from {@link #entryIndexOf}, so it is already a group anchor and this
+     * is just the slot added back on. Every site that stamps a corridor knows its role — the on-train
+     * carriage ({@code CarriagePlacer} computes it from {@link #roleFor}), the underground twin and
+     * every exit copy ({@code PortalCarriageBuilder.stampCorridorHalf} takes it as a parameter) — so
+     * all of them derive this identically with no state passing between them. That purity is what the
+     * crossing needs: a player is only ever mapped between a carriage and the twin of the <b>same</b>
+     * role, so entry and exit are free to furnish differently while each role's copies still agree
+     * block-for-block.</p>
+     */
+    public static int corridorIndexOf(int pairKey, PortalCarriageRole role) {
+        return pairKey + (role == EXIT
+            ? PortalCarriageSelection.SLOT_EXIT
+            : PortalCarriageSelection.SLOT_ENTRY);
+    }
 }

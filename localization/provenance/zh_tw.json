@@ -595,6 +595,7 @@
   "death.attack.dungeontrain.walked_away.player": {"author": "Opus 4.8 (Claude)", "reviewer": ""},
   "gui.dungeontrain.death.leave_line": {"author": "Opus 4.8 (Claude)", "reviewer": ""},
   "gui.dungeontrain.discord_button": {"author": "Opus 4.8 (Claude)", "reviewer": ""},
+  "gui.dungeontrain.bilibili_button": {"author": "Opus 5 (Claude)", "reviewer": ""},
   "gui.dungeontrain.support.button": {"author": "阿世xAsh", "reviewer": "阿世xAsh"},
   "gui.dungeontrain.support.title": {"author": "阿世xAsh", "reviewer": "阿世xAsh"},
   "gui.dungeontrain.support.subtitle": {"author": "阿世xAsh", "reviewer": ""},
