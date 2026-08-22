@@ -102,7 +102,7 @@
   },
   "miniword": {
     "weight": 1,
-    "mode": "bedrock_lock"
+    "mode": "bedrock_lock/exact/off/off/off/day"
   },
   "nobeam": {
     "weight": 1,

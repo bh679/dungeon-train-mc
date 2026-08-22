@@ -205,6 +205,15 @@ public final class EditorCommand {
             return builder.buildFuture();
         };
 
+    private static final SuggestionProvider<CommandSourceStack> PORTAL_ROOM_SKY_SUGGESTIONS =
+        (ctx, builder) -> {
+            for (games.brennan.dungeontrain.portal.PortalRoomSky sky
+                    : games.brennan.dungeontrain.portal.PortalRoomSky.values()) {
+                builder.suggest(sky.id());
+            }
+            return builder.buildFuture();
+        };
+
     private static final SuggestionProvider<CommandSourceStack> PORTAL_ROOM_EXITS_SUGGESTIONS =
         (ctx, builder) -> {
             for (games.brennan.dungeontrain.portal.PortalRoomExits.Kind k
@@ -486,6 +495,15 @@ public final class EditorCommand {
                         .suggests(PORTAL_ROOM_CONTENTS_SUGGESTIONS)
                         .executes(ctx -> runPortalRoomContents(ctx.getSource(),
                             StringArgumentType.getString(ctx, "contents")))))
+                // Whether the room is lit as though it stood outdoors, and under which sky. Off by
+                // default, which is every room lit only by whatever its own build gives it.
+                .then(Commands.literal("sky")
+                    .then(Commands.literal("next")
+                        .executes(ctx -> runPortalRoomSkyCycle(ctx.getSource())))
+                    .then(Commands.argument("sky", StringArgumentType.word())
+                        .suggests(PORTAL_ROOM_SKY_SUGGESTIONS)
+                        .executes(ctx -> runPortalRoomSky(ctx.getSource(),
+                            StringArgumentType.getString(ctx, "sky")))))
                 // How many extra ways back to the train an endless room scatters through its copies.
                 // Means nothing under the modes that do not repeat.
                 .then(Commands.literal("exits")
@@ -5837,6 +5855,15 @@ public final class EditorCommand {
         return applyPortalRoomSettings(source, name, current.withContents(current.contents().next()));
     }
 
+    /** {@code /dt editor portals sky next} — step Off → Daylight → Day/Night → Nether → End. */
+    private static int runPortalRoomSkyCycle(CommandSourceStack source) {
+        String name = portalRoomPlotUnderPlayer(source);
+        if (name == null) return 0;
+        games.brennan.dungeontrain.portal.PortalRoomSettings current =
+            games.brennan.dungeontrain.portal.PortalRoomSettings.of(name);
+        return applyPortalRoomSettings(source, name, current.withSky(current.sky().next()));
+    }
+
     /** {@code /dt editor portals exits next} — step On → Random → Off, keeping the spacing. */
     private static int runPortalRoomExitsCycle(CommandSourceStack source) {
         String name = portalRoomPlotUnderPlayer(source);
@@ -5926,6 +5953,28 @@ public final class EditorCommand {
         }
         return applyPortalRoomSettings(source, name,
             games.brennan.dungeontrain.portal.PortalRoomSettings.of(name).withContents(wanted));
+    }
+
+    /**
+     * {@code /dt editor portals sky <none|day|cycle|nether|end>} — set it outright.
+     *
+     * <p>Compared on the parsed id rather than trusting {@code parse} outright, for the reason the
+     * contents setter does the same: parsing is deliberately total, so a typo would otherwise
+     * silently set the room to Off and report success.</p>
+     */
+    private static int runPortalRoomSky(CommandSourceStack source, String raw) {
+        String name = portalRoomPlotUnderPlayer(source);
+        if (name == null) return 0;
+
+        games.brennan.dungeontrain.portal.PortalRoomSky wanted =
+            games.brennan.dungeontrain.portal.PortalRoomSky.parse(raw);
+        if (!wanted.id().equalsIgnoreCase(raw.trim())) {
+            source.sendFailure(Component.literal(
+                "Unknown sky option '" + raw + "'. Try none, day, cycle, nether or end."));
+            return 0;
+        }
+        return applyPortalRoomSettings(source, name,
+            games.brennan.dungeontrain.portal.PortalRoomSettings.of(name).withSky(wanted));
     }
 
     /**
@@ -6284,9 +6333,13 @@ public final class EditorCommand {
                     ? "" : "\u2013" + settings.books().maxBooks())
                 + " books"
             : "";
+        // Same rule as Books: only worth a word when the room actually asks for a sky.
+        String sky = settings.sky().lights()
+            ? ", sky: " + settings.sky().displayName()
+            : "";
         source.sendSuccess(() -> Component.literal(
             "Portal room '" + name + "' walls: " + settings.mode().displayName() + copies + contents
-            + exits + books
+            + exits + books + sky
             + ". Portals already standing keep the settings they were built with — this takes effect "
             + "on the next one the train reaches." + subVariantNote(name)
         ).withStyle(ChatFormatting.GREEN), true);

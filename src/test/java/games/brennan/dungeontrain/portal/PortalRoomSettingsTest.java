@@ -363,18 +363,22 @@ class PortalRoomSettingsTest {
     @Test
     @DisplayName("The longest tag any room can write still fits the editor status packet")
     void longestTagFitsThePacket() {
-        // The packet caps this string, and a fifth segment eats into that cap — so the worst case is
-        // asserted here rather than reasoned about, and a future sixth setting fails this test first
-        // instead of failing a writeUtf on a live server.
+        // The packet caps this string, and every segment eats into that cap — so the worst case is
+        // asserted here rather than reasoned about, and a future seventh setting fails this test
+        // first instead of failing a writeUtf on a live server. Sky is in the product because it is
+        // the one that pushed the worst case up by a whole segment when it was added.
         String longest = "";
         for (PortalRoomMode mode : PortalRoomMode.values()) {
             for (PortalRoomCopies copies : everyCopiesValue()) {
                 for (PortalRoomContents contents : PortalRoomContents.values()) {
                     for (PortalRoomBooks books : everyBooksValue()) {
-                        PortalRoomExits widest = new PortalRoomExits(PortalRoomExits.Kind.RANDOM,
-                            PortalRoomExits.MAX_EVERY, PortalRoomExits.MOVE_ALWAYS);
-                        String tag = new PortalRoomSettings(mode, copies, contents, widest, books).toTag();
-                        if (tag.length() > longest.length()) longest = tag;
+                        for (PortalRoomSky sky : PortalRoomSky.values()) {
+                            PortalRoomExits widest = new PortalRoomExits(PortalRoomExits.Kind.RANDOM,
+                                PortalRoomExits.MAX_EVERY, PortalRoomExits.MOVE_ALWAYS);
+                            String tag = new PortalRoomSettings(mode, copies, contents, widest,
+                                books, sky).toTag();
+                            if (tag.length() > longest.length()) longest = tag;
+                        }
                     }
                 }
             }
@@ -568,5 +572,89 @@ class PortalRoomSettingsTest {
             PortalRoomTiling.base());
         assertNotEquals(a.variantIndexFor(PortalRoomTiling.Tile.BASE, PAIR),
             b.variantIndexFor(PortalRoomTiling.Tile.BASE, PAIR));
+    }
+
+    @Test
+    @DisplayName("A room says nothing about its sky unless its template asked for one")
+    void skyDefaultsToOff() {
+        assertSame(PortalRoomSky.NONE, PortalRoomSettings.DEFAULT.sky());
+        assertSame(PortalRoomSky.NONE, PortalRoomSettings.parse("bedrockless").sky());
+        // Every tag written before Sky existed — one to five segments — still reads as an unlit room.
+        assertSame(PortalRoomSky.NONE, PortalRoomSettings.parse("endless_repetition/dynamic").sky());
+        assertSame(PortalRoomSky.NONE,
+            PortalRoomSettings.parse("endless_repetition/dynamic/fit/on/mix").sky());
+        // ...and is re-written unchanged, rather than growing a segment for nothing.
+        assertEquals("bedrockless", PortalRoomSettings.parse("bedrockless").toTag());
+    }
+
+    @Test
+    @DisplayName("A sky round-trips through the tag, placeholders and all")
+    void skyRoundTrips() {
+        for (PortalRoomSky sky : PortalRoomSky.values()) {
+            PortalRoomSettings original = PortalRoomSettings.DEFAULT.withSky(sky);
+            assertSame(sky, PortalRoomSettings.parse(original.toTag()).sky(), original.toTag());
+        }
+        // The segments are positional, so the four in front of Sky are written as their own
+        // defaults and must read back as exactly that.
+        PortalRoomSettings day = PortalRoomSettings.DEFAULT.withSky(PortalRoomSky.DAY);
+        PortalRoomSettings back = PortalRoomSettings.parse(day.toTag());
+        assertEquals(PortalRoomSettings.DEFAULT.copies(), back.copies());
+        assertSame(PortalRoomSettings.DEFAULT.contents(), back.contents());
+        assertEquals(PortalRoomSettings.DEFAULT.books(), back.books());
+    }
+
+    @Test
+    @DisplayName("The shipped tags the templates were opted in with mean what they say")
+    void shippedSkyTagsParse() {
+        assertSame(PortalRoomSky.DAY,
+            PortalRoomSettings.parse("bedrockless/exact/off/off/off/day").sky());
+        assertSame(PortalRoomSky.END,
+            PortalRoomSettings.parse("bedrockless/exact/off/off/off/end").sky());
+        assertSame(PortalRoomSky.DAY,
+            PortalRoomSettings.parse("bedrock_lock/exact/off/off/off/day").sky());
+        // window_contents carries a real Contents value in front of its sky.
+        PortalRoomSettings furnished =
+            PortalRoomSettings.parse("bedrockless/exact/fit/off/off/day");
+        assertSame(PortalRoomSky.DAY, furnished.sky());
+        assertSame(PortalRoomContents.FIT, furnished.contents());
+    }
+
+    @Test
+    @DisplayName("An unreadable sky stamps an unlit room rather than failing the pair's stamp")
+    void skyParseIsTotal() {
+        assertSame(PortalRoomSky.NONE,
+            PortalRoomSettings.parse("bedrockless/exact/off/off/off/daylihgt").sky());
+        assertSame(PortalRoomSky.NONE, PortalRoomSky.parse(""));
+        assertSame(PortalRoomSky.NONE, PortalRoomSky.parse(null));
+        // What a client on a different build than the server is sent.
+        assertSame(PortalRoomSky.NONE, PortalRoomSky.byOrdinal(-1));
+        assertSame(PortalRoomSky.NONE, PortalRoomSky.byOrdinal(99));
+        assertSame(PortalRoomSky.DAY, PortalRoomSky.byOrdinal(PortalRoomSky.DAY.ordinal()));
+    }
+
+    @Test
+    @DisplayName("Only the clock-following sky lets the lightmap darken")
+    void onlyCyclePinsNothing() {
+        assertFalse(PortalRoomSky.NONE.pinsDaylight());
+        assertFalse(PortalRoomSky.CYCLE.pinsDaylight());
+        assertTrue(PortalRoomSky.CYCLE.lights());
+        assertTrue(PortalRoomSky.DAY.pinsDaylight());
+        assertTrue(PortalRoomSky.NETHER.pinsDaylight());
+        assertTrue(PortalRoomSky.END.pinsDaylight());
+    }
+
+    @Test
+    @DisplayName("Switching a sky on and back off leaves the tag exactly as it found it")
+    void skyRoundTripLeavesNoChurn() {
+        // Regression: toTag used to test the Books segment by identity, and parse builds a new
+        // instance for an "off" segment rather than returning DEFAULT. Cycling Sky writes that
+        // placeholder on the way through, so a room set to Daylight and back used to come to rest
+        // one segment longer than it started — permanent churn in weights.json for no change at all.
+        for (String original : new String[]{"bedrock_lock", "endless_open/single:minecraft:stone",
+                "endless_repetition/dynamic", "bedrockless/exact/fit"}) {
+            String lit = PortalRoomSettings.parse(original).withSky(PortalRoomSky.DAY).toTag();
+            String back = PortalRoomSettings.parse(lit).withSky(PortalRoomSky.NONE).toTag();
+            assertEquals(original, back, "round tripped via " + lit);
+        }
     }
 }

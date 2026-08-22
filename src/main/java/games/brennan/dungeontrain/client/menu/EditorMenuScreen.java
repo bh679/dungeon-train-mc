@@ -227,6 +227,8 @@ public final class EditorMenuScreen implements MenuScreen {
             if (contentsRow != null) out.add(contentsRow);
             CommandMenuEntry booksRow = roomBooksRowFor(EditorStatusHudOverlay.roomMode());
             if (booksRow != null) out.add(booksRow);
+            CommandMenuEntry skyRow = roomSkyRowFor(EditorStatusHudOverlay.roomMode());
+            if (skyRow != null) out.add(skyRow);
             CommandMenuEntry exitsRow = exitsRowFor(EditorStatusHudOverlay.roomMode());
             if (exitsRow != null) out.add(exitsRow);
             CommandMenuEntry exitEveryRow = exitEveryTripleFor(EditorStatusHudOverlay.roomMode());
@@ -487,6 +489,20 @@ public final class EditorMenuScreen implements MenuScreen {
         return new CommandMenuEntry.Split(cycle,
             new CommandMenuEntry.DrillIn("Edit", new PortalRoomBooksScreen(currentMode)),
             0.72);
+    }
+
+    /**
+     * The Sky row — whether the room is lit as though it stood outdoors, and under which sky.
+     *
+     * <p>Shown for every portal room, on the same reasoning as Contents and Books: the sky a room
+     * stands under is a statement about the place it is pretending to be, not about how it seals or
+     * what is furnished into it.</p>
+     */
+    static CommandMenuEntry roomSkyRowFor(String currentMode) {
+        if (currentMode == null || EditorStatusPacket.NO_MODE.equals(currentMode)) return null;
+        return new CommandMenuEntry.Stay(
+            EditorPlotLabelsRenderer.roomSkyLabel(currentMode),
+            "dungeontrain editor portals sky next");
     }
 
     /**
