@@ -72,6 +72,11 @@ public final class PortalRoomSinglePlanes {
      * Dynamic. So an Exact plain is one mix repeated and a Dynamic plain is a fresh mix each tile,
      * both of them stable under a player walking back over ground they have already crossed.</p>
      *
+     * <p><b>Each plane draws from its own palette.</b> {@code palette} holds one candidate list per
+     * {@link PortalRoomCopiesVariant.Plane}, so a stone floor can sit under a sea-lantern roof. A
+     * plane whose list is empty is simply not written — the cleared tile keeps its air there, which
+     * is how an open sky over the plain is asked for.</p>
+     *
      * @param clearMask    the corridors standing in this tile, whose cells are left alone
      * @param relight      as the stamp was called with — a lit write costs the light engine a pass,
      *                     an unlit one is section-local and is what the bulk paths use
@@ -91,14 +96,17 @@ public final class PortalRoomSinglePlanes {
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         for (int x = x0; x <= x1; x++) {
             for (int z = z0; z <= z1; z++) {
-                setPlaneBlock(level, pos.set(x, floorY, z), origin, palette, clearMask, relight,
+                setPlaneBlock(level, pos.set(x, floorY, z), origin,
+                    PortalRoomCopiesVariant.Plane.FLOOR, palette, clearMask, relight,
                     worldSeed, variantIndex);
                 // A room one block tall would have its floor and its ceiling in the same plane, and
                 // the second write would be the first one again. PortalRoomLayout.MIN_HEIGHT rules
                 // that out, but the guard costs a comparison and the alternative is a silent
-                // double-write if the floor ever moves.
+                // double-write if the floor ever moves. With the two planes authored apart it would
+                // also be the roof quietly overwriting the floor.
                 if (ceilingY != floorY) {
-                    setPlaneBlock(level, pos.set(x, ceilingY, z), origin, palette, clearMask,
+                    setPlaneBlock(level, pos.set(x, ceilingY, z), origin,
+                        PortalRoomCopiesVariant.Plane.ROOF, palette, clearMask,
                         relight, worldSeed, variantIndex);
                 }
             }
@@ -106,18 +114,20 @@ public final class PortalRoomSinglePlanes {
     }
 
     /**
-     * One plane cell, skipped where a corridor owns it. Mirrors {@code PortalCarriageBuilder.setRoomBlock}.
+     * One cell of {@code plane}, skipped where a corridor owns it. Mirrors
+     * {@code PortalCarriageBuilder.setRoomBlock}.
      *
      * <p>The picker is handed the cell's position <b>relative to the tile</b>, not its world
      * position. Two tiles rolling the same variant index must lay the same mix — that is what Exact
      * means — and a world position would make every tile's mix differ regardless of the setting.</p>
      */
     private static void setPlaneBlock(ServerLevel level, BlockPos pos, BlockPos origin,
+                                      PortalRoomCopiesVariant.Plane plane,
                                       PortalRoomCopiesVariant palette, PortalCorridorMask clearMask,
                                       boolean relight, long worldSeed, int variantIndex) {
         if (clearMask.covers(pos)) return;
         BlockPos local = pos.subtract(origin);
-        VariantState picked = palette.resolve(local, worldSeed, variantIndex);
+        VariantState picked = palette.resolve(plane, local, worldSeed, variantIndex);
         if (picked == null) return;
 
         // Air is a candidate like any other: the empty-placeholder sentinel and mob entries both

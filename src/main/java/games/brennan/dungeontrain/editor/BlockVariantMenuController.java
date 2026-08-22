@@ -174,14 +174,19 @@ public final class BlockVariantMenuController {
 
     /** Compose + send the sync packet for the cell at {@code localPos}. */
     /**
-     * Open the menu on a portal room's Copies block — the row's Edit button.
+     * Open the menu on one plane of a portal room's Copies palette — that row's Edit button.
      *
      * <p>Unlike {@link #toggle} there is no cell in the world to target: the value is a setting on
      * the room, presented as a one-cell plot ({@code PortalRoomCopiesPlot}). The block the player
      * happens to be looking at is used for the panel's anchor and nothing else, so the menu appears
      * where they are looking exactly as it does everywhere else.</p>
+     *
+     * <p>{@code plane} rather than a cell within one plot: this panel targets a single cell and
+     * cannot walk to a second, so the floor and the roof are two plots — see
+     * {@code PortalRoomCopiesPlot}.</p>
      */
-    public static void openForCopies(ServerPlayer player, String roomName) {
+    public static void openForCopies(ServerPlayer player, String roomName,
+                                     games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane plane) {
         if (!player.hasPermissions(2)) {
             actionBar(player, "Block variant menu requires OP", ChatFormatting.RED);
             return;
@@ -194,7 +199,8 @@ public final class BlockVariantMenuController {
             actionBar(player, "Stand in the portal room's plot", ChatFormatting.YELLOW);
             return;
         }
-        games.brennan.dungeontrain.portal.PortalRoomCopiesPlot plot = copiesPlotFor(roomName, room.origin());
+        games.brennan.dungeontrain.portal.PortalRoomCopiesPlot plot =
+            copiesPlotFor(roomName, plane, room.origin());
 
         // In front of the player at eye level, not on a block. Every other opening of this menu
         // targets a cell in the world and hangs the panel off that cell's face, but a Copies variant
@@ -222,13 +228,17 @@ public final class BlockVariantMenuController {
             plot.lockIdAt(cell), anchor, right, up));
     }
 
-    /** The one-cell plot over {@code roomName}'s Copies variant, seeded from what it repeats today. */
+    /**
+     * The one-cell plot over one plane of {@code roomName}'s Copies palette, seeded from what that
+     * plane repeats today.
+     */
     private static games.brennan.dungeontrain.portal.PortalRoomCopiesPlot copiesPlotFor(
-        String roomName, BlockPos origin
+        String roomName, games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane plane,
+        BlockPos origin
     ) {
         games.brennan.dungeontrain.portal.PortalRoomSettings settings =
             games.brennan.dungeontrain.portal.PortalRoomSettings.of(roomName);
-        return new games.brennan.dungeontrain.portal.PortalRoomCopiesPlot(roomName, origin,
+        return new games.brennan.dungeontrain.portal.PortalRoomCopiesPlot(roomName, plane, origin,
             games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.forRoom(
                 roomName, settings.copies()));
     }
@@ -252,7 +262,9 @@ public final class BlockVariantMenuController {
         String roomKey = ContainerContentsStore.trackPlotKey(
             games.brennan.dungeontrain.track.variant.TrackKind.PORTAL_ROOM, room);
         if (!positional.key().equals(roomKey)) return null;
-        return copiesPlotFor(room, positional.origin());
+        return copiesPlotFor(room,
+            games.brennan.dungeontrain.portal.PortalRoomCopiesPlot.planeOf(variantId),
+            positional.origin());
     }
 
     private static void sendSync(ServerPlayer player, BlockVariantPlot plot,
