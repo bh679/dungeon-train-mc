@@ -3,6 +3,8 @@ package games.brennan.dungeontrain.client;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.menu.PauseMenuActionButton;
+import games.brennan.dungeontrain.client.version.VersionCheckState;
+import games.brennan.dungeontrain.client.version.VersionStatusButton;
 import games.brennan.dungeontrain.net.AbandonRunPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import net.minecraft.client.Minecraft;
@@ -38,7 +40,11 @@ import org.slf4j.Logger;
  * drives the Shift swap from a {@code ScreenEvent.Render.Pre} pass that toggles
  * each {@link PauseMenuActionButton}'s {@code visible} flag every frame.</p>
  *
- * <p>Gated to singleplayer (integrated server present) — multiplayer keeps the
+ * <p>Also mirrors the title screen's top-left {@link VersionStatusButton}
+ * (version label + release-check status) onto the pause menu, for both
+ * singleplayer and multiplayer, skipping the widgetless F3+Esc pause.</p>
+ *
+ * <p>The Abandon-run reshuffle is gated to singleplayer (integrated server present) — multiplayer keeps the
  * vanilla "Disconnect" button. If the Save-and-Quit button can't be located
  * (a third-party mod rewrote the menu) the menu is left untouched, mirroring
  * {@link TitleScreenLayoutHandler}'s defensive stance.</p>
@@ -61,9 +67,19 @@ public final class PauseMenuLayoutHandler {
 
     @SubscribeEvent
     public static void onScreenInitPost(ScreenEvent.Init.Post event) {
-        if (!(event.getScreen() instanceof PauseScreen)) {
+        if (!(event.getScreen() instanceof PauseScreen pauseScreen)) {
             return;
         }
+
+        // Same combined version label + release-check widget the title screen
+        // carries, in the same top-left spot. Skipped for the invisible
+        // F3+Esc pause (no menu shown) and independent of the singleplayer
+        // gate below so multiplayer players still see the version line.
+        if (pauseScreen.showsPauseMenu()) {
+            VersionCheckState.ensureChecked();
+            event.addListener(new VersionStatusButton(4, 4));
+        }
+
         if (!Minecraft.getInstance().hasSingleplayerServer()) {
             return;
         }
