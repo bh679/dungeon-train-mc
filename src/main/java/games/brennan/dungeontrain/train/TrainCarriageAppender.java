@@ -51,8 +51,10 @@ import java.util.concurrent.ConcurrentHashMap;
  * <p>Each spawned group is its own Sable sub-level holding {@code groupSize}
  * adjacent carriages — see
  * {@link TrainAssembler#spawnGroup(ServerLevel, BlockPos, Vector3dc, int, int, CarriageDims, UUID)}.
- * The group's blocks are placed once at assembly and never modified after,
- * so the per-sub-level MassTracker / rotationPoint stays constant.</p>
+ * Assembly places the group's blocks once, so appending never disturbs an
+ * existing group's MassTracker / rotationPoint. Later block changes do move it,
+ * and are corrected by
+ * {@link games.brennan.dungeontrain.ship.sable.CarriagePivotPin}.</p>
  *
  * <p>Append-only: never erases. Walking back over a previously-spawned
  * group shows it intact.</p>
