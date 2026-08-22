@@ -7897,6 +7897,22 @@
       "released": true,
       "released_in": "v0.613.0",
       "released_at": "2026-08-22T09:09:00Z"
+    },
+    {
+      "id": "portal-carriage-loot-reroll",
+      "version": "0.614.0",
+      "type": "fix",
+      "title": "Portal corridors no longer hold the same loot every time",
+      "summary": "Chests and containers inside a portal's corridors used to roll identical contents in every portal and every world, always at starting-area difficulty. They now roll fresh for each corridor, differ between worlds, and scale with how far down the train the portal sits.",
+      "highlights": [
+        "Portal corridor loot varies between portals and between worlds",
+        "A portal's entry and exit corridors are now furnished separately",
+        "Portal loot scales with distance down the train instead of staying at starting-area tier"
+      ],
+      "date": "2026-08-22",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
