@@ -8005,9 +8005,9 @@
       ],
       "pr": 1048,
       "date": "2026-08-22",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.625.0",
+      "released_at": "2026-08-22T16:12:08Z"
     },
     {
       "id": "editor-undo-redo",
@@ -8023,9 +8023,9 @@
         "Works from anywhere, not just while standing in the plot"
       ],
       "date": "2026-08-22",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.625.0",
+      "released_at": "2026-08-22T16:12:08Z"
     },
     {
       "id": "sable-205-physics-update",
@@ -8039,9 +8039,9 @@
       ],
       "pr": 1050,
       "date": "2026-08-22",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.625.0",
+      "released_at": "2026-08-22T16:12:08Z"
     },
     {
       "id": "carriage-pivot-pin",
@@ -8052,9 +8052,9 @@
       "highlights": [],
       "pr": 1050,
       "date": "2026-08-22",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.625.0",
+      "released_at": "2026-08-22T16:12:08Z"
     },
     {
       "id": "single-copies-floor-roof",
@@ -8065,9 +8065,9 @@
       "highlights": [],
       "pr": 1051,
       "date": "2026-08-22",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.625.0",
+      "released_at": "2026-08-22T16:12:08Z"
     },
     {
       "id": "deserter-hall",
@@ -8080,9 +8080,9 @@
       ],
       "pr": 1051,
       "date": "2026-08-22",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.625.0",
+      "released_at": "2026-08-22T16:12:08Z"
     },
     {
       "id": "restore-backpack-loot-weights",
@@ -8092,9 +8092,9 @@
       "summary": "Edible backpacks turn up in loot chests, iron/gold chests, decorated pots and the starter chest at their original rates again.",
       "highlights": [],
       "date": "2026-08-22",
-      "released": false,
-      "released_in": null,
-      "released_at": null,
+      "released": true,
+      "released_in": "v0.625.0",
+      "released_at": "2026-08-22T16:12:08Z",
       "pr": 1054
     },
     {
@@ -8110,9 +8110,9 @@
       ],
       "pr": 1052,
       "date": "2026-08-22",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.625.0",
+      "released_at": "2026-08-22T16:12:08Z"
     }
   ]
 }
