@@ -1,0 +1,11 @@
+{
+  "id": "it_loved_them_to_death",
+  "title": "Kochało na śmierć",
+  "author": "Brennan Hatton",
+  "generation": 0,
+  "weight": 1,
+  "variants": [
+    "Tę trudno się pisze.\n\n\n%TARGET% stamtąd nie odszedł.\n\nTwoje echo jest powodem.\n\n\nZanim rozstrzygniesz, co to znaczy:\n\nto nie ono zaczęło.\n\nOno nie zaczyna. Nie takie coś wysłałeś.\n\n\n%STORY%\n\n\nStało się to przy wagonie %CARRIAGE%.\n%DAYS% dni bezruchu.\n%GEAR%\n\nBroniło się.\nByło w tym bardzo dobre.\nTy tego dopilnowałeś.\n\n\nTo ta część, którą wciąż obracam w głowie.\n\nWysłałeś coś, co go kochało, i wysłałeś to uzbrojone.\n\n\nOddałoby mu wszystko.\n\nTo on uderzył pierwszy.\n\nWciąż było twoje.",
+    "Skończyło się źle.\n\nNie tak, jak źle kończy się tamten rodzaj.\n\nGorzej, być może.\n\n\n%TARGET% je zaatakował.\nOno go zabiło.\n\nOba te zdania są prawdziwe i żadne nie jest całością.\n\n\n%STORY%\n\n\n%DAYS% dni czekało przy wagonie %CARRIAGE%, żeby być dla kogoś łagodne.\n%GEAR%\n\n\nCoś może cię kochać i wciąż mieć ręce.\n\n\nNikt nie wygrał.\n\nPociąg nie prowadzi stronicy na takie rzeczy, więc prowadzi tę.\n\n\nJeśli to pomoże:\n\nnie było wściekłe.\n\nNawet na końcu."
+  ]
+}

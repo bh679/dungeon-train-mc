@@ -1,0 +1,11 @@
+{
+  "id": "no_one_came_back",
+  "title": "Nul n'est revenu",
+  "author": "Brennan Hatton",
+  "generation": 0,
+  "weight": 1,
+  "variants": [
+    "Tu as écrit un nom.\nTu t'en souviens ?\n\n%TARGET%.\nTu as écrit %TARGET%.\n\nÇa a marché.\nPas comme tu l'avais demandé.\nComme ça marche, c'est tout.\n\nTu es mort au wagon %CARRIAGE%.\nQuelque chose de toi y est resté.\n%GEAR%\n\nIl a attendu %DAYS% jours.\n\nPuis %TARGET% est entré dans le wagon %CARRIAGE%, dans un monde que tu ne verras jamais.\n\n%STORY%\n\nEt là, le papier s'arrête.\n\nJe ne sais pas comment ça s'est fini.\nToi non plus.\n\nC'est le marché que tu as passé.",
+    "Bienvenue de retour.\nQu'est-ce que le train ?\nPourquoi es-tu ici ?\nQu'as-tu fait ?\n\nUne seule de ces réponses a changé.\n\n%TARGET% t'a rencontré au wagon %CARRIAGE%.\n\nPas toi.\nLa part de toi qui est restée en arrière.\n\nIl a attendu %DAYS% jours.\nPatiente chose.\nIl avait ton visage.\n\n%STORY%\n\n.\n\nJe te dirais bien qui est reparti.\n\nPersonne ne l'a écrit."
+  ]
+}

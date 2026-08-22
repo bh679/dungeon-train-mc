@@ -1,0 +1,11 @@
+{
+  "id": "they_didnt_want_it",
+  "title": "Nie chcieli tego",
+  "author": "Brennan Hatton",
+  "generation": 0,
+  "weight": 1,
+  "variants": [
+    "Znalazło go.\nZabił je.\n\n\nTo wersja krótka.\n\nOto długa.\n\n%STORY%\n\n\nWagon %CARRIAGE%.\n\n%DAYS% dni czekania na jakąś minutę pomyłki.\n\n\nZ początku nie oddawało.\nOno nie oddaje, na początku.\n%GEAR%\n\n\nMoże nie wiedział.\n\nCoś martwego podchodzi w czyjejś twarzy i wyciąga rękę.\n\nWiększość ludzi uderza.\n\n\nChciałbym ci powiedzieć, że wiedział i zrobił to mimo wszystko.\n\nTo gorsze, a nie wiem, czy prawdziwe.\n\n\n%TARGET% ma gdzieś w skrzyni twoje pismo.\n\nMyśli, że to trofeum.",
+    "%TARGET% je zabił.\n\n\nPowinieneś wiedzieć, że poszło szybko.\n\n%DAYS% dni czekania, a potem już bardzo krótko.\n\n\n%STORY%\n\n\nWciąż myślę o chwili tuż przedtem.\n\nTrzymało coś w rękach dla niego.\n%GEAR%\n\nWciąż to trzymało.\n\n\nLudzie w tym pociągu nie dostają wielu darów.\n\nDostają zasadzki.\n\nUczą się odróżniać jedno od drugiego, zgadując.\n\n\nZgadł źle.\n\n\nWybaczyłbyś mu.\n\nTo jest w tobie właśnie irytujące."
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "id": "they_won",
+  "title": "Ganaron ellos",
+  "author": "Brennan Hatton",
+  "generation": 0,
+  "weight": 1,
+  "variants": [
+    "Ganaron.\n\n%TARGET% te mató.\nOtra vez, técnicamente.\nYa te habías ido.\n\nVagón %CARRIAGE%.\n%DAYS% días de espera.\n\n%STORY%\n\nLe quitaron la nota al cuerpo.\nTu letra.\nTu nombre en ella.\n\nEn algún lugar de un mundo que nunca vas a visitar, alguien tiene tu nota mortal en un cofre.\n\n¿Cómo te cae eso?",
+    "Sobre ese nombre que escribiste.\n\n%TARGET%.\n\nSigue respirando.\n\nTu eco los encontró en el vagón %CARRIAGE%, %DAYS% días tarde, y perdió.\n\n%GEAR%\nTenía tu cara.\nPeleaba como tú.\n\n%STORY%\n\nEsa última parte a lo mejor es el problema.\n\n.\n\nMejor suerte en la próxima vida."
+  ]
+}

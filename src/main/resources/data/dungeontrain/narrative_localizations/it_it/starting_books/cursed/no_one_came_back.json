@@ -1,0 +1,11 @@
+{
+  "id": "no_one_came_back",
+  "title": "Nessuno tornò",
+  "author": "Brennan Hatton",
+  "generation": 0,
+  "weight": 1,
+  "variants": [
+    "Hai scritto un nome.\nTe lo ricordi?\n\n%TARGET%.\nHai scritto %TARGET%.\n\nHa funzionato.\nNon come avevi chiesto.\nCome funziona lui.\n\nSei morto al vagone %CARRIAGE%.\nQualcosa di te è rimasto lì.\n%GEAR%\n\nHa aspettato %DAYS% giorni.\n\nPoi %TARGET% è entrato nel vagone %CARRIAGE%, in un mondo che non vedrai mai.\n\n%STORY%\n\nE lì la carta si ferma.\n\nNon so come sia finita.\nNemmeno tu.\n\nÈ il patto che hai fatto.",
+    "Bentornato.\nCos'è il treno?\nPerché sei qui?\nChe cosa hai fatto?\n\nSolo una di queste è cambiata.\n\n%TARGET% ti ha incontrato al vagone %CARRIAGE%.\n\nNon te.\nLa parte di te rimasta indietro.\n\n%DAYS% giorni ha aspettato.\nCosa paziente.\nAveva la tua faccia.\n\n%STORY%\n\n.\n\nTi direi chi se n'è andato vivo.\n\nNessuno l'ha scritto."
+  ]
+}
