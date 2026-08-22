@@ -7905,9 +7905,9 @@
       "title": "Portal corridor loot variety",
       "summary": "Chests in a portal's corridors now roll different contents from portal to portal, instead of the same ones every time.",
       "date": "2026-08-22",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.619.0",
+      "released_at": "2026-08-22T14:38:59Z"
     },
     {
       "id": "bilibili-link-chinese-clients",
@@ -7922,9 +7922,9 @@
       ],
       "pr": 1042,
       "date": "2026-08-22",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.619.0",
+      "released_at": "2026-08-22T14:38:59Z"
     },
     {
       "id": "endless-open-single-block-variant",
@@ -7940,9 +7940,9 @@
       ],
       "pr": 1044,
       "date": "2026-08-22",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.619.0",
+      "released_at": "2026-08-22T14:38:59Z"
     },
     {
       "id": "translation-replies-and-good-as-is",
@@ -7957,9 +7957,9 @@
       ],
       "pr": 1043,
       "date": "2026-08-22",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.619.0",
+      "released_at": "2026-08-22T14:38:59Z"
     },
     {
       "id": "curseforge-modpack-publish-reliability",
@@ -7974,9 +7974,9 @@
       ],
       "pr": 1046,
       "date": "2026-08-22",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.619.0",
+      "released_at": "2026-08-22T14:38:59Z"
     },
     {
       "id": "localize-recent-text-19-locales",
@@ -7990,9 +7990,9 @@
         "New Quiet Rules and Train Glossary entries translated to match the English originals"
       ],
       "date": "2026-08-22",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.619.0",
+      "released_at": "2026-08-22T14:38:59Z"
     }
   ]
 }
