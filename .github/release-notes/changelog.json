@@ -6963,6 +6963,21 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "builder-quiet-rules-on-load",
+      "version": "0.552.0",
+      "type": "fix",
+      "title": "Builder worlds keep the clock and weather stopped",
+      "summary": "A Train Builder world switched off the day/night cycle, weather and mob spawning when it was created, and never checked again \u2014 so a builder world made before those defaults existed, or one where the game rules had been changed, could still have the light moving under a build. The builder now re-applies those three rules every time it loads.",
+      "highlights": [
+        "Day/night cycle, weather and mob spawning stay off in a builder world",
+        "Applies to older builder worlds on load, not just newly-created ones"
+      ],
+      "date": "2026-08-22",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
