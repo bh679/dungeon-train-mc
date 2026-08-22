@@ -363,18 +363,22 @@ class PortalRoomSettingsTest {
     @Test
     @DisplayName("The longest tag any room can write still fits the editor status packet")
     void longestTagFitsThePacket() {
-        // The packet caps this string, and a fifth segment eats into that cap — so the worst case is
-        // asserted here rather than reasoned about, and a future sixth setting fails this test first
-        // instead of failing a writeUtf on a live server.
+        // The packet caps this string, and every segment eats into that cap — so the worst case is
+        // asserted here rather than reasoned about, and a future seventh setting fails this test
+        // first instead of failing a writeUtf on a live server. Sky is in the product because it is
+        // the one that pushed the worst case up by a whole segment when it was added.
         String longest = "";
         for (PortalRoomMode mode : PortalRoomMode.values()) {
             for (PortalRoomCopies copies : everyCopiesValue()) {
                 for (PortalRoomContents contents : PortalRoomContents.values()) {
                     for (PortalRoomBooks books : everyBooksValue()) {
-                        PortalRoomExits widest = new PortalRoomExits(PortalRoomExits.Kind.RANDOM,
-                            PortalRoomExits.MAX_EVERY, PortalRoomExits.MOVE_ALWAYS);
-                        String tag = new PortalRoomSettings(mode, copies, contents, widest, books).toTag();
-                        if (tag.length() > longest.length()) longest = tag;
+                        for (PortalRoomSky sky : PortalRoomSky.values()) {
+                            PortalRoomExits widest = new PortalRoomExits(PortalRoomExits.Kind.RANDOM,
+                                PortalRoomExits.MAX_EVERY, PortalRoomExits.MOVE_ALWAYS);
+                            String tag = new PortalRoomSettings(mode, copies, contents, widest,
+                                books, sky).toTag();
+                            if (tag.length() > longest.length()) longest = tag;
+                        }
                     }
                 }
             }

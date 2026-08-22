@@ -97,6 +97,8 @@ public final class EditorPlotLabelsRenderer {
         COPIES_BLOCK_EDIT,
         /** The furnishing row — whether the room takes a contents template, and how it is fitted. */
         ROOM_CONTENTS_CYCLE,
+        /** The sky row — whether the room is lit as though it stood outdoors, and under which sky. */
+        ROOM_SKY_CYCLE,
         /** The author-lock row — whether the room stocks its shelves from one person. */
         ROOM_BOOKS_CYCLE,
         /** The Edit half of that row — the weights and the band, which only a stocking room has. */
@@ -123,7 +125,7 @@ public final class EditorPlotLabelsRenderer {
      */
     public enum RowKind {
         NAME, WEIGHT, LENGTH, WIDTH, HEIGHT, MODE, COPIES, COPIES_BLOCK, ROOM_CONTENTS,
-        ROOM_BOOKS, EXITS, EXIT_EVERY, EXIT_MOVE, ENTER, ACTION, CONTENTS
+        ROOM_BOOKS, ROOM_SKY, EXITS, EXIT_EVERY, EXIT_MOVE, ENTER, ACTION, CONTENTS
     }
 
     /**
@@ -149,6 +151,7 @@ public final class EditorPlotLabelsRenderer {
         if (hasCopiesBlockRow(entry)) buf[n++] = RowKind.COPIES_BLOCK;
         if (hasRoomContentsRow(entry)) buf[n++] = RowKind.ROOM_CONTENTS;
         if (hasRoomBooksRow(entry)) buf[n++] = RowKind.ROOM_BOOKS;
+        if (hasRoomSkyRow(entry)) buf[n++] = RowKind.ROOM_SKY;
         if (hasExitsRow(entry)) buf[n++] = RowKind.EXITS;
         if (hasExitEveryRow(entry)) buf[n++] = RowKind.EXIT_EVERY;
         if (hasExitMoveRow(entry)) buf[n++] = RowKind.EXIT_MOVE;
@@ -308,6 +311,23 @@ public final class EditorPlotLabelsRenderer {
     public static String roomBooksLabel(String modeTag) {
         return "Books: " + games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag)
             .books().displayName();
+    }
+
+    /**
+     * Whether the Sky row shows: on every portal room, on the same reasoning as Contents and Books.
+     *
+     * <p>Not gated on the room's walls or on what is inside it. Any room can be lit as though it
+     * stood outdoors — that is a statement about the place the room is pretending to be, not about
+     * how it seals or what it is furnished with.</p>
+     */
+    public static boolean hasRoomSkyRow(EditorPlotLabelsPacket.Entry entry) {
+        return hasModeRow(entry);
+    }
+
+    /** What the Sky row reads, e.g. {@code "Sky: Daylight"}. */
+    public static String roomSkyLabel(String modeTag) {
+        return "Sky: " + games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag)
+            .sky().displayName();
     }
 
     /**
@@ -714,6 +734,7 @@ public final class EditorPlotLabelsRenderer {
                 ? CellKind.COPIES_BLOCK_EDIT : CellKind.COPIES_BLOCK_HELD;
             case ROOM_CONTENTS -> CellKind.ROOM_CONTENTS_CYCLE;
             case ROOM_BOOKS -> roomBooksRowCell(entry, hitX, halfW);
+            case ROOM_SKY -> CellKind.ROOM_SKY_CYCLE;
             case EXITS -> CellKind.EXITS_CYCLE;
             case EXIT_EVERY -> stepperCell(hitX, halfW,
                 CellKind.EXIT_EVERY_DEC, CellKind.EXIT_EVERY_INC, CellKind.EXIT_EVERY_TYPE);
@@ -963,6 +984,13 @@ public final class EditorPlotLabelsRenderer {
                         drawQuad(ps, buffer, -halfW + 0.01, rBot + 0.005, halfW - 0.01, rTop - 0.005, bg);
                         drawCenteredText(ps, buffer, font, roomBooksLabel(entry.roomMode()), 0, rCY, WEIGHT_COLOR);
                     }
+                }
+                // Sky — whether this room is lit as though it stood outdoors, and under which sky.
+                // Off by default, which is every room lit only by whatever its own build gives it.
+                case ROOM_SKY -> {
+                    int bg = hovered == CellKind.ROOM_SKY_CYCLE ? HOVER_COLOR : BUTTON_BG;
+                    drawQuad(ps, buffer, -halfW + 0.01, rBot + 0.005, halfW - 0.01, rTop - 0.005, bg);
+                    drawCenteredText(ps, buffer, font, roomSkyLabel(entry.roomMode()), 0, rCY, WEIGHT_COLOR);
                 }
                 // Exits — how many extra ways back to the train this room scatters through its
                 // copies. Only an endless room has anywhere to put one.

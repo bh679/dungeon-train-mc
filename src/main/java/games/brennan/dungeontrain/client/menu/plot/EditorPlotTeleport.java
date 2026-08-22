@@ -111,6 +111,12 @@ public final class EditorPlotTeleport {
         return "dungeontrain editor portals contents next";
     }
 
+    /** As {@link #modeCycleCommandFor}, for whether the room is lit as though it stood outdoors. */
+    public static String roomSkyCycleCommandFor(String category) {
+        if (!"PORTALS".equals(category)) return null;
+        return "dungeontrain editor portals sky next";
+    }
+
     /** As {@link #modeCycleCommandFor}, for how many extra corridors an endless room lays. */
     public static String exitsCycleCommandFor(String category) {
         if (!"PORTALS".equals(category)) return null;

@@ -157,6 +157,7 @@ public final class EditorPlotPanelInputHandler {
             case ROOM_CONTENTS_CYCLE -> dispatchRoomContentsCycle(entry);
             case ROOM_BOOKS_CYCLE -> dispatchRoomBooksCycle(entry);
             case ROOM_BOOKS_EDIT -> openBookMix(entry);
+            case ROOM_SKY_CYCLE -> dispatchRoomSkyCycle(entry);
             case EXITS_CYCLE -> dispatchExitsCycle(entry);
             case EXIT_EVERY_DEC -> dispatchExitEvery(entry, "dec");
             case EXIT_EVERY_INC -> dispatchExitEvery(entry, "inc");
@@ -242,6 +243,13 @@ public final class EditorPlotPanelInputHandler {
     /** Step the portal room the player is standing in to the next Books value. */
     private static void dispatchRoomBooksCycle(EditorPlotLabelsPacket.Entry entry) {
         String cmd = EditorPlotTeleport.roomBooksCycleCommandFor(entry.category());
+        if (cmd == null) return;
+        CommandRunner.run(cmd);
+    }
+
+    /** Step the portal room the player is standing in to the next Sky value. */
+    private static void dispatchRoomSkyCycle(EditorPlotLabelsPacket.Entry entry) {
+        String cmd = EditorPlotTeleport.roomSkyCycleCommandFor(entry.category());
         if (cmd == null) return;
         CommandRunner.run(cmd);
     }
