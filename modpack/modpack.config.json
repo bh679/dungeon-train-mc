@@ -5,10 +5,10 @@
   "dt_modrinth_project": "dungeon-train",
   "sable": {
     "project_id": 1312371,
-    "file_id": 8255445,
-    "version": "2.0.2+mc1.21.1",
+    "file_id": 8673825,
+    "version": "2.0.5+mc1.21.1",
     "modrinth_project": "sable",
-    "modrinth_version": "6PfAtJN1"
+    "modrinth_version": "U678xqle"
   },
   "optional_mods": [
     { "name": "Adventure Item Names", "slug": "adventure-item-names", "project_id": 1546573, "file_id": 8698408, "required": true, "dependency_type": "required", "version": "0.49.0", "gradle_property": "adventureitemnames_min_version", "modrinth_project": "adventureitemnames", "modrinth_version": "2K5LtX6C" },
