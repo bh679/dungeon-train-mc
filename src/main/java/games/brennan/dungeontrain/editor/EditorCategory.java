@@ -241,6 +241,11 @@ public enum EditorCategory {
         // an empty snapshot so the labels disappear in lockstep with the
         // structures.
         EditorStampedCategoryState.clear();
+        // Every plot below is about to be torn down, so every undo step recorded
+        // against one would now write into an empty plot floor. Staleness would
+        // catch that on use; dropping the history here is the honest signal.
+        EditorEditHistory.clearAll();
+        EditorEditRecorder.discardPending();
         for (CarriageVariant v : CarriageVariantRegistry.allVariants()) {
             CarriageEditor.clearPlot(overworld, v, dims);
         }

@@ -8008,6 +8008,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "editor-undo-redo",
+      "version": "0.621.0",
+      "type": "feat",
+      "title": "Undo and redo in the train editor",
+      "summary": "The in-world editor now has an undo history on Ctrl+Z and Ctrl+Y (Cmd+Z / Cmd+Y on Mac), with an Undo | Redo row in the editor's X menu. It covers block edits, whole-plot actions like Clear and Reset, block variants, and menu changes such as weights, stage links, loot tables and part assignments. Undo works from anywhere \u2014 change something, walk away, and you can still take it back.",
+      "highlights": [
+        "Ctrl/Cmd+Z and Ctrl/Cmd+Y, rebindable from the vanilla Controls screen",
+        "Blocks, whole-plot Clear and Reset, block variants, and menu changes all undo",
+        "A mirrored edit undoes as one step, not one per reflected cell",
+        "Broken containers come back with their contents intact",
+        "Works from anywhere, not just while standing in the plot"
+      ],
+      "date": "2026-08-22",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

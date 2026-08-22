@@ -439,7 +439,8 @@ public final class TrackVariantBlocks {
         return parse(new java.io.StringReader(json), kind, name, "memory", size);
     }
 
-    private String toJsonText() {
+    /** Serialised form of this sidecar as {@link #save} would write it. Used by the editor undo history. */
+    public String toJsonText() {
         StringBuilder sb = new StringBuilder();
         sb.append("{\n  \"schemaVersion\": ").append(CURRENT_SCHEMA_VERSION).append(",\n");
         // Only emit the mirror field when non-default so existing sidecars stay

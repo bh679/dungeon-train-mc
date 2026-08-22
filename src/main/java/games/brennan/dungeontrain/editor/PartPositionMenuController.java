@@ -96,6 +96,19 @@ public final class PartPositionMenuController {
     }
 
     /** Per-player exit reset. Hooked from {@link VariantOverlayRenderer#forget}. */
+    /**
+     * Re-send this player's open part menu, if any, because its underlying state
+     * changed behind the controller's back — an editor undo or redo.
+     *
+     * <p>Drops only the hover dedup key, so the per-tick hover sync re-composes
+     * and re-sends on the next tick. Deliberately not {@link #forget}, which
+     * also clears DISABLED and pushes an empty packet — that <i>closes</i> the
+     * menu rather than refreshing it.</p>
+     */
+    public static void resyncOpen(ServerPlayer player) {
+        LAST_HOVER.remove(player.getUUID());
+    }
+
     public static void forget(ServerPlayer player) {
         UUID uuid = player.getUUID();
         DISABLED.remove(uuid);
