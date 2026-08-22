@@ -8,6 +8,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import games.brennan.dungeontrain.editor.RotationApplier;
 import games.brennan.dungeontrain.editor.VariantState;
 import net.minecraft.world.level.block.state.BlockState;
 
@@ -115,16 +116,28 @@ public final class PortalRoomSinglePlanes {
                                       PortalRoomCopiesPalette palette, PortalCorridorMask clearMask,
                                       boolean relight, long worldSeed, int variantIndex) {
         if (clearMask.covers(pos)) return;
-        VariantState picked = palette.resolve(pos.subtract(origin), worldSeed, variantIndex);
+        BlockPos local = pos.subtract(origin);
+        VariantState picked = palette.resolve(local, worldSeed, variantIndex);
         if (picked == null) return;
-        BlockState state = picked.state();
+
+        // The whole entry, not just its block. A variant carries a facing and a slab half as well as
+        // a state, and dropping them would place every log in a palette on the axis it happened to be
+        // copied from — the visible half of "it uses the variant you gave it". Lock id 0: a palette is
+        // one list with no group to agree with, so each cell rolls its own facing under RANDOM.
+        BlockState state = RotationApplier.apply(picked.state(), picked.rotation(), picked.half(),
+            local, worldSeed, variantIndex, /*lockId*/ 0);
+
         // A block entity in a floor plane is legal — an author can put a chest in a palette — and it
         // has to be evicted rather than written over, or its contents spray across the floor. Same
         // hazard, same fix, as PortalCarriageBuilder.applyRoomVariants documents at length.
-        if (state.hasBlockEntity()) {
+        if (state.hasBlockEntity() || level.getBlockState(pos).hasBlockEntity()) {
             SilentBlockOps.evictBlockEntity(level.getChunkAt(pos), pos);
         }
-        if (relight) {
+        if (picked.hasBlockEntityData()) {
+            // Carries the authored NBT — a sign's text, a banner's pattern. setBlockSilent is the
+            // only writer that stamps it onto the fresh block entity.
+            SilentBlockOps.setBlockSilent(level, pos, state, picked.blockEntityNbt());
+        } else if (relight) {
             level.setBlock(pos, state, Block.UPDATE_ALL);
         } else {
             SilentBlockOps.setBlockSectionLocal(level, pos, state);

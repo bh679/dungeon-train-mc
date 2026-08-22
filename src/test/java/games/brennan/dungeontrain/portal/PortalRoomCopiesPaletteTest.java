@@ -162,6 +162,47 @@ class PortalRoomCopiesPaletteTest {
     }
 
     @Test
+    @DisplayName("Per-entry weights reach the roll — a heavy candidate wins more cells")
+    void weightsAreHonoured() {
+        // 1 : 50. Over a sweep of cells the heavy entry must dominate; the exact split is the
+        // picker's business, but a weight that never reached it would give roughly half and half.
+        PortalRoomCopiesPalette palette = PortalRoomCopiesPalette.of(List.of(
+            new VariantState(Blocks.STONE.defaultBlockState(), null, 1),
+            new VariantState(Blocks.ANDESITE.defaultBlockState(), null, 50)));
+
+        int heavy = 0;
+        int total = 0;
+        for (int x = 0; x < 16; x++) {
+            for (int z = 0; z < 16; z++) {
+                VariantState picked = palette.resolve(new BlockPos(x, 0, z), 42L, 3);
+                if (picked.state().is(Blocks.ANDESITE)) heavy++;
+                total++;
+            }
+        }
+        assertTrue(heavy > total * 3 / 4,
+            "weight 50 against weight 1 took only " + heavy + " of " + total + " cells — "
+                + "the per-entry weight is not reaching the picker");
+    }
+
+    @Test
+    @DisplayName("The authored facing survives — a variant is placed as it was copied")
+    void rotationDataSurvivesRoundTrip() {
+        // The axis is part of the BlockState, so it has to come back off disk intact before
+        // RotationApplier ever sees it.
+        VariantState log = new VariantState(
+            Blocks.SPRUCE_LOG.defaultBlockState()
+                .setValue(net.minecraft.world.level.block.RotatedPillarBlock.AXIS,
+                    net.minecraft.core.Direction.Axis.X),
+            null);
+
+        PortalRoomCopiesPalette back = reread(PortalRoomCopiesPalette.of(List.of(log)));
+
+        assertEquals(net.minecraft.core.Direction.Axis.X,
+            back.states().get(0).state()
+                .getValue(net.minecraft.world.level.block.RotatedPillarBlock.AXIS));
+    }
+
+    @Test
     @DisplayName("An empty palette resolves to nothing rather than to air")
     void emptyResolvesToNull() {
         assertNull(PortalRoomCopiesPalette.empty().resolve(BlockPos.ZERO, 1L, 1));

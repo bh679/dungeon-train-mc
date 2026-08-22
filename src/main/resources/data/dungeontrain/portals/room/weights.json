@@ -58,7 +58,7 @@
       "VOID",
       "END"
     ],
-    "mode": "bedrock_lock"
+    "mode": "endless_open/single:minecraft:stone"
   },
   "distantenemies": {
     "weight": 2,
@@ -88,7 +88,7 @@
   },
   "miniword": {
     "weight": 1,
-    "mode": "bedrock_lock"
+    "mode": "endless_open/single:minecraft:spruce_log"
   },
   "nobeam": {
     "weight": 1,
