@@ -279,6 +279,7 @@ jobs:
             kinetic-hosting-integration(optional)
             effortless-building(optional)
             punchy(optional)
+            worldedit(optional)
           java: 21
           retry-attempts: 2
           retry-delay: 10000

@@ -132,8 +132,22 @@ logoFile="logo.png"
     ordering="AFTER"
     side="CLIENT"
 
+# effortlessbuilding. Optional modpack companion (shipped OFF by default) — NOT a compile dep.
+# Dungeon Train ships a SERVER-side compat mixin (dungeontrain.effortlessbuilding.mixins.json, gated
+# by EffortlessBuildingMixinPlugin) that puts a run into Free Play when its creative features are
+# USED — installing it alone changes nothing. Metadata only; the mixin no-ops when the mod is absent.
+[[dependencies.${mod_id}]]
+    modId="effortlessbuilding"
+    type="optional"
+    versionRange="[1.0,)"
+    ordering="AFTER"
+    side="BOTH"
+
 [[mixins]]
     config="${mod_id}.mixins.json"
 
 [[mixins]]
     config="${mod_id}.vivecraft.mixins.json"
+
+[[mixins]]
+    config="${mod_id}.effortlessbuilding.mixins.json"

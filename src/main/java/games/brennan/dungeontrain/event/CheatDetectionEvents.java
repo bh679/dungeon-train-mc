@@ -52,6 +52,11 @@ import java.util.concurrent.ConcurrentHashMap;
  *       run-scoped effect is re-applied if already Free Play.</li>
  *   <li>{@link PlayerEvent.PlayerRespawnEvent} — re-applies the effect after a
  *       death clears it, while the run is still Free Play.</li>
+ *   <li>{@link #requestFreePlayConfirm} — the same prompt for a tainting action that
+ *       is <b>not</b> a command and cannot be replayed: a creative mod's features being
+ *       used (see {@link games.brennan.dungeontrain.compat.EffortlessBuildingGate}).
+ *       WorldEdit needs nothing here — its whole surface is commands, so the
+ *       {@link CommandEvent} path above already covers it.</li>
  * </ul>
  *
  * @see RunIntegrity
@@ -60,8 +65,21 @@ import java.util.concurrent.ConcurrentHashMap;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class CheatDetectionEvents {
 
-    /** A tainting command held per-player while its Free Play confirmation is open. */
-    private record Pending(String rawCommand, String label) {}
+    /**
+     * A tainting action held per-player while its Free Play confirmation is open.
+     *
+     * <p>{@code rawCommand} is the command to re-dispatch once the player confirms, or
+     * {@code null} for a cause that cannot be replayed — a creative-mod action
+     * ({@link #requestFreePlayConfirm}) was cancelled outright, so the player simply
+     * repeats the click after confirming.</p>
+     */
+    private record Pending(String rawCommand, String label) {
+
+        /** A non-replayable cause: nothing is re-run on confirm. */
+        static Pending action(String label) {
+            return new Pending(null, label);
+        }
+    }
 
     private static final Map<UUID, Pending> PENDING = new ConcurrentHashMap<>();
 
@@ -94,16 +112,49 @@ public final class CheatDetectionEvents {
         DungeonTrainNet.sendTo(player, new ShowFreePlayConfirmPacket(label));
     }
 
+    /**
+     * Ask the player to confirm Free Play for an action that is <b>not</b> a command — a
+     * creative-mod feature (Effortless Building's build modes and modifiers) whose use DT
+     * gates the same way it gates {@code /give}. The caller must already have cancelled the
+     * action: unlike the command path there is nothing to replay, so on confirm the run just
+     * goes Free Play and the player repeats the click. Backing out leaves the run untouched
+     * and the next use prompts again.
+     *
+     * <p>No-ops when the run is already permanently cheated (the caller should let the action
+     * through in that case), and records the taint quietly without a prompt while a session-only
+     * taint is active — mirroring {@link #onCommand}.</p>
+     *
+     * @param label what the player did, shown on the confirm screen (e.g. {@code "Effortless Building"})
+     * @return true when a prompt was sent and the action should stay cancelled; false when the
+     *         caller may let the action run
+     */
+    public static boolean requestFreePlayConfirm(ServerPlayer player, String label) {
+        if (RunIntegrity.isPermanentlyCheated(player)) return false;
+        if (AisDataIntegrity.isSessionFreePlay()) {
+            // Already Free Play for the session — nothing to confirm or back out of.
+            RunIntegrity.markCheated(player, Component.translatable(
+                "chat.dungeontrain.free_play.cause.creative_mod", label));
+            return false;
+        }
+        PENDING.put(player.getUUID(), Pending.action(label));
+        DungeonTrainNet.sendTo(player, new ShowFreePlayConfirmPacket(label));
+        return true;
+    }
+
     /** Called from {@code FreePlayConfirmResponsePacket} on the server thread. */
     public static void onConfirmResponse(ServerPlayer player, boolean confirmed) {
         Pending pending = PENDING.remove(player.getUUID());
         if (pending == null) return;
-        if (!confirmed) return; // backed out — the command stayed canceled
+        if (!confirmed) return; // backed out — the action stayed canceled
+        boolean replayable = pending.rawCommand() != null;
         RunIntegrity.markCheated(player, Component.translatable(
-            "chat.dungeontrain.free_play.cause.command", pending.label()));
+            replayable ? "chat.dungeontrain.free_play.cause.command"
+                       : "chat.dungeontrain.free_play.cause.creative_mod",
+            pending.label()));
         // Lock the live Ender Chest onto the Free Play (creative) slot now, before
         // the held command runs — the legit chest is hidden the instant the run trips.
         EnderChestLockBridge.engage(player);
+        if (!replayable) return; // creative-mod action: cancelled outright, the player repeats it
         // Re-run the held command. isCheated is now true, so onCommand won't re-gate it.
         MinecraftServer server = player.getServer();
         if (server != null) {
