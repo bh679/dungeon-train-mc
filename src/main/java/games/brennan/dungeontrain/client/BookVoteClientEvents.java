@@ -2,7 +2,9 @@ package games.brennan.dungeontrain.client;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.mixin.client.BookViewScreenAccessor;
+import games.brennan.dungeontrain.narrative.BookReportTag;
 import games.brennan.dungeontrain.narrative.BookVoteTag;
+import games.brennan.dungeontrain.net.BookReportPacket;
 import games.brennan.dungeontrain.net.BookVotePacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import net.minecraft.ChatFormatting;
@@ -49,6 +51,15 @@ import java.util.OptionalInt;
  * throwing without voting registers nothing. Lectern reads are excluded, same guard as read
  * telemetry ({@link BookReadClientEvents}) — which also range-checks the vote page out of its
  * dwell math.</p>
+ *
+ * <p>Below the thumbs sits the ⚠ <b>report</b> control — the escalation above 👎: not "I disliked
+ * this" but "this should not be in the pool". It is drawn as text rather than a sprite (it
+ * localizes, and the page is cramped), and it is deliberately <b>two-tap</b>: the first click arms
+ * it, a second commits. A mistyped vote is harmless; a mistaken report is not, which is also why
+ * there is no keyboard shortcut for it. Committing sends {@link BookReportPacket} and closes the
+ * book exactly as a vote does, but casts no vote — the two are independent verdicts. A book this
+ * player already reported ({@link BookReportTag}) shows an inert "Reported" line instead: a report
+ * cannot be taken back or repeated.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class BookVoteClientEvents {
@@ -65,6 +76,9 @@ public final class BookVoteClientEvents {
     private static final int BUTTONS_Y = BOOK_TOP + 90;
     private static final int BUTTON_GAP = 20;            // between the two thumbs
     private static final int LABELS_Y = BUTTONS_Y + BUTTON_SIZE + 6;
+    private static final int REPORT_Y = LABELS_Y + 20;   // clear of the labels, above the page number
+    private static final int REPORT_PAD_X = 3;           // hit-box slack either side of the text
+    private static final int REPORT_PAD_Y = 2;
 
     // Warm leather dim over the whole page (approved variant A) + the train's rust-orange voice.
     private static final int DIM_COLOR = 0x5A48220A;     // ARGB (72,34,10) @ alpha 90
@@ -72,8 +86,12 @@ public final class BookVoteClientEvents {
     private static final int DIM_X1 = 26, DIM_Y1 = 8, DIM_X2 = 158, DIM_Y2 = 173; // book-local
     private static final int COLOR_PREFIX = 0x5C2C0E;    // rust-orange "The train asks,"
     private static final int COLOR_TEXT = 0x0C0602;      // ink black
+    private static final int COLOR_REPORT = 0x6B1B10;    // muted red — present, not shouting
+    private static final int COLOR_REPORT_ARMED = 0x9E1B0C;
+    private static final int COLOR_REPORTED = 0x4A423C;  // spent/grey once the report is in
     private static final int PROMPT_COUNT = 10;
     private static final int RESPONSE_COUNT = 10;        // per set (yes / no / general)
+    private static final int REPORT_RESPONSE_COUNT = 5;  // train lines for a report
 
     private static final ResourceLocation UP_SPRITE =
         ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "widget/thumbs_up");
@@ -93,6 +111,8 @@ public final class BookVoteClientEvents {
     private static List<Component> realPages = null;     // the book's REAL pages (vote page excluded)
     private static int selectedVote = 0;                 // 0 none, ±1 — seeded from the stack's tag
     private static int promptIndex = 1;                  // 1-based, deterministic per book
+    private static boolean reported = false;             // seeded from the stack's tag — one-way
+    private static boolean reportArmed = false;          // first click armed it; a second commits
 
     private BookVoteClientEvents() {}
 
@@ -114,6 +134,7 @@ public final class BookVoteClientEvents {
         realPages = List.copyOf(access.pages());
         OptionalInt vote = BookVoteTag.read(stack);
         selectedVote = vote.isPresent() ? vote.getAsInt() : 0;
+        reported = BookReportTag.isReported(stack);
         // The train always asks a book the same question: stable per (bookType, bookId).
         promptIndex = Math.floorMod((bookType + ":" + bookId).hashCode(), PROMPT_COUNT) + 1;
         screen = book;
@@ -135,7 +156,11 @@ public final class BookVoteClientEvents {
     /** Draw the train's page: warm dim → prompt → thumbs (hover/selected lit) → labels. */
     @SubscribeEvent
     public static void onScreenRenderPost(ScreenEvent.Render.Post event) {
-        if (!active || event.getScreen() != screen || !onVotePage()) return;
+        if (!active || event.getScreen() != screen) return;
+        if (!onVotePage()) {
+            reportArmed = false; // turning off the page abandons a half-made report
+            return;
+        }
         GuiGraphics gfx = event.getGuiGraphics();
         Font font = Minecraft.getInstance().font;
         int left = bookLeft();
@@ -166,6 +191,22 @@ public final class BookVoteClientEvents {
         Component no = Component.translatable("gui.dungeontrain.book_vote.reject");
         gfx.drawString(font, yes, upX() + BUTTON_SIZE / 2 - font.width(yes) / 2, LABELS_Y, COLOR_TEXT, false);
         gfx.drawString(font, no, downX() + BUTTON_SIZE / 2 - font.width(no) / 2, LABELS_Y, COLOR_TEXT, false);
+
+        // The report control — quiet by default, louder once armed, spent once used. Underlined
+        // while hovered so it reads as clickable without a button chrome the page has no room for.
+        Component report = reportLabel();
+        int color = reported ? COLOR_REPORTED : reportArmed ? COLOR_REPORT_ARMED : COLOR_REPORT;
+        boolean hot = !reported && inReport(mouseX, mouseY);
+        gfx.drawString(font, hot ? report.copy().withStyle(ChatFormatting.UNDERLINE) : report,
+            centerX - font.width(report) / 2, REPORT_Y, color, false);
+    }
+
+    /** What the report control currently says: offer → confirm → spent. */
+    private static Component reportLabel() {
+        if (reported) return Component.translatable("gui.dungeontrain.book_vote.reported");
+        return Component.translatable(reportArmed
+            ? "gui.dungeontrain.book_vote.report_confirm"
+            : "gui.dungeontrain.book_vote.report");
     }
 
     /** Thumb clicks on the vote page — instant commit (the screen closes, so consume the click). */
@@ -183,6 +224,14 @@ public final class BookVoteClientEvents {
             event.setCanceled(true);
             clickSound();
             applyVote(-1);
+        } else if (!reported && inReport(mx, my)) {
+            // Two-tap: arm, then commit. A stray click anywhere else on the page disarms, so a
+            // report always takes two deliberate clicks in the same spot.
+            event.setCanceled(true);
+            clickSound();
+            if (reportArmed) applyReport(); else reportArmed = true;
+        } else {
+            reportArmed = false;
         }
     }
 
@@ -226,6 +275,31 @@ public final class BookVoteClientEvents {
         }
     }
 
+    /**
+     * Commit the report: send the packet (server validates + stamps + consent-gates the relay POST),
+     * CLOSE the book (the normal Closing flow — read telemetry included), then have the train
+     * acknowledge it. No vote is cast: "pull this" and "I disliked this" are different verdicts, and
+     * folding one into the other would put a 👎 on the record the player never gave.
+     */
+    private static void applyReport() {
+        if (!active || reported) return;
+        reported = true;
+        reportArmed = false;
+        DungeonTrainNet.sendToServer(new BookReportPacket(bookType, bookId));
+
+        Minecraft mc = Minecraft.getInstance();
+        LocalPlayer player = mc.player;
+        BookViewScreen closing = screen;
+        if (mc.screen == closing) mc.setScreen(null); // triggers Closing → reset()
+
+        if (player != null) {
+            int pick = player.getRandom().nextInt(REPORT_RESPONSE_COUNT) + 1;
+            player.displayClientMessage(
+                Component.translatable("gui.dungeontrain.book_vote.report_response." + pick)
+                    .withStyle(ChatFormatting.GRAY), false);
+        }
+    }
+
     private static void clickSound() {
         Minecraft.getInstance().getSoundManager()
             .play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
@@ -249,6 +323,19 @@ public final class BookVoteClientEvents {
 
     private static boolean inDownButton(int x, int y) {
         return x >= downX() && x < downX() + BUTTON_SIZE && y >= BUTTONS_Y && y < BUTTONS_Y + BUTTON_SIZE;
+    }
+
+    /**
+     * The report control's hit box — derived from the current label's width, since the three states
+     * ("report" / "click again" / "reported") are different lengths and localize to different
+     * lengths again. Centered on the page column, same as the drawn text.
+     */
+    private static boolean inReport(int x, int y) {
+        Font font = Minecraft.getInstance().font;
+        int w = font.width(reportLabel());
+        int left = bookLeft() + PAGE_CENTER_X_OFFSET - w / 2;
+        return x >= left - REPORT_PAD_X && x < left + w + REPORT_PAD_X
+            && y >= REPORT_Y - REPORT_PAD_Y && y < REPORT_Y + 9 + REPORT_PAD_Y;
     }
 
     private static boolean onVotePage() {
@@ -278,5 +365,7 @@ public final class BookVoteClientEvents {
         realPages = null;
         selectedVote = 0;
         promptIndex = 1;
+        reported = false;
+        reportArmed = false;
     }
 }
