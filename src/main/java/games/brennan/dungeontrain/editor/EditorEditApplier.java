@@ -83,7 +83,19 @@ public final class EditorEditApplier {
             return new Result(Outcome.STALE, step.label(), plotKey);
         }
 
-        if (!apply(level, step)) return new Result(Outcome.FAILED, step.label(), plotKey);
+        boolean applied = apply(level, step);
+
+        // The data is back; the open menus still show what it was. Each menu
+        // only re-sends on its own dedup key, and an undo moves state through a
+        // different door entirely — so refresh them explicitly.
+        EditorMenuResync.afterHistoryStep(player);
+
+        LOGGER.info("[DungeonTrain] Editor {}: '{}' on {} — {} cell(s), {} sidecar(s), {} file(s){}",
+            redoing ? "redo" : "undo", step.label(), plotKey,
+            step.cells().size(), step.sidecars().size(), step.files().size(),
+            applied ? "" : " (PARTIAL — see warnings above)");
+
+        if (!applied) return new Result(Outcome.FAILED, step.label(), plotKey);
 
         // The inverse becomes the step for the opposite direction.
         if (redoing) {

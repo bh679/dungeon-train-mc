@@ -78,6 +78,22 @@ public final class BlockVariantMenuController {
     private BlockVariantMenuController() {}
 
     /** Per-player exit reset — drop the tracked anchor face. */
+    /**
+     * Re-send this player's open block-variant menu because its sidecar changed
+     * behind the controller's back — an editor undo or redo. No-op when nothing
+     * is open, or when the player has since moved to a different plot.
+     */
+    public static void resyncOpen(ServerPlayer player) {
+        OpenMenu open = OPEN.get(player.getUUID());
+        if (open == null) return;
+        ServerLevel level = player.serverLevel();
+        CarriageDims dims = DungeonTrainWorldData.get(level).dims();
+        BlockVariantPlot plot = BlockVariantPlot.resolveAt(player, dims);
+        if (plot == null || !plot.key().equals(open.variantId())) return;
+        sendSync(player, plot, open.localPos(), plot.origin().offset(open.localPos()),
+            open.face(), open.up());
+    }
+
     public static void forget(ServerPlayer player) {
         OPEN.remove(player.getUUID());
     }

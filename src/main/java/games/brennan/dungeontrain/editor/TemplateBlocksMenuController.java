@@ -69,6 +69,19 @@ public final class TemplateBlocksMenuController {
     private TemplateBlocksMenuController() {}
 
     /** Per-player exit reset. */
+    /**
+     * Re-send this player's open template-blocks menu because the plot changed
+     * behind the controller's back — an editor undo or redo.
+     */
+    public static void resyncOpen(ServerPlayer player) {
+        OpenMenu open = OPEN.get(player.getUUID());
+        if (open == null) return;
+        CarriageDims dims = DungeonTrainWorldData.get(player.serverLevel()).dims();
+        BlockVariantPlot plot = BlockVariantPlot.resolveAt(player, dims);
+        if (plot == null || !plot.key().equals(open.key())) return;
+        sendSync(player, plot);
+    }
+
     public static void forget(ServerPlayer player) {
         OPEN.remove(player.getUUID());
     }
