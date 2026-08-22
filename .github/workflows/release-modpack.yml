@@ -2,10 +2,12 @@ name: Release Modpack
 
 # Publishes the Dungeon Train CurseForge MODPACK (project = vars.CURSEFORGE_MODPACK_PROJECT_ID),
 # distinct from the mod itself. Dispatched by release.yml right after a successful CurseForge
-# mod upload — for EVERY release, including the auto-release cascade ticks. It waits
+# mod upload — for REAL (operator-dispatched) releases only; auto-release cascade ticks are
+# deliberately skipped (see the `inputs.auto == false` gate on that dispatch step). It waits
 # `delay_minutes` (so CurseForge can approve the freshly uploaded DT file before the modpack
 # manifest references it), then builds + uploads a matching modpack version that bundles that
-# release's DT file plus the pinned Sable dependency.
+# release's DT file plus the pinned Sable dependency, and finally VERIFIES that the uploaded
+# version actually became public — CurseForge can accept an upload and reject it afterwards.
 #
 # Not tag-triggered: release.yml is the only production caller. Can also be dispatched manually
 # (e.g. with dry_run=true) for testing — see modpack/README.md.
