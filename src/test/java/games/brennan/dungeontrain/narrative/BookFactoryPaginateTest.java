@@ -97,4 +97,30 @@ final class BookFactoryPaginateTest {
         assertEquals(1, pages.size(), "leading/trailing empty sections are skipped");
         assertEquals("Middle.", pages.get(0));
     }
+
+    /** U+1F600 — one code point, TWO chars, so a hard split can land between its halves. */
+    private static final String EMOJI = new String(Character.toChars(0x1f600));
+
+    @Test
+    @DisplayName("A hard word split never orphans half a surrogate pair")
+    void hardSplitKeepsSurrogatePairsIntact() {
+        // One unbroken "word" of emoji, long enough to force the char-level fallback split. With a
+        // plain substring the cut at MAX_CHARS_PER_PAGE lands mid-pair and leaves a lone surrogate,
+        // which throws when the page reaches NBT's modified-UTF-8 encoder on the client.
+        List<String> pages = BookFactory.paginate(EMOJI.repeat(400));
+        assertTrue(pages.size() > 1, "400 emoji must span more than one page");
+        for (String page : pages) {
+            for (int i = 0; i < page.length(); i++) {
+                char c = page.charAt(i);
+                if (Character.isHighSurrogate(c)) {
+                    assertTrue(i + 1 < page.length() && Character.isLowSurrogate(page.charAt(i + 1)),
+                        "orphaned high surrogate at " + i);
+                    i++;
+                } else {
+                    assertTrue(!Character.isLowSurrogate(c), "orphaned low surrogate at " + i);
+                }
+            }
+        }
+        assertEquals(EMOJI.repeat(400), String.join("", pages), "no characters lost or duplicated");
+    }
 }
