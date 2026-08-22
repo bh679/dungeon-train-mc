@@ -7943,6 +7943,40 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "translation-replies-and-good-as-is",
+      "version": "0.617.0",
+      "type": "feat",
+      "title": "Reviewers can reply to translators, and translators can retire good AI lines",
+      "summary": "The in-game translation editor now carries a conversation. When a reviewer turns down a translation you sent, they can say why \u2014 and that reply comes back to your client, marked against the line it is about, readable in the list and above the box when you open it, with a note on the title screen when something new is waiting. And when a machine-translated line is already correct, you can now say so: 'Good As Is' retires it from your queue so it stops coming back, and you can put it back at any time.",
+      "highlights": [
+        "Reviewers can reply to a translation, and the reply reaches the translator's client",
+        "A title-screen note tells you when a reviewer has written back",
+        "'Good As Is' retires a machine-translated line that needs no fixing \u2014 reversible, and per install"
+      ],
+      "pr": 1043,
+      "date": "2026-08-22",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "curseforge-modpack-publish-reliability",
+      "version": "0.618.0",
+      "type": "ci",
+      "title": "CurseForge modpack keeps up with releases again",
+      "summary": "The CurseForge modpack had quietly stopped updating \u2014 it sat on v0.592.0 while the mod shipped v0.613.0, because CurseForge was accepting our uploads and then rejecting them behind the scenes with no error anywhere we could see. Uploads now retry when the platform hiccups, and every upload is checked afterwards to confirm it actually went live, so the pack can't silently fall behind again.",
+      "highlights": [
+        "CurseForge modpack is publishing again",
+        "Failed uploads retry instead of losing that version",
+        "A pack version that never goes live now fails loudly"
+      ],
+      "pr": 1046,
+      "date": "2026-08-22",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
