@@ -40,7 +40,8 @@
     { "name": "Kinetic Hosting Integration", "slug": "kinetic-hosting-integration", "project_id": 1048150, "file_id": 8188461, "required": true, "modrinth_project": "kinetic-hosting-integration", "modrinth_version": "MU40ZSjV" },
     { "name": "Overloaded Armor Bar", "slug": "overloaded-armor-bar", "project_id": 314002, "file_id": 5537850, "required": true, "modrinth_project": "overloaded-armor-bar", "modrinth_version": "ioPwPPpS" },
     { "name": "Effortless Building", "slug": "effortless-building", "project_id": 302113, "file_id": 8515718, "required": false, "modrinth_project": "effortless-building", "modrinth_version": "YxnBXtLv" },
-    { "name": "Punchy!", "slug": "punchy", "project_id": 1374153, "file_id": 8697205, "required": false, "modrinth_project": "punchy-fpa", "modrinth_version": "F6nWR1sw" }
+    { "name": "Punchy!", "slug": "punchy", "project_id": 1374153, "file_id": 8697205, "required": false, "modrinth_project": "punchy-fpa", "modrinth_version": "F6nWR1sw" },
+    { "name": "WorldEdit", "slug": "worldedit", "project_id": 225608, "file_id": 5830452, "required": false, "modrinth_project": "worldedit", "modrinth_version": "WTAFvuRx" }
   ],
   "curseforge_relations": [
     { "slug": "sable", "type": "requiredDependency" }
