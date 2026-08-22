@@ -7877,9 +7877,9 @@
       "summary": "Adjusted what villagers pay for a few items in the Trade Anything slot.",
       "highlights": [],
       "date": "2026-08-22",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.613.0",
+      "released_at": "2026-08-22T09:09:00Z"
     },
     {
       "id": "player-head-death-skins",
@@ -7894,9 +7894,9 @@
       ],
       "pr": 1040,
       "date": "2026-08-22",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.613.0",
+      "released_at": "2026-08-22T09:09:00Z"
     }
   ]
 }
