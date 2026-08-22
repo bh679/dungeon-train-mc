@@ -4,10 +4,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Session-scoped holder for the official outbound links (Discord invite, Patreon, direct-payment,
- * hosting affiliate). Baked-in fallbacks ship in the jar so every screen works offline; when the
- * relay is reachable the values from {@code GET /<CAP>/links} overlay them, letting a rotated link
- * (new invite, changed payment provider, updated affiliate deal) reach already-shipped jars.
+ * Session-scoped holder for the official outbound links (Discord invite, Bilibili channel, Patreon,
+ * direct-payment, hosting affiliate). Baked-in fallbacks ship in the jar so every screen works
+ * offline; when the relay is reachable the values from {@code GET /<CAP>/links} overlay them,
+ * letting a rotated link (new invite, changed payment provider, updated affiliate deal) reach
+ * already-shipped jars.
  *
  * <p>Mirrors {@link games.brennan.dungeontrain.client.version.VersionCheckState}: one JVM, one
  * successful fetch — repeat {@link #ensureFetched()} calls are idempotent unless the previous
@@ -29,6 +30,14 @@ public final class OfficialLinks {
             "https://revolut.me/brennacg7?currency=AUD&amount=2500&note=Dungeon%20Train%20";
     static final String FALLBACK_AFFILIATE =
             "https://billing.kinetichosting.com/aff.php?aff=1461";
+    /**
+     * The Bilibili channel — the community link offered to Chinese-language clients, for whom the
+     * Discord invite is a dead end (Discord is blocked in mainland China). Baked like the others
+     * rather than relay-only: the players who need it are exactly the ones least likely to have a
+     * clean route to the relay, so it must work with no fetch at all.
+     */
+    static final String FALLBACK_BILIBILI =
+            "https://space.bilibili.com/3707029436762273";
     /**
      * The China-facing payment link (a Stripe link; WeChat Pay today) has NO baked fallback on
      * purpose — it is relay-only. Patreon and Revolut are both walled in mainland China, so this is
@@ -60,6 +69,8 @@ public final class OfficialLinks {
     public static String patreon()   { return resolve("patreon", FALLBACK_PATREON); }
     public static String payment()   { return resolve("payment", FALLBACK_PAYMENT); }
     public static String affiliate() { return resolve("affiliate", FALLBACK_AFFILIATE); }
+    /** The Bilibili channel — shown above Discord on Chinese-language clients, and only there. */
+    public static String bilibili()  { return resolve("bilibili", FALLBACK_BILIBILI); }
 
     /** The China payment link, or {@code null} when the relay has not served a valid one. */
     public static String paymentCn() { return resolve("payment_cn", null); }

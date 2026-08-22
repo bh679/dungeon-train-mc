@@ -7897,6 +7897,34 @@
       "released": true,
       "released_in": "v0.613.0",
       "released_at": "2026-08-22T09:09:00Z"
+    },
+    {
+      "id": "portal-carriage-loot-reroll",
+      "version": "0.614.0",
+      "type": "fix",
+      "title": "Portal corridor loot variety",
+      "summary": "Chests in a portal's corridors now roll different contents from portal to portal, instead of the same ones every time.",
+      "date": "2026-08-22",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "bilibili-link-chinese-clients",
+      "version": "0.615.0",
+      "type": "feat",
+      "title": "Bilibili link for Chinese-language players",
+      "summary": "Playing in Chinese? There's now a Bilibili button on the main menu, just above Discord \u2014 Discord doesn't work in mainland China, so that one was a dead end. It only shows up on Chinese-language clients; everyone else's menu is unchanged.",
+      "highlights": [
+        "New Bilibili button on the main menu, above Discord",
+        "Shows only on Chinese-language clients (\u7b80\u4f53\u4e2d\u6587, \u7e41\u9ad4\u4e2d\u6587, \u6587\u8a00\u6587)",
+        "Discord stays where it is \u2014 the Bilibili link is added, not swapped in"
+      ],
+      "pr": 1042,
+      "date": "2026-08-22",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

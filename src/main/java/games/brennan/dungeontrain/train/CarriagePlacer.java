@@ -298,8 +298,12 @@ public final class CarriagePlacer {
                 origin.offset(PortalCorridorSize.originOffsetX(role, dims, kind), 0, 0);
             CarriageDims corridorDims = PortalCorridorSize.corridorDims(dims, kind);
 
+            // role as well as pairKey: together they give the corridor's own carriage index, which is
+            // what its shell variants and contents roll against. The twin underground is stamped with
+            // the same pair and the same role, so the two land on identical blocks — see
+            // PortalCarriageRole.corridorIndexOf.
             PortalCarriageBuilder.stampCarriage(
-                level, corridorOrigin, dims, kind, /*relight*/ false, pairKey);
+                level, corridorOrigin, dims, kind, /*relight*/ false, pairKey, role);
             // Report the portal variant, not the one the roll happened to land on: what stands here
             // is a portal corridor, and a log line reading "variant=fancywood sources=portal" sends
             // anyone reading it after the fact looking for a bug that isn't there.
