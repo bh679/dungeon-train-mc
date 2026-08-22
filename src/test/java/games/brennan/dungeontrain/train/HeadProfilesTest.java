@@ -68,6 +68,27 @@ final class HeadProfilesTest {
     }
 
     @Test
+    @DisplayName("accepts plain Minecraft usernames as head titles")
+    void isPlayerName_acceptsUsernames() {
+        assertTrue(HeadProfiles.isPlayerName("Notch"));
+        assertTrue(HeadProfiles.isPlayerName("a_Player_99"));
+        assertTrue(HeadProfiles.isPlayerName("A"));
+        assertTrue(HeadProfiles.isPlayerName("_".repeat(16)));
+    }
+
+    @Test
+    @DisplayName("rejects anything vanilla's profile codec would reject")
+    void isPlayerName_rejectsEverythingElse() {
+        assertFalse(HeadProfiles.isPlayerName(null));
+        assertFalse(HeadProfiles.isPlayerName(""));
+        assertFalse(HeadProfiles.isPlayerName("two words"));
+        // A legacy formatting code would otherwise colour the item name.
+        assertFalse(HeadProfiles.isPlayerName("\u00a7cRed"));
+        assertFalse(HeadProfiles.isPlayerName("<script>"));
+        assertFalse(HeadProfiles.isPlayerName("a".repeat(17)));
+    }
+
+    @Test
     @DisplayName("uuid is stable per URL and differs between URLs")
     void stableId_isDeterministicPerUrl() {
         assertEquals(HeadProfiles.stableId(URL), HeadProfiles.stableId(URL));

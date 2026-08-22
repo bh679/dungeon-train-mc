@@ -26,8 +26,15 @@ import java.util.regex.Pattern;
  * the same call — its entries are pre-resolved {@code textures.minecraft.net} URLs — which is why the
  * relay's dead-player skins and the PlayerMob fallback can share one code path.</p>
  *
- * <p>The profile is deliberately <em>anonymous</em>: no name, and a uuid derived from the texture URL
- * rather than the dead player's own. Nothing here identifies whose skin it is.</p>
+ * <p>The profile carries the wearer's NAME as well as their face, because vanilla titles the item
+ * from it: {@code PlayerHeadItem.getName} renders {@code block.minecraft.player_head.named}
+ * ("%s's Head") whenever the profile has a name, and the default "Player Head" when it does not. So
+ * a mined head reads "Ranboo's Head" with no naming code of our own — and the name rides the same
+ * {@code minecraft:profile} component the skin does, which is why it survives being mined.</p>
+ *
+ * <p>The uuid is still derived from the texture URL rather than being the wearer's real one: the
+ * client needs a stable id per distinct skin and nothing more, and a real uuid is a join key to the
+ * rest of a player's record.</p>
  */
 public final class HeadProfiles {
 
@@ -42,6 +49,13 @@ public final class HeadProfiles {
     /** Namespace for {@link #stableId} — keeps derived head uuids out of any real player's space. */
     private static final String ID_NAMESPACE = "dungeontrain:head:";
 
+    /**
+     * Minecraft's username charset. Vanilla's {@code ExtraCodecs.PLAYER_NAME} rejects anything else,
+     * and a rejected name would fail the whole profile encode — so a name that is not a plain
+     * username is dropped and the head simply stays untitled.
+     */
+    private static final Pattern PLAYER_NAME = Pattern.compile("^[A-Za-z0-9_]{1,16}$");
+
     private HeadProfiles() {}
 
     /** True when {@code url} is a Mojang CDN skin texture URL this class will build a profile from. */
@@ -49,18 +63,27 @@ public final class HeadProfiles {
         return url != null && TEXTURE_URL.matcher(url).matches();
     }
 
+    /** True when {@code name} is a plain Minecraft username, and so safe to title a head with. */
+    public static boolean isPlayerName(String name) {
+        return name != null && PLAYER_NAME.matcher(name).matches();
+    }
+
     /**
-     * A head profile wearing the skin at {@code textureUrl}, or empty when the URL is not one this
-     * class accepts. {@code slim} picks the Alex-style 3-pixel arm model — which a head never shows,
-     * but the metadata is part of the texture blob and is carried faithfully so the same value can
-     * dress a mob.
+     * A head profile wearing the skin at {@code textureUrl} and titled {@code name}, or empty when
+     * the URL is not one this class accepts. {@code slim} picks the Alex-style 3-pixel arm model —
+     * which a head never shows, but the metadata is part of the texture blob and is carried
+     * faithfully so the same value can dress a mob.
+     *
+     * <p>A blank or non-username {@code name} yields an untitled head ("Player Head") rather than no
+     * head at all: the face is the feature, and the title is the part that may be missing — for a
+     * death recorded without a name, or against a relay too old to send one.</p>
      */
-    public static Optional<ResolvableProfile> of(String textureUrl, boolean slim) {
+    public static Optional<ResolvableProfile> of(String textureUrl, boolean slim, String name) {
         if (!isTextureUrl(textureUrl)) return Optional.empty();
         PropertyMap properties = new PropertyMap();
         properties.put("textures", new Property("textures", textureValue(textureUrl, slim)));
-        // No name: an anonymous profile, and one fewer field for ExtraCodecs.PLAYER_NAME to reject.
-        return Optional.of(new ResolvableProfile(Optional.empty(), Optional.of(stableId(textureUrl)), properties));
+        Optional<String> title = isPlayerName(name) ? Optional.of(name) : Optional.empty();
+        return Optional.of(new ResolvableProfile(title, Optional.of(stableId(textureUrl)), properties));
     }
 
     /**

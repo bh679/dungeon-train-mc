@@ -12,6 +12,9 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 
+import com.mojang.logging.LogUtils;
+import org.slf4j.Logger;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -38,6 +41,8 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 @EventBusSubscriber(modid = games.brennan.dungeontrain.DungeonTrain.MOD_ID)
 public final class DeathHeadSkins {
+
+    private static final Logger LOGGER = LogUtils.getLogger();
 
     /** Salt keeping this roll independent of every other deterministic roll on the same cell. */
     private static final long SALT_HEAD_SKIN = 0x8EAD5C1D5EEDBEEFL;
@@ -93,10 +98,16 @@ public final class DeathHeadSkins {
         List<DeathSkinClient.Skin> pool = poolFor(carriage);
         if (!pool.isEmpty()) {
             DeathSkinClient.Skin skin = pool.get((int) Math.floorMod(state, pool.size()));
-            Optional<ResolvableProfile> profile = HeadProfiles.of(skin.url(), skin.slim());
-            if (profile.isPresent()) return profile;
+            Optional<ResolvableProfile> profile = HeadProfiles.of(skin.url(), skin.slim(), skin.name());
+            if (profile.isPresent()) {
+                // Says which pool dressed this head, so "did the death path actually fire?" is
+                // answerable from the log rather than by staring at faces in-game.
+                LOGGER.debug("[DungeonTrain] head skin carriage={} cell={} source=deaths name={} skin=...{}",
+                    carriage, localPos, skin.name().isEmpty() ? "<none>" : skin.name(), tail(skin.url()));
+                return profile;
+            }
         }
-        return fallback(state);
+        return fallback(state, carriage, localPos);
     }
 
     /** Cached skins for {@code carriage}, kicking off a refresh when stale or absent. */
@@ -116,10 +127,20 @@ public final class DeathHeadSkins {
      * playermob is safe — it is jarJar'd into Dungeon Train, the same guarantee
      * {@link games.brennan.dungeontrain.compat.EchoIdentity} relies on.
      */
-    private static Optional<ResolvableProfile> fallback(long state) {
+    private static Optional<ResolvableProfile> fallback(long state, int carriage, BlockPos localPos) {
         Optional<PlayerMobSkin> skin = PlayerMobSkinRegistry.pickRandom(RandomSource.create(state));
         if (skin.isEmpty()) return Optional.empty();
-        return HeadProfiles.of(skin.get().textureUrl(), skin.get().model() == SkinModel.SLIM);
+        LOGGER.debug("[DungeonTrain] head skin carriage={} cell={} source=playermob name={} skin=...{}",
+            carriage, localPos, skin.get().displayName(), tail(skin.get().textureUrl()));
+        // A bundled skin's displayName documents the real player it portrays, so it titles the head
+        // the same way a dead player's name does. HeadProfiles drops it if it is not a username.
+        return HeadProfiles.of(skin.get().textureUrl(), skin.get().model() == SkinModel.SLIM,
+            skin.get().displayName());
+    }
+
+    /** Last few characters of a texture URL — enough to tell two skins apart in a log line. */
+    private static String tail(String url) {
+        return url == null || url.length() < 12 ? String.valueOf(url) : url.substring(url.length() - 12);
     }
 
     /** Splittable-mix of the deterministic-roll inputs, mirroring {@code ContainerContentsRoller.mix}. */

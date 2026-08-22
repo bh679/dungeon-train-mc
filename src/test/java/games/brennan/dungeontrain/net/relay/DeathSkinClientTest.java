@@ -28,8 +28,8 @@ final class DeathSkinClientTest {
         List<DeathSkinClient.Skin> out = DeathSkinClient.parse(
             "{\"ok\":true,\"carriage\":3,\"skins\":[{\"url\":\"" + URL_A + "\",\"model\":\"wide\"},"
             + "{\"url\":\"" + URL_B + "\",\"model\":\"slim\"}]}");
-        assertEquals(List.of(new DeathSkinClient.Skin(URL_A, false),
-                             new DeathSkinClient.Skin(URL_B, true)), out);
+        assertEquals(List.of(new DeathSkinClient.Skin(URL_A, false, ""),
+                             new DeathSkinClient.Skin(URL_B, true, "")), out);
     }
 
     @Test
@@ -44,7 +44,26 @@ final class DeathSkinClientTest {
     void parse_defaultsToWide() {
         List<DeathSkinClient.Skin> out = DeathSkinClient.parse(
             "{\"ok\":true,\"skins\":[{\"url\":\"" + URL_A + "\"}]}");
-        assertEquals(List.of(new DeathSkinClient.Skin(URL_A, false)), out);
+        assertEquals(List.of(new DeathSkinClient.Skin(URL_A, false, "")), out);
+    }
+
+    @Test
+    @DisplayName("reads the wearer's name, which is what titles the mined head")
+    void parse_readsName() {
+        List<DeathSkinClient.Skin> out = DeathSkinClient.parse(
+            "{\"ok\":true,\"skins\":[{\"url\":\"" + URL_A + "\",\"name\":\"Ranboo\"}]}");
+        assertEquals(List.of(new DeathSkinClient.Skin(URL_A, false, "Ranboo")), out);
+    }
+
+    @Test
+    @DisplayName("a name vanilla's profile codec would reject leaves the head untitled, not unskinned")
+    void parse_dropsUnusableNames() {
+        // The whole encode fails on a bad name, so the skin must survive it being dropped.
+        List<DeathSkinClient.Skin> out = DeathSkinClient.parse(
+            "{\"ok\":true,\"skins\":[{\"url\":\"" + URL_A + "\",\"name\":\"two words\"},"
+            + "{\"url\":\"" + URL_B + "\",\"name\":\"\u00a7cRed\"}]}");
+        assertEquals(List.of(new DeathSkinClient.Skin(URL_A, false, ""),
+                             new DeathSkinClient.Skin(URL_B, false, "")), out);
     }
 
     @Test
@@ -53,7 +72,7 @@ final class DeathSkinClientTest {
         List<DeathSkinClient.Skin> out = DeathSkinClient.parse(
             "{\"ok\":true,\"skins\":[{\"url\":\"http://evil.example/texture/abcdef0123456789\"},"
             + "{\"url\":\"\"},{\"url\":\"" + URL_A + "\"},{\"nope\":1}]}");
-        assertEquals(List.of(new DeathSkinClient.Skin(URL_A, false)), out);
+        assertEquals(List.of(new DeathSkinClient.Skin(URL_A, false, "")), out);
     }
 
     @Test

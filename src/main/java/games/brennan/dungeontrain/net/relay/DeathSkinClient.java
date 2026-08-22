@@ -20,9 +20,10 @@ import java.util.function.Consumer;
  * {@code player_head} blocks generated in that same carriage (see
  * {@link games.brennan.dungeontrain.train.DeathHeadSkins}).
  *
- * <p>Read-only and anonymous by design: the request names a carriage number and nothing else — not
- * the asking player, not their world — and the relay answers with Mojang CDN texture URLs alone, no
- * names and no uuids. Nobody's identity travels in either direction; only their skin does.</p>
+ * <p>Read-only and anonymous in the outbound direction: the request names a carriage number and
+ * nothing else — not the asking player, not their world. The response carries each dead player's
+ * skin URL and display name, which is what lets a mined head read "<Name>'s Head"; their uuid never
+ * travels.</p>
  *
  * <p>Mirrors {@link ModPopularityClient}: same HTTP/1.1 pin (for local cleartext testing), same
  * timeouts, no-throw throughout, and the callback fires on the HTTP completion thread — never on the
@@ -45,8 +46,12 @@ public final class DeathSkinClient {
 
     private DeathSkinClient() {}
 
-    /** One skin as the relay reports it: a Mojang CDN texture URL plus its arm model. */
-    public record Skin(String url, boolean slim) {}
+    /**
+     * One skin as the relay reports it: a Mojang CDN texture URL, its arm model, and the display name
+     * of the player who wore it. {@code name} is {@code ""} when the death carried no usable one (or
+     * the relay predates names), which dresses the head without titling it.
+     */
+    public record Skin(String url, boolean slim, String name) {}
 
     /**
      * Fetch the skins for {@code carriage} off-thread and hand them to {@code callback}. No-throw: a
@@ -86,10 +91,10 @@ public final class DeathSkinClient {
     /**
      * Parse {@code {ok:true, carriage, skins:[{url, model}]}} into skins, or null when malformed.
      *
-     * <p>Every entry is re-validated against
-     * {@link games.brennan.dungeontrain.train.HeadProfiles#isTextureUrl} rather than trusted: this is
-     * data off the wire on its way into a block entity, and a URL that is not Mojang's CDN would
-     * produce an invisible head rather than a skin.</p>
+     * <p>Every entry is re-validated rather than trusted — this is data off the wire on its way into
+     * a block entity. A URL that is not Mojang's CDN would produce an invisible head rather than a
+     * skin, and a name that is not a plain username would be rejected by vanilla's profile codec and
+     * take the whole encode down with it, so a bad one is dropped and the head goes untitled.</p>
      */
     static List<Skin> parse(String body) {
         JsonElement root = JsonParser.parseString(body);
@@ -108,7 +113,9 @@ public final class DeathSkinClient {
             if (!games.brennan.dungeontrain.train.HeadProfiles.isTextureUrl(url)) continue;
             boolean slim = e.has("model") && e.get("model").isJsonPrimitive()
                     && "slim".equals(e.get("model").getAsString());
-            out.add(new Skin(url, slim));
+            String name = e.has("name") && e.get("name").isJsonPrimitive() ? e.get("name").getAsString() : "";
+            if (!games.brennan.dungeontrain.train.HeadProfiles.isPlayerName(name)) name = "";
+            out.add(new Skin(url, slim, name));
         }
         return List.copyOf(out);
     }
