@@ -250,6 +250,20 @@ public final class EditorPlotLabelsRenderer {
         return settings.copiesApply() && settings.effectiveCopies().repeatsOneBlock();
     }
 
+    /**
+     * True when {@code blockId} is the empty-placeholder sentinel — the author asked for air.
+     *
+     * <p>Id-only because that is all the row is sent: the label packet carries one block id per
+     * plane for the icon, never a state. Same three command-block kinds
+     * {@code CarriageVariantBlocks.isEmptyPlaceholder} covers, which is where the sentinel is
+     * defined.</p>
+     */
+    public static boolean isAirSentinelId(String blockId) {
+        return "minecraft:command_block".equals(blockId)
+            || "minecraft:chain_command_block".equals(blockId)
+            || "minecraft:repeating_command_block".equals(blockId);
+    }
+
     /** Where the icon sits on a Copies plane row — right of its "Floor:" / "Roof:" label. */
     private static double copiesIconCentre(double halfW) {
         return -halfW + halfW * 0.75;
@@ -1080,6 +1094,12 @@ public final class EditorPlotLabelsRenderer {
             // Nothing set yet: say what to do rather than showing an empty slot.
             drawLeftText(ps, buffer, font, "hold one", copiesIconCentre(halfW) - PAD_X,
                 rCY, LABEL_COLOR);
+        } else if (isAirSentinelId(block)) {
+            // The plane is authored as air. Drawing the sentinel's own icon would put a command
+            // block in the author's roof row, which is a block they never chose; the Block Variant
+            // menu calls this entry "nothing" and so does this row.
+            drawLeftText(ps, buffer, font, "nothing", copiesIconCentre(halfW) - PAD_X,
+                rCY, WEIGHT_COLOR);
         } else {
             MenuBlockIcons.drawBlockIcon(ps, buffer, block, copiesIconCentre(halfW),
                 rCY, COPIES_ICON_SIZE);

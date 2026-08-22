@@ -84,7 +84,7 @@
     "mode": "bedrockless"
   },
   "house": {
-    "weight": 1,
+    "weight": 64,
     "mode": "bedrock_lock"
   },
   "labrynth": {

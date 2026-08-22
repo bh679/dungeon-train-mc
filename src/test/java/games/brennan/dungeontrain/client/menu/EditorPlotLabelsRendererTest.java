@@ -464,6 +464,34 @@ class EditorPlotLabelsRendererTest {
     }
 
     @Test
+    @DisplayName("The air sentinel is recognised by id, so a plane set to air reads as nothing")
+    void airSentinelIsRecognised() {
+        // All three command-block kinds are the empty-placeholder sentinel, and the row is only
+        // ever sent an id — so the check has to work off the id alone.
+        assertTrue(EditorPlotLabelsRenderer.isAirSentinelId("minecraft:command_block"));
+        assertTrue(EditorPlotLabelsRenderer.isAirSentinelId("minecraft:chain_command_block"));
+        assertTrue(EditorPlotLabelsRenderer.isAirSentinelId("minecraft:repeating_command_block"));
+
+        // An ordinary block is not, and neither is the unset case — those are three distinct
+        // things the row draws differently: an icon, the word "nothing", and the "hold one" hint.
+        assertFalse(EditorPlotLabelsRenderer.isAirSentinelId("minecraft:stone"));
+        assertFalse(EditorPlotLabelsRenderer.isAirSentinelId(""));
+        assertFalse(EditorPlotLabelsRenderer.isAirSentinelId(null));
+    }
+
+    @Test
+    @DisplayName("One plane set to air leaves the other's icon alone")
+    void planesCarryTheirOwnIcons() {
+        EditorPlotLabelsPacket.Entry e = entryWithBlocks(
+            "endless_open/single", "minecraft:stone", "minecraft:command_block");
+
+        assertEquals("minecraft:stone", e.copiesFloorBlock());
+        assertTrue(EditorPlotLabelsRenderer.isAirSentinelId(e.copiesRoofBlock()));
+        assertFalse(EditorPlotLabelsRenderer.isAirSentinelId(e.copiesFloorBlock()),
+            "a roof of air must not read back as a floor of air");
+    }
+
+    @Test
     @DisplayName("The Block row shows only where Single is what the walls actually do")
     void copiesBlockRowFollowsTheEffectiveValue() {
         assertTrue(EditorPlotLabelsRenderer.hasCopiesBlockRowFor(

@@ -1,4 +1,5 @@
 {
-  "schemaVersion": 1,
-  "blocks": [{"state": "minecraft:black_concrete", "weight": 30}, "minecraft:sea_lantern"]
+  "schemaVersion": 2,
+  "floor": [{"state": "minecraft:black_concrete", "weight": 30}, "minecraft:sea_lantern"],
+  "roof": [{"state": "minecraft:black_concrete", "weight": 30}, "minecraft:sea_lantern"]
 }

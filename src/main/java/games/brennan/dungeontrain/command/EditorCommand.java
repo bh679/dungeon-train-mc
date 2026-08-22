@@ -5964,9 +5964,15 @@ public final class EditorCommand {
      * {@code /dt editor portals copies block held} — set Single's block to what the author is
      * holding.
      *
-     * <p>Two things are worth holding. A plain <b>block</b> is the ordinary case. A <b>variant
-     * clipboard</b>, copied from a cell by the Block Variant menu, brings that cell's whole
-     * candidate list over in one gesture — the same value the Edit button authors in place.</p>
+     * <p>Three things are worth holding, and one of them is nothing. A plain <b>block</b> is the
+     * ordinary case. A <b>variant clipboard</b>, copied from a cell by the Block Variant menu,
+     * brings that cell's whole candidate list over in one gesture — the same value the Edit button
+     * authors in place. An <b>empty hand</b> sets the plane to air: a floor of gaps, or a roof that
+     * is open sky.</p>
+     *
+     * <p>Empty-hand-means-air is not invented here — it is what the Block Variant menu's Add does
+     * with an empty hand, down to the same command-block sentinel, so the gesture an author already
+     * knows from every other cell in the game means the same thing on these two rows.</p>
      *
      * <p>The held item rather than a typed id because this is a picking gesture, and the author is
      * already standing in the plot with their palette in their hotbar. The menu is opened by a key
@@ -5986,6 +5992,17 @@ public final class EditorCommand {
         }
         ItemStack held = player.getMainHandItem();
 
+        if (held.isEmpty()) {
+            // The empty-placeholder sentinel, stored verbatim: PortalRoomSinglePlanes translates it
+            // to a no-cascade air write at stamp time, exactly as applyRoomVariants does for a cell.
+            // Air is a candidate like any other here, so this is authoring the plane rather than
+            // clearing it — the row keeps showing a value, and the plane is deliberately empty
+            // rather than merely unset.
+            return savePortalRoomCopiesVariant(source, name, plane, java.util.List.of(
+                new games.brennan.dungeontrain.editor.VariantState(
+                    net.minecraft.world.level.block.Blocks.COMMAND_BLOCK.defaultBlockState(), null)));
+        }
+
         if (held.getItem() instanceof games.brennan.dungeontrain.item.VariantClipboardItem) {
             java.util.List<games.brennan.dungeontrain.editor.VariantState> states =
                 games.brennan.dungeontrain.item.VariantClipboardItem.decodeStates(
@@ -6002,7 +6019,8 @@ public final class EditorCommand {
                     blockItem.getBlock().defaultBlockState(), null)));
         }
         source.sendFailure(Component.literal(
-            "Hold a block, or a variant copied from a cell, then press this again."));
+            "Hold a block, or a variant copied from a cell — or nothing at all for air — "
+                + "then press this again."));
         return 0;
     }
 
@@ -6089,10 +6107,33 @@ public final class EditorCommand {
         String what = plane == null ? "floor and roof" : plane.displayName().toLowerCase(java.util.Locale.ROOT);
         source.sendSuccess(() -> Component.literal(
             "Editor: portal room '" + name + "' copies " + what + " is now "
-                + String.join(", ", variant.blockIds(
-                    plane == null ? games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane.FLOOR : plane)))
+                + copiesPaletteText(variant,
+                    plane == null ? games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane.FLOOR : plane))
             .withStyle(ChatFormatting.GREEN), true);
         return 1;
+    }
+
+    /**
+     * One plane's palette as text — with the empty-placeholder sentinel read back as {@code air}.
+     *
+     * <p>The sentinel is a command block on disk and a gap at stamp time, and the id is what the
+     * author would be shown otherwise. Telling them their roof is now {@code minecraft:command_block}
+     * describes the storage rather than the choice.</p>
+     */
+    private static String copiesPaletteText(
+        games.brennan.dungeontrain.portal.PortalRoomCopiesVariant variant,
+        games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane plane
+    ) {
+        java.util.List<games.brennan.dungeontrain.editor.VariantState> states = variant.states(plane);
+        if (states.isEmpty()) return "unset";
+        java.util.List<String> out = new java.util.ArrayList<>(states.size());
+        for (games.brennan.dungeontrain.editor.VariantState st : states) {
+            out.add(games.brennan.dungeontrain.editor.CarriageVariantBlocks.isEmptyPlaceholder(st.state())
+                ? "air"
+                : net.minecraft.core.registries.BuiltInRegistries.BLOCK
+                    .getKey(st.state().getBlock()).toString());
+        }
+        return String.join(", ", out);
     }
 
     /**
@@ -6108,12 +6149,12 @@ public final class EditorCommand {
     ) {
         games.brennan.dungeontrain.portal.PortalRoomCopiesVariant variant =
             games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.forRoom(name, settings.copies());
-        java.util.List<String> floor = variant.blockIds(
+        String floor = copiesPaletteText(variant,
             games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane.FLOOR);
-        java.util.List<String> roof = variant.blockIds(
+        String roof = copiesPaletteText(variant,
             games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane.ROOF);
-        if (floor.equals(roof)) return String.join(", ", floor);
-        return "floor " + String.join(", ", floor) + "; roof " + String.join(", ", roof);
+        if (floor.equals(roof)) return floor;
+        return "floor " + floor + "; roof " + roof;
     }
 
     /** {@code /dt editor portals books next} — step the author lock. */
