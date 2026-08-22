@@ -50,7 +50,7 @@ class PortalOpenTileWriteMaskTest {
         for (Vec3i size : roomSizes()) {
             PortalStructure structure = structure(PortalRoomMode.ENDLESS_OPEN, size);
             PortalCorridorMask write = PortalRoomTiler.writeMaskFor(
-                structure, PortalCorridorMask.NONE, ORIGIN, size);
+                structure, PortalCorridorMask.NONE, ORIGIN, size, /*singlePlanes*/ false);
 
             for (int x = 0; x < size.getX(); x++) {
                 for (int z = 0; z < size.getZ(); z++) {
@@ -82,7 +82,8 @@ class PortalOpenTileWriteMaskTest {
         PortalStructure structure = structure(PortalRoomMode.ENDLESS_OPEN, size);
 
         PortalCorridorMask clear = PortalCorridorMask.NONE;
-        PortalCorridorMask write = PortalRoomTiler.writeMaskFor(structure, clear, ORIGIN, size);
+        PortalCorridorMask write = PortalRoomTiler.writeMaskFor(
+            structure, clear, ORIGIN, size, /*singlePlanes*/ false);
 
         assertTrue(clear.isEmpty(),
             "widening the clear mask would leave the copy standing in the deepslate it landed in");
@@ -99,12 +100,68 @@ class PortalOpenTileWriteMaskTest {
         // cannot be confused for one another.
         BoundingBox corridor = new BoundingBox(0, 0, 0, 4, 4, 4);
         PortalCorridorMask write = PortalRoomTiler.writeMaskFor(
-            structure, PortalCorridorMask.NONE.plus(corridor), ORIGIN, size);
+            structure, PortalCorridorMask.NONE.plus(corridor), ORIGIN, size,
+            /*singlePlanes*/ false);
 
         assertTrue(write.covers(2, 2, 2), "the corridor box must survive the union");
         assertTrue(write.covers(ORIGIN.getX(), ORIGIN.getY() + 1, ORIGIN.getZ()),
             "the interior box must be there as well");
         assertEquals(2, write.boxes().size(), "one corridor box plus one interior box");
+    }
+
+    @Test
+    @DisplayName("Single masks the whole tile — planes included, since they are written afterwards")
+    void endlessOpen_singleMasksTheWholeTile() {
+        for (Vec3i size : roomSizes()) {
+            PortalStructure structure = structure(PortalRoomMode.ENDLESS_OPEN, size);
+            PortalCorridorMask write = PortalRoomTiler.writeMaskFor(
+                structure, PortalCorridorMask.NONE, ORIGIN, size, /*singlePlanes*/ true);
+
+            for (int x = 0; x < size.getX(); x++) {
+                for (int z = 0; z < size.getZ(); z++) {
+                    for (int y = 0; y < size.getY(); y++) {
+                        assertTrue(write.covers(ORIGIN.getX() + x, ORIGIN.getY() + y,
+                                ORIGIN.getZ() + z),
+                            size + " at (" + x + "," + y + "," + z + "): under Single the stamp puts "
+                                + "nothing anywhere in the tile — the two planes are written from "
+                                + "one block afterwards, and an authored floor laid here would only "
+                                + "be overwritten");
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("Single still leaves the clear mask alone — the tile is emptied of rock as ever")
+    void endlessOpen_singleLeavesTheClearMaskAlone() {
+        Vec3i size = PortalRoomLayout.builtInSize(CarriageDims.DEFAULT);
+        PortalStructure structure = structure(PortalRoomMode.ENDLESS_OPEN, size);
+
+        PortalCorridorMask clear = PortalCorridorMask.NONE;
+        PortalCorridorMask write = PortalRoomTiler.writeMaskFor(
+            structure, clear, ORIGIN, size, /*singlePlanes*/ true);
+
+        assertTrue(clear.isEmpty(),
+            "widening the clear mask would leave the copy standing in the deepslate it landed in");
+        assertFalse(write.isEmpty(), "precondition: the write mask did gain the whole tile box");
+    }
+
+    @Test
+    @DisplayName("A mode that is not Endless Open ignores singlePlanes entirely")
+    void otherModes_ignoreSinglePlanes() {
+        Vec3i size = PortalRoomLayout.builtInSize(CarriageDims.DEFAULT);
+        PortalCorridorMask clear = PortalCorridorMask.NONE.plus(new BoundingBox(0, 0, 0, 4, 4, 4));
+
+        for (PortalRoomMode mode : PortalRoomMode.values()) {
+            if (mode == PortalRoomMode.ENDLESS_OPEN) continue;
+            // Single is Endless Open's alone (PortalRoomMode.singleCopiesApply), so the flag can
+            // never be true here in practice — but the mode check has to come first regardless, or
+            // an Endless Repetition tile would mask its whole room and stamp an empty box.
+            assertSame(clear, PortalRoomTiler.writeMaskFor(
+                    structure(mode, size), clear, ORIGIN, size, /*singlePlanes*/ true),
+                mode + " tiles the whole room and must write all of it");
+        }
     }
 
     @Test
@@ -116,7 +173,7 @@ class PortalOpenTileWriteMaskTest {
         for (PortalRoomMode mode : PortalRoomMode.values()) {
             if (mode == PortalRoomMode.ENDLESS_OPEN) continue;
             PortalCorridorMask write = PortalRoomTiler.writeMaskFor(
-                structure(mode, size), clear, ORIGIN, size);
+                structure(mode, size), clear, ORIGIN, size, /*singlePlanes*/ false);
             // Same object, not merely equal: nothing is added, so nothing is rebuilt.
             assertSame(clear, write, mode + " tiles the whole room and must write all of it");
         }

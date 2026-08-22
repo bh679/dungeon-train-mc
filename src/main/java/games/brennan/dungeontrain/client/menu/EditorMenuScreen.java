@@ -32,6 +32,15 @@ public final class EditorMenuScreen implements MenuScreen {
      */
     private static final double WALLS_ROW_PANEL_WIDTH = 2.6;
 
+    /**
+     * Panel width while the Copies Block row is showing.
+     *
+     * <p>The same width the Walls row asks for. The row named a block id when it was added, which
+     * needed more than forty characters; it names the gesture now — {@code Blocks: + held} — and the
+     * palette itself is shown as icons on the plot panel, so there is nothing here to size for.</p>
+     */
+    private static final double COPIES_BLOCK_ROW_PANEL_WIDTH = WALLS_ROW_PANEL_WIDTH;
+
     @Override public String title() { return "Editor"; }
 
     @Override public List<CommandMenuEntry> entries() {
@@ -190,6 +199,8 @@ public final class EditorMenuScreen implements MenuScreen {
             if (modeRow != null) out.add(modeRow);
             CommandMenuEntry copiesRow = copiesRowFor(EditorStatusHudOverlay.roomMode());
             if (copiesRow != null) out.add(copiesRow);
+            CommandMenuEntry copiesBlockRow = copiesBlockRowFor(EditorStatusHudOverlay.roomMode());
+            if (copiesBlockRow != null) out.add(copiesBlockRow);
             CommandMenuEntry contentsRow = roomContentsRowFor(EditorStatusHudOverlay.roomMode());
             if (contentsRow != null) out.add(contentsRow);
             CommandMenuEntry booksRow = roomBooksRowFor(EditorStatusHudOverlay.roomMode());
@@ -373,7 +384,10 @@ public final class EditorMenuScreen implements MenuScreen {
         if (mode == null || EditorStatusPacket.NO_MODE.equals(mode)) {
             return CommandMenuLayout.PANEL_WIDTH;
         }
-        return Math.max(CommandMenuLayout.PANEL_WIDTH, WALLS_ROW_PANEL_WIDTH);
+        double widest = EditorPlotLabelsRenderer.hasCopiesBlockRowFor(mode)
+            ? Math.max(WALLS_ROW_PANEL_WIDTH, COPIES_BLOCK_ROW_PANEL_WIDTH)
+            : WALLS_ROW_PANEL_WIDTH;
+        return Math.max(CommandMenuLayout.PANEL_WIDTH, widest);
     }
 
     /**
@@ -388,6 +402,26 @@ public final class EditorMenuScreen implements MenuScreen {
         return new CommandMenuEntry.Stay(
             EditorPlotLabelsRenderer.copiesLabel(currentMode),
             "dungeontrain editor portals copies next");
+    }
+
+    /**
+     * The Block row, or null unless Copies is set to Single — the one value that reads a block.
+     *
+     * <p>A picker, not a cycle: the value is any block in the registry, so tapping the row takes
+     * whatever the author is holding rather than stepping to a "next" nobody could enumerate. The
+     * menu is opened by a key toggle rather than by holding a tool, so their main hand is free for
+     * the block itself. <b>Edit</b> opens the Block Variant menu on that block, which is how one
+     * block becomes a variant of several.</p>
+     */
+    static CommandMenuEntry copiesBlockRowFor(String currentMode) {
+        if (currentMode == null || EditorStatusPacket.NO_MODE.equals(currentMode)) return null;
+        if (!EditorPlotLabelsRenderer.hasCopiesBlockRowFor(currentMode)) return null;
+        // Value on the left, a way into its editor on the right — the same Split the Books row uses.
+        return new CommandMenuEntry.Split(
+            new CommandMenuEntry.Stay(EditorPlotLabelsRenderer.copiesBlockLabel(),
+                "dungeontrain editor portals copies block held"),
+            new CommandMenuEntry.Stay("Edit", "dungeontrain editor portals copies block edit"),
+            0.72);
     }
 
     /**

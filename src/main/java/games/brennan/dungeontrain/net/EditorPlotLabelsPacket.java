@@ -78,14 +78,30 @@ public record EditorPlotLabelsPacket(List<Entry> entries) implements CustomPacke
         int roomLength,
         int roomWidth,
         int roomHeight,
-        String roomMode
+        String roomMode,
+        String copiesBlock
     ) {
+        public Entry {
+            // Never null: the renderer reads it every frame the panel is up, and "" is the
+            // "nothing authored yet" case the row draws its hint for.
+            if (copiesBlock == null) copiesBlock = "";
+        }
+
+        /** The shape before the Copies palette existed — no blocks to draw icons for. */
+        public Entry(BlockPos worldPos, String name, int weight, String category,
+                     String modelId, String modelName,
+                     boolean inPlot, boolean isUser, boolean isImported,
+                     int roomLength, int roomWidth, int roomHeight, String roomMode) {
+            this(worldPos, name, weight, category, modelId, modelName, inPlot, isUser, isImported,
+                roomLength, roomWidth, roomHeight, roomMode, "");
+        }
+
         /** Back-compat shape for every category but PORTALS — no authored size or mode to show. */
         public Entry(BlockPos worldPos, String name, int weight, String category,
                      String modelId, String modelName,
                      boolean inPlot, boolean isUser, boolean isImported) {
             this(worldPos, name, weight, category, modelId, modelName,
-                inPlot, isUser, isImported, NO_SIZE, NO_SIZE, NO_SIZE, NO_MODE);
+                inPlot, isUser, isImported, NO_SIZE, NO_SIZE, NO_SIZE, NO_MODE, "");
         }
 
         /** Back-compat shape from before portal rooms carried a mode. */
@@ -140,6 +156,7 @@ public record EditorPlotLabelsPacket(List<Entry> entries) implements CustomPacke
             buf.writeVarInt(e.roomWidth());
             buf.writeVarInt(e.roomHeight());
             buf.writeUtf(e.roomMode(), EditorStatusPacket.MODE_TAG_MAX);
+            buf.writeUtf(e.copiesBlock(), 128);
         }
     }
 
@@ -161,8 +178,10 @@ public record EditorPlotLabelsPacket(List<Entry> entries) implements CustomPacke
             int roomWidth = buf.readVarInt();
             int roomHeight = buf.readVarInt();
             String roomMode = buf.readUtf(EditorStatusPacket.MODE_TAG_MAX);
+            String copiesBlock = buf.readUtf(128);
             out.add(new Entry(pos, name, weight, category, modelId, modelName,
-                inPlot, isUser, isImported, roomLength, roomWidth, roomHeight, roomMode));
+                inPlot, isUser, isImported, roomLength, roomWidth, roomHeight, roomMode,
+                copiesBlock));
         }
         return new EditorPlotLabelsPacket(out);
     }
