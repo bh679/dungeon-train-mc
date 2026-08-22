@@ -7998,11 +7998,10 @@
       "id": "jei-optional-modpack",
       "version": "0.620.0",
       "type": "feat",
-      "title": "JEI is now in the modpack, ready to switch on",
-      "summary": "The modpack now ships Just Enough Items, turned off by default. Tick it on when you install the pack (or in the launcher afterwards) and you get JEI's recipe and item lookup \u2014 press R on any item to see how it's made, U to see what it makes. It stays off unless you ask for it, so the inventory screen is unchanged if you'd rather play without it.",
+      "title": "JEI, ready to switch on",
+      "summary": "The modpack now ships Just Enough Items, off by default. Tick it on at install for recipe and item lookup \u2014 press R on any item to see how it's made.",
       "highlights": [
-        "Just Enough Items is bundled with the modpack, switched off by default \u2014 enable it with one click, no separate download or version hunting.",
-        "Pinned to JEI 19.39.0.372, the newest build that runs on the modpack's NeoForge version."
+        "Bundled with the modpack, switched off by default."
       ],
       "pr": 1048,
       "date": "2026-08-22",
