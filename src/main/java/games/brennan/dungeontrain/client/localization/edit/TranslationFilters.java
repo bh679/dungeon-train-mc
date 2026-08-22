@@ -38,4 +38,20 @@ public final class TranslationFilters {
     public static boolean needsHuman(TranslationUnit unit, TranslationEdits approved) {
         return unit != null && unit.aiUnreviewed() && overrideOf(unit, approved) == null;
     }
+
+    /**
+     * The same question, minus the strings this player has already read and marked
+     * <b>good as is</b>.
+     *
+     * <p>A dismissal is a review — a speaker of the language went through the line and decided it
+     * needed nothing — so it leaves the queue exactly as an approval does. It differs in who it
+     * binds: an approval releases text to everybody, a dismissal only ever changes what THIS
+     * translator is shown, which is why it lives on their disk and not in the served pool.</p>
+     *
+     * @param dismissed this locale's dismissals, or null to ask the unfiltered question
+     */
+    public static boolean needsHuman(TranslationUnit unit, TranslationEdits approved,
+                                     java.util.function.Predicate<TranslationUnit> dismissed) {
+        return needsHuman(unit, approved) && (dismissed == null || !dismissed.test(unit));
+    }
 }
