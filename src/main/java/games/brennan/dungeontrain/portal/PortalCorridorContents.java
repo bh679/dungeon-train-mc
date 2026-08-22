@@ -21,7 +21,8 @@ import java.util.Map;
  * <p><b>One roll per pair, and it has to be.</b> A corridor exists twice — as a carriage on the
  * train and as a static twin underground — and the two are stamped by independent calls. They must
  * produce identical blocks or the crossing tears open, which is the same reason
- * {@code PortalCarriageBuilder}'s {@code CONTENTS_SEED} and {@code CONTENTS_INDEX} are fixed. Both
+ * {@code PortalCarriageBuilder.stampCorridorContents} keys its per-cell rolls on nothing but
+ * {@code (worldSeed, pairKey)}. Both
  * sites can name the portal without any state passing between them, because {@code pairKey} is a
  * pure function of the carriage index ({@code PortalCarriageRole.entryIndexOf}). A pair's entry and
  * exit corridors share that key, so they share a member too — which suits a corridor whose geometry

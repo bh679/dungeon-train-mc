@@ -171,17 +171,6 @@ public final class PortalCarriageBuilder {
      */
     private static final CarriageContents PORTAL_SHORT_CONTENTS = CarriageContents.custom("portal_short");
 
-    /**
-     * The seed and carriage index the corridor's contents are resolved with.
-     *
-     * <p><b>Fixed, not the carriage's own.</b> Those two values drive the contents sidecar's
-     * variant-block picks, and a corridor's blocks have to match its twin exactly — so both copies
-     * must resolve the same way. Feeding in a per-carriage index would let the carriage and its twin
-     * roll different blocks and tear the crossing open.</p>
-     */
-    private static final long CONTENTS_SEED = 0L;
-    private static final int CONTENTS_INDEX = 0;
-
     private PortalCarriageBuilder() {}
 
     /** The contents variant authored for the inside of a corridor of this kind. */
@@ -362,7 +351,7 @@ public final class PortalCarriageBuilder {
      * carriages at different indices that never see each other, and the variant picker keys on
      * {@code (worldSeed, index, lockId)} — so feeding it a per-carriage index lets the two halves
      * of one corridor land on different blocks and tears the crossing open, which is the same trap
-     * {@link #CONTENTS_SEED} documents for the contents pass. {@code pairKey} is a pure function of
+     * {@link #stampCorridorContents} documents for the contents pass. {@code pairKey} is a pure function of
      * the carriage index ({@code PortalCarriageRole.entryIndexOf}), so both stamp sites derive it
      * identically without either knowing about the other, while still letting different portals
      * differ from one another.</p>
@@ -396,17 +385,34 @@ public final class PortalCarriageBuilder {
      * <p>The world's carriage dims go in, not the corridor's — the placer resolves the corridor box
      * itself from the contents id ({@link CarriageContentsPlacer#contentsDims}), and handing it an
      * already-resolved box would grow it a second time.</p>
+     *
+     * <p><b>Rolled against {@code (worldSeed, pairKey)} — pure, not constant.</b> The roll key drives
+     * both the contents sidecar's per-cell variant picks and every container's item roll
+     * ({@code CarriageContentsPlacer.applyVariantBlocks} / {@code applyContentPools}), and a
+     * corridor's blocks have to match its twin exactly, so the two independent stamps must resolve
+     * the same way. This used to be guaranteed by hardcoding the key to {@code (0L, 0)} — which
+     * bought twin agreement at the price of making every corridor in every world hold identical
+     * loot, and pinning it to {@code DifficultyProgression.positionTier(0)} forever. Purity is what
+     * the crossing actually needs, not constancy: {@code pairKey} is a pure function of the carriage
+     * index ({@code PortalCarriageRole.entryIndexOf}), so both stamp sites — {@link #stampCarriage}
+     * on the train and {@link #stampTwin} underground — derive it identically without either knowing
+     * about the other, and different portals still differ from one another. Same frame, same reason,
+     * as {@link #applyCorridorVariants} directly above.</p>
+     *
+     * <p>Passing {@code pairKey} as the carriage index is also what restores the difficulty frame: it
+     * is the entry corridor's <em>real</em> index, so portal loot tiers up with distance down the
+     * train the way an ordinary carriage's does. {@link #applyRoomVariants} passes it as its
+     * {@code diffIndex} for exactly this reason.</p>
      */
     private static void stampCorridorContents(ServerLevel level, BlockPos origin, CarriageDims dims,
                                               PortalCorridorKind kind, int pairKey) {
         // The pair's rolled sub-variant, not the literal `portal` template: the contents carry a
         // group sidecar, and naming the parent here is what used to make every corridor in every
         // world identical. PortalCorridorContents holds the draw so this pair's carriage and its
-        // twin cannot disagree. CONTENTS_SEED/CONTENTS_INDEX still govern the sidecar's per-cell
-        // picks WITHIN the chosen template, which is a separate thing and still has to be fixed.
+        // twin cannot disagree; the key below governs the per-cell picks WITHIN the chosen template.
         CarriageContents contents = PortalCorridorContents.forPair(level, kind, pairKey);
         CarriageContentsPlacer.placeBlocksOnly(
-            level, origin, contents, dims, CONTENTS_SEED, CONTENTS_INDEX);
+            level, origin, contents, dims, level.getSeed(), pairKey);
     }
 
     /**
