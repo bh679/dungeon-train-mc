@@ -7838,6 +7838,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "banner-backpack-emerald-values",
+      "version": "0.611.0",
+      "type": "feat",
+      "title": "Ominous banners and backpacks are worth trading",
+      "summary": "Villagers now pay properly for an ominous banner and for edible backpacks in the Trade Anything slot, and anything worth at least one emerald trades one item at a time instead of asking for a batch.",
+      "highlights": [
+        "Ominous banners are worth 5 emeralds \u2014 ordinary banners are unchanged",
+        "Edible backpacks are worth 5 emeralds, upgraded backpacks 45",
+        "Items worth an emerald or more now trade one at a time, with the change rounded down"
+      ],
+      "date": "2026-08-22",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
