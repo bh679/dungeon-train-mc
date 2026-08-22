@@ -445,7 +445,8 @@ public final class CarriageContentsVariantBlocks {
         LOGGER.info("[DungeonTrain] Wrote bundled contents variant sidecar for {} to {}", contents.id(), file);
     }
 
-    private String toJsonText() {
+    /** Serialised form of this sidecar as {@link #save} would write it. Used by the editor undo history. */
+    String toJsonText() {
         // Hand-written to keep the v2 mixed-array form (bare strings + objects)
         // diff-clean against existing files. Same shape as
         // CarriagePartVariantBlocks#save / CarriageVariantBlocks#toJson.

@@ -313,6 +313,18 @@ public final class ContainerContentsMenuController {
      * {@link games.brennan.dungeontrain.event.PrefabUseHandler} after they
      * mutate the link state behind the controller's back.
      */
+    /**
+     * Re-send this player's open container-contents menu, wherever it is
+     * anchored. The editor undo path's counterpart to
+     * {@link #resyncIfOpen(ServerPlayer, String, BlockPos)}, which needs the
+     * caller to already know the anchor.
+     */
+    public static void resyncOpen(ServerPlayer player) {
+        OpenMenu open = OPEN.get(player.getUUID());
+        if (open == null) return;
+        resyncIfOpen(player, open.plotKey(), open.localPos());
+    }
+
     public static void resyncIfOpen(ServerPlayer player, String plotKey, BlockPos localPos) {
         OpenMenu open = OPEN.get(player.getUUID());
         if (open == null) return;

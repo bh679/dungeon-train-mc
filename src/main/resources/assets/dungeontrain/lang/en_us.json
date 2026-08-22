@@ -777,6 +777,8 @@
   "key.dungeontrain.command_menu": "Toggle Command Menu",
   "key.dungeontrain.variant_place": "Place Block Variant (hold + right-click; tap to open menu)",
   "key.dungeontrain.template_blocks": "Open Template Blocks Menu (or /dungeontrain editor blocks)",
+  "key.dungeontrain.editor_undo": "Editor: Undo (Ctrl/Cmd+Z)",
+  "key.dungeontrain.editor_redo": "Editor: Redo (Ctrl/Cmd+Y)",
   "key.categories.dungeontrain": "Dungeon Train",
   "item.dungeontrain.variant_clipboard": "Block Variant Clipboard",
   "item.dungeontrain.random_book": "Random Book",
