@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.support;
 
+import games.brennan.dungeontrain.client.ClientLanguage;
 import games.brennan.dungeontrain.client.links.OfficialLinks;
 import games.brennan.dungeontrain.narrative.LanguageFamily;
 import net.minecraft.client.Minecraft;
@@ -162,9 +163,13 @@ public final class PaymentLinks {
         return cnUrl != null && isChineseLocale(locale);
     }
 
-    /** Whether a raw client locale belongs to the Chinese language family. */
+    /**
+     * Whether a raw client locale belongs to the Chinese language family. Delegates to
+     * {@link ClientLanguage#isChinese(String)} so the wide gate has exactly one definition — the
+     * title screen's Bilibili icon asks the same question of the same family.
+     */
     static boolean isChineseLocale(String locale) {
-        return locale != null && "zh".equals(LanguageFamily.of(locale));
+        return ClientLanguage.isChinese(locale);
     }
 
     /**

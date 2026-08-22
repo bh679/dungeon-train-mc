@@ -27,6 +27,21 @@ class OfficialLinksTest {
         assertEquals(OfficialLinks.FALLBACK_PATREON, OfficialLinks.patreon());
         assertEquals(OfficialLinks.FALLBACK_PAYMENT, OfficialLinks.payment());
         assertEquals(OfficialLinks.FALLBACK_AFFILIATE, OfficialLinks.affiliate());
+        assertEquals(OfficialLinks.FALLBACK_BILIBILI, OfficialLinks.bilibili());
+    }
+
+    @Test
+    void bilibiliIsBakedSoAChineseClientNeverNeedsTheRelay() {
+        // The players offered this link are the ones least likely to have a clean route to the
+        // relay, so the channel must resolve with no fetch at all — unlike payment_cn, which is
+        // relay-only on purpose.
+        assertTrue(OfficialLinks.bilibili().startsWith("https://space.bilibili.com/"));
+    }
+
+    @Test
+    void aRelayServedBilibiliOverlaysTheBakedChannel() {
+        OfficialLinks.accept(Map.of("bilibili", "https://space.bilibili.com/999"));
+        assertEquals("https://space.bilibili.com/999", OfficialLinks.bilibili());
     }
 
     @Test

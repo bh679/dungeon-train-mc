@@ -76,6 +76,13 @@ public final class UiAnalytics {
     public static final String TARGET_CONTENT_MODE_KID = "content_mode_kid";
     public static final String TARGET_AFFILIATE = "affiliate";
     public static final String TARGET_DISCORD = "discord";
+    // The title-screen Bilibili logomark, shown above Discord to Chinese-language clients only (see
+    // TitleScreenCreditsButton). Separate from TARGET_DISCORD so the funnel can show whether the
+    // China-reachable community link is the one those players actually take — Discord is blocked
+    // there, so counting both as one number would hide the whole point of the icon. Lock-step with
+    // ui-events.js TARGETS: until the relay whitelists `bilibili`, these 400 silently and the button
+    // still works.
+    public static final String TARGET_BILIBILI = "bilibili";
     // "Help Translate" on the Support page — the one button there that stays inside the game, so it
     // records a click and no confirm (there is no external link to follow through on). Lock-step
     // with ui-events.js TARGETS: until the relay whitelists `translate`, these 400 silently.
