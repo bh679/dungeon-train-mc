@@ -20,7 +20,9 @@ import java.util.Locale;
  *       tile, seams between neighbours carved open, tiles appended as the player approaches an
  *       edge.</li>
  *   <li>{@link #ENDLESS_OPEN} — the same grid, but only the floor and ceiling planes repeat. No side
- *       walls at all, so it reads as an open plain rather than a hall of rooms.</li>
+ *       walls at all, so it reads as an open plain rather than a hall of rooms. Those two planes are
+ *       still rolled per tile or once for the whole grid as {@link PortalRoomCopies} says — see
+ *       {@link #copiesApply}.</li>
  *   <li>{@link #BEDROCKLESS} — {@link #BEDROCK_LOCK} with the bedrock taken away: no repetition, and
  *       nothing at all around the room for {@link PortalRoomLayout#VOID_CLEARANCE} blocks.</li>
  * </ul>
@@ -156,13 +158,26 @@ public enum PortalRoomMode {
     }
 
     /**
+     * True when the Copies control applies at all — either mode that appends tiles.
+     *
+     * <p>{@link #tiles} and deliberately not {@link #tilesWholeRoom}, which is what this used to be
+     * gated on. The two answer different questions: {@code tilesWholeRoom} is what an appended tile
+     * <i>contains</i>, while Copies is how whatever it contains is <i>rolled</i>. An
+     * {@link #ENDLESS_OPEN} tile contains only the floor and the ceiling — and those cells go through
+     * the variant sidecar exactly as any other cell does, so whether they reroll per tile is a live
+     * question for it too. Gated on the narrower predicate, an open plain could only ever repeat one
+     * floor out to the fog, with no way for an author to say otherwise.</p>
+     */
+    public boolean copiesApply() {
+        return tiles();
+    }
+
+    /**
      * True when the Exits control applies at all — only a room that repeats has anywhere to put an
      * extra way back to the train.
      *
-     * <p>Both tiling modes, unlike {@code PortalRoomSettings.copiesApply}, which is
-     * {@link #tilesWholeRoom} — what Copies describes is what an appended tile <i>contains</i>, which
-     * {@link #ENDLESS_OPEN} decides for itself. Getting lost is not a property of the walls, so a
-     * question about the way out is asked of any endless room.</p>
+     * <p>Both tiling modes, the same set {@link #copiesApply} covers. Getting lost is not a property
+     * of the walls, so a question about the way out is asked of any endless room.</p>
      */
     public boolean exitsApply() {
         return tiles();

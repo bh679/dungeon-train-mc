@@ -97,8 +97,8 @@ class EditorPlotLabelsRendererTest {
     }
 
     @Test
-    @DisplayName("Endless Repetition grows a Copies row under Walls; the other modes do not")
-    void copiesRowOnlyForRepetition() {
+    @DisplayName("Both endless modes grow a Copies row under Walls; the sealed ones do not")
+    void copiesRowForBothEndlessModes() {
         // Endless Repetition defaults to laying extra corridors, so it grows the Exits row AND its
         // spacing stepper as well as Copies.
         assertArrayEquals(
@@ -109,11 +109,12 @@ class EditorPlotLabelsRendererTest {
                 entry("PORTALS", true, 1, 11, 13, 7, "endless_repetition")));
 
         // Endless Open is endless, so it is asked about Exits — and answers Off, which takes the
-        // spacing stepper with it. It still makes no whole-room copies, so no Copies row.
+        // spacing stepper with it. It appends tiles of floor and ceiling, so it IS asked about
+        // Copies: those cells roll from the variant sidecar like any others.
         assertArrayEquals(
             new RowKind[]{RowKind.NAME, RowKind.WEIGHT, RowKind.LENGTH, RowKind.WIDTH,
-                RowKind.HEIGHT, RowKind.MODE, RowKind.ROOM_CONTENTS, RowKind.ROOM_BOOKS, RowKind.EXITS,
-                RowKind.ENTER, RowKind.ACTION},
+                RowKind.HEIGHT, RowKind.MODE, RowKind.COPIES, RowKind.ROOM_CONTENTS,
+                RowKind.ROOM_BOOKS, RowKind.EXITS, RowKind.ENTER, RowKind.ACTION},
             EditorPlotLabelsRenderer.rows(entry("PORTALS", true, 1, 11, 13, 7, "endless_open")));
 
         // Bedrock Lock repeats nothing, so it has neither.

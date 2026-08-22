@@ -377,8 +377,8 @@ public final class EditorMenuScreen implements MenuScreen {
     }
 
     /**
-     * The Copies row, or null unless the walls are set to repeat the whole room — the only mode that
-     * makes copies for the setting to describe.
+     * The Copies row, or null unless the walls are set to one of the two endless modes — the only
+     * ones that append tiles for the setting to describe.
      */
     static CommandMenuEntry copiesRowFor(String currentMode) {
         if (currentMode == null || EditorStatusPacket.NO_MODE.equals(currentMode)) return null;

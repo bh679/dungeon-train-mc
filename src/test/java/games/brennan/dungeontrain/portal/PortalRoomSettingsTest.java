@@ -41,10 +41,22 @@ class PortalRoomSettingsTest {
     void nonRepeatingRoomsRoundTripAsBareIds() {
         assertEquals("bedrock_lock",
             new PortalRoomSettings(PortalRoomMode.BEDROCK_LOCK, PortalRoomCopies.DYNAMIC).toTag());
-        assertEquals("endless_open",
-            new PortalRoomSettings(PortalRoomMode.ENDLESS_OPEN, PortalRoomCopies.DYNAMIC).toTag());
         assertEquals("bedrockless",
             new PortalRoomSettings(PortalRoomMode.BEDROCKLESS, PortalRoomCopies.DYNAMIC).toTag());
+    }
+
+    @Test
+    @DisplayName("Endless Open keeps a Copies choice now — it appends tiles for the setting to roll")
+    void endlessOpenKeepsItsSubMode() {
+        // It used to flatten to "endless_open", because Copies was gated on the mode tiling the WHOLE
+        // room. An open tile is only the floor and the ceiling, but those cells roll from the variant
+        // sidecar like any other, so the choice means something and has to survive the round trip.
+        assertEquals("endless_open/dynamic",
+            new PortalRoomSettings(PortalRoomMode.ENDLESS_OPEN, PortalRoomCopies.DYNAMIC).toTag());
+        assertEquals("endless_open",
+            new PortalRoomSettings(PortalRoomMode.ENDLESS_OPEN, PortalRoomCopies.EXACT).toTag());
+        assertSame(PortalRoomCopies.DYNAMIC,
+            PortalRoomSettings.parse("endless_open/dynamic").copies());
     }
 
     @Test
@@ -353,10 +365,10 @@ class PortalRoomSettingsTest {
     }
 
     @Test
-    @DisplayName("Only Endless Repetition makes copies, so only it has a Copies control")
-    void copiesApplyOnlyToRepetition() {
+    @DisplayName("Both endless modes append tiles, so both have a Copies control")
+    void copiesApplyToBothEndlessModes() {
         assertTrue(PortalRoomSettings.DEFAULT.withMode(PortalRoomMode.ENDLESS_REPETITION).copiesApply());
-        assertFalse(PortalRoomSettings.DEFAULT.withMode(PortalRoomMode.ENDLESS_OPEN).copiesApply());
+        assertTrue(PortalRoomSettings.DEFAULT.withMode(PortalRoomMode.ENDLESS_OPEN).copiesApply());
         assertFalse(PortalRoomSettings.DEFAULT.withMode(PortalRoomMode.BEDROCK_LOCK).copiesApply());
         assertFalse(PortalRoomSettings.DEFAULT.withMode(PortalRoomMode.BEDROCKLESS).copiesApply());
     }
@@ -389,6 +401,20 @@ class PortalRoomSettingsTest {
         assertTrue(seen.size() > 40, "only " + seen.size() + " distinct rolls across 49 copies");
         assertNotEquals(s.variantIndexFor(PortalRoomTiling.Tile.BASE, PAIR),
             s.variantIndexFor(new PortalRoomTiling.Tile(1, 0), PAIR));
+    }
+
+    @Test
+    @DisplayName("Endless Open honours Copies too — its floor and ceiling reroll per tile")
+    void endlessOpenRollsPerTileUnderDynamic() {
+        PortalRoomTiling.Tile away = new PortalRoomTiling.Tile(2, -1);
+
+        PortalStructure dynamic = structure(PortalRoomMode.ENDLESS_OPEN, PortalRoomCopies.DYNAMIC);
+        assertNotEquals(dynamic.variantIndexFor(PortalRoomTiling.Tile.BASE, PAIR),
+            dynamic.variantIndexFor(away, PAIR));
+
+        PortalStructure exact = structure(PortalRoomMode.ENDLESS_OPEN, PortalRoomCopies.EXACT);
+        assertEquals(exact.variantIndexFor(PortalRoomTiling.Tile.BASE, PAIR),
+            exact.variantIndexFor(away, PAIR));
     }
 
     @Test
