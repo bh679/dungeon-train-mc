@@ -8085,8 +8085,21 @@
       "released_at": null
     },
     {
-      "id": "portal-room-daylight",
+      "id": "restore-backpack-loot-weights",
       "version": "0.624.0",
+      "type": "chore",
+      "title": "Edible backpacks are findable again",
+      "summary": "Edible backpacks turn up in loot chests, iron/gold chests, decorated pots and the starter chest at their original rates again.",
+      "highlights": [],
+      "date": "2026-08-22",
+      "released": false,
+      "released_in": null,
+      "released_at": null,
+      "pr": 1054
+    },
+    {
+      "id": "portal-room-daylight",
+      "version": "0.625.0",
       "type": "feat",
       "title": "Dimensional carriages can stand under their own sky",
       "summary": "A dimensional carriage's template now chooses the sky it stands under \u2014 ordinary daylight, daylight that follows the world clock, or a Nether or End cast. The light eases in as you step inside and eases back out as you leave for the corridor home. The mini-world carriage is the first to use it.",
