@@ -49,6 +49,7 @@ pack must list them explicitly. Everything else is a manifest file with a `requi
 | Effortless Building | `302113` | off (opt-in) | Client-side building QoL (multi-block placement modes, mirror / array / radial). No dependencies. **Pinned** (4.2 — one multi-loader jar covers Fabric + NeoForge). |
 | Punchy! | `1374153` | off (opt-in) | First-person animation overhaul (swing/movement animations, visible hands with held items). Client-only render (`server_side=unsupported`, auto-skipped on dedicated servers), no dependencies. ARR licence, but the author explicitly permits modpack inclusion. **Pinned** (2.7d). |
 | WorldEdit | `225608` | off (opt-in) | In-game map editor (`//set`, `//copy`, brushes, schematics). Powerful and destructive, so opt-in — and its block writes know nothing about Sable sub-levels, so editing a **moving carriage** is unverified; use it on the static world. No dependencies (one multi-loader NeoForge/Fabric jar). **Pinned** (7.3.8 — the newest 1.21.1 build; 7.4.x is MC 26.x only). |
+| Just Enough Items (JEI) | `238222` | off (opt-in) | Recipe / item lookup overlay. Opt-in because it restyles every inventory screen — a change players should choose. No dependencies. 1.21.1 builds are published on the **beta** channel only (JEI ships no release-channel build for this MC line), same as Iris here. **Pinned** (19.44.0.403). |
 
 …plus NeoForge as the modloader (`neoforge-<neo_version>`) and the Minecraft version,
 both read from `gradle.properties`.
@@ -89,7 +90,7 @@ flag straight into the manifest:
   enabled so their dependent loads on a default install (CreativeCore — AmbientSounds is on;
   Iceberg — AP is on).
 - **Bundled but off by default (`required:false`)** — Mouse Tweaks, Nemo's Inventory Sorting,
-  Distant Horizons, Effortless Building, Punchy!, WorldEdit. Shipped in the pack so a player can flip them on with one click, but inert until they
+  Distant Horizons, Effortless Building, Punchy!, WorldEdit, Just Enough Items (JEI). Shipped in the pack so a player can flip them on with one click, but inert until they
   do. (DT itself + Sable are hardcoded `required:true` in the builder.)
 
 ## Declared dependencies (CurseForge "Relations")
