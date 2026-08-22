@@ -7993,6 +7993,21 @@
       "released": true,
       "released_in": "v0.619.0",
       "released_at": "2026-08-22T14:38:59Z"
+    },
+    {
+      "id": "jei-optional-modpack",
+      "version": "0.620.0",
+      "type": "feat",
+      "title": "JEI, ready to switch on",
+      "summary": "The modpack now ships Just Enough Items, off by default. Tick it on at install for recipe and item lookup \u2014 press R on any item to see how it's made.",
+      "highlights": [
+        "Bundled with the modpack, switched off by default."
+      ],
+      "pr": 1048,
+      "date": "2026-08-22",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
