@@ -14,6 +14,7 @@ import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import org.slf4j.Logger;
 
 import java.util.Collection;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -196,7 +197,13 @@ public final class PortalRoomTiler {
         Vec3i size = structure.roomSize();
 
         PortalCorridorMask clearMask = maskFor(structure, dims, tile);
-        PortalCorridorMask writeMask = writeMaskFor(structure, clearMask, origin, size);
+        // Resolved once, before the mask is chosen, because the two answers have to agree: the mask
+        // only swallows the whole tile when there is genuinely a block to put back afterwards. A
+        // name that no longer resolves — a mod uninstalled between two launches, a hand-edited tag —
+        // falls through to stamping the room as it always did, rather than to a floorless tile.
+        Optional<BlockState> single = singlePlaneState(structure);
+        PortalCorridorMask writeMask =
+            writeMaskFor(structure, clearMask, origin, size, single.isPresent());
         PortalCarriageBuilder.stampRoomAt(level, origin, dims, structure.roomName(), size,
             /*relight*/ true, clearMask, writeMask, structure.variantIndexFor(tile, pairKey),
             pairKey, tile,
@@ -204,6 +211,12 @@ public final class PortalRoomTiler {
             // The structure's own setting, not a fresh read of the variant: a portal already standing
             // keeps what it was built with, the same promise planStructure makes about the room.
             structure.settings().contents(), structure.settings().books());
+
+        // After the stamp, not instead of it: the stamp is what clears the rock this tile landed in,
+        // and under Single its write half put nothing back. These two planes are the whole of what
+        // an appended tile is in that case.
+        single.ifPresent(state -> PortalRoomSinglePlanes.write(
+            level, origin, size, state, clearMask, /*relight*/ true));
 
         PortalStructure grown = structure.withTiling(structure.tiling().with(tile));
         refreshFacesAround(level, dims, grown, tile);
@@ -215,6 +228,13 @@ public final class PortalRoomTiler {
      * {@link PortalRoomMode#ENDLESS_OPEN} — everything strictly between the tile's floor and its
      * ceiling.
      *
+     * <p>Under {@link PortalRoomCopies.Kind#SINGLE} it is the <b>whole</b> tile instead, planes
+     * included: those are written afterwards from one block, so the stamp has nothing to contribute
+     * and laying the authored floor first would only be work to overwrite. {@code singlePlanes} is
+     * passed in rather than read off the structure because the caller has already had to resolve the
+     * block — a mask that swallowed a tile for a block that turned out not to exist would leave a
+     * hole in the plain.</p>
+     *
      * <p>Tested against {@code ENDLESS_OPEN} rather than {@code !tilesWholeRoom()}, which is also
      * true of {@link PortalRoomMode#BEDROCK_LOCK} and is only unreachable for it because
      * {@link #tick} returns early for a mode that does not tile at all. That is a trap waiting for
@@ -225,13 +245,40 @@ public final class PortalRoomTiler {
     // space with the rock the copy landed in.
     static PortalCorridorMask writeMaskFor(PortalStructure structure,
                                            PortalCorridorMask clearMask,
-                                           BlockPos origin, Vec3i size) {
+                                           BlockPos origin, Vec3i size,
+                                           boolean singlePlanes) {
         if (structure.mode() != PortalRoomMode.ENDLESS_OPEN) return clearMask;
+        if (singlePlanes) {
+            // The whole box, floor and roof included. Under Single the two planes are written
+            // afterwards from one block (PortalRoomSinglePlanes), so there is nothing the stamp
+            // should put anywhere in this tile — and masking the planes as well as the interior is
+            // what keeps the authored floor from being laid down first and immediately overwritten.
+            return clearMask.plus(new BoundingBox(
+                origin.getX(), origin.getY(), origin.getZ(),
+                origin.getX() + size.getX() - 1,
+                origin.getY() + size.getY() - 1,
+                origin.getZ() + size.getZ() - 1));
+        }
         return clearMask.plus(new BoundingBox(
             origin.getX(), origin.getY() + 1, origin.getZ(),
             origin.getX() + size.getX() - 1,
             origin.getY() + size.getY() - 2,
             origin.getZ() + size.getZ() - 1));
+    }
+
+    /**
+     * The block this structure's appended tiles are floored and roofed with, or empty when it does
+     * not repeat one — or names one nothing answers to.
+     *
+     * <p>{@link PortalStructure#copies} rather than the raw setting, so a room whose walls were
+     * changed away from Endless Open since it was authored stamps as Endless Open's neighbour would
+     * rather than as a mode that cannot use the setting at all.</p>
+     */
+    private static Optional<BlockState> singlePlaneState(PortalStructure structure) {
+        if (structure.mode() != PortalRoomMode.ENDLESS_OPEN) return Optional.empty();
+        PortalRoomCopies copies = structure.copies();
+        if (!copies.repeatsOneBlock()) return Optional.empty();
+        return PortalRoomSinglePlanes.stateFor(copies.blockId());
     }
 
     /**

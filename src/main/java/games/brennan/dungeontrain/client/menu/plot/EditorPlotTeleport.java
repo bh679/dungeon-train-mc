@@ -86,6 +86,17 @@ public final class EditorPlotTeleport {
         return "dungeontrain editor portals copies next";
     }
 
+    /**
+     * As {@link #modeCycleCommandFor}, for the block a Single room repeats.
+     *
+     * <p>Not a cycle: the value is a block out of the whole registry, so the row sets it from what
+     * the author is holding rather than stepping through a list nobody could reach the end of.</p>
+     */
+    public static String copiesBlockHeldCommandFor(String category) {
+        if (!"PORTALS".equals(category)) return null;
+        return "dungeontrain editor portals copies block held";
+    }
+
     /** As {@link #modeCycleCommandFor}, for whether the room is furnished from the contents pool. */
     public static String roomContentsCycleCommandFor(String category) {
         if (!"PORTALS".equals(category)) return null;

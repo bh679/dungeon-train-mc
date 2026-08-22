@@ -173,6 +173,23 @@ public enum PortalRoomMode {
     }
 
     /**
+     * True when {@link PortalRoomCopies.Kind#SINGLE} is one of the answers this mode can give.
+     *
+     * <p>{@link #ENDLESS_OPEN} alone. Single replaces an appended tile's floor and ceiling with one
+     * block, and floor-and-ceiling is the whole of what an Endless Open tile is. An
+     * {@link #ENDLESS_REPETITION} tile is a whole room — walls, furnishing, chests — so the same
+     * setting there would append solid cubes of stone to the end of a hall, which is not a room and
+     * not somewhere a player can walk.</p>
+     *
+     * <p>Narrower than {@link #copiesApply} on purpose, and asked separately rather than folded into
+     * it: a Repetition room is still asked whether its copies are Exact or Dynamic. What differs is
+     * only which answers are on the list.</p>
+     */
+    public boolean singleCopiesApply() {
+        return this == ENDLESS_OPEN;
+    }
+
+    /**
      * True when the Exits control applies at all — only a room that repeats has anywhere to put an
      * extra way back to the train.
      *

@@ -117,6 +117,26 @@ class EditorPlotLabelsRendererTest {
                 RowKind.ROOM_BOOKS, RowKind.EXITS, RowKind.ENTER, RowKind.ACTION},
             EditorPlotLabelsRenderer.rows(entry("PORTALS", true, 1, 11, 13, 7, "endless_open")));
 
+        // Single adds a Block row directly under Copies, because that is the one Copies value with a
+        // block to name. The rows either side of it must not shift — the row walk is shared by the
+        // count, the hit test and the draw, so an insert in the wrong place lands clicks elsewhere.
+        assertArrayEquals(
+            new RowKind[]{RowKind.NAME, RowKind.WEIGHT, RowKind.LENGTH, RowKind.WIDTH,
+                RowKind.HEIGHT, RowKind.MODE, RowKind.COPIES, RowKind.COPIES_BLOCK,
+                RowKind.ROOM_CONTENTS, RowKind.ROOM_BOOKS, RowKind.EXITS, RowKind.ENTER,
+                RowKind.ACTION},
+            EditorPlotLabelsRenderer.rows(
+                entry("PORTALS", true, 1, 11, 13, 7, "endless_open/single:minecraft:sandstone")));
+
+        // Under Endless Repetition the same stored tag means Exact, so there is no block to show.
+        assertArrayEquals(
+            new RowKind[]{RowKind.NAME, RowKind.WEIGHT, RowKind.LENGTH, RowKind.WIDTH,
+                RowKind.HEIGHT, RowKind.MODE, RowKind.COPIES, RowKind.ROOM_CONTENTS,
+                RowKind.ROOM_BOOKS, RowKind.EXITS, RowKind.EXIT_EVERY, RowKind.ENTER,
+                RowKind.ACTION},
+            EditorPlotLabelsRenderer.rows(entry("PORTALS", true, 1, 11, 13, 7,
+                "endless_repetition/single:minecraft:sandstone")));
+
         // Bedrock Lock repeats nothing, so it has neither.
         assertArrayEquals(
             new RowKind[]{RowKind.NAME, RowKind.WEIGHT, RowKind.LENGTH, RowKind.WIDTH,
@@ -368,6 +388,25 @@ class EditorPlotLabelsRendererTest {
     }
 
     @Test
+    @DisplayName("The Block row is one button, and the rows around it still hit-test where they were")
+    void copiesBlockRowIsOneButton() {
+        EditorPlotLabelsPacket.Entry e =
+            entry("PORTALS", true, 1, 11, 13, 7, "endless_open/single:minecraft:sandstone");
+        RowKind[] rows = EditorPlotLabelsRenderer.rows(e);
+        double halfW = EditorPlotLabelsRenderer.MIN_HALF_W;
+        double y = rowCentreY(e, indexOf(rows, RowKind.COPIES_BLOCK));
+
+        for (double x : new double[]{-halfW + 0.05, 0.0, halfW - 0.05}) {
+            assertEquals(CellKind.COPIES_BLOCK_HELD, EditorPlotLabelsRenderer.cellAt(e, halfW, x, y));
+        }
+        // The row it was inserted under, and the one it was inserted above, both still land right.
+        assertEquals(CellKind.COPIES_CYCLE, EditorPlotLabelsRenderer.cellAt(e, halfW, 0.0,
+            rowCentreY(e, indexOf(rows, RowKind.COPIES))));
+        assertEquals(CellKind.ROOM_CONTENTS_CYCLE, EditorPlotLabelsRenderer.cellAt(e, halfW, 0.0,
+            rowCentreY(e, indexOf(rows, RowKind.ROOM_CONTENTS))));
+    }
+
+    @Test
     @DisplayName("Both rows read their own half of the one stored tag")
     void rowsReadTheirOwnHalfOfTheTag() {
         assertEquals("Walls: Endless Repetition",
@@ -376,6 +415,27 @@ class EditorPlotLabelsRendererTest {
             EditorPlotLabelsRenderer.copiesLabel("endless_repetition/dynamic"));
         // No sub-mode stored is the default, not a blank.
         assertEquals("Copies: Exact", EditorPlotLabelsRenderer.copiesLabel("endless_repetition"));
+
+        // Single's block reads as the stored id — what the author would type, and what the command
+        // takes, so the row and the command cannot disagree about which block is meant.
+        assertEquals("Copies: Single",
+            EditorPlotLabelsRenderer.copiesLabel("endless_open/single:minecraft:sandstone"));
+        assertEquals("Block: minecraft:sandstone",
+            EditorPlotLabelsRenderer.copiesBlockLabel("endless_open/single:minecraft:sandstone"));
+    }
+
+    @Test
+    @DisplayName("The Block row shows only where Single is what the walls actually do")
+    void copiesBlockRowFollowsTheEffectiveValue() {
+        assertTrue(EditorPlotLabelsRenderer.hasCopiesBlockRowFor(
+            "endless_open/single:minecraft:sandstone"));
+        assertFalse(EditorPlotLabelsRenderer.hasCopiesBlockRowFor("endless_open/dynamic"));
+        assertFalse(EditorPlotLabelsRenderer.hasCopiesBlockRowFor("endless_open"));
+        // Stored but not usable: Endless Repetition reads Single back as Exact, so no block row.
+        assertFalse(EditorPlotLabelsRenderer.hasCopiesBlockRowFor(
+            "endless_repetition/single:minecraft:sandstone"));
+        assertFalse(EditorPlotLabelsRenderer.hasCopiesBlockRowFor(
+            "bedrock_lock/single:minecraft:sandstone"));
     }
 
     @Test

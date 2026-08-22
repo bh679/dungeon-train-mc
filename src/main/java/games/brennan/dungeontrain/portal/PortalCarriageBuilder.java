@@ -1414,8 +1414,8 @@ public final class PortalCarriageBuilder {
      * {@code TunnelPlacer} does it for tunnels.</p>
      *
      * <p>{@code variantIndex} is what makes one pair's room differ from another pair's, and what makes
-     * one copy of a room differ from another under {@link PortalRoomCopies#DYNAMIC} and identical
-     * under {@link PortalRoomCopies#EXACT} — see {@code PortalStructure.variantIndexFor}.</p>
+     * one copy of a room differ from another under {@link PortalRoomCopies.Kind#DYNAMIC} and identical
+     * under {@link PortalRoomCopies.Kind#EXACT} — see {@code PortalStructure.variantIndexFor}.</p>
      */
     /**
      * {@link #stampRoomAt} with the two jobs a mask does held apart.

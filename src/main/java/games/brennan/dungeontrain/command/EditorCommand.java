@@ -69,6 +69,8 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import org.slf4j.Logger;
@@ -185,8 +187,8 @@ public final class EditorCommand {
 
     private static final SuggestionProvider<CommandSourceStack> PORTAL_ROOM_COPIES_SUGGESTIONS =
         (ctx, builder) -> {
-            for (games.brennan.dungeontrain.portal.PortalRoomCopies c
-                    : games.brennan.dungeontrain.portal.PortalRoomCopies.values()) {
+            for (games.brennan.dungeontrain.portal.PortalRoomCopies.Kind c
+                    : games.brennan.dungeontrain.portal.PortalRoomCopies.Kind.values()) {
                 builder.suggest(c.id());
             }
             return builder.buildFuture();
@@ -457,6 +459,15 @@ public final class EditorCommand {
                 .then(Commands.literal("copies")
                     .then(Commands.literal("next")
                         .executes(ctx -> runPortalRoomCopiesCycle(ctx.getSource())))
+                    // Which block Single repeats. Its own branch rather than a second argument on
+                    // the setter above, so the setter stays a bare word and a block id — which
+                    // carries a colon — never has to survive StringArgumentType.word().
+                    .then(Commands.literal("block")
+                        .then(Commands.literal("held")
+                            .executes(ctx -> runPortalRoomCopiesBlockHeld(ctx.getSource())))
+                        .then(Commands.argument("block", StringArgumentType.string())
+                            .executes(ctx -> runPortalRoomCopiesBlock(ctx.getSource(),
+                                StringArgumentType.getString(ctx, "block")))))
                     .then(Commands.argument("copies", StringArgumentType.word())
                         .suggests(PORTAL_ROOM_COPIES_SUGGESTIONS)
                         .executes(ctx -> runPortalRoomCopies(ctx.getSource(),
@@ -5797,7 +5808,7 @@ public final class EditorCommand {
         if (name == null) return 0;
         games.brennan.dungeontrain.portal.PortalRoomSettings current =
             games.brennan.dungeontrain.portal.PortalRoomSettings.of(name);
-        return applyPortalRoomSettings(source, name, current.withCopies(current.copies().next()));
+        return applyPortalRoomSettings(source, name, current.nextCopies());
     }
 
     /** {@code /dt editor portals contents next} — step the Contents setting. */
@@ -5900,20 +5911,88 @@ public final class EditorCommand {
             games.brennan.dungeontrain.portal.PortalRoomSettings.of(name).withContents(wanted));
     }
 
-    /** {@code /dt editor portals copies <exact|dynamic>} — set it outright. */
+    /**
+     * {@code /dt editor portals copies <exact|dynamic|single>} — set it outright, keeping the block.
+     *
+     * <p>Compared on the KIND rather than the whole id, for the same reason the books setter is:
+     * {@code single}'s id() carries the block it repeats, and rejecting the bare word would be
+     * rejecting the only spelling the suggestions offer.</p>
+     */
     private static int runPortalRoomCopies(CommandSourceStack source, String raw) {
         String name = portalRoomPlotUnderPlayer(source);
         if (name == null) return 0;
 
-        games.brennan.dungeontrain.portal.PortalRoomCopies wanted =
-            games.brennan.dungeontrain.portal.PortalRoomCopies.parse(raw);
-        if (!wanted.id().equalsIgnoreCase(raw.trim())) {
+        games.brennan.dungeontrain.portal.PortalRoomCopies.Kind wanted =
+            games.brennan.dungeontrain.portal.PortalRoomCopies.Kind.parse(raw);
+        if (!wanted.id().equalsIgnoreCase(kindOf(raw))) {
             source.sendFailure(Component.literal(
-                "Unknown copies option '" + raw + "'. Try exact or dynamic."));
+                "Unknown copies option '" + raw + "'. Try exact, dynamic or single."));
             return 0;
         }
+        games.brennan.dungeontrain.portal.PortalRoomSettings current =
+            games.brennan.dungeontrain.portal.PortalRoomSettings.of(name);
         return applyPortalRoomSettings(source, name,
-            games.brennan.dungeontrain.portal.PortalRoomSettings.of(name).withCopies(wanted));
+            current.withCopies(current.copies().withKind(wanted)));
+    }
+
+    /**
+     * {@code /dt editor portals copies block held} — set Single's block to what the author is
+     * holding.
+     *
+     * <p>The held item rather than a typed id because this is a block-picking gesture, and the
+     * author is already standing in the plot with a palette in their hotbar. The menu is opened by a
+     * key toggle rather than by holding a tool, so the main hand is free for the block itself.</p>
+     */
+    private static int runPortalRoomCopiesBlockHeld(CommandSourceStack source) {
+        String name = portalRoomPlotUnderPlayer(source);
+        if (name == null) return 0;
+
+        ServerPlayer player = source.getPlayer();
+        if (player == null) {
+            source.sendFailure(Component.literal("Only a player can pick a block from their hand."));
+            return 0;
+        }
+        ItemStack held = player.getMainHandItem();
+        if (!(held.getItem() instanceof BlockItem blockItem)) {
+            source.sendFailure(Component.literal(
+                "Hold the block you want the copies made of, then press this again."));
+            return 0;
+        }
+        return setPortalRoomCopiesBlock(source, name,
+            BuiltInRegistries.BLOCK.getKey(blockItem.getBlock()).toString());
+    }
+
+    /** {@code /dt editor portals copies block <id>} — the same, for a script or a keyboard. */
+    private static int runPortalRoomCopiesBlock(CommandSourceStack source, String raw) {
+        String name = portalRoomPlotUnderPlayer(source);
+        if (name == null) return 0;
+        return setPortalRoomCopiesBlock(source, name, raw);
+    }
+
+    /**
+     * Store {@code blockId} as the block Single repeats, refusing a name nothing answers to.
+     *
+     * <p>Validated here and not only at stamp time: the tiler already falls back to stamping the
+     * room normally for a block it cannot resolve, which is the right thing for a tag that went bad
+     * on disk but the wrong thing to do silently to somebody who just typed one in. An author who
+     * sets a block and sees nothing change should be told why.</p>
+     */
+    private static int setPortalRoomCopiesBlock(CommandSourceStack source, String name,
+                                                String blockId) {
+        if (blockId != null
+                && blockId.trim().length() > games.brennan.dungeontrain.portal.PortalRoomCopies.BLOCK_ID_MAX) {
+            source.sendFailure(Component.literal(
+                "'" + blockId + "' is too long a block id to store in a room's settings."));
+            return 0;
+        }
+        if (games.brennan.dungeontrain.portal.PortalRoomSinglePlanes.stateFor(blockId).isEmpty()) {
+            source.sendFailure(Component.literal(
+                "'" + blockId + "' is not a block this world knows about."));
+            return 0;
+        }
+        games.brennan.dungeontrain.portal.PortalRoomSettings current =
+            games.brennan.dungeontrain.portal.PortalRoomSettings.of(name);
+        return applyPortalRoomSettings(source, name, current.withCopiesBlock(blockId));
     }
 
     /** {@code /dt editor portals books next} — step the author lock. */
@@ -6005,7 +6084,11 @@ public final class EditorCommand {
             return 0;
         }
         // The Copies and Exits halves are only worth reporting when they mean anything.
-        String copies = settings.copiesApply() ? ", copies: " + settings.copies().displayName() : "";
+        String copies = settings.copiesApply()
+            ? ", copies: " + settings.copies().displayName()
+                + (settings.effectiveCopies().repeatsOneBlock()
+                    ? " (" + settings.copies().blockId() + ")" : "")
+            : "";
         String contents = ", contents: " + settings.contents().displayName();
         String exits = settings.exitsApply()
             ? ", exits: " + settings.exits().displayName()

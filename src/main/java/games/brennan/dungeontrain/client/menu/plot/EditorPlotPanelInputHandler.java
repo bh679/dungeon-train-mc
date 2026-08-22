@@ -152,6 +152,7 @@ public final class EditorPlotPanelInputHandler {
             case HEIGHT_TYPE -> openAxisEntry(entry, "height", "Height", entry.roomHeight());
             case MODE_CYCLE -> dispatchModeCycle(entry);
             case COPIES_CYCLE -> dispatchCopiesCycle(entry);
+            case COPIES_BLOCK_HELD -> dispatchCopiesBlockHeld(entry);
             case ROOM_CONTENTS_CYCLE -> dispatchRoomContentsCycle(entry);
             case ROOM_BOOKS_CYCLE -> dispatchRoomBooksCycle(entry);
             case ROOM_BOOKS_EDIT -> openBookMix(entry);
@@ -212,6 +213,13 @@ public final class EditorPlotPanelInputHandler {
     /** Step the portal room the player is standing in to its next copies sub-mode. */
     private static void dispatchCopiesCycle(EditorPlotLabelsPacket.Entry entry) {
         String cmd = EditorPlotTeleport.copiesCycleCommandFor(entry.category());
+        if (cmd == null) return;
+        CommandRunner.run(cmd);
+    }
+
+    /** Set the Single block of the portal room the player is standing in to what they are holding. */
+    private static void dispatchCopiesBlockHeld(EditorPlotLabelsPacket.Entry entry) {
+        String cmd = EditorPlotTeleport.copiesBlockHeldCommandFor(entry.category());
         if (cmd == null) return;
         CommandRunner.run(cmd);
     }

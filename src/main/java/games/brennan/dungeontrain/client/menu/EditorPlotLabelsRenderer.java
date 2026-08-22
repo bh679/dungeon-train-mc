@@ -91,6 +91,8 @@ public final class EditorPlotLabelsRenderer {
         MODE_CYCLE,
         /** The sub-mode row — only shown while the mode makes copies. */
         COPIES_CYCLE,
+        /** The block row under it — only shown while those copies are one block, and sets it from the hand. */
+        COPIES_BLOCK_HELD,
         /** The furnishing row — whether the room takes a contents template, and how it is fitted. */
         ROOM_CONTENTS_CYCLE,
         /** The author-lock row — whether the room stocks its shelves from one person. */
@@ -118,8 +120,8 @@ public final class EditorPlotLabelsRenderer {
      * {@link #rows} now, so the three cannot drift.</p>
      */
     public enum RowKind {
-        NAME, WEIGHT, LENGTH, WIDTH, HEIGHT, MODE, COPIES, ROOM_CONTENTS, ROOM_BOOKS, EXITS,
-        EXIT_EVERY, EXIT_MOVE, ENTER, ACTION, CONTENTS
+        NAME, WEIGHT, LENGTH, WIDTH, HEIGHT, MODE, COPIES, COPIES_BLOCK, ROOM_CONTENTS,
+        ROOM_BOOKS, EXITS, EXIT_EVERY, EXIT_MOVE, ENTER, ACTION, CONTENTS
     }
 
     /**
@@ -142,6 +144,7 @@ public final class EditorPlotLabelsRenderer {
         }
         if (hasModeRow(entry)) buf[n++] = RowKind.MODE;
         if (hasCopiesRow(entry)) buf[n++] = RowKind.COPIES;
+        if (hasCopiesBlockRow(entry)) buf[n++] = RowKind.COPIES_BLOCK;
         if (hasRoomContentsRow(entry)) buf[n++] = RowKind.ROOM_CONTENTS;
         if (hasRoomBooksRow(entry)) buf[n++] = RowKind.ROOM_BOOKS;
         if (hasExitsRow(entry)) buf[n++] = RowKind.EXITS;
@@ -211,6 +214,44 @@ public final class EditorPlotLabelsRenderer {
     public static String copiesLabel(String modeTag) {
         return "Copies: " + games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag)
             .copies().displayName();
+    }
+
+    /**
+     * Whether the Block row shows: only while the Copies row above it says Single, the one value
+     * that reads a block.
+     *
+     * <p>Hidden rather than dimmed under the other two, the same way the Copies row itself is absent
+     * rather than greyed out under walls that make no copies — a block for tiles that are copies of
+     * the room is a control with nothing on the other end of it.</p>
+     */
+    public static boolean hasCopiesBlockRow(EditorPlotLabelsPacket.Entry entry) {
+        return hasCopiesRow(entry) && hasCopiesBlockRowFor(entry.roomMode());
+    }
+
+    /**
+     * The same question asked of a mode tag alone — what the command menu has to hand.
+     *
+     * <p>{@code effectiveCopies} and not the raw value, so a room still carrying Single from before
+     * its walls were changed to Endless Repetition does not show a block row for a setting that mode
+     * cannot use.</p>
+     */
+    public static boolean hasCopiesBlockRowFor(String modeTag) {
+        games.brennan.dungeontrain.portal.PortalRoomSettings settings =
+            games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag);
+        return settings.copiesApply() && settings.effectiveCopies().repeatsOneBlock();
+    }
+
+    /**
+     * What the Block row reads, e.g. {@code "Block: minecraft:sandstone"}.
+     *
+     * <p>The stored id rather than a translated display name: this is a headless string helper
+     * shared with the plot panel, and reaching the block registry from here would tie the row's
+     * label to a world being loaded. The id is also what the author would type, which makes the row
+     * and the command agree.</p>
+     */
+    public static String copiesBlockLabel(String modeTag) {
+        return "Block: " + games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag)
+            .copies().blockId();
     }
 
     /**
@@ -504,6 +545,12 @@ public final class EditorPlotLabelsRenderer {
         if (hasCopiesRow(entry)) {
             w = Math.max(w, measure.applyAsInt(copiesLabel(entry.roomMode())) * TEXT_SCALE + 2 * PAD_X);
         }
+        if (hasCopiesBlockRow(entry)) {
+            // The longest label the panel can show — a namespaced block id runs well past
+            // "Walls: Endless Repetition", and it is one unbroken string with nowhere to wrap.
+            w = Math.max(w, measure.applyAsInt(copiesBlockLabel(entry.roomMode())) * TEXT_SCALE
+                + 2 * PAD_X);
+        }
         if (hasExitsRow(entry)) {
             w = Math.max(w, measure.applyAsInt(exitsLabel(entry.roomMode())) * TEXT_SCALE + 2 * PAD_X);
         }
@@ -630,6 +677,7 @@ public final class EditorPlotLabelsRenderer {
             // costs no more clicks than aiming at an arrow for it.
             case MODE -> CellKind.MODE_CYCLE;
             case COPIES -> CellKind.COPIES_CYCLE;
+            case COPIES_BLOCK -> CellKind.COPIES_BLOCK_HELD;
             case ROOM_CONTENTS -> CellKind.ROOM_CONTENTS_CYCLE;
             case ROOM_BOOKS -> roomBooksRowCell(entry, hitX, halfW);
             case EXITS -> CellKind.EXITS_CYCLE;
@@ -829,6 +877,13 @@ public final class EditorPlotLabelsRenderer {
                     int bg = hovered == CellKind.COPIES_CYCLE ? HOVER_COLOR : BUTTON_BG;
                     drawQuad(ps, buffer, -halfW + 0.01, rBot + 0.005, halfW - 0.01, rTop - 0.005, bg);
                     drawCenteredText(ps, buffer, font, copiesLabel(entry.roomMode()), 0, rCY, WEIGHT_COLOR);
+                }
+                // Block — which block Single repeats. Clicking it takes what the author is
+                // holding, so the row is a picker rather than a cycle.
+                case COPIES_BLOCK -> {
+                    int bg = hovered == CellKind.COPIES_BLOCK_HELD ? HOVER_COLOR : BUTTON_BG;
+                    drawQuad(ps, buffer, -halfW + 0.01, rBot + 0.005, halfW - 0.01, rTop - 0.005, bg);
+                    drawCenteredText(ps, buffer, font, copiesBlockLabel(entry.roomMode()), 0, rCY, WEIGHT_COLOR);
                 }
                 // Contents — whether this room is furnished from the contents pool, and how a
                 // furnishing smaller than the room is fitted into it. Off by default.
