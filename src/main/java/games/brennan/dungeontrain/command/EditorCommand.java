@@ -20,6 +20,8 @@ import games.brennan.dungeontrain.editor.CarriageVariantBlocks;
 import games.brennan.dungeontrain.editor.CarriageVariantContentsAllowStore;
 import games.brennan.dungeontrain.editor.CarriageVariantPartsStore;
 import games.brennan.dungeontrain.editor.EditorCategory;
+import games.brennan.dungeontrain.editor.EditorEditApplier;
+import games.brennan.dungeontrain.editor.EditorRegionDiff;
 import games.brennan.dungeontrain.editor.PortalRoomEditor;
 import games.brennan.dungeontrain.portal.PortalRoomLayout;
 import games.brennan.dungeontrain.portal.PortalRoomResize;
@@ -574,10 +576,16 @@ public final class EditorCommand {
             .then(Commands.literal("reset")
                 .then(Commands.argument("variant", StringArgumentType.word())
                     .suggests(VARIANT_SUGGESTIONS)
-                    .executes(ctx -> runReset(ctx.getSource(),
-                        StringArgumentType.getString(ctx, "variant")))))
+                    .executes(ctx -> EditorRegionDiff.recording(ctx.getSource(), "Reset",
+                        () -> runReset(ctx.getSource(),
+                            StringArgumentType.getString(ctx, "variant"))))))
             .then(Commands.literal("clear")
-                .executes(ctx -> runClear(ctx.getSource())))
+                .executes(ctx -> EditorRegionDiff.recording(ctx.getSource(), "Clear",
+                    () -> runClear(ctx.getSource()))))
+            .then(Commands.literal("undo")
+                .executes(ctx -> runUndoRedo(ctx.getSource(), /*redoing*/ false)))
+            .then(Commands.literal("redo")
+                .executes(ctx -> runUndoRedo(ctx.getSource(), /*redoing*/ true)))
             .then(Commands.literal("new")
                 .then(Commands.argument("name", StringArgumentType.word())
                     .executes(ctx -> runNew(ctx.getSource(),
@@ -1077,7 +1085,13 @@ public final class EditorCommand {
                 .withStyle(ChatFormatting.RED));
             return 0;
         }
-        if (!games.brennan.dungeontrain.editor.EditorMirrorRebuild.run(player.serverLevel(), plot)) {
+        // Rebuild rewrites every image octant in one pass; the region diff around
+        // it is what makes that one Ctrl+Z rather than an unrecoverable pass.
+        boolean[] rebuilt = new boolean[1];
+        EditorRegionDiff.record(player, "Mirror rebuild", plot.key(),
+            () -> rebuilt[0] = games.brennan.dungeontrain.editor.EditorMirrorRebuild.run(
+                player.serverLevel(), plot));
+        if (!rebuilt[0]) {
             source.sendFailure(Component.literal(
                 "Editor: no mirror axis is on for this plot — turn on X, Y or Z first.")
                 .withStyle(ChatFormatting.RED));
@@ -6710,4 +6724,47 @@ public final class EditorCommand {
         double tz = origin.getZ() + fp.getZ() / 2.0;
         player.teleportTo(overworld, tx, ty, tz, player.getYRot(), player.getXRot());
     }
+
+    /**
+     * {@code /dungeontrain editor undo|redo} — step the editor history for the
+     * plot the player is standing in.
+     *
+     * <p>Both the Ctrl/Cmd+Z keybinding and the X-menu's Undo | Redo row come
+     * through here, so there is one server-side path and the two surfaces
+     * cannot drift. Feedback goes to the action bar rather than chat: an author
+     * undoing a run of edits should not have to watch their chat fill up.</p>
+     */
+    private static int runUndoRedo(CommandSourceStack source, boolean redoing) {
+        ServerPlayer player = requirePlayer(source);
+        if (player == null) return 0;
+
+        EditorEditApplier.Result result = redoing
+            ? EditorEditApplier.redo(player)
+            : EditorEditApplier.undo(player);
+        String verb = redoing ? "Redo" : "Undo";
+
+        switch (result.outcome()) {
+            case DONE -> {
+                // Name the plot: the author may be nowhere near it, so "Undo: Place"
+                // alone would not say what just changed.
+                actionBar(player, verb + ": " + result.label() + " — " + result.plotKey(),
+                    ChatFormatting.GREEN);
+                return 1;
+            }
+            case NOTHING -> actionBar(player, "Nothing to " + verb.toLowerCase(Locale.ROOT),
+                ChatFormatting.GRAY);
+            case STALE -> actionBar(player,
+                "Editor history is out of date — " + result.plotKey() + " was rebuilt",
+                ChatFormatting.YELLOW);
+            case FAILED -> actionBar(player, verb + " partly failed — see the log",
+                ChatFormatting.RED);
+        }
+        return 0;
+    }
+
+    /** Overlay text above the hotbar — the editor's usual channel for transient feedback. */
+    private static void actionBar(ServerPlayer player, String text, ChatFormatting colour) {
+        player.displayClientMessage(Component.literal(text).withStyle(colour), true);
+    }
+
 }

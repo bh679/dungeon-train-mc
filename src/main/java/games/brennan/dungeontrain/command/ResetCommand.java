@@ -8,6 +8,7 @@ import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
+import games.brennan.dungeontrain.editor.EditorRegionDiff;
 import net.minecraft.commands.Commands;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
@@ -52,9 +53,11 @@ public final class ResetCommand {
 
     public static LiteralArgumentBuilder<CommandSourceStack> build() {
         return Commands.literal("reset")
-            .executes(ctx -> runReset(ctx.getSource(), false))
+            .executes(ctx -> EditorRegionDiff.recording(ctx.getSource(), "Reset",
+                () -> runReset(ctx.getSource(), false)))
             .then(Commands.literal("default")
-                .executes(ctx -> runReset(ctx.getSource(), true)));
+                .executes(ctx -> EditorRegionDiff.recording(ctx.getSource(), "Reset",
+                    () -> runReset(ctx.getSource(), true))));
     }
 
     private static int runReset(CommandSourceStack source, boolean defaultOnly) {

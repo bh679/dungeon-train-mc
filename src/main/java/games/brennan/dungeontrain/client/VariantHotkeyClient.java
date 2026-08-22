@@ -8,6 +8,7 @@ import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.VariantHotkeyPacket;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.Screen;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.neoforge.client.event.InputEvent;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
@@ -93,6 +94,22 @@ public final class VariantHotkeyClient {
                 useDuringPress = false;
                 return;
             }
+            // Ctrl+Z is the editor's undo (EditorUndoHotkeyClient). A plain-Z
+            // mapping stays "active" while Ctrl is held — KeyModifier.NONE only
+            // suppresses itself outside IN_GAME contexts — so without this
+            // every undo would also arm right-click-to-add for the length of
+            // the press. Ctrl is not a build or movement modifier in-game, so
+            // nothing is lost by ignoring Z while it is down.
+            if (Screen.hasControlDown()) {
+                if (lastSentHeld) {
+                    DungeonTrainNet.sendToServer(new VariantHotkeyPacket(false));
+                    lastSentHeld = false;
+                }
+                pressStartTick = -1;
+                useDuringPress = false;
+                return;
+            }
+
             boolean held = KEY.isDown();
             if (held == lastSentHeld) return;
 

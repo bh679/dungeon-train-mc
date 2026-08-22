@@ -1,0 +1,11 @@
+{
+  "id": "no_one_came_back",
+  "title": "Nikt nie wrócił",
+  "author": "Brennan Hatton",
+  "generation": 0,
+  "weight": 1,
+  "variants": [
+    "Zapisałeś imię.\nPamiętasz?\n\n%TARGET%.\nNapisałeś %TARGET%.\n\nZadziałało.\nNie tak, jak prosiłeś.\nTak, jak to działa.\n\nZginąłeś przy wagonie %CARRIAGE%.\nCoś z ciebie tam zostało.\n%GEAR%\n\nCzekało %DAYS% dni.\n\nPotem %TARGET% wszedł do wagonu %CARRIAGE%, w świecie, którego nigdy nie zobaczysz.\n\n%STORY%\n\nI tam papier się urywa.\n\nNie wiem, jak się skończyło.\nTy też nie.\n\nTaką zawarłeś umowę.",
+    "Witaj z powrotem.\nCzym jest ten pociąg?\nCzemu tu jesteś?\nCo zrobiłeś?\n\nZmieniło się tylko jedno z nich.\n\n%TARGET% spotkał cię przy wagonie %CARRIAGE%.\n\nNie ciebie.\nTę część ciebie, która tam została.\n\nCzekała %DAYS% dni.\nCierpliwa rzecz.\nMiała twoją twarz.\n\n%STORY%\n\n.\n\nPowiedziałbym ci, kto stamtąd odszedł.\n\nNikt tego nie zapisał."
+  ]
+}

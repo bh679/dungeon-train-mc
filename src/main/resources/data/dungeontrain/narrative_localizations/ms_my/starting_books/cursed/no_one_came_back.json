@@ -1,0 +1,11 @@
+{
+  "id": "no_one_came_back",
+  "title": "Tiada Kembali",
+  "author": "Brennan Hatton",
+  "generation": 0,
+  "weight": 1,
+  "variants": [
+    "Kau menulis satu nama.\nKau masih ingat?\n\n%TARGET%.\nKau menulis %TARGET%.\n\nIa berkesan.\nBukan seperti yang kau minta.\nSeperti caranya sendiri.\n\nKau mati di gerabak %CARRIAGE%.\nSesuatu daripadamu tinggal di situ.\n%GEAR%\n\nIa menunggu %DAYS% hari.\n\nKemudian %TARGET% melangkah masuk ke gerabak %CARRIAGE%, dalam dunia yang tidak akan pernah kau lihat.\n\n%STORY%\n\nDan di situ kertasnya berhenti.\n\nAku tak tahu bagaimana ia berakhir.\nKau pun tidak.\n\nItulah perjanjian yang kau buat.",
+    "Selamat kembali.\nApa itu kereta api ini?\nKenapa kau di sini?\nApa yang kau buat?\n\nHanya satu daripadanya berubah.\n\n%TARGET% bertemu kau di gerabak %CARRIAGE%.\n\nBukan kau.\nBahagian dirimu yang tertinggal.\n\n%DAYS% hari ia menunggu.\nBenda yang sabar.\nIa punya wajahmu.\n\n%STORY%\n\n.\n\nAku mahu beritahu kau siapa yang berjalan pergi.\n\nTiada siapa menulisnya."
+  ]
+}

@@ -15,6 +15,9 @@ import org.slf4j.Logger;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 
@@ -147,6 +150,29 @@ public interface BlockVariantPlot {
             && localPos.getY() >= -1 && localPos.getY() <= f.getY()
             && localPos.getZ() >= -1 && localPos.getZ() <= f.getZ();
     }
+
+    /**
+     * This plot's variant sidecar, serialised exactly as {@link #save} would
+     * write it. The editor undo history snapshots this before and after every
+     * sidecar-mutating operation, which is cheaper and far more robust than
+     * teaching each op to invert itself.
+     *
+     * <p>Read from the in-memory sidecar rather than the file on disk: several
+     * edit paths defer their write to {@code /dt save}, so the file can lag the
+     * state the author is actually looking at.</p>
+     */
+    String snapshotJson();
+
+    /**
+     * Overwrite this plot's sidecar file with {@code json} and drop the cached
+     * instance, so the next {@code loadFor} reads the restored document.
+     *
+     * <p>Callers should re-resolve the plot afterwards and {@link #save} it:
+     * that lets each sidecar apply its own "empty means delete the file" rule
+     * and perform the dev-mode source write-through, instead of this method
+     * duplicating either.</p>
+     */
+    void restoreJson(String json) throws IOException;
 
     // ---------- Resolution ----------
 
@@ -301,6 +327,13 @@ public interface BlockVariantPlot {
                 }
             }
         }
+        @Override public String snapshotJson() { return sidecar.toJson(); }
+        @Override public void restoreJson(String json) throws IOException {
+            Path file = CarriageVariantBlocks.configPathFor(variant);
+            Files.createDirectories(file.getParent());
+            Files.writeString(file, json, StandardCharsets.UTF_8);
+            CarriageVariantBlocks.invalidate(variant.id());
+        }
         @Override public int lockIdAt(BlockPos l) { return sidecar.lockIdAt(l); }
         @Override public void setLockId(BlockPos l, int id) { sidecar.setLockId(l, id); }
         @Override public java.util.Set<BlockPos> positionsWithLockId(int id) { return sidecar.positionsWithLockId(id); }
@@ -346,6 +379,13 @@ public interface BlockVariantPlot {
                         contents.id(), e.toString());
                 }
             }
+        }
+        @Override public String snapshotJson() { return sidecar.toJsonText(); }
+        @Override public void restoreJson(String json) throws IOException {
+            Path file = CarriageContentsVariantBlocks.configPathFor(contents);
+            Files.createDirectories(file.getParent());
+            Files.writeString(file, json, StandardCharsets.UTF_8);
+            CarriageContentsVariantBlocks.invalidate(contents.id());
         }
         @Override public int lockIdAt(BlockPos l) { return sidecar.lockIdAt(l); }
         @Override public void setLockId(BlockPos l, int id) { sidecar.setLockId(l, id); }
@@ -395,6 +435,13 @@ public interface BlockVariantPlot {
                 }
             }
         }
+        @Override public String snapshotJson() { return sidecar.toJsonText(); }
+        @Override public void restoreJson(String json) throws IOException {
+            Path file = CarriagePartVariantBlocks.configPathFor(kind, name);
+            Files.createDirectories(file.getParent());
+            Files.writeString(file, json, StandardCharsets.UTF_8);
+            CarriagePartVariantBlocks.invalidate(kind, name);
+        }
         @Override public int lockIdAt(BlockPos l) { return sidecar.lockIdAt(l); }
         @Override public void setLockId(BlockPos l, int id) { sidecar.setLockId(l, id); }
         @Override public java.util.Set<BlockPos> positionsWithLockId(int id) { return sidecar.positionsWithLockId(id); }
@@ -442,6 +489,13 @@ public interface BlockVariantPlot {
                         kind.id(), name, e.toString());
                 }
             }
+        }
+        @Override public String snapshotJson() { return sidecar.toJsonText(); }
+        @Override public void restoreJson(String json) throws IOException {
+            Path file = TrackVariantBlocks.configPathFor(kind, name);
+            Files.createDirectories(file.getParent());
+            Files.writeString(file, json, StandardCharsets.UTF_8);
+            TrackVariantBlocks.invalidate(kind, name);
         }
         @Override public int lockIdAt(BlockPos l) { return sidecar.lockIdAt(l); }
         @Override public void setLockId(BlockPos l, int id) { sidecar.setLockId(l, id); }

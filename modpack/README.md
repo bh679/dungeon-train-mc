@@ -49,6 +49,7 @@ pack must list them explicitly. Everything else is a manifest file with a `requi
 | Effortless Building | `302113` | off (opt-in) | Client-side building QoL (multi-block placement modes, mirror / array / radial). No dependencies. **Pinned** (4.2 — one multi-loader jar covers Fabric + NeoForge). |
 | Punchy! | `1374153` | off (opt-in) | First-person animation overhaul (swing/movement animations, visible hands with held items). Client-only render (`server_side=unsupported`, auto-skipped on dedicated servers), no dependencies. ARR licence, but the author explicitly permits modpack inclusion. **Pinned** (2.7d). |
 | WorldEdit | `225608` | off (opt-in) | In-game map editor (`//set`, `//copy`, brushes, schematics). Powerful and destructive, so opt-in — and its block writes know nothing about Sable sub-levels, so editing a **moving carriage** is unverified; use it on the static world. No dependencies (one multi-loader NeoForge/Fabric jar). **Pinned** (7.3.8 — the newest 1.21.1 build; 7.4.x is MC 26.x only). |
+| Just Enough Items (JEI) | `238222` | off (opt-in) | Recipe / item lookup overlay. Opt-in because it restyles every inventory screen — a change players should choose. No dependencies. 1.21.1 builds are published on the **beta** channel only (JEI ships no release-channel build for this MC line), same as Iris here. **Pinned** (19.39.0.372) — ⚠️ NOT the newest: JEI raised its NeoForge floor to `[21.1.238,)` in 19.42.0.379 (2026-07-27) and DT ships `neo_version=21.1.228`, so anything newer hard-fails at load with "Mod jei requires neoforge 21.1.238 or above". 19.39.0.372 is the last build declaring `[21.0.118-beta,)`. Re-check this pin whenever `neo_version` moves. |
 
 …plus NeoForge as the modloader (`neoforge-<neo_version>`) and the Minecraft version,
 both read from `gradle.properties`.
@@ -89,7 +90,7 @@ flag straight into the manifest:
   enabled so their dependent loads on a default install (CreativeCore — AmbientSounds is on;
   Iceberg — AP is on).
 - **Bundled but off by default (`required:false`)** — Mouse Tweaks, Nemo's Inventory Sorting,
-  Distant Horizons, Effortless Building, Punchy!, WorldEdit. Shipped in the pack so a player can flip them on with one click, but inert until they
+  Distant Horizons, Effortless Building, Punchy!, WorldEdit, Just Enough Items (JEI). Shipped in the pack so a player can flip them on with one click, but inert until they
   do. (DT itself + Sable are hardcoded `required:true` in the builder.)
 
 ## Declared dependencies (CurseForge "Relations")
@@ -144,21 +145,86 @@ undeclared in PR #390. So each `optional_mods` entry **must carry a `slug`** (it
 slug). The library deps are bundled too, so they are likewise declared `iceberg(optional)` (for
 Advancement Plaques).
 
-## How it deploys (15 min after every mod release)
+## How it deploys (15 min after every real mod release)
 
 ```
-release.yml (real release OR auto-release cascade tick)
+release.yml (REAL release only — cascade ticks are skipped for CurseForge)
   └─ mc-publish uploads the DT jar to CurseForge  → file ID
   └─ dispatches release-modpack.yml with that file ID
         └─ waits 15 min   (lets CurseForge approve the DT file first)
         └─ scripts/modpack/build-manifest.py   → manifest.json
         └─ zip  manifest.json + overrides/      → dungeon-train-<version>.zip
         └─ scripts/modpack/publish-curseforge.sh → uploads to project 1556213
+        └─ scripts/modpack/reconcile.py --verify → confirms it actually went PUBLIC
 ```
 
 The 15-minute wait is the `delay_minutes` input on
 [`release-modpack.yml`](../.github/workflows/release-modpack.yml) (default `15`).
-Every mod release triggers it — including the ~22 quiet auto-release cascade ticks.
+
+**The CurseForge pack publishes only on real, operator-dispatched releases.** The
+dispatch step in `release.yml` is gated on `inputs.auto == false`, so the ~22 quiet
+auto-release cascade ticks no longer each push a pack version. The **Modrinth** pack is
+not gated and still follows every release, so the two packs' version lists differ by
+design — that is expected, not drift.
+
+## ⚠️ Upload accepted ≠ pack published
+
+A `200` from CurseForge's `/upload-file` only means the file was *accepted*. CurseForge
+validates `manifest.json` asynchronously and can reject the file afterwards:
+
+> Invalid manifest.json file: 500 - `{"errorCode":500,"errorMessage":"An unhandled exception occurred while processing the request."}`
+
+When that happens the workflow stays **green**, nothing is logged, and the release is
+simply missing from the pack. In Aug 2026 this silently cost 13 consecutive releases
+(the pack sat on v0.592.0 while the mod shipped v0.613.0) and 86 versions that exist on
+Modrinth have no CurseForge counterpart.
+
+**What it actually was (2026-08-22).** Re-uploading the *identical* manifest for v0.613.0 a day
+later was **accepted** — the pack went from 260 to 261 files. Every one of the 33
+project/file ids in that manifest resolves to a real public file, and the only config change
+across the accept→reject boundary was a pin bump plus the removal of two mods. So the rejections
+were a **transient CurseForge-side fault**, not a bad manifest on our side. Missing versions can
+therefore be recovered by simply re-uploading them.
+
+Two guards now cover it:
+
+| Guard | Where | What it catches |
+|---|---|---|
+| `reconcile.py --verify <tag>` | last step of `release-modpack.yml` | polls the public listing for up to 30 min and **fails that release's run** if the version never appears |
+| `modpack-reconcile.yml` | scheduled every 6h | drift backstop — prints published-vs-released for both packs, fails after a 7-day CurseForge stall |
+
+Check drift yourself at any time:
+
+```bash
+python3 scripts/modpack/reconcile.py
+```
+
+### ⚠️ Set `CURSEFORGE_API_KEY` to make verification authoritative
+
+`reconcile.py` reads CurseForge's own API when the `CURSEFORGE_API_KEY` secret is set, and
+otherwise falls back to the keyless **cfwidget** mirror. (`CURSEFORGE_TOKEN` is an *upload*
+credential and cannot read listings.)
+
+**cfwidget caches and lags badly.** During the 2026-08-22 live test it still reported 260 files
+/ v0.592.0 for a full 30 minutes after curseforge.com already listed 261 / v0.613.0. A cache
+cannot prove absence, so without an API key `--verify` downgrades a negative result to
+`INCONCLUSIVE`: it prints a warning with a link to check by hand and **does not fail the
+release**. Set the secret and the check becomes authoritative — a genuine rejection then fails
+the run, which is the whole point.
+
+If verification fails, open the pack's file list in CurseForge Studio — a rejected file
+shows the reason inline. A rejection with a `500` body is CurseForge-side; the manifest
+we send is validated against the platform before upload and every referenced
+project/file id resolves.
+
+## Transient upload failures
+
+Both publish scripts share [`../scripts/modpack/lib/upload-retry.sh`](../scripts/modpack/lib/upload-retry.sh):
+3 attempts with 15s/45s backoff, retrying **only** 5xx and curl transport faults. `4xx`
+is never retried — a client error means our payload is wrong, so re-sending it just
+burns attempts (the historic `errorCode 1002 "Invalid JSON"` outage needed a code fix,
+not a retry). Before this, a single blip lost that release's pack version permanently:
+63 of 346 runs failed that way.
 
 ## ⚠️ Sable-pin coupling
 
@@ -255,6 +321,8 @@ Keep the two in sync so both packs ship the same build. A stale pin just ships a
 | `../scripts/modpack/check-relations.py` | CI guard: every `optional_mods` entry must also be an `<slug>(optional)` dependency of the mod in `release.yml`. Run by the `modpack-checks` job. |
 | `../scripts/modpack/publish-curseforge.sh` | Zips + uploads the CurseForge pack using `CURSEFORGE_TOKEN`. |
 | `../scripts/modpack/publish-modrinth.sh` | Zips the `.mrpack` + uploads to Modrinth using `MODRINTH_TOKEN`. |
+| `../scripts/modpack/lib/upload-retry.sh` | Shared curl-upload helper: retries 5xx + transport faults, never 4xx. Sourced by both publish scripts. |
+| `../scripts/modpack/reconcile.py` | `--verify <tag>` confirms an uploaded version actually went public (run by `release-modpack.yml`); with no args, prints a published-vs-released drift report for both packs. |
 
 ## Local test (no upload)
 

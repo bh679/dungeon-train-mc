@@ -415,7 +415,8 @@ public final class CarriagePartVariantBlocks {
             kind.id(), name, file);
     }
 
-    private String toJsonText() {
+    /** Serialised form of this sidecar as {@link #save} would write it. Used by the editor undo history. */
+    String toJsonText() {
         // Hand-written so the v2 mixed-array form (bare strings + objects) stays
         // diff-clean against existing v1 files. Same shape as CarriageVariantBlocks#toJson.
         StringBuilder sb = new StringBuilder(256);

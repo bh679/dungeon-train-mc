@@ -7905,9 +7905,9 @@
       "title": "Portal corridor loot variety",
       "summary": "Chests in a portal's corridors now roll different contents from portal to portal, instead of the same ones every time.",
       "date": "2026-08-22",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.619.0",
+      "released_at": "2026-08-22T14:38:59Z"
     },
     {
       "id": "bilibili-link-chinese-clients",
@@ -7922,9 +7922,9 @@
       ],
       "pr": 1042,
       "date": "2026-08-22",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.619.0",
+      "released_at": "2026-08-22T14:38:59Z"
     },
     {
       "id": "endless-open-single-block-variant",
@@ -7940,9 +7940,9 @@
       ],
       "pr": 1044,
       "date": "2026-08-22",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.619.0",
+      "released_at": "2026-08-22T14:38:59Z"
     },
     {
       "id": "translation-replies-and-good-as-is",
@@ -7956,6 +7956,72 @@
         "'Good As Is' retires a machine-translated line that needs no fixing \u2014 reversible, and per install"
       ],
       "pr": 1043,
+      "date": "2026-08-22",
+      "released": true,
+      "released_in": "v0.619.0",
+      "released_at": "2026-08-22T14:38:59Z"
+    },
+    {
+      "id": "curseforge-modpack-publish-reliability",
+      "version": "0.618.0",
+      "type": "ci",
+      "title": "CurseForge modpack keeps up with releases again",
+      "summary": "The CurseForge modpack had quietly stopped updating \u2014 it sat on v0.592.0 while the mod shipped v0.613.0, because CurseForge was accepting our uploads and then rejecting them behind the scenes with no error anywhere we could see. Uploads now retry when the platform hiccups, and every upload is checked afterwards to confirm it actually went live, so the pack can't silently fall behind again.",
+      "highlights": [
+        "CurseForge modpack is publishing again",
+        "Failed uploads retry instead of losing that version",
+        "A pack version that never goes live now fails loudly"
+      ],
+      "pr": 1046,
+      "date": "2026-08-22",
+      "released": true,
+      "released_in": "v0.619.0",
+      "released_at": "2026-08-22T14:38:59Z"
+    },
+    {
+      "id": "localize-recent-text-19-locales",
+      "version": "0.619.0",
+      "type": "feat",
+      "title": "Three weeks of new text, now in all 19 languages",
+      "summary": "Everything added since early August was English-only outside en_us \u2014 the seven new advancements, the Video Tools page, the skybox blocks, the difficulty-change warning, the drifting-carriage death lines, the community-book report button and more. All of it is now translated into every language Dungeon Train ships in, along with ten in-world books that had never been localized. Machine-translated and marked as such, so the in-game translation editor lists them for human review.",
+      "highlights": [
+        "115 newly translated interface lines in each of the 19 languages",
+        "Ten new books \u2014 including The Drifting Carriages and the cursed and loved starting books \u2014 now read in your language",
+        "New Quiet Rules and Train Glossary entries translated to match the English originals"
+      ],
+      "date": "2026-08-22",
+      "released": true,
+      "released_in": "v0.619.0",
+      "released_at": "2026-08-22T14:38:59Z"
+    },
+    {
+      "id": "jei-optional-modpack",
+      "version": "0.620.0",
+      "type": "feat",
+      "title": "JEI, ready to switch on",
+      "summary": "The modpack now ships Just Enough Items, off by default. Tick it on at install for recipe and item lookup \u2014 press R on any item to see how it's made.",
+      "highlights": [
+        "Bundled with the modpack, switched off by default."
+      ],
+      "pr": 1048,
+      "date": "2026-08-22",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "editor-undo-redo",
+      "version": "0.621.0",
+      "type": "feat",
+      "title": "Undo and redo in the train editor",
+      "summary": "The in-world editor now has an undo history on Ctrl+Z and Ctrl+Y (Cmd+Z / Cmd+Y on Mac), with an Undo | Redo row in the editor's X menu. It covers block edits, whole-plot actions like Clear and Reset, block variants, and menu changes such as weights, stage links, loot tables and part assignments. Undo works from anywhere \u2014 change something, walk away, and you can still take it back.",
+      "highlights": [
+        "Ctrl/Cmd+Z and Ctrl/Cmd+Y, rebindable from the vanilla Controls screen",
+        "Blocks, whole-plot Clear and Reset, block variants, and menu changes all undo",
+        "A mirrored edit undoes as one step, not one per reflected cell",
+        "Broken containers come back with their contents intact",
+        "Works from anywhere, not just while standing in the plot"
+      ],
       "date": "2026-08-22",
       "released": false,
       "released_in": null,
