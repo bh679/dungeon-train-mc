@@ -52,14 +52,15 @@ import java.util.OptionalInt;
  * telemetry ({@link BookReadClientEvents}) — which also range-checks the vote page out of its
  * dwell math.</p>
  *
- * <p>Below the thumbs sits the ⚠ <b>report</b> control — the escalation above 👎: not "I disliked
- * this" but "this should not be in the pool". It is drawn as text rather than a sprite (it
- * localizes, and the page is cramped), and it is deliberately <b>two-tap</b>: the first click arms
- * it, a second commits. A mistyped vote is harmless; a mistaken report is not, which is also why
- * there is no keyboard shortcut for it. Committing sends {@link BookReportPacket} and closes the
- * book exactly as a vote does, but casts no vote — the two are independent verdicts. A book this
- * player already reported ({@link BookReportTag}) shows an inert "Reported" line instead: a report
- * cannot be taken back or repeated.</p>
+ * <p>Below the thumbs sits a third 18×18 icon — the ⚠ <b>report</b> control, the escalation above
+ * 👎: not "I disliked this" but "this should not be in the pool". It is an icon for the same reason
+ * the verdicts above it are: three controls on one row of the same footing, with no words until
+ * words are needed. It is deliberately <b>two-tap</b> — the first click arms it and reveals the
+ * confirmation line beneath, a second commits. A mistyped vote is harmless; a mistaken report is
+ * not, which is also why there is no keyboard shortcut for it. Committing sends
+ * {@link BookReportPacket} and closes the book exactly as a vote does, but casts no vote — the two
+ * are independent verdicts. A book this player already reported ({@link BookReportTag}) shows the
+ * icon dimmed over an inert "Reported" line: a report cannot be taken back or repeated.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class BookVoteClientEvents {
@@ -76,9 +77,8 @@ public final class BookVoteClientEvents {
     private static final int BUTTONS_Y = BOOK_TOP + 90;
     private static final int BUTTON_GAP = 20;            // between the two thumbs
     private static final int LABELS_Y = BUTTONS_Y + BUTTON_SIZE + 6;
-    private static final int REPORT_Y = LABELS_Y + 20;   // clear of the labels, above the page number
-    private static final int REPORT_PAD_X = 3;           // hit-box slack either side of the text
-    private static final int REPORT_PAD_Y = 2;
+    private static final int REPORT_Y = LABELS_Y + 12;   // its own row under the (Y)es/(N)o labels
+    private static final int REPORT_TEXT_Y = REPORT_Y + BUTTON_SIZE + 3; // confirmation line, when shown
 
     // Warm leather dim over the whole page (approved variant A) + the train's rust-orange voice.
     private static final int DIM_COLOR = 0x5A48220A;     // ARGB (72,34,10) @ alpha 90
@@ -86,9 +86,9 @@ public final class BookVoteClientEvents {
     private static final int DIM_X1 = 26, DIM_Y1 = 8, DIM_X2 = 158, DIM_Y2 = 173; // book-local
     private static final int COLOR_PREFIX = 0x5C2C0E;    // rust-orange "The train asks,"
     private static final int COLOR_TEXT = 0x0C0602;      // ink black
-    private static final int COLOR_REPORT = 0x6B1B10;    // muted red — present, not shouting
-    private static final int COLOR_REPORT_ARMED = 0x9E1B0C;
-    private static final int COLOR_REPORTED = 0x4A423C;  // spent/grey once the report is in
+    private static final int COLOR_REPORT_ARMED = 0x9E1B0C; // the "click again" line
+    private static final int COLOR_REPORTED = 0x4A423C;     // spent/grey once the report is in
+    private static final float REPORTED_ALPHA = 0.4F;       // the icon, dimmed, after reporting
     private static final int PROMPT_COUNT = 10;
     private static final int RESPONSE_COUNT = 10;        // per set (yes / no / general)
     private static final int REPORT_RESPONSE_COUNT = 5;  // train lines for a report
@@ -101,6 +101,10 @@ public final class BookVoteClientEvents {
         ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "widget/thumbs_down");
     private static final ResourceLocation DOWN_HIGHLIGHTED_SPRITE =
         ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "widget/thumbs_down_highlighted");
+    private static final ResourceLocation REPORT_SPRITE =
+        ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "widget/report");
+    private static final ResourceLocation REPORT_HIGHLIGHTED_SPRITE =
+        ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "widget/report_highlighted");
 
     // --- single tracked votable book screen (one book screen is open at a time) ---
     private static boolean active = false;
@@ -192,21 +196,27 @@ public final class BookVoteClientEvents {
         gfx.drawString(font, yes, upX() + BUTTON_SIZE / 2 - font.width(yes) / 2, LABELS_Y, COLOR_TEXT, false);
         gfx.drawString(font, no, downX() + BUTTON_SIZE / 2 - font.width(no) / 2, LABELS_Y, COLOR_TEXT, false);
 
-        // The report control — quiet by default, louder once armed, spent once used. Underlined
-        // while hovered so it reads as clickable without a button chrome the page has no room for.
-        Component report = reportLabel();
-        int color = reported ? COLOR_REPORTED : reportArmed ? COLOR_REPORT_ARMED : COLOR_REPORT;
-        boolean hot = !reported && inReport(mouseX, mouseY);
-        gfx.drawString(font, hot ? report.copy().withStyle(ChatFormatting.UNDERLINE) : report,
-            centerX - font.width(report) / 2, REPORT_Y, color, false);
-    }
+        // The report icon — cream and wordless at rest, red on hover or once armed, dimmed and inert
+        // once spent. Words appear only in the two states that need them (see below).
+        boolean lit = !reported && (reportArmed || inReport(mouseX, mouseY));
+        if (reported) gfx.setColor(1F, 1F, 1F, REPORTED_ALPHA);
+        gfx.blitSprite(lit ? REPORT_HIGHLIGHTED_SPRITE : REPORT_SPRITE,
+            reportX(), REPORT_Y, BUTTON_SIZE, BUTTON_SIZE);
+        if (reported) gfx.setColor(1F, 1F, 1F, 1F);
 
-    /** What the report control currently says: offer → confirm → spent. */
-    private static Component reportLabel() {
-        if (reported) return Component.translatable("gui.dungeontrain.book_vote.reported");
-        return Component.translatable(reportArmed
-            ? "gui.dungeontrain.book_vote.report_confirm"
-            : "gui.dungeontrain.book_vote.report");
+        // Idle and hover stay wordless — the icon is the whole control. The confirmation line is the
+        // point of the second tap, and "Reported" is the only way a spent icon can say so.
+        Component line = reported
+            ? Component.translatable("gui.dungeontrain.book_vote.reported")
+            : reportArmed ? Component.translatable("gui.dungeontrain.book_vote.report_confirm") : null;
+        if (line != null) {
+            gfx.drawString(font, line, centerX - font.width(line) / 2, REPORT_TEXT_Y,
+                reported ? COLOR_REPORTED : COLOR_REPORT_ARMED, false);
+        } else if (lit) {
+            // Hovering an unlabelled icon: say what it does before the player commits to finding out.
+            gfx.renderTooltip(font, Component.translatable("gui.dungeontrain.book_vote.report"),
+                mouseX, mouseY);
+        }
     }
 
     /** Thumb clicks on the vote page — instant commit (the screen closes, so consume the click). */
@@ -325,17 +335,14 @@ public final class BookVoteClientEvents {
         return x >= downX() && x < downX() + BUTTON_SIZE && y >= BUTTONS_Y && y < BUTTONS_Y + BUTTON_SIZE;
     }
 
-    /**
-     * The report control's hit box — derived from the current label's width, since the three states
-     * ("report" / "click again" / "reported") are different lengths and localize to different
-     * lengths again. Centered on the page column, same as the drawn text.
-     */
+    /** The report icon sits on the page's centre line, under the two thumbs. */
+    private static int reportX() {
+        return bookLeft() + PAGE_CENTER_X_OFFSET - BUTTON_SIZE / 2;
+    }
+
     private static boolean inReport(int x, int y) {
-        Font font = Minecraft.getInstance().font;
-        int w = font.width(reportLabel());
-        int left = bookLeft() + PAGE_CENTER_X_OFFSET - w / 2;
-        return x >= left - REPORT_PAD_X && x < left + w + REPORT_PAD_X
-            && y >= REPORT_Y - REPORT_PAD_Y && y < REPORT_Y + 9 + REPORT_PAD_Y;
+        return x >= reportX() && x < reportX() + BUTTON_SIZE
+            && y >= REPORT_Y && y < REPORT_Y + BUTTON_SIZE;
     }
 
     private static boolean onVotePage() {
