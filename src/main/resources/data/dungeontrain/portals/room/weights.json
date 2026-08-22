@@ -62,7 +62,7 @@
   },
   "deserter": {
     "weight": 1,
-    "mode": "endless_open"
+    "mode": "endless_open/dynamic"
   },
   "distantenemies": {
     "weight": 2,
