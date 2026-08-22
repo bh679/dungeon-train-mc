@@ -7868,6 +7868,35 @@
       "released": true,
       "released_in": "v0.612.0",
       "released_at": "2026-08-22T06:52:30Z"
+    },
+    {
+      "id": "banner-backpack-emerald-values",
+      "version": "0.613.0",
+      "type": "feat",
+      "title": "Villager trade tweaks",
+      "summary": "Adjusted what villagers pay for a few items in the Trade Anything slot.",
+      "highlights": [],
+      "date": "2026-08-22",
+      "released": true,
+      "released_in": "v0.613.0",
+      "released_at": "2026-08-22T09:09:00Z"
+    },
+    {
+      "id": "player-head-death-skins",
+      "version": "0.613.0",
+      "type": "feat",
+      "title": "Player heads remember who died there",
+      "summary": "The player heads scattered through the train are no longer anonymous. Each one now wears the face and name of a real player whose run ended at that same carriage \u2014 the fourth carriage remembers people who fell in a fourth carriage. Mine one and the head keeps them, so you can carry a fallen traveller with you or set them up somewhere of your choosing.",
+      "highlights": [
+        "Heads in carriage N show players who died at carriage N",
+        "A mined head keeps its face and name, and can be placed anywhere",
+        "Falls back to the bundled skins when there is nobody to remember yet"
+      ],
+      "pr": 1040,
+      "date": "2026-08-22",
+      "released": true,
+      "released_in": "v0.613.0",
+      "released_at": "2026-08-22T09:09:00Z"
     }
   ]
 }
