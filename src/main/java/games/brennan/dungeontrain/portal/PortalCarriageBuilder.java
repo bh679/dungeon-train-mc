@@ -322,12 +322,14 @@ public final class PortalCarriageBuilder {
         if (withContents) {
             throw new IllegalArgumentException("corridor contents need a pairKey to roll against");
         }
-        stampCorridorFrom(level, origin, dims, kind, relight, false, NO_PAIR);
+        // ENTRY is arbitrary and never read: NO_PAIR turns both rolling passes off outright.
+        stampCorridorFrom(level, origin, dims, kind, relight, false, NO_PAIR, PortalCarriageRole.ENTRY);
     }
 
     public static void stampCorridorFrom(ServerLevel level, BlockPos origin, CarriageDims dims,
                                          PortalCorridorKind kind, boolean relight,
-                                         boolean withContents, int pairKey) {
+                                         boolean withContents, int pairKey,
+                                         PortalCarriageRole role) {
         // Looked up against the CORRIDOR's dims, not the world's carriage dims: a LONG corridor's
         // template is longer than every other carriage template (PortalCorridorSize), and
         // CarriagePlacer's size gate would reject it against the wrong figure and silently drop to
@@ -340,21 +342,21 @@ public final class PortalCarriageBuilder {
         } else {
             stampBuiltIn(level, origin, dims, kind, relight);
         }
-        applyCorridorVariants(level, origin, dims, kind, pairKey);
-        if (withContents) stampCorridorContents(level, origin, dims, kind, pairKey);
+        applyCorridorVariants(level, origin, dims, kind, pairKey, role);
+        if (withContents) stampCorridorContents(level, origin, dims, kind, pairKey, role);
     }
 
     /**
      * Roll the corridor shell's own authored block variants over the stamp that just landed.
      *
-     * <p><b>Rolled against the pair's key, not the carriage's index.</b> A crossing is two
-     * carriages at different indices that never see each other, and the variant picker keys on
-     * {@code (worldSeed, index, lockId)} — so feeding it a per-carriage index lets the two halves
-     * of one corridor land on different blocks and tears the crossing open, which is the same trap
-     * {@link #stampCorridorContents} documents for the contents pass. {@code pairKey} is a pure function of
-     * the carriage index ({@code PortalCarriageRole.entryIndexOf}), so both stamp sites derive it
-     * identically without either knowing about the other, while still letting different portals
-     * differ from one another.</p>
+     * <p><b>Rolled against {@code (trainSeed, corridorIndex)} — the same frame as any other
+     * carriage.</b> The variant picker keys on {@code (seed, index, lockId)}, and a crossing is a
+     * carriage and a twin that never see each other, so the key has to be something both stamp sites
+     * derive identically with no state passing between them. {@link PortalCarriageRole#corridorIndexOf}
+     * is exactly that: a pure function of the pair's anchor and the corridor's role, and every site
+     * that stamps a corridor knows its role. The seed is the train's own
+     * ({@link PortalCarriageSelection#generationSeed}), not the raw {@code level.getSeed()} — see
+     * {@link #stampCorridorContents}, which rolls in the same frame for the same reasons.</p>
      *
      * <p>Skipped for {@link #NO_PAIR} — the editor plot has no pair to roll against, and showing
      * the author a resolved roll instead of the master blocks would misrepresent what they are
@@ -368,10 +370,12 @@ public final class PortalCarriageBuilder {
      * second time and miss the template.</p>
      */
     private static void applyCorridorVariants(ServerLevel level, BlockPos origin, CarriageDims dims,
-                                              PortalCorridorKind kind, int pairKey) {
+                                              PortalCorridorKind kind, int pairKey,
+                                              PortalCarriageRole role) {
         if (pairKey == NO_PAIR) return;
         CarriagePlacer.applyVariantBlocks(level, origin, portalVariant(kind), dims,
-            level.getSeed(), pairKey);
+            PortalCarriageSelection.generationSeed(level),
+            PortalCarriageRole.corridorIndexOf(pairKey, role));
     }
 
     /**
@@ -386,33 +390,44 @@ public final class PortalCarriageBuilder {
      * itself from the contents id ({@link CarriageContentsPlacer#contentsDims}), and handing it an
      * already-resolved box would grow it a second time.</p>
      *
-     * <p><b>Rolled against {@code (worldSeed, pairKey)} — pure, not constant.</b> The roll key drives
-     * both the contents sidecar's per-cell variant picks and every container's item roll
+     * <p><b>Rolled against {@code (trainSeed, corridorIndex)} — pure, not constant.</b> The roll key
+     * drives both the contents sidecar's per-cell variant picks and every container's item roll
      * ({@code CarriageContentsPlacer.applyVariantBlocks} / {@code applyContentPools}), and a
      * corridor's blocks have to match its twin exactly, so the two independent stamps must resolve
-     * the same way. This used to be guaranteed by hardcoding the key to {@code (0L, 0)} — which
+     * the same way. That used to be guaranteed by hardcoding the key to {@code (0L, 0)} — which
      * bought twin agreement at the price of making every corridor in every world hold identical
-     * loot, and pinning it to {@code DifficultyProgression.positionTier(0)} forever. Purity is what
-     * the crossing actually needs, not constancy: {@code pairKey} is a pure function of the carriage
-     * index ({@code PortalCarriageRole.entryIndexOf}), so both stamp sites — {@link #stampCarriage}
-     * on the train and {@link #stampTwin} underground — derive it identically without either knowing
-     * about the other, and different portals still differ from one another. Same frame, same reason,
-     * as {@link #applyCorridorVariants} directly above.</p>
+     * loot, and pinning it to {@code DifficultyProgression.positionTier(0)} forever.</p>
      *
-     * <p>Passing {@code pairKey} as the carriage index is also what restores the difficulty frame: it
-     * is the entry corridor's <em>real</em> index, so portal loot tiers up with distance down the
-     * train the way an ordinary carriage's does. {@link #applyRoomVariants} passes it as its
-     * {@code diffIndex} for exactly this reason.</p>
+     * <p>Purity is what the crossing needs, not constancy. A player is only ever mapped between a
+     * carriage and the twin of the <b>same</b> role, so the key only has to agree across one role's
+     * copies — the on-train carriage ({@link #stampCarriage}), the twin underground and every exit
+     * copy ({@link #stampCorridorHalf}). All of them know their role, so
+     * {@link PortalCarriageRole#corridorIndexOf} lands the same answer at each with nothing passing
+     * between them, while a portal's entry and exit corridors are free to furnish differently and
+     * different portals differ from one another.</p>
+     *
+     * <p><b>The train's seed, not the world's.</b> {@link PortalCarriageSelection#generationSeed} is
+     * the persisted per-world seed the rest of DT's generation draws from, and is exactly what an
+     * ordinary carriage's contents roll against ({@code CarriageGenerationConfig.seed}). A corridor
+     * is a carriage; rolling it in the same frame is the point.</p>
+     *
+     * <p>The index is a <em>real</em> carriage index, which is also what restores the difficulty
+     * frame: portal loot tiers up with distance down the train the way an ordinary carriage's does,
+     * where the old constant {@code 0} pinned it to the start of the line forever.
+     * {@link #applyRoomVariants} passes a real index as its {@code diffIndex} for the same reason.</p>
      */
     private static void stampCorridorContents(ServerLevel level, BlockPos origin, CarriageDims dims,
-                                              PortalCorridorKind kind, int pairKey) {
+                                              PortalCorridorKind kind, int pairKey,
+                                              PortalCarriageRole role) {
         // The pair's rolled sub-variant, not the literal `portal` template: the contents carry a
         // group sidecar, and naming the parent here is what used to make every corridor in every
         // world identical. PortalCorridorContents holds the draw so this pair's carriage and its
         // twin cannot disagree; the key below governs the per-cell picks WITHIN the chosen template.
         CarriageContents contents = PortalCorridorContents.forPair(level, kind, pairKey);
         CarriageContentsPlacer.placeBlocksOnly(
-            level, origin, contents, dims, level.getSeed(), pairKey);
+            level, origin, contents, dims,
+            PortalCarriageSelection.generationSeed(level),
+            PortalCarriageRole.corridorIndexOf(pairKey, role));
     }
 
     /**
@@ -464,10 +479,14 @@ public final class PortalCarriageBuilder {
      *
      * @param relight {@code true} in an editor plot, which is never lifted into a sub-level;
      *                {@code false} on the spawn path, where Sable relights the plot afterwards
+     * @param role    which end of the pair this carriage is — the twin that mirrors it is stamped
+     *                with the same one, which is what makes the two roll identically
+     *                ({@link PortalCarriageRole#corridorIndexOf})
      */
     public static Set<BlockPos> stampCarriage(ServerLevel level, BlockPos origin, CarriageDims dims,
-                                              PortalCorridorKind kind, boolean relight, int pairKey) {
-        stampCorridorFrom(level, origin, dims, kind, relight, /*withContents*/ true, pairKey);
+                                              PortalCorridorKind kind, boolean relight, int pairKey,
+                                              PortalCarriageRole role) {
+        stampCorridorFrom(level, origin, dims, kind, relight, /*withContents*/ true, pairKey, role);
         return Set.of();   // the caller re-reads the footprint via CarriagePlacer.finishPlace
     }
 
@@ -703,12 +722,13 @@ public final class PortalCarriageBuilder {
      * them.</p>
      */
     public static void stampTwin(ServerLevel level, BlockPos origin, CarriageDims dims,
-                                 PortalCorridorKind kind, int pairKey) {
+                                 PortalCorridorKind kind, int pairKey, PortalCarriageRole role) {
         // Clear first: unlike a carriage, a twin lands in open air rather than a pre-cleared volume,
         // and a template stamp only writes its own cells — anything already standing there would
         // show through and break the match with the carriage.
         clearBox(level, origin, dims, kind);
-        stampCorridorFrom(level, origin, dims, kind, /*relight*/ true, /*withContents*/ true, pairKey);
+        stampCorridorFrom(level, origin, dims, kind, /*relight*/ true, /*withContents*/ true,
+            pairKey, role);
     }
 
     /**
@@ -875,9 +895,12 @@ public final class PortalCarriageBuilder {
      * that writes the original, which is what keeps a copy block-identical to the carriage it will
      * hand a player back to. See {@link #stampExitCopy}.</p>
      *
-     * <p>Both halves take the <b>pair's</b> key rather than a carriage index, so every corridor in a
-     * pair — copies included — rolls the same block variants and the same corridor contents, and the
-     * crossing shows no seam whichever one a player walks through.</p>
+     * <p>Both halves take the pair's key <b>and their own role</b>, which together give the corridor's
+     * real carriage index ({@link PortalCarriageRole#corridorIndexOf}) — the key its block variants
+     * and its contents roll against. Copies included: an exit copy carries the exit role, so it rolls
+     * identically to the exit carriage it hands a player back to, and the crossing shows no seam
+     * whichever one a player walks through. The two <i>ends</i> of a pair are deliberately free to
+     * differ; nothing ever maps a player from one role's corridor into the other's.</p>
      *
      * <p>{@code base} is the pair's own structure, of which {@code structure} may be a
      * {@link PortalStructure#shadowAt shadow} — the same object for an entry, a translated one for a
@@ -894,7 +917,7 @@ public final class PortalCarriageBuilder {
         boolean entry = role == PortalCarriageRole.ENTRY;
         BlockPos corridorOrigin = entry ? structure.origin() : structure.exitOrigin(dims);
 
-        stampTwin(level, corridorOrigin, dims, structure.kind(), pairKey);
+        stampTwin(level, corridorOrigin, dims, structure.kind(), pairKey, role);
 
         // Seal the ring around the corridor mouth. The room's shell is wider and taller than a
         // corridor, so everything it does not already cover at the door plane has to be walled off,

@@ -17,18 +17,24 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * The roll key {@code PortalCarriageBuilder.stampCorridorContents} hands the contents pass.
  *
- * <p>A corridor exists twice — as a carriage on the train and as a static twin underground — stamped
- * by two independent calls that must produce identical blocks or the crossing tears open. That was
- * once guaranteed by hardcoding the key to {@code (0L, 0)}, which bought twin agreement at the price
- * of every corridor in every world holding the same loot. The key the crossing actually needs is a
- * <i>pure</i> one, not a constant one: {@code (worldSeed, pairKey)}, where {@code pairKey} is a pure
- * function of the carriage index ({@link PortalCarriageRole#entryIndexOf}) so both stamp sites derive
- * it identically without either knowing about the other.</p>
+ * <p>A corridor exists several times over — as a carriage on the train, as a static twin
+ * underground, and as any number of exit copies across an endless room's tiling — stamped by
+ * independent calls that must produce identical blocks or the crossing tears open. That was once
+ * guaranteed by hardcoding the key to {@code (0L, 0)}, which bought agreement at the price of every
+ * corridor in every world holding the same loot, pinned to difficulty tier 0 forever.</p>
+ *
+ * <p>The key the crossing actually needs is a <i>pure</i> one, not a constant one:
+ * {@code (trainSeed, corridorIndex)}, where {@code trainSeed} is the persisted per-world generation
+ * seed and {@code corridorIndex} is {@link PortalCarriageRole#corridorIndexOf} — the corridor's own
+ * real carriage index, derived from the pair's anchor and the corridor's role. Every site that stamps
+ * a corridor knows its role, so all of them land on the same answer with no state passing between
+ * them. A player is only ever mapped between a carriage and the twin of the <b>same</b> role, so a
+ * portal's two ends are free to furnish differently.</p>
  *
  * <p>Tested against {@link CarriageVariantBlocks#pickIndexFromWeights} — the picker both halves of
  * the contents pass ({@code applyVariantBlocks} and {@code applyContentPools}) are driven by, and
- * which they are handed the <em>same</em> {@code (seed, carriageIndex)} pair. Pinning the key on one
- * seam pins it for both. No Forge/MC bootstrap needed, same as
+ * which they are handed the <em>same</em> {@code (seed, carriageIndex)} pair. The corridor's shell
+ * variants roll in that same frame too. Pinning the key on one seam pins it for all of them. No Forge/MC bootstrap needed, same as
  * {@code CarriageVariantBlocksLockGroupTest}.</p>
  *
  * <p><b>What this does NOT cover.</b> {@code stampCorridorContents} is private and needs a
@@ -58,61 +64,70 @@ final class PortalCorridorContentsRollKeyTest {
         return picks;
     }
 
-    /** Entry-corridor index of the n-th portal group, at the default group size of three. */
+    /** Anchor of the n-th portal group, at the default group size of three. */
     private static int pairKeyOf(int groupOrdinal) {
         return PortalCarriageRole.entryIndexOf(groupOrdinal * 3, 3);
     }
 
-    @Test
-    @DisplayName("twin agreement: the same (worldSeed, pairKey) reproduces the corridor exactly")
-    void samePairKeyReproducesTheCorridor() {
-        long worldSeed = 0x5EEDCAFEL;
-        int pairKey = pairKeyOf(4);
+    /** The roll key one end of the n-th portal resolves under. */
+    private static List<Integer> corridorPicks(long trainSeed, int groupOrdinal, PortalCarriageRole role) {
+        return picksFor(trainSeed, PortalCarriageRole.corridorIndexOf(pairKeyOf(groupOrdinal), role));
+    }
 
-        List<Integer> carriage = picksFor(worldSeed, pairKey);
-        for (int restamp = 0; restamp < 50; restamp++) {
-            assertEquals(carriage, picksFor(worldSeed, pairKey),
-                "the twin must resolve identically to the carriage, or the crossing tears open");
+    @Test
+    @DisplayName("twin agreement: the same (trainSeed, corridorIndex) reproduces the corridor exactly")
+    void sameCorridorIndexReproducesTheCorridor() {
+        // The carriage, its twin, and every exit copy resolve this key independently. If it ever
+        // stopped reproducing, the crossing would show a seam.
+        long trainSeed = 0x5EEDCAFEL;
+
+        for (PortalCarriageRole role : PortalCarriageRole.values()) {
+            List<Integer> carriage = corridorPicks(trainSeed, 4, role);
+            for (int restamp = 0; restamp < 50; restamp++) {
+                assertEquals(carriage, corridorPicks(trainSeed, 4, role),
+                    "the twin must resolve identically to the carriage, or the crossing tears open");
+            }
         }
     }
 
     @Test
     @DisplayName("cross-portal variety: different portals in one world furnish differently")
-    void differentPairKeysDiverge() {
-        long worldSeed = 0x5EEDCAFEL;
+    void differentPortalsDiverge() {
+        long trainSeed = 0x5EEDCAFEL;
         Set<List<Integer>> distinct = new HashSet<>();
         for (int group = 0; group < 12; group++) {
-            distinct.add(picksFor(worldSeed, pairKeyOf(group)));
+            distinct.add(corridorPicks(trainSeed, group, PortalCarriageRole.ENTRY));
         }
         assertTrue(distinct.size() > 1,
             "every portal on the train resolved the same contents — the reported bug");
     }
 
     @Test
-    @DisplayName("cross-world variety: the same portal ordinal differs between world seeds")
-    void differentWorldSeedsDiverge() {
-        int pairKey = pairKeyOf(4);
-        assertNotEquals(picksFor(0x5EEDCAFEL, pairKey), picksFor(0x0DDBA11L, pairKey),
+    @DisplayName("cross-world variety: the same portal ordinal differs between train seeds")
+    void differentTrainSeedsDiverge() {
+        assertNotEquals(corridorPicks(0x5EEDCAFEL, 4, PortalCarriageRole.ENTRY),
+            corridorPicks(0x0DDBA11L, 4, PortalCarriageRole.ENTRY),
             "two worlds resolved the same corridor contents");
     }
 
     @Test
-    @DisplayName("a pair's entry and exit corridors share the key, so they furnish identically")
-    void bothCorridorsOfOnePairShareTheKey() {
-        // The property the key rests on: entryIndexOf answers the GROUP ANCHOR, so every slot in a
-        // portal group — entry corridor, exit corridor, the cart between — resolves to one key
-        // without any of them knowing another's index. A corridor is mirror-symmetric between the
-        // two roles, so the two ends of one portal are meant to agree; it is the next portal along
-        // that must differ.
-        long worldSeed = 0x5EEDCAFEL;
-        int anchor = 4 * 3;
+    @DisplayName("a portal's entry and exit corridors are separate carriages and furnish differently")
+    void entryAndExitDiverge() {
+        // The property the per-corridor key buys, and the one the pair-anchor key did not: the two
+        // ends of one portal are distinct carriages, so they get distinct furnishings. Nothing ever
+        // maps a player from one role's corridor into the other's, so there is no seam to protect.
+        long trainSeed = 0x5EEDCAFEL;
+        int pairKey = pairKeyOf(4);
 
-        int entryKey = PortalCarriageRole.entryIndexOf(anchor + PortalCarriageSelection.SLOT_ENTRY, 3);
-        int exitKey = PortalCarriageRole.entryIndexOf(anchor + PortalCarriageSelection.SLOT_EXIT, 3);
-        assertEquals(entryKey, exitKey, "the two corridors of one portal must derive the same key");
-        assertEquals(picksFor(worldSeed, entryKey), picksFor(worldSeed, exitKey));
+        int entryIndex = PortalCarriageRole.corridorIndexOf(pairKey, PortalCarriageRole.ENTRY);
+        int exitIndex = PortalCarriageRole.corridorIndexOf(pairKey, PortalCarriageRole.EXIT);
+        assertNotEquals(entryIndex, exitIndex,
+            "the two ends of a portal must be separate carriage indices");
+        assertEquals(pairKey + PortalCarriageSelection.SLOT_ENTRY, entryIndex);
+        assertEquals(pairKey + PortalCarriageSelection.SLOT_EXIT, exitIndex);
 
-        assertNotEquals(picksFor(worldSeed, entryKey), picksFor(worldSeed, pairKeyOf(5)),
-            "the next portal along resolved the same contents");
+        assertNotEquals(corridorPicks(trainSeed, 4, PortalCarriageRole.ENTRY),
+            corridorPicks(trainSeed, 4, PortalCarriageRole.EXIT),
+            "the two ends of one portal resolved identically");
     }
 }
