@@ -60,6 +60,16 @@
     ],
     "mode": "bedrock_lock"
   },
+  "defaultweird": {
+    "weight": 1,
+    "phases": [
+      "OVERWORLD",
+      "NETHER",
+      "VOID",
+      "END"
+    ],
+    "mode": "endless_open/single:minecraft:stone"
+  },
   "distantenemies": {
     "weight": 2,
     "minLevel": 1,
