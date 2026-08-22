@@ -30,11 +30,13 @@ import java.util.UUID;
  * {@code groupSize}-carriage <i>group</i> — all sharing a
  * {@link TrainTransformProvider#getTrainId() trainId}.
  *
- * <p>Each group is its own kinematic body. Because each sub-level's blocks
- * are placed once at assembly and never modified after, the per-sub-level
- * MassTracker / rotationPoint stays constant — eliminating the COM-drift
- * jitter we hit with the previous "one big sub-level for the whole train"
- * model. Trains are reassembled into logical groups via {@link Trains}.</p>
+ * <p>Each group is its own kinematic body, which eliminates the COM-drift jitter
+ * we hit with the previous "one big sub-level for the whole train" model: an
+ * append no longer moves an existing group's MassTracker / rotationPoint.
+ * <b>Runtime block mutations still do</b> — an explosion, a player mining, a
+ * portal mirror write — and those are corrected by
+ * {@link games.brennan.dungeontrain.ship.sable.CarriagePivotPin}, not by this
+ * layout. Trains are reassembled into logical groups via {@link Trains}.</p>
  *
  * <p>{@code groupSize} comes from the per-world
  * {@link CarriageGenerationConfig#groupSize() generation config} and is

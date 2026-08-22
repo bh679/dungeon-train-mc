@@ -40,23 +40,63 @@ class PortalRoomCopiesPlotTest {
     }
 
     private static PortalRoomCopiesPlot plot(VariantState... states) {
-        return new PortalRoomCopiesPlot("testroom", ORIGIN,
+        return plot(PortalRoomCopiesVariant.Plane.FLOOR, states);
+    }
+
+    private static PortalRoomCopiesPlot plot(PortalRoomCopiesVariant.Plane plane, VariantState... states) {
+        return new PortalRoomCopiesPlot("testroom", plane, ORIGIN,
             PortalRoomCopiesVariant.of(List.of(states)));
     }
 
     @Test
-    @DisplayName("The key names the room, and reads back as it")
+    @DisplayName("The key names the plane and the room, and reads back as both")
     void keyRoundTrips() {
         PortalRoomCopiesPlot p = plot(of(Blocks.STONE));
 
-        assertEquals("copies:testroom", p.key());
+        assertEquals("copies:floor:testroom", p.key());
         assertTrue(PortalRoomCopiesPlot.isCopiesKey(p.key()));
         assertEquals("testroom", PortalRoomCopiesPlot.roomOf(p.key()));
+        assertEquals(PortalRoomCopiesVariant.Plane.FLOOR, PortalRoomCopiesPlot.planeOf(p.key()));
+
+        PortalRoomCopiesPlot roof = plot(PortalRoomCopiesVariant.Plane.ROOF, of(Blocks.GLASS));
+        assertEquals("copies:roof:testroom", roof.key());
+        assertEquals("testroom", PortalRoomCopiesPlot.roomOf(roof.key()));
+        assertEquals(PortalRoomCopiesVariant.Plane.ROOF, PortalRoomCopiesPlot.planeOf(roof.key()));
 
         // Every other plot's key must not be mistaken for one of these.
         assertFalse(PortalRoomCopiesPlot.isCopiesKey("track:portal_room:testroom"));
         assertNull(PortalRoomCopiesPlot.roomOf("track:portal_room:testroom"));
         assertNull(PortalRoomCopiesPlot.roomOf(null));
+    }
+
+    @Test
+    @DisplayName("A key from before the planes were split still names its room, and means Floor")
+    void legacyKeyReadsAsFloor() {
+        assertEquals("testroom", PortalRoomCopiesPlot.roomOf("copies:testroom"));
+        assertEquals(PortalRoomCopiesVariant.Plane.FLOOR,
+            PortalRoomCopiesPlot.planeOf("copies:testroom"));
+    }
+
+    @Test
+    @DisplayName("Each plane's plot shows and edits its own palette")
+    void plotsAreScopedToTheirPlane() {
+        PortalRoomCopiesVariant both = PortalRoomCopiesVariant.of(
+            List.of(of(Blocks.STONE)), List.of(of(Blocks.GLASS)));
+        PortalRoomCopiesPlot floor =
+            new PortalRoomCopiesPlot("testroom", PortalRoomCopiesVariant.Plane.FLOOR, ORIGIN, both);
+        PortalRoomCopiesPlot roof =
+            new PortalRoomCopiesPlot("testroom", PortalRoomCopiesVariant.Plane.ROOF, ORIGIN, both);
+
+        assertEquals(List.of("minecraft:stone"), floor.variant().blockIds(
+            PortalRoomCopiesVariant.Plane.FLOOR));
+        assertTrue(roof.statesAt(PortalRoomCopiesPlot.CELL).get(0).state().is(Blocks.GLASS));
+
+        // Clearing the roof must leave the floor standing — an author tidying one row is not
+        // unbuilding the plain.
+        assertTrue(roof.remove(PortalRoomCopiesPlot.CELL));
+        assertTrue(roof.variant().isEmpty(PortalRoomCopiesVariant.Plane.ROOF));
+        assertEquals(List.of("minecraft:stone"),
+            roof.variant().blockIds(PortalRoomCopiesVariant.Plane.FLOOR));
     }
 
     @Test
@@ -88,22 +128,25 @@ class PortalRoomCopiesPlotTest {
 
         p.put(PortalRoomCopiesPlot.CELL, List.of(of(Blocks.ANDESITE), of(Blocks.COBBLESTONE)));
         assertEquals(List.of("minecraft:andesite", "minecraft:cobblestone"),
-            p.variant().blockIds());
+            p.variant().blockIds(PortalRoomCopiesVariant.Plane.FLOOR));
 
         // A write to any other address is dropped rather than silently landing on the one cell.
         p.put(new BlockPos(1, 0, 0), List.of(of(Blocks.SANDSTONE)));
         assertEquals(List.of("minecraft:andesite", "minecraft:cobblestone"),
-            p.variant().blockIds());
+            p.variant().blockIds(PortalRoomCopiesVariant.Plane.FLOOR));
     }
 
     @Test
-    @DisplayName("remove empties the cell and reports whether there was one")
+    @DisplayName("remove empties this plane's cell and reports whether there was one")
     void removeEmptiesTheCell() {
         PortalRoomCopiesPlot p = plot(of(Blocks.STONE));
 
         assertFalse(p.remove(new BlockPos(1, 0, 0)));
         assertTrue(p.remove(PortalRoomCopiesPlot.CELL));
-        assertTrue(p.variant().isEmpty());
+        // This plane only: the helper seeds both planes alike, and clearing the floor row must not
+        // take the roof with it.
+        assertTrue(p.variant().isEmpty(PortalRoomCopiesVariant.Plane.FLOOR));
+        assertNull(p.statesAt(PortalRoomCopiesPlot.CELL));
         // Nothing left to remove.
         assertFalse(p.remove(PortalRoomCopiesPlot.CELL));
     }

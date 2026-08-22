@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.portal;
 
 import games.brennan.dungeontrain.editor.VariantState;
+import games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane;
 import net.minecraft.SharedConstants;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.Bootstrap;
@@ -21,6 +22,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * The variant an {@link PortalRoomCopies.Kind#SINGLE} room repeats.
+ *
+ * <p>It holds one palette per {@link Plane}: an author may want a stone floor under a sea-lantern
+ * roof, and a file written before the two were split names one palette that both planes read.</p>
  *
  * <p>Three properties carry it. It must <b>round-trip</b>, since it is written by the editor and
  * read back at stamp time through the same shared serialization the block-variant sidecars use. It
@@ -56,14 +60,14 @@ class PortalRoomCopiesVariantTest {
         PortalRoomCopiesVariant back = reread(palette);
 
         assertEquals(List.of("minecraft:stone", "minecraft:andesite", "minecraft:cobblestone"),
-            back.blockIds(), palette.toJsonText());
+            back.blockIds(Plane.FLOOR), palette.toJsonText());
     }
 
     @Test
     @DisplayName("A one-entry palette round-trips too — the plain held block case")
     void roundTripSingleEntry() {
         PortalRoomCopiesVariant back = reread(PortalRoomCopiesVariant.of(List.of(of(Blocks.SANDSTONE))));
-        assertEquals(List.of("minecraft:sandstone"), back.blockIds());
+        assertEquals(List.of("minecraft:sandstone"), back.blockIds(Plane.FLOOR));
     }
 
     /** The editor's "this cell becomes air" sentinel — a command block, stored verbatim. */
@@ -84,15 +88,15 @@ class PortalRoomCopiesVariantTest {
         PortalRoomCopiesVariant variant =
             PortalRoomCopiesVariant.of(List.of(of(Blocks.STONE), airEntry()));
 
-        assertEquals(2, variant.size(),
+        assertEquals(2, variant.size(Plane.FLOOR),
             "filtering the author's variant makes the row, the file and a Copy back out disagree");
-        assertTrue(variant.states().stream().anyMatch(
+        assertTrue(variant.states(Plane.FLOOR).stream().anyMatch(
                 v -> games.brennan.dungeontrain.editor.CarriageVariantBlocks
                     .isEmptyPlaceholder(v.state())),
             "the empty-placeholder sentinel must survive being added");
 
         // And it has to survive the file, not just the constructor.
-        assertEquals(2, reread(variant).size());
+        assertEquals(2, reread(variant).size(Plane.FLOOR));
     }
 
     @Test
@@ -102,7 +106,7 @@ class PortalRoomCopiesVariantTest {
 
         assertFalse(variant.isEmpty(),
             "an all-air variant floors nothing, which is legal and the author's business");
-        assertEquals(1, variant.size());
+        assertEquals(1, variant.size(Plane.FLOOR));
     }
 
     @Test
@@ -111,8 +115,8 @@ class PortalRoomCopiesVariantTest {
         PortalRoomCopiesVariant variant =
             PortalRoomCopiesVariant.of(List.of(of(Blocks.STONE), mobEntry()));
 
-        assertEquals(2, variant.size());
-        assertTrue(reread(variant).states().stream().anyMatch(VariantState::isMob),
+        assertEquals(2, variant.size(Plane.FLOOR));
+        assertTrue(reread(variant).states(Plane.FLOOR).stream().anyMatch(VariantState::isMob),
             "the entity id must survive the round trip even though the planes do not spawn it");
     }
 
@@ -123,7 +127,7 @@ class PortalRoomCopiesVariantTest {
         for (int i = 0; i < PortalRoomCopiesVariant.MAX_ENTRIES + 5; i++) many.add(of(Blocks.STONE));
 
         assertEquals(PortalRoomCopiesVariant.MAX_ENTRIES,
-            PortalRoomCopiesVariant.of(many).size());
+            PortalRoomCopiesVariant.of(many).size(Plane.FLOOR));
     }
 
     @Test
@@ -144,10 +148,10 @@ class PortalRoomCopiesVariantTest {
             of(Blocks.STONE), of(Blocks.ANDESITE), of(Blocks.COBBLESTONE)));
 
         assertEquals(List.of("minecraft:sandstone"),
-            variant.withStates(List.of(of(Blocks.SANDSTONE))).blockIds());
+            variant.withStates(Plane.FLOOR, List.of(of(Blocks.SANDSTONE))).blockIds(Plane.FLOOR));
         // The row draws the first candidate, which is what the icon has to resolve to.
-        assertEquals("minecraft:stone", variant.iconBlockId());
-        assertEquals("", PortalRoomCopiesVariant.empty().iconBlockId());
+        assertEquals("minecraft:stone", variant.iconBlockId(Plane.FLOOR));
+        assertEquals("", PortalRoomCopiesVariant.empty().iconBlockId(Plane.FLOOR));
     }
 
     @Test
@@ -157,10 +161,10 @@ class PortalRoomCopiesVariantTest {
             of(Blocks.STONE), of(Blocks.ANDESITE), of(Blocks.COBBLESTONE)));
         BlockPos cell = new BlockPos(3, 0, 5);
 
-        VariantState first = palette.resolve(cell, 1234L, 7);
+        VariantState first = palette.resolve(Plane.FLOOR, cell, 1234L, 7);
         assertNotNull(first);
         // Same inputs, same answer — this is what makes a copy walked back to the copy you left.
-        assertEquals(first.state(), palette.resolve(cell, 1234L, 7).state());
+        assertEquals(first.state(), palette.resolve(Plane.FLOOR, cell, 1234L, 7).state());
     }
 
     @Test
@@ -175,9 +179,9 @@ class PortalRoomCopiesVariantTest {
         // Not an assertion that any particular pair differs — the picker is a hash, so a given pair
         // may legitimately collide. What must hold is that the index reaches the roll at all.
         boolean anyDiffer = false;
-        VariantState base = palette.resolve(cell, 99L, 0);
+        VariantState base = palette.resolve(Plane.FLOOR, cell, 99L, 0);
         for (int index = 1; index < 40 && !anyDiffer; index++) {
-            VariantState other = palette.resolve(cell, 99L, index);
+            VariantState other = palette.resolve(Plane.FLOOR, cell, 99L, index);
             anyDiffer = other != null && !other.state().equals(base.state());
         }
         assertTrue(anyDiffer, "the copy's identity must reach the roll or every tile would match");
@@ -196,7 +200,7 @@ class PortalRoomCopiesVariantTest {
         int total = 0;
         for (int x = 0; x < 16; x++) {
             for (int z = 0; z < 16; z++) {
-                VariantState picked = palette.resolve(new BlockPos(x, 0, z), 42L, 3);
+                VariantState picked = palette.resolve(Plane.FLOOR, new BlockPos(x, 0, z), 42L, 3);
                 if (picked.state().is(Blocks.ANDESITE)) heavy++;
                 total++;
             }
@@ -220,14 +224,85 @@ class PortalRoomCopiesVariantTest {
         PortalRoomCopiesVariant back = reread(PortalRoomCopiesVariant.of(List.of(log)));
 
         assertEquals(net.minecraft.core.Direction.Axis.X,
-            back.states().get(0).state()
+            back.states(Plane.FLOOR).get(0).state()
                 .getValue(net.minecraft.world.level.block.RotatedPillarBlock.AXIS));
+    }
+
+    // ---------- the two planes ----------
+
+    @Test
+    @DisplayName("A v1 file reads into both planes — nothing authored before the split changes")
+    void legacyFileFillsBothPlanes() {
+        PortalRoomCopiesVariant back = PortalRoomCopiesVariant.parse(new StringReader(
+            "{\"schemaVersion\": 1, \"blocks\": [\"minecraft:sandstone\"]}"), "t", "memory");
+
+        assertEquals(List.of("minecraft:sandstone"), back.blockIds(Plane.FLOOR));
+        assertEquals(List.of("minecraft:sandstone"), back.blockIds(Plane.ROOF),
+            "the old one-palette file was written from for both planes — reading it as floor-only "
+                + "would silently unroof every plain authored before the split");
+    }
+
+    @Test
+    @DisplayName("Two different planes round-trip through the file apart")
+    void planesRoundTripSeparately() {
+        PortalRoomCopiesVariant back = reread(PortalRoomCopiesVariant.of(
+            List.of(of(Blocks.STONE)), List.of(of(Blocks.SEA_LANTERN))));
+
+        assertEquals(List.of("minecraft:stone"), back.blockIds(Plane.FLOOR));
+        assertEquals(List.of("minecraft:sea_lantern"), back.blockIds(Plane.ROOF));
+    }
+
+    @Test
+    @DisplayName("A file naming one plane leaves the other empty rather than mirroring it")
+    void v2FileWithOnePlaneDoesNotMirror() {
+        PortalRoomCopiesVariant back = PortalRoomCopiesVariant.parse(new StringReader(
+            "{\"schemaVersion\": 2, \"floor\": [\"minecraft:stone\"]}"), "t", "memory");
+
+        assertEquals(List.of("minecraft:stone"), back.blockIds(Plane.FLOOR));
+        assertTrue(back.isEmpty(Plane.ROOF),
+            "a v2 file that names the floor and not the roof is asking for an open sky, not for "
+                + "the floor repeated overhead");
+    }
+
+    @Test
+    @DisplayName("Setting one plane leaves the other standing")
+    void withStatesTouchesOnePlane() {
+        PortalRoomCopiesVariant both = PortalRoomCopiesVariant.of(List.of(of(Blocks.STONE)));
+
+        PortalRoomCopiesVariant roofed = both.withStates(Plane.ROOF, List.of(of(Blocks.GLASS)));
+
+        assertEquals(List.of("minecraft:stone"), roofed.blockIds(Plane.FLOOR),
+            "authoring the roof must not unbuild the floor");
+        assertEquals(List.of("minecraft:glass"), roofed.blockIds(Plane.ROOF));
+    }
+
+    @Test
+    @DisplayName("Each plane rolls from its own palette")
+    void eachPlaneRollsItsOwn() {
+        PortalRoomCopiesVariant variant = PortalRoomCopiesVariant.of(
+            List.of(of(Blocks.STONE)), List.of(of(Blocks.GLASS)));
+        BlockPos cell = new BlockPos(4, 0, 6);
+
+        assertTrue(variant.resolve(Plane.FLOOR, cell, 7L, 1).state().is(Blocks.STONE));
+        assertTrue(variant.resolve(Plane.ROOF, cell, 7L, 1).state().is(Blocks.GLASS));
+    }
+
+    @Test
+    @DisplayName("An empty plane resolves to nothing — that plane is simply not written")
+    void emptyPlaneResolvesToNull() {
+        PortalRoomCopiesVariant floorOnly =
+            PortalRoomCopiesVariant.of(List.of(of(Blocks.STONE)), List.of());
+
+        assertNull(floorOnly.resolve(Plane.ROOF, BlockPos.ZERO, 1L, 1),
+            "a roofless plain is an authored choice, and an empty palette is how it is asked for");
+        assertFalse(floorOnly.isEmpty(), "the variant still has a floor");
+        assertTrue(floorOnly.isEmpty(Plane.ROOF));
     }
 
     @Test
     @DisplayName("An empty palette resolves to nothing rather than to air")
     void emptyResolvesToNull() {
-        assertNull(PortalRoomCopiesVariant.empty().resolve(BlockPos.ZERO, 1L, 1));
+        assertNull(PortalRoomCopiesVariant.empty().resolve(Plane.FLOOR, BlockPos.ZERO, 1L, 1));
         assertTrue(PortalRoomCopiesVariant.empty().isEmpty());
         assertFalse(PortalRoomCopiesVariant.of(List.of(of(Blocks.STONE))).isEmpty());
     }

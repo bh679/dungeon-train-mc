@@ -70,6 +70,10 @@
     ],
     "mode": "bedrock_lock"
   },
+  "deserter": {
+    "weight": 1,
+    "mode": "endless_open/single:minecraft:stone"
+  },
   "distantenemies": {
     "weight": 2,
     "minLevel": 1,

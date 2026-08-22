@@ -152,8 +152,14 @@ public final class EditorPlotPanelInputHandler {
             case HEIGHT_TYPE -> openAxisEntry(entry, "height", "Height", entry.roomHeight());
             case MODE_CYCLE -> dispatchModeCycle(entry);
             case COPIES_CYCLE -> dispatchCopiesCycle(entry);
-            case COPIES_BLOCK_HELD -> dispatchCopiesBlockHeld(entry);
-            case COPIES_BLOCK_EDIT -> dispatchCopiesBlockEdit(entry);
+            case COPIES_FLOOR_HELD -> dispatchCopiesBlockHeld(entry,
+                games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane.FLOOR);
+            case COPIES_FLOOR_EDIT -> dispatchCopiesBlockEdit(entry,
+                games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane.FLOOR);
+            case COPIES_ROOF_HELD -> dispatchCopiesBlockHeld(entry,
+                games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane.ROOF);
+            case COPIES_ROOF_EDIT -> dispatchCopiesBlockEdit(entry,
+                games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane.ROOF);
             case ROOM_CONTENTS_CYCLE -> dispatchRoomContentsCycle(entry);
             case ROOM_BOOKS_CYCLE -> dispatchRoomBooksCycle(entry);
             case ROOM_BOOKS_EDIT -> openBookMix(entry);
@@ -220,15 +226,21 @@ public final class EditorPlotPanelInputHandler {
     }
 
     /** Set the Copies block of the portal room the player is standing in to what they are holding. */
-    private static void dispatchCopiesBlockHeld(EditorPlotLabelsPacket.Entry entry) {
-        String cmd = EditorPlotTeleport.copiesBlockHeldCommandFor(entry.category());
+    private static void dispatchCopiesBlockHeld(
+        EditorPlotLabelsPacket.Entry entry,
+        games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane plane
+    ) {
+        String cmd = EditorPlotTeleport.copiesBlockHeldCommandFor(entry.category(), plane);
         if (cmd == null) return;
         CommandRunner.run(cmd);
     }
 
     /** Open the Block Variant menu on that block, so it can be turned into a variant. */
-    private static void dispatchCopiesBlockEdit(EditorPlotLabelsPacket.Entry entry) {
-        String cmd = EditorPlotTeleport.copiesBlockEditCommandFor(entry.category());
+    private static void dispatchCopiesBlockEdit(
+        EditorPlotLabelsPacket.Entry entry,
+        games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane plane
+    ) {
+        String cmd = EditorPlotTeleport.copiesBlockEditCommandFor(entry.category(), plane);
         if (cmd == null) return;
         CommandRunner.run(cmd);
     }

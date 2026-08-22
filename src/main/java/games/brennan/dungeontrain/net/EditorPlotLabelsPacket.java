@@ -79,12 +79,14 @@ public record EditorPlotLabelsPacket(List<Entry> entries) implements CustomPacke
         int roomWidth,
         int roomHeight,
         String roomMode,
-        String copiesBlock
+        String copiesFloorBlock,
+        String copiesRoofBlock
     ) {
         public Entry {
-            // Never null: the renderer reads it every frame the panel is up, and "" is the
-            // "nothing authored yet" case the row draws its hint for.
-            if (copiesBlock == null) copiesBlock = "";
+            // Never null: the renderer reads them every frame the panel is up, and "" is the
+            // "nothing authored yet" case the rows draw their hint for.
+            if (copiesFloorBlock == null) copiesFloorBlock = "";
+            if (copiesRoofBlock == null) copiesRoofBlock = "";
         }
 
         /** The shape before the Copies palette existed — no blocks to draw icons for. */
@@ -93,7 +95,7 @@ public record EditorPlotLabelsPacket(List<Entry> entries) implements CustomPacke
                      boolean inPlot, boolean isUser, boolean isImported,
                      int roomLength, int roomWidth, int roomHeight, String roomMode) {
             this(worldPos, name, weight, category, modelId, modelName, inPlot, isUser, isImported,
-                roomLength, roomWidth, roomHeight, roomMode, "");
+                roomLength, roomWidth, roomHeight, roomMode, "", "");
         }
 
         /** Back-compat shape for every category but PORTALS — no authored size or mode to show. */
@@ -101,7 +103,7 @@ public record EditorPlotLabelsPacket(List<Entry> entries) implements CustomPacke
                      String modelId, String modelName,
                      boolean inPlot, boolean isUser, boolean isImported) {
             this(worldPos, name, weight, category, modelId, modelName,
-                inPlot, isUser, isImported, NO_SIZE, NO_SIZE, NO_SIZE, NO_MODE, "");
+                inPlot, isUser, isImported, NO_SIZE, NO_SIZE, NO_SIZE, NO_MODE, "", "");
         }
 
         /** Back-compat shape from before portal rooms carried a mode. */
@@ -156,7 +158,8 @@ public record EditorPlotLabelsPacket(List<Entry> entries) implements CustomPacke
             buf.writeVarInt(e.roomWidth());
             buf.writeVarInt(e.roomHeight());
             buf.writeUtf(e.roomMode(), EditorStatusPacket.MODE_TAG_MAX);
-            buf.writeUtf(e.copiesBlock(), 128);
+            buf.writeUtf(e.copiesFloorBlock(), 128);
+            buf.writeUtf(e.copiesRoofBlock(), 128);
         }
     }
 
@@ -178,10 +181,11 @@ public record EditorPlotLabelsPacket(List<Entry> entries) implements CustomPacke
             int roomWidth = buf.readVarInt();
             int roomHeight = buf.readVarInt();
             String roomMode = buf.readUtf(EditorStatusPacket.MODE_TAG_MAX);
-            String copiesBlock = buf.readUtf(128);
+            String copiesFloorBlock = buf.readUtf(128);
+            String copiesRoofBlock = buf.readUtf(128);
             out.add(new Entry(pos, name, weight, category, modelId, modelName,
                 inPlot, isUser, isImported, roomLength, roomWidth, roomHeight, roomMode,
-                copiesBlock));
+                copiesFloorBlock, copiesRoofBlock));
         }
         return new EditorPlotLabelsPacket(out);
     }

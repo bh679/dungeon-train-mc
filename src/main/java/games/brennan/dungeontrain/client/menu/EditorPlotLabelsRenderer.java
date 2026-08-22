@@ -91,10 +91,13 @@ public final class EditorPlotLabelsRenderer {
         MODE_CYCLE,
         /** The sub-mode row — only shown while the mode makes copies. */
         COPIES_CYCLE,
-        /** The block row under it — sets the block from the hand. */
-        COPIES_BLOCK_HELD,
-        /** The Edit half of that row — opens the Block Variant menu on it. */
-        COPIES_BLOCK_EDIT,
+        /** The floor row under it — sets the floor palette from the hand. */
+        COPIES_FLOOR_HELD,
+        /** The Edit half of that row — opens the Block Variant menu on the floor palette. */
+        COPIES_FLOOR_EDIT,
+        /** The roof row — the same two halves, aimed at the plane over the player's head. */
+        COPIES_ROOF_HELD,
+        COPIES_ROOF_EDIT,
         /** The furnishing row — whether the room takes a contents template, and how it is fitted. */
         ROOM_CONTENTS_CYCLE,
         /** The sky row — whether the room is lit as though it stood outdoors, and under which sky. */
@@ -124,7 +127,7 @@ public final class EditorPlotLabelsRenderer {
      * {@link #rows} now, so the three cannot drift.</p>
      */
     public enum RowKind {
-        NAME, WEIGHT, LENGTH, WIDTH, HEIGHT, MODE, COPIES, COPIES_BLOCK, ROOM_CONTENTS,
+        NAME, WEIGHT, LENGTH, WIDTH, HEIGHT, MODE, COPIES, COPIES_FLOOR, COPIES_ROOF, ROOM_CONTENTS,
         ROOM_BOOKS, ROOM_SKY, EXITS, EXIT_EVERY, EXIT_MOVE, ENTER, ACTION, CONTENTS
     }
 
@@ -148,7 +151,10 @@ public final class EditorPlotLabelsRenderer {
         }
         if (hasModeRow(entry)) buf[n++] = RowKind.MODE;
         if (hasCopiesRow(entry)) buf[n++] = RowKind.COPIES;
-        if (hasCopiesBlockRow(entry)) buf[n++] = RowKind.COPIES_BLOCK;
+        if (hasCopiesBlockRow(entry)) {
+            buf[n++] = RowKind.COPIES_FLOOR;
+            buf[n++] = RowKind.COPIES_ROOF;
+        }
         if (hasRoomContentsRow(entry)) buf[n++] = RowKind.ROOM_CONTENTS;
         if (hasRoomBooksRow(entry)) buf[n++] = RowKind.ROOM_BOOKS;
         if (hasRoomSkyRow(entry)) buf[n++] = RowKind.ROOM_SKY;
@@ -222,8 +228,9 @@ public final class EditorPlotLabelsRenderer {
     }
 
     /**
-     * Whether the Block row shows: only while the Copies row above it says Single, the one value
-     * that reads a block.
+     * Whether the Floor and Roof rows show: only while the Copies row above them says Single, the
+     * one value that reads a block. The two always appear together — a tile has both planes, and an
+     * author who has set only one still needs to see that the other is unset.
      *
      * <p>Hidden rather than dimmed under the other two, the same way the Copies row itself is absent
      * rather than greyed out under walls that make no copies — a block for tiles that are copies of
@@ -246,13 +253,27 @@ public final class EditorPlotLabelsRenderer {
         return settings.copiesApply() && settings.effectiveCopies().repeatsOneBlock();
     }
 
-    /** Where the icon sits on the Copies Block row — right of the "Block:" label. */
+    /**
+     * True when {@code blockId} is the empty-placeholder sentinel — the author asked for air.
+     *
+     * <p>Id-only because that is all the row is sent: the label packet carries one block id per
+     * plane for the icon, never a state. Same three command-block kinds
+     * {@code CarriageVariantBlocks.isEmptyPlaceholder} covers, which is where the sentinel is
+     * defined.</p>
+     */
+    public static boolean isAirSentinelId(String blockId) {
+        return "minecraft:command_block".equals(blockId)
+            || "minecraft:chain_command_block".equals(blockId)
+            || "minecraft:repeating_command_block".equals(blockId);
+    }
+
+    /** Where the icon sits on a Copies plane row — right of its "Floor:" / "Roof:" label. */
     private static double copiesIconCentre(double halfW) {
         return -halfW + halfW * 0.75;
     }
 
     /**
-     * Where the Edit half of the Copies Block row starts.
+     * Where the Edit half of a Copies plane row starts.
      *
      * <p>{@link #BOOKS_CYCLE_SHARE}, the same split the Books row uses, so the two read as one
      * pattern: a value on the left, a way into its editor on the right.</p>
@@ -261,7 +282,7 @@ public final class EditorPlotLabelsRenderer {
         return booksEditLeft(halfW);
     }
 
-    /** True when {@code hitX} lands on the Copies Block row's Edit button rather than its value. */
+    /** True when {@code hitX} lands on a Copies plane row's Edit button rather than its value. */
     public static boolean copiesBlockHitIsEdit(double halfW, double hitX) {
         return hitX >= copiesEditLeft(halfW);
     }
@@ -275,8 +296,8 @@ public final class EditorPlotLabelsRenderer {
      * stops being the answer the moment a variant is authored. Saying what the row does is honest
      * at every width.</p>
      */
-    public static String copiesBlockLabel() {
-        return "Block: + held";
+    public static String copiesBlockLabel(games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane plane) {
+        return plane.displayName() + ": + held";
     }
 
     /**
@@ -730,8 +751,10 @@ public final class EditorPlotLabelsRenderer {
             // costs no more clicks than aiming at an arrow for it.
             case MODE -> CellKind.MODE_CYCLE;
             case COPIES -> CellKind.COPIES_CYCLE;
-            case COPIES_BLOCK -> copiesBlockHitIsEdit(halfW, hitX)
-                ? CellKind.COPIES_BLOCK_EDIT : CellKind.COPIES_BLOCK_HELD;
+            case COPIES_FLOOR -> copiesBlockHitIsEdit(halfW, hitX)
+                ? CellKind.COPIES_FLOOR_EDIT : CellKind.COPIES_FLOOR_HELD;
+            case COPIES_ROOF -> copiesBlockHitIsEdit(halfW, hitX)
+                ? CellKind.COPIES_ROOF_EDIT : CellKind.COPIES_ROOF_HELD;
             case ROOM_CONTENTS -> CellKind.ROOM_CONTENTS_CYCLE;
             case ROOM_BOOKS -> roomBooksRowCell(entry, hitX, halfW);
             case ROOM_SKY -> CellKind.ROOM_SKY_CYCLE;
@@ -933,32 +956,15 @@ public final class EditorPlotLabelsRenderer {
                     drawQuad(ps, buffer, -halfW + 0.01, rBot + 0.005, halfW - 0.01, rTop - 0.005, bg);
                     drawCenteredText(ps, buffer, font, copiesLabel(entry.roomMode()), 0, rCY, WEIGHT_COLOR);
                 }
-                // Blocks — the variant Single repeats, as icons. Clicking the row takes what the
-                // author is holding (a block, or a variant copied from a cell); clicking one icon
-                // removes that candidate. Mirrors StagePanelMenuRenderer's part strip.
-                case COPIES_BLOCK -> {
-                    double split = copiesEditLeft(halfW);
-                    int valueBg = hovered == CellKind.COPIES_BLOCK_HELD ? HOVER_COLOR : BUTTON_BG;
-                    drawQuad(ps, buffer, -halfW + 0.01, rBot + 0.005, split - 0.005, rTop - 0.005,
-                        valueBg);
-                    drawLeftText(ps, buffer, font, "Block:", -halfW + PAD_X, rCY, WEIGHT_COLOR);
-
-                    String block = entry.copiesBlock();
-                    if (block.isEmpty()) {
-                        // Nothing set yet: say what to do rather than showing an empty slot.
-                        drawLeftText(ps, buffer, font, "hold one", copiesIconCentre(halfW) - PAD_X,
-                            rCY, LABEL_COLOR);
-                    } else {
-                        MenuBlockIcons.drawBlockIcon(ps, buffer, block, copiesIconCentre(halfW),
-                            rCY, COPIES_ICON_SIZE);
-                    }
-
-                    int editBg = hovered == CellKind.COPIES_BLOCK_EDIT ? HOVER_COLOR : BUTTON_BG;
-                    drawQuad(ps, buffer, split + 0.005, rBot + 0.005, halfW - 0.01, rTop - 0.005,
-                        editBg);
-                    drawCenteredText(ps, buffer, font, "Edit", (split + halfW) / 2.0, rCY,
-                        BUTTON_TEXT_COLOR);
-                }
+                // Floor and Roof — the two variants Single repeats, as icons. Clicking a row takes
+                // what the author is holding (a block, or a variant copied from a cell); its Edit
+                // half opens the Block Variant menu on that plane alone.
+                case COPIES_FLOOR -> drawCopiesPlaneRow(ps, buffer, font, halfW, rBot, rTop, rCY,
+                    hovered, "Floor:", entry.copiesFloorBlock(),
+                    CellKind.COPIES_FLOOR_HELD, CellKind.COPIES_FLOOR_EDIT);
+                case COPIES_ROOF -> drawCopiesPlaneRow(ps, buffer, font, halfW, rBot, rTop, rCY,
+                    hovered, "Roof:", entry.copiesRoofBlock(),
+                    CellKind.COPIES_ROOF_HELD, CellKind.COPIES_ROOF_EDIT);
                 // Contents — whether this room is furnished from the contents pool, and how a
                 // furnishing smaller than the room is fitted into it. Off by default.
                 case ROOM_CONTENTS -> {
@@ -1092,6 +1098,44 @@ public final class EditorPlotLabelsRenderer {
             drawCenteredText(ps, buffer, font, "R", resetCX, aCY, BUTTON_TEXT_COLOR);
             drawCenteredText(ps, buffer, font, "C", clearCX, aCY, BUTTON_TEXT_COLOR);
         }
+    }
+
+    /**
+     * One Copies plane row: its label and icon on the left, an Edit button on the right.
+     *
+     * <p>Floor and Roof are the same row bar their label, their icon and which two cells they
+     * report — written once so the two cannot drift apart in geometry, which is what the hit-test
+     * assumes when it splits both of them at {@link #copiesEditLeft}.</p>
+     */
+    private static void drawCopiesPlaneRow(
+        PoseStack ps, MultiBufferSource buffer, Font font,
+        double halfW, double rBot, double rTop, double rCY,
+        CellKind hovered, String label, String block,
+        CellKind heldCell, CellKind editCell
+    ) {
+        double split = copiesEditLeft(halfW);
+        int valueBg = hovered == heldCell ? HOVER_COLOR : BUTTON_BG;
+        drawQuad(ps, buffer, -halfW + 0.01, rBot + 0.005, split - 0.005, rTop - 0.005, valueBg);
+        drawLeftText(ps, buffer, font, label, -halfW + PAD_X, rCY, WEIGHT_COLOR);
+
+        if (block.isEmpty()) {
+            // Nothing set yet: say what to do rather than showing an empty slot.
+            drawLeftText(ps, buffer, font, "hold one", copiesIconCentre(halfW) - PAD_X,
+                rCY, LABEL_COLOR);
+        } else if (isAirSentinelId(block)) {
+            // The plane is authored as air. Drawing the sentinel's own icon would put a command
+            // block in the author's roof row, which is a block they never chose; the Block Variant
+            // menu calls this entry "nothing" and so does this row.
+            drawLeftText(ps, buffer, font, "nothing", copiesIconCentre(halfW) - PAD_X,
+                rCY, WEIGHT_COLOR);
+        } else {
+            MenuBlockIcons.drawBlockIcon(ps, buffer, block, copiesIconCentre(halfW),
+                rCY, COPIES_ICON_SIZE);
+        }
+
+        int editBg = hovered == editCell ? HOVER_COLOR : BUTTON_BG;
+        drawQuad(ps, buffer, split + 0.005, rBot + 0.005, halfW - 0.01, rTop - 0.005, editBg);
+        drawCenteredText(ps, buffer, font, "Edit", (split + halfW) / 2.0, rCY, BUTTON_TEXT_COLOR);
     }
 
     /** {@link #drawCenteredText} anchored at its left edge — what a row with a strip beside it needs. */

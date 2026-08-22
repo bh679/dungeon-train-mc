@@ -473,14 +473,15 @@ public final class EditorCommand {
                     // Which block Single repeats. Its own branch rather than a second argument on
                     // the setter above, so the setter stays a bare word and a block id — which
                     // carries a colon — never has to survive StringArgumentType.word().
-                    .then(Commands.literal("block")
-                        .then(Commands.literal("held")
-                            .executes(ctx -> runPortalRoomCopiesBlockHeld(ctx.getSource())))
-                        .then(Commands.literal("edit")
-                            .executes(ctx -> runPortalRoomCopiesBlockEdit(ctx.getSource())))
-                        .then(Commands.argument("block", StringArgumentType.greedyString())
-                            .executes(ctx -> runPortalRoomCopiesBlock(ctx.getSource(),
-                                StringArgumentType.getString(ctx, "block")))))
+                    //
+                    // `block` sets both planes at once, which is what it has always meant and what
+                    // "I just want one material" still wants. `floor` and `roof` are the same three
+                    // verbs aimed at one plane each.
+                    .then(copiesPlaneNode("block", null))
+                    .then(copiesPlaneNode("floor",
+                        games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane.FLOOR))
+                    .then(copiesPlaneNode("roof",
+                        games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane.ROOF))
                     .then(Commands.argument("copies", StringArgumentType.word())
                         .suggests(PORTAL_ROOM_COPIES_SUGGESTIONS)
                         .executes(ctx -> runPortalRoomCopies(ctx.getSource(),
@@ -6001,18 +6002,49 @@ public final class EditorCommand {
     }
 
     /**
+     * One plane's three verbs: {@code held}, {@code edit} and a block id.
+     *
+     * <p>{@code plane} null means both planes — the {@code block} branch, which is what Single had
+     * before the floor and the roof were authored apart and is still the one-material gesture. The
+     * three branches are identical bar that argument, so they are built once rather than written out
+     * three times over.</p>
+     */
+    private static LiteralArgumentBuilder<CommandSourceStack> copiesPlaneNode(
+        String literal,
+        @javax.annotation.Nullable games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane plane
+    ) {
+        return Commands.literal(literal)
+            .then(Commands.literal("held")
+                .executes(ctx -> runPortalRoomCopiesBlockHeld(ctx.getSource(), plane)))
+            .then(Commands.literal("edit")
+                .executes(ctx -> runPortalRoomCopiesBlockEdit(ctx.getSource(), plane)))
+            .then(Commands.argument("block", StringArgumentType.greedyString())
+                .executes(ctx -> runPortalRoomCopiesBlock(ctx.getSource(), plane,
+                    StringArgumentType.getString(ctx, "block"))));
+    }
+
+    /**
      * {@code /dt editor portals copies block held} — set Single's block to what the author is
      * holding.
      *
-     * <p>Two things are worth holding. A plain <b>block</b> is the ordinary case. A <b>variant
-     * clipboard</b>, copied from a cell by the Block Variant menu, brings that cell's whole
-     * candidate list over in one gesture — the same value the Edit button authors in place.</p>
+     * <p>Three things are worth holding, and one of them is nothing. A plain <b>block</b> is the
+     * ordinary case. A <b>variant clipboard</b>, copied from a cell by the Block Variant menu,
+     * brings that cell's whole candidate list over in one gesture — the same value the Edit button
+     * authors in place. An <b>empty hand</b> sets the plane to air: a floor of gaps, or a roof that
+     * is open sky.</p>
+     *
+     * <p>Empty-hand-means-air is not invented here — it is what the Block Variant menu's Add does
+     * with an empty hand, down to the same command-block sentinel, so the gesture an author already
+     * knows from every other cell in the game means the same thing on these two rows.</p>
      *
      * <p>The held item rather than a typed id because this is a picking gesture, and the author is
      * already standing in the plot with their palette in their hotbar. The menu is opened by a key
      * toggle rather than by holding a tool, so the main hand is free.</p>
      */
-    private static int runPortalRoomCopiesBlockHeld(CommandSourceStack source) {
+    private static int runPortalRoomCopiesBlockHeld(
+        CommandSourceStack source,
+        @javax.annotation.Nullable games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane plane
+    ) {
         String name = portalRoomPlotUnderPlayer(source);
         if (name == null) return 0;
 
@@ -6023,6 +6055,17 @@ public final class EditorCommand {
         }
         ItemStack held = player.getMainHandItem();
 
+        if (held.isEmpty()) {
+            // The empty-placeholder sentinel, stored verbatim: PortalRoomSinglePlanes translates it
+            // to a no-cascade air write at stamp time, exactly as applyRoomVariants does for a cell.
+            // Air is a candidate like any other here, so this is authoring the plane rather than
+            // clearing it — the row keeps showing a value, and the plane is deliberately empty
+            // rather than merely unset.
+            return savePortalRoomCopiesVariant(source, name, plane, java.util.List.of(
+                new games.brennan.dungeontrain.editor.VariantState(
+                    net.minecraft.world.level.block.Blocks.COMMAND_BLOCK.defaultBlockState(), null)));
+        }
+
         if (held.getItem() instanceof games.brennan.dungeontrain.item.VariantClipboardItem) {
             java.util.List<games.brennan.dungeontrain.editor.VariantState> states =
                 games.brennan.dungeontrain.item.VariantClipboardItem.decodeStates(
@@ -6031,22 +6074,25 @@ public final class EditorCommand {
                 source.sendFailure(Component.literal("That clipboard is empty."));
                 return 0;
             }
-            return savePortalRoomCopiesVariant(source, name,
-                games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.of(states));
+            return savePortalRoomCopiesVariant(source, name, plane, states);
         }
         if (held.getItem() instanceof BlockItem blockItem) {
-            return savePortalRoomCopiesVariant(source, name,
-                games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.of(java.util.List.of(
-                    new games.brennan.dungeontrain.editor.VariantState(
-                        blockItem.getBlock().defaultBlockState(), null))));
+            return savePortalRoomCopiesVariant(source, name, plane, java.util.List.of(
+                new games.brennan.dungeontrain.editor.VariantState(
+                    blockItem.getBlock().defaultBlockState(), null)));
         }
         source.sendFailure(Component.literal(
-            "Hold a block, or a variant copied from a cell, then press this again."));
+            "Hold a block, or a variant copied from a cell — or nothing at all for air — "
+                + "then press this again."));
         return 0;
     }
 
-    /** {@code /dt editor portals copies block <id>} — set the block by name, for a script. */
-    private static int runPortalRoomCopiesBlock(CommandSourceStack source, String raw) {
+    /** {@code /dt editor portals copies <block|floor|roof> <id>} — set it by name, for a script. */
+    private static int runPortalRoomCopiesBlock(
+        CommandSourceStack source,
+        @javax.annotation.Nullable games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane plane,
+        String raw
+    ) {
         String name = portalRoomPlotUnderPlayer(source);
         if (name == null) return 0;
 
@@ -6057,9 +6103,8 @@ public final class EditorCommand {
                 "'" + raw + "' is not a block this world knows about."));
             return 0;
         }
-        return savePortalRoomCopiesVariant(source, name,
-            games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.of(java.util.List.of(
-                new games.brennan.dungeontrain.editor.VariantState(state.get(), null))));
+        return savePortalRoomCopiesVariant(source, name, plane, java.util.List.of(
+            new games.brennan.dungeontrain.editor.VariantState(state.get(), null)));
     }
 
     /**
@@ -6070,7 +6115,10 @@ public final class EditorCommand {
      * ({@code PortalRoomCopiesPlot}). Add, weights, rotation modes and Copy all work there, so
      * turning the one block into a variant needs no authoring surface of its own.</p>
      */
-    private static int runPortalRoomCopiesBlockEdit(CommandSourceStack source) {
+    private static int runPortalRoomCopiesBlockEdit(
+        CommandSourceStack source,
+        @javax.annotation.Nullable games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane plane
+    ) {
         String name = portalRoomPlotUnderPlayer(source);
         if (name == null) return 0;
         ServerPlayer player = source.getPlayer();
@@ -6078,36 +6126,98 @@ public final class EditorCommand {
             source.sendFailure(Component.literal("Only a player can open the variant menu."));
             return 0;
         }
-        games.brennan.dungeontrain.editor.BlockVariantMenuController.openForCopies(player, name);
+        // Both-planes has no menu of its own — one panel authors one cell, so `block edit` opens
+        // the floor and the row's own Edit buttons are how the roof is reached.
+        games.brennan.dungeontrain.editor.BlockVariantMenuController.openForCopies(player, name,
+            plane == null ? games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane.FLOOR : plane);
         return 1;
     }
 
     /**
-     * Store {@code variant} as what this room's copies repeat.
+     * Store {@code states} as what one of this room's planes repeats — or both of them, when
+     * {@code plane} is null.
      *
-     * <p>Replaces rather than appends: the value is one block, and the Block Variant menu is what
-     * turns it into several. Two writers, one whole-value handoff each.</p>
+     * <p>Read-modify-write on the room's existing palettes rather than a fresh value, so setting the
+     * roof leaves the floor exactly as it was. The plane not named keeps whatever it had, which is
+     * the whole point of authoring the two apart.</p>
+     *
+     * <p>Replaces rather than appends within a plane: the value is one block, and the Block Variant
+     * menu is what turns it into several. Two writers, one whole-value handoff each.</p>
      *
      * <p>Nothing is rejected on content. An entry that resolves to air is a gap the author asked
      * for, not a mistake to catch here.</p>
      */
     private static int savePortalRoomCopiesVariant(
         CommandSourceStack source, String name,
-        games.brennan.dungeontrain.portal.PortalRoomCopiesVariant variant
+        @javax.annotation.Nullable games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane plane,
+        java.util.List<games.brennan.dungeontrain.editor.VariantState> states
     ) {
+        games.brennan.dungeontrain.portal.PortalRoomCopiesVariant current =
+            games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.forRoom(
+                name, games.brennan.dungeontrain.portal.PortalRoomSettings.of(name).copies());
+        games.brennan.dungeontrain.portal.PortalRoomCopiesVariant variant = plane == null
+            ? games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.of(states)
+            : current.withStates(plane, states);
         try {
             variant.save(name);
             if (EditorDevMode.isEnabled()) variant.saveToSource(name);
         } catch (IOException e) {
             source.sendFailure(Component.literal(
-                "Could not save the copies block for portal room '" + name + "': " + e.getMessage()));
+                "Could not save the copies blocks for portal room '" + name + "': " + e.getMessage()));
             return 0;
         }
         games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.invalidate(name);
+        String what = plane == null ? "floor and roof" : plane.displayName().toLowerCase(java.util.Locale.ROOT);
         source.sendSuccess(() -> Component.literal(
-            "Editor: portal room '" + name + "' copies block is now "
-                + String.join(", ", variant.blockIds())).withStyle(ChatFormatting.GREEN), true);
+            "Editor: portal room '" + name + "' copies " + what + " is now "
+                + copiesPaletteText(variant,
+                    plane == null ? games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane.FLOOR : plane))
+            .withStyle(ChatFormatting.GREEN), true);
         return 1;
+    }
+
+    /**
+     * One plane's palette as text — with the empty-placeholder sentinel read back as {@code air}.
+     *
+     * <p>The sentinel is a command block on disk and a gap at stamp time, and the id is what the
+     * author would be shown otherwise. Telling them their roof is now {@code minecraft:command_block}
+     * describes the storage rather than the choice.</p>
+     */
+    private static String copiesPaletteText(
+        games.brennan.dungeontrain.portal.PortalRoomCopiesVariant variant,
+        games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane plane
+    ) {
+        java.util.List<games.brennan.dungeontrain.editor.VariantState> states = variant.states(plane);
+        if (states.isEmpty()) return "unset";
+        java.util.List<String> out = new java.util.ArrayList<>(states.size());
+        for (games.brennan.dungeontrain.editor.VariantState st : states) {
+            out.add(games.brennan.dungeontrain.editor.CarriageVariantBlocks.isEmptyPlaceholder(st.state())
+                ? "air"
+                : net.minecraft.core.registries.BuiltInRegistries.BLOCK
+                    .getKey(st.state().getBlock()).toString());
+        }
+        return String.join(", ", out);
+    }
+
+    /**
+     * The two Copies palettes for the status line — {@code "stone"} when both planes agree, and
+     * {@code "floor stone, roof glass"} when they do not.
+     *
+     * <p>Named separately only when they differ: a room whose planes match is the ordinary case, and
+     * spelling out "floor X, roof X" for it would put the split in front of every author who never
+     * asked for it.</p>
+     */
+    private static String copiesPalettesText(
+        String name, games.brennan.dungeontrain.portal.PortalRoomSettings settings
+    ) {
+        games.brennan.dungeontrain.portal.PortalRoomCopiesVariant variant =
+            games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.forRoom(name, settings.copies());
+        String floor = copiesPaletteText(variant,
+            games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane.FLOOR);
+        String roof = copiesPaletteText(variant,
+            games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane.ROOF);
+        if (floor.equals(roof)) return floor;
+        return "floor " + floor + "; roof " + roof;
     }
 
     /** {@code /dt editor portals books next} — step the author lock. */
@@ -6202,9 +6312,7 @@ public final class EditorCommand {
         String copies = settings.copiesApply()
             ? ", copies: " + settings.copies().displayName()
                 + (settings.effectiveCopies().repeatsOneBlock()
-                    ? " (" + String.join(", ",
-                        games.brennan.dungeontrain.portal.PortalRoomCopiesVariant
-                            .forRoom(name, settings.copies()).blockIds()) + ")"
+                    ? " (" + copiesPalettesText(name, settings) + ")"
                     : "")
             : "";
         String contents = ", contents: " + settings.contents().displayName();
