@@ -139,7 +139,12 @@ public record PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
             return mode.id() + SEPARATOR + effectiveCopies.id() + SEPARATOR + contents.id()
                 + SEPARATOR + effectiveExits.id() + SEPARATOR + books.id() + SEPARATOR + sky.id();
         }
-        if (books != PortalRoomBooks.DEFAULT) {
+        // Value equality, not identity: PortalRoomBooks is a record, and parsing an "off" segment
+        // builds a NEW instance equal to DEFAULT rather than returning it. An identity test here has
+        // any tag that has ever carried a books segment re-writing itself one segment longer for
+        // good — which switching Sky on and back off is now an easy way to trigger, since doing so
+        // writes the books placeholder on the way through.
+        if (!PortalRoomBooks.DEFAULT.equals(books)) {
             // Exits is written out as whatever it effectively is, even when that is the mode's own
             // default: a later segment cannot be written without the earlier ones in front of it,
             // and parse reads that placeholder back as the same value it stood in for.

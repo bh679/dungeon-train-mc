@@ -642,4 +642,19 @@ class PortalRoomSettingsTest {
         assertTrue(PortalRoomSky.NETHER.pinsDaylight());
         assertTrue(PortalRoomSky.END.pinsDaylight());
     }
+
+    @Test
+    @DisplayName("Switching a sky on and back off leaves the tag exactly as it found it")
+    void skyRoundTripLeavesNoChurn() {
+        // Regression: toTag used to test the Books segment by identity, and parse builds a new
+        // instance for an "off" segment rather than returning DEFAULT. Cycling Sky writes that
+        // placeholder on the way through, so a room set to Daylight and back used to come to rest
+        // one segment longer than it started — permanent churn in weights.json for no change at all.
+        for (String original : new String[]{"bedrock_lock", "endless_open/single:minecraft:stone",
+                "endless_repetition/dynamic", "bedrockless/exact/fit"}) {
+            String lit = PortalRoomSettings.parse(original).withSky(PortalRoomSky.DAY).toTag();
+            String back = PortalRoomSettings.parse(lit).withSky(PortalRoomSky.NONE).toTag();
+            assertEquals(original, back, "round tripped via " + lit);
+        }
+    }
 }
