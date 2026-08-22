@@ -1,0 +1,11 @@
+{
+  "id": "it_loved_them_for_you",
+  "title": "Il les a aimés pour toi",
+  "author": "Brennan Hatton",
+  "generation": 0,
+  "weight": 1,
+  "variants": [
+    "Tu vas vouloir t'asseoir.\n\nPas parce que c'est une mauvaise nouvelle.\n\n\n%TARGET% est en vie.\n\nTu n'y es pour rien.\n\nOu tu y es pour tout, selon la façon de compter.\n\n\nTu es tombé au wagon %CARRIAGE%.\nIl y a %DAYS% jours, à peu près.\n\nQuelque chose est resté derrière.\n%GEAR%\n\n\nIl l'a trouvé.\n\n%STORY%\n\n\nIl ne lui a rien demandé.\n\nIl a tendu ce qu'il avait et s'est mis entre lui et le reste du wagon.\n\n\nC'était toi.\nEn quelque sorte.\n\nLa part de toi qui n'a pas besoin d'être vivante pour tenir une promesse.\n\n\nUn jour, il en parlera à quelqu'un.\n\nIl se trompera sur ton nom.",
+    "Il y a des choses qu'on ne peut pas regarder.\n\nEn voici une.\n\n\n%TARGET% est arrivé au wagon %CARRIAGE%, dans un monde qui n'est pas celui-ci.\n\nQuelque chose portant ton visage attendait déjà.\n\n\nIl est resté là %DAYS% jours.\n%GEAR%\n\nRien de tout cela n'était pour se battre.\n\n\n%STORY%\n\n\nVoilà ce que je peux te dire.\n\nIl le connaissait.\nPas comme on connaît quelqu'un.\nComme une pièce connaît le soleil.\n\n\nEt puis le papier s'arrête.\n\nJe ne sais pas s'il a compris. Je ne sais pas si quelqu'un lui a dit à qui était ce visage.\n\n\nTu as aimé quelqu'un jusque dans le noir.\n\nLe noir l'a porté."
+  ]
+}

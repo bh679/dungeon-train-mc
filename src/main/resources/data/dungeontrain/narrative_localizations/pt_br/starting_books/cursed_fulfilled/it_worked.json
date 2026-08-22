@@ -1,0 +1,11 @@
+{
+  "id": "it_worked",
+  "title": "Funcionou",
+  "author": "Brennan Hatton",
+  "generation": 0,
+  "weight": 1,
+  "variants": [
+    "Funcionou.\n\n%TARGET% está morto.\n\nVocê não estava lá.\nVocê já estava morto.\n\nVagão %CARRIAGE%.\nO número em que você morreu virou o número em que eles morreram.\n\nAquilo esperou %DAYS% dias para fazer isso.\n%GEAR%\n\nFoi assim que aconteceu.\n\n%STORY%\n\nNão é estranho?\nUma coisa com o seu rosto,\nnum mundo que você nunca viu,\nterminando o que você começou.\n\nVocê não precisa se sentir bem com isso.\nVocê não precisa se sentir mal com isso.\n\nVocê só precisa saber.\n\nAgora você sabe.",
+    "Bem-vindo de volta ao Dungeon Train\nO que é o trem?\nPor que você está aqui?\nO que foi que você escreveu?\nTodas essas são boas perguntas\n\nVocê escreveu %TARGET%.\n\n%DAYS% dias depois, no vagão %CARRIAGE%, o papel estava certo.\n\n%STORY%\n\nPapel normalmente não está.\n\nEu sou papel.\nEu raramente estou certo.\n\nAquele estava.\n\nDurma bem."
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "id": "it_worked",
+  "title": "Berhasil",
+  "author": "Brennan Hatton",
+  "generation": 0,
+  "weight": 1,
+  "variants": [
+    "Berhasil.\n\n%TARGET% mati.\n\nKau tidak ada di sana.\nKau sudah mati lebih dulu.\n\nGerbong %CARRIAGE%.\nAngka tempatmu mati menjadi angka tempat mereka mati.\n\nIa menunggu %DAYS% hari untuk melakukannya.\n%GEAR%\n\nBeginilah jalannya.\n\n%STORY%\n\nTidakkah itu terasa ganjil?\nSesuatu berwajah kau,\ndi dunia yang tak pernah kaulihat,\nmenuntaskan apa yang kaumulai.\n\nKau tak harus merasa senang soal itu.\nKau tak harus merasa buruk soal itu.\n\nKau hanya harus tahu.\n\nSekarang kau tahu.",
+    "Selamat datang kembali di Dungeon Train\nApa itu kereta ini?\nMengapa kau ada di sini?\nApa yang kautulis?\nSemua ini pertanyaan bagus\n\nKau menulis %TARGET%.\n\n%DAYS% hari kemudian, di gerbong %CARRIAGE%, kertas itu benar.\n\n%STORY%\n\nKertas biasanya tidak benar.\n\nAku ini kertas.\nAku jarang benar.\n\nYang itu benar.\n\nTidurlah yang nyenyak."
+  ]
+}
