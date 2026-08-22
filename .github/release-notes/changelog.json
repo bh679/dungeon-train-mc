@@ -7825,6 +7825,19 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "endless-open-copies-control",
+      "version": "0.610.0",
+      "type": "feat",
+      "title": "Open-plain portal rooms can vary their floor",
+      "summary": "Endless Open portal rooms can now reroll their floor and ceiling per tile instead of repeating one pattern to the horizon.",
+      "highlights": [],
+      "pr": 1036,
+      "date": "2026-08-22",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

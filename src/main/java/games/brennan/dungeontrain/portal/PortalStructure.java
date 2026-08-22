@@ -140,6 +140,12 @@ public record PortalStructure(BlockPos origin, String roomName, Vec3i roomSize,
      * the same room repeated block for block. Under {@link PortalRoomCopies#DYNAMIC} the index mixes
      * in the copy's position, so copies differ from one another.</p>
      *
+     * <p>Both endless modes, not Endless Repetition alone. An {@link PortalRoomMode#ENDLESS_OPEN}
+     * copy is only the floor and the ceiling, but those cells go through the variant sidecar like any
+     * other, so a Dynamic open plain rerolls them per tile instead of repeating one floor out to the
+     * fog. Nothing here needs to know which mode asked: the index is the same pure function of the
+     * pair and the tile either way.</p>
+     *
      * <p><b>Still not a loot machine.</b> Both inputs are fixed for the life of the pair — the key is
      * its position on the train and the tile is a grid cell — so the index is a pure function of
      * <i>where</i>, never of <i>when</i>. A copy that retires as the tiling window slides, or a whole

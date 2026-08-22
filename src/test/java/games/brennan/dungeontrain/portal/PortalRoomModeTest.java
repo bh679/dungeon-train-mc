@@ -109,6 +109,23 @@ final class PortalRoomModeTest {
     }
 
     /**
+     * Stated per mode rather than as {@code tiles()}, for the reason {@link #fogging} is: Copies used
+     * to be gated on {@code tilesWholeRoom()}, and the two predicates agreed only while Endless Open
+     * was the sole mode that tiled less than a whole room. A mode added later has to say for itself
+     * whether a tile it appends is worth rolling separately.
+     */
+    @Test
+    @DisplayName("both endless modes take a Copies setting; the two that append nothing do not")
+    void copiesControl() {
+        assertTrue(PortalRoomMode.ENDLESS_REPETITION.copiesApply());
+        assertTrue(PortalRoomMode.ENDLESS_OPEN.copiesApply());
+        assertFalse(PortalRoomMode.BEDROCK_LOCK.copiesApply());
+        assertFalse(PortalRoomMode.BEDROCKLESS.copiesApply());
+        assertEquals(4, PortalRoomMode.values().length,
+            "a new mode must decide for itself whether it takes a Copies setting — add it to this test");
+    }
+
+    /**
      * Stated per mode rather than as {@code == BEDROCK_LOCK}, for the reason {@link #fogging} is:
      * the room's own skin stops at its ±X ends, so this is the only thing closing off the two
      * corridors that stand off them, and a mode added later has to answer it deliberately.
