@@ -465,7 +465,7 @@ public final class EditorCommand {
                     .then(Commands.literal("block")
                         .then(Commands.literal("held")
                             .executes(ctx -> runPortalRoomCopiesBlockHeld(ctx.getSource())))
-                        .then(Commands.argument("block", StringArgumentType.string())
+                        .then(Commands.argument("block", StringArgumentType.greedyString())
                             .executes(ctx -> runPortalRoomCopiesBlock(ctx.getSource(),
                                 StringArgumentType.getString(ctx, "block")))))
                     .then(Commands.argument("copies", StringArgumentType.word())
