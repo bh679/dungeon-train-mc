@@ -7771,9 +7771,9 @@
         "Remote servers keep vanilla Immediate Respawn behaviour"
       ],
       "date": "2026-08-22",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.606.0",
+      "released_at": "2026-08-22T03:15:31Z"
     }
   ]
 }
