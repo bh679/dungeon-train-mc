@@ -7743,8 +7743,25 @@
       "released_at": "2026-08-21T15:55:41Z"
     },
     {
-      "id": "instant-respawn-new-world",
+      "id": "trade-everything-separate-download",
       "version": "0.605.0",
+      "type": "feat",
+      "title": "Trade Everything is now its own download",
+      "summary": "Trade Everything \u2014 the mod that gives every villager a \"Trade Anything\" slot \u2014 used to ride along inside Dungeon Train's own file. It now installs alongside Dungeon Train as its own mod, so it shows up in your mod list and gets credited for its own downloads. The CurseForge and Modrinth apps fetch it for you automatically; if you install by hand, grab Trade Everything (0.7.0 or newer) with Dungeon Train.",
+      "highlights": [
+        "The CurseForge and Modrinth apps install Trade Everything for you \u2014 nothing to do.",
+        "Installing manually? Add Trade Everything 0.7.0+ next to Dungeon Train, or the game will tell you it's missing on launch.",
+        "Villager payouts fixed: selling no longer hands back emerald blocks priced as ordinary goods.",
+        "Bookshelves are now valued at 3 per emerald."
+      ],
+      "date": "2026-08-21",
+      "released": true,
+      "released_in": "v0.605.0",
+      "released_at": "2026-08-22T03:00:00Z"
+    },
+    {
+      "id": "instant-respawn-new-world",
+      "version": "0.606.0",
       "type": "feat",
       "title": "Immediate Respawn now rolls straight into a new run",
       "summary": "Turn on Minecraft's Immediate Respawn game rule and dying skips the death screen entirely \u2014 the world is discarded and a fresh Dungeon Train run starts on the spot, the same reboard the death screen's \"Board anew\" button performs. Previously the rule dropped you back into the world you had just died in, the one way a run could outlive your death. Multiplayer is unchanged: on a server you do not host, Immediate Respawn still respawns you as vanilla does.",
@@ -7753,7 +7770,7 @@
         "Holding Shift while you die keeps the current game mode, as on the reboard chip",
         "Remote servers keep vanilla Immediate Respawn behaviour"
       ],
-      "date": "2026-08-21",
+      "date": "2026-08-22",
       "released": false,
       "released_in": null,
       "released_at": null
