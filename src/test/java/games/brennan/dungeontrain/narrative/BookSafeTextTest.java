@@ -27,6 +27,10 @@ class BookSafeTextTest {
     private static final String ZWSP = String.valueOf((char) 0x200b);
     private static final String BOM = String.valueOf((char) 0xfeff);
     private static final String LRI = String.valueOf((char) 0x2066);  // bidi isolate
+    private static final String LRM = String.valueOf((char) 0x200e);  // left-to-right mark
+    private static final String RLM = String.valueOf((char) 0x200f);  // right-to-left mark
+    private static final String ZWNJ = String.valueOf((char) 0x200c);
+    private static final String ZWJ = String.valueOf((char) 0x200d);
     private static final String ACUTE = String.valueOf((char) 0x301); // combining acute accent
     private static final String HIGH = String.valueOf((char) 0xd800); // unpaired high surrogate
     private static final String SECTION = String.valueOf((char) 0xa7);
@@ -48,46 +52,75 @@ class BookSafeTextTest {
     }
 
     @Test
-    @DisplayName("strips formatting, control, bidi and zero-width characters")
+    @DisplayName("strips control characters, lone surrogates and invisible padding")
     void stripsHostileCharacters() {
-        assertEquals("akb", BookSafeText.sanitize("a" + SECTION + "kb", false));
-        assertEquals("abcd", BookSafeText.sanitize("a" + NUL + "b" + DEL + "c" + C1 + "d", false));
-        assertEquals("abcde", BookSafeText.sanitize("a" + RLO + "b" + ZWSP + "c" + BOM + "d" + LRI + "e", false));
-        assertEquals("ab", BookSafeText.sanitize("a" + HIGH + "b", false));
-        assertEquals("", BookSafeText.sanitize(null, false));
+        assertEquals("abcd", BookSafeText.sanitizeName("a" + NUL + "b" + DEL + "c" + C1 + "d"));
+        assertEquals("ab", BookSafeText.sanitizeName("a" + HIGH + "b"));   // lone surrogate
+        assertEquals("abc", BookSafeText.sanitizeName("a" + ZWSP + "b" + BOM + "c"));
+        assertEquals("", BookSafeText.sanitizeName(null));
     }
 
     @Test
-    @DisplayName("keeps astral characters whole")
-    void keepsAstralText() {
-        assertEquals("a" + EMOJI + "b", BookSafeText.sanitize("a" + EMOJI + "b", false));
-        assertFalse(hasLoneSurrogate(BookSafeText.sanitize("a" + EMOJI + "b", false)));
+    @DisplayName("§ styles a page body, but never a title or an author")
+    void formattingAllowedOnPagesOnly() {
+        // Styling your own page is a feature. A title or author name reaches item names, chat and
+        // tooltips, so § there would restyle UI that does not belong to the book.
+        assertEquals("a" + SECTION + "lpage", BookSafeText.sanitizePage("a" + SECTION + "lpage"));
+        assertEquals("alpage", BookSafeText.sanitizeName("a" + SECTION + "lpage"));
     }
 
     @Test
-    @DisplayName("newlines survive in pages, never in titles or authors")
+    @DisplayName("right-to-left text is left alone — bidi marks, overrides and isolates all survive")
+    void bidiIsPreserved() {
+        // Stripping these mangles legitimate Arabic and Hebrew, which DT ships locales for. A book
+        // that reverses its own display is cosmetic and cannot escape the book.
+        for (String bidi : new String[] { RLO, LRI, LRM, RLM }) {
+            assertEquals("a" + bidi + "b", BookSafeText.sanitizePage("a" + bidi + "b"));
+            assertEquals("a" + bidi + "b", BookSafeText.sanitizeName("a" + bidi + "b"));
+        }
+    }
+
+    @Test
+    @DisplayName("ZWNJ and ZWJ survive — Indic/Persian scripts and emoji sequences need them")
+    void joinersArePreserved() {
+        assertEquals("a" + ZWNJ + "b", BookSafeText.sanitizePage("a" + ZWNJ + "b"));
+        // A ZWJ emoji sequence must come through whole, or every family emoji breaks.
+        String family = EMOJI + ZWJ + EMOJI;
+        assertEquals(family, BookSafeText.sanitizePage(family));
+    }
+
+    @Test
+    @DisplayName("newlines survive in pages, never in names")
     void newlinePolicy() {
-        assertEquals("a\nb", BookSafeText.sanitize("a\nb", true));
-        assertEquals("ab", BookSafeText.sanitize("a\nb", false));
-        assertEquals("a\nb", BookSafeText.sanitize("a\r\nb", true)); // CR dropped, LF kept
+        assertEquals("a\nb", BookSafeText.sanitizePage("a\nb"));
+        assertEquals("ab", BookSafeText.sanitizeName("a\nb"));
+        assertEquals("a\nb", BookSafeText.sanitizePage("a\r\nb")); // CR dropped, LF kept
     }
 
     @Test
     @DisplayName("collapses Zalgo combining-mark stacks, keeps ordinary accents")
     void collapsesCombiningRuns() {
         String zalgo = "e" + ACUTE.repeat(200);
-        assertEquals(1 + BookSafeText.MAX_COMBINING_RUN, BookSafeText.sanitize(zalgo, false).length());
-        assertEquals("e" + ACUTE, BookSafeText.sanitize("e" + ACUTE, false));
-        assertEquals("e" + ACUTE.repeat(3), BookSafeText.sanitize("e" + ACUTE.repeat(3), false));
-        // The run counter resets on the next base character — a second accented letter is untouched.
-        assertEquals("e" + ACUTE + "a" + ACUTE, BookSafeText.sanitize("e" + ACUTE + "a" + ACUTE, false));
+        assertEquals(1 + BookSafeText.MAX_COMBINING_RUN, BookSafeText.sanitizePage(zalgo).length());
+        assertEquals("e" + ACUTE, BookSafeText.sanitizePage("e" + ACUTE));
+        assertEquals("e" + ACUTE.repeat(3), BookSafeText.sanitizePage("e" + ACUTE.repeat(3)));
+        // The run counter resets on the next base character.
+        assertEquals("e" + ACUTE + "a" + ACUTE, BookSafeText.sanitizePage("e" + ACUTE + "a" + ACUTE));
+    }
+
+    @Test
+    @DisplayName("keeps astral characters whole")
+    void keepsAstralText() {
+        assertEquals("a" + EMOJI + "b", BookSafeText.sanitizePage("a" + EMOJI + "b"));
+        assertFalse(hasLoneSurrogate(BookSafeText.sanitizePage("a" + EMOJI + "b")));
     }
 
     @Test
     @DisplayName("is idempotent, so applying it in more than one place is safe")
     void idempotent() {
-        String hostile = "a" + SECTION + "k " + RLO + EMOJI + "e" + ACUTE.repeat(50) + HIGH;
-        assertEquals(BookSafeText.sanitize(hostile, true), BookSafeText.sanitize(BookSafeText.sanitize(hostile, true), true));
+        String hostile = "a" + SECTION + "k " + RLO + EMOJI + "e" + ACUTE.repeat(50) + HIGH + ZWSP;
+        assertEquals(BookSafeText.sanitizePage(hostile), BookSafeText.sanitizePage(BookSafeText.sanitizePage(hostile)));
+        assertEquals(BookSafeText.sanitizeName(hostile), BookSafeText.sanitizeName(BookSafeText.sanitizeName(hostile)));
     }
 
     @Test
@@ -103,10 +136,10 @@ class BookSafeTextTest {
     }
 
     @Test
-    @DisplayName("sanitizeAndClamp trims before clamping so whitespace can't eat the budget")
+    @DisplayName("sanitizeAndClampName trims before clamping so whitespace can't eat the budget")
     void sanitizeAndClampTrims() {
-        assertEquals("hi", BookSafeText.sanitizeAndClamp("   hi   ", 8, false));
-        assertEquals("abcd", BookSafeText.sanitizeAndClamp("  a" + SECTION + "bcdefg", 4, false));
-        assertFalse(hasLoneSurrogate(BookSafeText.sanitizeAndClamp("x".repeat(127) + EMOJI, 128, false)));
+        assertEquals("hi", BookSafeText.sanitizeAndClampName("   hi   ", 8));
+        assertEquals("abcd", BookSafeText.sanitizeAndClampName("  a" + SECTION + "bcdefg", 4));
+        assertFalse(hasLoneSurrogate(BookSafeText.sanitizeAndClampName("x".repeat(127) + EMOJI, 128)));
     }
 }

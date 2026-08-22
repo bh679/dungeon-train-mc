@@ -427,8 +427,8 @@ public final class BookFactory {
         // relay pool and the client's sign-book packet — and a title made entirely of control
         // characters would otherwise pass the isBlank() test, skip the "Untitled" fallback, and
         // ship as an invisible name. See BookSafeText for what is stripped and why.
-        String cleanTitle = BookSafeText.sanitize(title, false);
-        String cleanAuthor = BookSafeText.sanitize(author, false);
+        String cleanTitle = BookSafeText.sanitizeName(title);
+        String cleanAuthor = BookSafeText.sanitizeName(author);
         String safeTitle = cleanTitle.isBlank() ? "Untitled" : cleanTitle;
         String safeAuthor = cleanAuthor.isBlank() ? "Anonymous" : cleanAuthor;
 
@@ -436,9 +436,9 @@ public final class BookFactory {
         if (pages != null) {
             for (String page : pages) {
                 if (page == null) continue;
-                // Pages keep their newlines — paginate() splits on blank lines, so line structure
-                // is load-bearing in a way it is not for a title.
-                String cleanPage = BookSafeText.sanitize(page, true);
+                // Pages keep their newlines AND their § formatting codes — line structure is
+                // load-bearing here, and styling your own page is a feature. See BookSafeText.
+                String cleanPage = BookSafeText.sanitizePage(page);
                 // Re-flow each contributed page through the shared paginator so an
                 // overlong page is split across multiple book pages rather than
                 // silently clipped by the client's page renderer.

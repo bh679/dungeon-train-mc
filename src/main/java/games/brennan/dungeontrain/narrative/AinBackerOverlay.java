@@ -225,7 +225,7 @@ public final class AinBackerOverlay {
      * char-based clamp here, truncates without ever splitting a surrogate pair.</p>
      */
     public static String sanitize(String raw, int maxLen) {
-        return BookSafeText.sanitizeAndClamp(raw, maxLen, false);
+        return BookSafeText.sanitizeAndClampName(raw, maxLen);
     }
 
     /** Tests only: how many segment overrides are currently installed. */

@@ -143,8 +143,8 @@ public final class BookAuthorsClient {
             if (token.isBlank()) continue;
             // Sanitized at the parse boundary: this name reaches chat lines and lectern tribute
             // pages that do NOT pass through BookFactory, so it has no other guard.
-            String name = BookSafeText.sanitize(
-                o.has("name") && !o.get("name").isJsonNull() ? o.get("name").getAsString() : "", false);
+            String name = BookSafeText.sanitizeName(
+                o.has("name") && !o.get("name").isJsonNull() ? o.get("name").getAsString() : "");
             int count = 0;
             if (o.has("count") && o.get("count").isJsonPrimitive()) {
                 try {

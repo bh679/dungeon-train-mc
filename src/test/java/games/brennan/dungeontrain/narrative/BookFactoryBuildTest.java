@@ -43,6 +43,7 @@ class BookFactoryBuildTest {
     private static final String SECTION = String.valueOf((char) 0xa7);
     private static final String NUL = String.valueOf((char) 0x00);
     private static final String RLO = String.valueOf((char) 0x202e);
+    private static final String ZWSP = String.valueOf((char) 0x200b);
     private static final String EMOJI = new String(Character.toChars(0x1f600));
 
     private static WrittenBookContent contentOf(ItemStack stack) {
@@ -104,20 +105,33 @@ class BookFactoryBuildTest {
         // Sanitizing runs BEFORE the blank check for exactly this case: these characters pass
         // isBlank() on the raw string, so without that ordering the book would ship a nameless title.
         WrittenBookContent content = contentOf(
-            BookFactory.buildPlainBook(NUL + RLO, NUL, List.of("body")));
+            BookFactory.buildPlainBook(NUL + ZWSP, NUL, List.of("body")));
         assertEquals("Untitled", content.title().raw());
         assertEquals("Anonymous", content.author());
     }
 
     @Test
-    @DisplayName("Section signs reach the item as literal text, never as formatting")
-    void sectionSignsAreStripped() {
+    @DisplayName("Section signs style a page, but are stripped from the title and author")
+    void sectionSignsAllowedOnPagesOnly() {
+        // Styling your own page is a feature. A title or author reaches item names, chat lines and
+        // tooltips, where § would restyle UI that does not belong to the book.
         WrittenBookContent content = contentOf(BookFactory.buildPlainBook(
             "My" + SECTION + "kBook", "St" + SECTION + "leve", List.of("a" + SECTION + "lpage")));
         assertEquals("MykBook", content.title().raw());
         assertEquals("Stleve", content.author());
-        assertEquals(List.of("alpage"), pageTexts(content));
         assertFalse(content.title().raw().contains(SECTION));
+        assertEquals(List.of("a" + SECTION + "lpage"), pageTexts(content), "page keeps its formatting");
+    }
+
+    @Test
+    @DisplayName("Right-to-left text survives the build intact")
+    void bidiSurvives() {
+        // Stripping bidi would mangle legitimate Arabic and Hebrew, which DT ships locales for.
+        WrittenBookContent content = contentOf(BookFactory.buildPlainBook(
+            "Title" + RLO, "Auth" + RLO + "or", List.of("a page" + RLO + " with bidi")));
+        assertTrue(content.title().raw().contains(RLO));
+        assertTrue(content.author().contains(RLO));
+        assertTrue(pageTexts(content).get(0).contains(RLO));
     }
 
     @Test
@@ -143,7 +157,7 @@ class BookFactoryBuildTest {
     @DisplayName("A book whose pages all sanitize away still builds a valid stack")
     void emptyPagesStillBuild() {
         WrittenBookContent content = contentOf(
-            BookFactory.buildPlainBook("Title", "Steve", List.of(NUL, RLO)));
+            BookFactory.buildPlainBook("Title", "Steve", List.of(NUL, ZWSP)));
         assertEquals(1, content.pages().size(), "an empty book gets one blank page, not zero");
         assertEquals("", pageTexts(content).get(0));
     }
