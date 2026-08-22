@@ -198,8 +198,8 @@ public final class EditorPlotLabelsRenderer {
     }
 
     /**
-     * Whether the Copies row shows: only when the walls repeat the whole room, since that is the
-     * only mode that makes copies for the setting to describe.
+     * Whether the Copies row shows: only when the walls are endless, since those are the only modes
+     * that append tiles for the setting to describe.
      */
     public static boolean hasCopiesRow(EditorPlotLabelsPacket.Entry entry) {
         return hasModeRow(entry)

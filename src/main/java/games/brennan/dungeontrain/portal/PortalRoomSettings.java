@@ -5,10 +5,9 @@ import games.brennan.dungeontrain.track.variant.TrackVariantWeights;
 
 /**
  * Everything a {@code portal_room} variant says about its own boundary: what it does at its walls,
- * — for {@link PortalRoomMode#ENDLESS_REPETITION} — whether the copies it makes are identical or
- * rolled afresh, whether the room is furnished from the ordinary contents pool, for either
- * endless mode how many extra ways back to the train it scatters through its copies, and whether
- * every book inside it is by one author.
+ * — for either endless mode — whether the tiles it appends are identical or rolled afresh, whether
+ * the room is furnished from the ordinary contents pool, how many extra ways back to the train it
+ * scatters through its copies, and whether every book inside it is by one author.
  *
  * <h2>All five live in the one {@code mode} tag</h2>
  * <p>On disk that reads {@code "mode": "endless_repetition/dynamic/fit/random:12/signature"}, or just
@@ -142,9 +141,9 @@ public record PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
         return mode.id() + SEPARATOR + effectiveCopies.id();
     }
 
-    /** True when the Copies control applies at all — only Endless Repetition makes copies of a room. */
+    /** True when the Copies control applies at all — either endless mode appends tiles to roll. */
     public boolean copiesApply() {
-        return mode.tilesWholeRoom();
+        return mode.copiesApply();
     }
 
     /** True when the Exits control applies at all — only an endless room has anywhere to put one. */

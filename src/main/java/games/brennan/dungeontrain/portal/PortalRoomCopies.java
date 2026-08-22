@@ -3,11 +3,19 @@ package games.brennan.dungeontrain.portal;
 import java.util.Locale;
 
 /**
- * Whether the copies {@link PortalRoomMode#ENDLESS_REPETITION} makes are identical to the room they
- * repeat, or each rolled afresh from its block-variant sidecar.
+ * Whether the tiles an endless room appends are identical to the room they repeat, or each rolled
+ * afresh from its block-variant sidecar.
  *
- * <p>A sub-mode rather than a mode of its own: it only means anything while the walls are set to
- * Endless Repetition, and it says nothing about what happens at them.</p>
+ * <p>A sub-mode rather than a mode of its own: it only means anything while the walls are set to one
+ * of the two endless modes, and it says nothing about what happens at them.</p>
+ *
+ * <h2>What it varies depends on what the tile carries</h2>
+ * <p>Under {@link PortalRoomMode#ENDLESS_REPETITION} a tile is the whole room, so Dynamic varies
+ * everything in it — blocks, furnishing and chest contents alike. Under
+ * {@link PortalRoomMode#ENDLESS_OPEN} a tile is the floor and the ceiling and nothing between them
+ * ({@code PortalRoomTiler.writeMaskFor}), so Dynamic varies those two planes and there is no
+ * per-copy loot for it to vary — the interior is never written in the first place. Exact repeats
+ * one roll of whichever of the two it is.</p>
  *
  * <h2>Dynamic is deterministic per copy, on purpose</h2>
  * <p>A copy's variant seed is a pure function of the world seed, the room's name and the copy's
@@ -19,13 +27,13 @@ import java.util.Locale;
  */
 public enum PortalRoomCopies {
 
-    /** Every copy is the room, block for block — the same variant roll throughout. */
+    /** Every tile is what the base tile is, block for block — the same variant roll throughout. */
     EXACT("exact", "Exact"),
 
-    /** Each copy rolls its own variants and container contents from the same template. */
+    /** Each tile rolls its own variants and container contents from the same template. */
     DYNAMIC("dynamic", "Dynamic");
 
-    /** What a variant with nothing set behaves as: copies that match the room they repeat. */
+    /** What a variant with nothing set behaves as: tiles that match the room they repeat. */
     public static final PortalRoomCopies DEFAULT = EXACT;
 
     private final String id;
