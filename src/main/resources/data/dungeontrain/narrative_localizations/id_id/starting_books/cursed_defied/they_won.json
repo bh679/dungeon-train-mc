@@ -1,0 +1,11 @@
+{
+  "id": "they_won",
+  "title": "Mereka Menang",
+  "author": "Brennan Hatton",
+  "generation": 0,
+  "weight": 1,
+  "variants": [
+    "Mereka menang.\n\n%TARGET% membunuhmu.\nLagi, secara teknis.\nKau sudah tiada sejak tadi.\n\nGerbong %CARRIAGE%.\n%DAYS% hari menunggu.\n\n%STORY%\n\nMereka mengambil catatan itu dari tubuhnya.\nTulisan tanganmu.\nNamamu di atasnya.\n\nDi suatu tempat di dunia yang takkan pernah kaukunjungi, seseorang menyimpan catatan kematianmu di dalam sebuah peti.\n\nBagaimana rasanya?",
+    "Soal nama yang kautulis itu.\n\n%TARGET%.\n\nMasih bernapas.\n\nGemamu menemukan mereka di gerbong %CARRIAGE%, terlambat %DAYS% hari, dan kalah.\n\n%GEAR%\nIa punya wajahmu.\nIa bertarung sepertimu.\n\n%STORY%\n\nBagian terakhir itu mungkin masalahnya.\n\n.\n\nSemoga lebih beruntung di kehidupan berikutnya."
+  ]
+}

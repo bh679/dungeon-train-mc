@@ -1,0 +1,11 @@
+{
+  "id": "they_won",
+  "title": "Wygrali",
+  "author": "Brennan Hatton",
+  "generation": 0,
+  "weight": 1,
+  "variants": [
+    "Wygrali.\n\n%TARGET% cię zabił.\nZnowu, formalnie rzecz biorąc.\nCiebie już nie było.\n\nWagon %CARRIAGE%.\n%DAYS% dni czekania.\n\n%STORY%\n\nZdjęli notes z ciała.\nTwoje pismo.\nTwoje imię na nim.\n\nGdzieś w świecie, którego nigdy nie odwiedzisz, ktoś trzyma twój notes śmierci w skrzyni.\n\nJak ci z tym?",
+    "Co do tego imienia, które zapisałeś.\n\n%TARGET%.\n\nWciąż oddycha.\n\nTwoje echo znalazło go przy wagonie %CARRIAGE%, %DAYS% dni za późno, i przegrało.\n\n%GEAR%\nMiało twoją twarz.\nBiło się jak ty.\n\n%STORY%\n\nMoże właśnie to ostatnie jest problemem.\n\n.\n\nPowodzenia w następnym życiu."
+  ]
+}

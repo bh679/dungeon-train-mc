@@ -1,0 +1,11 @@
+{
+  "id": "it_loved_them_for_you",
+  "title": "Amou-os Por Ti",
+  "author": "Brennan Hatton",
+  "generation": 0,
+  "weight": 1,
+  "variants": [
+    "É melhor sentares-te.\n\nNão porque seja mau.\n\n\n%TARGET% está vivo.\n\nNão tiveste nada a ver com isso.\n\nOu tiveste tudo a ver com isso, depende de como se conta.\n\n\nCaíste na carruagem %CARRIAGE%.\nHá %DAYS% dias, mais coisa menos coisa.\n\nAlgo ficou para trás.\n%GEAR%\n\n\nEncontrou-o.\n\n%STORY%\n\n\nNão lhe pediu nada.\n\nEntregou o que tinha e pôs-se entre ele e o resto da carruagem.\n\n\nAquilo eras tu.\nMais ou menos.\n\nA parte que não precisa de estar viva para cumprir uma promessa.\n\n\nUm dia há de contar isto a alguém.\n\nE há de enganar-se no teu nome.",
+    "Há coisas que não te é dado ver.\n\nEsta é uma delas.\n\n\n%TARGET% chegou à carruagem %CARRIAGE% num mundo que não é este.\n\nAlgo com a tua cara já lá estava à espera.\n\n\nFicou ali %DAYS% dias.\n%GEAR%\n\nNada daquilo era para lutar.\n\n\n%STORY%\n\n\nIsto é o que te posso dizer.\n\nConhecia-o.\nNão como se conhece alguém.\nComo uma sala conhece o sol.\n\n\nE depois o papel para.\n\nNão sei se percebeu. Não sei se alguém lhe disse de quem era aquela cara.\n\n\nAmaste alguém para dentro do escuro.\n\nO escuro levou esse amor."
+  ]
+}
