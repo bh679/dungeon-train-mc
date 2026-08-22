@@ -63,18 +63,18 @@ final class EditorEditHistoryTest {
         EditorEditHistory.push(player, step(PLOT, "two", 2, AIR, STONE));
         EditorEditHistory.push(player, step(PLOT, "three", 3, AIR, STONE));
 
-        assertEquals("three", EditorEditHistory.popUndo(player, PLOT).orElseThrow().label());
-        assertEquals("two", EditorEditHistory.popUndo(player, PLOT).orElseThrow().label());
-        assertEquals("one", EditorEditHistory.popUndo(player, PLOT).orElseThrow().label());
-        assertTrue(EditorEditHistory.popUndo(player, PLOT).isEmpty(), "stack drained");
+        assertEquals("three", EditorEditHistory.popUndo(player).orElseThrow().label());
+        assertEquals("two", EditorEditHistory.popUndo(player).orElseThrow().label());
+        assertEquals("one", EditorEditHistory.popUndo(player).orElseThrow().label());
+        assertTrue(EditorEditHistory.popUndo(player).isEmpty(), "stack drained");
     }
 
     @Test
     @DisplayName("Empty history pops nothing rather than failing")
     void emptyHistoryIsEmptyOptional() {
-        assertTrue(EditorEditHistory.popUndo(player, PLOT).isEmpty());
-        assertTrue(EditorEditHistory.popRedo(player, PLOT).isEmpty());
-        assertEquals(0, EditorEditHistory.undoDepth(player, PLOT));
+        assertTrue(EditorEditHistory.popUndo(player).isEmpty());
+        assertTrue(EditorEditHistory.popRedo(player).isEmpty());
+        assertEquals(0, EditorEditHistory.undoDepth(player));
     }
 
     @Test
@@ -84,7 +84,7 @@ final class EditorEditHistoryTest {
             new EditorEditHistory.Step(PLOT, "no-op", List.of(), List.of());
         assertTrue(nothing.isEmpty());
         assertFalse(EditorEditHistory.push(player, nothing));
-        assertEquals(0, EditorEditHistory.undoDepth(player, PLOT));
+        assertEquals(0, EditorEditHistory.undoDepth(player));
     }
 
     // ─── the redo fork ─────────────────────────────────────────────────────
@@ -94,23 +94,23 @@ final class EditorEditHistoryTest {
     void redoForksOnNewEdit() {
         EditorEditHistory.push(player, step(PLOT, "one", 1, AIR, STONE));
 
-        EditorEditHistory.Step undone = EditorEditHistory.popUndo(player, PLOT).orElseThrow();
+        EditorEditHistory.Step undone = EditorEditHistory.popUndo(player).orElseThrow();
         EditorEditHistory.pushRedo(player, undone.inverted());
-        assertEquals(1, EditorEditHistory.redoDepth(player, PLOT));
+        assertEquals(1, EditorEditHistory.redoDepth(player));
 
         // Redoing puts it back on the undo stack without touching redo depth
         // beyond the pop itself.
-        EditorEditHistory.Step redone = EditorEditHistory.popRedo(player, PLOT).orElseThrow();
+        EditorEditHistory.Step redone = EditorEditHistory.popRedo(player).orElseThrow();
         EditorEditHistory.pushUndoPreservingRedo(player, redone.inverted());
-        assertEquals(1, EditorEditHistory.undoDepth(player, PLOT));
-        assertEquals(0, EditorEditHistory.redoDepth(player, PLOT));
+        assertEquals(1, EditorEditHistory.undoDepth(player));
+        assertEquals(0, EditorEditHistory.redoDepth(player));
 
         // Undo again, then make a fresh edit — the redo branch is abandoned.
         EditorEditHistory.pushRedo(player,
-            EditorEditHistory.popUndo(player, PLOT).orElseThrow().inverted());
-        assertEquals(1, EditorEditHistory.redoDepth(player, PLOT));
+            EditorEditHistory.popUndo(player).orElseThrow().inverted());
+        assertEquals(1, EditorEditHistory.redoDepth(player));
         EditorEditHistory.push(player, step(PLOT, "fresh", 9, AIR, OAK));
-        assertEquals(0, EditorEditHistory.redoDepth(player, PLOT), "new edit forks the timeline");
+        assertEquals(0, EditorEditHistory.redoDepth(player), "new edit forks the timeline");
     }
 
     @Test
@@ -161,15 +161,15 @@ final class EditorEditHistoryTest {
     @Test
     @DisplayName("The undo stack caps out, dropping the oldest step")
     void capacityEvictsOldest() {
-        for (int i = 0; i <= EditorEditHistory.MAX_STEPS_PER_PLOT; i++) {
+        for (int i = 0; i <= EditorEditHistory.MAX_STEPS; i++) {
             EditorEditHistory.push(player, step(PLOT, "edit-" + i, i, AIR, STONE));
         }
-        assertEquals(EditorEditHistory.MAX_STEPS_PER_PLOT, EditorEditHistory.undoDepth(player, PLOT));
+        assertEquals(EditorEditHistory.MAX_STEPS, EditorEditHistory.undoDepth(player));
 
         // Drain to the bottom — "edit-0" fell off, so the oldest survivor is edit-1.
         String oldest = null;
-        for (Optional<EditorEditHistory.Step> s = EditorEditHistory.popUndo(player, PLOT);
-             s.isPresent(); s = EditorEditHistory.popUndo(player, PLOT)) {
+        for (Optional<EditorEditHistory.Step> s = EditorEditHistory.popUndo(player);
+             s.isPresent(); s = EditorEditHistory.popUndo(player)) {
             oldest = s.get().label();
         }
         assertEquals("edit-1", oldest);
@@ -188,29 +188,51 @@ final class EditorEditHistoryTest {
 
         assertFalse(EditorEditHistory.push(player,
             new EditorEditHistory.Step(PLOT, "enormous", huge, List.of())));
-        assertEquals(0, EditorEditHistory.undoDepth(player, PLOT),
+        assertEquals(0, EditorEditHistory.undoDepth(player),
             "a partial undo is worse than none — the whole plot's history goes");
     }
 
     @Test
-    @DisplayName("Plots and players keep separate stacks")
-    void stacksAreScopedPerPlotAndPlayer() {
-        UUID other = UUID.randomUUID();
-        EditorEditHistory.push(player, step(PLOT, "mine", 1, AIR, STONE));
-        EditorEditHistory.push(player, step(OTHER_PLOT, "other plot", 1, AIR, STONE));
-        EditorEditHistory.push(other, step(PLOT, "theirs", 1, AIR, STONE));
+    @DisplayName("One stack per player: steps from different plots interleave in order")
+    void oneStackPerPlayerAcrossPlots() {
+        EditorEditHistory.push(player, step(PLOT, "carriage edit", 1, AIR, STONE));
+        EditorEditHistory.push(player, step(OTHER_PLOT, "contents edit", 1, AIR, STONE));
+        EditorEditHistory.push(player, step(PLOT, "carriage again", 2, AIR, STONE));
 
-        assertEquals(1, EditorEditHistory.undoDepth(player, PLOT));
-        assertEquals(1, EditorEditHistory.undoDepth(player, OTHER_PLOT));
-        assertEquals(1, EditorEditHistory.undoDepth(other, PLOT));
+        assertEquals(3, EditorEditHistory.undoDepth(player),
+            "one stack, regardless of which plot each step belongs to");
+        // Undo walks back through them in the order they were made, not grouped by plot.
+        assertEquals("carriage again", EditorEditHistory.popUndo(player).orElseThrow().label());
+        assertEquals("contents edit", EditorEditHistory.popUndo(player).orElseThrow().label());
+        assertEquals("carriage edit", EditorEditHistory.popUndo(player).orElseThrow().label());
+    }
+
+    @Test
+    @DisplayName("Clearing one plot spares steps from the others")
+    void clearPlotIsSurgical() {
+        EditorEditHistory.push(player, step(PLOT, "stale plot", 1, AIR, STONE));
+        EditorEditHistory.push(player, step(OTHER_PLOT, "innocent bystander", 1, AIR, STONE));
+        EditorEditHistory.push(player, step(PLOT, "stale plot again", 2, AIR, STONE));
 
         EditorEditHistory.clearPlot(player, PLOT);
-        assertEquals(0, EditorEditHistory.undoDepth(player, PLOT));
-        assertEquals(1, EditorEditHistory.undoDepth(player, OTHER_PLOT), "sibling plot untouched");
-        assertEquals(1, EditorEditHistory.undoDepth(other, PLOT), "other player untouched");
+
+        assertEquals(1, EditorEditHistory.undoDepth(player),
+            "a rebuilt plot must not cost the author edits made elsewhere");
+        assertEquals("innocent bystander", EditorEditHistory.popUndo(player).orElseThrow().label());
+    }
+
+    @Test
+    @DisplayName("Players keep separate histories")
+    void playersAreIsolated() {
+        UUID other = UUID.randomUUID();
+        EditorEditHistory.push(player, step(PLOT, "mine", 1, AIR, STONE));
+        EditorEditHistory.push(other, step(PLOT, "theirs", 1, AIR, STONE));
+
+        assertEquals(1, EditorEditHistory.undoDepth(player));
+        assertEquals(1, EditorEditHistory.undoDepth(other));
 
         EditorEditHistory.clearPlayer(player);
-        assertEquals(0, EditorEditHistory.undoDepth(player, OTHER_PLOT));
-        assertEquals(1, EditorEditHistory.undoDepth(other, PLOT));
+        assertEquals(0, EditorEditHistory.undoDepth(player));
+        assertEquals(1, EditorEditHistory.undoDepth(other), "other player untouched");
     }
 }

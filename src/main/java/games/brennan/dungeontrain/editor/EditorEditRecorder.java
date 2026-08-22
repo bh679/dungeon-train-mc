@@ -82,6 +82,8 @@ public final class EditorEditRecorder {
         private final Map<BlockPos, Before> cells = new LinkedHashMap<>();
         /** Variant-sidecar plot key → its serialised state before this tick's edits. */
         private final Map<String, String> sidecars = new LinkedHashMap<>();
+        /** Editor config tree as it stood before this tick's edits; null when not armed. */
+        @Nullable private Map<String, String> configBefore;
         /** Names the step; set when the pending is created and kept for the whole tick. */
         private final String label;
 
@@ -109,6 +111,9 @@ public final class EditorEditRecorder {
      * into real server time for an answer that cannot change within a tick.
      */
     private static final Map<UUID, Resolved> RESOLVED = new HashMap<>();
+
+    /** Stands in as the plot key for a menu change made outside any plot. */
+    private static final String MENU_PLOT_KEY = "editor menu";
 
     /** True while {@link EditorEditApplier} is writing — suppresses recording of its own work. */
     private static boolean suppressed = false;
@@ -138,6 +143,18 @@ public final class EditorEditRecorder {
         Resolved resolved = new Resolved(scope, plot);
         RESOLVED.put(player.getUUID(), resolved);
         return resolved;
+    }
+
+    /**
+     * Throw away every player's in-flight capture for this tick.
+     *
+     * <p>Pairs with {@link EditorEditHistory#clearAll()}: a wipe that left the
+     * pending captures armed would let the very next flush push a step back onto
+     * the freshly emptied history, describing a world that no longer exists.</p>
+     */
+    public static void discardPending() {
+        PENDING.clear();
+        RESOLVED.clear();
     }
 
     // ─── Capture ───────────────────────────────────────────────────────────
@@ -256,6 +273,37 @@ public final class EditorEditRecorder {
     }
 
     /**
+     * Note that {@code player} is about to change editor <b>menu</b> state — a
+     * weight, a stage link, a loot table, an allow-list, a part assignment — so
+     * this tick's step captures it.
+     *
+     * <p>Call this <b>before</b> the mutation. Menu state lives in a small tree
+     * of JSON files rather than in the world, so it is captured by snapshotting
+     * that tree and diffing at end of tick; see {@link EditorConfigDiff} for why
+     * that beats teaching twenty stores to invert themselves.</p>
+     *
+     * <p>Unlike the block and sidecar paths this does not require the player to
+     * be standing in a plot — most menu changes are made from the plot panel,
+     * but weights and stages can be driven from anywhere.</p>
+     */
+    public static void notePendingConfig(ServerPlayer player, String label) {
+        if (suppressed) return;
+        Pending pending = PENDING.get(player.getUUID());
+        if (pending == null) {
+            EditorPlotScope scope = resolve(player, player.serverLevel()).scope();
+            // Outside a plot the step still needs a name for its feedback line.
+            pending = new Pending(player.serverLevel(),
+                scope == null ? MENU_PLOT_KEY : scope.key(), label);
+            PENDING.put(player.getUUID(), pending);
+        }
+        // First arm wins — the tree as it stood before the tick, not between two
+        // changes within it.
+        if (pending.configBefore == null) {
+            pending.configBefore = EditorConfigDiff.scan();
+        }
+    }
+
+    /**
      * World positions live mirroring will reflect {@code worldPos} into, or
      * empty when the player's plot has no mirror axis enabled (or is a category
      * {@link BlockVariantPlot#resolveAt} does not cover, e.g. a portal room —
@@ -321,7 +369,7 @@ public final class EditorEditRecorder {
             }
             EditorEditHistory.push(entry.getKey(),
                 new EditorEditHistory.Step(pending.plotKey, pending.label, changed,
-                    changedSidecars(pending)));
+                    changedSidecars(pending), changedFiles(pending)));
         }
     }
 
@@ -342,6 +390,16 @@ public final class EditorEditRecorder {
             out.add(new EditorEditHistory.SidecarSnapshot(entry.getKey(), entry.getValue(), after));
         }
         return out;
+    }
+
+    /**
+     * Config files that actually moved this tick. An armed snapshot whose tree
+     * is unchanged — a command that only queried, or one the server refused —
+     * contributes nothing.
+     */
+    private static List<EditorEditHistory.FileSnapshot> changedFiles(Pending pending) {
+        if (pending.configBefore == null) return List.of();
+        return EditorConfigDiff.diff(pending.configBefore, EditorConfigDiff.scan());
     }
 
     // ─── Lifecycle ─────────────────────────────────────────────────────────

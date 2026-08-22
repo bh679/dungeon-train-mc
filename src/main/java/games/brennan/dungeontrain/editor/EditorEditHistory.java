@@ -17,8 +17,8 @@ import java.util.function.Function;
 
 /**
  * Server-side undo / redo history for the in-world template editors — one pair
- * of stacks per (player, plot), holding {@link Step}s that describe exactly how
- * to put the plot back.
+ * of stacks per player, holding {@link Step}s that describe exactly how to put
+ * the edit back.
  *
  * <p>A step is deliberately format-agnostic about <em>how</em> it was captured.
  * Three producers push into the same stack so Ctrl+Z always means "the last
@@ -46,14 +46,20 @@ import java.util.function.Function;
  * {@link EditorPlotSnapshots} capture sites — several of which also run on
  * <em>save</em>, where the history must survive.</p>
  *
+ * <p><b>One stack per player, not per plot.</b> Ctrl+Z means "undo the last thing
+ * I did" wherever the author happens to be standing — they may have changed a
+ * weight and walked off before noticing. Each {@link Step} carries its own
+ * {@code plotKey}, so it still knows which plot it belongs to; that is a label
+ * and the scope for {@link #clearPlot}, not a lookup key.</p>
+ *
  * <p>State is in-memory and per-session, matching {@link EditorPlotSnapshots}:
  * a server restart drops it, and the plot re-stamp that follows would have
  * invalidated it anyway.</p>
  */
 public final class EditorEditHistory {
 
-    /** Deepest undo stack kept per (player, plot). Older steps fall off the bottom. */
-    public static final int MAX_STEPS_PER_PLOT = 64;
+    /** Deepest undo stack kept per player. Older steps fall off the bottom. */
+    public static final int MAX_STEPS = 64;
 
     /**
      * Largest single step recorded. A bigger one drops the plot's whole history
@@ -88,6 +94,16 @@ public final class EditorEditHistory {
                                   @Nullable String afterJson) {}
 
     /**
+     * One config file's serialised before / after, keyed by path relative to the
+     * editor's active write directory. {@code null} means the file did not
+     * exist, so undoing a file's creation deletes it rather than leaving an
+     * empty document behind.
+     */
+    public record FileSnapshot(String relPath,
+                               @Nullable String beforeJson,
+                               @Nullable String afterJson) {}
+
+    /**
      * One undoable action. Carries block cells, sidecar snapshots, or both — a
      * bulk block swap changes the plot's geometry <em>and</em> its variant pools,
      * and the author thinks of that as a single thing they did.
@@ -95,25 +111,31 @@ public final class EditorEditHistory {
      * <p>{@code label} is shown in the action-bar feedback ("Undid: Clear").</p>
      */
     public record Step(String plotKey, String label,
-                       List<Cell> cells, List<SidecarSnapshot> sidecars) {
+                       List<Cell> cells, List<SidecarSnapshot> sidecars, List<FileSnapshot> files) {
 
         public Step {
             cells = List.copyOf(cells);
             sidecars = List.copyOf(sidecars);
+            files = List.copyOf(files);
+        }
+
+        /** Convenience for the block-only and sidecar-only producers. */
+        public Step(String plotKey, String label, List<Cell> cells, List<SidecarSnapshot> sidecars) {
+            this(plotKey, label, cells, sidecars, List.of());
         }
 
         /** A step with nothing in it is never pushed — the op ran but changed nothing. */
         public boolean isEmpty() {
-            return cells.isEmpty() && sidecars.isEmpty();
+            return cells.isEmpty() && sidecars.isEmpty() && files.isEmpty();
         }
 
         /**
          * Has the world moved on since this step was recorded? True when any cell
          * no longer holds the state the step left there.
          *
-         * <p>Sidecar-only steps are never stale: sidecars are read back through
-         * the same cache the edit wrote to, so there is no third party to race
-         * with.</p>
+         * <p>Steps with no block cells — a sidecar or menu change — are never
+         * stale: that state is read back through the same store the edit wrote
+         * to, so there is no third party to race with.</p>
          */
         public boolean isStale(Function<BlockPos, BlockState> stateReader) {
             for (Cell cell : cells) {
@@ -132,20 +154,24 @@ public final class EditorEditHistory {
             for (SidecarSnapshot s : sidecars) {
                 flippedSidecars.add(new SidecarSnapshot(s.plotKey(), s.afterJson(), s.beforeJson()));
             }
-            return new Step(plotKey, label, flipped, flippedSidecars);
+            List<FileSnapshot> flippedFiles = new ArrayList<>(files.size());
+            for (FileSnapshot f : files) {
+                flippedFiles.add(new FileSnapshot(f.relPath(), f.afterJson(), f.beforeJson()));
+            }
+            return new Step(plotKey, label, flipped, flippedSidecars, flippedFiles);
         }
     }
 
     // ─── Stacks ────────────────────────────────────────────────────────────
 
-    /** One plot's pair of stacks. Undo pops here and pushes the inverse onto redo. */
+    /** One player's pair of stacks. Undo pops here and pushes the inverse onto redo. */
     private static final class Stacks {
         private final Deque<Step> undo = new ArrayDeque<>();
         private final Deque<Step> redo = new ArrayDeque<>();
     }
 
-    /** player → plot key → stacks. Guarded by this class's monitor. */
-    private static final Map<UUID, Map<String, Stacks>> HISTORY = new HashMap<>();
+    /** player → stacks. Guarded by this class's monitor. */
+    private static final Map<UUID, Stacks> HISTORY = new HashMap<>();
 
     /**
      * Record a step against its plot, clearing the redo stack — a fresh edit
@@ -161,12 +187,10 @@ public final class EditorEditHistory {
             clearPlot(player, step.plotKey());
             return false;
         }
-        Stacks stacks = stacksFor(player, step.plotKey());
+        Stacks stacks = stacksFor(player);
         stacks.undo.addLast(step);
         stacks.redo.clear();
-        while (stacks.undo.size() > MAX_STEPS_PER_PLOT) {
-            stacks.undo.removeFirst();
-        }
+        trim(stacks.undo);
         return true;
     }
 
@@ -175,26 +199,24 @@ public final class EditorEditHistory {
      * applies it and then hands the inverse to {@link #pushRedo}; leaving that
      * to the caller keeps a failed application from losing the step.
      */
-    public static synchronized Optional<Step> popUndo(UUID player, String plotKey) {
-        Stacks stacks = existingStacks(player, plotKey);
+    public static synchronized Optional<Step> popUndo(UUID player) {
+        Stacks stacks = HISTORY.get(player);
         if (stacks == null || stacks.undo.isEmpty()) return Optional.empty();
         return Optional.of(stacks.undo.removeLast());
     }
 
-    /** Take the newest redoable step for this plot off the stack. */
-    public static synchronized Optional<Step> popRedo(UUID player, String plotKey) {
-        Stacks stacks = existingStacks(player, plotKey);
+    /** Take the newest redoable step off the stack. */
+    public static synchronized Optional<Step> popRedo(UUID player) {
+        Stacks stacks = HISTORY.get(player);
         if (stacks == null || stacks.redo.isEmpty()) return Optional.empty();
         return Optional.of(stacks.redo.removeLast());
     }
 
     /** Push a step onto the redo stack — the inverse of one just undone. */
     public static synchronized void pushRedo(UUID player, Step step) {
-        Stacks stacks = stacksFor(player, step.plotKey());
+        Stacks stacks = stacksFor(player);
         stacks.redo.addLast(step);
-        while (stacks.redo.size() > MAX_STEPS_PER_PLOT) {
-            stacks.redo.removeFirst();
-        }
+        trim(stacks.redo);
     }
 
     /**
@@ -202,29 +224,34 @@ public final class EditorEditHistory {
      * redo is applied, so the step becomes undoable again.
      */
     public static synchronized void pushUndoPreservingRedo(UUID player, Step step) {
-        Stacks stacks = stacksFor(player, step.plotKey());
+        Stacks stacks = stacksFor(player);
         stacks.undo.addLast(step);
-        while (stacks.undo.size() > MAX_STEPS_PER_PLOT) {
-            stacks.undo.removeFirst();
-        }
+        trim(stacks.undo);
     }
 
-    public static synchronized int undoDepth(UUID player, String plotKey) {
-        Stacks stacks = existingStacks(player, plotKey);
+    public static synchronized int undoDepth(UUID player) {
+        Stacks stacks = HISTORY.get(player);
         return stacks == null ? 0 : stacks.undo.size();
     }
 
-    public static synchronized int redoDepth(UUID player, String plotKey) {
-        Stacks stacks = existingStacks(player, plotKey);
+    public static synchronized int redoDepth(UUID player) {
+        Stacks stacks = HISTORY.get(player);
         return stacks == null ? 0 : stacks.redo.size();
     }
 
-    /** Drop one plot's history for one player — the staleness and over-cap path. */
+    /**
+     * Drop every step belonging to one plot — the staleness and over-cap path.
+     *
+     * <p>Filters within the player's single stack rather than dropping a whole
+     * keyed entry: a stale carriage plot must not cost the author the track-side
+     * edits they interleaved with it.</p>
+     */
     public static synchronized void clearPlot(UUID player, String plotKey) {
-        Map<String, Stacks> byPlot = HISTORY.get(player);
-        if (byPlot == null) return;
-        byPlot.remove(plotKey);
-        if (byPlot.isEmpty()) HISTORY.remove(player);
+        Stacks stacks = HISTORY.get(player);
+        if (stacks == null) return;
+        stacks.undo.removeIf(step -> step.plotKey().equals(plotKey));
+        stacks.redo.removeIf(step -> step.plotKey().equals(plotKey));
+        if (stacks.undo.isEmpty() && stacks.redo.isEmpty()) HISTORY.remove(player);
     }
 
     /** Drop every plot's history for one player — logout, editor exit. */
@@ -237,14 +264,14 @@ public final class EditorEditHistory {
         HISTORY.clear();
     }
 
-    private static Stacks stacksFor(UUID player, String plotKey) {
-        return HISTORY.computeIfAbsent(player, p -> new HashMap<>())
-            .computeIfAbsent(plotKey, k -> new Stacks());
+    private static Stacks stacksFor(UUID player) {
+        return HISTORY.computeIfAbsent(player, p -> new Stacks());
     }
 
-    @Nullable
-    private static Stacks existingStacks(UUID player, String plotKey) {
-        Map<String, Stacks> byPlot = HISTORY.get(player);
-        return byPlot == null ? null : byPlot.get(plotKey);
+    /** Keep a stack at {@link #MAX_STEPS}, dropping from the old end. */
+    private static void trim(Deque<Step> stack) {
+        while (stack.size() > MAX_STEPS) {
+            stack.removeFirst();
+        }
     }
 }

@@ -6554,15 +6554,17 @@ public final class EditorCommand {
 
         switch (result.outcome()) {
             case DONE -> {
-                actionBar(player, verb + ": " + result.label(), ChatFormatting.GREEN);
+                // Name the plot: the author may be nowhere near it, so "Undo: Place"
+                // alone would not say what just changed.
+                actionBar(player, verb + ": " + result.label() + " — " + result.plotKey(),
+                    ChatFormatting.GREEN);
                 return 1;
             }
             case NOTHING -> actionBar(player, "Nothing to " + verb.toLowerCase(Locale.ROOT),
                 ChatFormatting.GRAY);
-            case NOT_IN_PLOT -> actionBar(player, "Stand in an editor plot to " + verb.toLowerCase(Locale.ROOT),
-                ChatFormatting.GRAY);
             case STALE -> actionBar(player,
-                "Editor history is out of date — this plot was rebuilt", ChatFormatting.YELLOW);
+                "Editor history is out of date — " + result.plotKey() + " was rebuilt",
+                ChatFormatting.YELLOW);
             case FAILED -> actionBar(player, verb + " partly failed — see the log",
                 ChatFormatting.RED);
         }

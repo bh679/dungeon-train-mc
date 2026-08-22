@@ -245,6 +245,7 @@ public enum EditorCategory {
         // against one would now write into an empty plot floor. Staleness would
         // catch that on use; dropping the history here is the honest signal.
         EditorEditHistory.clearAll();
+        EditorEditRecorder.discardPending();
         for (CarriageVariant v : CarriageVariantRegistry.allVariants()) {
             CarriageEditor.clearPlot(overworld, v, dims);
         }

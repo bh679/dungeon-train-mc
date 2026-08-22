@@ -29,9 +29,9 @@ import net.neoforged.neoforge.client.settings.KeyModifier;
  * alternative, a bespoke packet, would have bought a second code path and a
  * protocol bump for nothing.</p>
  *
- * <p>Gated on {@link EditorStatusHudOverlay#isActive()} so Ctrl+Z outside an
- * editor plot does nothing at all rather than firing a command that would be
- * refused server-side.</p>
+ * <p>Works from anywhere — the history is keyed per player, not per plot, so an
+ * author can change a weight, walk away, and still take it back. Only survival
+ * is gated out.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class EditorUndoHotkeyClient {
@@ -77,8 +77,12 @@ public final class EditorUndoHotkeyClient {
         public static void onClientTick(ClientTickEvent.Post event) {
             Minecraft mc = Minecraft.getInstance();
             if (mc.getConnection() == null || mc.screen != null) return;
+            // Deliberately NOT gated on EditorStatusHudOverlay.isActive(): the
+            // author may change something and walk off before realising it was
+            // wrong, and the history is per-player rather than per-plot. The
+            // survival gate stays — the editor is not a survival tool, and a
+            // stray Ctrl+Z mid-run should do nothing.
             if (TemplateBlocksHotkeyClient.inSurvival()) return;
-            if (!EditorStatusHudOverlay.isActive()) return;
 
             // consumeClick drains one press per tick, so holding the key does
             // not run away with the history — one tap, one step.

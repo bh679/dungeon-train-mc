@@ -67,6 +67,7 @@ public record TemplateBlocksEditPacket(Op op, String key, String blockId) implem
         ctx.enqueueWork(() -> {
             Player p = ctx.player();
             if (p instanceof ServerPlayer sender) {
+                games.brennan.dungeontrain.editor.EditorEditRecorder.notePendingConfig(sender, "template blocks");
                 TemplateBlocksMenuController.applyEdit(sender, packet);
             }
         });

@@ -80,6 +80,7 @@ public final class TemplateStores {
         // Same reasoning for the undo history: the templates behind every plot
         // have changed, so steps recorded against the old ones are meaningless.
         games.brennan.dungeontrain.editor.EditorEditHistory.clearAll();
+        games.brennan.dungeontrain.editor.EditorEditRecorder.discardPending();
 
         LOGGER.info(
             "[DungeonTrain] Reload complete — {} package(s) processed, {} new file(s), {} skipped, {} rejected.",

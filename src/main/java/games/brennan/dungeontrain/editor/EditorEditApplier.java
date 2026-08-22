@@ -38,8 +38,6 @@ public final class EditorEditApplier {
     public enum Outcome {
         /** Applied. {@link Result#label} names the step. */
         DONE,
-        /** The player is not standing in an editor plot. */
-        NOT_IN_PLOT,
         /** Nothing left on the stack. */
         NOTHING,
         /** The plot was rewritten since the step was recorded; its history has been dropped. */
@@ -48,31 +46,33 @@ public final class EditorEditApplier {
         FAILED
     }
 
-    public record Result(Outcome outcome, String label) {
-        static Result of(Outcome outcome) { return new Result(outcome, ""); }
+    public record Result(Outcome outcome, String label, String plotKey) {
+        static Result of(Outcome outcome) { return new Result(outcome, "", ""); }
     }
 
-    /** Undo the player's most recent step in the plot they are standing in. */
+    /** Undo the player's most recent editor step, wherever they are standing. */
     public static Result undo(ServerPlayer player) {
         return step(player, /*redoing*/ false);
     }
 
-    /** Redo the step most recently undone in the plot the player is standing in. */
+    /** Redo the step this player most recently undid. */
     public static Result redo(ServerPlayer player) {
         return step(player, /*redoing*/ true);
     }
 
     private static Result step(ServerPlayer player, boolean redoing) {
-        ServerLevel level = player.serverLevel();
-        Optional<EditorPlotScope> scope = EditorPlotScope.resolveAt(player, level);
-        if (scope.isEmpty()) return Result.of(Outcome.NOT_IN_PLOT);
-        String plotKey = scope.get().key();
+        // Every editor plot lives in the overworld, so the step's cells are
+        // overworld positions regardless of where the player is now — the Nether,
+        // the End, or a Sable sub-level. Resolving from player.serverLevel()
+        // would read and write the wrong dimension from any of those.
+        ServerLevel level = player.server.overworld();
 
         Optional<EditorEditHistory.Step> popped = redoing
-            ? EditorEditHistory.popRedo(player.getUUID(), plotKey)
-            : EditorEditHistory.popUndo(player.getUUID(), plotKey);
+            ? EditorEditHistory.popRedo(player.getUUID())
+            : EditorEditHistory.popUndo(player.getUUID());
         if (popped.isEmpty()) return Result.of(Outcome.NOTHING);
         EditorEditHistory.Step step = popped.get();
+        String plotKey = step.plotKey();
 
         // The step records what it left in the world. If that is no longer what
         // is standing there, the plot has been re-stamped or filled from
@@ -80,10 +80,10 @@ public final class EditorEditApplier {
         // whatever replaced it.
         if (step.isStale(level::getBlockState)) {
             EditorEditHistory.clearPlot(player.getUUID(), plotKey);
-            return Result.of(Outcome.STALE);
+            return new Result(Outcome.STALE, step.label(), plotKey);
         }
 
-        if (!apply(level, step)) return new Result(Outcome.FAILED, step.label());
+        if (!apply(level, step)) return new Result(Outcome.FAILED, step.label(), plotKey);
 
         // The inverse becomes the step for the opposite direction.
         if (redoing) {
@@ -91,25 +91,35 @@ public final class EditorEditApplier {
         } else {
             EditorEditHistory.pushRedo(player.getUUID(), step.inverted());
         }
-        return new Result(Outcome.DONE, step.label());
+        return new Result(Outcome.DONE, step.label(), plotKey);
     }
 
     /**
-     * Write a step's {@code before} side into the world. Returns false when a
-     * sidecar restore failed — the block cells are still applied, because a
-     * half-undone plot the author can see beats one that silently did nothing.
+     * Write a step's {@code before} side back: block cells into the world,
+     * variant sidecars into their caches, menu state into its config files.
+     * Returns false when a sidecar or file restore failed — the block cells are
+     * still applied, because a half-undone plot the author can see beats one
+     * that silently did nothing.
      */
     private static boolean apply(ServerLevel level, EditorEditHistory.Step step) {
-        boolean ok = true;
+        boolean[] ok = {true};
+        // Suppression spans the whole application, not just the block writes.
+        // The sidecar and file restores are writes too, and if anything had
+        // armed a capture earlier in this tick they would otherwise be diffed
+        // into a fresh step — an undo that records itself, so the next Ctrl+Z
+        // would undo the undo and the history would never move backwards.
         EditorEditRecorder.withRecordingSuppressed(() -> {
             for (EditorEditHistory.Cell cell : step.cells()) {
                 SilentBlockOps.setBlockSilent(level, cell.worldPos(), cell.before(), cell.beforeNbt());
             }
+            for (EditorEditHistory.SidecarSnapshot snapshot : step.sidecars()) {
+                if (!restoreSidecar(level, snapshot)) ok[0] = false;
+            }
+            for (EditorEditHistory.FileSnapshot snapshot : step.files()) {
+                if (!EditorConfigDiff.restore(snapshot)) ok[0] = false;
+            }
         });
-        for (EditorEditHistory.SidecarSnapshot snapshot : step.sidecars()) {
-            if (!restoreSidecar(level, snapshot)) ok = false;
-        }
-        return ok;
+        return ok[0];
     }
 
     /**

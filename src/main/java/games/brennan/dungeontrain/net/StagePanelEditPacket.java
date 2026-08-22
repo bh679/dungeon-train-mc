@@ -61,6 +61,7 @@ public record StagePanelEditPacket(Op op, String stageId, String blockId) implem
         ctx.enqueueWork(() -> {
             Player p = ctx.player();
             if (p instanceof ServerPlayer sender) {
+                games.brennan.dungeontrain.editor.EditorEditRecorder.notePendingConfig(sender, "stage");
                 games.brennan.dungeontrain.editor.StagePanelController.applyEdit(sender, packet);
             }
         });

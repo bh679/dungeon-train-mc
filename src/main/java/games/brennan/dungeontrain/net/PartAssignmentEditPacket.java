@@ -85,6 +85,7 @@ public record PartAssignmentEditPacket(Op op, String variantId, CarriagePartKind
         ctx.enqueueWork(() -> {
             Player p = ctx.player();
             if (p instanceof ServerPlayer sender) {
+                games.brennan.dungeontrain.editor.EditorEditRecorder.notePendingConfig(sender, "part assignment");
                 PartPositionMenuController.applyEdit(sender, packet);
             }
         });
