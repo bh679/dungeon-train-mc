@@ -32,7 +32,8 @@ import org.slf4j.Logger;
  *
  * <p>{@link DifficultyChangeEvent} fires after the server has taken the new value, so the old difficulty
  * is only available from the event itself — which is why the partition to store into is read from
- * {@code getOldDifficulty()} rather than from any level.</p>
+ * {@code getOldDifficulty()} rather than from any level. It carries no side or level either, so the
+ * client's echo of the same change is told apart by thread, not by the event — see the guard below.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DifficultyIsolationEvents {
@@ -56,7 +57,15 @@ public final class DifficultyIsolationEvents {
 
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
         if (server == null) {
-            return; // client-side echo of the change, or no world running — nothing to swap
+            return; // no world running — nothing to swap
+        }
+        if (!server.isSameThread()) {
+            // The client's echo of the change fires this event too, and in singleplayer it finds the
+            // integrated server — so `server == null` doesn't screen it out. Letting it through ran
+            // the whole swap a second time: it captured the inventory the first swap had just loaded
+            // (usually empty) and stored THAT under the outgoing difficulty, destroying the loadout
+            // the first swap had saved a millisecond earlier. Only the server thread swaps.
+            return;
         }
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
             try {

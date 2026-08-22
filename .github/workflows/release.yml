@@ -246,12 +246,14 @@ jobs:
             adventure-items-stats(required)
             interactive-player-mobs(required)
             ender-chest-persistence(required)
+            trade-everything(required)
           curseforge-dependencies: |
             sable(required)
             adventure-item-names(required)
             adventure-item-stats(required)
             interactive-player-mobs(required)
             ender-chest-persistence(required)
+            trade-everything(required)
             appleskin(optional)
             ferritecore(optional)
             modernfix(optional)
@@ -262,6 +264,7 @@ jobs:
             advancement-plaques(optional)
             iceberg(optional)
             distant-horizons(optional)
+            nemos-inventory-sorting(optional)
             mouse-tweaks(optional)
             jade(optional)
             jade-sable-compat(optional)
@@ -275,6 +278,7 @@ jobs:
             overloaded-armor-bar(optional)
             kinetic-hosting-integration(optional)
             effortless-building(optional)
+            punchy(optional)
           java: 21
           retry-attempts: 2
           retry-delay: 10000

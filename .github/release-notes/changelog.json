@@ -7650,6 +7650,130 @@
       "released": true,
       "released_in": "v0.599.0",
       "released_at": "2026-08-21T14:55:36Z"
+    },
+    {
+      "id": "nemos-inventory-sorting-modpack",
+      "version": "0.600.0",
+      "type": "chore",
+      "title": "Nemo's Inventory Sorting available in the modpack",
+      "summary": "The Dungeon Train modpack now offers Nemo's Inventory Sorting as an optional add-on. Turn it on in the launcher's optional-mods list to get one-click sort buttons on your inventory and any chest \u2014 handy when a loot run leaves your carriage storage a mess. It's off by default, so nothing changes unless you opt in.",
+      "highlights": [
+        "New opt-in companion mod: Nemo's Inventory Sorting (client-side, 1.8.2.1)",
+        "Adds sort buttons to inventory and container screens",
+        "Ships switched off \u2014 enable it in the launcher's optional mods list"
+      ],
+      "date": "2026-08-21",
+      "released": true,
+      "released_in": "v0.600.0",
+      "released_at": "2026-08-21T15:05:53Z"
+    },
+    {
+      "id": "punchy-modpack-optin",
+      "version": "0.601.0",
+      "type": "feat",
+      "title": "Punchy! now in the modpack (off by default)",
+      "summary": "The Dungeon Train modpack now ships Punchy!, a first-person animation mod that adds weight and personality to swinging, mining and movement. It's included but switched off \u2014 flip it on in your launcher's mod list if you want it.",
+      "highlights": [
+        "Punchy! 2.7d bundled in both the CurseForge and Modrinth packs",
+        "Disabled by default \u2014 enable it with one click, no extra download",
+        "Client-side only, so it's skipped on dedicated servers"
+      ],
+      "pr": 1024,
+      "date": "2026-08-21",
+      "released": true,
+      "released_in": "v0.601.0",
+      "released_at": "2026-08-21T15:14:13Z"
+    },
+    {
+      "id": "edible-backpack-rarity",
+      "version": "0.602.0",
+      "type": "chore",
+      "title": "Edible backpacks are rarer",
+      "summary": "The edible backpack turned up in almost every other chest. Its odds are now cut across the general, iron/gold and pot loot pools, and it no longer appears in the starter chest \u2014 so finding one feels like a find again.",
+      "highlights": [
+        "Edible backpack far less common in chests",
+        "No longer handed out in the starter chest"
+      ],
+      "pr": 1025,
+      "date": "2026-08-21",
+      "released": true,
+      "released_in": "v0.602.0",
+      "released_at": "2026-08-21T15:39:10Z"
+    },
+    {
+      "id": "miniword-portal-room",
+      "version": "0.602.0",
+      "type": "content",
+      "title": "Miniword \u2014 a new House portal room",
+      "summary": "Step through a portal into Miniword, a hand-built world in a box and by far the largest portal room in the game at 48x30x48. It turns up as a House room from Diff-Level 12 onward.",
+      "highlights": [
+        "New Miniword portal room \u2014 a 48x30x48 build, the biggest room in Dungeon Train",
+        "Appears among the House portal rooms from Diff-Level 12"
+      ],
+      "pr": 1026,
+      "date": "2026-08-21",
+      "released": true,
+      "released_in": "v0.602.0",
+      "released_at": "2026-08-21T15:39:10Z"
+    },
+    {
+      "id": "veinminer-freeplay-blacklist",
+      "version": "0.603.0",
+      "type": "feat",
+      "title": "Vein miner mods now trigger Free Play",
+      "summary": "Playing with a vein miner installed runs the session in Free Play.",
+      "highlights": [],
+      "pr": 1027,
+      "date": "2026-08-21",
+      "released": true,
+      "released_in": "v0.603.0",
+      "released_at": "2026-08-21T15:48:13Z"
+    },
+    {
+      "id": "difficulty-change-confirmation",
+      "version": "0.604.0",
+      "type": "feat",
+      "title": "Difficulty changes now ask first",
+      "summary": "Changing difficulty swaps your gear, XP and Ender Chest. It now warns you before it does \u2014 and the gear you leave behind is no longer lost.",
+      "highlights": [],
+      "pr": 1028,
+      "date": "2026-08-21",
+      "released": true,
+      "released_in": "v0.604.0",
+      "released_at": "2026-08-21T15:55:41Z"
+    },
+    {
+      "id": "trade-everything-separate-download",
+      "version": "0.605.0",
+      "type": "feat",
+      "title": "Trade Everything is now its own download",
+      "summary": "Trade Everything \u2014 the mod that gives every villager a \"Trade Anything\" slot \u2014 used to ride along inside Dungeon Train's own file. It now installs alongside Dungeon Train as its own mod, so it shows up in your mod list and gets credited for its own downloads. The CurseForge and Modrinth apps fetch it for you automatically; if you install by hand, grab Trade Everything (0.7.0 or newer) with Dungeon Train.",
+      "highlights": [
+        "The CurseForge and Modrinth apps install Trade Everything for you \u2014 nothing to do.",
+        "Installing manually? Add Trade Everything 0.7.0+ next to Dungeon Train, or the game will tell you it's missing on launch.",
+        "Villager payouts fixed: selling no longer hands back emerald blocks priced as ordinary goods.",
+        "Bookshelves are now valued at 3 per emerald."
+      ],
+      "date": "2026-08-21",
+      "released": true,
+      "released_in": "v0.605.0",
+      "released_at": "2026-08-22T03:00:00Z"
+    },
+    {
+      "id": "instant-respawn-new-world",
+      "version": "0.606.0",
+      "type": "feat",
+      "title": "Immediate Respawn now rolls straight into a new run",
+      "summary": "Turn on Minecraft's Immediate Respawn game rule and dying skips the death screen entirely \u2014 the world is discarded and a fresh Dungeon Train run starts on the spot, the same reboard the death screen's \"Board anew\" button performs. Previously the rule dropped you back into the world you had just died in, the one way a run could outlive your death. Multiplayer is unchanged: on a server you do not host, Immediate Respawn still respawns you as vanilla does.",
+      "highlights": [
+        "Immediate Respawn ends the run and starts a new world, no button press",
+        "Holding Shift while you die keeps the current game mode, as on the reboard chip",
+        "Remote servers keep vanilla Immediate Respawn behaviour"
+      ],
+      "date": "2026-08-22",
+      "released": true,
+      "released_in": "v0.606.0",
+      "released_at": "2026-08-22T03:15:31Z"
     }
   ]
 }

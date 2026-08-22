@@ -44,8 +44,10 @@ pack must list them explicitly. Everything else is a manifest file with a `requi
 | Jade | `324717` | **enabled** | Block/item tooltip HUD. Formerly opt-in because tooltips didn't render for blocks **on the moving train** (Sable sub-level) — that limitation is now **resolved** by the bundled **Jade Sable Compat** (below), so Jade ships on by default. **Pinned** (15.10.5 — the build Sable's bundled Jade compat is verified against). |
 | Jade Sable Compat | `1530988` | **enabled** | Client-only compat mod (`sablejade`, MIT). Gives Jade a Sable-aware retrace path so tooltips resolve the **correct** block on Sable sub-levels / moving trains. Requires **Jade** (shipped enabled, above). `server_side=unsupported` — auto-skipped on dedicated servers. **Pinned** (1.2.1). |
 | Mouse Tweaks | `60089` | off (opt-in) | Inventory QoL (shift-drag / scroll-to-move). **Pinned**. |
+| Nemo's Inventory Sorting | `1148320` | off (opt-in) | Client-side inventory sorting buttons (`server_side=unsupported`). No dependencies. **Pinned** (1.8.2.1). |
 | Distant Horizons | `508933` | off (opt-in) | LOD render distance. **Use 2.x** — 3.0.x crashes the JVM on DT world entry. **Pinned** to a 2.x file. |
 | Effortless Building | `302113` | off (opt-in) | Client-side building QoL (multi-block placement modes, mirror / array / radial). No dependencies. **Pinned** (4.2 — one multi-loader jar covers Fabric + NeoForge). |
+| Punchy! | `1374153` | off (opt-in) | First-person animation overhaul (swing/movement animations, visible hands with held items). Client-only render (`server_side=unsupported`, auto-skipped on dedicated servers), no dependencies. ARR licence, but the author explicitly permits modpack inclusion. **Pinned** (2.7d). |
 
 …plus NeoForge as the modloader (`neoforge-<neo_version>`) and the Minecraft version,
 both read from `gradle.properties`.
@@ -69,9 +71,9 @@ Each non-core mod is an entry in `modpack.config.json` → `optional_mods[]` car
 `"required"` boolean. [`build-manifest.py`](../scripts/modpack/build-manifest.py) copies that
 flag straight into the manifest:
 
-- **Enabled by default, and mandatory (`required:true`)** — the four sibling mods **Adventure
-  Item Names**, **Adventure Item Stats**, **Interactive Player Mobs** and **Ender Chest
-  Persistence**. These are not companions: DT declares them as hard dependencies and will not
+- **Enabled by default, and mandatory (`required:true`)** — the five sibling mods **Adventure
+  Item Names**, **Adventure Item Stats**, **Interactive Player Mobs**, **Ender Chest
+  Persistence** and **Trade Everything**. These are not companions: DT declares them as hard dependencies and will not
   load without them, so shipping any of them `required:false` (i.e. switched OFF) would break
   the pack outright.
 - **Enabled by default (`required:true`)** — AppleSkin, FerriteCore, ModernFix, **Sodium**
@@ -85,8 +87,8 @@ flag straight into the manifest:
   **CreativeCore** (AmbientSounds) and **Iceberg** (Advancement Plaques). The libraries ship
   enabled so their dependent loads on a default install (CreativeCore — AmbientSounds is on;
   Iceberg — AP is on).
-- **Bundled but off by default (`required:false`)** — Mouse Tweaks, Distant Horizons,
-  Effortless Building. Shipped in the pack so a player can flip them on with one click, but inert until they
+- **Bundled but off by default (`required:false`)** — Mouse Tweaks, Nemo's Inventory Sorting,
+  Distant Horizons, Effortless Building, Punchy!. Shipped in the pack so a player can flip them on with one click, but inert until they
   do. (DT itself + Sable are hardcoded `required:true` in the builder.)
 
 ## Declared dependencies (CurseForge "Relations")
@@ -119,7 +121,7 @@ The declared type is **`optional` by default** — regardless of whether the pac
 enabled (`required:true`) or off (`required:false`), the mod's relationship to a companion is
 "optional" either way, because DT runs fine without it.
 
-The exception is the four sibling mods, which DT genuinely cannot run without. They carry
+The exception is the five sibling mods, which DT genuinely cannot run without. They carry
 `"dependency_type": "required"` in `modpack.config.json` and are declared `<slug>(required)` in
 `release.yml`. That `required` declaration is what makes the CurseForge and Modrinth apps
 auto-install them — the whole point of un-bundling.
@@ -244,7 +246,7 @@ Keep the two in sync so both packs ship the same build. A stale pin just ships a
 
 | File | Purpose |
 |---|---|
-| `modpack.config.json` | Editable config (drives **both** packs): pack name/author, DT project IDs, the pinned Sable project/file/version + `modrinth_project`/`modrinth_version`, `optional_mods` (every non-core bundled mod, each with a `slug` for the consistency guard, a `required` flag — `true` = enabled by default, `false` = shipped-but-off opt-in — and a `modrinth_project`/`modrinth_version` pin; the four sibling mods additionally carry `dependency_type: required` plus `version` + `gradle_property` for the floor guard), and `curseforge_relations` (sable only). |
+| `modpack.config.json` | Editable config (drives **both** packs): pack name/author, DT project IDs, the pinned Sable project/file/version + `modrinth_project`/`modrinth_version`, `optional_mods` (every non-core bundled mod, each with a `slug` for the consistency guard, a `required` flag — `true` = enabled by default, `false` = shipped-but-off opt-in — and a `modrinth_project`/`modrinth_version` pin; the five sibling mods additionally carry `dependency_type: required` plus `version` + `gradle_property` for the floor guard), and `curseforge_relations` (sable only). |
 | `overrides/` | Config files copied verbatim into the player's instance on install (shared by both packs). Currently ships `config/smoothswapping.json` (tuned Smooth Swapping) and `config/khi.toml` (the Kinetic Hosting affiliate URL + banner text, so every install gets the partner link pre-filled), plus the localization compat packs — see below. |
 | `overrides/resourcepacks/DungeonTrain-zh_cn-compat.zip` | zh_cn translations for the bundled **companion** mods (Jade, Distant Horizons, Controlling, ModernFix, CreativeCore, Sable). The shipped zips also still carry legacy `tectonic` keys from when the pack bundled Tectonic — inert now that it is gone (a lang overlay for an absent mod does nothing), and left in place so the zips stay byte-identical. Dungeon Train's own namespaces (+ AIN/PlayerMob/DiscordPresence) ship their zh_cn `lang/` inside the mod jar, so they're not in here. **Auto-enabled by a client-side one-shot** in the mod (`CompanionResourcePackAutoEnabler`) — it selects this pack the first time it's found and writes a marker so it never fights a player who later disables it. This replaces a shipped `options.txt` (which a launcher would copy wholesale and reset the player's other options); the hook only ever touches the resource-pack selection. |
 | `../scripts/modpack/build-manifest.py` | CurseForge: renders `manifest.json` from this config + `gradle.properties` + the release's DT file ID. |
@@ -296,9 +298,9 @@ Each `optional_mods` entry (and `sable`) carries `modrinth_project` (slug) + `mo
 (the version id), pinned to the **same build the CurseForge pack ships**. The DT mod is the only
 un-pinned reference: its Modrinth version id is passed in per release. Refresh a pin the same way
 as a CurseForge pin — open `https://modrinth.com/mod/<slug>/versions`, filter to **NeoForge
-1.21.1**, and copy the version id from the version URL (`/version/<id>`). Two slugs differ from
-their CurseForge slug: **FerriteCore** is `ferrite-core` and **Distant Horizons** is
-`distanthorizons` on Modrinth.
+1.21.1**, and copy the version id from the version URL (`/version/<id>`). Three slugs differ from
+their CurseForge slug: **FerriteCore** is `ferrite-core`, **Distant Horizons** is
+`distanthorizons`, and **Punchy!** is `punchy-fpa` on Modrinth.
 
 CI guards the pins: `build-mrpack.py --check-config` (in the `modpack-checks` job) fails the build
 if any mod is missing its `modrinth_project`/`modrinth_version`, so a new companion can't silently

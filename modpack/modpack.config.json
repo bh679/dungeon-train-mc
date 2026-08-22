@@ -15,6 +15,7 @@
     { "name": "Adventure Item Stats", "slug": "adventure-item-stats", "project_id": 1554362, "file_id": 8465206, "required": true, "dependency_type": "required", "version": "0.7.0", "gradle_property": "adventureitemstats_min_version", "modrinth_project": "adventure-items-stats", "modrinth_version": "kZyMXeU3" },
     { "name": "Interactive Player Mobs", "slug": "interactive-player-mobs", "project_id": 1559379, "file_id": 8517180, "required": true, "dependency_type": "required", "version": "0.86.0", "gradle_property": "playermob_min_version", "modrinth_project": "interactive-player-mobs", "modrinth_version": "uqYt1KFW" },
     { "name": "Ender Chest Persistence", "slug": "ender-chest-persistence", "project_id": 1579341, "file_id": 8283688, "required": true, "dependency_type": "required", "version": "0.2.0", "gradle_property": "enderchestpersistence_min_version", "modrinth_project": "ender-chest-persistence", "modrinth_version": "2I1HdVBa" },
+    { "name": "Trade Everything", "slug": "trade-everything", "project_id": 1622962, "file_id": 8700327, "required": true, "dependency_type": "required", "version": "0.7.0", "gradle_property": "tradeeverything_min_version", "modrinth_project": "trade-everything", "modrinth_version": "5PrwEY1f" },
     { "name": "AppleSkin", "slug": "appleskin", "project_id": 248787, "file_id": 7854442, "required": true, "modrinth_project": "appleskin", "modrinth_version": "uAKA6Laj" },
     { "name": "FerriteCore", "slug": "ferritecore", "project_id": 429235, "file_id": 7524151, "required": true, "modrinth_project": "ferrite-core", "modrinth_version": "x7kQWVju" },
     { "name": "ModernFix", "slug": "modernfix", "project_id": 790626, "file_id": 8255560, "required": true, "modrinth_project": "modernfix", "modrinth_version": "KcU1Mn0I" },
@@ -24,6 +25,7 @@
     { "name": "CreativeCore", "slug": "creativecore", "project_id": 257814, "file_id": 8190065, "required": true, "modrinth_project": "creativecore", "modrinth_version": "nLLornod" },
     { "name": "Advancement Plaques", "slug": "advancement-plaques", "project_id": 499826, "file_id": 5905995, "required": true, "modrinth_project": "advancement-plaques", "modrinth_version": "OWylG33I" },
     { "name": "Iceberg", "slug": "iceberg", "project_id": 520110, "file_id": 6423863, "required": true, "modrinth_project": "iceberg", "modrinth_version": "IMssx9du" },
+    { "name": "Nemo's Inventory Sorting", "slug": "nemos-inventory-sorting", "project_id": 1148320, "file_id": 6487633, "required": false, "modrinth_project": "nemos-inventory-sorting", "modrinth_version": "Foc0173y" },
     { "name": "Mouse Tweaks", "slug": "mouse-tweaks", "project_id": 60089, "file_id": 5637846, "required": false, "modrinth_project": "mouse-tweaks", "modrinth_version": "9I21YYxf" },
     { "name": "Jade", "slug": "jade", "project_id": 324717, "file_id": 7545219, "required": true, "modrinth_project": "jade", "modrinth_version": "yd8FKCmx" },
     { "name": "Jade Sable Compat", "slug": "jade-sable-compat", "project_id": 1530988, "file_id": 8269260, "required": true, "modrinth_project": "jade-sable-compat", "modrinth_version": "7HFg7hFp" },
@@ -37,7 +39,8 @@
     { "name": "Smooth Swapping", "slug": "smooth-swapping", "project_id": 513689, "file_id": 7274625, "required": false, "modrinth_project": "smooth-swapping", "modrinth_version": "tnvwgXE6" },
     { "name": "Kinetic Hosting Integration", "slug": "kinetic-hosting-integration", "project_id": 1048150, "file_id": 8188461, "required": true, "modrinth_project": "kinetic-hosting-integration", "modrinth_version": "MU40ZSjV" },
     { "name": "Overloaded Armor Bar", "slug": "overloaded-armor-bar", "project_id": 314002, "file_id": 5537850, "required": true, "modrinth_project": "overloaded-armor-bar", "modrinth_version": "ioPwPPpS" },
-    { "name": "Effortless Building", "slug": "effortless-building", "project_id": 302113, "file_id": 8515718, "required": false, "modrinth_project": "effortless-building", "modrinth_version": "YxnBXtLv" }
+    { "name": "Effortless Building", "slug": "effortless-building", "project_id": 302113, "file_id": 8515718, "required": false, "modrinth_project": "effortless-building", "modrinth_version": "YxnBXtLv" },
+    { "name": "Punchy!", "slug": "punchy", "project_id": 1374153, "file_id": 8697205, "required": false, "modrinth_project": "punchy-fpa", "modrinth_version": "F6nWR1sw" }
   ],
   "curseforge_relations": [
     { "slug": "sable", "type": "requiredDependency" }
