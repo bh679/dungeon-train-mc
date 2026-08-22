@@ -126,6 +126,11 @@ public record PortalStructure(BlockPos origin, String roomName, Vec3i roomSize,
         return settings.effectiveExits();
     }
 
+    /** What this room's appended tiles are made of — the setting as its walls can actually use it. */
+    public PortalRoomCopies copies() {
+        return settings.effectiveCopies();
+    }
+
     /**
      * The seed index the copy at {@code tile} rolls its block variants and container contents from.
      *
@@ -136,8 +141,8 @@ public record PortalStructure(BlockPos origin, String roomName, Vec3i roomSize,
      * is what makes one portal's room differ from the next's; the name stays in so two different rooms
      * at the same key still separate.</p>
      *
-     * <p>Under {@link PortalRoomCopies#EXACT} every copy shares the base room's index, so the hall is
-     * the same room repeated block for block. Under {@link PortalRoomCopies#DYNAMIC} the index mixes
+     * <p>Under {@link PortalRoomCopies.Kind#EXACT} every copy shares the base room's index, so the hall is
+     * the same room repeated block for block. Under {@link PortalRoomCopies.Kind#DYNAMIC} the index mixes
      * in the copy's position, so copies differ from one another.</p>
      *
      * <p>Both endless modes, not Endless Repetition alone. An {@link PortalRoomMode#ENDLESS_OPEN}
@@ -154,7 +159,7 @@ public record PortalStructure(BlockPos origin, String roomName, Vec3i roomSize,
      */
     public int variantIndexFor(PortalRoomTiling.Tile tile, int pairKey) {
         int base = Objects.hash(roomName.hashCode(), pairKey);
-        if (settings.copies() != PortalRoomCopies.DYNAMIC) return base;
+        if (settings.effectiveCopies().kind() != PortalRoomCopies.Kind.DYNAMIC) return base;
         return Objects.hash(base, tile.x(), tile.z());
     }
 
