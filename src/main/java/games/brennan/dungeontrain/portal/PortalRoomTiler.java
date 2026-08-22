@@ -201,9 +201,9 @@ public final class PortalRoomTiler {
         // only swallows the whole tile when there is genuinely a block to put back afterwards. A
         // name that no longer resolves — a mod uninstalled between two launches, a hand-edited tag —
         // falls through to stamping the room as it always did, rather than to a floorless tile.
-        Optional<BlockState> single = singlePlaneState(structure);
+        PortalRoomCopiesPalette single = singlePalette(structure);
         PortalCorridorMask writeMask =
-            writeMaskFor(structure, clearMask, origin, size, single.isPresent());
+            writeMaskFor(structure, clearMask, origin, size, !single.isEmpty());
         PortalCarriageBuilder.stampRoomAt(level, origin, dims, structure.roomName(), size,
             /*relight*/ true, clearMask, writeMask, structure.variantIndexFor(tile, pairKey),
             pairKey, tile,
@@ -215,8 +215,8 @@ public final class PortalRoomTiler {
         // After the stamp, not instead of it: the stamp is what clears the rock this tile landed in,
         // and under Single its write half put nothing back. These two planes are the whole of what
         // an appended tile is in that case.
-        single.ifPresent(state -> PortalRoomSinglePlanes.write(
-            level, origin, size, state, clearMask, /*relight*/ true));
+        PortalRoomSinglePlanes.write(level, origin, size, single, clearMask, /*relight*/ true,
+            level.getSeed(), structure.variantIndexFor(tile, pairKey));
 
         PortalStructure grown = structure.withTiling(structure.tiling().with(tile));
         refreshFacesAround(level, dims, grown, tile);
@@ -267,18 +267,18 @@ public final class PortalRoomTiler {
     }
 
     /**
-     * The block this structure's appended tiles are floored and roofed with, or empty when it does
+     * The variant this structure's appended tiles are floored and roofed from, or empty when it does
      * not repeat one — or names one nothing answers to.
      *
      * <p>{@link PortalStructure#copies} rather than the raw setting, so a room whose walls were
      * changed away from Endless Open since it was authored stamps as Endless Open's neighbour would
      * rather than as a mode that cannot use the setting at all.</p>
      */
-    private static Optional<BlockState> singlePlaneState(PortalStructure structure) {
-        if (structure.mode() != PortalRoomMode.ENDLESS_OPEN) return Optional.empty();
+    private static PortalRoomCopiesPalette singlePalette(PortalStructure structure) {
+        if (structure.mode() != PortalRoomMode.ENDLESS_OPEN) return PortalRoomCopiesPalette.empty();
         PortalRoomCopies copies = structure.copies();
-        if (!copies.repeatsOneBlock()) return Optional.empty();
-        return PortalRoomSinglePlanes.stateFor(copies.blockId());
+        if (!copies.repeatsOneBlock()) return PortalRoomCopiesPalette.empty();
+        return PortalRoomCopiesPalette.forRoom(structure.roomName(), copies);
     }
 
     /**

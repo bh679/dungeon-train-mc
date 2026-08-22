@@ -8,6 +8,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import games.brennan.dungeontrain.editor.VariantState;
 import net.minecraft.world.level.block.state.BlockState;
 
 import java.util.Optional;
@@ -56,19 +57,29 @@ public final class PortalRoomSinglePlanes {
     }
 
     /**
-     * Fill the tile's floor plane and ceiling plane at {@code origin} with {@code state}.
+     * Fill the tile's floor plane and ceiling plane at {@code origin} from {@code palette}.
      *
      * <p>The full cross-section of both, edge columns included: Endless Open has no side walls, so
      * there is no wall row for the planes to stop short of — every cell of each plane is plain floor
      * or plain roof. Only the two planes are touched; everything between them was cleared to air by
      * the stamp and is what makes the space open.</p>
      *
-     * @param clearMask the corridors standing in this tile, whose cells are left alone
-     * @param relight   as the stamp was called with — a lit write costs the light engine a pass, an
-     *                  unlit one is section-local and is what the bulk paths use
+     * <p><b>Rolled per cell, on the cell's position within the tile.</b> That is what makes a
+     * multi-block palette read as a mix rather than as a checkerboard, and it costs nothing to make
+     * the two Copies values mean here what they mean everywhere else: the roll also takes
+     * {@code variantIndex}, which is one value for every tile under Exact and a per-tile value under
+     * Dynamic. So an Exact plain is one mix repeated and a Dynamic plain is a fresh mix each tile,
+     * both of them stable under a player walking back over ground they have already crossed.</p>
+     *
+     * @param clearMask    the corridors standing in this tile, whose cells are left alone
+     * @param relight      as the stamp was called with — a lit write costs the light engine a pass,
+     *                     an unlit one is section-local and is what the bulk paths use
+     * @param variantIndex the copy's identity, {@code PortalStructure.variantIndexFor}
      */
-    public static void write(ServerLevel level, BlockPos origin, Vec3i size, BlockState state,
-                             PortalCorridorMask clearMask, boolean relight) {
+    public static void write(ServerLevel level, BlockPos origin, Vec3i size,
+                             PortalRoomCopiesPalette palette, PortalCorridorMask clearMask,
+                             boolean relight, long worldSeed, int variantIndex) {
+        if (palette == null || palette.isEmpty()) return;
         int x0 = origin.getX();
         int x1 = x0 + size.getX() - 1;
         int z0 = origin.getZ();
@@ -79,22 +90,40 @@ public final class PortalRoomSinglePlanes {
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         for (int x = x0; x <= x1; x++) {
             for (int z = z0; z <= z1; z++) {
-                setPlaneBlock(level, pos.set(x, floorY, z), state, clearMask, relight);
+                setPlaneBlock(level, pos.set(x, floorY, z), origin, palette, clearMask, relight,
+                    worldSeed, variantIndex);
                 // A room one block tall would have its floor and its ceiling in the same plane, and
                 // the second write would be the first one again. PortalRoomLayout.MIN_HEIGHT rules
                 // that out, but the guard costs a comparison and the alternative is a silent
                 // double-write if the floor ever moves.
                 if (ceilingY != floorY) {
-                    setPlaneBlock(level, pos.set(x, ceilingY, z), state, clearMask, relight);
+                    setPlaneBlock(level, pos.set(x, ceilingY, z), origin, palette, clearMask,
+                        relight, worldSeed, variantIndex);
                 }
             }
         }
     }
 
-    /** One plane cell, skipped where a corridor owns it. Mirrors {@code PortalCarriageBuilder.setRoomBlock}. */
-    private static void setPlaneBlock(ServerLevel level, BlockPos pos, BlockState state,
-                                      PortalCorridorMask clearMask, boolean relight) {
+    /**
+     * One plane cell, skipped where a corridor owns it. Mirrors {@code PortalCarriageBuilder.setRoomBlock}.
+     *
+     * <p>The picker is handed the cell's position <b>relative to the tile</b>, not its world
+     * position. Two tiles rolling the same variant index must lay the same mix — that is what Exact
+     * means — and a world position would make every tile's mix differ regardless of the setting.</p>
+     */
+    private static void setPlaneBlock(ServerLevel level, BlockPos pos, BlockPos origin,
+                                      PortalRoomCopiesPalette palette, PortalCorridorMask clearMask,
+                                      boolean relight, long worldSeed, int variantIndex) {
         if (clearMask.covers(pos)) return;
+        VariantState picked = palette.resolve(pos.subtract(origin), worldSeed, variantIndex);
+        if (picked == null) return;
+        BlockState state = picked.state();
+        // A block entity in a floor plane is legal — an author can put a chest in a palette — and it
+        // has to be evicted rather than written over, or its contents spray across the floor. Same
+        // hazard, same fix, as PortalCarriageBuilder.applyRoomVariants documents at length.
+        if (state.hasBlockEntity()) {
+            SilentBlockOps.evictBlockEntity(level.getChunkAt(pos), pos);
+        }
         if (relight) {
             level.setBlock(pos, state, Block.UPDATE_ALL);
         } else {

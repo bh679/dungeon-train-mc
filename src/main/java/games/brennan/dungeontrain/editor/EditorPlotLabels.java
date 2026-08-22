@@ -68,7 +68,8 @@ public final class EditorPlotLabels {
         int roomLength,
         int roomWidth,
         int roomHeight,
-        String roomMode
+        String roomMode,
+        java.util.List<String> copiesBlocks
     ) {
         /** Back-compat shape for every category but PORTALS — no authored size or mode to show. */
         public Label(BlockPos worldPos, String name, int weight, String category,
@@ -76,13 +77,23 @@ public final class EditorPlotLabels {
                      boolean inPlot, boolean isUser, boolean isImported) {
             this(worldPos, name, weight, category, modelId, modelName, inPlot, isUser, isImported,
                 EditorPlotLabelsPacket.NO_SIZE, EditorPlotLabelsPacket.NO_SIZE,
-                EditorPlotLabelsPacket.NO_SIZE, EditorPlotLabelsPacket.NO_MODE);
+                EditorPlotLabelsPacket.NO_SIZE, EditorPlotLabelsPacket.NO_MODE, java.util.List.of());
+        }
+
+        /** The shape before the Copies palette existed — no blocks to draw icons for. */
+        public Label(BlockPos worldPos, String name, int weight, String category,
+                     String modelId, String modelName,
+                     boolean inPlot, boolean isUser, boolean isImported,
+                     int roomLength, int roomWidth, int roomHeight, String roomMode) {
+            this(worldPos, name, weight, category, modelId, modelName, inPlot, isUser, isImported,
+                roomLength, roomWidth, roomHeight, roomMode, java.util.List.of());
         }
 
         /** Construct a Label flagged as out-of-plot — the per-category builders use this; the per-player snapshot patches the matching one to inPlot=true. */
         public Label withInPlot(boolean newInPlot) {
             return new Label(worldPos, name, weight, category, modelId, modelName,
-                newInPlot, isUser, isImported, roomLength, roomWidth, roomHeight, roomMode);
+                newInPlot, isUser, isImported, roomLength, roomWidth, roomHeight, roomMode,
+                copiesBlocks);
         }
     }
 
@@ -208,9 +219,18 @@ public final class EditorPlotLabels {
             // actually behave as even when the tag on disk is absent or misspelt.
             String mode = games.brennan.dungeontrain.portal.PortalRoomSettings
                 .of(l.modelName()).toTag();
+            // The palette's blocks travel with the label so the Block row can draw icons without a
+            // packet of its own: the row already lives on this panel, and the list is a handful of
+            // short ids, empty for every room that is not repeating a variant.
+            games.brennan.dungeontrain.portal.PortalRoomSettings settings =
+                games.brennan.dungeontrain.portal.PortalRoomSettings.parse(mode);
+            java.util.List<String> copiesBlocks = settings.effectiveCopies().repeatsOneBlock()
+                ? games.brennan.dungeontrain.portal.PortalRoomCopiesPalette
+                    .forRoom(l.modelName(), settings.copies()).blockIds()
+                : java.util.List.of();
             out.set(i, new Label(l.worldPos(), l.name(), l.weight(), l.category(),
                 l.modelId(), l.modelName(), l.inPlot(), l.isUser(), l.isImported(),
-                size.getX(), size.getZ(), size.getY(), mode));
+                size.getX(), size.getZ(), size.getY(), mode, copiesBlocks));
         }
         return out;
     }

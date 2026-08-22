@@ -241,17 +241,44 @@ public final class EditorPlotLabelsRenderer {
         return settings.copiesApply() && settings.effectiveCopies().repeatsOneBlock();
     }
 
+    /** Where the icon strip starts — right of the "Blocks:" label. */
+    private static double copiesStripLeft(double halfW) {
+        return -halfW + halfW * 0.55;
+    }
+
+    /** How many icons the row has room for at this width. */
+    public static int copiesIconCapacity(double halfW) {
+        double room = halfW - copiesStripLeft(halfW) - PAD_X;
+        return Math.max(1, (int) Math.floor(room / COPIES_ICON_SLOT));
+    }
+
     /**
-     * What the Block row reads, e.g. {@code "Block: minecraft:sandstone"}.
+     * Which icon on the Copies Block row {@code hitX} lands on, or {@code -1} for the rest of the row.
      *
-     * <p>The stored id rather than a translated display name: this is a headless string helper
-     * shared with the plot panel, and reaching the block registry from here would tie the row's
-     * label to a world being loaded. The id is also what the author would type, which makes the row
-     * and the command agree.</p>
+     * <p>A separate query rather than a {@link CellKind} per icon: the row has one meaning either
+     * side of this line — an icon removes itself, the rest of the row adds what you are holding —
+     * and sixteen cell kinds for sixteen slots would put the palette's cap into an enum.</p>
      */
-    public static String copiesBlockLabel(String modeTag) {
-        return "Block: " + games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag)
-            .copies().blockId();
+    public static int copiesBlockIconAt(EditorPlotLabelsPacket.Entry entry, double halfW, double hitX) {
+        int drawn = Math.min(entry.copiesBlocks().size(), copiesIconCapacity(halfW));
+        if (drawn <= 0) return -1;
+        double left = copiesStripLeft(halfW);
+        if (hitX < left) return -1;
+        int index = (int) Math.floor((hitX - left) / COPIES_ICON_SLOT);
+        return index >= 0 && index < drawn ? index : -1;
+    }
+
+    /**
+     * What the Blocks row reads where it cannot draw icons — the command menu, which is text-only.
+     *
+     * <p>Names the gesture rather than the value. The value is a variant of up to
+     * {@code PortalRoomCopiesPalette.MAX_ENTRIES} candidates and lives server-side; the plot panel
+     * shows it as icons, and a text row that tried to would either be a wall of namespaced ids or,
+     * worse, the one id in the mode tag — which stops being the answer the moment a palette exists.
+     * Saying what the row does is honest at every width.</p>
+     */
+    public static String copiesBlockLabel() {
+        return "Blocks: + held";
     }
 
     /**
@@ -377,8 +404,13 @@ public final class EditorPlotLabelsRenderer {
     }
 
     /** Where the player's crosshair is currently pointing. */
-    public record Hovered(int entryIndex, CellKind cell) {
-        public static final Hovered NONE = new Hovered(-1, CellKind.NONE);
+    public record Hovered(int entryIndex, CellKind cell, int iconIndex) {
+        public static final Hovered NONE = new Hovered(-1, CellKind.NONE, -1);
+
+        /** Every cell but the Copies Block strip, which is the only one with more than one target. */
+        public Hovered(int entryIndex, CellKind cell) {
+            this(entryIndex, cell, -1);
+        }
     }
 
     /** Same composite as PartPositionMenuRenderer.PANEL_QUAD. */
@@ -407,6 +439,16 @@ public final class EditorPlotLabelsRenderer {
     /** Horizontal padding inside each row. */
     static final double PAD_X = 0.10;
 
+    /**
+     * Icon edge length and slot pitch on the Copies Block row, in panel-local units.
+     *
+     * <p>Matched to {@code StagePanelMenuRenderer}'s strip so the two read as one control at two
+     * sizes rather than as two controls.</p>
+     */
+    public static final double COPIES_ICON_SIZE = ROW_H * 0.8;
+    public static final double COPIES_ICON_SLOT = ROW_H;
+
+
     /** Backdrop fill for the whole panel. */
     private static final int BACKDROP_COLOR = 0xC8000000;
     /** Tint fill behind the hovered cell — copied from the part menu's hover yellow. */
@@ -433,9 +475,16 @@ public final class EditorPlotLabelsRenderer {
     private static final int ARROW_COLOR = 0xFFFFFFFF;
     private static final int BUTTON_TEXT_COLOR = 0xFFFFFFFF;
     private static final int BUTTON_TEXT_DIM_COLOR = 0xFFAAAAAA;
+    /** The Copies Block row's "nothing here yet" hint — dimmer than a value. */
+    private static final int LABEL_COLOR = 0xFFAAAAAA;
 
     private static volatile List<EditorPlotLabelsPacket.Entry> CACHE = List.of();
     private static volatile Hovered HOVERED = Hovered.NONE;
+
+    /** Which icon of the Copies Block strip the cursor is over, or -1. */
+    private static int hoveredIconIndex() {
+        return HOVERED.iconIndex();
+    }
 
     private EditorPlotLabelsRenderer() {}
 
@@ -546,10 +595,10 @@ public final class EditorPlotLabelsRenderer {
             w = Math.max(w, measure.applyAsInt(copiesLabel(entry.roomMode())) * TEXT_SCALE + 2 * PAD_X);
         }
         if (hasCopiesBlockRow(entry)) {
-            // The longest label the panel can show — a namespaced block id runs well past
-            // "Walls: Endless Repetition", and it is one unbroken string with nowhere to wrap.
-            w = Math.max(w, measure.applyAsInt(copiesBlockLabel(entry.roomMode())) * TEXT_SCALE
-                + 2 * PAD_X);
+            // Label plus room for a few icons. The strip scrolls into its "+N" rather than widening
+            // the panel, so this is a floor on the row and not a function of the palette's size.
+            w = Math.max(w, measure.applyAsInt("Blocks:") * TEXT_SCALE + 2 * PAD_X
+                + 4 * COPIES_ICON_SLOT);
         }
         if (hasExitsRow(entry)) {
             w = Math.max(w, measure.applyAsInt(exitsLabel(entry.roomMode())) * TEXT_SCALE + 2 * PAD_X);
@@ -878,12 +927,38 @@ public final class EditorPlotLabelsRenderer {
                     drawQuad(ps, buffer, -halfW + 0.01, rBot + 0.005, halfW - 0.01, rTop - 0.005, bg);
                     drawCenteredText(ps, buffer, font, copiesLabel(entry.roomMode()), 0, rCY, WEIGHT_COLOR);
                 }
-                // Block — which block Single repeats. Clicking it takes what the author is
-                // holding, so the row is a picker rather than a cycle.
+                // Blocks — the variant Single repeats, as icons. Clicking the row takes what the
+                // author is holding (a block, or a variant copied from a cell); clicking one icon
+                // removes that candidate. Mirrors StagePanelMenuRenderer's part strip.
                 case COPIES_BLOCK -> {
-                    int bg = hovered == CellKind.COPIES_BLOCK_HELD ? HOVER_COLOR : BUTTON_BG;
-                    drawQuad(ps, buffer, -halfW + 0.01, rBot + 0.005, halfW - 0.01, rTop - 0.005, bg);
-                    drawCenteredText(ps, buffer, font, copiesBlockLabel(entry.roomMode()), 0, rCY, WEIGHT_COLOR);
+                    boolean rowHovered = hovered == CellKind.COPIES_BLOCK_HELD
+                        && hoveredIconIndex() < 0;
+                    drawQuad(ps, buffer, -halfW + 0.01, rBot + 0.005, halfW - 0.01, rTop - 0.005,
+                        rowHovered ? HOVER_COLOR : BUTTON_BG);
+                    drawLeftText(ps, buffer, font, "Blocks:", -halfW + PAD_X, rCY, WEIGHT_COLOR);
+
+                    java.util.List<String> blocks = entry.copiesBlocks();
+                    int capacity = copiesIconCapacity(halfW);
+                    int drawn = Math.min(blocks.size(), capacity);
+                    double left = copiesStripLeft(halfW);
+                    for (int i = 0; i < drawn; i++) {
+                        double cx = left + (i + 0.5) * COPIES_ICON_SLOT;
+                        if (hovered == CellKind.COPIES_BLOCK_HELD && hoveredIconIndex() == i) {
+                            drawQuad(ps, buffer, cx - COPIES_ICON_SLOT / 2.0, rBot + 0.005,
+                                cx + COPIES_ICON_SLOT / 2.0, rTop - 0.005, HOVER_COLOR);
+                        }
+                        MenuBlockIcons.drawBlockIcon(ps, buffer, blocks.get(i), cx, rCY,
+                            COPIES_ICON_SIZE);
+                    }
+                    if (blocks.size() > drawn) {
+                        drawLeftText(ps, buffer, font, "+" + (blocks.size() - drawn),
+                            left + drawn * COPIES_ICON_SLOT + PAD_X, rCY, WEIGHT_COLOR);
+                    }
+                    if (blocks.isEmpty()) {
+                        // Nothing authored yet: say what to do rather than showing an empty strip.
+                        drawLeftText(ps, buffer, font, "hold a block or variant",
+                            left, rCY, LABEL_COLOR);
+                    }
                 }
                 // Contents — whether this room is furnished from the contents pool, and how a
                 // furnishing smaller than the room is fitted into it. Off by default.
@@ -1011,6 +1086,22 @@ public final class EditorPlotLabelsRenderer {
             drawCenteredText(ps, buffer, font, "R", resetCX, aCY, BUTTON_TEXT_COLOR);
             drawCenteredText(ps, buffer, font, "C", clearCX, aCY, BUTTON_TEXT_COLOR);
         }
+    }
+
+    /** {@link #drawCenteredText} anchored at its left edge — what a row with a strip beside it needs. */
+    private static void drawLeftText(
+        PoseStack ps, MultiBufferSource buffer, Font font,
+        String text, double worldX, double worldY, int colour
+    ) {
+        ps.pushPose();
+        ps.translate(worldX, worldY, 0.001f);
+        float scale = (float) TEXT_SCALE;
+        ps.scale(scale, -scale, scale);
+        float y = -font.lineHeight / 2f;
+        Matrix4f mat = ps.last().pose();
+        font.drawInBatch(text, 0, y, colour, false, mat, buffer,
+            Font.DisplayMode.SEE_THROUGH, 0, LightTexture.FULL_BRIGHT);
+        ps.popPose();
     }
 
     private static void drawCenteredText(

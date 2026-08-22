@@ -78,14 +78,30 @@ public record EditorPlotLabelsPacket(List<Entry> entries) implements CustomPacke
         int roomLength,
         int roomWidth,
         int roomHeight,
-        String roomMode
+        String roomMode,
+        List<String> copiesBlocks
     ) {
+        public Entry {
+            // Defensive rather than trusting: this record is built from the wire, and the renderer
+            // walks the list every frame the panel is up.
+            copiesBlocks = copiesBlocks == null ? List.of() : List.copyOf(copiesBlocks);
+        }
+
+        /** The shape before the Copies palette existed — no blocks to draw icons for. */
+        public Entry(BlockPos worldPos, String name, int weight, String category,
+                     String modelId, String modelName,
+                     boolean inPlot, boolean isUser, boolean isImported,
+                     int roomLength, int roomWidth, int roomHeight, String roomMode) {
+            this(worldPos, name, weight, category, modelId, modelName, inPlot, isUser, isImported,
+                roomLength, roomWidth, roomHeight, roomMode, List.of());
+        }
+
         /** Back-compat shape for every category but PORTALS — no authored size or mode to show. */
         public Entry(BlockPos worldPos, String name, int weight, String category,
                      String modelId, String modelName,
                      boolean inPlot, boolean isUser, boolean isImported) {
             this(worldPos, name, weight, category, modelId, modelName,
-                inPlot, isUser, isImported, NO_SIZE, NO_SIZE, NO_SIZE, NO_MODE);
+                inPlot, isUser, isImported, NO_SIZE, NO_SIZE, NO_SIZE, NO_MODE, List.of());
         }
 
         /** Back-compat shape from before portal rooms carried a mode. */
@@ -140,6 +156,13 @@ public record EditorPlotLabelsPacket(List<Entry> entries) implements CustomPacke
             buf.writeVarInt(e.roomWidth());
             buf.writeVarInt(e.roomHeight());
             buf.writeUtf(e.roomMode(), EditorStatusPacket.MODE_TAG_MAX);
+            // Capped at the palette's own maximum so a hand-edited sidecar cannot make this packet
+            // unbounded; the ids themselves are ordinary registry names.
+            List<String> blocks = e.copiesBlocks();
+            int n = Math.min(blocks.size(),
+                games.brennan.dungeontrain.portal.PortalRoomCopiesPalette.MAX_ENTRIES);
+            buf.writeVarInt(n);
+            for (int i = 0; i < n; i++) buf.writeUtf(blocks.get(i), 128);
         }
     }
 
@@ -161,8 +184,12 @@ public record EditorPlotLabelsPacket(List<Entry> entries) implements CustomPacke
             int roomWidth = buf.readVarInt();
             int roomHeight = buf.readVarInt();
             String roomMode = buf.readUtf(EditorStatusPacket.MODE_TAG_MAX);
+            int blockCount = buf.readVarInt();
+            List<String> copiesBlocks = new ArrayList<>(Math.max(0, blockCount));
+            for (int b = 0; b < blockCount; b++) copiesBlocks.add(buf.readUtf(128));
             out.add(new Entry(pos, name, weight, category, modelId, modelName,
-                inPlot, isUser, isImported, roomLength, roomWidth, roomHeight, roomMode));
+                inPlot, isUser, isImported, roomLength, roomWidth, roomHeight, roomMode,
+                copiesBlocks));
         }
         return new EditorPlotLabelsPacket(out);
     }

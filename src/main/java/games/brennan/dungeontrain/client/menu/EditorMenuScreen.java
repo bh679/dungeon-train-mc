@@ -35,13 +35,11 @@ public final class EditorMenuScreen implements MenuScreen {
     /**
      * Panel width while the Copies Block row is showing.
      *
-     * <p>Wider again than {@link #WALLS_ROW_PANEL_WIDTH}, because the value on that row is a
-     * namespaced block id out of the whole registry rather than one of a fixed set of labels —
-     * {@code Block: minecraft:polished_blackstone_bricks} is over forty characters and has nowhere
-     * to wrap. Sized for that rather than for the average, since a clipped id is one an author
-     * cannot read back.</p>
+     * <p>The same width the Walls row asks for. The row named a block id when it was added, which
+     * needed more than forty characters; it names the gesture now — {@code Blocks: + held} — and the
+     * palette itself is shown as icons on the plot panel, so there is nothing here to size for.</p>
      */
-    private static final double COPIES_BLOCK_ROW_PANEL_WIDTH = 4.4;
+    private static final double COPIES_BLOCK_ROW_PANEL_WIDTH = WALLS_ROW_PANEL_WIDTH;
 
     @Override public String title() { return "Editor"; }
 
@@ -418,7 +416,7 @@ public final class EditorMenuScreen implements MenuScreen {
         if (currentMode == null || EditorStatusPacket.NO_MODE.equals(currentMode)) return null;
         if (!EditorPlotLabelsRenderer.hasCopiesBlockRowFor(currentMode)) return null;
         return new CommandMenuEntry.Stay(
-            EditorPlotLabelsRenderer.copiesBlockLabel(currentMode),
+            EditorPlotLabelsRenderer.copiesBlockLabel(),
             "dungeontrain editor portals copies block held");
     }
 

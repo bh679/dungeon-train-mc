@@ -89,8 +89,15 @@ public final class EditorPlotPanelRaycast {
             CellKind cell = EditorPlotLabelsRenderer.cellAt(entry, font, hitX, hitY);
             if (cell == CellKind.NONE) continue;
 
+            // The Copies Block row is the one cell with more than one target: an icon removes that
+            // candidate, the rest of the row adds what the player is holding.
+            int iconIndex = cell == CellKind.COPIES_BLOCK_HELD
+                ? EditorPlotLabelsRenderer.copiesBlockIconAt(
+                    entry, EditorPlotLabelsRenderer.halfWidth(entry, font), hitX)
+                : -1;
+
             closestT = t;
-            closest = new Hovered(i, cell);
+            closest = new Hovered(i, cell, iconIndex);
         }
 
         EditorPlotLabelsRenderer.setHovered(closest);

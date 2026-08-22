@@ -97,6 +97,12 @@ public final class EditorPlotTeleport {
         return "dungeontrain editor portals copies block held";
     }
 
+    /** As {@link #copiesBlockHeldCommandFor}, for dropping the candidate an icon stands for. */
+    public static String copiesBlockRemoveCommandFor(String category, int index) {
+        if (!"PORTALS".equals(category) || index < 0) return null;
+        return "dungeontrain editor portals copies block remove " + index;
+    }
+
     /** As {@link #modeCycleCommandFor}, for whether the room is furnished from the contents pool. */
     public static String roomContentsCycleCommandFor(String category) {
         if (!"PORTALS".equals(category)) return null;

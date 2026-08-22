@@ -465,6 +465,12 @@ public final class EditorCommand {
                     .then(Commands.literal("block")
                         .then(Commands.literal("held")
                             .executes(ctx -> runPortalRoomCopiesBlockHeld(ctx.getSource())))
+                        .then(Commands.literal("clear")
+                            .executes(ctx -> runPortalRoomCopiesBlockClear(ctx.getSource())))
+                        .then(Commands.literal("remove")
+                            .then(Commands.argument("index", IntegerArgumentType.integer(0))
+                                .executes(ctx -> runPortalRoomCopiesBlockRemove(ctx.getSource(),
+                                    IntegerArgumentType.getInteger(ctx, "index")))))
                         .then(Commands.argument("block", StringArgumentType.greedyString())
                             .executes(ctx -> runPortalRoomCopiesBlock(ctx.getSource(),
                                 StringArgumentType.getString(ctx, "block")))))
@@ -5936,12 +5942,17 @@ public final class EditorCommand {
     }
 
     /**
-     * {@code /dt editor portals copies block held} — set Single's block to what the author is
-     * holding.
+     * {@code /dt editor portals copies block held} — add what the author is holding to Single's
+     * palette.
      *
-     * <p>The held item rather than a typed id because this is a block-picking gesture, and the
-     * author is already standing in the plot with a palette in their hotbar. The menu is opened by a
-     * key toggle rather than by holding a tool, so the main hand is free for the block itself.</p>
+     * <p>Two things are worth holding. A <b>variant clipboard</b>, copied from a cell by the Block
+     * Variant menu, brings that cell's whole candidate list over in one gesture — which is the point
+     * of the setting: the endless plain rolls a variant the author built, not a block they named. A
+     * plain <b>block</b> is the one-entry case of the same thing.</p>
+     *
+     * <p>The held item rather than a typed id because this is a picking gesture, and the author is
+     * already standing in the plot with their palette in their hotbar. The menu is opened by a key
+     * toggle rather than by holding a tool, so the main hand is free.</p>
      */
     private static int runPortalRoomCopiesBlockHeld(CommandSourceStack source) {
         String name = portalRoomPlotUnderPlayer(source);
@@ -5953,46 +5964,104 @@ public final class EditorCommand {
             return 0;
         }
         ItemStack held = player.getMainHandItem();
-        if (!(held.getItem() instanceof BlockItem blockItem)) {
-            source.sendFailure(Component.literal(
-                "Hold the block you want the copies made of, then press this again."));
-            return 0;
+
+        if (held.getItem() instanceof games.brennan.dungeontrain.item.VariantClipboardItem) {
+            java.util.List<games.brennan.dungeontrain.editor.VariantState> states =
+                games.brennan.dungeontrain.item.VariantClipboardItem.decodeStates(
+                    games.brennan.dungeontrain.item.VariantClipboardItem.readClipboardTag(held));
+            if (states.isEmpty()) {
+                source.sendFailure(Component.literal("That clipboard is empty."));
+                return 0;
+            }
+            return addToPortalRoomCopiesPalette(source, name, states);
         }
-        return setPortalRoomCopiesBlock(source, name,
-            BuiltInRegistries.BLOCK.getKey(blockItem.getBlock()).toString());
+        if (held.getItem() instanceof BlockItem blockItem) {
+            return addToPortalRoomCopiesPalette(source, name, java.util.List.of(
+                new games.brennan.dungeontrain.editor.VariantState(
+                    blockItem.getBlock().defaultBlockState(), null)));
+        }
+        source.sendFailure(Component.literal(
+            "Hold a block, or a variant copied from a cell, then press this again."));
+        return 0;
     }
 
-    /** {@code /dt editor portals copies block <id>} — the same, for a script or a keyboard. */
+    /** {@code /dt editor portals copies block <id>} — add one named block, for a script. */
     private static int runPortalRoomCopiesBlock(CommandSourceStack source, String raw) {
         String name = portalRoomPlotUnderPlayer(source);
         if (name == null) return 0;
-        return setPortalRoomCopiesBlock(source, name, raw);
+
+        java.util.Optional<net.minecraft.world.level.block.state.BlockState> state =
+            games.brennan.dungeontrain.portal.PortalRoomSinglePlanes.stateFor(raw);
+        if (state.isEmpty()) {
+            source.sendFailure(Component.literal(
+                "'" + raw + "' is not a block this world knows about."));
+            return 0;
+        }
+        return addToPortalRoomCopiesPalette(source, name, java.util.List.of(
+            new games.brennan.dungeontrain.editor.VariantState(state.get(), null)));
+    }
+
+    /** {@code /dt editor portals copies block remove <index>} — drop one candidate, by icon. */
+    private static int runPortalRoomCopiesBlockRemove(CommandSourceStack source, int index) {
+        String name = portalRoomPlotUnderPlayer(source);
+        if (name == null) return 0;
+        games.brennan.dungeontrain.portal.PortalRoomCopiesPalette palette =
+            games.brennan.dungeontrain.portal.PortalRoomCopiesPalette.forRoom(
+                name, games.brennan.dungeontrain.portal.PortalRoomSettings.of(name).copies());
+        return savePortalRoomCopiesPalette(source, name, palette.without(index));
+    }
+
+    /** {@code /dt editor portals copies block clear} — empty the palette. */
+    private static int runPortalRoomCopiesBlockClear(CommandSourceStack source) {
+        String name = portalRoomPlotUnderPlayer(source);
+        if (name == null) return 0;
+        return savePortalRoomCopiesPalette(source, name,
+            games.brennan.dungeontrain.portal.PortalRoomCopiesPalette.empty());
     }
 
     /**
-     * Store {@code blockId} as the block Single repeats, refusing a name nothing answers to.
+     * Append {@code added} to the room's palette and persist it.
      *
-     * <p>Validated here and not only at stamp time: the tiler already falls back to stamping the
-     * room normally for a block it cannot resolve, which is the right thing for a tag that went bad
-     * on disk but the wrong thing to do silently to somebody who just typed one in. An author who
-     * sets a block and sees nothing change should be told why.</p>
+     * <p>Read through {@code forRoom} rather than straight off disk, so the first block added to a
+     * room that has only ever had the tag's one-block form starts from that block rather than
+     * silently discarding it.</p>
      */
-    private static int setPortalRoomCopiesBlock(CommandSourceStack source, String name,
-                                                String blockId) {
-        if (blockId != null
-                && blockId.trim().length() > games.brennan.dungeontrain.portal.PortalRoomCopies.BLOCK_ID_MAX) {
+    private static int addToPortalRoomCopiesPalette(
+        CommandSourceStack source, String name,
+        java.util.List<games.brennan.dungeontrain.editor.VariantState> added
+    ) {
+        games.brennan.dungeontrain.portal.PortalRoomCopiesPalette current =
+            games.brennan.dungeontrain.portal.PortalRoomCopiesPalette.forRoom(
+                name, games.brennan.dungeontrain.portal.PortalRoomSettings.of(name).copies());
+        games.brennan.dungeontrain.portal.PortalRoomCopiesPalette next = current.plus(added);
+        if (next.size() == current.size()) {
             source.sendFailure(Component.literal(
-                "'" + blockId + "' is too long a block id to store in a room's settings."));
+                "Nothing was added — the palette is full ("
+                    + games.brennan.dungeontrain.portal.PortalRoomCopiesPalette.MAX_ENTRIES
+                    + ") or those entries cannot floor a room."));
             return 0;
         }
-        if (games.brennan.dungeontrain.portal.PortalRoomSinglePlanes.stateFor(blockId).isEmpty()) {
+        return savePortalRoomCopiesPalette(source, name, next);
+    }
+
+    private static int savePortalRoomCopiesPalette(
+        CommandSourceStack source, String name,
+        games.brennan.dungeontrain.portal.PortalRoomCopiesPalette palette
+    ) {
+        try {
+            palette.save(name);
+            if (EditorDevMode.isEnabled()) palette.saveToSource(name);
+        } catch (IOException e) {
             source.sendFailure(Component.literal(
-                "'" + blockId + "' is not a block this world knows about."));
+                "Could not save the copies palette for portal room '" + name + "': " + e.getMessage()));
             return 0;
         }
-        games.brennan.dungeontrain.portal.PortalRoomSettings current =
-            games.brennan.dungeontrain.portal.PortalRoomSettings.of(name);
-        return applyPortalRoomSettings(source, name, current.withCopiesBlock(blockId));
+        games.brennan.dungeontrain.portal.PortalRoomCopiesPalette.invalidate(name);
+        source.sendSuccess(() -> Component.literal(
+            "Editor: portal room '" + name + "' copies palette is now "
+                + (palette.isEmpty() ? "empty" : String.join(", ", palette.blockIds())))
+            .withStyle(ChatFormatting.GREEN), true);
+        return 1;
     }
 
     /** {@code /dt editor portals books next} — step the author lock. */
@@ -6087,7 +6156,10 @@ public final class EditorCommand {
         String copies = settings.copiesApply()
             ? ", copies: " + settings.copies().displayName()
                 + (settings.effectiveCopies().repeatsOneBlock()
-                    ? " (" + settings.copies().blockId() + ")" : "")
+                    ? " (" + String.join(", ",
+                        games.brennan.dungeontrain.portal.PortalRoomCopiesPalette
+                            .forRoom(name, settings.copies()).blockIds()) + ")"
+                    : "")
             : "";
         String contents = ", contents: " + settings.contents().displayName();
         String exits = settings.exitsApply()
