@@ -8083,6 +8083,19 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "restore-backpack-loot-weights",
+      "version": "0.624.0",
+      "type": "chore",
+      "title": "Edible backpacks are findable again",
+      "summary": "Edible backpacks turn up in loot chests, iron/gold chests, decorated pots and the starter chest at their original rates again.",
+      "highlights": [],
+      "date": "2026-08-22",
+      "released": false,
+      "released_in": null,
+      "released_at": null,
+      "pr": 1054
     }
   ]
 }
