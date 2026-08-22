@@ -75,11 +75,11 @@ logoFile="logo.png"
 [[dependencies.${mod_id}]]
     modId="tradeeverything"
     type="required"
-    versionRange="[${tradeeverything_version},)"
+    versionRange="[${tradeeverything_min_version},)"
     ordering="AFTER"
     side="BOTH"
 
-# Edible Backpacks is jarJar'd INSIDE this jar (like DiscordPresence/TradeEverything),
+# Edible Backpacks is jarJar'd INSIDE this jar (like DiscordPresence),
 # so the shipped version is always exactly ediblebackpacks_version — no floor indirection.
 [[dependencies.${mod_id}]]
     modId="ediblebackpacks"

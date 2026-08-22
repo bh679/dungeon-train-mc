@@ -6,7 +6,7 @@
 # Mod keys:
 #   dt         the freshly built Dungeon Train jar (build/libs/)
 #   sable      the pinned Sable build
-#   ain ais pmob ecp    the four un-bundled sibling mods, at their pinned versions
+#   ain ais pmob ecp te the five un-bundled sibling mods, at their pinned versions
 #   pmob-new   PlayerMob ABOVE the declared floor (uses playermob_version)
 #   pmob-old   PlayerMob BELOW the declared floor (downloaded, see README)
 #
@@ -61,6 +61,7 @@ resolve() {
     ain)      cached "bh679/adventureitemnames"      "$(prop adventureitemnames_version)" ;;
     ais)      cached "bh679/adventureitemstats"      "$(prop adventureitemstats_version)" ;;
     ecp)      cached "bh679/enderchestpersistence"   "$(prop enderchestpersistence_version)" ;;
+    te)       cached "bh679/tradeeverything"         "$(prop tradeeverything_version)" ;;
     # At the declared floor — the oldest build DT claims to support.
     pmob)     cached "bh679/playermob"               "$(prop playermob_min_version)" ;;
     # Above the floor: whatever the cascade has moved playermob_version to. When those two

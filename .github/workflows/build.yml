@@ -64,7 +64,7 @@ jobs:
       - name: Dependency version pins (Sable chain + sibling floors)
         # Two checks. (1) Sable: fails if sable_mod_version (DT's exact mods.toml lock) or
         # the modpack's sable.version drift from gradle.properties sable_version.
-        # (2) Siblings: fails if a modpack-pinned AIN/AIS/PMOB/ECP build is OLDER than the
+        # (2) Siblings: fails if a modpack-pinned AIN/AIS/PMOB/ECP/TE build is OLDER than the
         # <mod>_min_version floor DT declares — i.e. the pack would ship a sibling the mod
         # refuses to load against. No network.
         run: python3 scripts/modpack/check-pins.py
