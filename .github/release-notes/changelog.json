@@ -8031,8 +8031,8 @@
       "id": "portal-room-daylight",
       "version": "0.622.0",
       "type": "feat",
-      "title": "Portal rooms can be lit like they're above ground",
-      "summary": "Some portal rooms now feel like daylit places rather than pockets buried under the world. A room's template chooses the sky it stands under \u2014 ordinary daylight, daylight that follows the world clock, or a Nether or End cast \u2014 and the light eases in as you step inside and back out as you leave for the corridor home. The mini-world room is the first to use it.",
+      "title": "Portal rooms can stand under their own sky",
+      "summary": "A portal room's template now chooses the sky it stands under \u2014 ordinary daylight, daylight that follows the world clock, or a Nether or End cast. The light eases in as you step inside and eases back out as you leave for the corridor home. The mini-world room is the first to use it.",
       "highlights": [
         "The mini-world portal room is now daylit",
         "Room builders get a Sky control in the portal room editor",

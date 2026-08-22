@@ -190,7 +190,7 @@ public final class DungeonTrainConfig {
     public static final int MIN_PORTAL_ROOM_AUTHOR_MIN_BOOKS = 0;
     public static final int MAX_PORTAL_ROOM_AUTHOR_MIN_BOOKS = 1000;
 
-    /** Default master for portal rooms whose template asks to be lit as though it stood outdoors. */
+    /** Default master for portal rooms whose template asks to stand under a sky of its own. */
     public static final boolean DEFAULT_PORTAL_ROOM_DAYLIGHT = true;
 
     /** Default master for serving approved player-written narrative series back on narrative lecterns. */
@@ -496,13 +496,13 @@ public final class DungeonTrainConfig {
                 .defineInRange("portalRoomAuthorMinBooks", DEFAULT_PORTAL_ROOM_AUTHOR_MIN_BOOKS,
                         MIN_PORTAL_ROOM_AUTHOR_MIN_BOOKS, MAX_PORTAL_ROOM_AUTHOR_MIN_BOOKS);
         ModConfigSpec.BooleanValue portalRoomDaylight = b
-                .comment("Light portal rooms whose template asks for it as though they stood outdoors. Those rooms are",
-                        "stamped far below the world's bedrock row, where natural sky light is zero, so the sky-light",
-                        "engine is told to treat one row inside the room as open sky and flood downward from there —",
-                        "the room's own pillars and overhangs then cast real shadows. Only templates that opt in are",
-                        "affected (the Sky segment of their `mode` tag); every other room is lit by its lamps exactly as",
-                        "before. Set false to turn the whole mechanism off, which also switches off the vanilla lighting",
-                        "hooks it installs — worth trying first if another lighting mod misbehaves. Default true.")
+                .comment("Light portal rooms whose template asks for a sky. Only templates that opt in are affected",
+                        "(the Sky segment of their `mode` tag); every other room is lit exactly as before. Each player's",
+                        "own lightmap is lifted toward that sky while they are inside the room, and eased back as they",
+                        "leave — no block is changed, no light is stored, and no game logic (mob spawns, the clock) is",
+                        "affected. Set false to turn the whole mechanism off, which also switches off the vanilla",
+                        "lighting hook it installs — worth trying first if another lighting mod misbehaves.",
+                        "Default true.")
                 .define("portalRoomDaylight", DEFAULT_PORTAL_ROOM_DAYLIGHT);
         ModConfigSpec.BooleanValue discoverNarrativesEnabled = b
                 .comment("Serve approved player-written narrative series back on narrative lecterns. When true, a lectern",
