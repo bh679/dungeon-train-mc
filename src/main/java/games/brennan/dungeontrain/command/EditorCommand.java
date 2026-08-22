@@ -6024,16 +6024,14 @@ public final class EditorCommand {
      *
      * <p>Replaces rather than appends: the value is one block, and the Block Variant menu is what
      * turns it into several. Two writers, one whole-value handoff each.</p>
+     *
+     * <p>Nothing is rejected on content. An entry that resolves to air is a gap the author asked
+     * for, not a mistake to catch here.</p>
      */
     private static int savePortalRoomCopiesVariant(
         CommandSourceStack source, String name,
         games.brennan.dungeontrain.portal.PortalRoomCopiesVariant variant
     ) {
-        if (variant.isEmpty()) {
-            source.sendFailure(Component.literal(
-                "That cannot floor a room — a mob or an empty-placeholder entry would leave a hole."));
-            return 0;
-        }
         try {
             variant.save(name);
             if (EditorDevMode.isEnabled()) variant.saveToSource(name);

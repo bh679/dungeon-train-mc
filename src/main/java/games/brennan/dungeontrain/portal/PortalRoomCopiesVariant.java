@@ -52,6 +52,12 @@ import java.util.Map;
  * share. A palette is one cell's worth of candidates with no lock id, which is the bare-array form
  * those two have always round-tripped, so every entry shape they learn this one gets too.</p>
  *
+ * <h2>Air is a legitimate candidate</h2>
+ * <p>An entry that resolves to air — the empty-placeholder sentinel, or a mob entry — leaves that
+ * cell as a gap: a hole in the floor, an opening in the roof. That is an authored choice and the
+ * only way to ask for one, so it is stored and stamped rather than filtered. A variant of nothing
+ * but air floors nothing at all, which is legal and is the author's business.</p>
+ *
  * <h2>Rolling</h2>
  * <p>{@link #resolve} is {@link CarriageVariantBlocks#pickIndexWeighted} and nothing else: the same
  * pure function of world seed, variant index and local position that the sidecars use. So a cell
@@ -92,23 +98,28 @@ public final class PortalRoomCopiesVariant {
     }
 
     /**
-     * A variant holding the usable entries of {@code states}, capped at {@link #MAX_ENTRIES}.
+     * A variant holding {@code states} exactly as given, in order, capped at {@link #MAX_ENTRIES}.
      *
-     * <p><b>Mob and empty-placeholder entries are dropped.</b> Both resolve to air at stamp time,
-     * and air in a floor plane is a hole in the plain that drops a player out of the world — the one
-     * outcome this whole feature must never produce. A clipboard copied from a cell that mixes
-     * blocks with a mob entry is still worth accepting; it just contributes its blocks.</p>
+     * <p><b>Nothing is filtered.</b> This used to drop entries that resolve to air — the
+     * empty-placeholder sentinel and mob entries — to stop a floor plane growing a hole. That was
+     * editing the author's data: a variant is a value they built in the Block Variant menu, and
+     * storing something other than what they handed over makes the row's icon, a later Copy back
+     * onto a cell, and the file on disk all disagree with what was added. Air in the variant is
+     * also the only way to ask for <i>gaps</i> in the plain, so the filter removed the one thing it
+     * was there to express. {@code PortalRoomSinglePlanes} honours air at stamp time instead.</p>
+     *
+     * <p>The cap is not a judgement about content: it is the same number
+     * {@code BlockVariantMenuController.MAX_ENTRIES} allows per cell, so a variant that came from
+     * the menu can never reach it and one that does came from a hand-edited file.</p>
      */
     public static PortalRoomCopiesVariant of(List<VariantState> states) {
         if (states == null || states.isEmpty()) return empty();
-        List<VariantState> usable = new ArrayList<>(Math.min(states.size(), MAX_ENTRIES));
+        List<VariantState> kept = new ArrayList<>(Math.min(states.size(), MAX_ENTRIES));
         for (VariantState s : states) {
-            if (usable.size() >= MAX_ENTRIES) break;
-            if (s == null || s.isMob()) continue;
-            if (CarriageVariantBlocks.isEmptyPlaceholder(s.state())) continue;
-            usable.add(s);
+            if (kept.size() >= MAX_ENTRIES) break;
+            if (s != null) kept.add(s);
         }
-        return usable.isEmpty() ? empty() : new PortalRoomCopiesVariant(usable);
+        return kept.isEmpty() ? empty() : new PortalRoomCopiesVariant(kept);
     }
 
     /** The candidates, in the order they were added. Never null; possibly empty. */

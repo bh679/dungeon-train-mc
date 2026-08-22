@@ -120,6 +120,24 @@ public final class PortalRoomSinglePlanes {
         VariantState picked = palette.resolve(local, worldSeed, variantIndex);
         if (picked == null) return;
 
+        // Air is a candidate like any other: the empty-placeholder sentinel and mob entries both
+        // mean "this cell is a gap", which is how an author asks for holes in the floor or openings
+        // in the roof. Same branch PortalCarriageBuilder.applyRoomVariants has for the same entries.
+        //
+        // No-cascade, for the reason its callers there document: an UPDATE_ALL air write runs the
+        // neighbour update that breaks whatever was standing on the cell and drops it as an item.
+        //
+        // A mob entry's block half is all that is honoured — nothing is spawned. applyRoomVariants
+        // does spawn them, but into ONE room, behind PortalRoomMobs' live-count cap and its paired
+        // reap when the copy retires. The same entry on a plane cell is one mob per cell across an
+        // endless grid, with no reaper; that wants its own design, not a line here.
+        if (picked.isMob()
+                || games.brennan.dungeontrain.editor.CarriageVariantBlocks
+                    .isEmptyPlaceholder(picked.state())) {
+            SilentBlockOps.setBlockSilentNoCascade(level, pos, Blocks.AIR.defaultBlockState(), null);
+            return;
+        }
+
         // The whole entry, not just its block. A variant carries a facing and a slab half as well as
         // a state, and dropping them would place every log in a palette on the axis it happened to be
         // copied from — the visible half of "it uses the variant you gave it". Lock id 0: a palette is

@@ -66,29 +66,54 @@ class PortalRoomCopiesVariantTest {
         assertEquals(List.of("minecraft:sandstone"), back.blockIds());
     }
 
-    @Test
-    @DisplayName("Anything that would floor a tile with air is dropped on the way in")
-    void airEntriesAreDropped() {
-        // A mob entry resolves to air at stamp time by design, and the empty placeholder is the
-        // editor's "this cell becomes air" sentinel. Either one in a floor plane is a hole.
-        VariantState mob = new VariantState(Blocks.STONE.defaultBlockState(), null, 1,
+    /** The editor's "this cell becomes air" sentinel — a command block, stored verbatim. */
+    private static VariantState airEntry() {
+        return new VariantState(Blocks.COMMAND_BLOCK.defaultBlockState(), null);
+    }
+
+    /** A mob entry: the canonical constructor stamps the sentinel state and carries the entity id. */
+    private static VariantState mobEntry() {
+        return new VariantState(Blocks.STONE.defaultBlockState(), null, 1,
             games.brennan.dungeontrain.editor.VariantRotation.NONE, null,
             net.minecraft.resources.ResourceLocation.parse("minecraft:zombie"));
-
-        PortalRoomCopiesVariant palette =
-            PortalRoomCopiesVariant.of(List.of(of(Blocks.STONE), mob));
-
-        assertEquals(List.of("minecraft:stone"), palette.blockIds(),
-            "a mob entry in a floor plane is a hole a player falls through");
     }
 
     @Test
-    @DisplayName("A palette of nothing but air entries is empty, not a palette of holes")
-    void allAirIsEmpty() {
-        VariantState mob = new VariantState(Blocks.STONE.defaultBlockState(), null, 1,
-            games.brennan.dungeontrain.editor.VariantRotation.NONE, null,
-            net.minecraft.resources.ResourceLocation.parse("minecraft:zombie"));
-        assertTrue(PortalRoomCopiesVariant.of(List.of(mob)).isEmpty());
+    @DisplayName("An air entry is kept — it is how an author asks for gaps in the plain")
+    void airEntriesAreKept() {
+        PortalRoomCopiesVariant variant =
+            PortalRoomCopiesVariant.of(List.of(of(Blocks.STONE), airEntry()));
+
+        assertEquals(2, variant.size(),
+            "filtering the author's variant makes the row, the file and a Copy back out disagree");
+        assertTrue(variant.states().stream().anyMatch(
+                v -> games.brennan.dungeontrain.editor.CarriageVariantBlocks
+                    .isEmptyPlaceholder(v.state())),
+            "the empty-placeholder sentinel must survive being added");
+
+        // And it has to survive the file, not just the constructor.
+        assertEquals(2, reread(variant).size());
+    }
+
+    @Test
+    @DisplayName("A variant of nothing but air is a variant, not an empty one")
+    void allAirIsNotEmpty() {
+        PortalRoomCopiesVariant variant = PortalRoomCopiesVariant.of(List.of(airEntry()));
+
+        assertFalse(variant.isEmpty(),
+            "an all-air variant floors nothing, which is legal and the author's business");
+        assertEquals(1, variant.size());
+    }
+
+    @Test
+    @DisplayName("A mob entry is data too — this class stores it rather than judging it")
+    void mobEntriesAreKept() {
+        PortalRoomCopiesVariant variant =
+            PortalRoomCopiesVariant.of(List.of(of(Blocks.STONE), mobEntry()));
+
+        assertEquals(2, variant.size());
+        assertTrue(reread(variant).states().stream().anyMatch(VariantState::isMob),
+            "the entity id must survive the round trip even though the planes do not spawn it");
     }
 
     @Test
