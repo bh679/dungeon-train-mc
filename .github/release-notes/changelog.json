@@ -8083,6 +8083,21 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "restore-backpack-loot-weights",
+      "version": "0.624.0",
+      "type": "chore",
+      "title": "Edible backpacks are findable again",
+      "summary": "Backpacks were thinned out back when the game was also swapping them into random loot slots everywhere. That global source is long gone, but the thinning stayed \u2014 so backpacks had quietly become twice as rare as intended. The chest, iron/gold, decorated pot and starter odds all go back to their original values.",
+      "highlights": [
+        "Edible backpack odds restored across the loot, iron/gold and pot pools",
+        "The starter chest can hand out a backpack again"
+      ],
+      "date": "2026-08-22",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
