@@ -6,7 +6,6 @@ import dev.ryanhcode.sable.api.physics.force.QueuedForceGroup;
 import dev.ryanhcode.sable.api.physics.handle.RigidBodyHandle;
 import dev.ryanhcode.sable.api.physics.mass.MassData;
 import dev.ryanhcode.sable.companion.math.BoundingBox3dc;
-import dev.ryanhcode.sable.companion.math.Pose3d;
 import dev.ryanhcode.sable.companion.math.Pose3dc;
 import dev.ryanhcode.sable.sublevel.ServerSubLevel;
 import games.brennan.dungeontrain.ship.InertiaSnapshot;
@@ -164,14 +163,32 @@ public final class SableManagedShip implements ManagedShip {
      * so internal block connectivity does not affect how they move.</p>
      */
     public static boolean isDungeonTrainManaged(ServerSubLevel subLevel) {
+        return driverFor(subLevel) != null;
+    }
+
+    /**
+     * The {@link KinematicDriver} registered for {@code subLevel} (or for the sub-level it
+     * was split from), or {@code null} if this is not a DT-driven carriage group.
+     *
+     * <p>The static counterpart of {@link #getKinematicDriver()}, for callers that hold a
+     * bare {@link ServerSubLevel} and no wrapper — chiefly
+     * {@link CarriagePivotPin#repinAfterMassChange}, which runs on Sable's per-block-change
+     * choke point where allocating a wrapper per block write would be wasteful. Unlike the
+     * instance method this does <em>not</em> cache the resolved driver under the split
+     * sub-level's own id; it is a plain lookup, matching what
+     * {@link #isDungeonTrainManaged} has always done.</p>
+     */
+    @Nullable
+    public static KinematicDriver driverFor(ServerSubLevel subLevel) {
         if (subLevel == null) {
-            return false;
+            return null;
         }
-        if (DRIVERS_BY_UUID.containsKey(subLevel.getUniqueId())) {
-            return true;
+        KinematicDriver d = DRIVERS_BY_UUID.get(subLevel.getUniqueId());
+        if (d != null) {
+            return d;
         }
         UUID origin = subLevel.getSplitFromSubLevel();
-        return origin != null && DRIVERS_BY_UUID.containsKey(origin);
+        return origin == null ? null : DRIVERS_BY_UUID.get(origin);
     }
 
     @Override
@@ -194,6 +211,22 @@ public final class SableManagedShip implements ManagedShip {
 
     @Override
     public void applyTickOutput(KinematicDriver.TickOutput output) {
+        // Pin the model-space pivot FIRST, before either early return below can skip it.
+        //
+        // Sable's MassTracker recomputes this sub-level's centre of mass on every block change and
+        // writes it into Pose3d.rotationPoint. Since the world mapping is
+        // {@code position + rotation*(voxel_shipyard - rotationPoint)}, any rotationPoint drift
+        // shifts ALL of the carriage's blocks — visibly, and (because rotationPoint is serialised)
+        // permanently. Sable normally cancels its own recompute with a compensating body teleport,
+        // but that compensation is exactly what DT's soft-freeze mixins suppress, and a frozen or
+        // handle-less carriage used to fall out of this method before ever reaching the pin. So it
+        // goes first and runs unconditionally.
+        //
+        // This does not undermine the #646 soft-freeze: the pin is three double compares and (only
+        // on real drift) three double stores. The freeze's saving is the per-body Rapier work
+        // below, none of which this touches. See CarriagePivotPin.
+        CarriagePivotPin.pin(subLevel, output.positionInModel());
+
         // A DT-frozen carriage (#646 soft-freeze) has been parked: its body stays in the physics
         // scene, but DT stops teleporting it here so it sits at rest while Sable does no per-body work
         // for it. Skipping this per-tick teleport + velocity write IS the park (and part of the
@@ -215,22 +248,6 @@ public final class SableManagedShip implements ManagedShip {
         // and the current pose, so the visual motion is smooth as long as
         // applyTickOutput fires every tick.
         handle.teleport(output.position(), output.rotation());
-
-        // Pin the model-space pivot ({@code Pose3d.rotationPoint}) to the
-        // driver's spawn-time-locked value. Sable's MassTracker recomputes
-        // the sub-level's centre of mass on every block change and feeds it
-        // back into rotationPoint, which would otherwise translate every
-        // block visibly each time the appender adds a carriage (the world
-        // mapping is {@code position + rotation*(voxel_shipyard - rotationPoint)},
-        // so any rotationPoint drift shifts ALL blocks). RigidBodyHandle
-        // exposes no setter for rotationPoint, but Pose3d returns the live
-        // mutable {@code Vector3d}, so {@code .set(...)} pins it in place.
-        // This is the Sable equivalent of the VS-era inertia-pin we
-        // formerly applied via reflection in {@code ship.vs.VsInertiaLocker}.
-        Vector3dc pivotTarget = output.positionInModel();
-        if (pivotTarget != null && subLevel.logicalPose() instanceof Pose3d livePose) {
-            livePose.rotationPoint().set(pivotTarget.x(), pivotTarget.y(), pivotTarget.z());
-        }
 
         // Reset velocity to zero, then add the driver's chosen velocity.
         // Sable has no direct `setVelocity` — only `addLinearAndAngularVelocity`
@@ -292,9 +309,12 @@ public final class SableManagedShip implements ManagedShip {
 
     @Override
     public void restoreInertia(@Nullable InertiaSnapshot snapshot) {
-        // Sable's MassTracker is read-only; restore is intentionally a no-op.
-        // The pivot-drift problem this API protected against in VS does not
-        // exist in Sable's kinematic mode (block mutations don't recompute
-        // physics state mid-tick). See plans/modular-scribbling-thunder.md.
+        // Sable's MassTracker is read-only, so there is nothing to restore through this API.
+        //
+        // Note this is NOT because the pivot-drift problem went away on Sable — block mutations
+        // very much do recompute physics state, synchronously, inside LevelChunk.setBlockState.
+        // It is because the defence moved: CarriagePivotPin re-pins Pose3d.rotationPoint both on
+        // Sable's per-block-change choke point and at the top of applyTickOutput, which covers
+        // frozen and handle-less carriages that this API never reached anyway.
     }
 }
