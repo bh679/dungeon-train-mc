@@ -301,7 +301,7 @@ def test_real_config_every_mod_has_modrinth_pins():
         assert opt.get("modrinth_version"), f"{opt.get('name')} missing modrinth_version"
     # Hard pins mirrored from the CurseForge pack.
     sable = cfg["sable"]
-    assert sable["modrinth_version"] == "6PfAtJN1", sable  # Sable 2.0.2+mc1.21.1
+    assert sable["modrinth_version"] == "U678xqle", sable  # Sable 2.0.5+mc1.21.1
     by_slug = {o["slug"]: o for o in cfg["optional_mods"]}
     assert by_slug["jade"]["modrinth_version"] == "yd8FKCmx"            # Jade 15.10.5 (Sable compat)
     assert by_slug["distant-horizons"]["modrinth_version"] == "75PXmyqH"  # DH 2.4.3-b (2.x only)
