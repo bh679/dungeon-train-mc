@@ -142,12 +142,24 @@ public final class EditorEditRecorder {
 
     // ─── Capture ───────────────────────────────────────────────────────────
 
+    /**
+     * <b>Placement's before-state must come from the event, not the world.</b>
+     * {@link BlockEvent.EntityPlaceEvent} fires once the block is already in the
+     * level, so reading the cell here returns what was just placed — recording
+     * that as "before" makes the cell read as unchanged at flush time and the
+     * placement silently drops out of the history. The event's
+     * {@link BlockSnapshot} is the state and block-entity NBT the placement
+     * replaced, which is exactly what undo has to put back.
+     *
+     * <p>{@link BlockEvent.BreakEvent} is the opposite — it fires <i>before</i>
+     * the break, so there the world is the right source.</p>
+     */
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onBlockPlace(BlockEvent.EntityPlaceEvent event) {
         if (event.isCanceled()) return;
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         if (!(event.getLevel() instanceof ServerLevel level)) return;
-        capture(player, level, event.getPos(), "Place");
+        capture(player, level, event.getPos(), "Place", replacedBy(event.getBlockSnapshot()));
     }
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)
@@ -156,7 +168,7 @@ public final class EditorEditRecorder {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         if (!(event.getLevel() instanceof ServerLevel level)) return;
         for (BlockSnapshot snapshot : event.getReplacedBlockSnapshots()) {
-            capture(player, level, snapshot.getPos(), "Place");
+            capture(player, level, snapshot.getPos(), "Place", replacedBy(snapshot));
         }
     }
 
@@ -165,24 +177,40 @@ public final class EditorEditRecorder {
         if (event.isCanceled()) return;
         if (!(event.getPlayer() instanceof ServerPlayer player)) return;
         if (!(event.getLevel() instanceof ServerLevel level)) return;
-        capture(player, level, event.getPos(), "Break");
+        capture(player, level, event.getPos(), "Break", null);
+    }
+
+    /**
+     * What a placement covered over: the snapshot's <i>recorded</i> state, not
+     * its current one. {@code BlockSnapshot.getState()} is the pre-place
+     * reading; {@code getCurrentState()} would be the block just placed.
+     */
+    private static Before replacedBy(BlockSnapshot snapshot) {
+        return new Before(snapshot.getState(), snapshot.getTag());
     }
 
     /**
      * Register the edited cell — and every cell live mirroring is about to
      * reflect it into — as pending for this tick. No-op outside an editor plot,
      * outside the plot's box, or while an applier is running.
+     *
+     * <p>{@code known} is the caller's before-state when the event carries one
+     * (placement); null means read it from the world (breaks).</p>
      */
-    private static void capture(ServerPlayer player, ServerLevel level, BlockPos worldPos, String label) {
+    private static void capture(ServerPlayer player, ServerLevel level, BlockPos worldPos,
+                                String label, @Nullable Before known) {
         if (suppressed) return;
         Resolved resolved = resolve(player, level);
         if (resolved.scope() == null) return;
         if (!resolved.scope().contains(worldPos)) return;
 
         Pending pending = pendingFor(player, level, resolved.scope().key(), label);
-        rememberBefore(pending, level, worldPos);
+        rememberBefore(pending, level, worldPos, known);
+        // Mirror images are always read from the world: at HIGHEST priority
+        // EditorMirrorLiveHandler has not written them yet, so they still hold
+        // their pre-edit state.
         for (BlockPos image : mirrorImagesOf(resolved.plot(), worldPos)) {
-            rememberBefore(pending, level, image);
+            rememberBefore(pending, level, image, null);
         }
     }
 
@@ -251,9 +279,12 @@ public final class EditorEditRecorder {
     }
 
     /** First write wins — a cell edited twice in one tick keeps its state from before the tick. */
-    private static void rememberBefore(Pending pending, ServerLevel level, BlockPos worldPos) {
+    private static void rememberBefore(Pending pending, ServerLevel level, BlockPos worldPos,
+                                       @Nullable Before known) {
         if (pending.cells.containsKey(worldPos)) return;
-        pending.cells.put(worldPos, new Before(level.getBlockState(worldPos), readNbt(level, worldPos)));
+        pending.cells.put(worldPos, known != null
+            ? known
+            : new Before(level.getBlockState(worldPos), readNbt(level, worldPos)));
     }
 
     /** Full block-entity contents at {@code pos}, or null when there is no block entity. */
