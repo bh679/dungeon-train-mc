@@ -1,5 +1,6 @@
 {
   "schemaVersion": 9,
+  "mirror": { "x": true, "y": false, "z": true, "v": false },
   "variants": {
     "5,0,10": [{"state": "minecraft:black_concrete", "weight": 30}, "minecraft:sea_lantern"],
     "6,0,10": [{"state": "minecraft:black_concrete", "weight": 30}, "minecraft:sea_lantern"],
