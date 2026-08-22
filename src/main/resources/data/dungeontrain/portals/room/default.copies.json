@@ -1,0 +1,4 @@
+{
+  "schemaVersion": 1,
+  "blocks": ["minecraft:shroomlight", "minecraft:polished_blackstone_bricks", "minecraft:command_block[conditional=false,facing=north]"]
+}
