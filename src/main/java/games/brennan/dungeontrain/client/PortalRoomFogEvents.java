@@ -73,6 +73,9 @@ public final class PortalRoomFogEvents {
         // would not contain the player wherever they arrived next — but a stale region is exactly
         // the thing that used to strand somebody permanently fogged, so it is cleared outright.
         ClientPortalRoomFog.reset();
+        // The daylit-room box is the same shape of cache with the same failure mode — a stale one
+        // would leave the next world's lightmap lifted — so it goes on the same pass.
+        ClientPortalRoomSky.reset();
         // The engine-audio region is the same shape of cache with the same failure mode — a stale one
         // would have the train audible in the next world's portal-shaped nowhere — so it goes too.
         ClientPortalTrainAudio.reset();

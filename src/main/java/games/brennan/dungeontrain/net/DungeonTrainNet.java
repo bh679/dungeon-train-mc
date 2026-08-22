@@ -66,6 +66,10 @@ public final class DungeonTrainNet {
         // corridor is occupied, and once empty when it clears. See portal/PortalPuppets.
         registrar.playToClient(PortalPuppetsPacket.TYPE, PortalPuppetsPacket.STREAM_CODEC, PortalPuppetsPacket::handle);
         registrar.playToClient(PortalRoomFogPacket.TYPE, PortalRoomFogPacket.STREAM_CODEC, PortalRoomFogPacket::handle);
+        // …and the same region trick again for the lightmap: a room whose template asked to be lit as
+        // though it stood outdoors is named to the client as a box, and the client lifts its own
+        // lightmap inside it. See client/ClientPortalRoomSky.
+        registrar.playToClient(PortalRoomSkyPacket.TYPE, PortalRoomSkyPacket.STREAM_CODEC, PortalRoomSkyPacket::handle);
         // …and the swap itself, which the client cannot infer from the position packet that carries it:
         // the renderer has to be told to finish its occlusion rebuild before drawing, or the first
         // frames in the twin draw nothing at all. See client/portal/ClientPortalSwap.

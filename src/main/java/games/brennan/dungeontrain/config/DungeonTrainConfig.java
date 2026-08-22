@@ -190,6 +190,9 @@ public final class DungeonTrainConfig {
     public static final int MIN_PORTAL_ROOM_AUTHOR_MIN_BOOKS = 0;
     public static final int MAX_PORTAL_ROOM_AUTHOR_MIN_BOOKS = 1000;
 
+    /** Default master for portal rooms whose template asks to be lit as though it stood outdoors. */
+    public static final boolean DEFAULT_PORTAL_ROOM_DAYLIGHT = true;
+
     /** Default master for serving approved player-written narrative series back on narrative lecterns. */
     public static final boolean DEFAULT_DISCOVER_NARRATIVES_ENABLED = true;
 
@@ -270,6 +273,7 @@ public final class DungeonTrainConfig {
     public static final ModConfigSpec.DoubleValue SHARED_BOOK_LOOT_MAX_CHANCE;
     public static final ModConfigSpec.IntValue SHARED_BOOK_REPEAT_GROUPS;
     public static final ModConfigSpec.IntValue PORTAL_ROOM_AUTHOR_MIN_BOOKS;
+    public static final ModConfigSpec.BooleanValue PORTAL_ROOM_DAYLIGHT;
     public static final ModConfigSpec.BooleanValue SHARED_CARRIAGES_ENABLED;
     public static final ModConfigSpec.DoubleValue SHARED_CARRIAGE_POOL_CHANCE;
     public static final ModConfigSpec.DoubleValue SHARED_CARRIAGE_OWN_CHANCE;
@@ -323,6 +327,7 @@ public final class DungeonTrainConfig {
         SHARED_BOOK_LOOT_MAX_CHANCE = pair.getLeft().sharedBookLootMaxChance;
         SHARED_BOOK_REPEAT_GROUPS = pair.getLeft().sharedBookRepeatGroups;
         PORTAL_ROOM_AUTHOR_MIN_BOOKS = pair.getLeft().portalRoomAuthorMinBooks;
+        PORTAL_ROOM_DAYLIGHT = pair.getLeft().portalRoomDaylight;
         SHARED_CARRIAGES_ENABLED = pair.getLeft().sharedCarriagesEnabled;
         SHARED_CARRIAGE_POOL_CHANCE = pair.getLeft().sharedCarriagePoolChance;
         SHARED_CARRIAGE_OWN_CHANCE = pair.getLeft().sharedCarriageOwnChance;
@@ -490,6 +495,15 @@ public final class DungeonTrainConfig {
                         "written ten books yet; 0 lets any author with a single book fill a room.")
                 .defineInRange("portalRoomAuthorMinBooks", DEFAULT_PORTAL_ROOM_AUTHOR_MIN_BOOKS,
                         MIN_PORTAL_ROOM_AUTHOR_MIN_BOOKS, MAX_PORTAL_ROOM_AUTHOR_MIN_BOOKS);
+        ModConfigSpec.BooleanValue portalRoomDaylight = b
+                .comment("Light portal rooms whose template asks for it as though they stood outdoors. Those rooms are",
+                        "stamped far below the world's bedrock row, where natural sky light is zero, so the sky-light",
+                        "engine is told to treat one row inside the room as open sky and flood downward from there —",
+                        "the room's own pillars and overhangs then cast real shadows. Only templates that opt in are",
+                        "affected (the Sky segment of their `mode` tag); every other room is lit by its lamps exactly as",
+                        "before. Set false to turn the whole mechanism off, which also switches off the vanilla lighting",
+                        "hooks it installs — worth trying first if another lighting mod misbehaves. Default true.")
+                .define("portalRoomDaylight", DEFAULT_PORTAL_ROOM_DAYLIGHT);
         ModConfigSpec.BooleanValue discoverNarrativesEnabled = b
                 .comment("Serve approved player-written narrative series back on narrative lecterns. When true, a lectern",
                         "may (weighted + tapered like shared-book loot, at LETTER granularity) lock to a player's narrative",
@@ -618,7 +632,8 @@ public final class DungeonTrainConfig {
                 freePlayNoticeToDiscord, devMessageConsentToDiscord, echoEncounterToDiscord, worldJoinReportToDiscord,
                 worldInfoToRelay, shareBooksEnabled, discoverSharedBooksEnabled, deathNotesEnabled,
                 loveNotesEnabled, lettersEnabled,
-                sharedBookLootMaxChance, sharedBookRepeatGroups, portalRoomAuthorMinBooks, discoverNarrativesEnabled, narrativeDiscoveryRampThreshold,
+                sharedBookLootMaxChance, sharedBookRepeatGroups, portalRoomAuthorMinBooks, portalRoomDaylight,
+                discoverNarrativesEnabled, narrativeDiscoveryRampThreshold,
                 difficultyLevelNoticeToDiscord, introCinematicEnabled, introCinematicDurationTicks,
                 introCinematicChunkPreloadEnabled, sharedCarriagesEnabled, sharedCarriagePoolChance,
                 sharedCarriageOwnChance, sharedCarriageMaxEntities);
@@ -851,6 +866,11 @@ public final class DungeonTrainConfig {
         return Math.max(MIN_PORTAL_ROOM_AUTHOR_MIN_BOOKS, Math.min(MAX_PORTAL_ROOM_AUTHOR_MIN_BOOKS, v));
     }
 
+    /** Whether portal rooms that ask for a sky get one; falls back to the hardcoded default pre-load. */
+    public static boolean isPortalRoomDaylight() {
+        return isLoaded() ? PORTAL_ROOM_DAYLIGHT.get() : DEFAULT_PORTAL_ROOM_DAYLIGHT;
+    }
+
     /**
      * The repeat threshold in CARRIAGES — {@link #getSharedBookRepeatGroups()} × {@link #getGroupSize()}.
      * The selector compares raw carriage indices, so the group-based setting is resolved here rather than
@@ -1035,6 +1055,7 @@ public final class DungeonTrainConfig {
             ModConfigSpec.DoubleValue sharedBookLootMaxChance,
             ModConfigSpec.IntValue sharedBookRepeatGroups,
             ModConfigSpec.IntValue portalRoomAuthorMinBooks,
+            ModConfigSpec.BooleanValue portalRoomDaylight,
             ModConfigSpec.BooleanValue discoverNarrativesEnabled,
             ModConfigSpec.DoubleValue narrativeDiscoveryRampThreshold,
             ModConfigSpec.BooleanValue difficultyLevelNoticeToDiscord,

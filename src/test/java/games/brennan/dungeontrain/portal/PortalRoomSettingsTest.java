@@ -569,4 +569,73 @@ class PortalRoomSettingsTest {
         assertNotEquals(a.variantIndexFor(PortalRoomTiling.Tile.BASE, PAIR),
             b.variantIndexFor(PortalRoomTiling.Tile.BASE, PAIR));
     }
+
+    @Test
+    @DisplayName("A room says nothing about its sky unless its template asked for one")
+    void skyDefaultsToOff() {
+        assertSame(PortalRoomSky.NONE, PortalRoomSettings.DEFAULT.sky());
+        assertSame(PortalRoomSky.NONE, PortalRoomSettings.parse("bedrockless").sky());
+        // Every tag written before Sky existed — one to five segments — still reads as an unlit room.
+        assertSame(PortalRoomSky.NONE, PortalRoomSettings.parse("endless_repetition/dynamic").sky());
+        assertSame(PortalRoomSky.NONE,
+            PortalRoomSettings.parse("endless_repetition/dynamic/fit/on/mix").sky());
+        // ...and is re-written unchanged, rather than growing a segment for nothing.
+        assertEquals("bedrockless", PortalRoomSettings.parse("bedrockless").toTag());
+    }
+
+    @Test
+    @DisplayName("A sky round-trips through the tag, placeholders and all")
+    void skyRoundTrips() {
+        for (PortalRoomSky sky : PortalRoomSky.values()) {
+            PortalRoomSettings original = PortalRoomSettings.DEFAULT.withSky(sky);
+            assertSame(sky, PortalRoomSettings.parse(original.toTag()).sky(), original.toTag());
+        }
+        // The segments are positional, so the four in front of Sky are written as their own
+        // defaults and must read back as exactly that.
+        PortalRoomSettings day = PortalRoomSettings.DEFAULT.withSky(PortalRoomSky.DAY);
+        PortalRoomSettings back = PortalRoomSettings.parse(day.toTag());
+        assertEquals(PortalRoomSettings.DEFAULT.copies(), back.copies());
+        assertSame(PortalRoomSettings.DEFAULT.contents(), back.contents());
+        assertEquals(PortalRoomSettings.DEFAULT.books(), back.books());
+    }
+
+    @Test
+    @DisplayName("The shipped tags the templates were opted in with mean what they say")
+    void shippedSkyTagsParse() {
+        assertSame(PortalRoomSky.DAY,
+            PortalRoomSettings.parse("bedrockless/exact/off/off/off/day").sky());
+        assertSame(PortalRoomSky.END,
+            PortalRoomSettings.parse("bedrockless/exact/off/off/off/end").sky());
+        assertSame(PortalRoomSky.DAY,
+            PortalRoomSettings.parse("bedrock_lock/exact/off/off/off/day").sky());
+        // window_contents carries a real Contents value in front of its sky.
+        PortalRoomSettings furnished =
+            PortalRoomSettings.parse("bedrockless/exact/fit/off/off/day");
+        assertSame(PortalRoomSky.DAY, furnished.sky());
+        assertSame(PortalRoomContents.FIT, furnished.contents());
+    }
+
+    @Test
+    @DisplayName("An unreadable sky stamps an unlit room rather than failing the pair's stamp")
+    void skyParseIsTotal() {
+        assertSame(PortalRoomSky.NONE,
+            PortalRoomSettings.parse("bedrockless/exact/off/off/off/daylihgt").sky());
+        assertSame(PortalRoomSky.NONE, PortalRoomSky.parse(""));
+        assertSame(PortalRoomSky.NONE, PortalRoomSky.parse(null));
+        // What a client on a different build than the server is sent.
+        assertSame(PortalRoomSky.NONE, PortalRoomSky.byOrdinal(-1));
+        assertSame(PortalRoomSky.NONE, PortalRoomSky.byOrdinal(99));
+        assertSame(PortalRoomSky.DAY, PortalRoomSky.byOrdinal(PortalRoomSky.DAY.ordinal()));
+    }
+
+    @Test
+    @DisplayName("Only the clock-following sky lets the lightmap darken")
+    void onlyCyclePinsNothing() {
+        assertFalse(PortalRoomSky.NONE.pinsDaylight());
+        assertFalse(PortalRoomSky.CYCLE.pinsDaylight());
+        assertTrue(PortalRoomSky.CYCLE.lights());
+        assertTrue(PortalRoomSky.DAY.pinsDaylight());
+        assertTrue(PortalRoomSky.NETHER.pinsDaylight());
+        assertTrue(PortalRoomSky.END.pinsDaylight());
+    }
 }

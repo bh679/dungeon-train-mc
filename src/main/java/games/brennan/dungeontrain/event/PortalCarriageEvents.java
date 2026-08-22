@@ -41,6 +41,7 @@ import games.brennan.dungeontrain.portal.PortalTwinLanes;
 import games.brennan.dungeontrain.portal.PortalTwinRegion;
 import games.brennan.dungeontrain.portal.PortalTwinSpace;
 import games.brennan.dungeontrain.net.PortalRoomFogPacket;
+import games.brennan.dungeontrain.net.PortalRoomSkyPacket;
 import games.brennan.dungeontrain.net.PortalSwapPacket;
 import games.brennan.dungeontrain.net.PortalTrainAudioPacket;
 import games.brennan.dungeontrain.ship.ManagedShip;
@@ -304,6 +305,12 @@ public final class PortalCarriageEvents {
     private static final Map<UUID, PortalRoomFogPacket> LAST_FOG = new HashMap<>();
 
     /**
+     * Player → the daylit-room box they were last told about, on the same "only when it changes"
+     * rule as {@link #LAST_FOG}.
+     */
+    private static final Map<UUID, PortalRoomSkyPacket> LAST_SKY = new HashMap<>();
+
+    /**
      * Player → the engine-audio region they were last told about, on the same "only when it changes"
      * rule as {@link #LAST_FOG}.
      */
@@ -512,6 +519,7 @@ public final class PortalCarriageEvents {
         games.brennan.dungeontrain.narrative.PortalLibraryGreeter.clear();
         ACTIVE_PAIRS.clear();
         LAST_FOG.clear();
+        LAST_SKY.clear();
         LAST_TRAIN_AUDIO.clear();
         COOLDOWNS.clear();
         LAST_SWAP.clear();
@@ -851,6 +859,7 @@ public final class PortalCarriageEvents {
                                        List<ServerPlayer> players) {
         if (STRUCTURES.isEmpty()) {
             clearFogFor(players, Set.of());
+            clearSkyFor(players, Set.of());
             clearTrainAudioFor(players, Set.of());
             PortalPairResidency.syncTo(level, Set.of());
             // Still called with nothing occupied: this is what un-freezes a train whose last
@@ -863,6 +872,7 @@ public final class PortalCarriageEvents {
         // against the others so no two pairs stamp into each other.
         List<Map.Entry<Integer, PortalStructure>> pairs = new ArrayList<>(STRUCTURES.entrySet());
         Set<UUID> fogged = new HashSet<>();
+        Set<UUID> skied = new HashSet<>();
         Set<UUID> inStructure = new HashSet<>();
         Set<Integer> occupiedPairs = new HashSet<>();
 
@@ -897,10 +907,12 @@ public final class PortalCarriageEvents {
             if (next != structure) STRUCTURES.put(pair.getKey(), next);
 
             sendFogFor(players, dims, layout, next, fogged);
+            sendSkyFor(players, dims, layout, next, skied);
             sendTrainAudioFor(players, dims, next, inStructure);
         }
 
         clearFogFor(players, fogged);
+        clearSkyFor(players, skied);
         clearTrainAudioFor(players, inStructure);
         // Take and release in one pass, so a ticket's lifetime is exactly a room's occupancy.
         PortalPairResidency.syncTo(level, occupiedPairs);
@@ -1033,6 +1045,59 @@ public final class PortalCarriageEvents {
             LAST_FOG.put(player.getUUID(), region);
             PacketDistributor.sendToPlayer(player, region);
         }
+    }
+
+    /**
+     * Tell whoever is in a room that asked to be lit as though it stood outdoors where that room is,
+     * so their client can lift its own lightmap inside it.
+     *
+     * <p>Sent for any wall mode — this is a property of the template, not of what the room does at
+     * its boundary — but only for a template that opted in, which is almost none of them. A room
+     * that said nothing sends nothing and costs one enum comparison a tick.</p>
+     *
+     * <p><b>Delivered on the padded box, carried as the bare one.</b> The test that decides who
+     * hears about the room is {@link #structureBox}, the same generous box the fog uses, so the
+     * region is cached before the player walks in and the crossfade has somewhere to start. What the
+     * packet describes is the room's own stamped extent, because that is where the lift stops: the
+     * corridors back to the train are not daylit, and neither is the void a bedrockless room swept.</p>
+     */
+    private static void sendSkyFor(List<ServerPlayer> players, CarriageDims dims,
+                                   PortalCarriageLayout layout, PortalStructure structure,
+                                   Set<UUID> skied) {
+        games.brennan.dungeontrain.portal.PortalRoomSky sky = structure.settings().sky();
+        if (!sky.lights() || !DungeonTrainConfig.isPortalRoomDaylight()) return;
+
+        PortalRoomSkyPacket region = new PortalRoomSkyPacket(
+            structure.tiledMinX(dims, layout),
+            structure.origin().getY(),
+            structure.tiledMinZ(dims, layout),
+            structure.tiledMaxX(dims, layout),
+            structure.origin().getY() + structure.roomSize().getY() - 1,
+            structure.tiledMaxZ(dims, layout),
+            sky.ordinal());
+
+        AABB box = structureBox(dims, structure);
+        for (ServerPlayer player : players) {
+            if (!box.contains(player.getX(), player.getY(), player.getZ())) continue;
+            skied.add(player.getUUID());
+            if (region.equals(LAST_SKY.get(player.getUUID()))) continue;
+            LAST_SKY.put(player.getUUID(), region);
+            PacketDistributor.sendToPlayer(player, region);
+        }
+    }
+
+    /** Take the daylight back off anyone who was near a daylit room this tick and is not any more. */
+    private static void clearSkyFor(List<ServerPlayer> players, Set<UUID> stillSkied) {
+        if (LAST_SKY.isEmpty()) return;
+        for (ServerPlayer player : players) {
+            UUID id = player.getUUID();
+            if (stillSkied.contains(id) || !LAST_SKY.containsKey(id)) continue;
+            LAST_SKY.remove(id);
+            PacketDistributor.sendToPlayer(player, PortalRoomSkyPacket.none());
+        }
+        // A player who left the world entirely never gets the message, which is exactly why the
+        // client holds a box rather than a flag — it stops applying the moment they are not in it.
+        LAST_SKY.keySet().removeIf(id -> players.stream().noneMatch(p -> p.getUUID().equals(id)));
     }
 
     /** Take the fog back off anyone who was in a room this tick and is not any more. */
