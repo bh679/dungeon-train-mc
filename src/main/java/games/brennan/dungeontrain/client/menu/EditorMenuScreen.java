@@ -102,6 +102,15 @@ public final class EditorMenuScreen implements MenuScreen {
                     "dungeontrain editor part rename",
                     "", name));
             }
+            // Undo | Redo — steps the per-plot editor history. Mirrors the
+            // Ctrl/Cmd+Z / Ctrl/Cmd+Y keybindings through the same commands, so
+            // the two surfaces cannot drift apart.
+            out.add(new CommandMenuEntry.Split(
+                new CommandMenuEntry.Run("Undo", "dungeontrain editor undo"),
+                new CommandMenuEntry.Run("Redo", "dungeontrain editor redo"),
+                0.50
+            ));
+
             addMirrorToggles(out);
             out.add(new CommandMenuEntry.DrillIn("Package", new PackageListScreen()));
             out.add(new CommandMenuEntry.Run("Exit", "dungeontrain editor exit"));
@@ -113,6 +122,15 @@ public final class EditorMenuScreen implements MenuScreen {
             new CommandMenuEntry.Run("Save", "dungeontrain save"),
             new CommandMenuEntry.Run("All", "dungeontrain save all"),
             0.80
+        ));
+
+        // Undo | Redo — steps the per-plot editor history. Mirrors the
+        // Ctrl/Cmd+Z / Ctrl/Cmd+Y keybindings through the same commands, so
+        // the two surfaces cannot drift apart.
+        out.add(new CommandMenuEntry.Split(
+            new CommandMenuEntry.Run("Undo", "dungeontrain editor undo"),
+            new CommandMenuEntry.Run("Redo", "dungeontrain editor redo"),
+            0.50
         ));
 
         // Reset | Clear — paired destructive actions. Reset deletes the

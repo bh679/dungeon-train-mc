@@ -905,7 +905,8 @@ public final class CarriageVariantBlocks {
      * BlockEntity NBT (v1-compatible), or as {@code {"state": ..., "nbt": ...}}
      * when NBT is present.</p>
      */
-    private String toJson() {
+    /** Serialised form of this sidecar as {@link #save} would write it. Used by the editor undo history. */
+    String toJson() {
         StringBuilder sb = new StringBuilder(256);
         sb.append("{\n");
         sb.append("  \"schemaVersion\": ").append(CURRENT_SCHEMA_VERSION).append(",\n");

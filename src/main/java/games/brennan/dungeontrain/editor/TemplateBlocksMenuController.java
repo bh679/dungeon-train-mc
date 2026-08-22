@@ -226,7 +226,10 @@ public final class TemplateBlocksMenuController {
         switch (packet.op()) {
             case PREVIEW_BLOCK -> previewBlock(level, plot, target);
             case SWAP_BLOCK -> {
-                swapBlock(player, level, plot, target);
+                // A reskin rewrites base blocks and variant pools together, and
+                // the author means it as one action — so record it as one step.
+                EditorRegionDiff.record(player, "Block swap", plot.key(),
+                    () -> swapBlock(player, level, plot, target));
                 sendSync(player, plot);
             }
         }

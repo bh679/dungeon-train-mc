@@ -224,6 +224,11 @@ public final class BlockVariantMenuController {
             return;
         }
 
+        // One snapshot ahead of the op switch covers every menu mutation —
+        // candidate add / remove / reorder, weight, rotation, lock-id cycle —
+        // without each arm having to describe its own inverse.
+        EditorEditRecorder.notePendingSidecar(player, "Variant edit");
+
         // CYCLE_LOCK_ID has its own short flow — handle before the
         // states-list mutation pipeline since it doesn't touch states.
         if (packet.op() == BlockVariantEditPacket.Op.CYCLE_LOCK_ID) {
