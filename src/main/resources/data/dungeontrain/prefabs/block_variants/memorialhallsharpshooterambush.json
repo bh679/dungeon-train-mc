@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "states": [
+    "minecraft:command_block[conditional=false,facing=north]",
+    {"entity": "minecraft:pillager", "weight": 15, "difficulty": {"min": 1, "max": "all"}}
+  ]
+}
