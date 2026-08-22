@@ -41,8 +41,10 @@ public final class TrainTransformProvider implements KinematicDriver {
     private static final Logger LOGGER = LogUtils.getLogger();
     // Diagnostic logger for residual jitter probes. Elevated to DEBUG in
     // DungeonTrain's constructor so these lines survive Forge's default
-    // INFO root level. Mostly informational since the per-carriage
-    // architecture eliminates COM drift at the source.
+    // INFO root level. The per-carriage architecture removed APPENDER-driven
+    // COM drift; mutation-driven drift (explosions, mining, portal mirroring)
+    // is still real and is corrected by CarriagePivotPin, so these probes —
+    // and its [pinCorrected] line — remain the live regression signal.
     private static final Logger JITTER_LOGGER = LoggerFactory.getLogger("games.brennan.dungeontrain.jitter");
 
     // SableKinematicTicker fires nextTransform every server tick (20 Hz),
@@ -196,8 +198,8 @@ public final class TrainTransformProvider implements KinematicDriver {
     // Lazily captured on the first tick so the sub-level's spawn-time
     // orientation, world position, and model-space pivot become the
     // authoritative baseline. Re-applying them every tick makes the
-    // carriage immune to gravity, collision impulses, and any
-    // (now-impossible-on-per-carriage) COM-shift side effects.
+    // carriage immune to gravity, collision impulses, and COM-shift side
+    // effects from block changes.
     //
     // {@code spawnWorldPos} and {@code spawnGameTick} are the basis for
     // a deterministic per-tick position calculation:
@@ -266,9 +268,10 @@ public final class TrainTransformProvider implements KinematicDriver {
     // One-shot guard so the [panic.canonicalPos] line fires once per
     // sub-level spawn — otherwise a sustained NaN would spam every tick.
     private boolean canonicalPosNanLogged;
-    // Set by callers that mutate the sub-level's blocks (currently nothing —
-    // per-carriage means immutable post-assembly). Kept around because the
-    // jitter probe references {@code lastMutationNanos} for diagnostics.
+    // Stamped by {@link #onExternalMassChange} when CarriagePivotPin corrects a
+    // pivot that a block change had moved — so the jitter probe's
+    // {@code mutationDriven} flag means "the last pivot movement was a mass
+    // recompute we just undid", not merely "a block changed somewhere".
     private long lastMutationTick = -1L;
     private volatile long lastMutationNanos = 0L;
 
@@ -463,6 +466,32 @@ public final class TrainTransformProvider implements KinematicDriver {
 
     public Vector3dc getLockedPositionInModel() {
         return lockedPositionInModel;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The spawn-locked pivot captured on the first kinematic tick. {@code null} until
+     * then, which is exactly the window in which there is nothing to pin to.</p>
+     */
+    @Override
+    public Vector3dc lockedPositionInModel() {
+        return lockedPositionInModel;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>Feeds the {@code [pivotMoved]} probe's {@code mutationDriven} flag. Reached only
+     * when {@code CarriagePivotPin} found real drift and corrected it, so a run of these
+     * marks genuine mass changes (an explosion, a player mining a carriage block) rather
+     * than the thousands of block writes track and tunnel painting push through the same
+     * choke point every tick.</p>
+     */
+    @Override
+    public void onExternalMassChange() {
+        this.lastMutationTick = physicsTickCounter;
+        this.lastMutationNanos = System.nanoTime();
     }
 
     /**
@@ -965,9 +994,10 @@ public final class TrainTransformProvider implements KinematicDriver {
     }
 
     /**
-     * Residual jitter probe. With per-carriage immutable blocks,
-     * {@code rawComDeltaX} should stay at 0 — any drift is a regression
-     * worth investigating.
+     * Residual jitter probe. {@code rawComDeltaX} should stay at 0: appends no
+     * longer move the pivot, and CarriagePivotPin re-pins it on the block-change
+     * choke point before this runs. Non-zero here means the pin missed a path —
+     * a regression worth investigating.
      */
     private void logPhysicsProbe(TickInput current, TickOutput nextTransform) {
         physicsTickCounter++;

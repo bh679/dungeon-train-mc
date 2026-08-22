@@ -8028,6 +8028,35 @@
       "released_at": null
     },
     {
+      "id": "sable-205-physics-update",
+      "version": "0.622.0",
+      "type": "chore",
+      "title": "Sable updated to 2.0.5",
+      "summary": "Dungeon Train now runs on Sable 2.0.5, which fixes several upstream crashes \u2014 most notably a panic when you close the CurseForge or Modrinth launcher before entering a world. Sable is a required download, so update it too.",
+      "highlights": [
+        "Fixes the crash from closing the launcher before joining a world",
+        "Requires Sable 2.0.5 \u2014 the modpack updates it for you"
+      ],
+      "pr": 1050,
+      "date": "2026-08-22",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "carriage-pivot-pin",
+      "version": "0.622.0",
+      "type": "fix",
+      "title": "Carriages no longer shift when their blocks change",
+      "summary": "Blowing up or mining blocks on a carriage could shove the whole carriage sideways, and the shift survived a save and reload. Beds in the Nether and End were the loudest case, but creepers, trap TNT and ordinary mining did it too.",
+      "highlights": [],
+      "pr": 1050,
+      "date": "2026-08-22",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "single-copies-floor-roof",
       "version": "0.622.0",
       "type": "feat",
