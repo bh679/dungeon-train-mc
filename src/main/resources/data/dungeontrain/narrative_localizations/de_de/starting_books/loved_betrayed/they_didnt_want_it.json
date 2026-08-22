@@ -1,0 +1,11 @@
+{
+  "id": "they_didnt_want_it",
+  "title": "Nicht gewollt",
+  "author": "Brennan Hatton",
+  "generation": 0,
+  "weight": 1,
+  "variants": [
+    "Es fand sie.\nSie töteten es.\n\n\nDas ist die kurze Fassung.\n\nHier ist die lange.\n\n%STORY%\n\n\nWaggon %CARRIAGE%.\n\n%DAYS% Tage Warten für etwa eine Minute Irrtum.\n\n\nEs wehrte sich zuerst nicht.\nDas tut es am Anfang nie.\n%GEAR%\n\n\nVielleicht wussten sie es nicht.\n\nEtwas Totes kommt heran, trägt ein Gesicht und hält dir etwas hin.\n\nDie meisten schlagen zu.\n\n\nIch würde dir gern sagen, sie wussten es und taten es trotzdem.\n\nDas wäre schlimmer, und ich weiß nicht, ob es stimmt.\n\n\n%TARGET% hat deine Handschrift irgendwo in einer Truhe.\n\nSie halten sie für eine Trophäe.",
+    "%TARGET% hat es getötet.\n\n\nDu solltest wissen, dass es schnell ging.\n\n%DAYS% Tage Warten, und dann überhaupt nicht lange.\n\n\n%STORY%\n\n\nIch denke immer wieder an den Moment davor.\n\nEs hatte etwas in den Händen, für sie.\n%GEAR%\n\nEs hielt es immer noch.\n\n\nDie Leute in diesem Zug bekommen nicht viele Geschenke.\n\nSie bekommen Hinterhalte.\n\nSie lernen durch Raten, was was ist.\n\n\nSie haben falsch geraten.\n\n\nDu würdest ihnen verzeihen.\n\nDas ist das Ärgerliche an dir."
+  ]
+}

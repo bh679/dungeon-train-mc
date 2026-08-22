@@ -1,0 +1,11 @@
+{
+  "id": "it_loved_them_to_death",
+  "title": "Minahal Hanggang Patay",
+  "author": "Brennan Hatton",
+  "generation": 0,
+  "weight": 1,
+  "variants": [
+    "Mahirap isulat ito.\n\n\nHindi nakalakad palayo si %TARGET%.\n\nAng alingawngaw mo ang dahilan.\n\n\nBago mo pagpasyahan kung ano ang ibig sabihin niyon:\n\nhindi ito ang nagsimula.\n\nHindi ito nagsisimula ng gulo. Hindi iyon ang ipinadala mo.\n\n\n%STORY%\n\n\nNangyari ito sa bagon %CARRIAGE%.\n%DAYS% araw na nakatayo lang.\n%GEAR%\n\nIpinagtanggol nito ang sarili.\nMagaling ito roon.\nSiniguro mo iyon.\n\n\nIyon ang bahaging paulit-ulit kong binabalikan.\n\nNagpadala ka ng bagay na nagmamahal sa kanila, at ipinadala mo itong armado.\n\n\nIbibigay sana nito ang lahat sa kanila.\n\nSila ang naunang tumaga.\n\nSa iyo pa rin ito.",
+    "Masamang natapos ito.\n\nHindi sa paraang masamang natatapos ang isa pang uri.\n\nMas masama, siguro.\n\n\nInatake ito ni %TARGET%.\nPinatay nito sila.\n\nTotoo ang dalawang iyon at wala ni isa sa kanila ang buong kuwento.\n\n\n%STORY%\n\n\n%DAYS% araw itong naghintay sa bagon %CARRIAGE% para maging banayad sa isang tao.\n%GEAR%\n\n\nKayang mahalin ka ng isang bagay at may kamay pa rin ito.\n\n\nWalang nanalo.\n\nWalang pahinang itinatago ang tren para roon, kaya itinatago nito ang isang ito.\n\n\nKung makakatulong:\n\nhindi ito galit.\n\nKahit sa huli."
+  ]
+}

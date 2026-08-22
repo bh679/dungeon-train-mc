@@ -7905,9 +7905,9 @@
       "title": "Portal corridor loot variety",
       "summary": "Chests in a portal's corridors now roll different contents from portal to portal, instead of the same ones every time.",
       "date": "2026-08-22",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.619.0",
+      "released_at": "2026-08-22T14:38:59Z"
     },
     {
       "id": "bilibili-link-chinese-clients",
@@ -7921,6 +7921,89 @@
         "Discord stays where it is \u2014 the Bilibili link is added, not swapped in"
       ],
       "pr": 1042,
+      "date": "2026-08-22",
+      "released": true,
+      "released_in": "v0.619.0",
+      "released_at": "2026-08-22T14:38:59Z"
+    },
+    {
+      "id": "endless-open-single-block-variant",
+      "version": "0.616.0",
+      "type": "feat",
+      "title": "Endless Open rooms can repeat a single block variant",
+      "summary": "An endless open portal room can now be set to repeat one block instead of the room you arrived in \u2014 an open plain of sandstone, or of a mix you build yourself. The room you walk into keeps everything its author built; only the ground stretching away from it goes uniform. The block can be a full block variant, with weights, facings and even gaps, authored in the same block-variant menu the rest of the editor uses.",
+      "highlights": [
+        "Copies: a new Single option for Endless Open rooms",
+        "Repeat one block, or a whole block variant with weights and facings",
+        "Air in the variant leaves gaps in the plain",
+        "The default portal room now opens onto a lit plain of shroomlight and blackstone"
+      ],
+      "pr": 1044,
+      "date": "2026-08-22",
+      "released": true,
+      "released_in": "v0.619.0",
+      "released_at": "2026-08-22T14:38:59Z"
+    },
+    {
+      "id": "translation-replies-and-good-as-is",
+      "version": "0.617.0",
+      "type": "feat",
+      "title": "Reviewers can reply to translators, and translators can retire good AI lines",
+      "summary": "The in-game translation editor now carries a conversation. When a reviewer turns down a translation you sent, they can say why \u2014 and that reply comes back to your client, marked against the line it is about, readable in the list and above the box when you open it, with a note on the title screen when something new is waiting. And when a machine-translated line is already correct, you can now say so: 'Good As Is' retires it from your queue so it stops coming back, and you can put it back at any time.",
+      "highlights": [
+        "Reviewers can reply to a translation, and the reply reaches the translator's client",
+        "A title-screen note tells you when a reviewer has written back",
+        "'Good As Is' retires a machine-translated line that needs no fixing \u2014 reversible, and per install"
+      ],
+      "pr": 1043,
+      "date": "2026-08-22",
+      "released": true,
+      "released_in": "v0.619.0",
+      "released_at": "2026-08-22T14:38:59Z"
+    },
+    {
+      "id": "curseforge-modpack-publish-reliability",
+      "version": "0.618.0",
+      "type": "ci",
+      "title": "CurseForge modpack keeps up with releases again",
+      "summary": "The CurseForge modpack had quietly stopped updating \u2014 it sat on v0.592.0 while the mod shipped v0.613.0, because CurseForge was accepting our uploads and then rejecting them behind the scenes with no error anywhere we could see. Uploads now retry when the platform hiccups, and every upload is checked afterwards to confirm it actually went live, so the pack can't silently fall behind again.",
+      "highlights": [
+        "CurseForge modpack is publishing again",
+        "Failed uploads retry instead of losing that version",
+        "A pack version that never goes live now fails loudly"
+      ],
+      "pr": 1046,
+      "date": "2026-08-22",
+      "released": true,
+      "released_in": "v0.619.0",
+      "released_at": "2026-08-22T14:38:59Z"
+    },
+    {
+      "id": "localize-recent-text-19-locales",
+      "version": "0.619.0",
+      "type": "feat",
+      "title": "Three weeks of new text, now in all 19 languages",
+      "summary": "Everything added since early August was English-only outside en_us \u2014 the seven new advancements, the Video Tools page, the skybox blocks, the difficulty-change warning, the drifting-carriage death lines, the community-book report button and more. All of it is now translated into every language Dungeon Train ships in, along with ten in-world books that had never been localized. Machine-translated and marked as such, so the in-game translation editor lists them for human review.",
+      "highlights": [
+        "115 newly translated interface lines in each of the 19 languages",
+        "Ten new books \u2014 including The Drifting Carriages and the cursed and loved starting books \u2014 now read in your language",
+        "New Quiet Rules and Train Glossary entries translated to match the English originals"
+      ],
+      "date": "2026-08-22",
+      "released": true,
+      "released_in": "v0.619.0",
+      "released_at": "2026-08-22T14:38:59Z"
+    },
+    {
+      "id": "jei-optional-modpack",
+      "version": "0.620.0",
+      "type": "feat",
+      "title": "JEI, ready to switch on",
+      "summary": "The modpack now ships Just Enough Items, off by default. Tick it on at install for recipe and item lookup \u2014 press R on any item to see how it's made.",
+      "highlights": [
+        "Bundled with the modpack, switched off by default."
+      ],
+      "pr": 1048,
       "date": "2026-08-22",
       "released": false,
       "released_in": null,

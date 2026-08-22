@@ -1,0 +1,234 @@
+package games.brennan.dungeontrain.portal;
+
+import games.brennan.dungeontrain.editor.VariantState;
+import net.minecraft.SharedConstants;
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.Bootstrap;
+import net.minecraft.world.level.block.Blocks;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+
+import java.io.StringReader;
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+/**
+ * The variant an {@link PortalRoomCopies.Kind#SINGLE} room repeats.
+ *
+ * <p>Three properties carry it. It must <b>round-trip</b>, since it is written by the editor and
+ * read back at stamp time through the same shared serialization the block-variant sidecars use. It
+ * must <b>never yield air</b>, because air in a floor plane is a hole in the plain that drops a
+ * player out of the world. And its roll must be a pure function of <b>where</b>, never of
+ * <i>when</i>, or walking back across the plain would find different ground.</p>
+ *
+ * <p>Needs a headless Minecraft bootstrap so {@link VariantState}'s {@code BlockState} resolves.</p>
+ */
+class PortalRoomCopiesVariantTest {
+
+    @BeforeAll
+    static void bootstrap() {
+        SharedConstants.tryDetectVersion();
+        Bootstrap.bootStrap();
+    }
+
+    private static VariantState of(net.minecraft.world.level.block.Block block) {
+        return new VariantState(block.defaultBlockState(), null);
+    }
+
+    private static PortalRoomCopiesVariant reread(PortalRoomCopiesVariant palette) {
+        return PortalRoomCopiesVariant.parse(
+            new StringReader(palette.toJsonText()), "test", "memory");
+    }
+
+    @Test
+    @DisplayName("A multi-block palette round-trips through its file")
+    void roundTrip() {
+        PortalRoomCopiesVariant palette = PortalRoomCopiesVariant.of(List.of(
+            of(Blocks.STONE), of(Blocks.ANDESITE), of(Blocks.COBBLESTONE)));
+
+        PortalRoomCopiesVariant back = reread(palette);
+
+        assertEquals(List.of("minecraft:stone", "minecraft:andesite", "minecraft:cobblestone"),
+            back.blockIds(), palette.toJsonText());
+    }
+
+    @Test
+    @DisplayName("A one-entry palette round-trips too — the plain held block case")
+    void roundTripSingleEntry() {
+        PortalRoomCopiesVariant back = reread(PortalRoomCopiesVariant.of(List.of(of(Blocks.SANDSTONE))));
+        assertEquals(List.of("minecraft:sandstone"), back.blockIds());
+    }
+
+    /** The editor's "this cell becomes air" sentinel — a command block, stored verbatim. */
+    private static VariantState airEntry() {
+        return new VariantState(Blocks.COMMAND_BLOCK.defaultBlockState(), null);
+    }
+
+    /** A mob entry: the canonical constructor stamps the sentinel state and carries the entity id. */
+    private static VariantState mobEntry() {
+        return new VariantState(Blocks.STONE.defaultBlockState(), null, 1,
+            games.brennan.dungeontrain.editor.VariantRotation.NONE, null,
+            net.minecraft.resources.ResourceLocation.parse("minecraft:zombie"));
+    }
+
+    @Test
+    @DisplayName("An air entry is kept — it is how an author asks for gaps in the plain")
+    void airEntriesAreKept() {
+        PortalRoomCopiesVariant variant =
+            PortalRoomCopiesVariant.of(List.of(of(Blocks.STONE), airEntry()));
+
+        assertEquals(2, variant.size(),
+            "filtering the author's variant makes the row, the file and a Copy back out disagree");
+        assertTrue(variant.states().stream().anyMatch(
+                v -> games.brennan.dungeontrain.editor.CarriageVariantBlocks
+                    .isEmptyPlaceholder(v.state())),
+            "the empty-placeholder sentinel must survive being added");
+
+        // And it has to survive the file, not just the constructor.
+        assertEquals(2, reread(variant).size());
+    }
+
+    @Test
+    @DisplayName("A variant of nothing but air is a variant, not an empty one")
+    void allAirIsNotEmpty() {
+        PortalRoomCopiesVariant variant = PortalRoomCopiesVariant.of(List.of(airEntry()));
+
+        assertFalse(variant.isEmpty(),
+            "an all-air variant floors nothing, which is legal and the author's business");
+        assertEquals(1, variant.size());
+    }
+
+    @Test
+    @DisplayName("A mob entry is data too — this class stores it rather than judging it")
+    void mobEntriesAreKept() {
+        PortalRoomCopiesVariant variant =
+            PortalRoomCopiesVariant.of(List.of(of(Blocks.STONE), mobEntry()));
+
+        assertEquals(2, variant.size());
+        assertTrue(reread(variant).states().stream().anyMatch(VariantState::isMob),
+            "the entity id must survive the round trip even though the planes do not spawn it");
+    }
+
+    @Test
+    @DisplayName("The file is capped, so a hand-edited one cannot grow without bound")
+    void cappedAtMaxEntries() {
+        List<VariantState> many = new ArrayList<>();
+        for (int i = 0; i < PortalRoomCopiesVariant.MAX_ENTRIES + 5; i++) many.add(of(Blocks.STONE));
+
+        assertEquals(PortalRoomCopiesVariant.MAX_ENTRIES,
+            PortalRoomCopiesVariant.of(many).size());
+    }
+
+    @Test
+    @DisplayName("Reading is total — a malformed file stamps a room rather than failing a pair")
+    void parsingIsTotal() {
+        assertTrue(PortalRoomCopiesVariant.parse(new StringReader("[]"), "t", "m").isEmpty());
+        assertTrue(PortalRoomCopiesVariant.parse(new StringReader("{}"), "t", "m").isEmpty());
+        assertTrue(PortalRoomCopiesVariant.parse(
+            new StringReader("{\"blocks\": \"nonsense\"}"), "t", "m").isEmpty());
+        assertTrue(PortalRoomCopiesVariant.parse(
+            new StringReader("{\"blocks\": [\"minecraft:not_a_block\"]}"), "t", "m").isEmpty());
+    }
+
+    @Test
+    @DisplayName("The value is replaced wholesale — the menu owns add and remove")
+    void withStatesReplaces() {
+        PortalRoomCopiesVariant variant = PortalRoomCopiesVariant.of(List.of(
+            of(Blocks.STONE), of(Blocks.ANDESITE), of(Blocks.COBBLESTONE)));
+
+        assertEquals(List.of("minecraft:sandstone"),
+            variant.withStates(List.of(of(Blocks.SANDSTONE))).blockIds());
+        // The row draws the first candidate, which is what the icon has to resolve to.
+        assertEquals("minecraft:stone", variant.iconBlockId());
+        assertEquals("", PortalRoomCopiesVariant.empty().iconBlockId());
+    }
+
+    @Test
+    @DisplayName("The roll is a pure function of where, not of when")
+    void rollIsStablePerPosition() {
+        PortalRoomCopiesVariant palette = PortalRoomCopiesVariant.of(List.of(
+            of(Blocks.STONE), of(Blocks.ANDESITE), of(Blocks.COBBLESTONE)));
+        BlockPos cell = new BlockPos(3, 0, 5);
+
+        VariantState first = palette.resolve(cell, 1234L, 7);
+        assertNotNull(first);
+        // Same inputs, same answer — this is what makes a copy walked back to the copy you left.
+        assertEquals(first.state(), palette.resolve(cell, 1234L, 7).state());
+    }
+
+    @Test
+    @DisplayName("The variant index separates copies, so Dynamic differs where Exact agrees")
+    void variantIndexSeparatesCopies() {
+        List<VariantState> states = new ArrayList<>();
+        for (int i = 0; i < 8; i++) states.add(of(Blocks.STONE));
+        states.set(3, of(Blocks.ANDESITE));
+        PortalRoomCopiesVariant palette = PortalRoomCopiesVariant.of(states);
+        BlockPos cell = new BlockPos(2, 0, 2);
+
+        // Not an assertion that any particular pair differs — the picker is a hash, so a given pair
+        // may legitimately collide. What must hold is that the index reaches the roll at all.
+        boolean anyDiffer = false;
+        VariantState base = palette.resolve(cell, 99L, 0);
+        for (int index = 1; index < 40 && !anyDiffer; index++) {
+            VariantState other = palette.resolve(cell, 99L, index);
+            anyDiffer = other != null && !other.state().equals(base.state());
+        }
+        assertTrue(anyDiffer, "the copy's identity must reach the roll or every tile would match");
+    }
+
+    @Test
+    @DisplayName("Per-entry weights reach the roll — a heavy candidate wins more cells")
+    void weightsAreHonoured() {
+        // 1 : 50. Over a sweep of cells the heavy entry must dominate; the exact split is the
+        // picker's business, but a weight that never reached it would give roughly half and half.
+        PortalRoomCopiesVariant palette = PortalRoomCopiesVariant.of(List.of(
+            new VariantState(Blocks.STONE.defaultBlockState(), null, 1),
+            new VariantState(Blocks.ANDESITE.defaultBlockState(), null, 50)));
+
+        int heavy = 0;
+        int total = 0;
+        for (int x = 0; x < 16; x++) {
+            for (int z = 0; z < 16; z++) {
+                VariantState picked = palette.resolve(new BlockPos(x, 0, z), 42L, 3);
+                if (picked.state().is(Blocks.ANDESITE)) heavy++;
+                total++;
+            }
+        }
+        assertTrue(heavy > total * 3 / 4,
+            "weight 50 against weight 1 took only " + heavy + " of " + total + " cells — "
+                + "the per-entry weight is not reaching the picker");
+    }
+
+    @Test
+    @DisplayName("The authored facing survives — a variant is placed as it was copied")
+    void rotationDataSurvivesRoundTrip() {
+        // The axis is part of the BlockState, so it has to come back off disk intact before
+        // RotationApplier ever sees it.
+        VariantState log = new VariantState(
+            Blocks.SPRUCE_LOG.defaultBlockState()
+                .setValue(net.minecraft.world.level.block.RotatedPillarBlock.AXIS,
+                    net.minecraft.core.Direction.Axis.X),
+            null);
+
+        PortalRoomCopiesVariant back = reread(PortalRoomCopiesVariant.of(List.of(log)));
+
+        assertEquals(net.minecraft.core.Direction.Axis.X,
+            back.states().get(0).state()
+                .getValue(net.minecraft.world.level.block.RotatedPillarBlock.AXIS));
+    }
+
+    @Test
+    @DisplayName("An empty palette resolves to nothing rather than to air")
+    void emptyResolvesToNull() {
+        assertNull(PortalRoomCopiesVariant.empty().resolve(BlockPos.ZERO, 1L, 1));
+        assertTrue(PortalRoomCopiesVariant.empty().isEmpty());
+        assertFalse(PortalRoomCopiesVariant.of(List.of(of(Blocks.STONE))).isEmpty());
+    }
+}

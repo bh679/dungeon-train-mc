@@ -61,6 +61,14 @@ public final class BlockVariantMenuController {
 
     private static final double TOGGLE_REACH = 8.0;
 
+    /**
+     * How far in front of the player a panel with no cell of its own is hung.
+     *
+     * <p>{@code CommandMenuState.ANCHOR_DISTANCE}'s value, so the Copies variant menu appears where
+     * every other floating menu in the game appears.</p>
+     */
+    private static final double FLOATING_ANCHOR_DISTANCE = 2.5;
+
     /** Cap on entries per cell — matches the JSON sidecar's practical limit. */
     public static final int MAX_ENTRIES = 32;
 
@@ -71,7 +79,18 @@ public final class BlockVariantMenuController {
      * so the panel neither jumps to a wrapping side face nor rotates to
      * track the player's current look angle.
      */
-    private record OpenMenu(String variantId, BlockPos localPos, Direction face, Vec3 up) {}
+    private record OpenMenu(String variantId, BlockPos localPos, Direction face, Vec3 up,
+                           @Nullable Vec3 anchor, @Nullable Vec3 right) {
+        /** A panel hung off a cell's face — the anchor is re-derived from that face on every re-sync. */
+        OpenMenu(String variantId, BlockPos localPos, Direction face, Vec3 up) {
+            this(variantId, localPos, face, up, null, null);
+        }
+
+        /** True for a panel with no cell in the world, whose basis has to be remembered rather than recomputed. */
+        boolean isFloating() {
+            return anchor != null && right != null;
+        }
+    }
 
     private static final Map<UUID, OpenMenu> OPEN = new ConcurrentHashMap<>();
 
@@ -170,6 +189,88 @@ public final class BlockVariantMenuController {
     }
 
     /** Compose + send the sync packet for the cell at {@code localPos}. */
+    /**
+     * Open the menu on a portal room's Copies block — the row's Edit button.
+     *
+     * <p>Unlike {@link #toggle} there is no cell in the world to target: the value is a setting on
+     * the room, presented as a one-cell plot ({@code PortalRoomCopiesPlot}). The block the player
+     * happens to be looking at is used for the panel's anchor and nothing else, so the menu appears
+     * where they are looking exactly as it does everywhere else.</p>
+     */
+    public static void openForCopies(ServerPlayer player, String roomName) {
+        if (!player.hasPermissions(2)) {
+            actionBar(player, "Block variant menu requires OP", ChatFormatting.RED);
+            return;
+        }
+        ServerLevel level = player.serverLevel();
+        CarriageDims dims = DungeonTrainWorldData.get(level).dims();
+
+        BlockVariantPlot room = BlockVariantPlot.resolveAt(player, dims);
+        if (room == null) {
+            actionBar(player, "Stand in the portal room's plot", ChatFormatting.YELLOW);
+            return;
+        }
+        games.brennan.dungeontrain.portal.PortalRoomCopiesPlot plot = copiesPlotFor(roomName, room.origin());
+
+        // In front of the player at eye level, not on a block. Every other opening of this menu
+        // targets a cell in the world and hangs the panel off that cell's face, but a Copies variant
+        // is not anywhere — anchoring it to whatever block the crosshair happened to be over put it
+        // on the floor at the author's feet, since that is what you are looking at while standing in
+        // a plot reading a row. Same basis the command menu builds for the same reason.
+        Vec3 eye = player.getEyePosition();
+        Vec3 look = player.getLookAngle();
+        Vec3 anchor = eye.add(look.scale(FLOATING_ANCHOR_DISTANCE));
+        Vec3 normal = look.scale(-1.0).normalize();
+        Vec3 worldUp = new Vec3(0, 1, 0);
+        Vec3 up = worldUp.subtract(normal.scale(worldUp.dot(normal)));
+        // Looking straight up or straight down leaves no horizontal component to keep the panel
+        // level against; any fixed axis will do, and this is the one the command menu picks.
+        if (up.lengthSqr() < 1.0e-4) up = new Vec3(0, 0, 1);
+        up = up.normalize();
+        Vec3 right = up.cross(normal).normalize();
+
+        BlockPos cell = games.brennan.dungeontrain.portal.PortalRoomCopiesPlot.CELL;
+        // The stored face is only used to re-anchor a later re-sync; UP keeps that stable rather
+        // than tying it to a block face this panel never had.
+        OPEN.put(player.getUUID(), new OpenMenu(plot.key(), cell, Direction.UP, up, anchor, right));
+        List<VariantState> states = plot.statesAt(cell);
+        DungeonTrainNet.sendTo(player, buildSyncPacket(plot, cell, states == null ? List.of() : states,
+            plot.lockIdAt(cell), anchor, right, up));
+    }
+
+    /** The one-cell plot over {@code roomName}'s Copies variant, seeded from what it repeats today. */
+    private static games.brennan.dungeontrain.portal.PortalRoomCopiesPlot copiesPlotFor(
+        String roomName, BlockPos origin
+    ) {
+        games.brennan.dungeontrain.portal.PortalRoomSettings settings =
+            games.brennan.dungeontrain.portal.PortalRoomSettings.of(roomName);
+        return new games.brennan.dungeontrain.portal.PortalRoomCopiesPlot(roomName, origin,
+            games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.forRoom(
+                roomName, settings.copies()));
+    }
+
+    /**
+     * The plot an edit packet addresses.
+     *
+     * <p>{@link BlockVariantPlot#resolveAt} is positional, and a Copies variant is not anywhere —
+     * standing in the room resolves to the <i>room</i>. So a {@code copies:} key is answered with
+     * the one-cell plot instead, once the player has been checked to be standing in that room's own
+     * plot. That check is the authorisation: it is the same "you must be in the plot you are
+     * editing" rule every other key gets, applied to the plot this value belongs to.</p>
+     */
+    @Nullable
+    private static BlockVariantPlot resolvePlotFor(ServerPlayer player, CarriageDims dims,
+                                                   String variantId) {
+        BlockVariantPlot positional = BlockVariantPlot.resolveAt(player, dims);
+        String room = games.brennan.dungeontrain.portal.PortalRoomCopiesPlot.roomOf(variantId);
+        if (room == null) return positional;
+        if (positional == null) return null;
+        String roomKey = ContainerContentsStore.trackPlotKey(
+            games.brennan.dungeontrain.track.variant.TrackKind.PORTAL_ROOM, room);
+        if (!positional.key().equals(roomKey)) return null;
+        return copiesPlotFor(room, positional.origin());
+    }
+
     private static void sendSync(ServerPlayer player, BlockVariantPlot plot,
                                  BlockPos localPos, BlockPos worldPos,
                                  Direction face, Vec3 up) {
@@ -193,7 +294,17 @@ public final class BlockVariantMenuController {
         Vec3 anchor = faceCentre.add(normal.scale(0.02));
 
         Vec3 right = up.cross(normal).normalize();
+        return buildSyncPacket(plot, localPos, states, lockId, anchor, right, up);
+    }
 
+    /**
+     * {@link #buildSyncPacket} with the panel's basis supplied outright, for a plot with no cell in
+     * the world to hang off — see {@link #openForCopies}.
+     */
+    private static BlockVariantSyncPacket buildSyncPacket(
+        BlockVariantPlot plot, BlockPos localPos, List<VariantState> states, int lockId,
+        Vec3 anchor, Vec3 right, Vec3 up
+    ) {
         // Liveness of every v9 reference in this cell, decided once against the
         // plot's whole reference graph — the client can't work it out on its
         // own, it only ever sees one cell.
@@ -227,7 +338,7 @@ public final class BlockVariantMenuController {
         }
         ServerLevel level = player.serverLevel();
         CarriageDims dims = DungeonTrainWorldData.get(level).dims();
-        BlockVariantPlot plot = BlockVariantPlot.resolveAt(player, dims);
+        BlockVariantPlot plot = resolvePlotFor(player, dims, packet.variantId());
         if (plot == null || !plot.key().equals(packet.variantId())) {
             LOGGER.warn("[DungeonTrain] BlockVariantMenu edit rejected: player {} not in plot for '{}'",
                 player.getName().getString(), packet.variantId());
@@ -704,11 +815,24 @@ public final class BlockVariantMenuController {
     private static void resyncSameFace(ServerPlayer player, BlockVariantPlot plot,
                                        BlockPos localPos) {
         OpenMenu open = OPEN.get(player.getUUID());
+        boolean sameMenu = open != null
+            && open.variantId().equals(plot.key())
+            && open.localPos().equals(localPos);
+
+        // A floating panel has no cell to re-derive an anchor from — plot.origin() for a Copies
+        // variant is the room plot's corner, so recomputing would drop the panel on the floor over
+        // there after every button press. Reuse the basis it was opened with instead.
+        if (sameMenu && open.isFloating()) {
+            List<VariantState> states = plot.statesAt(localPos);
+            DungeonTrainNet.sendTo(player, buildSyncPacket(plot, localPos,
+                states == null ? List.of() : states, plot.lockIdAt(localPos),
+                open.anchor(), open.right(), open.up()));
+            return;
+        }
+
         Direction face;
         Vec3 up;
-        if (open != null
-            && open.variantId().equals(plot.key())
-            && open.localPos().equals(localPos)) {
+        if (sameMenu) {
             face = open.face();
             up = open.up();
         } else {

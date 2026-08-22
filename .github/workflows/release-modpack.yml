@@ -2,10 +2,12 @@ name: Release Modpack
 
 # Publishes the Dungeon Train CurseForge MODPACK (project = vars.CURSEFORGE_MODPACK_PROJECT_ID),
 # distinct from the mod itself. Dispatched by release.yml right after a successful CurseForge
-# mod upload — for EVERY release, including the auto-release cascade ticks. It waits
+# mod upload — for REAL (operator-dispatched) releases only; auto-release cascade ticks are
+# deliberately skipped (see the `inputs.auto == false` gate on that dispatch step). It waits
 # `delay_minutes` (so CurseForge can approve the freshly uploaded DT file before the modpack
 # manifest references it), then builds + uploads a matching modpack version that bundles that
-# release's DT file plus the pinned Sable dependency.
+# release's DT file plus the pinned Sable dependency, and finally VERIFIES that the uploaded
+# version actually became public — CurseForge can accept an upload and reject it afterwards.
 #
 # Not tag-triggered: release.yml is the only production caller. Can also be dispatched manually
 # (e.g. with dry_run=true) for testing — see modpack/README.md.
@@ -110,3 +112,22 @@ jobs:
             exit 1
           fi
           bash scripts/modpack/publish-curseforge.sh --manifest manifest.json --tag "$TAG" --changelog "$CHANGELOG"
+
+      # An HTTP 200 from /upload-file does NOT mean the pack was published. CurseForge
+      # validates the manifest asynchronously and can reject the file afterwards — e.g.
+      # `Invalid manifest.json file: 500 - "…An unhandled exception occurred…"`. When that
+      # happens this workflow stays green and the release goes missing from the pack with no
+      # signal anywhere. That is exactly how the pack silently fell 13 releases behind.
+      # Poll the public listing and fail loudly if the version never shows up.
+      #
+      # Skipped on dry runs (nothing was uploaded). Failing here does not undo the upload —
+      # it exists to make a rejection visible the same day instead of weeks later.
+      - name: Verify the pack version actually published
+        if: ${{ !inputs.dry_run }}
+        env:
+          TAG: ${{ inputs.tag }}
+          CURSEFORGE_MODPACK_PROJECT_ID: ${{ vars.CURSEFORGE_MODPACK_PROJECT_ID }}
+          CURSEFORGE_API_KEY: ${{ secrets.CURSEFORGE_API_KEY }}
+        run: |
+          python3 scripts/modpack/reconcile.py --verify "$TAG" \
+            --platform curseforge --timeout-minutes 30 --poll-seconds 60
