@@ -8113,6 +8113,23 @@
       "released": true,
       "released_in": "v0.625.0",
       "released_at": "2026-08-22T16:12:08Z"
+    },
+    {
+      "id": "pause-menu-version-label",
+      "version": "0.626.0",
+      "type": "feat",
+      "title": "Version number now shown on the pause menu",
+      "summary": "The Dungeon Train version line that sits in the corner of the main menu now also appears on the pause menu, so you can check which build you are on without leaving your run. It carries the same update notice as the title screen \u2014 if a newer release is out, the line turns amber and clicking it opens the download page for wherever you installed the mod.",
+      "highlights": [
+        "Version number added to the pause (Esc) menu, matching the main menu",
+        "Shows the same clickable 'update available' notice as the title screen",
+        "Visible in multiplayer as well as singleplayer"
+      ],
+      "pr": 1055,
+      "date": "2026-08-22",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
