@@ -7960,6 +7960,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "curseforge-modpack-publish-reliability",
+      "version": "0.618.0",
+      "type": "ci",
+      "title": "CurseForge modpack keeps up with releases again",
+      "summary": "The CurseForge modpack had quietly stopped updating \u2014 it sat on v0.592.0 while the mod shipped v0.613.0, because CurseForge was accepting our uploads and then rejecting them behind the scenes with no error anywhere we could see. Uploads now retry when the platform hiccups, and every upload is checked afterwards to confirm it actually went live, so the pack can't silently fall behind again.",
+      "highlights": [
+        "CurseForge modpack is publishing again",
+        "Failed uploads retry instead of losing that version",
+        "A pack version that never goes live now fails loudly"
+      ],
+      "pr": 1046,
+      "date": "2026-08-22",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

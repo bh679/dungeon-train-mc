@@ -252,10 +252,13 @@ Separate from the mod, there are **two modpacks** published from one config
   pin), so config entries carry `modrinth_project`+`modrinth_version` alongside the CurseForge
   `project_id`/`file_id`. First publish is a **draft** → enters Modrinth's modpack review queue.
 
-After every successful mod upload (real releases AND the ~22 auto-release cascade ticks),
-`release.yml` dispatches **`release-modpack.yml`** (CurseForge — waits ~15 min for CurseForge to
-approve the new DT file) and **`release-modpack-modrinth.yml`** (Modrinth — no wait), each
-gated on that platform's mod upload having produced a file/version id. Both bundle that release's
+After a successful mod upload `release.yml` dispatches **`release-modpack.yml`** (CurseForge —
+waits ~15 min for CurseForge to approve the new DT file) and **`release-modpack-modrinth.yml`**
+(Modrinth — no wait), each gated on that platform's mod upload having produced a file/version id.
+**Modrinth fires for every release including the ~22 cascade ticks; CurseForge fires only for
+real, operator-dispatched releases** (`inputs.auto == false`) — CurseForge's pack validation
+returns sporadic 500s and silently rejects files, so the cascade is kept out of it. The two packs'
+version lists therefore differ by design. Both bundle that release's
 DT file + Sable + the pinned sibling and companion mods. Core entries are
 **Dungeon Train + Sable** (DT jarJars only DiscordPresence + EdibleBackpacks + joml-primitives);
 the sibling mods **AIN/AIS/PMOB/ECP/TE are un-bundled required downloads**, declared `<slug>(required)` so the
@@ -292,6 +295,20 @@ loads (Advancement Plaques needs Iceberg).
   Enforced in CI (`modpack-checks` job in `build.yml`): `check-relations.py` (CurseForge dep) +
   `build-mrpack.py --check-config` (Modrinth pins present) + `check-pins.py` (Sable chain +
   sibling floors).
+- **A CurseForge upload returning 200 is NOT a publish.** CurseForge validates the manifest
+  asynchronously and can reject the file afterwards (`Invalid manifest.json file: 500 - "…An
+  unhandled exception occurred…"`), leaving the workflow green and the release missing from the
+  pack — this is how the pack silently fell 13 releases behind in Aug 2026. `release-modpack.yml`
+  now polls the public listing after uploading (`scripts/modpack/reconcile.py --verify`) and fails
+  the run if the version never appears. `modpack-reconcile.yml` re-checks every 6h as a backstop.
+  Run the drift report any time with `python3 scripts/modpack/reconcile.py`.
+  A 2026-08-22 re-upload of the identical rejected manifest was **accepted**, so those rejections
+  were a transient CurseForge fault — missing versions can be recovered by re-uploading.
+  ⚠️ **Set the `CURSEFORGE_API_KEY` secret.** Without it the check reads the cached cfwidget
+  mirror, which lagged 30+ min in testing; a cache can't prove absence, so `--verify` reports
+  INCONCLUSIVE and won't fail the run. With the key it is authoritative.
+- Both publish scripts retry transient 5xx/transport failures via
+  `scripts/modpack/lib/upload-retry.sh` (never 4xx — a bad payload stays bad).
 - Manual test: `gh workflow run release-modpack.yml --ref <branch> -f tag=v<ver>
   -f dt_file_id=<id> -f dry_run=true` (CurseForge); `gh workflow run
   release-modpack-modrinth.yml --ref <branch> -f tag=v<ver> -f dt_modrinth_version=<id>
