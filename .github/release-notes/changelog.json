@@ -8031,11 +8031,11 @@
       "id": "portal-room-daylight",
       "version": "0.622.0",
       "type": "feat",
-      "title": "Portal rooms can stand under their own sky",
-      "summary": "A portal room's template now chooses the sky it stands under \u2014 ordinary daylight, daylight that follows the world clock, or a Nether or End cast. The light eases in as you step inside and eases back out as you leave for the corridor home. The mini-world room is the first to use it.",
+      "title": "Dimensional carriages can stand under their own sky",
+      "summary": "A dimensional carriage's template now chooses the sky it stands under \u2014 ordinary daylight, daylight that follows the world clock, or a Nether or End cast. The light eases in as you step inside and eases back out as you leave for the corridor home. The mini-world carriage is the first to use it.",
       "highlights": [
-        "The mini-world portal room is now daylit",
-        "Room builders get a Sky control in the portal room editor",
+        "The mini-world dimensional carriage is now daylit",
+        "Room builders get a Sky control in the dimensional carriage editor",
         "Turn it off server-wide with the new portalRoomDaylight setting"
       ],
       "pr": 1052,
