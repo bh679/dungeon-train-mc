@@ -8026,6 +8026,39 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "single-copies-floor-roof",
+      "version": "0.622.0",
+      "type": "feat",
+      "title": "Endless plains can have a different floor and roof",
+      "summary": "A repeating Endless Open room no longer has to wear the same material overhead as underfoot \u2014 the floor and the roof are set separately in the editor, and either can be set to air by clicking its row with an empty hand.",
+      "highlights": [
+        "Separate Floor and Roof rows for Single copies",
+        "Either plane can be air \u2014 an open sky, or a floor of gaps"
+      ],
+      "pr": 1051,
+      "date": "2026-08-22",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "deserter-hall",
+      "version": "0.622.0",
+      "type": "content",
+      "title": "The deserter's hall",
+      "summary": "Behind a house portal door you may now find the deserter's hall \u2014 a lamplit spruce hall left behind by someone who walked off the train, with their journal still tucked away inside. Its plain runs out under an open sky.",
+      "highlights": [
+        "New deserter's hall portal room, found through house portal doors",
+        "Four-page journal telling the deserter's story",
+        "Black concrete and sea lantern floor beneath a skybox roof"
+      ],
+      "pr": 1051,
+      "date": "2026-08-22",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
