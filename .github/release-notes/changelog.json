@@ -7825,6 +7825,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "player-head-death-skins",
+      "version": "0.610.0",
+      "type": "feat",
+      "title": "Player heads remember who died there",
+      "summary": "The player heads scattered through the train are no longer anonymous. Each one now wears the face and name of a real player whose run ended at that same carriage \u2014 the fourth carriage remembers people who fell in a fourth carriage. Mine one and the head keeps them, so you can carry a fallen traveller with you or set them up somewhere of your choosing.",
+      "highlights": [
+        "Heads in carriage N show players who died at carriage N",
+        "A mined head keeps its face and name, and can be placed anywhere",
+        "Falls back to the bundled skins when there is nobody to remember yet"
+      ],
+      "pr": 1040,
+      "date": "2026-08-22",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
