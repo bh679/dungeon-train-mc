@@ -7774,6 +7774,21 @@
       "released": true,
       "released_in": "v0.606.0",
       "released_at": "2026-08-22T03:15:31Z"
+    },
+    {
+      "id": "worldedit-modpack-optional",
+      "version": "0.607.0",
+      "type": "feat",
+      "title": "WorldEdit available in the modpack",
+      "summary": "The modpack now ships WorldEdit as an optional extra. It's switched off by default \u2014 tick it on in the launcher's optional-mods list if you want an in-game map editor for building. Best used off the moving train: WorldEdit's block edits aren't aware of the train's physics sub-level.",
+      "highlights": [
+        "WorldEdit bundled in the modpack, off by default",
+        "Enable it from the optional-mods list in the CurseForge/Modrinth launcher"
+      ],
+      "date": "2026-08-22",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
