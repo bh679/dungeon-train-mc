@@ -74,11 +74,37 @@ class TranslationFiltersTest {
     }
 
     @Test
+    @DisplayName("a string the player marked good as is leaves the queue too")
+    void dismissedLeavesTheQueue() {
+        // A dismissal is the review the queue was asking for — a speaker of the language read the
+        // machine translation and decided it needed nothing. Unlike an approval it binds only this
+        // translator's own list, which is why it is a predicate rather than an override layer.
+        TranslationUnit unit = langUnit("gui.a", true);
+        TranslationEdits none = TranslationEdits.empty("de_de");
+        assertTrue(TranslationFilters.needsHuman(unit, none, (u) -> false));
+        assertFalse(TranslationFilters.needsHuman(unit, none, (u) -> true));
+        // The unfiltered question is unchanged — ALL still shows a dismissed string.
+        assertTrue(TranslationFilters.needsHuman(unit, none));
+    }
+
+    @Test
+    @DisplayName("dismissing one string does not excuse another")
+    void dismissalIsPerUnit() {
+        TranslationEdits none = TranslationEdits.empty("de_de");
+        assertTrue(TranslationFilters.needsHuman(langUnit("gui.b", true), none,
+            (u) -> u.id().equals("gui.a")));
+        assertFalse(TranslationFilters.needsHuman(langUnit("gui.a", true), none,
+            (u) -> u.id().equals("gui.a")));
+    }
+
+    @Test
     @DisplayName("a missing layer is treated as no approvals rather than throwing")
     void nullsAreSafe() {
         assertTrue(TranslationFilters.needsHuman(langUnit("gui.a", true), null));
         assertFalse(TranslationFilters.needsHuman(null, TranslationEdits.empty("de_de")));
         assertNull(TranslationFilters.overrideOf(null, TranslationEdits.empty("de_de")));
         assertNull(TranslationFilters.overrideOf(langUnit("gui.a", true), null));
+        // No dismissal set at all asks the plain question rather than throwing.
+        assertTrue(TranslationFilters.needsHuman(langUnit("gui.a", true), null, null));
     }
 }
