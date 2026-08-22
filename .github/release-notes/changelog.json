@@ -7774,6 +7774,24 @@
       "released": true,
       "released_in": "v0.606.0",
       "released_at": "2026-08-22T03:15:31Z"
+    },
+    {
+      "id": "book-text-sanitization",
+      "version": "0.607.0",
+      "type": "fix",
+      "title": "Community books can't break your game or your screen",
+      "summary": "Books written by other players are now cleaned up before they reach you. Certain characters could previously scramble or reverse the text on a page, hide it, or stack accent marks until a page overflowed \u2014 and an emoji landing in exactly the wrong spot in a long title could crash the game outright. All of that is now stripped or handled safely, on the server and in the mod. Ordinary books are completely unaffected.",
+      "highlights": [
+        "Formatting codes in a book now show as plain text instead of scrambling or recolouring it",
+        "Invisible and text-reversing characters are removed from titles, authors and pages",
+        "An emoji in a long title or a full page can no longer crash the game",
+        "Books already in the community pool are cleaned as they're handed out \u2014 nothing needed re-uploading"
+      ],
+      "pr": 1033,
+      "date": "2026-08-22",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
