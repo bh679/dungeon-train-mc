@@ -94,8 +94,6 @@ public final class ContainerContentsRoller {
     /** Salt for the "shared vs local pool" coin-flip on a placeholder book roll. */
     private static final long SALT_SHARED_BOOK_CHANCE = 0x5A1EDB00C0FFEE12L;
 
-    /** Salt for the edible-backpack loot substitution coin-flip. */
-    private static final long SALT_EDIBLE_BACKPACK = 0xEDB1EBACC0FFEE77L;
     /** Salt for the procedural name composer (naturally-spawned items). */
     private static final long SALT_NAME        = 0x4E414D4544585742L;
     /** Salt for the AIS Gaussian stat roller (naturally-spawned items). */
@@ -850,21 +848,6 @@ public final class ContainerContentsRoller {
                                            HolderLookup.Provider registries) {
         Item item = resolveItem(picked.itemId());
         if (item == null) return ItemStack.EMPTY;
-
-        // Edible Backpacks bundle: a small deterministic per-slot chance that this
-        // rolled item is instead an edible backpack (+1 permanent storage slot when
-        // eaten). Same seeded idiom as the shared-book substitution so a given chest
-        // slot always makes the same choice for a given world seed. Config
-        // edibleBackpackLootChance (0 disables). Never replaces the narrative
-        // placeholders below — books stay books.
-        if (item != ModItems.RANDOM_BOOK.get() && item != ModItems.RANDOM_PLAYERBOOK.get()) {
-            double backpackChance = DungeonTrainConfig.getEdibleBackpackLootChance();
-            if (backpackChance > 0.0 && rollDoubleChance(backpackChance, localPos, worldSeed,
-                    carriageIndex, slot, SALT_EDIBLE_BACKPACK)) {
-                return new ItemStack(
-                    games.brennan.ediblebackpacks.registry.ModItems.EDIBLE_BACKPACK.get());
-            }
-        }
 
         // Editor-only placeholder dungeontrain:random_book — substitute a
         // stamped vanilla WRITTEN_BOOK rolled from RandomBookRegistry. Pool
