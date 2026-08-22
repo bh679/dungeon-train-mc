@@ -7776,8 +7776,59 @@
       "released_at": "2026-08-22T03:15:31Z"
     },
     {
-      "id": "worldedit-modpack-optional",
+      "id": "remove-backpack-loot-substitution",
       "version": "0.607.0",
+      "type": "fix",
+      "title": "Edible backpacks come from loot tables only",
+      "summary": "Edible backpacks were being swapped into 1.5% of every loot slot in the game, on top of the chests and pots that were meant to carry them. That global substitution is gone \u2014 backpacks now turn up only where the loot tables actually list them, so finding one means something again.",
+      "highlights": [
+        "Edible backpacks no longer replace random items in unrelated containers",
+        "Backpacks still appear in the loot chests, iron/gold chests and decorated pots that list them"
+      ],
+      "pr": 1032,
+      "date": "2026-08-22",
+      "released": true,
+      "released_in": "v0.607.0",
+      "released_at": "2026-08-22T04:56:27Z"
+    },
+    {
+      "id": "book-text-sanitization",
+      "version": "0.608.0",
+      "type": "fix",
+      "title": "Community books can't break your game \u2014 and can still be styled",
+      "summary": "Books written by other players are now cleaned up before they reach you. Certain characters could previously hide text on a page or stack accent marks until it overflowed, and an emoji landing in exactly the wrong spot in a long title could crash the game outright. That's all handled now, on the server and in the mod. Colour codes and right-to-left writing still work exactly as they did \u2014 the cleanup is aimed at characters that do nothing but cause trouble. Ordinary books are unaffected.",
+      "highlights": [
+        "Colour and style codes still work in your book's pages \u2014 they're only stripped from titles and author names, where they leaked out into chat and tooltips",
+        "Invisible padding characters are removed from titles, authors and pages; right-to-left writing and emoji sequences are left alone",
+        "An emoji in a long title or a full page can no longer crash the game",
+        "Books already in the community pool are cleaned as they're handed out \u2014 nothing needed re-uploading"
+      ],
+      "pr": 1033,
+      "date": "2026-08-22",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "book-reader-reports",
+      "version": "0.609.0",
+      "type": "feat",
+      "title": "Report a community book",
+      "summary": "Community books written by other players now carry a report button beside the thumbs up and down. A thumbs down says a book was weak; reporting says it should not be in the pool at all. Enough reports, relative to how many people have read it, pull the book from circulation and put it in front of a human.",
+      "highlights": [
+        "A report icon sits under the thumbs on the train's question page, on player-written books only",
+        "It takes two clicks \u2014 the first arms it, the second sends \u2014 and there is no hotkey, so a slip cannot report a book",
+        "Reporting does not cast a vote; the two are separate verdicts",
+        "Reports are weighed against readers, so a well-read book is not pulled by a handful of complaints"
+      ],
+      "date": "2026-08-22",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "worldedit-modpack-optional",
+      "version": "0.610.0",
       "type": "feat",
       "title": "WorldEdit available in the modpack",
       "summary": "The modpack now ships WorldEdit as an optional extra. It's switched off by default \u2014 tick it on in the launcher's optional-mods list if you want an in-game map editor for building. Best used off the moving train: WorldEdit's block edits aren't aware of the train's physics sub-level.",
@@ -7785,6 +7836,7 @@
         "WorldEdit bundled in the modpack, off by default",
         "Enable it from the optional-mods list in the CurseForge/Modrinth launcher"
       ],
+      "pr": 1031,
       "date": "2026-08-22",
       "released": false,
       "released_in": null,
