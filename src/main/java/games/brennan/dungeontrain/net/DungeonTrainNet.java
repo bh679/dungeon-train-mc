@@ -110,6 +110,11 @@ public final class DungeonTrainNet {
         // consent-gates the relay POST.
         registrar.playToServer(BookVotePacket.TYPE, BookVotePacket.STREAM_CODEC, BookVotePacket::handle);
 
+        // Book report: client asks for a community book to be pulled from the shared pool (the ⚠
+        // control on the same vote page); server re-validates the held stack, stamps
+        // dt_book_reported, and consent-gates the relay POST. Shared books only.
+        registrar.playToServer(BookReportPacket.TYPE, BookReportPacket.STREAM_CODEC, BookReportPacket::handle);
+
         // Lectern letters: server → client to open the book sign screen when a book & quill is
         // right-clicked onto a lectern and the feature is active; client → server when that screen is
         // closed WITHOUT signing, so the server leaves the unsigned book on the lectern as a draft.

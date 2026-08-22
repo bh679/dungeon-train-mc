@@ -7808,6 +7808,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "book-reader-reports",
+      "version": "0.609.0",
+      "type": "feat",
+      "title": "Report a community book",
+      "summary": "Community books written by other players now carry a report button beside the thumbs up and down. A thumbs down says a book was weak; reporting says it should not be in the pool at all. Enough reports, relative to how many people have read it, pull the book from circulation and put it in front of a human.",
+      "highlights": [
+        "A report icon sits under the thumbs on the train's question page, on player-written books only",
+        "It takes two clicks \u2014 the first arms it, the second sends \u2014 and there is no hotkey, so a slip cannot report a book",
+        "Reporting does not cast a vote; the two are separate verdicts",
+        "Reports are weighed against readers, so a well-read book is not pulled by a handful of complaints"
+      ],
+      "date": "2026-08-22",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
