@@ -1,0 +1,11 @@
+{
+  "id": "it_worked",
+  "title": "Ia Berkesan",
+  "author": "Brennan Hatton",
+  "generation": 0,
+  "weight": 1,
+  "variants": [
+    "Ia berkesan.\n\n%TARGET% sudah mati.\n\nKau tiada di situ.\nKau sudah pun mati.\n\nGerabak %CARRIAGE%.\nNombor tempat kau mati menjadi nombor tempat dia mati.\n\nIa menunggu %DAYS% hari untuk melakukannya.\n%GEAR%\n\nBeginilah ceritanya.\n\n%STORY%\n\nTidakkah itu terasa ganjil?\nSesuatu yang berwajahmu,\ndalam dunia yang tak pernah kau lihat,\nmenyelesaikan apa yang kau mulakan.\n\nKau tak perlu rasa senang tentangnya.\nKau tak perlu rasa bersalah tentangnya.\n\nKau cuma perlu tahu.\n\nSekarang kau tahu.",
+    "Selamat kembali ke Dungeon Train\nApa itu kereta api ini?\nKenapa kau di sini?\nApa yang kau tulis?\nSemuanya soalan yang baik\n\nKau menulis %TARGET%.\n\n%DAYS% hari kemudian, di gerabak %CARRIAGE%, kertas itu betul.\n\n%STORY%\n\nKertas selalunya tidak betul.\n\nAku ini kertas.\nAku jarang betul.\n\nYang itu betul.\n\nTidurlah lena."
+  ]
+}

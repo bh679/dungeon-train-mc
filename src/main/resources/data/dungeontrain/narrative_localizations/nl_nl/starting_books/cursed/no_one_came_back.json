@@ -1,0 +1,11 @@
+{
+  "id": "no_one_came_back",
+  "title": "Niemand terug",
+  "author": "Brennan Hatton",
+  "generation": 0,
+  "weight": 1,
+  "variants": [
+    "Je hebt een naam opgeschreven.\nWeet je het nog?\n\n%TARGET%.\nJe schreef %TARGET%.\n\nHet werkte.\nNiet zoals je het vroeg.\nZoals het altijd gaat.\n\nJe stierf bij wagon %CARRIAGE%.\nIets van jou bleef daar achter.\n%GEAR%\n\nHet wachtte %DAYS% dagen.\n\nToen liep %TARGET% wagon %CARRIAGE% binnen, in een wereld die jij nooit zult zien.\n\n%STORY%\n\nEn daar houdt het papier op.\n\nIk weet niet hoe het afliep.\nJij ook niet.\n\nDat is de afspraak die je maakte.",
+    "Welkom terug.\nWat is de trein?\nWaarom ben je hier?\nWat heb je gedaan?\n\nMaar één daarvan is veranderd.\n\n%TARGET% ontmoette jou bij wagon %CARRIAGE%.\n\nNiet jou.\nHet deel van jou dat achterbleef.\n\n%DAYS% dagen heeft het gewacht.\nGeduldig ding.\nHet had jouw gezicht.\n\n%STORY%\n\n.\n\nIk zou je vertellen wie er wegliep.\n\nNiemand heeft het opgeschreven."
+  ]
+}

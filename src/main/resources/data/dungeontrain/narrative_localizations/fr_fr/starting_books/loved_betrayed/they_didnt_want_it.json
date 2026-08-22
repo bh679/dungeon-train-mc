@@ -1,0 +1,11 @@
+{
+  "id": "they_didnt_want_it",
+  "title": "Ils n'en voulaient pas",
+  "author": "Brennan Hatton",
+  "generation": 0,
+  "weight": 1,
+  "variants": [
+    "Il l'a trouvé.\nIl s'est fait tuer.\n\n\nÇa, c'est la version courte.\n\nVoici la longue.\n\n%STORY%\n\n\nWagon %CARRIAGE%.\n\n%DAYS% jours d'attente pour une minute d'erreur, à peu près.\n\n\nIl n'a pas riposté tout de suite.\nIl ne le fait pas, au début.\n%GEAR%\n\n\nPeut-être qu'il ne savait pas.\n\nUne chose morte s'avance en portant un visage et tend quelque chose.\n\nLa plupart des gens frappent.\n\n\nJ'aimerais te dire qu'il savait et qu'il l'a fait quand même.\n\nC'est pire, et je ne sais pas si c'est vrai.\n\n\n%TARGET% garde ton écriture dans un coffre, quelque part.\n\nIl croit que c'est un trophée.",
+    "%TARGET% l'a tué.\n\n\nSache que ça a été rapide.\n\n%DAYS% jours d'attente, et puis pas très longtemps du tout.\n\n\n%STORY%\n\n\nJe repense sans cesse à l'instant d'avant.\n\nIl avait quelque chose dans les mains pour lui.\n%GEAR%\n\nIl le tenait encore.\n\n\nSur ce train, on reçoit peu de cadeaux.\n\nOn reçoit des embuscades.\n\nOn apprend à les distinguer en devinant.\n\n\nIl a mal deviné.\n\n\nToi, tu lui pardonnerais.\n\nC'est ça qui est agaçant, chez toi."
+  ]
+}

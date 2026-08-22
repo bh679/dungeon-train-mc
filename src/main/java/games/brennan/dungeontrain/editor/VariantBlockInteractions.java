@@ -115,6 +115,11 @@ public final class VariantBlockInteractions {
         }
         if (newVariant == null) return;
 
+        // Snapshot the sidecar before any of the four per-kind branches touches
+        // it, so this add joins the tick's undo step. One call covers all four:
+        // they differ in which sidecar they write, not in whether they write.
+        EditorEditRecorder.notePendingSidecar(player, "Variant add");
+
         // Part plot takes priority: if the clicked position falls inside a
         // part plot, route the shift-click into the part's own variants
         // sidecar. Part rows sit past the carriage row, so a carriage plot

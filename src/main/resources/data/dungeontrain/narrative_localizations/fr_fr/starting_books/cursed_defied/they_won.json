@@ -1,0 +1,11 @@
+{
+  "id": "they_won",
+  "title": "Ils ont gagné",
+  "author": "Brennan Hatton",
+  "generation": 0,
+  "weight": 1,
+  "variants": [
+    "Ils ont gagné.\n\n%TARGET% t'a tué.\nEncore, techniquement.\nTu étais déjà parti.\n\nWagon %CARRIAGE%.\n%DAYS% jours d'attente.\n\n%STORY%\n\nIls ont pris la note sur le corps.\nTon écriture.\nTon nom dessus.\n\nQuelque part, dans un monde que tu ne visiteras jamais, quelqu'un garde ta Note de Mort dans un coffre.\n\nComment tu le prends ?",
+    "À propos de ce nom que tu as écrit.\n\n%TARGET%.\n\nRespire toujours.\n\nTon écho l'a trouvé au wagon %CARRIAGE%, avec %DAYS% jours de retard, et a perdu.\n\n%GEAR%\nIl avait ton visage.\nIl se battait comme toi.\n\n%STORY%\n\nC'est peut-être là le problème.\n\n.\n\nMeilleure chance à la prochaine vie."
+  ]
+}

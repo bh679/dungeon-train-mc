@@ -52,6 +52,10 @@ public final class VariantBlockBreakHandler {
         if (existing == null) return;
 
         int removedCount = existing.size();
+        // The break itself is recorded by EditorEditRecorder; noting the sidecar
+        // here folds the variant entry this break removes into the same step, so
+        // one Ctrl+Z brings back both the block and its variant pool.
+        EditorEditRecorder.notePendingSidecar(player, "Break");
         plot.remove(local);
         try {
             plot.save();

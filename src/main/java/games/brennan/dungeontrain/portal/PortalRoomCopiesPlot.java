@@ -8,6 +8,9 @@ import net.minecraft.core.Vec3i;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Files;
+import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -166,6 +169,27 @@ public final class PortalRoomCopiesPlot implements BlockVariantPlot {
         if (games.brennan.dungeontrain.editor.EditorDevMode.isEnabled()) {
             variant.saveToSource(roomName);
         }
+    }
+
+    /**
+     * This plot's sidecar, serialised as {@link #save} would write it — the
+     * editor undo history's before/after snapshot for a copies edit.
+     */
+    @Override
+    public String snapshotJson() {
+        return variant.toJsonText();
+    }
+
+    /**
+     * Put the sidecar file back to {@code json} and drop the cached instance, so
+     * the next {@code loadFor} reads the restored document.
+     */
+    @Override
+    public void restoreJson(String json) throws IOException {
+        Path file = PortalRoomCopiesVariant.configPathFor(roomName);
+        Files.createDirectories(file.getParent());
+        Files.writeString(file, json, StandardCharsets.UTF_8);
+        PortalRoomCopiesVariant.invalidate(roomName);
     }
 
     /** The variant as it now stands — what the caller persists to the source tree in dev mode. */
