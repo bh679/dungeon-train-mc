@@ -10,8 +10,10 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
 /**
- * A square title-screen icon button carrying the Bilibili mark, blitted from
- * {@code textures/gui/bilibili.png} and scaled into the button's size. Unlike its neighbours
+ * A title-screen icon button carrying the Bilibili mark, blitted from
+ * {@code textures/gui/bilibili.png} and scaled into the button's size. The artwork's corners are
+ * rounded in its own alpha channel, so it reads as a rounded app tile alongside the Discord
+ * logomark below it rather than a hard square. Unlike its neighbours
  * {@link DiscordIconButton} and {@link PatreonIconButton}, whose marks are plotted with
  * {@code fill} calls, this one ships as real artwork — the logo has more shape in it than
  * rectangles reproduce honestly at any size.
@@ -39,6 +41,14 @@ public final class BilibiliIconButton extends Button {
      */
     private static final int HOVER_WASH = 0x33FFFFFF;
 
+    /**
+     * Corner nip for the hover wash, as a fraction of the button size — the same 8% {@link
+     * DiscordIconButton} uses. The artwork's own corners are rounded in its alpha channel, so a
+     * plain full-rect wash would paint a square halo into the transparency and undo the rounding
+     * the moment the mouse arrives. Two overlapping rects leave the corners alone.
+     */
+    private static final float WASH_INSET = 0.08F;
+
     public BilibiliIconButton(int x, int y, int size, Component narration, OnPress onPress) {
         super(x, y, size, size, narration, onPress, DEFAULT_NARRATION);
     }
@@ -48,7 +58,9 @@ public final class BilibiliIconButton extends Button {
         RenderSystem.enableBlend();
         g.blit(TEXTURE, getX(), getY(), getWidth(), getHeight(), 0.0F, 0.0F, TEX, TEX, TEX, TEX);
         if (isHoveredOrFocused()) {
-            g.fill(getX(), getY(), getX() + getWidth(), getY() + getHeight(), HOVER_WASH);
+            int inset = Math.max(1, Math.round(Math.min(getWidth(), getHeight()) * WASH_INSET));
+            g.fill(getX() + inset, getY(), getX() + getWidth() - inset, getY() + getHeight(), HOVER_WASH);
+            g.fill(getX(), getY() + inset, getX() + getWidth(), getY() + getHeight() - inset, HOVER_WASH);
         }
     }
 }
