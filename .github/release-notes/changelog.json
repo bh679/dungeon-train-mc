@@ -7805,9 +7805,9 @@
       ],
       "pr": 1033,
       "date": "2026-08-22",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.612.0",
+      "released_at": "2026-08-22T06:52:30Z"
     },
     {
       "id": "book-reader-reports",
@@ -7822,9 +7822,9 @@
         "Reports are weighed against readers, so a well-read book is not pulled by a handful of complaints"
       ],
       "date": "2026-08-22",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.612.0",
+      "released_at": "2026-08-22T06:52:30Z"
     },
     {
       "id": "endless-open-copies-control",
@@ -7835,9 +7835,9 @@
       "highlights": [],
       "pr": 1036,
       "date": "2026-08-22",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.612.0",
+      "released_at": "2026-08-22T06:52:30Z"
     },
     {
       "id": "worldedit-modpack-optional",
@@ -7851,9 +7851,9 @@
       ],
       "pr": 1031,
       "date": "2026-08-22",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.612.0",
+      "released_at": "2026-08-22T06:52:30Z"
     },
     {
       "id": "creative-mod-free-play-gate",
@@ -7865,9 +7865,9 @@
         "Ordinary building with Effortless Building is still normal play"
       ],
       "date": "2026-08-22",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.612.0",
+      "released_at": "2026-08-22T06:52:30Z"
     }
   ]
 }
