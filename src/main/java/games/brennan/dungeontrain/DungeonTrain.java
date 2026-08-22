@@ -525,15 +525,16 @@ public class DungeonTrain {
             }
         }
 
-        // Value DT narrative books in Trade Everything's villager "Trade Anything"
-        // slot (flat 6-payout-items-per-book). TE is bundled (jarJar), but tolerate
-        // a build predating the valuation API: degrade to default valuation.
+        // Price DT-relevant items in Trade Everything's villager "Trade Anything"
+        // slot (narrative books, ominous banners, edible backpacks). TE is bundled
+        // (jarJar), but tolerate a build predating the valuation API: degrade to
+        // default valuation.
         if (ModList.get().isLoaded("tradeeverything")) {
             try {
                 TradeEverythingBridge.install();
             } catch (Throwable t) {
                 LOGGER.warn("TradeEverything present but valuation API unavailable ({}); "
-                        + "narrative-book trade value defaults apply.", t.toString());
+                        + "default trade values apply.", t.toString());
             }
         }
 
