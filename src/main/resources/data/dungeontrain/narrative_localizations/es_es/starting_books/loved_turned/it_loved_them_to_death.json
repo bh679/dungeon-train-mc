@@ -1,0 +1,11 @@
+{
+  "id": "it_loved_them_to_death",
+  "title": "Amó hasta matar",
+  "author": "Brennan Hatton",
+  "generation": 0,
+  "weight": 1,
+  "variants": [
+    "Esta cuesta escribirla.\n\n\n%TARGET% no se marchó de allí.\n\nTu eco es el motivo.\n\n\nAntes de que decidas qué significa eso:\n\nno lo empezó él.\n\nNo empieza cosas. No es eso lo que enviaste.\n\n\n%STORY%\n\n\nPasó en el vagón %CARRIAGE%.\n%DAYS% días quieto en el sitio.\n%GEAR%\n\nSe defendió.\nSe le daba muy bien.\nTú te encargaste de eso.\n\n\nEsa es la parte a la que no dejo de dar vueltas.\n\nEnviaste algo que lo quería, y lo enviaste armado.\n\n\nLe habría dado todo lo que tenía.\n\nGolpearon primero.\n\nSeguía siendo tuyo.",
+    "Acabó mal.\n\nNo como acaba mal la otra clase.\n\nPeor, quizá.\n\n\n%TARGET% lo atacó.\nÉl lo mató.\n\nLas dos cosas son ciertas y ninguna es el asunto entero.\n\n\n%STORY%\n\n\n%DAYS% días esperó en el vagón %CARRIAGE% para ser amable con alguien.\n%GEAR%\n\n\nUna cosa puede quererte y aun así tener manos.\n\n\nNadie ganó.\n\nEl tren no guarda una página para eso, así que guarda esta.\n\n\nPor si ayuda:\n\nno estaba enfadado.\n\nNi siquiera al final."
+  ]
+}

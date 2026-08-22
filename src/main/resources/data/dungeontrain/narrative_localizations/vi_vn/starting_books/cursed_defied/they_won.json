@@ -1,0 +1,11 @@
+{
+  "id": "they_won",
+  "title": "Họ Đã Thắng",
+  "author": "Brennan Hatton",
+  "generation": 0,
+  "weight": 1,
+  "variants": [
+    "Họ đã thắng.\n\n%TARGET% đã giết bạn.\nLần nữa, về mặt kỹ thuật.\nBạn thì đã đi từ trước rồi.\n\nToa %CARRIAGE%.\n%DAYS% ngày chờ đợi.\n\n%STORY%\n\nHọ lấy tờ giấy khỏi cái xác.\nNét chữ của bạn.\nTên bạn trên đó.\n\nỞ đâu đó trong một thế giới bạn sẽ chẳng bao giờ ghé tới, có người đang cất Tử Thư của bạn trong một cái rương.\n\nThấy thế nào?",
+    "Về cái tên bạn đã viết.\n\n%TARGET%.\n\nVẫn còn thở.\n\nTiếng vọng của bạn tìm ra họ ở toa %CARRIAGE%, muộn %DAYS% ngày, và thua.\n\n%GEAR%\nNó mang khuôn mặt bạn.\nNó đánh như bạn.\n\n%STORY%\n\nPhần cuối đó có lẽ mới là vấn đề.\n\n.\n\nChúc may mắn hơn ở kiếp sau."
+  ]
+}

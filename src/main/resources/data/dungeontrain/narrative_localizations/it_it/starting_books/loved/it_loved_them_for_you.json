@@ -1,0 +1,11 @@
+{
+  "id": "it_loved_them_for_you",
+  "title": "Li ha amati per te",
+  "author": "Brennan Hatton",
+  "generation": 0,
+  "weight": 1,
+  "variants": [
+    "Ti conviene sederti.\n\nNon perché sia una brutta notizia.\n\n\n%TARGET% è vivo.\n\nTu non c'entri niente.\n\nOppure c'entri tutto, a seconda di come conti.\n\n\nSei caduto al vagone %CARRIAGE%.\n%DAYS% giorni fa, più o meno.\n\nQualcosa è rimasto indietro.\n%GEAR%\n\n\nL'ha trovato.\n\n%STORY%\n\n\nNon gli ha chiesto niente.\n\nGli ha consegnato quello che aveva e si è messo tra lui e il resto del vagone.\n\n\nQuello eri tu.\nIn un certo senso.\n\nLa parte che non ha bisogno di essere viva per mantenere una promessa.\n\n\nUn giorno lo racconterà a qualcuno.\n\nSbaglierà il tuo nome.",
+    "Certe cose non ti è dato vederle.\n\nQuesta è una di quelle.\n\n\n%TARGET% è arrivato al vagone %CARRIAGE% in un mondo che non è questo.\n\nQualcosa che portava la tua faccia era già lì ad aspettare.\n\n\n%DAYS% giorni è rimasto fermo.\n%GEAR%\n\nNiente di tutto ciò serviva a combattere.\n\n\n%STORY%\n\n\nEcco quello che posso dirti.\n\nLo conosceva.\nNon come si conosce qualcuno.\nCome una stanza conosce il sole.\n\n\nE poi la carta si ferma.\n\nNon so se abbia capito. Non so se qualcuno gli abbia detto di chi fosse quella faccia.\n\n\nHai amato qualcuno fin dentro il buio.\n\nIl buio se l'è portato."
+  ]
+}
