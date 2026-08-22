@@ -465,12 +465,8 @@ public final class EditorCommand {
                     .then(Commands.literal("block")
                         .then(Commands.literal("held")
                             .executes(ctx -> runPortalRoomCopiesBlockHeld(ctx.getSource())))
-                        .then(Commands.literal("clear")
-                            .executes(ctx -> runPortalRoomCopiesBlockClear(ctx.getSource())))
-                        .then(Commands.literal("remove")
-                            .then(Commands.argument("index", IntegerArgumentType.integer(0))
-                                .executes(ctx -> runPortalRoomCopiesBlockRemove(ctx.getSource(),
-                                    IntegerArgumentType.getInteger(ctx, "index")))))
+                        .then(Commands.literal("edit")
+                            .executes(ctx -> runPortalRoomCopiesBlockEdit(ctx.getSource())))
                         .then(Commands.argument("block", StringArgumentType.greedyString())
                             .executes(ctx -> runPortalRoomCopiesBlock(ctx.getSource(),
                                 StringArgumentType.getString(ctx, "block")))))
@@ -5942,13 +5938,12 @@ public final class EditorCommand {
     }
 
     /**
-     * {@code /dt editor portals copies block held} — add what the author is holding to Single's
-     * palette.
+     * {@code /dt editor portals copies block held} — set Single's block to what the author is
+     * holding.
      *
-     * <p>Two things are worth holding. A <b>variant clipboard</b>, copied from a cell by the Block
-     * Variant menu, brings that cell's whole candidate list over in one gesture — which is the point
-     * of the setting: the endless plain rolls a variant the author built, not a block they named. A
-     * plain <b>block</b> is the one-entry case of the same thing.</p>
+     * <p>Two things are worth holding. A plain <b>block</b> is the ordinary case. A <b>variant
+     * clipboard</b>, copied from a cell by the Block Variant menu, brings that cell's whole
+     * candidate list over in one gesture — the same value the Edit button authors in place.</p>
      *
      * <p>The held item rather than a typed id because this is a picking gesture, and the author is
      * already standing in the plot with their palette in their hotbar. The menu is opened by a key
@@ -5973,19 +5968,21 @@ public final class EditorCommand {
                 source.sendFailure(Component.literal("That clipboard is empty."));
                 return 0;
             }
-            return addToPortalRoomCopiesPalette(source, name, states);
+            return savePortalRoomCopiesVariant(source, name,
+                games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.of(states));
         }
         if (held.getItem() instanceof BlockItem blockItem) {
-            return addToPortalRoomCopiesPalette(source, name, java.util.List.of(
-                new games.brennan.dungeontrain.editor.VariantState(
-                    blockItem.getBlock().defaultBlockState(), null)));
+            return savePortalRoomCopiesVariant(source, name,
+                games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.of(java.util.List.of(
+                    new games.brennan.dungeontrain.editor.VariantState(
+                        blockItem.getBlock().defaultBlockState(), null))));
         }
         source.sendFailure(Component.literal(
             "Hold a block, or a variant copied from a cell, then press this again."));
         return 0;
     }
 
-    /** {@code /dt editor portals copies block <id>} — add one named block, for a script. */
+    /** {@code /dt editor portals copies block <id>} — set the block by name, for a script. */
     private static int runPortalRoomCopiesBlock(CommandSourceStack source, String raw) {
         String name = portalRoomPlotUnderPlayer(source);
         if (name == null) return 0;
@@ -5997,70 +5994,58 @@ public final class EditorCommand {
                 "'" + raw + "' is not a block this world knows about."));
             return 0;
         }
-        return addToPortalRoomCopiesPalette(source, name, java.util.List.of(
-            new games.brennan.dungeontrain.editor.VariantState(state.get(), null)));
-    }
-
-    /** {@code /dt editor portals copies block remove <index>} — drop one candidate, by icon. */
-    private static int runPortalRoomCopiesBlockRemove(CommandSourceStack source, int index) {
-        String name = portalRoomPlotUnderPlayer(source);
-        if (name == null) return 0;
-        games.brennan.dungeontrain.portal.PortalRoomCopiesPalette palette =
-            games.brennan.dungeontrain.portal.PortalRoomCopiesPalette.forRoom(
-                name, games.brennan.dungeontrain.portal.PortalRoomSettings.of(name).copies());
-        return savePortalRoomCopiesPalette(source, name, palette.without(index));
-    }
-
-    /** {@code /dt editor portals copies block clear} — empty the palette. */
-    private static int runPortalRoomCopiesBlockClear(CommandSourceStack source) {
-        String name = portalRoomPlotUnderPlayer(source);
-        if (name == null) return 0;
-        return savePortalRoomCopiesPalette(source, name,
-            games.brennan.dungeontrain.portal.PortalRoomCopiesPalette.empty());
+        return savePortalRoomCopiesVariant(source, name,
+            games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.of(java.util.List.of(
+                new games.brennan.dungeontrain.editor.VariantState(state.get(), null))));
     }
 
     /**
-     * Append {@code added} to the room's palette and persist it.
+     * {@code /dt editor portals copies block edit} — open the Block Variant menu on this room's
+     * Copies block.
      *
-     * <p>Read through {@code forRoom} rather than straight off disk, so the first block added to a
-     * room that has only ever had the tag's one-block form starts from that block rather than
-     * silently discarding it.</p>
+     * <p>The same menu that authors every other cell in the game, pointed at a one-cell plot
+     * ({@code PortalRoomCopiesPlot}). Add, weights, rotation modes and Copy all work there, so
+     * turning the one block into a variant needs no authoring surface of its own.</p>
      */
-    private static int addToPortalRoomCopiesPalette(
-        CommandSourceStack source, String name,
-        java.util.List<games.brennan.dungeontrain.editor.VariantState> added
-    ) {
-        games.brennan.dungeontrain.portal.PortalRoomCopiesPalette current =
-            games.brennan.dungeontrain.portal.PortalRoomCopiesPalette.forRoom(
-                name, games.brennan.dungeontrain.portal.PortalRoomSettings.of(name).copies());
-        games.brennan.dungeontrain.portal.PortalRoomCopiesPalette next = current.plus(added);
-        if (next.size() == current.size()) {
-            source.sendFailure(Component.literal(
-                "Nothing was added — the palette is full ("
-                    + games.brennan.dungeontrain.portal.PortalRoomCopiesPalette.MAX_ENTRIES
-                    + ") or those entries cannot floor a room."));
+    private static int runPortalRoomCopiesBlockEdit(CommandSourceStack source) {
+        String name = portalRoomPlotUnderPlayer(source);
+        if (name == null) return 0;
+        ServerPlayer player = source.getPlayer();
+        if (player == null) {
+            source.sendFailure(Component.literal("Only a player can open the variant menu."));
             return 0;
         }
-        return savePortalRoomCopiesPalette(source, name, next);
+        games.brennan.dungeontrain.editor.BlockVariantMenuController.openForCopies(player, name);
+        return 1;
     }
 
-    private static int savePortalRoomCopiesPalette(
+    /**
+     * Store {@code variant} as what this room's copies repeat.
+     *
+     * <p>Replaces rather than appends: the value is one block, and the Block Variant menu is what
+     * turns it into several. Two writers, one whole-value handoff each.</p>
+     */
+    private static int savePortalRoomCopiesVariant(
         CommandSourceStack source, String name,
-        games.brennan.dungeontrain.portal.PortalRoomCopiesPalette palette
+        games.brennan.dungeontrain.portal.PortalRoomCopiesVariant variant
     ) {
-        try {
-            palette.save(name);
-            if (EditorDevMode.isEnabled()) palette.saveToSource(name);
-        } catch (IOException e) {
+        if (variant.isEmpty()) {
             source.sendFailure(Component.literal(
-                "Could not save the copies palette for portal room '" + name + "': " + e.getMessage()));
+                "That cannot floor a room — a mob or an empty-placeholder entry would leave a hole."));
             return 0;
         }
-        games.brennan.dungeontrain.portal.PortalRoomCopiesPalette.invalidate(name);
+        try {
+            variant.save(name);
+            if (EditorDevMode.isEnabled()) variant.saveToSource(name);
+        } catch (IOException e) {
+            source.sendFailure(Component.literal(
+                "Could not save the copies block for portal room '" + name + "': " + e.getMessage()));
+            return 0;
+        }
+        games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.invalidate(name);
         source.sendSuccess(() -> Component.literal(
-            "Editor: portal room '" + name + "' copies palette is now "
-                + (palette.isEmpty() ? "empty" : String.join(", ", palette.blockIds())))
-            .withStyle(ChatFormatting.GREEN), true);
+            "Editor: portal room '" + name + "' copies block is now "
+                + String.join(", ", variant.blockIds())).withStyle(ChatFormatting.GREEN), true);
         return 1;
     }
 
@@ -6157,7 +6142,7 @@ public final class EditorCommand {
             ? ", copies: " + settings.copies().displayName()
                 + (settings.effectiveCopies().repeatsOneBlock()
                     ? " (" + String.join(", ",
-                        games.brennan.dungeontrain.portal.PortalRoomCopiesPalette
+                        games.brennan.dungeontrain.portal.PortalRoomCopiesVariant
                             .forRoom(name, settings.copies()).blockIds()) + ")"
                     : "")
             : "";

@@ -78,7 +78,7 @@ public final class PortalRoomSinglePlanes {
      * @param variantIndex the copy's identity, {@code PortalStructure.variantIndexFor}
      */
     public static void write(ServerLevel level, BlockPos origin, Vec3i size,
-                             PortalRoomCopiesPalette palette, PortalCorridorMask clearMask,
+                             PortalRoomCopiesVariant palette, PortalCorridorMask clearMask,
                              boolean relight, long worldSeed, int variantIndex) {
         if (palette == null || palette.isEmpty()) return;
         int x0 = origin.getX();
@@ -113,7 +113,7 @@ public final class PortalRoomSinglePlanes {
      * means — and a world position would make every tile's mix differ regardless of the setting.</p>
      */
     private static void setPlaneBlock(ServerLevel level, BlockPos pos, BlockPos origin,
-                                      PortalRoomCopiesPalette palette, PortalCorridorMask clearMask,
+                                      PortalRoomCopiesVariant palette, PortalCorridorMask clearMask,
                                       boolean relight, long worldSeed, int variantIndex) {
         if (clearMask.covers(pos)) return;
         BlockPos local = pos.subtract(origin);

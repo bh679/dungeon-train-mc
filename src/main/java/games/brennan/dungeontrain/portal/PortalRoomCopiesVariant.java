@@ -30,15 +30,15 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * The block variant an {@link PortalRoomCopies.Kind#SINGLE} room repeats — a list of candidates
- * with the weights, rotations and block-entity payloads any other variant carries.
+ * The block variant an {@link PortalRoomCopies.Kind#SINGLE} room repeats — one cell's worth of
+ * candidates, with the weights, rotations and block-entity payloads any other variant carries.
  *
- * <h2>Why it is a variant and not a block</h2>
- * <p>Because a variant is what an author already has in their hand. The Block Variant menu's Copy
- * button puts a cell's whole candidate list on a {@code VariantClipboardItem}; pointing Single at
- * that same shape means the endless plain rolls the way every other cell in the game rolls, rather
- * than through a second, flatter mechanism sitting beside it. A plain held block is simply the
- * one-entry case.</p>
+ * <h2>One block, which may be a variant</h2>
+ * <p>The ordinary case is one block, set from whatever the author is holding. When that block
+ * should vary, the same Block Variant menu that authors every other cell in the game is opened on
+ * it — see {@link PortalRoomCopiesPlot}, which presents this file as a one-cell plot so the menu
+ * needs no special case for it. That is why the value is a list rather than a state: a variant
+ * <i>is</i> a candidate list, and one block is simply the one-entry case of it.</p>
  *
  * <h2>Why it is a sidecar and not part of the mode tag</h2>
  * <p>The tag is a capped {@code writeUtf} on two editor packets, and a candidate list carries NBT.
@@ -58,7 +58,7 @@ import java.util.Map;
  * walked back to is the cell you left, an Exact room's copies agree with each other, and a Dynamic
  * room's differ — all of it inherited rather than restated.</p>
  */
-public final class PortalRoomCopiesPalette {
+public final class PortalRoomCopiesVariant {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
@@ -69,37 +69,37 @@ public final class PortalRoomCopiesPalette {
     public static final String COPIES_EXT = ".copies.json";
 
     /**
-     * Most candidates a palette will hold.
+     * Most candidates this file will hold.
      *
-     * <p>A bound on the file rather than a judgement about palettes. The block ids are synced to the
-     * client to draw the row's icons, and an unbounded list would be an unbounded packet; past a
-     * dozen the icon strip has long since overflowed into its {@code +N} anyway.</p>
+     * <p>A bound on the file rather than a judgement about variants, and deliberately the same
+     * number {@code BlockVariantMenuController.MAX_ENTRIES} allows per cell — the menu is what
+     * authors this, so a file it could not have written is a file that was hand-edited.</p>
      */
-    public static final int MAX_ENTRIES = 16;
+    public static final int MAX_ENTRIES = 32;
 
-    /** Session cache keyed on room name. Invalidated on save and on editor enter. */
-    private static final Map<String, PortalRoomCopiesPalette> CACHE = new HashMap<>();
+    /** Session cache keyed on room name. Invalidated on save. */
+    private static final Map<String, PortalRoomCopiesVariant> CACHE = new HashMap<>();
 
     private final List<VariantState> states;
 
-    private PortalRoomCopiesPalette(List<VariantState> states) {
+    private PortalRoomCopiesVariant(List<VariantState> states) {
         this.states = List.copyOf(states);
     }
 
-    /** The palette a room with no sidecar has: nothing to repeat. */
-    public static PortalRoomCopiesPalette empty() {
-        return new PortalRoomCopiesPalette(List.of());
+    /** The variant a room with no sidecar has: nothing to repeat. */
+    public static PortalRoomCopiesVariant empty() {
+        return new PortalRoomCopiesVariant(List.of());
     }
 
     /**
-     * A palette holding the usable entries of {@code states}, capped at {@link #MAX_ENTRIES}.
+     * A variant holding the usable entries of {@code states}, capped at {@link #MAX_ENTRIES}.
      *
      * <p><b>Mob and empty-placeholder entries are dropped.</b> Both resolve to air at stamp time,
      * and air in a floor plane is a hole in the plain that drops a player out of the world — the one
      * outcome this whole feature must never produce. A clipboard copied from a cell that mixes
      * blocks with a mob entry is still worth accepting; it just contributes its blocks.</p>
      */
-    public static PortalRoomCopiesPalette of(List<VariantState> states) {
+    public static PortalRoomCopiesVariant of(List<VariantState> states) {
         if (states == null || states.isEmpty()) return empty();
         List<VariantState> usable = new ArrayList<>(Math.min(states.size(), MAX_ENTRIES));
         for (VariantState s : states) {
@@ -108,7 +108,7 @@ public final class PortalRoomCopiesPalette {
             if (CarriageVariantBlocks.isEmptyPlaceholder(s.state())) continue;
             usable.add(s);
         }
-        return usable.isEmpty() ? empty() : new PortalRoomCopiesPalette(usable);
+        return usable.isEmpty() ? empty() : new PortalRoomCopiesVariant(usable);
     }
 
     /** The candidates, in the order they were added. Never null; possibly empty. */
@@ -128,7 +128,8 @@ public final class PortalRoomCopiesPalette {
      * The block ids of every candidate, for the editor row's icons.
      *
      * <p>Ids and not states: the row draws an inventory icon, which is a property of the block, and
-     * sending the whole state would put block-entity NBT on the wire for a picture.</p>
+     * sending the whole state would put block-entity NBT on the wire for a picture. The row itself
+     * shows only {@link #iconBlockId}; the rest is for the status line and for tests.</p>
      */
     public List<String> blockIds() {
         List<String> out = new ArrayList<>(states.size());
@@ -140,23 +141,22 @@ public final class PortalRoomCopiesPalette {
 
     // ---------- mutation, by copy ----------
 
-    /** This palette with {@code added} appended, up to {@link #MAX_ENTRIES}. */
-    public PortalRoomCopiesPalette plus(List<VariantState> added) {
-        if (added == null || added.isEmpty()) return this;
-        List<VariantState> out = new ArrayList<>(states);
-        for (VariantState s : added) {
-            if (out.size() >= MAX_ENTRIES) break;
-            out.add(s);
-        }
-        return new PortalRoomCopiesPalette(out);
+    /**
+     * This variant's candidates replaced wholesale.
+     *
+     * <p>Replace and not append, because there are exactly two things that write here and both hand
+     * over the whole list: the row's held-block gesture, which sets one block, and the Block Variant
+     * menu through {@link PortalRoomCopiesPlot}, which owns add and remove itself. A third
+     * append-shaped API would be a second way to author the same value.</p>
+     */
+    public PortalRoomCopiesVariant withStates(List<VariantState> newStates) {
+        return of(newStates);
     }
 
-    /** This palette without the candidate at {@code index}; unchanged when the index is not one. */
-    public PortalRoomCopiesPalette without(int index) {
-        if (index < 0 || index >= states.size()) return this;
-        List<VariantState> out = new ArrayList<>(states);
-        out.remove(index);
-        return new PortalRoomCopiesPalette(out);
+    /** The one block the editor row draws, or empty when nothing is authored. */
+    public String iconBlockId() {
+        List<String> ids = blockIds();
+        return ids.isEmpty() ? "" : ids.get(0);
     }
 
     // ---------- rolling ----------
@@ -196,31 +196,31 @@ public final class PortalRoomCopiesPalette {
     }
 
     /** Load {@code roomName}'s palette — config first, then bundled, then empty. */
-    public static synchronized PortalRoomCopiesPalette loadFor(String roomName) {
-        PortalRoomCopiesPalette cached = CACHE.get(roomName);
+    public static synchronized PortalRoomCopiesVariant loadFor(String roomName) {
+        PortalRoomCopiesVariant cached = CACHE.get(roomName);
         if (cached != null) return cached;
-        PortalRoomCopiesPalette loaded = loadFromDisk(roomName);
+        PortalRoomCopiesVariant loaded = loadFromDisk(roomName);
         CACHE.put(roomName, loaded);
         return loaded;
     }
 
-    private static PortalRoomCopiesPalette loadFromDisk(String roomName) {
+    private static PortalRoomCopiesVariant loadFromDisk(String roomName) {
         Path cfg = UserContentPaths.findFile(TrackKind.PORTAL_ROOM.subdir(), roomName + COPIES_EXT);
         if (cfg != null) {
             try (Reader r = Files.newBufferedReader(cfg, StandardCharsets.UTF_8)) {
                 return parse(r, roomName, "config " + cfg);
             } catch (IOException e) {
-                LOGGER.error("[DungeonTrain] Failed to read copies palette {}: {}", cfg, e.toString());
+                LOGGER.error("[DungeonTrain] Failed to read copies variant {}: {}", cfg, e.toString());
             }
         }
         String resource = TrackKind.PORTAL_ROOM.bundledResourcePrefix() + roomName + COPIES_EXT;
-        try (InputStream in = PortalRoomCopiesPalette.class.getResourceAsStream(resource)) {
+        try (InputStream in = PortalRoomCopiesVariant.class.getResourceAsStream(resource)) {
             if (in == null) return empty();
             try (Reader r = new InputStreamReader(in, StandardCharsets.UTF_8)) {
                 return parse(r, roomName, "bundled " + resource);
             }
         } catch (IOException e) {
-            LOGGER.error("[DungeonTrain] Failed to read bundled copies palette {}: {}",
+            LOGGER.error("[DungeonTrain] Failed to read bundled copies variant {}: {}",
                 resource, e.toString());
             return empty();
         }
@@ -230,16 +230,16 @@ public final class PortalRoomCopiesPalette {
      * Read a palette file. Total, like every other sidecar reader here: anything malformed logs and
      * reads as empty, which stamps the room normally rather than failing the pair's stamp.
      */
-    static PortalRoomCopiesPalette parse(Reader reader, String roomName, String origin) {
+    static PortalRoomCopiesVariant parse(Reader reader, String roomName, String origin) {
         JsonElement root = JsonParser.parseReader(reader);
         if (!root.isJsonObject()) {
-            LOGGER.warn("[DungeonTrain] Copies palette {} ({}) is not a JSON object — ignoring.",
+            LOGGER.warn("[DungeonTrain] Copies variant {} ({}) is not a JSON object — ignoring.",
                 roomName, origin);
             return empty();
         }
         JsonObject obj = root.getAsJsonObject();
         if (obj.has("schemaVersion") && obj.get("schemaVersion").getAsInt() > CURRENT_SCHEMA_VERSION) {
-            LOGGER.warn("[DungeonTrain] Copies palette {} ({}) schemaVersion {} (newer than {}) — best-effort parse.",
+            LOGGER.warn("[DungeonTrain] Copies variant {} ({}) schemaVersion {} (newer than {}) — best-effort parse.",
                 roomName, origin, obj.get("schemaVersion").getAsInt(), CURRENT_SCHEMA_VERSION);
         }
         if (!obj.has("blocks")) return empty();
@@ -248,28 +248,28 @@ public final class PortalRoomCopiesPalette {
         // BlockPos.ZERO as the context position: a palette has no cell to belong to, and the
         // position is only ever used in the parser's warning text.
         CarriageVariantBlocks.ParsedCell cell = CarriageVariantBlocks.parseCellValue(
-            obj.get("blocks"), blocks, "copies palette " + roomName, BlockPos.ZERO);
+            obj.get("blocks"), blocks, "copies variant " + roomName, BlockPos.ZERO);
         if (cell == null) return empty();
         return of(cell.states());
     }
 
     /**
-     * The palette a room actually repeats: its sidecar when it has one, and the single block named
+     * The variant a room actually repeats: its sidecar when it has one, and the single block named
      * in its {@code mode} tag when it does not.
      *
-     * <p>The tag's {@code single:<blockid>} form is how Single shipped before palettes existed, and
-     * it is still what the editor writes for a one-block choice — a whole sidecar file for one id
-     * would be a file per room to say what the tag already says. So the two coexist by rank rather
+     * <p>The tag's {@code single:<blockid>} form is how Single first shipped, and
+     * it is still what the tag carries for a room that has never been given a variant. The two
+     * coexist by rank rather
      * than by migration: a room that has been given a real variant has a sidecar and uses it, and
      * every other room falls back to its tag. Nothing authored either way needs rewriting.</p>
      */
-    public static PortalRoomCopiesPalette forRoom(String roomName, PortalRoomCopies copies) {
-        PortalRoomCopiesPalette sidecar = loadFor(roomName);
+    public static PortalRoomCopiesVariant forRoom(String roomName, PortalRoomCopies copies) {
+        PortalRoomCopiesVariant sidecar = loadFor(roomName);
         if (!sidecar.isEmpty()) return sidecar;
         if (copies == null || !copies.repeatsOneBlock()) return empty();
         return PortalRoomSinglePlanes.stateFor(copies.blockId())
             .map(state -> of(List.of(new VariantState(state, null))))
-            .orElseGet(PortalRoomCopiesPalette::empty);
+            .orElseGet(PortalRoomCopiesVariant::empty);
     }
 
     /** Persist to the user config directory and refresh the session cache. */
@@ -295,7 +295,7 @@ public final class PortalRoomCopiesPalette {
         }
         if (states.isEmpty()) {
             Files.deleteIfExists(file);
-            LOGGER.info("[DungeonTrain] Cleared bundled copies palette for {} (no entries)", roomName);
+            LOGGER.info("[DungeonTrain] Cleared bundled copies variant for {} (no entries)", roomName);
             return;
         }
         Files.createDirectories(file.getParent());

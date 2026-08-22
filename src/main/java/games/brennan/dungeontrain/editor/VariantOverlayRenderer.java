@@ -693,9 +693,9 @@ public final class VariantOverlayRenderer {
                 .append('@').append(l.roomLength()).append('x').append(l.roomHeight())
                 .append('x').append(l.roomWidth())
                 .append('/').append(l.roomMode())
-                // The palette too, or adding a block would not re-push and the row would keep
-                // showing the icons it had.
-                .append('/').append(String.join(",", l.copiesBlocks()))
+                // The block too, or setting one would not re-push and the row would keep showing
+                // the icon it had.
+                .append('/').append(l.copiesBlock())
                 .append(l.inPlot() ? "*" : "").append(';');
         }
         String snapshotKey = keyBuf.toString();
@@ -716,7 +716,7 @@ public final class VariantOverlayRenderer {
                 l.category(), l.modelId(), l.modelName(),
                 l.inPlot(), l.isUser(), l.isImported(),
                 l.roomLength(), l.roomWidth(), l.roomHeight(), l.roomMode(),
-                l.copiesBlocks()));
+                l.copiesBlock()));
         }
         EditorPlotLabels.Label first = labels.get(0);
         LOGGER.info("[DungeonTrain] EditorPlotLabels: send {} entries (category {}, first '{}' weight={} @ {}) to {}",

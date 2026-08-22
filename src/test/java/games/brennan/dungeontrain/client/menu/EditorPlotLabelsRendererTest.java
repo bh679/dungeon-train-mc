@@ -38,11 +38,11 @@ class EditorPlotLabelsRendererTest {
             inPlot, false, false, length, width, height, mode);
     }
 
-    /** A portal-room entry whose Copies palette holds {@code blocks}. */
-    private static EditorPlotLabelsPacket.Entry entryWithBlocks(String mode, String... blocks) {
+    /** A portal-room entry whose Copies block is {@code block}. */
+    private static EditorPlotLabelsPacket.Entry entryWithBlock(String mode, String block) {
         return new EditorPlotLabelsPacket.Entry(
             POS, "default", 1, "PORTALS", "portal_room", "default",
-            true, false, false, 11, 13, 7, mode, java.util.List.of(blocks));
+            true, false, false, 11, 13, 7, mode, block);
     }
 
     private static EditorPlotLabelsPacket.Entry portalInPlot() {
@@ -395,18 +395,24 @@ class EditorPlotLabelsRendererTest {
     }
 
     @Test
-    @DisplayName("The Block row is one button, and the rows around it still hit-test where they were")
-    void copiesBlockRowIsOneButton() {
+    @DisplayName("The Block row splits into a value half and an Edit half")
+    void copiesBlockRowSplitsIntoValueAndEdit() {
         EditorPlotLabelsPacket.Entry e =
-            entry("PORTALS", true, 1, 11, 13, 7, "endless_open/single:minecraft:sandstone");
-        RowKind[] rows = EditorPlotLabelsRenderer.rows(e);
+            entryWithBlock("endless_open/single", "minecraft:sandstone");
         double halfW = EditorPlotLabelsRenderer.MIN_HALF_W;
-        double y = rowCentreY(e, indexOf(rows, RowKind.COPIES_BLOCK));
 
-        for (double x : new double[]{-halfW + 0.05, 0.0, halfW - 0.05}) {
-            assertEquals(CellKind.COPIES_BLOCK_HELD, EditorPlotLabelsRenderer.cellAt(e, halfW, x, y));
-        }
-        // The row it was inserted under, and the one it was inserted above, both still land right.
+        // Left of the split sets the block from the hand; right of it opens the variant menu.
+        assertFalse(EditorPlotLabelsRenderer.copiesBlockHitIsEdit(halfW, -halfW + 0.05));
+        assertTrue(EditorPlotLabelsRenderer.copiesBlockHitIsEdit(halfW, halfW - 0.05));
+
+        RowKind[] rows = EditorPlotLabelsRenderer.rows(e);
+        double y = rowCentreY(e, indexOf(rows, RowKind.COPIES_BLOCK));
+        assertEquals(CellKind.COPIES_BLOCK_HELD,
+            EditorPlotLabelsRenderer.cellAt(e, halfW, -halfW + 0.05, y));
+        assertEquals(CellKind.COPIES_BLOCK_EDIT,
+            EditorPlotLabelsRenderer.cellAt(e, halfW, halfW - 0.05, y));
+
+        // And the rows either side of it still land where they did.
         assertEquals(CellKind.COPIES_CYCLE, EditorPlotLabelsRenderer.cellAt(e, halfW, 0.0,
             rowCentreY(e, indexOf(rows, RowKind.COPIES))));
         assertEquals(CellKind.ROOM_CONTENTS_CYCLE, EditorPlotLabelsRenderer.cellAt(e, halfW, 0.0,
@@ -414,41 +420,12 @@ class EditorPlotLabelsRendererTest {
     }
 
     @Test
-    @DisplayName("The Blocks strip hit-tests per icon, and the rest of the row is the add target")
-    void copiesBlockStripHitTestsPerIcon() {
-        EditorPlotLabelsPacket.Entry e = entryWithBlocks(
-            "endless_open/single", "minecraft:stone", "minecraft:andesite", "minecraft:cobblestone");
+    @DisplayName("An unset Copies block still splits — the row is usable before anything is chosen")
+    void copiesBlockRowSplitsWhenUnset() {
+        EditorPlotLabelsPacket.Entry e = entryWithBlock("endless_open/single", "");
         double halfW = EditorPlotLabelsRenderer.MIN_HALF_W;
-        int capacity = EditorPlotLabelsRenderer.copiesIconCapacity(halfW);
-        assertTrue(capacity >= 1, "precondition: the row has room for at least one icon");
-
-        // Left of the strip is the label, which is part of the add target rather than any icon.
-        assertEquals(-1, EditorPlotLabelsRenderer.copiesBlockIconAt(e, halfW, -halfW + 0.01));
-
-        int drawn = Math.min(3, capacity);
-        for (int i = 0; i < drawn; i++) {
-            double centre = stripLeft(halfW) + (i + 0.5) * EditorPlotLabelsRenderer.COPIES_ICON_SLOT;
-            assertEquals(i, EditorPlotLabelsRenderer.copiesBlockIconAt(e, halfW, centre),
-                "icon " + i + " must claim its own slot, or a click removes the wrong candidate");
-        }
-        // Past the last drawn icon is empty strip — still the add target, not a removal.
-        double pastEnd = stripLeft(halfW) + (drawn + 0.5) * EditorPlotLabelsRenderer.COPIES_ICON_SLOT;
-        assertEquals(-1, EditorPlotLabelsRenderer.copiesBlockIconAt(e, halfW, pastEnd));
-    }
-
-    @Test
-    @DisplayName("An empty palette has no icons to hit — the whole row adds")
-    void copiesBlockStripEmptyIsAllAdd() {
-        EditorPlotLabelsPacket.Entry e = entryWithBlocks("endless_open/single");
-        double halfW = EditorPlotLabelsRenderer.MIN_HALF_W;
-        for (double x : new double[]{-halfW + 0.05, 0.0, halfW - 0.05}) {
-            assertEquals(-1, EditorPlotLabelsRenderer.copiesBlockIconAt(e, halfW, x));
-        }
-    }
-
-    /** Mirrors the renderer's private strip origin so the test aims where the icons are drawn. */
-    private static double stripLeft(double halfW) {
-        return -halfW + halfW * 0.55;
+        assertFalse(EditorPlotLabelsRenderer.copiesBlockHitIsEdit(halfW, -halfW + 0.05));
+        assertTrue(EditorPlotLabelsRenderer.copiesBlockHitIsEdit(halfW, halfW - 0.05));
     }
 
     @Test
@@ -465,7 +442,7 @@ class EditorPlotLabelsRendererTest {
             EditorPlotLabelsRenderer.copiesLabel("endless_open/single:minecraft:sandstone"));
         // The Blocks row names the gesture, not the value: the palette is a variant of up to
         // MAX_ENTRIES candidates that lives server-side, and the plot panel draws it as icons.
-        assertEquals("Blocks: + held", EditorPlotLabelsRenderer.copiesBlockLabel());
+        assertEquals("Block: + held", EditorPlotLabelsRenderer.copiesBlockLabel());
     }
 
     @Test

@@ -154,6 +154,82 @@ public final class BlockVariantMenuController {
     }
 
     /** Compose + send the sync packet for the cell at {@code localPos}. */
+    /**
+     * Open the menu on a portal room's Copies block — the row's Edit button.
+     *
+     * <p>Unlike {@link #toggle} there is no cell in the world to target: the value is a setting on
+     * the room, presented as a one-cell plot ({@code PortalRoomCopiesPlot}). The block the player
+     * happens to be looking at is used for the panel's anchor and nothing else, so the menu appears
+     * where they are looking exactly as it does everywhere else.</p>
+     */
+    public static void openForCopies(ServerPlayer player, String roomName) {
+        if (!player.hasPermissions(2)) {
+            actionBar(player, "Block variant menu requires OP", ChatFormatting.RED);
+            return;
+        }
+        ServerLevel level = player.serverLevel();
+        CarriageDims dims = DungeonTrainWorldData.get(level).dims();
+
+        BlockVariantPlot room = BlockVariantPlot.resolveAt(player, dims);
+        if (room == null) {
+            actionBar(player, "Stand in the portal room's plot", ChatFormatting.YELLOW);
+            return;
+        }
+        games.brennan.dungeontrain.portal.PortalRoomCopiesPlot plot = copiesPlotFor(roomName, room.origin());
+
+        HitResult hit = player.pick(TOGGLE_REACH, 1.0f, false);
+        BlockPos anchorWorld;
+        Direction face;
+        if (hit instanceof BlockHitResult bhit && bhit.getType() != HitResult.Type.MISS) {
+            anchorWorld = bhit.getBlockPos();
+            face = bhit.getDirection();
+        } else {
+            // Nothing in reach — anchor on the block the player is standing at, facing them, so the
+            // Edit button always opens something rather than failing on where they were looking.
+            anchorWorld = player.blockPosition();
+            face = player.getDirection().getOpposite();
+        }
+        Vec3 up = computeUp(face, player);
+
+        OPEN.put(player.getUUID(), new OpenMenu(plot.key(),
+            games.brennan.dungeontrain.portal.PortalRoomCopiesPlot.CELL, face, up));
+        sendSync(player, plot, games.brennan.dungeontrain.portal.PortalRoomCopiesPlot.CELL,
+            anchorWorld, face, up);
+    }
+
+    /** The one-cell plot over {@code roomName}'s Copies variant, seeded from what it repeats today. */
+    private static games.brennan.dungeontrain.portal.PortalRoomCopiesPlot copiesPlotFor(
+        String roomName, BlockPos origin
+    ) {
+        games.brennan.dungeontrain.portal.PortalRoomSettings settings =
+            games.brennan.dungeontrain.portal.PortalRoomSettings.of(roomName);
+        return new games.brennan.dungeontrain.portal.PortalRoomCopiesPlot(roomName, origin,
+            games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.forRoom(
+                roomName, settings.copies()));
+    }
+
+    /**
+     * The plot an edit packet addresses.
+     *
+     * <p>{@link BlockVariantPlot#resolveAt} is positional, and a Copies variant is not anywhere —
+     * standing in the room resolves to the <i>room</i>. So a {@code copies:} key is answered with
+     * the one-cell plot instead, once the player has been checked to be standing in that room's own
+     * plot. That check is the authorisation: it is the same "you must be in the plot you are
+     * editing" rule every other key gets, applied to the plot this value belongs to.</p>
+     */
+    @Nullable
+    private static BlockVariantPlot resolvePlotFor(ServerPlayer player, CarriageDims dims,
+                                                   String variantId) {
+        BlockVariantPlot positional = BlockVariantPlot.resolveAt(player, dims);
+        String room = games.brennan.dungeontrain.portal.PortalRoomCopiesPlot.roomOf(variantId);
+        if (room == null) return positional;
+        if (positional == null) return null;
+        String roomKey = ContainerContentsStore.trackPlotKey(
+            games.brennan.dungeontrain.track.variant.TrackKind.PORTAL_ROOM, room);
+        if (!positional.key().equals(roomKey)) return null;
+        return copiesPlotFor(room, positional.origin());
+    }
+
     private static void sendSync(ServerPlayer player, BlockVariantPlot plot,
                                  BlockPos localPos, BlockPos worldPos,
                                  Direction face, Vec3 up) {
@@ -211,7 +287,7 @@ public final class BlockVariantMenuController {
         }
         ServerLevel level = player.serverLevel();
         CarriageDims dims = DungeonTrainWorldData.get(level).dims();
-        BlockVariantPlot plot = BlockVariantPlot.resolveAt(player, dims);
+        BlockVariantPlot plot = resolvePlotFor(player, dims, packet.variantId());
         if (plot == null || !plot.key().equals(packet.variantId())) {
             LOGGER.warn("[DungeonTrain] BlockVariantMenu edit rejected: player {} not in plot for '{}'",
                 player.getName().getString(), packet.variantId());

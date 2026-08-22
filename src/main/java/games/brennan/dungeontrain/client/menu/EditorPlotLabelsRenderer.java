@@ -91,8 +91,10 @@ public final class EditorPlotLabelsRenderer {
         MODE_CYCLE,
         /** The sub-mode row — only shown while the mode makes copies. */
         COPIES_CYCLE,
-        /** The block row under it — only shown while those copies are one block, and sets it from the hand. */
+        /** The block row under it — sets the block from the hand. */
         COPIES_BLOCK_HELD,
+        /** The Edit half of that row — opens the Block Variant menu on it. */
+        COPIES_BLOCK_EDIT,
         /** The furnishing row — whether the room takes a contents template, and how it is fitted. */
         ROOM_CONTENTS_CYCLE,
         /** The author-lock row — whether the room stocks its shelves from one person. */
@@ -241,44 +243,37 @@ public final class EditorPlotLabelsRenderer {
         return settings.copiesApply() && settings.effectiveCopies().repeatsOneBlock();
     }
 
-    /** Where the icon strip starts — right of the "Blocks:" label. */
-    private static double copiesStripLeft(double halfW) {
-        return -halfW + halfW * 0.55;
-    }
-
-    /** How many icons the row has room for at this width. */
-    public static int copiesIconCapacity(double halfW) {
-        double room = halfW - copiesStripLeft(halfW) - PAD_X;
-        return Math.max(1, (int) Math.floor(room / COPIES_ICON_SLOT));
+    /** Where the icon sits on the Copies Block row — right of the "Block:" label. */
+    private static double copiesIconCentre(double halfW) {
+        return -halfW + halfW * 0.75;
     }
 
     /**
-     * Which icon on the Copies Block row {@code hitX} lands on, or {@code -1} for the rest of the row.
+     * Where the Edit half of the Copies Block row starts.
      *
-     * <p>A separate query rather than a {@link CellKind} per icon: the row has one meaning either
-     * side of this line — an icon removes itself, the rest of the row adds what you are holding —
-     * and sixteen cell kinds for sixteen slots would put the palette's cap into an enum.</p>
+     * <p>{@link #BOOKS_CYCLE_SHARE}, the same split the Books row uses, so the two read as one
+     * pattern: a value on the left, a way into its editor on the right.</p>
      */
-    public static int copiesBlockIconAt(EditorPlotLabelsPacket.Entry entry, double halfW, double hitX) {
-        int drawn = Math.min(entry.copiesBlocks().size(), copiesIconCapacity(halfW));
-        if (drawn <= 0) return -1;
-        double left = copiesStripLeft(halfW);
-        if (hitX < left) return -1;
-        int index = (int) Math.floor((hitX - left) / COPIES_ICON_SLOT);
-        return index >= 0 && index < drawn ? index : -1;
+    private static double copiesEditLeft(double halfW) {
+        return booksEditLeft(halfW);
+    }
+
+    /** True when {@code hitX} lands on the Copies Block row's Edit button rather than its value. */
+    public static boolean copiesBlockHitIsEdit(double halfW, double hitX) {
+        return hitX >= copiesEditLeft(halfW);
     }
 
     /**
      * What the Blocks row reads where it cannot draw icons — the command menu, which is text-only.
      *
-     * <p>Names the gesture rather than the value. The value is a variant of up to
-     * {@code PortalRoomCopiesPalette.MAX_ENTRIES} candidates and lives server-side; the plot panel
-     * shows it as icons, and a text row that tried to would either be a wall of namespaced ids or,
-     * worse, the one id in the mode tag — which stops being the answer the moment a palette exists.
-     * Saying what the row does is honest at every width.</p>
+     * <p>Names the gesture rather than the value. The value lives server-side and may be a variant
+     * of several candidates; the plot panel shows it as an icon, and a text row that tried to would
+     * either be a namespaced id forty characters long or, worse, the id in the mode tag — which
+     * stops being the answer the moment a variant is authored. Saying what the row does is honest
+     * at every width.</p>
      */
     public static String copiesBlockLabel() {
-        return "Blocks: + held";
+        return "Block: + held";
     }
 
     /**
@@ -404,13 +399,8 @@ public final class EditorPlotLabelsRenderer {
     }
 
     /** Where the player's crosshair is currently pointing. */
-    public record Hovered(int entryIndex, CellKind cell, int iconIndex) {
-        public static final Hovered NONE = new Hovered(-1, CellKind.NONE, -1);
-
-        /** Every cell but the Copies Block strip, which is the only one with more than one target. */
-        public Hovered(int entryIndex, CellKind cell) {
-            this(entryIndex, cell, -1);
-        }
+    public record Hovered(int entryIndex, CellKind cell) {
+        public static final Hovered NONE = new Hovered(-1, CellKind.NONE);
     }
 
     /** Same composite as PartPositionMenuRenderer.PANEL_QUAD. */
@@ -480,11 +470,6 @@ public final class EditorPlotLabelsRenderer {
 
     private static volatile List<EditorPlotLabelsPacket.Entry> CACHE = List.of();
     private static volatile Hovered HOVERED = Hovered.NONE;
-
-    /** Which icon of the Copies Block strip the cursor is over, or -1. */
-    private static int hoveredIconIndex() {
-        return HOVERED.iconIndex();
-    }
 
     private EditorPlotLabelsRenderer() {}
 
@@ -595,10 +580,9 @@ public final class EditorPlotLabelsRenderer {
             w = Math.max(w, measure.applyAsInt(copiesLabel(entry.roomMode())) * TEXT_SCALE + 2 * PAD_X);
         }
         if (hasCopiesBlockRow(entry)) {
-            // Label plus room for a few icons. The strip scrolls into its "+N" rather than widening
-            // the panel, so this is a floor on the row and not a function of the palette's size.
-            w = Math.max(w, measure.applyAsInt("Blocks:") * TEXT_SCALE + 2 * PAD_X
-                + 4 * COPIES_ICON_SLOT);
+            // Label, one icon, and an Edit button — the same three-part shape the Books row has.
+            w = Math.max(w, (measure.applyAsInt("Block:") + measure.applyAsInt("Edit")) * TEXT_SCALE
+                + 4 * PAD_X + COPIES_ICON_SLOT);
         }
         if (hasExitsRow(entry)) {
             w = Math.max(w, measure.applyAsInt(exitsLabel(entry.roomMode())) * TEXT_SCALE + 2 * PAD_X);
@@ -726,7 +710,8 @@ public final class EditorPlotLabelsRenderer {
             // costs no more clicks than aiming at an arrow for it.
             case MODE -> CellKind.MODE_CYCLE;
             case COPIES -> CellKind.COPIES_CYCLE;
-            case COPIES_BLOCK -> CellKind.COPIES_BLOCK_HELD;
+            case COPIES_BLOCK -> copiesBlockHitIsEdit(halfW, hitX)
+                ? CellKind.COPIES_BLOCK_EDIT : CellKind.COPIES_BLOCK_HELD;
             case ROOM_CONTENTS -> CellKind.ROOM_CONTENTS_CYCLE;
             case ROOM_BOOKS -> roomBooksRowCell(entry, hitX, halfW);
             case EXITS -> CellKind.EXITS_CYCLE;
@@ -931,34 +916,27 @@ public final class EditorPlotLabelsRenderer {
                 // author is holding (a block, or a variant copied from a cell); clicking one icon
                 // removes that candidate. Mirrors StagePanelMenuRenderer's part strip.
                 case COPIES_BLOCK -> {
-                    boolean rowHovered = hovered == CellKind.COPIES_BLOCK_HELD
-                        && hoveredIconIndex() < 0;
-                    drawQuad(ps, buffer, -halfW + 0.01, rBot + 0.005, halfW - 0.01, rTop - 0.005,
-                        rowHovered ? HOVER_COLOR : BUTTON_BG);
-                    drawLeftText(ps, buffer, font, "Blocks:", -halfW + PAD_X, rCY, WEIGHT_COLOR);
+                    double split = copiesEditLeft(halfW);
+                    int valueBg = hovered == CellKind.COPIES_BLOCK_HELD ? HOVER_COLOR : BUTTON_BG;
+                    drawQuad(ps, buffer, -halfW + 0.01, rBot + 0.005, split - 0.005, rTop - 0.005,
+                        valueBg);
+                    drawLeftText(ps, buffer, font, "Block:", -halfW + PAD_X, rCY, WEIGHT_COLOR);
 
-                    java.util.List<String> blocks = entry.copiesBlocks();
-                    int capacity = copiesIconCapacity(halfW);
-                    int drawn = Math.min(blocks.size(), capacity);
-                    double left = copiesStripLeft(halfW);
-                    for (int i = 0; i < drawn; i++) {
-                        double cx = left + (i + 0.5) * COPIES_ICON_SLOT;
-                        if (hovered == CellKind.COPIES_BLOCK_HELD && hoveredIconIndex() == i) {
-                            drawQuad(ps, buffer, cx - COPIES_ICON_SLOT / 2.0, rBot + 0.005,
-                                cx + COPIES_ICON_SLOT / 2.0, rTop - 0.005, HOVER_COLOR);
-                        }
-                        MenuBlockIcons.drawBlockIcon(ps, buffer, blocks.get(i), cx, rCY,
-                            COPIES_ICON_SIZE);
+                    String block = entry.copiesBlock();
+                    if (block.isEmpty()) {
+                        // Nothing set yet: say what to do rather than showing an empty slot.
+                        drawLeftText(ps, buffer, font, "hold one", copiesIconCentre(halfW) - PAD_X,
+                            rCY, LABEL_COLOR);
+                    } else {
+                        MenuBlockIcons.drawBlockIcon(ps, buffer, block, copiesIconCentre(halfW),
+                            rCY, COPIES_ICON_SIZE);
                     }
-                    if (blocks.size() > drawn) {
-                        drawLeftText(ps, buffer, font, "+" + (blocks.size() - drawn),
-                            left + drawn * COPIES_ICON_SLOT + PAD_X, rCY, WEIGHT_COLOR);
-                    }
-                    if (blocks.isEmpty()) {
-                        // Nothing authored yet: say what to do rather than showing an empty strip.
-                        drawLeftText(ps, buffer, font, "hold a block or variant",
-                            left, rCY, LABEL_COLOR);
-                    }
+
+                    int editBg = hovered == CellKind.COPIES_BLOCK_EDIT ? HOVER_COLOR : BUTTON_BG;
+                    drawQuad(ps, buffer, split + 0.005, rBot + 0.005, halfW - 0.01, rTop - 0.005,
+                        editBg);
+                    drawCenteredText(ps, buffer, font, "Edit", (split + halfW) / 2.0, rCY,
+                        BUTTON_TEXT_COLOR);
                 }
                 // Contents — whether this room is furnished from the contents pool, and how a
                 // furnishing smaller than the room is fitted into it. Off by default.

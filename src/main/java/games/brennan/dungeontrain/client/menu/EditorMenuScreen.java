@@ -410,14 +410,18 @@ public final class EditorMenuScreen implements MenuScreen {
      * <p>A picker, not a cycle: the value is any block in the registry, so tapping the row takes
      * whatever the author is holding rather than stepping to a "next" nobody could enumerate. The
      * menu is opened by a key toggle rather than by holding a tool, so their main hand is free for
-     * the block itself.</p>
+     * the block itself. <b>Edit</b> opens the Block Variant menu on that block, which is how one
+     * block becomes a variant of several.</p>
      */
     static CommandMenuEntry copiesBlockRowFor(String currentMode) {
         if (currentMode == null || EditorStatusPacket.NO_MODE.equals(currentMode)) return null;
         if (!EditorPlotLabelsRenderer.hasCopiesBlockRowFor(currentMode)) return null;
-        return new CommandMenuEntry.Stay(
-            EditorPlotLabelsRenderer.copiesBlockLabel(),
-            "dungeontrain editor portals copies block held");
+        // Value on the left, a way into its editor on the right — the same Split the Books row uses.
+        return new CommandMenuEntry.Split(
+            new CommandMenuEntry.Stay(EditorPlotLabelsRenderer.copiesBlockLabel(),
+                "dungeontrain editor portals copies block held"),
+            new CommandMenuEntry.Stay("Edit", "dungeontrain editor portals copies block edit"),
+            0.72);
     }
 
     /**

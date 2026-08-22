@@ -152,7 +152,8 @@ public final class EditorPlotPanelInputHandler {
             case HEIGHT_TYPE -> openAxisEntry(entry, "height", "Height", entry.roomHeight());
             case MODE_CYCLE -> dispatchModeCycle(entry);
             case COPIES_CYCLE -> dispatchCopiesCycle(entry);
-            case COPIES_BLOCK_HELD -> dispatchCopiesBlock(entry, hit.iconIndex());
+            case COPIES_BLOCK_HELD -> dispatchCopiesBlockHeld(entry);
+            case COPIES_BLOCK_EDIT -> dispatchCopiesBlockEdit(entry);
             case ROOM_CONTENTS_CYCLE -> dispatchRoomContentsCycle(entry);
             case ROOM_BOOKS_CYCLE -> dispatchRoomBooksCycle(entry);
             case ROOM_BOOKS_EDIT -> openBookMix(entry);
@@ -217,18 +218,16 @@ public final class EditorPlotPanelInputHandler {
         CommandRunner.run(cmd);
     }
 
-    /**
-     * The Copies Block row: an icon removes that candidate, the rest of the row adds what the
-     * player is holding.
-     *
-     * <p>Removal is by index rather than by block id because a palette may legitimately hold the
-     * same block twice — two entries differing only in weight or rotation — and removing "the
-     * sandstone one" would then be ambiguous.</p>
-     */
-    private static void dispatchCopiesBlock(EditorPlotLabelsPacket.Entry entry, int iconIndex) {
-        String cmd = iconIndex >= 0
-            ? EditorPlotTeleport.copiesBlockRemoveCommandFor(entry.category(), iconIndex)
-            : EditorPlotTeleport.copiesBlockHeldCommandFor(entry.category());
+    /** Set the Copies block of the portal room the player is standing in to what they are holding. */
+    private static void dispatchCopiesBlockHeld(EditorPlotLabelsPacket.Entry entry) {
+        String cmd = EditorPlotTeleport.copiesBlockHeldCommandFor(entry.category());
+        if (cmd == null) return;
+        CommandRunner.run(cmd);
+    }
+
+    /** Open the Block Variant menu on that block, so it can be turned into a variant. */
+    private static void dispatchCopiesBlockEdit(EditorPlotLabelsPacket.Entry entry) {
+        String cmd = EditorPlotTeleport.copiesBlockEditCommandFor(entry.category());
         if (cmd == null) return;
         CommandRunner.run(cmd);
     }

@@ -30,7 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *
  * <p>Needs a headless Minecraft bootstrap so {@link VariantState}'s {@code BlockState} resolves.</p>
  */
-class PortalRoomCopiesPaletteTest {
+class PortalRoomCopiesVariantTest {
 
     @BeforeAll
     static void bootstrap() {
@@ -42,18 +42,18 @@ class PortalRoomCopiesPaletteTest {
         return new VariantState(block.defaultBlockState(), null);
     }
 
-    private static PortalRoomCopiesPalette reread(PortalRoomCopiesPalette palette) {
-        return PortalRoomCopiesPalette.parse(
+    private static PortalRoomCopiesVariant reread(PortalRoomCopiesVariant palette) {
+        return PortalRoomCopiesVariant.parse(
             new StringReader(palette.toJsonText()), "test", "memory");
     }
 
     @Test
     @DisplayName("A multi-block palette round-trips through its file")
     void roundTrip() {
-        PortalRoomCopiesPalette palette = PortalRoomCopiesPalette.of(List.of(
+        PortalRoomCopiesVariant palette = PortalRoomCopiesVariant.of(List.of(
             of(Blocks.STONE), of(Blocks.ANDESITE), of(Blocks.COBBLESTONE)));
 
-        PortalRoomCopiesPalette back = reread(palette);
+        PortalRoomCopiesVariant back = reread(palette);
 
         assertEquals(List.of("minecraft:stone", "minecraft:andesite", "minecraft:cobblestone"),
             back.blockIds(), palette.toJsonText());
@@ -62,7 +62,7 @@ class PortalRoomCopiesPaletteTest {
     @Test
     @DisplayName("A one-entry palette round-trips too — the plain held block case")
     void roundTripSingleEntry() {
-        PortalRoomCopiesPalette back = reread(PortalRoomCopiesPalette.of(List.of(of(Blocks.SANDSTONE))));
+        PortalRoomCopiesVariant back = reread(PortalRoomCopiesVariant.of(List.of(of(Blocks.SANDSTONE))));
         assertEquals(List.of("minecraft:sandstone"), back.blockIds());
     }
 
@@ -75,8 +75,8 @@ class PortalRoomCopiesPaletteTest {
             games.brennan.dungeontrain.editor.VariantRotation.NONE, null,
             net.minecraft.resources.ResourceLocation.parse("minecraft:zombie"));
 
-        PortalRoomCopiesPalette palette =
-            PortalRoomCopiesPalette.of(List.of(of(Blocks.STONE), mob));
+        PortalRoomCopiesVariant palette =
+            PortalRoomCopiesVariant.of(List.of(of(Blocks.STONE), mob));
 
         assertEquals(List.of("minecraft:stone"), palette.blockIds(),
             "a mob entry in a floor plane is a hole a player falls through");
@@ -88,50 +88,47 @@ class PortalRoomCopiesPaletteTest {
         VariantState mob = new VariantState(Blocks.STONE.defaultBlockState(), null, 1,
             games.brennan.dungeontrain.editor.VariantRotation.NONE, null,
             net.minecraft.resources.ResourceLocation.parse("minecraft:zombie"));
-        assertTrue(PortalRoomCopiesPalette.of(List.of(mob)).isEmpty());
+        assertTrue(PortalRoomCopiesVariant.of(List.of(mob)).isEmpty());
     }
 
     @Test
-    @DisplayName("The palette is capped, so the file and the packet stay bounded")
+    @DisplayName("The file is capped, so a hand-edited one cannot grow without bound")
     void cappedAtMaxEntries() {
         List<VariantState> many = new ArrayList<>();
-        for (int i = 0; i < PortalRoomCopiesPalette.MAX_ENTRIES + 5; i++) many.add(of(Blocks.STONE));
+        for (int i = 0; i < PortalRoomCopiesVariant.MAX_ENTRIES + 5; i++) many.add(of(Blocks.STONE));
 
-        assertEquals(PortalRoomCopiesPalette.MAX_ENTRIES,
-            PortalRoomCopiesPalette.of(many).size());
-        assertEquals(PortalRoomCopiesPalette.MAX_ENTRIES,
-            PortalRoomCopiesPalette.empty().plus(many).size());
+        assertEquals(PortalRoomCopiesVariant.MAX_ENTRIES,
+            PortalRoomCopiesVariant.of(many).size());
     }
 
     @Test
     @DisplayName("Reading is total — a malformed file stamps a room rather than failing a pair")
     void parsingIsTotal() {
-        assertTrue(PortalRoomCopiesPalette.parse(new StringReader("[]"), "t", "m").isEmpty());
-        assertTrue(PortalRoomCopiesPalette.parse(new StringReader("{}"), "t", "m").isEmpty());
-        assertTrue(PortalRoomCopiesPalette.parse(
+        assertTrue(PortalRoomCopiesVariant.parse(new StringReader("[]"), "t", "m").isEmpty());
+        assertTrue(PortalRoomCopiesVariant.parse(new StringReader("{}"), "t", "m").isEmpty());
+        assertTrue(PortalRoomCopiesVariant.parse(
             new StringReader("{\"blocks\": \"nonsense\"}"), "t", "m").isEmpty());
-        assertTrue(PortalRoomCopiesPalette.parse(
+        assertTrue(PortalRoomCopiesVariant.parse(
             new StringReader("{\"blocks\": [\"minecraft:not_a_block\"]}"), "t", "m").isEmpty());
     }
 
     @Test
-    @DisplayName("Removing by index leaves the rest in order")
-    void withoutRemovesOne() {
-        PortalRoomCopiesPalette palette = PortalRoomCopiesPalette.of(List.of(
+    @DisplayName("The value is replaced wholesale — the menu owns add and remove")
+    void withStatesReplaces() {
+        PortalRoomCopiesVariant variant = PortalRoomCopiesVariant.of(List.of(
             of(Blocks.STONE), of(Blocks.ANDESITE), of(Blocks.COBBLESTONE)));
 
-        assertEquals(List.of("minecraft:stone", "minecraft:cobblestone"),
-            palette.without(1).blockIds());
-        // Out-of-range is a no-op rather than an error: the index comes from a click on a panel the
-        // server has no reason to trust is in sync.
-        assertEquals(3, palette.without(9).size());
-        assertEquals(3, palette.without(-1).size());
+        assertEquals(List.of("minecraft:sandstone"),
+            variant.withStates(List.of(of(Blocks.SANDSTONE))).blockIds());
+        // The row draws the first candidate, which is what the icon has to resolve to.
+        assertEquals("minecraft:stone", variant.iconBlockId());
+        assertEquals("", PortalRoomCopiesVariant.empty().iconBlockId());
     }
 
     @Test
     @DisplayName("The roll is a pure function of where, not of when")
     void rollIsStablePerPosition() {
-        PortalRoomCopiesPalette palette = PortalRoomCopiesPalette.of(List.of(
+        PortalRoomCopiesVariant palette = PortalRoomCopiesVariant.of(List.of(
             of(Blocks.STONE), of(Blocks.ANDESITE), of(Blocks.COBBLESTONE)));
         BlockPos cell = new BlockPos(3, 0, 5);
 
@@ -147,7 +144,7 @@ class PortalRoomCopiesPaletteTest {
         List<VariantState> states = new ArrayList<>();
         for (int i = 0; i < 8; i++) states.add(of(Blocks.STONE));
         states.set(3, of(Blocks.ANDESITE));
-        PortalRoomCopiesPalette palette = PortalRoomCopiesPalette.of(states);
+        PortalRoomCopiesVariant palette = PortalRoomCopiesVariant.of(states);
         BlockPos cell = new BlockPos(2, 0, 2);
 
         // Not an assertion that any particular pair differs — the picker is a hash, so a given pair
@@ -166,7 +163,7 @@ class PortalRoomCopiesPaletteTest {
     void weightsAreHonoured() {
         // 1 : 50. Over a sweep of cells the heavy entry must dominate; the exact split is the
         // picker's business, but a weight that never reached it would give roughly half and half.
-        PortalRoomCopiesPalette palette = PortalRoomCopiesPalette.of(List.of(
+        PortalRoomCopiesVariant palette = PortalRoomCopiesVariant.of(List.of(
             new VariantState(Blocks.STONE.defaultBlockState(), null, 1),
             new VariantState(Blocks.ANDESITE.defaultBlockState(), null, 50)));
 
@@ -195,7 +192,7 @@ class PortalRoomCopiesPaletteTest {
                     net.minecraft.core.Direction.Axis.X),
             null);
 
-        PortalRoomCopiesPalette back = reread(PortalRoomCopiesPalette.of(List.of(log)));
+        PortalRoomCopiesVariant back = reread(PortalRoomCopiesVariant.of(List.of(log)));
 
         assertEquals(net.minecraft.core.Direction.Axis.X,
             back.states().get(0).state()
@@ -205,8 +202,8 @@ class PortalRoomCopiesPaletteTest {
     @Test
     @DisplayName("An empty palette resolves to nothing rather than to air")
     void emptyResolvesToNull() {
-        assertNull(PortalRoomCopiesPalette.empty().resolve(BlockPos.ZERO, 1L, 1));
-        assertTrue(PortalRoomCopiesPalette.empty().isEmpty());
-        assertFalse(PortalRoomCopiesPalette.of(List.of(of(Blocks.STONE))).isEmpty());
+        assertNull(PortalRoomCopiesVariant.empty().resolve(BlockPos.ZERO, 1L, 1));
+        assertTrue(PortalRoomCopiesVariant.empty().isEmpty());
+        assertFalse(PortalRoomCopiesVariant.of(List.of(of(Blocks.STONE))).isEmpty());
     }
 }

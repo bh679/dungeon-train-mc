@@ -201,7 +201,7 @@ public final class PortalRoomTiler {
         // only swallows the whole tile when there is genuinely a block to put back afterwards. A
         // name that no longer resolves — a mod uninstalled between two launches, a hand-edited tag —
         // falls through to stamping the room as it always did, rather than to a floorless tile.
-        PortalRoomCopiesPalette single = singlePalette(structure);
+        PortalRoomCopiesVariant single = singlePalette(structure);
         PortalCorridorMask writeMask =
             writeMaskFor(structure, clearMask, origin, size, !single.isEmpty());
         PortalCarriageBuilder.stampRoomAt(level, origin, dims, structure.roomName(), size,
@@ -274,11 +274,11 @@ public final class PortalRoomTiler {
      * changed away from Endless Open since it was authored stamps as Endless Open's neighbour would
      * rather than as a mode that cannot use the setting at all.</p>
      */
-    private static PortalRoomCopiesPalette singlePalette(PortalStructure structure) {
-        if (structure.mode() != PortalRoomMode.ENDLESS_OPEN) return PortalRoomCopiesPalette.empty();
+    private static PortalRoomCopiesVariant singlePalette(PortalStructure structure) {
+        if (structure.mode() != PortalRoomMode.ENDLESS_OPEN) return PortalRoomCopiesVariant.empty();
         PortalRoomCopies copies = structure.copies();
-        if (!copies.repeatsOneBlock()) return PortalRoomCopiesPalette.empty();
-        return PortalRoomCopiesPalette.forRoom(structure.roomName(), copies);
+        if (!copies.repeatsOneBlock()) return PortalRoomCopiesVariant.empty();
+        return PortalRoomCopiesVariant.forRoom(structure.roomName(), copies);
     }
 
     /**
