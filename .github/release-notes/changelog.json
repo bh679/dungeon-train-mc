@@ -8252,14 +8252,9 @@
       "id": "editor-out-of-plot-ghosts",
       "version": "0.633.0",
       "type": "feat",
-      "title": "The editor shows blocks you left outside a template plot",
-      "summary": "Only what sits inside a plot's footprint is saved into a template. A block placed against the outside of the bedrock cage was silently dropped, with nothing in the world to say so. Those blocks now wear a red ghost, visible from anywhere in the editor rather than only from inside the plot they belong to.",
-      "highlights": [
-        "Red ghost cubes mark every block sitting outside a template plot",
-        "Tracked across the whole row, not just the plot you are standing in \u2014 drawn within four chunks of you",
-        "Catches blocks placed by command as well as by hand, and clears itself once you remove them",
-        "Toggle with /dungeontrain editor strays on|off"
-      ],
+      "title": "Blocks left outside a template plot show up red",
+      "summary": "Only what sits inside a plot is saved into the template. Anything outside it now wears a red ghost, from anywhere in the editor.",
+      "highlights": [],
       "date": "2026-08-23",
       "released": false,
       "released_in": null,
