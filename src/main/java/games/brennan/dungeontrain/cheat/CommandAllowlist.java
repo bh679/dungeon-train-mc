@@ -44,8 +44,12 @@ public final class CommandAllowlist {
      * dev/authoring tools, so running one taints the run. In practice authoring happens in creative
      * (already Free Play), so the editor UI's own commands early-return in
      * {@code CheatDetectionEvents.onCommand}; the taint only bites when one is run from a clean run.
+     *
+     * <p>{@code customcontent} IS here, and must stay: it is the command the Free Play notice links
+     * to for turning custom editor content OFF. Tainting a player for clicking the way <em>out</em>
+     * of Free Play would be exactly backwards — the same trap {@code /fixaisconfig} avoids.</p>
      */
-    private static final Set<String> DT_ALLOWED_SUBS = Set.of("cinematic", "debug");
+    private static final Set<String> DT_ALLOWED_SUBS = Set.of("cinematic", "debug", "customcontent");
 
     /** Read-only {@code narrative} subcommands (the rest of the tree taints). */
     private static final Set<String> NARRATIVE_READONLY = Set.of("list", "progress");

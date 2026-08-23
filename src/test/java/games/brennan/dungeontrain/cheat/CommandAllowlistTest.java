@@ -203,6 +203,19 @@ class CommandAllowlistTest {
     }
 
     @Test
+    @DisplayName("/dt customcontent never taints — it is the way OUT of Free Play")
+    void customContentNeverTaints() {
+        // The Free Play notice links straight to this command. Tainting a player for clicking the
+        // "turn my custom content off" line would be exactly backwards — same reasoning that keeps
+        // /fixaisconfig allowlisted.
+        assertFalse(CommandAllowlist.taints("/dt customcontent off"));
+        assertFalse(CommandAllowlist.taints("/dt customcontent on"));
+        assertFalse(CommandAllowlist.taints("/dungeontrain customcontent status"));
+        // …while its authoring siblings under the same root still do.
+        assertTrue(CommandAllowlist.taints("/dt package disable my-pack"));
+    }
+
+    @Test
     @DisplayName("Empty / blank input never taints")
     void emptyNeverTaints() {
         assertFalse(CommandAllowlist.taints(""));

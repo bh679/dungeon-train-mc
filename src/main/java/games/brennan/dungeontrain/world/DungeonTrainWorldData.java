@@ -59,6 +59,7 @@ public final class DungeonTrainWorldData extends SavedData {
     private static final String TAG_BREAK_BLOCKS_ON_CONTACT_OVERRIDE = "breakBlocksOnContactOverride";
     private static final String TAG_USED_CARRIAGE_IDS = "usedSharedCarriageIds";
     private static final String TAG_DIFFICULTY_TRAVELLED_OFFSET = "difficultyTravelledOffset";
+    private static final String TAG_CUSTOM_CONTENT_CHOICE = "customContentChoice";
 
     private int trainY;
     private boolean startsWithTrain;
@@ -81,6 +82,14 @@ public final class DungeonTrainWorldData extends SavedData {
      * by {@code DifficultyOffsetLifecycle}. 0 = fully automatic.
      */
     private int difficultyTravelledOffset;
+
+    /**
+     * This world's answer to the custom-Train-Editor-content prompt. Absent on every world saved
+     * before the feature landed → {@link CustomContentChoice#UNSET} → the prompt fires on the next
+     * join. Written through {@code EditorContentIntegrity.setWorldChoice}, which also mirrors it
+     * into the static the Free Play gate reads.
+     */
+    private CustomContentChoice customContentChoice = CustomContentChoice.UNSET;
 
     /**
      * Transient scheduling set of chunk keys ({@link net.minecraft.world.level.ChunkPos#toLong}) whose
@@ -246,6 +255,10 @@ public final class DungeonTrainWorldData extends SavedData {
         if (tag.contains(TAG_DIFFICULTY_TRAVELLED_OFFSET)) {
             data.difficultyTravelledOffset = clampDifficultyOffset(tag.getInt(TAG_DIFFICULTY_TRAVELLED_OFFSET));
         }
+        // Absent on legacy worlds → UNSET → the custom-content prompt fires on the next join.
+        if (tag.contains(TAG_CUSTOM_CONTENT_CHOICE)) {
+            data.customContentChoice = CustomContentChoice.fromNbt(tag.getString(TAG_CUSTOM_CONTENT_CHOICE));
+        }
         // getIntArray returns an empty array for an absent key, so worlds saved before shared carriages
         // simply start having placed nothing.
         data.usedCarriageIds.loadFrom(tag.getIntArray(TAG_USED_CARRIAGE_IDS));
@@ -273,6 +286,7 @@ public final class DungeonTrainWorldData extends SavedData {
         }
         tag.putBoolean(TAG_JOIN_REPORT_POSTED, joinReportPosted);
         tag.putInt(TAG_DIFFICULTY_TRAVELLED_OFFSET, difficultyTravelledOffset);
+        tag.putString(TAG_CUSTOM_CONTENT_CHOICE, customContentChoice.nbtId());
         tag.putIntArray(TAG_USED_CARRIAGE_IDS, usedCarriageIds.toIntArray());
         return tag;
     }
@@ -295,6 +309,22 @@ public final class DungeonTrainWorldData extends SavedData {
 
     public StartingDimension startingDimension() {
         return startingDimension;
+    }
+
+    /**
+     * This world's answer to the custom-content prompt. Read it through
+     * {@code EditorContentIntegrity} rather than here — that class caches it so the Free Play
+     * gate doesn't touch SavedData on hot paths.
+     */
+    public CustomContentChoice customContentChoice() {
+        return customContentChoice;
+    }
+
+    /** Record the player's answer. Called from {@code EditorContentIntegrity.setWorldChoice}. */
+    public void setCustomContentChoice(CustomContentChoice choice) {
+        if (choice == null || this.customContentChoice == choice) return;
+        this.customContentChoice = choice;
+        setDirty();
     }
 
     public void setStartingDimension(StartingDimension d) {

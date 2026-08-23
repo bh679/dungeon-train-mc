@@ -99,6 +99,12 @@ public final class ClientDisplayConfig {
     public static final ModConfigSpec.EnumValue<ContentMode> CONTENT_MODE;
 
     /**
+     * Remembered answer to the custom-Train-Editor-content prompt — see
+     * {@link CustomContentPreference}. {@code ASK} means keep prompting.
+     */
+    public static final ModConfigSpec.EnumValue<CustomContentPreference> CUSTOM_CONTENT_PREFERENCE;
+
+    /**
      * Whether the player wants community content the relay tagged as politically sensitive filtered
      * out of what they are served.
      *
@@ -154,6 +160,7 @@ public final class ClientDisplayConfig {
         DEATH_SCREEN_LAST_NPS = pair.getLeft().deathScreenLastNps;
         POLITICAL_FILTER = pair.getLeft().politicalFilter;
         CONTENT_MODE = pair.getLeft().contentMode;
+        CUSTOM_CONTENT_PREFERENCE = pair.getLeft().customContentPreference;
     }
 
     private ClientDisplayConfig() {}
@@ -296,6 +303,19 @@ public final class ClientDisplayConfig {
                 .defineEnum("mode", ContentMode.ADULT);
         b.pop();
 
+        b.push("customContent");
+        ModConfigSpec.EnumValue<CustomContentPreference> customContentPreference = b
+                .comment("What to do when a world starts with custom Train Editor content active",
+                         "(your own edits, or an imported dtpack).",
+                         "ASK (default) — show the prompt each time a world is entered for the first time.",
+                         "CONTINUE — always play with the custom content. Those runs are Free Play: they",
+                         "  earn advancements live but don't count towards your cross-world profile or stats.",
+                         "DISABLE — always turn custom content off, so the world runs the bundled game and",
+                         "  your stats count. Set from the prompt's \"Remember decision\" checkbox, or the",
+                         "Custom Train Content row in Options -> Dungeon Train...")
+                .defineEnum("preference", CustomContentPreference.ASK);
+        b.pop();
+
         b.push("deathScreen");
         ModConfigSpec.IntValue deathScreenLastNps = b
                 .comment("Internal: the player's most recent NPS (\"how likely to recommend\") answer, 0-10, or -1 if never answered. Used to decide when the death-screen donation page appears. Managed automatically.")
@@ -319,7 +339,7 @@ public final class ClientDisplayConfig {
                 rideSnapshotDiskOffload, rideSnapshotFlushMinFps, rideSnapshotFlushMinTps, rideSnapshotMaxOnDisk,
                 rideSnapshotMaxResolution,
                 framerateThrottleEnabled, framerateThrottleFps, trainEngineVolume, skyboxPunchEnabled, deleteWorldOnReboard, sharedBooksRead,
-                deathScreenLastNps, politicalFilter, contentMode);
+                deathScreenLastNps, politicalFilter, contentMode, customContentPreference);
     }
 
     /**
@@ -732,6 +752,28 @@ public final class ClientDisplayConfig {
         CONTENT_MODE.save();
     }
 
+    // ----- Custom Train Editor content prompt (see CustomContentPromptClient) -----
+
+    /**
+     * This client's remembered answer to the custom-content prompt. Defaults to
+     * {@link CustomContentPreference#ASK}, including before the config loads — a pre-load read must
+     * never silently answer a prompt on the player's behalf.
+     */
+    public static CustomContentPreference getCustomContentPreference() {
+        return isLoaded() ? CUSTOM_CONTENT_PREFERENCE.get() : CustomContentPreference.ASK;
+    }
+
+    /**
+     * Persist the remembered answer. Idempotent — skips the TOML write when unchanged. Driven by
+     * the prompt's "Remember decision" checkbox and by the Options row; no-op pre-load.
+     */
+    public static void setCustomContentPreference(CustomContentPreference preference) {
+        if (!isLoaded() || preference == null) return;
+        if (CUSTOM_CONTENT_PREFERENCE.get() == preference) return;
+        CUSTOM_CONTENT_PREFERENCE.set(preference);
+        CUSTOM_CONTENT_PREFERENCE.save();
+    }
+
     // ----- Global client-side community-book read history (see SharedBookReadSyncClient / SharedBookReadMirror) -----
 
     /**
@@ -800,6 +842,7 @@ public final class ClientDisplayConfig {
             ModConfigSpec.ConfigValue<List<? extends String>> sharedBooksRead,
             ModConfigSpec.IntValue deathScreenLastNps,
             ModConfigSpec.EnumValue<PoliticalFilter> politicalFilter,
-            ModConfigSpec.EnumValue<ContentMode> contentMode
+            ModConfigSpec.EnumValue<ContentMode> contentMode,
+            ModConfigSpec.EnumValue<CustomContentPreference> customContentPreference
     ) {}
 }

@@ -161,6 +161,11 @@ public final class UserContentPaths {
      * forces after a state mutation.</p>
      */
     public static List<Path> searchDirs(String subSlug) {
+        // The world has disabled custom content: no package tier at all, so every store falls
+        // through to the bundled classpath copy. One choke point for the whole suppression.
+        if (games.brennan.dungeontrain.cheat.EditorContentIntegrity.isSuppressed()) {
+            return List.of();
+        }
         List<Path> out = new ArrayList<>();
         // Active package wins first. If the registry hasn't been populated yet
         // (e.g. very early server start before DtpacksMigration has run), the
@@ -264,6 +269,11 @@ public final class UserContentPaths {
      * </ul>
      */
     public static Provenance provenanceOf(String subSlug, String basenameWithExt) {
+        // Suppressed ⇒ nothing loads from a package, so everything really is bundled. Reporting
+        // USER/IMPORTED here would tint the variant menus for files that aren't being read.
+        if (games.brennan.dungeontrain.cheat.EditorContentIntegrity.isSuppressed()) {
+            return Provenance.BUNDLED;
+        }
         // The active package's working dir maps onto the legacy USER tier —
         // it's where edits land and what the variant menus tint as "yours".
         if (Files.isRegularFile(activeSubDir(subSlug).resolve(basenameWithExt))) {
@@ -300,6 +310,9 @@ public final class UserContentPaths {
      * wants to show <i>which</i> package a variant came from.</p>
      */
     public static java.util.Optional<PackageInfo> packageOf(String subSlug, String basenameWithExt) {
+        if (games.brennan.dungeontrain.cheat.EditorContentIntegrity.isSuppressed()) {
+            return java.util.Optional.empty(); // nothing resolves through a package while suppressed
+        }
         PackageInfo active = PackageRegistry.active();
         if (Files.isRegularFile(active.workingDir().resolve(subSlug).resolve(basenameWithExt))) {
             return java.util.Optional.of(active);
