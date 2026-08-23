@@ -8199,6 +8199,23 @@
       "released": true,
       "released_in": "v0.630.0",
       "released_at": "2026-08-23T13:40:00Z"
+    },
+    {
+      "id": "editor-plot-transforms",
+      "version": "0.631.0",
+      "type": "feat",
+      "title": "Move, turn and mirror a whole template in the editor",
+      "summary": "The train editor can now rearrange the plot you are standing in, instead of you rebuilding it block by block. Offset slides the build and wraps it at the plot edges, rotate turns it, and flip mirrors it \u2014 and any of the three is a single Ctrl+Z away from being undone.",
+      "highlights": [
+        "/dt editor offset <x> <y> <z> slides the build, wrapping at the plot faces so nothing is lost",
+        "/dt editor rotate 90|180|270 turns the build; a quarter turn needs a square plot, so carriages take 180",
+        "/dt editor flip x|y|z mirrors the build, vertical flips included",
+        "Variant pools, lock groups and container loot pools travel with the blocks \u2014 the build stays wired up"
+      ],
+      "date": "2026-08-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
