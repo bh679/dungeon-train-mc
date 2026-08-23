@@ -45,8 +45,16 @@ public final class EditorStrayGhostRenderer {
     /** Outset on every axis so the ghost sits just proud of the block rather than z-fighting with it. */
     private static final double EXPAND = 0.004;
 
-    /** Beyond this (squared) distance from the camera a ghost is skipped, bounding the per-frame box count. */
-    private static final double MAX_DISTANCE_SQ = 96.0 * 96.0;
+    /** How far a ghost is drawn from the camera, in chunks. */
+    private static final int MAX_DISTANCE_CHUNKS = 4;
+
+    /**
+     * Beyond this (squared) distance from the camera a ghost is skipped, bounding the per-frame box
+     * count. A stray further out is still tracked server-side — it paints as soon as you fly into
+     * range — so the cull costs visibility at distance, never detection.
+     */
+    private static final double MAX_DISTANCE_SQ =
+        (MAX_DISTANCE_CHUNKS * 16.0) * (MAX_DISTANCE_CHUNKS * 16.0);
 
     private static final float RED = 0.90f;
     private static final float GREEN = 0.15f;
