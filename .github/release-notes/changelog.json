@@ -8181,6 +8181,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "own-books-shelf-and-controls",
+      "version": "0.630.0",
+      "type": "feat",
+      "title": "Find the books you wrote, even the ones the train hasn't let out",
+      "summary": "Your own library rooms now stock the books you wrote that the train is still deciding about \u2014 or has decided against. Open one and its last page tells you where it stands, in the train's own words. You can also take one of your released books back out of circulation whenever you like.",
+      "highlights": [
+        "Books you wrote that are pending, undecided or refused now appear on your own library shelves instead of vanishing the moment you sign them.",
+        "The last page of one of your books says where it stands: still being read, undecided, or turned away \u2014 in orange, or red once it is a no.",
+        "Made Private: take one of your released books off the line so only you can find it. Reversible \u2014 the padlock shows what it will do before you click it.",
+        "Protest a verdict you disagree with, on a book the train has actually read. It asks a person to look again; it does not overturn anything by itself.",
+        "No thumbs on a book you wrote \u2014 rating your own work was never the point, and it skewed which books everyone else was shown."
+      ],
+      "date": "2026-08-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
