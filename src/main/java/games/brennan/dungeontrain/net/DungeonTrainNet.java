@@ -19,7 +19,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "52";
+    public static final String PROTOCOL_VERSION = "53";
 
     private DungeonTrainNet() {}
 
@@ -47,6 +47,7 @@ public final class DungeonTrainNet {
         registrar.playToServer(TemplateBlocksEditPacket.TYPE, TemplateBlocksEditPacket.STREAM_CODEC, TemplateBlocksEditPacket::handle);
         registrar.playToClient(BlockVariantLockIdsPacket.TYPE, BlockVariantLockIdsPacket.STREAM_CODEC, BlockVariantLockIdsPacket::handle);
         registrar.playToClient(BlockVariantOutlinePacket.TYPE, BlockVariantOutlinePacket.STREAM_CODEC, BlockVariantOutlinePacket::handle);
+        registrar.playToClient(EditorStrayBlocksPacket.TYPE, EditorStrayBlocksPacket.STREAM_CODEC, EditorStrayBlocksPacket::handle);
         registrar.playToClient(EditorPlotLabelsPacket.TYPE, EditorPlotLabelsPacket.STREAM_CODEC, EditorPlotLabelsPacket::handle);
         registrar.playToServer(EditorPlotActionPacket.TYPE, EditorPlotActionPacket.STREAM_CODEC, EditorPlotActionPacket::handle);
         registrar.playToClient(EditorTypeMenusPacket.TYPE, EditorTypeMenusPacket.STREAM_CODEC, EditorTypeMenusPacket::handle);
@@ -166,6 +167,8 @@ public final class DungeonTrainNet {
         // confirmed/canceled (the "don't show again" pref lives client-side).
         registrar.playToClient(ShowFreePlayConfirmPacket.TYPE, ShowFreePlayConfirmPacket.STREAM_CODEC, ShowFreePlayConfirmPacket::handle);
         registrar.playToServer(FreePlayConfirmResponsePacket.TYPE, FreePlayConfirmResponsePacket.STREAM_CODEC, FreePlayConfirmResponsePacket::handle);
+        registrar.playToClient(ShowCustomContentPromptPacket.TYPE, ShowCustomContentPromptPacket.STREAM_CODEC, ShowCustomContentPromptPacket::handle);
+        registrar.playToServer(CustomContentChoicePacket.TYPE, CustomContentChoicePacket.STREAM_CODEC, CustomContentChoicePacket::handle);
         registrar.playToClient(ShowDifficultyConfirmPacket.TYPE, ShowDifficultyConfirmPacket.STREAM_CODEC, ShowDifficultyConfirmPacket::handle);
         registrar.playToServer(DifficultyConfirmResponsePacket.TYPE, DifficultyConfirmResponsePacket.STREAM_CODEC, DifficultyConfirmResponsePacket::handle);
 
