@@ -44,6 +44,14 @@ public final class CustomContentPromptClient {
      */
     private static String pendingPackages = null;
 
+    /** Ticks between re-open attempts. Something else holding the screen is usually transient. */
+    private static final int RETRY_TICKS = 40;
+    /** Give up after this many attempts (~40s) rather than fight for the screen forever. */
+    private static final int MAX_ATTEMPTS = 20;
+
+    private static int retryCooldown = 0;
+    private static int attempts = 0;
+
     private CustomContentPromptClient() {}
 
     public static void onShow(String packages) {
@@ -57,11 +65,15 @@ public final class CustomContentPromptClient {
         LOGGER.info("[DungeonTrain] Custom content prompt received ({}) — waiting for a clear screen.",
             packages);
         pendingPackages = packages;
+        retryCooldown = 0;
+        attempts = 0;
     }
 
     /** Drop a parked prompt — called when leaving a world so it can't surface in the next one. */
     public static void forget() {
         pendingPackages = null;
+        retryCooldown = 0;
+        attempts = 0;
     }
 
     /**
@@ -84,11 +96,40 @@ public final class CustomContentPromptClient {
             forget();
             return;
         }
+        // The cinematic intro owns the screen while it runs: CinematicPreloadGate.onClientTick
+        // reinstates its own CinematicLoadingScreen whenever anything else takes mc.screen, and it
+        // runs on this same event. Opening here would be a tug-of-war neither side wins — and the
+        // player is watching the intro anyway. Wait it out without spending a retry.
+        if (CinematicPreloadGate.isActive() || CinematicCameraController.isActive()) return;
+
         // Wait for a clear screen: the terrain-loading screen is still up right after login, and
         // anything opened underneath it is discarded when it closes.
         if (mc.screen != null) return;
 
-        LOGGER.info("[DungeonTrain] Opening the custom content prompt.");
+        // Throttle. The prompt survives being replaced (see pendingPackages), but if something is
+        // closing screens every tick — a cinematic intro, another mod's takeover — retrying at tick
+        // rate turns that into an open/close storm. Back off, and eventually concede: the run is
+        // already carrying the Free Play effect, and the world stays UNSET so the next join asks
+        // again, which is a far better outcome than a screen that flickers forever.
+        if (retryCooldown > 0) {
+            retryCooldown--;
+            return;
+        }
+        if (attempts >= MAX_ATTEMPTS) {
+            LOGGER.warn("[DungeonTrain] Gave up opening the custom content prompt after {} attempts "
+                + "— something keeps closing it. The world stays unanswered and will ask again.",
+                attempts);
+            forget();
+            return;
+        }
+        retryCooldown = RETRY_TICKS;
+        attempts++;
+        if (attempts == 1) {
+            LOGGER.info("[DungeonTrain] Opening the custom content prompt.");
+        } else {
+            LOGGER.info("[DungeonTrain] Re-opening the custom content prompt (attempt {}) — it was "
+                + "closed before it could be answered.", attempts);
+        }
         mc.setScreen(new CustomContentPromptScreen(pendingPackages));
     }
 }
