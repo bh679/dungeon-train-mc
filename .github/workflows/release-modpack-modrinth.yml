@@ -64,6 +64,11 @@ jobs:
             echo "::error::dt_modrinth_version must be a base62 Modrinth version id, got '$DT_MODRINTH_VERSION'"; exit 1
           fi
 
+      - name: Modpack override allowlist
+        # overrides/ ships verbatim to every player. Re-checked here because this workflow is
+        # dispatchable with --ref <branch>, which bypasses build.yml's modpack-checks job.
+        run: python3 scripts/modpack/check-overrides.py
+
       - name: Render Modrinth modpack index
         env:
           TAG: ${{ inputs.tag }}
