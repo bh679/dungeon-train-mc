@@ -8265,6 +8265,18 @@
       "released": true,
       "released_in": "v0.632.0",
       "released_at": "2026-08-23T15:15:10Z"
+    },
+    {
+      "id": "editor-out-of-plot-ghosts",
+      "version": "0.633.0",
+      "type": "feat",
+      "title": "Blocks left outside a template plot show up red",
+      "summary": "Only what sits inside a plot is saved into the template. Anything outside it now wears a red ghost, from anywhere in the editor.",
+      "highlights": [],
+      "date": "2026-08-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

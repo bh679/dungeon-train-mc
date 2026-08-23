@@ -241,6 +241,9 @@ public enum EditorCategory {
         // an empty snapshot so the labels disappear in lockstep with the
         // structures.
         EditorStampedCategoryState.clear();
+        // Nothing is stamped any more, so there is nothing left for a block to be outside of —
+        // every ghost would now be pointing at a plot that no longer exists.
+        EditorStrayBlocks.clear();
         // Every plot below is about to be torn down, so every undo step recorded
         // against one would now write into an empty plot floor. Staleness would
         // catch that on use; dropping the history here is the honest signal.
