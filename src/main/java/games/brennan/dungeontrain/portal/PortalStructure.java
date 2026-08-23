@@ -292,9 +292,17 @@ public record PortalStructure(BlockPos origin, String roomName, Vec3i roomSize,
         return roomSize.getX() * roomSize.getY() * roomSize.getZ();
     }
 
-    /** How many copies of this room may stand at once. */
+    /** How many copies of this room may stand at once, for a room with one person in it. */
     public int tileBudget() {
-        return PortalRoomTiling.budgetTiles(blocksPerTile());
+        return tileBudget(1);
+    }
+
+    /**
+     * How many copies of this room may stand at once with {@code occupants} players inside it, each
+     * of whom the window follows — see {@link PortalRoomTiling#budgetTiles(int, int)}.
+     */
+    public int tileBudget(int occupants) {
+        return PortalRoomTiling.budgetTiles(blocksPerTile(), occupants);
     }
 
     /** Lowest world X any standing copy of the room reaches. */

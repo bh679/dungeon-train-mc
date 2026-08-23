@@ -8130,6 +8130,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "portal-room-tiles-multiplayer",
+      "version": "0.627.0",
+      "type": "fix",
+      "title": "Endless portal rooms no longer vanish under other players",
+      "summary": "In multiplayer, the endless portal rooms only followed one player \u2014 usually the host. Anyone else could watch the floor disappear from around them and drop out of the world, and the room stopped growing ahead of them. Every player in the room now gets their own window of rooms.",
+      "highlights": [
+        "The floor around you is never cleared while you are standing near it, whoever else is in the room",
+        "The room keeps building ahead of every player exploring it, not just the first one in",
+        "Extra corridors are held open the same way, so the way back does not disappear behind you"
+      ],
+      "pr": 1056,
+      "date": "2026-08-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
