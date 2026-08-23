@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Supplier;
 
@@ -32,6 +33,13 @@ import java.util.function.Supplier;
  * <p>Diffing rather than storing the whole region keeps a step proportional to
  * what changed: re-stamping a plot that was already saved records nothing at
  * all.</p>
+ *
+ * <p>The step also carries the <b>config-file</b> diff for the op, taken over
+ * from {@link EditorEditRecorder#takePendingConfig}. Whole-plot ops routinely
+ * write JSON as well as blocks — a clear drops its variant entries, a transform
+ * moves its container pools — and left to the recorder those files would land in
+ * a separate end-of-tick step, so undoing one authored action would take two
+ * Ctrl+Z presses.</p>
  */
 public final class EditorRegionDiff {
 
@@ -89,11 +97,19 @@ public final class EditorRegionDiff {
         }
 
         String sidecarBefore = sidecarPlotKey == null ? null : snapshotSidecar(level, sidecarPlotKey);
+        // Taken from the recorder rather than scanned here: every editor command
+        // already arms one up front, and leaving it armed would push the file
+        // half as a second step at end of tick — two Ctrl+Z presses for one
+        // action. Nothing armed (a menu-driven op) means scanning now.
+        Map<String, String> filesBefore = EditorEditRecorder.takePendingConfig(player);
+        if (filesBefore == null) filesBefore = EditorConfigDiff.scan();
         Map<BlockPos, Snapshot> before = scan(level, scope);
 
         op.run();
 
         List<EditorEditHistory.Cell> cells = diff(level, before);
+        List<EditorEditHistory.FileSnapshot> files =
+            EditorConfigDiff.diff(filesBefore, EditorConfigDiff.scan());
         List<EditorEditHistory.SidecarSnapshot> sidecars = List.of();
         if (sidecarPlotKey != null) {
             String sidecarAfter = snapshotSidecar(level, sidecarPlotKey);
@@ -103,7 +119,7 @@ public final class EditorRegionDiff {
             }
         }
         EditorEditHistory.push(player.getUUID(),
-            new EditorEditHistory.Step(scope.key(), label, cells, sidecars));
+            new EditorEditHistory.Step(scope.key(), label, cells, sidecars, files));
     }
 
     /** Every cell in the plot box, block-entity contents included. */
@@ -134,9 +150,12 @@ public final class EditorRegionDiff {
             BlockPos pos = entry.getKey();
             Snapshot snapshot = entry.getValue();
             BlockState after = level.getBlockState(pos);
-            if (after == snapshot.state()) continue;
-            out.add(new EditorEditHistory.Cell(pos, snapshot.state(), snapshot.nbt(),
-                after, after.hasBlockEntity() ? EditorEditRecorder.readNbt(level, pos) : null));
+            CompoundTag afterNbt = after.hasBlockEntity() ? EditorEditRecorder.readNbt(level, pos) : null;
+            // Not just the state: two chests that trade places under a plot
+            // transform leave every state identical and every inventory moved,
+            // and a state-only comparison would record none of it.
+            if (after == snapshot.state() && Objects.equals(afterNbt, snapshot.nbt())) continue;
+            out.add(new EditorEditHistory.Cell(pos, snapshot.state(), snapshot.nbt(), after, afterNbt));
         }
         return out;
     }
