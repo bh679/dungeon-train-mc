@@ -4,11 +4,11 @@
   "variants": [
     {
       "id": "smalllibrary",
-      "weight": 20
+      "weight": 1
     },
     {
       "id": "midlibrary",
-      "weight": 20
+      "weight": 1
     }
   ]
 }

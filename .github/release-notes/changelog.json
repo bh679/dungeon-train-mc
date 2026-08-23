@@ -8201,17 +8201,48 @@
       "released_at": "2026-08-23T13:40:00Z"
     },
     {
-      "id": "editor-out-of-plot-ghosts",
+      "id": "own-book-vote-counters",
       "version": "0.631.0",
       "type": "feat",
-      "title": "The editor shows blocks you left outside a template plot",
-      "summary": "Only what sits inside a plot's footprint is saved into a template. A block placed against the outside of the bedrock cage was silently dropped, with nothing in the world to say so. Those blocks now wear a red ghost, visible from anywhere in the editor rather than only from inside the plot they belong to.",
+      "title": "See how your own books are landing",
+      "summary": "The last page of a book you wrote now shows its thumbs up and thumbs down count. The numbers refresh whenever you pick the book up.",
       "highlights": [
-        "Red ghost cubes mark every block sitting outside a template plot",
-        "Tracked across the whole row, not just the plot you are standing in \u2014 drawn within four chunks of you",
-        "Catches blocks placed by command as well as by hand, and clears itself once you remove them",
-        "Toggle with /dungeontrain editor strays on|off"
+        "Vote counts sit where the voting buttons are on other people's books \u2014 yours report, they don't ask.",
+        "A released book of yours shows its tally even at zero, so \"nobody has voted yet\" is something you can actually see."
       ],
+      "date": "2026-08-23",
+      "released": true,
+      "released_in": "v0.631.0",
+      "released_at": "2026-08-23T14:25:53Z"
+    },
+    {
+      "id": "portal-library-weights-restored",
+      "version": "0.631.0",
+      "type": "fix",
+      "title": "Portal room variety restored",
+      "summary": "Since v0.630.0 portal rooms had been coming up as libraries far more often than intended, and those libraries always drew from your own shelf instead of mixing in other writers. Test settings had been shipped as real content by mistake. The original room weights are back.",
+      "highlights": [
+        "Libraries are rare again, and the rooms you meet are varied again.",
+        "Library rooms go back to mostly showing other people's writing, with your own as the occasional treat."
+      ],
+      "date": "2026-08-23",
+      "released": true,
+      "released_in": "v0.631.0",
+      "released_at": "2026-08-23T14:25:53Z"
+    },
+    {
+      "id": "custom-train-content-free-play",
+      "version": "0.632.0",
+      "type": "feat",
+      "title": "Custom train content now asks before it changes your run",
+      "summary": "If you've built your own carriages in the Train Editor \u2014 or installed someone else's pack \u2014 starting a world now asks what you want to do with them. Continue and you play with your creations, but the run counts as Free Play: it won't add to your profile or global stats. Disable them and the world runs the built-in designs, and your stats count as normal. Tick 'Remember decision' and it won't ask again; you can change your mind any time in Options, or with /customcontent.",
+      "highlights": [
+        "A prompt at the start of any world running custom train content, with Continue / Disable Custom Changes and a Remember decision checkbox.",
+        "Playing with custom content is Free Play \u2014 advancements still earn live, but they don't count towards your profile or global totals.",
+        "Disabling is per-world and reversible: the world falls back to the built-in designs, and /customcontent on brings yours back.",
+        "A new Custom Train Content row in Options -> Dungeon Train sets what happens by default."
+      ],
+      "pr": 1061,
       "date": "2026-08-23",
       "released": false,
       "released_in": null,

@@ -211,6 +211,20 @@ class CommandAllowlistTest {
     }
 
     @Test
+    @DisplayName("/customcontent never taints — it is the way OUT of Free Play")
+    void customContentNeverTaints() {
+        // The Free Play notice links straight to this command. Tainting a player for clicking the
+        // "turn my custom content off" line would be exactly backwards — same reasoning that keeps
+        // /fixaisconfig allowlisted. It is a ROOT command, not a /dt subcommand, because /dt is
+        // gated at permission 2 and the player it exists for is an ordinary survival player.
+        assertFalse(CommandAllowlist.taints("/customcontent off"));
+        assertFalse(CommandAllowlist.taints("/customcontent on"));
+        assertFalse(CommandAllowlist.taints("/customcontent status"));
+        // …while the DT authoring commands still do.
+        assertTrue(CommandAllowlist.taints("/dt package disable my-pack"));
+    }
+
+    @Test
     @DisplayName("Empty / blank input never taints")
     void emptyNeverTaints() {
         assertFalse(CommandAllowlist.taints(""));
