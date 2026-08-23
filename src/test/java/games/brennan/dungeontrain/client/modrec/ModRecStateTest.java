@@ -181,6 +181,82 @@ class ModRecStateTest {
     }
 
     @Test
+    @DisplayName("a flagged mod sinks like a sent one and carries the reported marker")
+    void hackReportSinksAndMarks() {
+        ModRecState s = popular();
+        s.toggleHack("jei");
+        assertTrue(s.isReportingHack());
+        s.setComment("x-ray through stone");
+        assertTrue(s.canSend());
+        s.markSent();
+
+        assertEquals(List.of("xaerominimap", "chunky", "jei"), ids(s));
+        ModRecState.Tile flagged = s.tiles().get(2);
+        assertTrue(flagged.reported());
+        assertTrue(flagged.sent());
+        assertFalse(flagged.request());
+        assertFalse(s.isReportingHack());
+    }
+
+    @Test
+    @DisplayName("a mod is recommended or flagged, never both — the later send replaces the tile")
+    void recommendAndFlagAreExclusive() {
+        ModRecState s = popular();
+        s.toggle("jei");
+        s.setComment("indispensable");
+        s.markSent();
+        s.toggleHack("jei");
+        s.setComment("actually it cheats");
+        s.markSent();
+
+        assertEquals(List.of("xaerominimap", "chunky", "jei"), ids(s));
+        assertEquals(3, s.tiles().size());               // one tile for jei, not two
+        assertTrue(s.tiles().get(2).reported());
+    }
+
+    @Test
+    @DisplayName("the ⚠ icon does nothing on the 'not installed' tile — there is no mod to report")
+    void requestTileCannotBeFlagged() {
+        ModRecState s = popular();
+        s.toggleHack(ModRecState.REQUEST_ID);
+        assertEquals(null, s.selected());
+        assertFalse(s.isReportingHack());
+    }
+
+    @Test
+    @DisplayName("switching mode on the selected tile re-arms it and drops the typed reason")
+    void switchingModeClearsComment() {
+        ModRecState s = popular();
+        s.toggle("jei");
+        s.setComment("why I like it");
+        s.toggleHack("jei");
+        assertTrue(s.isReportingHack());
+        assertEquals("", s.comment());
+
+        s.setComment("what it lets you do");
+        s.toggle("jei");                       // back to a recommendation
+        assertFalse(s.isReportingHack());
+        assertEquals("", s.comment());
+
+        s.toggle("jei");                       // same mode twice deselects
+        assertEquals(null, s.selected());
+    }
+
+    @Test
+    @DisplayName("clicking the icon on the flagged tile again re-opens it, not a second card")
+    void reflagKeepsOneTile() {
+        ModRecState s = popular();
+        s.toggleHack("jei");
+        s.setComment("cheats");
+        s.markSent();
+        s.toggleHack("jei");
+        s.setComment("cheats, in detail");
+        s.markSent();
+        assertEquals(3, s.tiles().size());
+        assertEquals(List.of("xaerominimap", "chunky", "jei"), ids(s));
+    }
+
+    @Test
     @DisplayName("a mod with no display name falls back to its id on the tile")
     void namelessMod() {
         ModRecState s = new ModRecState(List.of(new ModRoster.LoadedMod("weirdmod", "")));

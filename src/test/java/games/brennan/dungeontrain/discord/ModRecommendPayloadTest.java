@@ -26,30 +26,44 @@ class ModRecommendPayloadTest {
     @DisplayName("a recommendation carries the modId, the flag, the mod's name and the reason")
     void recommendation() {
         JsonObject out = ModRecommendReporter.buildPayload(UUID,
-                new ModRecommendPacket("jei", "Just Enough Items", "saves me so much time", false));
+                new ModRecommendPacket("jei", "Just Enough Items", "saves me so much time", false, false));
         assertEquals(UUID, out.get("uuid").getAsString());
         assertEquals("jei", out.get("modId").getAsString());
         assertFalse(out.get("requested").getAsBoolean());
         assertEquals("Just Enough Items", out.get("name").getAsString());
         assertEquals("saves me so much time", out.get("comment").getAsString());
+        assertFalse(out.get("hack").getAsBoolean());
     }
 
     @Test
     @DisplayName("a request sends its typed name but still NO id — the name is not an identifier")
     void request() {
         JsonObject out = ModRecommendReporter.buildPayload(UUID,
-                new ModRecommendPacket("", "Create", "would suit the train perfectly", true));
+                new ModRecommendPacket("", "Create", "would suit the train perfectly", true, false));
         assertEquals("", out.get("modId").getAsString());
         assertTrue(out.get("requested").getAsBoolean());
         assertEquals("Create", out.get("name").getAsString());
         assertEquals("would suit the train perfectly", out.get("comment").getAsString());
+        assertFalse(out.get("hack").getAsBoolean());
+    }
+
+    @Test
+    @DisplayName("a hack report is a recommendation's mirror: real id, hack set, requested clear")
+    void hackReport() {
+        JsonObject out = ModRecommendReporter.buildPayload(UUID,
+                new ModRecommendPacket("xray", "X-Ray", "see ores through stone", false, true));
+        assertEquals("xray", out.get("modId").getAsString());
+        assertTrue(out.get("hack").getAsBoolean());
+        assertFalse(out.get("requested").getAsBoolean());
+        assertEquals("X-Ray", out.get("name").getAsString());
+        assertEquals("see ores through stone", out.get("comment").getAsString());
     }
 
     @Test
     @DisplayName("an installed mod with no display name falls back to its id, never to a placeholder")
     void nameFallsBackToId() {
         JsonObject out = ModRecommendReporter.buildPayload(UUID,
-                new ModRecommendPacket("jei", "  ", "good", false));
+                new ModRecommendPacket("jei", "  ", "good", false, false));
         assertEquals("jei", out.get("name").getAsString());
     }
 
@@ -57,7 +71,7 @@ class ModRecommendPayloadTest {
     @DisplayName("null fields degrade to empty strings rather than JSON nulls")
     void nullsAreSafe() {
         JsonObject out = ModRecommendReporter.buildPayload(UUID,
-                new ModRecommendPacket(null, null, null, false));
+                new ModRecommendPacket(null, null, null, false, false));
         assertEquals("", out.get("modId").getAsString());
         assertEquals("", out.get("name").getAsString());
         assertEquals("", out.get("comment").getAsString());

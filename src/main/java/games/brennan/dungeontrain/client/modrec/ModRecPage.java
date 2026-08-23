@@ -36,6 +36,15 @@ public final class ModRecPage {
     private static final int SEL_TEXT     = 0xFFFFFFFF;
     private static final int SENT_BORDER  = 0xFF34503A;
     private static final int SENT_TEXT    = 0xFF7FAE84;
+    // The hack-report side of the palette: the same three roles as the green ones, in warning red,
+    // so a flagged tile reads as the opposite of a recommended one at a glance.
+    private static final int REP_BG       = 0xFF5A2A26;
+    private static final int REP_BORDER   = 0xFF8E4238;
+    private static final int REP_TEXT     = 0xFFFFFFFF;
+    private static final int FLAGGED_BORDER = 0xFF5A302A;
+    private static final int FLAGGED_TEXT = 0xFFC08A80;
+    private static final int ICON_IDLE    = 0xFF6E6455;
+    private static final int ICON_HOVER   = 0xFFD4614E;
     private static final int ASK_TEXT     = 0xFF948A70;
     private static final int SUBLINE      = 0xFF948A70;
     private static final int SCROLLBAR_BG = 0xFF1C1D21;
@@ -46,6 +55,10 @@ public final class ModRecPage {
     private static final int BTN_OFF_TEXT = 0xFF6A6C70;
     private static final int BTN_DARK     = 0xFF1E1F21;
     private static final int BTN_TEXT     = 0xFFEAEAEA;
+
+    /** The ⚠ affordance drawn in a tile's right edge, and the click target reserved for it. */
+    private static final String HACK_GLYPH = "\u26A0";
+    private static final int ICON_W = 10;
 
     private static final int COLS = 3;
     private static final int GAP = 4;
@@ -66,7 +79,11 @@ public final class ModRecPage {
     private int maxScroll = 0;
     private int gridTop, gridBottom, gridLeft, gridRight;
     private final List<Hit> hits = new ArrayList<>();
+    private final List<Hit> hackHits = new ArrayList<>();
     private Hit sendButton;
+    /** Tooltip queued while the grid is scissored, drawn once the clip is off. */
+    private Component pendingTooltip;
+    private int tooltipX, tooltipY;
 
     public ModRecPage(Font font, IntUnaryOperator fade) {
         this.font = font;
@@ -93,6 +110,8 @@ public final class ModRecPage {
     public int draw(GuiGraphics g, ModRecState state, int left, int w, int cx, int y,
                     int footerTop, int mouseX, int mouseY) {
         hits.clear();
+        hackHits.clear();
+        pendingTooltip = null;
         sendButton = null;
         commentBoxY = -1;
         nameBoxY = -1;
@@ -137,18 +156,39 @@ public final class ModRecPage {
                     ? Component.translatable("gui.dungeontrain.death.modrec.not_installed").getString()
                     : tile.displayName();
             boolean sent = !isAskTile && tile.sent();
+            boolean flagged = !isAskTile && tile.reported();
             // A sent request is a receipt, not a control: there is nothing to change about a mod the
             // player doesn't have, so it draws but registers no hit and can't be selected.
             boolean clickable = isAskTile || !tile.request();
             boolean selected = clickable && state.isSelected(modId);
-            boolean hover = clickable && mouseX >= tx && mouseX < tx + cellW
+            boolean reporting = selected && state.isReportingHack();
+            boolean inside = mouseX >= tx && mouseX < tx + cellW
                     && mouseY >= ty && mouseY < ty + TILE_H
                     && mouseY >= gridTop && mouseY < gridBottom;
+            // Only a real, installed mod can be flagged: the "not installed" tile names a mod the
+            // player doesn't have, and a sent request is a receipt rather than a control.
+            boolean hackable = !isAskTile && clickable;
+            int iconX = tx + cellW - ICON_W - 2;
+            boolean iconHover = hackable && inside && mouseX >= iconX;
+            boolean hover = clickable && inside && !iconHover;
 
-            drawTile(g, tx, ty, cellW, label, sent, selected, hover, isAskTile || !clickable);
+            drawTile(g, tx, ty, cellW, label, sent, selected, hover, isAskTile || !clickable,
+                    flagged, reporting, hackable, iconHover);
             if (clickable) hits.add(new Hit(modId, tx, ty, cellW, TILE_H));
+            if (hackable) {
+                hackHits.add(new Hit(modId, iconX, ty, ICON_W + 2, TILE_H));
+                if (iconHover) {
+                    pendingTooltip = Component.translatable("gui.dungeontrain.death.modrec.hack_hint");
+                    tooltipX = mouseX;
+                    tooltipY = mouseY;
+                }
+            }
         }
         g.disableScissor();
+        // Drawn after the clip so a tooltip on the top or bottom row isn't sliced by the viewport.
+        if (pendingTooltip != null) {
+            g.renderTooltip(font, pendingTooltip, tooltipX, tooltipY);
+        }
 
         if (maxScroll > 0) {
             int barX = gridRight + 2;
@@ -169,7 +209,9 @@ public final class ModRecPage {
             commentBoxY = below;
             below += 16 + 6;
 
-            Component label = Component.translatable("gui.dungeontrain.death.modrec.send");
+            Component label = Component.translatable(state.isReportingHack()
+                    ? "gui.dungeontrain.death.modrec.report"
+                    : "gui.dungeontrain.death.modrec.send");
             int bw = Math.max(60, font.width(label) + 24), bh = 18;
             int bx = cx - bw / 2;
             boolean live = state.canSend();
@@ -191,18 +233,33 @@ public final class ModRecPage {
     }
 
     private void drawTile(GuiGraphics g, int x, int y, int w, String label,
-                          boolean sent, boolean selected, boolean hover, boolean muted) {
-        int bg = selected ? SEL_BG : TILE_BG;
-        int border = selected ? SEL_BORDER : (sent ? SENT_BORDER : (hover ? TILE_HOVER : TILE_BORDER));
-        int text = selected ? SEL_TEXT : (sent ? SENT_TEXT : (muted ? ASK_TEXT : TILE_TEXT));
+                          boolean sent, boolean selected, boolean hover, boolean muted,
+                          boolean flagged, boolean reporting, boolean hackable, boolean iconHover) {
+        int bg = reporting ? REP_BG : (selected ? SEL_BG : TILE_BG);
+        int border = reporting ? REP_BORDER
+                : selected ? SEL_BORDER
+                : flagged ? FLAGGED_BORDER
+                : sent ? SENT_BORDER
+                : hover ? TILE_HOVER : TILE_BORDER;
+        int text = reporting ? REP_TEXT
+                : selected ? SEL_TEXT
+                : flagged ? FLAGGED_TEXT
+                : sent ? SENT_TEXT
+                : muted ? ASK_TEXT : TILE_TEXT;
 
         g.fill(x, y, x + w, y + TILE_H, fade.applyAsInt(bg));
         drawBorder(g, x, y, w, TILE_H, border);
 
-        String shown = sent ? "✓ " + label : label;
-        shown = trim(shown, w - 8);
-        g.drawString(font, shown, x + 4, y + (TILE_H - font.lineHeight) / 2 + 1,
-                fade.applyAsInt(text), false);
+        int textY = y + (TILE_H - font.lineHeight) / 2 + 1;
+        if (hackable) {
+            g.drawString(font, HACK_GLYPH, x + w - ICON_W, textY,
+                    fade.applyAsInt(iconHover || reporting ? ICON_HOVER : ICON_IDLE), false);
+        }
+
+        // A flagged tile keeps a ⚠ where a recommended one keeps its ✓ — same receipt, opposite sign.
+        String shown = flagged ? HACK_GLYPH + " " + label : (sent ? "✓ " + label : label);
+        shown = trim(shown, w - 8 - (hackable ? ICON_W : 0));
+        g.drawString(font, shown, x + 4, textY, fade.applyAsInt(text), false);
     }
 
     /** Shorten to fit {@code maxW}, ending in "…" — mod names are long and the tiles are narrow. */
@@ -224,6 +281,18 @@ public final class ModRecPage {
     public String tileAt(double mx, double my) {
         if (my < gridTop || my >= gridBottom) return null;
         for (Hit h : hits) {
+            if (h.has(mx, my)) return h.modId();
+        }
+        return null;
+    }
+
+    /**
+     * The tile whose ⚠ icon is under the cursor, or null. Must be tested before {@link #tileAt},
+     * since the icon sits inside its tile's rect.
+     */
+    public String hackAt(double mx, double my) {
+        if (my < gridTop || my >= gridBottom) return null;
+        for (Hit h : hackHits) {
             if (h.has(mx, my)) return h.modId();
         }
         return null;

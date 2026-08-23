@@ -8147,6 +8147,22 @@
       "released": true,
       "released_in": "v0.627.0",
       "released_at": "2026-08-23T07:53:19Z"
+    },
+    {
+      "id": "mod-hack-report-icon",
+      "version": "0.628.0",
+      "type": "feat",
+      "title": "Flag a cheat mod from the death screen",
+      "summary": "The Mod Recommendations page now works both ways. Alongside recommending a mod to the creator, each of your installed mods carries a small warning icon \u2014 click it to flag that mod as a cheat or hack, say what it lets you do, and send. Flagged mods sink to the bottom of the grid with a warning mark, the way recommended ones keep their tick.",
+      "highlights": [
+        "Report any installed mod as a cheat or hack, with a reason",
+        "Recommendations are unchanged \u2014 the tile body still recommends"
+      ],
+      "pr": 1057,
+      "date": "2026-08-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
