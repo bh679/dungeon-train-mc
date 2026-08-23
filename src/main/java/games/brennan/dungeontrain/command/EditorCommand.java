@@ -21,6 +21,9 @@ import games.brennan.dungeontrain.editor.CarriageVariantContentsAllowStore;
 import games.brennan.dungeontrain.editor.CarriageVariantPartsStore;
 import games.brennan.dungeontrain.editor.EditorCategory;
 import games.brennan.dungeontrain.editor.EditorEditApplier;
+import games.brennan.dungeontrain.editor.EditorEditHistory;
+import games.brennan.dungeontrain.editor.EditorPlotTransform;
+import games.brennan.dungeontrain.editor.EditorPlotTransformer;
 import games.brennan.dungeontrain.editor.EditorRegionDiff;
 import games.brennan.dungeontrain.editor.PortalRoomEditor;
 import games.brennan.dungeontrain.portal.PortalRoomLayout;
@@ -67,6 +70,7 @@ import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.ResourceLocationArgument;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.Vec3i;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
@@ -589,6 +593,29 @@ public final class EditorCommand {
             .then(Commands.literal("clear")
                 .executes(ctx -> EditorRegionDiff.recording(ctx.getSource(), "Clear",
                     () -> runClear(ctx.getSource()))))
+            .then(Commands.literal("offset")
+                .then(Commands.argument("x", IntegerArgumentType.integer())
+                    .then(Commands.argument("y", IntegerArgumentType.integer())
+                        .then(Commands.argument("z", IntegerArgumentType.integer())
+                            .executes(ctx -> runTransform(ctx.getSource(),
+                                EditorPlotTransform.offset(
+                                    IntegerArgumentType.getInteger(ctx, "x"),
+                                    IntegerArgumentType.getInteger(ctx, "y"),
+                                    IntegerArgumentType.getInteger(ctx, "z"))))))))
+            .then(Commands.literal("rotate")
+                .then(Commands.literal("90").executes(ctx -> runTransform(ctx.getSource(),
+                    EditorPlotTransform.rotation(90))))
+                .then(Commands.literal("180").executes(ctx -> runTransform(ctx.getSource(),
+                    EditorPlotTransform.rotation(180))))
+                .then(Commands.literal("270").executes(ctx -> runTransform(ctx.getSource(),
+                    EditorPlotTransform.rotation(270)))))
+            .then(Commands.literal("flip")
+                .then(Commands.literal("x").executes(ctx -> runTransform(ctx.getSource(),
+                    EditorPlotTransform.flip(Direction.Axis.X))))
+                .then(Commands.literal("y").executes(ctx -> runTransform(ctx.getSource(),
+                    EditorPlotTransform.flip(Direction.Axis.Y))))
+                .then(Commands.literal("z").executes(ctx -> runTransform(ctx.getSource(),
+                    EditorPlotTransform.flip(Direction.Axis.Z)))))
             .then(Commands.literal("undo")
                 .executes(ctx -> runUndoRedo(ctx.getSource(), /*redoing*/ false)))
             .then(Commands.literal("redo")
@@ -6858,6 +6885,108 @@ public final class EditorCommand {
      * cannot drift. Feedback goes to the action bar rather than chat: an author
      * undoing a run of edits should not have to watch their chat fill up.</p>
      */
+    /**
+     * Rearrange the plot the player is standing in — {@code offset}, {@code rotate}
+     * and {@code flip} all land here, differing only in the
+     * {@link EditorPlotTransform} they carry.
+     *
+     * <p>Recorded through {@link EditorRegionDiff} so the whole rearrangement —
+     * blocks, variant sidecar and container pools — comes back on one Ctrl+Z.
+     * The wrapper is entered only once the transform is known to apply, so a
+     * rejected quarter turn does not push an empty step.</p>
+     */
+    private static int runTransform(CommandSourceStack source, EditorPlotTransform transform) {
+        ServerPlayer player = requirePlayer(source);
+        if (player == null) return 0;
+        ServerLevel level = source.getServer().overworld();
+
+        EditorPlotTransformer.Region region =
+            EditorPlotTransformer.resolve(player, level).orElse(null);
+        if (region == null) {
+            source.sendFailure(Component.literal(
+                "Not in an editor plot — stand inside the template you want to move."
+            ).withStyle(ChatFormatting.RED));
+            return 0;
+        }
+        if (transform.isIdentity()) {
+            source.sendFailure(Component.literal(
+                transform.label() + " would leave the plot exactly as it is."
+            ).withStyle(ChatFormatting.RED));
+            return 0;
+        }
+        String rejection = transform.rejection(region.size());
+        if (rejection != null) {
+            source.sendFailure(Component.literal(
+                "Cannot " + transform.label().toLowerCase(Locale.ROOT) + ": " + rejection + "."
+            ).withStyle(ChatFormatting.RED));
+            return 0;
+        }
+
+        // Say so up front rather than letting the author find out at Ctrl+Z: a
+        // plot bigger than the history's per-step cell cap runs unrecorded, and
+        // EditorRegionDiff drops that plot's history when it happens.
+        if (region.volume() > EditorEditHistory.MAX_CELLS_PER_STEP) {
+            source.sendSuccess(() -> Component.literal(
+                "Heads up: this plot is too big to record (" + region.volume()
+                    + " cells) — this cannot be undone."
+            ).withStyle(ChatFormatting.YELLOW), false);
+        }
+
+        return EditorRegionDiff.recording(source, transform.label(),
+            () -> applyTransform(source, level, region, transform));
+    }
+
+    /** The recorded half of {@link #runTransform} — see there for the guards. */
+    private static int applyTransform(CommandSourceStack source, ServerLevel level,
+                                      EditorPlotTransformer.Region region,
+                                      EditorPlotTransform transform) {
+        EditorPlotTransformer.Result result;
+        try {
+            result = EditorPlotTransformer.apply(level, region, transform);
+        } catch (IOException e) {
+            // The blocks have already moved by the time a sidecar write can
+            // fail, so this is a partial apply — say which half, and leave the
+            // history step to put both back.
+            LOGGER.error("[DungeonTrain] editor transform ({}) failed to save a sidecar",
+                transform.label(), e);
+            source.sendFailure(Component.literal(
+                transform.label() + ": blocks moved but a sidecar could not be saved — "
+                    + e.getMessage() + ". Undo with Ctrl+Z."
+            ).withStyle(ChatFormatting.RED));
+            return 0;
+        }
+
+        StringBuilder message = new StringBuilder("Editor: ")
+            .append(transform.label()).append(" — ").append(result.cells())
+            .append(result.cells() == 1 ? " block" : " blocks");
+        if (result.variantEntries() > 0) {
+            message.append(", ").append(result.variantEntries()).append(" variant ")
+                .append(result.variantEntries() == 1 ? "entry" : "entries");
+        }
+        if (result.pools() > 0) {
+            message.append(", ").append(result.pools()).append(" container ")
+                .append(result.pools() == 1 ? "pool" : "pools");
+        }
+        message.append('.');
+        source.sendSuccess(() -> Component.literal(message.toString())
+            .withStyle(ChatFormatting.GREEN), true);
+
+        if (result.entities() > 0) {
+            source.sendSuccess(() -> Component.literal(
+                "  " + result.entities() + " entit" + (result.entities() == 1 ? "y" : "ies")
+                    + " in the plot stayed put — undo has no record of entities, so moving them "
+                    + "would strand them on a Ctrl+Z."
+            ).withStyle(ChatFormatting.YELLOW), false);
+        }
+        if (region.mirrored()) {
+            source.sendSuccess(() -> Component.literal(
+                "  This plot has a mirror axis on — the two halves may no longer agree. "
+                    + "Run /dt editor mirror rebuild if you want them re-derived."
+            ).withStyle(ChatFormatting.YELLOW), false);
+        }
+        return 1;
+    }
+
     private static int runUndoRedo(CommandSourceStack source, boolean redoing) {
         ServerPlayer player = requirePlayer(source);
         if (player == null) return 0;
