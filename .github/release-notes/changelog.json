@@ -8163,6 +8163,72 @@
       "released": true,
       "released_in": "v0.628.0",
       "released_at": "2026-08-23T08:01:10Z"
+    },
+    {
+      "id": "config-integrity-free-play",
+      "version": "0.629.0",
+      "type": "feat",
+      "title": "Changed settings now show at launch, with one-click restore",
+      "summary": "Dungeon Train's difficulty settings are what your advancements and lifetime stats are measured against, so a world running with them changed now plays in Free Play \u2014 the same rule that already applied to Adventure Item Stats. If your settings differ, the game tells you on the title screen, lists exactly what changed, and offers to put them back. Your own settings are always backed up first, never deleted, so you can rename a file back to restore them. Settings that don't affect balance \u2014 visual options, Discord and telemetry toggles, and the content filters \u2014 are unaffected.",
+      "highlights": [
+        "Changed difficulty settings are shown at launch, not discovered mid-run",
+        "One-click restore to defaults, with your old settings kept as backups",
+        "Keeping your changes is remembered, so you're only asked again if something else changes",
+        "New /fixconfig command does the same restore from in-game"
+      ],
+      "pr": 1058,
+      "date": "2026-08-23",
+      "released": true,
+      "released_in": "v0.630.0",
+      "released_at": "2026-08-23T13:40:00Z"
+    },
+    {
+      "id": "own-books-shelf-and-controls",
+      "version": "0.630.0",
+      "type": "feat",
+      "title": "Find the books you wrote, even the ones the train hasn't let out",
+      "summary": "Your own library rooms now stock the books you wrote that the train is still deciding about \u2014 or has decided against. Open one and its last page tells you where it stands, in the train's own words. You can also take one of your released books back out of circulation whenever you like.",
+      "highlights": [
+        "Books you wrote that are pending, undecided or refused now appear on your own library shelves instead of vanishing the moment you sign them.",
+        "The last page of one of your books says where it stands: still being read, undecided, or turned away \u2014 in orange, or red once it is a no.",
+        "Made Private: take one of your released books off the line so only you can find it. Reversible \u2014 the padlock shows what it will do before you click it.",
+        "Protest a verdict you disagree with, on a book the train has actually read. It asks a person to look again; it does not overturn anything by itself.",
+        "No thumbs on a book you wrote \u2014 rating your own work was never the point, and it skewed which books everyone else was shown."
+      ],
+      "date": "2026-08-23",
+      "released": true,
+      "released_in": "v0.630.0",
+      "released_at": "2026-08-23T13:40:00Z"
+    },
+    {
+      "id": "own-book-vote-counters",
+      "version": "0.631.0",
+      "type": "feat",
+      "title": "See how your own books are landing",
+      "summary": "The last page of a book you wrote now shows its thumbs up and thumbs down count. The numbers refresh whenever you pick the book up.",
+      "highlights": [
+        "Vote counts sit where the voting buttons are on other people's books \u2014 yours report, they don't ask.",
+        "A released book of yours shows its tally even at zero, so \"nobody has voted yet\" is something you can actually see."
+      ],
+      "date": "2026-08-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "portal-library-weights-restored",
+      "version": "0.631.0",
+      "type": "fix",
+      "title": "Portal room variety restored",
+      "summary": "Since v0.630.0 portal rooms had been coming up as libraries far more often than intended, and those libraries always drew from your own shelf instead of mixing in other writers. Test settings had been shipped as real content by mistake. The original room weights are back.",
+      "highlights": [
+        "Libraries are rare again, and the rooms you meet are varied again.",
+        "Library rooms go back to mostly showing other people's writing, with your own as the occasional treat."
+      ],
+      "date": "2026-08-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

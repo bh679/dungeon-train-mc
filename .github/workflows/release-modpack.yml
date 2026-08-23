@@ -80,6 +80,11 @@ jobs:
           echo "Waiting ${DELAY_MINUTES}m before publishing the modpack (lets CurseForge approve the DT file)…"
           sleep $(( DELAY_MINUTES * 60 ))
 
+      - name: Modpack override allowlist
+        # overrides/ ships verbatim to every player. Re-checked here because this workflow is
+        # dispatchable with --ref <branch>, which bypasses build.yml's modpack-checks job.
+        run: python3 scripts/modpack/check-overrides.py
+
       - name: Render modpack manifest
         env:
           TAG: ${{ inputs.tag }}

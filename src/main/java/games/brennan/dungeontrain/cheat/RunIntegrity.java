@@ -47,7 +47,8 @@ public final class RunIntegrity {
      * Is this player's current run Free Play? True when the run is permanently
      * cheated ({@link #isPermanentlyCheated}), OR when the whole server session
      * is Free Play because AIS data was changed
-     * ({@link AisDataIntegrity#isSessionFreePlay}), a known cheat mod is
+     * ({@link AisDataIntegrity#isSessionFreePlay}), DT's own balance config was
+     * changed ({@link DtConfigIntegrity#isSessionFreePlay}), a known cheat mod is
      * installed ({@link CheatModIntegrity#isSessionFreePlay}), or custom Train
      * Editor content is active ({@link EditorContentIntegrity#isSessionFreePlay}).
      * Every persistence gate keys off this, so the session taints inherit all
@@ -55,6 +56,7 @@ public final class RunIntegrity {
      */
     public static boolean isCheated(ServerPlayer player) {
         return AisDataIntegrity.isSessionFreePlay()
+            || DtConfigIntegrity.isSessionFreePlay()
             || CheatModIntegrity.isSessionFreePlay()
             || EditorContentIntegrity.isSessionFreePlay()
             || isPermanentlyCheated(player);
@@ -86,26 +88,30 @@ public final class RunIntegrity {
      * confirmation prompt that would have nothing to confirm, and to record the permanent taint
      * quietly instead of notifying twice.
      *
-     * <p>Covers the AIS-config taint and the custom-editor-content taint. Deliberately <b>not</b>
-     * {@link CheatModIntegrity} — that source predates this helper and still takes the prompt /
-     * notify path; folding it in would change its Discord reporting, which is a separate call.</p>
+     * <p>Covers the AIS-config, DT-config and custom-editor-content taints. Deliberately
+     * <b>not</b> {@link CheatModIntegrity} — that source predates this helper and still takes the
+     * prompt / notify path; folding it in would change its Discord reporting, which is a separate
+     * call.</p>
      */
     public static boolean isVisiblySessionFreePlay() {
-        return AisDataIntegrity.isSessionFreePlay() || EditorContentIntegrity.isSessionFreePlay();
+        return AisDataIntegrity.isSessionFreePlay()
+            || DtConfigIntegrity.isSessionFreePlay()
+            || EditorContentIntegrity.isSessionFreePlay();
     }
 
     public static void markCheated(ServerPlayer player, Component cause) {
         // Idempotence keys off the permanent attachment, NOT isCheated(): during
-        // a session-only AIS taint a tainting action must still be recorded
-        // permanently, or restoring the AIS config would forget it.
+        // a session-only config taint a tainting action must still be recorded
+        // permanently, or restoring the config would forget it.
         if (isPermanentlyCheated(player)) return;
         player.setData(ModDataAttachments.RUN_CHEATED.get(), Boolean.TRUE);
         applyFreePlayEffect(player);
         LOGGER.info("[DungeonTrain] Run is now Free Play for {} — {}",
             player.getName().getString(), cause.getString());
         if (isVisiblySessionFreePlay()) {
-            // Already visibly in Free Play this session (the AIS or custom-content notice on
-            // join) — record the permanent taint quietly, no second chat line / Discord post.
+            // Already visibly in Free Play this session (the AIS, DT-config or custom-content
+            // notice on join) — record the permanent taint quietly, no second chat line /
+            // Discord post.
             return;
         }
         sendFreePlayNotice(player, cause);

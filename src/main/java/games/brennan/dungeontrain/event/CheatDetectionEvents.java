@@ -4,6 +4,7 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.cheat.AisDataIntegrity;
 import games.brennan.dungeontrain.cheat.CheatModIntegrity;
 import games.brennan.dungeontrain.cheat.CommandAllowlist;
+import games.brennan.dungeontrain.cheat.DtConfigIntegrity;
 import games.brennan.dungeontrain.cheat.RunIntegrity;
 import games.brennan.dungeontrain.compat.EnderChestLockBridge;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
@@ -196,6 +197,25 @@ public final class CheatDetectionEvents {
                     .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/fixaisconfig"))
                     .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
                         Component.literal("/fixaisconfig")))));
+        }
+        if (DtConfigIntegrity.isSessionFreePlay()) {
+            // Session-only DT-config taint (parallel to the AIS block above): markCheated never
+            // runs in this path, so apply the effect and explain WHY here, once per login — with
+            // the exact changed settings and a one-click fix action.
+            RunIntegrity.applyFreePlayEffect(player);
+            RunIntegrity.sendFreePlayNotice(player,
+                Component.translatable("chat.dungeontrain.free_play.cause.dt_config"));
+            player.sendSystemMessage(Component.translatable(
+                    "chat.dungeontrain.free_play.dt_config_changed",
+                    String.join(", ", DtConfigIntegrity.deviations()))
+                .withStyle(ChatFormatting.GRAY));
+            player.sendSystemMessage(Component.translatable("chat.dungeontrain.free_play.dt_config_fix")
+                .withStyle(style -> style
+                    .withColor(ChatFormatting.AQUA)
+                    .withUnderlined(true)
+                    .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/fixconfig"))
+                    .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+                        Component.literal("/fixconfig")))));
         }
         if (CheatModIntegrity.isSessionFreePlay()) {
             // Session-only cheat-mod taint (parallel to the AIS block above): markCheated never

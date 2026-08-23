@@ -88,8 +88,71 @@ public final class SharedBookPool {
      * snapshot serves everybody on a server: two players may have answered differently, so like
      * {@code lang} these are stored per book and applied per player at selection time.</p>
      */
+    /**
+     * The moderation state a book is in, as the relay names it. {@code "approved"} for every book the
+     * ordinary pool serves; the withheld states — {@code "pending"} (submitted, nothing has read it
+     * yet), {@code "flagged"} / {@code "needs_human_review"} (read, no verdict), {@code "rejected"} —
+     * reach a client ONLY on the writer's own shelf ({@code /books/pool?mine=1}), and only their own.
+     *
+     * <p>Never null, and the unknown case is {@code "approved"} — which reads backwards next to
+     * {@code kidSafe} above, so it is worth saying why. {@code kidSafe} guesses closed because guessing
+     * wrong means showing a child something nobody judged. Here the closed guess is the harmful one:
+     * this field only ever decorates a book, and a garbled value defaulting to "withheld" would tint a
+     * perfectly ordinary community book red and tell its reader the train dislikes it.</p>
+     */
+    public static final String STATUS_APPROVED = "approved";
+
+    /**
+     * The relay said nothing about this book's state — an ordinary community book, by anyone.
+     *
+     * <p>Distinct from {@link #STATUS_APPROVED}, and the distinction is load-bearing: only the
+     * author's own shelf ({@code mine=1}) carries a {@code status} at all, so a present
+     * {@code "approved"} means "yours, and released" while an absent one means "somebody's, and we
+     * were not told". The vote page shows different controls for those two.</p>
+     */
+    public static final String STATUS_UNKNOWN = null;
+
     public record PoolBook(int id, String title, String author, List<String> pages, String lang, int weight,
-                           boolean kidSafe, boolean political) {}
+                           boolean kidSafe, boolean political, String status, boolean isPrivate,
+                           int votesUp, int votesDown) {
+
+        /**
+         * Whether the relay declined to call this book released — i.e. anything but a literal
+         * {@code "approved"}, including a status this jar does not recognise.
+         *
+         * <p><b>This deliberately answers a different question from
+         * {@link BookModerationState#fromStatus}, and defaults the opposite way.</b> That one asks
+         * "what should I show the writer?", where an unrecognised status must fail OPEN — tinting an
+         * ordinary community book red and telling its reader the train dislikes it is the harmful
+         * mistake. This one asks "may this be written into a shelf other players can read?", where an
+         * unrecognised status must fail CLOSED, because the harmful mistake is the other one. A future
+         * relay state this jar has never heard of is therefore shown as an ordinary book and still
+         * kept off a shared shelf, which is the safe reading of both questions at once.</p>
+         *
+         * @see games.brennan.dungeontrain.portal.PortalRoomLibrarian#shelvable
+         */
+        public boolean isWithheld() {
+            return status != null && !STATUS_APPROVED.equals(status);
+        }
+
+        /**
+         * Whether the relay told us this book's state at all — which it does only on the author's own
+         * shelf, so in practice: is this the reader's own book.
+         */
+        public boolean isOwn() {
+            return status != null;
+        }
+    }
+
+    /** A non-negative int field, or 0 when absent / null / not a number. */
+    private static int optInt(JsonObject o, String key) {
+        if (!o.has(key) || o.get(key).isJsonNull() || !o.get(key).isJsonPrimitive()) return 0;
+        try {
+            return Math.max(0, o.get(key).getAsInt());
+        } catch (RuntimeException ignored) {
+            return 0;
+        }
+    }
 
     /**
      * Upper bound on the accumulated snapshot. Fetches MERGE into it (see {@link #applyResponse}) so a
@@ -161,6 +224,20 @@ public final class SharedBookPool {
         ItemStack stack = BookFactory.buildPlainBook(book.title(), book.author(), book.pages());
         SharedBookFoundTag.stamp(stack);               // "read a stranger's book" advancement marker
         SharedBookReadTag.stampId(stack, book.id());   // read-telemetry identity only
+        // The moderation state rides along as data ONLY. The book itself — title, author, pages — is
+        // exactly the book its writer wrote: no tint, no renamed item, no added lore. Where the train
+        // has something to say about it, it says so on the vote page (see BookVoteClientEvents), which
+        // is the train's own page rather than any part of the author's.
+        BookModerationTag.stamp(stack, BookModerationState.fromStatus(book.status()));
+        if (book.isOwn()) {
+            // Guarded on isOwn() and not on the numbers themselves. The tally is sent even at zero, so
+            // 0/0 from the relay ("nobody voted") and 0/0 from an absent field ("we were not told")
+            // are indistinguishable once parsed — and stamping the second would put a component on
+            // every ordinary community book and claim nobody cared about it. isOwn() IS the "the relay
+            // told us about this book" signal, so it is the one to gate on.
+            BookPrivateTag.stamp(stack, book.isPrivate());
+            BookVoteCountsTag.stamp(stack, book.votesUp(), book.votesDown());
+        }
         return stack;
     }
 
@@ -385,7 +462,30 @@ public final class SharedBookPool {
         // about the tag at all.
         boolean political = o.has("political") && !o.get("political").isJsonNull()
                 && o.get("political").isJsonPrimitive() && o.get("political").getAsBoolean();
-        return new PoolBook(id, title, author, pages, lang, weight, kidSafe, political);
+        // `status` rides along only on the writer's-own-shelf response (`mine=1`); every ordinary pool
+        // response omits it. Absent, null or garbled therefore means "an ordinary released book", which
+        // is also the right read for a relay too old to send it. See PoolBook#STATUS_APPROVED for why
+        // this default is the OPEN one while kidSafe's is closed.
+        String status = STATUS_UNKNOWN;
+        if (o.has("status") && !o.get("status").isJsonNull() && o.get("status").isJsonPrimitive()) {
+            try {
+                String raw = o.get("status").getAsString();
+                if (raw != null && !raw.isBlank()) status = raw.trim();
+            } catch (RuntimeException ignored) {
+                // non-string status — read it as "the relay said nothing"
+            }
+        }
+        // `private` is the author's own withdrawal, sent only on their own shelf and only when true —
+        // the same omit-when-false handshake as `political`.
+        boolean isPrivate = o.has("private") && !o.get("private").isJsonNull()
+                && o.get("private").isJsonPrimitive() && o.get("private").getAsBoolean();
+        // The 👍/👎 tally, sent only on the writer's own shelf — and sent there even at zero, which is
+        // why absent means "we were told nothing" rather than "nobody voted". A relay too old to send
+        // them lands on 0/0, and the page shows no counters at all rather than claiming nobody cared.
+        int votesUp = optInt(o, "votesUp");
+        int votesDown = optInt(o, "votesDown");
+        return new PoolBook(id, title, author, pages, lang, weight, kidSafe, political, status, isPrivate,
+            votesUp, votesDown);
     }
 
     /**
