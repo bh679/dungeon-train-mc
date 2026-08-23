@@ -1436,6 +1436,20 @@ public final class NarrativeDeathScreen extends Screen {
         return below;
     }
 
+    /**
+     * Point the comment box's hint and narration at the question the live selection actually asks —
+     * a recommendation's "why" or a hack report's "what does it let you do". Called on every
+     * selection change; the box itself is built once in {@link #init()}.
+     */
+    private void retargetModCommentPrompt() {
+        if (modCommentBox == null || modRec == null) return;
+        Component prompt = Component.translatable(modRec.isReportingHack()
+                ? "gui.dungeontrain.death.modrec.hack_why"
+                : "gui.dungeontrain.death.modrec.why");
+        modCommentBox.setMessage(prompt);
+        modCommentBox.setHint(prompt);
+    }
+
     /** Position an optional EditBox, or park it off-screen when the page gave it no slot (y &lt; 0). */
     private void placeBox(EditBox box, int x, int y, int w) {
         if (box == null) return;
@@ -1901,9 +1915,14 @@ public final class NarrativeDeathScreen extends Screen {
             }
             if (page.kind() == Kind.MODREC && modRec != null) {
                 if (modRecPage.sendAt(mx, my)) { sendModRecommendation(); return true; }
-                String modId = modRecPage.tileAt(mx, my);
+                // The ⚠ icon lives inside its tile's rect, so it has to win the hit test.
+                String hackId = modRecPage.hackAt(mx, my);
+                String modId = hackId != null ? hackId : modRecPage.tileAt(mx, my);
                 if (modId != null) {
-                    modRec.toggle(modId);
+                    if (hackId != null) modRec.toggleHack(modId); else modRec.toggle(modId);
+                    // The prompt has to follow the mode: "why I'd recommend it" and "what it lets
+                    // you do" are different questions and the box is built once, in init().
+                    retargetModCommentPrompt();
                     // The state cleared the text; the widgets have to follow, or the old comment
                     // would re-arm Send for the newly selected mod.
                     if (modCommentBox != null) modCommentBox.setValue(modRec.comment());
@@ -2122,10 +2141,13 @@ public final class NarrativeDeathScreen extends Screen {
     private void sendModRecommendation() {
         if (modRec == null || !modRec.canSend()) return;
         boolean requested = modRec.isRequesting();
+        boolean hack = modRec.isReportingHack();
         String modId = requested ? "" : modRec.selected();
         String name = modRec.selectedName();
-        DungeonTrainNet.sendToServer(new ModRecommendPacket(modId, name, modRec.comment().trim(), requested));
-        UiAnalytics.click(UiAnalytics.SURFACE_DEATH_SCREEN, UiAnalytics.TARGET_MOD_RECOMMEND);
+        DungeonTrainNet.sendToServer(
+                new ModRecommendPacket(modId, name, modRec.comment().trim(), requested, hack));
+        UiAnalytics.click(UiAnalytics.SURFACE_DEATH_SCREEN,
+                hack ? UiAnalytics.TARGET_MOD_HACK_REPORT : UiAnalytics.TARGET_MOD_RECOMMEND);
         modRec.markSent();
         if (modCommentBox != null) modCommentBox.setValue("");
         if (modNameBox != null) modNameBox.setValue("");
