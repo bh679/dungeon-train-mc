@@ -5,6 +5,8 @@ import games.brennan.dungeontrain.portal.PortalRoomTiling.Tile;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.util.Set;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -131,6 +133,32 @@ class PortalExitCopiesTest {
 
         // And with every standing copy bound, there is simply nothing to retire.
         assertNull(standing.nextToRemove(Tile.BASE, approach, REACH, site -> false));
+    }
+
+    @Test
+    @DisplayName("A copy beside a second player is held when the first walks away")
+    void aSecondOccupantsCopyIsHeld() {
+        // The multiplayer failure. A player standing in a copy's corridor resolves to a tile that
+        // corridor reaches into, so retiring it around them clears the floor they are on.
+        PortalExitCopies standing = PortalExitCopies.NONE.with(exitAt(0, 16)).with(exitAt(0, -16));
+        Tile walker = Tile.BASE;
+        Tile stayed = new Tile(0, 16);
+
+        // Following the walker alone — what it used to do — the copy the second player is standing in
+        // is the first thing offered up.
+        assertEquals(exitAt(0, 16), standing.nextToRemove(walker, RADIUS, REACH));
+
+        // With both of them as centres, that copy is held and the one behind them both goes instead.
+        assertEquals(exitAt(0, -16),
+            standing.nextToRemove(Set.of(walker, stayed), RADIUS, REACH, site -> true));
+
+        // Nothing near either of them is ever offered, however long the tick loop asks.
+        PortalExitCopies drained = standing;
+        for (Site stale;
+             (stale = drained.nextToRemove(Set.of(walker, stayed), RADIUS, REACH, site -> true)) != null; ) {
+            drained = drained.without(stale);
+        }
+        assertTrue(drained.has(exitAt(0, 16)));
     }
 
     @Test
