@@ -102,6 +102,7 @@
   "gui.dungeontrain.config_deviation.body": "Dungeon Train's difficulty settings are no longer the ones the game is balanced around. You can keep playing this way, but advancements and stats won't be saved to your profile while they differ.",
   "gui.dungeontrain.config_deviation.more": "...and %s more",
   "gui.dungeontrain.config_deviation.reset": "Reset to default",
+  "gui.dungeontrain.config_deviation.reset.tooltip": "Your current settings are backed up first — nothing is deleted. They're kept in the config folder, and you can rename one back to restore it.",
   "gui.dungeontrain.config_deviation.keep": "Keep my changes",
   "gui.dungeontrain.config_deviation.done.title": "Settings Reset",
   "gui.dungeontrain.config_deviation.done.body": "Your old settings were kept as backup files in the config folder — rename one back to restore it. Restart the game to play with the defaults.",

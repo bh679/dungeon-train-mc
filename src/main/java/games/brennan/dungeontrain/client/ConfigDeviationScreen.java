@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.client;
 import games.brennan.dungeontrain.cheat.ConfigReset;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
@@ -36,6 +37,7 @@ public final class ConfigDeviationScreen extends Screen {
     private static final String KEY_BODY = "gui.dungeontrain.config_deviation.body";
     private static final String KEY_MORE = "gui.dungeontrain.config_deviation.more";
     private static final String KEY_RESET = "gui.dungeontrain.config_deviation.reset";
+    private static final String KEY_RESET_TOOLTIP = "gui.dungeontrain.config_deviation.reset.tooltip";
     private static final String KEY_KEEP = "gui.dungeontrain.config_deviation.keep";
     private static final String KEY_DONE_TITLE = "gui.dungeontrain.config_deviation.done.title";
     private static final String KEY_DONE_BODY = "gui.dungeontrain.config_deviation.done.body";
@@ -128,6 +130,9 @@ public final class ConfigDeviationScreen extends Screen {
         int buttonW = (innerWidth - BUTTON_GAP) / 2;
         addRenderableWidget(Button.builder(Component.translatable(KEY_RESET), b -> reset())
                 .bounds(innerLeft, cursor, buttonW, BUTTON_H)
+                // Say up front that nothing is destroyed — the word "reset" reads as "lose my
+                // settings", and the player shouldn't have to click it to find out otherwise.
+                .tooltip(Tooltip.create(Component.translatable(KEY_RESET_TOOLTIP)))
                 .build());
         addRenderableWidget(Button.builder(Component.translatable(KEY_KEEP), b -> keep())
                 .bounds(innerLeft + buttonW + BUTTON_GAP, cursor, innerWidth - buttonW - BUTTON_GAP, BUTTON_H)
