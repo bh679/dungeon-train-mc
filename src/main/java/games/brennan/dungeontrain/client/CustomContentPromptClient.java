@@ -46,6 +46,8 @@ public final class CustomContentPromptClient {
             DungeonTrainNet.sendToServer(new CustomContentChoicePacket(remembered.keepsContent()));
             return;
         }
+        LOGGER.info("[DungeonTrain] Custom content prompt received ({}) — waiting for a clear screen.",
+            packages);
         pendingPackages = packages;
     }
 
@@ -61,6 +63,7 @@ public final class CustomContentPromptClient {
         if (mc.player == null || mc.level == null) {
             // Disconnected before the prompt could be shown — the world keeps its UNSET choice and
             // will ask again next join.
+            LOGGER.info("[DungeonTrain] Left the world before the custom content prompt could open.");
             forget();
             return;
         }
@@ -70,6 +73,7 @@ public final class CustomContentPromptClient {
 
         String packages = pendingPackages;
         forget();
+        LOGGER.info("[DungeonTrain] Opening the custom content prompt.");
         mc.setScreen(new CustomContentPromptScreen(packages));
     }
 }
