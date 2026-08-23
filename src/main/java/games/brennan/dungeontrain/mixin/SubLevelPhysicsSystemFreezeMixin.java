@@ -10,7 +10,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
  * Issue #646 — gates the third and last per-body native reader (bytecode-verified against
- * {@code sable-2.0.2+mc1.21.1}): {@code SubLevelPhysicsSystem.updatePose(ServerSubLevel)} →
+ * {@code sable-2.0.5+mc1.21.1}): {@code SubLevelPhysicsSystem.updatePose(ServerSubLevel)} →
  * {@code pipeline.readPose} → native {@code Rapier3D.getPose}. Injecting at {@code updatePose}
  * (public, no internal {@code isRemoved()} guard) is a single choke point covering both callers —
  * the per-substep {@code updateAllPoses} loop and the post-{@code recoverSubLevel} re-read.

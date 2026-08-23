@@ -37,7 +37,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * <p>String target + {@code remap = false}: {@code RapierPhysicsPipeline} ships in Sable's jar-in-jar
  * and is not on DT's compile classpath (same pattern as the Vivecraft mixin). Its method args
  * ({@link PhysicsPipelineBody}, {@link ServerSubLevel}, JOML, {@link Pose3d}) are on the classpath, so
- * the handlers still compile. <b>Re-audit this method set on any {@code sable_version} bump.</b></p>
+ * the handlers still compile. Bytecode-verified against {@code sable-2.0.5+mc1.21.1}: all nine gated
+ * methods are present on the pipeline. <b>Re-audit this method set on any {@code sable_version}
+ * bump</b> — {@code scripts/sable/verify-mixin-targets.sh <old> <new>} does the diff.</p>
  */
 @Mixin(targets = "dev.ryanhcode.sable.physics.impl.rapier.RapierPhysicsPipeline", remap = false)
 public abstract class RapierPipelineFreezeMixin {

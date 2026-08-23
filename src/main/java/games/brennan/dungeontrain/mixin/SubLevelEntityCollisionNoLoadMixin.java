@@ -30,7 +30,7 @@ import org.spongepowered.asm.mixin.injection.At;
  * them all, and non-blocking collision is the sane behaviour universally.</p>
  *
  * <p>{@code remap = false}: target class, {@code collide}, and the {@code LevelAccelerator}
- * constructor are Sable's own names. Bytecode-verified against {@code sable-2.0.2+mc1.21.1}
+ * constructor are Sable's own names. Bytecode-verified against {@code sable-2.0.5+mc1.21.1}
  * ({@code collide} has exactly one {@code new LevelAccelerator} site). <b>Re-verify on any
  * {@code sable_version} bump.</b> Mirrors the gating pattern of
  * {@link SubLevelHeatMapSplitMixin} / {@link ServerSubLevelFreezeMixin}.</p>

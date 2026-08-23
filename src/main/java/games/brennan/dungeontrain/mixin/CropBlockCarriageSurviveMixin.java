@@ -38,7 +38,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  *       destination cell ({@code LevelChunk.setBlockState}, no cascade), then
  *       {@code markAndNotifyBlock(..., 3, 512)} over all of them, then air the source cells, then
  *       notify clients. Every block, farmland included, is already in place before the first cascade
- *       runs, so only light can fail. (Bytecode-verified against {@code sable-2.0.2+mc1.21.1}:
+ *       runs, so only light can fail. (Bytecode-verified against {@code sable-2.0.5+mc1.21.1}:
  *       loop bounds at 303/685/827/939, {@code setBlockState} at 529, {@code markAndNotifyBlock} at
  *       763. <b>Re-verify on any {@code sable_version} bump</b>, as
  *       {@code SableBlockChangeGuardMixin} instructs for its own target.)</li>

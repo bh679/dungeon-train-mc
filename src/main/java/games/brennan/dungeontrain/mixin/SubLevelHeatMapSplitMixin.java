@@ -33,7 +33,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  *
  * <p>{@code remap = false}: the target class, its {@code tick} method, and the {@code subLevel}
  * field are Sable's own names, not Minecraft mappings. Bytecode-verified against
- * {@code sable-2.0.2+mc1.21.1}. <b>Re-verify method/field names on any {@code sable_version}
+ * {@code sable-2.0.5+mc1.21.1}. <b>Re-verify method/field names on any {@code sable_version}
  * bump.</b> Mirrors the gating pattern in {@link ServerSubLevelFreezeMixin} /
  * {@link SubLevelPhysicsSystemFreezeMixin}.</p>
  */

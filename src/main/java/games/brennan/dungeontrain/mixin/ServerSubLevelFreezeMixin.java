@@ -16,7 +16,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * steps every resident sub-level; a frozen carriage stays resident and IN the scene, but there is no
  * point running its per-body work when DT has parked it — skipping it is the soft-freeze saving.
  *
- * <p>Gated steps (bytecode-verified against {@code sable-2.0.2+mc1.21.1}): {@code prePhysicsTick}
+ * <p>Gated steps (bytecode-verified against {@code sable-2.0.5+mc1.21.1}): {@code prePhysicsTick}
  * (per-body velocity read) and {@code applyQueuedForces} (per-body force write). The third native
  * per-body reader, {@code SubLevelPhysicsSystem.updatePose} (pose read), is gated in
  * {@link SubLevelPhysicsSystemFreezeMixin}. The remaining {@code getAllSubLevels()} loops

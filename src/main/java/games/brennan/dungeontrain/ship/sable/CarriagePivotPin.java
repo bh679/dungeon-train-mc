@@ -54,7 +54,7 @@ import org.slf4j.LoggerFactory;
  * <em>live mutable</em> {@code Vector3d} — there is no setter for it, so if a future Sable returns a
  * copy the pin silently becomes a no-op and the bug returns without a compile error. Re-verify that,
  * plus {@code SubLevelPhysicsSystem.IN_PHYSICS_STEP} and {@code RigidBodyHandle.of/isValid/teleport},
- * on any {@code sable_version} bump. Verified against {@code sable-2.0.2+mc1.21.1}.</p>
+ * on any {@code sable_version} bump. Verified against {@code sable-2.0.5+mc1.21.1}.</p>
  */
 public final class CarriagePivotPin {
 

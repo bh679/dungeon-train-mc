@@ -42,7 +42,7 @@ import org.spongepowered.asm.mixin.injection.At;
  *
  * <p>{@code remap = false}: the target class and {@code grabChunkFast} are Sable's own names.
  * The wrapped {@code Level.getChunk(II)} call is written in Mojang mappings, which is what the
- * Sable NeoForge jar uses at runtime. Bytecode-verified against {@code sable-2.0.2+mc1.21.1}
+ * Sable NeoForge jar uses at runtime. Bytecode-verified against {@code sable-2.0.5+mc1.21.1}
  * ({@code grabChunkFast(IIJ)} has exactly two {@code Level.getChunk(II)} call sites: the
  * client-side branch and the server fallback — both are wrapped; the client branch passes
  * through untouched via the {@code isClientSide} guard). <b>Re-verify on any

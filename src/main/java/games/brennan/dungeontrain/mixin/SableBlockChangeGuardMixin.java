@@ -49,7 +49,7 @@ import java.util.UUID;
  * </ol>
  *
  * <p>{@code remap = false}: {@code SableCommonEvents} and {@code handleBlockChange} are Sable's own
- * names. Bytecode-verified against {@code sable-2.0.2+mc1.21.1} — {@code public static void
+ * names. Bytecode-verified against {@code sable-2.0.5+mc1.21.1} — {@code public static void
  * handleBlockChange(ServerLevel, LevelChunk, int, int, int, BlockState, BlockState)}. <b>Re-verify on
  * any {@code sable_version} bump.</b></p>
  */
