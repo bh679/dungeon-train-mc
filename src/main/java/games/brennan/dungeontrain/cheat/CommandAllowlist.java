@@ -55,7 +55,10 @@ public final class CommandAllowlist {
      * social/info commands everyone may run, plus benign "end / reset the run"
      * actions — {@code /new-world} (the dev world-roll command) and bare
      * {@code /kill} (self-kill only — see {@link #isAllowed}). {@code /feedback}
-     * and {@code /bug} (player feedback / bug-report submission) are also exempt.
+     * and {@code /bug} (player feedback / bug-report submission) are also exempt,
+     * as are the config-restore actions {@code /fixaisconfig} and {@code /fixconfig}
+     * — putting the config back the way it shipped is the opposite of cheating, so
+     * the fix must never taint the run it repairs.
      * {@code /playanimation} and {@code /stopsound} (cosmetic, no gameplay
      * effect) are exempt too. {@code /weather} is deliberately <b>not</b>
      * exempt — unlike a dedicated server, DT's Free Play system relies on
@@ -65,7 +68,7 @@ public final class CommandAllowlist {
      */
     private static final Set<String> ALLOWED_ROOTS = Set.of(
         "help", "me", "msg", "tell", "w", "teammsg", "tm", "trigger", "list",
-        "feedback", "bug", "fixaisconfig", "new-world", "playanimation", "stopsound");
+        "feedback", "bug", "fixaisconfig", "fixconfig", "new-world", "playanimation", "stopsound");
 
     private CommandAllowlist() {}
 

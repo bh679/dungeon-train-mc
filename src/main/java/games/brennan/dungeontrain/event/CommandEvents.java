@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.command.BugCommand;
 import games.brennan.dungeontrain.command.DtpCommand;
 import games.brennan.dungeontrain.command.EchoEncounterTestCommand;
 import games.brennan.dungeontrain.command.FixAisConfigCommand;
+import games.brennan.dungeontrain.command.FixConfigCommand;
 import games.brennan.dungeontrain.command.ReportCarriageCommand;
 import games.brennan.dungeontrain.command.TrainCommand;
 import games.brennan.dungeontrain.editor.EditorEditRecorder;
@@ -36,6 +37,9 @@ public final class CommandEvents {
         DtpCommand.register(event.getDispatcher());
         // /fixaisconfig — restores AIS config defaults (the AIS-data Free Play fix action).
         FixAisConfigCommand.register(event.getDispatcher());
+        // /fixconfig — moves every governed config aside so defaults regenerate (the DT-config
+        // Free Play fix action; the same reset the title-screen prompt offers).
+        FixConfigCommand.register(event.getDispatcher());
         // /reportcarriage [reason] — player-facing report of the shared carriage underfoot (also a
         // subcommand of the op-gated /dungeontrain root). Any player, any game mode.
         ReportCarriageCommand.register(event.getDispatcher());
