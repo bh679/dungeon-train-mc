@@ -97,6 +97,13 @@ public final class ClientDisplayConfig {
      * state above; the server learns it per-player via {@code ContentModeSyncPacket}.
      */
     public static final ModConfigSpec.EnumValue<ContentMode> CONTENT_MODE;
+    /**
+     * The config deviation the player last chose to keep, as a stable signature (see
+     * {@code ConfigDeviationPromptHandler}). Empty when they have never dismissed the launch
+     * prompt. Signature rather than a plain opt-out flag so a NEW change is still surfaced —
+     * dismissing once doesn't silently sign the player up to every future edit.
+     */
+    public static final ModConfigSpec.ConfigValue<String> CONFIG_DEVIATION_ACKNOWLEDGED;
 
     /**
      * Whether the player wants community content the relay tagged as politically sensitive filtered
@@ -154,6 +161,7 @@ public final class ClientDisplayConfig {
         DEATH_SCREEN_LAST_NPS = pair.getLeft().deathScreenLastNps;
         POLITICAL_FILTER = pair.getLeft().politicalFilter;
         CONTENT_MODE = pair.getLeft().contentMode;
+        CONFIG_DEVIATION_ACKNOWLEDGED = pair.getLeft().configDeviationAcknowledged;
     }
 
     private ClientDisplayConfig() {}
@@ -312,6 +320,15 @@ public final class ClientDisplayConfig {
                 .defineEnum("politicalFilter", PoliticalFilter.UNSET);
         b.pop();
 
+        b.push("configIntegrity");
+        ModConfigSpec.ConfigValue<String> configDeviationAcknowledged = b
+                .comment("Internal: the Dungeon Train config change you last chose to keep at the launch prompt,",
+                         "recorded as a signature of exactly what had been changed. The prompt stays quiet while",
+                         "the config still matches that, and asks again if you change something else. Empty = never",
+                         "dismissed. Managed automatically — clear it by hand to be asked again.")
+                .define("deviationAcknowledged", "");
+        b.pop();
+
         return new Holder(allScale, worldspaceChannel, hudChannel, developerPopupShownBefore, developerPopupOptedOut, freePlayConfirmOptedOut,
                 devConsentGranted, devConsentGrantSession, devConsentLastMsgToDev, openedAdvancementsBefore,
                 rideSnapshotsEnabled, rideSnapshotIntervalSeconds, rideSnapshotMaxStored, rideSnapshotChatLog,
@@ -319,7 +336,7 @@ public final class ClientDisplayConfig {
                 rideSnapshotDiskOffload, rideSnapshotFlushMinFps, rideSnapshotFlushMinTps, rideSnapshotMaxOnDisk,
                 rideSnapshotMaxResolution,
                 framerateThrottleEnabled, framerateThrottleFps, trainEngineVolume, skyboxPunchEnabled, deleteWorldOnReboard, sharedBooksRead,
-                deathScreenLastNps, politicalFilter, contentMode);
+                deathScreenLastNps, politicalFilter, contentMode, configDeviationAcknowledged);
     }
 
     /**
@@ -432,6 +449,25 @@ public final class ClientDisplayConfig {
         if (!isLoaded()) return;
         FREE_PLAY_CONFIRM_OPTED_OUT.set(value);
         FREE_PLAY_CONFIRM_OPTED_OUT.save();
+    }
+
+    // ----- Config deviation prompt (see client/ConfigDeviationPromptHandler) -----
+
+    /**
+     * The deviation signature the player last chose to keep, or {@code ""} when they have never
+     * dismissed the prompt. Compared against the CURRENT signature, so changing the config again
+     * re-arms the prompt.
+     */
+    public static String getConfigDeviationAcknowledged() {
+        return isLoaded() ? CONFIG_DEVIATION_ACKNOWLEDGED.get() : "";
+    }
+
+    /** Remember this exact deviation as "keep my changes". Pass {@code ""} to re-arm the prompt. */
+    public static void setConfigDeviationAcknowledged(String signature) {
+        if (!isLoaded()) return;
+        if (CONFIG_DEVIATION_ACKNOWLEDGED.get().equals(signature)) return; // skip a needless TOML write
+        CONFIG_DEVIATION_ACKNOWLEDGED.set(signature);
+        CONFIG_DEVIATION_ACKNOWLEDGED.save();
     }
 
     // ----- Political content filter (see client/PoliticalFilterPrefs) -----
@@ -800,6 +836,7 @@ public final class ClientDisplayConfig {
             ModConfigSpec.ConfigValue<List<? extends String>> sharedBooksRead,
             ModConfigSpec.IntValue deathScreenLastNps,
             ModConfigSpec.EnumValue<PoliticalFilter> politicalFilter,
-            ModConfigSpec.EnumValue<ContentMode> contentMode
+            ModConfigSpec.EnumValue<ContentMode> contentMode,
+            ModConfigSpec.ConfigValue<String> configDeviationAcknowledged
     ) {}
 }

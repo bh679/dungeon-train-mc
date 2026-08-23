@@ -42,12 +42,14 @@ public final class RunIntegrity {
      * Is this player's current run Free Play? True when the run is permanently
      * cheated ({@link #isPermanentlyCheated}), OR when the whole server session
      * is Free Play because AIS data was changed
-     * ({@link AisDataIntegrity#isSessionFreePlay}) or a known cheat mod is
-     * installed ({@link CheatModIntegrity#isSessionFreePlay}). Every persistence
+     * ({@link AisDataIntegrity#isSessionFreePlay}), DT's own balance config was
+     * changed ({@link DtConfigIntegrity#isSessionFreePlay}), or a known cheat mod
+     * is installed ({@link CheatModIntegrity#isSessionFreePlay}). Every persistence
      * gate keys off this, so the session taints inherit all Free Play behaviour.
      */
     public static boolean isCheated(ServerPlayer player) {
         return AisDataIntegrity.isSessionFreePlay()
+            || DtConfigIntegrity.isSessionFreePlay()
             || CheatModIntegrity.isSessionFreePlay()
             || isPermanentlyCheated(player);
     }
@@ -74,15 +76,15 @@ public final class RunIntegrity {
      */
     public static void markCheated(ServerPlayer player, Component cause) {
         // Idempotence keys off the permanent attachment, NOT isCheated(): during
-        // a session-only AIS taint a tainting action must still be recorded
-        // permanently, or restoring the AIS config would forget it.
+        // a session-only config taint a tainting action must still be recorded
+        // permanently, or restoring the config would forget it.
         if (isPermanentlyCheated(player)) return;
         player.setData(ModDataAttachments.RUN_CHEATED.get(), Boolean.TRUE);
         applyFreePlayEffect(player);
         LOGGER.info("[DungeonTrain] Run is now Free Play for {} — {}",
             player.getName().getString(), cause.getString());
-        if (AisDataIntegrity.isSessionFreePlay()) {
-            // Already visibly in Free Play this session (AIS notice on join) —
+        if (AisDataIntegrity.isSessionFreePlay() || DtConfigIntegrity.isSessionFreePlay()) {
+            // Already visibly in Free Play this session (the config notice on join) —
             // record the permanent taint quietly, no second chat line / Discord post.
             return;
         }

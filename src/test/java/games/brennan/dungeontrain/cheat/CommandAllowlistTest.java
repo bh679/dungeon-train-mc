@@ -142,6 +142,14 @@ class CommandAllowlistTest {
     }
 
     @Test
+    @DisplayName("/fixconfig (config-reset Free Play fix action) is allowed")
+    void fixConfigAllowed() {
+        // Putting the config back the way it shipped must never taint the run it repairs.
+        assertFalse(CommandAllowlist.taints("fixconfig"));
+        assertFalse(CommandAllowlist.taints("/fixconfig"));
+    }
+
+    @Test
     @DisplayName("/playanimation (cosmetic entity animation) is allowed")
     void playAnimationAllowed() {
         assertFalse(CommandAllowlist.taints("playanimation @s minecraft:humanoid.emote sneeze"));
