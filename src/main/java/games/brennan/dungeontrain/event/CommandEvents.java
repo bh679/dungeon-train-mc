@@ -37,6 +37,7 @@ public final class CommandEvents {
         DtpCommand.register(event.getDispatcher());
         // /fixaisconfig — restores AIS config defaults (the AIS-data Free Play fix action).
         FixAisConfigCommand.register(event.getDispatcher());
+        games.brennan.dungeontrain.command.CustomContentCommand.register(event.getDispatcher());
         // /fixconfig — moves every governed config aside so defaults regenerate (the DT-config
         // Free Play fix action; the same reset the title-screen prompt offers).
         FixConfigCommand.register(event.getDispatcher());

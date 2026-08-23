@@ -36,7 +36,7 @@ final class SharedBookSelectorTest {
 
     /** As {@link #book(int, String, int)} but with an explicit kid-safe verdict. */
     private static PoolBook book(int id, String lang, int weight, boolean kidSafe) {
-        return new PoolBook(id, "title" + id, "author", List.of("p"), lang, weight, kidSafe, false, SharedBookPool.STATUS_UNKNOWN, false);
+        return new PoolBook(id, "title" + id, "author", List.of("p"), lang, weight, kidSafe, false, SharedBookPool.STATUS_UNKNOWN, false, 0, 0);
     }
 
     /** An en_us player who has read nothing and been served nothing; carriage 0, repeat threshold 10. */
@@ -208,7 +208,7 @@ final class SharedBookSelectorTest {
 
     /** A tagged book — the relay marked it politically sensitive; see PoliticalFilterPrefs. */
     private static PoolBook politicalBook(int id, String lang, int weight) {
-        return new PoolBook(id, "title" + id, "author", List.of("p"), lang, weight, true, true, SharedBookPool.STATUS_UNKNOWN, false);
+        return new PoolBook(id, "title" + id, "author", List.of("p"), lang, weight, true, true, SharedBookPool.STATUS_UNKNOWN, false, 0, 0);
     }
 
     private static PlayerContext filteringPlayer() {
