@@ -139,9 +139,10 @@ public final class VariantOverlayRenderer {
     private static final Map<UUID, String> LAST_PART_VIS_KEY = new HashMap<>();
 
     /**
-     * Per-player dedup key for the red stray-block ghosts — {@code EditorStrayBlocks.generation()}
-     * plus whether this player has the ghosts on, so flipping the toggle pushes even when the
-     * sweep has not moved. {@code null} or absent means "last sent was empty (or none yet)".
+     * Per-player dedup key for the red stray-block ghosts — {@code EditorStrayBlocks.generation()}.
+     * {@code null} or absent means "last sent was empty (or none yet)", which is also how the
+     * toggle works: turning the ghosts off clears the key (and sends the empty packet once), so
+     * turning them back on pushes again without the sweep having to move.
      */
     private static final Map<UUID, String> LAST_STRAYS_KEY = new HashMap<>();
 
@@ -923,9 +924,9 @@ public final class VariantOverlayRenderer {
     }
 
     /**
-     * Push the red-ghost snapshot when the sweep has moved or the player has flipped their own
-     * ghost toggle. The toggle is in the dedup key rather than an early return so that switching
-     * it off pushes the clearing packet exactly once.
+     * Push the red-ghost snapshot when the sweep has moved. A player with the ghosts toggled off
+     * goes down the clear path instead, which drops their dedup key — so the packet that turns
+     * them off is sent exactly once, and turning them back on re-pushes immediately.
      */
     private static void pushStraysSnapshot(ServerPlayer player) {
         UUID uuid = player.getUUID();
