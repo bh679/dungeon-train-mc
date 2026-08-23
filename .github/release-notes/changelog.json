@@ -8277,6 +8277,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "video-tools-reset",
+      "version": "0.634.0",
+      "type": "feat",
+      "title": "Reset your progress for a fresh start",
+      "summary": "Filming a first-run video, or just want to start over? The Video Tools page has a new Reset Everything button. A new world was never really a clean slate \u2014 your advancements, lifetime stats, story progress, Ender Chest and past lives all live outside the world and follow you into the next one. This wipes all of it, along with every Dungeon Train world on your install, so the game treats you as a first-time player again. Worlds without Dungeon Train in them are left alone.",
+      "highlights": [
+        "Clears advancements, lifetime stats, story progress, your Ender Chest, past lives and every one-time prompt",
+        "Deletes your Dungeon Train worlds \u2014 other worlds in your save list are untouched",
+        "Lists every world by name and makes you type DELETE first; there is no undo"
+      ],
+      "pr": 1065,
+      "date": "2026-08-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
