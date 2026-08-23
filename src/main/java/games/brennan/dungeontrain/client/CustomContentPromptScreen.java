@@ -115,6 +115,7 @@ public final class CustomContentPromptScreen extends Screen {
             ClientDisplayConfig.setCustomContentPreference(
                 keepContent ? CustomContentPreference.CONTINUE : CustomContentPreference.DISABLE);
         }
+        CustomContentPromptClient.answered();
         DungeonTrainNet.sendToServer(new CustomContentChoicePacket(keepContent));
         onClose();
     }
@@ -128,6 +129,7 @@ public final class CustomContentPromptScreen extends Screen {
     public void onClose() {
         if (!responded) {
             responded = true;
+            CustomContentPromptClient.answered();
             DungeonTrainNet.sendToServer(new CustomContentChoicePacket(true));
         }
         super.onClose();

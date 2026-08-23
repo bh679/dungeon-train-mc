@@ -63,18 +63,24 @@ public final class CustomContentPromptEvents {
             return;
         }
 
-        // Content is loading, so the run is Free Play from this tick — whether or not anyone has
-        // answered the prompt yet. Say so FIRST, unconditionally: an UNSET world that only sent the
-        // prompt would leave a player whose prompt didn't surface silently tainted, which is worse
-        // than not having the feature. Same contract as the AIS and cheat-mod login notices.
-        sendFreePlayNotice(player);
+        // The run IS Free Play from this tick — the content is loading whether or not anyone has
+        // answered yet — so the status effect goes on immediately either way. That is the honest,
+        // non-silent part, and it costs no chat line.
+        RunIntegrity.applyFreePlayEffect(player);
 
         if (!choice.isAnswered()) {
+            // Un-answered: the window is the whole message. No chat lines here — the player gets
+            // the popup and hears from chat only once they've chosen, exactly the order the normal
+            // Free Play flow uses (FreePlayConfirmScreen first, notice after).
             LOGGER.info("[DungeonTrain] Asking {} about custom content ({}) — world choice is UNSET.",
                 player.getName().getString(), packageSummary());
             DungeonTrainNet.sendTo(player,
                 new ShowCustomContentPromptPacket(packageSummary()));
+            return;
         }
+        // Already answered "keep it" on a previous join — re-state why the run is Free Play, the
+        // same way the AIS and cheat-mod taints re-explain themselves at every login.
+        sendFreePlayNotice(player);
     }
 
     /**
@@ -99,10 +105,11 @@ public final class CustomContentPromptEvents {
         CustomContentChoice choice = keepContent ? CustomContentChoice.ALLOW : CustomContentChoice.DISABLE;
         EditorContentIntegrity.setWorldChoice(player.getServer(), choice);
 
-        // Keeping the content needs no further word — the Free Play notice already went out at
-        // login, and the run simply carries on. Turning it off changes the world for everybody, so
-        // everybody hears about it.
-        if (!keepContent) {
+        // Now — and only now — chat explains itself: keeping the content means Free Play, so say
+        // what that costs. Turning it off changes the world for everybody, so everybody hears.
+        if (keepContent) {
+            sendFreePlayNotice(player);
+        } else {
             broadcast(player, Component.translatable("chat.dungeontrain.custom_content.now_disabled",
                     player.getName().getString())
                 .withStyle(ChatFormatting.GRAY));

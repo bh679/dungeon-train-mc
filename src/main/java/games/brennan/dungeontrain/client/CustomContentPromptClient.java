@@ -33,7 +33,15 @@ public final class CustomContentPromptClient {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    /** Package summary from the server while a prompt is waiting to be shown; null = nothing pending. */
+    /**
+     * Package summary from the server while a prompt is outstanding; null = nothing pending.
+     *
+     * <p>Deliberately NOT cleared when the screen opens — only when the player actually answers
+     * ({@link #answered()}). Anything else calling {@code setScreen} replaces our screen via
+     * {@code removed()} rather than {@code onClose()}, so the prompt would vanish without sending
+     * a response and the player would never see it. Keeping the request pending means the next
+     * clear-screen tick puts it straight back up.</p>
+     */
     private static String pendingPackages = null;
 
     private CustomContentPromptClient() {}
@@ -56,6 +64,15 @@ public final class CustomContentPromptClient {
         pendingPackages = null;
     }
 
+    /**
+     * The player answered: stop re-showing the prompt. Called by
+     * {@link CustomContentPromptScreen} at the moment it sends the response, so the only thing
+     * that retires a pending prompt is a real answer.
+     */
+    public static void answered() {
+        pendingPackages = null;
+    }
+
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
         if (pendingPackages == null) return;
@@ -71,9 +88,7 @@ public final class CustomContentPromptClient {
         // anything opened underneath it is discarded when it closes.
         if (mc.screen != null) return;
 
-        String packages = pendingPackages;
-        forget();
         LOGGER.info("[DungeonTrain] Opening the custom content prompt.");
-        mc.setScreen(new CustomContentPromptScreen(packages));
+        mc.setScreen(new CustomContentPromptScreen(pendingPackages));
     }
 }
