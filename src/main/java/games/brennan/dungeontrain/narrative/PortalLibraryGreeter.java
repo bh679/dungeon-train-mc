@@ -74,11 +74,15 @@ public final class PortalLibraryGreeter {
      *
      * <p>Under Current Player the lock starts from the holder and rotates to a stranger when they have
      * written nothing, so "is this mine?" cannot be read off the setting alone. The relay never sends
-     * uuids, so this compares the one thing both sides have: whether the author it named is the
-     * player's own {@code self} directory entry.</p>
+     * uuids, so the answer rides on the author entry itself: {@link BookAuthorsClient.Author#mine()}
+     * is stamped from the {@code kind} that fetched it, and only a {@code self} directory can set it.</p>
+     *
+     * <p>This used to compare the token against the cached {@code self} page, which answered "no" for
+     * as long as that page was still in flight — so a reader could be greeted as a stranger to their
+     * own shelves purely on timing.</p>
      */
     private static boolean isOwn(ServerPlayer player, BookAuthorsClient.Author author) {
-        return PortalRoomAuthorLocks.isSelfAuthor(player, author.token());
+        return author.mine();
     }
 
     /** Forget a player's current library — on logout, and on server stop. */

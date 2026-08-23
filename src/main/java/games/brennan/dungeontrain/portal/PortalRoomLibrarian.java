@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.event.ContentModeMirror;
 import games.brennan.dungeontrain.event.SharedBookGate;
 import games.brennan.dungeontrain.narrative.AuthorBookPool;
+import games.brennan.dungeontrain.narrative.SharedBookPool;
 import games.brennan.dungeontrain.net.relay.BookAuthorsClient;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
@@ -15,6 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -70,6 +72,30 @@ public final class PortalRoomLibrarian {
     }
 
     /**
+     * The books this catalogue may actually be written into shelves with.
+     *
+     * <p>A writer's own catalogue can contain books the pool withholds — pending, undecided, refused —
+     * and those are theirs alone to read. But a stocked shelf is <b>world state</b>, not a per-player
+     * view: {@link PortalRoomLibrary#stock} writes real stacks into real chiseled bookshelves, this
+     * room is stocked exactly once (see {@link #tick}), and anyone who walks in afterwards can open it
+     * and take what is there. So the withheld books go in only when the reader is alone on the level;
+     * with company the room stocks the author's public shelf, exactly as it did before this feature.</p>
+     *
+     * <p><b>Known residual.</b> "Alone" is true at stock time, not forever. A room stocked in a
+     * single-player world keeps its withheld books if that world is later opened to others. Closing
+     * that properly means rendering the pages per-viewer rather than placing them, which is a
+     * different piece of machinery than this one.</p>
+     */
+    static List<SharedBookPool.PoolBook> shelvable(List<SharedBookPool.PoolBook> catalogue, int playerCount) {
+        if (catalogue.isEmpty() || playerCount <= 1) return catalogue;
+        List<SharedBookPool.PoolBook> out = new ArrayList<>(catalogue.size());
+        for (SharedBookPool.PoolBook book : catalogue) {
+            if (!book.isWithheld()) out.add(book);
+        }
+        return out;
+    }
+
+    /**
      * Try to stock every room still waiting. Cheap and total: nothing here may throw into the portal
      * tick, and an empty pending set costs one map check.
      *
@@ -105,8 +131,10 @@ public final class PortalRoomLibrarian {
             }
 
             BookAuthorsClient.Author author = resolved.author();
+            UUID owner = PortalRoomAuthorLocks.ownerFor(reader, author);
             int placed = PortalRoomLibrary.stock(level, pending.origin(), pending.size(),
-                AuthorBookPool.booksFor(author.token()), pairKey, author.name());
+                shelvable(AuthorBookPool.booksFor(author.token(), owner != null), players.size()),
+                pairKey, author.name());
             if (placed <= 0 && !PortalRoomLibrary.hasShelves(level, pending.origin(), pending.size())) {
                 // No shelves to stock: the room is set to stock an author but was never built to hold
                 // books. Drop it rather than asking again forever.
