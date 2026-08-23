@@ -6,6 +6,7 @@ import games.brennan.dungeontrain.narrative.BookModerationState;
 import games.brennan.dungeontrain.narrative.BookModerationTag;
 import games.brennan.dungeontrain.narrative.BookPrivateTag;
 import games.brennan.dungeontrain.narrative.BookProtestTag;
+import games.brennan.dungeontrain.narrative.BookVoteCountsTag;
 import games.brennan.dungeontrain.narrative.BookReportTag;
 import games.brennan.dungeontrain.narrative.BookVoteTag;
 import games.brennan.dungeontrain.narrative.UnapprovedBookMessage;
@@ -146,6 +147,10 @@ public final class BookVoteClientEvents {
     private static BookModerationState moderation = BookModerationState.PUBLIC;
     private static boolean isPrivate = false;            // seeded from the stack's tag — reversible
     private static boolean protested = false;            // seeded from the stack's tag — one-way
+    // How this book is polling, when it is one of the reader's own. -1 = the relay never told us, and
+    // is NOT the same as 0: zero votes is a real answer worth showing, an absent tally is not.
+    private static int votesUp = -1;
+    private static int votesDown = -1;
     private static boolean reportArmed = false;          // first click armed it; a second commits
 
     private BookVoteClientEvents() {}
@@ -172,6 +177,9 @@ public final class BookVoteClientEvents {
         moderation = BookModerationTag.read(stack);
         isPrivate = BookPrivateTag.isPrivate(stack);
         protested = BookProtestTag.isProtested(stack);
+        boolean hasVotes = BookVoteCountsTag.has(stack);
+        votesUp = hasVotes ? BookVoteCountsTag.up(stack) : -1;
+        votesDown = hasVotes ? BookVoteCountsTag.down(stack) : -1;
         // The train always asks a book the same question: stable per (bookType, bookId).
         promptIndex = Math.floorMod((bookType + ":" + bookId).hashCode(), PROMPT_COUNT) + 1;
         screen = book;
@@ -249,9 +257,39 @@ public final class BookVoteClientEvents {
             Component no = Component.translatable("gui.dungeontrain.book_vote.reject");
             gfx.drawString(font, yes, upX() + BUTTON_SIZE / 2 - font.width(yes) / 2, LABELS_Y, COLOR_TEXT, false);
             gfx.drawString(font, no, downX() + BUTTON_SIZE / 2 - font.width(no) / 2, LABELS_Y, COLOR_TEXT, false);
+        } else {
+            renderVoteCounts(gfx, font);
         }
 
         renderAction(gfx, font, centerX, mouseX, mouseY);
+    }
+
+    /**
+     * How this book is polling, in the row the thumbs used to occupy on somebody else's book.
+     *
+     * <p>The same two icons, drawn <b>inert</b> — no hover state and, crucially, no hitbox. They are
+     * reporting an answer rather than asking a question, and the click handler must not grow a branch
+     * for them: the voting hitboxes are gated behind {@code !moderation.isOwn()} precisely so that a
+     * writer cannot vote on their own book, and putting a clickable icon back in that space would
+     * undo it. Only the author ever sees these numbers — the relay hands vote tallies to nobody
+     * else.</p>
+     *
+     * <p>Nothing is drawn when the relay never sent a tally ({@code -1}), nor on a book nothing could
+     * have voted on yet: a pair of zeros under a book still awaiting its first read is dispiriting
+     * and says nothing true. A book that WAS out and earned votes before being pulled still shows
+     * what it earned.</p>
+     */
+    private static void renderVoteCounts(GuiGraphics gfx, Font font) {
+        if (votesUp < 0 || votesDown < 0) return;
+        if (moderation.isWithheld() && votesUp + votesDown == 0) return;
+
+        gfx.blitSprite(UP_SPRITE, upX(), BUTTONS_Y, BUTTON_SIZE, BUTTON_SIZE);
+        gfx.blitSprite(DOWN_SPRITE, downX(), BUTTONS_Y, BUTTON_SIZE, BUTTON_SIZE);
+
+        Component up = Component.literal(Integer.toString(votesUp));
+        Component down = Component.literal(Integer.toString(votesDown));
+        gfx.drawString(font, up, upX() + BUTTON_SIZE / 2 - font.width(up) / 2, LABELS_Y, COLOR_TEXT, false);
+        gfx.drawString(font, down, downX() + BUTTON_SIZE / 2 - font.width(down) / 2, LABELS_Y, COLOR_TEXT, false);
     }
 
     /**
@@ -578,5 +616,7 @@ public final class BookVoteClientEvents {
         moderation = BookModerationState.PUBLIC;
         isPrivate = false;
         protested = false;
+        votesUp = -1;
+        votesDown = -1;
     }
 }

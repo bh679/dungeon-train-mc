@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class PortalRoomLibrarianShelvableTest {
 
     private static SharedBookPool.PoolBook book(int id, String status) {
-        return new SharedBookPool.PoolBook(id, "t" + id, "A", List.of("p"), "en_us", 1, true, false, status, false);
+        return new SharedBookPool.PoolBook(id, "t" + id, "A", List.of("p"), "en_us", 1, true, false, status, false, 0, 0);
     }
 
     private static final SharedBookPool.PoolBook OPEN = book(1, SharedBookPool.STATUS_APPROVED);

@@ -113,7 +113,8 @@ public final class SharedBookPool {
     public static final String STATUS_UNKNOWN = null;
 
     public record PoolBook(int id, String title, String author, List<String> pages, String lang, int weight,
-                           boolean kidSafe, boolean political, String status, boolean isPrivate) {
+                           boolean kidSafe, boolean political, String status, boolean isPrivate,
+                           int votesUp, int votesDown) {
 
         /**
          * Whether the relay declined to call this book released — i.e. anything but a literal
@@ -140,6 +141,16 @@ public final class SharedBookPool {
          */
         public boolean isOwn() {
             return status != null;
+        }
+    }
+
+    /** A non-negative int field, or 0 when absent / null / not a number. */
+    private static int optInt(JsonObject o, String key) {
+        if (!o.has(key) || o.get(key).isJsonNull() || !o.get(key).isJsonPrimitive()) return 0;
+        try {
+            return Math.max(0, o.get(key).getAsInt());
+        } catch (RuntimeException ignored) {
+            return 0;
         }
     }
 
@@ -218,7 +229,15 @@ public final class SharedBookPool {
         // has something to say about it, it says so on the vote page (see BookVoteClientEvents), which
         // is the train's own page rather than any part of the author's.
         BookModerationTag.stamp(stack, BookModerationState.fromStatus(book.status()));
-        BookPrivateTag.stamp(stack, book.isPrivate());
+        if (book.isOwn()) {
+            // Guarded on isOwn() and not on the numbers themselves. The tally is sent even at zero, so
+            // 0/0 from the relay ("nobody voted") and 0/0 from an absent field ("we were not told")
+            // are indistinguishable once parsed — and stamping the second would put a component on
+            // every ordinary community book and claim nobody cared about it. isOwn() IS the "the relay
+            // told us about this book" signal, so it is the one to gate on.
+            BookPrivateTag.stamp(stack, book.isPrivate());
+            BookVoteCountsTag.stamp(stack, book.votesUp(), book.votesDown());
+        }
         return stack;
     }
 
@@ -460,7 +479,13 @@ public final class SharedBookPool {
         // the same omit-when-false handshake as `political`.
         boolean isPrivate = o.has("private") && !o.get("private").isJsonNull()
                 && o.get("private").isJsonPrimitive() && o.get("private").getAsBoolean();
-        return new PoolBook(id, title, author, pages, lang, weight, kidSafe, political, status, isPrivate);
+        // The 👍/👎 tally, sent only on the writer's own shelf — and sent there even at zero, which is
+        // why absent means "we were told nothing" rather than "nobody voted". A relay too old to send
+        // them lands on 0/0, and the page shows no counters at all rather than claiming nobody cared.
+        int votesUp = optInt(o, "votesUp");
+        int votesDown = optInt(o, "votesDown");
+        return new PoolBook(id, title, author, pages, lang, weight, kidSafe, political, status, isPrivate,
+            votesUp, votesDown);
     }
 
     /**
