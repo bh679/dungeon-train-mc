@@ -38,6 +38,12 @@ public final class CustomContentPromptScreen extends Screen {
     private static final int COLOUR_CONSEQ = 0xFFB8B8B8;
     private static final int COLOUR_PACKAGES = 0xFF7E7E8C;
     private static final int COLOUR_SEPARATOR = 0x40FFFFFF;
+    /**
+     * Ring drawn just outside the "Remember decision" box. Vanilla's checkbox sprite has a dim
+     * grey border that all but disappears against this panel's near-black fill, and the checkbox
+     * is the one control here whose state the player has to read at a glance.
+     */
+    private static final int COLOUR_CHECKBOX_OUTLINE = 0xFFD0D0D8;
 
     private static final int MAX_PANEL_W = 240;
     private static final int PADDING = 12;
@@ -151,6 +157,15 @@ public final class CustomContentPromptScreen extends Screen {
         drawLines(g, keepLines, cx, panelY + keepRelY, COLOUR_CONSEQ, lh);
         drawLines(g, disableLines, cx, panelY + disableRelY, COLOUR_CONSEQ, lh);
         drawLines(g, packageLines, cx, panelY + packagesRelY, COLOUR_PACKAGES, lh);
+
+        // Sits one pixel OUTSIDE the sprite rather than on top of it: GuiGraphics flushes textured
+        // quads after flat fills, so anything drawn over the sprite's own footprint would end up
+        // beneath it however late we draw.
+        if (rememberBox != null) {
+            int box = rememberBox.getHeight();
+            g.renderOutline(rememberBox.getX() - 1, rememberBox.getY() - 1,
+                box + 2, box + 2, COLOUR_CHECKBOX_OUTLINE);
+        }
     }
 
     private void drawLines(GuiGraphics g, List<FormattedCharSequence> lines, int cx, int y, int colour, int lh) {
