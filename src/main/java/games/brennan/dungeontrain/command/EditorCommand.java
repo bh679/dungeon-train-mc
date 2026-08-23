@@ -37,6 +37,7 @@ import games.brennan.dungeontrain.editor.TrackEditor;
 import games.brennan.dungeontrain.editor.TrackTemplateStore;
 import games.brennan.dungeontrain.editor.TunnelEditor;
 import games.brennan.dungeontrain.editor.TunnelTemplateStore;
+import games.brennan.dungeontrain.editor.EditorStrayBlocks;
 import games.brennan.dungeontrain.editor.VariantOverlayRenderer;
 import games.brennan.dungeontrain.editor.VariantState;
 import games.brennan.dungeontrain.track.PillarAdjunct;
@@ -423,6 +424,11 @@ public final class EditorCommand {
             .executes(ctx -> runEnterCategory(ctx.getSource(), EditorCategory.CARRIAGES))
             .then(Commands.literal("carriages")
                 .executes(ctx -> runEnterCategory(ctx.getSource(), EditorCategory.CARRIAGES)))
+            // Red ghosts over blocks left outside the plots. Its own toggle rather than a rider on
+            // the variant overlay: that one hides annotations, this one hides a warning.
+            .then(Commands.literal("strays")
+                .then(Commands.literal("on").executes(ctx -> runStrayGhosts(ctx.getSource(), true)))
+                .then(Commands.literal("off").executes(ctx -> runStrayGhosts(ctx.getSource(), false))))
             // Position-resolved mirror toggle — works in any editor plot. Backs
             // the X-menu Mirror X / Y / Z toggles for every category.
             .then(Commands.literal("mirror")
@@ -2790,6 +2796,16 @@ public final class EditorCommand {
         return local.getX() >= 0 && local.getX() < size.getX()
             && local.getY() >= 0 && local.getY() < size.getY()
             && local.getZ() >= 0 && local.getZ() < size.getZ();
+    }
+
+    private static int runStrayGhosts(CommandSourceStack source, boolean on) {
+        ServerPlayer player = requirePlayer(source);
+        if (player == null) return 0;
+        EditorStrayBlocks.setEnabled(player.getUUID(), on);
+        source.sendSuccess(() -> Component.literal(
+            "Out-of-plot ghosts: " + (on ? "ON" : "off") + "."
+        ), false);
+        return 1;
     }
 
     private static int runVariantOverlay(CommandSourceStack source, boolean on) {
