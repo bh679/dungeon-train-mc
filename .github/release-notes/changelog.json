@@ -8160,9 +8160,9 @@
       ],
       "pr": 1057,
       "date": "2026-08-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.628.0",
+      "released_at": "2026-08-23T08:01:10Z"
     }
   ]
 }
