@@ -6,10 +6,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
-import net.minecraft.core.component.DataComponents;
-import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.component.ItemLore;
 import org.slf4j.Logger;
 
 import java.net.URI;
@@ -195,38 +192,15 @@ public final class SharedBookPool {
      * so both the uniform and the curated paths produce identically-tagged stacks.
      */
     public static ItemStack buildStack(PoolBook book) {
-        BookModerationState state = BookModerationState.fromStatus(book.status());
-        ItemStack stack = BookFactory.buildPlainBook(book.title(), book.author(), book.pages(), state.tint());
+        ItemStack stack = BookFactory.buildPlainBook(book.title(), book.author(), book.pages());
         SharedBookFoundTag.stamp(stack);               // "read a stranger's book" advancement marker
         SharedBookReadTag.stampId(stack, book.id());   // read-telemetry identity only
-        // Everything below is a no-op for an APPROVED book, which is every book the shared pool serves:
-        // an ordinary community book comes out of here byte-identical to what it always did.
-        BookModerationTag.stamp(stack, state);
-        decorateWithheld(stack, book, state);
+        // The moderation state rides along as data ONLY. The book itself — title, author, pages — is
+        // exactly the book its writer wrote: no tint, no renamed item, no added lore. Where the train
+        // has something to say about it, it says so on the vote page (see BookVoteClientEvents), which
+        // is the train's own page rather than any part of the author's.
+        BookModerationTag.stamp(stack, BookModerationState.fromStatus(book.status()));
         return stack;
-    }
-
-    /**
-     * Name and label a book the relay served back to its own author unapproved.
-     *
-     * <p>The page tint says "this one has not gone out" while the book is OPEN. These two say it while
-     * it is not: a coloured item name so a shelf of your own writing reads at a glance, and one lore
-     * line so the state survives past the chat message, which fires once per copy and is gone.</p>
-     *
-     * <p>The name has to be set as a component on the stack because the book's own title cannot carry
-     * colour — {@code WrittenBookContent} stores it as a plain String. Italics off: a custom item name
-     * renders italic by default, and every book on the shelf leaning over reads as a mistake rather
-     * than as meaning.</p>
-     */
-    private static void decorateWithheld(ItemStack stack, PoolBook book, BookModerationState state) {
-        if (!state.isWithheld()) return;
-        String title = BookSafeText.sanitizeName(book.title());
-        if (title.isBlank()) title = "Untitled";
-        stack.set(DataComponents.CUSTOM_NAME,
-            Component.literal(title).withStyle(state.tint()).withStyle(s -> s.withItalic(false)));
-        stack.set(DataComponents.LORE, new ItemLore(List.of(
-            Component.translatable("item.dungeontrain.unapproved_book." + state.messageKey())
-                .withStyle(state.tint()).withStyle(s -> s.withItalic(false)))));
     }
 
     /** Whether the pool currently holds any books (cheap volatile read). */

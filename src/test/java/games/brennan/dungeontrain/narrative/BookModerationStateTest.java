@@ -1,6 +1,5 @@
 package games.brennan.dungeontrain.narrative;
 
-import net.minecraft.ChatFormatting;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -43,21 +42,15 @@ class BookModerationStateTest {
     }
 
     @Test
-    @DisplayName("Only a withheld state carries a colour and a message set")
+    @DisplayName("Only a withheld state has anything to say")
     void onlyWithheldStatesAreShown() {
         assertFalse(BookModerationState.APPROVED.isWithheld());
-        assertNull(BookModerationState.APPROVED.tint(), "a released book is never tinted");
-        assertNull(BookModerationState.APPROVED.messageKey(), "and says nothing about itself");
+        assertNull(BookModerationState.APPROVED.messageKey(), "a released book says nothing about itself");
 
         for (BookModerationState s : new BookModerationState[] {
                 BookModerationState.READING, BookModerationState.UNDECIDED, BookModerationState.DISLIKED}) {
             assertTrue(s.isWithheld());
-            assertNotNull(s.tint(), s + " must have a colour");
             assertNotNull(s.messageKey(), s + " must have a message set");
         }
-        // Red is reserved for the only state that is actually a no.
-        assertEquals(ChatFormatting.RED, BookModerationState.DISLIKED.tint());
-        assertEquals(ChatFormatting.YELLOW, BookModerationState.READING.tint());
-        assertEquals(ChatFormatting.GOLD, BookModerationState.UNDECIDED.tint());
     }
 }

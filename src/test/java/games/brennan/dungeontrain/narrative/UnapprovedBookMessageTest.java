@@ -2,7 +2,6 @@ package games.brennan.dungeontrain.narrative;
 
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.contents.TranslatableContents;
-import net.minecraft.util.RandomSource;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -14,37 +13,53 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/** The three sets of "where your book stands" lines. */
+/** The three sets of "where your book stands" lines shown on the vote page. */
 class UnapprovedBookMessageTest {
+
+    private static String keyOf(Component line) {
+        return assertInstanceOf(TranslatableContents.class, line.getContents()).getKey();
+    }
 
     @Test
     @DisplayName("A released book says nothing about itself")
     void approvedProducesNoLine() {
-        assertNull(UnapprovedBookMessage.random(BookModerationState.APPROVED, RandomSource.create(1)));
-        assertNull(UnapprovedBookMessage.random(null, RandomSource.create(1)));
+        assertNull(UnapprovedBookMessage.forBook(BookModerationState.APPROVED, "shared:1"));
+        assertNull(UnapprovedBookMessage.forBook(null, "shared:1"));
     }
 
     @Test
-    @DisplayName("Every withheld state draws from its own set of LINE_COUNT keys, and reaches all of them")
+    @DisplayName("One book always says the same thing — the vote page redraws every frame")
+    void selectionIsStablePerBook() {
+        // A random pick here would flicker through all ten lines at the refresh rate.
+        String first = keyOf(UnapprovedBookMessage.forBook(BookModerationState.READING, "shared:41"));
+        for (int i = 0; i < 100; i++) {
+            assertEquals(first, keyOf(UnapprovedBookMessage.forBook(BookModerationState.READING, "shared:41")));
+        }
+    }
+
+    @Test
+    @DisplayName("Every withheld state reaches all LINE_COUNT of its own keys across books")
     void everyStateCoversItsWholeSet() {
         for (BookModerationState state : new BookModerationState[] {
                 BookModerationState.READING, BookModerationState.UNDECIDED, BookModerationState.DISLIKED}) {
             Set<String> seen = new HashSet<>();
-            RandomSource rng = RandomSource.create(20260823L);
-            // Enough draws that every line is overwhelmingly likely to come up; a set that is short
-            // (or a key built with an off-by-one) shows up here as a missing or unexpected key.
-            for (int i = 0; i < 4000; i++) {
-                Component line = UnapprovedBookMessage.random(state, rng);
-                TranslatableContents c = assertInstanceOf(TranslatableContents.class, line.getContents());
-                seen.add(c.getKey());
+            for (int id = 0; id < 4000; id++) {
+                seen.add(keyOf(UnapprovedBookMessage.forBook(state, "shared:" + id)));
             }
             assertEquals(UnapprovedBookMessage.LINE_COUNT, seen.size(),
                 state + " must draw from exactly LINE_COUNT distinct lines");
             for (int n = 1; n <= UnapprovedBookMessage.LINE_COUNT; n++) {
-                String key = "chat.dungeontrain.unapproved_book." + state.messageKey() + "." + n;
-                assertTrue(seen.contains(key), "missing " + key);
+                assertTrue(seen.contains("gui.dungeontrain.book_vote.status." + state.messageKey() + "." + n),
+                    "missing line " + n + " for " + state);
             }
         }
+    }
+
+    @Test
+    @DisplayName("A null seed is tolerated rather than thrown on")
+    void nullSeedStillProducesALine() {
+        assertTrue(keyOf(UnapprovedBookMessage.forBook(BookModerationState.DISLIKED, null))
+            .startsWith("gui.dungeontrain.book_vote.status.disliked."));
     }
 
     @Test

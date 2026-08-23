@@ -1,7 +1,5 @@
 package games.brennan.dungeontrain.narrative;
 
-import net.minecraft.ChatFormatting;
-
 /**
  * How the train feels about one player-written book, as far as the player who wrote it is concerned.
  *
@@ -9,8 +7,10 @@ import net.minecraft.ChatFormatting;
  * writer's book simply vanished the moment they signed it — no way to find it, and no way to tell
  * whether it had been refused, was still in the screening queue, or had never been looked at. A
  * writer can now find their own withheld books on their own library shelves
- * ({@code /books/pool?mine=1}), and this is what turns the relay's flag into the two things the game
- * shows them: a colour on the page, and which set of chat lines to draw from.</p>
+ * ({@code /books/pool?mine=1}), and this is what names the state the vote page reports.</p>
+ *
+ * <p>The book itself is left alone — same title, same author, same pages. The news belongs on the
+ * train's own page, not written over the author's.</p>
  *
  * <h3>Why the states collapse the way they do</h3>
  * <p>The relay distinguishes {@code flagged} (the first-pass classifier withheld it, nobody has read
@@ -25,37 +25,36 @@ import net.minecraft.ChatFormatting;
 public enum BookModerationState {
 
     /** Released. The only state the shared pool serves, and the only one that shows nothing at all. */
-    APPROVED(null, null),
+    APPROVED(null),
 
     /**
      * Submitted, and nothing has read it yet — the relay's {@code pending}, which is where a book
-     * waits under {@code SCREENING_MODE=queue}. Yellow: this is the hopeful one.
+     * waits under {@code SCREENING_MODE=queue}.
      */
-    READING(ChatFormatting.YELLOW, "reading"),
+    READING("reading"),
 
     /**
      * Read and withheld, with no verdict either way — the relay's {@code flagged} and
-     * {@code needs_human_review}. Gold: further along than {@link #READING}, still not a no.
+     * {@code needs_human_review}. Further along than {@link #READING}, and still not a no.
      */
-    UNDECIDED(ChatFormatting.GOLD, "undecided"),
+    UNDECIDED("undecided"),
 
-    /** Refused. It will never reach another player — but the writer keeps it. Red. */
-    DISLIKED(ChatFormatting.RED, "disliked");
+    /** Refused. It will never reach another player — but the writer keeps it. */
+    DISLIKED("disliked");
 
-    private final ChatFormatting tint;
     private final String messageKey;
 
-    BookModerationState(ChatFormatting tint, String messageKey) {
-        this.tint = tint;
+    BookModerationState(String messageKey) {
         this.messageKey = messageKey;
     }
 
-    /** The colour this book's pages and item name are shown in, or {@code null} to leave them alone. */
-    public ChatFormatting tint() {
-        return tint;
-    }
-
-    /** The {@code chat.dungeontrain.unapproved_book.<key>.N} family for this state, or {@code null}. */
+    /**
+     * The {@code gui.dungeontrain.book_vote.status.<key>.N} family for this state, or {@code null}.
+     *
+     * <p>The COLOUR each state is drawn in is not here: the vote page paints with raw values from its
+     * own leather-and-ink palette rather than with chat formatting, so it lives there — orange while
+     * an answer is still coming, red once it is not.</p>
+     */
     public String messageKey() {
         return messageKey;
     }

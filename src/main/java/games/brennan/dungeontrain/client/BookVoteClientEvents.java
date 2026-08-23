@@ -2,8 +2,11 @@ package games.brennan.dungeontrain.client;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.mixin.client.BookViewScreenAccessor;
+import games.brennan.dungeontrain.narrative.BookModerationState;
+import games.brennan.dungeontrain.narrative.BookModerationTag;
 import games.brennan.dungeontrain.narrative.BookReportTag;
 import games.brennan.dungeontrain.narrative.BookVoteTag;
+import games.brennan.dungeontrain.narrative.UnapprovedBookMessage;
 import games.brennan.dungeontrain.net.BookReportPacket;
 import games.brennan.dungeontrain.net.BookVotePacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
@@ -87,6 +90,11 @@ public final class BookVoteClientEvents {
     private static final int COLOR_PREFIX = 0x5C2C0E;    // rust-orange "The train asks,"
     private static final int COLOR_TEXT = 0x0C0602;      // ink black
     private static final int COLOR_REPORT_ARMED = 0x9E1B0C; // the "click again" line
+    // Where the train stands on one of YOUR OWN books it has not released (see BookModerationState).
+    // Orange while there is still an answer coming, red once there isn't. Both are read off the same
+    // dimmed leather as everything else on this page, so they sit in its palette rather than shouting.
+    private static final int COLOR_STATUS_WAITING = 0xB5500A;  // pending / undecided
+    private static final int COLOR_STATUS_REJECTED = 0x9E1B0C; // rejected
     private static final int COLOR_REPORTED = 0x4A423C;     // spent/grey once the report is in
     private static final float REPORTED_ALPHA = 0.4F;       // the icon, dimmed, after reporting
     private static final int PROMPT_COUNT = 10;
@@ -116,6 +124,9 @@ public final class BookVoteClientEvents {
     private static int selectedVote = 0;                 // 0 none, ±1 — seeded from the stack's tag
     private static int promptIndex = 1;                  // 1-based, deterministic per book
     private static boolean reported = false;             // seeded from the stack's tag — one-way
+    // Where this book stands, when it is one of the reader's OWN that the train has not released.
+    // APPROVED for every ordinary community book, which is the overwhelming majority.
+    private static BookModerationState moderation = BookModerationState.APPROVED;
     private static boolean reportArmed = false;          // first click armed it; a second commits
 
     private BookVoteClientEvents() {}
@@ -139,6 +150,7 @@ public final class BookVoteClientEvents {
         OptionalInt vote = BookVoteTag.read(stack);
         selectedVote = vote.isPresent() ? vote.getAsInt() : 0;
         reported = BookReportTag.isReported(stack);
+        moderation = BookModerationTag.read(stack);
         // The train always asks a book the same question: stable per (bookType, bookId).
         promptIndex = Math.floorMod((bookType + ":" + bookId).hashCode(), PROMPT_COUNT) + 1;
         screen = book;
@@ -174,15 +186,31 @@ public final class BookVoteClientEvents {
         // Warm leather dim over the page — visibly NOT the author's parchment.
         gfx.fill(left + DIM_X1, BOOK_TOP + DIM_Y1, left + DIM_X2, BOOK_TOP + DIM_Y2, DIM_COLOR);
 
-        // "The train asks," + this book's question, both centered in the page column.
         int centerX = left + PAGE_CENTER_X_OFFSET;
-        Component prefix = Component.translatable("gui.dungeontrain.book_vote.ask_prefix");
-        gfx.drawString(font, prefix, centerX - font.width(prefix) / 2, PREFIX_Y, COLOR_PREFIX, false);
-        int y = PROMPT_Y;
-        Component prompt = Component.translatable("gui.dungeontrain.book_vote.prompt." + promptIndex);
-        for (FormattedCharSequence line : font.split(prompt, TEXT_WIDTH)) {
-            gfx.drawString(font, line, centerX - font.width(line) / 2, y, COLOR_TEXT, false);
-            y += 9;
+        // One of the reader's OWN books that the train has not released. It says where the book
+        // stands INSTEAD of asking how they liked it — the news is the more useful thing, and asking
+        // someone to rate their own unreleased writing is not a question worth putting to them. It
+        // takes the question's place and nothing else: the author's own pages are untouched, and the
+        // thumbs and the report icon below are exactly where they always are.
+        Component status = UnapprovedBookMessage.forBook(moderation, bookType + ":" + bookId);
+        if (status != null) {
+            int statusColor = moderation == BookModerationState.DISLIKED
+                ? COLOR_STATUS_REJECTED : COLOR_STATUS_WAITING;
+            int sy = PREFIX_Y;
+            for (FormattedCharSequence line : font.split(status, TEXT_WIDTH)) {
+                gfx.drawString(font, line, centerX - font.width(line) / 2, sy, statusColor, false);
+                sy += 9;
+            }
+        } else {
+            // "The train asks," + this book's question, both centered in the page column.
+            Component prefix = Component.translatable("gui.dungeontrain.book_vote.ask_prefix");
+            gfx.drawString(font, prefix, centerX - font.width(prefix) / 2, PREFIX_Y, COLOR_PREFIX, false);
+            int y = PROMPT_Y;
+            Component prompt = Component.translatable("gui.dungeontrain.book_vote.prompt." + promptIndex);
+            for (FormattedCharSequence line : font.split(prompt, TEXT_WIDTH)) {
+                gfx.drawString(font, line, centerX - font.width(line) / 2, y, COLOR_TEXT, false);
+                y += 9;
+            }
         }
 
         // Thumbs — highlighted when hovered or when that side is the current vote.
@@ -374,5 +402,6 @@ public final class BookVoteClientEvents {
         promptIndex = 1;
         reported = false;
         reportArmed = false;
+        moderation = BookModerationState.APPROVED;
     }
 }

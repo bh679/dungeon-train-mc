@@ -326,11 +326,6 @@ public final class NarrativeBookEvents {
                 LOGGER.info("[DungeonTrain] SharedBookFound: marked discovered book held (by {}) — will burn after reading",
                     player.getName().getString());
             }
-            // One of the holder's OWN books that the train has not released — say where it stands, and
-            // stop there. FamiliarBookGreeter reports how a book is doing in the wild, which is not a
-            // question an unreleased book has an answer to; running both would print two lines for one
-            // pickup and spend a relay round-trip finding out nothing.
-            if (UnapprovedBookGreeter.maybeGreet(player, stack)) return;
             // If the holder authored this community book, greet them with how it's doing in the wild.
             FamiliarBookGreeter.maybeGreet(player, stack);
             return;
