@@ -40,15 +40,20 @@ public final class ModRecState {
      * {@code request} marks a card for a mod the player asked for but doesn't have, which is a
      * record of what they sent rather than something to click again.
      */
-    public record Tile(String modId, String displayName, boolean sent, boolean request) {}
+    public record Tile(String modId, String displayName, boolean sent, boolean request,
+                       boolean reported) {}
 
     private final List<ModRoster.LoadedMod> mods;
     private final LinkedHashSet<String> sent = new LinkedHashSet<>();
+    /** Mods flagged as a cheat/hack this death, in flag order — kept apart from {@link #sent}. */
+    private final LinkedHashSet<String> reported = new LinkedHashSet<>();
     /** Names of mods requested this death, in send order — each becomes its own card. */
     private final List<String> sentRequests = new ArrayList<>();
 
     private Map<String, Integer> popularity = Map.of();
     private String selected = null;
+    /** Whether the current selection is a hack report rather than a recommendation. */
+    private boolean reportingHack = false;
     private String comment = "";
     private String requestedName = "";
     private int sentCount = 0;
@@ -68,7 +73,7 @@ public final class ModRecState {
     }
 
     public List<Tile> tiles() {
-        return order(mods, popularity, sent, sentRequests);
+        return order(mods, popularity, sent, reported, sentRequests);
     }
 
     /**
@@ -79,11 +84,13 @@ public final class ModRecState {
     public static List<Tile> order(List<ModRoster.LoadedMod> mods,
                                    Map<String, Integer> popularity,
                                    Set<String> sentOrder,
+                                   Set<String> reportedOrder,
                                    List<String> sentRequests) {
+        Set<String> flagged = reportedOrder == null ? Set.<String>of() : reportedOrder;
         List<Tile> unsent = new ArrayList<>();
         for (ModRoster.LoadedMod m : mods) {
-            if (!sentOrder.contains(m.modId())) {
-                unsent.add(new Tile(m.modId(), name(m), false, false));
+            if (!sentOrder.contains(m.modId()) && !flagged.contains(m.modId())) {
+                unsent.add(new Tile(m.modId(), name(m), false, false, false));
             }
         }
         unsent.sort(Comparator
@@ -94,7 +101,17 @@ public final class ModRecState {
         for (String modId : sentOrder) {
             for (ModRoster.LoadedMod m : mods) {
                 if (m.modId().equals(modId)) {
-                    out.add(new Tile(modId, name(m), true, false));
+                    out.add(new Tile(modId, name(m), true, false, false));
+                    break;
+                }
+            }
+        }
+        // Flagged mods sink alongside the recommended ones and keep their slot on a re-flag, for the
+        // same reason: the tile must not move out from under the cursor.
+        for (String modId : flagged) {
+            for (ModRoster.LoadedMod m : mods) {
+                if (m.modId().equals(modId)) {
+                    out.add(new Tile(modId, name(m), true, false, true));
                     break;
                 }
             }
@@ -104,7 +121,7 @@ public final class ModRecState {
         // change about a mod the player doesn't have, and a second thought is a second request.
         List<String> requests = sentRequests == null ? List.of() : sentRequests;
         for (int i = 0; i < requests.size(); i++) {
-            out.add(new Tile(REQUEST_ID + "#" + i, requests.get(i), true, true));
+            out.add(new Tile(REQUEST_ID + "#" + i, requests.get(i), true, true, false));
         }
         return List.copyOf(out);
     }
@@ -121,19 +138,42 @@ public final class ModRecState {
 
     public boolean isRequesting() { return REQUEST_ID.equals(selected); }
 
-    /** Click a tile: selects it, or clears the selection when it was already selected. */
+    /** Whether the live selection is a hack report — the page and the send path both branch on it. */
+    public boolean isReportingHack() { return selected != null && reportingHack; }
+
+    /** Click a tile: selects it for a recommendation, or clears an identical live selection. */
     public void toggle(String modId) {
-        if (isSelected(modId)) {
+        select(modId, false);
+    }
+
+    /**
+     * Click a tile's ⚠ icon: selects it for a hack report. Ignored for the "not installed" tile —
+     * there is nothing to report about a mod the player doesn't have.
+     */
+    public void toggleHack(String modId) {
+        if (REQUEST_ID.equals(modId)) return;
+        select(modId, true);
+    }
+
+    /**
+     * Shared selection: re-clicking the same tile in the same mode clears it, while switching mode
+     * on the selected tile re-arms it — the typed comment is dropped either way, since "why I'd
+     * recommend it" and "what it lets you do" are not the same sentence.
+     */
+    private void select(String modId, boolean hack) {
+        if (isSelected(modId) && reportingHack == hack) {
             clearSelection();
-        } else {
-            selected = modId;
-            comment = "";
-            requestedName = "";
+            return;
         }
+        selected = modId;
+        reportingHack = hack;
+        comment = "";
+        requestedName = "";
     }
 
     public void clearSelection() {
         selected = null;
+        reportingHack = false;
         comment = "";
         requestedName = "";
     }
@@ -168,7 +208,13 @@ public final class ModRecState {
     /** Record a successful send: the tile sinks to the bottom and the inputs clear. */
     public void markSent() {
         if (selected == null) return;
-        if (isRequesting()) {
+        if (isReportingHack()) {
+            // A mod is either recommended or flagged, never both: the two sets are kept disjoint so
+            // changing your mind replaces the tile rather than drawing it twice. add() on an element
+            // already present is a no-op, so a re-flag keeps the tile put.
+            sent.remove(selected);
+            reported.add(selected);
+        } else if (isRequesting()) {
             // Each request becomes its own card, so the player can see what they've asked for and
             // ask for something else. Duplicates are kept rather than merged: sending the same name
             // twice means they sent it twice, and hiding the second one would look like a failure.
@@ -176,6 +222,7 @@ public final class ModRecState {
         } else {
             // add() on an element already present is a no-op for a LinkedHashSet, so a re-send
             // keeps the tile exactly where it was rather than jumping to the end of the grid.
+            reported.remove(selected);
             sent.add(selected);
         }
         sentCount++;

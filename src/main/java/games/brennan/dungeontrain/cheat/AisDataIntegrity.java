@@ -184,9 +184,11 @@ public final class AisDataIntegrity {
     /**
      * Read {@link #FILE_NAME} from {@code configDir} and report deviations from
      * the AIS defaults. Missing file or unreadable file ⇒ no deviations (AIS
-     * itself falls back to defaults in both cases).
+     * itself falls back to defaults in both cases). Public because the
+     * title-screen prompt ({@code ConfigDeviationPromptHandler}) runs the same
+     * check with no server around.
      */
-    static List<String> check(Path configDir) {
+    public static List<String> check(Path configDir) {
         Path file = configDir.resolve(FILE_NAME);
         if (!Files.exists(file)) return List.of();
         Properties properties = new Properties();

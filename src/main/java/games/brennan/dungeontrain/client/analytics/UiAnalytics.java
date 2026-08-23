@@ -100,6 +100,7 @@ public final class UiAnalytics {
     // A mod recommendation was sent from the MODREC page. The mod itself is NOT a funnel dimension —
     // which mods get recommended is counted by /telemetry/mod-rec, this is only the button press.
     public static final String TARGET_MOD_RECOMMEND = "mod_recommend";
+    public static final String TARGET_MOD_HACK_REPORT = "mod_hack_report";
 
     // Death-screen page identities (the {@code page} dimension on open / page_time / survey_answer).
     // Lock-step with ui-events.js PAGES. The eight paginated death-screen pages, plus the full-screen

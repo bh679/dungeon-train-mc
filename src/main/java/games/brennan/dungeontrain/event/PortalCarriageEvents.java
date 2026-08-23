@@ -890,6 +890,10 @@ public final class PortalCarriageEvents {
             // somebody is actually inside: riding past a portal carriage is far more common than
             // going through it, and the full window is a hundred copies of a room nobody looked at.
             // Nobody near at all is the signal to drain.
+            //
+            // Every occupant is passed down, not just the first: the tilers centre a window on each
+            // of them. Handing over one player's tile is what left everybody else on a one-room
+            // island with the floor erased around them the moment the first walked the other way.
             Set<PortalRoomTiling.Tile> standingIn = occupiedTiles(players, dims, layout, structure);
             // Somebody is in this room, so its carriage group must not be culled out from under
             // them — that is what turns every corridor in the room, copies included, into a dead

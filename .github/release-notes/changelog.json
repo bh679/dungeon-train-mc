@@ -8127,6 +8127,57 @@
       ],
       "pr": 1055,
       "date": "2026-08-22",
+      "released": true,
+      "released_in": "v0.627.0",
+      "released_at": "2026-08-23T07:53:19Z"
+    },
+    {
+      "id": "portal-room-tiles-multiplayer",
+      "version": "0.627.0",
+      "type": "fix",
+      "title": "Endless portal rooms no longer vanish under other players",
+      "summary": "In multiplayer, the endless portal rooms only followed one player \u2014 usually the host. Anyone else could watch the floor disappear from around them and drop out of the world, and the room stopped growing ahead of them. Every player in the room now gets their own window of rooms.",
+      "highlights": [
+        "The floor around you is never cleared while you are standing near it, whoever else is in the room",
+        "The room keeps building ahead of every player exploring it, not just the first one in",
+        "Extra corridors are held open the same way, so the way back does not disappear behind you"
+      ],
+      "pr": 1056,
+      "date": "2026-08-23",
+      "released": true,
+      "released_in": "v0.627.0",
+      "released_at": "2026-08-23T07:53:19Z"
+    },
+    {
+      "id": "mod-hack-report-icon",
+      "version": "0.628.0",
+      "type": "feat",
+      "title": "Flag a cheat mod from the death screen",
+      "summary": "The Mod Recommendations page now works both ways. Alongside recommending a mod to the creator, each of your installed mods carries a small warning icon \u2014 click it to flag that mod as a cheat or hack, say what it lets you do, and send. Flagged mods sink to the bottom of the grid with a warning mark, the way recommended ones keep their tick.",
+      "highlights": [
+        "Report any installed mod as a cheat or hack, with a reason",
+        "Recommendations are unchanged \u2014 the tile body still recommends"
+      ],
+      "pr": 1057,
+      "date": "2026-08-23",
+      "released": true,
+      "released_in": "v0.628.0",
+      "released_at": "2026-08-23T08:01:10Z"
+    },
+    {
+      "id": "config-integrity-free-play",
+      "version": "0.629.0",
+      "type": "feat",
+      "title": "Changed settings now show at launch, with one-click restore",
+      "summary": "Dungeon Train's difficulty settings are what your advancements and lifetime stats are measured against, so a world running with them changed now plays in Free Play \u2014 the same rule that already applied to Adventure Item Stats. If your settings differ, the game tells you on the title screen, lists exactly what changed, and offers to put them back. Your own settings are always backed up first, never deleted, so you can rename a file back to restore them. Settings that don't affect balance \u2014 visual options, Discord and telemetry toggles, and the content filters \u2014 are unaffected.",
+      "highlights": [
+        "Changed difficulty settings are shown at launch, not discovered mid-run",
+        "One-click restore to defaults, with your old settings kept as backups",
+        "Keeping your changes is remembered, so you're only asked again if something else changes",
+        "New /fixconfig command does the same restore from in-game"
+      ],
+      "pr": 1058,
+      "date": "2026-08-23",
       "released": false,
       "released_in": null,
       "released_at": null
