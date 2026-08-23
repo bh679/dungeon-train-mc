@@ -8199,6 +8199,36 @@
       "released": true,
       "released_in": "v0.630.0",
       "released_at": "2026-08-23T13:40:00Z"
+    },
+    {
+      "id": "own-book-vote-counters",
+      "version": "0.631.0",
+      "type": "feat",
+      "title": "See how your own books are landing",
+      "summary": "The last page of a book you wrote now shows its thumbs up and thumbs down count. The numbers refresh whenever you pick the book up.",
+      "highlights": [
+        "Vote counts sit where the voting buttons are on other people's books \u2014 yours report, they don't ask.",
+        "A released book of yours shows its tally even at zero, so \"nobody has voted yet\" is something you can actually see."
+      ],
+      "date": "2026-08-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "portal-library-weights-restored",
+      "version": "0.631.0",
+      "type": "fix",
+      "title": "Portal room variety restored",
+      "summary": "Since v0.630.0 portal rooms had been coming up as libraries far more often than intended, and those libraries always drew from your own shelf instead of mixing in other writers. Test settings had been shipped as real content by mistake. The original room weights are back.",
+      "highlights": [
+        "Libraries are rare again, and the rooms you meet are varied again.",
+        "Library rooms go back to mostly showing other people's writing, with your own as the occasional treat."
+      ],
+      "date": "2026-08-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
