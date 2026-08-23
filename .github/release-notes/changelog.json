@@ -8211,9 +8211,9 @@
         "A released book of yours shows its tally even at zero, so \"nobody has voted yet\" is something you can actually see."
       ],
       "date": "2026-08-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.631.0",
+      "released_at": "2026-08-23T14:25:53Z"
     },
     {
       "id": "portal-library-weights-restored",
@@ -8226,27 +8226,9 @@
         "Library rooms go back to mostly showing other people's writing, with your own as the occasional treat."
       ],
       "date": "2026-08-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
-    },
-    {
-      "id": "custom-train-content-free-play",
-      "version": "0.632.0",
-      "type": "feat",
-      "title": "Custom train content now asks before it changes your run",
-      "summary": "If you've built your own carriages in the Train Editor \u2014 or installed someone else's pack \u2014 starting a world now asks what you want to do with them. Continue and you play with your creations, but the run counts as Free Play: it won't add to your profile or global stats. Disable them and the world runs the built-in designs, and your stats count as normal. Tick 'Remember decision' and it won't ask again; you can change your mind any time in Options, or with /customcontent.",
-      "highlights": [
-        "A prompt at the start of any world running custom train content, with Continue / Disable Custom Changes and a Remember decision checkbox.",
-        "Playing with custom content is Free Play \u2014 advancements still earn live, but they don't count towards your profile or global totals.",
-        "Disabling is per-world and reversible: the world falls back to the built-in designs, and /customcontent on brings yours back.",
-        "A new Custom Train Content row in Options -> Dungeon Train sets what happens by default."
-      ],
-      "pr": 1061,
-      "date": "2026-08-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.631.0",
+      "released_at": "2026-08-23T14:25:53Z"
     }
   ]
 }
