@@ -8127,9 +8127,9 @@
       ],
       "pr": 1055,
       "date": "2026-08-22",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.627.0",
+      "released_at": "2026-08-23T07:53:19Z"
     },
     {
       "id": "portal-room-tiles-multiplayer",
@@ -8144,9 +8144,9 @@
       ],
       "pr": 1056,
       "date": "2026-08-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.627.0",
+      "released_at": "2026-08-23T07:53:19Z"
     }
   ]
 }
