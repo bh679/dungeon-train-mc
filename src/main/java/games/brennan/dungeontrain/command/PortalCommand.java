@@ -294,7 +294,7 @@ public final class PortalCommand {
         if (PortalCarriageSelection.isDevCreative(source.getLevel())) {
             source.sendSuccess(() -> Component.literal(
                 "  → dev build, everyone in creative: overridden to every "
-                    + PortalCarriageSelection.DEV_CREATIVE_EVERY + "nd group. Switch to survival for "
+                    + PortalCarriageSelection.DEV_CREATIVE_EVERY + " groups. Switch to survival for "
                     + "the real rate.")
                 .withStyle(ChatFormatting.YELLOW), false);
         }

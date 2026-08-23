@@ -222,7 +222,7 @@ final class PortalMinLevelGateTest {
     void periodicRateLiftsTheGate() {
         Rate rate = Rate.periodic(PortalCarriageSelection.DEV_CREATIVE_EVERY);
         for (int group = -40; group <= 40; group++) {
-            assertEquals(group % 2 == 0,
+            assertEquals(Math.floorMod(group, PortalCarriageSelection.DEV_CREATIVE_EVERY) == 0,
                 PortalCarriageSelection.isPortalPart(group * GROUP, GROUP, rate, SEED, SHIPPED_GATE),
                 "group " + group + " under the dev-creative cadence");
         }

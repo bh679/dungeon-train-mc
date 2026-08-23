@@ -53,7 +53,7 @@ import java.util.Map;
  * {@link #MIN_PORTAL_LEVEL} holds a portal, and the draw begins counting at that boundary rather
  * than running from the origin and discarding what it drew — see {@link #firstEligibleGroup()}.</p>
  *
- * <p>The one exception is a dev build with everyone in creative, which keeps the old every-2nd
+ * <p>The one exception is a dev build with everyone in creative, which takes a fixed every-5th
  * cadence so a portal is always a short ride away while testing — see {@link #rateFor}.</p>
  */
 public final class PortalCarriageSelection {
@@ -115,12 +115,19 @@ public final class PortalCarriageSelection {
     public static final int MIN_GROUP_GAP = 5;
 
     /**
-     * The cadence a dev build hands a creative player: every 2nd group, as the whole system worked
-     * before the lottery. Finding a portal at the shipped 1-in-20 means riding a long way, which is
-     * a poor loop for testing one; creative on a dev build is exactly the case where that matters
-     * and nobody's play experience is at stake.
+     * The cadence a dev build hands a creative player: every 5th group, evenly spaced and the same
+     * in every world. Finding a portal at the shipped 1-in-20 means riding a long way, which is a
+     * poor loop for testing one; creative on a dev build is exactly the case where that matters and
+     * nobody's play experience is at stake.
+     *
+     * <p>Five is close enough that the next portal is always a short ride off, while still leaving
+     * ordinary carriages either side of one — a denser cadence turns the test train into a row of
+     * corridors, which is its own poor loop for testing how a portal reads against the train. It
+     * coincides with {@link #MIN_GROUP_GAP} by arithmetic rather than by meaning: that constant is
+     * the lottery's anti-clumping floor and this one is a testing convenience, so they stay
+     * separate and may drift apart.</p>
      */
-    public static final int DEV_CREATIVE_EVERY = 2;
+    public static final int DEV_CREATIVE_EVERY = 5;
 
     private PortalCarriageSelection() {}
 
@@ -173,7 +180,7 @@ public final class PortalCarriageSelection {
      * <p>The draw is a hash of the group's ordinal and the world seed rather than a modulo, so
      * portals arrive at no fixed beat while every reader — the placer, the relay, the tick that
      * builds the pair — keeps getting the same answer for the same group forever. A
-     * {@link Rate#periodic} rate takes the old every-nth cadence instead; see
+     * {@link Rate#periodic} rate takes a fixed every-nth cadence instead; see
      * {@link #DEV_CREATIVE_EVERY} for the one case that uses it.</p>
      */
     public static boolean isPortalGroup(int carriageIndex, int groupSize, Rate rate, long worldSeed) {

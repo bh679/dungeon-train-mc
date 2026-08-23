@@ -182,16 +182,20 @@ final class PortalCarriageLotteryTest {
     }
 
     /**
-     * The dev-creative escape hatch: a periodic rate is the old cadence exactly, so a tester in
-     * creative always has a portal a couple of groups away, and the seed cannot move it.
+     * The dev-creative escape hatch: a periodic rate lands on a fixed beat, so a tester in creative
+     * always has a portal a short ride away, and the seed cannot move it.
+     *
+     * <p>The expectation is derived from {@code DEV_CREATIVE_EVERY} rather than written out, so
+     * retuning the testing cadence does not fail a test that is about the rule, not the number.
+     * {@link Math#floorMod} because the sweep runs behind the origin as well as ahead.</p>
      */
     @Test
     @DisplayName("a periodic rate lands on every nth group in every world alike")
-    void periodicRateIsTheOldCadence() {
+    void periodicRateIsAFixedCadence() {
         for (long seed : new long[] {SEED, 0L, -1L, 12345L}) {
             for (int group = -40; group <= 40; group++) {
                 int anchor = group * GROUP;
-                assertEquals(group % 2 == 0,
+                assertEquals(Math.floorMod(group, PortalCarriageSelection.DEV_CREATIVE_EVERY) == 0,
                     PortalCarriageSelection.isPortalPart(
                         anchor, GROUP, Rate.periodic(PortalCarriageSelection.DEV_CREATIVE_EVERY), seed),
                     "group " + group + " at seed " + seed);
