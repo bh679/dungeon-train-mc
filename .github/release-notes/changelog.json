@@ -8293,6 +8293,22 @@
       "released": true,
       "released_in": "v0.634.0",
       "released_at": "2026-08-23T16:20:06Z"
+    },
+    {
+      "id": "portal-self-shelf-consent",
+      "version": "0.635.0",
+      "type": "fix",
+      "title": "Your own portal library is only asked for once you've allowed network access",
+      "summary": "A portal room set to stock its shelves from your own writing had to ask the server which books are yours, and asking meant sending your player ID. It now does that only if you granted Dungeon Train network access. If you declined, the room quietly stocks itself from another player's library instead \u2014 the same thing it already did for anyone who hasn't written a book yet.",
+      "highlights": [
+        "No player ID leaves your game for the author lookup unless you've said yes to network access",
+        "Declined the prompt? Self-stocked rooms fill from the community pool rather than sitting empty"
+      ],
+      "pr": 1067,
+      "date": "2026-08-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
