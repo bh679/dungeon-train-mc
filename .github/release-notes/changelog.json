@@ -8277,6 +8277,22 @@
       "released": true,
       "released_in": "v0.633.0",
       "released_at": "2026-08-23T15:37:53Z"
+    },
+    {
+      "id": "video-tools-reset",
+      "version": "0.634.0",
+      "type": "feat",
+      "title": "Reset your progress",
+      "summary": "A Reset Everything button on the Video Tools page. Wipes your advancements, stats, story progress, Ender Chest and past lives, and deletes your Dungeon Train worlds, so the game treats you as a first-time player again.",
+      "highlights": [
+        "Names every world it will delete and makes you type DELETE first \u2014 there is no undo",
+        "Worlds without Dungeon Train in them are left alone"
+      ],
+      "pr": 1065,
+      "date": "2026-08-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
