@@ -193,6 +193,25 @@ final class PortalCarriageLotteryTest {
         }
     }
 
+    /**
+     * The dev build's dense cadence stands in for a rate nobody has chosen, and steps aside for one
+     * that has been. An unconditional override made {@code portal carriage 7} look broken in the dev
+     * client — the world stored 7, the command said 7, and the train kept stamping every 2 — so this
+     * pins the precedence rather than the number.
+     */
+    @Test
+    @DisplayName("an explicitly set rate beats the dev testing cadence")
+    void setByHandBeatsTheDevCadence() {
+        assertEquals(7, PortalCarriageSelection.creativeEvery(7, true, true),
+            "a rate set by hand must survive on a dev build");
+        assertEquals(PortalCarriageSelection.DEV_CREATIVE_EVERY,
+            PortalCarriageSelection.creativeEvery(7, false, true),
+            "an untouched dev world takes the testing cadence");
+        assertEquals(7, PortalCarriageSelection.creativeEvery(7, false, false),
+            "a release build always takes the world's rate");
+        assertEquals(7, PortalCarriageSelection.creativeEvery(7, true, false));
+    }
+
     /** Same rate, different rule — otherwise the periodic flag would not be doing anything. */
     @Test
     @DisplayName("the lottery does not agree with the cadence at the same rate")

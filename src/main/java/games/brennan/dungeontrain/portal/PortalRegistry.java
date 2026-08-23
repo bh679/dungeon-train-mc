@@ -34,6 +34,7 @@ public final class PortalRegistry extends SavedData {
     private static final String TAG_PORTALS = "portals";
     private static final String TAG_AUTO_SPACING = "autoSpacing";
     private static final String TAG_CARRIAGE_EVERY = "carriageEvery";
+    private static final String TAG_CARRIAGE_EVERY_SET = "carriageEverySet";
     private static final String TAG_ORIGIN_X = "originX";
     private static final String TAG_FLOOR_Y = "floorY";
     private static final String TAG_ORIGIN_Z = "originZ";
@@ -74,6 +75,17 @@ public final class PortalRegistry extends SavedData {
      * carriage under a player standing in it.
      */
     private int carriageEvery = PortalCarriageSelection.DEFAULT_CARRIAGE_EVERY;
+
+    /**
+     * True once someone has set the rate by hand, as opposed to inheriting the shipped default.
+     *
+     * <p>Load-bearing on a dev build only, and only in creative: that build substitutes its own dense
+     * testing cadence for the world's rate, and it must not do so once a rate has been asked for
+     * explicitly — otherwise {@code portal carriage 7} silently does nothing in the dev client, which
+     * is the one place it most needs to be testable. See
+     * {@link PortalCarriageSelection#rateFor}.</p>
+     */
+    private boolean carriageEverySet = false;
 
     /**
      * Default anchor spacing for the free-standing portals that generate beside the track.
@@ -143,9 +155,19 @@ public final class PortalRegistry extends SavedData {
     }
 
     public synchronized void setCarriageEvery(int every) {
-        if (carriageEvery == every) return;
+        // The "set by hand" flag is recorded even when the value is unchanged: asking for the rate
+        // the world already had is still asking, and on a dev build it is how a tester turns the
+        // substituted testing cadence off.
+        boolean firstSet = !carriageEverySet;
+        carriageEverySet = true;
+        if (carriageEvery == every && !firstSet) return;
         carriageEvery = every;
         setDirty();
+    }
+
+    /** True once the rate was set by hand rather than inherited — see {@link #carriageEverySet}. */
+    public synchronized boolean isCarriageEverySet() {
+        return carriageEverySet;
     }
 
     /** True if this carriage's corridor no longer takes anyone in. The way out is never severed. */
@@ -193,6 +215,10 @@ public final class PortalRegistry extends SavedData {
         if (tag.contains(TAG_CARRIAGE_EVERY)) {
             data.carriageEvery = tag.getInt(TAG_CARRIAGE_EVERY);
         }
+        // Absent on worlds saved before the flag existed. Those stored a rate unconditionally, so
+        // whether it was chosen or inherited is unknowable — false is the safe read, since it only
+        // affects which cadence a dev build shows in creative.
+        data.carriageEverySet = tag.getBoolean(TAG_CARRIAGE_EVERY_SET);
         // Absent in worlds saved before severing existed, which read back as "nothing severed" —
         // the right answer for a world where no corridor had ever been broken into.
         for (int carriageIndex : tag.getIntArray(TAG_SEVERED)) {
@@ -227,6 +253,7 @@ public final class PortalRegistry extends SavedData {
     public synchronized CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
         tag.putInt(TAG_AUTO_SPACING, autoSpacing);
         tag.putInt(TAG_CARRIAGE_EVERY, carriageEvery);
+        tag.putBoolean(TAG_CARRIAGE_EVERY_SET, carriageEverySet);
         tag.putIntArray(TAG_SEVERED, severedCarriages.stream().mapToInt(Integer::intValue).toArray());
 
         ListTag list = new ListTag();

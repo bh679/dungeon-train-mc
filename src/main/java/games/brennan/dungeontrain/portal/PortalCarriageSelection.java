@@ -108,10 +108,13 @@ public final class PortalCarriageSelection {
     public static final int MIN_PORTAL_LEVEL = 2;
 
     /**
-     * The cadence a dev build hands a creative player, in place of the world's own rate: every 2nd
-     * group, as the whole system worked before the lottery. Riding to a portal at the shipped rate is
-     * a poor loop for testing one, and a dev build is exactly where that matters and nobody's play
-     * experience is at stake.
+     * The cadence a dev build stands in for the world's own rate with, while nobody has set one:
+     * every 2nd group, as the whole system worked before the lottery. Riding to a portal at the
+     * shipped rate is a poor loop for testing one, and a dev build is exactly where that matters and
+     * nobody's play experience is at stake.
+     *
+     * <p>A stand-in, not an override — {@code /dungeontrain portal carriage <n>} beats it, so the
+     * command is testable in the dev client. See {@link #creativeEvery}.</p>
      */
     public static final int DEV_CREATIVE_EVERY = 2;
 
@@ -394,11 +397,31 @@ public final class PortalCarriageSelection {
      * other, and {@code portal carriage off} means no portals to both.</p>
      */
     public static Rate rateFor(ServerLevel level) {
-        int stored = PortalRegistry.get(level).carriageEvery();
+        PortalRegistry registry = PortalRegistry.get(level);
+        int stored = registry.carriageEvery();
         if (stored <= CARRIAGE_EVERY_OFF) return Rate.OFF;
         if (!isAllCreative(level)) return Rate.lottery(stored);
-        // A dev build swaps in its own dense cadence so a tester never has to ride for one.
-        return Rate.periodic(DungeonTrain.isDevBuild() ? DEV_CREATIVE_EVERY : stored);
+        return Rate.periodic(creativeEveryFor(registry));
+    }
+
+    /**
+     * The exact cadence creative runs at: the world's rate, unless this is a dev build whose rate
+     * nobody has set, in which case the dense testing cadence stands in for it.
+     *
+     * <p><b>An explicit setting wins, including on a dev build.</b> An unconditional dev override
+     * makes {@code /dungeontrain portal carriage 7} appear to do nothing in the dev client — the
+     * command reports the new rate, the world stores it, and the train keeps stamping every
+     * {@link #DEV_CREATIVE_EVERY} groups. The substitution is a convenience for a world nobody has
+     * an opinion about, so it steps aside the moment someone does.</p>
+     */
+    private static int creativeEveryFor(PortalRegistry registry) {
+        return creativeEvery(registry.carriageEvery(), registry.isCarriageEverySet(),
+            DungeonTrain.isDevBuild());
+    }
+
+    /** {@link #creativeEveryFor} with its inputs supplied — the testable form. */
+    static int creativeEvery(int stored, boolean setByHand, boolean devBuild) {
+        return devBuild && !setByHand ? DEV_CREATIVE_EVERY : stored;
     }
 
     /**

@@ -286,6 +286,7 @@ public final class PortalCommand {
         if (every != PortalCarriageSelection.CARRIAGE_EVERY_OFF
                 && PortalCarriageSelection.isAllCreative(source.getLevel())) {
             int creative = PortalCarriageSelection.isDevCreative(source.getLevel())
+                    && !registry.isCarriageEverySet()
                 ? PortalCarriageSelection.DEV_CREATIVE_EVERY : every;
             source.sendSuccess(() -> Component.literal(
                 "  → everyone here is in creative, so it is exactly every " + creative
