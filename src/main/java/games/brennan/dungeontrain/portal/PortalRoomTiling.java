@@ -33,6 +33,18 @@ import java.util.function.Predicate;
  * genuinely endless rather than merely large, and it is what bounds the cost — the resident set never
  * exceeds {@link #budgetTiles}, however far anyone walks.</p>
  *
+ * <h2>One window per occupant, not one per room</h2>
+ * <p>Every method that takes a centre takes a <b>set</b> of them — the tiles the players inside are
+ * standing in. The window is their union: a tile is retired only once it has fallen outside the
+ * radius of <i>every</i> one of them, and the next tile to build is the one nearest to <i>any</i> of
+ * them.</p>
+ *
+ * <p>It used to follow the first occupant alone, with the others protected only by the caller sparing
+ * the single tile each was standing in. On a server that erased the floor all round a second player
+ * the moment the first walked the other way, leaving them on an island one room across with the world
+ * floor below the next step. Following one centre is the same thing as following the host, and the
+ * cost of the room is paid per occupant anyway — see {@link #budgetTiles(int, int)}.</p>
+ *
  * <h2>The budget is a block count, not a tile count</h2>
  * <p>{@link #MAX_RESIDENT_BLOCKS} caps how much of the world floor one pair may own. A small room
  * therefore gets the full {@link #MAX_RADIUS} window; a room already at the maximum on every axis
@@ -96,11 +108,53 @@ public record PortalRoomTiling(Set<Tile> tiles) {
     /** Widest window the radius allows, as a tile count — the cap {@link #budgetTiles} clamps to. */
     private static final int MAX_WINDOW_TILES = (2 * MAX_RADIUS + 1) * (2 * MAX_RADIUS + 1);
 
-    /** Nearest first, ties broken on coordinates so a tick's choice is deterministic. */
-    private static Comparator<Tile> nearestTo(Tile centre) {
-        return Comparator.comparingInt((Tile t) -> t.distanceSqTo(centre))
+    /**
+     * How many occupants of one room the block budget is multiplied by before it stops growing.
+     *
+     * <p>Somewhere the per-occupant budget has to stop, or a full server standing in one endless room
+     * would own the world floor. Four is chosen as the size of a group that plays together — past
+     * that, players are close enough to share a window in practice, and the retire rule protects
+     * everybody regardless of what the budget says.</p>
+     */
+    public static final int MAX_CENTRES = 4;
+
+    /**
+     * How far {@code tile} is from the closest of {@code centres}, squared. Ordering only, so the
+     * square is never taken.
+     *
+     * <p>{@link Integer#MAX_VALUE} for an empty set, which no caller passes — the tick loop drains
+     * instead of tiling when nobody is inside.</p>
+     */
+    private static int distanceSqToNearest(Tile tile, Set<Tile> centres) {
+        int best = Integer.MAX_VALUE;
+        for (Tile centre : centres) {
+            best = Math.min(best, tile.distanceSqTo(centre));
+        }
+        return best;
+    }
+
+    /**
+     * Nearest to whichever occupant is closest, ties broken on coordinates so a tick's choice is
+     * deterministic.
+     *
+     * <p>Measuring against the nearest centre rather than against a chosen one is what balances the
+     * fill between two players walking apart: a gap one tile from the second of them outranks a tile
+     * four out in the first's window, so both are surrounded before either is extended.</p>
+     */
+    private static Comparator<Tile> nearestToAny(Set<Tile> centres) {
+        return Comparator.comparingInt((Tile t) -> distanceSqToNearest(t, centres))
             .thenComparingInt(Tile::x)
             .thenComparingInt(Tile::z);
+    }
+
+    /** True when {@code tile} is inside the Chebyshev {@code radius} of at least one centre. */
+    private static boolean withinAny(Tile tile, Set<Tile> centres, int radius) {
+        for (Tile centre : centres) {
+            if (Math.abs(tile.x() - centre.x()) <= radius && Math.abs(tile.z() - centre.z()) <= radius) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public PortalRoomTiling {
@@ -123,8 +177,28 @@ public record PortalRoomTiling(Set<Tile> tiles) {
      * in it, and that clear is the same size whichever mode asked for it.</p>
      */
     public static int budgetTiles(int blocksPerTile) {
-        if (blocksPerTile <= 0) return MAX_WINDOW_TILES;
-        return Math.max(1, Math.min(MAX_WINDOW_TILES, MAX_RESIDENT_BLOCKS / blocksPerTile));
+        return budgetTiles(blocksPerTile, 1);
+    }
+
+    /**
+     * As {@link #budgetTiles(int)}, for a room with {@code occupants} players standing in distinct
+     * tiles — the budget one of them would get, that many times over, up to {@link #MAX_CENTRES}.
+     *
+     * <p>A shared budget is not merely mean, it is a wall. Two players walking apart both fill their
+     * side of a single budget; it is then spent, and nothing is retirable because every resident tile
+     * is close to one of them — so neither window can ever grow again, in a room whose whole promise
+     * is that it does not end. Scaling with the occupants keeps each of them a window of the size
+     * they would have had alone.</p>
+     *
+     * <p>The cost is real and it is bounded on both sides: it is only paid while those players are
+     * actually in the room, and it buys no more stamping per tick — {@code PortalRoomTiler} still
+     * lays one tile a tick however many people are watching.</p>
+     */
+    public static int budgetTiles(int blocksPerTile, int occupants) {
+        int centres = Math.max(1, Math.min(MAX_CENTRES, occupants));
+        if (blocksPerTile <= 0) return MAX_WINDOW_TILES * centres;
+        return Math.max(1, Math.min(MAX_WINDOW_TILES * centres,
+            (MAX_RESIDENT_BLOCKS / blocksPerTile) * centres));
     }
 
     /** True when a copy of the room is standing at {@code tile}. */
@@ -166,7 +240,7 @@ public record PortalRoomTiling(Set<Tile> tiles) {
      * is a gap they would see.</p>
      */
     public Tile nextToAdd(Tile centre, int radius, int budget) {
-        return nextToAdd(centre, radius, budget, t -> true);
+        return nextToAdd(Set.of(centre), radius, budget, t -> true);
     }
 
     /**
@@ -178,16 +252,36 @@ public record PortalRoomTiling(Set<Tile> tiles) {
      * every tick.</p>
      */
     public Tile nextToAdd(Tile centre, int radius, int budget, Predicate<Tile> buildable) {
-        if (tiles.size() >= budget) return null;
-        Comparator<Tile> order = nearestTo(centre);
+        return nextToAdd(Set.of(centre), radius, budget, buildable);
+    }
+
+    /**
+     * As {@link #nextToAdd(Tile, int, int, Predicate)} for a room with several people in it: the
+     * window is the union of the squares around {@code centres}, and the tile chosen is the nearest
+     * unbuilt one to whichever of them is closest to it.
+     *
+     * <p>Which is what keeps a second player supplied. Following one centre only, the room simply
+     * never extended past the first player's radius — everybody else walked to a wall, or in
+     * {@link PortalRoomMode#ENDLESS_OPEN}, which closes no faces, off the edge of the floor.</p>
+     *
+     * <p>The candidate scan is per-centre and deduplicated by the resident check rather than by a
+     * set, so overlapping windows cost a few repeated comparisons and no allocation. With the centres
+     * capped at {@link #MAX_CENTRES} for the budget, and in practice one or two, that is cheaper than
+     * building the union.</p>
+     */
+    public Tile nextToAdd(Set<Tile> centres, int radius, int budget, Predicate<Tile> buildable) {
+        if (tiles.size() >= budget || centres.isEmpty()) return null;
+        Comparator<Tile> order = nearestToAny(centres);
         Tile best = null;
-        for (int dx = -radius; dx <= radius; dx++) {
-            for (int dz = -radius; dz <= radius; dz++) {
-                Tile candidate = centre.offset(dx, dz);
-                if (tiles.contains(candidate)) continue;
-                if (best != null && order.compare(candidate, best) >= 0) continue;
-                if (!buildable.test(candidate)) continue;
-                best = candidate;
+        for (Tile centre : centres) {
+            for (int dx = -radius; dx <= radius; dx++) {
+                for (int dz = -radius; dz <= radius; dz++) {
+                    Tile candidate = centre.offset(dx, dz);
+                    if (tiles.contains(candidate)) continue;
+                    if (best != null && order.compare(candidate, best) >= 0) continue;
+                    if (!buildable.test(candidate)) continue;
+                    best = candidate;
+                }
             }
         }
         return best;
@@ -201,7 +295,7 @@ public record PortalRoomTiling(Set<Tile> tiles) {
      * rather than what is beside them.</p>
      */
     public Tile nextToRemove(Tile centre, int radius) {
-        return nextToRemove(centre, radius, t -> true);
+        return nextToRemove(Set.of(centre), radius, t -> true);
     }
 
     /**
@@ -212,13 +306,26 @@ public record PortalRoomTiling(Set<Tile> tiles) {
      * the other way would drop them onto the rock at the world floor.</p>
      */
     public Tile nextToRemove(Tile centre, int radius, Predicate<Tile> removable) {
-        Comparator<Tile> order = nearestTo(centre);
+        return nextToRemove(Set.of(centre), radius, removable);
+    }
+
+    /**
+     * As {@link #nextToRemove(Tile, int, Predicate)} for a room with several people in it: a tile is
+     * offered up only once it has fallen outside {@code radius} of <b>every</b> centre.
+     *
+     * <p>This is the safety rule of the whole class, and it deliberately does not consult the budget.
+     * Erasing a copy takes its floor with it, so a tile retired next to somebody is a step they can
+     * take into the world floor — and it does not have to be the tile they occupy, which was the only
+     * one the caller could spare while the window followed a single player. Everything within a
+     * radius of everybody stays, whatever it costs; growth is what the budget limits.</p>
+     */
+    public Tile nextToRemove(Set<Tile> centres, int radius, Predicate<Tile> removable) {
+        if (centres.isEmpty()) return null;
+        Comparator<Tile> order = nearestToAny(centres);
         Tile worst = null;
         for (Tile tile : tiles) {
             if (Tile.BASE.equals(tile)) continue;
-            if (Math.abs(tile.x() - centre.x()) <= radius && Math.abs(tile.z() - centre.z()) <= radius) {
-                continue;
-            }
+            if (withinAny(tile, centres, radius)) continue;
             if (worst != null && order.compare(tile, worst) <= 0) continue;
             if (!removable.test(tile)) continue;
             worst = tile;
@@ -239,7 +346,7 @@ public record PortalRoomTiling(Set<Tile> tiles) {
 
     /** As {@link #farthestFrom(Tile)}, sparing anything {@code removable} rejects. */
     public Tile farthestFrom(Tile centre, Predicate<Tile> removable) {
-        Comparator<Tile> order = nearestTo(centre);
+        Comparator<Tile> order = nearestToAny(Set.of(centre));
         Tile worst = null;
         for (Tile tile : tiles) {
             if (Tile.BASE.equals(tile)) continue;

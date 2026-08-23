@@ -252,6 +252,112 @@ class PortalRoomTilingTest {
         assertEquals(2, drained.size());
     }
 
+    // ---- several people in one room ----
+
+    /** Fill the window around every one of {@code centres}, the way the tick loop does. */
+    private static PortalRoomTiling fillAround(Set<Tile> centres, int radius, int budget) {
+        PortalRoomTiling tiling = PortalRoomTiling.base();
+        for (Tile next; (next = tiling.nextToAdd(centres, radius, budget, t -> true)) != null; ) {
+            tiling = tiling.with(next);
+        }
+        return tiling;
+    }
+
+    /** Retire everything the window offers up, the way the tick loop does — one tile at a time. */
+    private static PortalRoomTiling drainTo(PortalRoomTiling tiling, Set<Tile> centres, int radius) {
+        PortalRoomTiling drained = tiling;
+        for (Tile stale; (stale = drained.nextToRemove(centres, radius, t -> true)) != null; ) {
+            drained = drained.without(stale);
+        }
+        return drained;
+    }
+
+    @Test
+    @DisplayName("the floor around a second player is not erased when the first walks the other way")
+    void aSecondOccupantKeepsTheirSurroundings() {
+        // The multiplayer bug this all exists for. Two players walk in; one heads off along -z while
+        // the other stays put ten tiles away. Following one centre, everything around the one who
+        // stayed falls outside the window and is cleared — floor included — leaving them on an island
+        // one room across with the world floor below the next step they take.
+        PortalRoomTiling tiling = fillAround(Tile.BASE, RADIUS, UNLIMITED);
+        Tile walker = new Tile(0, -5);
+        Tile stayed = new Tile(0, 5);
+        Tile besideStayed = new Tile(1, 5);
+        assertTrue(tiling.has(besideStayed));
+
+        PortalRoomTiling drained = drainTo(tiling, Set.of(walker, stayed), RADIUS);
+        for (Tile t : tiling.tiles()) {
+            if (Math.abs(t.x() - stayed.x()) <= RADIUS && Math.abs(t.z() - stayed.z()) <= RADIUS) {
+                assertTrue(drained.has(t), t + " was erased beside the second player");
+            }
+        }
+        assertTrue(drained.has(besideStayed));
+
+        // And the contrast: with the walker as the only centre — what the tiler used to do — the tile
+        // beside the player who stayed is exactly what goes.
+        PortalRoomTiling followedOne = drainTo(tiling, Set.of(walker), RADIUS);
+        assertFalse(followedOne.has(besideStayed));
+    }
+
+    @Test
+    @DisplayName("the room grows ahead of every occupant, not only the first")
+    void theWindowFollowsEverybody() {
+        Tile first = Tile.BASE;
+        Tile second = new Tile(0, 12);
+        PortalRoomTiling tiling = fillAround(Set.of(first, second), RADIUS, UNLIMITED);
+
+        // Both are surrounded to the full radius — nobody is walking into unbuilt space.
+        for (int d = -RADIUS; d <= RADIUS; d++) {
+            assertTrue(tiling.has(second.offset(0, d)), "the second player's row should be built");
+            assertTrue(tiling.has(first.offset(0, d)));
+        }
+        // Including the tile they are walking towards, well outside the first player's window.
+        assertTrue(tiling.has(new Tile(0, 17)));
+        assertNull(tiling.nextToRemove(Set.of(first, second), RADIUS, t -> true));
+    }
+
+    @Test
+    @DisplayName("the fill is nearest-to-anybody, so nobody waits for the other's window to finish")
+    void fillIsNearestToTheNearestOccupant() {
+        Tile first = Tile.BASE;
+        Tile second = new Tile(0, 12);
+        PortalRoomTiling tiling = PortalRoomTiling.base().with(second);
+
+        // The very first tile laid is beside one of them, not four rooms out in the first's window.
+        Tile next = tiling.nextToAdd(Set.of(first, second), RADIUS, UNLIMITED, t -> true);
+        assertNotNull(next);
+        assertEquals(1, Math.min(next.distanceSqTo(first), next.distanceSqTo(second)));
+    }
+
+    @Test
+    @DisplayName("the budget scales with the occupants, so a shared window is not a wall")
+    void budgetScalesWithOccupants() {
+        int builtIn = 11 * 7 * 13;
+        int one = PortalRoomTiling.budgetTiles(builtIn);
+
+        assertEquals(one, PortalRoomTiling.budgetTiles(builtIn, 1));
+        assertEquals(one * 2, PortalRoomTiling.budgetTiles(builtIn, 2));
+        // Capped: a full server in one room does not get the world floor.
+        assertEquals(one * PortalRoomTiling.MAX_CENTRES,
+            PortalRoomTiling.budgetTiles(builtIn, PortalRoomTiling.MAX_CENTRES + 20));
+        // And an occupant count of nothing reads as one rather than as no budget at all.
+        assertEquals(one, PortalRoomTiling.budgetTiles(builtIn, 0));
+        // The per-occupant ceiling still holds for a room too big to tile.
+        assertEquals(2, PortalRoomTiling.budgetTiles(PortalRoomTiling.MAX_RESIDENT_BLOCKS, 2));
+    }
+
+    @Test
+    @DisplayName("one occupant behaves exactly as it always did — the set overload is the same window")
+    void oneOccupantIsUnchanged() {
+        Tile walkedTo = new Tile(0, 3);
+        PortalRoomTiling tiling = fillAround(Tile.BASE, RADIUS, UNLIMITED);
+        assertEquals(tiling.tiles(), fillAround(Set.of(Tile.BASE), RADIUS, UNLIMITED).tiles());
+        assertEquals(tiling.nextToRemove(walkedTo, RADIUS),
+            tiling.nextToRemove(Set.of(walkedTo), RADIUS, t -> true));
+        assertEquals(tiling.nextToAdd(walkedTo, RADIUS, UNLIMITED),
+            tiling.nextToAdd(Set.of(walkedTo), RADIUS, UNLIMITED, t -> true));
+    }
+
     // ---- bounds ----
 
     @Test
