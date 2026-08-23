@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.portal;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
+import games.brennan.dungeontrain.event.NetworkConsentMirror;
 import games.brennan.dungeontrain.narrative.AuthorBookPool;
 import games.brennan.dungeontrain.net.relay.BookAuthorsClient;
 import net.minecraft.server.level.ServerPlayer;
@@ -158,11 +159,12 @@ public final class PortalRoomAuthorLocks {
         if (held != null) {
             // Settled — unless the catalogue we settled on turned out to be empty, in which case the
             // room has to move on rather than serve nothing for as long as it stands.
-            if (!AuthorBookPool.isFetched(held.token())) {
-                AuthorBookPool.refreshAsync(held.token(), hostLocaleOf(player), kidSafe);
+            UUID heldOwner = ownerFor(player, held);
+            if (!AuthorBookPool.isFetched(held.token(), heldOwner != null)) {
+                AuthorBookPool.refreshAsync(held.token(), hostLocaleOf(player), kidSafe, heldOwner);
                 return Resolution.PENDING;                     // in flight; the next pass has it
             }
-            if (!AuthorBookPool.booksFor(held.token()).isEmpty()) return Resolution.of(held);
+            if (!AuthorBookPool.booksFor(held.token(), heldOwner != null).isEmpty()) return Resolution.of(held);
             reject(key, held.token());
             LOCKS.remove(key);
         }
@@ -176,11 +178,12 @@ public final class PortalRoomAuthorLocks {
                 return directoriesAnswered(player, share, books) ? Resolution.NONE : Resolution.PENDING;
             }
             BookAuthorsClient.Author author = candidate.get();
-            if (!AuthorBookPool.isFetched(author.token())) {
-                AuthorBookPool.refreshAsync(author.token(), hostLocaleOf(player), kidSafe);
+            UUID owner = ownerFor(player, author);
+            if (!AuthorBookPool.isFetched(author.token(), owner != null)) {
+                AuthorBookPool.refreshAsync(author.token(), hostLocaleOf(player), kidSafe, owner);
                 return Resolution.PENDING;                      // in flight; the next pass has it
             }
-            if (AuthorBookPool.booksFor(author.token()).isEmpty()) {
+            if (AuthorBookPool.booksFor(author.token(), owner != null).isEmpty()) {
                 // Counted in the directory, servable to nobody here. Try somebody else.
                 reject(key, author.token());
                 continue;
@@ -357,6 +360,25 @@ public final class PortalRoomAuthorLocks {
      * which is the safe way round: naming somebody else's library as yours would be a lie, while a
      * missed self-line is only a slightly less personal greeting.</p>
      */
+    /**
+     * The reader's uuid when {@code author} is the reader's OWN entry and they have consented to
+     * network features — otherwise {@code null}, meaning "fetch this as anybody else's public shelf".
+     *
+     * <p>This one value decides three things at once, which is why it is computed in a single place:
+     * which query goes to the relay ({@code mine=1&uuid=} vs {@code author=}), which cache key the
+     * result lands under (see {@link AuthorBookPool}), and therefore whether withheld books can be in
+     * it at all. Deriving them separately is how they would drift apart.</p>
+     *
+     * <p>Consent is load-bearing, not ceremony: the {@code mine=1} query is the first thing on this
+     * path that ever puts a player uuid on the wire. Without consent the room falls back to the
+     * author's public shelf, which is exactly what it served before this feature existed.</p>
+     */
+    public static UUID ownerFor(ServerPlayer player, BookAuthorsClient.Author author) {
+        if (player == null || author == null || !author.mine()) return null;
+        if (!NetworkConsentMirror.isGranted(player)) return null;
+        return player.getUUID();
+    }
+
     public static boolean isSelfAuthor(ServerPlayer player, String token) {
         if (player == null || token == null) return false;
         List<BookAuthorsClient.Author> mine = DIRECTORY.get("self:" + player.getUUID());

@@ -65,13 +65,13 @@ class AuthorBookPoolTest {
     @Test
     @DisplayName("Fetched-but-empty is not the same as never fetched")
     void emptyCatalogueIsStillAnAnswer() {
-        assertFalse(AuthorBookPool.isFetched("pnobody"));
+        assertFalse(AuthorBookPool.isFetched("pnobody", false));
 
         // The relay said this author has nothing servable here. Caching that is what lets a room
         // rotate to somebody else instead of asking again on every single pickup.
-        AuthorBookPool.put("pnobody", List.of());
-        assertTrue(AuthorBookPool.isFetched("pnobody"));
-        assertTrue(AuthorBookPool.booksFor("pnobody").isEmpty());
+        AuthorBookPool.put("pnobody", false, List.of());
+        assertTrue(AuthorBookPool.isFetched("pnobody", false));
+        assertTrue(AuthorBookPool.booksFor("pnobody", false).isEmpty());
     }
 
     @Test
@@ -79,34 +79,84 @@ class AuthorBookPoolTest {
     void publishedCataloguesAreImmutable() {
         List<SharedBookPool.PoolBook> source = new java.util.ArrayList<>(AuthorBookPool.parse(
             "{\"ok\":true,\"books\":[{\"id\":1,\"title\":\"T\",\"author\":\"A\",\"pages\":[\"p\"]}]}"));
-        AuthorBookPool.put("ptoken", source);
+        AuthorBookPool.put("ptoken", false, source);
         source.clear();   // the caller's list moving on must not empty a room's library
 
-        assertEquals(1, AuthorBookPool.booksFor("ptoken").size());
+        assertEquals(1, AuthorBookPool.booksFor("ptoken", false).size());
     }
 
     @Test
     @DisplayName("Catalogues are bounded — a long session cannot grow them without limit")
     void cachedCataloguesAreBounded() {
         for (int i = 0; i < AuthorBookPool.MAX_CATALOGUES + 4; i++) {
-            AuthorBookPool.put("token-" + i, List.of());
+            AuthorBookPool.put("token-" + i, false, List.of());
         }
         int live = 0;
         for (int i = 0; i < AuthorBookPool.MAX_CATALOGUES + 4; i++) {
-            if (AuthorBookPool.isFetched("token-" + i)) live++;
+            if (AuthorBookPool.isFetched("token-" + i, false)) live++;
         }
         assertEquals(AuthorBookPool.MAX_CATALOGUES, live);
         // The most recent survive; the first rooms visited are the ones dropped.
-        assertTrue(AuthorBookPool.isFetched("token-" + (AuthorBookPool.MAX_CATALOGUES + 3)));
-        assertFalse(AuthorBookPool.isFetched("token-0"));
+        assertTrue(AuthorBookPool.isFetched("token-" + (AuthorBookPool.MAX_CATALOGUES + 3), false));
+        assertFalse(AuthorBookPool.isFetched("token-0", false));
     }
 
     @Test
     @DisplayName("An unknown token is empty, never null")
     void unknownTokenIsEmpty() {
-        assertTrue(AuthorBookPool.booksFor("nope").isEmpty());
-        assertTrue(AuthorBookPool.booksFor(null).isEmpty());
-        assertTrue(AuthorBookPool.booksFor("  ").isEmpty());
-        assertFalse(AuthorBookPool.isFetching(null));
+        assertTrue(AuthorBookPool.booksFor("nope", false).isEmpty());
+        assertTrue(AuthorBookPool.booksFor(null, false).isEmpty());
+        assertTrue(AuthorBookPool.booksFor("  ", false).isEmpty());
+        assertFalse(AuthorBookPool.isFetching(null, false));
+    }
+
+    @Test
+    @DisplayName("A writer's own shelf and a stranger's view of it are DIFFERENT catalogues")
+    void mineAndPublicDoNotShareACacheEntry() {
+        // The relay's `player` directory lists every author, so the same p… token reaches the game
+        // both ways: as the reader's own self entry, and as a stranger's shelf another room drew.
+        // The two fetches return different books — only the first may contain withheld ones — so one
+        // cache entry cannot stand for both. Keyed on the token alone this leaks whichever way the
+        // race lands.
+        List<SharedBookPool.PoolBook> withheld = AuthorBookPool.parse(
+            "{\"ok\":true,\"books\":[" +
+            "{\"id\":1,\"title\":\"Mine\",\"author\":\"A\",\"pages\":[\"p\"],\"status\":\"rejected\"}]}");
+        AuthorBookPool.put("ptoken", true, withheld);
+
+        // A stranger's room asking about the same author has not fetched anything...
+        assertFalse(AuthorBookPool.isFetched("ptoken", false),
+            "the writer's own fetch must not answer for a stranger's");
+        assertTrue(AuthorBookPool.booksFor("ptoken", false).isEmpty(),
+            "and must never hand a stranger's room the withheld books");
+
+        // ...and once it has, the two coexist rather than overwriting each other.
+        AuthorBookPool.put("ptoken", false, List.of());
+        assertTrue(AuthorBookPool.isFetched("ptoken", true));
+        assertEquals(1, AuthorBookPool.booksFor("ptoken", true).size(),
+            "the writer's own catalogue survives a stranger's fetch of the same author");
+        assertTrue(AuthorBookPool.booksFor("ptoken", false).isEmpty());
+    }
+
+    @Test
+    @DisplayName("The reverse race too: a stranger's fetch must not starve the writer's own")
+    void publicFetchDoesNotSatisfyMine() {
+        AuthorBookPool.put("ptoken", false, List.of());
+        assertTrue(AuthorBookPool.isFetched("ptoken", false));
+        // Without this, isFetched short-circuits the writer's refresh and they never see their own
+        // withheld books at all — the same bug, failing quiet instead of loud.
+        assertFalse(AuthorBookPool.isFetched("ptoken", true));
+    }
+
+    @Test
+    @DisplayName("A catalogue carries each book's moderation status through the shared parse")
+    void catalogueCarriesStatus() {
+        List<SharedBookPool.PoolBook> books = AuthorBookPool.parse(
+            "{\"ok\":true,\"books\":[" +
+            "{\"id\":1,\"title\":\"A\",\"author\":\"A\",\"pages\":[\"p\"],\"status\":\"pending\"}," +
+            "{\"id\":2,\"title\":\"B\",\"author\":\"A\",\"pages\":[\"p\"]}]}");
+        assertEquals("pending", books.get(0).status());
+        assertTrue(books.get(0).isWithheld());
+        assertEquals(SharedBookPool.STATUS_APPROVED, books.get(1).status());
+        assertFalse(books.get(1).isWithheld());
     }
 }

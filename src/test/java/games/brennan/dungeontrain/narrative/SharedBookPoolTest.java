@@ -151,4 +151,49 @@ final class SharedBookPoolTest {
         assertEquals(1, SharedBookPool.snapshot().size(), "the book still parses");
         assertFalse(SharedBookPool.snapshot().get(0).political());
     }
+
+    @Test
+    @DisplayName("A book's moderation status is parsed, and an absent one reads as released")
+    void statusParsing() {
+        // `status` rides along only on the writer's-own-shelf response (mine=1); every ordinary pool
+        // response omits it entirely.
+        SharedBookPool.applyResponse("{\"ok\":true,\"books\":[" +
+            "{\"id\":1,\"title\":\"A\",\"author\":\"A\",\"pages\":[\"p\"],\"status\":\"pending\"}," +
+            "{\"id\":2,\"title\":\"B\",\"author\":\"A\",\"pages\":[\"p\"],\"status\":\"rejected\"}," +
+            "{\"id\":3,\"title\":\"C\",\"author\":\"A\",\"pages\":[\"p\"]}]}", "en_us");
+        List<SharedBookPool.PoolBook> books = SharedBookPool.snapshot();
+        assertEquals("pending", byId(books, 1).status());
+        assertEquals("rejected", byId(books, 2).status());
+        assertEquals(SharedBookPool.STATUS_APPROVED, byId(books, 3).status());
+        assertTrue(byId(books, 1).isWithheld());
+        assertFalse(byId(books, 3).isWithheld());
+    }
+
+    @Test
+    @DisplayName("An absent or blank status is released; an UNRECOGNISED one is shown as released but never shelved")
+    void statusGarbageResolvesBothWaysOnPurpose() {
+        SharedBookPool.applyResponse("{\"ok\":true,\"books\":[" +
+            "{\"id\":1,\"title\":\"A\",\"author\":\"A\",\"pages\":[\"p\"],\"status\":null}," +
+            "{\"id\":2,\"title\":\"B\",\"author\":\"A\",\"pages\":[\"p\"],\"status\":\"  \"}," +
+            "{\"id\":3,\"title\":\"C\",\"author\":\"A\",\"pages\":[\"p\"],\"status\":\"sixth_state_from_a_newer_relay\"}]}",
+            "en_us");
+
+        // Null and blank are simply "the relay said nothing" — an ordinary community book, both ways.
+        for (int id : new int[] {1, 2}) {
+            assertFalse(byId(SharedBookPool.snapshot(), id).isWithheld());
+            assertFalse(BookModerationState.fromStatus(byId(SharedBookPool.snapshot(), id).status()).isWithheld());
+        }
+
+        // A status this jar does not recognise splits the two questions apart, which is the point:
+        // nothing is tinted or claimed about it (that failure would be loud and wrong), but it is
+        // still kept off a shelf other players can read (that failure would be quiet and worse).
+        SharedBookPool.PoolBook unknown = byId(SharedBookPool.snapshot(), 3);
+        assertEquals(BookModerationState.APPROVED, BookModerationState.fromStatus(unknown.status()),
+            "an unknown state must not invent a verdict to show the reader");
+        assertTrue(unknown.isWithheld(), "...but must not be shelved where strangers can read it");
+    }
+
+    private static SharedBookPool.PoolBook byId(List<SharedBookPool.PoolBook> books, int id) {
+        return books.stream().filter(b -> b.id() == id).findFirst().orElseThrow();
+    }
 }

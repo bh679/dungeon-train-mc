@@ -6,7 +6,10 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.ItemLore;
 import org.slf4j.Logger;
 
 import java.net.URI;
@@ -88,8 +91,42 @@ public final class SharedBookPool {
      * snapshot serves everybody on a server: two players may have answered differently, so like
      * {@code lang} these are stored per book and applied per player at selection time.</p>
      */
+    /**
+     * The moderation state a book is in, as the relay names it. {@code "approved"} for every book the
+     * ordinary pool serves; the withheld states — {@code "pending"} (submitted, nothing has read it
+     * yet), {@code "flagged"} / {@code "needs_human_review"} (read, no verdict), {@code "rejected"} —
+     * reach a client ONLY on the writer's own shelf ({@code /books/pool?mine=1}), and only their own.
+     *
+     * <p>Never null, and the unknown case is {@code "approved"} — which reads backwards next to
+     * {@code kidSafe} above, so it is worth saying why. {@code kidSafe} guesses closed because guessing
+     * wrong means showing a child something nobody judged. Here the closed guess is the harmful one:
+     * this field only ever decorates a book, and a garbled value defaulting to "withheld" would tint a
+     * perfectly ordinary community book red and tell its reader the train dislikes it.</p>
+     */
+    public static final String STATUS_APPROVED = "approved";
+
     public record PoolBook(int id, String title, String author, List<String> pages, String lang, int weight,
-                           boolean kidSafe, boolean political) {}
+                           boolean kidSafe, boolean political, String status) {
+
+        /**
+         * Whether the relay declined to call this book released — i.e. anything but a literal
+         * {@code "approved"}, including a status this jar does not recognise.
+         *
+         * <p><b>This deliberately answers a different question from
+         * {@link BookModerationState#fromStatus}, and defaults the opposite way.</b> That one asks
+         * "what should I show the writer?", where an unrecognised status must fail OPEN — tinting an
+         * ordinary community book red and telling its reader the train dislikes it is the harmful
+         * mistake. This one asks "may this be written into a shelf other players can read?", where an
+         * unrecognised status must fail CLOSED, because the harmful mistake is the other one. A future
+         * relay state this jar has never heard of is therefore shown as an ordinary book and still
+         * kept off a shared shelf, which is the safe reading of both questions at once.</p>
+         *
+         * @see games.brennan.dungeontrain.portal.PortalRoomLibrarian#shelvable
+         */
+        public boolean isWithheld() {
+            return !STATUS_APPROVED.equals(status);
+        }
+    }
 
     /**
      * Upper bound on the accumulated snapshot. Fetches MERGE into it (see {@link #applyResponse}) so a
@@ -158,10 +195,38 @@ public final class SharedBookPool {
      * so both the uniform and the curated paths produce identically-tagged stacks.
      */
     public static ItemStack buildStack(PoolBook book) {
-        ItemStack stack = BookFactory.buildPlainBook(book.title(), book.author(), book.pages());
+        BookModerationState state = BookModerationState.fromStatus(book.status());
+        ItemStack stack = BookFactory.buildPlainBook(book.title(), book.author(), book.pages(), state.tint());
         SharedBookFoundTag.stamp(stack);               // "read a stranger's book" advancement marker
         SharedBookReadTag.stampId(stack, book.id());   // read-telemetry identity only
+        // Everything below is a no-op for an APPROVED book, which is every book the shared pool serves:
+        // an ordinary community book comes out of here byte-identical to what it always did.
+        BookModerationTag.stamp(stack, state);
+        decorateWithheld(stack, book, state);
         return stack;
+    }
+
+    /**
+     * Name and label a book the relay served back to its own author unapproved.
+     *
+     * <p>The page tint says "this one has not gone out" while the book is OPEN. These two say it while
+     * it is not: a coloured item name so a shelf of your own writing reads at a glance, and one lore
+     * line so the state survives past the chat message, which fires once per copy and is gone.</p>
+     *
+     * <p>The name has to be set as a component on the stack because the book's own title cannot carry
+     * colour — {@code WrittenBookContent} stores it as a plain String. Italics off: a custom item name
+     * renders italic by default, and every book on the shelf leaning over reads as a mistake rather
+     * than as meaning.</p>
+     */
+    private static void decorateWithheld(ItemStack stack, PoolBook book, BookModerationState state) {
+        if (!state.isWithheld()) return;
+        String title = BookSafeText.sanitizeName(book.title());
+        if (title.isBlank()) title = "Untitled";
+        stack.set(DataComponents.CUSTOM_NAME,
+            Component.literal(title).withStyle(state.tint()).withStyle(s -> s.withItalic(false)));
+        stack.set(DataComponents.LORE, new ItemLore(List.of(
+            Component.translatable("item.dungeontrain.unapproved_book." + state.messageKey())
+                .withStyle(state.tint()).withStyle(s -> s.withItalic(false)))));
     }
 
     /** Whether the pool currently holds any books (cheap volatile read). */
@@ -385,7 +450,20 @@ public final class SharedBookPool {
         // about the tag at all.
         boolean political = o.has("political") && !o.get("political").isJsonNull()
                 && o.get("political").isJsonPrimitive() && o.get("political").getAsBoolean();
-        return new PoolBook(id, title, author, pages, lang, weight, kidSafe, political);
+        // `status` rides along only on the writer's-own-shelf response (`mine=1`); every ordinary pool
+        // response omits it. Absent, null or garbled therefore means "an ordinary released book", which
+        // is also the right read for a relay too old to send it. See PoolBook#STATUS_APPROVED for why
+        // this default is the OPEN one while kidSafe's is closed.
+        String status = STATUS_APPROVED;
+        if (o.has("status") && !o.get("status").isJsonNull() && o.get("status").isJsonPrimitive()) {
+            try {
+                String raw = o.get("status").getAsString();
+                if (raw != null && !raw.isBlank()) status = raw.trim();
+            } catch (RuntimeException ignored) {
+                // non-string status — keep the released default
+            }
+        }
+        return new PoolBook(id, title, author, pages, lang, weight, kidSafe, political, status);
     }
 
     /**

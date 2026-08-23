@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.narrative;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.event.SharedBookGate;
+import net.minecraft.ChatFormatting;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
@@ -423,6 +424,29 @@ public final class BookFactory {
      * @param pages  source page strings in order; {@code null}/empty → one blank page
      */
     public static ItemStack buildPlainBook(String title, String author, List<String> pages) {
+        return buildPlainBook(title, author, pages, null);
+    }
+
+    /**
+     * As {@link #buildPlainBook(String, String, List)}, with every page tinted {@code tint}.
+     *
+     * <p>Used for a book the relay served back to its own author unapproved — the colour is how the
+     * writer sees at a glance that this one has not gone out (see {@link BookModerationState}). A
+     * {@code null} tint is the ordinary path and produces exactly the stack it always did.</p>
+     *
+     * <p>The tint is applied to each page Component AFTER pagination, not by prefixing a §-code to the
+     * text: the paginator splits a long page into several, so a prefix would colour the first fragment
+     * and leave the rest plain.</p>
+     *
+     * <p><b>Partial by design.</b> A page keeps the author's own § codes, because styling your own book
+     * is a feature (see {@link BookSafeText}) — and a §r in their text resets to the default colour
+     * rather than back to this style, so a writer who coloured their own pages will see the tint only
+     * up to that point. Colouring the title is not possible at all: {@link WrittenBookContent} stores
+     * it as a String, and {@code sanitizeName} strips § from it. The stack's custom name carries the
+     * colour instead.</p>
+     */
+    public static ItemStack buildPlainBook(String title, String author, List<String> pages,
+                                           ChatFormatting tint) {
         // Sanitize BEFORE the blank check. Book text is untrusted on both paths into here — the
         // relay pool and the client's sign-book packet — and a title made entirely of control
         // characters would otherwise pass the isBlank() test, skip the "Untitled" fallback, and
@@ -453,7 +477,9 @@ public final class BookFactory {
 
         List<Filterable<Component>> bookPages = new ArrayList<>(pageStrings.size());
         for (String page : pageStrings) {
-            bookPages.add(Filterable.passThrough(BookText.toPage(page)));
+            Component rendered = BookText.toPage(page);
+            if (tint != null) rendered = rendered.copy().withStyle(tint);
+            bookPages.add(Filterable.passThrough(rendered));
         }
         if (bookPages.isEmpty()) {
             bookPages.add(Filterable.passThrough(Component.literal("")));
