@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.cheat.AisDataIntegrity;
 import games.brennan.dungeontrain.cheat.CheatModIntegrity;
 import games.brennan.dungeontrain.cheat.CommandAllowlist;
 import games.brennan.dungeontrain.cheat.DtConfigIntegrity;
+import games.brennan.dungeontrain.cheat.PortalTuningIntegrity;
 import games.brennan.dungeontrain.cheat.RunIntegrity;
 import games.brennan.dungeontrain.compat.EnderChestLockBridge;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
@@ -229,6 +230,17 @@ public final class CheatDetectionEvents {
                     String.join(", ", CheatModIntegrity.detected()))
                 .withStyle(ChatFormatting.GRAY));
             player.sendSystemMessage(Component.translatable("chat.dungeontrain.free_play.cheat_mods_fix")
+                .withStyle(ChatFormatting.GRAY));
+        }
+        if (PortalTuningIntegrity.isWorldFreePlay()) {
+            // World-level portal-rate taint. Unlike the three above this one is permanent and
+            // belongs to the world, so it reaches players who never ran anything — which is exactly
+            // why it has to explain itself on every join. No one-click fix: the track this world
+            // generated is already in the save.
+            RunIntegrity.applyFreePlayEffect(player);
+            RunIntegrity.sendFreePlayNotice(player,
+                Component.translatable("chat.dungeontrain.free_play.cause.portal_rate"));
+            player.sendSystemMessage(Component.translatable("chat.dungeontrain.free_play.portal_rate_changed")
                 .withStyle(ChatFormatting.GRAY));
         }
         if (RunIntegrity.isPermanentlyCheated(player)) {

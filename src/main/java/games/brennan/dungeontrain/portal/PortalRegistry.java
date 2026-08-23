@@ -34,6 +34,7 @@ public final class PortalRegistry extends SavedData {
     private static final String TAG_PORTALS = "portals";
     private static final String TAG_AUTO_SPACING = "autoSpacing";
     private static final String TAG_CARRIAGE_EVERY = "carriageEvery";
+    private static final String TAG_CREATIVE_EVERY = "creativeEvery";
     private static final String TAG_ORIGIN_X = "originX";
     private static final String TAG_FLOOR_Y = "floorY";
     private static final String TAG_ORIGIN_Z = "originZ";
@@ -74,6 +75,17 @@ public final class PortalRegistry extends SavedData {
      * carriage under a player standing in it.
      */
     private int carriageEvery = PortalCarriageSelection.DEFAULT_CARRIAGE_EVERY;
+
+    /**
+     * How often a portal lands while everyone on the level is in creative, or
+     * {@link PortalCarriageSelection#CREATIVE_EVERY_UNSET} to take the build's default.
+     *
+     * <p>Unset rather than a number so the default can differ by build — dense on a dev build, the
+     * shipped cadence on a release — while an explicit setting still wins on either. A world saved
+     * before this existed has no tag and reads back unset, which is the right answer for a world
+     * nobody has retuned.</p>
+     */
+    private int creativeEvery = PortalCarriageSelection.CREATIVE_EVERY_UNSET;
 
     /**
      * Default anchor spacing for the free-standing portals that generate beside the track.
@@ -148,6 +160,21 @@ public final class PortalRegistry extends SavedData {
         setDirty();
     }
 
+    /**
+     * The stored creative cadence, or {@link PortalCarriageSelection#CREATIVE_EVERY_UNSET} where the
+     * world has none. Resolve it through {@link PortalCarriageSelection#creativeEveryFor} rather than
+     * reading it raw — that is what applies the per-build default.
+     */
+    public synchronized int creativeEvery() {
+        return creativeEvery;
+    }
+
+    public synchronized void setCreativeEvery(int every) {
+        if (creativeEvery == every) return;
+        creativeEvery = every;
+        setDirty();
+    }
+
     /** True if this carriage's corridor no longer takes anyone in. The way out is never severed. */
     public synchronized boolean isSevered(int carriageIndex) {
         return severedCarriages.contains(carriageIndex);
@@ -193,6 +220,11 @@ public final class PortalRegistry extends SavedData {
         if (tag.contains(TAG_CARRIAGE_EVERY)) {
             data.carriageEvery = tag.getInt(TAG_CARRIAGE_EVERY);
         }
+        // Absent in every world saved before the creative cadence was settable, which reads back as
+        // unset — the build's default, which is what those worlds have been running at all along.
+        if (tag.contains(TAG_CREATIVE_EVERY)) {
+            data.creativeEvery = tag.getInt(TAG_CREATIVE_EVERY);
+        }
         // Absent in worlds saved before severing existed, which read back as "nothing severed" —
         // the right answer for a world where no corridor had ever been broken into.
         for (int carriageIndex : tag.getIntArray(TAG_SEVERED)) {
@@ -227,6 +259,7 @@ public final class PortalRegistry extends SavedData {
     public synchronized CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
         tag.putInt(TAG_AUTO_SPACING, autoSpacing);
         tag.putInt(TAG_CARRIAGE_EVERY, carriageEvery);
+        tag.putInt(TAG_CREATIVE_EVERY, creativeEvery);
         tag.putIntArray(TAG_SEVERED, severedCarriages.stream().mapToInt(Integer::intValue).toArray());
 
         ListTag list = new ListTag();

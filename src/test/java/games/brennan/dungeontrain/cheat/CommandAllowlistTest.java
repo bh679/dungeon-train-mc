@@ -51,6 +51,11 @@ class CommandAllowlistTest {
         assertTrue(CommandAllowlist.taints("dungeontrain speed 12"));
         assertTrue(CommandAllowlist.taints("dungeontrain carriages 8"));
         assertTrue(CommandAllowlist.taints("dungeontrain tracks off"));
+        // Retuning how often portals arrive re-shapes the run, so it has to route through the Free
+        // Play prompt like any other. The world-level taint that PortalCommand adds on top only
+        // fires once the command actually runs, which this gate is what allows.
+        assertTrue(CommandAllowlist.taints("dungeontrain portal carriage 5"));
+        assertTrue(CommandAllowlist.taints("dungeontrain portal carriage creative 5"));
         assertTrue(CommandAllowlist.taints("dt spawn"));               // alias
         assertTrue(CommandAllowlist.taints("dungeontrain:spawn"));     // namespaced root alias
     }

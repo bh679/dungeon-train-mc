@@ -8,6 +8,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -201,6 +202,51 @@ final class PortalCarriageLotteryTest {
                     "group " + group + " at seed " + seed);
             }
         }
+    }
+
+    /**
+     * The shipped creative cadence, on the same footing as the dev one: an exact beat every
+     * {@code CREATIVE_EVERY} groups that no seed and no gap rule can move.
+     */
+    @Test
+    @DisplayName("the creative cadence lands on every 5th group in every world alike")
+    void creativeCadenceIsAFixedBeat() {
+        for (long seed : new long[] {SEED, 0L, -1L, 12345L}) {
+            for (int group = -40; group <= 40; group++) {
+                assertEquals(Math.floorMod(group, PortalCarriageSelection.CREATIVE_EVERY) == 0,
+                    PortalCarriageSelection.isPortalPart(group * GROUP, GROUP,
+                        Rate.periodic(PortalCarriageSelection.CREATIVE_EVERY), seed),
+                    "group " + group + " at seed " + seed);
+            }
+        }
+    }
+
+    /**
+     * The two cadences answer different questions — a dev build's testing convenience and the
+     * cadence players get — so collapsing them into one constant has to fail here rather than
+     * quietly hand players the dense testing beat.
+     */
+    @Test
+    @DisplayName("the creative and dev-creative cadences are distinct")
+    void creativeAndDevCadencesAreDistinct() {
+        assertNotEquals(PortalCarriageSelection.CREATIVE_EVERY,
+            PortalCarriageSelection.DEV_CREATIVE_EVERY,
+            "the shipped creative cadence must not be the dev testing one");
+    }
+
+    /**
+     * The unset sentinel has to stay outside the range the command accepts (1–64) and clear of
+     * {@code CARRIAGE_EVERY_OFF}, or "no override stored" would be indistinguishable from a real
+     * setting and a world would silently take the wrong cadence.
+     */
+    @Test
+    @DisplayName("the creative-unset sentinel cannot collide with a real setting")
+    void creativeUnsetSentinelIsOutOfBand() {
+        assertTrue(PortalCarriageSelection.CREATIVE_EVERY_UNSET < 0,
+            "unset must be negative, outside the 1-64 the command accepts");
+        assertNotEquals(PortalCarriageSelection.CARRIAGE_EVERY_OFF,
+            PortalCarriageSelection.CREATIVE_EVERY_UNSET,
+            "unset and off are different answers and must not share a value");
     }
 
     /** Same rate, different rule — otherwise the periodic flag would not be doing anything. */
