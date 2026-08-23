@@ -24,8 +24,20 @@ package games.brennan.dungeontrain.narrative;
  */
 public enum BookModerationState {
 
-    /** Released. The only state the shared pool serves, and the only one that shows nothing at all. */
-    APPROVED(null),
+    /**
+     * The relay said nothing about this book — an ordinary community book, by anybody, which is what
+     * the overwhelming majority of books a player meets are.
+     *
+     * <p>Deliberately distinct from {@link #APPROVED}. Only the author's own shelf carries a status
+     * at all, so "no status" and "status: approved" are two different facts: somebody's released book
+     * versus YOUR released book. The vote page offers different controls for each — a stranger's book
+     * can be rated and reported, your own can be withdrawn — so collapsing them would put the wrong
+     * buttons on the page.</p>
+     */
+    PUBLIC(null),
+
+    /** Yours, and released — out on the line where other players can find it. */
+    APPROVED("released"),
 
     /**
      * Submitted, and nothing has read it yet — the relay's {@code pending}, which is where a book
@@ -59,21 +71,38 @@ public enum BookModerationState {
         return messageKey;
     }
 
-    /** Whether this state is shown to the writer at all — i.e. anything but {@link #APPROVED}. */
+    /** Whether the train is holding this book back from other players. */
     public boolean isWithheld() {
-        return this != APPROVED;
+        return this != PUBLIC && this != APPROVED;
     }
 
     /**
-     * The state a relay {@code status} names. Null, blank or unrecognised → {@link #APPROVED}; see the
-     * class note on why the unknown case fails open.
+     * Whether this is the reader's OWN book — anything the relay told us the state of.
+     *
+     * <p>This is the question the vote page really asks: your own books never show the thumbs (see
+     * {@code BookVoteClientEvents}), because the relay weights which books get served by player votes
+     * and does not check authorship, so a shelf of your own writing would otherwise be a
+     * self-upvoting machine.</p>
+     */
+    public boolean isOwn() {
+        return this != PUBLIC;
+    }
+
+    /**
+     * The state a relay {@code status} names. Absent/blank → {@link #PUBLIC} (an ordinary book we were
+     * told nothing about); an unrecognised value → {@link #APPROVED}, since it still arrived on the
+     * reader's own shelf. See the class note on why the unknown case fails open rather than closed.
      */
     public static BookModerationState fromStatus(String status) {
-        if (status == null) return APPROVED;
+        if (status == null || status.isBlank()) return PUBLIC;
         return switch (status.trim().toLowerCase(java.util.Locale.ROOT)) {
             case "pending" -> READING;
             case "flagged", "needs_human_review" -> UNDECIDED;
             case "rejected" -> DISLIKED;
+            case "approved" -> APPROVED;
+            // A state a newer relay knows and this jar does not. Treat it as an ordinary released book
+            // of the reader's own: it still came off their own shelf, so the withdraw control belongs
+            // on it, but nothing is claimed about a verdict this jar cannot name.
             default -> APPROVED;
         };
     }

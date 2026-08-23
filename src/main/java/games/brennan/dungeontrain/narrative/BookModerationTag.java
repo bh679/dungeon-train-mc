@@ -26,26 +26,31 @@ public final class BookModerationTag {
 
     private BookModerationTag() {}
 
-    /** Stamp {@code state} onto {@code stack}. {@link BookModerationState#APPROVED} stamps nothing. */
+    /**
+     * Stamp {@code state} onto {@code stack}. {@link BookModerationState#PUBLIC} stamps nothing, so an
+     * ordinary community book stays byte-identical to what it was before this existed; every book off
+     * the reader's OWN shelf carries the tag, including a released one — that is what the withdraw
+     * control on the vote page keys off.
+     */
     public static void stamp(ItemStack stack, BookModerationState state) {
-        if (stack == null || stack.isEmpty() || state == null || !state.isWithheld()) return;
+        if (stack == null || stack.isEmpty() || state == null || !state.isOwn()) return;
         CustomData.update(DataComponents.CUSTOM_DATA, stack,
             tag -> tag.putString(NBT_STATUS, state.name()));
     }
 
-    /** The stamped state, or {@link BookModerationState#APPROVED} when there is none. */
+    /** The stamped state, or {@link BookModerationState#PUBLIC} when there is none. */
     public static BookModerationState read(ItemStack stack) {
-        if (stack == null || stack.isEmpty()) return BookModerationState.APPROVED;
+        if (stack == null || stack.isEmpty()) return BookModerationState.PUBLIC;
         CustomData cd = stack.get(DataComponents.CUSTOM_DATA);
-        if (cd == null || cd.isEmpty()) return BookModerationState.APPROVED;
+        if (cd == null || cd.isEmpty()) return BookModerationState.PUBLIC;
         CompoundTag tag = cd.copyTag();
-        if (!tag.contains(NBT_STATUS, Tag.TAG_STRING)) return BookModerationState.APPROVED;
+        if (!tag.contains(NBT_STATUS, Tag.TAG_STRING)) return BookModerationState.PUBLIC;
         try {
             return BookModerationState.valueOf(tag.getString(NBT_STATUS));
         } catch (IllegalArgumentException e) {
             // A stack written by a newer jar that knows a state this one does not. Treat it as an
             // ordinary book rather than inventing a verdict for it.
-            return BookModerationState.APPROVED;
+            return BookModerationState.PUBLIC;
         }
     }
 }

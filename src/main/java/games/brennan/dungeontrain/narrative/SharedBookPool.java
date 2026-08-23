@@ -102,8 +102,18 @@ public final class SharedBookPool {
      */
     public static final String STATUS_APPROVED = "approved";
 
+    /**
+     * The relay said nothing about this book's state — an ordinary community book, by anyone.
+     *
+     * <p>Distinct from {@link #STATUS_APPROVED}, and the distinction is load-bearing: only the
+     * author's own shelf ({@code mine=1}) carries a {@code status} at all, so a present
+     * {@code "approved"} means "yours, and released" while an absent one means "somebody's, and we
+     * were not told". The vote page shows different controls for those two.</p>
+     */
+    public static final String STATUS_UNKNOWN = null;
+
     public record PoolBook(int id, String title, String author, List<String> pages, String lang, int weight,
-                           boolean kidSafe, boolean political, String status) {
+                           boolean kidSafe, boolean political, String status, boolean isPrivate) {
 
         /**
          * Whether the relay declined to call this book released — i.e. anything but a literal
@@ -121,7 +131,15 @@ public final class SharedBookPool {
          * @see games.brennan.dungeontrain.portal.PortalRoomLibrarian#shelvable
          */
         public boolean isWithheld() {
-            return !STATUS_APPROVED.equals(status);
+            return status != null && !STATUS_APPROVED.equals(status);
+        }
+
+        /**
+         * Whether the relay told us this book's state at all — which it does only on the author's own
+         * shelf, so in practice: is this the reader's own book.
+         */
+        public boolean isOwn() {
+            return status != null;
         }
     }
 
@@ -200,6 +218,7 @@ public final class SharedBookPool {
         // has something to say about it, it says so on the vote page (see BookVoteClientEvents), which
         // is the train's own page rather than any part of the author's.
         BookModerationTag.stamp(stack, BookModerationState.fromStatus(book.status()));
+        BookPrivateTag.stamp(stack, book.isPrivate());
         return stack;
     }
 
@@ -428,16 +447,20 @@ public final class SharedBookPool {
         // response omits it. Absent, null or garbled therefore means "an ordinary released book", which
         // is also the right read for a relay too old to send it. See PoolBook#STATUS_APPROVED for why
         // this default is the OPEN one while kidSafe's is closed.
-        String status = STATUS_APPROVED;
+        String status = STATUS_UNKNOWN;
         if (o.has("status") && !o.get("status").isJsonNull() && o.get("status").isJsonPrimitive()) {
             try {
                 String raw = o.get("status").getAsString();
                 if (raw != null && !raw.isBlank()) status = raw.trim();
             } catch (RuntimeException ignored) {
-                // non-string status — keep the released default
+                // non-string status — read it as "the relay said nothing"
             }
         }
-        return new PoolBook(id, title, author, pages, lang, weight, kidSafe, political, status);
+        // `private` is the author's own withdrawal, sent only on their own shelf and only when true —
+        // the same omit-when-false handshake as `political`.
+        boolean isPrivate = o.has("private") && !o.get("private").isJsonNull()
+                && o.get("private").isJsonPrimitive() && o.get("private").getAsBoolean();
+        return new PoolBook(id, title, author, pages, lang, weight, kidSafe, political, status, isPrivate);
     }
 
     /**

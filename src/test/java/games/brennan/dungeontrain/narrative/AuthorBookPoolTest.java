@@ -156,7 +156,11 @@ class AuthorBookPoolTest {
             "{\"id\":2,\"title\":\"B\",\"author\":\"A\",\"pages\":[\"p\"]}]}");
         assertEquals("pending", books.get(0).status());
         assertTrue(books.get(0).isWithheld());
-        assertEquals(SharedBookPool.STATUS_APPROVED, books.get(1).status());
+        // No status field at all — an ordinary community book, which is what every catalogue but the
+        // reader's own contains.
+        assertEquals(SharedBookPool.STATUS_UNKNOWN, books.get(1).status());
         assertFalse(books.get(1).isWithheld());
+        assertFalse(books.get(1).isOwn());
+        assertTrue(books.get(0).isOwn());
     }
 }

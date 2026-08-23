@@ -164,9 +164,14 @@ final class SharedBookPoolTest {
         List<SharedBookPool.PoolBook> books = SharedBookPool.snapshot();
         assertEquals("pending", byId(books, 1).status());
         assertEquals("rejected", byId(books, 2).status());
-        assertEquals(SharedBookPool.STATUS_APPROVED, byId(books, 3).status());
+        // Absent means "the relay said nothing" — an ordinary community book, NOT a released one of
+        // the reader's own. Only the own-shelf response carries a status at all, and the vote page
+        // shows different controls for those two.
+        assertEquals(SharedBookPool.STATUS_UNKNOWN, byId(books, 3).status());
         assertTrue(byId(books, 1).isWithheld());
+        assertTrue(byId(books, 1).isOwn());
         assertFalse(byId(books, 3).isWithheld());
+        assertFalse(byId(books, 3).isOwn());
     }
 
     @Test
@@ -181,7 +186,9 @@ final class SharedBookPoolTest {
         // Null and blank are simply "the relay said nothing" — an ordinary community book, both ways.
         for (int id : new int[] {1, 2}) {
             assertFalse(byId(SharedBookPool.snapshot(), id).isWithheld());
-            assertFalse(BookModerationState.fromStatus(byId(SharedBookPool.snapshot(), id).status()).isWithheld());
+            assertFalse(byId(SharedBookPool.snapshot(), id).isOwn());
+            assertEquals(BookModerationState.PUBLIC,
+                BookModerationState.fromStatus(byId(SharedBookPool.snapshot(), id).status()));
         }
 
         // A status this jar does not recognise splits the two questions apart, which is the point:

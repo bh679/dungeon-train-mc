@@ -4,9 +4,13 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.mixin.client.BookViewScreenAccessor;
 import games.brennan.dungeontrain.narrative.BookModerationState;
 import games.brennan.dungeontrain.narrative.BookModerationTag;
+import games.brennan.dungeontrain.narrative.BookPrivateTag;
+import games.brennan.dungeontrain.narrative.BookProtestTag;
 import games.brennan.dungeontrain.narrative.BookReportTag;
 import games.brennan.dungeontrain.narrative.BookVoteTag;
 import games.brennan.dungeontrain.narrative.UnapprovedBookMessage;
+import games.brennan.dungeontrain.net.BookPrivatePacket;
+import games.brennan.dungeontrain.net.BookProtestPacket;
 import games.brennan.dungeontrain.net.BookReportPacket;
 import games.brennan.dungeontrain.net.BookVotePacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
@@ -100,6 +104,8 @@ public final class BookVoteClientEvents {
     private static final int PROMPT_COUNT = 10;
     private static final int RESPONSE_COUNT = 10;        // per set (yes / no / general)
     private static final int REPORT_RESPONSE_COUNT = 5;  // train lines for a report
+    private static final int PROTEST_RESPONSE_COUNT = 5; // ...for an author's protest
+    private static final int PRIVATE_RESPONSE_COUNT = 5; // ...for withdrawing / restoring your own
 
     private static final ResourceLocation UP_SPRITE =
         ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "widget/thumbs_up");
@@ -113,6 +119,15 @@ public final class BookVoteClientEvents {
         ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "widget/report");
     private static final ResourceLocation REPORT_HIGHLIGHTED_SPRITE =
         ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "widget/report_highlighted");
+    // The two author-only controls that stand where Report stands on somebody else's book.
+    private static final ResourceLocation PROTEST_SPRITE =
+        ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "widget/protest");
+    private static final ResourceLocation PROTEST_HIGHLIGHTED_SPRITE =
+        ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "widget/protest_highlighted");
+    private static final ResourceLocation PRIVATE_SPRITE =
+        ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "widget/private");
+    private static final ResourceLocation PRIVATE_HIGHLIGHTED_SPRITE =
+        ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "widget/private_highlighted");
 
     // --- single tracked votable book screen (one book screen is open at a time) ---
     private static boolean active = false;
@@ -126,7 +141,9 @@ public final class BookVoteClientEvents {
     private static boolean reported = false;             // seeded from the stack's tag — one-way
     // Where this book stands, when it is one of the reader's OWN that the train has not released.
     // APPROVED for every ordinary community book, which is the overwhelming majority.
-    private static BookModerationState moderation = BookModerationState.APPROVED;
+    private static BookModerationState moderation = BookModerationState.PUBLIC;
+    private static boolean isPrivate = false;            // seeded from the stack's tag — reversible
+    private static boolean protested = false;            // seeded from the stack's tag — one-way
     private static boolean reportArmed = false;          // first click armed it; a second commits
 
     private BookVoteClientEvents() {}
@@ -151,6 +168,8 @@ public final class BookVoteClientEvents {
         selectedVote = vote.isPresent() ? vote.getAsInt() : 0;
         reported = BookReportTag.isReported(stack);
         moderation = BookModerationTag.read(stack);
+        isPrivate = BookPrivateTag.isPrivate(stack);
+        protested = BookProtestTag.isProtested(stack);
         // The train always asks a book the same question: stable per (bookType, bookId).
         promptIndex = Math.floorMod((bookType + ":" + bookId).hashCode(), PROMPT_COUNT) + 1;
         screen = book;
@@ -194,8 +213,10 @@ public final class BookVoteClientEvents {
         // thumbs and the report icon below are exactly where they always are.
         Component status = UnapprovedBookMessage.forBook(moderation, bookType + ":" + bookId);
         if (status != null) {
-            int statusColor = moderation == BookModerationState.DISLIKED
-                ? COLOR_STATUS_REJECTED : COLOR_STATUS_WAITING;
+            // Orange while an answer is still coming, red once it is not — and ordinary ink for one of
+            // your own that is simply out on the line, which is news but not a warning.
+            int statusColor = moderation == BookModerationState.DISLIKED ? COLOR_STATUS_REJECTED
+                : moderation.isWithheld() ? COLOR_STATUS_WAITING : COLOR_TEXT;
             int sy = PREFIX_Y;
             for (FormattedCharSequence line : font.split(status, TEXT_WIDTH)) {
                 gfx.drawString(font, line, centerX - font.width(line) / 2, sy, statusColor, false);
@@ -213,17 +234,46 @@ public final class BookVoteClientEvents {
             }
         }
 
-        // Thumbs — highlighted when hovered or when that side is the current vote.
-        boolean upLit = selectedVote == 1 || inUpButton(mouseX, mouseY);
-        boolean downLit = selectedVote == -1 || inDownButton(mouseX, mouseY);
-        gfx.blitSprite(upLit ? UP_HIGHLIGHTED_SPRITE : UP_SPRITE, upX(), BUTTONS_Y, BUTTON_SIZE, BUTTON_SIZE);
-        gfx.blitSprite(downLit ? DOWN_HIGHLIGHTED_SPRITE : DOWN_SPRITE, downX(), BUTTONS_Y, BUTTON_SIZE, BUTTON_SIZE);
+        // Thumbs — but never on a book you WROTE. The relay weights which books get served by player
+        // votes and does not check authorship, so a shelf of your own writing plus a thumbs-up is a
+        // self-upvoting machine. Rating your own work is also just not a question worth asking.
+        if (!moderation.isOwn()) {
+            boolean upLit = selectedVote == 1 || inUpButton(mouseX, mouseY);
+            boolean downLit = selectedVote == -1 || inDownButton(mouseX, mouseY);
+            gfx.blitSprite(upLit ? UP_HIGHLIGHTED_SPRITE : UP_SPRITE, upX(), BUTTONS_Y, BUTTON_SIZE, BUTTON_SIZE);
+            gfx.blitSprite(downLit ? DOWN_HIGHLIGHTED_SPRITE : DOWN_SPRITE, downX(), BUTTONS_Y, BUTTON_SIZE, BUTTON_SIZE);
 
-        Component yes = Component.translatable("gui.dungeontrain.book_vote.approve");
-        Component no = Component.translatable("gui.dungeontrain.book_vote.reject");
-        gfx.drawString(font, yes, upX() + BUTTON_SIZE / 2 - font.width(yes) / 2, LABELS_Y, COLOR_TEXT, false);
-        gfx.drawString(font, no, downX() + BUTTON_SIZE / 2 - font.width(no) / 2, LABELS_Y, COLOR_TEXT, false);
+            Component yes = Component.translatable("gui.dungeontrain.book_vote.approve");
+            Component no = Component.translatable("gui.dungeontrain.book_vote.reject");
+            gfx.drawString(font, yes, upX() + BUTTON_SIZE / 2 - font.width(yes) / 2, LABELS_Y, COLOR_TEXT, false);
+            gfx.drawString(font, no, downX() + BUTTON_SIZE / 2 - font.width(no) / 2, LABELS_Y, COLOR_TEXT, false);
+        }
 
+        renderAction(gfx, font, centerX, mouseX, mouseY);
+    }
+
+    /**
+     * The third control, in the row under the thumbs. Which one it is depends on whose book this is:
+     *
+     * <ul>
+     *   <li>somebody else's → <b>Report</b>, unchanged;</li>
+     *   <li>yours and released → <b>Make Private</b> / <b>Make Public</b>, a reversible toggle;</li>
+     *   <li>yours and withheld → <b>Protest</b>, which asks a person to look again and changes
+     *       nothing by itself.</li>
+     * </ul>
+     *
+     * <p>Reporting your own book is nonsense and protesting somebody else's is not yours to do, so
+     * they are alternatives rather than additions — one row, one control, always in the same place.</p>
+     */
+    private static void renderAction(GuiGraphics gfx, Font font, int centerX, int mouseX, int mouseY) {
+        if (moderation.isWithheld()) {
+            renderProtest(gfx, font, centerX, mouseX, mouseY);
+            return;
+        }
+        if (moderation.isOwn()) {
+            renderPrivate(gfx, font, centerX, mouseX, mouseY);
+            return;
+        }
         // The report icon — cream and wordless at rest, red on hover or once armed, dimmed and inert
         // once spent. Words appear only in the two states that need them (see below).
         boolean lit = !reported && (reportArmed || inReport(mouseX, mouseY));
@@ -247,6 +297,47 @@ public final class BookVoteClientEvents {
         }
     }
 
+    /** Protest — the same two-tap shape as Report, because it is also a one-way claim to a person. */
+    private static void renderProtest(GuiGraphics gfx, Font font, int centerX, int mouseX, int mouseY) {
+        boolean lit = !protested && (reportArmed || inReport(mouseX, mouseY));
+        if (protested) gfx.setColor(1F, 1F, 1F, REPORTED_ALPHA);
+        gfx.blitSprite(lit ? PROTEST_HIGHLIGHTED_SPRITE : PROTEST_SPRITE,
+            reportX(), REPORT_Y, BUTTON_SIZE, BUTTON_SIZE);
+        if (protested) gfx.setColor(1F, 1F, 1F, 1F);
+
+        Component line = protested
+            ? Component.translatable("gui.dungeontrain.book_vote.protested")
+            : reportArmed ? Component.translatable("gui.dungeontrain.book_vote.protest_confirm") : null;
+        if (line != null) {
+            gfx.drawString(font, line, centerX - font.width(line) / 2, REPORT_TEXT_Y,
+                protested ? COLOR_REPORTED : COLOR_REPORT_ARMED, false);
+        } else if (lit) {
+            gfx.renderTooltip(font, Component.translatable("gui.dungeontrain.book_vote.protest"),
+                mouseX, mouseY);
+        }
+    }
+
+    /**
+     * Make Private / Make Public — a single tap, no arming step. It is reversible, so a confirm on it
+     * would be friction for nothing, and the label under the icon is always drawn: unlike Report there
+     * is no "unspent" state to keep wordless, and a toggle that looks identical either way is a toggle
+     * nobody can read.
+     */
+    private static void renderPrivate(GuiGraphics gfx, Font font, int centerX, int mouseX, int mouseY) {
+        boolean lit = inReport(mouseX, mouseY);
+        gfx.blitSprite(lit ? PRIVATE_HIGHLIGHTED_SPRITE : PRIVATE_SPRITE,
+            reportX(), REPORT_Y, BUTTON_SIZE, BUTTON_SIZE);
+        Component line = Component.translatable(isPrivate
+            ? "gui.dungeontrain.book_vote.private_on" : "gui.dungeontrain.book_vote.private_off");
+        gfx.drawString(font, line, centerX - font.width(line) / 2, REPORT_TEXT_Y,
+            isPrivate ? COLOR_REPORTED : COLOR_TEXT, false);
+        if (lit) {
+            gfx.renderTooltip(font, Component.translatable(isPrivate
+                ? "gui.dungeontrain.book_vote.private_restore" : "gui.dungeontrain.book_vote.private_hint"),
+                mouseX, mouseY);
+        }
+    }
+
     /** Thumb clicks on the vote page — instant commit (the screen closes, so consume the click). */
     @SubscribeEvent
     public static void onMousePressed(ScreenEvent.MouseButtonPressed.Pre event) {
@@ -254,15 +345,28 @@ public final class BookVoteClientEvents {
         if (event.getButton() != GLFW.GLFW_MOUSE_BUTTON_LEFT) return;
         int mx = (int) event.getMouseX();
         int my = (int) event.getMouseY();
-        if (inUpButton(mx, my)) {
+        // The thumbs are not drawn on your own book, so they must not be clickable either — an
+        // invisible hitbox that still votes is worse than the button being there.
+        if (!moderation.isOwn() && inUpButton(mx, my)) {
             event.setCanceled(true);
             clickSound();
             applyVote(1);
-        } else if (inDownButton(mx, my)) {
+        } else if (!moderation.isOwn() && inDownButton(mx, my)) {
             event.setCanceled(true);
             clickSound();
             applyVote(-1);
-        } else if (!reported && inReport(mx, my)) {
+        } else if (inReport(mx, my) && moderation.isOwn() && !moderation.isWithheld()) {
+            // Make Private / Make Public — single tap, and the screen stays open so the flipped
+            // label is the feedback.
+            event.setCanceled(true);
+            clickSound();
+            applyPrivate(!isPrivate);
+        } else if (inReport(mx, my) && moderation.isWithheld() && !protested) {
+            // Two-tap, like a report: a one-way claim put to a person.
+            event.setCanceled(true);
+            clickSound();
+            if (reportArmed) applyProtest(); else reportArmed = true;
+        } else if (!moderation.isOwn() && !reported && inReport(mx, my)) {
             // Two-tap: arm, then commit. A stray click anywhere else on the page disarms, so a
             // report always takes two deliberate clicks in the same spot.
             event.setCanceled(true);
@@ -277,6 +381,9 @@ public final class BookVoteClientEvents {
     @SubscribeEvent
     public static void onKeyPressed(ScreenEvent.KeyPressed.Post event) {
         if (!active || event.getScreen() != screen) return;
+        // ...but not on your own book, where there is no vote to cast. Without this the shortcut
+        // would be a way round the missing thumbs, which is exactly the hole they close.
+        if (moderation.isOwn()) return;
         int key = event.getKeyCode();
         if (key != GLFW.GLFW_KEY_Y && key != GLFW.GLFW_KEY_N) return;
         applyVote(key == GLFW.GLFW_KEY_Y ? 1 : -1);
@@ -334,6 +441,56 @@ public final class BookVoteClientEvents {
             int pick = player.getRandom().nextInt(REPORT_RESPONSE_COUNT) + 1;
             player.displayClientMessage(
                 Component.translatable("gui.dungeontrain.book_vote.report_response." + pick)
+                    .withStyle(ChatFormatting.GRAY), false);
+        }
+    }
+
+    /**
+     * Commit a protest: send the packet (the server stamps the tag; the RELAY is what checks the
+     * caller is actually this book's author), close the book, and have the train answer.
+     *
+     * <p>Nothing about the book changes. That is the honest thing to say in the response line too —
+     * a protest asks a person to look again, it does not overturn anything, and a line implying
+     * otherwise would be a promise the system does not keep.</p>
+     */
+    private static void applyProtest() {
+        if (!active || protested) return;
+        protested = true;
+        reportArmed = false;
+        DungeonTrainNet.sendToServer(new BookProtestPacket(bookType, bookId));
+
+        Minecraft mc = Minecraft.getInstance();
+        LocalPlayer player = mc.player;
+        BookViewScreen closing = screen;
+        if (mc.screen == closing) mc.setScreen(null); // triggers Closing → reset()
+
+        if (player != null) {
+            int pick = player.getRandom().nextInt(PROTEST_RESPONSE_COUNT) + 1;
+            player.displayClientMessage(
+                Component.translatable("gui.dungeontrain.book_vote.protest_response." + pick)
+                    .withStyle(ChatFormatting.GRAY), false);
+        }
+    }
+
+    /**
+     * Withdraw this book from circulation, or put it back.
+     *
+     * <p>The screen deliberately stays OPEN, unlike every other control here: a vote, a report and a
+     * protest are one-shot verdicts that end the reading, while this is a setting the author may well
+     * want to flip straight back. The label under the icon is the feedback.</p>
+     */
+    private static void applyPrivate(boolean makePrivate) {
+        if (!active) return;
+        isPrivate = makePrivate;
+        reportArmed = false;
+        DungeonTrainNet.sendToServer(new BookPrivatePacket(bookType, bookId, makePrivate));
+
+        LocalPlayer player = Minecraft.getInstance().player;
+        if (player != null) {
+            int pick = player.getRandom().nextInt(PRIVATE_RESPONSE_COUNT) + 1;
+            player.displayClientMessage(
+                Component.translatable("gui.dungeontrain.book_vote."
+                        + (makePrivate ? "private_response." : "public_response.") + pick)
                     .withStyle(ChatFormatting.GRAY), false);
         }
     }
@@ -402,6 +559,8 @@ public final class BookVoteClientEvents {
         promptIndex = 1;
         reported = false;
         reportArmed = false;
-        moderation = BookModerationState.APPROVED;
+        moderation = BookModerationState.PUBLIC;
+        isPrivate = false;
+        protested = false;
     }
 }

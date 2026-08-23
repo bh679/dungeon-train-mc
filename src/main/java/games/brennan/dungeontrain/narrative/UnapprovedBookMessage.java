@@ -6,7 +6,7 @@ import net.minecraft.network.chat.Component;
  * What the train says about one of the reader's own books that it has not released — shown on the
  * book's vote page (see {@code BookVoteClientEvents}), in that state's colour.
  *
- * <p>Three separate sets, one per {@link BookModerationState}, because they are three different
+ * <p>One set per {@link BookModerationState}, because they are three different
  * pieces of news and only one of them is bad. {@link BookModerationState#READING} is "nothing has
  * happened yet"; {@link BookModerationState#UNDECIDED} is "it has been read and there is still no
  * answer"; {@link BookModerationState#DISLIKED} is a no — softened by the fact that the train kept
@@ -33,12 +33,16 @@ public final class UnapprovedBookMessage {
 
     /**
      * The line for {@code state} on the book identified by {@code seed}, or {@code null} for
-     * {@link BookModerationState#APPROVED} — a released book says nothing about itself.
+     * {@link BookModerationState#PUBLIC} — somebody else's book gets the train's usual question
+     * instead, and nothing here to say about it.
+     *
+     * <p>A released book of the reader's OWN does get a line ({@code released.*}): its page has no
+     * thumbs and no question, so without one it would be a page with a button and no words.</p>
      *
      * @param seed anything stable for one book (the vote page passes {@code bookType + ":" + bookId})
      */
     public static Component forBook(BookModerationState state, String seed) {
-        if (state == null || !state.isWithheld()) return null;
+        if (state == null || !state.isOwn()) return null;
         int n = Math.floorMod((seed == null ? "" : seed).hashCode(), LINE_COUNT) + 1;
         return Component.translatable(KEY + state.messageKey() + "." + n);
     }

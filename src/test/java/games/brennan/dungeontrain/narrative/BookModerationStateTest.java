@@ -24,14 +24,43 @@ class BookModerationStateTest {
     }
 
     @Test
-    @DisplayName("An unknown status fails OPEN — an ordinary book is never tinted or greeted")
-    void unknownStatusFailsOpen() {
-        // The opposite of how kid-safety resolves an unknown, and on purpose: guessing wrong here
-        // means telling a reader the train dislikes a perfectly ordinary community book.
-        for (String s : new String[] {null, "", "   ", "nonsense", "APPROVED_MAYBE"}) {
-            assertEquals(BookModerationState.APPROVED, BookModerationState.fromStatus(s),
-                "unknown status '" + s + "' must read as released");
+    @DisplayName("An absent status is PUBLIC — somebody's book, and we were told nothing")
+    void absentStatusIsPublic() {
+        // Only the author's own shelf carries a status at all, so "no status" is the ordinary
+        // community book every player meets, not a released book of the reader's own.
+        for (String s : new String[] {null, "", "   "}) {
+            assertEquals(BookModerationState.PUBLIC, BookModerationState.fromStatus(s));
+            assertFalse(BookModerationState.fromStatus(s).isOwn());
         }
+    }
+
+    @Test
+    @DisplayName("An unrecognised status is treated as the reader's own, released — never as a verdict")
+    void unknownStatusFailsOpen() {
+        // A state a newer relay knows and this jar does not. It still arrived on the reader's own
+        // shelf, so the withdraw control belongs on it — but nothing is claimed about a verdict this
+        // jar cannot name. Guessing "withheld" here would tell a reader the train dislikes a book
+        // when it may have said the opposite.
+        for (String s : new String[] {"nonsense", "sixth_state_from_a_newer_relay"}) {
+            BookModerationState st = BookModerationState.fromStatus(s);
+            assertEquals(BookModerationState.APPROVED, st, "unknown status '" + s + "'");
+            assertTrue(st.isOwn());
+            assertFalse(st.isWithheld());
+        }
+    }
+
+    @Test
+    @DisplayName("isOwn is what the vote page keys the thumbs off")
+    void ownershipIsSeparateFromWithholding() {
+        // The thumbs come off ANY book you wrote, released or not — the relay weights selection by
+        // votes and never checks authorship, so your own shelf plus a thumbs-up is a self-upvoting
+        // machine. isWithheld() alone would have left the released half of that hole open.
+        assertFalse(BookModerationState.PUBLIC.isOwn());
+        for (BookModerationState s : new BookModerationState[] {BookModerationState.APPROVED,
+                BookModerationState.READING, BookModerationState.UNDECIDED, BookModerationState.DISLIKED}) {
+            assertTrue(s.isOwn(), s + " is one of the reader's own");
+        }
+        assertFalse(BookModerationState.APPROVED.isWithheld(), "released is yours but not held back");
     }
 
     @Test
@@ -42,14 +71,12 @@ class BookModerationStateTest {
     }
 
     @Test
-    @DisplayName("Only a withheld state has anything to say")
-    void onlyWithheldStatesAreShown() {
-        assertFalse(BookModerationState.APPROVED.isWithheld());
-        assertNull(BookModerationState.APPROVED.messageKey(), "a released book says nothing about itself");
-
-        for (BookModerationState s : new BookModerationState[] {
+    @DisplayName("Every state but PUBLIC has something to say")
+    void everyOwnStateHasALine() {
+        assertNull(BookModerationState.PUBLIC.messageKey(),
+            "somebody else's book gets the train's usual question instead");
+        for (BookModerationState s : new BookModerationState[] {BookModerationState.APPROVED,
                 BookModerationState.READING, BookModerationState.UNDECIDED, BookModerationState.DISLIKED}) {
-            assertTrue(s.isWithheld());
             assertNotNull(s.messageKey(), s + " must have a message set");
         }
     }

@@ -21,10 +21,19 @@ class UnapprovedBookMessageTest {
     }
 
     @Test
-    @DisplayName("A released book says nothing about itself")
-    void approvedProducesNoLine() {
-        assertNull(UnapprovedBookMessage.forBook(BookModerationState.APPROVED, "shared:1"));
+    @DisplayName("Somebody else's book gets the train's usual question, not a line about its state")
+    void publicProducesNoLine() {
+        assertNull(UnapprovedBookMessage.forBook(BookModerationState.PUBLIC, "shared:1"));
         assertNull(UnapprovedBookMessage.forBook(null, "shared:1"));
+    }
+
+    @Test
+    @DisplayName("A released book of your OWN does get a line — its page has no question and no thumbs")
+    void ownApprovedProducesALine() {
+        // Without this the page would be a button and no words: the thumbs come off every book you
+        // wrote, and the question goes with them.
+        assertTrue(keyOf(UnapprovedBookMessage.forBook(BookModerationState.APPROVED, "shared:3"))
+            .startsWith("gui.dungeontrain.book_vote.status.released."));
     }
 
     @Test
@@ -38,9 +47,9 @@ class UnapprovedBookMessageTest {
     }
 
     @Test
-    @DisplayName("Every withheld state reaches all LINE_COUNT of its own keys across books")
+    @DisplayName("Every own-book state reaches all LINE_COUNT of its own keys across books")
     void everyStateCoversItsWholeSet() {
-        for (BookModerationState state : new BookModerationState[] {
+        for (BookModerationState state : new BookModerationState[] {BookModerationState.APPROVED,
                 BookModerationState.READING, BookModerationState.UNDECIDED, BookModerationState.DISLIKED}) {
             Set<String> seen = new HashSet<>();
             for (int id = 0; id < 4000; id++) {
