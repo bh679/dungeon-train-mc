@@ -8293,6 +8293,19 @@
       "released": true,
       "released_in": "v0.634.0",
       "released_at": "2026-08-23T16:20:06Z"
+    },
+    {
+      "id": "portal-self-shelf-consent",
+      "version": "0.635.0",
+      "type": "fix",
+      "title": "Dimensional carriage libraries follow your network-access choice",
+      "summary": "A dimensional carriage that stocks its shelves from your own writing has to ask the server which books are yours, which means sending your player ID. It now does that only if you allowed network access; if you declined, the carriage stocks from another player's library instead.",
+      "highlights": [],
+      "pr": 1067,
+      "date": "2026-08-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
