@@ -46,17 +46,21 @@ import java.util.Map;
  * <p>Mixing the world seed in is what keeps the lottery from being the same lottery everywhere: a
  * seedless hash would put portals at identical group ordinals in every world ever generated.</p>
  *
- * <p>Two portals are never closer than {@link #MIN_GROUP_GAP} groups, so the lottery reads as
- * sporadic rather than clumpy — an unconstrained draw puts two back to back often enough to notice.</p>
+ * <p><b>The draw is unconstrained.</b> There is no minimum spacing between portals: a rate of one
+ * group in {@code n} is drawn at exactly that, and two portals may land back to back. An earlier
+ * design enforced a five-group floor to keep the lottery from clumping, and it was removed on
+ * purpose — it capped achievable density near one group in twelve, so any denser rate silently
+ * became something other than what was asked for. A number that means what it says is worth more
+ * than a guaranteed gap.</p>
  *
  * <p><b>The lottery does not start at the origin.</b> Nothing before Diff-Level
  * {@link #MIN_PORTAL_LEVEL} holds a portal, and the draw begins counting at that boundary rather
  * than running from the origin and discarding what it drew — see {@link #firstEligibleGroup()}.</p>
  *
- * <p>The one exception is a level where everyone is in creative, which takes a fixed cadence — every
- * {@link #CREATIVE_EVERY}th group, or {@link #DEV_CREATIVE_EVERY} on a dev build — so a portal is
- * always a short ride away. See {@link #rateFor}, which also spells out what riding on a mutable
- * input costs.</p>
+ * <p>The one exception is a level where everyone is in creative, which reads the same stored number
+ * as an <b>exact cadence</b> rather than a rate to draw against — every nth group, no seed involved,
+ * and no Diff-Level gate. See {@link #rateFor}, which also spells out what riding on a mutable input
+ * costs.</p>
  */
 public final class PortalCarriageSelection {
 
@@ -70,8 +74,8 @@ public final class PortalCarriageSelection {
     /** Slot of the exit corridor within its group. */
     public static final int SLOT_EXIT = 2;
 
-    /** One group in fifteen holds a portal, on average. */
-    public static final int DEFAULT_CARRIAGE_EVERY = 15;
+    /** One group in five holds a portal: on average in survival, exactly in creative. */
+    public static final int DEFAULT_CARRIAGE_EVERY = 5;
 
     /** Value meaning "no group holds a portal". */
     public static final int CARRIAGE_EVERY_OFF = 0;
@@ -104,44 +108,12 @@ public final class PortalCarriageSelection {
     public static final int MIN_PORTAL_LEVEL = 2;
 
     /**
-     * Groups two portals must be apart, at the least.
-     *
-     * <p>An unconstrained lottery clumps: a rate of one in fifteen still puts two portals back to
-     * back now and then, and a player who walks out of one exit corridor into the next entry has
-     * been handed the machinery rather than a surprise. The gap costs nothing to enforce and buys
-     * the sporadic feel the lottery was for.</p>
-     *
-     * <p>Five is also a ceiling on density: no lottery rate can average denser than one group in
-     * about twelve while honouring it — see {@link #drawThreshold}.</p>
-     */
-    public static final int MIN_GROUP_GAP = 5;
-
-    /**
-     * The cadence a <b>dev build</b> hands a creative player by default: every 2nd group, as the
-     * whole system worked before the lottery. Riding to a portal at the shipped rate is a poor loop
-     * for testing one, and a dev build is exactly where that matters and nobody's play experience is
-     * at stake.
-     *
-     * <p>A default, not an override: {@code /dungeontrain portal carriage creative <n>} beats it, so
-     * the release cadence can be exercised from the dev client. See {@link #creativeEveryDefault}.</p>
+     * The cadence a dev build hands a creative player, in place of the world's own rate: every 2nd
+     * group, as the whole system worked before the lottery. Riding to a portal at the shipped rate is
+     * a poor loop for testing one, and a dev build is exactly where that matters and nobody's play
+     * experience is at stake.
      */
     public static final int DEV_CREATIVE_EVERY = 2;
-
-    /**
-     * The cadence a creative player gets on a <b>release</b> build by default: every 5th group.
-     *
-     * <p>Creative is the build-and-look-around mode, and a portal is the thing worth looking at, so
-     * it arrives on a fixed beat rather than by the lottery survival runs on. Five leaves ordinary
-     * carriages either side of every portal — denser and the train reads as a row of corridors.</p>
-     *
-     * <p>It coincides with {@link #MIN_GROUP_GAP} by arithmetic rather than by meaning: that constant
-     * is the <em>lottery's</em> anti-clumping floor, which a periodic rate never consults. They stay
-     * separate and may drift apart.</p>
-     */
-    public static final int CREATIVE_EVERY = 5;
-
-    /** Value meaning "no creative override stored" — resolve through {@link #creativeEveryDefault}. */
-    public static final int CREATIVE_EVERY_UNSET = -1;
 
     private PortalCarriageSelection() {}
 
@@ -245,32 +217,10 @@ public final class PortalCarriageSelection {
         // Every group, without troubling the hash — and the case the group-arithmetic tests use.
         if (rate.every() == 1) return true;
 
-        // Denser than the gap can carry, so the draw is a certainty — and a certainty cannot go
-        // through the suppression below, where every group would be knocked out by the one behind it
-        // and the train would end up with no portals at all. Space them by the gap directly instead:
-        // the densest arrangement the constraint permits, which is what such a rate is asking for.
-        if (drawThreshold(rate.every()) >= DRAW_PRECISION) {
-            return Math.floorMod(drawIndex, (long) MIN_GROUP_GAP) == 0L;
-        }
-
-        if (!drewHit(worldSeed, drawIndex, rate.every())) return false;
-
-        // Suppressed by any hit in the four groups behind it, so two portals can never land within
-        // MIN_GROUP_GAP: were they to, the earlier one's hit would sit inside the later one's window
-        // and would have taken it out. Earlier wins.
-        //
-        // Deliberately looking at raw HITS rather than at whether those groups were themselves
-        // chosen — that would recurse back down the train with no floor, and this has to answer
-        // from the group's own ordinal alone, the same on every reload and for every reader.
-        for (long back = 1; back < MIN_GROUP_GAP; back++) {
-            // Nothing to be too close to on the far side of the gate: the groups there hold no
-            // portal, so letting their raw hits suppress the first eligible ones would push the
-            // first portal back past the gate for no reason. Ungated (gate 0) the draw is one
-            // unbroken line through the origin and keeps looking straight through it, as before.
-            if (gate > 0 && drawIndex - back < 0) break;
-            if (drewHit(worldSeed, drawIndex - back, rate.every())) return false;
-        }
-        return true;
+        // One draw, taken as it falls. Nothing suppresses a hit for being close to another: there is
+        // no minimum spacing, so a rate of one in n is realised at one in n and two portals may land
+        // back to back. See the class note on why the old gap rule was removed.
+        return drewHit(worldSeed, drawIndex, rate.every());
     }
 
     /**
@@ -307,15 +257,6 @@ public final class PortalCarriageSelection {
                 DungeonTrainConfig.getProgressionLevelDelay());
     }
 
-    /**
-     * True if {@code every} is denser than {@link #MIN_GROUP_GAP} allows, so the realised spacing
-     * will be every {@code MIN_GROUP_GAP}th group rather than the rate that was asked for. The
-     * command says so out loud — a setting that quietly does something else reads as a bug.
-     */
-    public static boolean isGapClamped(int every) {
-        return every > 1 && drawThreshold(every) >= DRAW_PRECISION;
-    }
-
     /** One group's raw draw, before the gap rule takes any of them back out. */
     private static boolean drewHit(long worldSeed, long groupIndex, int every) {
         return Math.floorMod(hash(worldSeed, groupIndex), DRAW_PRECISION) < drawThreshold(every);
@@ -324,54 +265,17 @@ public final class PortalCarriageSelection {
     /** Denominator the draw is taken against. A millionth of a group is finer than anyone can feel. */
     private static final long DRAW_PRECISION = 1_000_000L;
 
-    /** Rates the command accepts (1–64), solved once at class init rather than per call. */
-    private static final int MAX_TABULATED_EVERY = 64;
-
-    private static final long[] DRAW_THRESHOLDS = tabulateThresholds();
-
     /**
-     * How often a group must draw a hit for one in {@code every} to <b>survive</b> the gap rule.
+     * How often a group must draw a hit for one group in {@code every} to hold a portal — which,
+     * with nothing thinning the draw afterwards, is simply the wanted rate.
      *
-     * <p>Suppression thins the draw, so hitting at one in fifteen and dropping everything inside the
-     * gap would realise about one in twenty and make the number in the command a lie. The raw rate
-     * is therefore solved from the wanted one: a hit survives when the {@code MIN_GROUP_GAP - 1}
-     * groups behind it all missed, so</p>
-     *
-     * <pre>   p · (1 − p)^(gap−1) = 1 / every</pre>
-     *
-     * <p>which the fixed point {@code p ← target / (1 − p)^(gap−1)} settles at in a few dozen steps.</p>
-     *
-     * <p><b>Rates the gap cannot reach.</b> That left-hand side peaks around 0.082 — one group in
-     * roughly twelve — so anything denser is simply not achievable while keeping portals five apart.
-     * Those clamp to a certain hit, which the gap then thins to exactly every fifth group: as dense
-     * as the constraint permits, and an honest answer rather than a silent near-miss.</p>
+     * <p>This used to be solved by fixed-point iteration against a lookup table, because the old
+     * minimum-spacing rule suppressed hits and the raw rate had to be inflated to compensate. With
+     * that rule gone the honest answer is one division.</p>
      */
     private static long drawThreshold(int every) {
-        if (every >= 0 && every <= MAX_TABULATED_EVERY) return DRAW_THRESHOLDS[every];
-        return solveThreshold(every);
-    }
-
-    private static long[] tabulateThresholds() {
-        long[] thresholds = new long[MAX_TABULATED_EVERY + 1];
-        for (int every = 0; every <= MAX_TABULATED_EVERY; every++) {
-            thresholds[every] = solveThreshold(every);
-        }
-        return thresholds;
-    }
-
-    private static long solveThreshold(int every) {
         if (every <= CARRIAGE_EVERY_OFF) return 0L;
-
-        double target = 1.0 / every;
-        double p = target;
-        for (int step = 0; step < 64; step++) {
-            double next = target / Math.pow(1.0 - p, MIN_GROUP_GAP - 1);
-            // Diverged past certainty: this rate is denser than the gap allows, so draw every time
-            // and let the gap alone space them.
-            if (!(next < 1.0)) return DRAW_PRECISION;
-            p = next;
-        }
-        return Math.round(p * DRAW_PRECISION);
+        return DRAW_PRECISION / every;
     }
 
     /**
@@ -483,48 +387,18 @@ public final class PortalCarriageSelection {
      * there is no per-player answer available, so this is the honest one. An empty level keeps the
      * stored rate.</p>
      *
-     * <p><b>Turning the stored rate off turns creative off with it.</b> {@code portal carriage off}
-     * means this world has no portals at all, which outranks a cadence for how often they arrive.</p>
+     * <p><b>One number, read two ways.</b> Creative and survival share the world's stored rate: in
+     * survival it is a rate the seeded lottery draws against, in creative it is an exact period —
+     * every nth group, no seed, no Diff-Level gate. Same setting, so
+     * {@code /dungeontrain portal carriage 5} means "about every 5th" to one and "every 5th" to the
+     * other, and {@code portal carriage off} means no portals to both.</p>
      */
     public static Rate rateFor(ServerLevel level) {
-        // One registry lookup, not two: this runs per carriage verdict, and the creative branch used
-        // to fetch it again through creativeEveryFor.
-        PortalRegistry registry = PortalRegistry.get(level);
-        int stored = registry.carriageEvery();
+        int stored = PortalRegistry.get(level).carriageEvery();
         if (stored <= CARRIAGE_EVERY_OFF) return Rate.OFF;
         if (!isAllCreative(level)) return Rate.lottery(stored);
-
-        int creative = resolveCreativeEvery(registry.creativeEvery());
-        // Creative explicitly set to off: fall back to the lottery rather than to no portals, since
-        // "off" here means "don't give creative its own cadence", not "no portals in this world".
-        if (creative <= CARRIAGE_EVERY_OFF) return Rate.lottery(stored);
-        return Rate.periodic(creative);
-    }
-
-    /**
-     * The creative cadence in force on this level: the world's stored override, or
-     * {@link #creativeEveryDefault} where none is stored.
-     */
-    public static int creativeEveryFor(ServerLevel level) {
-        return resolveCreativeEvery(PortalRegistry.get(level).creativeEvery());
-    }
-
-    /** {@link #creativeEveryFor} with the stored value already in hand. */
-    private static int resolveCreativeEvery(int stored) {
-        return stored == CREATIVE_EVERY_UNSET ? creativeEveryDefault() : stored;
-    }
-
-    /**
-     * The creative cadence a world starts at: the dense {@link #DEV_CREATIVE_EVERY} on a dev build
-     * ({@link DungeonTrain#isDevBuild()}, branch is not {@code main}), {@link #CREATIVE_EVERY} on a
-     * release.
-     *
-     * <p>Only the <b>default</b> differs by build. An explicit
-     * {@code /dungeontrain portal carriage creative <n>} wins on either, so the shipped cadence can
-     * be exercised from the dev client rather than only after a merge to {@code main}.</p>
-     */
-    public static int creativeEveryDefault() {
-        return DungeonTrain.isDevBuild() ? DEV_CREATIVE_EVERY : CREATIVE_EVERY;
+        // A dev build swaps in its own dense cadence so a tester never has to ride for one.
+        return Rate.periodic(DungeonTrain.isDevBuild() ? DEV_CREATIVE_EVERY : stored);
     }
 
     /**

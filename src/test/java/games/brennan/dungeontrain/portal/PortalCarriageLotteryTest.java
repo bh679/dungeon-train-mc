@@ -59,12 +59,12 @@ final class PortalCarriageLotteryTest {
     }
 
     /**
-     * The rate the command promises is the one that survives the gap rule, not the raw draw — the
-     * threshold is solved backwards from it for exactly this reason. Rates denser than the gap can
-     * carry (below about 1 in 12) are excluded here; {@link #clampedRatesLandOnTheGap} covers those.
+     * The rate the command promises is the rate the train delivers. With nothing thinning the draw
+     * there is no gap between the two any more — the threshold is one division — so any rate the
+     * command accepts is checkable the same way, dense ones included.
      */
     @Test
-    @DisplayName("roughly one group in every wins a portal, after the gap rule has taken its cut")
+    @DisplayName("roughly one group in every wins a portal")
     void rateMatchesEvery() {
         for (int every : new int[] {15, 20, 30, 64}) {
             int hits = chosenAnchors(SEED, every, SAMPLE_GROUPS).size();
@@ -79,8 +79,8 @@ final class PortalCarriageLotteryTest {
 
     /**
      * The point of the change. On the old rule the gap between portals was always the same number,
-     * so a player who had seen two knew where the third was. The minimum gap puts a floor under the
-     * spacing without restoring that.
+     * so a player who had seen two knew where the third was. Nothing constrains the spacing now, so
+     * this is the only thing keeping the draw from reading as a cadence.
      */
     @Test
     @DisplayName("the gaps between portals vary rather than repeating a fixed period")
@@ -90,52 +90,41 @@ final class PortalCarriageLotteryTest {
     }
 
     /**
-     * Walking out of an exit corridor and straight into the next entry hands the player the
-     * machinery. The rule that prevents it is local — a group looks at the four draws behind it and
-     * nothing further — so this checks the guarantee actually holds over a long run rather than
-     * trusting the argument.
+     * There is <b>no</b> minimum spacing, and that is a deliberate property rather than an accident:
+     * the old five-group floor capped achievable density near one group in twelve, so any denser
+     * rate quietly became something else. Re-introducing a gap rule has to fail here.
      */
     @Test
-    @DisplayName("no two portals ever land closer than the minimum gap")
-    void portalsAreNeverCloserThanTheMinimumGap() {
-        for (int every : new int[] {15, 20, 30}) {
-            for (long seed : new long[] {SEED, 0L, -1L}) {
-                int smallest = groupGaps(seed, every).stream().mapToInt(Integer::intValue).min().orElse(Integer.MAX_VALUE);
-                assertTrue(smallest >= PortalCarriageSelection.MIN_GROUP_GAP,
-                    "every=" + every + " seed=" + seed + " put two portals " + smallest + " groups apart");
-            }
+    @DisplayName("portals may land back to back — there is no minimum spacing")
+    void portalsMayLandAdjacent() {
+        boolean sawAdjacent = false;
+        for (int group = 0; group < SAMPLE_GROUPS && !sawAdjacent; group++) {
+            sawAdjacent = PortalCarriageSelection.isPortalPart(group * GROUP, GROUP, Rate.lottery(5), SEED)
+                && PortalCarriageSelection.isPortalPart((group + 1) * GROUP, GROUP, Rate.lottery(5), SEED);
         }
-    }
-
-    /** The origin is where the group ordinal changes sign — the gap must not open up across it. */
-    @Test
-    @DisplayName("the minimum gap holds across the origin too")
-    void minimumGapHoldsThroughNegativeIndices() {
-        int previous = Integer.MIN_VALUE;
-        for (int group = -2_000; group <= 2_000; group++) {
-            if (!PortalCarriageSelection.isPortalPart(group * GROUP, GROUP, Rate.lottery(15), SEED)) continue;
-            if (previous != Integer.MIN_VALUE) {
-                assertTrue(group - previous >= PortalCarriageSelection.MIN_GROUP_GAP,
-                    "groups " + previous + " and " + group + " are too close");
-            }
-            previous = group;
-        }
+        assertTrue(sawAdjacent,
+            "no two portals landed in consecutive groups over " + SAMPLE_GROUPS
+                + " groups at 1-in-5 — something is enforcing spacing again");
     }
 
     /**
-     * A rate denser than the gap can carry has one honest answer: as dense as the gap permits. The
-     * alternative is quietly delivering something else and looking broken.
+     * The shipped default is dense enough that the old gap rule could not have delivered it, so this
+     * pins the thing that change was for: the number in the command is the number on the train.
      */
     @Test
-    @DisplayName("a rate denser than the gap allows lands on exactly every nth group")
-    void clampedRatesLandOnTheGap() {
-        assertTrue(PortalCarriageSelection.isGapClamped(5), "1-in-5 should be clamped by the gap");
-        for (int group = 0; group < 500; group++) {
-            assertEquals(group % PortalCarriageSelection.MIN_GROUP_GAP == 0,
-                PortalCarriageSelection.isPortalPart(group * GROUP, GROUP, Rate.lottery(5), SEED),
-                "group " + group);
+    @DisplayName("the default rate is realised at the rate it claims")
+    void defaultRateIsRealisedAsAsked() {
+        for (long seed : new long[] {SEED, 0L, -1L, 12345L}) {
+            int hits = 0;
+            for (int group = 0; group < SAMPLE_GROUPS; group++) {
+                if (PortalCarriageSelection.isPortalPart(
+                        group * GROUP, GROUP,
+                        Rate.lottery(PortalCarriageSelection.DEFAULT_CARRIAGE_EVERY), seed)) hits++;
+            }
+            double expected = (double) SAMPLE_GROUPS / PortalCarriageSelection.DEFAULT_CARRIAGE_EVERY;
+            assertTrue(hits > expected * 0.85 && hits < expected * 1.15,
+                "seed " + seed + ": " + hits + " of " + SAMPLE_GROUPS + ", expected about " + expected);
         }
-        assertFalse(PortalCarriageSelection.isGapClamped(15), "1-in-15 is reachable and must not clamp");
     }
 
     /** Distinct gap lengths, in groups, between consecutive portals over the sample. */
@@ -202,51 +191,6 @@ final class PortalCarriageLotteryTest {
                     "group " + group + " at seed " + seed);
             }
         }
-    }
-
-    /**
-     * The shipped creative cadence, on the same footing as the dev one: an exact beat every
-     * {@code CREATIVE_EVERY} groups that no seed and no gap rule can move.
-     */
-    @Test
-    @DisplayName("the creative cadence lands on every 5th group in every world alike")
-    void creativeCadenceIsAFixedBeat() {
-        for (long seed : new long[] {SEED, 0L, -1L, 12345L}) {
-            for (int group = -40; group <= 40; group++) {
-                assertEquals(Math.floorMod(group, PortalCarriageSelection.CREATIVE_EVERY) == 0,
-                    PortalCarriageSelection.isPortalPart(group * GROUP, GROUP,
-                        Rate.periodic(PortalCarriageSelection.CREATIVE_EVERY), seed),
-                    "group " + group + " at seed " + seed);
-            }
-        }
-    }
-
-    /**
-     * The two cadences answer different questions — a dev build's testing convenience and the
-     * cadence players get — so collapsing them into one constant has to fail here rather than
-     * quietly hand players the dense testing beat.
-     */
-    @Test
-    @DisplayName("the creative and dev-creative cadences are distinct")
-    void creativeAndDevCadencesAreDistinct() {
-        assertNotEquals(PortalCarriageSelection.CREATIVE_EVERY,
-            PortalCarriageSelection.DEV_CREATIVE_EVERY,
-            "the shipped creative cadence must not be the dev testing one");
-    }
-
-    /**
-     * The unset sentinel has to stay outside the range the command accepts (1–64) and clear of
-     * {@code CARRIAGE_EVERY_OFF}, or "no override stored" would be indistinguishable from a real
-     * setting and a world would silently take the wrong cadence.
-     */
-    @Test
-    @DisplayName("the creative-unset sentinel cannot collide with a real setting")
-    void creativeUnsetSentinelIsOutOfBand() {
-        assertTrue(PortalCarriageSelection.CREATIVE_EVERY_UNSET < 0,
-            "unset must be negative, outside the 1-64 the command accepts");
-        assertNotEquals(PortalCarriageSelection.CARRIAGE_EVERY_OFF,
-            PortalCarriageSelection.CREATIVE_EVERY_UNSET,
-            "unset and off are different answers and must not share a value");
     }
 
     /** Same rate, different rule — otherwise the periodic flag would not be doing anything. */
