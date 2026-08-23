@@ -36,6 +36,7 @@ public final class CommandEvents {
         DtpCommand.register(event.getDispatcher());
         // /fixaisconfig — restores AIS config defaults (the AIS-data Free Play fix action).
         FixAisConfigCommand.register(event.getDispatcher());
+        games.brennan.dungeontrain.command.CustomContentCommand.register(event.getDispatcher());
         // /reportcarriage [reason] — player-facing report of the shared carriage underfoot (also a
         // subcommand of the op-gated /dungeontrain root). Any player, any game mode.
         ReportCarriageCommand.register(event.getDispatcher());

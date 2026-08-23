@@ -123,7 +123,6 @@ public final class TrainCommand {
             .then(ResetCommand.build())
             .then(DebugCommand.build())
             .then(PackageCommand.build())
-            .then(CustomContentCommand.build())
             .then(NarrativeCommand.build())
             .then(CinematographerCommand.build())
             .then(PortalCommand.build());

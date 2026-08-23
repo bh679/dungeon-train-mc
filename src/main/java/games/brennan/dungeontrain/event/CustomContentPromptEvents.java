@@ -40,8 +40,8 @@ public final class CustomContentPromptEvents {
     private static final Logger LOGGER = LogUtils.getLogger();
 
     /** The one-click way back, offered in every notice this class sends. */
-    private static final String COMMAND_ON = "/dt customcontent on";
-    private static final String COMMAND_OFF = "/dt customcontent off";
+    private static final String COMMAND_ON = "/customcontent on";
+    private static final String COMMAND_OFF = "/customcontent off";
 
     private CustomContentPromptEvents() {}
 

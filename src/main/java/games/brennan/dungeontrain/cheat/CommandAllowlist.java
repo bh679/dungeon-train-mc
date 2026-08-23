@@ -44,12 +44,9 @@ public final class CommandAllowlist {
      * dev/authoring tools, so running one taints the run. In practice authoring happens in creative
      * (already Free Play), so the editor UI's own commands early-return in
      * {@code CheatDetectionEvents.onCommand}; the taint only bites when one is run from a clean run.
-     *
-     * <p>{@code customcontent} IS here, and must stay: it is the command the Free Play notice links
-     * to for turning custom editor content OFF. Tainting a player for clicking the way <em>out</em>
-     * of Free Play would be exactly backwards — the same trap {@code /fixaisconfig} avoids.</p>
+
      */
-    private static final Set<String> DT_ALLOWED_SUBS = Set.of("cinematic", "debug", "customcontent");
+    private static final Set<String> DT_ALLOWED_SUBS = Set.of("cinematic", "debug");
 
     /** Read-only {@code narrative} subcommands (the rest of the tree taints). */
     private static final Set<String> NARRATIVE_READONLY = Set.of("list", "progress");
@@ -61,7 +58,10 @@ public final class CommandAllowlist {
      * {@code /kill} (self-kill only — see {@link #isAllowed}). {@code /feedback}
      * and {@code /bug} (player feedback / bug-report submission) are also exempt.
      * {@code /playanimation} and {@code /stopsound} (cosmetic, no gameplay
-     * effect) are exempt too. {@code /weather} is deliberately <b>not</b>
+     * effect) are exempt too. {@code /customcontent} is exempt for the same
+     * reason as {@code /fixaisconfig}: it is what the Free Play notice links to
+     * for turning custom editor content OFF, and tainting a player for clicking
+     * the way <em>out</em> of Free Play would be exactly backwards. {@code /weather} is deliberately <b>not</b>
      * exempt — unlike a dedicated server, DT's Free Play system relies on
      * cheat commands actually reaching a normal player (see the class
      * javadoc), so weather changes still need to gate behind the Free Play
@@ -69,7 +69,7 @@ public final class CommandAllowlist {
      */
     private static final Set<String> ALLOWED_ROOTS = Set.of(
         "help", "me", "msg", "tell", "w", "teammsg", "tm", "trigger", "list",
-        "feedback", "bug", "fixaisconfig", "new-world", "playanimation", "stopsound");
+        "feedback", "bug", "fixaisconfig", "customcontent", "new-world", "playanimation", "stopsound");
 
     private CommandAllowlist() {}
 

@@ -1,6 +1,6 @@
 package games.brennan.dungeontrain.command;
 
-import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import com.mojang.brigadier.CommandDispatcher;
 import games.brennan.dungeontrain.cheat.EditorContentIntegrity;
 import games.brennan.dungeontrain.world.CustomContentChoice;
 import net.minecraft.ChatFormatting;
@@ -9,38 +9,39 @@ import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
 
 /**
- * {@code /dt customcontent <on|off|status>} — turn custom Train Editor content
- * on or off for this world, and report what is installed.
+ * {@code /customcontent <on|off|status>} — turn custom Train Editor content on
+ * or off for this world, and report what is installed.
  *
  * <p>This is the reversible half of the join-time prompt: the chat notices link
  * straight here, and a player who picked "Disable" (or ticked Remember and later
  * changed their mind) can flip back without editing files.</p>
  *
- * <p><b>Must stay in {@code CommandAllowlist.DT_ALLOWED_SUBS}.</b> Every other
- * {@code /dt} authoring subcommand taints the run, and this one is what the
- * "turn it off" link runs — a player clicking it to <em>leave</em> Free Play
- * must not be permanently marked for doing so. Same reasoning that put
- * {@code /fixaisconfig} on the allowlist.</p>
+ * <p><b>A root command with {@code requires(s -> true)}, not a {@code /dt}
+ * subcommand</b> — deliberately, and for the same reason {@code /fixaisconfig}
+ * is one. The {@code /dungeontrain} root is gated at permission level 2, so in
+ * an ordinary Survival world without cheats the whole tree is invisible and a
+ * clicked link dead-ends in "Unknown or incomplete command". The player this
+ * command exists for is precisely that player. It is also consistent with the
+ * prompt itself, which any player may answer.</p>
  *
- * <p>No {@code requires} of its own: the {@code /dungeontrain} root already gates
- * the whole tree at permission level 2, and re-stating it on the child nodes is
- * the difference between this command working and the Free Play notice's link
- * dead-ending in "Unknown or incomplete command".</p>
+ * <p><b>Must stay in {@code CommandAllowlist.ALLOWED_ROOTS}.</b> This is what the
+ * "turn it off" link runs — a player clicking it to <em>leave</em> Free Play must
+ * not be permanently marked for doing so.</p>
  */
 public final class CustomContentCommand {
 
     private CustomContentCommand() {}
 
-    /** Build the {@code customcontent} branch to splice under {@code /dungeontrain}. */
-    public static LiteralArgumentBuilder<CommandSourceStack> build() {
-        return Commands.literal("customcontent")
+    public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
+        dispatcher.register(Commands.literal("customcontent")
+            .requires(source -> true) // everyone, any game mode — see class doc
             .then(Commands.literal("status")
                 .executes(ctx -> runStatus(ctx.getSource())))
             .then(Commands.literal("on")
                 .executes(ctx -> runSet(ctx.getSource(), CustomContentChoice.ALLOW)))
             .then(Commands.literal("off")
                 .executes(ctx -> runSet(ctx.getSource(), CustomContentChoice.DISABLE)))
-            .executes(ctx -> runStatus(ctx.getSource()));
+            .executes(ctx -> runStatus(ctx.getSource())));
     }
 
     private static int runStatus(CommandSourceStack source) {
