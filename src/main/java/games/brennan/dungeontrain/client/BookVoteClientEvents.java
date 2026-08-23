@@ -119,15 +119,17 @@ public final class BookVoteClientEvents {
         ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "widget/report");
     private static final ResourceLocation REPORT_HIGHLIGHTED_SPRITE =
         ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "widget/report_highlighted");
-    // The two author-only controls that stand where Report stands on somebody else's book.
-    private static final ResourceLocation PROTEST_SPRITE =
-        ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "widget/protest");
-    private static final ResourceLocation PROTEST_HIGHLIGHTED_SPRITE =
-        ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "widget/protest_highlighted");
-    private static final ResourceLocation PRIVATE_SPRITE =
-        ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "widget/private");
-    private static final ResourceLocation PRIVATE_HIGHLIGHTED_SPRITE =
-        ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "widget/private_highlighted");
+    // Withdraw / restore: a padlock that shows the state the book is in, and swaps to the state it
+    // WILL be in while the pointer is over it — so the control answers "what does this do" before it
+    // is pressed, rather than only after.
+    private static final ResourceLocation PRIVATE_LOCKED_SPRITE =
+        ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "widget/private_locked");
+    private static final ResourceLocation PRIVATE_LOCKED_HIGHLIGHTED_SPRITE =
+        ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "widget/private_locked_highlighted");
+    private static final ResourceLocation PRIVATE_UNLOCKED_SPRITE =
+        ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "widget/private_unlocked");
+    private static final ResourceLocation PRIVATE_UNLOCKED_HIGHLIGHTED_SPRITE =
+        ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "widget/private_unlocked_highlighted");
 
     // --- single tracked votable book screen (one book screen is open at a time) ---
     private static boolean active = false;
@@ -258,8 +260,9 @@ public final class BookVoteClientEvents {
      * <ul>
      *   <li>somebody else's → <b>Report</b>, unchanged;</li>
      *   <li>yours and released → <b>Make Private</b> / <b>Make Public</b>, a reversible toggle;</li>
-     *   <li>yours and withheld → <b>Protest</b>, which asks a person to look again and changes
-     *       nothing by itself.</li>
+     *   <li>yours and judged-but-withheld → <b>Protest</b>, which asks a person to look again and
+     *       changes nothing by itself;</li>
+     *   <li>yours and not yet read → <b>nothing</b>. There is no verdict to argue with.</li>
      * </ul>
      *
      * <p>Reporting your own book is nonsense and protesting somebody else's is not yours to do, so
@@ -267,7 +270,8 @@ public final class BookVoteClientEvents {
      */
     private static void renderAction(GuiGraphics gfx, Font font, int centerX, int mouseX, int mouseY) {
         if (moderation.isWithheld()) {
-            renderProtest(gfx, font, centerX, mouseX, mouseY);
+            // ...but nothing at all on a book nothing has read yet: there is no verdict to protest.
+            if (moderation.canProtest()) renderProtest(gfx, font, centerX, mouseX, mouseY);
             return;
         }
         if (moderation.isOwn()) {
@@ -297,11 +301,16 @@ public final class BookVoteClientEvents {
         }
     }
 
-    /** Protest — the same two-tap shape as Report, because it is also a one-way claim to a person. */
+    /**
+     * Protest — the same two-tap shape as Report, because it is also a one-way claim put to a person,
+     * and the same glyph, because it is the same gesture pointed the other way: Report says "this
+     * book is wrong", Protest says "your verdict on it is". Only the wording differs, and they never
+     * appear together.
+     */
     private static void renderProtest(GuiGraphics gfx, Font font, int centerX, int mouseX, int mouseY) {
         boolean lit = !protested && (reportArmed || inReport(mouseX, mouseY));
         if (protested) gfx.setColor(1F, 1F, 1F, REPORTED_ALPHA);
-        gfx.blitSprite(lit ? PROTEST_HIGHLIGHTED_SPRITE : PROTEST_SPRITE,
+        gfx.blitSprite(lit ? REPORT_HIGHLIGHTED_SPRITE : REPORT_SPRITE,
             reportX(), REPORT_Y, BUTTON_SIZE, BUTTON_SIZE);
         if (protested) gfx.setColor(1F, 1F, 1F, 1F);
 
@@ -325,7 +334,14 @@ public final class BookVoteClientEvents {
      */
     private static void renderPrivate(GuiGraphics gfx, Font font, int centerX, int mouseX, int mouseY) {
         boolean lit = inReport(mouseX, mouseY);
-        gfx.blitSprite(lit ? PRIVATE_HIGHLIGHTED_SPRITE : PRIVATE_SPRITE,
+        // Hovering shows the state the book will be in once clicked, not the one it is in — the
+        // padlock closes under the pointer on a public book and springs open on a withdrawn one, so
+        // the control previews its own effect. Away from the pointer it goes back to reporting the
+        // truth about the book.
+        boolean showLocked = lit != isPrivate;
+        gfx.blitSprite(showLocked
+                ? (lit ? PRIVATE_LOCKED_HIGHLIGHTED_SPRITE : PRIVATE_LOCKED_SPRITE)
+                : (lit ? PRIVATE_UNLOCKED_HIGHLIGHTED_SPRITE : PRIVATE_UNLOCKED_SPRITE),
             reportX(), REPORT_Y, BUTTON_SIZE, BUTTON_SIZE);
         Component line = Component.translatable(isPrivate
             ? "gui.dungeontrain.book_vote.private_on" : "gui.dungeontrain.book_vote.private_off");
@@ -361,7 +377,7 @@ public final class BookVoteClientEvents {
             event.setCanceled(true);
             clickSound();
             applyPrivate(!isPrivate);
-        } else if (inReport(mx, my) && moderation.isWithheld() && !protested) {
+        } else if (inReport(mx, my) && moderation.canProtest() && !protested) {
             // Two-tap, like a report: a one-way claim put to a person.
             event.setCanceled(true);
             clickSound();

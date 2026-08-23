@@ -37,9 +37,9 @@ class BookVoteControlsTest {
         return !s.isOwn();
     }
 
-    /** Protest stands where report stands, on a book of yours the train is holding back. */
+    /** Protest stands where report stands, on a book of yours the train has JUDGED and held back. */
     private static boolean showsProtest(BookModerationState s) {
-        return s.isWithheld();
+        return s.canProtest();
     }
 
     /** Withdraw stands there on a book of yours that IS out on the line. */
@@ -68,10 +68,10 @@ class BookVoteControlsTest {
     }
 
     @Test
-    @DisplayName("Your own withheld books: no thumbs, no report, no withdraw — protest instead")
-    void ownWithheldBooks() {
+    @DisplayName("Your own JUDGED-and-withheld books: no thumbs, no report, no withdraw — protest instead")
+    void ownJudgedWithheldBooks() {
         for (BookModerationState s : new BookModerationState[] {
-                BookModerationState.READING, BookModerationState.UNDECIDED, BookModerationState.DISLIKED}) {
+                BookModerationState.UNDECIDED, BookModerationState.DISLIKED}) {
             assertFalse(showsThumbs(s), s + " must not be votable");
             assertFalse(showsReport(s), s + " must not be reportable");
             assertTrue(showsProtest(s), s + " is what protest is for");
@@ -81,14 +81,27 @@ class BookVoteControlsTest {
     }
 
     @Test
-    @DisplayName("Exactly one of the three actions is offered, in every state")
-    void theActionSlotHoldsExactlyOneControl() {
+    @DisplayName("A book nothing has read yet offers NO action — there is no verdict to argue with")
+    void unreadBookOffersNothing() {
+        BookModerationState s = BookModerationState.READING;
+        assertTrue(s.isWithheld());
+        assertFalse(showsThumbs(s));
+        assertFalse(showsReport(s));
+        assertFalse(showsProtest(s), "protesting a decision nobody has made is an argument with nobody");
+        assertFalse(showsPrivate(s));
+    }
+
+    @Test
+    @DisplayName("The action slot never holds more than one control")
+    void theActionSlotHoldsAtMostOneControl() {
         // They share one row and one hitbox, so two at once would be a click landing on whichever
-        // branch happened to be tested first.
+        // branch happened to be tested first. Zero is legitimate (see READING above).
         for (BookModerationState s : BookModerationState.values()) {
             int offered = (showsReport(s) ? 1 : 0) + (showsProtest(s) ? 1 : 0) + (showsPrivate(s) ? 1 : 0);
-            org.junit.jupiter.api.Assertions.assertEquals(1, offered,
-                s + " must offer exactly one action, not " + offered);
+            assertTrue(offered <= 1, s + " must offer at most one action, not " + offered);
+            org.junit.jupiter.api.Assertions.assertEquals(
+                s == BookModerationState.READING ? 0 : 1, offered,
+                s + " offered " + offered + " actions");
         }
     }
 }

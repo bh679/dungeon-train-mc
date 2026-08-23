@@ -71,6 +71,18 @@ class BookModerationStateTest {
     }
 
     @Test
+    @DisplayName("Protest needs a verdict to protest against")
+    void protestNeedsAVerdict() {
+        // READING is "submitted, nothing has read it yet". There is no decision there to disagree
+        // with, so the page offers nothing to press rather than inviting an argument with nobody.
+        assertFalse(BookModerationState.READING.canProtest(), "nothing has judged it yet");
+        assertTrue(BookModerationState.UNDECIDED.canProtest(), "read and held — that is a call to object to");
+        assertTrue(BookModerationState.DISLIKED.canProtest());
+        assertFalse(BookModerationState.APPROVED.canProtest(), "nothing to object to when it is released");
+        assertFalse(BookModerationState.PUBLIC.canProtest(), "and somebody else's is not yours to protest");
+    }
+
+    @Test
     @DisplayName("Every state but PUBLIC has something to say")
     void everyOwnStateHasALine() {
         assertNull(BookModerationState.PUBLIC.messageKey(),

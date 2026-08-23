@@ -89,6 +89,17 @@ public enum BookModerationState {
     }
 
     /**
+     * Whether there is a verdict here for the author to object to.
+     *
+     * <p>False for {@link #READING}: nothing has read that book yet, so there is nothing to disagree
+     * with — a protest control on it would invite an argument with a decision that has not been made.
+     * The page simply says the train is still reading and offers nothing to press.</p>
+     */
+    public boolean canProtest() {
+        return this == UNDECIDED || this == DISLIKED;
+    }
+
+    /**
      * The state a relay {@code status} names. Absent/blank → {@link #PUBLIC} (an ordinary book we were
      * told nothing about); an unrecognised value → {@link #APPROVED}, since it still arrived on the
      * reader's own shelf. See the class note on why the unknown case fails open rather than closed.
