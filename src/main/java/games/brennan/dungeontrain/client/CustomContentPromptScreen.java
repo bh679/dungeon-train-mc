@@ -44,6 +44,10 @@ public final class CustomContentPromptScreen extends Screen {
      * is the one control here whose state the player has to read at a glance.
      */
     private static final int COLOUR_CHECKBOX_OUTLINE = 0xFFD0D0D8;
+    /** Tick drawn over the box when it's ticked — vanilla's own is a muted grey at this size. */
+    private static final int COLOUR_CHECKBOX_TICK = 0xFFFFFFFF;
+    /** U+2713. Already proven to render in this game by the book-vote "Reported" label. */
+    private static final String TICK = "\u2713";
 
     private static final int MAX_PANEL_W = 240;
     private static final int PADDING = 12;
@@ -165,6 +169,15 @@ public final class CustomContentPromptScreen extends Screen {
             int box = rememberBox.getHeight();
             g.renderOutline(rememberBox.getX() - 1, rememberBox.getY() - 1,
                 box + 2, box + 2, COLOUR_CHECKBOX_OUTLINE);
+            if (rememberBox.selected()) {
+                // Text, not a fill: glyphs are drawn over widget sprites (the same reason item
+                // stack counts sit on top of item icons), so this lands above vanilla's muted tick
+                // instead of under it.
+                g.drawCenteredString(this.font, TICK,
+                    rememberBox.getX() + box / 2,
+                    rememberBox.getY() + (box - lh) / 2 + 1,
+                    COLOUR_CHECKBOX_TICK);
+            }
         }
     }
 
