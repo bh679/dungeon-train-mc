@@ -94,11 +94,11 @@ public final class CheatDetectionEvents {
         if (RunIntegrity.isPermanentlyCheated(player)) return; // already recorded — let it run (incl. re-dispatch)
         if (!CommandAllowlist.taints(event.getParseResults())) return;
 
-        if (AisDataIntegrity.isSessionFreePlay()) {
-            // The session is already Free Play (AIS data changed) — there is
-            // nothing to confirm or back out of. Just record the permanent taint
-            // (quiet — markCheated skips the notice during a session taint) and
-            // let the command run.
+        if (RunIntegrity.isVisiblySessionFreePlay()) {
+            // The session is already Free Play (AIS data changed, or custom editor content is
+            // active) — there is nothing to confirm or back out of. Just record the permanent
+            // taint (quiet — markCheated skips the notice during a session taint) and let the
+            // command run.
             RunIntegrity.markCheated(player, Component.translatable(
                 "chat.dungeontrain.free_play.cause.command",
                 CommandAllowlist.label(event.getParseResults())));
@@ -131,7 +131,7 @@ public final class CheatDetectionEvents {
      */
     public static boolean requestFreePlayConfirm(ServerPlayer player, String label) {
         if (RunIntegrity.isPermanentlyCheated(player)) return false;
-        if (AisDataIntegrity.isSessionFreePlay()) {
+        if (RunIntegrity.isVisiblySessionFreePlay()) {
             // Already Free Play for the session — nothing to confirm or back out of.
             RunIntegrity.markCheated(player, Component.translatable(
                 "chat.dungeontrain.free_play.cause.creative_mod", label));
