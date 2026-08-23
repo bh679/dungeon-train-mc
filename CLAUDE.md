@@ -294,7 +294,11 @@ loads (Advancement Plaques needs Iceberg).
   `dependency_type` (mod won't load without it) answer different questions — don't conflate them.
   Enforced in CI (`modpack-checks` job in `build.yml`): `check-relations.py` (CurseForge dep) +
   `build-mrpack.py --check-config` (Modrinth pins present) + `check-pins.py` (Sable chain +
-  sibling floors).
+  sibling floors) + `check-overrides.py` (allowlist for `modpack/overrides/`).
+- **`modpack/overrides/` is allowlisted.** The tree ships verbatim to every player, so a config
+  file DT holds to its defaults landing there would put the whole player base into Free Play
+  (`adventureitemstats.properties` → `AisDataIntegrity`). `check-overrides.py` fails CI on any
+  file not in its `ALLOWED` list — adding an override means allowlisting it deliberately.
 - **A CurseForge upload returning 200 is NOT a publish.** CurseForge validates the manifest
   asynchronously and can reject the file afterwards (`Invalid manifest.json file: 500 - "…An
   unhandled exception occurred…"`), leaving the workflow green and the release missing from the

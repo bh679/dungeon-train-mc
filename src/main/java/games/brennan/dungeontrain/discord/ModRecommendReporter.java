@@ -29,6 +29,11 @@ import java.util.UUID;
  *       {@code comment} go to a separate capped, admin-only table ({@code modrecstore.js}).</li>
  * </ul>
  *
+ * <p>A <b>hack report</b> — the ⚠ icon on a mod tile — rides the same path with {@code hack} set:
+ * Discord gets a 🚩 post asking what the mod lets the player do, and the relay payload carries the
+ * flag for a future relay change to count. The current relay drops the field, so a report is only
+ * fully legible in Discord for now.</p>
+ *
  * <p>Sending the text is a deliberate change (2026-08-08, relay v0.128.0), and it is what makes a
  * <b>request</b> legible at all: a mod the player does not have installed has no {@code modId}, so
  * the name they typed is its only identity — previously that name existed nowhere but Discord, where
@@ -54,15 +59,20 @@ public final class ModRecommendReporter {
     private static void postToDiscord(ServerPlayer player, ModRecommendPacket packet) {
         try {
             String name = displayName(packet);
-            String title = packet.requested()
-                    ? "🧩 " + player.getGameProfile().getName() + " asked for a mod"
-                    : "🧩 " + player.getGameProfile().getName() + " recommends a mod";
-            String description = packet.requested()
+            String who = player.getGameProfile().getName();
+            String title = packet.hack()
+                    ? "🚩 " + who + " reported a mod as a hack"
+                    : packet.requested()
+                    ? "🧩 " + who + " asked for a mod"
+                    : "🧩 " + who + " recommends a mod";
+            String description = packet.hack()
+                    ? "Running it now — flagged from the death screen as a cheat/hack mod."
+                    : packet.requested()
                     ? "Not installed — requested from the death screen."
                     : "Running it now — recommended from the death screen.";
             List<DeathField> fields = List.of(
                     new DeathField("Mod", name),
-                    new DeathField("Why", packet.comment()));
+                    new DeathField(packet.hack() ? "What it does" : "Why", packet.comment()));
             DiscordService.get().postSurveyAnswer(player, title, description, fields, List.of());
         } catch (Throwable t) {
             LOGGER.warn("[DungeonTrain] mod recommendation to Discord failed: {}", t.toString());
@@ -92,6 +102,9 @@ public final class ModRecommendReporter {
         body.addProperty("uuid", uuid);
         body.addProperty("modId", packet.requested() ? "" : safe(packet.modId()));
         body.addProperty("requested", packet.requested());
+        // Today's relay ignores this field; it is sent so a later relay change can count flags
+        // without a mod update. Never true alongside "requested" — see the packet's class doc.
+        body.addProperty("hack", packet.hack());
         body.addProperty("name", safe(packet.displayName()).isBlank()
                 // Not displayName()'s "(unnamed)" placeholder: that is a Discord label, and storing
                 // it would put a fake name in a data row the explorer reads as the mod's own.

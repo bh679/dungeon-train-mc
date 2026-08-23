@@ -44,6 +44,7 @@ public final class CommandAllowlist {
      * dev/authoring tools, so running one taints the run. In practice authoring happens in creative
      * (already Free Play), so the editor UI's own commands early-return in
      * {@code CheatDetectionEvents.onCommand}; the taint only bites when one is run from a clean run.
+
      */
     private static final Set<String> DT_ALLOWED_SUBS = Set.of("cinematic", "debug");
 
@@ -55,9 +56,15 @@ public final class CommandAllowlist {
      * social/info commands everyone may run, plus benign "end / reset the run"
      * actions — {@code /new-world} (the dev world-roll command) and bare
      * {@code /kill} (self-kill only — see {@link #isAllowed}). {@code /feedback}
-     * and {@code /bug} (player feedback / bug-report submission) are also exempt.
+     * and {@code /bug} (player feedback / bug-report submission) are also exempt,
+     * as are the config-restore actions {@code /fixaisconfig} and {@code /fixconfig}
+     * — putting the config back the way it shipped is the opposite of cheating, so
+     * the fix must never taint the run it repairs.
      * {@code /playanimation} and {@code /stopsound} (cosmetic, no gameplay
-     * effect) are exempt too. {@code /weather} is deliberately <b>not</b>
+     * effect) are exempt too. {@code /customcontent} is exempt for the same
+     * reason as {@code /fixaisconfig}: it is what the Free Play notice links to
+     * for turning custom editor content OFF, and tainting a player for clicking
+     * the way <em>out</em> of Free Play would be exactly backwards. {@code /weather} is deliberately <b>not</b>
      * exempt — unlike a dedicated server, DT's Free Play system relies on
      * cheat commands actually reaching a normal player (see the class
      * javadoc), so weather changes still need to gate behind the Free Play
@@ -65,7 +72,8 @@ public final class CommandAllowlist {
      */
     private static final Set<String> ALLOWED_ROOTS = Set.of(
         "help", "me", "msg", "tell", "w", "teammsg", "tm", "trigger", "list",
-        "feedback", "bug", "fixaisconfig", "new-world", "playanimation", "stopsound");
+        "feedback", "bug", "fixaisconfig", "fixconfig", "customcontent", "new-world",
+        "playanimation", "stopsound");
 
     private CommandAllowlist() {}
 

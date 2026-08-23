@@ -142,6 +142,14 @@ class CommandAllowlistTest {
     }
 
     @Test
+    @DisplayName("/fixconfig (config-reset Free Play fix action) is allowed")
+    void fixConfigAllowed() {
+        // Putting the config back the way it shipped must never taint the run it repairs.
+        assertFalse(CommandAllowlist.taints("fixconfig"));
+        assertFalse(CommandAllowlist.taints("/fixconfig"));
+    }
+
+    @Test
     @DisplayName("/playanimation (cosmetic entity animation) is allowed")
     void playAnimationAllowed() {
         assertFalse(CommandAllowlist.taints("playanimation @s minecraft:humanoid.emote sneeze"));
@@ -200,6 +208,20 @@ class CommandAllowlistTest {
         // …as do the non-slash-prefixed roots.
         assertTrue(CommandAllowlist.taints("worldedit reload"));
         assertTrue(CommandAllowlist.taints("we reload"));
+    }
+
+    @Test
+    @DisplayName("/customcontent never taints — it is the way OUT of Free Play")
+    void customContentNeverTaints() {
+        // The Free Play notice links straight to this command. Tainting a player for clicking the
+        // "turn my custom content off" line would be exactly backwards — same reasoning that keeps
+        // /fixaisconfig allowlisted. It is a ROOT command, not a /dt subcommand, because /dt is
+        // gated at permission 2 and the player it exists for is an ordinary survival player.
+        assertFalse(CommandAllowlist.taints("/customcontent off"));
+        assertFalse(CommandAllowlist.taints("/customcontent on"));
+        assertFalse(CommandAllowlist.taints("/customcontent status"));
+        // …while the DT authoring commands still do.
+        assertTrue(CommandAllowlist.taints("/dt package disable my-pack"));
     }
 
     @Test

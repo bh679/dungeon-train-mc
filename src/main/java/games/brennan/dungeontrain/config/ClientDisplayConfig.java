@@ -97,6 +97,19 @@ public final class ClientDisplayConfig {
      * state above; the server learns it per-player via {@code ContentModeSyncPacket}.
      */
     public static final ModConfigSpec.EnumValue<ContentMode> CONTENT_MODE;
+    /**
+     * The config deviation the player last chose to keep, as a stable signature (see
+     * {@code ConfigDeviationPromptHandler}). Empty when they have never dismissed the launch
+     * prompt. Signature rather than a plain opt-out flag so a NEW change is still surfaced —
+     * dismissing once doesn't silently sign the player up to every future edit.
+     */
+    public static final ModConfigSpec.ConfigValue<String> CONFIG_DEVIATION_ACKNOWLEDGED;
+
+    /**
+     * Remembered answer to the custom-Train-Editor-content prompt — see
+     * {@link CustomContentPreference}. {@code ASK} means keep prompting.
+     */
+    public static final ModConfigSpec.EnumValue<CustomContentPreference> CUSTOM_CONTENT_PREFERENCE;
 
     /**
      * Whether the player wants community content the relay tagged as politically sensitive filtered
@@ -154,6 +167,8 @@ public final class ClientDisplayConfig {
         DEATH_SCREEN_LAST_NPS = pair.getLeft().deathScreenLastNps;
         POLITICAL_FILTER = pair.getLeft().politicalFilter;
         CONTENT_MODE = pair.getLeft().contentMode;
+        CUSTOM_CONTENT_PREFERENCE = pair.getLeft().customContentPreference;
+        CONFIG_DEVIATION_ACKNOWLEDGED = pair.getLeft().configDeviationAcknowledged;
     }
 
     private ClientDisplayConfig() {}
@@ -296,6 +311,19 @@ public final class ClientDisplayConfig {
                 .defineEnum("mode", ContentMode.ADULT);
         b.pop();
 
+        b.push("customContent");
+        ModConfigSpec.EnumValue<CustomContentPreference> customContentPreference = b
+                .comment("What to do when a world starts with custom Train Editor content active",
+                         "(your own edits, or an imported dtpack).",
+                         "ASK (default) — show the prompt each time a world is entered for the first time.",
+                         "CONTINUE — always play with the custom content. Those runs are Free Play: they",
+                         "  earn advancements live but don't count towards your cross-world profile or stats.",
+                         "DISABLE — always turn custom content off, so the world runs the bundled game and",
+                         "  your stats count. Set from the prompt's \"Remember decision\" checkbox, or the",
+                         "Custom Train Content row in Options -> Dungeon Train...")
+                .defineEnum("preference", CustomContentPreference.ASK);
+        b.pop();
+
         b.push("deathScreen");
         ModConfigSpec.IntValue deathScreenLastNps = b
                 .comment("Internal: the player's most recent NPS (\"how likely to recommend\") answer, 0-10, or -1 if never answered. Used to decide when the death-screen donation page appears. Managed automatically.")
@@ -312,6 +340,15 @@ public final class ClientDisplayConfig {
                 .defineEnum("politicalFilter", PoliticalFilter.UNSET);
         b.pop();
 
+        b.push("configIntegrity");
+        ModConfigSpec.ConfigValue<String> configDeviationAcknowledged = b
+                .comment("Internal: the Dungeon Train config change you last chose to keep at the launch prompt,",
+                         "recorded as a signature of exactly what had been changed. The prompt stays quiet while",
+                         "the config still matches that, and asks again if you change something else. Empty = never",
+                         "dismissed. Managed automatically — clear it by hand to be asked again.")
+                .define("deviationAcknowledged", "");
+        b.pop();
+
         return new Holder(allScale, worldspaceChannel, hudChannel, developerPopupShownBefore, developerPopupOptedOut, freePlayConfirmOptedOut,
                 devConsentGranted, devConsentGrantSession, devConsentLastMsgToDev, openedAdvancementsBefore,
                 rideSnapshotsEnabled, rideSnapshotIntervalSeconds, rideSnapshotMaxStored, rideSnapshotChatLog,
@@ -319,7 +356,8 @@ public final class ClientDisplayConfig {
                 rideSnapshotDiskOffload, rideSnapshotFlushMinFps, rideSnapshotFlushMinTps, rideSnapshotMaxOnDisk,
                 rideSnapshotMaxResolution,
                 framerateThrottleEnabled, framerateThrottleFps, trainEngineVolume, skyboxPunchEnabled, deleteWorldOnReboard, sharedBooksRead,
-                deathScreenLastNps, politicalFilter, contentMode);
+                deathScreenLastNps, politicalFilter, contentMode, customContentPreference,
+                configDeviationAcknowledged);
     }
 
     /**
@@ -434,6 +472,25 @@ public final class ClientDisplayConfig {
         FREE_PLAY_CONFIRM_OPTED_OUT.save();
     }
 
+    // ----- Config deviation prompt (see client/ConfigDeviationPromptHandler) -----
+
+    /**
+     * The deviation signature the player last chose to keep, or {@code ""} when they have never
+     * dismissed the prompt. Compared against the CURRENT signature, so changing the config again
+     * re-arms the prompt.
+     */
+    public static String getConfigDeviationAcknowledged() {
+        return isLoaded() ? CONFIG_DEVIATION_ACKNOWLEDGED.get() : "";
+    }
+
+    /** Remember this exact deviation as "keep my changes". Pass {@code ""} to re-arm the prompt. */
+    public static void setConfigDeviationAcknowledged(String signature) {
+        if (!isLoaded()) return;
+        if (CONFIG_DEVIATION_ACKNOWLEDGED.get().equals(signature)) return; // skip a needless TOML write
+        CONFIG_DEVIATION_ACKNOWLEDGED.set(signature);
+        CONFIG_DEVIATION_ACKNOWLEDGED.save();
+    }
+
     // ----- Political content filter (see client/PoliticalFilterPrefs) -----
 
     /**
@@ -512,6 +569,36 @@ public final class ClientDisplayConfig {
         if (!isLoaded()) return;
         if (OPENED_ADVANCEMENTS_BEFORE.get() == value) return;
         OPENED_ADVANCEMENTS_BEFORE.set(value);
+        OPENED_ADVANCEMENTS_BEFORE.save();
+    }
+
+    /**
+     * Put every "you have seen this once already" client flag back to its first-run value: the
+     * advancements-keybind hint, the developer-popup and Free Play confirm opt-outs, and the last NPS
+     * answer. Used by the Video Tools profile reset, whose whole job is making the mod behave as if
+     * this install had never been played.
+     *
+     * <p>Deliberately narrow: display preferences the player tuned (snapshots, framerate, filters)
+     * are choices, not progress, and are left alone. One {@code .save()} covers the whole TOML.</p>
+     */
+    /**
+     * True when any first-run flag has moved off its fresh-install value — i.e. there is something
+     * for {@link #resetFirstRunFlags} to do. Lets the reset screen say "nothing to reset" honestly.
+     */
+    public static boolean hasFirstRunFlagsSet() {
+        if (!isLoaded()) return false;
+        return OPENED_ADVANCEMENTS_BEFORE.get()
+            || DEVELOPER_POPUP_OPTED_OUT.get()
+            || FREE_PLAY_CONFIRM_OPTED_OUT.get()
+            || DEATH_SCREEN_LAST_NPS.get() >= 0;
+    }
+
+    public static void resetFirstRunFlags() {
+        if (!isLoaded()) return;
+        OPENED_ADVANCEMENTS_BEFORE.set(false);
+        DEVELOPER_POPUP_OPTED_OUT.set(false);
+        FREE_PLAY_CONFIRM_OPTED_OUT.set(false);
+        DEATH_SCREEN_LAST_NPS.set(-1);
         OPENED_ADVANCEMENTS_BEFORE.save();
     }
 
@@ -732,6 +819,28 @@ public final class ClientDisplayConfig {
         CONTENT_MODE.save();
     }
 
+    // ----- Custom Train Editor content prompt (see CustomContentPromptClient) -----
+
+    /**
+     * This client's remembered answer to the custom-content prompt. Defaults to
+     * {@link CustomContentPreference#ASK}, including before the config loads — a pre-load read must
+     * never silently answer a prompt on the player's behalf.
+     */
+    public static CustomContentPreference getCustomContentPreference() {
+        return isLoaded() ? CUSTOM_CONTENT_PREFERENCE.get() : CustomContentPreference.ASK;
+    }
+
+    /**
+     * Persist the remembered answer. Idempotent — skips the TOML write when unchanged. Driven by
+     * the prompt's "Remember decision" checkbox and by the Options row; no-op pre-load.
+     */
+    public static void setCustomContentPreference(CustomContentPreference preference) {
+        if (!isLoaded() || preference == null) return;
+        if (CUSTOM_CONTENT_PREFERENCE.get() == preference) return;
+        CUSTOM_CONTENT_PREFERENCE.set(preference);
+        CUSTOM_CONTENT_PREFERENCE.save();
+    }
+
     // ----- Global client-side community-book read history (see SharedBookReadSyncClient / SharedBookReadMirror) -----
 
     /**
@@ -800,6 +909,8 @@ public final class ClientDisplayConfig {
             ModConfigSpec.ConfigValue<List<? extends String>> sharedBooksRead,
             ModConfigSpec.IntValue deathScreenLastNps,
             ModConfigSpec.EnumValue<PoliticalFilter> politicalFilter,
-            ModConfigSpec.EnumValue<ContentMode> contentMode
+            ModConfigSpec.EnumValue<ContentMode> contentMode,
+            ModConfigSpec.EnumValue<CustomContentPreference> customContentPreference,
+            ModConfigSpec.ConfigValue<String> configDeviationAcknowledged
     ) {}
 }

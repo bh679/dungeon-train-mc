@@ -4,6 +4,7 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.cheat.AisDataIntegrity;
 import games.brennan.dungeontrain.cheat.CheatModIntegrity;
 import games.brennan.dungeontrain.cheat.CommandAllowlist;
+import games.brennan.dungeontrain.cheat.DtConfigIntegrity;
 import games.brennan.dungeontrain.cheat.RunIntegrity;
 import games.brennan.dungeontrain.compat.EnderChestLockBridge;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
@@ -93,11 +94,11 @@ public final class CheatDetectionEvents {
         if (RunIntegrity.isPermanentlyCheated(player)) return; // already recorded — let it run (incl. re-dispatch)
         if (!CommandAllowlist.taints(event.getParseResults())) return;
 
-        if (AisDataIntegrity.isSessionFreePlay()) {
-            // The session is already Free Play (AIS data changed) — there is
-            // nothing to confirm or back out of. Just record the permanent taint
-            // (quiet — markCheated skips the notice during a session taint) and
-            // let the command run.
+        if (RunIntegrity.isVisiblySessionFreePlay()) {
+            // The session is already Free Play (AIS data changed, or custom editor content is
+            // active) — there is nothing to confirm or back out of. Just record the permanent
+            // taint (quiet — markCheated skips the notice during a session taint) and let the
+            // command run.
             RunIntegrity.markCheated(player, Component.translatable(
                 "chat.dungeontrain.free_play.cause.command",
                 CommandAllowlist.label(event.getParseResults())));
@@ -130,7 +131,7 @@ public final class CheatDetectionEvents {
      */
     public static boolean requestFreePlayConfirm(ServerPlayer player, String label) {
         if (RunIntegrity.isPermanentlyCheated(player)) return false;
-        if (AisDataIntegrity.isSessionFreePlay()) {
+        if (RunIntegrity.isVisiblySessionFreePlay()) {
             // Already Free Play for the session — nothing to confirm or back out of.
             RunIntegrity.markCheated(player, Component.translatable(
                 "chat.dungeontrain.free_play.cause.creative_mod", label));
@@ -196,6 +197,25 @@ public final class CheatDetectionEvents {
                     .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/fixaisconfig"))
                     .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
                         Component.literal("/fixaisconfig")))));
+        }
+        if (DtConfigIntegrity.isSessionFreePlay()) {
+            // Session-only DT-config taint (parallel to the AIS block above): markCheated never
+            // runs in this path, so apply the effect and explain WHY here, once per login — with
+            // the exact changed settings and a one-click fix action.
+            RunIntegrity.applyFreePlayEffect(player);
+            RunIntegrity.sendFreePlayNotice(player,
+                Component.translatable("chat.dungeontrain.free_play.cause.dt_config"));
+            player.sendSystemMessage(Component.translatable(
+                    "chat.dungeontrain.free_play.dt_config_changed",
+                    String.join(", ", DtConfigIntegrity.deviations()))
+                .withStyle(ChatFormatting.GRAY));
+            player.sendSystemMessage(Component.translatable("chat.dungeontrain.free_play.dt_config_fix")
+                .withStyle(style -> style
+                    .withColor(ChatFormatting.AQUA)
+                    .withUnderlined(true)
+                    .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/fixconfig"))
+                    .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+                        Component.literal("/fixconfig")))));
         }
         if (CheatModIntegrity.isSessionFreePlay()) {
             // Session-only cheat-mod taint (parallel to the AIS block above): markCheated never

@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class PortalRoomAuthorLocksTest {
 
     private static BookAuthorsClient.Author author(String token) {
-        return new BookAuthorsClient.Author(token, token.toUpperCase(java.util.Locale.ROOT), 12);
+        return BookAuthorsClient.Author.other(token, token.toUpperCase(java.util.Locale.ROOT), 12);
     }
 
     private static final List<BookAuthorsClient.Author> THREE =

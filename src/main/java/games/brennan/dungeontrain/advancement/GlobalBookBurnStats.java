@@ -89,6 +89,17 @@ public final class GlobalBookBurnStats {
         CACHE.remove(uuid);
     }
 
+    /**
+     * Wipe the player's burn counter, cache first so {@link #flushAll} cannot resurrect it.
+     * Mirrors {@code GlobalPlayerStats.deleteFor}.
+     *
+     * @return true when a file was actually removed
+     */
+    public static boolean deleteFor(UUID uuid) throws IOException {
+        CACHE.remove(uuid);
+        return Files.deleteIfExists(file(uuid));
+    }
+
     private static Data loadFromDisk(UUID uuid) {
         Path path = file(uuid);
         if (!Files.isRegularFile(path)) return Data.EMPTY;

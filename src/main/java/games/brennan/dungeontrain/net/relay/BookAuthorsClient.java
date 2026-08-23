@@ -59,7 +59,16 @@ public final class BookAuthorsClient {
      * display {@code name} (a signature — public on every book already), and how many approved books
      * stand behind it.
      */
-    public record Author(String token, String name, int count) {}
+    public record Author(String token, String name, int count, boolean mine) {
+
+        /**
+         * An author page fetched as somebody else's — the ordinary {@code player} / {@code signature}
+         * directories. Never {@code mine}, whoever it turns out to name.
+         */
+        public static Author other(String token, String name, int count) {
+            return new Author(token, name, count, false);
+        }
+    }
 
     /**
      * Fetch the authors within this room's book range and hand the list to
@@ -78,6 +87,9 @@ public final class BookAuthorsClient {
      */
     public static void fetch(String kind, int minBooks, int maxBooks, UUID uuid, boolean kidSafe,
                              Consumer<List<Author>> callback) {
+        // `self` is the only kind that names the caller, so it is the only one whose entries may be
+        // marked `mine` — see parse(String, boolean).
+        final boolean self = "self".equals(kind);
         try {
             StringBuilder url = new StringBuilder(DungeonTrain.relayBaseUrl())
                     .append("/books/authors?kind=")
@@ -103,7 +115,7 @@ public final class BookAuthorsClient {
                             } else if (resp.statusCode() / 100 != 2) {
                                 LOGGER.debug("[DungeonTrain] book-authors fetch -> HTTP {}", resp.statusCode());
                             } else {
-                                out = parse(resp.body());
+                                out = parse(resp.body(), self);
                             }
                         } catch (Throwable t) {
                             LOGGER.debug("[DungeonTrain] book-authors parse failed: {}", t.toString());
@@ -127,8 +139,18 @@ public final class BookAuthorsClient {
         }
     }
 
-    /** Parse {@code {ok, authors:[{token,name,count}]}}; anything malformed yields an empty list. */
-    static List<Author> parse(String body) {
+    /**
+     * Parse {@code {ok, authors:[{token,name,count}]}}; anything malformed yields an empty list.
+     *
+     * <p>{@code mine} is stamped here, from the KIND THAT WAS ASKED FOR, and nowhere else. It has to
+     * be decided at the source: a {@code player}-kind directory contains every author including the
+     * reader, so the same {@code p…} token can arrive both as "my own shelf" and as "a stranger's
+     * shelf I happened to draw", and only the request that produced it can tell those apart. Anything
+     * that tried to work it out downstream — comparing tokens against a cached self page, say — would
+     * answer "no" while that page was still in flight and flip afterwards, which is exactly the window
+     * in which a catalogue gets cached under the wrong key.</p>
+     */
+    static List<Author> parse(String body, boolean mine) {
         JsonElement root = JsonParser.parseString(body);
         if (!root.isJsonObject()) return List.of();
         JsonObject obj = root.getAsJsonObject();
@@ -153,7 +175,7 @@ public final class BookAuthorsClient {
                     // non-numeric count — a nameable author with an unknown tally is still usable
                 }
             }
-            out.add(new Author(token, name, count));
+            out.add(new Author(token, name, count, mine));
         }
         return List.copyOf(out);
     }

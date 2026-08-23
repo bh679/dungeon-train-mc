@@ -45,7 +45,8 @@ jobs:
   # parallel with `build`. check-relations.py enforces the invariant that every modpack
   # Include (optional_mods) is also declared as a dependency of the mod in release.yml
   # (the bug that shipped AppleSkin un-declared in PR #390); check-pins.py guards both
-  # the exact Sable chain and the un-bundled sibling mods' minimum-version floors.
+  # the exact Sable chain and the un-bundled sibling mods' minimum-version floors;
+  # check-overrides.py allowlists the overrides/ tree the pack ships verbatim to players.
   modpack-checks:
     runs-on: ubuntu-latest
     permissions:
@@ -61,6 +62,13 @@ jobs:
         # project+version pin (which would silently drop it from the .mrpack). No network.
         run: python3 scripts/modpack/build-mrpack.py --check-config
 
+      - name: Modpack override allowlist
+        # overrides/ is copied verbatim into every player's instance, so a config file the mod
+        # holds to its defaults (adventureitemstats.properties today — see AisDataIntegrity)
+        # would put EVERY pack user into Free Play. Strict allowlist: any new override file
+        # fails until it is added to ALLOWED in the script. No network.
+        run: python3 scripts/modpack/check-overrides.py
+
       - name: Dependency version pins (Sable chain + sibling floors)
         # Two checks. (1) Sable: fails if sable_mod_version (DT's exact mods.toml lock) or
         # the modpack's sable.version drift from gradle.properties sable_version.
@@ -73,6 +81,7 @@ jobs:
         run: |
           python3 scripts/modpack/test_build_manifest.py
           python3 scripts/modpack/test_check_relations.py
+          python3 scripts/modpack/test_check_overrides.py
           python3 scripts/modpack/test_build_mrpack.py
           python3 scripts/modpack/test_check_pins.py
           python3 scripts/modpack/test_upload_retry.py

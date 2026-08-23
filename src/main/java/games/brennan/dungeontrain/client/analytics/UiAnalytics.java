@@ -92,6 +92,10 @@ public final class UiAnalytics {
     // event 400s and is dropped; the Discord button ON that page reports as TARGET_DISCORD from the
     // title-screen surface, so the funnel keeps counting Discord clicks either way.
     public static final String TARGET_VIDEO_TOOLS = "video_tools";
+    // "Reset Everything" on the Video Tools page — opening the confirm screen, not the wipe itself.
+    // Same whitelist caveat as above: until the relay knows "video_tools_reset" this 400s silently,
+    // which costs a funnel row and nothing else.
+    public static final String TARGET_VIDEO_TOOLS_RESET = "video_tools_reset";
     // Death-screen button targets (see NarrativeDeathScreen). Lock-step with ui-events.js TARGETS.
     public static final String TARGET_CONTRIBUTE = "contribute"; // "Contribute" opens the donate-options window
     public static final String TARGET_BOARD_ANEW = "board_anew";  // "Board anew" — start the next run
@@ -100,6 +104,7 @@ public final class UiAnalytics {
     // A mod recommendation was sent from the MODREC page. The mod itself is NOT a funnel dimension —
     // which mods get recommended is counted by /telemetry/mod-rec, this is only the button press.
     public static final String TARGET_MOD_RECOMMEND = "mod_recommend";
+    public static final String TARGET_MOD_HACK_REPORT = "mod_hack_report";
 
     // Death-screen page identities (the {@code page} dimension on open / page_time / survey_answer).
     // Lock-step with ui-events.js PAGES. The eight paginated death-screen pages, plus the full-screen
