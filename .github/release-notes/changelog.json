@@ -8293,6 +8293,25 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "portal-rate-one-knob",
+      "version": "0.635.0",
+      "type": "feat",
+      "title": "Portal rooms arrive more often, and you can set how often",
+      "summary": "Portal rooms now show up roughly every 5 carriage groups instead of every 15, and there is no longer a minimum distance between them \u2014 two can appear back to back. In Creative they arrive on an exact beat rather than at random, so you always know where the next one is. Set the rate yourself with /dungeontrain portal carriage <n>; doing so switches the world to Free Play for everyone in it, permanently.",
+      "highlights": [
+        "Portal rooms are about three times more common by default",
+        "No minimum spacing \u2014 portals can now land back to back",
+        "In Creative, portals arrive on an exact cadence instead of at random",
+        "/dungeontrain portal carriage <n> sets the rate for the world",
+        "Retuning the rate puts the whole world into Free Play, including players who join later",
+        "Worlds you already have keep their current rate \u2014 the new default applies to new worlds"
+      ],
+      "date": "2026-08-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
