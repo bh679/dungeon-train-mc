@@ -212,6 +212,11 @@ public final class EditorMirror {
      * pass through. Mob entries (state is the AIR sentinel; rotation is a spawn
      * Y-rot, not a block facing) are returned unchanged — their cell still moves,
      * but the spawn orientation isn't reflected (documented editor limitation).
+     *
+     * <p>A lock-group reference ({@code groupRef}) is an id, not a geometry, so
+     * it carries across a reflection untouched. It has to be passed explicitly:
+     * the shorter {@link VariantState} constructor defaults it to 0, which
+     * would quietly turn a referencing entry back into a literal one.</p>
      */
     public static VariantState reflectVariant(VariantState v, boolean flipX, boolean flipY, boolean flipZ) {
         if (v.isMob()) return v;
@@ -220,7 +225,7 @@ public final class EditorMirror {
             v.blockEntityNbt(), v.weight(),
             reflectRotation(v.rotation(), flipX, flipY, flipZ),
             v.linkedLootPrefabId(), v.entityId(),
-            reflectHalf(v.half(), flipY), v.difficulty());
+            reflectHalf(v.half(), flipY), v.difficulty(), v.groupRef());
     }
 
     /** Reflect a whole candidate pool ({@link #reflectVariant} over each entry). */

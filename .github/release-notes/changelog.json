@@ -8244,6 +8244,52 @@
       ],
       "pr": 1061,
       "date": "2026-08-23",
+      "released": true,
+      "released_in": "v0.632.0",
+      "released_at": "2026-08-23T15:15:10Z"
+    },
+    {
+      "id": "editor-plot-transforms",
+      "version": "0.632.0",
+      "type": "feat",
+      "title": "Move, turn and mirror a whole template in the editor",
+      "summary": "The train editor can now rearrange the plot you are standing in, instead of you rebuilding it block by block. Offset slides the build and wraps it at the plot edges, rotate turns it, and flip mirrors it \u2014 and any of the three is a single Ctrl+Z away from being undone.",
+      "highlights": [
+        "/dt editor offset <x> <y> <z> slides the build, wrapping at the plot faces so nothing is lost",
+        "/dt editor rotate 90|180|270 turns the build; a quarter turn needs a square plot, so carriages take 180",
+        "/dt editor flip x|y|z mirrors the build, vertical flips included",
+        "Variant pools, lock groups and container loot pools travel with the blocks \u2014 the build stays wired up"
+      ],
+      "pr": 1062,
+      "date": "2026-08-23",
+      "released": true,
+      "released_in": "v0.632.0",
+      "released_at": "2026-08-23T15:15:10Z"
+    },
+    {
+      "id": "editor-out-of-plot-ghosts",
+      "version": "0.633.0",
+      "type": "feat",
+      "title": "Blocks left outside a template plot show up red",
+      "summary": "Only what sits inside a plot is saved into the template. Anything outside it now wears a red ghost, from anywhere in the editor.",
+      "highlights": [],
+      "date": "2026-08-23",
+      "released": true,
+      "released_in": "v0.633.0",
+      "released_at": "2026-08-23T15:37:53Z"
+    },
+    {
+      "id": "video-tools-reset",
+      "version": "0.634.0",
+      "type": "feat",
+      "title": "Reset your progress",
+      "summary": "A Reset Everything button on the Video Tools page. Wipes your advancements, stats, story progress, Ender Chest and past lives, and deletes your Dungeon Train worlds, so the game treats you as a first-time player again.",
+      "highlights": [
+        "Names every world it will delete and makes you type DELETE first \u2014 there is no undo",
+        "Worlds without Dungeon Train in them are left alone"
+      ],
+      "pr": 1065,
+      "date": "2026-08-23",
       "released": false,
       "released_in": null,
       "released_at": null

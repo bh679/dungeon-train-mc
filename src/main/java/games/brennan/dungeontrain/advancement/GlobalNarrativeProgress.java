@@ -243,4 +243,18 @@ public final class GlobalNarrativeProgress {
         readLetters = null;
         variantsSeen = null;
     }
+
+    /**
+     * Delete {@code global.json} and drop the in-memory cache, so nothing is left to write back and
+     * the next world starts with no letters read and no story variants seen. Used by the Video Tools
+     * profile reset. Cache is cleared first for the same reason {@link #onServerStopped} clears it:
+     * a stale map here would re-save the old progress on the next mutation.
+     *
+     * @return {@code true} when a file was actually removed.
+     */
+    public static synchronized boolean deleteAll() throws IOException {
+        readLetters = null;
+        variantsSeen = null;
+        return Files.deleteIfExists(file());
+    }
 }

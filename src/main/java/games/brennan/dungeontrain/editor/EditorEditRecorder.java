@@ -304,6 +304,32 @@ public final class EditorEditRecorder {
     }
 
     /**
+     * Hand the armed config snapshot for {@code player} over to a caller that
+     * will record the file diff itself, clearing it here so it is not also
+     * pushed as a step of its own at end of tick.
+     *
+     * <p>{@link EditorRegionDiff} uses this. Every {@code /dungeontrain editor}
+     * command arms a config snapshot up front (see {@code CommandEvents}), but a
+     * whole-plot op that writes JSON as well as blocks — a transform moving its
+     * container pools, a clear dropping its variant entries — would then produce
+     * <i>two</i> steps for one action, and cost the author two Ctrl+Z presses.
+     * Folding the files into the region step keeps the history's promise that
+     * one undo means "the last thing I did".</p>
+     *
+     * <p>Only the config half is taken: this tick's block cells and noted
+     * sidecars stay armed, so a hand edit made in the same tick still records
+     * normally. Returns null when nothing was armed.</p>
+     */
+    @Nullable
+    static Map<String, String> takePendingConfig(ServerPlayer player) {
+        Pending pending = PENDING.get(player.getUUID());
+        if (pending == null) return null;
+        Map<String, String> before = pending.configBefore;
+        pending.configBefore = null;
+        return before;
+    }
+
+    /**
      * World positions live mirroring will reflect {@code worldPos} into, or
      * empty when the player's plot has no mirror axis enabled (or is a category
      * {@link BlockVariantPlot#resolveAt} does not cover, e.g. a portal room —
