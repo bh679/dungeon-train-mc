@@ -8178,9 +8178,9 @@
       ],
       "pr": 1058,
       "date": "2026-08-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.630.0",
+      "released_at": "2026-08-23T13:40:00Z"
     },
     {
       "id": "own-books-shelf-and-controls",
@@ -8196,9 +8196,9 @@
         "No thumbs on a book you wrote \u2014 rating your own work was never the point, and it skewed which books everyone else was shown."
       ],
       "date": "2026-08-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.630.0",
+      "released_at": "2026-08-23T13:40:00Z"
     }
   ]
 }
