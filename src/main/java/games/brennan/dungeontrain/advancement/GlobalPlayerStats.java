@@ -279,6 +279,18 @@ public final class GlobalPlayerStats {
         CACHE.remove(uuid);
     }
 
+    /**
+     * Wipe the player's lifetime stats: drop the cached record <em>before</em> unlinking the file, so
+     * a later {@link #flushAll} in the same JVM cannot write the old totals back over the deletion.
+     * Used by the Video Tools profile reset.
+     *
+     * @return true when a file was actually removed
+     */
+    public static boolean deleteFor(UUID uuid) throws IOException {
+        CACHE.remove(uuid);
+        return Files.deleteIfExists(file(uuid));
+    }
+
     private static Data loadFromDisk(UUID uuid) {
         Path path = file(uuid);
         if (!Files.isRegularFile(path)) return Data.EMPTY;

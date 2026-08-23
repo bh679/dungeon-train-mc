@@ -98,6 +98,14 @@ public final class VideoToolsScreen extends Screen {
         y = addTileRow(y, lh);
         y += SECTION_GAP;
 
+        // The reset lives on this page because it exists for filming: a creator shooting a first-run
+        // video needs the mod to behave as if it had never been played, which no new world can do on
+        // its own (the cross-world profile replays onto every world).
+        y = addLeftWrapped(tr("reset.header"), y, lh, COLOUR_HEADER);
+        y += HEADER_GAP;
+        y = addLeftWrapped(tr("reset.desc"), y, lh, COLOUR_DESC);
+        y += SECTION_GAP;
+
         // Where the finished video goes. "…on the Discord" is an inline link so the channel is
         // reachable without scrolling back to the button.
         y = addLeftWrapped(tr("share.header"), y, lh, COLOUR_HEADER);
@@ -123,15 +131,28 @@ public final class VideoToolsScreen extends Screen {
         scrollY = Mth.clamp(scrollY, 0, maxScroll);
 
         int gap = 4;
-        int discordW = 150;
-        int doneW = 100;
-        int rowX = (this.width - (discordW + gap + doneW)) / 2;
+        int resetW = 120;
+        int discordW = 110;
+        int doneW = 70;
+        int rowX = (this.width - (resetW + discordW + doneW + 2 * gap)) / 2;
 
-        addRenderableWidget(new DarkTintedButton(rowX, rowY, discordW, 20,
+        DarkTintedButton reset = new DarkTintedButton(rowX, rowY, resetW, 20,
+                tr("reset.button"), b -> openReset());
+        // Title-screen-only today, so this never fires; the guard is here so putting the page on the
+        // pause menu later cannot hand someone a world-deleting button while that world is loaded.
+        reset.active = Minecraft.getInstance().level == null;
+        addRenderableWidget(reset);
+        addRenderableWidget(new DarkTintedButton(rowX + resetW + gap, rowY, discordW, 20,
                 tr("discord_button"), b -> openDiscord()));
         addRenderableWidget(Button.builder(CommonComponents.GUI_DONE, b -> onClose())
-                .bounds(rowX + discordW + gap, rowY, doneW, 20)
+                .bounds(rowX + resetW + discordW + 2 * gap, rowY, doneW, 20)
                 .build());
+    }
+
+    /** Open the type-to-confirm screen. Nothing is deleted until the player confirms there. */
+    private void openReset() {
+        UiAnalytics.click(UiAnalytics.SURFACE_TITLE_SCREEN, UiAnalytics.TARGET_VIDEO_TOOLS_RESET);
+        Minecraft.getInstance().setScreen(new ResetProgressScreen(this));
     }
 
     /**
