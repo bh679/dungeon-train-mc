@@ -551,6 +551,36 @@ public final class ClientDisplayConfig {
         OPENED_ADVANCEMENTS_BEFORE.save();
     }
 
+    /**
+     * Put every "you have seen this once already" client flag back to its first-run value: the
+     * advancements-keybind hint, the developer-popup and Free Play confirm opt-outs, and the last NPS
+     * answer. Used by the Video Tools profile reset, whose whole job is making the mod behave as if
+     * this install had never been played.
+     *
+     * <p>Deliberately narrow: display preferences the player tuned (snapshots, framerate, filters)
+     * are choices, not progress, and are left alone. One {@code .save()} covers the whole TOML.</p>
+     */
+    /**
+     * True when any first-run flag has moved off its fresh-install value — i.e. there is something
+     * for {@link #resetFirstRunFlags} to do. Lets the reset screen say "nothing to reset" honestly.
+     */
+    public static boolean hasFirstRunFlagsSet() {
+        if (!isLoaded()) return false;
+        return OPENED_ADVANCEMENTS_BEFORE.get()
+            || DEVELOPER_POPUP_OPTED_OUT.get()
+            || FREE_PLAY_CONFIRM_OPTED_OUT.get()
+            || DEATH_SCREEN_LAST_NPS.get() >= 0;
+    }
+
+    public static void resetFirstRunFlags() {
+        if (!isLoaded()) return;
+        OPENED_ADVANCEMENTS_BEFORE.set(false);
+        DEVELOPER_POPUP_OPTED_OUT.set(false);
+        FREE_PLAY_CONFIRM_OPTED_OUT.set(false);
+        DEATH_SCREEN_LAST_NPS.set(-1);
+        OPENED_ADVANCEMENTS_BEFORE.save();
+    }
+
     // ----- Ride snapshots (third-person photos used as death-screen backgrounds) -----
 
     /** Capture + death-screen backdrops on? Defaults to {@code true} (also pre-load). */
