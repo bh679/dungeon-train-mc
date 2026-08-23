@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.portal;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
+import games.brennan.dungeontrain.event.NetworkConsentMirror;
 import games.brennan.dungeontrain.narrative.AuthorBookPool;
 import games.brennan.dungeontrain.net.relay.BookAuthorsClient;
 import net.minecraft.server.level.ServerPlayer;
@@ -38,8 +39,9 @@ import java.util.concurrent.ConcurrentHashMap;
  * <p>An author whose catalogue comes back empty — they were counted on a rating this world cannot be
  * served, or the relay lost them between the two calls — is discarded and the next candidate tried,
  * up to {@link #MAX_ATTEMPTS}. {@link PortalRoomBooks#SELF} starts from the holder's own catalogue and
- * rotates into the random-player pool when they have written nothing, which is most players. Only when
- * nothing at all resolves does the room quietly serve ordinary books.</p>
+ * rotates into the random-player pool when they have written nothing, which is most players — or when
+ * they have not granted network access, since asking for their shelf means sending their uuid. Only
+ * when nothing at all resolves does the room quietly serve ordinary books.</p>
  *
  * <h2>Self is per player, the others are per room</h2>
  * <p>Under {@link PortalRoomBooks#SELF} two people in one room are reading two different libraries, so
@@ -205,13 +207,43 @@ public final class PortalRoomAuthorLocks {
      */
     private static boolean directoriesAnswered(ServerPlayer player, PortalRoomBooks.Share share,
                                                PortalRoomBooks books) {
-        if (share.isSelf()
-                && !DIRECTORY.containsKey(PortalRoomBooks.Share.SELF.directoryKind() + ':' + player.getUUID())) {
-            return false;
-        }
+        boolean useSelf = useSelfDirectory(share, consented(player));
+        boolean selfPage = DIRECTORY.containsKey(
+            PortalRoomBooks.Share.SELF.directoryKind() + ':' + player.getUUID());
         String kind = share.isSelf()
             ? PortalRoomBooks.Share.PLAYER.directoryKind() : share.directoryKind();
-        return DIRECTORY.containsKey(kind + ':' + books.minBooks() + ':' + books.maxBooks());
+        boolean poolPage = DIRECTORY.containsKey(kind + ':' + books.minBooks() + ':' + books.maxBooks());
+        return answered(useSelf, selfPage, poolPage);
+    }
+
+    /**
+     * PENDING vs NONE, given which pages this room is actually waiting on.
+     *
+     * <p>Pure and package-private so the wedge case can be tested without a server. The one that
+     * matters: a room whose holder declined network access never asks for a self page, so it must not
+     * wait on one — waiting would pin it at {@link Outcome#PENDING} for as long as it stands, and
+     * {@link PortalRoomLibrarian} would re-ask every tick and never report the room settled.</p>
+     */
+    static boolean answered(boolean useSelf, boolean selfPagePresent, boolean poolPagePresent) {
+        return (!useSelf || selfPagePresent) && poolPagePresent;
+    }
+
+    /**
+     * Whether this room should consult the holder's own shelf: the Self share, and only where the
+     * holder has granted network access.
+     *
+     * <p>The self page is the one directory call that names a person — it goes out as {@code &uuid=}
+     * (see {@link BookAuthorsClient#fetch}), which is exactly what the network-consent prompt governs.
+     * Declined, the room simply rotates into the random-player directory, the same path it already
+     * takes for the many players who have written nothing. Pure and package-private for the test.</p>
+     */
+    static boolean useSelfDirectory(PortalRoomBooks.Share share, boolean consented) {
+        return share != null && share.isSelf() && consented;
+    }
+
+    /** Has this player's client synced network consent? The self page sends their uuid. */
+    private static boolean consented(ServerPlayer player) {
+        return NetworkConsentMirror.isGranted(player);
     }
 
     /**
@@ -233,12 +265,13 @@ public final class PortalRoomAuthorLocks {
      *
      * <p>Under {@link PortalRoomBooks.Share#SELF} the reader's own entry comes first and the
      * random-player directory is the rotation behind it — which is what makes Self work for the many
-     * players who have written nothing, rather than leaving their rooms bare.</p>
+     * players who have written nothing, rather than leaving their rooms bare. That same rotation is
+     * what serves a holder who declined network access: their shelf is never asked for.</p>
      */
     private static Optional<BookAuthorsClient.Author> nextCandidate(ServerPlayer player, Key key,
                                                                    PortalRoomBooks.Share share,
                                                                    PortalRoomBooks books, boolean kidSafe) {
-        if (share.isSelf()) {
+        if (useSelfDirectory(share, consented(player))) {
             // The reader's own shelf is exempt from the room's range: finding YOUR two books in a
             // room is the point of the Self share, and a floor meant for strangers should not veto it.
             Optional<BookAuthorsClient.Author> self =
@@ -311,6 +344,9 @@ public final class PortalRoomAuthorLocks {
     /** Pull a directory page for {@code kind}, once at a time. Caches an empty page as "asked, nothing". */
     private static void fetchDirectory(String kind, String cacheKey, ServerPlayer player,
                                        PortalRoomBooks books, boolean kidSafe) {
+        // Unreachable while nextCandidate holds the gate; kept so a later caller cannot send a uuid
+        // the player never agreed to. Ahead of the in-flight mark, which nothing would then clear.
+        if ("self".equals(kind) && !consented(player)) return;
         if (!DIRECTORY_IN_FLIGHT.add(cacheKey)) return;
         UUID uuid = "self".equals(kind) ? player.getUUID() : null;
         BookAuthorsClient.fetch(kind, books.minBooks(), books.maxBooks(), uuid, kidSafe,
