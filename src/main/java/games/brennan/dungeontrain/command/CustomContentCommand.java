@@ -22,9 +22,10 @@ import net.minecraft.network.chat.Component;
  * must not be permanently marked for doing so. Same reasoning that put
  * {@code /fixaisconfig} on the allowlist.</p>
  *
- * <p>Requires permission level 2 in line with the other world-changing DT
- * subcommands: on a shared server the content roster is the host's call, and
- * flipping it re-stamps what everyone generates from here on.</p>
+ * <p>No {@code requires} of its own: the {@code /dungeontrain} root already gates
+ * the whole tree at permission level 2, and re-stating it on the child nodes is
+ * the difference between this command working and the Free Play notice's link
+ * dead-ending in "Unknown or incomplete command".</p>
  */
 public final class CustomContentCommand {
 
@@ -36,10 +37,8 @@ public final class CustomContentCommand {
             .then(Commands.literal("status")
                 .executes(ctx -> runStatus(ctx.getSource())))
             .then(Commands.literal("on")
-                .requires(source -> source.hasPermission(2))
                 .executes(ctx -> runSet(ctx.getSource(), CustomContentChoice.ALLOW)))
             .then(Commands.literal("off")
-                .requires(source -> source.hasPermission(2))
                 .executes(ctx -> runSet(ctx.getSource(), CustomContentChoice.DISABLE)))
             .executes(ctx -> runStatus(ctx.getSource()));
     }

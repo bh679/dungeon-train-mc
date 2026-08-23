@@ -11,6 +11,7 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -23,42 +24,44 @@ import java.util.List;
  * persists the answer to {@link ClientDisplayConfig} and is changeable later in
  * Options → Dungeon Train.</p>
  *
- * <p>Drawn with the same vanilla tooltip frame as {@link FreePlayConfirmScreen}
- * so the two prompts read as one family of UI.</p>
+ * <p><b>Full-screen</b>, unlike the narrow tooltip-framed
+ * {@link FreePlayConfirmScreen}: that one interrupts an action the player just
+ * took and should stay out of the way, while this one greets them as the world
+ * opens and is the only thing they should be looking at. The world is covered
+ * by an opaque backdrop rather than the usual dim, so nothing competes with the
+ * choice.</p>
  */
 public final class CustomContentPromptScreen extends Screen {
 
-    // Vanilla tooltip palette — kept in step with FreePlayConfirmScreen.
-    private static final int FRAME_BG = 0xF0100010;
-    private static final int FRAME_BORDER_TOP = 0x505000FF;
-    private static final int FRAME_BORDER_BOTTOM = 0x5028007F;
+    /** Opaque backdrop — this is the whole screen, not a panel floating over the world. */
+    private static final int BACKDROP = 0xF00A0A12;
+    /** Hairline rules above and below the title, the one piece of chrome the screen keeps. */
+    private static final int COLOUR_RULE = 0x40FFFFFF;
 
     private static final int TITLE_TEAL = 0xFF5BC8C2;
     private static final int COLOUR_BODY = 0xFFE0E0E0;
     private static final int COLOUR_CONSEQ = 0xFFB8B8B8;
     private static final int COLOUR_PACKAGES = 0xFF7E7E8C;
-    private static final int COLOUR_SEPARATOR = 0x40FFFFFF;
 
-    private static final int MAX_PANEL_W = 240;
-    private static final int PADDING = 12;
-    private static final int LINE_GAP = 1;
-    private static final int SECTION_GAP = 7;
-    private static final int TITLE_SEP_GAP = 6;
+    /** Text column width. Capped so lines stay readable on a wide monitor. */
+    private static final int MAX_TEXT_W = 340;
+    private static final int BUTTON_W = 220;
     private static final int BUTTON_H = 20;
-    private static final int BUTTON_GAP = 4;
-    private static final int CHECKBOX_H = 20;
+    private static final int LINE_GAP = 2;
+    private static final int SECTION_GAP = 12;
+    private static final int TITLE_GAP = 14;
+    private static final int BUTTON_GAP = 6;
 
     private final String packages;
     private Checkbox rememberBox;
     private boolean responded = false;
 
-    // Layout, computed in init() and reused by render().
-    private int panelX, panelY, panelW, panelH;
-    private int titleRelY, bodyRelY, keepRelY, disableRelY, packagesRelY;
-    private List<FormattedCharSequence> bodyLines = List.of();
-    private List<FormattedCharSequence> keepLines = List.of();
-    private List<FormattedCharSequence> disableLines = List.of();
-    private List<FormattedCharSequence> packageLines = List.of();
+    /** One block of pre-wrapped lines with its colour, laid out top-down in {@link #render}. */
+    private record Block(List<FormattedCharSequence> lines, int colour) {}
+
+    private final List<Block> blocks = new ArrayList<>();
+    private int titleY;
+    private int bodyTopY;
 
     public CustomContentPromptScreen(String packages) {
         super(Component.translatable("gui.dungeontrain.custom_content.title"));
@@ -67,45 +70,51 @@ public final class CustomContentPromptScreen extends Screen {
 
     @Override
     protected void init() {
-        panelW = Math.min(MAX_PANEL_W, this.width - 40);
-        int innerW = panelW - 2 * PADDING;
+        blocks.clear();
+        int textW = Math.min(MAX_TEXT_W, this.width - 40);
+        int cx = this.width / 2;
         int lh = this.font.lineHeight;
 
-        bodyLines = this.font.split(Component.translatable("gui.dungeontrain.custom_content.body"), innerW);
-        keepLines = this.font.split(Component.translatable("gui.dungeontrain.custom_content.keep"), innerW);
-        disableLines = this.font.split(Component.translatable("gui.dungeontrain.custom_content.disable"), innerW);
-        packageLines = packages.isBlank()
-            ? List.of()
-            : this.font.split(Component.translatable("gui.dungeontrain.custom_content.packages", packages), innerW);
+        addBlock("gui.dungeontrain.custom_content.body", textW, COLOUR_BODY);
+        addBlock("gui.dungeontrain.custom_content.keep", textW, COLOUR_CONSEQ);
+        addBlock("gui.dungeontrain.custom_content.disable", textW, COLOUR_CONSEQ);
+        if (!packages.isBlank()) {
+            blocks.add(new Block(this.font.split(
+                Component.translatable("gui.dungeontrain.custom_content.packages", packages), textW),
+                COLOUR_PACKAGES));
+        }
 
-        int y = PADDING;
-        titleRelY = y;    y += lh + TITLE_SEP_GAP;
-        bodyRelY = y;     y += bodyLines.size() * (lh + LINE_GAP) + SECTION_GAP;
-        keepRelY = y;     y += keepLines.size() * (lh + LINE_GAP);
-        disableRelY = y;  y += disableLines.size() * (lh + LINE_GAP) + SECTION_GAP;
-        packagesRelY = y; y += packageLines.size() * (lh + LINE_GAP);
-        if (!packageLines.isEmpty()) y += SECTION_GAP;
-        int checkboxRelY = y; y += CHECKBOX_H + SECTION_GAP;
-        int continueRelY = y; y += BUTTON_H + BUTTON_GAP;
-        int disableBtnRelY = y; y += BUTTON_H + PADDING;
-        panelH = y;
+        // Measure the whole stack, then centre it vertically — the screen is full-bleed, so the
+        // content should sit in the middle of it rather than hang off a fixed top margin.
+        int textH = 0;
+        for (Block b : blocks) textH += b.lines().size() * (lh + LINE_GAP) + SECTION_GAP;
+        int controlsH = BUTTON_H /* checkbox */ + SECTION_GAP + 2 * BUTTON_H + BUTTON_GAP;
+        int totalH = lh + TITLE_GAP + textH + SECTION_GAP + controlsH;
 
-        panelX = (this.width - panelW) / 2;
-        panelY = (this.height - panelH) / 2;
+        titleY = Math.max(20, (this.height - totalH) / 2);
+        bodyTopY = titleY + lh + TITLE_GAP;
+
+        int y = bodyTopY + textH + SECTION_GAP;
 
         rememberBox = Checkbox.builder(
                 Component.translatable("gui.dungeontrain.custom_content.remember"), this.font)
-            .pos(panelX + PADDING, panelY + checkboxRelY)
+            .pos(cx - BUTTON_W / 2, y)
             .selected(!ClientDisplayConfig.getCustomContentPreference().asks())
             .build();
         addRenderableWidget(rememberBox);
+        y += BUTTON_H + SECTION_GAP;
 
         addRenderableWidget(Button.builder(
                 Component.translatable("gui.dungeontrain.custom_content.continue"), b -> respond(true))
-            .bounds(panelX + PADDING, panelY + continueRelY, innerW, BUTTON_H).build());
+            .bounds(cx - BUTTON_W / 2, y, BUTTON_W, BUTTON_H).build());
+        y += BUTTON_H + BUTTON_GAP;
         addRenderableWidget(Button.builder(
                 Component.translatable("gui.dungeontrain.custom_content.disable_button"), b -> respond(false))
-            .bounds(panelX + PADDING, panelY + disableBtnRelY, innerW, BUTTON_H).build());
+            .bounds(cx - BUTTON_W / 2, y, BUTTON_W, BUTTON_H).build());
+    }
+
+    private void addBlock(String translationKey, int textW, int colour) {
+        blocks.add(new Block(this.font.split(Component.translatable(translationKey), textW), colour));
     }
 
     private void respond(boolean keepContent) {
@@ -133,37 +142,31 @@ public final class CustomContentPromptScreen extends Screen {
         super.onClose();
     }
 
+    /** Full-bleed: paint our own opaque backdrop instead of the usual world dim. */
+    @Override
+    public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+        g.fill(0, 0, this.width, this.height, BACKDROP);
+    }
+
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
         super.render(g, mouseX, mouseY, partialTick);
-        drawFrame(g, panelX, panelY, panelX + panelW, panelY + panelH);
 
-        int cx = panelX + panelW / 2;
+        int cx = this.width / 2;
         int lh = this.font.lineHeight;
+        int textW = Math.min(MAX_TEXT_W, this.width - 40);
 
-        g.drawCenteredString(this.font, this.title, cx, panelY + titleRelY, TITLE_TEAL);
-        int sepY = panelY + titleRelY + lh + 2;
-        g.fill(panelX + 10, sepY, panelX + panelW - 10, sepY + 1, COLOUR_SEPARATOR);
+        g.drawCenteredString(this.font, this.title, cx, titleY, TITLE_TEAL);
+        int ruleY = titleY + lh + 5;
+        g.fill(cx - textW / 2, ruleY, cx + textW / 2, ruleY + 1, COLOUR_RULE);
 
-        drawLines(g, bodyLines, cx, panelY + bodyRelY, COLOUR_BODY, lh);
-        drawLines(g, keepLines, cx, panelY + keepRelY, COLOUR_CONSEQ, lh);
-        drawLines(g, disableLines, cx, panelY + disableRelY, COLOUR_CONSEQ, lh);
-        drawLines(g, packageLines, cx, panelY + packagesRelY, COLOUR_PACKAGES, lh);
-    }
-
-    private void drawLines(GuiGraphics g, List<FormattedCharSequence> lines, int cx, int y, int colour, int lh) {
-        for (FormattedCharSequence line : lines) {
-            g.drawCenteredString(this.font, line, cx, y, colour);
-            y += lh + LINE_GAP;
+        int y = bodyTopY;
+        for (Block block : blocks) {
+            for (FormattedCharSequence line : block.lines()) {
+                g.drawCenteredString(this.font, line, cx, y, block.colour());
+                y += lh + LINE_GAP;
+            }
+            y += SECTION_GAP;
         }
-    }
-
-    /** Vanilla tooltip-style frame: dark fill + purple gradient border. */
-    private static void drawFrame(GuiGraphics g, int x0, int y0, int x1, int y1) {
-        g.fill(x0, y0, x1, y1, FRAME_BG);
-        g.fill(x0, y0, x1, y0 + 1, FRAME_BORDER_TOP);
-        g.fill(x0, y1 - 1, x1, y1, FRAME_BORDER_BOTTOM);
-        g.fillGradient(x0, y0 + 1, x0 + 1, y1 - 1, FRAME_BORDER_TOP, FRAME_BORDER_BOTTOM);
-        g.fillGradient(x1 - 1, y0 + 1, x1, y1 - 1, FRAME_BORDER_TOP, FRAME_BORDER_BOTTOM);
     }
 }
