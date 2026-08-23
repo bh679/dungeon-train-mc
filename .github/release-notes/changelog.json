@@ -8244,9 +8244,9 @@
       ],
       "pr": 1061,
       "date": "2026-08-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.632.0",
+      "released_at": "2026-08-23T15:15:10Z"
     },
     {
       "id": "editor-plot-transforms",
@@ -8262,9 +8262,9 @@
       ],
       "pr": 1062,
       "date": "2026-08-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.632.0",
+      "released_at": "2026-08-23T15:15:10Z"
     }
   ]
 }
