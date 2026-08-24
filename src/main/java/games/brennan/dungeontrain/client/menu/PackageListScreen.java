@@ -17,9 +17,14 @@ import java.util.List;
  * <ul>
  *   <li><b>Name</b> — clicking activates the package (server-side mutation
  *       through {@code /dungeontrain package activate <name>}).</li>
- *   <li><b>Save</b> — typing field pre-filled with the package's current
- *       name (empty for the unsaved pseudo-package). On submit, dispatches
- *       {@code /dungeontrain package save <name>}.</li>
+ *   <li><b>Save</b> — shown on the <i>active</i> row only, because the
+ *       save always applies to the active package. Typing field pre-filled
+ *       with that package's current name (empty for the unsaved
+ *       pseudo-package). On submit, dispatches
+ *       {@code /dungeontrain package save <name>}. Typing a name other
+ *       than the active package's saves a <i>copy</i> under that name and
+ *       leaves the original package on disk untouched. Inactive rows
+ *       render a "—" label.</li>
  *   <li><b>Open</b> — opens the package's working folder in the OS file
  *       manager. Client-side only.</li>
  *   <li><b>Enable</b> — toggles via {@code /dungeontrain package enable}
@@ -96,14 +101,23 @@ public final class PackageListScreen implements MenuScreen {
             isActive
         );
 
-        String saveInitial = isUnsaved ? "" : entry.name();
-        CommandMenuEntry save = new CommandMenuEntry.TypeArg(
-            "Save",
-            "name",
-            "dungeontrain package save",
-            "",
-            saveInitial
-        );
+        // Save acts on the ACTIVE package, whatever row it's clicked from, so it
+        // only appears on the active row. Drawn on every row it read as "save
+        // this package" and instead saved a different one — which is how players
+        // ended up overwriting the wrong pack.
+        CommandMenuEntry save;
+        if (isActive) {
+            String saveInitial = isUnsaved ? "" : entry.name();
+            save = new CommandMenuEntry.TypeArg(
+                "Save",
+                "name",
+                "dungeontrain package save",
+                "",
+                saveInitial
+            );
+        } else {
+            save = new CommandMenuEntry.Label("\u2014");
+        }
 
         final String packageName = entry.name();
         CommandMenuEntry open = new CommandMenuEntry.ClientAction(
