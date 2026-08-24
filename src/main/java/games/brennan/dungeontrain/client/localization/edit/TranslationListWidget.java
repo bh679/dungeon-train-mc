@@ -33,13 +33,12 @@ import java.util.function.Consumer;
 public final class TranslationListWidget extends AbstractWidget {
 
     private static final int PAD = 4;
-    private static final int SCROLLBAR_W = 3;
+    private static final int SCROLLBAR_W = ListScrollbar.WIDTH;
     private static final int ROW_LINES = 3;
 
     private static final int BG = 0x66000000;
     private static final int ROW_HOVER = 0x33FFFFFF;
     private static final int ROW_ALT = 0x18FFFFFF;
-    private static final int SCROLLBAR = 0x80AAB0BE;
     private static final int KEY_COLOUR = 0xFF7F7F7F;
     private static final int SOURCE_COLOUR = 0xFFFFFFFF;
     private static final int SHIPPED_COLOUR = 0xFFA0A0A0;
@@ -57,6 +56,7 @@ public final class TranslationListWidget extends AbstractWidget {
 
     private final Font font;
     private final Consumer<TranslationUnit> onSelect;
+    private final ListScrollbar scrollbar = new ListScrollbar();
 
     private List<TranslationUnit> units = List.of();
     /** The overrides for the locale being EDITED, which on a dev build is not the one displayed. */
@@ -165,7 +165,7 @@ public final class TranslationListWidget extends AbstractWidget {
             renderRow(g, units.get(i), i, rowY, rowH, textWidth, mouseX, mouseY);
         }
         g.disableScissor();
-        renderScrollbar(g);
+        scrollbar.render(g, getX(), getY(), width, height, totalHeight(), scroll, maxScroll());
     }
 
     private void renderRow(GuiGraphics g, TranslationUnit unit, int index, int rowY, int rowH,
@@ -238,21 +238,17 @@ public final class TranslationListWidget extends AbstractWidget {
         return font.plainSubstrByWidth(text.replace('\n', ' ').replace('\r', ' '), maxWidth);
     }
 
-    private void renderScrollbar(GuiGraphics g) {
-        int max = maxScroll();
-        if (max <= 0) {
-            return;
-        }
-        int trackX = getX() + width - SCROLLBAR_W - 1;
-        int thumbH = Math.max(12, (int) ((long) height * height / totalHeight()));
-        int thumbY = getY() + (int) ((long) (height - thumbH) * scroll / max);
-        g.fill(trackX, thumbY, trackX + SCROLLBAR_W, thumbY + thumbH, SCROLLBAR);
-    }
-
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (!visible || !active || button != 0 || !isMouseOver(mouseX, mouseY) || units.isEmpty()) {
             return false;
+        }
+        // The bar first, and only where there is one: a press on the track is aimed at the
+        // scrollbar, not at the row it happens to be drawn over.
+        if (maxScroll() > 0 && scrollbar.isOverTrack(mouseX, getX(), width)) {
+            scrollbar.begin();
+            scroll = scrollbar.scrollFor(mouseY, getY(), height, totalHeight(), maxScroll());
+            return true;
         }
         int index = (int) ((mouseY - getY() + scroll) / rowHeight());
         if (index < 0 || index >= units.size()) {
@@ -264,12 +260,38 @@ public final class TranslationListWidget extends AbstractWidget {
     }
 
     @Override
+    public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX,
+                                double dragY) {
+        if (!scrollbar.isDragging()) {
+            return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
+        }
+        scroll = scrollbar.scrollFor(mouseY, getY(), height, totalHeight(), maxScroll());
+        return true;
+    }
+
+    @Override
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        scrollbar.end();
+        return super.mouseReleased(mouseX, mouseY, button);
+    }
+
+    @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
         if (!visible || !isMouseOver(mouseX, mouseY) || maxScroll() == 0) {
             return false;
         }
         scroll = Mth.clamp(scroll - (int) (scrollY * font.lineHeight * 3), 0, maxScroll());
         return true;
+    }
+
+    /** Where the list is scrolled to, so the screen can put it back after a rebuild. */
+    public int scrollOffset() {
+        return scroll;
+    }
+
+    /** Restore a scroll position captured before a rebuild; clamped to what the list now holds. */
+    public void setScrollOffset(int offset) {
+        this.scroll = Mth.clamp(offset, 0, maxScroll());
     }
 
     /** Scroll so {@code index} is visible — used when jumping to the next unreviewed unit. */
