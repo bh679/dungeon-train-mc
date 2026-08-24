@@ -10,7 +10,36 @@ package games.brennan.dungeontrain.client.localization.edit;
  */
 public final class TranslationFilters {
 
+    /**
+     * Vanilla locales that are English wearing a hat but do not carry the {@code en_} prefix.
+     * LOLCAT is its own code. See {@link #isTranslatableLocale}.
+     */
+    private static final java.util.Set<String> JOKE_LOCALES = java.util.Set.of("lol_us");
+
     private TranslationFilters() {}
+
+    /**
+     * Whether {@code locale} is a language Dungeon Train could be translated into at all.
+     *
+     * <p>Deliberately NOT "a language the mod already ships": that rule made the nineteen locales
+     * with a lang file the only ones anybody could work on, so a player whose language had nothing
+     * was shown no way to start it. Every real language is translatable; what it has already is a
+     * separate question, and the one the editor answers by showing blank strings.</p>
+     *
+     * <p>What stays excluded is the English family and the joke locales — {@code en_us} itself,
+     * {@code en_au}, {@code en_gb}, {@code en_pt} (Pirate), {@code en_ud} (upside down),
+     * {@code lol_us}. Those render English by vanilla's own fallback whatever the mod does, so
+     * there is genuinely nothing there to translate and submissions against them could never be
+     * applied. A prefix rule rather than a list of codes, so a locale Mojang adds to the family
+     * later is covered without a release.</p>
+     */
+    public static boolean isTranslatableLocale(String locale) {
+        if (locale == null || locale.isBlank()) {
+            return false;
+        }
+        String code = locale.trim().toLowerCase(java.util.Locale.ROOT);
+        return !code.startsWith("en_") && !JOKE_LOCALES.contains(code);
+    }
 
     /** This layer's override for {@code unit}, or null — the two bodies are keyed separately. */
     public static String overrideOf(TranslationUnit unit, TranslationEdits edits) {

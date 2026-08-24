@@ -156,10 +156,12 @@ public final class LanguageScreenTranslateButton {
         int strip = rowHeight + GAP;
         int contentTop = screen.layout.getHeaderHeight();
         int contentHeight = screen.layout.getContentHeight();
-        if (contentHeight - strip < rowHeight) {
+        if (LanguageScreenLayout.heightIfBottom(screen, strip) < rowHeight) {
             return false; // a window too short to give the line room
         }
-        list.updateSizeAndPosition(list.getWidth(), contentHeight - strip, contentTop);
+        // Through the layout owner rather than straight at the list: the search row above it is a
+        // separate Init.Post handler taking its own strip, and NeoForge does not order the two.
+        LanguageScreenLayout.reserveBottom(screen, strip);
 
         AbstractWidget warning = findWarning(screen);
         int lineHeight = Minecraft.getInstance().font.lineHeight;

@@ -123,29 +123,73 @@ public final class TranslationCatalog {
         }
     }
 
+    /**
+     * Book prose, driven by the ENGLISH originals rather than by what the locale happens to have.
+     *
+     * <p>The direction is the whole point. Reading the locale's own directory and iterating its
+     * fields — which is what this did — can only ever show prose somebody has already translated:
+     * a book the locale has never touched has no file, a field nobody filled in has no entry, and
+     * both were simply absent from the editor. That is exactly the work a translator is looking
+     * for, so the one body of text they most needed to find was the one they could not.</p>
+     *
+     * <p>English first, then the locale's own extras, mirroring {@link #collectLangUnits}'s union —
+     * a field or a book that exists only in the locale is still real and still editable.</p>
+     */
     private static void collectBookUnits(String locale, List<TranslationUnit> out) {
         String root = NARRATIVE_ROOT + "/" + locale;
-        Map<String, String> files = ModJarResources.readAll(root, JSON_EXT);
-        for (Map.Entry<String, String> file : files.entrySet()) {
-            String bookPath = file.getKey().substring(root.length() + 1,
-                file.getKey().length() - JSON_EXT.length());
-            Map<String, String> translated = NarrativeBookFields.flatten(file.getValue());
-            if (translated.isEmpty()) {
-                continue;
+        Map<String, String> localeFiles = ModJarResources.readAll(root, JSON_EXT);
+
+        // Both English trees, keyed the way the locale overlay names them (see englishPathFor).
+        Map<String, String> englishByBook = new LinkedHashMap<>();
+        for (Map.Entry<String, String> file : ModJarResources.readAll(NARRATIVES_BASE, JSON_EXT).entrySet()) {
+            englishByBook.put(bookPathFor(file.getKey()), file.getValue());
+        }
+        for (Map.Entry<String, String> file : ModJarResources.readAll(DEATH_LORE_BASE, JSON_EXT).entrySet()) {
+            englishByBook.put(bookPathFor(file.getKey()), file.getValue());
+        }
+
+        Set<String> bookPaths = new LinkedHashSet<>(englishByBook.keySet());
+        for (String path : localeFiles.keySet()) {
+            bookPaths.add(path.substring(root.length() + 1, path.length() - JSON_EXT.length()));
+        }
+
+        for (String bookPath : bookPaths) {
+            Map<String, String> english = NarrativeBookFields.flatten(englishByBook.get(bookPath));
+            Map<String, String> translated = NarrativeBookFields.flatten(
+                localeFiles.get(root + "/" + bookPath + JSON_EXT));
+            if (english.isEmpty() && translated.isEmpty()) {
+                continue; // not prose — an index or a malformed file, with nothing to show either way
             }
-            Map<String, String> english =
-                NarrativeBookFields.flatten(ModJarResources.read(englishPathFor(bookPath)));
             boolean aiUnreviewed = ProvenanceManifestRegistry.isAiUnreviewedBook(locale, bookPath);
-            for (Map.Entry<String, String> field : translated.entrySet()) {
+            Set<String> fields = new LinkedHashSet<>(english.keySet());
+            fields.addAll(translated.keySet());
+            for (String field : fields) {
                 out.add(new TranslationUnit(
                     TranslationUnit.Type.BOOK,
                     "dungeontrain",
-                    bookPath + "#" + field.getKey(),
-                    english.getOrDefault(field.getKey(), ""),
-                    field.getValue(),
+                    bookPath + "#" + field,
+                    english.getOrDefault(field, ""),
+                    translated.getOrDefault(field, ""),
                     aiUnreviewed));
             }
         }
+    }
+
+    /**
+     * The locale-relative book path an English resource path belongs to — the inverse of
+     * {@link #englishPathFor}, and the reason both live next to each other.
+     */
+    static String bookPathFor(String englishPath) {
+        String path = englishPath.endsWith(JSON_EXT)
+            ? englishPath.substring(0, englishPath.length() - JSON_EXT.length())
+            : englishPath;
+        if (path.startsWith(DEATH_LORE_BASE + "/")) {
+            return DEATH_LORE_CATEGORY + path.substring(DEATH_LORE_BASE.length() + 1);
+        }
+        if (path.startsWith(NARRATIVES_BASE + "/")) {
+            return path.substring(NARRATIVES_BASE.length() + 1);
+        }
+        return path;
     }
 
     /**
