@@ -271,6 +271,18 @@ public final class PortalCommand {
                 + ": entry corridor, one cart, exit corridor. "
                 + "Walk the train to find one — the twin is stamped as you approach."), true);
 
+        if (PortalCarriageSelection.isGapClamped(every)) {
+            source.sendSuccess(() -> Component.literal(
+                "  → that is denser than the " + PortalCarriageSelection.MIN_GROUP_GAP
+                    + "-group minimum spacing allows, so portals will land exactly every "
+                    + PortalCarriageSelection.MIN_GROUP_GAP + "th group in survival.")
+                .withStyle(ChatFormatting.YELLOW), false);
+        } else if (every > 1) {
+            source.sendSuccess(() -> Component.literal(
+                "  → in survival, never closer than " + PortalCarriageSelection.MIN_GROUP_GAP
+                    + " groups apart. In creative, exactly every " + every + " groups.")
+                .withStyle(ChatFormatting.GRAY), false);
+        }
         return 1;
     }
 
