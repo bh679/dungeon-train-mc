@@ -33,6 +33,7 @@ import games.brennan.dungeontrain.portal.PortalRoomSizes;
 import games.brennan.dungeontrain.portal.PortalRoomTiler;
 import games.brennan.dungeontrain.portal.PortalRoomTiling;
 import games.brennan.dungeontrain.portal.PortalSever;
+import games.brennan.dungeontrain.portal.PortalStampRecord;
 import games.brennan.dungeontrain.portal.PortalSwapDiagnostics;
 import games.brennan.dungeontrain.portal.PortalStructure;
 import games.brennan.dungeontrain.portal.PortalTrainFreeze;
@@ -132,6 +133,17 @@ public final class PortalCarriageEvents {
      * thousands of block writes a second for corridors nobody is walking into.
      */
     private static final double APPROACH_RANGE = 12.0;
+
+    /**
+     * How near a player must be for an unrecorded group to be asked to prove it holds a corridor.
+     *
+     * <p>Measured from the group's minimum corner, so it has to clear the group's own length before
+     * it reaches anybody standing at the far end of it — three carriages plus both pads. Generous on
+     * top of that: the read wants the plot loaded, which happens as the player approaches rather than
+     * on arrival, and confirming a tick early costs one lookup while confirming a tick late is a
+     * portal that did nothing when it was walked into.</p>
+     */
+    private static final double CONFIRM_RANGE = 96.0;
 
     /**
      * Re-stamp the twin once the carriage has rolled this far from it. The twin has to stay inside
@@ -538,6 +550,9 @@ public final class PortalCarriageEvents {
         PortalPairResidency.clear();
         PortalCarriageRevival.clear();
         PortalRoomRescue.clear();
+        // The confirmation throttle keys on a group anchor, which names a different group in the
+        // next world opened — a surviving entry would delay one legacy group's proof by a second.
+        PortalStampRecord.reset();
     }
 
     @SubscribeEvent
@@ -581,12 +596,20 @@ public final class PortalCarriageEvents {
                 ManagedShip ship = group.getValue();
 
                 // Portal groups only, asked before the pose guards rather than per slot below —
-                // not to save the work, which is a lottery draw, but because those guards WARN.
-                // "This pair has no swap plane this tick" is only meaningful about a group that
-                // would otherwise have had one, and most groups on a train are ordinary carriages
-                // that never had a portal in them. Warning for those buries the signal the log
-                // exists to carry. isPortalGroup answers for the whole group from any index in it.
-                if (!PortalCarriageSelection.isPortalGroup(level, anchorPIdx)) continue;
+                // not to save the work, which is a lookup, but because those guards WARN. "This
+                // pair has no swap plane this tick" is only meaningful about a group that would
+                // otherwise have had one, and most groups on a train are ordinary carriages that
+                // never had a portal in them. Warning for those buries the signal the log exists to
+                // carry. The verdict answers for the whole group from any index in it.
+                //
+                // Asked of the STAMP RECORD, never of the lottery: PortalCarriageSelection.rateFor
+                // reads the level's live game modes, so re-deriving here let a mode switch hand this
+                // walk a carriage that had been stamped as an ordinary one — and the swap plane
+                // below covers a whole carriage interior, so walking down it teleported the player
+                // into a pocket room. See PortalStampRecord.
+                PortalStampRecord.Verdict verdict =
+                    PortalStampRecord.groupVerdict(level, anchorPIdx, groupSize);
+                if (verdict == PortalStampRecord.Verdict.ORDINARY) continue;
 
                 // knownGroups is a grow-only registry, so a handle in it can outlive its sub-level.
                 // A stale one still answers worldAABB() with its LAST pose (ManagedShip#isResident
@@ -608,6 +631,30 @@ public final class PortalCarriageEvents {
                 if (ShipAabbs.isDegenerate(bb)) {
                     warnSkippedGroup(level, anchorPIdx, PortalSwapDiagnostics.Reason.DEGENERATE_AABB);
                     continue;
+                }
+
+                // A world saved before the stamp record existed carries none, so its standing
+                // corridors have to prove themselves from their own blocks once — and a group the
+                // lottery claims but that holds no corridor is refused here rather than teleporting
+                // anybody. Needs the pose, which is why it waits until after the guards above.
+                if (verdict == PortalStampRecord.Verdict.UNCONFIRMED) {
+                    // Only for a group somebody is actually near. A carriage's voxels live in its
+                    // Sable sub-level, and a group across the map has no plot chunks loaded to read
+                    // — so asking there answers "no corridor" about every distant carriage on the
+                    // train, once a second, in the log. Proximity is also when the answer starts to
+                    // matter: nothing swaps for a player who is nowhere near it.
+                    if (!anyPlayerWithin(players, bb.minX(), bb.minY(), bb.minZ(), CONFIRM_RANGE)) {
+                        continue;
+                    }
+                    PortalStampRecord.Proof proof = PortalStampRecord.confirmGroup(
+                        level, ship, dims, anchorPIdx, groupSize, bb.minX(), bb.minY(), bb.minZ());
+                    // REFUTED is the disagreement worth reporting. UNREADABLE is "ask again in a
+                    // moment" — the plot has not loaded — and saying so would be the same line at
+                    // the same rate for a state that resolves itself.
+                    if (proof == PortalStampRecord.Proof.REFUTED) {
+                        warnSkippedGroup(level, anchorPIdx, PortalSwapDiagnostics.Reason.NOT_STAMPED);
+                    }
+                    if (proof != PortalStampRecord.Proof.CONFIRMED) continue;
                 }
 
                 handleGroup(level, players, dims, anchorPIdx, ship,
@@ -647,7 +694,9 @@ public final class PortalCarriageEvents {
                                     int groupSize, int padLen, PortalPuppets.Session puppets) {
         for (int slot = 0; slot < groupSize; slot++) {
             int carriageIndex = anchorPIdx + slot;
-            if (!PortalCarriageSelection.isPortalCarriage(level, carriageIndex)) continue;
+            // The record again, not the lottery — see the walk above. The slot arithmetic that
+            // separates the two corridors from the cart between them is pure and stays where it is.
+            if (!PortalStampRecord.isStampedPortalCarriage(level, carriageIndex, groupSize)) continue;
 
             // A portal is one group, so both its corridors key on that group's anchor and the role
             // falls out of which end of the group this one is.
@@ -1995,7 +2044,18 @@ public final class PortalCarriageEvents {
         int padLen = CarriagePlacer.halfPadLen(dims);
         for (int slot = 0; slot < groupSize; slot++) {
             int carriageIndex = anchor + slot;
-            if (!PortalCarriageSelection.isPortalCarriage(level, carriageIndex)) continue;
+            // Both answers, unlike the tick walk, which trusts only the record: a report exists to
+            // show a disagreement rather than to act on one, and a group the lottery claims with
+            // nothing stamped in it is exactly what somebody would be running this command about.
+            boolean stamped = PortalStampRecord.isStampedPortalCarriage(level, carriageIndex, groupSize);
+            boolean drawn = PortalCarriageSelection.isPortalCarriage(level, carriageIndex);
+            if (!stamped && !drawn) continue;
+            if (stamped != drawn) {
+                out.add("  carriage " + carriageIndex + ": stamped=" + stamped + " but the current "
+                    + "selection rate says " + drawn + " — the rate has moved since these blocks "
+                    + "were laid (game mode changes it). The stamped answer is the one that counts.");
+            }
+            if (!stamped) continue;
 
             PortalCarriageRole role = PortalCarriageRole.roleFor(carriageIndex, groupSize);
             // The same helper the tick uses, not a second copy of the arithmetic: a diagnosis that
@@ -2118,7 +2178,12 @@ public final class PortalCarriageEvents {
         for (UUID trainId : Trains.byTrainId(level).keySet()) {
             for (Map.Entry<Integer, ManagedShip> group : Trains.knownGroups(trainId).entrySet()) {
                 int anchorPIdx = group.getKey();
-                if (!PortalCarriageSelection.isPortalGroup(level, anchorPIdx)) continue;
+                // Either answer makes it a candidate — a group the rate claims but that holds no
+                // corridor is a state worth diagnosing, and searching only the record would hide it.
+                if (PortalStampRecord.groupVerdict(level, anchorPIdx,
+                        DungeonTrainConfig.getGroupSize()) == PortalStampRecord.Verdict.ORDINARY) {
+                    continue;
+                }
 
                 AABBdc bb = group.getValue().worldAABB();
                 if (ShipAabbs.isDegenerate(bb)) {
