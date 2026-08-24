@@ -8496,12 +8496,9 @@
       "id": "portal-room-from-ordinary-carriage",
       "version": "0.644.0",
       "type": "fix",
-      "title": "Portal rooms only open from actual portal carriages",
-      "summary": "Walking or flying down an ordinary carriage could drop you into a portal room you never entered a portal for. Whether a carriage holds a portal corridor is now settled when the carriage is built, so the train and the portals can no longer disagree about it.",
-      "highlights": [
-        "Ordinary carriages no longer teleport you into a portal room.",
-        "Switching game mode mid-run no longer changes what the carriages already standing on your train do \u2014 it only affects what generates ahead."
-      ],
+      "title": "Only dimensional carriages take you to their rooms",
+      "summary": "An ordinary carriage could send you into a dimensional carriage's room without you ever walking through one. It no longer can.",
+      "highlights": [],
       "pr": 1081,
       "date": "2026-08-24",
       "released": false,
