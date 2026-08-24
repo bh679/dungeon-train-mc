@@ -6978,6 +6978,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "editor-relay-profile",
+      "version": "0.552.0",
+      "type": "feat",
+      "title": "Your Train Editor builds follow you",
+      "summary": "Saving in the Train Editor now also keeps a copy on your Dungeon Train profile, the way the Train Builder already did. Your builds follow you between worlds instead of living in one save folder, and a carriage you are happy with can be put on the train for everyone. Builds stay private to you until you submit one.",
+      "highlights": [
+        "Editor saves upload to your profile \u2014 carriages, rooms, parts, track and portal rooms alike",
+        "My Builds is on the pause menu in creative, so you can see what you have made and put a carriage on the train",
+        "Only the templates you made yourself are uploaded, never Dungeon Train's own",
+        "The relay being down can never cost you a save \u2014 the file on your machine is the build"
+      ],
+      "pr": 1071,
+      "date": "2026-08-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
