@@ -4,8 +4,10 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.menu.ScribbleColorPickerToggleButton;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.events.GuiEventListener;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.BookEditScreen;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -33,19 +35,32 @@ import java.util.List;
  * {@code showFormattingButtons}, but it needs MC 1.21.4+ and it also hides the bold/italic column,
  * which we keep.)</p>
  *
- * <h2>Why an event, and why visibility rather than removal</h2>
+ * <h2>Why an event, and why removal rather than hiding</h2>
  * <p>Scribble registers each swatch with {@code addDrawableChild}, so they land in the screen's
  * ordinary listener list, and its {@code ColorSwatchWidget} extends vanilla {@link AbstractWidget}.
  * NeoForge fires {@link ScreenEvent.Init.Post} after {@code init()} returns while Scribble injects
  * at {@code HEAD} of it, so by the time we run the swatches exist.</p>
  *
- * <p>That lets us flip {@code visible}/{@code active} instead of removing the widgets.
- * {@code AbstractWidget.render} early-outs on {@code !visible} and both {@code mouseClicked} and
- * {@code isMouseOver} gate on it, so a hidden swatch neither draws nor takes clicks — and toggling
- * costs nothing: no {@code rebuildWidgets()}, no screen re-init, no chance of disturbing the book's
- * page or cursor state. Scribble keeps its own {@code colorSwatches} list and only calls
- * {@code setToggled()} on the entries, so leaving them registered keeps its formatting state
- * intact.</p>
+ * <p><b>Setting {@code visible = false} does NOT work</b>, and this was shipped wrong once — Scribble
+ * re-asserts visibility itself. Its {@code invalidateControlButtons}, injected at {@code HEAD} of
+ * vanilla {@code BookEditScreen.updateButtons()}, runs
+ * {@code for (ColorSwatchWidget swatch : colorSwatches) swatch.visible = !signing;}. That fires on
+ * page insert, page delete, page change, undo/redo and entering/leaving signing mode, each time
+ * undoing our hide. It re-asserts only {@code visible} and not {@code active}, so the swatches came
+ * back looking live but doing nothing.</p>
+ *
+ * <p>Registration is the thing Scribble never re-asserts: {@code addDrawableChild} is called from
+ * {@code initButtons()} alone, which runs only from its {@code init} inject. So we unregister the
+ * widgets instead — {@code updateButtons()} may then flip {@code visible} on Scribble's own retained
+ * list as often as it likes and nothing renders or takes clicks. The event's {@code removeListener}
+ * is vanilla {@code Screen.removeWidget}, which drops the widget from {@code renderables},
+ * {@code narratables} and {@code children} alike. Scribble's {@code colorSwatches} list still holds
+ * live references, so {@code invalidateControlButtons} and {@code setToggled} keep working and
+ * nothing NPEs.</p>
+ *
+ * <p>Every path that re-creates the swatches also re-runs this handler: {@code ScreenEvent.Init.Post}
+ * is fired from both {@code Screen.init()} and {@code Screen.rebuildWidgets()}, so a window resize
+ * re-hides them too.</p>
  *
  * <p>A mixin would be the wrong tool here twice over: the event suffices (the same reasoning
  * recorded in {@code SoundOptionsScreenTrainVolumeMixin}), and DT's mixin config is
@@ -99,15 +114,21 @@ public final class ScribbleColorPickerToggle {
         if (swatches.isEmpty()) return;
 
         boolean shown = ClientDisplayConfig.isScribbleColorPickerVisible();
-        applyVisibility(swatches, shown);
 
         if (SHOW_TOGGLE_BUTTON) {
-            event.addListener(new ScribbleColorPickerToggleButton(
-                    toggleX(swatches), toggleY(swatches), shown,
+            // Positions are read BEFORE removal — an unregistered widget keeps its coordinates, but
+            // reading them first keeps the button's placement independent of the branch below.
+            int buttonX = toggleX(swatches);
+            int buttonY = toggleY(swatches);
+            event.addListener(new ScribbleColorPickerToggleButton(buttonX, buttonY, shown,
                     nowShown -> {
                         ClientDisplayConfig.setScribbleColorPickerVisible(nowShown);
-                        applyVisibility(swatches, nowShown);
+                        rebuild(event.getScreen());
                     }));
+        }
+
+        if (!shown) {
+            swatches.forEach(event::removeListener);
         }
     }
 
@@ -126,11 +147,20 @@ public final class ScribbleColorPickerToggle {
         return name.startsWith("me.chrr.scribble.") && name.endsWith(".ColorSwatchWidget");
     }
 
-    private static void applyVisibility(List<AbstractWidget> swatches, boolean shown) {
-        for (AbstractWidget swatch : swatches) {
-            swatch.visible = shown;
-            swatch.active = shown;
-        }
+    /**
+     * Re-runs the screen's {@code init()} so the new setting takes effect immediately.
+     *
+     * <p>Needed because removal is not reversible in place: bringing the picker back means letting
+     * Scribble rebuild its widgets. {@code Screen.resize} is public and routes through
+     * {@code repositionElements()} to {@code rebuildWidgets()}, which fires
+     * {@link ScreenEvent.Init.Post} again. {@code BookEditScreen} holds its page text in fields, so
+     * a rebuild does not lose anything the player has typed.</p>
+     */
+    private static void rebuild(Screen screen) {
+        Minecraft minecraft = Minecraft.getInstance();
+        screen.resize(minecraft,
+                minecraft.getWindow().getGuiScaledWidth(),
+                minecraft.getWindow().getGuiScaledHeight());
     }
 
     /**
@@ -142,10 +172,7 @@ public final class ScribbleColorPickerToggle {
         return swatches.stream().mapToInt(AbstractWidget::getX).min().orElseThrow();
     }
 
-    /**
-     * Just below the grid. Anchored to the grid's extent rather than to the button's own state, so
-     * the control does not jump out from under the cursor when it is clicked.
-     */
+    /** Just below the grid, so the button sits in the same place whether the picker is shown or not. */
     private static int toggleY(List<AbstractWidget> swatches) {
         int bottom = swatches.stream().mapToInt(w -> w.getY() + w.getHeight()).max().orElseThrow();
         return bottom + GAP;
