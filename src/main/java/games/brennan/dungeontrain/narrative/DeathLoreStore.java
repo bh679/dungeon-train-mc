@@ -324,7 +324,7 @@ public final class DeathLoreStore {
      * "второй, кто пал"). A template needing another gender wants its own placeholder, not a guess
      * made here — the sentence knows its noun and this method cannot.</p>
      */
-    private static String ord(long v) {
+    static String ord(long v) {
         return "" + LocaleOrdinalWords.forLocale(
                 NarrativeContentLocale.current(), v, LocaleOrdinalWords.Gender.MASCULINE) + "";
     }
