@@ -74,8 +74,8 @@ class PresenceLineTest {
     }
 
     /** Reads back the {@code chat.dungeontrain.time.*} key + count the localized duration component encodes. */
-    private static void assertAgo(Duration d, String expectedKey, long expectedCount) {
-        var contents = PresenceLine.agoComponent(d).getContents();
+    private static void assertAgo(String locale, Duration d, String expectedKey, long expectedCount) {
+        var contents = PresenceLine.agoComponent(locale, d).getContents();
         var tc = assertInstanceOf(TranslatableContents.class, contents);
         assertEquals("chat.dungeontrain.time." + expectedKey, tc.getKey());
         assertEquals(1, tc.getArgs().length);
@@ -84,25 +84,40 @@ class PresenceLineTest {
 
     @Test
     void agoComponentPicksSingularKeys() {
-        assertAgo(Duration.ofSeconds(1), "second", 1L);
-        assertAgo(Duration.ofMinutes(1), "minute", 1L);
-        assertAgo(Duration.ofHours(1), "hour", 1L);
-        assertAgo(Duration.ofDays(1), "day", 1L);
+        assertAgo("en_us", Duration.ofSeconds(1), "second.one", 1L);
+        assertAgo("en_us", Duration.ofMinutes(1), "minute.one", 1L);
+        assertAgo("en_us", Duration.ofHours(1), "hour.one", 1L);
+        assertAgo("en_us", Duration.ofDays(1), "day.one", 1L);
     }
 
     @Test
     void agoComponentPicksPluralKeys() {
-        assertAgo(Duration.ofSeconds(0), "seconds", 0L);
-        assertAgo(Duration.ofSeconds(7), "seconds", 7L);
-        assertAgo(Duration.ofMinutes(7), "minutes", 7L);
-        assertAgo(Duration.ofHours(5), "hours", 5L);
-        assertAgo(Duration.ofDays(3), "days", 3L);
+        assertAgo("en_us", Duration.ofSeconds(0), "second.other", 0L);
+        assertAgo("en_us", Duration.ofSeconds(7), "second.other", 7L);
+        assertAgo("en_us", Duration.ofMinutes(7), "minute.other", 7L);
+        assertAgo("en_us", Duration.ofHours(5), "hour.other", 5L);
+        assertAgo("en_us", Duration.ofDays(3), "day.other", 3L);
+    }
+
+    /**
+     * The duration is declined against the READER's language, not the server's — a Russian client
+     * gets минуту / минуты / минут where English has only two forms to offer.
+     */
+    @Test
+    void agoComponentDeclinesForTheReadersLanguage() {
+        assertAgo("ru_ru", Duration.ofMinutes(1), "minute.one", 1L);
+        assertAgo("ru_ru", Duration.ofMinutes(2), "minute.few", 2L);
+        assertAgo("ru_ru", Duration.ofMinutes(5), "minute.many", 5L);
+        assertAgo("ru_ru", Duration.ofMinutes(21), "minute.one", 21L);
+        assertAgo("ja_jp", Duration.ofMinutes(1), "minute.other", 1L);
+        // An unknown client language still renders — it just falls back to the English rule.
+        assertAgo("", Duration.ofMinutes(1), "minute.one", 1L);
     }
 
     @Test
     void agoComponentPicksLargestWholeUnit() {
-        assertAgo(Duration.ofSeconds(119), "minute", 1L);   // truncates, not rounds
-        assertAgo(Duration.ofSeconds(3599), "minutes", 59L);
-        assertAgo(Duration.ofMinutes(60), "hour", 1L);
+        assertAgo("en_us", Duration.ofSeconds(119), "minute.one", 1L);   // truncates, not rounds
+        assertAgo("en_us", Duration.ofSeconds(3599), "minute.other", 59L);
+        assertAgo("en_us", Duration.ofMinutes(60), "hour.one", 1L);
     }
 }
