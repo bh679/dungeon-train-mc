@@ -73,7 +73,7 @@
   "chat.dungeontrain.difficulty_profile.swapped": "Now riding on %s. Each difficulty keeps its own gear, XP and Ender Chest — what you were carrying is waiting for you back on %s.",
   "chat.dungeontrain.free_play.ais_changed": "Changed: %s",
   "chat.dungeontrain.free_play.ais_fix": "Click here to restore the default settings, then restart the game to play normally.",
-  "chat.dungeontrain.free_play.cause.portal_rate": "How often portal rooms appear has been changed in this world.",
+  "chat.dungeontrain.free_play.cause.portal_rate": "How often dimensional carriages appear has been changed in this world.",
   "chat.dungeontrain.free_play.portal_rate_changed": "The track this world generates is no longer the one Dungeon Train is balanced against, so this world stays in Free Play.",
   "chat.dungeontrain.free_play.cause.dt_config": "The Dungeon Train difficulty settings have been changed.",
   "chat.dungeontrain.free_play.dt_config_changed": "Changed: %s",

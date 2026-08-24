@@ -80,7 +80,7 @@ public final class NewSourcePickerScreen implements MenuScreen {
             // consistently with its siblings; the entry list collapses to
             // a single name TypeArg + Back below.
             case TRACKS -> "New " + kind + " — name";
-            case PORTALS -> "New portal room — name";
+            case PORTALS -> "New dimensional carriage — name";
             case CONTENTS_SUB_VARIANT, PORTAL_ROOM_SUB_VARIANT -> "New sub-variant of " + currentId + " — name";
         };
     }
