@@ -8368,6 +8368,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "language-search-and-translation-requests",
+      "version": "0.640.0",
+      "type": "feat",
+      "title": "Find your language, and ask for one that isn't there",
+      "summary": "The language list has a search box and a filter, every language can now be translated instead of only the nineteen we ship, and translators who volunteered since the last release are named in the credits.",
+      "highlights": [
+        "Search the language list by name, by country, or by locale code \u2014 in your own language or in English. \"French\", \"Franz\u00f6sisch\", \"Germany\" and \"Switzerland\" all find what you would expect, and one country brings up every language spoken there.",
+        "A filter beside the search: all languages, ones with machine translation still waiting on a human, ones a person has been through, and ones with no translation at all.",
+        "The translation editor opens on ANY language, not just the ones Dungeon Train ships. Every line is listed, blank where nothing has been translated yet \u2014 including book prose, which was previously invisible if a language had never touched it.",
+        "No machine translation for your language? A button asks for one, and shows how many other players have asked for the same.",
+        "Credits now name every translator whose work has been approved, not only those whose work had shipped when the build was made."
+      ],
+      "date": "2026-08-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
