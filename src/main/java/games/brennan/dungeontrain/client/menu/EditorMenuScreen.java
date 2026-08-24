@@ -1,8 +1,11 @@
 package games.brennan.dungeontrain.client.menu;
 
 import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
+import games.brennan.dungeontrain.client.builder.BuilderProfileScreen;
 import games.brennan.dungeontrain.client.VersionInfo;
 import games.brennan.dungeontrain.net.EditorStatusPacket;
+import net.minecraft.client.Minecraft;
+import net.minecraft.network.chat.Component;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -80,6 +83,7 @@ public final class EditorMenuScreen implements MenuScreen {
                 new CommandMenuEntry.Run("All", "dungeontrain editor part save all"),
                 0.80
             ));
+            out.add(myBuildsEntry());
             CommandMenuEntry partsClear = clearEntryFor(category, model);
             if (partsClear != null) out.add(partsClear);
             int sep = model.indexOf(':');
@@ -114,6 +118,7 @@ public final class EditorMenuScreen implements MenuScreen {
             new CommandMenuEntry.Run("All", "dungeontrain save all"),
             0.80
         ));
+        out.add(myBuildsEntry());
 
         // Reset | Clear — paired destructive actions. Reset deletes the
         // on-disk template; Clear wipes interior blocks to air. Clear is
@@ -631,4 +636,28 @@ public final class EditorMenuScreen implements MenuScreen {
     private static boolean isReservedContentsBuiltin(String id) {
         return "default".equals(id);
     }
+
+    /**
+     * Everything this player has uploaded to their relay profile, and the one button that puts a
+     * build on the train.
+     *
+     * <p>Directly under Save, because that is what fills it — the same placement and the same
+     * reasoning as the Train Builder's pause menu, which is where this screen came from. The screen
+     * itself was always world-agnostic; only the builder's button was, so the editor gets its own
+     * rather than a copy of it.</p>
+     *
+     * <p>A {@link CommandMenuEntry.ClientAction} opening a vanilla screen has precedent in
+     * {@code CommandMenuState.beginTyping}. The worldspace menu is closed first: it is drawn in the
+     * world and raycast for input, so leaving it up behind a screen would leave two things reading
+     * the mouse. A null parent means Back returns to the game.</p>
+     */
+    private static CommandMenuEntry myBuildsEntry() {
+        return new CommandMenuEntry.ClientAction(
+            Component.translatable("gui.dungeontrain.builder.profile").getString(),
+            () -> {
+                CommandMenuState.close();
+                Minecraft.getInstance().setScreen(new BuilderProfileScreen(null));
+            });
+    }
+
 }

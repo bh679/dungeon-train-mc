@@ -503,12 +503,14 @@ public final class DungeonTrainConfig {
                 .defineInRange("sharedCarriageOwnChance", DEFAULT_SHARED_CARRIAGE_OWN_CHANCE,
                         MIN_SHARED_CARRIAGE_OWN_CHANCE, MAX_SHARED_CARRIAGE_OWN_CHANCE);
         ModConfigSpec.BooleanValue builderProfileEnabled = b
-                .comment("Train Builder profiles \u2014 when true, saving in the Train Builder also uploads the build to the",
-                        "Dungeon Train relay under the player's name, so their builds follow them between worlds and can be",
-                        "submitted to the train for everyone. Every kind the builder authors is uploaded (carriages, rooms,",
-                        "parts, track, tunnels, portal rooms), but only a whole carriage can be submitted to the train \u2014 the",
-                        "rest simply live in the player's profile. Uploading also requires the player's client to have granted",
-                        "network consent, and a build stays private to its author until they submit it. Default false.")
+                .comment("Build profiles \u2014 when true, saving in the Train Builder OR the Train Editor also uploads the",
+                        "build to the Dungeon Train relay under the player's name, so their builds follow them between",
+                        "worlds and can be submitted to the train for everyone. Every kind either tool authors is uploaded",
+                        "(carriages, rooms, parts, track, tunnels, portal rooms), but only a whole carriage can be submitted",
+                        "to the train \u2014 the rest simply live in the player's profile. The editor uploads only templates the",
+                        "player authored, never the ones that ship with the mod. Uploading also requires the player's client",
+                        "to have granted network consent, and a build stays private to its author until they submit it.",
+                        "Default false.")
                 .define("builderProfileEnabled", DEFAULT_BUILDER_PROFILE_ENABLED);
         b.pop();
         b.push("discord");
@@ -608,7 +610,7 @@ public final class DungeonTrainConfig {
         return isLoaded() ? SHARED_CARRIAGES_ENABLED.get() : DEFAULT_SHARED_CARRIAGES_ENABLED;
     }
 
-    /** Whether a Train Builder save also uploads the build to the player's relay profile. */
+    /** Whether a Train Builder or Train Editor save also uploads the build to the player's relay profile. */
     public static boolean isBuilderProfileEnabled() {
         return isLoaded() ? BUILDER_PROFILE_ENABLED.get() : DEFAULT_BUILDER_PROFILE_ENABLED;
     }

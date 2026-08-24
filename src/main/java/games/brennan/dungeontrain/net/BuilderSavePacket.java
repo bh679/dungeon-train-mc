@@ -61,7 +61,8 @@ public record BuilderSavePacket() implements CustomPacketPayload {
                 // …and, when the player has opted in, the build goes to their relay profile. After the
                 // local write, never instead of it: the file on disk is the build, and an upload that
                 // can't happen costs the player nothing.
-                BuilderRelayUpload.afterSave(player, level, result.written());
+                BuilderRelayUpload.afterSave(player, level, result.written(),
+                        DungeonTrainWorldData.get(level).builderStage());
             } else {
                 player.sendSystemMessage(Component.translatable(
                         "gui.dungeontrain.builder.save_failed", result.failure())
