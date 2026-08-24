@@ -8365,9 +8365,9 @@
       ],
       "pr": 1073,
       "date": "2026-08-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.640.0",
+      "released_at": "2026-08-24T13:01:12Z"
     },
     {
       "id": "language-search-and-translation-requests",
@@ -8383,9 +8383,9 @@
         "Credits now name every translator whose work has been approved, not only those whose work had shipped when the build was made."
       ],
       "date": "2026-08-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.640.0",
+      "released_at": "2026-08-24T13:01:12Z"
     }
   ]
 }
