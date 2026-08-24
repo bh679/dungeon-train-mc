@@ -169,7 +169,10 @@ public final class SharedCarriageClient {
         body.addProperty("source", "builder");
         return post("/carriages/submit", body).thenApply(resp -> {
             JsonObject o = okJson(resp);
-            if (o == null || !o.has("id")) return Optional.empty();
+            if (o == null || !o.has("id")) {
+                logFailure("/carriages/submit", resp);
+                return Optional.empty();
+            }
             return Optional.of(new BuildUpload(o.get("id").getAsInt(), str(o, "token"), str(o, "secret"),
                     o.has("deduped") && o.get("deduped").getAsBoolean()));
         });
@@ -251,12 +254,18 @@ public final class SharedCarriageClient {
         if (holderName != null && !holderName.isEmpty()) body.addProperty("name", holderName);
         body.addProperty("world", WORLD);
         return post("/carriages/claim", body).thenApply(resp -> {
-            if (resp == null) return new ClaimResult(CallStatus.ERROR, "", false);
+            if (resp == null) {
+                logFailure("/carriages/claim", null);
+                return new ClaimResult(CallStatus.ERROR, "", false);
+            }
             int sc = resp.statusCode();
             if (sc == 403) return new ClaimResult(CallStatus.FORBIDDEN, "", false);
             if (sc == 404) return new ClaimResult(CallStatus.UNKNOWN, "", false);
             JsonObject o = sc / 100 == 2 ? asObject(resp) : null;
-            if (o == null) return new ClaimResult(CallStatus.ERROR, "", false);
+            if (o == null) {
+                logFailure("/carriages/claim", resp);
+                return new ClaimResult(CallStatus.ERROR, "", false);
+            }
             boolean ok = o.has("ok") && o.get("ok").getAsBoolean();
             return new ClaimResult(ok ? CallStatus.OK : CallStatus.ERROR, str(o, "token"),
                     !ok && "in_use".equals(str(o, "reason")));
@@ -526,6 +535,32 @@ public final class SharedCarriageClient {
             if (sc == 404) return CallStatus.UNKNOWN;
             return CallStatus.ERROR;
         });
+    }
+
+    /**
+     * Say why a build-lifecycle call failed, at WARN.
+     *
+     * <p>{@link #post} reports the underlying exception at DEBUG, and the callers collapse every
+     * failure into a single "couldn't upload" for the player — so without this a timeout, a refused
+     * connection and an HTTP 400 are indistinguishable in the log, and diagnosing one means reading
+     * timestamps. Deliberately NOT inside {@link #post} or {@link #statusPost}: those also carry the
+     * in-play save/heartbeat/contribute traffic, which fails on a cadence for any offline player and
+     * would turn ordinary offline play into a wall of warnings. Uploading a build is rare and
+     * deliberate, so one line per failure earns its place.</p>
+     *
+     * @param resp the response, or null when there was none — timed out, or never connected
+     */
+    private static void logFailure(String path, HttpResponse<String> resp) {
+        if (resp == null) {
+            LOGGER.warn("[DungeonTrain] relay {} failed: no response (timed out after {}s, or could not connect)",
+                    path, REQUEST_TIMEOUT.toSeconds());
+            return;
+        }
+        String body = resp.body() == null ? "" : resp.body();
+        if (body.length() > 200) {
+            body = body.substring(0, 200) + "\u2026";
+        }
+        LOGGER.warn("[DungeonTrain] relay {} failed: HTTP {} {}", path, resp.statusCode(), body);
     }
 
     /** Parse a 2xx JSON object with {@code ok:true}, or null. */

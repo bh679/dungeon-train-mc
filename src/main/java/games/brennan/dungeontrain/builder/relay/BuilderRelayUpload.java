@@ -159,6 +159,8 @@ public final class BuilderRelayUpload {
                         claimThenSave(player, level, key, tokenless, blocks, text, written);
                         return;
                     }
+                    LOGGER.warn("[DungeonTrain] Builder relay upload: saving '{}' through its lease failed — {}",
+                            written.id(), status);
                     tell(player, "gui.dungeontrain.builder.profile.upload_failed", ChatFormatting.RED, written.id());
                 }));
     }
