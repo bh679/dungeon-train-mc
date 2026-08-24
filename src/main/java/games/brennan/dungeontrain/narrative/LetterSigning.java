@@ -56,7 +56,13 @@ public final class LetterSigning {
         // Fire-and-forget upload of the authored letter as the next entry in the life-series (no-throw).
         // The author's client language (vanilla-synced ClientInformation, "" when unknown) is stamped.
         String lang = WorldInfoReporter.clientLanguage(player);
-        LetterReporter.submit(player.getUUID(), series.seriesId(), series.letterIndex(), author, finalTitle, pages, lang);
+        // Uploads paused (a duplicate BOOK earned the window — the relay refuses letters for its
+        // duration too). Only the upload is skipped: the letter still burns at the lectern and still
+        // counts, it simply goes nowhere, and the player is told why.
+        boolean paused = BookUploadSuspensions.isSuspended(player.getUUID());
+        if (!paused) {
+            LetterReporter.submit(player.getUUID(), series.seriesId(), series.letterIndex(), author, finalTitle, pages, lang);
+        }
 
         // One-shot "wrote a letter" advancement — signing the letter is the rewarded action.
         ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "wrote_letter");
@@ -99,5 +105,9 @@ public final class LetterSigning {
 
         player.sendSystemMessage(Component.translatable("chat.dungeontrain.letter.sealed",
                 finalTitle, series.letterIndex()).withStyle(ChatFormatting.GRAY));
+        if (paused) {
+            player.sendSystemMessage(BookSuspensionMessage.letterNotShared(
+                    lang, BookUploadSuspensions.remainingSec(player.getUUID())));
+        }
     }
 }

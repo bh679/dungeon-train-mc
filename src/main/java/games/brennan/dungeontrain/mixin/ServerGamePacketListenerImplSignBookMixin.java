@@ -6,6 +6,8 @@ import games.brennan.dungeontrain.discord.SharedBookReporter;
 import games.brennan.dungeontrain.discord.WorldInfoReporter;
 import games.brennan.dungeontrain.event.SharedBookGate;
 import games.brennan.dungeontrain.narrative.BookFactory;
+import games.brennan.dungeontrain.narrative.BookSuspensionMessage;
+import games.brennan.dungeontrain.narrative.BookUploadSuspensions;
 import games.brennan.dungeontrain.narrative.DeathNoteSigning;
 import games.brennan.dungeontrain.narrative.DeathNoteTitleLocalization;
 import games.brennan.dungeontrain.narrative.NoteKind;
@@ -131,6 +133,17 @@ public abstract class ServerGamePacketListenerImplSignBookMixin {
             // Community shared book — gated on feature flag + client network consent. Gate fails →
             // let vanilla sign normally (player keeps the written book, no upload, no burn).
             if (!SharedBookGate.canContribute(serverPlayer)) return;
+
+            // Uploads paused (the relay refused a book this player had already sent — see
+            // BookUploadSuspensions). Same fall-through as a failed gate, and for the same reason:
+            // burning the book would cost them their writing for an upload the relay will refuse.
+            // Death Notes / Love Notes are handled above and stay exempt.
+            if (BookUploadSuspensions.isSuspended(serverPlayer.getUUID())) {
+                serverPlayer.sendSystemMessage(BookSuspensionMessage.blocked(
+                        WorldInfoReporter.clientLanguage(serverPlayer),
+                        BookUploadSuspensions.remainingSec(serverPlayer.getUUID())));
+                return;
+            }
 
             // Fire-and-forget upload of the authored text (no-throw internally). The author's client
             // language (vanilla-synced ClientInformation, "" when unknown) is stamped so the relay can
