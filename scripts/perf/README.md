@@ -68,6 +68,32 @@ Every one of these produced a confident-looking but **invalid** result before it
    nothing about the feature — only that the scenario never exercised it. The analyzer prints a
    warning below 5.
 
+## Single-arm soak runs
+
+A single arm doubles as a soak rig for anything that needs the server to simply *keep ticking* —
+most usefully an **autosave**, which a dev client can rarely reach because the integrated server
+pauses whenever the window loses focus (a 40-minute client session once reached only tick 1681).
+
+```bash
+MEASURE_SECS=420 VIEW_DISTANCE=20 bash scripts/perf/run-arm.sh soak off . 25571
+```
+
+- **`MEASURE_SECS >= 400`** — autosave fires every 6000 ticks = 300 s at 20 tps; the surplus absorbs
+  any tick-rate dip so the save actually lands inside the measure window.
+- **`VIEW_DISTANCE=20`** — `TrainCarriageAppender` sizes the resident window off view distance, so
+  this is the knob that decides how many carriages are resident. The default 12 lands ~18-20; 20
+  reaches ~31, which is what you need to push past `PhysicsSubstepTuner`'s `HIGH_WATER = 24` and see
+  `[substep-tuner] … 2->1` engage at all. It cannot engage in singleplayer, which caps resident ~22.
+- The arm flag is still `contentsdespawn`; passing `off` matches what the populate phase already
+  sets, so it is a no-op for a soak.
+
+### Autosave logs under a different name here
+
+`Saving and pausing game world` is **`IntegratedServer`-only** — a client string. A dedicated server
+autosaves through `MinecraftServer.tickServer` and logs **`Autosave started`** / `Autosave finished`
+at DEBUG (DT forces DEBUG on runs, so they are present). Grepping the client string against a server
+log reports "never autosaved" for a server that autosaved perfectly well. Match both.
+
 ## Files
 
 | | |

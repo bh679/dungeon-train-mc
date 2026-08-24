@@ -41,6 +41,9 @@ OFF_TRAIN_Z=10         # off the deck but hard beside the track (see README gotc
 POPULATE_HOPS=4        # 4x36=144 blocks, under the train's own length (see README gotcha 4)
 POPULATE_DWELL=8
 MEASURE_SECS="${MEASURE_SECS:-120}"
+# Sizes the resident carriage window: TrainCarriageAppender targets (vd*16*2)/carriageLength.
+# 12 lands ~18-20 resident; raise to 20 (~31) to push past PhysicsSubstepTuner's HIGH_WATER=24.
+VIEW_DISTANCE="${VIEW_DISTANCE:-12}"
 SETTLE_AFTER_DTP=45
 SETTLE_AFTER_JOIN=45
 
@@ -73,7 +76,7 @@ server-port=$PORT
 online-mode=false
 enforce-secure-profile=false
 max-tick-time=-1
-view-distance=12
+view-distance=$VIEW_DISTANCE
 simulation-distance=10
 sync-chunk-writes=false
 level-name=world
