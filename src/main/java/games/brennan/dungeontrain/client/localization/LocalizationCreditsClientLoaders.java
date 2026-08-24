@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.client.localization;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.client.localization.edit.LocalizationCoverage;
 import games.brennan.dungeontrain.client.localization.edit.ProvenanceManifestRegistry;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
@@ -34,6 +35,8 @@ public final class LocalizationCreditsClientLoaders {
             @Override
             public void onResourceManagerReload(ResourceManager resourceManager) {
                 LocalizationCreditRegistry.load(resourceManager);
+                // The lang files it falls back to counting may have changed with the pack stack.
+                LocalizationCoverage.invalidate();
             }
 
             @Override

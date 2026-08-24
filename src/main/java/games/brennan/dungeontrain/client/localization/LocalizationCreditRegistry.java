@@ -4,7 +4,9 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.client.localization.edit.LocalizationCoverage;
 import games.brennan.dungeontrain.client.localization.edit.RelayTranslationCredits;
+import games.brennan.dungeontrain.client.localization.edit.TranslationCoverageClient;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
@@ -174,7 +176,13 @@ public final class LocalizationCreditRegistry {
      */
     static LocalizationCredit.AiCounts withRelayApprovals(String localeCode,
                                                           LocalizationCredit.AiCounts baked) {
-        return adjust(baked, RelayReviewedCount.forLocale(localeCode));
+        // The locally verified count where there is one, the relay's per-locale total otherwise.
+        // Only one of these is ever non-zero in practice: the pool is fetched for the language
+        // being played, and the startup coverage call answers for all the others. Taking the
+        // greater keeps the verified number winning if they ever overlap.
+        int verified = RelayReviewedCount.forLocale(localeCode);
+        int reported = TranslationCoverageClient.approvedFor(localeCode);
+        return adjust(baked, Math.max(verified, reported));
     }
 
     /**
@@ -210,6 +218,8 @@ public final class LocalizationCreditRegistry {
             return null;
         }
         LocalizationCredit.AiCounts best = null;
+        // Falls through to counting the loaded lang files when no credit file names this locale --
+        // which is every language but the nineteen the mod ships a stamped one for.
         for (LocalizationCredit credit : CREDITS.values()) {
             if (!credit.locale().equalsIgnoreCase(localeCode) || credit.aiCounts().isEmpty()) {
                 continue;
@@ -222,7 +232,7 @@ public final class LocalizationCreditRegistry {
                 best = counts;
             }
         }
-        return best;
+        return best != null ? best : LocalizationCoverage.forLocale(localeCode);
     }
 
     private static int numerator(LocalizationCredit.AiCounts counts) {

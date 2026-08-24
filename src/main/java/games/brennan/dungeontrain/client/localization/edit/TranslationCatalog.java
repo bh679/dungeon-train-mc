@@ -209,7 +209,7 @@ public final class TranslationCatalog {
      * resource pack's overrides win — the same precedence the game itself applies. Missing or
      * malformed files yield an empty map rather than failing the catalog.
      */
-    private static Map<String, String> readLang(String namespace, String locale) {
+    static Map<String, String> readLang(String namespace, String locale) {
         Map<String, String> out = new LinkedHashMap<>();
         Minecraft mc = Minecraft.getInstance();
         if (mc == null) {
