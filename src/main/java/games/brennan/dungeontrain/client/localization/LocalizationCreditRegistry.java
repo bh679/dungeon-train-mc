@@ -4,7 +4,9 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.client.localization.edit.LocalizationCoverage;
 import games.brennan.dungeontrain.client.localization.edit.RelayTranslationCredits;
+import games.brennan.dungeontrain.client.localization.edit.TranslationCoverageClient;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
@@ -174,7 +176,13 @@ public final class LocalizationCreditRegistry {
      */
     static LocalizationCredit.AiCounts withRelayApprovals(String localeCode,
                                                           LocalizationCredit.AiCounts baked) {
-        return adjust(baked, RelayReviewedCount.forLocale(localeCode));
+        // The locally verified count where there is one, the relay's per-locale total otherwise.
+        // Only one of these is ever non-zero in practice: the pool is fetched for the language
+        // being played, and the startup coverage call answers for all the others. Taking the
+        // greater keeps the verified number winning if they ever overlap.
+        int verified = RelayReviewedCount.forLocale(localeCode);
+        int reported = TranslationCoverageClient.approvedFor(localeCode);
+        return adjust(baked, Math.max(verified, reported));
     }
 
     /**
@@ -210,6 +218,8 @@ public final class LocalizationCreditRegistry {
             return null;
         }
         LocalizationCredit.AiCounts best = null;
+        // Falls through to counting the loaded lang files when no credit file names this locale --
+        // which is every language but the nineteen the mod ships a stamped one for.
         for (LocalizationCredit credit : CREDITS.values()) {
             if (!credit.locale().equalsIgnoreCase(localeCode) || credit.aiCounts().isEmpty()) {
                 continue;
@@ -222,7 +232,7 @@ public final class LocalizationCreditRegistry {
                 best = counts;
             }
         }
-        return best;
+        return best != null ? best : LocalizationCoverage.forLocale(localeCode);
     }
 
     private static int numerator(LocalizationCredit.AiCounts counts) {
@@ -259,6 +269,77 @@ public final class LocalizationCreditRegistry {
      */
     static boolean meetsReviewedCoverage(LocalizationCredit.AiCounts counts) {
         return counts != null && counts.unreviewedFraction() <= REVIEWED_UNREVIEWED_MAX;
+    }
+
+    /**
+     * Whether a person has been through <b>any</b> of this locale, at any depth.
+     *
+     * <p>A deliberately different question from {@link #isHumanReviewed}, which asks whether the
+     * language as a whole can be called reviewed and holds out for 90% coverage. That threshold is
+     * right for the badge on a row — it is a claim about what the player is about to read — and
+     * wrong for a filter, where it currently matches <em>nothing</em>: the most worked-on language
+     * in the mod is 18% unreviewed, so "Human reviewed" would be an option that never returned a
+     * language. This asks the answerable question instead, and the two are allowed to disagree.</p>
+     */
+    public static synchronized boolean hasAnyHumanReview(String localeCode) {
+        if (localeCode == null || localeCode.isEmpty()) {
+            return false;
+        }
+        for (LocalizationCredit credit : CREDITS.values()) {
+            if (credit.humanReviewed() && credit.locale().equalsIgnoreCase(localeCode)) {
+                return true;
+            }
+        }
+        return hasAnyReview(withRelayApprovals(localeCode, bestCounts(localeCode)));
+    }
+
+    /**
+     * How many lines this locale has in total, or 0 when nothing is known about it — the
+     * denominator behind a translator's percentage on the credits screen.
+     */
+    public static synchronized int totalKeysFor(String localeCode) {
+        LocalizationCredit.AiCounts counts = bestCounts(localeCode);
+        return counts == null ? 0 : counts.totalKeys();
+    }
+
+    /**
+     * Whether any of this locale still wants a human — machine translation nobody has read yet.
+     *
+     * <p>The counterpart to {@link #hasAnyHumanReview}, and deliberately not its negation: a
+     * language can be both. zh_cn has had a translator through most of it AND has 232 lines still
+     * untouched; zh_tw has fourteen reviewed lines and 1265 that are not. Asking one question and
+     * inverting it put both of them under "human reviewed" only, which hid the largest block of
+     * outstanding work in the mod from the filter built to find outstanding work.</p>
+     */
+    public static synchronized boolean hasUnreviewedAi(String localeCode) {
+        if (localeCode == null || localeCode.isEmpty()) {
+            return false;
+        }
+        return hasUnreviewed(withRelayApprovals(localeCode, bestCounts(localeCode)));
+    }
+
+    /**
+     * The counts half of {@link #hasUnreviewedAi}, pure so the arithmetic is testable.
+     *
+     * <p>Absent counts read as "still wants a human", the opposite of {@link #hasAnyReview}'s
+     * reading of the same absence. Both fail towards MORE work being visible: no data is not
+     * evidence that a language has been reviewed, and a translated language that fell out of every
+     * filter would be a language nobody could find their way to.</p>
+     */
+    static boolean hasUnreviewed(LocalizationCredit.AiCounts counts) {
+        return counts == null || counts.aiUnreviewed() > 0;
+    }
+
+    /**
+     * The counts half of {@link #hasAnyHumanReview}, pure so the arithmetic is testable.
+     *
+     * <p>A key has had a human on it when it is not AI-authored-and-unreviewed — which covers both
+     * routes to that: written by a person in the first place, or machine-written and since
+     * corrected. That is {@code total - aiUnreviewed}, and one is enough.</p>
+     */
+    static boolean hasAnyReview(LocalizationCredit.AiCounts counts) {
+        return counts != null && counts.totalKeys() > 0
+            && counts.totalKeys() - counts.aiUnreviewed() > 0;
     }
 
     private static LocalizationCredit parse(InputStream in, ResourceLocation id) throws ParseException {

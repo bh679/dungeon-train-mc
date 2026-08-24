@@ -62,6 +62,10 @@ public final class TitleScreenTranslateButton {
         // submitted in German and then switched to English still has a queue to drain.
         TranslationOutbox.get().flush();
         ApprovedTranslationsFetcher.fetchOnce();
+        // Alongside it, and for the same reason one screen along: the language list draws a
+        // ring per row, and without this every row but the one being played shows the counts
+        // the jar was built with.
+        TranslationCoverageClient.fetchOnce();
         TranslationContributor.refreshOnce();
 
         // On a release build this is the player's own language. On a dev build with the game in

@@ -136,7 +136,7 @@ public final class TranslationScreen extends Screen {
     private EditBox search;
     private TranslationListWidget list;
     private TranslationSubmissionList sentList;
-    private StateFilter stateFilter = StateFilter.AI_UNREVIEWED;
+    private StateFilter stateFilter;
     private BodyFilter bodyFilter = BodyFilter.ALL;
     /** The strings of the submission currently picked in the SENT view. */
     private List<TranslationSubmissionsClient.SentUnit> sentUnits = List.of();
@@ -150,6 +150,12 @@ public final class TranslationScreen extends Screen {
     /** The two narrowing controls — hidden while the left pane belongs to a finished submission. */
     private CycleButton<StateFilter> stateCycle;
     private CycleButton<BodyFilter> bodyCycle;
+    /**
+     * The green ask-for-a-first-draft button, present only on a language the mod ships nothing for,
+     * and the tally of other players who have asked for the same one ({@code -1} until it lands).
+     */
+    private ColorTintedButton request;
+    private int requestCount = -1;
     /**
      * The live search text, held on the SCREEN rather than in the box.
      *
@@ -181,24 +187,28 @@ public final class TranslationScreen extends Screen {
         super(Component.translatable("gui.dungeontrain.translate.title"));
         this.parent = parent;
         this.locale = locale == null ? "" : locale.toLowerCase(Locale.ROOT);
+        // "Needs a human" is the right thing to open on for a language the mod ships machine
+        // translation for. For one it ships nothing for, that queue is empty by definition — every
+        // string needs a human — and opening on it would show a translator an empty screen for a
+        // language with a thousand blank lines in it.
+        this.stateFilter = hasAiQueue() ? StateFilter.AI_UNREVIEWED : StateFilter.ALL;
+    }
+
+    /** Whether this locale has machine translation to review at all — see {@link #offeredStates}. */
+    private boolean hasAiQueue() {
+        return ProvenanceManifestRegistry.hasData(locale);
     }
 
     /**
-     * True when {@code locale} is a language Dungeon Train actually ships a translation for.
+     * True when {@code locale} is a language the editor should open on — every real language, now,
+     * rather than only the nineteen the mod ships a lang file for.
      *
-     * <p>Not merely "anything but {@code en_us}": Minecraft offers dozens of locales the mod has
-     * no lang file for — {@code en_au}, {@code en_gb}, and the joke ones like {@code lol_us} and
-     * {@code en_ud}. A player on those already sees the mod in English, because that is what
-     * vanilla falls back to, so there is nothing there to fix. Pointing the editor at one would
-     * invent a locale the repo does not track and produce submissions nothing could ever apply.
-     * </p>
-     *
-     * <p>Discovered from the resource pack via {@link DungeonTrainLanguages#isTranslated} rather
-     * than hardcoded, so a localization resource pack's locale counts too.</p>
+     * <p>The rule itself lives in {@link TranslationFilters#isTranslatableLocale}, with the
+     * reasoning, for the reason every predicate in that class does: what a translator is offered is
+     * worth being able to answer without opening Minecraft.</p>
      */
     public static boolean isEditable(String locale) {
-        return locale != null && !locale.isBlank() && !"en_us".equalsIgnoreCase(locale)
-            && DungeonTrainLanguages.isTranslated(locale);
+        return TranslationFilters.isTranslatableLocale(locale);
     }
 
     @Override
@@ -228,7 +238,12 @@ public final class TranslationScreen extends Screen {
         int bottomRow = height - MARGIN - ROW_H;
         int listBottom = bottomRow - GAP;
         int contentWidth = width - MARGIN * 2;
-        int listTop = TOP + ROW_H + GAP * 2;
+        // A language with no machine draft gets a row of its own between the controls and the list.
+        // Above the strings rather than below them because it is the first thing to do on such a
+        // language, not the last: a thousand blank lines is not where a translator should start.
+        boolean offerRequest = !DungeonTrainLanguages.isTranslated(locale) && isEditable(locale);
+        int requestStrip = offerRequest ? ROW_H + GAP : 0;
+        int listTop = TOP + ROW_H + GAP * 2 + requestStrip;
 
         List<StateFilter> states = offeredStates();
         if (!states.contains(stateFilter)) {
@@ -301,6 +316,18 @@ public final class TranslationScreen extends Screen {
                     refresh();
                 }));
         applySearchOpen(); // the box starts collapsed, and survives a resize in whatever state it was
+
+        if (offerRequest) {
+            request = addRenderableWidget(new ColorTintedButton(MARGIN, TOP + ROW_H + GAP,
+                contentWidth, ROW_H, requestLabel(),
+                SUBMIT_TINT[0], SUBMIT_TINT[1], SUBMIT_TINT[2], b -> requestTranslation()));
+            request.setTooltip(Tooltip.create(
+                Component.translatable("gui.dungeontrain.translate.request.tip")));
+            request.active = !TranslationRequests.isRequested(locale);
+            // Asked for on every open, not only after a press: the number is the one part of this
+            // that makes a lone request feel like it joined something.
+            TranslationRequestClient.fetchCount(locale, this::onRequestCount);
+        }
 
         // Two panes, always: strings on the left, what you have sent down a narrow right column.
         // The column is the navigation — what the left pane is showing is whatever it says.
@@ -520,10 +547,13 @@ public final class TranslationScreen extends Screen {
      * translation accepted, which is the cheapest honest proof they are here to translate. Fails
      * closed: no verdict, no unlock.</p>
      */
-    private static List<StateFilter> offeredStates() {
+    private List<StateFilter> offeredStates() {
         List<StateFilter> out = new ArrayList<>(
             List.of(StateFilter.AI_UNREVIEWED, StateFilter.EDITED, StateFilter.TODO));
-        if (TranslationContributor.hasApprovedTranslation()) {
+        // Unlocked by contributing — or, on a language with no machine translation to review, from
+        // the start: the gate exists to point a newcomer at the review queue first, and where there
+        // is no queue it would only hide the entire catalog behind work they cannot do yet.
+        if (TranslationContributor.hasApprovedTranslation() || !hasAiQueue()) {
             out.add(StateFilter.ALL);
         }
         return out;
@@ -707,6 +737,40 @@ public final class TranslationScreen extends Screen {
 
     private boolean isDismissed(TranslationUnit unit) {
         return TranslationDismissals.isDismissed(locale, unit);
+    }
+
+    // ---- asking for a machine first draft -------------------------------------------------------
+
+    /**
+     * "Request AI translation", or — once asked — what was asked and by how many. The count only
+     * joins the label when the relay has answered; there is no "0 players", which would read as a
+     * verdict on the language rather than as a network that has not replied yet.
+     */
+    private Component requestLabel() {
+        boolean asked = TranslationRequests.isRequested(locale);
+        String key = "gui.dungeontrain.translate.request" + (asked ? ".sent" : "");
+        return requestCount > 0
+            ? Component.translatable(key + ".count", requestCount)
+            : Component.translatable(key);
+    }
+
+    private void requestTranslation() {
+        if (!TranslationRequests.record(locale)) {
+            return; // already asked, or a locale that cannot be recorded
+        }
+        // The local record first, so the button acknowledges the press whatever the network does.
+        TranslationRequestClient.send(locale, this::onRequestCount);
+        if (request != null) {
+            request.active = false;
+            request.setMessage(requestLabel());
+        }
+    }
+
+    private void onRequestCount(int count) {
+        requestCount = count;
+        if (request != null) {
+            request.setMessage(requestLabel());
+        }
     }
 
     static String overrideOf(TranslationUnit unit, TranslationEdits edits) {
