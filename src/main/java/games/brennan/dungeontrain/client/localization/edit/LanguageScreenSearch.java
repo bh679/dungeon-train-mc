@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.client.localization.edit;
 
 import games.brennan.dungeontrain.client.localization.LanguageAiFilter;
+import games.brennan.dungeontrain.client.localization.LanguageCountryIndex;
 import games.brennan.dungeontrain.mixin.client.LanguageSelectEntryAccessor;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.AbstractWidget;
@@ -350,7 +351,15 @@ public final class LanguageScreenSearch {
         ((ObjectSelectionList<E>) list).setSelected((E) keep);
     }
 
-    /** Matches the language's own name and its locale code, so both "espa" and "es_es" find it. */
+    /**
+     * Everything a language can be found by: its locale code, the name and region vanilla puts on
+     * the row, and the countries that speak it — in the player's own language and in English.
+     *
+     * <p>Vanilla's own text already covers the country in the language's own words, so "Brasil"
+     * and "Deutschland" work with no help. The index is what adds "Brazil" and "Allemagne", and
+     * the countries that share a language without lending it their name: "Switzerland" reaches
+     * German, French and Italian; "Argentina" reaches Spanish.</p>
+     */
     private static boolean matchesQuery(String code, String needle) {
         if (needle.isEmpty()) {
             return true;
@@ -359,8 +368,17 @@ public final class LanguageScreenSearch {
             return true;
         }
         var info = Minecraft.getInstance().getLanguageManager().getLanguages().get(code);
-        return info != null
-            && info.toComponent().getString().toLowerCase(Locale.ROOT).contains(needle);
+        if (info != null
+            && info.toComponent().getString().toLowerCase(Locale.ROOT).contains(needle)) {
+            return true;
+        }
+        return LanguageCountryIndex.matchesCountry(code, needle, uiLocale());
+    }
+
+    /** The language the player is reading in, which is the one country names should come back in. */
+    private static String uiLocale() {
+        var manager = Minecraft.getInstance().getLanguageManager();
+        return manager == null ? "" : manager.getSelected();
     }
 
     private static String codeOf(Object row) {
