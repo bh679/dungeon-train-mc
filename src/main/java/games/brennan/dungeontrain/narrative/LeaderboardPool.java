@@ -80,7 +80,36 @@ public final class LeaderboardPool {
     private static final Map<LeaderboardCategory, Boolean> IN_FLIGHT = new ConcurrentHashMap<>();
     private static final Map<UUID, Map<LeaderboardCategory, Standing>> RANKS = new ConcurrentHashMap<>();
 
+    /**
+     * Set once a leaderboard book actually exists somewhere in the world. Until then this pool makes
+     * no requests at all: a server whose loot never rolls one should cost the relay nothing.
+     */
+    private static volatile boolean wanted = false;
+
+    /** Rotates {@link #warmNext()} through the categories so one tick is one request. */
+    private static volatile int warmCursor = 0;
+
     private LeaderboardPool() {}
+
+    /**
+     * Note that a leaderboard book has been rolled into the world, so boards are worth fetching.
+     * Called from the loot intercept — at container-load time, which is comfortably before anyone
+     * opens the book.
+     */
+    public static void noteWanted() {
+        wanted = true;
+    }
+
+    /**
+     * Fetch at most ONE board, rotating through the categories. Called on the shared-book refresh
+     * tick, so the whole set cycles in about eleven minutes and no tick ever issues more than one
+     * request. Does nothing until a book has actually been rolled.
+     */
+    public static void warmNext() {
+        if (!wanted) return;
+        LeaderboardCategory[] all = LeaderboardCategory.values();
+        refresh(all[Math.floorMod(warmCursor++, all.length)]);
+    }
 
     /** The cached board for {@code category} — empty until a fetch succeeds. Never null. */
     public static Board board(LeaderboardCategory category) {
@@ -256,5 +285,7 @@ public final class LeaderboardPool {
         BOARDS.clear();
         IN_FLIGHT.clear();
         RANKS.clear();
+        wanted = false;
+        warmCursor = 0;
     }
 }

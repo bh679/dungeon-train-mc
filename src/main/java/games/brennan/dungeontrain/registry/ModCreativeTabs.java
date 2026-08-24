@@ -106,6 +106,9 @@ public final class ModCreativeTabs {
      *   <li>{@link ModItems#RANDOM_PLAYERBOOK} — sibling placeholder that
      *       substitutes an exclusively player-written community book (local
      *       fallback when the shared pool is unavailable).</li>
+     *   <li>{@link ModItems#RANDOM_LEADERBOARD_BOOK} — sibling placeholder
+     *       that substitutes a ranked list of the top players in one
+     *       category, fetched from the relay.</li>
      *   <li>{@link ModBlocks#NARRATIVE_LECTERN_ITEM} — progression-aware
      *       lectern variant (also remains in vanilla FUNCTIONAL_BLOCKS for
      *       discoverability).</li>
@@ -119,6 +122,7 @@ public final class ModCreativeTabs {
             .displayItems((parameters, output) -> {
                 output.accept(ModItems.RANDOM_BOOK.get());
                 output.accept(ModItems.RANDOM_PLAYERBOOK.get());
+                output.accept(ModItems.RANDOM_LEADERBOARD_BOOK.get());
                 output.accept(ModBlocks.NARRATIVE_LECTERN_ITEM.get());
             })
             .build()
