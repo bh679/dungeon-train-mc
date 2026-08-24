@@ -65,8 +65,14 @@ public final class BuilderRelayUpload {
      * that lease is what an unpublished build IS, on the relay's side, and holding it is also what
      * keeps the row safe from the pool's ring eviction. Later saves of the same template {@code save}
      * through that lease, so a build has one profile entry however many times it is saved.</p>
+     *
+     * @param stageId the stage the build belongs to, from whichever tool did the saving — a builder
+     *                world's current stage, or an editor template's own stage link. A parameter
+     *                rather than a read of {@code DungeonTrainWorldData.builderStage()} because that
+     *                field describes a builder world and means nothing in an ordinary one.
      */
-    public static void afterSave(ServerPlayer player, ServerLevel level, BuilderSave.Written written) {
+    public static void afterSave(ServerPlayer player, ServerLevel level, BuilderSave.Written written,
+                                 String stageId) {
         if (written == null || !canUpload(player)) return;
         String blocks;
         String text;
@@ -100,16 +106,16 @@ public final class BuilderRelayUpload {
             claimThenSave(player, level, key, known, blocks, text, written);
             return;
         }
-        submitNew(player, level, key, blocks, text, written, data);
+        submitNew(player, level, key, blocks, text, written, data, stageId);
     }
 
     /** First upload of this template: create the profile entry and remember what came back. */
     private static void submitNew(ServerPlayer player, ServerLevel level, String key, String blocks, String text,
-                                  BuilderSave.Written written, DungeonTrainWorldData data) {
+                                  BuilderSave.Written written, DungeonTrainWorldData data, String stageId) {
         SharedCarriageClient.submitBuild(
                 player.getUUID().toString(), player.getGameProfile().getName(), blocks,
                 written.size().getX(), written.size().getY(), written.size().getZ(),
-                text, data.builderStage(), poolFor(),
+                text, stageId == null ? "" : stageId, poolFor(),
                 BuilderRelayKinds.idOf(written.kind()), written.subKind(), written.id(), "profile")
                 .thenAccept(result -> onServer(level, () -> {
                     if (result.isEmpty()) {

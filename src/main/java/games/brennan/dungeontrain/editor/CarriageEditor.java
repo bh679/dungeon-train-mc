@@ -7,6 +7,8 @@ import games.brennan.dungeontrain.train.CarriagePlacer;
 import games.brennan.dungeontrain.train.CarriageVariant;
 import games.brennan.dungeontrain.train.CarriageVariantRegistry;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
+import games.brennan.dungeontrain.editor.relay.EditorRelaySave;
+import games.brennan.dungeontrain.template.Template;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.resources.ResourceKey;
@@ -375,6 +377,9 @@ public final class CarriageEditor {
             overworld, origin, box.length(), box.height(), box.width()
         );
 
+        // …and, when they have opted in, to the player's relay profile. Hooked here rather than at
+        // the callers because both ways in land on this method — see EditorRelaySave.
+        EditorRelaySave.afterSave(player, new Template.Carriage(variant));
         LOGGER.info("[DungeonTrain] Editor save: {} -> {} template dims={}x{}x{} ({} variant entries)",
             player.getName().getString(), variant.id(), box.length(), box.width(), box.height(),
             sidecar.size());

@@ -11,6 +11,8 @@ import games.brennan.dungeontrain.track.variant.TrackVariantBlocks;
 import games.brennan.dungeontrain.track.variant.TrackVariantRegistry;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
+import games.brennan.dungeontrain.editor.relay.EditorRelaySave;
+import games.brennan.dungeontrain.template.Template;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.network.chat.Component;
@@ -500,6 +502,9 @@ public final class PortalRoomEditor {
         SaveResult result = saveRoomFrom(overworld, origin, size, name);
         captureSnapshot(overworld, origin, size, name);
 
+        // …and, when they have opted in, to the player's relay profile. Hooked here rather than at
+        // the callers because both ways in land on this method — see EditorRelaySave.
+        EditorRelaySave.afterSave(player, new Template.PortalRoom(name));
         LOGGER.info("[DungeonTrain] Editor save: {} -> portal room '{}' template ({}x{}x{})",
             player.getName().getString(), name, size.getX(), size.getY(), size.getZ());
         return result;
