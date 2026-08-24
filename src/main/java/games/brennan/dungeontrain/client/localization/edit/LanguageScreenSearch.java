@@ -4,11 +4,13 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.localization.LanguageAiFilter;
 import games.brennan.dungeontrain.mixin.client.LanguageSelectEntryAccessor;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.CycleButton;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.components.ObjectSelectionList;
 import net.minecraft.client.gui.components.SpriteIconButton;
+import net.minecraft.client.gui.components.StringWidget;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.options.LanguageSelectScreen;
 import net.minecraft.network.chat.Component;
@@ -38,6 +40,12 @@ import java.util.Locale;
  * visible, because unlike a query it is a state you can be in without having typed anything, and a
  * hidden one would be a list quietly missing rows.</p>
  *
+ * <p>Both sit on the title's own line, in the header band vanilla leaves empty either side of it.
+ * That space is already there and already the width of the list, so the controls cost the list no
+ * height at all — a row of their own would have taken thirty pixels of languages to say nothing the
+ * heading does not already say. When the box opens it takes the title's room, exactly as the
+ * editor's takes its file icons'.</p>
+ *
  * <p>Filtering re-lists the vanilla rows rather than rebuilding them: a row is a private inner class
  * holding a {@code LanguageInfo} this has no way to reconstruct, so the originals are captured once
  * per list and nothing is ever lost by narrowing. The re-listing goes through the list's own public
@@ -55,10 +63,8 @@ public final class LanguageScreenSearch {
     private static final int ROW_H = 20;
     /** Vanilla's spacing, the same 8 the footer row uses. */
     private static final int GAP = 8;
-    /** What the row costs the list: itself, plus the gap under it. */
-    private static final int STRIP = ROW_H + GAP;
-    /** Below this the list is a sliver and the row is not worth its space. */
-    private static final int MIN_LIST_H = ROW_H * 3;
+    /** The screen edge the row is kept inside when the window is narrower than the list's rows. */
+    private static final int MARGIN = 6;
     private static final int FILTER_MAX_W = 110;
     private static final int MAX_QUERY = 50;
 
@@ -75,6 +81,8 @@ public final class LanguageScreenSearch {
      */
     private static List<Object> allRows = List.of();
 
+    /** Vanilla's heading, which the open search box takes the room of. Weak, like {@link #owner}. */
+    private static WeakReference<AbstractWidget> titleWidget = new WeakReference<>(null);
     private static SpriteIconButton toggle;
     private static EditBox search;
     private static CycleButton<LanguageAiFilter> filterCycle;
@@ -92,8 +100,9 @@ public final class LanguageScreenSearch {
         if (list == null) {
             return; // another mod owns this screen's list; leave it alone
         }
-        if (LanguageScreenLayout.heightIfTop(screen, STRIP) < MIN_LIST_H) {
-            return; // a window too short to spend a row on
+        AbstractWidget title = findTitle(screen);
+        if (screen.layout.getHeaderHeight() < ROW_H) {
+            return; // a header too short to hold the row; leave the screen as vanilla built it
         }
 
         boolean rebuilt = list != owner.get();
@@ -108,10 +117,12 @@ public final class LanguageScreenSearch {
             return;
         }
 
-        LanguageScreenLayout.reserveTop(screen, STRIP);
-        int y = LanguageScreenLayout.contentTop(screen);
-        int left = list.getRowLeft();
-        int right = list.getRowRight();
+        // Centred on the title's line, and held inside the screen at widths where the list's rows
+        // are wider than the window. The header is 33 and the controls are 20, so on any window
+        // vanilla itself draws a title on, this lands clear of both edges of the band.
+        int y = Math.max(1, titleMiddle(screen, title) - ROW_H / 2);
+        int left = Math.max(MARGIN, list.getRowLeft());
+        int right = Math.min(screen.width - MARGIN, list.getRowRight());
         int cycleW = Math.min(FILTER_MAX_W, Math.max(ROW_H, (right - left) / 3));
         int cycleX = right - cycleW;
         int searchX = left + ROW_H + GAP;
@@ -128,8 +139,31 @@ public final class LanguageScreenSearch {
         addIfAbsent(event, search);
         addIfAbsent(event, filterCycle);
 
+        titleWidget = new WeakReference<>(title);
         applySearchOpen();
         applyFilter(list);
+    }
+
+    /**
+     * The vertical centre of the title's line, or of the header band when another mod has taken the
+     * title away. Measured off the widget rather than off {@code headerHeight / 2} so the row tracks
+     * the heading it is meant to share a line with, wherever that heading actually is.
+     */
+    private static int titleMiddle(LanguageSelectScreen screen, AbstractWidget title) {
+        return title != null
+            ? title.getY() + title.getHeight() / 2
+            : screen.layout.getHeaderHeight() / 2;
+    }
+
+    /** Vanilla's heading, a {@code StringWidget} carrying the screen's own title. */
+    private static AbstractWidget findTitle(LanguageSelectScreen screen) {
+        for (var child : screen.children()) {
+            if (child instanceof StringWidget widget
+                && screen.getTitle().equals(widget.getMessage())) {
+                return widget;
+            }
+        }
+        return null;
     }
 
     private static void buildWidgets(LanguageSelectScreen screen, int y, int left,
@@ -190,6 +224,13 @@ public final class LanguageScreenSearch {
     private static void applySearchOpen() {
         search.visible = searchOpen;
         search.active = searchOpen;
+        // The box occupies the title's line, so the title stands down while it is open — the same
+        // trade the editor's row makes with its file icons. Restored, not hidden for good: closing
+        // the box is the only thing that takes the room back.
+        AbstractWidget title = titleWidget.get();
+        if (title != null) {
+            title.visible = !searchOpen;
+        }
         toggle.setTooltip(Tooltip.create(Component.translatable(searchOpen
             ? "gui.dungeontrain.language.search.close"
             : "gui.dungeontrain.language.search")));
