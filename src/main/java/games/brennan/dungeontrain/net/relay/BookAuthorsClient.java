@@ -27,6 +27,7 @@ import java.util.function.Consumer;
  *
  * <p>Backs the author-locked portal rooms: a room picks one {@link Author} here, then passes its
  * {@link Author#token()} to {@code /books/pool?author=} to be served only that person's catalogue.
+ * Both halves carry the host locale, so the person a room settles on is one its readers can read.
  * See {@link games.brennan.dungeontrain.portal.PortalRoomAuthorLocks}.</p>
  *
  * <h3>Why a token rather than a uuid</h3>
@@ -84,24 +85,21 @@ public final class BookAuthorsClient {
      * @param uuid     required by {@code kind=self}, ignored otherwise; may be {@code null}
      * @param kidSafe  narrow to books the relay judged fit for a young child, so a Kid-mode world can
      *                 never be handed an author whose whole catalogue it is not allowed to see
+     * @param lang     the host's raw client locale, so the room is stocked from somebody writing in a
+     *                 language its readers can read. The relay counts only that language family and
+     *                 falls back to English authors when nobody in the family qualifies; a relay too
+     *                 old to know the parameter ignores it and answers exactly as it did before.
+     *                 Blank or {@code null} sends nothing. {@code kind=self} is exempt relay-side —
+     *                 a writer's own library is their own writing whatever language it is in.
      */
     public static void fetch(String kind, int minBooks, int maxBooks, UUID uuid, boolean kidSafe,
-                             Consumer<List<Author>> callback) {
+                             String lang, Consumer<List<Author>> callback) {
         // `self` is the only kind that names the caller, so it is the only one whose entries may be
         // marked `mine` — see parse(String, boolean).
         final boolean self = "self".equals(kind);
         try {
-            StringBuilder url = new StringBuilder(DungeonTrain.relayBaseUrl())
-                    .append("/books/authors?kind=")
-                    .append(URLEncoder.encode(kind, StandardCharsets.UTF_8))
-                    .append("&min=").append(Math.max(0, minBooks))
-                    .append("&limit=").append(DIRECTORY_LIMIT);
-            if (maxBooks > 0) url.append("&max=").append(maxBooks);
-            if (uuid != null) {
-                url.append("&uuid=").append(uuid.toString().replace("-", ""));
-            }
-            if (kidSafe) url.append("&kidsafe=1");
-            HttpRequest req = HttpRequest.newBuilder(URI.create(url.toString()))
+            String url = DungeonTrain.relayBaseUrl() + query(kind, minBooks, maxBooks, uuid, kidSafe, lang);
+            HttpRequest req = HttpRequest.newBuilder(URI.create(url))
                     .timeout(REQUEST_TIMEOUT)
                     .header("Accept", "application/json")
                     .GET()
@@ -137,6 +135,28 @@ public final class BookAuthorsClient {
                 // nothing left to do
             }
         }
+    }
+
+    /**
+     * Everything after the relay base url — the whole question this fetch is asking, in one pure
+     * package-private place so it can be asserted without a network.
+     *
+     * <p>Optional parameters are OMITTED rather than sent empty: a relay too old to know one ignores
+     * it either way, but an absent {@code lang} is also the relay's own "count every language"
+     * back-compat path, so sending a blank one would be asking a different question.</p>
+     */
+    static String query(String kind, int minBooks, int maxBooks, UUID uuid, boolean kidSafe, String lang) {
+        StringBuilder q = new StringBuilder("/books/authors?kind=")
+                .append(URLEncoder.encode(kind, StandardCharsets.UTF_8))
+                .append("&min=").append(Math.max(0, minBooks))
+                .append("&limit=").append(DIRECTORY_LIMIT);
+        if (maxBooks > 0) q.append("&max=").append(maxBooks);
+        if (uuid != null) q.append("&uuid=").append(uuid.toString().replace("-", ""));
+        if (kidSafe) q.append("&kidsafe=1");
+        if (lang != null && !lang.isBlank()) {
+            q.append("&lang=").append(URLEncoder.encode(lang, StandardCharsets.UTF_8));
+        }
+        return q.toString();
     }
 
     /**

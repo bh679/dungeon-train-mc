@@ -210,11 +210,12 @@ public final class PortalRoomAuthorLocks {
     private static boolean directoriesAnswered(ServerPlayer player, PortalRoomBooks.Share share,
                                                PortalRoomBooks books) {
         boolean useSelf = useSelfDirectory(share, consented(player));
+        String lang = hostLocaleOf(player);
         boolean selfPage = DIRECTORY.containsKey(
-            PortalRoomBooks.Share.SELF.directoryKind() + ':' + player.getUUID());
+            directoryKey(PortalRoomBooks.Share.SELF.directoryKind(), player.getUUID(), books, lang));
         String kind = share.isSelf()
             ? PortalRoomBooks.Share.PLAYER.directoryKind() : share.directoryKind();
-        boolean poolPage = DIRECTORY.containsKey(kind + ':' + books.minBooks() + ':' + books.maxBooks());
+        boolean poolPage = DIRECTORY.containsKey(directoryKey(kind, player.getUUID(), books, lang));
         return answered(useSelf, selfPage, poolPage);
     }
 
@@ -292,14 +293,11 @@ public final class PortalRoomAuthorLocks {
     private static Optional<BookAuthorsClient.Author> pick(String kind, Key key, ServerPlayer player,
                                                            PortalRoomBooks books, boolean kidSafe,
                                                            boolean applyRange) {
-        // The range is part of the cache key: two rooms asking for different bands of author are
-        // asking the relay two different questions, and one answer must not stand in for the other.
-        String cacheKey = "self".equals(kind)
-            ? kind + ':' + player.getUUID()
-            : kind + ':' + books.minBooks() + ':' + books.maxBooks();
+        String lang = hostLocaleOf(player);
+        String cacheKey = directoryKey(kind, player.getUUID(), books, lang);
         List<BookAuthorsClient.Author> candidates = DIRECTORY.get(cacheKey);
         if (candidates == null) {
-            fetchDirectory(kind, cacheKey, player, books, kidSafe);
+            fetchDirectory(kind, cacheKey, player, books, kidSafe, lang);
             return Optional.empty();
         }
         // Belt and braces over the relay's own filter: a cached page outliving an edit to the range
@@ -343,15 +341,42 @@ public final class PortalRoomAuthorLocks {
         return Optional.of(from.get(randomIndex.applyAsInt(from.size())));
     }
 
+    /**
+     * What a directory page is remembered under — the question that produced it, not just its kind.
+     *
+     * <p>The range is part of it because two rooms asking for different bands of author are asking
+     * the relay two different questions, and one answer must not stand in for the other. The host
+     * locale is part of it for the same reason: the relay counts an author's books inside that
+     * language family, so the same band in two languages is two different pages.</p>
+     *
+     * <p>The self page is keyed on the holder alone. It is not language-scoped at either end — a
+     * writer's own library is their own writing whatever they wrote it in — and
+     * {@link #isSelfAuthor} reads that key literally.</p>
+     *
+     * <p>Built in ONE place because {@link #pick} and {@link #directoriesAnswered} both need it: they
+     * used to spell it out separately, and a drift between them would leave a room asking about a page
+     * that is never coming — {@link Outcome#PENDING} for as long as it stands.</p>
+     */
+    static String directoryKey(String kind, UUID holder, PortalRoomBooks books, String lang) {
+        if ("self".equals(kind)) return kind + ':' + holder;
+        return kind + ':' + books.minBooks() + ':' + books.maxBooks()
+            + ':' + (lang == null ? "" : lang);
+    }
+
     /** Pull a directory page for {@code kind}, once at a time. Caches an empty page as "asked, nothing". */
     private static void fetchDirectory(String kind, String cacheKey, ServerPlayer player,
-                                       PortalRoomBooks books, boolean kidSafe) {
+                                       PortalRoomBooks books, boolean kidSafe, String lang) {
         // Unreachable while nextCandidate holds the gate; kept so a later caller cannot send a uuid
         // the player never agreed to. Ahead of the in-flight mark, which nothing would then clear.
         if ("self".equals(kind) && !consented(player)) return;
         if (!DIRECTORY_IN_FLIGHT.add(cacheKey)) return;
-        UUID uuid = "self".equals(kind) ? player.getUUID() : null;
+        boolean self = "self".equals(kind);
+        UUID uuid = self ? player.getUUID() : null;
+        // No locale on the self page. The relay ignores it for `self` anyway, and its key does not
+        // carry one — sending it would mean one cached page standing for two different questions if
+        // that ever stopped being true.
         BookAuthorsClient.fetch(kind, books.minBooks(), books.maxBooks(), uuid, kidSafe,
+            self ? null : lang,
             authors -> {
                 try {
                     DIRECTORY.put(cacheKey, List.copyOf(authors));
@@ -362,9 +387,13 @@ public final class PortalRoomAuthorLocks {
     }
 
     /**
-     * The locale an author's catalogue is fetched for — the HOST's, like every other pool fetch, since
-     * one catalogue serves everybody in the room. Null-safe: a player with no server yet leaves the
-     * fetch unfiltered rather than failing it.
+     * The locale this room's books are chosen for — the HOST's, like every other pool fetch, since one
+     * room serves everybody standing in it. Null-safe: a player with no server yet leaves the fetch
+     * unfiltered rather than failing it.
+     *
+     * <p>It reaches BOTH relay calls: the directory (which author this room can be) and the catalogue
+     * (which of their books it holds). Only filtering the second would pick a person nobody in the
+     * room can read and then hand back an empty shelf.</p>
      */
     private static String hostLocaleOf(ServerPlayer player) {
         return player.getServer() == null ? null
