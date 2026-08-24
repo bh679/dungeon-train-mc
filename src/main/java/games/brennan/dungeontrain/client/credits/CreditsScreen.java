@@ -1,7 +1,7 @@
 package games.brennan.dungeontrain.client.credits;
 
 import games.brennan.dungeontrain.client.localization.TranslationContributor;
-import games.brennan.dungeontrain.client.localization.TranslationContributorsRegistry;
+import games.brennan.dungeontrain.client.localization.TranslationCreditsMerge;
 import games.brennan.dungeontrain.client.menu.DarkTintedButton;
 import games.brennan.dungeontrain.client.support.SupportScreen;
 import net.minecraft.Util;
@@ -140,7 +140,9 @@ public final class CreditsScreen extends Screen {
         // Translations — the generated, human-grouped translator list (one line per person,
         // listing every language they worked on with a %). Fully derived from the provenance
         // data at build time, so it never needs a hand-authored credit file. Skipped when empty.
-        List<TranslationContributor> contributors = TranslationContributorsRegistry.all();
+        // The build-time list PLUS anyone the relay has approved since — see TranslationCreditsMerge
+        // for why they are merged into one list rather than thanked twice in two.
+        List<TranslationContributor> contributors = TranslationCreditsMerge.merged();
         if (!contributors.isEmpty()) {
             y = addLeft(Component.translatable("gui.dungeontrain.credits.translations.header"), y, lh, COLOUR_HEADER);
             y += HEADER_GAP;
@@ -260,6 +262,11 @@ public final class CreditsScreen extends Screen {
     private Component languagePercent(TranslationContributor.LanguageShare share) {
         LanguageInfo info = Minecraft.getInstance().getLanguageManager().getLanguage(share.locale());
         Component language = info != null ? info.toComponent() : Component.literal(share.locale());
+        if (share.total() <= 0) {
+            // A relay credit for a language whose totals this build knows nothing about. The name
+            // and the language are real; the percentage would be invented, so it is left off.
+            return language;
+        }
         // At least 1% so a small-but-real contribution never reads as "0%". The "%" lives in the
         // literal (not the translation format) so no locale has to escape it.
         int percent = Math.max(1, (int) Math.round(share.fraction() * 100));

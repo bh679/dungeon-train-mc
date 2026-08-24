@@ -14,7 +14,9 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -61,6 +63,11 @@ public final class TranslationCoverageClient {
 
     /** Locale to the number of its AI-unreviewed lines an approval has since covered. */
     private static final Map<String, Integer> COVERAGE = new HashMap<>();
+    /** Locale to everyone credited for an approved translation of it, and how much they did. */
+    private static final Map<String, List<Credit>> CREDITS = new HashMap<>();
+
+    /** One person's credited work in one language, as the relay reports it. */
+    public record Credit(String name, int units) {}
 
     private TranslationCoverageClient() {}
 
@@ -79,9 +86,29 @@ public final class TranslationCoverageClient {
         return COVERAGE.getOrDefault(locale.toLowerCase(Locale.ROOT), 0);
     }
 
+    /**
+     * Everyone the relay credits for {@code locale}, most-recently-started last. Never null.
+     *
+     * <p>Distinct from {@link RelayTranslationCredits}, which holds the same fact for the ONE locale
+     * whose pool this client downloaded — that is what the editor needs, this is what a credits page
+     * listing every language needs.</p>
+     */
+    public static synchronized List<Credit> creditsFor(String locale) {
+        if (locale == null || locale.isBlank()) {
+            return List.of();
+        }
+        return CREDITS.getOrDefault(locale.toLowerCase(Locale.ROOT), List.of());
+    }
+
+    /** Every locale the relay has credited anybody for. */
+    public static synchronized Map<String, List<Credit>> allCredits() {
+        return Map.copyOf(CREDITS);
+    }
+
     /** For tests, and for a client that has changed relay. */
     public static synchronized void clear() {
         COVERAGE.clear();
+        CREDITS.clear();
         FETCHED.set(false);
     }
 
@@ -102,7 +129,7 @@ public final class TranslationCoverageClient {
                                 : "HTTP " + (resp == null ? "?" : resp.statusCode()));
                         return;
                     }
-                    apply(parse(resp.body()));
+                    apply(parse(resp.body()), parseCredits(resp.body()));
                 });
         } catch (Throwable t) {
             LOGGER.debug("[DungeonTrain] Translations: coverage fetch failed -- {}", t.toString());
@@ -154,8 +181,57 @@ public final class TranslationCoverageClient {
         return 0;
     }
 
-    private static void apply(Map<String, Integer> parsed) {
-        if (parsed.isEmpty()) {
+    /**
+     * {@code {"locales":{"de_de":{"contributors":[{"name":"Ada","units":12}]}}}} to a map.
+     *
+     * <p>A blank name is dropped again here even though the relay already drops them: declining
+     * credit has to hold at every layer it could surface through, not just the first one.</p>
+     */
+    static Map<String, List<Credit>> parseCredits(String body) {
+        Map<String, List<Credit>> out = new HashMap<>();
+        try {
+            JsonElement root = JsonParser.parseString(body == null ? "" : body);
+            if (!root.isJsonObject()) {
+                return out;
+            }
+            JsonElement locales = root.getAsJsonObject().get("locales");
+            if (locales == null || !locales.isJsonObject()) {
+                return out;
+            }
+            for (Map.Entry<String, JsonElement> entry : locales.getAsJsonObject().entrySet()) {
+                if (!entry.getValue().isJsonObject()) {
+                    continue;
+                }
+                JsonElement arr = entry.getValue().getAsJsonObject().get("contributors");
+                if (arr == null || !arr.isJsonArray()) {
+                    continue;
+                }
+                List<Credit> credits = new ArrayList<>();
+                for (JsonElement el : arr.getAsJsonArray()) {
+                    if (!el.isJsonObject()) {
+                        continue;
+                    }
+                    JsonObject obj = el.getAsJsonObject();
+                    String name = obj.has("name") && obj.get("name").isJsonPrimitive()
+                        ? obj.get("name").getAsString().trim() : "";
+                    int units = obj.has("units") && obj.get("units").isJsonPrimitive()
+                        ? obj.get("units").getAsInt() : 0;
+                    if (!name.isEmpty() && units > 0) {
+                        credits.add(new Credit(name, units));
+                    }
+                }
+                if (!credits.isEmpty()) {
+                    out.put(entry.getKey().toLowerCase(Locale.ROOT), List.copyOf(credits));
+                }
+            }
+        } catch (Exception e) {
+            return new HashMap<>();
+        }
+        return out;
+    }
+
+    private static void apply(Map<String, Integer> parsed, Map<String, List<Credit>> credits) {
+        if (parsed.isEmpty() && credits.isEmpty()) {
             return;
         }
         Minecraft mc = Minecraft.getInstance();
@@ -168,8 +244,11 @@ public final class TranslationCoverageClient {
             synchronized (TranslationCoverageClient.class) {
                 COVERAGE.clear();
                 COVERAGE.putAll(parsed);
+                CREDITS.clear();
+                CREDITS.putAll(credits);
             }
-            LOGGER.debug("[DungeonTrain] Translations: coverage for {} locale(s)", parsed.size());
+            LOGGER.debug("[DungeonTrain] Translations: coverage for {} locale(s), credits for {}",
+                parsed.size(), credits.size());
         });
     }
 }

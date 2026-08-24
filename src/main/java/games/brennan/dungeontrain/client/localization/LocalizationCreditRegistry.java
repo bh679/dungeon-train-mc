@@ -294,6 +294,15 @@ public final class LocalizationCreditRegistry {
     }
 
     /**
+     * How many lines this locale has in total, or 0 when nothing is known about it — the
+     * denominator behind a translator's percentage on the credits screen.
+     */
+    public static synchronized int totalKeysFor(String localeCode) {
+        LocalizationCredit.AiCounts counts = bestCounts(localeCode);
+        return counts == null ? 0 : counts.totalKeys();
+    }
+
+    /**
      * Whether any of this locale still wants a human — machine translation nobody has read yet.
      *
      * <p>The counterpart to {@link #hasAnyHumanReview}, and deliberately not its negation: a
