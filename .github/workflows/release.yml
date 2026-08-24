@@ -287,9 +287,9 @@ jobs:
           fail-mode: warn
 
       # Mirror REAL (operator-dispatched) mod releases into the CurseForge modpack.
-      # Dispatches release-modpack.yml (which waits ~15 min for CurseForge to approve
-      # the DT file, then publishes a matching modpack version bundling that file +
-      # pinned Sable).
+      # Dispatches release-modpack.yml (which polls until CurseForge has APPROVED the
+      # DT file — a pack referencing an unapproved file is rejected — then publishes a
+      # matching modpack version bundling that file + pinned Sable).
       #
       # Gated on inputs.auto == false, so the ~22 micro-releases per auto-release
       # cascade no longer each push a pack version. Every CurseForge pack upload is a

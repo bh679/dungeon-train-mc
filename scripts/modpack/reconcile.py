@@ -33,33 +33,23 @@ Data sources (stdlib only, matching the other scripts here):
   * Releases   — api.github.com (GITHUB_TOKEN honoured if present).
 """
 import argparse
-import json
 import os
 import sys
 import time
-import urllib.error
-import urllib.request
+
+# Shared CurseForge read helpers (HTTP + the key-vs-mirror distinction). Same directory,
+# so a plain import works when this file is run as a script.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import cf_api  # noqa: E402
 
 CF_MODPACK_PROJECT = int(os.environ.get("CURSEFORGE_MODPACK_PROJECT_ID") or 1556213)
 MR_MODPACK_PROJECT = os.environ.get("MODRINTH_MODPACK_PROJECT_ID") or "bEFyz3ji"
 GITHUB_REPO = os.environ.get("GITHUB_REPOSITORY") or "bh679/dungeon-train-mc"
 
-USER_AGENT = "dungeon-train-modpack-reconcile"
+USER_AGENT = cf_api.USER_AGENT
 
-
-def _get_json(url, headers=None, retries=3, backoff=2.0):
-    """GET + parse JSON with simple retry/backoff (mirrors build-mrpack.py::_http_get_json)."""
-    last = None
-    for attempt in range(1, retries + 1):
-        try:
-            req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT, **(headers or {})})
-            with urllib.request.urlopen(req, timeout=30) as resp:
-                return json.loads(resp.read().decode("utf-8"))
-        except (urllib.error.URLError, json.JSONDecodeError, TimeoutError) as exc:
-            last = exc
-            if attempt < retries:
-                time.sleep(backoff * attempt)
-    raise RuntimeError(f"GET {url} failed after {retries} attempts: {last}")
+# Thin aliases onto cf_api — kept so this module's long-standing names still resolve.
+_get_json = cf_api.get_json
 
 
 def normalize(raw):
@@ -77,29 +67,20 @@ def version_key(version):
         return (0,)
 
 
-def curseforge_is_authoritative():
-    """True when we read CurseForge's own API rather than the cfwidget mirror.
-
-    Only an authoritative source can prove a version is ABSENT. cfwidget caches, and
-    observably lags by many minutes — during the 2026-08-22 live test it still reported
-    260 files / v0.592.0 while curseforge.com already listed 261 / v0.613.0. Treating
-    that lag as "not published" would fail perfectly good releases.
-    """
-    return bool(os.environ.get("CURSEFORGE_API_KEY"))
+curseforge_is_authoritative = cf_api.is_authoritative
 
 
 def curseforge_versions():
     """Publicly listed pack versions on CurseForge, newest-first."""
-    key = os.environ.get("CURSEFORGE_API_KEY")
-    if key:
+    if cf_api.is_authoritative():
         data = _get_json(
-            f"https://api.curseforge.com/v1/mods/{CF_MODPACK_PROJECT}/files?pageSize=10000",
-            headers={"x-api-key": key, "Accept": "application/json"},
+            f"{cf_api.CF_API}/mods/{CF_MODPACK_PROJECT}/files?pageSize=10000",
+            headers=cf_api.api_headers(),
         )
         files = data.get("data", [])
         pairs = [(normalize(f.get("displayName", "")), f.get("fileDate", "")) for f in files]
     else:
-        data = _get_json(f"https://api.cfwidget.com/{CF_MODPACK_PROJECT}")
+        data = _get_json(f"{cf_api.CFWIDGET_API}/{CF_MODPACK_PROJECT}")
         files = data.get("files", [])
         pairs = [(normalize(f.get("display", "")), f.get("uploaded_at", "")) for f in files]
     pairs = [(v, d) for v, d in pairs if v]
