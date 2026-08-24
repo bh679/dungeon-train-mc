@@ -8423,6 +8423,21 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "tamed-animals-death-report",
+      "version": "0.642.0",
+      "type": "feat",
+      "title": "Every animal you tame is counted in your death report",
+      "summary": "Tame a wolf, a cat, a horse \u2014 anything \u2014 and it is tallied for the life you are living. When that life ends, the count appears on your death screen and in your death report alongside the rest of the run: how far you got, what you fought, what you carried. A life spent making friends of animals now leaves a mark in the record, not just in the moment.",
+      "highlights": [
+        "Taming anything counts toward the life you are currently living, and resets when you die.",
+        "The tally shows on the in-game death screen and in the Discord death report."
+      ],
+      "date": "2026-08-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
