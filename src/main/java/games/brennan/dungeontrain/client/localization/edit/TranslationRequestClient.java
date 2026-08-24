@@ -106,7 +106,9 @@ public final class TranslationRequestClient {
      * error where a count should be would be worse than no count.
      */
     public static void fetchCount(String locale, IntConsumer onCount) {
-        if (locale == null || locale.isBlank() || !RelayChatClient.canConnect()) {
+        // Ungated: a tally carries no uuid and says nothing about this player, so it is the pool's
+        // posture, not the submission's. The POST above is the one that identifies somebody.
+        if (locale == null || locale.isBlank()) {
             return;
         }
         try {

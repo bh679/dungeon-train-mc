@@ -5,7 +5,6 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
-import games.brennan.dungeontrain.client.chat.RelayChatClient;
 import games.brennan.dungeontrain.client.localization.RelayReviewedCount;
 import net.minecraft.client.Minecraft;
 import org.slf4j.Logger;
@@ -32,9 +31,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * every language except the one they are already in.</p>
  *
  * <p>So: one request, every locale, at the same title-screen moment the pool fetch already
- * happens. Anonymous -- it carries no uuid, asks nothing about this player, and is a public
- * aggregate like {@code /translations/pool} -- so it is not consent-gated on identity, only on the
- * client being allowed to reach the relay at all.</p>
+ * happens. Anonymous, and UNGATED for that reason: it carries no uuid and asks nothing about this
+ * player, exactly like {@code /translations/pool}, which {@link ApprovedTranslationsFetcher} also
+ * fetches without consulting the network-consent setting. Gating it would have been a quiet
+ * mistake rather than a cautious one — consent defaults to off, so the rings would have stayed at
+ * their build-time values for very nearly everybody.</p>
  *
  * <p><b>Trusted, where {@link RelayReviewedCount} is not.</b> That class deliberately validates
  * each approval against the local provenance manifest, because an approval for a line the manifest
@@ -85,9 +86,6 @@ public final class TranslationCoverageClient {
     }
 
     private static void fetchAsync() {
-        if (!RelayChatClient.canConnect()) {
-            return;
-        }
         try {
             HttpRequest req = HttpRequest.newBuilder(
                     URI.create(DungeonTrain.relayBaseUrl() + "/translations/coverage"))
