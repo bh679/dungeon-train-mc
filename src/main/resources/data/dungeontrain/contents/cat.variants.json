@@ -1,0 +1,6 @@
+{
+  "schemaVersion": 9,
+  "variants": {
+    "2,0,2": [{"entity": "minecraft:cat", "weight": 21}, {"entity": "minecraft:ocelot"}]
+  }
+}
