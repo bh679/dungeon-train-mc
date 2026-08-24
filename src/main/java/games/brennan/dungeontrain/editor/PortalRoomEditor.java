@@ -142,7 +142,7 @@ public final class PortalRoomEditor {
         player.teleportTo(overworld, tx, ty, tz, player.getYRot(), player.getXRot());
 
         player.sendSystemMessage(Component.literal(
-            "[DungeonTrain] Portal room editor: this is the room between a portal's two corridors. "
+            "[DungeonTrain] Dimensional carriage editor: this is the room between a portal's two corridors. "
             + "Keep the way through clear on the walkway centre line — the corridors open onto it "
             + "at both ends. Resize it from the X menu, or with "
             + "/dt editor portals length|width|height <blocks>."));

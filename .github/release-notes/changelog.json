@@ -8324,8 +8324,21 @@
       "released_at": null
     },
     {
-      "id": "author-library-language-filter",
+      "id": "portal-rate-one-knob",
       "version": "0.638.0",
+      "type": "feat",
+      "title": "Dimensional carriages, and more of them in Creative",
+      "summary": "The room between a portal's two corridors is now called a dimensional carriage in-game, matching what the notes have been calling it. In Creative they arrive on an exact beat \u2014 every 5 carriage groups \u2014 instead of at random, so you always know where the next one is. Survival is unchanged. Set the rate for a world with /dungeontrain portal carriage <n>; doing so puts the world into Free Play.",
+      "highlights": [],
+      "pr": 1066,
+      "date": "2026-08-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "author-library-language-filter",
+      "version": "0.639.0",
       "type": "feat",
       "title": "Library rooms stock authors you can read",
       "summary": "A library portal room fills its shelves with one community author's whole catalogue \u2014 and now it only ever picks somebody writing in your game's language. Play in \u4e2d\u6587 and the room is a Chinese author's library; play in English and it is an English one. When nobody writes in your language yet, the room falls back to an English author rather than standing empty.",

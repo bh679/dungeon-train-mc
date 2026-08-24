@@ -212,7 +212,7 @@ public final class EditorTypeMenus {
         List<EditorTypeMenusPacket.TypeTab> typeStrip = buildPortalsTypeStrip();
         String activeId = EditorCategory.PORTALS.id();
 
-        addTrackKindMenu(out, TrackKind.PORTAL_ROOM, "Portal Room", dims, activeId,
+        addTrackKindMenu(out, TrackKind.PORTAL_ROOM, "Dimensional Carriage", dims, activeId,
             categoryBar, typeStrip, EditorCategory.PORTALS);
         return out;
     }
@@ -226,7 +226,7 @@ public final class EditorTypeMenus {
         List<String> names = TrackVariantRegistry.namesFor(TrackKind.PORTAL_ROOM);
         if (names.isEmpty()) return strip;
         strip.add(new EditorTypeMenusPacket.TypeTab(
-            "Portal Room", EditorCategory.PORTALS.name(),
+            "Dimensional Carriage", EditorCategory.PORTALS.name(),
             TrackKind.PORTAL_ROOM.id(), names.get(0)));
         return strip;
     }

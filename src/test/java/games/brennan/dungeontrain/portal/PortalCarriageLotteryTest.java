@@ -8,6 +8,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -182,21 +183,61 @@ final class PortalCarriageLotteryTest {
     }
 
     /**
-     * The dev-creative escape hatch: a periodic rate is the old cadence exactly, so a tester in
-     * creative always has a portal a couple of groups away, and the seed cannot move it.
+     * The dev-creative escape hatch: a periodic rate lands on a fixed beat, so a tester in creative
+     * always has a portal a short ride away, and the seed cannot move it.
+     *
+     * <p>The expectation is derived from {@code DEV_CREATIVE_EVERY} rather than written out, so
+     * retuning the testing cadence does not fail a test that is about the rule, not the number.
+     * {@link Math#floorMod} because the sweep runs behind the origin as well as ahead.</p>
      */
     @Test
     @DisplayName("a periodic rate lands on every nth group in every world alike")
-    void periodicRateIsTheOldCadence() {
+    void periodicRateIsAFixedCadence() {
         for (long seed : new long[] {SEED, 0L, -1L, 12345L}) {
             for (int group = -40; group <= 40; group++) {
                 int anchor = group * GROUP;
-                assertEquals(group % 2 == 0,
+                assertEquals(Math.floorMod(group, PortalCarriageSelection.DEV_CREATIVE_EVERY) == 0,
                     PortalCarriageSelection.isPortalPart(
                         anchor, GROUP, Rate.periodic(PortalCarriageSelection.DEV_CREATIVE_EVERY), seed),
                     "group " + group + " at seed " + seed);
             }
         }
+    }
+
+    /**
+     * The dev build's dense cadence stands in for a rate nobody has chosen, and steps aside for one
+     * that has been. An unconditional override made {@code portal carriage 7} look broken in the dev
+     * client — the world stored 7, the command said 7, and the train kept stamping every 2 — so this
+     * pins the precedence rather than the number.
+     */
+    @Test
+    @DisplayName("an explicitly set rate beats both creative defaults")
+    void setByHandBeatsTheDefaults() {
+        assertEquals(7, PortalCarriageSelection.creativeEvery(7, true, true),
+            "a rate set by hand must survive on a dev build");
+        assertEquals(7, PortalCarriageSelection.creativeEvery(7, true, false),
+            "a rate set by hand must survive on a release build");
+        assertEquals(PortalCarriageSelection.DEV_CREATIVE_EVERY,
+            PortalCarriageSelection.creativeEvery(15, false, true),
+            "an untouched dev world takes the testing cadence");
+        assertEquals(PortalCarriageSelection.CREATIVE_EVERY,
+            PortalCarriageSelection.creativeEvery(15, false, false),
+            "an untouched release world takes the creative default, NOT the survival rate");
+    }
+
+    /**
+     * The two defaults answer different questions — how often a survival run meets a portal, and how
+     * often creative does — so they must not be collapsed into one. Making creative dense by moving
+     * DEFAULT_CARRIAGE_EVERY would silently retune survival, which is the mistake this pins.
+     */
+    @Test
+    @DisplayName("the creative default is separate from the survival rate")
+    void creativeDefaultIsSeparateFromSurvival() {
+        assertNotEquals(PortalCarriageSelection.DEFAULT_CARRIAGE_EVERY,
+            PortalCarriageSelection.CREATIVE_EVERY,
+            "creative's default must not be survival's lottery rate");
+        assertEquals(15, PortalCarriageSelection.DEFAULT_CARRIAGE_EVERY,
+            "survival's shipped rate is 1-in-15 and this change must not move it");
     }
 
     /** Same rate, different rule — otherwise the periodic flag would not be doing anything. */

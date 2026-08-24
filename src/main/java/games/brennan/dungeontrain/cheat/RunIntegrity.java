@@ -50,7 +50,10 @@ public final class RunIntegrity {
      * ({@link AisDataIntegrity#isSessionFreePlay}), DT's own balance config was
      * changed ({@link DtConfigIntegrity#isSessionFreePlay}), a known cheat mod is
      * installed ({@link CheatModIntegrity#isSessionFreePlay}), or custom Train
-     * Editor content is active ({@link EditorContentIntegrity#isSessionFreePlay}).
+     * Editor content is active ({@link EditorContentIntegrity#isSessionFreePlay}),
+     * OR the world's portal rate has been retuned
+     * ({@link PortalTuningIntegrity#isWorldFreePlay} — per-world and permanent
+     * rather than per-session and derived, see that class).
      * Every persistence gate keys off this, so the session taints inherit all
      * Free Play behaviour.
      */
@@ -59,6 +62,7 @@ public final class RunIntegrity {
             || DtConfigIntegrity.isSessionFreePlay()
             || CheatModIntegrity.isSessionFreePlay()
             || EditorContentIntegrity.isSessionFreePlay()
+            || PortalTuningIntegrity.isWorldFreePlay()
             || isPermanentlyCheated(player);
     }
 
@@ -88,7 +92,7 @@ public final class RunIntegrity {
      * confirmation prompt that would have nothing to confirm, and to record the permanent taint
      * quietly instead of notifying twice.
      *
-     * <p>Covers the AIS-config, DT-config and custom-editor-content taints. Deliberately
+     * <p>Covers the AIS-config, DT-config, custom-editor-content and retuned-portal-rate taints. Deliberately
      * <b>not</b> {@link CheatModIntegrity} — that source predates this helper and still takes the
      * prompt / notify path; folding it in would change its Discord reporting, which is a separate
      * call.</p>
@@ -96,7 +100,8 @@ public final class RunIntegrity {
     public static boolean isVisiblySessionFreePlay() {
         return AisDataIntegrity.isSessionFreePlay()
             || DtConfigIntegrity.isSessionFreePlay()
-            || EditorContentIntegrity.isSessionFreePlay();
+            || EditorContentIntegrity.isSessionFreePlay()
+            || PortalTuningIntegrity.isWorldFreePlay();
     }
 
     public static void markCheated(ServerPlayer player, Component cause) {
