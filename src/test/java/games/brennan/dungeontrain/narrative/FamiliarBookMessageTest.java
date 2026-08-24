@@ -43,7 +43,7 @@ class FamiliarBookMessageTest {
 
     /** The top-level translatable contents of the built line for {@code s} at {@code seed}. */
     private static TranslatableContents contents(BookStatsClient.Stats s, long seed) {
-        Component c = FamiliarBookMessage.build(s, RandomSource.create(seed));
+        Component c = FamiliarBookMessage.build("en_us", s, RandomSource.create(seed));
         return (TranslatableContents) c.getContents();
     }
 

@@ -1,0 +1,29 @@
+{
+  "_note": "Locale -> plural rule family. Single source of truth for grammatical number: PluralRules.java reads it at class init, scripts/localization/validate-locale.py reads it to derive each locale's legal key set. Keys are the 2-letter prefix of the locale code, matching LocaleNumberWords.forLocale (note 'fi' is Filipino/fil_ph here, not Finnish - Dungeon Train ships no Finnish). Families are implemented in both PluralRules.java and validate-locale.py; adding a locale here needs no code change, adding a FAMILY needs both.",
+  "_families": {
+    "one_other": "one: n == 1; other: everything else",
+    "zero_one_other": "one: n == 0 or n == 1; other: everything else (French, Portuguese)",
+    "east_slavic": "one: n%10 == 1 and n%100 != 11; few: n%10 in 2..4 and n%100 not in 12..14; many: everything else",
+    "polish": "one: n == 1; few: n%10 in 2..4 and n%100 not in 12..14; many: everything else",
+    "single": "other: always - the language does not inflect for number"
+  },
+  "locales": {
+    "en": "one_other",
+    "de": "one_other",
+    "nl": "one_other",
+    "es": "one_other",
+    "it": "one_other",
+    "fr": "zero_one_other",
+    "pt": "zero_one_other",
+    "ru": "east_slavic",
+    "pl": "polish",
+    "ja": "single",
+    "ko": "single",
+    "zh": "single",
+    "th": "single",
+    "vi": "single",
+    "id": "single",
+    "ms": "single",
+    "fi": "single"
+  }
+}

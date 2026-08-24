@@ -107,4 +107,38 @@ class TranslationFiltersTest {
         // No dismissal set at all asks the plain question rather than throwing.
         assertTrue(TranslationFilters.needsHuman(langUnit("gui.a", true), null, null));
     }
+
+    // ---- which languages the editor opens on ----------------------------------------------------
+
+    @Test
+    @DisplayName("every real language is translatable, whether or not the mod ships it yet")
+    void realLanguagesAreTranslatable() {
+        assertTrue(TranslationFilters.isTranslatableLocale("de_de"));  // shipped
+        assertTrue(TranslationFilters.isTranslatableLocale("zh_cn"));  // shipped
+        assertTrue(TranslationFilters.isTranslatableLocale("hu_hu"));  // nothing shipped for it
+        assertTrue(TranslationFilters.isTranslatableLocale("cs_cz"));
+        assertTrue(TranslationFilters.isTranslatableLocale("HU_HU"), "case is not the question");
+        assertTrue(TranslationFilters.isTranslatableLocale(" hu_hu "));
+    }
+
+    @Test
+    @DisplayName("the English family and the joke locales are not translation targets")
+    void englishAndJokesAreExcluded() {
+        // These render English by vanilla's own fallback whatever the mod ships, so a submission
+        // against one could never be applied to anything.
+        assertFalse(TranslationFilters.isTranslatableLocale("en_us"));
+        assertFalse(TranslationFilters.isTranslatableLocale("en_gb"));
+        assertFalse(TranslationFilters.isTranslatableLocale("en_au"));
+        assertFalse(TranslationFilters.isTranslatableLocale("en_pt"));
+        assertFalse(TranslationFilters.isTranslatableLocale("en_ud"));
+        assertFalse(TranslationFilters.isTranslatableLocale("lol_us"));
+    }
+
+    @Test
+    @DisplayName("a missing locale is not a translation target rather than a crash")
+    void blankLocaleIsSafe() {
+        assertFalse(TranslationFilters.isTranslatableLocale(null));
+        assertFalse(TranslationFilters.isTranslatableLocale(""));
+        assertFalse(TranslationFilters.isTranslatableLocale("   "));
+    }
 }

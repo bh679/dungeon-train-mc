@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.event;
 
+import games.brennan.dungeontrain.discord.WorldInfoReporter;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.net.relay.SharedCarriageClient.Credits;
 import games.brennan.dungeontrain.net.relay.SharedCarriageClient.Deaths;
@@ -193,12 +194,13 @@ public final class SharedCarriageEnterEvents {
         Credits shown = own ? new Credits("", credits.editors(), credits.editorCount()) : credits;
         List<PendingLine> queue = new ArrayList<>(2);
         int due = player.tickCount + CREDIT_DELAY_TICKS;
-        Component credit = SharedCarriageMessage.creditLine(shown, level.getRandom());
+        String locale = WorldInfoReporter.clientLanguage(player);
+        Component credit = SharedCarriageMessage.creditLine(locale, shown, level.getRandom());
         if (credit != null) queue.add(new PendingLine(credit, due));
         // Third line: who died aboard. Independent of the credit line — a carriage can have deaths and no
         // named builder, or the reverse — but it always sits a beat BEHIND wherever the credit beat fell,
         // so the two never land together when both are present.
-        Component died = SharedCarriageMessage.deathLine(deaths, level.getRandom());
+        Component died = SharedCarriageMessage.deathLine(locale, deaths, level.getRandom());
         if (died != null) queue.add(new PendingLine(died, due + DEATH_DELAY_TICKS));
         // Replaced, never appended: whatever the last carriage was still holding has been overtaken and
         // must not trail into this one.
