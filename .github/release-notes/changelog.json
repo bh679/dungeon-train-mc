@@ -8458,6 +8458,39 @@
       "released": true,
       "released_in": "v0.642.0",
       "released_at": "2026-08-24T14:55:08Z"
+    },
+    {
+      "id": "tamed-animals-death-report",
+      "version": "0.643.0",
+      "type": "feat",
+      "title": "Every animal you tame is counted in your death report",
+      "summary": "Tame a wolf, a cat, a horse \u2014 anything \u2014 and it is tallied for the life you are living. When that life ends, the count appears on your death screen and in your death report alongside the rest of the run: how far you got, what you fought, what you carried. A life spent making friends of animals now leaves a mark in the record, not just in the moment.",
+      "highlights": [
+        "Taming anything counts toward the life you are currently living, and resets when you die.",
+        "The tally shows on the in-game death screen and in the Discord death report."
+      ],
+      "date": "2026-08-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "echo-pets-return-on-the-train",
+      "version": "0.643.0",
+      "type": "feat",
+      "title": "Your pets come back with your echo",
+      "summary": "The animals you tamed are remembered when you die. When an echo of that life returns to the train, up to three of your pets walk back on with it \u2014 loyal to the echo exactly as they were to you. They follow it down the carriage, teleport to it when they fall behind, and turn on anyone who attacks it. Mounts stay behind unless you gave them a name: a horse you never named was transport, not a companion.",
+      "highlights": [
+        "Up to three tamed animals return alongside an echo of the life that tamed them.",
+        "They follow, teleport and defend exactly as pets do for a living player.",
+        "Unnamed mounts are left behind; a named one comes back with you.",
+        "Taming counts as kindness, so a life spent befriending animals returns friendlier.",
+        "Requires Interactive Player Mobs 0.92.0 or newer."
+      ],
+      "date": "2026-08-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

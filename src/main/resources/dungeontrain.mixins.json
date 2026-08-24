@@ -6,6 +6,8 @@
   "refmap": "dungeontrain.refmap.json",
   "mixins": [
     "PlayerFudgeSpawnMixin",
+    "TamableAnimalTameMixin",
+    "AbstractHorseTameMixin",
     "LightningBoltVisualOnlyMixin",
     "FlowingFluidExternalWaterMixin",
     "AdvancementVisibilityEvaluatorMixin",
