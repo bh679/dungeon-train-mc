@@ -8538,6 +8538,21 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "book-upload-retry-not-duplicate",
+      "version": "0.646.0",
+      "type": "fix",
+      "title": "A book the train never confirmed is no longer counted twice",
+      "summary": "If the train stored your book but the reply never got back to you \u2014 a restart, a timeout, a bad connection \u2014 your game sends it again, as it always has. That resend was being read as you uploading the same book twice, and it briefly cost four writers an upload pause they had not earned. Each upload now carries a handle the train recognises, so a resend is understood as the same book arriving again rather than a new offence.",
+      "highlights": [
+        "A re-sent upload is recognised as a retry and never counts as a duplicate"
+      ],
+      "pr": 1083,
+      "date": "2026-08-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
