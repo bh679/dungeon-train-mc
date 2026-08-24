@@ -289,7 +289,7 @@ public final class EditorDirtyCheck {
 
             if (unsaved || resized) {
                 out.add(new DirtyEntry("portals", "portal_room." + name,
-                    "portal room / " + name, true, false));
+                    "dimensional carriage / " + name, true, false));
             }
         }
     }

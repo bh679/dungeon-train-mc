@@ -3,11 +3,12 @@ name: Release Modpack
 # Publishes the Dungeon Train CurseForge MODPACK (project = vars.CURSEFORGE_MODPACK_PROJECT_ID),
 # distinct from the mod itself. Dispatched by release.yml right after a successful CurseForge
 # mod upload — for REAL (operator-dispatched) releases only; auto-release cascade ticks are
-# deliberately skipped (see the `inputs.auto == false` gate on that dispatch step). It waits
-# `delay_minutes` (so CurseForge can approve the freshly uploaded DT file before the modpack
-# manifest references it), then builds + uploads a matching modpack version that bundles that
-# release's DT file plus the pinned Sable dependency, and finally VERIFIES that the uploaded
-# version actually became public — CurseForge can accept an upload and reject it afterwards.
+# deliberately skipped (see the `inputs.auto == false` gate on that dispatch step). It first
+# POLLS until CurseForge has approved the freshly uploaded DT file (a pack whose manifest
+# references an unapproved file is rejected outright), then builds + uploads a matching modpack
+# version that bundles that release's DT file plus the pinned Sable dependency, and finally
+# VERIFIES that the uploaded version actually became public — CurseForge can accept an upload
+# and reject it afterwards.
 #
 # Not tag-triggered: release.yml is the only production caller. Can also be dispatched manually
 # (e.g. with dry_run=true) for testing — see modpack/README.md.
@@ -28,11 +29,11 @@ on:
         required: false
         type: boolean
         default: false
-      delay_minutes:
-        description: "Minutes to wait before publishing (lets CurseForge approve the DT file first)."
+      approval_timeout_minutes:
+        description: "How long to wait for CurseForge to approve the DT file before giving up."
         required: false
         type: string
-        default: "15"
+        default: "60"
       dry_run:
         description: "Build + validate the pack but skip the CurseForge upload."
         required: false
@@ -64,21 +65,32 @@ jobs:
       - name: Validate inputs
         env:
           DT_FILE_ID: ${{ inputs.dt_file_id }}
-          DELAY_MINUTES: ${{ inputs.delay_minutes }}
+          APPROVAL_TIMEOUT_MINUTES: ${{ inputs.approval_timeout_minutes }}
         run: |
           if ! [[ "$DT_FILE_ID" =~ ^[0-9]+$ ]]; then
             echo "::error::dt_file_id must be numeric, got '$DT_FILE_ID'"; exit 1
           fi
-          if ! [[ "$DELAY_MINUTES" =~ ^[0-9]+$ ]]; then
-            echo "::error::delay_minutes must be numeric, got '$DELAY_MINUTES'"; exit 1
+          if ! [[ "$APPROVAL_TIMEOUT_MINUTES" =~ ^[0-9]+$ ]]; then
+            echo "::error::approval_timeout_minutes must be numeric, got '$APPROVAL_TIMEOUT_MINUTES'"; exit 1
           fi
 
+      # The manifest references the DT jar by file id, and CurseForge rejects a pack whose
+      # referenced file is not approved yet ("References file with invalid status: <id>").
+      # This used to be a fixed `sleep 15m` — a guess. When approval took longer, or never
+      # came at all (every DT file after v0.625.0 in Aug 2026), the pack was built around an
+      # unapproved file and rejected AFTER upload, leaving this workflow green and the release
+      # silently missing from the pack. Ask the real question instead, and stop if the answer
+      # is no: a re-dispatch is cheap, a silently missing pack version is not.
       - name: Wait for CurseForge to approve the mod file
         env:
-          DELAY_MINUTES: ${{ inputs.delay_minutes }}
+          DT_FILE_ID: ${{ inputs.dt_file_id }}
+          APPROVAL_TIMEOUT_MINUTES: ${{ inputs.approval_timeout_minutes }}
+          # Authoritative when set; without it the check reads the caching cfwidget mirror.
+          CURSEFORGE_API_KEY: ${{ secrets.CURSEFORGE_API_KEY }}
+          CURSEFORGE_PROJECT_ID: ${{ vars.CURSEFORGE_PROJECT_ID }}
         run: |
-          echo "Waiting ${DELAY_MINUTES}m before publishing the modpack (lets CurseForge approve the DT file)…"
-          sleep $(( DELAY_MINUTES * 60 ))
+          python3 scripts/modpack/wait-for-approval.py \
+            --file-id "$DT_FILE_ID" --timeout-minutes "$APPROVAL_TIMEOUT_MINUTES"
 
       - name: Modpack override allowlist
         # overrides/ ships verbatim to every player. Re-checked here because this workflow is

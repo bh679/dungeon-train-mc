@@ -25,12 +25,11 @@ import java.util.function.Consumer;
 public final class TranslationSubmissionList extends AbstractWidget {
 
     private static final int PAD = 4;
-    private static final int SCROLLBAR_W = 3;
+    private static final int SCROLLBAR_W = ListScrollbar.WIDTH;
     private static final int ROW_LINES = 2;
 
     private static final int BG = 0x66000000;
     private static final int ROW_ALT = 0x18FFFFFF;
-    private static final int SCROLLBAR = 0x80AAB0BE;
     private static final int DATE_COLOUR = 0xFFFFFFFF;
     private static final int CREDIT_COLOUR = 0xFFA0A0A0;
 
@@ -43,6 +42,7 @@ public final class TranslationSubmissionList extends AbstractWidget {
      * {@code null} when the player clicks the selected row again to put it back down.
      */
     private final Consumer<TranslationSubmission> onSelect;
+    private final ListScrollbar scrollbar = new ListScrollbar();
 
     private List<TranslationSubmission> rows = List.of();
     private int scroll;
@@ -128,7 +128,7 @@ public final class TranslationSubmissionList extends AbstractWidget {
             renderRow(g, rows.get(i), i, getY() + i * rowH - scroll, rowH, textWidth, mouseX, mouseY);
         }
         g.disableScissor();
-        renderScrollbar(g);
+        scrollbar.render(g, getX(), getY(), width, height, totalHeight(), scroll, maxScroll());
     }
 
     private void renderRow(GuiGraphics g, TranslationSubmission row, int index, int rowY, int rowH,
@@ -163,22 +163,18 @@ public final class TranslationSubmissionList extends AbstractWidget {
         g.drawString(font, credit, textX, lineY, CREDIT_COLOUR, false);
     }
 
-    private void renderScrollbar(GuiGraphics g) {
-        int max = maxScroll();
-        if (max <= 0) {
-            return;
-        }
-        int trackX = getX() + width - SCROLLBAR_W - 1;
-        int thumbH = Math.max(12, (int) ((long) height * height / totalHeight()));
-        int thumbY = getY() + (int) ((long) (height - thumbH) * scroll / max);
-        g.fill(trackX, thumbY, trackX + SCROLLBAR_W, thumbY + thumbH, SCROLLBAR);
-    }
-
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (onSelect == null || !visible || !active || button != 0
             || !isMouseOver(mouseX, mouseY) || rows.isEmpty()) {
             return false;
+        }
+        // The bar first, and only where there is one: a press on the track is aimed at the
+        // scrollbar, not at the row it happens to be drawn over.
+        if (maxScroll() > 0 && scrollbar.isOverTrack(mouseX, getX(), width)) {
+            scrollbar.begin();
+            scroll = scrollbar.scrollFor(mouseY, getY(), height, totalHeight(), maxScroll());
+            return true;
         }
         int index = (int) ((mouseY - getY() + scroll) / rowHeight());
         if (index < 0 || index >= rows.size()) {
@@ -196,6 +192,22 @@ public final class TranslationSubmissionList extends AbstractWidget {
         selected = index;
         onSelect.accept(rows.get(index));
         return true;
+    }
+
+    @Override
+    public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX,
+                                double dragY) {
+        if (!scrollbar.isDragging()) {
+            return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
+        }
+        scroll = scrollbar.scrollFor(mouseY, getY(), height, totalHeight(), maxScroll());
+        return true;
+    }
+
+    @Override
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        scrollbar.end();
+        return super.mouseReleased(mouseX, mouseY, button);
     }
 
     @Override

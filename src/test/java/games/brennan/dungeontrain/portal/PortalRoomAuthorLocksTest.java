@@ -32,6 +32,27 @@ class PortalRoomAuthorLocksTest {
     private static final java.util.function.IntUnaryOperator FIRST = size -> 0;
 
     @Test
+    @DisplayName("Two languages are two directory pages — the same band asked in Chinese and in French")
+    void theLocaleIsPartOfTheDirectoryKey() {
+        java.util.UUID holder = java.util.UUID.randomUUID();
+        PortalRoomBooks books = new PortalRoomBooks(PortalRoomBooks.Kind.MIX, 1, 1, 1, 10, 50);
+        String zh = PortalRoomAuthorLocks.directoryKey("player", holder, books, "zh_cn");
+        String fr = PortalRoomAuthorLocks.directoryKey("player", holder, books, "fr_fr");
+        assertFalse(zh.equals(fr), "one page must not stand in for the other language's answer");
+        assertEquals(zh, PortalRoomAuthorLocks.directoryKey("player", holder, books, "zh_cn"));
+    }
+
+    @Test
+    @DisplayName("The self page is keyed on the holder alone — your own shelf is not language-scoped")
+    void theSelfKeyIgnoresTheLocale() {
+        java.util.UUID holder = java.util.UUID.randomUUID();
+        PortalRoomBooks books = new PortalRoomBooks(PortalRoomBooks.Kind.MIX, 1, 1, 1, 10, 50);
+        assertEquals("self:" + holder, PortalRoomAuthorLocks.directoryKey("self", holder, books, "zh_cn"));
+        assertEquals(PortalRoomAuthorLocks.directoryKey("self", holder, books, null),
+            PortalRoomAuthorLocks.directoryKey("self", holder, books, "fr_fr"));
+    }
+
+    @Test
     @DisplayName("A candidate this room already tried and found empty is never offered again")
     void rejectedCandidatesAreSkipped() {
         Optional<BookAuthorsClient.Author> pick =

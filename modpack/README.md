@@ -145,21 +145,37 @@ undeclared in PR #390. So each `optional_mods` entry **must carry a `slug`** (it
 slug). The library deps are bundled too, so they are likewise declared `iceberg(optional)` (for
 Advancement Plaques).
 
-## How it deploys (15 min after every real mod release)
+## How it deploys (after every real mod release, once the DT file is approved)
 
 ```
 release.yml (REAL release only — cascade ticks are skipped for CurseForge)
   └─ mc-publish uploads the DT jar to CurseForge  → file ID
   └─ dispatches release-modpack.yml with that file ID
-        └─ waits 15 min   (lets CurseForge approve the DT file first)
+        └─ scripts/modpack/wait-for-approval.py → polls until CurseForge APPROVES that file
         └─ scripts/modpack/build-manifest.py   → manifest.json
         └─ zip  manifest.json + overrides/      → dungeon-train-<version>.zip
         └─ scripts/modpack/publish-curseforge.sh → uploads to project 1556213
         └─ scripts/modpack/reconcile.py --verify → confirms it actually went PUBLIC
 ```
 
-The 15-minute wait is the `delay_minutes` input on
-[`release-modpack.yml`](../.github/workflows/release-modpack.yml) (default `15`).
+### The approval gate
+
+A pack manifest that references an **unapproved** DT file is rejected outright:
+
+> `Invalid manifest.json file: References file with invalid status: 8715518 (projectID 1527512).`
+
+This step used to be a fixed `sleep 15m` — a guess at how long approval takes. When approval
+took longer, or never came at all (every DT file after v0.625.0 in Aug 2026 was uploaded but
+never approved), the pack was built around an unapproved file, uploaded, and rejected
+afterwards — leaving the workflow green and the release silently missing from the pack.
+
+`wait-for-approval.py` asks the real question instead, and **fails the run** if the answer is
+still no when `approval_timeout_minutes` (default `60`) runs out. Nothing is uploaded, so the
+fix is to get the file approved in the author dashboard and re-dispatch the workflow for that
+tag. It reads `api.curseforge.com` when `CURSEFORGE_API_KEY` is set (authoritative:
+`fileStatus == 4`), otherwise the caching cfwidget mirror — where the file appearing proves
+approval but its absence may just be cache lag. It fails closed either way, because a needless
+re-dispatch is cheap and a silently missing pack version is not.
 
 **The CurseForge pack publishes only on real, operator-dispatched releases.** The
 dispatch step in `release.yml` is gated on `inputs.auto == false`, so the ~22 quiet

@@ -156,6 +156,16 @@ public final class TranslationScreen extends Screen {
      */
     private ColorTintedButton request;
     private int requestCount = -1;
+    /**
+     * The live search text, held on the SCREEN rather than in the box.
+     *
+     * <p>Every trip into the edit screen and back re-runs {@link #init}, which builds a fresh
+     * {@link EditBox}. Without this the query died on the way to a string and the list silently
+     * widened under the translator while the box sat there open and empty.</p>
+     */
+    private String query = "";
+    /** Likewise the list's scroll position, so coming back does not dump you at the top. */
+    private int listScroll;
     /** The magnifier that reveals the search box, and whether it currently is. */
     private SpriteIconButton searchToggle;
     private boolean searchOpen;
@@ -278,7 +288,11 @@ public final class TranslationScreen extends Screen {
             Component.translatable("gui.dungeontrain.translate.search"));
         search.setHint(Component.translatable("gui.dungeontrain.translate.search"));
         search.setMaxLength(100);
-        search.setResponder(text -> refresh());
+        search.setResponder(text -> {
+            query = text;
+            refresh();
+        });
+        search.setValue(query); // survives the rebuild an edit-and-back triggers
         addRenderableWidget(search);
 
         stateCycle = addRenderableWidget(CycleButton.<StateFilter>builder(StateFilter::label)
@@ -317,6 +331,10 @@ public final class TranslationScreen extends Screen {
 
         // Two panes, always: strings on the left, what you have sent down a narrow right column.
         // The column is the navigation — what the left pane is showing is whatever it says.
+        // Where the old list was looking, so the rebuild below can put it back.
+        if (list != null) {
+            listScroll = list.scrollOffset();
+        }
         int listHeight = Math.max(ROW_H, listBottom - listTop);
         int sentWidth = Math.max(SENT_COLUMN_MIN_W, (contentWidth - GAP) * SENT_COLUMN_PERCENT / 100);
         int leftWidth = Math.max(ROW_H, contentWidth - GAP - sentWidth);
@@ -361,6 +379,7 @@ public final class TranslationScreen extends Screen {
 
         layoutBottomRow(bottomRow, sentX, sentWidth);
         refresh();
+        list.setScrollOffset(listScroll);
     }
 
     /**
@@ -449,8 +468,11 @@ public final class TranslationScreen extends Screen {
      */
     private void setSearchOpen(boolean open) {
         searchOpen = open;
-        if (!open && search != null && !search.getValue().isEmpty()) {
-            search.setValue(""); // fires the responder, which refreshes
+        if (!open) {
+            query = "";
+            if (search != null && !search.getValue().isEmpty()) {
+                search.setValue(""); // fires the responder, which refreshes
+            }
         }
         applySearchOpen();
         if (open && search != null) {

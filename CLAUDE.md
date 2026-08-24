@@ -253,7 +253,7 @@ Separate from the mod, there are **two modpacks** published from one config
   `project_id`/`file_id`. First publish is a **draft** → enters Modrinth's modpack review queue.
 
 After a successful mod upload `release.yml` dispatches **`release-modpack.yml`** (CurseForge —
-waits ~15 min for CurseForge to approve the new DT file) and **`release-modpack-modrinth.yml`**
+polls until CurseForge approves the new DT file, and fails without uploading if it never does) and **`release-modpack-modrinth.yml`**
 (Modrinth — no wait), each gated on that platform's mod upload having produced a file/version id.
 **Modrinth fires for every release including the ~22 cascade ticks; CurseForge fires only for
 real, operator-dispatched releases** (`inputs.auto == false`) — CurseForge's pack validation

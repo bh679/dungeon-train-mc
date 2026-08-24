@@ -86,6 +86,7 @@ jobs:
           python3 scripts/modpack/test_check_pins.py
           python3 scripts/modpack/test_upload_retry.py
           python3 scripts/modpack/test_reconcile.py
+          python3 scripts/modpack/test_wait_for_approval.py
 
   # Stdlib-only Python guard for the translation provenance sidecars (who translated / who
   # human-reviewed each string). Two flavours, both under localization/ and both repo-side
