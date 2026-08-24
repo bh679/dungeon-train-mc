@@ -8403,6 +8403,26 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "editor-package-save-keeps-your-work",
+      "version": "0.641.0",
+      "type": "fix",
+      "title": "Saving a train package no longer loses your work",
+      "summary": "Saving in the Train Editor's Packages menu is now purely additive \u2014 it never deletes or moves anything you have built. Edits you make after saving a package now land in that package, so they stick.",
+      "highlights": [
+        "Saving under a new name makes a copy; the package you saved from stays exactly where it was, along with its .zip snapshot.",
+        "Your first save copies your in-progress work into the new package instead of moving it, leaving the originals in place as a backup.",
+        "Portal room, tunnel, track and pillar edits \u2014 including removing a block variant \u2014 are now written into the package you have active, instead of silently going somewhere the game was not reading.",
+        "Saving over a package name that only exists as a .zip is now refused rather than overwriting that .zip.",
+        "If a save cannot finish, your previous snapshot is left untouched instead of being deleted first.",
+        "The Packages menu now shows Save only on the active package's row, so it can no longer look like it will save a different one.",
+        "The custom train content prompt no longer appears when your run is already Free Play, where it had nothing left to ask."
+      ],
+      "date": "2026-08-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

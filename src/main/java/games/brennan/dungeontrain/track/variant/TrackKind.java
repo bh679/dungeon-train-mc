@@ -84,19 +84,18 @@ public enum TrackKind {
         return id;
     }
 
+    /**
+     * Slug under a package's working folder, e.g. {@code "portals/room"}.
+     * Resolve it against the <i>active</i> package via
+     * {@link games.brennan.dungeontrain.editor.UserContentPaths#activeSubDir}
+     * (writes) or
+     * {@link games.brennan.dungeontrain.editor.UserContentPaths#findFile}
+     * (reads) — never against a fixed {@code config/dungeontrain/user/} path,
+     * or writes land in a folder gameplay isn't reading once a package is
+     * active.
+     */
     public String subdir() {
         return subdir;
-    }
-
-    /**
-     * {@code config/dungeontrain/user/<subdir>/} relative slug. The
-     * {@code user/} segment is fixed — every track-side template the player
-     * authors lives under the same user-content root that the exporter
-     * walks. Bundled classpath data and source-tree writes are unaffected
-     * (see {@link #bundledResourcePrefix()} and {@link #sourceRelativePath()}).
-     */
-    public String configSubdir() {
-        return "dungeontrain/user/" + subdir;
     }
 
     /** {@code /data/dungeontrain/<subdir>/} classpath prefix (with trailing slash). */

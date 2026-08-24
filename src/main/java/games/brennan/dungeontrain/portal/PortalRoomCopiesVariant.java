@@ -285,9 +285,10 @@ public final class PortalRoomCopiesVariant {
 
     // ---------- storage ----------
 
+    /** Active package's copies file — see {@link games.brennan.dungeontrain.track.variant.TrackVariantStore#directory}. */
     public static Path configPathFor(String roomName) {
-        return FMLPaths.CONFIGDIR.get()
-            .resolve(TrackKind.PORTAL_ROOM.configSubdir())
+        return games.brennan.dungeontrain.editor.UserContentPaths
+            .activeSubDir(TrackKind.PORTAL_ROOM.subdir())
             .resolve(roomName + COPIES_EXT);
     }
 

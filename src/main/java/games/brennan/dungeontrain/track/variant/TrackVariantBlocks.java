@@ -155,8 +155,14 @@ public final class TrackVariantBlocks {
         this.mirrorVariants = v;
     }
 
+    /**
+     * Write target for the sidecar — the active package's folder, so it lands
+     * where {@link #loadFromDisk} looks first. See
+     * {@link games.brennan.dungeontrain.track.variant.TrackVariantStore#directory}
+     * for why this can't be the fixed {@code user/} path.
+     */
     public static Path configPathFor(TrackKind kind, String name) {
-        return FMLPaths.CONFIGDIR.get().resolve(kind.configSubdir()).resolve(name + TrackKind.VARIANTS_EXT);
+        return games.brennan.dungeontrain.editor.UserContentPaths.activeSubDir(kind.subdir()).resolve(name + TrackKind.VARIANTS_EXT);
     }
 
     public static String bundledResourceFor(TrackKind kind, String name) {

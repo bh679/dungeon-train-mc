@@ -241,8 +241,9 @@ public final class TrackVariantWeights {
         CURRENT.put(kind, Map.copyOf(next));
     }
 
+    /** Active package's weights file — see {@link TrackVariantStore#directory}. */
     public static Path configPath(TrackKind kind) {
-        return FMLPaths.CONFIGDIR.get().resolve(kind.configSubdir()).resolve(TrackKind.WEIGHTS_FILE);
+        return games.brennan.dungeontrain.editor.UserContentPaths.activeSubDir(kind.subdir()).resolve(TrackKind.WEIGHTS_FILE);
     }
 
     public static String bundledResource(TrackKind kind) {
