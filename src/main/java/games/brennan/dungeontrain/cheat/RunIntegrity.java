@@ -87,6 +87,28 @@ public final class RunIntegrity {
      *              "You switched to Creative.") — shown after the title.
      */
     /**
+     * Is the run already Free Play for some reason <em>other than</em> the custom Train Editor
+     * content itself?
+     *
+     * <p>Exists because {@link #isVisiblySessionFreePlay} can't answer this one:
+     * {@link EditorContentIntegrity#isSessionFreePlay} is true whenever custom content is loading,
+     * so asking it at the custom-content prompt always says "already Free Play" and the prompt
+     * would never appear. This is {@link #isCheated} with that one term removed.</p>
+     *
+     * <p>The caller that matters is the join-time custom-content prompt: its whole question is
+     * "keep your designs and run as Free Play, or drop them and keep your stats". When the run is
+     * Free Play anyway — creative mode, a cheat mod, a retuned config — there is nothing left to
+     * trade, so asking is just a modal in the way.</p>
+     */
+    public static boolean isFreePlayApartFromCustomContent(ServerPlayer player) {
+        return AisDataIntegrity.isSessionFreePlay()
+            || DtConfigIntegrity.isSessionFreePlay()
+            || CheatModIntegrity.isSessionFreePlay()
+            || PortalTuningIntegrity.isWorldFreePlay()
+            || isPermanentlyCheated(player);
+    }
+
+    /**
      * Is the session <em>already visibly</em> Free Play — i.e. the player has been told so and has
      * the effect — for a reason that has nothing to do with them? Callers use this to skip a
      * confirmation prompt that would have nothing to confirm, and to record the permanent taint

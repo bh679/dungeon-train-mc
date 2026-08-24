@@ -8386,6 +8386,78 @@
       "released": true,
       "released_in": "v0.640.0",
       "released_at": "2026-08-24T13:01:12Z"
+    },
+    {
+      "id": "russian-numeral-declension",
+      "version": "0.641.0",
+      "type": "fix",
+      "title": "Numbers read correctly in languages that decline them",
+      "summary": "Counts in chat and on the death screen now take the grammatical form your language actually wants. Russian says \u00ab1 \u0440\u0430\u0437\u00bb, \u00ab2 \u0440\u0430\u0437\u0430\u00bb, \u00ab5 \u0440\u0430\u0437\u00bb instead of forcing everything into one of two English shapes, and the death-screen epitaph reads \u00ab\u0432\u0442\u043e\u0440\u043e\u0439, \u043a\u0442\u043e \u043f\u0430\u043b\u00bb rather than \u00ab\u0434\u0432\u0430-\u0439\u00bb. English was quietly wrong here too \u2014 it used to say \"the twoth to fall\". Languages that don't inflect for number, like Japanese and Chinese, are unaffected.",
+      "highlights": [
+        "Russian and Polish counts decline properly \u2014 one, few and many forms, including the teens and the second decade",
+        "Death-screen epitaphs spell real ordinals: \u00ab\u0432\u0442\u043e\u0440\u043e\u0439, \u043a\u0442\u043e \u043f\u0430\u043b\u00bb, \"the second to fall\"",
+        "Elapsed times, book stats, and shared-carriage death lines all follow the reader's own language"
+      ],
+      "pr": 1076,
+      "date": "2026-08-24",
+      "released": true,
+      "released_in": "v0.642.0",
+      "released_at": "2026-08-24T14:55:08Z"
+    },
+    {
+      "id": "editor-package-save-keeps-your-work",
+      "version": "0.641.0",
+      "type": "fix",
+      "title": "Saving a train package no longer loses your work",
+      "summary": "Saving in the Train Editor's Packages menu is now purely additive \u2014 it never deletes or moves anything you have built. Edits you make after saving a package now land in that package, so they stick.",
+      "highlights": [
+        "Saving under a new name makes a copy; the package you saved from stays exactly where it was, along with its .zip snapshot.",
+        "Your first save copies your in-progress work into the new package instead of moving it, leaving the originals in place as a backup.",
+        "Portal room, tunnel, track and pillar edits \u2014 including removing a block variant \u2014 are now written into the package you have active, instead of silently going somewhere the game was not reading.",
+        "Saving over a package name that only exists as a .zip is now refused rather than overwriting that .zip.",
+        "If a save cannot finish, your previous snapshot is left untouched instead of being deleted first.",
+        "The Packages menu now shows Save only on the active package's row, so it can no longer look like it will save a different one.",
+        "The custom train content prompt no longer appears when your run is already Free Play, where it had nothing left to ask."
+      ],
+      "date": "2026-08-24",
+      "released": true,
+      "released_in": "v0.642.0",
+      "released_at": "2026-08-24T14:55:08Z"
+    },
+    {
+      "id": "editor-authored-books-burn-in-live-train",
+      "version": "0.642.0",
+      "type": "feat",
+      "title": "Hand-written lore books can be stocked in train loot chests",
+      "summary": "Books written and signed inside an editor plot are now ordinary written books while you build with them \u2014 they no longer catch fire when you read or drop them, so you can proof-read one and place it in a carriage's chest. Once that carriage rides the live train, the first player to take the book out of the chest arms it, and it burns after being read like any other book you find out there.",
+      "highlights": [
+        "Books signed in an editor plot no longer burn while you're building",
+        "Authored books can be stocked in a carriage's loot chest and saved into the template",
+        "Found on the live train, they still burn after reading"
+      ],
+      "pr": 1080,
+      "date": "2026-08-24",
+      "released": true,
+      "released_in": "v0.642.0",
+      "released_at": "2026-08-24T14:55:08Z"
+    },
+    {
+      "id": "scribble-book-tools",
+      "version": "0.642.0",
+      "type": "feat",
+      "title": "Better book writing",
+      "summary": "Writing a book in-game is far less painful. The Dungeon Train modpack now bundles Scribble, which adds page insert and delete, undo and redo, and the ability to save a book to a file and load it back later. Books you write still look exactly the same to everyone else, whether or not they have the mod.",
+      "highlights": [
+        "Insert and delete pages anywhere in a book, instead of only adding to the end",
+        "Undo and redo while writing",
+        "Save a book to a file and load it back into a fresh book and quill",
+        "Scribble's colour picker is switched off, so book text stays vanilla black \u2014 set colorPickerVisible in your Dungeon Train client config to bring it back"
+      ],
+      "pr": 1079,
+      "date": "2026-08-24",
+      "released": true,
+      "released_in": "v0.642.0",
+      "released_at": "2026-08-24T14:55:08Z"
     }
   ]
 }

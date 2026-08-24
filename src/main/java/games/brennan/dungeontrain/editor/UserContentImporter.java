@@ -79,7 +79,11 @@ public final class UserContentImporter {
             + "zip stays put — the folder is the live, editable copy.\n"
             + "\n"
             + "To revert a package to its saved snapshot, delete the folder and\n"
-            + "Reload; the zip re-extracts to a fresh folder.\n";
+            + "Reload; the zip re-extracts to a fresh folder.\n"
+            + "\n"
+            + "Saving never deletes anything. Saving the active package under a new\n"
+            + "name writes a copy and leaves the package you copied from in place,\n"
+            + "so nothing you have built can be lost by pressing Save.\n";
 
     /** Skipped on import — it's metadata about the package, not a template payload. */
     private static final String MANIFEST_ENTRY = "manifest.json";

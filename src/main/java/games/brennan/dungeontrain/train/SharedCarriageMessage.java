@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.train;
 
+import games.brennan.dungeontrain.narrative.PluralRules;
 import games.brennan.dungeontrain.net.relay.SharedCarriageClient.Credits;
 import games.brennan.dungeontrain.net.relay.SharedCarriageClient.Deaths;
 import net.minecraft.ChatFormatting;
@@ -97,7 +98,7 @@ public final class SharedCarriageMessage {
      * most five editors are named; any beyond that collapse into "and N others besides".</p>
      */
     @Nullable
-    public static Component creditLine(Credits credits, RandomSource rng) {
+    public static Component creditLine(String locale, Credits credits, RandomSource rng) {
         if (credits == null || !credits.hasAny()) return null;
         MutableComponent out = Component.empty();
         boolean hasCreator = !credits.creator().isEmpty();
@@ -113,13 +114,13 @@ public final class SharedCarriageMessage {
                     ? "chat.dungeontrain.shared_carriage.credit.editors." + (rng.nextInt(CREDIT_EDITOR_LINES) + 1)
                     : "chat.dungeontrain.shared_carriage.credit.editors_alone." + (rng.nextInt(CREDIT_EDITORS_ALONE_LINES) + 1);
             if (hasCreator) out.append(" ");
-            out.append(Component.translatable(key, editorList(editors, credits.editorCount())));
+            out.append(Component.translatable(key, editorList(locale, editors, credits.editorCount())));
         }
         return out.withStyle(ChatFormatting.GRAY);
     }
 
     /** The named editors joined with ", ", wrapped in "and N others" when the list was truncated. */
-    private static Component editorList(List<String> editors, int total) {
+    private static Component editorList(String locale, List<String> editors, int total) {
         MutableComponent joined = Component.empty();
         for (int i = 0; i < editors.size(); i++) {
             if (i > 0) joined.append(", ");
@@ -127,7 +128,8 @@ public final class SharedCarriageMessage {
         }
         int extra = total - editors.size();
         if (extra <= 0) return joined;
-        return Component.translatable("chat.dungeontrain.shared_carriage.credit.more", joined, extra);
+        return Component.translatable("chat.dungeontrain.shared_carriage.credit.more", joined,
+                PluralRules.clause(locale, "chat.dungeontrain.shared_carriage.credit.more.count", extra));
     }
 
     /** One contributor's name. Unstyled on purpose — it inherits the line's colour like any other word. */
@@ -168,7 +170,7 @@ public final class SharedCarriageMessage {
      * has outlived its own trail still reports how many died, and only names who it can.</p>
      */
     @Nullable
-    public static Component deathLine(Deaths deaths, RandomSource rng) {
+    public static Component deathLine(String locale, Deaths deaths, RandomSource rng) {
         if (deaths == null || !deaths.hasAny()) return null;
         List<String> names = deaths.names();
         int total = deaths.total();
@@ -176,8 +178,7 @@ public final class SharedCarriageMessage {
             return total == 1
                     ? Component.translatable("chat.dungeontrain.shared_carriage.deaths.unnamed_one."
                             + (rng.nextInt(DEATH_UNNAMED_ONE_LINES) + 1)).withStyle(ChatFormatting.GRAY)
-                    : Component.translatable("chat.dungeontrain.shared_carriage.deaths.unnamed."
-                            + (rng.nextInt(DEATH_UNNAMED_LINES) + 1), total).withStyle(ChatFormatting.GRAY);
+                    : unnamedMany(locale, total, rng.nextInt(DEATH_UNNAMED_LINES) + 1);
         }
         // "one" is only honest when exactly one death is on record — a single NAME with a higher total
         // means the others simply couldn't be named, which is the plural case wearing one name.
@@ -188,6 +189,33 @@ public final class SharedCarriageMessage {
         }
         return Component.translatable(
                 "chat.dungeontrain.shared_carriage.deaths.few." + (rng.nextInt(DEATH_FEW_LINES) + 1),
-                total, editorList(names, total)).withStyle(ChatFormatting.GRAY);
+                countClause(locale, "travellers", total), editorList(locale, names, total))
+                .withStyle(ChatFormatting.GRAY);
+    }
+
+    /**
+     * One of the three "deaths happened, nobody to name" lines. Each names a DIFFERENT noun — travellers,
+     * runs, times — so each takes its own count clause rather than a bare number: a language that declines
+     * its nouns declines each of them separately, and cannot do so at all if the noun is stranded in the
+     * outer sentence.
+     */
+    private static Component unnamedMany(String locale, int total, int variant) {
+        String noun = switch (variant) {
+            case 2 -> "runs";
+            case 3 -> "times";
+            default -> "travellers";
+        };
+        return Component.translatable("chat.dungeontrain.shared_carriage.deaths.unnamed." + variant,
+                countClause(locale, noun, total)).withStyle(ChatFormatting.GRAY);
+    }
+
+    /**
+     * "{@code N travellers}" / "{@code N runs}" / "{@code N times}" as a nested component, in the form
+     * {@code locale} wants for {@code n} — the same pattern {@code FamiliarBookMessage.heldClause} uses.
+     * Keeping the counted noun OUT of the surrounding sentence is what lets Russian say
+     * "2 путника" but "5 путников" without four re-phrasings of every line.
+     */
+    private static Component countClause(String locale, String noun, int n) {
+        return PluralRules.clause(locale, "chat.dungeontrain.shared_carriage.deaths.count." + noun, n);
     }
 }

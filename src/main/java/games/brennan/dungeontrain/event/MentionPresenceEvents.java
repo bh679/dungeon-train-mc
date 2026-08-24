@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.event;
 
+import games.brennan.dungeontrain.discord.WorldInfoReporter;
 import games.brennan.discordpresence.discord.DiscordService;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.echo.RemoteEchoEncounters;
@@ -96,6 +97,7 @@ public final class MentionPresenceEvents {
         }
         DiscordService dp = DiscordService.get();
         Component line = PresenceLine.recentLine(
+                WorldInfoReporter.clientLanguage(sender),
                 dp.isDiscordUserOnline(DungeonTrain.BRENNAN_DISCORD_ID),
                 dp.lastSeenOnline(DungeonTrain.BRENNAN_DISCORD_ID),
                 Instant.now());
