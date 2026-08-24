@@ -8303,9 +8303,9 @@
       "highlights": [],
       "pr": 1067,
       "date": "2026-08-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.639.0",
+      "released_at": "2026-08-24T11:57:21Z"
     },
     {
       "id": "translation-search-and-scrollbar",
@@ -8319,9 +8319,9 @@
       ],
       "pr": 1070,
       "date": "2026-08-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.639.0",
+      "released_at": "2026-08-24T11:57:21Z"
     },
     {
       "id": "portal-rate-one-knob",
@@ -8332,9 +8332,9 @@
       "highlights": [],
       "pr": 1066,
       "date": "2026-08-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.639.0",
+      "released_at": "2026-08-24T11:57:21Z"
     },
     {
       "id": "author-library-language-filter",
@@ -8349,9 +8349,9 @@
       ],
       "pr": 1072,
       "date": "2026-08-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.639.0",
+      "released_at": "2026-08-24T11:57:21Z"
     }
   ]
 }
