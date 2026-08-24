@@ -18,6 +18,30 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class BookAuthorsClientTest {
 
     @Test
+    @DisplayName("The host locale rides along, so a room is stocked from somebody its readers can read")
+    void theQueryCarriesTheLocale() {
+        String q = BookAuthorsClient.query("player", 10, 50, null, false, "zh_cn");
+        assertTrue(q.contains("&lang=zh_cn"), q);
+        assertTrue(q.startsWith("/books/authors?kind=player"), q);
+        assertTrue(q.contains("&min=10"), q);
+        assertTrue(q.contains("&max=50"), q);
+    }
+
+    @Test
+    @DisplayName("No locale sends no lang — which is the relay's own count-every-language path")
+    void noLocaleSendsNoLangAtAll() {
+        assertFalse(BookAuthorsClient.query("player", 10, 0, null, false, null).contains("lang="));
+        assertFalse(BookAuthorsClient.query("player", 10, 0, null, false, "  ").contains("lang="));
+    }
+
+    @Test
+    @DisplayName("An underscored locale survives encoding intact")
+    void localeIsEncodedNotMangled() {
+        assertTrue(BookAuthorsClient.query("signature", 0, 0, null, true, "pt_br")
+            .contains("&lang=pt_br"));
+    }
+
+    @Test
     @DisplayName("A well-formed reply parses into authors, newest fields and all")
     void parsesAuthors() {
         List<BookAuthorsClient.Author> authors = BookAuthorsClient.parse(
