@@ -8352,6 +8352,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "curseforge-pack-approval-gate",
+      "version": "0.640.0",
+      "type": "ci",
+      "title": "Modpack releases stop silently going missing from CurseForge",
+      "summary": "The CurseForge modpack is published from a manifest that points at that release's Dungeon Train file. If CurseForge has not approved that file yet, it rejects the whole pack \u2014 quietly, after the upload looked fine. The release pipeline now waits for the file to actually be approved before building the pack, and stops with a clear reason if it never is, instead of shipping nothing and reporting success.",
+      "highlights": [
+        "Pack uploads no longer reference an unapproved mod file",
+        "A stuck release fails loudly instead of going silently missing"
+      ],
+      "pr": 1073,
+      "date": "2026-08-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
