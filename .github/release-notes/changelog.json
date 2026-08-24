@@ -8306,6 +8306,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "translation-search-and-scrollbar",
+      "version": "0.637.0",
+      "type": "fix",
+      "title": "Translation editor keeps your search, and its scrollbars work",
+      "summary": "Opening a string in the translation editor no longer wipes what you typed in the search box or your place in the list \u2014 both are still there when you come back. The editor's two lists also have working scrollbars now: clicking or dragging the bar scrolls, instead of selecting the row hiding behind it.",
+      "highlights": [
+        "Search text and scroll position survive opening a string",
+        "Scrollbars are clickable and draggable in both the strings list and the sent column"
+      ],
+      "pr": 1070,
+      "date": "2026-08-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
