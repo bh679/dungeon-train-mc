@@ -175,24 +175,6 @@ final class PortalMinLevelGateTest {
             "mean wait past the gate was " + meanWait + " groups, expected about " + every);
     }
 
-    /** Portals five apart is a property of the whole track, including the first ones past the gate. */
-    @Test
-    @DisplayName("the minimum gap still holds either side of the gate")
-    void minimumGapHoldsPastTheGate() {
-        int previous = Integer.MIN_VALUE;
-        for (int group = SHIPPED_GATE; group < SHIPPED_GATE + 5_000; group++) {
-            if (!PortalCarriageSelection.isPortalPart(
-                group * GROUP, GROUP, Rate.lottery(15), SEED, SHIPPED_GATE)) continue;
-            if (previous != Integer.MIN_VALUE) {
-                assertTrue(group - previous >= PortalCarriageSelection.MIN_GROUP_GAP,
-                    "groups " + previous + " and " + group + " are too close");
-            }
-            previous = group;
-        }
-        assertTrue(previous != Integer.MIN_VALUE, "no portals past the gate to check the gap between");
-    }
-
-    /** The track behind the origin is gated and drawn like the track ahead of it, not mirrored onto it. */
     @Test
     @DisplayName("the track behind the origin is gated the same and draws at the same rate")
     void behindTheOriginMatchesAheadOfIt() {
@@ -213,6 +195,24 @@ final class PortalMinLevelGateTest {
             "ahead of the origin: " + ahead + " of " + groups + ", expected about " + expected);
     }
 
+    /** Portals five apart is a property of the whole track, including the first ones past the gate. */
+    @Test
+    @DisplayName("the minimum gap still holds either side of the gate")
+    void minimumGapHoldsPastTheGate() {
+        int previous = Integer.MIN_VALUE;
+        for (int group = SHIPPED_GATE; group < SHIPPED_GATE + 5_000; group++) {
+            if (!PortalCarriageSelection.isPortalPart(
+                group * GROUP, GROUP, Rate.lottery(15), SEED, SHIPPED_GATE)) continue;
+            if (previous != Integer.MIN_VALUE) {
+                assertTrue(group - previous >= PortalCarriageSelection.MIN_GROUP_GAP,
+                    "groups " + previous + " and " + group + " are too close");
+            }
+            previous = group;
+        }
+        assertTrue(previous != Integer.MIN_VALUE, "no portals past the gate to check the gap between");
+    }
+
+    /** The track behind the origin is gated and drawn like the track ahead of it, not mirrored onto it. */
     /**
      * The dev-creative cadence exists so a tester always has a portal a short ride away. A gate that
      * applied to it would put the nearest one sixty carriages off and take that away.
@@ -222,7 +222,7 @@ final class PortalMinLevelGateTest {
     void periodicRateLiftsTheGate() {
         Rate rate = Rate.periodic(PortalCarriageSelection.DEV_CREATIVE_EVERY);
         for (int group = -40; group <= 40; group++) {
-            assertEquals(group % 2 == 0,
+            assertEquals(Math.floorMod(group, PortalCarriageSelection.DEV_CREATIVE_EVERY) == 0,
                 PortalCarriageSelection.isPortalPart(group * GROUP, GROUP, rate, SEED, SHIPPED_GATE),
                 "group " + group + " under the dev-creative cadence");
         }

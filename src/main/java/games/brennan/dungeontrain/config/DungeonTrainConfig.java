@@ -486,7 +486,7 @@ public final class DungeonTrainConfig {
                 .defineInRange("sharedBookRepeatGroups", DEFAULT_SHARED_BOOK_REPEAT_GROUPS,
                         MIN_SHARED_BOOK_REPEAT_GROUPS, MAX_SHARED_BOOK_REPEAT_GROUPS);
         ModConfigSpec.IntValue portalRoomAuthorMinBooks = b
-                .comment("How many approved community books an author must have written before a portal room whose Books",
+                .comment("How many approved community books an author must have written before a dimensional carriage whose Books",
                         "setting is `player` or `signature` will lock to them. Strictly MORE than this, so 10 means an",
                         "eleventh book is needed to qualify. A room wants a catalogue rather than a shelf: locking to",
                         "somebody with two books hands those two out over and over. The `self` setting ignores this — finding",
@@ -496,7 +496,7 @@ public final class DungeonTrainConfig {
                 .defineInRange("portalRoomAuthorMinBooks", DEFAULT_PORTAL_ROOM_AUTHOR_MIN_BOOKS,
                         MIN_PORTAL_ROOM_AUTHOR_MIN_BOOKS, MAX_PORTAL_ROOM_AUTHOR_MIN_BOOKS);
         ModConfigSpec.BooleanValue portalRoomDaylight = b
-                .comment("Light portal rooms whose template asks for a sky. Only templates that opt in are affected",
+                .comment("Light dimensional carriages whose template asks for a sky. Only templates that opt in are affected",
                         "(the Sky segment of their `mode` tag); every other room is lit exactly as before. Each player's",
                         "own lightmap is lifted toward that sky while they are inside the room, and eased back as they",
                         "leave — no block is changed, no light is stored, and no game logic (mob spawns, the clock) is",

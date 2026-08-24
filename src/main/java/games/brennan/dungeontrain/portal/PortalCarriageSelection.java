@@ -47,14 +47,18 @@ import java.util.Map;
  * seedless hash would put portals at identical group ordinals in every world ever generated.</p>
  *
  * <p>Two portals are never closer than {@link #MIN_GROUP_GAP} groups, so the lottery reads as
- * sporadic rather than clumpy — an unconstrained draw puts two back to back often enough to notice.</p>
+ * sporadic rather than clumpy — an unconstrained draw puts two back to back often enough to notice.
+ * The gap is the <b>survival lottery's</b> alone: creative's fixed cadence never consults it.</p>
  *
  * <p><b>The lottery does not start at the origin.</b> Nothing before Diff-Level
  * {@link #MIN_PORTAL_LEVEL} holds a portal, and the draw begins counting at that boundary rather
  * than running from the origin and discarding what it drew — see {@link #firstEligibleGroup()}.</p>
  *
- * <p>The one exception is a dev build with everyone in creative, which keeps the old every-2nd
- * cadence so a portal is always a short ride away while testing — see {@link #rateFor}.</p>
+ * <p>The one exception is a level where everyone is in creative, which takes an <b>exact cadence</b>
+ * rather than a rate to draw against — every nth group, no seed involved, no gap rule and no
+ * Diff-Level gate. Its default is {@link #CREATIVE_EVERY}, separate from survival's, so creative can
+ * be dense without moving what a survival run meets. See {@link #rateFor}, which also spells out what riding on a mutable input
+ * costs.</p>
  */
 public final class PortalCarriageSelection {
 
@@ -68,7 +72,7 @@ public final class PortalCarriageSelection {
     /** Slot of the exit corridor within its group. */
     public static final int SLOT_EXIT = 2;
 
-    /** One group in fifteen holds a portal, on average. */
+    /** One group in fifteen holds a portal, on average — the survival lottery's rate. */
     public static final int DEFAULT_CARRIAGE_EVERY = 15;
 
     /** Value meaning "no group holds a portal". */
@@ -115,12 +119,28 @@ public final class PortalCarriageSelection {
     public static final int MIN_GROUP_GAP = 5;
 
     /**
-     * The cadence a dev build hands a creative player: every 2nd group, as the whole system worked
-     * before the lottery. Finding a portal at the shipped 1-in-20 means riding a long way, which is
-     * a poor loop for testing one; creative on a dev build is exactly the case where that matters
-     * and nobody's play experience is at stake.
+     * The cadence a dev build stands in for the world's own rate with, while nobody has set one:
+     * every 2nd group, as the whole system worked before the lottery. Riding to a portal at the
+     * shipped rate is a poor loop for testing one, and a dev build is exactly where that matters and
+     * nobody's play experience is at stake.
+     *
+     * <p>A stand-in, not an override — {@code /dungeontrain portal carriage <n>} beats it, so the
+     * command is testable in the dev client. See {@link #creativeEvery}.</p>
      */
     public static final int DEV_CREATIVE_EVERY = 2;
+
+    /**
+     * The cadence creative gets where the world's rate has not been set by hand: every 5th group.
+     *
+     * <p>Creative is the build-and-look-around mode and a portal is the thing worth looking at, so it
+     * arrives on a fixed beat and often. Deliberately <b>separate from
+     * {@link #DEFAULT_CARRIAGE_EVERY}</b>: making creative dense must not move what a survival run
+     * meets, and one stored number cannot default to two things at once.</p>
+     *
+     * <p>It coincides with {@link #MIN_GROUP_GAP} by arithmetic rather than by meaning — that constant
+     * is the lottery's anti-clumping floor, which a periodic rate never consults.</p>
+     */
+    public static final int CREATIVE_EVERY = 5;
 
     private PortalCarriageSelection() {}
 
@@ -173,7 +193,7 @@ public final class PortalCarriageSelection {
      * <p>The draw is a hash of the group's ordinal and the world seed rather than a modulo, so
      * portals arrive at no fixed beat while every reader — the placer, the relay, the tick that
      * builds the pair — keeps getting the same answer for the same group forever. A
-     * {@link Rate#periodic} rate takes the old every-nth cadence instead; see
+     * {@link Rate#periodic} rate takes a fixed every-nth cadence instead; see
      * {@link #DEV_CREATIVE_EVERY} for the one case that uses it.</p>
      */
     public static boolean isPortalGroup(int carriageIndex, int groupSize, Rate rate, long worldSeed) {
@@ -443,37 +463,76 @@ public final class PortalCarriageSelection {
     }
 
     /**
-     * The rate this level is currently drawing at: the world's stored one, unless a dev build has
-     * handed a creative player the dense testing cadence.
+     * The rate this level is currently drawing at: a fixed cadence while everyone on it is in
+     * creative, otherwise the world's stored lottery rate.
      *
-     * <p><b>Game mode is not a stable input, and that is the price here.</b> Everything else about
-     * the selection is fixed for the life of a world; this one input a player can change at will,
-     * and when they do, groups the rolling window has not stamped yet answer differently — a
-     * corridor re-stamped after the switch can come back an ordinary carriage. That is only
-     * tolerable because it is fenced to dev builds ({@link DungeonTrain#isDevBuild()}, branch is not
-     * {@code main}), where the point of the world is testing. It must never reach a release.</p>
+     * <p><b>Game mode is not a stable input, and that is the price of this feature.</b> Everything
+     * else about the selection is fixed for the life of a world; this one input a player can change
+     * at will, and when they do, groups the rolling window has not stamped yet answer differently —
+     * so a group that would have held a corridor can come back ordinary, and the other way about.
+     * Carriages already stamped keep what they have, so a world switched mid-run ends up with a
+     * mixed train. That is understood and accepted: creative is a mode you enter to look at the
+     * train rather than to run it, and the alternative — a creative cadence that only takes effect
+     * in a fresh world — is not what the mode is for.</p>
      *
      * <p><b>Every player, not any.</b> One carriage has one verdict — the invariant the placer, the
-     * relay and the pair tick all lean on — so the override cannot be per-player. A survival player
-     * sharing a level with a creative one therefore holds the whole level at the normal rate, which
-     * is also the plain reading of "survival is normal even on a dev build". An empty level keeps
-     * the stored rate.</p>
+     * relay and the pair tick all lean on — so the cadence cannot be per-player. A survival player
+     * sharing a level with a creative one therefore holds the whole level at the lottery rate. On a
+     * shared server that means one survival player silently changes what the creative players get;
+     * there is no per-player answer available, so this is the honest one. An empty level keeps the
+     * stored rate.</p>
+     *
+     * <p><b>One number, read two ways.</b> Creative and survival share the world's stored rate: in
+     * survival it is a rate the seeded lottery draws against, in creative it is an exact period —
+     * every nth group, no seed, no Diff-Level gate. Same setting, so
+     * {@code /dungeontrain portal carriage 5} means "about every 5th" to one and "every 5th" to the
+     * other, and {@code portal carriage off} means no portals to both.</p>
      */
     public static Rate rateFor(ServerLevel level) {
-        int stored = PortalRegistry.get(level).carriageEvery();
+        PortalRegistry registry = PortalRegistry.get(level);
+        int stored = registry.carriageEvery();
         if (stored <= CARRIAGE_EVERY_OFF) return Rate.OFF;
-        return isDevCreative(level) ? Rate.periodic(DEV_CREATIVE_EVERY) : Rate.lottery(stored);
+        if (!isAllCreative(level)) return Rate.lottery(stored);
+        return Rate.periodic(creativeEveryFor(registry));
     }
 
-    /** True on a dev build where at least one player is logged in and all of them are in creative. */
-    public static boolean isDevCreative(ServerLevel level) {
-        if (!DungeonTrain.isDevBuild()) return false;
+    /**
+     * The exact cadence creative runs at: the world's rate, unless this is a dev build whose rate
+     * nobody has set, in which case the dense testing cadence stands in for it.
+     *
+     * <p><b>An explicit setting wins, including on a dev build.</b> An unconditional dev override
+     * makes {@code /dungeontrain portal carriage 7} appear to do nothing in the dev client — the
+     * command reports the new rate, the world stores it, and the train keeps stamping every
+     * {@link #DEV_CREATIVE_EVERY} groups. The substitution is a convenience for a world nobody has
+     * an opinion about, so it steps aside the moment someone does.</p>
+     */
+    private static int creativeEveryFor(PortalRegistry registry) {
+        return creativeEvery(registry.carriageEvery(), registry.isCarriageEverySet(),
+            DungeonTrain.isDevBuild());
+    }
+
+    /** {@link #creativeEveryFor} with its inputs supplied — the testable form. */
+    static int creativeEvery(int stored, boolean setByHand, boolean devBuild) {
+        if (setByHand) return stored;
+        return devBuild ? DEV_CREATIVE_EVERY : CREATIVE_EVERY;
+    }
+
+    /**
+     * True where at least one player is logged in on this level and every one of them is in creative
+     * — see {@link #rateFor} for why it is every player rather than any.
+     */
+    public static boolean isAllCreative(ServerLevel level) {
         List<ServerPlayer> players = level.players();
         if (players.isEmpty()) return false;
         for (ServerPlayer player : players) {
             if (!player.gameMode.getGameModeForPlayer().isCreative()) return false;
         }
         return true;
+    }
+
+    /** True on a dev build that is also {@link #isAllCreative} — the dense testing default's case. */
+    public static boolean isDevCreative(ServerLevel level) {
+        return DungeonTrain.isDevBuild() && isAllCreative(level);
     }
 
     /**

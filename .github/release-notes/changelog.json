@@ -8322,6 +8322,19 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "portal-rate-one-knob",
+      "version": "0.638.0",
+      "type": "feat",
+      "title": "Dimensional carriages, and more of them in Creative",
+      "summary": "The room between a portal's two corridors is now called a dimensional carriage in-game, matching what the notes have been calling it. In Creative they arrive on an exact beat \u2014 every 5 carriage groups \u2014 instead of at random, so you always know where the next one is. Survival is unchanged. Set the rate for a world with /dungeontrain portal carriage <n>; doing so puts the world into Free Play.",
+      "highlights": [],
+      "pr": 1066,
+      "date": "2026-08-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

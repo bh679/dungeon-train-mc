@@ -286,7 +286,7 @@ public record EditorPlotActionPacket(
             return;
         }
         String name = packet.modelName;
-        String label = "portal room '" + name + "'";
+        String label = "dimensional carriage '" + name + "'";
         switch (packet.action) {
             case SAVE -> SaveCommand.saveOnePlayerVisible(sender, new Template.PortalRoom(name));
             case RESET -> ResetCommand.resetToSavedPlayerVisible(sender, new Template.PortalRoom(name));

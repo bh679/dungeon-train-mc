@@ -60,6 +60,7 @@ public final class DungeonTrainWorldData extends SavedData {
     private static final String TAG_USED_CARRIAGE_IDS = "usedSharedCarriageIds";
     private static final String TAG_DIFFICULTY_TRAVELLED_OFFSET = "difficultyTravelledOffset";
     private static final String TAG_CUSTOM_CONTENT_CHOICE = "customContentChoice";
+    private static final String TAG_PORTAL_RATE_TUNED = "portalRateTuned";
 
     private int trainY;
     private boolean startsWithTrain;
@@ -90,6 +91,20 @@ public final class DungeonTrainWorldData extends SavedData {
      * into the static the Free Play gate reads.
      */
     private CustomContentChoice customContentChoice = CustomContentChoice.UNSET;
+
+    /**
+     * True once someone has retuned how often portals arrive in this world
+     * ({@code /dungeontrain portal carriage …}).
+     *
+     * <p>A property of the <b>world</b>, not of whoever typed the command: the track everyone rides
+     * was laid at a rate DT did not balance, so the whole world is Free Play. Read it through
+     * {@code PortalTuningIntegrity} rather than here — that class caches it so the Free Play gate
+     * doesn't touch SavedData on hot paths.</p>
+     *
+     * <p><b>One-way.</b> Setting the rate back changes nothing already generated, so there is no
+     * un-tuning a world.</p>
+     */
+    private boolean portalRateTuned = false;
 
     /**
      * Transient scheduling set of chunk keys ({@link net.minecraft.world.level.ChunkPos#toLong}) whose
@@ -259,6 +274,9 @@ public final class DungeonTrainWorldData extends SavedData {
         if (tag.contains(TAG_CUSTOM_CONTENT_CHOICE)) {
             data.customContentChoice = CustomContentChoice.fromNbt(tag.getString(TAG_CUSTOM_CONTENT_CHOICE));
         }
+        // Absent on every world saved before the rate was settable → false, which is correct: those
+        // worlds ran at the rate DT balanced.
+        data.portalRateTuned = tag.getBoolean(TAG_PORTAL_RATE_TUNED);
         // getIntArray returns an empty array for an absent key, so worlds saved before shared carriages
         // simply start having placed nothing.
         data.usedCarriageIds.loadFrom(tag.getIntArray(TAG_USED_CARRIAGE_IDS));
@@ -287,6 +305,7 @@ public final class DungeonTrainWorldData extends SavedData {
         tag.putBoolean(TAG_JOIN_REPORT_POSTED, joinReportPosted);
         tag.putInt(TAG_DIFFICULTY_TRAVELLED_OFFSET, difficultyTravelledOffset);
         tag.putString(TAG_CUSTOM_CONTENT_CHOICE, customContentChoice.nbtId());
+        tag.putBoolean(TAG_PORTAL_RATE_TUNED, portalRateTuned);
         tag.putIntArray(TAG_USED_CARRIAGE_IDS, usedCarriageIds.toIntArray());
         return tag;
     }
@@ -318,6 +337,18 @@ public final class DungeonTrainWorldData extends SavedData {
      */
     public CustomContentChoice customContentChoice() {
         return customContentChoice;
+    }
+
+    /** True once this world's portal rate has been retuned — see {@link #portalRateTuned}. */
+    public boolean isPortalRateTuned() {
+        return portalRateTuned;
+    }
+
+    /** Record the retuning. One-way: there is no path back to false. */
+    public void markPortalRateTuned() {
+        if (portalRateTuned) return;
+        portalRateTuned = true;
+        setDirty();
     }
 
     /** Record the player's answer. Called from {@code EditorContentIntegrity.setWorldChoice}. */
