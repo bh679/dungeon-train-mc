@@ -8501,9 +8501,9 @@
       "highlights": [],
       "pr": 1081,
       "date": "2026-08-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.644.0",
+      "released_at": "2026-08-24T15:34:13Z"
     }
   ]
 }
