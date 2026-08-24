@@ -8438,6 +8438,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "echo-pets-return-on-the-train",
+      "version": "0.642.0",
+      "type": "feat",
+      "title": "Your pets come back with your echo",
+      "summary": "The animals you tamed are remembered when you die. When an echo of that life returns to the train, up to three of your pets walk back on with it \u2014 loyal to the echo exactly as they were to you. They follow it down the carriage, teleport to it when they fall behind, and turn on anyone who attacks it. Mounts stay behind unless you gave them a name: a horse you never named was transport, not a companion.",
+      "highlights": [
+        "Up to three tamed animals return alongside an echo of the life that tamed them.",
+        "They follow, teleport and defend exactly as pets do for a living player.",
+        "Unnamed mounts are left behind; a named one comes back with you.",
+        "Taming counts as kindness, so a life spent befriending animals returns friendlier.",
+        "Requires Interactive Player Mobs 0.92.0 or newer."
+      ],
+      "date": "2026-08-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
