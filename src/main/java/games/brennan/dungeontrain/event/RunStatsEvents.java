@@ -238,7 +238,9 @@ public final class RunStatsEvents {
 
             // The full paginated narrative + death-screen stats, and the full hotbar/main-inventory +
             // offhand, so the per-death detail view can show everything the death screen did.
-            DeathDetailReporter.report(player, packet);
+            DeathDetailReporter.report(player, packet, new DeathDetailReporter.Feats(
+                    run.echoesKilled(), GlobalPlayerStats.totalEchoesKilled(id),
+                    run.maxCarriagesNoChest(), run.pacifistCarriages()));
             DeathInventoryReporter.report(player);
         });
 

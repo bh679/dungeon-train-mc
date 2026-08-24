@@ -53,19 +53,33 @@ public final class DeathDetailReporter {
         }
     }
 
+    /**
+     * The four per-death figures the public leaderboards need that {@link DeathStatsPacket} does not
+     * carry. Kept off the packet on purpose: the death screen doesn't display any of them, and the
+     * packet is synced to every dying client, so widening it would spend bandwidth on values nothing
+     * renders. They are read straight off the run state at the death site instead.
+     *
+     * <p>{@code echoesKilled} and {@code maxCarriagesNoChest} are this run's; {@code lifeEchoesKilled}
+     * is the cross-world total (accrued live at each kill, like echoes encountered);
+     * {@code pacifistCarriages} is this run's carriages passed while dealing no damage at all.</p>
+     */
+    public record Feats(int echoesKilled, long lifeEchoesKilled, int maxCarriagesNoChest, int pacifistCarriages) {
+        static final Feats NONE = new Feats(0, 0L, 0, 0);
+    }
+
     private DeathDetailReporter() {}
 
     /**
      * Build and fire the death-detail record for {@code player} from the death-screen {@code
      * packet}. No-op when disabled or on any error — this must never disrupt death handling.
      */
-    public static void report(ServerPlayer player, DeathStatsPacket packet) {
+    public static void report(ServerPlayer player, DeathStatsPacket packet, Feats feats) {
         try {
             if (!DungeonTrainConfig.isWorldInfoToRelay()) {
                 return;
             }
             String uuid = player.getUUID().toString().replace("-", "");
-            JsonObject payload = buildPayload(uuid, packet.narrative(), DeathStats.from(packet));
+            JsonObject payload = buildPayload(uuid, packet.narrative(), DeathStats.from(packet), feats);
             post(uuid, payload.toString());
         } catch (Throwable t) {
             LOGGER.warn("[DungeonTrain] death-detail relay report failed: {}", t.toString());
@@ -76,7 +90,7 @@ public final class DeathDetailReporter {
      * Pure payload assembly over plain data — package-private so the shape can be unit-tested
      * without bootstrapping the game.
      */
-    static JsonObject buildPayload(String uuid, DeathNarrative narrative, DeathStats s) {
+    static JsonObject buildPayload(String uuid, DeathNarrative narrative, DeathStats s, Feats feats) {
         JsonObject body = new JsonObject();
         body.addProperty("uuid", uuid);
 
@@ -118,6 +132,13 @@ public final class DeathDetailReporter {
         body.addProperty("lifeAdvancements", s.lifeAdvancements());
         body.addProperty("lifeDamageDealt", s.lifeDamageDealt());
         body.addProperty("lifeDamageTaken", s.lifeDamageTaken());
+
+        // Leaderboard-only figures. New in this payload, so every board built on them starts empty
+        // and fills from here forward — there is no history to backfill for any of the four.
+        body.addProperty("echoesKilled", feats.echoesKilled());
+        body.addProperty("lifeEchoesKilled", feats.lifeEchoesKilled());
+        body.addProperty("maxCarriagesNoChest", feats.maxCarriagesNoChest());
+        body.addProperty("pacifistCarriages", feats.pacifistCarriages());
         return body;
     }
 

@@ -225,4 +225,70 @@ final class PlayerRunStateTest {
         assertTrue(state.recordNarrativeRead("augustus_park#1"),
             "after respawn the letter is fresh again — counts toward the new life's books-read");
     }
+
+    @Test
+    @DisplayName("the chest-free streak keeps its high-water mark when a container ends it")
+    void chestFreeStreakHighWaterMark() {
+        PlayerRunState state = new PlayerRunState();
+        state.recordCartMovement(5);
+        state.recordCartMovement(4);
+        assertEquals(9, state.maxCarriagesNoChest(), "nine carriages passed with nothing opened");
+
+        state.incrementContainersOpened(); // streak ends, the record it set does not
+        assertEquals(9, state.maxCarriagesNoChest());
+
+        state.recordCartMovement(3);
+        assertEquals(9, state.maxCarriagesNoChest(), "a shorter later run does not beat the record");
+        state.recordCartMovement(20);
+        assertEquals(23, state.maxCarriagesNoChest(), "a longer one does");
+    }
+
+    @Test
+    @DisplayName("backward carriages count towards the chest-free streak, same as the absolute cart counter")
+    void chestFreeStreakCountsBackwardTravel() {
+        PlayerRunState state = new PlayerRunState();
+        state.recordCartMovement(4);
+        state.recordCartMovement(-3);
+        assertEquals(7, state.maxCarriagesNoChest());
+    }
+
+    @Test
+    @DisplayName("pacifist carriages count only while no damage has been dealt at all")
+    void pacifistCarriagesRequireZeroDamage() {
+        PlayerRunState state = new PlayerRunState();
+        state.advanceTravelled(14);
+        assertEquals(14, state.pacifistCarriages(), "no damage dealt — every carriage counts");
+
+        state.addDamageDealt(0.5);
+        assertEquals(0, state.pacifistCarriages(), "one hit disqualifies the whole run, not just the rest");
+    }
+
+    @Test
+    @DisplayName("pacifist carriages measure distance travelled either way, never a negative")
+    void pacifistCarriagesUseAbsoluteTravel() {
+        PlayerRunState state = new PlayerRunState();
+        state.advanceTravelled(-6);
+        assertEquals(6, state.pacifistCarriages());
+    }
+
+    @Test
+    @DisplayName("echo kills tally per run and reset on death")
+    void echoKillsResetOnDeath() {
+        PlayerRunState state = new PlayerRunState();
+        assertEquals(1, state.incrementEchoesKilled());
+        assertEquals(2, state.incrementEchoesKilled());
+        state.resetDeathStats();
+        assertEquals(0, state.echoesKilled(), "a new life starts its own count");
+    }
+
+    @Test
+    @DisplayName("resetDeathStats clears the chest-free streak AND its high-water mark")
+    void chestFreeStreakResetsOnDeath() {
+        PlayerRunState state = new PlayerRunState();
+        state.recordCartMovement(11);
+        state.resetDeathStats();
+        assertEquals(0, state.maxCarriagesNoChest());
+        state.recordCartMovement(2);
+        assertEquals(2, state.maxCarriagesNoChest(), "the streak restarts rather than resuming");
+    }
 }

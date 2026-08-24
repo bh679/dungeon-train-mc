@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.advancement;
 
 import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
 import com.mojang.serialization.Codec;
@@ -74,6 +75,24 @@ public final class GlobalPlayerStats {
         public static final Damage EMPTY = new Damage(0.0, 0.0);
     }
 
+    /**
+     * Lifetime echo counters. Nested for the same reason {@link Damage} is — the top-level
+     * {@link Data} codec is at {@link RecordCodecBuilder}'s 16-field {@code group(...)} cap, so a new
+     * counter has to share a slot with a related one rather than claim a seventeenth.
+     *
+     * <p>{@code encountered} is the long-standing "Echos come across" tally, which used to be a
+     * top-level {@code totalEchos} field; {@link #migrateLegacy} moves it in so existing stat files
+     * keep their counts. {@code killed} is new and starts at zero for everyone — there is no history
+     * to recover, because nothing was ever counting it.</p>
+     */
+    public record Echoes(long encountered, long killed) {
+        public static final Codec<Echoes> CODEC = RecordCodecBuilder.create(in -> in.group(
+            Codec.LONG.optionalFieldOf("encountered", 0L).forGetter(Echoes::encountered),
+            Codec.LONG.optionalFieldOf("killed", 0L).forGetter(Echoes::killed)
+        ).apply(in, Echoes::new));
+        public static final Echoes EMPTY = new Echoes(0L, 0L);
+    }
+
     public record Data(
             long trainTicks, long randomBooksRead, long startingBooksRead, long playersEncountered,
             long totalDeaths, long totalCarriages, double totalDistance, long totalFriends, long totalBooks,
@@ -82,7 +101,7 @@ public final class GlobalPlayerStats {
             // New fields go at the END so the existing plus* helpers only gain an unchanged tail.
             // Damage dealt/taken share the nested Damage record to respect the 16-field group cap.
             long totalBooksWritten, long totalContainers, long totalMobKills, long totalPlayerKills,
-            long totalEchos, Damage damage) {
+            Echoes echoes, Damage damage) {
 
         public static final Codec<Data> CODEC = RecordCodecBuilder.create(in -> in.group(
             Codec.LONG.optionalFieldOf("trainTicks", 0L).forGetter(Data::trainTicks),
@@ -99,36 +118,39 @@ public final class GlobalPlayerStats {
             Codec.LONG.optionalFieldOf("totalContainers", 0L).forGetter(Data::totalContainers),
             Codec.LONG.optionalFieldOf("totalMobKills", 0L).forGetter(Data::totalMobKills),
             Codec.LONG.optionalFieldOf("totalPlayerKills", 0L).forGetter(Data::totalPlayerKills),
-            Codec.LONG.optionalFieldOf("totalEchos", 0L).forGetter(Data::totalEchos),
+            Echoes.CODEC.optionalFieldOf("echoes", Echoes.EMPTY).forGetter(Data::echoes),
             Damage.CODEC.optionalFieldOf("damage", Damage.EMPTY).forGetter(Data::damage)
         ).apply(in, Data::new));
 
-        public static final Data EMPTY = new Data(0L, 0L, 0L, 0L, 0L, 0L, 0.0, 0L, 0L, 0.0, 0L, 0L, 0L, 0L, 0L, Damage.EMPTY);
+        public static final Data EMPTY = new Data(0L, 0L, 0L, 0L, 0L, 0L, 0.0, 0L, 0L, 0.0, 0L, 0L, 0L, 0L, Echoes.EMPTY, Damage.EMPTY);
 
-        // Convenience accessors so callers read damage like any other total.
+        // Convenience accessors so callers read the nested counters like any other total.
+        public long totalEchos() { return echoes.encountered(); }
+        public long totalEchoesKilled() { return echoes.killed(); }
         public double totalDamageDealt() { return damage.dealt(); }
         public double totalDamageTaken() { return damage.taken(); }
 
         // Field-wise copy-with-increment helpers so the static adders below stay one-liners and the
         // 16-arg constructor is written in exactly one place per field. The trailing 6 (…damage) are
         // the appended all-lives icon-row fields; existing helpers pass them through unchanged.
-        Data plusTrainTicks(long d)         { return new Data(trainTicks + d, randomBooksRead, startingBooksRead, playersEncountered, totalDeaths, totalCarriages, totalDistance, totalFriends, totalBooks, distanceBlocks, totalBooksWritten, totalContainers, totalMobKills, totalPlayerKills, totalEchos, damage); }
-        Data plusRandomBooks(long d)        { return new Data(trainTicks, randomBooksRead + d, startingBooksRead, playersEncountered, totalDeaths, totalCarriages, totalDistance, totalFriends, totalBooks, distanceBlocks, totalBooksWritten, totalContainers, totalMobKills, totalPlayerKills, totalEchos, damage); }
-        Data plusStartingBooks(long d)      { return new Data(trainTicks, randomBooksRead, startingBooksRead + d, playersEncountered, totalDeaths, totalCarriages, totalDistance, totalFriends, totalBooks, distanceBlocks, totalBooksWritten, totalContainers, totalMobKills, totalPlayerKills, totalEchos, damage); }
-        Data plusPlayersEncountered(long d) { return new Data(trainTicks, randomBooksRead, startingBooksRead, playersEncountered + d, totalDeaths, totalCarriages, totalDistance, totalFriends, totalBooks, distanceBlocks, totalBooksWritten, totalContainers, totalMobKills, totalPlayerKills, totalEchos, damage); }
-        Data plusDeaths(long d)             { return new Data(trainTicks, randomBooksRead, startingBooksRead, playersEncountered, totalDeaths + d, totalCarriages, totalDistance, totalFriends, totalBooks, distanceBlocks, totalBooksWritten, totalContainers, totalMobKills, totalPlayerKills, totalEchos, damage); }
-        Data plusCarriages(long d)          { return new Data(trainTicks, randomBooksRead, startingBooksRead, playersEncountered, totalDeaths, totalCarriages + d, totalDistance, totalFriends, totalBooks, distanceBlocks, totalBooksWritten, totalContainers, totalMobKills, totalPlayerKills, totalEchos, damage); }
-        Data plusDistance(double d)         { return new Data(trainTicks, randomBooksRead, startingBooksRead, playersEncountered, totalDeaths, totalCarriages, totalDistance + d, totalFriends, totalBooks, distanceBlocks, totalBooksWritten, totalContainers, totalMobKills, totalPlayerKills, totalEchos, damage); }
-        Data plusFriends(long d)            { return new Data(trainTicks, randomBooksRead, startingBooksRead, playersEncountered, totalDeaths, totalCarriages, totalDistance, totalFriends + d, totalBooks, distanceBlocks, totalBooksWritten, totalContainers, totalMobKills, totalPlayerKills, totalEchos, damage); }
-        Data plusBooks(long d)              { return new Data(trainTicks, randomBooksRead, startingBooksRead, playersEncountered, totalDeaths, totalCarriages, totalDistance, totalFriends, totalBooks + d, distanceBlocks, totalBooksWritten, totalContainers, totalMobKills, totalPlayerKills, totalEchos, damage); }
-        Data plusDistanceBlocks(double d)   { return new Data(trainTicks, randomBooksRead, startingBooksRead, playersEncountered, totalDeaths, totalCarriages, totalDistance, totalFriends, totalBooks, distanceBlocks + d, totalBooksWritten, totalContainers, totalMobKills, totalPlayerKills, totalEchos, damage); }
-        Data plusBooksWritten(long d)       { return new Data(trainTicks, randomBooksRead, startingBooksRead, playersEncountered, totalDeaths, totalCarriages, totalDistance, totalFriends, totalBooks, distanceBlocks, totalBooksWritten + d, totalContainers, totalMobKills, totalPlayerKills, totalEchos, damage); }
-        Data plusContainers(long d)         { return new Data(trainTicks, randomBooksRead, startingBooksRead, playersEncountered, totalDeaths, totalCarriages, totalDistance, totalFriends, totalBooks, distanceBlocks, totalBooksWritten, totalContainers + d, totalMobKills, totalPlayerKills, totalEchos, damage); }
-        Data plusMobKills(long d)           { return new Data(trainTicks, randomBooksRead, startingBooksRead, playersEncountered, totalDeaths, totalCarriages, totalDistance, totalFriends, totalBooks, distanceBlocks, totalBooksWritten, totalContainers, totalMobKills + d, totalPlayerKills, totalEchos, damage); }
-        Data plusPlayerKills(long d)        { return new Data(trainTicks, randomBooksRead, startingBooksRead, playersEncountered, totalDeaths, totalCarriages, totalDistance, totalFriends, totalBooks, distanceBlocks, totalBooksWritten, totalContainers, totalMobKills, totalPlayerKills + d, totalEchos, damage); }
-        Data plusEchos(long d)              { return new Data(trainTicks, randomBooksRead, startingBooksRead, playersEncountered, totalDeaths, totalCarriages, totalDistance, totalFriends, totalBooks, distanceBlocks, totalBooksWritten, totalContainers, totalMobKills, totalPlayerKills, totalEchos + d, damage); }
-        Data plusDamageDealt(double d)      { return new Data(trainTicks, randomBooksRead, startingBooksRead, playersEncountered, totalDeaths, totalCarriages, totalDistance, totalFriends, totalBooks, distanceBlocks, totalBooksWritten, totalContainers, totalMobKills, totalPlayerKills, totalEchos, new Damage(damage.dealt() + d, damage.taken())); }
-        Data plusDamageTaken(double d)      { return new Data(trainTicks, randomBooksRead, startingBooksRead, playersEncountered, totalDeaths, totalCarriages, totalDistance, totalFriends, totalBooks, distanceBlocks, totalBooksWritten, totalContainers, totalMobKills, totalPlayerKills, totalEchos, new Damage(damage.dealt(), damage.taken() + d)); }
+        Data plusTrainTicks(long d)         { return new Data(trainTicks + d, randomBooksRead, startingBooksRead, playersEncountered, totalDeaths, totalCarriages, totalDistance, totalFriends, totalBooks, distanceBlocks, totalBooksWritten, totalContainers, totalMobKills, totalPlayerKills, echoes, damage); }
+        Data plusRandomBooks(long d)        { return new Data(trainTicks, randomBooksRead + d, startingBooksRead, playersEncountered, totalDeaths, totalCarriages, totalDistance, totalFriends, totalBooks, distanceBlocks, totalBooksWritten, totalContainers, totalMobKills, totalPlayerKills, echoes, damage); }
+        Data plusStartingBooks(long d)      { return new Data(trainTicks, randomBooksRead, startingBooksRead + d, playersEncountered, totalDeaths, totalCarriages, totalDistance, totalFriends, totalBooks, distanceBlocks, totalBooksWritten, totalContainers, totalMobKills, totalPlayerKills, echoes, damage); }
+        Data plusPlayersEncountered(long d) { return new Data(trainTicks, randomBooksRead, startingBooksRead, playersEncountered + d, totalDeaths, totalCarriages, totalDistance, totalFriends, totalBooks, distanceBlocks, totalBooksWritten, totalContainers, totalMobKills, totalPlayerKills, echoes, damage); }
+        Data plusDeaths(long d)             { return new Data(trainTicks, randomBooksRead, startingBooksRead, playersEncountered, totalDeaths + d, totalCarriages, totalDistance, totalFriends, totalBooks, distanceBlocks, totalBooksWritten, totalContainers, totalMobKills, totalPlayerKills, echoes, damage); }
+        Data plusCarriages(long d)          { return new Data(trainTicks, randomBooksRead, startingBooksRead, playersEncountered, totalDeaths, totalCarriages + d, totalDistance, totalFriends, totalBooks, distanceBlocks, totalBooksWritten, totalContainers, totalMobKills, totalPlayerKills, echoes, damage); }
+        Data plusDistance(double d)         { return new Data(trainTicks, randomBooksRead, startingBooksRead, playersEncountered, totalDeaths, totalCarriages, totalDistance + d, totalFriends, totalBooks, distanceBlocks, totalBooksWritten, totalContainers, totalMobKills, totalPlayerKills, echoes, damage); }
+        Data plusFriends(long d)            { return new Data(trainTicks, randomBooksRead, startingBooksRead, playersEncountered, totalDeaths, totalCarriages, totalDistance, totalFriends + d, totalBooks, distanceBlocks, totalBooksWritten, totalContainers, totalMobKills, totalPlayerKills, echoes, damage); }
+        Data plusBooks(long d)              { return new Data(trainTicks, randomBooksRead, startingBooksRead, playersEncountered, totalDeaths, totalCarriages, totalDistance, totalFriends, totalBooks + d, distanceBlocks, totalBooksWritten, totalContainers, totalMobKills, totalPlayerKills, echoes, damage); }
+        Data plusDistanceBlocks(double d)   { return new Data(trainTicks, randomBooksRead, startingBooksRead, playersEncountered, totalDeaths, totalCarriages, totalDistance, totalFriends, totalBooks, distanceBlocks + d, totalBooksWritten, totalContainers, totalMobKills, totalPlayerKills, echoes, damage); }
+        Data plusBooksWritten(long d)       { return new Data(trainTicks, randomBooksRead, startingBooksRead, playersEncountered, totalDeaths, totalCarriages, totalDistance, totalFriends, totalBooks, distanceBlocks, totalBooksWritten + d, totalContainers, totalMobKills, totalPlayerKills, echoes, damage); }
+        Data plusContainers(long d)         { return new Data(trainTicks, randomBooksRead, startingBooksRead, playersEncountered, totalDeaths, totalCarriages, totalDistance, totalFriends, totalBooks, distanceBlocks, totalBooksWritten, totalContainers + d, totalMobKills, totalPlayerKills, echoes, damage); }
+        Data plusMobKills(long d)           { return new Data(trainTicks, randomBooksRead, startingBooksRead, playersEncountered, totalDeaths, totalCarriages, totalDistance, totalFriends, totalBooks, distanceBlocks, totalBooksWritten, totalContainers, totalMobKills + d, totalPlayerKills, echoes, damage); }
+        Data plusPlayerKills(long d)        { return new Data(trainTicks, randomBooksRead, startingBooksRead, playersEncountered, totalDeaths, totalCarriages, totalDistance, totalFriends, totalBooks, distanceBlocks, totalBooksWritten, totalContainers, totalMobKills, totalPlayerKills + d, echoes, damage); }
+        Data plusEchos(long d)              { return new Data(trainTicks, randomBooksRead, startingBooksRead, playersEncountered, totalDeaths, totalCarriages, totalDistance, totalFriends, totalBooks, distanceBlocks, totalBooksWritten, totalContainers, totalMobKills, totalPlayerKills, new Echoes(echoes.encountered() + d, echoes.killed()), damage); }
+        Data plusEchoesKilled(long d)       { return new Data(trainTicks, randomBooksRead, startingBooksRead, playersEncountered, totalDeaths, totalCarriages, totalDistance, totalFriends, totalBooks, distanceBlocks, totalBooksWritten, totalContainers, totalMobKills, totalPlayerKills, new Echoes(echoes.encountered(), echoes.killed() + d), damage); }
+        Data plusDamageDealt(double d)      { return new Data(trainTicks, randomBooksRead, startingBooksRead, playersEncountered, totalDeaths, totalCarriages, totalDistance, totalFriends, totalBooks, distanceBlocks, totalBooksWritten, totalContainers, totalMobKills, totalPlayerKills, echoes, new Damage(damage.dealt() + d, damage.taken())); }
+        Data plusDamageTaken(double d)      { return new Data(trainTicks, randomBooksRead, startingBooksRead, playersEncountered, totalDeaths, totalCarriages, totalDistance, totalFriends, totalBooks, distanceBlocks, totalBooksWritten, totalContainers, totalMobKills, totalPlayerKills, echoes, new Damage(damage.dealt(), damage.taken() + d)); }
     }
 
     /** In-memory cache. Holds the full {@link Data} record per UUID. */
@@ -162,6 +184,7 @@ public final class GlobalPlayerStats {
     public static long totalMobKills(UUID uuid)      { return current(uuid).totalMobKills(); }
     public static long totalPlayerKills(UUID uuid)   { return current(uuid).totalPlayerKills(); }
     public static long totalEchos(UUID uuid)         { return current(uuid).totalEchos(); }
+    public static long totalEchoesKilled(UUID uuid)  { return current(uuid).totalEchoesKilled(); }
     public static double totalDamageDealt(UUID uuid) { return current(uuid).totalDamageDealt(); }
     public static double totalDamageTaken(UUID uuid) { return current(uuid).totalDamageTaken(); }
 
@@ -210,6 +233,12 @@ public final class GlobalPlayerStats {
     public static long addBooks(UUID uuid, long delta) {
         if (delta <= 0) return totalBooks(uuid);
         return CACHE.compute(uuid, (k, e) -> (e != null ? e : loadFromDisk(k)).plusBooks(delta)).totalBooks();
+    }
+
+    /** Echoes this player has KILLED — distinct from {@link #addEchos}, which counts ones met. */
+    public static long addEchoesKilled(UUID uuid, long delta) {
+        if (delta <= 0) return totalEchoesKilled(uuid);
+        return CACHE.compute(uuid, (k, e) -> (e != null ? e : loadFromDisk(k)).plusEchoesKilled(delta)).totalEchoesKilled();
     }
 
     /**
@@ -291,11 +320,27 @@ public final class GlobalPlayerStats {
         return Files.deleteIfExists(file(uuid));
     }
 
+    /**
+     * Move a pre-{@link Echoes} file's top-level {@code totalEchos} into the nested {@code echoes}
+     * object. Without this every existing player's "Echos come across" tally would silently read as
+     * zero the first time they loaded — the codec would simply not find the field it now looks for.
+     * Files already carrying {@code echoes} are returned untouched, so this is a no-op after the
+     * first save.
+     */
+    private static JsonElement migrateLegacy(JsonElement element) {
+        if (!(element instanceof JsonObject obj)) return element;
+        if (obj.has("echoes") || !obj.has("totalEchos")) return element;
+        JsonObject echoes = new JsonObject();
+        echoes.add("encountered", obj.get("totalEchos"));
+        obj.add("echoes", echoes);
+        return obj;
+    }
+
     private static Data loadFromDisk(UUID uuid) {
         Path path = file(uuid);
         if (!Files.isRegularFile(path)) return Data.EMPTY;
         try (Reader reader = Files.newBufferedReader(path)) {
-            JsonElement element = JsonParser.parseReader(reader);
+            JsonElement element = migrateLegacy(JsonParser.parseReader(reader));
             var result = Data.CODEC.parse(JsonOps.INSTANCE, element);
             if (result.error().isPresent()) {
                 LOGGER.warn("[DungeonTrain] GlobalPlayerStats: parse failed for {}: {}",

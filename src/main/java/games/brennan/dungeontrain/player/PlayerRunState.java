@@ -49,6 +49,13 @@ import java.util.UUID;
  *   <li>{@link #distanceBlocks} — accumulated world-space movement while
  *       boarded; sums train-carried + on-train walking distance.</li>
  *   <li>{@link #runTicks} — server ticks elapsed since the run began.</li>
+ *   <li>{@link #echoesKilled}, {@link #maxCarriagesNoChest} — per-run feats fed to the public
+ *       leaderboards. Deliberately NOT in {@link #CODEC}, matching {@code booksWrittenCount} and the
+ *       other transient death-screen stats here: the codec is already at RecordCodecBuilder's
+ *       16-field cap, and nesting an existing field to make room would silently zero an in-progress
+ *       life's counters on upgrade. The cost is that a mid-life logout restarts these two, exactly as
+ *       it already does for books written; the LIFETIME echo-kill tally lives in
+ *       {@code GlobalPlayerStats} and is unaffected.</li>
  *   <li>{@link #containersOpened} — flat counter of chest/barrel opens +
  *       decorated-pot breaks. (Pre-debounce — counts distinct interactions,
  *       not unique positions like {@link #uniqueChests}.)</li>
@@ -103,6 +110,15 @@ public final class PlayerRunState {
     private double damageDealt;
     /** Total damage this player took this run (health points). */
     private double damageTaken;
+    /**
+     * Echoes this player has KILLED this run. Distinct from the encounter tally — meeting an echo and
+     * putting one down are different feats, and only the second one is this.
+     */
+    private int echoesKilled;
+    /** Carriages passed since the last container was opened this run. Reset by {@link #incrementContainersOpened}. */
+    private int carriagesSinceChest;
+    /** High-water mark of {@link #carriagesSinceChest} this run — the longest stretch gone without looting. */
+    private int maxCarriagesNoChest;
     /** Distinct PlayerMobs come near this run (drives the death-screen "encountered" stat). */
     private final Set<UUID> encounteredMobs;
     /** Distinct PlayerMobs that liked this player (feeling above the friend threshold) this run — the death-screen "friends" tally. */
@@ -198,6 +214,9 @@ public final class PlayerRunState {
         this.encounteredMobs = new HashSet<>();
         this.befriendedMobs = new HashSet<>();
         this.trainTimeTicks = 0L;
+        this.echoesKilled = 0;
+        this.carriagesSinceChest = 0;
+        this.maxCarriagesNoChest = 0;
         this.narrativeLetters = new HashSet<>();
         this.earnedAdvancements = new LinkedHashSet<>();
         this.servedBookToCarriage = new HashMap<>();
@@ -235,6 +254,9 @@ public final class PlayerRunState {
         this.encounteredMobs = new HashSet<>(encounteredMobs);
         this.befriendedMobs = new HashSet<>(befriendedMobs);
         this.trainTimeTicks = trainTimeTicks;
+        this.echoesKilled = 0;
+        this.carriagesSinceChest = 0;
+        this.maxCarriagesNoChest = 0;
         this.narrativeLetters = new HashSet<>();
         this.earnedAdvancements = new LinkedHashSet<>();
         this.servedBookToCarriage = new HashMap<>();
@@ -322,6 +344,10 @@ public final class PlayerRunState {
         int abs = Math.abs(signedDelta);
         cartsSinceDeath += abs;
         if (signedDelta < 0) cartsBackwardSinceDeath += abs;
+        // Same absolute measure feeds the chest-free streak: riding a carriage counts whichever way
+        // you went, and the streak only ends when you actually open something.
+        carriagesSinceChest += abs;
+        if (carriagesSinceChest > maxCarriagesNoChest) maxCarriagesNoChest = carriagesSinceChest;
         return cartsSinceDeath;
     }
 
@@ -415,7 +441,31 @@ public final class PlayerRunState {
     }
 
     public int incrementContainersOpened() {
+        carriagesSinceChest = 0; // the streak is over — the high-water mark keeps what it was worth
         return ++containersOpened;
+    }
+
+    /** Echoes killed this run. */
+    public int echoesKilled() {
+        return echoesKilled;
+    }
+
+    public int incrementEchoesKilled() {
+        return ++echoesKilled;
+    }
+
+    /** The longest run of carriages passed without opening a container this run. */
+    public int maxCarriagesNoChest() {
+        return maxCarriagesNoChest;
+    }
+
+    /**
+     * Carriages passed while dealing no damage at all — this run's pacifist distance, measured in
+     * carriages. Derived rather than counted: the two inputs are already tracked, and dealing any
+     * damage disqualifies the whole run, so there is no partial streak to keep.
+     */
+    public int pacifistCarriages() {
+        return damageDealt > 0.0 ? 0 : Math.abs(travelledCarriageIndex);
     }
 
     public int incrementBooksRead() {
@@ -603,6 +653,9 @@ public final class PlayerRunState {
         friendAppearance = null;
         friendFeeling = Float.NEGATIVE_INFINITY;
         killedAppearance = null;
+        echoesKilled = 0;
+        carriagesSinceChest = 0;
+        maxCarriagesNoChest = 0;
     }
 
     /** Reset everything (called on respawn). */

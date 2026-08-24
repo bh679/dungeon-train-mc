@@ -1,6 +1,9 @@
 package games.brennan.dungeontrain.event;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.cheat.RunIntegrity;
+import games.brennan.dungeontrain.registry.ModDataAttachments;
+import games.brennan.dungeontrain.advancement.GlobalPlayerStats;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
 import games.brennan.dungeontrain.advancement.PlayerMobSocialTracker;
@@ -345,11 +348,21 @@ public final class PlayerMobAdvancementEvents {
         LivingEntity victim = event.getEntity();
         if (victim.level().isClientSide) return;
         if (!(event.getSource().getEntity() instanceof ServerPlayer player)) return;
-        if (EchoIdentity.isOwnEcho(victim, player.getUUID())) {
+        boolean own = EchoIdentity.isOwnEcho(victim, player.getUUID());
+        if (own) {
             ModAdvancementTriggers.KILLED_ECHO.get().trigger(player);
         } else if (EchoIdentity.sourcePlayer(victim).isPresent()) {
             // Someone else's echo — the remote counterpart to "Lay to Rest".
             ModAdvancementTriggers.ECHO_FEAT.get().trigger(player, "remote_kill");
+        }
+        // Both cases are an echo put down, so both count towards the echoes-killed leaderboards —
+        // the advancements split own-vs-remote, the tally does not. Cheated runs freeze the
+        // cross-world total the same way every other lifetime counter does.
+        if (own || EchoIdentity.sourcePlayer(victim).isPresent()) {
+            player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).incrementEchoesKilled();
+            if (!RunIntegrity.isCheated(player)) {
+                GlobalPlayerStats.addEchoesKilled(player.getUUID(), 1L);
+            }
         }
     }
 
