@@ -4,6 +4,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -55,5 +56,44 @@ class LocalizationCreditAdjustTest {
     @DisplayName("absent counts stay absent — no data is not evidence of review")
     void nullStaysNull() {
         assertNull(LocalizationCreditRegistry.adjust(null, 100));
+    }
+
+    // ---- "has a person been through any of this?" ------------------------------------------------
+
+    @Test
+    @DisplayName("one reviewed line is enough, at any coverage")
+    void anyReviewIsEnough() {
+        // zh_tw as shipped: 1279 keys, 1265 still AI-unreviewed. Fourteen lines is not a reviewed
+        // language, but it is unmistakably a language somebody has been in.
+        assertTrue(LocalizationCreditRegistry.hasAnyReview(
+            new LocalizationCredit.AiCounts(1279, 1268, 1265)));
+        assertFalse(LocalizationCreditRegistry.meetsReviewedCoverage(
+            new LocalizationCredit.AiCounts(1279, 1268, 1265)),
+            "and the badge still calls it machine-translated — the two questions differ on purpose");
+    }
+
+    @Test
+    @DisplayName("a wholly unreviewed language has had no human review")
+    void untouchedIsNotReviewed() {
+        // de_de as shipped: every key AI-authored, none reviewed.
+        assertFalse(LocalizationCreditRegistry.hasAnyReview(
+            new LocalizationCredit.AiCounts(1265, 1265, 1265)));
+    }
+
+    @Test
+    @DisplayName("human-authored lines count as review even with nothing corrected")
+    void humanAuthoredCounts() {
+        // 1000 keys, only 200 of them machine-written and all 200 unreviewed: 800 were written by
+        // a person in the first place, which is the stronger form of the same claim.
+        assertTrue(LocalizationCreditRegistry.hasAnyReview(
+            new LocalizationCredit.AiCounts(1000, 200, 200)));
+    }
+
+    @Test
+    @DisplayName("absent or empty counts are not evidence of review")
+    void absentCountsAreNotReview() {
+        assertFalse(LocalizationCreditRegistry.hasAnyReview(null));
+        assertFalse(LocalizationCreditRegistry.hasAnyReview(
+            new LocalizationCredit.AiCounts(0, 0, 0)));
     }
 }

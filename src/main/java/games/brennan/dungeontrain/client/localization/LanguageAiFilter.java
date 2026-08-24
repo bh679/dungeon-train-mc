@@ -50,12 +50,20 @@ public enum LanguageAiFilter {
         };
     }
 
-    /** The same question against a live locale code, resolved through the two registries. */
+    /**
+     * The same question against a live locale code, resolved through the two registries.
+     *
+     * <p>Review is {@link LocalizationCreditRegistry#hasAnyHumanReview} — any of the language, at
+     * any depth — not the 90%-coverage {@code isHumanReviewed} the row's badge uses. A filter has to
+     * return something: at the coverage bar, "Human reviewed" matches no language the mod ships,
+     * including the one a volunteer has taken most of the way. So the two deliberately disagree, and
+     * a language can sit under this filter while still wearing the AI badge.</p>
+     */
     public boolean matchesLocale(String localeCode) {
         boolean translated = DungeonTrainLanguages.isTranslated(localeCode);
-        // Only asked when it can matter: isHumanReviewed synchronises and parses credit files, and
-        // for an untranslated language the answer changes nothing.
+        // Only asked when it can matter: the registry synchronises and parses credit files, and for
+        // an untranslated language the answer changes nothing.
         return matches(translated,
-            translated && LocalizationCreditRegistry.isHumanReviewed(localeCode));
+            translated && LocalizationCreditRegistry.hasAnyHumanReview(localeCode));
     }
 }

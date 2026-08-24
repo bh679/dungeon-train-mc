@@ -261,6 +261,40 @@ public final class LocalizationCreditRegistry {
         return counts != null && counts.unreviewedFraction() <= REVIEWED_UNREVIEWED_MAX;
     }
 
+    /**
+     * Whether a person has been through <b>any</b> of this locale, at any depth.
+     *
+     * <p>A deliberately different question from {@link #isHumanReviewed}, which asks whether the
+     * language as a whole can be called reviewed and holds out for 90% coverage. That threshold is
+     * right for the badge on a row — it is a claim about what the player is about to read — and
+     * wrong for a filter, where it currently matches <em>nothing</em>: the most worked-on language
+     * in the mod is 18% unreviewed, so "Human reviewed" would be an option that never returned a
+     * language. This asks the answerable question instead, and the two are allowed to disagree.</p>
+     */
+    public static synchronized boolean hasAnyHumanReview(String localeCode) {
+        if (localeCode == null || localeCode.isEmpty()) {
+            return false;
+        }
+        for (LocalizationCredit credit : CREDITS.values()) {
+            if (credit.humanReviewed() && credit.locale().equalsIgnoreCase(localeCode)) {
+                return true;
+            }
+        }
+        return hasAnyReview(withRelayApprovals(localeCode, bestCounts(localeCode)));
+    }
+
+    /**
+     * The counts half of {@link #hasAnyHumanReview}, pure so the arithmetic is testable.
+     *
+     * <p>A key has had a human on it when it is not AI-authored-and-unreviewed — which covers both
+     * routes to that: written by a person in the first place, or machine-written and since
+     * corrected. That is {@code total - aiUnreviewed}, and one is enough.</p>
+     */
+    static boolean hasAnyReview(LocalizationCredit.AiCounts counts) {
+        return counts != null && counts.totalKeys() > 0
+            && counts.totalKeys() - counts.aiUnreviewed() > 0;
+    }
+
     private static LocalizationCredit parse(InputStream in, ResourceLocation id) throws ParseException {
         JsonElement rootEl;
         try {

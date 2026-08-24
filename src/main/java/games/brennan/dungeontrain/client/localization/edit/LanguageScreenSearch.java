@@ -1,11 +1,10 @@
 package games.brennan.dungeontrain.client.localization.edit;
 
-import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.localization.LanguageAiFilter;
 import games.brennan.dungeontrain.mixin.client.LanguageSelectEntryAccessor;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.AbstractWidget;
-import net.minecraft.client.gui.components.CycleButton;
+import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.components.ObjectSelectionList;
@@ -14,6 +13,7 @@ import net.minecraft.client.gui.components.StringWidget;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.options.LanguageSelectScreen;
 import net.minecraft.network.chat.Component;
+import games.brennan.dungeontrain.DungeonTrain;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -36,9 +36,12 @@ import java.util.Locale;
  * list.</p>
  *
  * <p>The magnifier reveals the box rather than the box always sitting there, the same interaction as
- * the translation editor's — a row that costs one square until you want it. The filter cycle stays
- * visible, because unlike a query it is a state you can be in without having typed anything, and a
- * hidden one would be a list quietly missing rows.</p>
+ * the translation editor's — a row that costs one square until you want it. The filter is the same
+ * bargain in the other direction: a funnel while it is showing everything, because a control that
+ * is not narrowing anything has nothing to say, and a labelled button naming the state the moment
+ * it is. It never hides, unlike the box — a query you have to have typed, but a filter is a state
+ * you can be in without having done anything, and a silent one would be a list quietly missing
+ * rows.</p>
  *
  * <p>Both sit on the title's own line, in the header band vanilla leaves empty either side of it.
  * That space is already there and already the width of the list, so the controls cost the list no
@@ -59,6 +62,13 @@ public final class LanguageScreenSearch {
     private static final ResourceLocation SEARCH_ICON =
         ResourceLocation.withDefaultNamespace("icon/search");
     private static final int SEARCH_ICON_PX = 12;
+    /** A funnel, ours — vanilla has no filter glyph, and its icons are the wrong vocabulary here. */
+    private static final ResourceLocation FILTER_ICON =
+        ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "icon/filter");
+    /** Authored at 16 and drawn 1:1, like the editor's own icons. */
+    private static final int FILTER_ICON_PX = 16;
+    /** Vanilla insets a button's label by 2px a side; 10 keeps a word clear of the frame. */
+    private static final int LABEL_PAD = 10;
 
     private static final int ROW_H = 20;
     /** Vanilla's spacing, the same 8 the footer row uses. */
@@ -85,8 +95,17 @@ public final class LanguageScreenSearch {
     private static WeakReference<AbstractWidget> titleWidget = new WeakReference<>(null);
     private static SpriteIconButton toggle;
     private static EditBox search;
-    private static CycleButton<LanguageAiFilter> filterCycle;
+    /** The funnel, shown while the filter is showing everything. */
+    private static SpriteIconButton filterIcon;
+    /** What it becomes once it is narrowing something: a button naming the state. */
+    private static Button filterLabel;
+    /** Where the left cluster ends, so the title knows whether it still has room. */
+    private static int clusterRight;
     private static boolean searchOpen;
+    /** The row's band, kept so a filter change can re-lay it out without another Init.Post. */
+    private static int rowY;
+    private static int rowLeft;
+    private static int rowRight;
     private static LanguageAiFilter filter = LanguageAiFilter.ALL;
 
     private LanguageScreenSearch() {}
@@ -120,28 +139,71 @@ public final class LanguageScreenSearch {
         // Centred on the title's line, and held inside the screen at widths where the list's rows
         // are wider than the window. The header is 33 and the controls are 20, so on any window
         // vanilla itself draws a title on, this lands clear of both edges of the band.
-        int y = Math.max(1, titleMiddle(screen, title) - ROW_H / 2);
-        int left = Math.max(MARGIN, list.getRowLeft());
-        int right = Math.min(screen.width - MARGIN, list.getRowRight());
-        int cycleW = Math.min(FILTER_MAX_W, Math.max(ROW_H, (right - left) / 3));
-        int cycleX = right - cycleW;
-        int searchX = left + ROW_H + GAP;
-        int searchW = Math.max(ROW_H, cycleX - GAP - searchX);
+        rowY = Math.max(1, titleMiddle(screen, title) - ROW_H / 2);
+        rowLeft = Math.max(MARGIN, list.getRowLeft());
+        rowRight = Math.min(screen.width - MARGIN, list.getRowRight());
 
         if (rebuilt || toggle == null) {
-            buildWidgets(screen, y, left, searchX, searchW, cycleX, cycleW);
-        } else {
-            reposition(y, left, searchX, searchW, cycleX, cycleW);
+            buildWidgets(screen);
         }
         // Adding is conditional on absence rather than on `rebuilt`, so a second Init.Post pass over
         // a screen whose widgets were never cleared cannot leave a twin behind.
+        addIfAbsent(event, filterIcon);
+        addIfAbsent(event, filterLabel);
         addIfAbsent(event, toggle);
         addIfAbsent(event, search);
-        addIfAbsent(event, filterCycle);
 
         titleWidget = new WeakReference<>(title);
-        applySearchOpen();
+        layoutRow();
         applyFilter(list);
+    }
+
+    /**
+     * Places the row left to right — filter, magnifier, then whatever is left over for the box.
+     *
+     * <p>Re-run whenever the filter changes, not only on init: the filter is a square while it is
+     * showing everything and a labelled button when it is not, so the two controls to its right
+     * move with it. Every number is derived from the band, so running it again is idempotent.</p>
+     */
+    private static void layoutRow() {
+        int filterW = filter == LanguageAiFilter.ALL ? ROW_H : Math.min(FILTER_MAX_W,
+            Math.max(ROW_H, Minecraft.getInstance().font.width(filter.label()) + LABEL_PAD));
+        filterIcon.setPosition(rowLeft, rowY);
+        filterLabel.setPosition(rowLeft, rowY);
+        filterLabel.setWidth(filterW);
+
+        int toggleX = rowLeft + filterW + GAP;
+        toggle.setPosition(toggleX, rowY);
+        clusterRight = toggleX + ROW_H;
+
+        int searchX = clusterRight + GAP;
+        search.setX(searchX);
+        search.setY(rowY);
+        search.setWidth(Math.max(ROW_H, rowRight - searchX));
+
+        applyFilterState();
+        applySearchOpen();
+    }
+
+    /** Which of the two filter widgets is the one on screen, and what it says. */
+    private static void applyFilterState() {
+        boolean narrowing = filter != LanguageAiFilter.ALL;
+        filterIcon.visible = !narrowing;
+        filterIcon.active = !narrowing;
+        filterLabel.visible = narrowing;
+        filterLabel.active = narrowing;
+        filterLabel.setMessage(filter.label());
+        Component name = Component.translatable("gui.dungeontrain.language.filter");
+        Tooltip tip = Tooltip.create(name.copy().append("\n").append(filter.label()));
+        filterIcon.setTooltip(tip);
+        filterLabel.setTooltip(tip);
+    }
+
+    private static void advanceFilter() {
+        LanguageAiFilter[] values = LanguageAiFilter.values();
+        filter = values[(filter.ordinal() + 1) % values.length];
+        layoutRow();
+        refilter();
     }
 
     /**
@@ -166,44 +228,32 @@ public final class LanguageScreenSearch {
         return null;
     }
 
-    private static void buildWidgets(LanguageSelectScreen screen, int y, int left,
-                                     int searchX, int searchW, int cycleX, int cycleW) {
+    private static void buildWidgets(LanguageSelectScreen screen) {
+        // Two widgets rather than one that changes shape: a sprite button and a labelled button are
+        // different vanilla components, and swapping which is visible is honest where a single
+        // widget pretending to be both would mean drawing the sprite ourselves.
+        filterIcon = SpriteIconButton.builder(
+                Component.translatable("gui.dungeontrain.language.filter"),
+                b -> advanceFilter(), true)
+            .width(ROW_H)
+            .sprite(FILTER_ICON, FILTER_ICON_PX, FILTER_ICON_PX)
+            .build();
+        filterLabel = Button.builder(filter.label(), b -> advanceFilter())
+            .bounds(rowLeft, rowY, ROW_H, ROW_H)
+            .build();
+
         toggle = SpriteIconButton.builder(
                 Component.translatable("gui.dungeontrain.language.search"),
                 b -> setSearchOpen(screen, !searchOpen), true)
             .width(ROW_H)
             .sprite(SEARCH_ICON, SEARCH_ICON_PX, SEARCH_ICON_PX)
             .build();
-        toggle.setPosition(left, y);
 
-        search = new EditBox(Minecraft.getInstance().font, searchX, y, searchW, ROW_H,
+        search = new EditBox(Minecraft.getInstance().font, rowLeft, rowY, ROW_H, ROW_H,
             Component.translatable("gui.dungeontrain.language.search"));
         search.setHint(Component.translatable("gui.dungeontrain.language.search.hint"));
         search.setMaxLength(MAX_QUERY);
         search.setResponder(text -> refilter());
-
-        filterCycle = CycleButton.<LanguageAiFilter>builder(LanguageAiFilter::label)
-            .withValues(LanguageAiFilter.values())
-            .withInitialValue(filter)
-            .displayOnlyValue()
-            .create(cycleX, y, cycleW, ROW_H,
-                Component.translatable("gui.dungeontrain.language.filter"),
-                (button, value) -> {
-                    filter = value;
-                    refilter();
-                });
-        filterCycle.setTooltip(Tooltip.create(
-            Component.translatable("gui.dungeontrain.language.filter")));
-    }
-
-    private static void reposition(int y, int left, int searchX, int searchW,
-                                   int cycleX, int cycleW) {
-        toggle.setPosition(left, y);
-        search.setX(searchX);
-        search.setY(y);
-        search.setWidth(searchW);
-        filterCycle.setPosition(cycleX, y);
-        filterCycle.setWidth(cycleW);
     }
 
     private static void setSearchOpen(LanguageSelectScreen screen, boolean open) {
@@ -211,7 +261,7 @@ public final class LanguageScreenSearch {
         if (!open && !search.getValue().isEmpty()) {
             search.setValue(""); // fires the responder, which re-filters
         }
-        applySearchOpen();
+        layoutRow();
         if (open) {
             // Focused on purpose: the box is one keystroke of intent away from being useless, and
             // while it holds focus Enter goes to it rather than to the list, whose rows read Enter
@@ -224,12 +274,13 @@ public final class LanguageScreenSearch {
     private static void applySearchOpen() {
         search.visible = searchOpen;
         search.active = searchOpen;
-        // The box occupies the title's line, so the title stands down while it is open — the same
-        // trade the editor's row makes with its file icons. Restored, not hidden for good: closing
-        // the box is the only thing that takes the room back.
+        // The row shares the title's line, so the title stands down when the row actually needs its
+        // room — the open box, or a filter label long enough to reach it. Measured rather than
+        // assumed: at a wide window "Language" and the whole row coexist happily, and hiding the
+        // heading of a screen for no reason is not a trade worth making by default.
         AbstractWidget title = titleWidget.get();
         if (title != null) {
-            title.visible = !searchOpen;
+            title.visible = !searchOpen && title.getX() >= clusterRight + GAP;
         }
         toggle.setTooltip(Tooltip.create(Component.translatable(searchOpen
             ? "gui.dungeontrain.language.search.close"
