@@ -34,7 +34,7 @@ class LeaderboardBookFactoryTest {
     @DisplayName("a full board fills every page and closes on the reader's standing")
     void fullBoardFillsTheBook() {
         List<Component> pages = LeaderboardBookFactory.pages(
-            CAT, entries(LeaderboardBookFactory.MAX_ROWS), Optional.of(new LeaderboardPool.Standing(4, 12)));
+            CAT, entries(LeaderboardBookFactory.MAX_ROWS), Optional.of(new LeaderboardPool.Standing(4, 12, 0)));
 
         assertEquals(LeaderboardBookFactory.PAGES + 1, pages.size(), "eight board pages plus the closing one");
         // Page one spends lines on the heading, so it carries fewer ranks than the rest.
@@ -85,6 +85,25 @@ class LeaderboardBookFactoryTest {
             assertTrue(BookColumnLayout.width(line) <= BookColumnLayout.PAGE_WIDTH_PX,
                 "over the margin: '" + line + "'");
         }
+    }
+
+    @Test
+    @DisplayName("a reader past the relay's rank horizon is told their score, not a made-up position")
+    void beyondTheHorizonSaysSo() {
+        List<Component> exact = LeaderboardBookFactory.pages(
+            CAT, entries(3), Optional.of(new LeaderboardPool.Standing(4, 12, 0)));
+        List<Component> beyond = LeaderboardBookFactory.pages(
+            CAT, entries(3), Optional.of(new LeaderboardPool.Standing(0, 12, 10000)));
+        List<Component> absent = LeaderboardBookFactory.pages(CAT, entries(3), Optional.empty());
+
+        // Three distinct closing lines — a horizon must never render as if it were a rank.
+        String a = last(exact), b = last(beyond), c = last(absent);
+        assertTrue(!a.equals(b) && !b.equals(c) && !a.equals(c),
+            "expected three different closing lines, got: " + a + " / " + b + " / " + c);
+    }
+
+    private static String last(List<Component> pages) {
+        return pages.get(pages.size() - 1).getString();
     }
 
     @Test

@@ -1284,5 +1284,6 @@
   "dungeontrain.leaderboard.translations.header": "ใครทำมากที่สุดเพื่อให้ขบวนรถพูดภาษาอื่นได้",
   "dungeontrain.leaderboard.donations.header": "ใครจ่ายเพื่อให้ขบวนรถแล่นต่อไป",
   "dungeontrain.leaderboard.you": "คุณอยู่อันดับที่ %s ในรายการนี้ ด้วย %s",
-  "dungeontrain.leaderboard.you_unranked": "คุณยังไม่อยู่ในรายการนี้ ยังไม่"
+  "dungeontrain.leaderboard.you_unranked": "คุณยังไม่อยู่ในรายการนี้ ยังไม่",
+  "dungeontrain.leaderboard.you_beyond": "คุณอยู่ในรายการนี้ด้วย %s แต่อยู่นอก %s อันดับแรก"
 }

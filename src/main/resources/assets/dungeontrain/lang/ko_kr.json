@@ -1284,5 +1284,6 @@
   "dungeontrain.leaderboard.translations.header": "열차가 다른 언어를 말하도록 가장 많이 애쓴 사람.",
   "dungeontrain.leaderboard.donations.header": "열차가 계속 달리도록 값을 치른 사람.",
   "dungeontrain.leaderboard.you": "당신은 이 목록에서 %s위이며, 기록은 %s입니다.",
-  "dungeontrain.leaderboard.you_unranked": "당신은 이 목록에 없습니다. 아직은."
+  "dungeontrain.leaderboard.you_unranked": "당신은 이 목록에 없습니다. 아직은.",
+  "dungeontrain.leaderboard.you_beyond": "당신은 %s의 기록으로 이 목록에 있지만, 상위 %s위 밖입니다."
 }

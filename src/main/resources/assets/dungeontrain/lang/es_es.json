@@ -1296,5 +1296,6 @@
   "dungeontrain.leaderboard.translations.header": "Quién más ha hecho para que el tren hable otros idiomas.",
   "dungeontrain.leaderboard.donations.header": "Quién ha pagado para que el tren siga en marcha.",
   "dungeontrain.leaderboard.you": "Ocupas el puesto n.º %s de esta lista, con %s.",
-  "dungeontrain.leaderboard.you_unranked": "No estás en esta lista. Todavía no."
+  "dungeontrain.leaderboard.you_unranked": "No estás en esta lista. Todavía no.",
+  "dungeontrain.leaderboard.you_beyond": "Estás en esta lista con %s, fuera de los %s primeros."
 }

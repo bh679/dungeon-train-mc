@@ -1296,5 +1296,6 @@
   "dungeontrain.leaderboard.translations.header": "Wie het meest heeft gedaan om de trein andere talen te laten spreken.",
   "dungeontrain.leaderboard.donations.header": "Wie heeft betaald om de trein te laten rijden.",
   "dungeontrain.leaderboard.you": "Je staat op #%s in deze lijst, met %s.",
-  "dungeontrain.leaderboard.you_unranked": "Je staat niet op deze lijst. Nog niet."
+  "dungeontrain.leaderboard.you_unranked": "Je staat niet op deze lijst. Nog niet.",
+  "dungeontrain.leaderboard.you_beyond": "Je staat met %s in deze lijst, buiten de top %s."
 }

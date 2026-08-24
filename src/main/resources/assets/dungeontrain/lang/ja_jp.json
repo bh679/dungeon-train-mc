@@ -1284,5 +1284,6 @@
   "dungeontrain.leaderboard.translations.header": "列車が他の言語を話せるよう、最も尽力したのは誰か。",
   "dungeontrain.leaderboard.donations.header": "列車を走らせ続けるために支払ってくれたのは誰か。",
   "dungeontrain.leaderboard.you": "あなたはこの一覧の第%s位、記録は%sです。",
-  "dungeontrain.leaderboard.you_unranked": "あなたはこの一覧に載っていません。まだ。"
+  "dungeontrain.leaderboard.you_unranked": "あなたはこの一覧に載っていません。まだ。",
+  "dungeontrain.leaderboard.you_beyond": "あなたは記録%sでこの一覧に載っていますが、上位%s位の外です。"
 }

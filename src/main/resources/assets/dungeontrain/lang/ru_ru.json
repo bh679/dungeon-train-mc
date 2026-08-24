@@ -1308,5 +1308,6 @@
   "dungeontrain.leaderboard.translations.header": "Кто больше всех сделал, чтобы поезд заговорил на других языках.",
   "dungeontrain.leaderboard.donations.header": "Кто заплатил за то, чтобы поезд шёл дальше.",
   "dungeontrain.leaderboard.you": "Вы на №%s в этом списке, с результатом %s.",
-  "dungeontrain.leaderboard.you_unranked": "Вас нет в этом списке. Пока нет."
+  "dungeontrain.leaderboard.you_unranked": "Вас нет в этом списке. Пока нет.",
+  "dungeontrain.leaderboard.you_beyond": "Вы есть в этом списке с результатом %s, за пределами первых %s."
 }

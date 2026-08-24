@@ -1298,5 +1298,6 @@
   "dungeontrain.leaderboard.translations.header": "谁为让列车说出别的语言出力最多。",
   "dungeontrain.leaderboard.donations.header": "谁出资让列车继续行驶。",
   "dungeontrain.leaderboard.you": "你在这份名单上排第 %s 位，成绩为 %s。",
-  "dungeontrain.leaderboard.you_unranked": "你还不在这份名单上。暂时还不在。"
+  "dungeontrain.leaderboard.you_unranked": "你还不在这份名单上。暂时还不在。",
+  "dungeontrain.leaderboard.you_beyond": "你以 %s 的成绩在这份名单上，但排在前 %s 名之外。"
 }

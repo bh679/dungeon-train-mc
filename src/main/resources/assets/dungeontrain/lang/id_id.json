@@ -1284,5 +1284,6 @@
   "dungeontrain.leaderboard.translations.header": "Siapa yang paling berjasa membuat kereta berbicara bahasa lain.",
   "dungeontrain.leaderboard.donations.header": "Siapa yang membayar agar kereta terus berjalan.",
   "dungeontrain.leaderboard.you": "Kamu berada di urutan #%s daftar ini, dengan %s.",
-  "dungeontrain.leaderboard.you_unranked": "Kamu belum ada di daftar ini. Belum."
+  "dungeontrain.leaderboard.you_unranked": "Kamu belum ada di daftar ini. Belum.",
+  "dungeontrain.leaderboard.you_beyond": "Kamu ada di daftar ini dengan %s, di luar %s besar."
 }

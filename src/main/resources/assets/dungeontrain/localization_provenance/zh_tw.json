@@ -1288,7 +1288,8 @@
       "dungeontrain.leaderboard.translations.header",
       "dungeontrain.leaderboard.donations.header",
       "dungeontrain.leaderboard.you",
-      "dungeontrain.leaderboard.you_unranked"
+      "dungeontrain.leaderboard.you_unranked",
+      "dungeontrain.leaderboard.you_beyond"
     ],
     "adventureitemnames": "*",
     "playermob": "*",

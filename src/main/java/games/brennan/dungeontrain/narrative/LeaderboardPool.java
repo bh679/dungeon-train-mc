@@ -73,8 +73,18 @@ public final class LeaderboardPool {
         public boolean isEmpty() { return entries.isEmpty(); }
     }
 
-    /** One player's standing on one board. */
-    public record Standing(int rank, long score) {}
+    /**
+     * One player's standing on one board.
+     *
+     * <p>{@code rank} is 0 when the relay could not give an exact one — it caps how far it will scan,
+     * because an exact rank costs more the further down you are and the login call asks for every
+     * board at once. In that case {@code beyond} is the horizon it stopped at, and the book says
+     * "outside the top N" rather than inventing a number.</p>
+     */
+    public record Standing(int rank, long score, int beyond) {
+        /** True when the relay gave a real position rather than just a horizon. */
+        public boolean isExact() { return rank > 0; }
+    }
 
     private static final Map<LeaderboardCategory, Board> BOARDS = new ConcurrentHashMap<>();
     private static final Map<LeaderboardCategory, Boolean> IN_FLIGHT = new ConcurrentHashMap<>();
@@ -248,7 +258,9 @@ public final class LeaderboardPool {
             JsonObject o = e.getValue().getAsJsonObject();
             int rank = (int) Math.min(Integer.MAX_VALUE, num(o, "rank"));
             long score = num(o, "score");
-            if (rank > 0) out.put(cat, new Standing(rank, score));
+            int beyond = (int) Math.min(Integer.MAX_VALUE, num(o, "beyond"));
+            // Either an exact position, or a score with a horizon. Neither one means unranked.
+            if (rank > 0 || beyond > 0) out.put(cat, new Standing(rank, score, beyond));
         }
         return out;
     }

@@ -68,6 +68,9 @@ public enum LeaderboardCategory {
     /** Translation key for the closing line shown to a reader who is not on the board. */
     public static final String YOU_UNRANKED_KEY = "dungeontrain.leaderboard.you_unranked";
 
+    /** Closing line for a reader who IS on the board, but too far down for the relay to place exactly. */
+    public static final String YOU_BEYOND_KEY = "dungeontrain.leaderboard.you_beyond";
+
     public static Optional<LeaderboardCategory> byId(String id) {
         if (id == null) return Optional.empty();
         for (LeaderboardCategory c : values()) {

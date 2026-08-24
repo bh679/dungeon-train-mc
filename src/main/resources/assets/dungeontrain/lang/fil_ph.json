@@ -1284,5 +1284,6 @@
   "dungeontrain.leaderboard.translations.header": "Sino ang pinakamalaki ang naitulong para makapagsalita ang tren ng ibang wika.",
   "dungeontrain.leaderboard.donations.header": "Sino ang nagbayad para patuloy na tumakbo ang tren.",
   "dungeontrain.leaderboard.you": "Ikaw ay #%s sa listahang ito, na may %s.",
-  "dungeontrain.leaderboard.you_unranked": "Wala ka sa listahang ito. Hindi pa."
+  "dungeontrain.leaderboard.you_unranked": "Wala ka sa listahang ito. Hindi pa.",
+  "dungeontrain.leaderboard.you_beyond": "Nasa listahang ito ka na may %s, labas sa nangungunang %s."
 }

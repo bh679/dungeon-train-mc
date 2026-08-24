@@ -96,9 +96,15 @@ public final class LeaderboardBookFactory {
         // under the last rows: a reader ranked 4,000th should not have to hunt for it at the bottom
         // of a column of strangers, and a full board leaves no room down there anyway.
         pages.add(mine
-            .map(s -> Component.translatable(LeaderboardCategory.YOU_KEY,
-                    Component.literal(Integer.toString(s.rank())),
-                    Component.literal(category.render(s.score()))))
+            .map(s -> s.isExact()
+                ? Component.translatable(LeaderboardCategory.YOU_KEY,
+                        Component.literal(Integer.toString(s.rank())),
+                        Component.literal(category.render(s.score())))
+                // On the board but past the relay's rank-scan horizon. Say that, rather than dress a
+                // horizon up as a position.
+                : Component.translatable(LeaderboardCategory.YOU_BEYOND_KEY,
+                        Component.literal(category.render(s.score())),
+                        Component.literal(Integer.toString(s.beyond()))))
             .orElseGet(() -> Component.translatable(LeaderboardCategory.YOU_UNRANKED_KEY)));
         return pages;
     }
