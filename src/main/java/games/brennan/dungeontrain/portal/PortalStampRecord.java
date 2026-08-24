@@ -101,12 +101,6 @@ public final class PortalStampRecord {
             && isCorridorSlot(carriageIndex, groupSize);
     }
 
-    /** True if this index holds the cart between a pair's two corridors. */
-    public static boolean isStampedPortalMiddle(ServerLevel level, int carriageIndex, int groupSize) {
-        return PortalRegistry.get(level).isStampedPortalPart(carriageIndex)
-            && !isCorridorSlot(carriageIndex, groupSize);
-    }
-
     /**
      * Which of a portal group's three carriages this index is — the two corridors, or the cart
      * between them.
