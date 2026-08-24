@@ -135,6 +135,17 @@ public final class PortalCarriageEvents {
     private static final double APPROACH_RANGE = 12.0;
 
     /**
+     * How near a player must be for an unrecorded group to be asked to prove it holds a corridor.
+     *
+     * <p>Measured from the group's minimum corner, so it has to clear the group's own length before
+     * it reaches anybody standing at the far end of it — three carriages plus both pads. Generous on
+     * top of that: the read wants the plot loaded, which happens as the player approaches rather than
+     * on arrival, and confirming a tick early costs one lookup while confirming a tick late is a
+     * portal that did nothing when it was walked into.</p>
+     */
+    private static final double CONFIRM_RANGE = 96.0;
+
+    /**
      * Re-stamp the twin once the carriage has rolled this far from it. The twin has to stay inside
      * the chunks the client already has, or the swap would land the player in unloaded space — the
      * one thing this whole approach exists to avoid. 24 blocks keeps it within a chunk or two of the
@@ -626,11 +637,24 @@ public final class PortalCarriageEvents {
                 // corridors have to prove themselves from their own blocks once — and a group the
                 // lottery claims but that holds no corridor is refused here rather than teleporting
                 // anybody. Needs the pose, which is why it waits until after the guards above.
-                if (verdict == PortalStampRecord.Verdict.UNCONFIRMED
-                    && !PortalStampRecord.confirmGroup(level, ship, dims, anchorPIdx, groupSize,
-                        bb.minX(), bb.minY(), bb.minZ())) {
-                    warnSkippedGroup(level, anchorPIdx, PortalSwapDiagnostics.Reason.NOT_STAMPED);
-                    continue;
+                if (verdict == PortalStampRecord.Verdict.UNCONFIRMED) {
+                    // Only for a group somebody is actually near. A carriage's voxels live in its
+                    // Sable sub-level, and a group across the map has no plot chunks loaded to read
+                    // — so asking there answers "no corridor" about every distant carriage on the
+                    // train, once a second, in the log. Proximity is also when the answer starts to
+                    // matter: nothing swaps for a player who is nowhere near it.
+                    if (!anyPlayerWithin(players, bb.minX(), bb.minY(), bb.minZ(), CONFIRM_RANGE)) {
+                        continue;
+                    }
+                    PortalStampRecord.Proof proof = PortalStampRecord.confirmGroup(
+                        level, ship, dims, anchorPIdx, groupSize, bb.minX(), bb.minY(), bb.minZ());
+                    // REFUTED is the disagreement worth reporting. UNREADABLE is "ask again in a
+                    // moment" — the plot has not loaded — and saying so would be the same line at
+                    // the same rate for a state that resolves itself.
+                    if (proof == PortalStampRecord.Proof.REFUTED) {
+                        warnSkippedGroup(level, anchorPIdx, PortalSwapDiagnostics.Reason.NOT_STAMPED);
+                    }
+                    if (proof != PortalStampRecord.Proof.CONFIRMED) continue;
                 }
 
                 handleGroup(level, players, dims, anchorPIdx, ship,

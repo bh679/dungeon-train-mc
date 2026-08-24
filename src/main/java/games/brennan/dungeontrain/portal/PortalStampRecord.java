@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.portal;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.ship.CarriageDeck;
 import games.brennan.dungeontrain.ship.ManagedShip;
+import games.brennan.dungeontrain.ship.sable.SableManagedShip;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriagePlacer;
 import net.minecraft.core.BlockPos;
@@ -61,6 +62,23 @@ public final class PortalStampRecord {
     private static final Map<Integer, Long> NEXT_CONFIRM = new HashMap<>();
 
     private PortalStampRecord() {}
+
+    /** The outcome of asking a group's own blocks whether it holds a corridor. */
+    public enum Proof {
+        /** The lanterns are there. The group has been recorded and will not be asked again. */
+        CONFIRMED,
+        /** Read the blocks, and they are not a corridor's — the disagreement to refuse and report. */
+        REFUTED,
+        /**
+         * Nothing could be read.
+         *
+         * <p>Not the same answer as {@link #REFUTED} and the distinction is the whole point: a
+         * sub-level with no loaded plot chunks answers air to every query, so treating an unreadable
+         * carriage as a carriage without a corridor would condemn real portals on the strength of
+         * having not looked at them. Says nothing, waits, asks again.</p>
+         */
+        UNREADABLE
+    }
 
     /** What is known about a group, before any blocks have been looked at. */
     public enum Verdict {
@@ -128,16 +146,25 @@ public final class PortalStampRecord {
      * is what it would do for an unproven one anyway.</p>
      *
      * @param minX the group's world AABB minimum corner, already checked for degeneracy by the caller
-     * @return true when the group holds a corridor; its three indices are recorded before returning
+     * @return {@link Proof#CONFIRMED} when the group holds a corridor; its three indices are
+     *         recorded before returning
      */
-    public static boolean confirmGroup(ServerLevel level, ManagedShip ship, CarriageDims dims,
-                                       int carriageIndex, int groupSize,
-                                       double minX, double minY, double minZ) {
+    public static Proof confirmGroup(ServerLevel level, ManagedShip ship, CarriageDims dims,
+                                     int carriageIndex, int groupSize,
+                                     double minX, double minY, double minZ) {
         int anchor = PortalCarriageSelection.groupAnchorOf(carriageIndex, groupSize);
         long now = level.getGameTime();
         Long next = NEXT_CONFIRM.get(anchor);
-        if (next != null && now < next) return false;
+        if (next != null && now < next) return Proof.UNREADABLE;
         NEXT_CONFIRM.put(anchor, now + CONFIRM_PERIOD_TICKS);
+
+        // Nothing to read from yet. A carriage's voxels live only in its Sable sub-level's plot, and
+        // an unloaded plot reports air for every cell — indistinguishable from an ordinary carriage
+        // if the difference is not drawn here.
+        if (!(ship instanceof SableManagedShip sable)
+            || sable.subLevel().getPlot().getLoadedChunks().isEmpty()) {
+            return Proof.UNREADABLE;
+        }
 
         PortalCorridorKind kind = PortalCarriageSelection.corridorKindFor(level, anchor);
         PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims, kind);
@@ -148,11 +175,12 @@ public final class PortalStampRecord {
 
         if (!hasCrossingLanterns(ship, layout, originX, minY, minZ)) {
             LOGGER.warn("[DungeonTrain] Portal group {} is claimed by the current selection rate but "
-                    + "holds no corridor: no crossing-zone lantern in the entry carriage at ({}, {}, "
-                    + "{}). Its blocks were stamped under a different rate — game mode moves it. "
-                    + "Refusing to build a swap plane over it.",
-                anchor, fmt(originX), fmt(minY), fmt(minZ));
-            return false;
+                    + "holds no corridor: the entry carriage at ({}, {}, {}) has {} where a "
+                    + "crossing-zone lantern would be. Its blocks were stamped under a different "
+                    + "rate — game mode moves it. Refusing to build a swap plane over it.",
+                anchor, fmt(originX), fmt(minY), fmt(minZ),
+                describeProbe(ship, layout, originX, minY, minZ));
+            return Proof.REFUTED;
         }
 
         PortalRegistry registry = PortalRegistry.get(level);
@@ -162,7 +190,20 @@ public final class PortalStampRecord {
         }
         LOGGER.info("[DungeonTrain] Portal group {} confirmed from its own blocks and recorded — a "
             + "world saved before the stamp record existed.", anchor);
-        return true;
+        return Proof.CONFIRMED;
+    }
+
+    /** What is actually standing at the first crossing-zone cell, for the refusal line above. */
+    private static String describeProbe(ManagedShip ship, PortalCarriageLayout layout,
+                                        double originX, double originY, double originZ) {
+        for (int dx = 0; dx < layout.length(); dx++) {
+            if (!layout.isCrossingZone(dx)) continue;
+            BlockPos world = BlockPos.containing(originX + dx + 0.5,
+                originY + layout.floorY() + 0.5, originZ + layout.doorZ() + 0.5);
+            return CarriageDeck.blockAt(ship, world).getBlock().getName().getString()
+                + " at " + world.toShortString();
+        }
+        return "no crossing zone in this layout";
     }
 
     /**
