@@ -8491,6 +8491,19 @@
       "released": true,
       "released_in": "v0.643.0",
       "released_at": "2026-08-24T15:19:07Z"
+    },
+    {
+      "id": "portal-room-from-ordinary-carriage",
+      "version": "0.644.0",
+      "type": "fix",
+      "title": "Only dimensional carriages take you to their rooms",
+      "summary": "An ordinary carriage could send you into a dimensional carriage's room without you ever walking through one. It no longer can.",
+      "highlights": [],
+      "pr": 1081,
+      "date": "2026-08-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
