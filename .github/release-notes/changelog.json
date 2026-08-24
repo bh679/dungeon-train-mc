@@ -8423,6 +8423,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "scribble-book-tools",
+      "version": "0.642.0",
+      "type": "feat",
+      "title": "Better book writing",
+      "summary": "Writing a book in-game is far less painful. The Dungeon Train modpack now bundles Scribble, which adds page insert and delete, undo and redo, and the ability to save a book to a file and load it back later. Books you write still look exactly the same to everyone else, whether or not they have the mod.",
+      "highlights": [
+        "Insert and delete pages anywhere in a book, instead of only adding to the end",
+        "Undo and redo while writing",
+        "Save a book to a file and load it back into a fresh book and quill",
+        "Scribble's colour picker is switched off, so book text stays vanilla black \u2014 set colorPickerVisible in your Dungeon Train client config to bring it back"
+      ],
+      "pr": 1079,
+      "date": "2026-08-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
