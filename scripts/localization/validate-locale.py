@@ -43,6 +43,64 @@ MAX_TITLE_CHARS = 15               # DeathNoteTitleLocalization.VANILLA_MAX_TITL
 # Instruction books whose TITLE is itself the in-game trigger word a player types (NoteKind).
 # Their translated titles must stay typeable, or that language loses the mechanic silently.
 TRIGGER_BOOKS = ("deathnote", "lovenote")
+# Locale -> plural rule family, shared verbatim with PluralRules.java. A count-dependent key is a
+# FAMILY of sibling keys (`<base>.one`, `<base>.few`, …) and each locale carries exactly the forms
+# its own grammar can reach, so the key set is derived per locale rather than matched to the
+# reference: Russian must have `.few`/`.many` that English cannot use, Japanese must NOT carry a
+# `.one` its rules can never select.
+PLURAL_RULES = ASSETS / "dungeontrain" / "plural_rules.json"
+FAMILY_CATEGORIES = {
+    "one_other": ("one", "other"),
+    "zero_one_other": ("one", "other"),
+    "east_slavic": ("one", "few", "many"),
+    "polish": ("one", "few", "many"),
+    "single": ("other",),
+}
+PLURAL_SUFFIXES = {"one", "two", "few", "many", "other"}
+
+
+def plural_categories(loc, errors=None):
+    """The plural categories `loc`'s rules can produce, e.g. ("one", "few", "many") for ru_ru."""
+    try:
+        table = load(PLURAL_RULES)["locales"]
+    except (OSError, json.JSONDecodeError, KeyError) as exc:
+        if errors is not None:
+            errors.append(f"[plural] cannot read {PLURAL_RULES.name}: {exc}")
+        return FAMILY_CATEGORIES["one_other"]
+    family = table.get(loc[:2].lower(), "one_other")
+    if family not in FAMILY_CATEGORIES:
+        if errors is not None:
+            errors.append(f"[plural] {loc}: unknown rule family '{family}'")
+        return FAMILY_CATEGORIES["one_other"]
+    return FAMILY_CATEGORIES[family]
+
+
+def plural_bases(keys):
+    """Bases in `keys` that form a plural family — a base carrying BOTH `.one` and `.other`."""
+    return {k.rsplit(".", 1)[0] for k in keys if k.endswith(".one")
+            and k.rsplit(".", 1)[0] + ".other" in keys}
+
+
+def expected_keys(ref_keys, loc, errors=None):
+    """The reference key set rewritten into the forms `loc` is required to carry."""
+    bases = plural_bases(ref_keys)
+    cats = plural_categories(loc, errors)
+    out = set()
+    for key in ref_keys:
+        base, _, suffix = key.rpartition(".")
+        if base in bases and suffix in PLURAL_SUFFIXES:
+            out.update(f"{base}.{c}" for c in cats)
+        else:
+            out.add(key)
+    return out, bases
+
+
+def reference_twin(key, ref, bases):
+    """The reference key a plural form is checked against — its family's `.other`."""
+    base, _, suffix = key.rpartition(".")
+    if base in bases and suffix in PLURAL_SUFFIXES:
+        return base + ".other"
+    return key
 
 
 def load(path):
@@ -115,16 +173,18 @@ def validate_gui(loc, errors):
         except json.JSONDecodeError as exc:
             errors.append(f"[gui:{mod}] JSON error: {exc}")
             continue
-        missing = set(ref) - set(cur)
-        extra = set(cur) - set(ref)
+        wanted, bases = expected_keys(set(ref), loc, errors)
+        missing = wanted - set(cur)
+        extra = set(cur) - wanted
         if missing:
             errors.append(f"[gui:{mod}] missing {len(missing)} keys e.g. {sorted(missing)[:3]}")
         if extra:
             errors.append(f"[gui:{mod}] {len(extra)} unexpected keys e.g. {sorted(extra)[:3]}")
-        for key in set(ref) & set(cur):
-            if placeholders(ref[key]) != placeholders(cur[key]):
+        for key in wanted & set(cur):
+            twin = reference_twin(key, ref, bases)
+            if twin in ref and placeholders(ref[twin]) != placeholders(cur[key]):
                 errors.append(f"[gui:{mod}] '{key}': placeholders "
-                              f"{placeholders(cur[key])} != {placeholders(ref[key])}")
+                              f"{placeholders(cur[key])} != {placeholders(ref[twin])}")
             if isinstance(cur[key], str) and not cur[key].strip():
                 errors.append(f"[gui:{mod}] '{key}': empty value")
 

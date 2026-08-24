@@ -1,0 +1,493 @@
+{
+  "af_za": [
+    "ZA",
+    "NA"
+  ],
+  "ar_sa": [
+    "SA",
+    "EG",
+    "DZ",
+    "MA",
+    "IQ",
+    "SD",
+    "SY",
+    "YE",
+    "JO",
+    "LB",
+    "LY",
+    "TN",
+    "AE",
+    "KW",
+    "QA",
+    "OM",
+    "BH",
+    "PS",
+    "MR"
+  ],
+  "ast_es": [
+    "ES"
+  ],
+  "az_az": [
+    "AZ",
+    "IR"
+  ],
+  "ba_ru": [
+    "RU"
+  ],
+  "bar": [
+    "DE",
+    "AT",
+    "IT"
+  ],
+  "be_by": [
+    "BY"
+  ],
+  "be_latn": [
+    "BY"
+  ],
+  "bg_bg": [
+    "BG"
+  ],
+  "br_fr": [
+    "FR"
+  ],
+  "brb": [
+    "NL",
+    "BE"
+  ],
+  "bs_ba": [
+    "BA"
+  ],
+  "ca_es": [
+    "ES",
+    "AD",
+    "FR",
+    "IT"
+  ],
+  "cs_cz": [
+    "CZ"
+  ],
+  "cv_cu": [
+    "RU"
+  ],
+  "cy_gb": [
+    "GB"
+  ],
+  "da_dk": [
+    "DK",
+    "GL"
+  ],
+  "de_at": [
+    "AT"
+  ],
+  "de_ch": [
+    "CH"
+  ],
+  "de_de": [
+    "DE",
+    "AT",
+    "CH",
+    "LI",
+    "LU",
+    "BE"
+  ],
+  "el_gr": [
+    "GR",
+    "CY"
+  ],
+  "en_au": [
+    "AU"
+  ],
+  "en_ca": [
+    "CA"
+  ],
+  "en_gb": [
+    "GB",
+    "IE"
+  ],
+  "en_nz": [
+    "NZ"
+  ],
+  "en_us": [
+    "US",
+    "GB",
+    "CA",
+    "AU",
+    "NZ",
+    "IE",
+    "ZA",
+    "IN",
+    "NG",
+    "PH",
+    "SG"
+  ],
+  "es_ar": [
+    "AR"
+  ],
+  "es_cl": [
+    "CL"
+  ],
+  "es_ec": [
+    "EC"
+  ],
+  "es_es": [
+    "ES",
+    "GQ"
+  ],
+  "es_mx": [
+    "MX"
+  ],
+  "es_uy": [
+    "UY"
+  ],
+  "es_ve": [
+    "VE"
+  ],
+  "esan": [
+    "ES"
+  ],
+  "et_ee": [
+    "EE"
+  ],
+  "eu_es": [
+    "ES",
+    "FR"
+  ],
+  "fa_ir": [
+    "IR",
+    "AF",
+    "TJ"
+  ],
+  "fi_fi": [
+    "FI"
+  ],
+  "fil_ph": [
+    "PH"
+  ],
+  "fo_fo": [
+    "FO"
+  ],
+  "fr_ca": [
+    "CA"
+  ],
+  "fr_ch": [
+    "CH"
+  ],
+  "fr_fr": [
+    "FR",
+    "BE",
+    "CH",
+    "CA",
+    "LU",
+    "MC",
+    "SN",
+    "CI",
+    "CM",
+    "CD",
+    "ML",
+    "BF",
+    "NE",
+    "TD",
+    "GN",
+    "HT",
+    "MG"
+  ],
+  "fra_de": [
+    "DE"
+  ],
+  "fur_it": [
+    "IT"
+  ],
+  "fy_nl": [
+    "NL"
+  ],
+  "ga_ie": [
+    "IE"
+  ],
+  "gd_gb": [
+    "GB"
+  ],
+  "gl_es": [
+    "ES"
+  ],
+  "hal_ua": [
+    "UA"
+  ],
+  "haw_us": [
+    "US"
+  ],
+  "he_il": [
+    "IL"
+  ],
+  "hi_in": [
+    "IN",
+    "FJ"
+  ],
+  "hn_no": [
+    "NO"
+  ],
+  "hr_hr": [
+    "HR",
+    "BA"
+  ],
+  "hu_hu": [
+    "HU",
+    "RO",
+    "SK",
+    "RS"
+  ],
+  "hy_am": [
+    "AM"
+  ],
+  "id_id": [
+    "ID"
+  ],
+  "ig_ng": [
+    "NG"
+  ],
+  "is_is": [
+    "IS"
+  ],
+  "it_it": [
+    "IT",
+    "CH",
+    "SM",
+    "VA"
+  ],
+  "ja_jp": [
+    "JP"
+  ],
+  "ka_ge": [
+    "GE"
+  ],
+  "kk_kz": [
+    "KZ"
+  ],
+  "kn_in": [
+    "IN"
+  ],
+  "ko_kr": [
+    "KR",
+    "KP"
+  ],
+  "ksh": [
+    "DE"
+  ],
+  "kw_gb": [
+    "GB"
+  ],
+  "ky_kg": [
+    "KG"
+  ],
+  "la_la": [
+    "VA"
+  ],
+  "lb_lu": [
+    "LU"
+  ],
+  "li_li": [
+    "NL",
+    "BE"
+  ],
+  "lmo": [
+    "IT",
+    "CH"
+  ],
+  "lo_la": [
+    "LA"
+  ],
+  "lt_lt": [
+    "LT"
+  ],
+  "lv_lv": [
+    "LV"
+  ],
+  "lzh": [
+    "CN",
+    "TW"
+  ],
+  "mk_mk": [
+    "MK"
+  ],
+  "mn_mn": [
+    "MN"
+  ],
+  "ms_my": [
+    "MY",
+    "BN",
+    "SG"
+  ],
+  "mt_mt": [
+    "MT"
+  ],
+  "nah": [
+    "MX"
+  ],
+  "nds_de": [
+    "DE",
+    "NL"
+  ],
+  "nl_be": [
+    "BE"
+  ],
+  "nl_nl": [
+    "NL",
+    "BE",
+    "SR",
+    "AW",
+    "CW",
+    "SX"
+  ],
+  "nn_no": [
+    "NO"
+  ],
+  "no_no": [
+    "NO"
+  ],
+  "oc_fr": [
+    "FR",
+    "IT",
+    "ES"
+  ],
+  "ovd": [
+    "SE"
+  ],
+  "pl_pl": [
+    "PL"
+  ],
+  "pls": [
+    "MX"
+  ],
+  "pt_br": [
+    "BR"
+  ],
+  "pt_pt": [
+    "PT",
+    "AO",
+    "MZ",
+    "GW",
+    "CV",
+    "ST",
+    "TL"
+  ],
+  "qcb_es": [
+    "ES"
+  ],
+  "ro_ro": [
+    "RO",
+    "MD"
+  ],
+  "rpr": [
+    "UA",
+    "SK"
+  ],
+  "ru_ru": [
+    "RU",
+    "BY",
+    "KZ",
+    "KG",
+    "UA"
+  ],
+  "ry_ua": [
+    "UA"
+  ],
+  "sah_sah": [
+    "RU"
+  ],
+  "se_no": [
+    "NO",
+    "SE",
+    "FI"
+  ],
+  "sk_sk": [
+    "SK"
+  ],
+  "sl_si": [
+    "SI"
+  ],
+  "so_so": [
+    "SO",
+    "ET",
+    "DJ",
+    "KE"
+  ],
+  "sq_al": [
+    "AL",
+    "MK"
+  ],
+  "sr_cs": [
+    "RS"
+  ],
+  "sr_sp": [
+    "RS",
+    "BA",
+    "ME"
+  ],
+  "sv_se": [
+    "SE",
+    "FI"
+  ],
+  "sxu": [
+    "DE"
+  ],
+  "szl": [
+    "PL"
+  ],
+  "ta_in": [
+    "IN",
+    "LK",
+    "SG",
+    "MY"
+  ],
+  "th_th": [
+    "TH"
+  ],
+  "tl_ph": [
+    "PH"
+  ],
+  "tr_tr": [
+    "TR",
+    "CY"
+  ],
+  "tt_ru": [
+    "RU"
+  ],
+  "tzo_mx": [
+    "MX"
+  ],
+  "uk_ua": [
+    "UA"
+  ],
+  "val_es": [
+    "ES"
+  ],
+  "vec_it": [
+    "IT"
+  ],
+  "vi_vn": [
+    "VN"
+  ],
+  "yi_de": [
+    "IL",
+    "US"
+  ],
+  "yo_ng": [
+    "NG",
+    "BJ"
+  ],
+  "zh_cn": [
+    "CN",
+    "SG"
+  ],
+  "zh_hk": [
+    "HK",
+    "MO"
+  ],
+  "zh_tw": [
+    "TW"
+  ],
+  "zlm_arab": [
+    "MY",
+    "BN"
+  ]
+}

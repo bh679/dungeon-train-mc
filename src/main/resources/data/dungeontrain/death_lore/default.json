@@ -80,7 +80,7 @@
     "conditions": { "min_deaths": 2 },
     "question": "Will you board again, or step off into the quiet?",
     "narration": "The platform is empty. The whistle sounds far down the line. It runs without end — and so, it seems, do you.",
-    "epitaph": "the {deaths}th to fall. perhaps not the last."
+    "epitaph": "the {deaths_nth} to fall. perhaps not the last."
   },
   {
     "page": "platform",
@@ -96,7 +96,7 @@
     "conditions": { "min_deaths": 20 },
     "question": "Need you even ask?",
     "narration": "The platform knows your face by now. The whistle sounds the way it always does. You already know what comes next.",
-    "epitaph": "the {deaths}th to fall — and not, it seems, the last."
+    "epitaph": "the {deaths_nth} to fall — and not, it seems, the last."
   },
 
   {
@@ -253,7 +253,7 @@
     "conditions": { "min_deaths": 2 },
     "question": "Will you board again, or let the platform keep you?",
     "narration": "The whistle is already sounding, far ahead. It is not waiting for you — it never was — and yet here you stand, deciding to follow.",
-    "epitaph": "the {deaths}th to fall. the line goes on."
+    "epitaph": "the {deaths_nth} to fall. the line goes on."
   },
   {
     "page": "platform",
@@ -261,7 +261,7 @@
     "conditions": { "min_deaths": 3 },
     "question": "Will you board again?",
     "narration": "The platform is quiet. Somewhere the train is already full of someone else's story. There is always room for one more of yours.",
-    "epitaph": "the {deaths}th to fall. perhaps not the last."
+    "epitaph": "the {deaths_nth} to fall. perhaps not the last."
   },
   {
     "page": "platform",
@@ -269,6 +269,6 @@
     "conditions": { "min_deaths": 5 },
     "question": "Need the line even ask?",
     "narration": "You know the weight of the door, the cold of the step. The dark is just a place you visit now.",
-    "epitaph": "the {deaths}th to fall — a regular of the line."
+    "epitaph": "the {deaths_nth} to fall — a regular of the line."
   }
 ]

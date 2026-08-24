@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.narrative;
 
+import games.brennan.dungeontrain.discord.WorldInfoReporter;
 import games.brennan.dungeontrain.event.NetworkConsentMirror;
 import games.brennan.dungeontrain.net.relay.BookStatsClient;
 import net.minecraft.core.component.DataComponents;
@@ -59,7 +60,8 @@ public final class FamiliarBookGreeter {
                 BookVoteCountsTag.stamp(stack, stats.votesUp(), stats.votesDown());
                 if (isGreeted(stack)) return; // lost a race with a concurrent equip — show once
                 markGreeted(stack);
-                player.sendSystemMessage(FamiliarBookMessage.build(stats, player.getRandom()));
+                player.sendSystemMessage(FamiliarBookMessage.build(
+                        WorldInfoReporter.clientLanguage(player), stats, player.getRandom()));
             });
         });
     }
