@@ -8290,16 +8290,45 @@
       ],
       "pr": 1065,
       "date": "2026-08-23",
+      "released": true,
+      "released_in": "v0.634.0",
+      "released_at": "2026-08-23T16:20:06Z"
+    },
+    {
+      "id": "portal-self-shelf-consent",
+      "version": "0.635.0",
+      "type": "fix",
+      "title": "Dimensional carriage libraries follow your network-access choice",
+      "summary": "A dimensional carriage that stocks its shelves from your own writing has to ask the server which books are yours, which means sending your player ID. It now does that only if you allowed network access; if you declined, the carriage stocks from another player's library instead.",
+      "highlights": [],
+      "pr": 1067,
+      "date": "2026-08-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "translation-search-and-scrollbar",
+      "version": "0.637.0",
+      "type": "fix",
+      "title": "Translation editor keeps your search, and its scrollbars work",
+      "summary": "Opening a string in the translation editor no longer wipes what you typed in the search box or your place in the list \u2014 both are still there when you come back. The editor's two lists also have working scrollbars now: clicking or dragging the bar scrolls, instead of selecting the row hiding behind it.",
+      "highlights": [
+        "Search text and scroll position survive opening a string",
+        "Scrollbars are clickable and draggable in both the strings list and the sent column"
+      ],
+      "pr": 1070,
+      "date": "2026-08-24",
       "released": false,
       "released_in": null,
       "released_at": null
     },
     {
       "id": "portal-rate-one-knob",
-      "version": "0.635.0",
+      "version": "0.638.0",
       "type": "feat",
       "title": "Dimensional carriages, and more of them in Creative",
-      "summary": "The room between a portal's two corridors is now called a dimensional carriage. In Creative they arrive on an exact beat \u2014 every 5 carriage groups \u2014 instead of at random, so you always know where the next one is. Survival is unchanged. Set the rate for a world with /dungeontrain portal carriage <n>; doing so puts the world into Free Play.",
+      "summary": "The room between a portal's two corridors is now called a dimensional carriage in-game, matching what the notes have been calling it. In Creative they arrive on an exact beat \u2014 every 5 carriage groups \u2014 instead of at random, so you always know where the next one is. Survival is unchanged. Set the rate for a world with /dungeontrain portal carriage <n>; doing so puts the world into Free Play.",
       "highlights": [],
       "pr": 1066,
       "date": "2026-08-24",

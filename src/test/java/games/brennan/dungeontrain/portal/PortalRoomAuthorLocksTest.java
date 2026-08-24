@@ -9,6 +9,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -99,6 +100,46 @@ class PortalRoomAuthorLocksTest {
             seen.add(PortalRoomAuthorLocks.effectiveShare(pair, books));
         }
         assertEquals(3, seen.size(), "an even three-way roll should reach all three across 60 rooms");
+    }
+
+    // ---- whose shelf a Self room is allowed to ask for ----
+
+    @Test
+    @DisplayName("A room asks for the reader's own shelf only when they granted network access")
+    void selfDirectoryNeedsConsent() {
+        // The self page is the one directory call that names a person: it goes out as &uuid=.
+        assertTrue(PortalRoomAuthorLocks.useSelfDirectory(PortalRoomBooks.Share.SELF, true));
+        assertFalse(PortalRoomAuthorLocks.useSelfDirectory(PortalRoomBooks.Share.SELF, false));
+
+        // The other two name nobody, so consent is not what gates them.
+        for (PortalRoomBooks.Share share :
+                List.of(PortalRoomBooks.Share.PLAYER, PortalRoomBooks.Share.SIGNATURE)) {
+            assertFalse(PortalRoomAuthorLocks.useSelfDirectory(share, true), share + " is not a shelf");
+            assertFalse(PortalRoomAuthorLocks.useSelfDirectory(share, false), share + " is not a shelf");
+        }
+        assertFalse(PortalRoomAuthorLocks.useSelfDirectory(null, true), "a missing share asks for nothing");
+    }
+
+    @Test
+    @DisplayName("Without consent a Self room is not wedged waiting on a page it will never ask for")
+    void deniedSelfRoomIsNotStuckPending() {
+        // The whole point of the gate: no self fetch is kicked, so waiting on one would pin the room
+        // at PENDING for as long as it stands. The random-player page is the only answer it needs.
+        assertTrue(PortalRoomAuthorLocks.answered(false, false, true));
+    }
+
+    @Test
+    @DisplayName("With consent a Self room still waits for its own page before giving up")
+    void consentedSelfRoomWaitsForItsOwnPage() {
+        assertFalse(PortalRoomAuthorLocks.answered(true, false, true));
+        assertTrue(PortalRoomAuthorLocks.answered(true, true, true));
+    }
+
+    @Test
+    @DisplayName("Nobody resolves until the random-player page lands, consent either way")
+    void thePoolPageIsAlwaysWaitedOn() {
+        assertFalse(PortalRoomAuthorLocks.answered(false, true, false));
+        assertFalse(PortalRoomAuthorLocks.answered(true, true, false));
     }
 
     @Test
