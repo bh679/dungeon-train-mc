@@ -5,6 +5,7 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.editor.CarriageTemplateStore;
 import games.brennan.dungeontrain.event.PortalCarriageEvents;
+import games.brennan.dungeontrain.cheat.PortalTuningIntegrity;
 import games.brennan.dungeontrain.portal.PortalAnchors;
 import games.brennan.dungeontrain.portal.PortalBuilder;
 import games.brennan.dungeontrain.portal.PortalCarriageBuilder;
@@ -89,9 +90,10 @@ public final class PortalCommand {
             .then(Commands.literal("carriage")
                 .then(Commands.literal("off")
                     .executes(ctx -> runCarriage(ctx.getSource(), PortalCarriageSelection.CARRIAGE_EVERY_OFF)))
-                // Counted in GROUPS, not carriages, and a rate rather than a period: a portal is a
-                // whole group (entry, one cart, exit), and one group in <every> wins one by lottery,
-                // so 1 means every group holds one. Twins no longer collide at close rates because
+                // Counted in GROUPS, not carriages: a portal is a whole group (entry, one cart,
+                // exit), so 1 means every group holds one. Survival draws one group in <every> by
+                // lottery; creative takes it as an exact period instead — see
+                // PortalCarriageSelection.rateFor. Twins no longer collide at close rates because
                 // each group takes its own Y lane — see PortalCarriageEvents.twinFloorY.
                 .then(Commands.argument("every", IntegerArgumentType.integer(1, 64))
                     .executes(ctx -> runCarriage(ctx.getSource(),
@@ -254,6 +256,7 @@ public final class PortalCommand {
 
     private static int runCarriage(CommandSourceStack source, int every) {
         PortalRegistry.get(source.getLevel()).setCarriageEvery(every);
+        PortalTuningIntegrity.markTuned(source.getLevel());
 
         if (every == PortalCarriageSelection.CARRIAGE_EVERY_OFF) {
             source.sendSuccess(() -> Component.literal(
@@ -272,11 +275,12 @@ public final class PortalCommand {
             source.sendSuccess(() -> Component.literal(
                 "  → that is denser than the " + PortalCarriageSelection.MIN_GROUP_GAP
                     + "-group minimum spacing allows, so portals will land exactly every "
-                    + PortalCarriageSelection.MIN_GROUP_GAP + "th group.")
+                    + PortalCarriageSelection.MIN_GROUP_GAP + "th group in survival.")
                 .withStyle(ChatFormatting.YELLOW), false);
         } else if (every > 1) {
             source.sendSuccess(() -> Component.literal(
-                "  → never closer than " + PortalCarriageSelection.MIN_GROUP_GAP + " groups apart.")
+                "  → in survival, never closer than " + PortalCarriageSelection.MIN_GROUP_GAP
+                    + " groups apart. In creative, exactly every " + every + " groups.")
                 .withStyle(ChatFormatting.GRAY), false);
         }
         return 1;
@@ -289,13 +293,16 @@ public final class PortalCommand {
         source.sendSuccess(() -> Component.literal(every == PortalCarriageSelection.CARRIAGE_EVERY_OFF
             ? "Portal carriages: off"
             : "Portal carriages: 1 carriage group in " + every + ", at random"), false);
-        // Says so out loud, because otherwise dense portals on a dev build read as the rate being
-        // broken rather than as the testing cadence doing its job.
-        if (PortalCarriageSelection.isDevCreative(source.getLevel())) {
+        // Says so out loud while it is in force, because otherwise portals arriving on a metronome
+        // reads as the "at random" above being broken.
+        if (every != PortalCarriageSelection.CARRIAGE_EVERY_OFF
+                && PortalCarriageSelection.isAllCreative(source.getLevel())) {
+            int creative = PortalCarriageSelection.isDevCreative(source.getLevel())
+                    && !registry.isCarriageEverySet()
+                ? PortalCarriageSelection.DEV_CREATIVE_EVERY : every;
             source.sendSuccess(() -> Component.literal(
-                "  → dev build, everyone in creative: overridden to every "
-                    + PortalCarriageSelection.DEV_CREATIVE_EVERY + "nd group. Switch to survival for "
-                    + "the real rate.")
+                "  → everyone here is in creative, so it is exactly every " + creative
+                    + " groups rather than a draw. Switch to survival for the lottery.")
                 .withStyle(ChatFormatting.YELLOW), false);
         }
         source.sendSuccess(() -> Component.literal(spacing == PortalAnchors.SPACING_OFF

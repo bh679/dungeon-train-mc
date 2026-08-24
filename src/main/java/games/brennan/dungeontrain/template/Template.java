@@ -774,7 +774,7 @@ public sealed interface Template
 
         @Override public String id() { return "portal_room"; }
 
-        @Override public String displayName() { return "portal room / " + name; }
+        @Override public String displayName() { return "dimensional carriage / " + name; }
 
         @Override public TemplateKind kind() { return TemplateKind.PORTAL_ROOM; }
 

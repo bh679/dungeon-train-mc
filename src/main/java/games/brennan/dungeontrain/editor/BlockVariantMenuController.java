@@ -212,7 +212,7 @@ public final class BlockVariantMenuController {
 
         BlockVariantPlot room = BlockVariantPlot.resolveAt(player, dims);
         if (room == null) {
-            actionBar(player, "Stand in the portal room's plot", ChatFormatting.YELLOW);
+            actionBar(player, "Stand in the dimensional carriage's plot", ChatFormatting.YELLOW);
             return;
         }
         games.brennan.dungeontrain.portal.PortalRoomCopiesPlot plot =

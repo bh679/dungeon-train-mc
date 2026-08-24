@@ -101,7 +101,7 @@ public final class PortalRoomTemplateStore {
         @Override
         public void promote(Template.PortalRoom template) {
             throw new IllegalStateException(
-                "Portal room templates have no bundled tier — '/dt save default' does not apply.");
+                "Dimensional carriage templates have no bundled tier — '/dt save default' does not apply.");
         }
     };
 
