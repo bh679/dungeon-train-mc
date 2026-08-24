@@ -8504,6 +8504,40 @@
       "released": true,
       "released_in": "v0.644.0",
       "released_at": "2026-08-24T15:34:13Z"
+    },
+    {
+      "id": "duplicate-book-upload-suspension",
+      "version": "0.645.0",
+      "type": "feat",
+      "title": "The train refuses a book you have already sent",
+      "summary": "Send the train the same book twice and it now says no, and stops taking your writing for a while \u2014 thirty seconds the first time, doubling with each repeat, up to an hour. While it is refusing you, the Sign button in the book screen turns red and will not press, with the time left on it, so you never burn a book for nothing. Someone else writing out a book they found in loot is not affected: only re-sending your OWN book counts.",
+      "highlights": [
+        "A re-upload of your own book is refused instead of silently ignored",
+        "Uploads pause for 30s, doubling per repeat, capped at an hour and forgotten after a clean week",
+        "The Sign button goes red and dead while paused, and frees itself when the time is up",
+        "Lectern letters, Death Notes and Love Notes are all paused too"
+      ],
+      "pr": 1082,
+      "date": "2026-08-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "cat-content-netherite-scrap-loot",
+      "version": "0.645.0",
+      "type": "content",
+      "title": "A cat rides the train, and netherite scrap turns up in loot",
+      "summary": "Carriages that carried cows may now carry a cat instead \u2014 or, rarely, an ocelot. Netherite scrap has also been added to the loot tables.",
+      "highlights": [
+        "New cat carriage content, with a rare ocelot variant",
+        "Netherite scrap added to prefab loot"
+      ],
+      "pr": 1082,
+      "date": "2026-08-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

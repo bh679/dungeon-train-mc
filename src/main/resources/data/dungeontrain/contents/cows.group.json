@@ -61,6 +61,10 @@
     {
       "id": "worf",
       "weight": 1
+    },
+    {
+      "id": "cat",
+      "weight": 1
     }
   ]
 }

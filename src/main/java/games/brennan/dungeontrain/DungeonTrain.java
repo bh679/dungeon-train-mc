@@ -331,6 +331,11 @@ public class DungeonTrain {
         // needed. The gate is a cheap tag-prefix scan (TrainMembership).
         NamingConfig.registerMobNameGate(TrainMembership::isOnTrain);
 
+        // Watch the relay's answer to a book upload: a re-upload of a book this player already sent
+        // is refused and pauses their uploads, and the writer is told in chat (see
+        // SharedBookSubmitResponses). Registration only — no network, no game state.
+        games.brennan.dungeontrain.net.relay.SharedBookSubmitResponses.register();
+
         // Point the bundled Discord Presence at Dungeon Train's central relay feed: every DT install
         // reports joins / deaths / advancements / chat to one community Discord via the relay at
         // brennan.games, carrying only this revocable relay URL — no Discord webhook/token ships in the

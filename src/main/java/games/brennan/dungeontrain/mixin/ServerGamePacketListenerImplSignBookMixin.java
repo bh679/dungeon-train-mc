@@ -7,6 +7,8 @@ import games.brennan.dungeontrain.discord.WorldInfoReporter;
 import games.brennan.dungeontrain.editor.EditorPlotScope;
 import games.brennan.dungeontrain.event.SharedBookGate;
 import games.brennan.dungeontrain.narrative.BookFactory;
+import games.brennan.dungeontrain.narrative.BookSuspensionMessage;
+import games.brennan.dungeontrain.narrative.BookUploadSuspensions;
 import games.brennan.dungeontrain.narrative.DeathNoteSigning;
 import games.brennan.dungeontrain.narrative.DeathNoteTitleLocalization;
 import games.brennan.dungeontrain.narrative.EditorAuthoredBookTag;
@@ -17,6 +19,7 @@ import games.brennan.dungeontrain.narrative.PlayerWrittenBookTag;
 import games.brennan.dungeontrain.narrative.SharedBookMessage;
 import games.brennan.dungeontrain.narrative.SharedBookTag;
 import games.brennan.dungeontrain.narrative.SignedCarriageTag;
+import games.brennan.dungeontrain.net.BookSuspensionSyncPacket;
 import games.brennan.dungeontrain.registry.ModDataAttachments;
 import games.brennan.dungeontrain.train.TrainCarriageAppender;
 import net.minecraft.core.GlobalPos;
@@ -24,6 +27,7 @@ import net.minecraft.core.component.DataComponents;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.network.FilteredText;
 import net.minecraft.world.item.ItemStack;
+import net.neoforged.neoforge.network.PacketDistributor;
 import org.slf4j.Logger;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -118,8 +122,29 @@ public abstract class ServerGamePacketListenerImplSignBookMixin {
             // so it stays inert until a player finds it in the live train). Deliberately ahead of the
             // lectern-letter / Death Note / community-contribution branches below: a prop book must not
             // fire a live mechanic or push curated text to the relay.
+            //
+            // Also ahead of the upload-suspension check: a prop book uploads nothing, so a paused
+            // author is still free to write content.
             if (EditorPlotScope.isInsideAnyPlot(serverPlayer)) {
                 this.dungeontrain$signedInEditorPlot = true;
+                return;
+            }
+
+            // Uploads paused — the relay refused a book this player had already sent (see
+            // BookUploadSuspensions). Signing is off ENTIRELY for the window: community books,
+            // lectern letters, Death Notes and Love Notes alike. Notes never upload, so this is a
+            // policy choice rather than a technical one — it keeps the rule one line long, and it is
+            // what the greyed-out Sign button on the client already tells the player.
+            //
+            // Fall through WITHOUT cancelling, exactly as a failed consent gate does: vanilla signs
+            // the book and the player keeps their writing rather than burning it for nothing.
+            if (BookUploadSuspensions.isSuspended(serverPlayer.getUUID())) {
+                long left = BookUploadSuspensions.remainingSec(serverPlayer.getUUID());
+                serverPlayer.sendSystemMessage(BookSuspensionMessage.blocked(
+                        WorldInfoReporter.clientLanguage(serverPlayer), left));
+                // Re-assert the window: a client that got this far had a stale or missing one.
+                PacketDistributor.sendToPlayer(serverPlayer,
+                        BookSuspensionSyncPacket.of(left, 0));
                 return;
             }
 
