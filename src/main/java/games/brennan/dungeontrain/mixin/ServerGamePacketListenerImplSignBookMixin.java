@@ -4,10 +4,12 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
 import games.brennan.dungeontrain.discord.SharedBookReporter;
 import games.brennan.dungeontrain.discord.WorldInfoReporter;
+import games.brennan.dungeontrain.editor.EditorPlotScope;
 import games.brennan.dungeontrain.event.SharedBookGate;
 import games.brennan.dungeontrain.narrative.BookFactory;
 import games.brennan.dungeontrain.narrative.DeathNoteSigning;
 import games.brennan.dungeontrain.narrative.DeathNoteTitleLocalization;
+import games.brennan.dungeontrain.narrative.EditorAuthoredBookTag;
 import games.brennan.dungeontrain.narrative.NoteKind;
 import games.brennan.dungeontrain.narrative.LetterLecternEvents;
 import games.brennan.dungeontrain.narrative.LetterSigning;
@@ -57,6 +59,13 @@ import java.util.List;
  * consumed either inline (community branch) or by a second {@code @At("RETURN")} injector once vanilla
  * finishes signing (the branch where the player actually keeps the book).</p>
  *
+ * <p>Signing inside an <b>editor plot</b> short-circuits all of the above: the HEAD injector returns
+ * without cancelling, so vanilla signs and the author keeps a plain written book, and the RETURN
+ * injector stamps {@link EditorAuthoredBookTag} instead of {@link PlayerWrittenBookTag}. An author
+ * hand-writing a lore book to stock a carriage's loot chest is producing content, not contributing a
+ * community book or arming a live mechanic — so the letter / Death Note / community branches are all
+ * skipped, and the book stays inert until a player takes it out of a chest on the live train.</p>
+ *
  * <p>That second, vanilla-signing branch is also where {@link PlayerWrittenBookTag} gets stamped —
  * unconditionally, regardless of carriage — so a book you write and keep (rather than contribute) still
  * burns once it's been read, the same as starting/random books. See
@@ -77,6 +86,13 @@ public abstract class ServerGamePacketListenerImplSignBookMixin {
      */
     private Integer dungeontrain$pendingSignCarriage;
 
+    /**
+     * Whether the signer was standing in an editor plot when {@link #dungeontrain$interceptSignBook}
+     * ran, consumed by {@link #dungeontrain$stampVanillaSignedBook} to choose which burn tag the kept
+     * book gets. Same single-connection, server-thread-sequential reasoning as the field above.
+     */
+    private boolean dungeontrain$signedInEditorPlot;
+
     @Inject(method = "signBook", at = @At("HEAD"), cancellable = true)
     private void dungeontrain$interceptSignBook(FilteredText title, List<FilteredText> pages, int slot,
                                                 CallbackInfo ci) {
@@ -84,6 +100,7 @@ public abstract class ServerGamePacketListenerImplSignBookMixin {
         this.dungeontrain$pendingSignCarriage = earlyPlayer != null
                 ? TrainCarriageAppender.lastCarriageIndex(earlyPlayer.getUUID())
                 : null;
+        this.dungeontrain$signedInEditorPlot = false;
         try {
             ServerPlayer serverPlayer = this.player;
             if (serverPlayer == null) return;
@@ -93,6 +110,16 @@ public abstract class ServerGamePacketListenerImplSignBookMixin {
             // (Read-only; validated ahead of either branch below.)
             ItemStack writable = serverPlayer.getInventory().getItem(slot);
             if (writable.isEmpty() || !writable.has(DataComponents.WRITABLE_BOOK_CONTENT)) {
+                return;
+            }
+
+            // Editor plot — the signer is authoring content, not playing. Let vanilla sign and keep the
+            // book (the RETURN injector stamps EditorAuthoredBookTag rather than PlayerWrittenBookTag,
+            // so it stays inert until a player finds it in the live train). Deliberately ahead of the
+            // lectern-letter / Death Note / community-contribution branches below: a prop book must not
+            // fire a live mechanic or push curated text to the relay.
+            if (EditorPlotScope.isInsideAnyPlot(serverPlayer)) {
+                this.dungeontrain$signedInEditorPlot = true;
                 return;
             }
 
@@ -187,18 +214,32 @@ public abstract class ServerGamePacketListenerImplSignBookMixin {
      * and, when a carriage index was captured at HEAD, with {@link SignedCarriageTag}. The two stamps
      * are independent: the carriage stamp is a no-op when the player wasn't near a train at sign time,
      * but the burn-after-read stamp always applies to a real signed book regardless.
+     *
+     * <p>The editor-plot branch swaps both: {@link EditorAuthoredBookTag} takes the place of
+     * {@link PlayerWrittenBookTag} (held-gated rather than unconditional, so the author can build with
+     * the book), and no {@link SignedCarriageTag} is stamped — a live-train carriage index means
+     * nothing for a book signed in a plot.</p>
      */
     @Inject(method = "signBook", at = @At("RETURN"))
     private void dungeontrain$stampVanillaSignedBook(FilteredText title, List<FilteredText> pages, int slot,
                                                       CallbackInfo ci) {
         Integer carriage = this.dungeontrain$pendingSignCarriage;
         this.dungeontrain$pendingSignCarriage = null;
+        boolean inEditorPlot = this.dungeontrain$signedInEditorPlot;
+        this.dungeontrain$signedInEditorPlot = false;
 
         ServerPlayer serverPlayer = this.player;
         if (serverPlayer == null) return;
 
         ItemStack signed = serverPlayer.getInventory().getItem(slot);
         if (signed.isEmpty() || !signed.has(DataComponents.WRITTEN_BOOK_CONTENT)) return;
+
+        if (inEditorPlot) {
+            EditorAuthoredBookTag.stamp(signed);
+            DUNGEONTRAIN$LOGGER.info("[DungeonTrain] EditorAuthoredBook: {} signed a book in an editor plot — inert until found in the live train",
+                    serverPlayer.getName().getString());
+            return;
+        }
 
         PlayerWrittenBookTag.stamp(signed);
 
