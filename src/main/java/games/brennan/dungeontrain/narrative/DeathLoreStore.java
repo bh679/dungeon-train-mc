@@ -284,6 +284,8 @@ public final class DeathLoreStore {
                 .replace("{loot}", num(ctx.loot()))
                 .replace("{hearts}", num(ctx.hearts()))
                 .replace("{deaths}", num(ctx.deaths()))
+                .replace("{deaths_nth}", ord(ctx.deaths()))
+                .replace("{carriage_nth}", ord(ctx.carriage()))
                 .replace("{distance}", "" + String.format(Locale.ROOT, "%,.0f", ctx.distance()) + "");
     }
 
@@ -310,6 +312,21 @@ public final class DeathLoreStore {
      */
     private static String num(long v) {
         return "" + words(v) + "";
+    }
+
+    /**
+     * The ORDINAL of {@code v} — "second", "второй" — in the prose language, wrapped in the same white-
+     * figure sentinels as {@link #num}. Templates say {@code {deaths_nth}} where they mean "the Nth to
+     * fall"; they used to say {@code the {deaths}th}, which glued an English suffix onto a spelled-out
+     * cardinal and read "the twoth" in English and "два-й" in Russian.
+     *
+     * <p>Masculine, because both templates using it attach the ordinal to a person who fell (Russian
+     * "второй, кто пал"). A template needing another gender wants its own placeholder, not a guess
+     * made here — the sentence knows its noun and this method cannot.</p>
+     */
+    private static String ord(long v) {
+        return "" + LocaleOrdinalWords.forLocale(
+                NarrativeContentLocale.current(), v, LocaleOrdinalWords.Gender.MASCULINE) + "";
     }
 
     static String words(long n) {
