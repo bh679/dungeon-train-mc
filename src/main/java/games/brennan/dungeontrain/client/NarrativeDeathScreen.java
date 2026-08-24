@@ -31,7 +31,10 @@ import games.brennan.dungeontrain.client.snapshot.SnapshotMeta;
 import games.brennan.dungeontrain.client.snapshot.SnapshotTag;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.net.DeathStatsPacket;
+import net.minecraft.ChatFormatting;
 import net.minecraft.Util;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -332,7 +335,7 @@ public final class NarrativeDeathScreen extends Screen {
     private int gearAdvMaxScroll = 0;       // scroll clamp bound, set during drawGear
     private int cargoRowY = -1;             // top y of row 1 (equipment + cargo icons), for tooltips
     private int cargoSx = -1;               // start x of the equipment slots, for tooltips
-    private Rect containersRect, booksRect, writtenRect; // chest / book / written-book cargo-icon hover regions (tooltips)
+    private Rect containersRect, booksRect, writtenRect, tamedRect; // chest / book / written-book / tamed cargo-icon hover regions (tooltips)
     /** All-lives (LIVES) page icon-row hover regions + their tooltip keys, rebuilt each frame in {@link #drawLives}. */
     private record LifeStat(Rect rect, String tipKey) {}
     private final List<LifeStat> lifeStats = new ArrayList<>();
@@ -649,6 +652,7 @@ public final class NarrativeDeathScreen extends Screen {
         containersRect = null;
         booksRect = null;
         writtenRect = null;
+        tamedRect = null;
         lifeStats.clear();
         seeAllRect = null;
         advViewport = null;
@@ -1047,7 +1051,7 @@ public final class NarrativeDeathScreen extends Screen {
         ItemStack[] gear = { s.mostUsedWeapon(), s.armorHead(), s.armorChest(), s.armorLegs(), s.armorFeet() };
         int gap = 6, cargoGap = 12;
         int equipW = gear.length * SLOT + (gear.length - 1) * gap;   // 5 worn slots
-        int cargoW = 3 * SLOT + 2 * gap;                             // chest + book + written book
+        int cargoW = 4 * SLOT + 3 * gap;                             // chest + book + written book + tamed
         int rowW = equipW + cargoGap + cargoW;
         int sx = left + (w - rowW) / 2;
         this.cargoRowY = y;
@@ -1064,9 +1068,11 @@ public final class NarrativeDeathScreen extends Screen {
         int chestX = sx + equipW + cargoGap;
         int bookX = chestX + SLOT + gap;
         int writtenX = bookX + SLOT + gap;
+        int tamedX = writtenX + SLOT + gap;
         drawSlot(g, chestX, y);
         drawSlot(g, bookX, y);
         drawSlot(g, writtenX, y);
+        drawSlot(g, tamedX, y);
         if (showItems) {
             ItemStack chest = new ItemStack(Items.CHEST);
             ItemStack book = new ItemStack(Items.ENCHANTED_BOOK);
@@ -1077,10 +1083,14 @@ public final class NarrativeDeathScreen extends Screen {
             g.renderItemDecorations(this.font, book, bookX + 1, y + 1, Integer.toString(s.booksRead()));
             g.renderItem(written, writtenX + 1, y + 1);
             g.renderItemDecorations(this.font, written, writtenX + 1, y + 1, Integer.toString(s.booksWritten()));
+            ItemStack tamed = new ItemStack(Items.LEAD); // the taming item — animals you took in
+            g.renderItem(tamed, tamedX + 1, y + 1);
+            g.renderItemDecorations(this.font, tamed, tamedX + 1, y + 1, Integer.toString(s.tamedCount()));
         }
         this.containersRect = new Rect(chestX, y, SLOT, SLOT);
         this.booksRect = new Rect(bookX, y, SLOT, SLOT);
         this.writtenRect = new Rect(writtenX, y, SLOT, SLOT);
+        this.tamedRect = new Rect(tamedX, y, SLOT, SLOT);
         y += SLOT + 12;
 
         // ---- Row 2: Dungeon Train advancements earned this life (scrollable) + see-all button.
@@ -2371,6 +2381,20 @@ public final class NarrativeDeathScreen extends Screen {
         }
         if (writtenRect != null && writtenRect.has(mouseX, mouseY)) {
             g.renderTooltip(this.font, Component.translatable("gui.dungeontrain.death.narr.tip_written"), mouseX, mouseY);
+            return;
+        }
+        if (tamedRect != null && tamedRect.has(mouseX, mouseY)) {
+            // The headline, then one line per remembered species — the run keeps a capped list, so a
+            // very long run names its first few and the count above stays exact.
+            List<Component> lines = new ArrayList<>();
+            lines.add(Component.translatable("gui.dungeontrain.death.narr.tip_tamed"));
+            for (ResourceLocation id : s.tamedAnimals()) {
+                EntityType<?> type = BuiltInRegistries.ENTITY_TYPE.get(id);
+                if (type != null) {
+                    lines.add(type.getDescription().copy().withStyle(ChatFormatting.GRAY));
+                }
+            }
+            g.renderComponentTooltip(this.font, lines, mouseX, mouseY);
             return;
         }
         if (advViewport != null && advViewport.has(mouseX, mouseY)) {

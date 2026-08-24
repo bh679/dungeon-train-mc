@@ -702,6 +702,7 @@
   "gui.dungeontrain.death.narr.lbl_loot": "loot containers",
   "gui.dungeontrain.death.narr.tip_loot": "Containers Opened",
   "gui.dungeontrain.death.narr.tip_books": "Books read",
+  "gui.dungeontrain.death.narr.tip_tamed": "Animals tamed this run",
   "gui.dungeontrain.death.narr.tip_written": "Books written",
   "gui.dungeontrain.death.narr.tip_life_written": "Books written",
   "gui.dungeontrain.death.narr.tip_life_chests": "Chests opened",

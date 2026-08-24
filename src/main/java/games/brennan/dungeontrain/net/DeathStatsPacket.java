@@ -77,7 +77,10 @@ public record DeathStatsPacket(
         String deathCause,
         byte side,
         PlayerMobAppearance portrait,
-        List<ResourceLocation> earnedAdvancements
+        List<ResourceLocation> earnedAdvancements,
+        // Animals tamed this run: the exact total, plus the types (capped) the report names.
+        int tamedCount,
+        List<ResourceLocation> tamedAnimals
 ) implements CustomPacketPayload {
 
     public static final Type<DeathStatsPacket> TYPE =
@@ -136,6 +139,12 @@ public record DeathStatsPacket(
         for (ResourceLocation id : earnedAdvancements) {
             buf.writeResourceLocation(id);
         }
+        // Animals tamed this run. The count is exact; the type list is capped by PlayerRunState.
+        buf.writeVarInt(tamedCount);
+        buf.writeVarInt(tamedAnimals.size());
+        for (ResourceLocation id : tamedAnimals) {
+            buf.writeResourceLocation(id);
+        }
     }
 
     public static DeathStatsPacket decode(RegistryFriendlyByteBuf buf) {
@@ -183,13 +192,19 @@ public record DeathStatsPacket(
         for (int i = 0; i < advCount; i++) {
             earnedAdvancements.add(buf.readResourceLocation());
         }
+        int tamedCount = buf.readVarInt();
+        int tamedTypes = buf.readVarInt();
+        List<ResourceLocation> tamedAnimals = new ArrayList<>(tamedTypes);
+        for (int i = 0; i < tamedTypes; i++) {
+            tamedAnimals.add(buf.readResourceLocation());
+        }
         return new DeathStatsPacket(mobKills, cartsTravelled, distanceBlocks, runTicks,
                 containersOpened, booksRead, booksWritten, weapon, head, chest, legs, feet,
                 playersEncountered, playersKilled, playersBefriended, damageDealt, damageTaken,
                 lifeDeaths, lifeCarriages, lifeDistance, lifeFriends, lifeBooks, lifeTrainTicks,
                 lifeBooksWritten, lifeContainers, lifeMobKills, lifePlayersKilled,
                 lifePlayersEncountered, lifeEchos, lifeAdvancements, lifeDamageDealt, lifeDamageTaken,
-                narrative, deathCause, side, portrait, earnedAdvancements);
+                narrative, deathCause, side, portrait, earnedAdvancements, tamedCount, tamedAnimals);
     }
 
     @Override

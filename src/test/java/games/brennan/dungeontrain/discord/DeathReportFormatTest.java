@@ -2,6 +2,8 @@ package games.brennan.dungeontrain.discord;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /** Unit tests for the death-report field formatters. */
@@ -39,5 +41,18 @@ class DeathReportFormatTest {
         assertEquals("12.3k", DeathReportFormat.damage(12_345.0));
         assertEquals("1.0M", DeathReportFormat.damage(1_000_000.0)); // M threshold
         assertEquals("0", DeathReportFormat.damage(-5.0)); // clamps to zero
+    }
+
+    @Test
+    void tamedNamesWhatTheRunRemembers() {
+        assertEquals("0", DeathReportFormat.tamed(0, List.of()));
+        assertEquals("0", DeathReportFormat.tamed(0, List.of("Wolf")));   // count wins over a stale list
+        assertEquals("2 (Wolf, Horse)", DeathReportFormat.tamed(2, List.of("Wolf", "Horse")));
+        // A run that tamed more than the type list remembers keeps the count exact and elides.
+        assertEquals("20 (Wolf, Cat, …)", DeathReportFormat.tamed(20, List.of("Wolf", "Cat")));
+        // No remembered names at all: the bare count, no empty parentheses.
+        assertEquals("3", DeathReportFormat.tamed(3, List.of()));
+        assertEquals("3", DeathReportFormat.tamed(3, null));
+        assertEquals("0", DeathReportFormat.tamed(-5, List.of()));
     }
 }

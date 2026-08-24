@@ -18,8 +18,26 @@ final class DeathManifestFormatTest {
     }
 
     private static List<DeathField> fields(List<String> advs) {
+        return fields(advs, 0);
+    }
+
+    private static List<DeathField> fields(List<String> advs, int tamed) {
         return DeathManifestFormat.fields("You were slain by a Zombie",
-                1284.0, 15160L, 412.0, 196.0, 21, 4, advs, 9, 2, 5);
+                1284.0, 15160L, 412.0, 196.0, 21, 4, advs, 9, 2, 5, tamed);
+    }
+
+    /** The named field's value, or null when the column isn't present. */
+    private static String value(List<DeathField> fields, String name) {
+        for (DeathField f : fields) {
+            if (f.name().equals(name)) return f.value();
+        }
+        return null;
+    }
+
+    @Test
+    void tamedLineAppearsOnlyWhenSomethingWasTamed() {
+        assertFalse(value(fields(List.of()), "This run").contains("tamed"));
+        assertTrue(value(fields(List.of(), 3), "This run").contains("🐾 3 tamed"));
     }
 
     @Test
