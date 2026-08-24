@@ -28,6 +28,13 @@ import org.slf4j.Logger;
  * prompt is the last thing the player sees, and it reads as a response to those
  * lines rather than competing with them.</p>
  *
+ * <p>The prompt is skipped entirely when the run is already Free Play for some other reason
+ * ({@link RunIntegrity#isFreePlayApartFromCustomContent}) — creative mode, a cheat mod, a retuned
+ * config. Its question is a trade ("keep your designs and run as Free Play, or drop them and keep
+ * your stats") and that trade is already spent, so the content simply stays on and chat says which
+ * packages are loading. The world choice stays {@link CustomContentChoice#UNSET}: it is permanent
+ * and world-wide, so a clean run still gets to answer it properly.</p>
+ *
  * <p>The decision is per-world, not per-player. On a shared server every player
  * who joins while the world is {@link CustomContentChoice#UNSET} is prompted,
  * the first answer to arrive wins, and any later answer is reported back rather
@@ -69,6 +76,20 @@ public final class CustomContentPromptEvents {
         RunIntegrity.applyFreePlayEffect(player);
 
         if (!choice.isAnswered()) {
+            if (RunIntegrity.isFreePlayApartFromCustomContent(player)) {
+                // The prompt's whole question is "keep your designs and run as Free Play, or drop
+                // them and keep your stats". This run is Free Play regardless — creative mode, a
+                // cheat mod, a retuned config — so there is nothing left to trade and the modal is
+                // just in the way. Keep the content (it is already loading) and say so in chat.
+                //
+                // The world choice stays UNSET on purpose: it is permanent and world-wide, and the
+                // player hasn't answered it. Opening this world in a clean run still asks properly.
+                LOGGER.info("[DungeonTrain] Skipping the custom content prompt for {} — run is "
+                        + "already Free Play for another reason; content ({}) stays on, choice stays UNSET.",
+                    player.getName().getString(), packageSummary());
+                sendPackagesNotice(player);
+                return;
+            }
             // Un-answered: the window is the whole message. No chat lines here — the player gets
             // the popup and hears from chat only once they've chosen, exactly the order the normal
             // Free Play flow uses (FreePlayConfirmScreen first, notice after).
@@ -125,6 +146,15 @@ public final class CustomContentPromptEvents {
         RunIntegrity.applyFreePlayEffect(player);
         RunIntegrity.sendFreePlayNotice(player,
             Component.translatable("chat.dungeontrain.free_play.cause.custom_content"));
+        sendPackagesNotice(player);
+    }
+
+    /**
+     * Which packages are loading, and the one-click way to turn them off — without the Free Play
+     * title. Used on its own when the run is Free Play for some other reason and has already been
+     * titled for it; repeating the banner would just say the same thing twice.
+     */
+    private static void sendPackagesNotice(ServerPlayer player) {
         player.sendSystemMessage(Component.translatable(
                 "chat.dungeontrain.custom_content.packages", packageSummary())
             .withStyle(ChatFormatting.GRAY));

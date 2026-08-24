@@ -41,7 +41,7 @@ import java.util.Set;
  *   <li><b>User content</b> — resolved through {@link UserContentPaths#findFile} across the active
  *       package and every enabled imported package, so a group shipped inside a package still
  *       resolves. Writes land in the config dir beside the kind's {@code .nbt} files
- *       ({@link TrackKind#configSubdir()}), same as
+ *       ({@link TrackKind#subdir()}), same as
  *       {@link games.brennan.dungeontrain.track.variant.TrackVariantStore}.</li>
  *   <li><b>Bundled resource</b> — {@code /data/dungeontrain/<kind.subdir>/<parent>.group.json}.</li>
  * </ol>
@@ -84,9 +84,13 @@ public final class TrackVariantGroupStore {
 
     // ---------- paths ----------
 
-    /** Config-dir write target for {@code kind} — the same directory its {@code .nbt} files live in. */
+    /**
+     * Write target for {@code kind} — the same directory its {@code .nbt} files
+     * live in, i.e. the active package's. See
+     * {@link games.brennan.dungeontrain.track.variant.TrackVariantStore#directory}.
+     */
     public static Path directory(TrackKind kind) {
-        return FMLPaths.CONFIGDIR.get().resolve(kind.configSubdir());
+        return UserContentPaths.activeSubDir(kind.subdir());
     }
 
     public static Path fileFor(TrackKind kind, String parent) {

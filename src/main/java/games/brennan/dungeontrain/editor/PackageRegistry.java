@@ -15,7 +15,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -40,10 +39,6 @@ import java.util.TreeMap;
  * {@link DtpacksMigration} has run for the first time, and so that even
  * after migration any forgotten leftover under {@code imported/} stays
  * discoverable.</p>
- *
- * <p>Phase 1 exposes read-only accessors only. Mutators (setActive,
- * setEnabled, saveCurrent) and the slash-command wiring arrive in
- * Phase 3.</p>
  */
 public final class PackageRegistry {
 
@@ -143,7 +138,7 @@ public final class PackageRegistry {
         return activeWriteDir().resolve(subSlug);
     }
 
-    /** Force a re-scan from disk on the next access. Called by mutators (Phase 3) and migration. */
+    /** Force a re-scan from disk on the next access. Called by mutators and migration. */
     public static synchronized void invalidate() {
         initialised = false;
     }
@@ -271,7 +266,7 @@ public final class PackageRegistry {
         }
     }
 
-    /** Public so Phase 3 mutators can persist after they've updated the in-memory state. */
+    /** Public so mutators can persist after they've updated the in-memory state. */
     public static synchronized void writeStateFile() {
         Path file = stateFile();
         try {
@@ -408,7 +403,7 @@ public final class PackageRegistry {
         return b.toString();
     }
 
-    // ---- Mutators (Phase 3) ----
+    // ---- Mutators ----
 
     /**
      * Switch the active package. Persists the new state, invalidates the
@@ -463,18 +458,25 @@ public final class PackageRegistry {
     }
 
     /**
-     * Save the active package under {@code requestedName}. Three cases:
+     * Save the active package under {@code requestedName}.
+     *
+     * <p><b>This never deletes or moves player content.</b> Two cases:</p>
      *
      * <ul>
-     *   <li><b>Active is unsaved</b>: moves every file from {@code user/}
-     *       into {@code dtpacks/<name>/}, writes the zip, switches active
-     *       to the new package, and clears the unsaved working folder.</li>
-     *   <li><b>Active is a saved package, same name typed</b>: just
-     *       rewrites the zip from the current working folder.</li>
-     *   <li><b>Active is a saved package, different name typed</b>:
-     *       renames the working folder, deletes the old zip, writes a new
-     *       one, and switches active to the new name.</li>
+     *   <li><b>Same name as the active package</b>: rewrites the zip from
+     *       the current working folder. The folder is untouched.</li>
+     *   <li><b>Any other name</b> (including the first save of the unsaved
+     *       package): <i>copies</i> the active working folder into
+     *       {@code dtpacks/<name>/}, writes the zip, and switches active
+     *       to the new package. The source package — the previous folder
+     *       and its zip, or {@code user/} on a first save — is left
+     *       exactly as it was, so a Save can never cost the player work.</li>
      * </ul>
+     *
+     * <p>The copy is verified before the save reports success, and a copy
+     * that fails removes the destination folder this call created.
+     * Every error path invalidates the registry so a failed save can't
+     * leave on-disk content hidden until the next restart.</p>
      *
      * <p>Synchronized; the entire flow is atomic with respect to other
      * registry reads. Template stores re-read {@code searchDirs} after
@@ -484,20 +486,15 @@ public final class PackageRegistry {
         ensureInitialised();
         String name = requestedName == null ? "" : requestedName.trim();
         if (!isValidName(name)) {
-            return SaveResult.error("Invalid name '" + name + "' — use a-z, 0-9, underscore, 1-32 chars.");
+            return SaveResult.error("Invalid name '" + name + "' \u2014 use a-z, 0-9, underscore, 1-32 chars.");
         }
         if (PackageInfo.UNSAVED_NAME.equals(name) || "(unsaved)".equalsIgnoreCase(name)) {
             return SaveResult.error("'" + name + "' is reserved.");
         }
 
         PackageInfo current = active();
-        boolean renaming = !current.isUnsaved() && !current.name().equalsIgnoreCase(name);
         boolean firstSave = current.isUnsaved();
-
-        if ((renaming || firstSave) && findByName(name).isPresent()) {
-            return SaveResult.error("A package named '" + name + "' already exists. "
-                + "Pick a different name or delete the existing folder/zip first.");
-        }
+        boolean sameName = !firstSave && current.name().equalsIgnoreCase(name);
 
         Path dtpacks = dtpacksRoot();
         try {
@@ -509,52 +506,67 @@ public final class PackageRegistry {
         Path newWorkingDir = workingDirFor(name);
         Path newZipPath = zipPathFor(name);
 
-        if (firstSave) {
-            try {
-                Files.createDirectories(newWorkingDir);
-                int moved = moveTree(current.workingDir(), newWorkingDir);
-                LOGGER.info("[DungeonTrain] save: moved {} file(s) from user/ -> dtpacks/{}/", moved, name);
-            } catch (IOException e) {
-                return SaveResult.error("Couldn't move content into new package: " + e.getMessage());
+        if (!sameName) {
+            // Checks the zip as well as the folder: a dropped-in <name>.zip that
+            // hasn't been extracted yet is absent from PACKAGES, and saving over
+            // it used to silently destroy someone else's pack.
+            if (PackageSaveOps.nameTaken(dtpacks, name)) {
+                return SaveResult.error("A package named '" + name + "' already exists. "
+                    + "Pick a different name, or activate that package and save over it.");
             }
-        } else if (renaming) {
+            // nameTaken() ruled out a pre-existing folder above, so anything under
+            // newWorkingDir from here on was written by this call — safe to clean up.
             try {
-                Files.move(current.workingDir(), newWorkingDir);
-                LOGGER.info("[DungeonTrain] save: renamed dtpacks/{}/ -> dtpacks/{}/", current.name(), name);
-            } catch (IOException e) {
-                return SaveResult.error("Couldn't rename working folder: " + e.getMessage());
-            }
-            if (current.hasZip()) {
-                try { Files.deleteIfExists(current.zipPath()); }
-                catch (IOException e) {
-                    LOGGER.warn("[DungeonTrain] save: couldn't delete old zip {}: {}",
-                        current.zipPath(), e.toString());
+                PackageSaveOps.CopyReport report = PackageSaveOps.copyTree(current.workingDir(), newWorkingDir);
+                if (!report.clean() || !PackageSaveOps.verifyTree(current.workingDir(), newWorkingDir)) {
+                    PackageSaveOps.deleteRecursivelyQuietly(newWorkingDir);
+                    invalidate();
+                    return SaveResult.error("Couldn't copy content into '" + name + "' \u2014 "
+                        + report.failures().size() + " file(s) failed. Your content is untouched at "
+                        + current.workingDir() + ".");
                 }
+                LOGGER.info("[DungeonTrain] save: copied {} file(s) from {} -> dtpacks/{}/ (source kept)",
+                    report.copied(), current.workingDir(), name);
+            } catch (IOException e) {
+                PackageSaveOps.deleteRecursivelyQuietly(newWorkingDir);
+                invalidate();
+                return SaveResult.error("Couldn't copy content into new package: " + e.getMessage()
+                    + " \u2014 your content is untouched at " + current.workingDir() + ".");
             }
         }
-        // else: re-save with same name — working folder untouched, zip will be rewritten below.
 
         try {
-            Files.deleteIfExists(newZipPath);
-            int zipped = zipFolder(newWorkingDir, newZipPath);
+            int zipped = PackageSaveOps.writeZipAtomically(newWorkingDir, newZipPath);
             LOGGER.info("[DungeonTrain] save: wrote {} ({} file(s))", newZipPath, zipped);
         } catch (IOException e) {
-            return SaveResult.error("Couldn't write zip: " + e.getMessage());
+            invalidate();
+            return SaveResult.error("Couldn't write zip: " + e.getMessage()
+                + " \u2014 any previous snapshot is unchanged.");
         }
 
         activeName = name;
         writeStateFile();
         invalidate();
         games.brennan.dungeontrain.template.TemplateStores.reloadCachesOnly();
-        return SaveResult.success(name, firstSave || renaming);
+        return SaveResult.success(name, !sameName, firstSave);
     }
 
     /** Outcome of a {@link #saveCurrent} call. */
     public record SaveResult(boolean success, String packageName, boolean switchedActive, String message) {
-        public static SaveResult success(String name, boolean switched) {
-            return new SaveResult(true, name, switched, switched
-                ? "Saved as '" + name + "' (now active)"
-                : "Resaved '" + name + "'");
+        public static SaveResult success(String name, boolean switched, boolean firstSave) {
+            String msg;
+            if (firstSave) {
+                // Say so explicitly: the copy left behind in user/ is a deliberate
+                // safety net, and a player who isn't told about it will read the
+                // duplicate as a bug the next time they activate (unsaved).
+                msg = "Saved as '" + name + "' (now active). Your unsaved folder was copied, not moved \u2014 "
+                    + "the originals are still there as a backup.";
+            } else if (switched) {
+                msg = "Saved a copy as '" + name + "' (now active). The package you copied from is untouched.";
+            } else {
+                msg = "Resaved '" + name + "'";
+            }
+            return new SaveResult(true, name, switched, msg);
         }
         public static SaveResult error(String message) {
             return new SaveResult(false, "", false, message);
@@ -575,119 +587,6 @@ public final class PackageRegistry {
 
     public static boolean isValidName(String name) {
         return name != null && NAME_PATTERN.matcher(name).matches();
-    }
-
-    /**
-     * Recursive move from {@code from} → {@code to}. Per-file moves so a
-     * single failure doesn't tear down the rest; the caller surfaces
-     * partial-progress state via the returned count.
-     *
-     * <p>Empty source subdirectories are deleted after the walk completes
-     * so {@code from} is left empty (modulo files that failed to move).
-     * The top-level {@code from} directory itself is preserved.</p>
-     */
-    private static int moveTree(Path from, Path to) throws IOException {
-        if (!Files.isDirectory(from)) return 0;
-        int[] moved = {0};
-        java.nio.file.Files.walkFileTree(from, new java.nio.file.SimpleFileVisitor<>() {
-            @Override
-            public java.nio.file.FileVisitResult visitFile(Path file,
-                    java.nio.file.attribute.BasicFileAttributes attrs) {
-                Path rel = from.relativize(file);
-                Path target = to.resolve(rel.toString());
-                try {
-                    Files.createDirectories(target.getParent());
-                    try {
-                        Files.move(file, target, java.nio.file.StandardCopyOption.ATOMIC_MOVE);
-                    } catch (IOException atomicFailed) {
-                        Files.move(file, target);
-                    }
-                    moved[0]++;
-                } catch (IOException e) {
-                    LOGGER.warn("[DungeonTrain] save: couldn't move {} -> {}: {}",
-                        file, target, e.toString());
-                }
-                return java.nio.file.FileVisitResult.CONTINUE;
-            }
-
-            @Override
-            public java.nio.file.FileVisitResult postVisitDirectory(Path dir, IOException exc) {
-                if (!dir.equals(from)) {
-                    try { Files.delete(dir); } catch (IOException ignored) { /* may be non-empty */ }
-                }
-                return java.nio.file.FileVisitResult.CONTINUE;
-            }
-        });
-        return moved[0];
-    }
-
-    /**
-     * Walk {@code source} and produce a {@code .zip} at {@code zipPath}
-     * with every file stored at its relative path inside the archive.
-     * Includes a top-level {@code manifest.json} matching the shape
-     * {@link UserContentExporter} writes so the resulting zip is
-     * importable by older clients that still expect the manifest entry.
-     */
-    private static int zipFolder(Path source, Path zipPath) throws IOException {
-        if (!Files.isDirectory(source)) {
-            // Create an empty zip with just a manifest so the player sees the file exist.
-            try (OutputStream raw = Files.newOutputStream(zipPath);
-                 java.util.zip.ZipOutputStream zip = new java.util.zip.ZipOutputStream(raw, StandardCharsets.UTF_8)) {
-                writeManifest(zip, List.of());
-            }
-            return 0;
-        }
-        Files.createDirectories(zipPath.getParent());
-        List<Path> files = new ArrayList<>();
-        java.nio.file.Files.walkFileTree(source, new java.nio.file.SimpleFileVisitor<>() {
-            @Override
-            public java.nio.file.FileVisitResult visitFile(Path file,
-                    java.nio.file.attribute.BasicFileAttributes attrs) {
-                if (attrs.isRegularFile()) files.add(file);
-                return java.nio.file.FileVisitResult.CONTINUE;
-            }
-        });
-        files.sort((a, b) -> a.toString().compareToIgnoreCase(b.toString()));
-
-        List<String> entryNames = new ArrayList<>();
-        for (Path file : files) {
-            entryNames.add(source.relativize(file).toString().replace('\\', '/'));
-        }
-
-        try (OutputStream raw = Files.newOutputStream(zipPath);
-             java.util.zip.ZipOutputStream zip = new java.util.zip.ZipOutputStream(raw, StandardCharsets.UTF_8)) {
-            writeManifest(zip, entryNames);
-            for (int i = 0; i < files.size(); i++) {
-                Path file = files.get(i);
-                java.util.zip.ZipEntry entry = new java.util.zip.ZipEntry(entryNames.get(i));
-                try { entry.setTime(Files.getLastModifiedTime(file).toMillis()); }
-                catch (IOException ignored) { /* fall back to epoch */ }
-                zip.putNextEntry(entry);
-                Files.copy(file, zip);
-                zip.closeEntry();
-            }
-        }
-        return files.size();
-    }
-
-    private static void writeManifest(java.util.zip.ZipOutputStream zip, List<String> entryNames) throws IOException {
-        zip.putNextEntry(new java.util.zip.ZipEntry("manifest.json"));
-        StringBuilder sb = new StringBuilder();
-        sb.append("{\n");
-        sb.append("  \"schemaVersion\": 1,\n");
-        sb.append("  \"savedAt\": \"")
-            .append(java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME))
-            .append("\",\n");
-        sb.append("  \"files\": [");
-        for (int i = 0; i < entryNames.size(); i++) {
-            if (i > 0) sb.append(",");
-            sb.append("\n    \"").append(escape(entryNames.get(i))).append("\"");
-        }
-        if (!entryNames.isEmpty()) sb.append("\n  ");
-        sb.append("]\n");
-        sb.append("}\n");
-        zip.write(sb.toString().getBytes(StandardCharsets.UTF_8));
-        zip.closeEntry();
     }
 
     /** Read-only access to disabled name set for callers that need a copy. */
