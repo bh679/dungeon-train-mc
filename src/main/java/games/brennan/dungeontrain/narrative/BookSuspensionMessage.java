@@ -48,6 +48,14 @@ public final class BookSuspensionMessage {
         return Component.translatable(KEY + "blocked", left(locale, remainingSec)).withStyle(ChatFormatting.RED);
     }
 
+    /**
+     * The tooltip on the greyed-out Sign / Finalize button (see {@code BookEditScreenSuspensionMixin}).
+     * Built client-side, so {@code locale} is the reader's own selected language.
+     */
+    public static Component signingPaused(String locale, long remainingSec) {
+        return Component.translatable(KEY + "signing", left(locale, remainingSec)).withStyle(ChatFormatting.RED);
+    }
+
     /** A lectern letter was sealed while paused: it burns as usual, but is not shared. */
     public static Component letterNotShared(String locale, long remainingSec) {
         return Component.translatable(KEY + "letter", left(locale, remainingSec)).withStyle(ChatFormatting.GRAY);

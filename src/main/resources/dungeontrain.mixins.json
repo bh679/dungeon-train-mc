@@ -54,6 +54,7 @@
   "client": [
     "client.BookViewScreenAccessor",
     "client.BookEditScreenSignMixin",
+    "client.BookEditScreenSuspensionMixin",
     "CreateWorldScreenAccessor",
     "CreateWorldScreenMixin",
     "CreateWorldScreenWorldTabMixin",

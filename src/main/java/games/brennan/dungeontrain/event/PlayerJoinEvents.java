@@ -4,6 +4,8 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.debug.DebugFlags;
 import games.brennan.dungeontrain.editor.EditorWelcome;
+import games.brennan.dungeontrain.narrative.BookUploadSuspensions;
+import games.brennan.dungeontrain.net.BookSuspensionSyncPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.VoidBandSyncPacket;
 import games.brennan.dungeontrain.net.PrefabRegistrySyncPacket;
@@ -203,6 +205,13 @@ public final class PlayerJoinEvents {
         // If the intro cinematic will play, open the loading screen + freeze the
         // player from world-entry so they don't fall while the train settles.
         CinematicIntroService.armPreloadIfNeeded(player);
+        // Re-assert any open book-upload pause (BookUploadSuspensions) so a reconnect mid-window
+        // doesn't hand the player back a working Sign button. Cleared when there is none, since the
+        // client keeps its own copy across worlds.
+        long suspendedFor = BookUploadSuspensions.remainingSec(player.getUUID());
+        DungeonTrainNet.sendTo(player, suspendedFor > 0
+                ? BookSuspensionSyncPacket.of(suspendedFor, 0)
+                : BookSuspensionSyncPacket.cleared());
         PENDING.put(player.getUUID(), 0);
     }
 

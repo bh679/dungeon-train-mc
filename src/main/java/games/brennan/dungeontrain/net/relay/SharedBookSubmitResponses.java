@@ -7,8 +7,10 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.discord.WorldInfoReporter;
 import games.brennan.dungeontrain.narrative.BookSuspensionMessage;
 import games.brennan.dungeontrain.narrative.BookUploadSuspensions;
+import games.brennan.dungeontrain.net.BookSuspensionSyncPacket;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
+import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.server.ServerLifecycleHooks;
 import org.slf4j.Logger;
 
@@ -94,6 +96,9 @@ public final class SharedBookSubmitResponses {
                     player.sendSystemMessage(v.duplicate()
                             ? BookSuspensionMessage.duplicate(locale, v.remainingSec())
                             : BookSuspensionMessage.blocked(locale, v.remainingSec()));
+                    // Carry the window to the screen that has to refuse the next sign.
+                    PacketDistributor.sendToPlayer(player,
+                            BookSuspensionSyncPacket.of(v.remainingSec(), v.strikes()));
                 } catch (Throwable t) {
                     LOGGER.debug("[DungeonTrain] book suspension notice failed: {}", t.toString());
                 }
