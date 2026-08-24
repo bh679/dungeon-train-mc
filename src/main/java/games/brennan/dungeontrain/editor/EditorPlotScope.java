@@ -75,6 +75,26 @@ public record EditorPlotScope(String key, BlockPos origin, Vec3i size) {
             && dz >= 0 && dz < size.getZ();
     }
 
+    /**
+     * True when {@code player} is standing inside any editor plot.
+     *
+     * <p>Coarse membership test for callers that only need "is this an authoring context?" and
+     * don't want the origin / size handle — currently the book-signing and book-held paths, which
+     * keep an editor-authored book inert while its author is still building with it (see
+     * {@code EditorAuthoredBookTag}).</p>
+     *
+     * <p>Cheap for the common case: every plot sits at or above {@link EditorLayout#PLOT_Y}, so a
+     * player below it is rejected without touching the {@link EditorCategory#locate} cascade or
+     * the world's {@code CarriageDims}.</p>
+     */
+    public static boolean isInsideAnyPlot(ServerPlayer player) {
+        if (player == null) return false;
+        if (player.blockPosition().getY() < EditorLayout.PLOT_Y) return false;
+        ServerLevel level = player.serverLevel();
+        if (level == null) return false;
+        return resolveAt(player, level).isPresent();
+    }
+
     /** Total cell count of the box — used to reject region diffs that would blow the step cap. */
     public int volume() {
         return size.getX() * size.getY() * size.getZ();
