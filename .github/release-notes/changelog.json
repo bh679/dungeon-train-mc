@@ -8425,6 +8425,23 @@
       "released_at": null
     },
     {
+      "id": "editor-authored-books-burn-in-live-train",
+      "version": "0.642.0",
+      "type": "feat",
+      "title": "Hand-written lore books can be stocked in train loot chests",
+      "summary": "Books written and signed inside an editor plot are now ordinary written books while you build with them \u2014 they no longer catch fire when you read or drop them, so you can proof-read one and place it in a carriage's chest. Once that carriage rides the live train, the first player to take the book out of the chest arms it, and it burns after being read like any other book you find out there.",
+      "highlights": [
+        "Books signed in an editor plot no longer burn while you're building",
+        "Authored books can be stocked in a carriage's loot chest and saved into the template",
+        "Found on the live train, they still burn after reading"
+      ],
+      "pr": 1080,
+      "date": "2026-08-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "scribble-book-tools",
       "version": "0.642.0",
       "type": "feat",

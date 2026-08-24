@@ -8,6 +8,7 @@ import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
 import games.brennan.dungeontrain.cheat.RunIntegrity;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.discord.WorldInfoReporter;
+import games.brennan.dungeontrain.editor.EditorPlotScope;
 import games.brennan.dungeontrain.event.AchievementEvents;
 import games.brennan.dungeontrain.event.ContentModeMirror;
 import games.brennan.dungeontrain.event.PoliticalFilterMirror;
@@ -277,7 +278,10 @@ public final class NarrativeBookEvents {
      * <p>Also stamps the "held" marker on discovered community books
      * ({@link SharedBookFoundTag}) — no content-swap needed for those, just the
      * held gate that unlocks the burn-after-reading flow (see
-     * {@link BurnableBookTag}).</p>
+     * {@link BurnableBookTag}) — and on editor-authored lore books
+     * ({@link EditorAuthoredBookTag}), which additionally require the holder to be
+     * OUTSIDE every editor plot: that suppression is what lets an author write,
+     * proof-read and re-shelve their own book while building without igniting it.</p>
      *
      * <p>Logic (world-scoped, random-book branch):
      * <ul>
@@ -315,6 +319,18 @@ public final class NarrativeBookEvents {
         // (Previously an unresolved placeholder returned here unmarked and could never burn.)
         if (PlayerBookPendingTag.isPending(stack)) {
             resolvePending(player, stack);
+        }
+
+        // Editor-authored lore books: arm the burn only once the book is held OUTSIDE an editor plot,
+        // i.e. by a player who found it in a chest on the live train. Inside a plot this is a no-op,
+        // so the author keeps working with an inert book (see EditorAuthoredBookTag).
+        if (EditorAuthoredBookTag.isAuthored(stack)) {
+            if (!EditorAuthoredBookTag.isHeld(stack) && !EditorPlotScope.isInsideAnyPlot(player)) {
+                EditorAuthoredBookTag.markHeld(stack);
+                LOGGER.info("[DungeonTrain] EditorAuthoredBook: marked authored book held (by {}) — will burn after reading",
+                    player.getName().getString());
+            }
+            return;
         }
 
         // Discovered community books: no content-swap needed (unlike random books below) — just
