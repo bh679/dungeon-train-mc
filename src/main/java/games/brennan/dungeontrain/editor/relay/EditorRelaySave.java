@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.editor.relay;
 
+import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.builder.BuilderSave;
 import games.brennan.dungeontrain.builder.relay.BuilderRelayUpload;
 import games.brennan.dungeontrain.template.Template;
@@ -8,6 +9,7 @@ import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import org.slf4j.Logger;
 
 /**
  * Sends a Train Editor save to the player's relay profile.
@@ -31,6 +33,8 @@ import net.minecraft.server.level.ServerPlayer;
  */
 public final class EditorRelaySave {
 
+    private static final Logger LOGGER = LogUtils.getLogger();
+
     private EditorRelaySave() {}
 
     /**
@@ -49,6 +53,18 @@ public final class EditorRelaySave {
      * succeeded.</p>
      */
     public static void afterSave(ServerPlayer player, Template model) {
+        // Nothing here may fail the save. This runs inside each editor's save(), after the template
+        // is already on disk, so an exception escaping would report a write that actually succeeded
+        // as a failure — and would do it for a feature the player may not even have turned on.
+        try {
+            upload(player, model);
+        } catch (Throwable t) {
+            LOGGER.warn("[DungeonTrain] Editor relay upload: skipped '{}': {}",
+                    model == null ? "?" : model.id(), t.toString());
+        }
+    }
+
+    private static void upload(ServerPlayer player, Template model) {
         if (player == null || model == null || model.isBuiltin()) {
             return;
         }
