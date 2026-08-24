@@ -87,12 +87,25 @@ MEASURE_SECS=420 VIEW_DISTANCE=20 bash scripts/perf/run-arm.sh soak off . 25571
 - The arm flag is still `contentsdespawn`; passing `off` matches what the populate phase already
   sets, so it is a no-op for a soak.
 
-### Autosave logs under a different name here
+### A dedicated-server autosave leaves NO log line — check `level.dat` instead
 
-`Saving and pausing game world` is **`IntegratedServer`-only** — a client string. A dedicated server
-autosaves through `MinecraftServer.tickServer` and logs **`Autosave started`** / `Autosave finished`
-at DEBUG (DT forces DEBUG on runs, so they are present). Grepping the client string against a server
-log reports "never autosaved" for a server that autosaved perfectly well. Match both.
+Do not try to detect it in the log. `Saving and pausing game world` is **`IntegratedServer`-only**, a
+client string. A dedicated server autosaves via `MinecraftServer.tickServer`, which logs
+`Autosave started` through `LOGGER.debug` on **`net.minecraft`** — and that logger sits at INFO in
+this harness. DT raises only its own `…dungeontrain.jitter` logger to DEBUG (which is why `[mspt]`
+and `[freeze]` are visible), so the autosave lines are filtered out. Verified 2026-08-24: a run that
+demonstrably autosaved twice produced **zero** matches for `autosave`, `Saving chunks`, or any
+variant.
+
+The reliable, log-independent signal is the **world's `level.dat` mtime**:
+
+```bash
+stat -f '%Sm' run/world/level.dat     # rewritten once per autosave
+```
+
+Sample it during the run. Successive rewrites ~5 minutes apart (6000 ticks at 20 tps) are autosaves;
+a single write at shutdown is just the quit-save. Region `.mca` mtimes are noisier — ordinary chunk
+writes touch them too.
 
 ## Files
 
