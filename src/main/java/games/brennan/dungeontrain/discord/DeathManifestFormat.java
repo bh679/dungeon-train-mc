@@ -39,6 +39,7 @@ public final class DeathManifestFormat {
     private static final String E_MET = "👥";
     private static final String E_BEFRIEND = "🤝";
     private static final String E_SLAIN = "🗡️";
+    private static final String E_TAMED = "🐾";
 
     /** The embed title: "{player} - Carriage {n}" — a compact header above the narrated body. */
     public static String title(String playerName, int carriage) {
@@ -90,7 +91,7 @@ public final class DeathManifestFormat {
      * The embed's stat fields, which Discord lays out as columns:
      * <ul>
      *   <li><b>The fall</b> — death cause / distance / run time;</li>
-     *   <li><b>This run</b> — damage dealt &amp; taken / loot &amp; books;</li>
+     *   <li><b>This run</b> — damage dealt &amp; taken / loot &amp; books / animals tamed;</li>
      *   <li><b>The souls</b> — other players/PlayerMobs met / befriended / slain this run;</li>
      *   <li><b>Advancements</b> — any earned this run, on their own row below the three columns
      *       (omitted entirely when none were earned).</li>
@@ -100,7 +101,8 @@ public final class DeathManifestFormat {
     public static List<DeathField> fields(String deathCause,
             double distanceBlocks, long runTicks, double damageDealt, double damageTaken,
             int loot, int booksRead, List<String> advancementTitles,
-            int playersEncountered, int playersBefriended, int playersKilled) {
+            int playersEncountered, int playersBefriended, int playersKilled,
+            int tamed) {
 
         // The fall — cause / distance / time.
         StringBuilder fall = new StringBuilder();
@@ -115,6 +117,12 @@ public final class DeathManifestFormat {
            .append(DeathReportFormat.damage(damageTaken)).append(" taken").append('\n')
            .append(E_LOOT).append(' ').append(loot).append(" loot · ")
            .append(E_BOOK).append(' ').append(booksRead).append(" books");
+        // Only when the run actually tamed something — an empty "0 tamed" line on every other
+        // death would cost a row in a narrow column to say nothing. The count alone here: the
+        // species are named in the per-player threaded report, which has room for them.
+        if (tamed > 0) {
+            run.append('\n').append(E_TAMED).append(' ').append(tamed).append(" tamed");
+        }
 
         // The souls — other souls met / befriended / slain this run.
         String souls = E_MET + ' ' + playersEncountered + " met\n"

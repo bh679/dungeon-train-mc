@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.discord;
 
+import java.util.List;
 import java.util.Locale;
 
 /**
@@ -28,6 +29,23 @@ public final class DeathReportFormat {
         return hours > 0
                 ? String.format("%d:%02d:%02d", hours, minutes, seconds)
                 : String.format("%d:%02d", minutes, seconds);
+    }
+
+    /**
+     * Animals tamed, named where the run remembered them: {@code "3 (Wolf, Horse, Cat)"}, or just
+     * {@code "0"} when nothing was tamed. {@code names} may be shorter than {@code count} — a run
+     * that tamed more animals than it kept type names for reads {@code "20 (Wolf, Cat, …)"} — and
+     * may be empty, which drops the parenthetical entirely.
+     */
+    public static String tamed(int count, List<String> names) {
+        int total = Math.max(0, count);
+        if (total == 0 || names == null || names.isEmpty()) {
+            return Integer.toString(total);
+        }
+        String listed = String.join(", ", names);
+        return total > names.size()
+                ? total + " (" + listed + ", …)"
+                : total + " (" + listed + ")";
     }
 
     /**
