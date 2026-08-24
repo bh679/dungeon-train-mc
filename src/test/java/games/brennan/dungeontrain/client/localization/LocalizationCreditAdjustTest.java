@@ -96,4 +96,33 @@ class LocalizationCreditAdjustTest {
         assertFalse(LocalizationCreditRegistry.hasAnyReview(
             new LocalizationCredit.AiCounts(0, 0, 0)));
     }
+
+    @Test
+    @DisplayName("'still wants a human' and 'has been reviewed' are independent, not opposites")
+    void unreviewedAndReviewedAreIndependent() {
+        // zh_cn as shipped: 1279 keys, 232 still AI-unreviewed. Both answers are yes, which is the
+        // whole reason the two filters overlap.
+        LocalizationCredit.AiCounts partial = new LocalizationCredit.AiCounts(1279, 284, 232);
+        assertTrue(LocalizationCreditRegistry.hasAnyReview(partial));
+        assertTrue(LocalizationCreditRegistry.hasUnreviewed(partial));
+
+        // Finished: reviewed, nothing left.
+        LocalizationCredit.AiCounts done = new LocalizationCredit.AiCounts(1000, 0, 0);
+        assertTrue(LocalizationCreditRegistry.hasAnyReview(done));
+        assertFalse(LocalizationCreditRegistry.hasUnreviewed(done));
+
+        // Untouched machine translation: work outstanding, nobody has been through it.
+        LocalizationCredit.AiCounts raw = new LocalizationCredit.AiCounts(1265, 1265, 1265);
+        assertFalse(LocalizationCreditRegistry.hasAnyReview(raw));
+        assertTrue(LocalizationCreditRegistry.hasUnreviewed(raw));
+    }
+
+    @Test
+    @DisplayName("absent counts fail towards more work being visible, not less")
+    void absentCountsMeanUnreviewed() {
+        // The two readings of the same absence are deliberately opposite: no data is not evidence
+        // of review, and a translated language in none of the filters could not be found at all.
+        assertFalse(LocalizationCreditRegistry.hasAnyReview(null));
+        assertTrue(LocalizationCreditRegistry.hasUnreviewed(null));
+    }
 }

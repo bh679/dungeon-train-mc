@@ -294,6 +294,34 @@ public final class LocalizationCreditRegistry {
     }
 
     /**
+     * Whether any of this locale still wants a human — machine translation nobody has read yet.
+     *
+     * <p>The counterpart to {@link #hasAnyHumanReview}, and deliberately not its negation: a
+     * language can be both. zh_cn has had a translator through most of it AND has 232 lines still
+     * untouched; zh_tw has fourteen reviewed lines and 1265 that are not. Asking one question and
+     * inverting it put both of them under "human reviewed" only, which hid the largest block of
+     * outstanding work in the mod from the filter built to find outstanding work.</p>
+     */
+    public static synchronized boolean hasUnreviewedAi(String localeCode) {
+        if (localeCode == null || localeCode.isEmpty()) {
+            return false;
+        }
+        return hasUnreviewed(withRelayApprovals(localeCode, bestCounts(localeCode)));
+    }
+
+    /**
+     * The counts half of {@link #hasUnreviewedAi}, pure so the arithmetic is testable.
+     *
+     * <p>Absent counts read as "still wants a human", the opposite of {@link #hasAnyReview}'s
+     * reading of the same absence. Both fail towards MORE work being visible: no data is not
+     * evidence that a language has been reviewed, and a translated language that fell out of every
+     * filter would be a language nobody could find their way to.</p>
+     */
+    static boolean hasUnreviewed(LocalizationCredit.AiCounts counts) {
+        return counts == null || counts.aiUnreviewed() > 0;
+    }
+
+    /**
      * The counts half of {@link #hasAnyHumanReview}, pure so the arithmetic is testable.
      *
      * <p>A key has had a human on it when it is not AI-authored-and-unreviewed — which covers both

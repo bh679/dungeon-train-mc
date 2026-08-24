@@ -4,15 +4,17 @@ import games.brennan.dungeontrain.client.DungeonTrainLanguages;
 import net.minecraft.network.chat.Component;
 
 /**
- * How much of Dungeon Train a language actually has, as the four buckets the language screen can
+ * How much of Dungeon Train a language actually has, as the four states the language screen can
  * narrow to. Declaration order is the cycle order.
  *
- * <p>The three states are exactly what the row already draws — the logo means "the mod ships this
- * language", the ring and the blue {@code AI} badge mean "and nobody has reviewed it". Deriving the
- * filter from the same two questions is what stops badge and filter ever disagreeing; a second
- * notion of "translated" living here would drift from the first the moment either moved.</p>
+ * <p><b>They overlap, and must.</b> AI and HUMAN answer two independent questions — "is there
+ * machine translation here nobody has read?" and "has a person been through any of this?" — and a
+ * language part-way through review answers yes to both. Treating them as exclusive buckets, which
+ * this did at first, put zh_cn and zh_tw under HUMAN alone and so hid 232 and 1265 unreviewed lines
+ * from the filter whose entire purpose is finding unreviewed lines. Only NONE is exclusive of the
+ * other two, because a language the mod ships nothing for has neither.</p>
  *
- * <p>{@link #matches} takes the two answers rather than a locale code so the bucketing is testable
+ * <p>{@link #matches} takes the three answers rather than a locale code so the bucketing is testable
  * without a {@code ResourceManager} — resolving them is {@link #matchesLocale}'s job, and that needs
  * a running client.</p>
  */
@@ -20,9 +22,9 @@ public enum LanguageAiFilter {
 
     /** Every language Minecraft offers, the vanilla list unfiltered. */
     ALL("all"),
-    /** Machine-translated, nobody has read it — the languages most in need of a speaker. */
+    /** Has machine translation still waiting on a human — the languages most in need of a speaker. */
     AI("ai"),
-    /** A human has been through it. */
+    /** A person has been through some of it, at any depth. */
     HUMAN("human"),
     /** Nothing at all: the player sees the mod in English by vanilla's fallback. */
     NONE("none");
@@ -38,13 +40,15 @@ public enum LanguageAiFilter {
     }
 
     /**
-     * @param translated     whether the mod ships any translation for the language
-     * @param humanReviewed  whether a person has reviewed it; meaningless when not translated
+     * @param translated    whether the mod ships any translation for the language
+     * @param humanReviewed whether a person has been through any of it; moot when not translated
+     * @param needsReview   whether any of it is machine translation nobody has read; moot when not
+     *                      translated
      */
-    public boolean matches(boolean translated, boolean humanReviewed) {
+    public boolean matches(boolean translated, boolean humanReviewed, boolean needsReview) {
         return switch (this) {
             case ALL -> true;
-            case AI -> translated && !humanReviewed;
+            case AI -> translated && needsReview;
             case HUMAN -> translated && humanReviewed;
             case NONE -> !translated;
         };
@@ -61,9 +65,10 @@ public enum LanguageAiFilter {
      */
     public boolean matchesLocale(String localeCode) {
         boolean translated = DungeonTrainLanguages.isTranslated(localeCode);
-        // Only asked when it can matter: the registry synchronises and parses credit files, and for
-        // an untranslated language the answer changes nothing.
+        // Only asked when they can matter: the registry synchronises and parses credit files, and
+        // for an untranslated language neither answer changes anything.
         return matches(translated,
-            translated && LocalizationCreditRegistry.hasAnyHumanReview(localeCode));
+            translated && LocalizationCreditRegistry.hasAnyHumanReview(localeCode),
+            translated && LocalizationCreditRegistry.hasUnreviewedAi(localeCode));
     }
 }
