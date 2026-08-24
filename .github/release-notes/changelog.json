@@ -8400,9 +8400,9 @@
       ],
       "pr": 1076,
       "date": "2026-08-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.642.0",
+      "released_at": "2026-08-24T14:55:08Z"
     },
     {
       "id": "editor-package-save-keeps-your-work",
@@ -8420,9 +8420,9 @@
         "The custom train content prompt no longer appears when your run is already Free Play, where it had nothing left to ask."
       ],
       "date": "2026-08-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.642.0",
+      "released_at": "2026-08-24T14:55:08Z"
     },
     {
       "id": "editor-authored-books-burn-in-live-train",
@@ -8437,9 +8437,9 @@
       ],
       "pr": 1080,
       "date": "2026-08-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.642.0",
+      "released_at": "2026-08-24T14:55:08Z"
     },
     {
       "id": "scribble-book-tools",
@@ -8455,9 +8455,9 @@
       ],
       "pr": 1079,
       "date": "2026-08-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.642.0",
+      "released_at": "2026-08-24T14:55:08Z"
     }
   ]
 }
