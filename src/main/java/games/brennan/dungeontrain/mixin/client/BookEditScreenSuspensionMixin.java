@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.mixin.client;
 
 import games.brennan.dungeontrain.client.ClientBookSuspension;
+import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
 import games.brennan.dungeontrain.narrative.BookSuspensionMessage;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
@@ -23,7 +24,12 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * button (and the Finalize button, if the screen was already in signing mode when the window opened)
  * goes <b>red and dead</b>, with a tooltip naming the time left.</p>
  *
- * <p><b>Everything is blocked, including Death Notes and Love Notes</b> — they never upload, so this is
+ * <p><b>Except inside an editor plot.</b> A book signed in a plot is authored CONTENT — it uploads
+ * nothing and fires no live mechanic (see {@code EditorPlotScope} in the server-side intercept), so a
+ * paused author is still free to write props. The client reads the editor status HUD's own
+ * {@code isActive()}, which is exactly "the server says I am standing in a plot".</p>
+ *
+ * <p><b>Otherwise everything is blocked, including Death Notes and Love Notes</b> — they never upload, so this is
  * a deliberate policy choice rather than a technical one, and the server's own intercept
  * ({@code ServerGamePacketListenerImplSignBookMixin}) makes the same call so a client that ignores
  * this cannot get further. One rule, one sentence: while the train is refusing your writing, signing
@@ -43,7 +49,7 @@ public abstract class BookEditScreenSuspensionMixin {
 
     @Inject(method = "updateButtonVisibility", at = @At("RETURN"))
     private void dungeontrain$greyOutSigningWhileSuspended(CallbackInfo ci) {
-        boolean suspended = ClientBookSuspension.isSuspended();
+        boolean suspended = ClientBookSuspension.isSuspended() && !dungeontrain$authoringInEditorPlot();
         dungeontrain$applyState(this.signButton, "book.signButton", suspended);
         dungeontrain$applyState(this.finalizeButton, "book.finalizeButton", suspended);
     }
@@ -70,6 +76,15 @@ public abstract class BookEditScreenSuspensionMixin {
         }
         button.setMessage(Component.translatable(vanillaKey));
         button.setTooltip(null);
+    }
+
+    /** True while the editor status HUD says this player is standing in an editor plot. */
+    private static boolean dungeontrain$authoringInEditorPlot() {
+        try {
+            return EditorStatusHudOverlay.isActive();
+        } catch (Throwable t) {
+            return false;
+        }
     }
 
     /** This client's own language, for the plural form of "30 seconds" (see PluralRules). */

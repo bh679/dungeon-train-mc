@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.train;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.net.relay.SharedCarriageClient;
 import games.brennan.dungeontrain.portal.PortalCarriageSelection;
+import games.brennan.dungeontrain.portal.PortalRegistry;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.Shipyard;
 import games.brennan.dungeontrain.ship.Shipyards;
@@ -491,6 +492,12 @@ public final class TrainAssembler {
                     carriageBlocks = placement.blocks();
                     relayEntsBySlot[slot] = placement.ents();
                     pickBySlot[slot] = pick;
+                    // This slot now holds somebody else's build, and this path never reaches
+                    // CarriagePlacer.placeAt — so the record has to be cleared here or nowhere. The
+                    // guard in tryLeaseShared reads the LIVE portal verdict, which moves with game
+                    // mode; a slot recorded as a corridor and then leased over would keep a swap
+                    // plane standing above a shared carriage. See PortalStampRecord.
+                    PortalRegistry.get(level).noteStamped(carriagePIdx, false);
                 }
             }
             if (carriageBlocks == null) {

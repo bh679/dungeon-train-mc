@@ -120,7 +120,21 @@ public final class PortalSwapDiagnostics {
          * {@link PortalCarriageRevival} has had its say means the group is neither resident nor in
          * holding — nothing can bring it back.</p>
          */
-        PAIR_NOT_WALKED("nobody's walk reached this pair's carriage group, and it is not in holding — its corridors have nothing to lead to");
+        PAIR_NOT_WALKED("nobody's walk reached this pair's carriage group, and it is not in holding — its corridors have nothing to lead to"),
+
+        /**
+         * The current selection rate claims this group, but its carriages hold no corridor.
+         *
+         * <p>The disagreement {@link PortalStampRecord} exists to refuse. Reached when the rate that
+         * stamped these carriages is not the rate being drawn now — game mode moves it, and so does
+         * {@code /dungeontrain portal carriage}. Refusing is the whole point: built on, the swap
+         * plane would cover an ordinary carriage and teleport whoever walked down it into a pocket
+         * room.</p>
+         *
+         * <p>Expected exactly once per group on a world saved before the stamp record existed, if
+         * that group's blocks could not be read yet. Repeating means a genuine disagreement.</p>
+         */
+        NOT_STAMPED("the selection rate claims this group but no corridor is stamped in it — its blocks were laid under a different rate");
 
         /**
          * True for a state that is ordinary rather than wrong — it stops a swap, but nothing about it
