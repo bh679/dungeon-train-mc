@@ -20,26 +20,28 @@ import java.util.Locale;
 import java.util.Map;
 
 /**
- * Which countries speak each of Minecraft's languages, so the language search finds one by the
- * place rather than only by the word.
+ * Every name a language can be found by that vanilla's own row does not already carry: what the
+ * language is called in other languages, and the countries that speak it.
  *
- * <p>Somebody looking for their language knows what country they are in. They may not know that
- * Minecraft files it under "Nederlands", that Swiss German is {@code de_ch}, or which of India's
- * languages the list actually carries. Vanilla does put the country on the row -- but in the
- * language's own words ({@code Deutschland}, {@code Brasil}), which only helps somebody who could
- * already read the row. This is what makes "Germany" and "Allemagne" work too.</p>
+ * <p>Vanilla writes each row in the language itself -- {@code Nederlands (Nederland)},
+ * {@code 日本語 (日本)} -- which is right for somebody who can already read that row and useless
+ * for anybody else. Someone hunting for their language knows it as "Dutch", or "Niederländisch",
+ * or by the country they are in; they may not know Minecraft files Swiss German under
+ * {@code de_ch}, or which of India's languages the list carries. This is what makes "French",
+ * "Französisch", "Germany" and "Allemagne" all work.</p>
  *
- * <p>Only the ISO country codes are data here; the <b>names</b> come from the JDK's own CLDR
- * tables at runtime, in the player's language. That is the whole reason this is one small file and
- * not several thousand translated strings -- a hand-kept table of country names in nineteen
- * languages would be a large, drifting duplicate of something already sitting in the JVM, and it
- * would have gone in the lang files, inflating every locale's key count and putting a hundred and
- * thirty-odd country lists in front of translators as work to do.</p>
+ * <p>Only the ISO country codes are data here. Every <b>name</b> -- of a language and of a country
+ * alike -- comes from the JDK's own CLDR tables at runtime, in the player's language. That is the
+ * whole reason this is one small file and not several thousand translated strings: a hand-kept
+ * table of language and country names in nineteen languages would be a large, drifting duplicate
+ * of something already sitting in the JVM, and it would have gone in the lang files, inflating
+ * every locale's key count and putting a few hundred name lists in front of translators as work to
+ * do.</p>
  *
  * <p>Matched in the player's language <em>and</em> in English, because English place names are what
  * people type into search boxes regardless of what they are reading the game in.</p>
  */
-public final class LanguageCountryIndex {
+public final class LanguageSearchIndex {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
@@ -49,24 +51,34 @@ public final class LanguageCountryIndex {
     /** Separates names in a haystack, so a needle cannot match across two of them. */
     private static final char SEPARATOR = '\n';
 
+    /**
+     * Locales whose code CLDR knows as an unrelated real language, so asking it for the name gives
+     * a confidently wrong one.
+     *
+     * <p>{@code lol} is ISO 639 for Mongo, spoken in the Congo; Minecraft means LOLCAT. Everything
+     * else in the list either resolves correctly -- CLDR carries Toki Pona, Lojban, Klingon,
+     * Bavarian and Literary Chinese -- or has no name at all and simply contributes nothing.</p>
+     */
+    private static final java.util.Set<String> MISNAMED_BY_CLDR = java.util.Set.of("lol_us");
+
     /** Minecraft locale code to the ISO 3166 countries that speak it. Empty until a reload runs. */
     private static Map<String, List<String>> countries = Map.of();
 
     /** The UI language {@link #haystacks} was built for, so a language switch rebuilds it. */
     private static String haystackLang = "";
-    /** Minecraft locale code to every country name it can be found by, lowercased and joined. */
+    /** Minecraft locale code to every name it can be found by, lowercased and newline-joined. */
     private static Map<String, String> haystacks = new LinkedHashMap<>();
 
-    private LanguageCountryIndex() {}
+    private LanguageSearchIndex() {}
 
     /**
-     * Whether {@code localeCode} is spoken somewhere whose name contains {@code needle}.
+     * Whether {@code localeCode} is known by any name containing {@code needle} -- its language's
+     * name, or that of a country where it is spoken.
      *
      * @param needle   already lowercased and trimmed by the caller
      * @param uiLocale the Minecraft locale the player is reading in, e.g. {@code fr_fr}
      */
-    public static synchronized boolean matchesCountry(String localeCode, String needle,
-                                                      String uiLocale) {
+    public static synchronized boolean matches(String localeCode, String needle, String uiLocale) {
         if (localeCode == null || needle == null || needle.isEmpty()) {
             return false;
         }
@@ -89,17 +101,20 @@ public final class LanguageCountryIndex {
     }
 
     static String buildHaystack(String localeCode, String uiLocale) {
-        List<String> codes = countries.get(localeCode);
-        if (codes == null || codes.isEmpty()) {
-            return "";
-        }
-        Locale reading = toJavaLocale(uiLocale);
+        Locale reading = readingLocale(uiLocale);
         StringBuilder out = new StringBuilder();
-        for (String country : codes) {
+
+        Locale target = MISNAMED_BY_CLDR.contains(localeCode) ? null : toJavaLocale(localeCode);
+        if (target != null) {
+            append(out, target.getDisplayLanguage(reading));
+            // English as well as their own language, here and below: search boxes get English
+            // names typed into them by people who are not reading anything else in English.
+            append(out, target.getDisplayLanguage(Locale.ENGLISH));
+        }
+
+        for (String country : countries.getOrDefault(localeCode, List.of())) {
             Locale region = new Locale.Builder().setRegion(country).build();
             append(out, region.getDisplayCountry(reading));
-            // English as well as their own language: search boxes get English place names typed
-            // into them by people who are not reading anything else in English.
             append(out, region.getDisplayCountry(Locale.ENGLISH));
         }
         return out.toString();
@@ -112,12 +127,17 @@ public final class LanguageCountryIndex {
     }
 
     /**
-     * A Minecraft locale code as a Java one -- {@code pt_br} becomes {@code pt-BR}. Anything
-     * unparseable falls back to English, which is what the second half of every haystack is anyway.
+     * A Minecraft locale code as a Java one -- {@code pt_br} becomes {@code pt-BR} -- or null when
+     * it is not one.
+     *
+     * <p>Null rather than a fallback, because the two callers want opposite things from a code
+     * they cannot parse: the language being NAMED must contribute nothing (a wrong name is worse
+     * than none), while the language being READ IN can perfectly well fall back to English, which
+     * is what the other half of every haystack is anyway. {@link #readingLocale} is that half.</p>
      */
     static Locale toJavaLocale(String localeCode) {
         if (localeCode == null || localeCode.isBlank()) {
-            return Locale.ENGLISH;
+            return null;
         }
         String[] parts = localeCode.split("_");
         try {
@@ -127,8 +147,14 @@ public final class LanguageCountryIndex {
             }
             return builder.build();
         } catch (Exception e) {
-            return Locale.ENGLISH; // a constructed locale like lol_us, or a pack's own invention
+            return null; // a pack's own invention, or a code Java will not accept as one
         }
+    }
+
+    /** The locale to render names IN, which always has an answer. */
+    static Locale readingLocale(String localeCode) {
+        Locale parsed = toJavaLocale(localeCode);
+        return parsed == null ? Locale.ENGLISH : parsed;
     }
 
     /** Reload listener entry point -- see {@code LocalizationCreditsClientLoaders}. */

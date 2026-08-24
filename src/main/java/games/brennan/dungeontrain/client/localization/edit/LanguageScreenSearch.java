@@ -1,7 +1,7 @@
 package games.brennan.dungeontrain.client.localization.edit;
 
 import games.brennan.dungeontrain.client.localization.LanguageAiFilter;
-import games.brennan.dungeontrain.client.localization.LanguageCountryIndex;
+import games.brennan.dungeontrain.client.localization.LanguageSearchIndex;
 import games.brennan.dungeontrain.mixin.client.LanguageSelectEntryAccessor;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.AbstractWidget;
@@ -355,10 +355,11 @@ public final class LanguageScreenSearch {
      * Everything a language can be found by: its locale code, the name and region vanilla puts on
      * the row, and the countries that speak it — in the player's own language and in English.
      *
-     * <p>Vanilla's own text already covers the country in the language's own words, so "Brasil"
-     * and "Deutschland" work with no help. The index is what adds "Brazil" and "Allemagne", and
-     * the countries that share a language without lending it their name: "Switzerland" reaches
-     * German, French and Italian; "Argentina" reaches Spanish.</p>
+     * <p>Vanilla writes its row in the language itself, so "Français", "Brasil" and "Deutschland"
+     * work with no help — and are exactly the words somebody who cannot read that row will not
+     * type. The index adds what they will: "French" and "Französisch", "Brazil" and "Allemagne",
+     * and the countries that share a language without lending it their name — "Switzerland"
+     * reaches German, French and Italian, "Argentina" reaches Spanish.</p>
      */
     private static boolean matchesQuery(String code, String needle) {
         if (needle.isEmpty()) {
@@ -372,7 +373,7 @@ public final class LanguageScreenSearch {
             && info.toComponent().getString().toLowerCase(Locale.ROOT).contains(needle)) {
             return true;
         }
-        return LanguageCountryIndex.matchesCountry(code, needle, uiLocale());
+        return LanguageSearchIndex.matches(code, needle, uiLocale());
     }
 
     /** The language the player is reading in, which is the one country names should come back in. */
