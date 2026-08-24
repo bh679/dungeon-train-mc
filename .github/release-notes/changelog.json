@@ -8322,6 +8322,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "author-library-language-filter",
+      "version": "0.638.0",
+      "type": "feat",
+      "title": "Library rooms stock authors you can read",
+      "summary": "A library portal room fills its shelves with one community author's whole catalogue \u2014 and now it only ever picks somebody writing in your game's language. Play in \u4e2d\u6587 and the room is a Chinese author's library; play in English and it is an English one. When nobody writes in your language yet, the room falls back to an English author rather than standing empty.",
+      "highlights": [
+        "Author libraries are chosen in your language, not just filtered afterwards",
+        "The book count on the room's author is now the count in your language",
+        "Your own library room still shows everything you have written, in any language"
+      ],
+      "pr": 1072,
+      "date": "2026-08-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
