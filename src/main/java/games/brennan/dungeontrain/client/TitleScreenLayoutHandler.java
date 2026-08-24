@@ -41,9 +41,10 @@ import java.util.List;
  *
  * <p>Discord opens the current official invite via {@link ConfirmLinkScreen}.</p>
  *
- * <p>The first slot holds a {@link TrainBuilderMenuButton}: normally <b>Train Builder</b>,
- * opening {@link TrainBuilderScreen}; on a dev build, holding Shift turns it into the old
- * <b>Train Editor</b> button. The editor path is unchanged — it launches a fresh creative world
+ * <p>The first slot holds a {@link TrainBuilderMenuButton}: normally <b>Train Editor</b>; on a
+ * dev build, holding Shift turns it into <b>Train Builder</b>, opening
+ * {@link TrainBuilderScreen}. The Editor leads because it is the finished tool, and the Builder
+ * hides behind a dev-only Shift while it is still being built. The editor path launches a fresh creative world
  * via {@link DevQuickWorldHandler#launchEditorWorld(Screen)}, which names the world
  * "train editor N" using the lowest unused index, and arms
  * {@link EditorDevMode#queueOnForNextStart()} so editor mode is forced on after the server
@@ -153,13 +154,14 @@ public final class TitleScreenLayoutHandler {
         quit.setY(rowY);
         quit.setWidth(thirdW);
 
-        // Train Builder by default; on a dev build, holding Shift swaps this same widget to the
-        // old Train Editor. The slot is only half a row wide (Discord has the other half), so a
-        // separate Editor button would not fit alongside it.
-        TrainBuilderMenuButton builder = new TrainBuilderMenuButton(slotX, slotY, halfW, slotH,
+        // Train Editor by default; on a dev build, holding Shift swaps this same widget to the
+        // unfinished Train Builder. The slot is only half a row wide (Discord has the other half),
+        // so a second button would not fit alongside it. Constructor argument order is unchanged
+        // (openBuilder, openEditor) — which of the two is the default lives in the button.
+        TrainBuilderMenuButton editor = new TrainBuilderMenuButton(slotX, slotY, halfW, slotH,
                 () -> openBuilder(titleScreen),
                 () -> openEditor(titleScreen));
-        event.addListener(builder);
+        event.addListener(editor);
 
         // If the player opted out of the developer welcome popup, keep the
         // Discord affordance gently visible via a pulsing blue border —
