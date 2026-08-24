@@ -12,7 +12,9 @@ import net.minecraft.world.level.block.state.BlockState;
 import org.slf4j.Logger;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * What is actually <b>standing</b> on the train, as opposed to what the selection lottery currently
@@ -61,6 +63,17 @@ public final class PortalStampRecord {
     /** Next game time each group anchor may be re-confirmed at. Session state; see the period above. */
     private static final Map<Integer, Long> NEXT_CONFIRM = new HashMap<>();
 
+    /**
+     * Group anchors whose refutation has already been spelled out once.
+     *
+     * <p>The detail — which block stands where a lantern would — is worth a line the first time and
+     * nothing after it: a player standing beside a claimed-but-empty group re-reads the same cell
+     * every second, and fifty-seven copies of one sentence is how a log stops being read. Recurrence
+     * is still visible: {@code PortalSwapDiagnostics} keeps reporting NOT_STAMPED on its own
+     * cadence.</p>
+     */
+    private static final Set<Integer> REFUTED_SAID = new HashSet<>();
+
     private PortalStampRecord() {}
 
     /** The outcome of asking a group's own blocks whether it holds a corridor. */
@@ -93,6 +106,7 @@ public final class PortalStampRecord {
     /** Drop the session's confirmation throttle — server shutdown, so the next world starts clean. */
     public static void reset() {
         NEXT_CONFIRM.clear();
+        REFUTED_SAID.clear();
     }
 
     /**
@@ -174,7 +188,7 @@ public final class PortalStampRecord {
             + PortalCorridorSize.originOffsetX(PortalCarriageRole.ENTRY, dims, kind);
 
         if (!hasCrossingLanterns(ship, layout, originX, minY, minZ)) {
-            LOGGER.warn("[DungeonTrain] Portal group {} is claimed by the current selection rate but "
+            if (REFUTED_SAID.add(anchor)) LOGGER.warn("[DungeonTrain] Portal group {} is claimed by the current selection rate but "
                     + "holds no corridor: the entry carriage at ({}, {}, {}) has {} where a "
                     + "crossing-zone lantern would be. Its blocks were stamped under a different "
                     + "rate — game mode moves it. Refusing to build a swap plane over it.",
@@ -188,6 +202,7 @@ public final class PortalStampRecord {
                 slot++) {
             registry.noteStamped(anchor + slot, true);
         }
+        REFUTED_SAID.remove(anchor);
         LOGGER.info("[DungeonTrain] Portal group {} confirmed from its own blocks and recorded — a "
             + "world saved before the stamp record existed.", anchor);
         return Proof.CONFIRMED;
