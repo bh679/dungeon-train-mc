@@ -8703,8 +8703,23 @@
       "released_at": "2026-08-25T15:37:51Z"
     },
     {
-      "id": "train-builder-mode",
+      "id": "portal-room-door-ghosts",
       "version": "0.655.0",
+      "type": "feat",
+      "title": "Portal room editor shows where the doors go",
+      "summary": "Authoring a dimensional carriage room now shows you the two corridor doorways it has to be built around. A translucent door stands in each opening — the same door the corridor really hangs — so a wall across the walkway centre line is something you see while you build rather than something you discover by walking a portal.",
+      "highlights": [
+        "Both corridor doorways are marked in every portal room plot, and follow the room as you resize it.",
+        "Toggle them with /dt editor doorghosts on|off — separate from the out-of-plot stray ghosts."
+      ],
+      "date": "2026-08-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "train-builder-mode",
+      "version": "0.656.0",
       "type": "feat",
       "title": "The Train Builder (work in progress)",
       "summary": "A soft release: the Train Builder is still in development and not yet fully functional, so expect rough edges and unfinished corners. It is a simpler way to build carriages, tracks and tunnels in a dedicated build world, and in time it is meant to replace the more complex Train Editor. For now both are here — hold Shift on the title screen to open the Builder, and find what you have made under My Builds.",
