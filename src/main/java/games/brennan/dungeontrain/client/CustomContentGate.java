@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.config.CustomContentPreference;
 import games.brennan.dungeontrain.world.CustomContentChoice;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.world.level.GameType;
 import org.slf4j.Logger;
 
 /**
@@ -35,6 +36,43 @@ public final class CustomContentGate {
     private CustomContentGate() {}
 
     /**
+     * Answer without asking, for a run that starts with no one at the menu — the automatic reboard
+     * after a death with immediate respawn on ({@code InstantRespawnReboard}). Takes the remembered
+     * preference, else the last answer actually given, else declines.
+     *
+     * <p>Declining as the last resort is deliberate. Carrying a previous <em>ALLOW</em> forward is
+     * the player's own consent, given once and reused. Inventing one they never gave would put a
+     * run into Free Play that nobody agreed to, which is the one thing the ask-before-assign rule
+     * exists to stop. Only reachable on a first-ever death with immediate respawn already on.</p>
+     */
+    public static void answerFromMemory() {
+        try {
+            if (!EditorContentIntegrity.hasCustomContent()) {
+                PendingCustomContentChoice.clear();
+                return;
+            }
+        } catch (RuntimeException e) {
+            // Same guard askFirst makes, and it matters more here: this runs mid-reboard with the
+            // old world tearing down, and the reboard has already been scheduled. Leaving the slot
+            // clear lets the new world ask at join rather than failing the respawn outright.
+            LOGGER.warn("[DungeonTrain] Couldn't check for custom content during an automatic "
+                + "reboard; leaving the question to join time.", e);
+            PendingCustomContentChoice.clear();
+            return;
+        }
+        CustomContentPreference remembered = ClientDisplayConfig.getCustomContentPreference();
+        CustomContentPreference source = remembered.asks()
+            ? ClientDisplayConfig.getLastCustomContentAnswer()
+            : remembered;
+        CustomContentChoice choice = !source.asks() && source.keepsContent()
+            ? CustomContentChoice.ALLOW
+            : CustomContentChoice.DISABLE;
+        LOGGER.info("[DungeonTrain] Automatic reboard — reusing the last custom content answer "
+            + "without asking: {} (from {})", choice, source);
+        PendingCustomContentChoice.set(choice);
+    }
+
+    /**
      * Put the question before {@code launch}, if there is a question to put.
      *
      * <p>Callers use it as a guard clause: {@code if (askFirst(screen, this::go)) return; go();} —
@@ -47,6 +85,32 @@ public final class CustomContentGate {
      *         caller should proceed immediately
      */
     public static boolean askFirst(Screen parent, Runnable launch) {
+        return askFirst(GameType.SURVIVAL, parent, launch);
+    }
+
+    /**
+     * As {@link #askFirst(Screen, Runnable)}, for a world whose starting game mode is known.
+     *
+     * <p>The question is only worth asking about a run that would otherwise <b>count</b>. A world
+     * created in creative or spectator is Free Play by virtue of its own game mode, so there is no
+     * trade to offer: that covers the Train Editor (whose world is creative by construction) and
+     * the dev creative world, without either having to be recognised by name.</p>
+     *
+     * <p>Those worlds record {@code ALLOW} rather than declining. An editor world must load the
+     * player's own designs — editing them is the point — and the run is Free Play either way, so
+     * there is nothing gained by withholding them.</p>
+     */
+    public static boolean askFirst(GameType mode, Screen parent, Runnable launch) {
+        if (mode == GameType.CREATIVE || mode == GameType.SPECTATOR) {
+            LOGGER.info("[DungeonTrain] New world starts in {} — Free Play regardless, so the "
+                + "custom content question doesn't arise; keeping the content.", mode);
+            PendingCustomContentChoice.set(CustomContentChoice.ALLOW);
+            return false;
+        }
+        return askCounting(parent, launch);
+    }
+
+    private static boolean askCounting(Screen parent, Runnable launch) {
         boolean hasContent;
         try {
             hasContent = EditorContentIntegrity.hasCustomContent();
