@@ -27,7 +27,10 @@ import java.util.function.Function;
  *   <li>{@link EditorEditRecorder} — a tick's worth of player place / break
  *       edits, plus whatever live mirroring wrote alongside them;</li>
  *   <li>{@link EditorRegionDiff} — a whole-plot operation (Clear, Reset, mirror
- *       rebuild, bulk block swap), captured as a before/after region diff; and</li>
+ *       rebuild, bulk block swap), captured as a before/after region diff. An
+ *       Effortless Building build rides this path too, via
+ *       {@link games.brennan.dungeontrain.compat.EffortlessBuildingHistory};
+ *       and</li>
  *   <li>the variant-sidecar edit paths, which carry no block cells at all and
  *       push a {@link SidecarSnapshot} instead.</li>
  * </ul>
