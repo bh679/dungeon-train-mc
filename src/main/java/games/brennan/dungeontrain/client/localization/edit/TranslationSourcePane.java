@@ -48,6 +48,8 @@ public final class TranslationSourcePane extends AbstractWidget {
     private final int contentHeight;
 
     private int scroll;
+    /** Pixels the screen has claimed at the right of the heading row — see {@link #reserveHeading}. */
+    private int headingReserve;
 
     /**
      * Wrap the text for a pane {@code width} wide. Split from the constructor because the screen
@@ -87,6 +89,17 @@ public final class TranslationSourcePane extends AbstractWidget {
             font.lineHeight, GAP, this.sourceLines.size(), this.replyLines.size());
     }
 
+    /**
+     * Keep {@code pixels} of the heading row free at the right, for the screen's source link.
+     *
+     * <p>The heading is truncated to what is left rather than drawn under the button: on a narrow
+     * window "English — current translation is AI, unreviewed" is wider than the row, and text
+     * running beneath a button reads as a rendering fault.</p>
+     */
+    public void reserveHeading(int pixels) {
+        this.headingReserve = Math.max(0, pixels);
+    }
+
     /** How tall the wrapped text wants to be, before any cap is applied. */
     public int contentHeight() {
         return contentHeight;
@@ -124,7 +137,9 @@ public final class TranslationSourcePane extends AbstractWidget {
 
     @Override
     protected void renderWidget(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
-        g.drawString(font, heading, getX(), getY(), headingColour, false);
+        int headingWidth = Math.max(0, width - headingReserve);
+        g.drawString(font, font.plainSubstrByWidth(heading.getString(), headingWidth),
+            getX(), getY(), headingColour, false);
         g.enableScissor(getX(), bodyY(), getX() + width, getY() + height);
         int y = bodyY() - scroll;
         for (FormattedCharSequence line : sourceLines) {
