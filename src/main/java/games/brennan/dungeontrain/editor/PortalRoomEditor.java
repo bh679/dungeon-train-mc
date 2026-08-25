@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.portal.PortalCorridorMask;
 import games.brennan.dungeontrain.portal.PortalRoomLayout;
 import games.brennan.dungeontrain.portal.PortalRoomResize;
 import games.brennan.dungeontrain.portal.PortalRoomSizes;
+import games.brennan.dungeontrain.template.TemplateDecor;
 import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.track.variant.TrackVariantBlocks;
 import games.brennan.dungeontrain.track.variant.TrackVariantRegistry;
@@ -357,8 +358,7 @@ public final class PortalRoomEditor {
 
         BlockPos origin = plotOrigin(name, dims);
         Vec3i size = plotSize(name, dims);
-        StructureTemplate template = new StructureTemplate();
-        template.fillFromWorld(overworld, origin, size, false, Blocks.STRUCTURE_VOID);
+        StructureTemplate template = TemplateDecor.capture(overworld, origin, size, Blocks.STRUCTURE_VOID);
         PortalRoomTemplateStore.save(name, template);
 
         // Fresh baseline, or the brand-new plot reads as already edited.
@@ -499,8 +499,7 @@ public final class PortalRoomEditor {
      */
     private static StructureTemplate captureLive(ServerLevel overworld, String name, PlotBox box) {
         if (!EditorPlotSnapshots.has(snapshotKey(name))) return null;
-        StructureTemplate template = new StructureTemplate();
-        template.fillFromWorld(overworld, box.origin(), box.size(), false, Blocks.STRUCTURE_VOID);
+        StructureTemplate template = TemplateDecor.capture(overworld, box.origin(), box.size(), Blocks.STRUCTURE_VOID);
         return template;
     }
 
@@ -605,8 +604,7 @@ public final class PortalRoomEditor {
         BlockPos origin = plotOrigin(name, dims);
         Vec3i size = plotSize(name, dims);
 
-        StructureTemplate template = new StructureTemplate();
-        template.fillFromWorld(overworld, origin, size, false, Blocks.STRUCTURE_VOID);
+        StructureTemplate template = TemplateDecor.capture(overworld, origin, size, Blocks.STRUCTURE_VOID);
 
         PortalRoomTemplateStore.save(name, template);
 

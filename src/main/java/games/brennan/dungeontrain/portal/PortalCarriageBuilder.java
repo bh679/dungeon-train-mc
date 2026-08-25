@@ -1471,6 +1471,14 @@ public final class PortalCarriageBuilder {
                                    int liveMobCount, PortalRoomContents contents,
                                    PortalRoomBooks books) {
         stampRoomAt(level, roomOrigin, dims, roomName, size, relight, clearMask, writeMask);
+        // Claim the pictures that stamp just hung, before anything else can walk in and be mistaken
+        // for one. A dimensional carriage REPEATS — the tiling window is 121 copies and it has no
+        // memory, so walking back over ground you left re-stamps it — and an item frame is a
+        // persistent entity, so spawning per stamp with nothing taking them away again is not a burst
+        // but a leak. The mark is what {@link PortalRoomMobs#reapTile} scopes a retiring copy's reap
+        // by, and what {@code clearIntruders} spares on the next stamp; it is the same invariant a
+        // room's authored mobs live under, and for the same reason.
+        PortalRoomMobs.markDecor(level, roomOrigin, size, pairKey, tile);
         // Contents first, the room's own authored cells second. Where the two overlap the author's
         // explicit entry is the one that should stand — and applyRoomVariants evicts a live block
         // entity before it writes, so a chest this pass just filled cannot spill when it does.
@@ -1705,7 +1713,7 @@ public final class PortalCarriageBuilder {
         // every stepper click.
         stampRoomBuiltIn(level, roomOrigin, size, relight, writeMask);
         CarriagePlacer.stampTemplateAt(level, roomOrigin, stored.get(),
-            clipTo(roomOrigin, size, writeMask), relight);
+            clipTo(roomOrigin, size, writeMask), relight, boxOf(roomOrigin, size));
     }
 
     /**
@@ -1730,7 +1738,7 @@ public final class PortalCarriageBuilder {
 
         stampRoomBuiltIn(level, roomOrigin, size, relight, PortalCorridorMask.NONE);
         CarriagePlacer.stampTemplateAt(level, roomOrigin.offset(shift), live,
-            clipTo(roomOrigin, size, PortalCorridorMask.NONE), relight);
+            clipTo(roomOrigin, size, PortalCorridorMask.NONE), relight, boxOf(roomOrigin, size));
     }
 
     /**
@@ -1741,6 +1749,15 @@ public final class PortalCarriageBuilder {
      * to be cut off at the new box's edge. Same {@code null}-returning contract
      * {@link PortalCorridorMask} uses, so a dropped cell is left alone rather than written as air.</p>
      */
+    /** The room's box, as the inclusive {@link BoundingBox} both the block clip and the decor clip use. */
+    private static BoundingBox boxOf(BlockPos roomOrigin, Vec3i size) {
+        return new BoundingBox(
+            roomOrigin.getX(), roomOrigin.getY(), roomOrigin.getZ(),
+            roomOrigin.getX() + size.getX() - 1,
+            roomOrigin.getY() + size.getY() - 1,
+            roomOrigin.getZ() + size.getZ() - 1);
+    }
+
     private static StructureProcessor clipTo(BlockPos roomOrigin, Vec3i size,
                                              PortalCorridorMask mask) {
         BoundingBox box = new BoundingBox(

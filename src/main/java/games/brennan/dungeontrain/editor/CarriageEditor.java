@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.editor;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.portal.PortalCorridorKind;
 import games.brennan.dungeontrain.portal.PortalCorridorSize;
+import games.brennan.dungeontrain.template.TemplateDecor;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriagePlacer;
 import games.brennan.dungeontrain.train.CarriageVariant;
@@ -537,10 +538,8 @@ public final class CarriageEditor {
     }
 
     private static StructureTemplate captureTemplate(ServerLevel level, BlockPos origin, CarriageDims dims) {
-        StructureTemplate template = new StructureTemplate();
         Vec3i size = new Vec3i(dims.length(), dims.height(), dims.width());
-        template.fillFromWorld(level, origin, size, false, Blocks.AIR);
-        return template;
+        return TemplateDecor.capture(level, origin, size, Blocks.AIR);
     }
 
     /**
