@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -37,6 +38,13 @@ import java.util.concurrent.ConcurrentHashMap;
  * <p>A room drops out of the pending set the moment it is stocked, so the pass costs nothing on a
  * world where every library has already been filled — and a room can never be re-stocked into a loot
  * machine by standing next to it.</p>
+ *
+ * <p><b>A room that found nobody is the exception</b> and stays pending. Its answer came from a
+ * directory page that expires (see {@code PortalRoomAuthorLocks.EMPTY_PAGE_TTL_MS}), so a room met
+ * while the corpus was thin — or while the relay was unwell — can fill itself minutes later instead
+ * of standing bare until the server restarts, which is what dropping it here used to mean. Kept
+ * bounded by {@link #MAX_PENDING_ROOMS}, since nothing calls {@link #forget} and pair keys climb for
+ * as long as a train runs.</p>
  */
 public final class PortalRoomLibrarian {
 
@@ -45,8 +53,27 @@ public final class PortalRoomLibrarian {
     /** A room waiting to be stocked: where it stands and what its author is drawn from. */
     private record Pending(BlockPos origin, Vec3i size, PortalRoomBooks books) {}
 
+    /**
+     * How many rooms may be waiting for their books at once.
+     *
+     * <p>Bounded because a room that finds no author now STAYS pending — it is waiting on a corpus
+     * that may grow, not giving up — while pair keys climb for as long as a train runs and nothing
+     * calls {@link #forget}. Well above the handful of rooms that can be standing at once; past it
+     * the lowest pair key goes, which is the room the train left behind furthest back.</p>
+     */
+    static final int MAX_PENDING_ROOMS = 32;
+
     /** pair key → the room still waiting for its books. */
     private static final Map<Integer, Pending> PENDING = new ConcurrentHashMap<>();
+
+    /**
+     * Rooms that have already had their "no author in this band" line logged.
+     *
+     * <p>A room that finds nobody stays pending and is re-asked every tick, so without this the one
+     * line worth reading would be buried under thousands of copies of itself. Cleared for a pair the
+     * moment it does resolve, so a later dry spell says so again.</p>
+     */
+    private static final Set<Integer> REPORTED_NONE = ConcurrentHashMap.newKeySet();
 
     private PortalRoomLibrarian() {}
 
@@ -57,6 +84,7 @@ public final class PortalRoomLibrarian {
      * a room that does not stock from an author, which is almost all of them.</p>
      */
     public static void register(int pairKey, BlockPos origin, Vec3i size, PortalRoomBooks books) {
+        REPORTED_NONE.remove(pairKey);
         if (books == null || !books.locks() || origin == null || size == null) {
             // A room re-stamped with the setting turned off must not keep an old pending record, or
             // it would be stocked from a decision its author has since taken back.
@@ -64,11 +92,32 @@ public final class PortalRoomLibrarian {
             return;
         }
         PENDING.put(pairKey, new Pending(origin.immutable(), size, books));
+        evictOldest();
+    }
+
+    /**
+     * Keep {@link #PENDING} inside {@link #MAX_PENDING_ROOMS}, dropping the lowest pair keys first.
+     *
+     * <p>Pair keys only climb, so the lowest is the oldest room — the one the train left behind
+     * furthest back, and the one least likely to still be standing. Only runs on {@link #register},
+     * which happens once per stamped room, so the cost never lands on the tick.</p>
+     */
+    private static void evictOldest() {
+        while (PENDING.size() > MAX_PENDING_ROOMS) {
+            Integer oldest = null;
+            for (Integer key : PENDING.keySet()) {
+                if (oldest == null || key < oldest) oldest = key;
+            }
+            if (oldest == null) return;
+            PENDING.remove(oldest);
+            REPORTED_NONE.remove(oldest);
+        }
     }
 
     /** Forget a pair — its structure has gone, and the box in the record no longer means anything. */
     public static void forget(int pairKey) {
         PENDING.remove(pairKey);
+        REPORTED_NONE.remove(pairKey);
     }
 
     /**
@@ -119,16 +168,22 @@ public final class PortalRoomLibrarian {
                 // The directory answered and nobody is inside this room's band. Said out loud and at
                 // INFO, because from in-game this is indistinguishable from a broken feature: the
                 // room simply stands there empty. Naming the band is what turns it back into a
-                // setting the author can change.
-                LOGGER.info("[DungeonTrain] Portal room {} found no author with {}-{} books — "
-                        + "its shelves stay empty. Widen the room's Books range, or the corpus has "
-                        + "nobody that prolific yet.",
-                    pairKey, pending.books().minBooks() + 1,
-                    pending.books().maxBooks() == PortalRoomBooks.NO_MAXIMUM
-                        ? "any" : String.valueOf(pending.books().maxBooks()));
-                PENDING.remove(pairKey);
+                // setting the author can change. Once per room, not once per tick.
+                if (REPORTED_NONE.add(pairKey)) {
+                    LOGGER.info("[DungeonTrain] Portal room {} found no author with {}-{} books — "
+                            + "its shelves stay empty for now. Widen the room's Books range, or the "
+                            + "corpus has nobody that prolific yet.",
+                        pairKey, pending.books().minBooks() + 1,
+                        pending.books().maxBooks() == PortalRoomBooks.NO_MAXIMUM
+                            ? "any" : String.valueOf(pending.books().maxBooks()));
+                }
+                // Deliberately still PENDING. The directory page behind this answer expires (see
+                // PortalRoomAuthorLocks.EMPTY_PAGE_TTL_MS), so a room that found nobody while the
+                // corpus was thin can fill itself later. Dropping it here is what made "empty once"
+                // mean "empty until the server restarts".
                 continue;
             }
+            REPORTED_NONE.remove(pairKey);
 
             BookAuthorsClient.Author author = resolved.author();
             UUID owner = PortalRoomAuthorLocks.ownerFor(reader, author);
@@ -169,6 +224,7 @@ public final class PortalRoomLibrarian {
     /** Drop every pending room — server stop, and unit tests. */
     public static void clear() {
         PENDING.clear();
+        REPORTED_NONE.clear();
     }
 
     /** Test hook: whether a pair is still waiting for its books. */
