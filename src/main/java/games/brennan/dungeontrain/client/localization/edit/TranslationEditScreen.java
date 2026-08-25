@@ -26,6 +26,17 @@ public final class TranslationEditScreen extends Screen {
     private static final int LABEL_COLOUR = 0xFFA0A0A0;
     private static final int NOTE_COLOUR = 0xFFD8A657;
     private static final int AI_COLOUR = 0xFF5B9BD5;
+    /** The gap between the English and the edit box, which is also the divider's grab area. */
+    private static final int SPLITTER_H = GAP * 3;
+
+    /**
+     * The height the translator last dragged the English to, or null while they never have.
+     *
+     * <p>Static on purpose, and only for as long as the game is running: having to re-drag the
+     * divider on every string would make dragging it not worth doing. Re-clamped on every
+     * {@code init}, so a resized window or a shorter string cannot strand it out of range.</p>
+     */
+    private static Integer preferredPaneHeight;
 
     private final TranslationScreen parent;
     private final String locale;
@@ -34,6 +45,8 @@ public final class TranslationEditScreen extends Screen {
     private MultiLineEditBox editor;
     /** The English, and any reviewer's reply about it — the whole of it, scrolled if need be. */
     private TranslationSourcePane sourcePane;
+    /** Null when the English already fits and there is nothing to trade between the two. */
+    private TranslationPaneSplitter splitter;
     /** Flips between "good as is" and "put it back"; relabelled in place, never rebuilt. */
     private Button dismissButton;
 
@@ -66,16 +79,30 @@ public final class TranslationEditScreen extends Screen {
             replyBy, reply == null ? "" : reply.note());
 
         int bottomRow = height - MARGIN - ROW_H;
-        int noteHeight = unit.type() == TranslationUnit.Type.BOOK
-            || !TranslationOverrides.isLive(locale) ? font.lineHeight + GAP : 0;
+        int noteHeight = noteHeight();
         // What is left for the English once the box the translator types in keeps its two rows.
-        int available = bottomRow - GAP - noteHeight - ROW_H * 2 - GAP * 3 - TOP;
-        int paneHeight = TranslationSourceLayout.viewportHeight(
-            sourcePane.contentHeight(), height, available, font.lineHeight);
+        int available = bottomRow - GAP - noteHeight - ROW_H * 2 - SPLITTER_H - TOP;
+        int content = sourcePane.contentHeight();
+        int paneHeight = preferredPaneHeight == null
+            ? TranslationSourceLayout.viewportHeight(content, height, available, font.lineHeight)
+            : TranslationSourceLayout.draggedHeight(
+                preferredPaneHeight, content, available, font.lineHeight);
         sourcePane.place(MARGIN, TOP, paneHeight);
         addRenderableWidget(sourcePane);
 
-        int editorTop = TOP + paneHeight + GAP * 3;
+        // Only where there is something to trade. A short string whose English already fits has
+        // no room to give the edit box, so it gets a plain gap rather than a handle that does
+        // nothing when pulled.
+        if (TranslationSourceLayout.isResizable(content, available, font.lineHeight)) {
+            splitter = addRenderableWidget(new TranslationPaneSplitter(
+                MARGIN, TOP + paneHeight, contentWidth, SPLITTER_H, this::onSplitterDragged));
+            splitter.setTooltip(Tooltip.create(
+                Component.translatable("gui.dungeontrain.translate.edit.resize.tip")));
+        } else {
+            splitter = null;
+        }
+
+        int editorTop = TOP + paneHeight + SPLITTER_H;
         int editorHeight = Math.max(ROW_H * 2, bottomRow - GAP - noteHeight - editorTop);
 
         editor = new MultiLineEditBox(font, MARGIN, editorTop, contentWidth, editorHeight,
@@ -107,6 +134,48 @@ public final class TranslationEditScreen extends Screen {
         x += buttonWidth + GAP;
         addRenderableWidget(Button.builder(CommonComponents.GUI_CANCEL, b -> onClose())
             .bounds(x, bottomRow, buttonWidth, ROW_H).build());
+    }
+
+    /**
+     * Give the keyboard back after a drag or a scroll.
+     *
+     * <p>Clicking the divider or the source scrollbar makes it the focused child, which silently
+     * leaves the translator typing into nothing. Handing focus back has to wait for the release —
+     * moving it mid-drag would end the drag it is meant to be following.</p>
+     */
+    @Override
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        boolean handled = super.mouseReleased(mouseX, mouseY, button);
+        if (getFocused() == splitter || getFocused() == sourcePane) {
+            setFocused(editor);
+        }
+        return handled;
+    }
+
+    /**
+     * Follow the divider. The widgets are moved where they stand rather than rebuilt: a rebuild
+     * would throw away what the translator has typed and where their cursor is, which is a high
+     * price for dragging a line.
+     */
+    private void onSplitterDragged(double mouseY) {
+        int bottomRow = height - MARGIN - ROW_H;
+        int noteHeight = noteHeight();
+        int available = bottomRow - GAP - noteHeight - ROW_H * 2 - SPLITTER_H - TOP;
+        int paneHeight = TranslationSourceLayout.draggedHeight(
+            (int) Math.round(mouseY) - TOP, sourcePane.contentHeight(), available, font.lineHeight);
+        preferredPaneHeight = paneHeight;
+
+        sourcePane.place(MARGIN, TOP, paneHeight);
+        splitter.setY(TOP + paneHeight);
+        int editorTop = TOP + paneHeight + SPLITTER_H;
+        editor.setY(editorTop);
+        editor.setHeight(Math.max(ROW_H * 2, bottomRow - GAP - noteHeight - editorTop));
+    }
+
+    /** The one-line warning under the edit box, when this string gets one. */
+    private int noteHeight() {
+        return unit.type() == TranslationUnit.Type.BOOK || !TranslationOverrides.isLive(locale)
+            ? font.lineHeight + GAP : 0;
     }
 
     private boolean isDismissed() {

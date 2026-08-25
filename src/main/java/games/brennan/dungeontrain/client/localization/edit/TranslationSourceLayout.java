@@ -39,6 +39,33 @@ final class TranslationSourceLayout {
         return Math.max(lineHeight * MIN_LINES, Math.min(contentHeight, cap));
     }
 
+    /**
+     * The tallest the English may be dragged: until all of it is showing, or until the edit box is
+     * down to its two rows, whichever stops you first.
+     *
+     * <p>This is allowed to exceed the half-window default from {@link #viewportHeight}, and that
+     * is the point. Half the window is what the screen picks when nobody has said otherwise — not
+     * a ceiling on what a translator reading a long book variant is permitted to ask for.</p>
+     */
+    static int maxDragHeight(int contentHeight, int available, int lineHeight) {
+        return Math.max(lineHeight * MIN_LINES, Math.min(contentHeight, available));
+    }
+
+    /**
+     * A height the translator dragged to, clamped into what the window can actually give. The
+     * floor is one line so the heading — which is where "this is unreviewed machine translation"
+     * is written — cannot be dragged out of existence.
+     */
+    static int draggedHeight(int preferred, int contentHeight, int available, int lineHeight) {
+        int max = maxDragHeight(contentHeight, available, lineHeight);
+        return Math.max(lineHeight * MIN_LINES, Math.min(preferred, max));
+    }
+
+    /** Is there any room to drag at all? A short string that already fits offers none. */
+    static boolean isResizable(int contentHeight, int available, int lineHeight) {
+        return maxDragHeight(contentHeight, available, lineHeight) > lineHeight * MIN_LINES;
+    }
+
     /** How far the block scrolls — zero whenever it is showing everything it has. */
     static int maxScroll(int contentHeight, int viewportHeight) {
         return Math.max(0, contentHeight - viewportHeight);

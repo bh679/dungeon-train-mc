@@ -4,6 +4,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * How much of the screen the English above the edit box is allowed to take.
@@ -64,5 +66,41 @@ class TranslationSourceLayoutTest {
     @DisplayName("what scrolls is exactly what does not fit")
     void scrollIsTheOverflow() {
         assertEquals(660, TranslationSourceLayout.maxScroll(900, 240));
+    }
+    @Test
+    @DisplayName("a drag past the bottom stops where the whole English is showing")
+    void dragStopsAtTheContent() {
+        assertEquals(120, TranslationSourceLayout.draggedHeight(400, 120, 300, LINE));
+    }
+
+    @Test
+    @DisplayName("a drag past the bottom stops sooner when the editor needs the room")
+    void dragStopsAtTheEditorsRoom() {
+        assertEquals(80, TranslationSourceLayout.draggedHeight(400, 900, 80, LINE));
+    }
+
+    @Test
+    @DisplayName("the heading cannot be dragged out of existence")
+    void dragKeepsOneLine() {
+        assertEquals(LINE, TranslationSourceLayout.draggedHeight(-50, 900, 300, LINE));
+    }
+
+    @Test
+    @DisplayName("a drag may go past the half-screen default — half is a guess, not a ceiling")
+    void dragMayExceedHalfTheScreen() {
+        // 480-tall window: the default would stop at 240, but the translator asked for 300.
+        assertEquals(300, TranslationSourceLayout.draggedHeight(300, 900, 340, LINE));
+    }
+
+    @Test
+    @DisplayName("English that already fits in a line offers nothing to resize")
+    void shortStringIsNotResizable() {
+        assertFalse(TranslationSourceLayout.isResizable(LINE, 300, LINE));
+    }
+
+    @Test
+    @DisplayName("English longer than a line can be traded against the box")
+    void longStringIsResizable() {
+        assertTrue(TranslationSourceLayout.isResizable(200, 300, LINE));
     }
 }
