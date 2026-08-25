@@ -8685,8 +8685,26 @@
       "released_at": "2026-08-25T13:25:38Z"
     },
     {
-      "id": "portal-room-door-ghosts",
+      "id": "editor-undo-effortless-building",
       "version": "0.654.0",
+      "type": "feat",
+      "title": "Ctrl+Z takes back Effortless Building work in the editor",
+      "summary": "Building part of a carriage with Effortless Building and then pressing Ctrl+Z used to undo whatever you'd placed by hand before it, leaving the Effortless Building work sitting there. It now goes on the editor's own undo stack like everything else \u2014 one press takes back a whole line, cube or mirrored build, and Ctrl+Y puts it back.",
+      "highlights": [
+        "Effortless Building builds and breaks are undoable with the editor's Ctrl+Z / Ctrl+Y",
+        "A whole multi-block build is one press, mirrored copies included",
+        "Effortless Building's own undo can itself be taken back",
+        "Applies to work inside an editor plot; building out past the plot is unchanged"
+      ],
+      "pr": 1092,
+      "date": "2026-08-25",
+      "released": true,
+      "released_in": "v0.654.0",
+      "released_at": "2026-08-25T15:37:51Z"
+    },
+    {
+      "id": "portal-room-door-ghosts",
+      "version": "0.655.0",
       "type": "feat",
       "title": "Portal room editor shows where the doors go",
       "summary": "Authoring a dimensional carriage room now shows you the two corridor doorways it has to be built around. A translucent door stands in each opening \u2014 the same door the corridor really hangs \u2014 so a wall across the walkway centre line is something you see while you build rather than something you discover by walking a portal.",
