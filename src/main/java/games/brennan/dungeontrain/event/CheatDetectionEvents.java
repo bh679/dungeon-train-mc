@@ -53,7 +53,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *   <li>{@link PlayerEvent.PlayerLoggedInEvent} — a world joined directly in
  *       creative/spectator marks Free Play (nothing to back out of); and the
  *       run-scoped effect is re-applied if already Free Play. It also drives
- *       {@link OperatorIntegrity#refresh}, which covers every cheat route that never
+ *       {@link OperatorIntegrity#refreshOnJoin}, which covers every cheat route that never
  *       reaches a command at all — REI/JEI cheat mode, item editors, or simply being
  *       handed the loot by an operator.</li>
  *   <li>{@link PlayerEvent.PlayerRespawnEvent} — re-applies the effect after a
