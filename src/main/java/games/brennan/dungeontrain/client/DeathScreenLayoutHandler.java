@@ -154,6 +154,22 @@ public final class DeathScreenLayoutHandler {
     }
 
     public static void launchWorld(Screen lastScreen, boolean sameSeed, boolean forceSurvival) {
+        launchWorld(lastScreen, sameSeed, forceSurvival, true);
+    }
+
+    /**
+     * @param ask whether the custom-content question may be put to the player. False for the
+     *            automatic reboard ({@code InstantRespawnReboard}), which fires with nobody at a
+     *            menu: there is no screen to return to if they back out, and the reboard cannot
+     *            re-fire once scheduled. That path reuses the last answer instead.
+     */
+    public static void launchWorld(Screen lastScreen, boolean sameSeed, boolean forceSurvival,
+                                   boolean ask) {
+        if (!ask) {
+            CustomContentGate.answerFromMemory();
+            launchWorldNow(lastScreen, sameSeed, forceSurvival);
+            return;
+        }
         // Reboard is one of the two moments a run starts, so it is one of the two moments the
         // custom-content question gets asked — before the next world exists, while "run without my
         // changes" is still an answer that can be honoured. Nothing to ask → falls straight through.

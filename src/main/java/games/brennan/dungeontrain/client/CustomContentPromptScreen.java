@@ -180,6 +180,10 @@ public final class CustomContentPromptScreen extends Screen {
     private void respond(boolean keepContent) {
         if (responded) return;
         responded = true;
+        // Recorded on every answer, not just remembered ones: the automatic reboard has no menu to
+        // ask from and reuses this, and a player who decides per-world never ticks the checkbox.
+        ClientDisplayConfig.setLastCustomContentAnswer(
+            keepContent ? CustomContentPreference.CONTINUE : CustomContentPreference.DISABLE);
         if (rememberBox != null && rememberBox.selected()) {
             ClientDisplayConfig.setCustomContentPreference(
                 keepContent ? CustomContentPreference.CONTINUE : CustomContentPreference.DISABLE);
@@ -210,6 +214,10 @@ public final class CustomContentPromptScreen extends Screen {
     @Override
     public void onClose() {
         if (onAnswer != null) {
+            // Backing out is not an answer. Clear the slot so an earlier one can't be consumed by
+            // a world started afterwards through a route that skips the gate (the vanilla world
+            // list), which would apply a choice never given for that world.
+            PendingCustomContentChoice.clear();
             this.minecraft.setScreen(parent);
             return;
         }

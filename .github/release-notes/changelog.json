@@ -8571,6 +8571,22 @@
       "released_at": "2026-08-25T07:24:46Z"
     },
     {
+      "id": "custom-content-prompt-every-route",
+      "version": "0.648.0",
+      "type": "fix",
+      "title": "The train question now shows up wherever a run starts",
+      "summary": "The choice between your own train designs and the built-in ones is now offered on every route that begins a run \u2014 including Minecraft's own Create New World screen, which used to ask only after the world had been built. Backing out with Escape returns you to the menu you came from and creates nothing.",
+      "highlights": [
+        "Create New World from the vanilla menu now asks before the world is generated, like Dungeon Train's own New World button does.",
+        "The Train Editor no longer asks. Editor worlds are creative, so they are Free Play anyway and always load your designs.",
+        "Dying with immediate respawn on reuses your last answer instead of interrupting the reboard."
+      ],
+      "date": "2026-08-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "vote-page-follows-book",
       "version": "0.648.0",
       "type": "fix",
