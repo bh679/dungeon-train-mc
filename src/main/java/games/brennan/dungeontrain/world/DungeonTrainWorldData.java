@@ -498,6 +498,134 @@ public final class DungeonTrainWorldData extends SavedData {
         return tag;
     }
 
+    /** Train Builder mode id, or null in an ordinary world. See {@code BuilderMode#fromId}. */
+    public String builderMode() {
+        return builderMode;
+    }
+
+    public void setBuilderMode(String modeId) {
+        this.builderMode = modeId;
+        setDirty();
+    }
+
+    /** Registered variant id the builder world was stamped from, or null outside a builder world. */
+    public String builderVariant() {
+        return builderVariant;
+    }
+
+    public void setBuilderVariant(String variantId) {
+        this.builderVariant = variantId;
+        setDirty();
+    }
+
+    /** What the current build saves as; null/empty for an unnamed draft. */
+    public String builderName() {
+        return builderName;
+    }
+
+    public void setBuilderName(String name) {
+        this.builderName = name;
+        setDirty();
+    }
+
+    /** Mirror setting for the current build. See {@code BuilderMirrorFlags} for why it lives here. */
+    public BuilderMirrorFlags builderMirror() {
+        return BuilderMirrorFlags.unpack(builderMirror);
+    }
+
+    public void setBuilderMirror(BuilderMirrorFlags flags) {
+        this.builderMirror = flags == null ? 0 : flags.pack();
+        setDirty();
+    }
+
+    /** What kind of template this build becomes on Save; null outside a builder world. */
+    public String builderSubType() {
+        return builderSubType;
+    }
+
+    /** Part kind for a parts build, or null/empty when this build isn't a part. */
+    public String builderPartKind() {
+        return builderPartKind;
+    }
+
+    /** Record what kind of carriage template this build is. Clears any track kind — see the twin below. */
+    public void setBuilderSubType(String subTypeId, String partKindId) {
+        this.builderSubType = subTypeId;
+        this.builderPartKind = partKindId;
+        if (subTypeId != null && !subTypeId.isEmpty()) {
+            this.builderTrackKind = "";
+        }
+        setDirty();
+    }
+
+    /** Track kind for a track build, or null/empty when this build is part of a carriage. */
+    public String builderTrackKind() {
+        return builderTrackKind;
+    }
+
+    /**
+     * Record which track kind is on the plot.
+     *
+     * <p>Clears the carriage sub type at the same time, because the two are alternatives and a build
+     * that is both would be read as whichever the caller asked about first — the exact ambiguity
+     * that would have Save write a tunnel into the carriage store.</p>
+     */
+    public void setBuilderTrackKind(String trackKindId) {
+        this.builderTrackKind = trackKindId;
+        if (trackKindId != null && !trackKindId.isEmpty()) {
+            this.builderSubType = "";
+            this.builderPartKind = "";
+        }
+        setDirty();
+    }
+
+    /** Carriages parked on the track, or {@code -1} when no stamp has recorded a count yet. */
+    public int builderCarriages() {
+        return builderCarriages;
+    }
+
+    /** Record what was just stamped. Callers pass the count they actually laid down, including 0. */
+    public void setBuilderCarriages(int carriages) {
+        this.builderCarriages = Math.max(0, carriages);
+        setDirty();
+    }
+
+    /**
+     * What this world does with the structures around the build, or null/empty when it has never
+     * been told. See {@code BuilderStructureMode#orDefault}, which is what every reader goes through.
+     */
+    public String builderStructureMode() {
+        return builderStructureMode;
+    }
+
+    public void setBuilderStructureMode(String modeId) {
+        this.builderStructureMode = modeId;
+        setDirty();
+    }
+
+    /**
+     * When the structures re-read their template, or null/empty when never told. See
+     * {@code BuilderStructureRefresh#orDefault}, which is what every reader goes through.
+     */
+    public String builderStructureRefresh() {
+        return builderStructureRefresh;
+    }
+
+    public void setBuilderStructureRefresh(String refreshId) {
+        this.builderStructureRefresh = refreshId;
+        setDirty();
+    }
+
+    /** Stage the current build was started for, or null/empty when none was picked. */
+    public String builderStage() {
+        return builderStage;
+    }
+
+    public void setBuilderStage(String stageId) {
+        this.builderStage = stageId;
+        setDirty();
+    }
+
     public int getTrainY() {
         return trainY;
     }

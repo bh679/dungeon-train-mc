@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.builder;
 
 import games.brennan.dungeontrain.editor.BlockVariantPlot;
+import games.brennan.dungeontrain.editor.VariantGroupResolver;
 import games.brennan.dungeontrain.editor.VariantState;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
@@ -31,6 +32,9 @@ import java.util.Set;
  * and carried onto the saved template, so the editor honours it later.</p>
  */
 public final class BuilderCarriagePlot implements BlockVariantPlot {
+
+    private static final VariantGroupResolver EMPTY_GROUP_REFS =
+            new VariantGroupResolver(Map.of(), Map.of());
 
     private final ServerLevel level;
     private final BlockPos origin;
@@ -127,6 +131,35 @@ public final class BuilderCarriagePlot implements BlockVariantPlot {
     public void save() {
         // Already persisted: the setters write world data, which saves with the world. Nothing to
         // flush, and no sidecar to write until the build is named and saved.
+    }
+
+    // ---- sidecar snapshots: nothing to snapshot, and nothing that can ask ----
+
+    /**
+     * Empty group view. This plot has no sidecar, so there are no lock groups to resolve and no
+     * references that could go live or dead.
+     */
+    @Override
+    public VariantGroupResolver groupRefs() {
+        return EMPTY_GROUP_REFS;
+    }
+
+    /**
+     * The empty document. Editor undo snapshots a plot's sidecar around each edit, and this plot
+     * has none — the mirror flags it does own live in world data, which saves with the world.
+     *
+     * <p>Unreachable in practice either way: both undo paths reach a plot through
+     * {@link BlockVariantPlot#resolveByKey}, which understands the four editor prefixes and not
+     * this class's {@code builder:carriage} key.</p>
+     */
+    @Override
+    public String snapshotJson() {
+        return "";
+    }
+
+    /** No sidecar file to put back. See {@link #snapshotJson()} for why nothing reaches here. */
+    @Override
+    public void restoreJson(String json) {
     }
 
     // ---- variant pools: not authored in the builder (yet) ----
