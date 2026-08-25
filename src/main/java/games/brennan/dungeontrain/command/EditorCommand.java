@@ -20,6 +20,7 @@ import games.brennan.dungeontrain.editor.CarriageVariantBlocks;
 import games.brennan.dungeontrain.editor.CarriageVariantContentsAllowStore;
 import games.brennan.dungeontrain.editor.CarriageVariantPartsStore;
 import games.brennan.dungeontrain.editor.EditorCategory;
+import games.brennan.dungeontrain.editor.EditorDoorGhosts;
 import games.brennan.dungeontrain.editor.EditorEditApplier;
 import games.brennan.dungeontrain.editor.EditorEditHistory;
 import games.brennan.dungeontrain.editor.EditorPlotTransform;
@@ -433,6 +434,12 @@ public final class EditorCommand {
             .then(Commands.literal("strays")
                 .then(Commands.literal("on").executes(ctx -> runStrayGhosts(ctx.getSource(), true)))
                 .then(Commands.literal("off").executes(ctx -> runStrayGhosts(ctx.getSource(), false))))
+            // Amber ghosts on the two portal corridor doorways in each room plot. Separate from
+            // `strays` because the two say opposite things — a stray is a block to remove, a door is
+            // a space to leave alone — so an author silencing one has no reason to lose the other.
+            .then(Commands.literal("doorghosts")
+                .then(Commands.literal("on").executes(ctx -> runDoorGhosts(ctx.getSource(), true)))
+                .then(Commands.literal("off").executes(ctx -> runDoorGhosts(ctx.getSource(), false))))
             // Position-resolved mirror toggle — works in any editor plot. Backs
             // the X-menu Mirror X / Y / Z toggles for every category.
             .then(Commands.literal("mirror")
@@ -2831,6 +2838,16 @@ public final class EditorCommand {
         EditorStrayBlocks.setEnabled(player.getUUID(), on);
         source.sendSuccess(() -> Component.literal(
             "Out-of-plot ghosts: " + (on ? "ON" : "off") + "."
+        ), false);
+        return 1;
+    }
+
+    private static int runDoorGhosts(CommandSourceStack source, boolean on) {
+        ServerPlayer player = requirePlayer(source);
+        if (player == null) return 0;
+        EditorDoorGhosts.setEnabled(player.getUUID(), on);
+        source.sendSuccess(() -> Component.literal(
+            "Portal door ghosts: " + (on ? "ON" : "off") + "."
         ), false);
         return 1;
     }
