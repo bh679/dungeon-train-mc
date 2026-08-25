@@ -8566,9 +8566,9 @@
         "The Free Play badge no longer lingers on saves where it no longer applies \u2014 it clears itself on your next login."
       ],
       "date": "2026-08-25",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.647.0",
+      "released_at": "2026-08-25T07:24:46Z"
     }
   ]
 }
