@@ -91,6 +91,29 @@ public final class ModDataAttachments {
         );
 
     /**
+     * Qualifier on {@link #RUN_CHEATED}: true when the <b>only</b> thing that ever tainted this
+     * run was the Train Editor putting the player into creative for an authoring session (see
+     * {@code RunIntegrity.markEditorCheated}). Such a taint is the one that can be handed back —
+     * turning the custom content off restores a clean run, because the editor snapshots and
+     * restores the inventory around its own forced game-mode switch, so nothing came out of it.
+     *
+     * <p>Every other cause revokes it permanently ({@code RunIntegrity.markCheated} clears it
+     * <em>before</em> its already-cheated early return, precisely so a real cheat committed after
+     * an editor session still downgrades the run). Meaningless on its own — always read it through
+     * {@code RunIntegrity.isEditorOnlyCheated}, which requires {@link #RUN_CHEATED} as well.</p>
+     *
+     * <p>Absent on every world saved before this landed → {@code false} → those runs keep the old
+     * behaviour of a taint that never lifts, which is the safe reading.</p>
+     */
+    public static final Supplier<AttachmentType<Boolean>> RUN_CHEATED_EDITOR_ONLY =
+        TYPES.register("run_cheated_editor_only",
+            () -> AttachmentType.<Boolean>builder(() -> Boolean.FALSE)
+                .serialize(Codec.BOOL)
+                .copyOnDeath()
+                .build()
+        );
+
+    /**
      * World-X where this player's current life began — the origin the relay's per-death
      * {@code distanceTravelled} (signed X displacement, {@code deathX - spawnX}) is measured from.
      *

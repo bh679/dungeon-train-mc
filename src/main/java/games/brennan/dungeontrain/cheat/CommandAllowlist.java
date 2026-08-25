@@ -48,6 +48,18 @@ public final class CommandAllowlist {
      */
     private static final Set<String> DT_ALLOWED_SUBS = Set.of("cinematic", "debug");
 
+    /**
+     * Dungeon Train subcommands that lead into a <b>Train Editor authoring session</b>. These
+     * still taint — they are not in {@link #DT_ALLOWED_SUBS} and never will be — but the taint
+     * they cause is the reversible kind ({@code RunIntegrity.markEditorCheated}): the editor puts
+     * the player in creative and puts them back, inventory included, so turning the authored
+     * content off afterwards can hand the run back.
+     *
+     * <p>{@code editor} covers its whole subtree ({@code editor reset}, {@code editor export}, …)
+     * because the classifier only ever looks at the first subcommand.</p>
+     */
+    private static final Set<String> DT_EDITOR_AUTHORING_SUBS = Set.of("editor", "save", "package");
+
     /** Read-only {@code narrative} subcommands (the rest of the tree taints). */
     private static final Set<String> NARRATIVE_READONLY = Set.of("list", "progress");
 
@@ -103,6 +115,23 @@ public final class CommandAllowlist {
         }
         if (root.equals("kill")) return sub.isEmpty(); // bare /kill (self) only; /kill @e taints
         return ALLOWED_ROOTS.contains(root);
+    }
+
+    /**
+     * Does running this command amount to opening the Train Editor? Only meaningful for commands
+     * that {@link #taints} — it says which <em>kind</em> of taint to record, not whether to record
+     * one. See {@link #DT_EDITOR_AUTHORING_SUBS}.
+     */
+    public static boolean isEditorAuthoring(ParseResults<CommandSourceStack> parse) {
+        return isEditorAuthoring(rawString(parse));
+    }
+
+    /** Core, string-based classifier (unit-testable without Brigadier). */
+    public static boolean isEditorAuthoring(String rawCommand) {
+        String[] parts = tokens(rawCommand);
+        if (parts.length < 2) return false;
+        if (!DT_ROOTS.contains(stripNamespace(parts[0]))) return false;
+        return DT_EDITOR_AUTHORING_SUBS.contains(parts[1].toLowerCase(Locale.ROOT));
     }
 
     /** A short label for the warning message, e.g. {@code "/give"} or {@code "/dungeontrain cinematographer"}. */

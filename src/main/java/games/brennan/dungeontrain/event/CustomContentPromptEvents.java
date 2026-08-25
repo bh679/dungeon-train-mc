@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.cheat.EditorContentIntegrity;
 import games.brennan.dungeontrain.cheat.RunIntegrity;
+import games.brennan.dungeontrain.compat.EnderChestLockBridge;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.ShowCustomContentPromptPacket;
 import games.brennan.dungeontrain.world.CustomContentChoice;
@@ -11,6 +12,7 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.HoverEvent;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -22,6 +24,15 @@ import org.slf4j.Logger;
  * The join-time half of the custom Train Editor content feature: ask once per
  * world whether to keep the content (and run in Free Play) or disable it, and
  * apply the answer.
+ *
+ * <p><b>The fallback, not the main path.</b> Singleplayer normally answers this
+ * before the world exists — {@code CustomContentGate} asks on New World and on
+ * reboard, and {@code EditorContentIntegrity.onOverworldLoad} commits the answer
+ * ahead of worldgen — so a world reaching login still {@link CustomContentChoice#UNSET}
+ * means one of the routes that can't be asked earlier: a multiplayer join, a
+ * world made through the vanilla world list, or a save from before the gate
+ * existed. Those still get the question here, where the honest thing to say is
+ * that the content is already loading.</p>
  *
  * <p>Runs at {@link EventPriority#LOW} so the Free Play notices in
  * {@code CheatDetectionEvents.onLogin} (HIGHEST) have already been sent — the
@@ -125,6 +136,7 @@ public final class CustomContentPromptEvents {
 
         CustomContentChoice choice = keepContent ? CustomContentChoice.ALLOW : CustomContentChoice.DISABLE;
         EditorContentIntegrity.setWorldChoice(player.getServer(), choice);
+        onChoiceApplied(player.getServer());
 
         // Now — and only now — chat explains itself: keeping the content means Free Play, so say
         // what that costs. Turning it off changes the world for everybody, so everybody hears.
@@ -134,6 +146,39 @@ public final class CustomContentPromptEvents {
             broadcast(player, Component.translatable("chat.dungeontrain.custom_content.now_disabled",
                     player.getName().getString())
                 .withStyle(ChatFormatting.GRAY));
+        }
+    }
+
+    /**
+     * Settle everyone's Free Play state after this world's content choice changed — from the
+     * prompt or from {@code /customcontent}. Two things happen here, and both are the point of the
+     * choice being offered at all:
+     *
+     * <ul>
+     *   <li>A run whose <em>only</em> taint was a Train Editor session is handed back
+     *       ({@link RunIntegrity#clearEditorOnlyTaint}) now that the content it authored is off.
+     *       Without this, "disable my changes and play normally" was a promise the game couldn't
+     *       keep: the editor's own forced creative switch had already marked the run for good.</li>
+     *   <li>Everyone's badge is reconciled. It is an infinite saved effect, so a player whose run
+     *       just stopped being Free Play would otherwise wear it for the life of the save.</li>
+     * </ul>
+     *
+     * <p>Per-world decision, so it runs for every online player, not just whoever answered.</p>
+     */
+    public static void onChoiceApplied(MinecraftServer server) {
+        if (server == null) return;
+        for (ServerPlayer p : server.getPlayerList().getPlayers()) {
+            boolean restored = RunIntegrity.clearEditorOnlyTaint(p);
+            RunIntegrity.reconcileFreePlayEffect(p);
+            // The Ender Chest slot is derived from isCheated, but the live chest only follows on a
+            // refresh — the same call CheatDetectionEvents makes when a run trips Free Play, run
+            // here for the trip back so a restored run gets its legit chest returned, not the
+            // creative one it was locked onto. No-op when the slot is unchanged.
+            EnderChestLockBridge.engage(p);
+            if (restored) {
+                p.sendSystemMessage(Component.translatable("chat.dungeontrain.custom_content.run_restored")
+                    .withStyle(ChatFormatting.GREEN));
+            }
         }
     }
 

@@ -1394,6 +1394,8 @@
   "gui.dungeontrain.translate.sent.rejected": "Not used",
   "gui.dungeontrain.translate.submit.blocked.nothing_new": "Everything you've edited has already been sent in.",
   "chat.dungeontrain.free_play.cause.custom_content": "This world is using custom train content.",
+  "chat.dungeontrain.free_play.cause.editor": "You opened the Train Editor.",
+  "chat.dungeontrain.custom_content.run_restored": "Your custom changes are off, so this run counts again — stats and advancements are saving to your profile.",
   "chat.dungeontrain.custom_content.packages": "Custom content from: %s",
   "chat.dungeontrain.custom_content.disable_link": "Click here to turn custom content off for this world and play normally.",
   "chat.dungeontrain.custom_content.enable_link": "Click here to turn it back on.",

@@ -236,4 +236,54 @@ class CommandAllowlistTest {
         assertFalse(CommandAllowlist.taints("   "));
         assertFalse(CommandAllowlist.taints("/"));
     }
+
+    // ---- Editor authoring: which taint, not whether ---------------------
+
+    @Test
+    @DisplayName("Editor-authoring commands taint, and taint the REVERSIBLE way")
+    void editorAuthoringIsRecognised() {
+        // Both halves matter: these still taint (they are not allowlisted), and they are the kind
+        // of taint /customcontent off can hand back, because the editor puts the player's game mode
+        // and inventory back when they leave.
+        for (String cmd : new String[] {
+            "/dungeontrain editor carriage default",
+            "/dt editor",
+            "/dt editor reset",
+            "/dt editor export my-pack",
+            "/dungeontrain save",
+            "/dt package disable my-pack",
+        }) {
+            assertTrue(CommandAllowlist.taints(cmd), cmd + " should still taint");
+            assertTrue(CommandAllowlist.isEditorAuthoring(cmd), cmd + " should be editor authoring");
+        }
+    }
+
+    @Test
+    @DisplayName("Real cheats are never editor authoring, however they are spelled")
+    void realCheatsAreNotEditorAuthoring() {
+        // This is the line the exemption rests on. Anything answering true here would be a run
+        // handed back after a cheat.
+        assertFalse(CommandAllowlist.isEditorAuthoring("/give @s minecraft:diamond 64"));
+        assertFalse(CommandAllowlist.isEditorAuthoring("/gamemode creative"));
+        assertFalse(CommandAllowlist.isEditorAuthoring("/dt cinematographer"));
+        assertFalse(CommandAllowlist.isEditorAuthoring("/dt spawn"));
+        assertFalse(CommandAllowlist.isEditorAuthoring("/dt narrative give"));
+        assertFalse(CommandAllowlist.isEditorAuthoring("/dtp 3000"));
+        // "editor" only counts under the DT root — no other mod's subcommand borrows the exemption.
+        assertFalse(CommandAllowlist.isEditorAuthoring("/someothermod editor thing"));
+        assertFalse(CommandAllowlist.isEditorAuthoring("/editor"));
+    }
+
+    @Test
+    @DisplayName("Editor authoring survives aliases, namespaces and case; bare roots don't qualify")
+    void editorAuthoringNormalisation() {
+        assertTrue(CommandAllowlist.isEditorAuthoring("dungeontrain editor carriage"));
+        assertTrue(CommandAllowlist.isEditorAuthoring("/dungeontrain:dt editor"));
+        assertTrue(CommandAllowlist.isEditorAuthoring("/dt EDITOR"));
+        // A bare root prints usage and enters nothing, so there is no session to forgive.
+        assertFalse(CommandAllowlist.isEditorAuthoring("/dungeontrain"));
+        assertFalse(CommandAllowlist.isEditorAuthoring("/dt"));
+        assertFalse(CommandAllowlist.isEditorAuthoring(""));
+        assertFalse(CommandAllowlist.isEditorAuthoring("   "));
+    }
 }

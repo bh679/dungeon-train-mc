@@ -12,10 +12,19 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
 
 import java.util.List;
+import java.util.function.Consumer;
 
 /**
- * "Custom train content" — shown once per world, at join, when Train Editor
- * content (the player's own edits or an imported dtpack) is active.
+ * "Custom train content" — shown once per world when Train Editor content (the
+ * player's own edits or an imported dtpack) is in play.
+ *
+ * <p>Two modes, differing only in where the answer goes. <b>Pre-world</b> is the
+ * one players normally see: {@link CustomContentGate} puts it up when they press
+ * New World or reboard, so the answer is recorded before the world is created and
+ * "disable" means a world that never loads the content. <b>Join-time</b> is the
+ * fallback for worlds that reach login unanswered — a multiplayer server, or a
+ * world created through the vanilla world list — where the answer goes back over
+ * the network to {@code CustomContentPromptEvents}.</p>
  *
  * <p>Continue plays the world with that content, which keeps the run in Free
  * Play. Disable Custom Changes turns the content off for this world from here
@@ -59,6 +68,12 @@ public final class CustomContentPromptScreen extends Screen {
     private static final int CHECKBOX_H = 20;
 
     private final String packages;
+    /**
+     * Pre-world mode: where to send the answer, and where to go if the player backs out. Both null
+     * in join-time mode, where the answer goes to the server and there is nothing to back out of.
+     */
+    private final Consumer<Boolean> onAnswer;
+    private final Screen parent;
     private Checkbox rememberBox;
     private boolean responded = false;
 
@@ -70,9 +85,21 @@ public final class CustomContentPromptScreen extends Screen {
     private List<FormattedCharSequence> disableLines = List.of();
     private List<FormattedCharSequence> packageLines = List.of();
 
+    /** Join-time: the world is already running, and the answer goes back over the network. */
     public CustomContentPromptScreen(String packages) {
+        this(packages, null, null);
+    }
+
+    /**
+     * Pre-world ({@link CustomContentGate}): no world exists yet, so the answer goes to
+     * {@code onAnswer} — which records it for the world about to be created and then starts it —
+     * and backing out returns to {@code parent} without starting anything.
+     */
+    public CustomContentPromptScreen(String packages, Screen parent, Consumer<Boolean> onAnswer) {
         super(Component.translatable("gui.dungeontrain.custom_content.title"));
         this.packages = packages;
+        this.parent = parent;
+        this.onAnswer = onAnswer;
     }
 
     @Override
@@ -125,18 +152,35 @@ public final class CustomContentPromptScreen extends Screen {
             ClientDisplayConfig.setCustomContentPreference(
                 keepContent ? CustomContentPreference.CONTINUE : CustomContentPreference.DISABLE);
         }
+        if (onAnswer != null) {
+            // Pre-world: the callback records the answer for the world about to be created and
+            // starts it, which replaces this screen. Nothing to send and nothing to close.
+            onAnswer.accept(keepContent);
+            return;
+        }
         CustomContentPromptClient.answered();
         DungeonTrainNet.sendToServer(new CustomContentChoicePacket(keepContent));
         onClose();
     }
 
     /**
-     * ESC answers "continue" rather than cancelling. There is nothing to back out of here — the
-     * world is already running with the content — so dismissing the prompt must mean "leave things
-     * as they are", not silently disable someone's builds.
+     * What dismissing means depends on which question this is.
+     *
+     * <p><b>Join-time:</b> ESC answers "continue" rather than cancelling. There is nothing to back
+     * out of — the world is already running with the content — so dismissing must mean "leave
+     * things as they are", not silently disable someone's builds.</p>
+     *
+     * <p><b>Pre-world:</b> nothing has started, so dismissing backs out of starting it. No answer
+     * is recorded and the player lands back where they were; pressing New World again asks again.
+     * Answering "continue" for them here would be the one reading they did not choose — it would
+     * start a Free Play run off an ESC keypress.</p>
      */
     @Override
     public void onClose() {
+        if (onAnswer != null) {
+            this.minecraft.setScreen(parent);
+            return;
+        }
         if (!responded) {
             responded = true;
             CustomContentPromptClient.answered();
