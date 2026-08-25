@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.config.CustomContentPreference;
 import games.brennan.dungeontrain.world.CustomContentChoice;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.world.level.GameType;
 import org.slf4j.Logger;
 
 /**
@@ -84,6 +85,32 @@ public final class CustomContentGate {
      *         caller should proceed immediately
      */
     public static boolean askFirst(Screen parent, Runnable launch) {
+        return askFirst(GameType.SURVIVAL, parent, launch);
+    }
+
+    /**
+     * As {@link #askFirst(Screen, Runnable)}, for a world whose starting game mode is known.
+     *
+     * <p>The question is only worth asking about a run that would otherwise <b>count</b>. A world
+     * created in creative or spectator is Free Play by virtue of its own game mode, so there is no
+     * trade to offer: that covers the Train Editor (whose world is creative by construction) and
+     * the dev creative world, without either having to be recognised by name.</p>
+     *
+     * <p>Those worlds record {@code ALLOW} rather than declining. An editor world must load the
+     * player's own designs — editing them is the point — and the run is Free Play either way, so
+     * there is nothing gained by withholding them.</p>
+     */
+    public static boolean askFirst(GameType mode, Screen parent, Runnable launch) {
+        if (mode == GameType.CREATIVE || mode == GameType.SPECTATOR) {
+            LOGGER.info("[DungeonTrain] New world starts in {} — Free Play regardless, so the "
+                + "custom content question doesn't arise; keeping the content.", mode);
+            PendingCustomContentChoice.set(CustomContentChoice.ALLOW);
+            return false;
+        }
+        return askCounting(parent, launch);
+    }
+
+    private static boolean askCounting(Screen parent, Runnable launch) {
         boolean hasContent;
         try {
             hasContent = EditorContentIntegrity.hasCustomContent();
