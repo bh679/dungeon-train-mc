@@ -61,6 +61,14 @@ public final class BlockVariantMenuController {
 
     private static final double TOGGLE_REACH = 8.0;
 
+    /**
+     * How far in front of the player a panel with no cell of its own is hung.
+     *
+     * <p>{@code CommandMenuState.ANCHOR_DISTANCE}'s value, so the Copies variant menu appears where
+     * every other floating menu in the game appears.</p>
+     */
+    private static final double FLOATING_ANCHOR_DISTANCE = 2.5;
+
     /** Cap on entries per cell — matches the JSON sidecar's practical limit. */
     public static final int MAX_ENTRIES = 32;
 
@@ -71,13 +79,40 @@ public final class BlockVariantMenuController {
      * so the panel neither jumps to a wrapping side face nor rotates to
      * track the player's current look angle.
      */
-    private record OpenMenu(String variantId, BlockPos localPos, Direction face, Vec3 up) {}
+    private record OpenMenu(String variantId, BlockPos localPos, Direction face, Vec3 up,
+                           @Nullable Vec3 anchor, @Nullable Vec3 right) {
+        /** A panel hung off a cell's face — the anchor is re-derived from that face on every re-sync. */
+        OpenMenu(String variantId, BlockPos localPos, Direction face, Vec3 up) {
+            this(variantId, localPos, face, up, null, null);
+        }
+
+        /** True for a panel with no cell in the world, whose basis has to be remembered rather than recomputed. */
+        boolean isFloating() {
+            return anchor != null && right != null;
+        }
+    }
 
     private static final Map<UUID, OpenMenu> OPEN = new ConcurrentHashMap<>();
 
     private BlockVariantMenuController() {}
 
     /** Per-player exit reset — drop the tracked anchor face. */
+    /**
+     * Re-send this player's open block-variant menu because its sidecar changed
+     * behind the controller's back — an editor undo or redo. No-op when nothing
+     * is open, or when the player has since moved to a different plot.
+     */
+    public static void resyncOpen(ServerPlayer player) {
+        OpenMenu open = OPEN.get(player.getUUID());
+        if (open == null) return;
+        ServerLevel level = player.serverLevel();
+        CarriageDims dims = DungeonTrainWorldData.get(level).dims();
+        BlockVariantPlot plot = BlockVariantPlot.resolveAt(player, dims);
+        if (plot == null || !plot.key().equals(open.variantId())) return;
+        sendSync(player, plot, open.localPos(), plot.origin().offset(open.localPos()),
+            open.face(), open.up());
+    }
+
     public static void forget(ServerPlayer player) {
         OPEN.remove(player.getUUID());
     }
@@ -154,6 +189,100 @@ public final class BlockVariantMenuController {
     }
 
     /** Compose + send the sync packet for the cell at {@code localPos}. */
+    /**
+     * Open the menu on one plane of a portal room's Copies palette — that row's Edit button.
+     *
+     * <p>Unlike {@link #toggle} there is no cell in the world to target: the value is a setting on
+     * the room, presented as a one-cell plot ({@code PortalRoomCopiesPlot}). The block the player
+     * happens to be looking at is used for the panel's anchor and nothing else, so the menu appears
+     * where they are looking exactly as it does everywhere else.</p>
+     *
+     * <p>{@code plane} rather than a cell within one plot: this panel targets a single cell and
+     * cannot walk to a second, so the floor and the roof are two plots — see
+     * {@code PortalRoomCopiesPlot}.</p>
+     */
+    public static void openForCopies(ServerPlayer player, String roomName,
+                                     games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane plane) {
+        if (!player.hasPermissions(2)) {
+            actionBar(player, "Block variant menu requires OP", ChatFormatting.RED);
+            return;
+        }
+        ServerLevel level = player.serverLevel();
+        CarriageDims dims = DungeonTrainWorldData.get(level).dims();
+
+        BlockVariantPlot room = BlockVariantPlot.resolveAt(player, dims);
+        if (room == null) {
+            actionBar(player, "Stand in the dimensional carriage's plot", ChatFormatting.YELLOW);
+            return;
+        }
+        games.brennan.dungeontrain.portal.PortalRoomCopiesPlot plot =
+            copiesPlotFor(roomName, plane, room.origin());
+
+        // In front of the player at eye level, not on a block. Every other opening of this menu
+        // targets a cell in the world and hangs the panel off that cell's face, but a Copies variant
+        // is not anywhere — anchoring it to whatever block the crosshair happened to be over put it
+        // on the floor at the author's feet, since that is what you are looking at while standing in
+        // a plot reading a row. Same basis the command menu builds for the same reason.
+        Vec3 eye = player.getEyePosition();
+        Vec3 look = player.getLookAngle();
+        Vec3 anchor = eye.add(look.scale(FLOATING_ANCHOR_DISTANCE));
+        Vec3 normal = look.scale(-1.0).normalize();
+        Vec3 worldUp = new Vec3(0, 1, 0);
+        Vec3 up = worldUp.subtract(normal.scale(worldUp.dot(normal)));
+        // Looking straight up or straight down leaves no horizontal component to keep the panel
+        // level against; any fixed axis will do, and this is the one the command menu picks.
+        if (up.lengthSqr() < 1.0e-4) up = new Vec3(0, 0, 1);
+        up = up.normalize();
+        Vec3 right = up.cross(normal).normalize();
+
+        BlockPos cell = games.brennan.dungeontrain.portal.PortalRoomCopiesPlot.CELL;
+        // The stored face is only used to re-anchor a later re-sync; UP keeps that stable rather
+        // than tying it to a block face this panel never had.
+        OPEN.put(player.getUUID(), new OpenMenu(plot.key(), cell, Direction.UP, up, anchor, right));
+        List<VariantState> states = plot.statesAt(cell);
+        DungeonTrainNet.sendTo(player, buildSyncPacket(plot, cell, states == null ? List.of() : states,
+            plot.lockIdAt(cell), anchor, right, up));
+    }
+
+    /**
+     * The one-cell plot over one plane of {@code roomName}'s Copies palette, seeded from what that
+     * plane repeats today.
+     */
+    private static games.brennan.dungeontrain.portal.PortalRoomCopiesPlot copiesPlotFor(
+        String roomName, games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane plane,
+        BlockPos origin
+    ) {
+        games.brennan.dungeontrain.portal.PortalRoomSettings settings =
+            games.brennan.dungeontrain.portal.PortalRoomSettings.of(roomName);
+        return new games.brennan.dungeontrain.portal.PortalRoomCopiesPlot(roomName, plane, origin,
+            games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.forRoom(
+                roomName, settings.copies()));
+    }
+
+    /**
+     * The plot an edit packet addresses.
+     *
+     * <p>{@link BlockVariantPlot#resolveAt} is positional, and a Copies variant is not anywhere —
+     * standing in the room resolves to the <i>room</i>. So a {@code copies:} key is answered with
+     * the one-cell plot instead, once the player has been checked to be standing in that room's own
+     * plot. That check is the authorisation: it is the same "you must be in the plot you are
+     * editing" rule every other key gets, applied to the plot this value belongs to.</p>
+     */
+    @Nullable
+    private static BlockVariantPlot resolvePlotFor(ServerPlayer player, CarriageDims dims,
+                                                   String variantId) {
+        BlockVariantPlot positional = BlockVariantPlot.resolveAt(player, dims);
+        String room = games.brennan.dungeontrain.portal.PortalRoomCopiesPlot.roomOf(variantId);
+        if (room == null) return positional;
+        if (positional == null) return null;
+        String roomKey = ContainerContentsStore.trackPlotKey(
+            games.brennan.dungeontrain.track.variant.TrackKind.PORTAL_ROOM, room);
+        if (!positional.key().equals(roomKey)) return null;
+        return copiesPlotFor(room,
+            games.brennan.dungeontrain.portal.PortalRoomCopiesPlot.planeOf(variantId),
+            positional.origin());
+    }
+
     private static void sendSync(ServerPlayer player, BlockVariantPlot plot,
                                  BlockPos localPos, BlockPos worldPos,
                                  Direction face, Vec3 up) {
@@ -177,6 +306,22 @@ public final class BlockVariantMenuController {
         Vec3 anchor = faceCentre.add(normal.scale(0.02));
 
         Vec3 right = up.cross(normal).normalize();
+        return buildSyncPacket(plot, localPos, states, lockId, anchor, right, up);
+    }
+
+    /**
+     * {@link #buildSyncPacket} with the panel's basis supplied outright, for a plot with no cell in
+     * the world to hang off — see {@link #openForCopies}.
+     */
+    private static BlockVariantSyncPacket buildSyncPacket(
+        BlockVariantPlot plot, BlockPos localPos, List<VariantState> states, int lockId,
+        Vec3 anchor, Vec3 right, Vec3 up
+    ) {
+        // Liveness of every v9 reference in this cell, decided once against the
+        // plot's whole reference graph — the client can't work it out on its
+        // own, it only ever sees one cell.
+        VariantGroupRefs.Graph refGraph = plot.groupRefs().graph();
+        int cellLockId = plot.lockIdAt(localPos);
 
         List<BlockVariantSyncPacket.Entry> entries = new ArrayList<>(states.size());
         for (VariantState s : states) {
@@ -184,12 +329,14 @@ public final class BlockVariantMenuController {
             String beNbt = s.hasBlockEntityData() ? s.blockEntityNbt().toString() : null;
             VariantRotation rot = s.rotation();
             String entityId = s.entityId() == null ? null : s.entityId().toString();
+            boolean refLive = s.isGroupRef() && refGraph.isLiveRef(cellLockId, s.groupRef());
             entries.add(new BlockVariantSyncPacket.Entry(
                 stateStr, beNbt, s.weight(),
                 (byte) rot.mode().ordinal(), (byte) rot.dirMask(),
                 s.linkedLootPrefabId(), entityId,
                 (byte) s.half().mode().ordinal(),
-                s.difficulty().min(), s.difficulty().max()));
+                s.difficulty().min(), s.difficulty().max(),
+                s.groupRef(), refLive));
         }
         return new BlockVariantSyncPacket(plot.key(), localPos, entries, lockId, anchor, right, up);
     }
@@ -203,7 +350,7 @@ public final class BlockVariantMenuController {
         }
         ServerLevel level = player.serverLevel();
         CarriageDims dims = DungeonTrainWorldData.get(level).dims();
-        BlockVariantPlot plot = BlockVariantPlot.resolveAt(player, dims);
+        BlockVariantPlot plot = resolvePlotFor(player, dims, packet.variantId());
         if (plot == null || !plot.key().equals(packet.variantId())) {
             LOGGER.warn("[DungeonTrain] BlockVariantMenu edit rejected: player {} not in plot for '{}'",
                 player.getName().getString(), packet.variantId());
@@ -215,6 +362,11 @@ public final class BlockVariantMenuController {
                 localPos, plot.key());
             return;
         }
+
+        // One snapshot ahead of the op switch covers every menu mutation —
+        // candidate add / remove / reorder, weight, rotation, lock-id cycle —
+        // without each arm having to describe its own inverse.
+        EditorEditRecorder.notePendingSidecar(player, "Variant edit");
 
         // CYCLE_LOCK_ID has its own short flow — handle before the
         // states-list mutation pipeline since it doesn't touch states.
@@ -246,6 +398,66 @@ public final class BlockVariantMenuController {
         switch (packet.op()) {
             case ADD -> {
                 ItemStack held = player.getMainHandItem();
+                // v9 lock-group reference branch. A variant clipboard copied
+                // from a locked cell already carries that cell's lock-id, so
+                // "copy a cell in group 1, hold it, press Add here" is the
+                // whole authoring gesture — no new item and no new button.
+                // Right-click paste keeps its existing meaning (overwrite this
+                // cell and join the group); only Add reads the clipboard as a
+                // reference.
+                if (held.getItem() instanceof VariantClipboardItem) {
+                    int refGroup = VariantClipboardItem.decodeLockId(
+                        VariantClipboardItem.readClipboardTag(held));
+                    if (refGroup <= 0) {
+                        actionBar(player, "That clipboard was copied from an unlocked cell — lock the source cell first",
+                            ChatFormatting.YELLOW);
+                        return;
+                    }
+                    if (wasEmpty) {
+                        // A reference is a second opinion, not a first one:
+                        // the cell needs its own candidate before it can
+                        // sometimes defer. Same rule the Lock button applies.
+                        actionBar(player, "Add at least one variant before adding a group reference",
+                            ChatFormatting.YELLOW);
+                        return;
+                    }
+                    int cellLock = plot.lockIdAt(localPos);
+                    if (refGroup == cellLock) {
+                        actionBar(player, "A cell cannot reference its own group (" + refGroup + ")",
+                            ChatFormatting.YELLOW);
+                        return;
+                    }
+                    List<VariantState> targetStates =
+                        plot.groupRefs().statesForLockId(refGroup);
+                    if (targetStates == null || targetStates.isEmpty()) {
+                        actionBar(player, "No cell in this template uses lock-id " + refGroup,
+                            ChatFormatting.YELLOW);
+                        return;
+                    }
+                    if (cellLock > 0 && VariantGroupRefs.reaches(plot.groupRefs(), refGroup, cellLock)) {
+                        actionBar(player, "Group " + refGroup + " already leads back to group " + cellLock
+                            + " — that would loop", ChatFormatting.YELLOW);
+                        return;
+                    }
+                    for (VariantState existing : mutated) {
+                        if (existing.groupRef() == refGroup) {
+                            actionBar(player, "This cell already references group " + refGroup,
+                                ChatFormatting.YELLOW);
+                            return;
+                        }
+                    }
+                    if (mutated.size() >= MAX_ENTRIES) {
+                        actionBar(player, "Variant cell full (max " + MAX_ENTRIES + ")", ChatFormatting.YELLOW);
+                        return;
+                    }
+                    // The placeholder is only ever the editor's icon and the
+                    // fallback if the reference is later cleared — the pick
+                    // path always follows the reference instead.
+                    mutated.add(VariantState.ofGroupRef(refGroup, targetStates.get(0).state()));
+                    actionBar(player, "Added reference to group " + refGroup, ChatFormatting.GREEN);
+                    dirty = true;
+                    break;
+                }
                 // Spawn-egg branch: add a v7 mob variant entry. The cell rolls
                 // AIR at spawn (mob entries are auto-stamped with the
                 // empty-placeholder sentinel) and a deferred entity pass
@@ -348,6 +560,7 @@ public final class BlockVariantMenuController {
                 BlockState capturedState;
                 CompoundTag itemBeNbt;
                 String linkedPrefabId = null;
+                BlockState bucketSource = VariantLiquids.sourceStateFrom(held);
                 if (held.isEmpty()) {
                     // Empty hand → add the empty-placeholder sentinel.
                     // CarriageVariantBlocks.isEmptyPlaceholder translates this
@@ -355,8 +568,16 @@ public final class BlockVariantMenuController {
                     // "leave this position empty in the rolled carriage".
                     capturedState = net.minecraft.world.level.block.Blocks.COMMAND_BLOCK.defaultBlockState();
                     itemBeNbt = null;
+                } else if (bucketSource != null) {
+                    // Filled bucket → add the fluid's SOURCE state. A bucket is
+                    // not a BlockItem so it would otherwise fall into the reject
+                    // below, and only level=0 survives placement: a flowing state
+                    // has nothing feeding it in a carriage and drains to air.
+                    // Buckets carry no block-entity or loot-prefab payload.
+                    capturedState = bucketSource;
+                    itemBeNbt = null;
                 } else if (!(held.getItem() instanceof BlockItem blockItem)) {
-                    actionBar(player, "Hold a block, spawn egg, or empty hand to add a variant",
+                    actionBar(player, "Hold a block, bucket, spawn egg, or empty hand to add a variant",
                         ChatFormatting.YELLOW);
                     return;
                 } else {
@@ -606,11 +827,24 @@ public final class BlockVariantMenuController {
     private static void resyncSameFace(ServerPlayer player, BlockVariantPlot plot,
                                        BlockPos localPos) {
         OpenMenu open = OPEN.get(player.getUUID());
+        boolean sameMenu = open != null
+            && open.variantId().equals(plot.key())
+            && open.localPos().equals(localPos);
+
+        // A floating panel has no cell to re-derive an anchor from — plot.origin() for a Copies
+        // variant is the room plot's corner, so recomputing would drop the panel on the floor over
+        // there after every button press. Reuse the basis it was opened with instead.
+        if (sameMenu && open.isFloating()) {
+            List<VariantState> states = plot.statesAt(localPos);
+            DungeonTrainNet.sendTo(player, buildSyncPacket(plot, localPos,
+                states == null ? List.of() : states, plot.lockIdAt(localPos),
+                open.anchor(), open.right(), open.up()));
+            return;
+        }
+
         Direction face;
         Vec3 up;
-        if (open != null
-            && open.variantId().equals(plot.key())
-            && open.localPos().equals(localPos)) {
+        if (sameMenu) {
             face = open.face();
             up = open.up();
         } else {
@@ -661,6 +895,12 @@ public final class BlockVariantMenuController {
      *
      * <p>Out-of-range indices and missing cells return silently; the
      * client can be slightly stale relative to the sidecar.</p>
+     *
+     * <p>A v9 reference row previews what it points at rather than its own
+     * placeholder. Any single preview is necessarily arbitrary — the
+     * referenced group rolls afresh per carriage — so it is drawn at
+     * {@code (world seed, index 0)}, which at least shows a genuinely
+     * possible outcome and shows the same one on every click.</p>
      */
     private static void previewEntry(ServerLevel level, BlockVariantPlot plot,
                                      BlockPos localPos, int entryIndex) {
@@ -668,6 +908,12 @@ public final class BlockVariantMenuController {
         if (current == null) return;
         if (entryIndex < 0 || entryIndex >= current.size()) return;
         VariantState picked = current.get(entryIndex);
+        if (picked.isGroupRef()) {
+            VariantState followed = VariantGroupRefs.follow(picked, plot.groupRefs(),
+                plot.groupRefs().graph(), level.getSeed(), 0);
+            if (followed == null) return;  // dead reference — nothing to show
+            picked = followed;
+        }
 
         int lockId = plot.lockIdAt(localPos);
         Set<BlockPos> targets = lockId > 0 ? plot.positionsWithLockId(lockId) : Set.of(localPos);
@@ -737,12 +983,76 @@ public final class BlockVariantMenuController {
      * instead of resetting to empty on the new cell.
      */
     private static void handleCopy(ServerPlayer player, BlockVariantPlot plot, BlockPos localPos) {
+        Clipboard clip = buildClipboardStack(player, plot, localPos);
+        if (clip == null) return;
+        boolean placed = player.getInventory().add(clip.stack());
+        if (!placed) player.drop(clip.stack(), false);
+        actionBar(player, "Copied " + clip.summary(), ChatFormatting.GREEN);
+    }
+
+    /** A freshly-built clipboard item plus the action-bar summary describing what it captured. */
+    private record Clipboard(ItemStack stack, String summary) {}
+
+    /**
+     * Middle-click shortcut for {@link #handleCopy}: resolve the plot + cell
+     * the player is looking at (same preamble {@link #toggle} uses — no open
+     * menu required) and deliver the clipboard item straight to the hotbar.
+     *
+     * <p>Driven by {@link games.brennan.dungeontrain.net.BlockVariantCopyPickPacket},
+     * whose client half only fires when the crosshair is on a cell that
+     * actually has variants — so vanilla pick-block keeps working everywhere
+     * else in the editor.</p>
+     */
+    public static void copyAtCrosshair(ServerPlayer player) {
+        if (!player.hasPermissions(2)) {
+            actionBar(player, "Block variant copy requires OP", ChatFormatting.RED);
+            return;
+        }
+        ServerLevel level = player.serverLevel();
+        CarriageDims dims = DungeonTrainWorldData.get(level).dims();
+
+        BlockVariantPlot plot = BlockVariantPlot.resolveAt(player, dims);
+        if (plot == null) {
+            actionBar(player, "Not in a block-variant editor plot", ChatFormatting.YELLOW);
+            return;
+        }
+
+        HitResult hit = player.pick(TOGGLE_REACH, 1.0f, false);
+        if (!(hit instanceof BlockHitResult bhit) || bhit.getType() == HitResult.Type.MISS) {
+            actionBar(player, "Look at a block to copy its variants", ChatFormatting.YELLOW);
+            return;
+        }
+        BlockPos localPos = bhit.getBlockPos().subtract(plot.origin());
+        if (!plot.inBounds(localPos)) {
+            actionBar(player, "Block is outside the editor plot", ChatFormatting.YELLOW);
+            return;
+        }
+
+        Clipboard clip = buildClipboardStack(player, plot, localPos);
+        if (clip == null) return;
+        giveToHotbar(player, clip);
+    }
+
+    /**
+     * Build the clipboard {@link ItemStack} for {@code localPos} — the cell's
+     * candidate list + lock-id + (when authored) its container contents pool,
+     * read from the same {@link ContainerContentsStore} the loot menu writes
+     * to, so a chest cell's hand-tuned drop pool round-trips through paste
+     * instead of resetting to empty on the new cell.
+     *
+     * <p>Sends the "nothing to copy" action bar itself and returns {@code null}
+     * when the cell has too few candidates to be worth copying; on success the
+     * caller decides the wording, since delivery differs (copied vs switched
+     * to an identical clipboard already in the hotbar).</p>
+     */
+    private static @Nullable Clipboard buildClipboardStack(ServerPlayer player, BlockVariantPlot plot,
+                                                           BlockPos localPos) {
         List<VariantState> current = plot.statesAt(localPos);
         if (current == null || current.size() < CarriageVariantBlocks.MIN_STATES_PER_ENTRY) {
             actionBar(player, "Nothing to copy — cell needs at least "
                 + CarriageVariantBlocks.MIN_STATES_PER_ENTRY + " variants",
                 ChatFormatting.YELLOW);
-            return;
+            return null;
         }
         int lockId = plot.lockIdAt(localPos);
         ContainerContentsPool pool = ContainerContentsStore.loadFor(plot.key()).poolAt(localPos);
@@ -751,20 +1061,75 @@ public final class BlockVariantMenuController {
         CompoundTag tag = VariantClipboardItem.encodeStates(current, lockId,
             poolCaptured ? pool : null);
         VariantClipboardItem.writeClipboardTag(stack, tag);
-        boolean placed = player.getInventory().add(stack);
-        if (!placed) player.drop(stack, false);
         String lockSuffix = lockId > 0 ? " (lock-id " + lockId + ")" : "";
         String poolSuffix = poolCaptured ? " +pool(" + pool.size() + ")" : "";
-        actionBar(player, "Copied " + current.size() + " variants" + lockSuffix + poolSuffix,
-            ChatFormatting.GREEN);
+        return new Clipboard(stack, current.size() + " variants" + lockSuffix + poolSuffix);
+    }
+
+    /**
+     * Put {@code clip} in the player's hand.
+     *
+     * <p>Mirrors vanilla pick-block's "already have it" behaviour first: when
+     * an identical clipboard (same item, same captured payload) is already in
+     * the hotbar, just switch to that slot rather than minting a duplicate.</p>
+     *
+     * <p>Otherwise slot choice is vanilla's
+     * {@link net.minecraft.world.entity.player.Inventory#getSuitableHotbarSlot()}:
+     * the selected slot when it's empty, else the first empty hotbar slot,
+     * else the selected slot — i.e. a full hotbar means the held stack is
+     * displaced. The displaced stack goes back into the inventory and is
+     * only dropped when there's nowhere left to put it, so nothing is
+     * silently destroyed.</p>
+     */
+    private static void giveToHotbar(ServerPlayer player, Clipboard clip) {
+        net.minecraft.world.entity.player.Inventory inv = player.getInventory();
+
+        int existing = findInHotbar(inv, clip.stack());
+        if (existing >= 0) {
+            selectSlot(player, inv, existing);
+            actionBar(player, "Switched to clipboard — " + clip.summary(), ChatFormatting.GREEN);
+            return;
+        }
+
+        int slot = inv.getSuitableHotbarSlot();
+        ItemStack displaced = inv.getItem(slot);
+        inv.setItem(slot, clip.stack());
+        selectSlot(player, inv, slot);
+        if (!displaced.isEmpty() && !inv.add(displaced)) {
+            player.drop(displaced, false);
+        }
+        player.inventoryMenu.broadcastChanges();
+        actionBar(player, "Copied " + clip.summary(), ChatFormatting.GREEN);
+    }
+
+    /**
+     * Hotbar slot holding a clipboard identical to {@code stack} (same item and
+     * same captured components — the encoded states / lock-id / pool live in
+     * {@code CUSTOM_DATA}), or {@code -1} when there is none.
+     */
+    private static int findInHotbar(net.minecraft.world.entity.player.Inventory inv, ItemStack stack) {
+        for (int i = 0; i < net.minecraft.world.entity.player.Inventory.getSelectionSize(); i++) {
+            if (ItemStack.isSameItemSameComponents(inv.getItem(i), stack)) return i;
+        }
+        return -1;
+    }
+
+    /** Set the held hotbar slot server-side and tell the client so its selection follows. */
+    private static void selectSlot(ServerPlayer player, net.minecraft.world.entity.player.Inventory inv, int slot) {
+        inv.selected = slot;
+        player.connection.send(new net.minecraft.network.protocol.game.ClientboundSetCarriedItemPacket(slot));
     }
 
     /**
      * Capture the current world block as a {@link VariantState} for ADD-on-empty-cell
      * seeding.
+     *
+     * <p>A liquid base is normalised to its source state — a captured {@code level=3} flow has
+     * nothing feeding it once stamped into a carriage and would drain to air.</p>
      */
-    private static @Nullable VariantState captureBaseVariant(ServerLevel level, BlockPos clicked, BlockState baseState) {
-        if (baseState.isAir()) return null;
+    private static @Nullable VariantState captureBaseVariant(ServerLevel level, BlockPos clicked, BlockState rawBaseState) {
+        if (rawBaseState.isAir()) return null;
+        BlockState baseState = VariantLiquids.toSource(rawBaseState);
         CompoundTag beNbt = null;
         if (baseState.hasBlockEntity()) {
             BlockEntity be = level.getBlockEntity(clicked);

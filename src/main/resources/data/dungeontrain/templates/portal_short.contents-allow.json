@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "excluded": [
+    "armor",
+    "books",
+    "cows",
+    "craft",
+    "default",
+    "dirt",
+    "ender",
+    "enemies",
+    "features",
+    "fire",
+    "maze",
+    "narrative",
+    "nature",
+    "shop",
+    "vase"
+  ]
+}

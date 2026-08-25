@@ -86,16 +86,52 @@ public final class EditorPlotTeleport {
         return "dungeontrain editor portals copies next";
     }
 
+    /**
+     * As {@link #modeCycleCommandFor}, for the blocks a Single room repeats on one of its two
+     * planes.
+     *
+     * <p>Not a cycle: the value is a block out of the whole registry, so the row sets it from what
+     * the author is holding rather than stepping through a list nobody could reach the end of. To
+     * make that block vary, {@link #copiesBlockEditCommandFor} opens the Block Variant menu on
+     * it.</p>
+     */
+    public static String copiesBlockHeldCommandFor(
+        String category, games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane plane
+    ) {
+        if (!"PORTALS".equals(category)) return null;
+        return "dungeontrain editor portals copies " + plane.id() + " held";
+    }
+
+    /** As {@link #copiesBlockHeldCommandFor}, for opening the Block Variant menu on that plane. */
+    public static String copiesBlockEditCommandFor(
+        String category, games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane plane
+    ) {
+        if (!"PORTALS".equals(category)) return null;
+        return "dungeontrain editor portals copies " + plane.id() + " edit";
+    }
+
     /** As {@link #modeCycleCommandFor}, for whether the room is furnished from the contents pool. */
     public static String roomContentsCycleCommandFor(String category) {
         if (!"PORTALS".equals(category)) return null;
         return "dungeontrain editor portals contents next";
     }
 
+    /** As {@link #modeCycleCommandFor}, for whether the room is lit as though it stood outdoors. */
+    public static String roomSkyCycleCommandFor(String category) {
+        if (!"PORTALS".equals(category)) return null;
+        return "dungeontrain editor portals sky next";
+    }
+
     /** As {@link #modeCycleCommandFor}, for how many extra corridors an endless room lays. */
     public static String exitsCycleCommandFor(String category) {
         if (!"PORTALS".equals(category)) return null;
         return "dungeontrain editor portals exits next";
+    }
+
+    /** As {@link #modeCycleCommandFor}, for whether every book in the room is by one author. */
+    public static String roomBooksCycleCommandFor(String category) {
+        if (!"PORTALS".equals(category)) return null;
+        return "dungeontrain editor portals books next";
     }
 
     /** As {@link #dimensionCommandFor}, for the spacing those extra corridors are laid at. */

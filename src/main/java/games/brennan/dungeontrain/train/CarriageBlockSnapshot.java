@@ -37,16 +37,26 @@ import java.util.Base64;
  *
  * <p>Contents are frozen exactly as-left: block entities (chest {@code Items}, sign text, lecterns) are
  * round-tripped verbatim via {@code saveWithFullMetadata} / {@code loadCustomOnly}. Free entities
- * (armor stands, item frames) are NOT captured in this version.</p>
+ * (armor stands, item frames, paintings, mobs) are captured alongside them by
+ * {@link CarriageEntitySnapshot} into the blob's {@code ents} list, and spawned back — deferred to the
+ * settle point, NOT by {@link #place} — when another world leases the build.</p>
  *
  * <p>Wire format (a gzipped-then-base64 {@link CompoundTag}):
- * {@code { v:1, l, h, w, cells:[ { p:[dx,dy,dz], s:<blockstate>, b?:<be nbt> } ] } } — only non-air
- * cells are stored; placement clears the footprint to air first, so the rest is implicitly empty.</p>
+ * {@code { v:2, l, h, w, cells:[ { p:[dx,dy,dz], s:<blockstate>, b?:<be nbt> } ], ents?:[…] } } — only
+ * non-air cells are stored; placement clears the footprint to air first, so the rest is implicitly
+ * empty. A v1 blob (captured before entities existed) simply has no {@code ents}, and a v1 READER
+ * ignores the key, so neither direction needs a version gate.</p>
  */
 public final class CarriageBlockSnapshot {
 
     private static final Logger LOGGER = LogUtils.getLogger();
-    private static final int FORMAT_VERSION = 1;
+    /**
+     * v1 = blocks only. v2 added the optional {@code ents} list. Bumped for diagnostics, not for gating:
+     * readers on both sides tolerate the key's presence or absence. The web viewer's
+     * {@code DELTA_FORMAT_VERSION} must be raised in lockstep — it SKIPS deltas claiming a version above
+     * its own, so a mod-only bump would freeze every build's history at its base snapshot.
+     */
+    private static final int FORMAT_VERSION = 2;
     /** setBlock flag for placement: notify clients, skip neighbour-shape updates + drops. */
     private static final int PLACE_FLAGS = Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE | Block.UPDATE_SUPPRESS_DROPS;
 
@@ -65,10 +75,13 @@ public final class CarriageBlockSnapshot {
     /**
      * Read the carriage footprint {@code [origin, origin+dims)} in shipyard space from {@code ship}'s
      * sub-level plot into a snapshot tag, and scrape its block-entities' authored text for moderation.
-     * {@code origin} is the per-carriage shipyard origin.
+     * {@code origin} is the per-carriage shipyard origin. The carriage's free entities are captured in
+     * the same pass ({@link CarriageEntitySnapshot#capture}), so a build and the things standing in it
+     * are always one consistent upload rather than two that can disagree.
      */
-    public static Captured capture(SableManagedShip ship, BlockPos origin, CarriageDims dims,
-                                   HolderLookup.Provider registries) {
+    public static Captured capture(SableManagedShip ship, ServerLevel level, BlockPos origin,
+                                   CarriageDims dims, int maxEntities) {
+        HolderLookup.Provider registries = level.registryAccess();
         LevelPlot plot = ship.subLevel().getPlot();
         ListTag cells = new ListTag();
         StringBuilder text = new StringBuilder();
@@ -96,12 +109,16 @@ public final class CarriageBlockSnapshot {
                 }
             }
         }
+        CarriageEntitySnapshot.Captured entities =
+                CarriageEntitySnapshot.capture(ship, level, origin, dims, maxEntities);
         CompoundTag root = new CompoundTag();
         root.putInt("v", FORMAT_VERSION);
         root.putInt("l", dims.length());
         root.putInt("h", dims.height());
         root.putInt("w", dims.width());
         root.put("cells", cells);
+        root.put("ents", entities.ents());
+        if (!entities.text().isEmpty()) text.append(text.length() > 0 ? "\n" : "").append(entities.text());
         return new Captured(root, text.toString());
     }
 
@@ -160,14 +177,16 @@ public final class CarriageBlockSnapshot {
 
     /**
      * Capture ONLY the given shipyard-space {@code positions} from {@code ship}'s plot into a compact
-     * delta tag {@code { v, set:[{p,s,b?}], del:[[dx,dy,dz]] } }, plus the authored text those cells
-     * carry (for moderation). A position whose block is now air becomes a {@code del} entry (removal);
+     * delta tag {@code { v, set:[{p,s,b?}], del:[[dx,dy,dz]], ents:[…] } }, plus the authored text those
+     * cells (and the carriage's entities) carry for moderation. A position whose block is now air becomes a {@code del} entry (removal);
      * anything else becomes a {@code set} cell (same shape as a full-capture cell). Positions outside the
      * footprint are ignored. Encode with {@link #encode} and fold onto a base tag with
      * {@link #applyDeltaCells}. {@code origin} is the per-carriage shipyard origin, matching {@link #capture}.
      */
-    public static Captured captureCells(SableManagedShip ship, BlockPos origin, CarriageDims dims,
-                                        java.util.Collection<BlockPos> positions, HolderLookup.Provider registries) {
+    public static Captured captureCells(SableManagedShip ship, ServerLevel level, BlockPos origin,
+                                        CarriageDims dims, java.util.Collection<BlockPos> positions,
+                                        int maxEntities) {
+        HolderLookup.Provider registries = level.registryAccess();
         LevelPlot plot = ship.subLevel().getPlot();
         ListTag set = new ListTag();
         ListTag del = new ListTag();
@@ -199,18 +218,28 @@ public final class CarriageBlockSnapshot {
             }
             set.add(cell);
         }
+        // Entities are not diffed: a delta carries the carriage's WHOLE current entity list, and the fold
+        // replaces the base's with it. They move and appear without touching a block, so a per-entity diff
+        // would need its own change tracking — and the list is single digits, so wholesale is cheaper.
+        CarriageEntitySnapshot.Captured entities =
+                CarriageEntitySnapshot.capture(ship, level, origin, dims, maxEntities);
         CompoundTag root = new CompoundTag();
         root.putInt("v", FORMAT_VERSION);
         root.put("set", set);
         root.put("del", del);
+        root.put("ents", entities.ents());
+        if (!entities.text().isEmpty()) text.append(text.length() > 0 ? "\n" : "").append(entities.text());
         return new Captured(root, text.toString());
     }
 
     /**
      * Fold a delta tag (from {@link #captureCells}) onto a decoded base snapshot, returning a NEW base
      * tag (the input is not mutated). {@code set} cells replace/add by their {@code p} offset; {@code
-     * del} offsets are removed. Dimensions/version carry over from {@code baseTag}. Applying deltas in
-     * ascending {@code seq} order (the caller's responsibility) makes reconstruction deterministic.
+     * del} offsets are removed. Dimensions/version carry over from {@code baseTag}. A delta's {@code ents}
+     * list REPLACES the base's wholesale (see {@link #captureCells}); a delta without one — every v1
+     * delta, and any delta from a build with no entities to report — leaves the base's alone. Applying
+     * deltas in ascending {@code seq} order (the caller's responsibility) makes reconstruction
+     * deterministic.
      */
     public static CompoundTag applyDeltaCells(CompoundTag baseTag, CompoundTag deltaTag) {
         java.util.LinkedHashMap<Long, CompoundTag> byPos = new java.util.LinkedHashMap<>();
@@ -239,6 +268,10 @@ public final class CarriageBlockSnapshot {
         ListTag cells = new ListTag();
         for (CompoundTag cell : byPos.values()) cells.add(cell);
         out.put("cells", cells);
+        ListTag ents = deltaTag.contains("ents", net.minecraft.nbt.Tag.TAG_LIST)
+                ? deltaTag.getList("ents", net.minecraft.nbt.Tag.TAG_COMPOUND)
+                : baseTag.getList("ents", net.minecraft.nbt.Tag.TAG_COMPOUND);
+        out.put("ents", ents.copy());
         return out;
     }
 

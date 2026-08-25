@@ -66,24 +66,24 @@ final class PortalRoomSizesTest {
 
     @Test
     @DisplayName("Clearing a pending resize falls back to the template, not the built-in")
-    void clearPendingKeepsTheObservedSize() {
+    void revertKeepsTheObservedSize() {
         // What the builder does on open. The distinction from forget() is the point: the resize goes,
         // the knowledge of how big the room actually is stays.
         PortalRoomSizes.observe(ROOM, ON_DISK);
         PortalRoomSizes.pending(ROOM, RESIZED);
 
-        PortalRoomSizes.clearPending(ROOM);
+        PortalRoomSizes.revert(ROOM);
 
         assertEquals(ON_DISK, PortalRoomSizes.sizeOf(ROOM, DIMS));
     }
 
     @Test
     @DisplayName("An unsaved resize does not survive being cleared twice, or a null name")
-    void clearPendingIsTotal() {
+    void revertIsTotal() {
         PortalRoomSizes.pending(ROOM, RESIZED);
-        PortalRoomSizes.clearPending(ROOM);
-        PortalRoomSizes.clearPending(ROOM);
-        PortalRoomSizes.clearPending(null);
+        PortalRoomSizes.revert(ROOM);
+        PortalRoomSizes.revert(ROOM);
+        PortalRoomSizes.revert(null);
         assertEquals(PortalRoomLayout.builtInSize(DIMS), PortalRoomSizes.sizeOf(ROOM, DIMS));
     }
 }

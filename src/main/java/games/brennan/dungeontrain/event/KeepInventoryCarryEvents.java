@@ -1,11 +1,14 @@
 package games.brennan.dungeontrain.event;
 
+import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.player.DifficultyPartition;
 import games.brennan.dungeontrain.player.PendingInventory;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import org.slf4j.Logger;
 
 /**
  * Restores the inventory + experience carried across a Dungeon Train "next
@@ -26,6 +29,8 @@ import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class KeepInventoryCarryEvents {
 
+    private static final Logger LOGGER = LogUtils.getLogger();
+
     private KeepInventoryCarryEvents() {}
 
     @SubscribeEvent
@@ -33,8 +38,19 @@ public final class KeepInventoryCarryEvents {
         if (!(event.getEntity() instanceof ServerPlayer player)) {
             return;
         }
-        if (PendingInventory.isPresentFor(player.getUUID())) {
-            PendingInventory.restore(player);
+        if (!PendingInventory.isPresentFor(player.getUUID())) {
+            return;
         }
+        // Each difficulty is its own profile (see DifficultyPartition) — a carry captured on one
+        // difficulty must never land on another. Normally moot (the new world inherits the difficulty),
+        // so a mismatch means something changed it in between; drop the carry rather than leak it.
+        if (!PendingInventory.matchesPartition(player)) {
+            LOGGER.info("[DungeonTrain] keepInventory carry discarded: captured on difficulty {}, "
+                    + "logging in on {}", PendingInventory.capturedPartition(),
+                DifficultyPartition.keyFor(player.level()));
+            PendingInventory.clear();
+            return;
+        }
+        PendingInventory.restore(player);
     }
 }

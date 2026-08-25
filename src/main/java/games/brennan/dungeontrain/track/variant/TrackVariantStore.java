@@ -26,7 +26,7 @@ import java.util.Optional;
 /**
  * Three-tier NBT store keyed on {@code (TrackKind, name)}, mirroring
  * {@link games.brennan.dungeontrain.editor.CarriagePartTemplateStore}. Each
- * kind has its own subdirectory (see {@link TrackKind#configSubdir()}) so
+ * kind has its own subdirectory (see {@link TrackKind#subdir()}) so
  * authoring a new track tile can never poison the tunnel registry, and so
  * a footprint mismatch in one kind doesn't break stamping in another.
  *
@@ -53,8 +53,23 @@ public final class TrackVariantStore {
 
     private TrackVariantStore() {}
 
+    /**
+     * Write target for {@code kind} — the <i>active package's</i>
+     * {@code <workingDir>/<subdir>/}, matching the directory
+     * {@link games.brennan.dungeontrain.editor.UserContentPaths#findFile} reads
+     * from first.
+     *
+     * <p>This used to resolve straight to {@code config/dungeontrain/user/},
+     * which is fine only while the unsaved package is active. Once a player
+     * saved a package, reads came from {@code dtpacks/<pack>/} while writes
+     * still went to {@code user/} — so edits (a removed block variant, a
+     * re-saved room) silently failed to stick and the old content appeared to
+     * come back. Resolving through the registry keeps the two halves pointed at
+     * the same folder; with the unsaved package active it is byte-identical to
+     * the old path.</p>
+     */
     public static Path directory(TrackKind kind) {
-        return FMLPaths.CONFIGDIR.get().resolve(kind.configSubdir());
+        return games.brennan.dungeontrain.editor.UserContentPaths.activeSubDir(kind.subdir());
     }
 
     public static Path fileFor(TrackKind kind, String name) {

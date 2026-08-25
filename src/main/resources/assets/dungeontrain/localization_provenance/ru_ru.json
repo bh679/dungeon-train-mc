@@ -1,0 +1,11 @@
+{
+  "_note": "Generated from localization/provenance + localization/narrative_provenance by scripts/localization/stamp-provenance.py — do not hand-edit. \"*\" = every unit in that body is AI-authored and unreviewed.",
+  "locale": "ru_ru",
+  "lang": {
+    "dungeontrain": "*",
+    "adventureitemnames": "*",
+    "playermob": "*",
+    "discordpresence": "*"
+  },
+  "books": "*"
+}

@@ -247,18 +247,9 @@ public final class PillarEditor {
         String name = id.name();
         BlockPos origin = plotOrigin(id, dims);
 
-        // Editor mirror save-time backstop to live mirroring — symmetric capture
-        // per the sidecar's enabled axes. No-op when all axes are off (default).
         TrackKind kind = PillarTemplateStore.pillarKind(section);
         Vec3i footprint = kind.dims(dims);
         TrackVariantBlocks sidecar = TrackVariantBlocks.loadFor(kind, name, footprint);
-        // "V" toggle: mirror the variant pools first so the structural pass below
-        // preserves the freshly-reflected far cells via markersOf.
-        EditorVariantMirror.rebuildFromMaster(overworld,
-            new BlockVariantPlot.TrackPlot(kind, name, origin, footprint));
-        EditorMirror.rebuildFromMaster(overworld, origin, footprint,
-            sidecar.mirrorX(), sidecar.mirrorY(), sidecar.mirrorZ(),
-            EditorMirror.markersOf(sidecar.entries()));
 
         StructureTemplate template = captureTemplate(overworld, origin, section, dims);
         TrackVariantStore.save(kind, name, template);
@@ -444,18 +435,9 @@ public final class PillarEditor {
         String name = id.name();
         BlockPos origin = plotOriginAdjunct(id, dims);
 
-        // Editor mirror save-time backstop to live mirroring — symmetric capture
-        // per the sidecar's enabled axes. No-op when all axes are off (default).
         TrackKind kind = PillarTemplateStore.adjunctKind(adjunct);
         Vec3i footprint = kind.dims(dims);
         TrackVariantBlocks sidecar = TrackVariantBlocks.loadFor(kind, name, footprint);
-        // "V" toggle: mirror the variant pools first so the structural pass below
-        // preserves the freshly-reflected far cells via markersOf.
-        EditorVariantMirror.rebuildFromMaster(overworld,
-            new BlockVariantPlot.TrackPlot(kind, name, origin, footprint));
-        EditorMirror.rebuildFromMaster(overworld, origin, footprint,
-            sidecar.mirrorX(), sidecar.mirrorY(), sidecar.mirrorZ(),
-            EditorMirror.markersOf(sidecar.entries()));
 
         StructureTemplate template = captureAdjunctTemplate(overworld, origin, adjunct);
         TrackVariantStore.save(kind, name, template);

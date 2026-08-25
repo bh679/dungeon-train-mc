@@ -21,7 +21,7 @@ class SharedBookReporterTest {
     void payloadShape() {
         JsonObject out = SharedBookReporter.buildPayload(
                 "069a79f444e94726a5befca90e38aaf5", "Notch", "My Journey",
-                List.of("page one", "page two"), "pt_br");
+                List.of("page one", "page two"), "pt_br", "outbox-item-1");
 
         assertEquals("069a79f444e94726a5befca90e38aaf5", out.get("uuid").getAsString());
         assertEquals("Notch", out.get("author").getAsString());
@@ -30,12 +30,13 @@ class SharedBookReporterTest {
         assertEquals("page one", out.getAsJsonArray("pages").get(0).getAsString());
         assertEquals("page two", out.getAsJsonArray("pages").get(1).getAsString());
         assertEquals("pt_br", out.get("lang").getAsString());
+        assertEquals("outbox-item-1", out.get("key").getAsString(), "the upload's idempotency handle");
     }
 
     @Test
     @DisplayName("null author/title/lang become empty strings; null pages an empty array")
     void nullsBecomeEmpty() {
-        JsonObject out = SharedBookReporter.buildPayload("uuid", null, null, null, null);
+        JsonObject out = SharedBookReporter.buildPayload("uuid", null, null, null, null, null);
 
         assertEquals("", out.get("author").getAsString());
         assertEquals("", out.get("title").getAsString());

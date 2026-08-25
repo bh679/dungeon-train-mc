@@ -375,6 +375,18 @@ public final class DevQuickWorldHandler {
      */
     private static void openLevel(String name, LevelSettings settings, Screen lastScreen,
                                   ResourceKey<WorldPreset> preset, boolean pinnedSeed) {
+        // New World is one of the two moments a run starts, so it is one of the two moments the
+        // custom-content question gets asked — before the world exists, while "run without my
+        // changes" is an answer that can still be honoured. Nothing to ask → falls straight through.
+        if (CustomContentGate.askFirst(settings.gameType(), lastScreen,
+                () -> openLevelNow(name, settings, lastScreen, preset, pinnedSeed))) {
+            return;
+        }
+        openLevelNow(name, settings, lastScreen, preset, pinnedSeed);
+    }
+
+    private static void openLevelNow(String name, LevelSettings settings, Screen lastScreen,
+                                     ResourceKey<WorldPreset> preset, boolean pinnedSeed) {
         Minecraft mc = Minecraft.getInstance();
         mc.options.tutorialStep = TutorialSteps.NONE;
         mc.options.save();

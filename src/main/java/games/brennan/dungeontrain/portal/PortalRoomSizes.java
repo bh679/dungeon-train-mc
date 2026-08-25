@@ -54,6 +54,35 @@ public final class PortalRoomSizes {
             : PortalRoomLayout.builtInSize(dims);
     }
 
+    /**
+     * The tallest room this world knows how to stamp, in blocks — what {@link PortalTwinLanes} sizes
+     * its lanes on.
+     *
+     * <p>Deliberately the tallest rather than each pair's own. A lane is only a lane if every pair
+     * agrees where it is, so the spacing has to be one number for the world, and the only safe one is
+     * the largest room any pair could roll. A world of short rooms therefore keeps every lane it had;
+     * one that authors a tall room spends lanes on it, for its short rooms too.</p>
+     *
+     * <p>Floored at the built-in room, which is what a name with no entry would stamp.</p>
+     *
+     * <p>It can grow mid-session: sizes land here as templates load, so a taller room coming into
+     * view widens the spacing and moves every lane under it. Structures already stamped at the old
+     * spacing are left where they are — under the bedrock, where nothing can see or reach them — and
+     * the train stamps correct ones as it drifts. That is the accepted cost of not pinning the
+     * spacing to a constant.</p>
+     */
+    public static int tallestKnown(CarriageDims dims) {
+        int tallest = PortalRoomLayout.builtInSize(dims).getY();
+        for (Map.Entry<String, Vec3i> e : SIZES.entrySet()) {
+            if (PENDING.containsKey(e.getKey())) continue;
+            tallest = Math.max(tallest, PortalRoomLayout.clampSize(dims, e.getValue()).getY());
+        }
+        for (Vec3i pending : PENDING.values()) {
+            tallest = Math.max(tallest, PortalRoomLayout.clampSize(dims, pending).getY());
+        }
+        return tallest;
+    }
+
     /** Editor override — the plot restamps at this size until the next save bakes it in. */
     public static void pending(String name, Vec3i size) {
         if (name == null || size == null) return;
@@ -61,19 +90,24 @@ public final class PortalRoomSizes {
     }
 
     /**
-     * Drop an unsaved resize, keeping what the template last said.
+     * Drop the editor override, leaving the size the template last reported.
      *
-     * <p>The Train Builder calls this when it opens a room, so a footprint changed with the size
-     * steppers and then walked away from does not follow the room into its next open. In the editor
-     * the plot <em>is</em> the working copy and a pending size is meant to outlive a restamp; in the
-     * builder the template is the working copy and the Save button is what commits to it, so a
-     * resize that survived without one read as a save that never happened.</p>
+     * <p>What the editor's Reset needs. {@link #settle} also clears the override, but only because a
+     * save has just made a new size authoritative — calling it here would bake the abandoned resize
+     * in as the known size, which is the opposite of a reset.</p>
      *
-     * <p>{@link #PENDING} is process-wide and shared with the editor, so this also drops an editor's
-     * in-flight resize of the same room. A builder world and an editor session are not live at the
-     * same time, but the coupling is real and worth knowing about rather than discovering.</p>
+     * <p>The Train Builder calls it for the same reason on a different beat: it opens a room from
+     * disk, so a footprint changed with the size steppers and then walked away from must not follow
+     * the room into its next open. In the editor the plot <em>is</em> the working copy and a pending
+     * size is meant to outlive a restamp; in the builder the template is the working copy and Save
+     * is what commits to it.</p>
+     *
+     * <p>{@link #PENDING} is process-wide and shared between the two, so this drops an editor's
+     * in-flight resize of the same room as well. A builder world and an editor session are never
+     * live at the same time, but the coupling is real and worth knowing about rather than
+     * discovering.</p>
      */
-    public static void clearPending(String name) {
+    public static void revert(String name) {
         if (name == null) return;
         PENDING.remove(name);
     }

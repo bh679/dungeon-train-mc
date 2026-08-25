@@ -33,14 +33,14 @@ class PortalCorridorPlotBoxTest {
 
     /** The corridor's box, in the {@code (length, height, width)} order footprints use. */
     private static Vec3i corridorFootprint() {
-        CarriageDims box = PortalCorridorSize.corridorDims(DIMS);
+        CarriageDims box = PortalCorridorSize.corridorDims(DIMS, PortalCorridorKind.LONG);
         return new Vec3i(box.length(), box.height(), box.width());
     }
 
     @Test
     @DisplayName("A corridor mirrors about its own centre — x <-> 12, not the carriage's x <-> 8")
     void mirrorsAboutTheCorridorCentre() {
-        int corridor = PortalCorridorSize.corridorLength(DIMS);   // 13
+        int corridor = PortalCorridorSize.corridorLength(DIMS, PortalCorridorKind.LONG);   // 13
         int carriage = DIMS.length();                             // 9
 
         // The bug in one line: same edit, two boxes, two different destinations.
@@ -92,9 +92,9 @@ class PortalCorridorPlotBoxTest {
     @Test
     @DisplayName("The corridor's box is the carriage's in every axis but length")
     void onlyTheLengthChanges() {
-        CarriageDims box = PortalCorridorSize.corridorDims(DIMS);
+        CarriageDims box = PortalCorridorSize.corridorDims(DIMS, PortalCorridorKind.LONG);
 
-        assertEquals(PortalCorridorSize.corridorLength(DIMS), box.length());
+        assertEquals(PortalCorridorSize.corridorLength(DIMS, PortalCorridorKind.LONG), box.length());
         assertEquals(DIMS.width(), box.width());
         assertEquals(DIMS.height(), box.height());
     }

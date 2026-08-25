@@ -41,12 +41,15 @@ pack must list them explicitly. Everything else is a manifest file with a `requi
 | CreativeCore | `257814` | **enabled** (library) | AmbientSounds' required dependency. Inert library — enabled so AmbientSounds loads on a default install. **Pinned**. |
 | Advancement Plaques | `499826` | **enabled** | Replaces vanilla advancement toasts with fancy plaques. Client-side toast render only — safe with Sable. Requires **Iceberg**. **Pinned**. |
 | Iceberg | `520110` | **enabled** (library) | Advancement Plaques' required dependency (`[1.2.2,)`). Inert UI library — enabled so AP loads on a default install. **Pinned**. |
-| Lithostitched | `936015` | **enabled** (library) | Tectonic's required dependency (`[1.6.0,)`). Inert worldgen library — enabled so enabling Tectonic stays one-click (no separate lib to toggle). **Pinned**. |
 | Jade | `324717` | **enabled** | Block/item tooltip HUD. Formerly opt-in because tooltips didn't render for blocks **on the moving train** (Sable sub-level) — that limitation is now **resolved** by the bundled **Jade Sable Compat** (below), so Jade ships on by default. **Pinned** (15.10.5 — the build Sable's bundled Jade compat is verified against). |
 | Jade Sable Compat | `1530988` | **enabled** | Client-only compat mod (`sablejade`, MIT). Gives Jade a Sable-aware retrace path so tooltips resolve the **correct** block on Sable sub-levels / moving trains. Requires **Jade** (shipped enabled, above). `server_side=unsupported` — auto-skipped on dedicated servers. **Pinned** (1.2.1). |
 | Mouse Tweaks | `60089` | off (opt-in) | Inventory QoL (shift-drag / scroll-to-move). **Pinned**. |
+| Nemo's Inventory Sorting | `1148320` | off (opt-in) | Client-side inventory sorting buttons (`server_side=unsupported`). No dependencies. **Pinned** (1.8.2.1). |
 | Distant Horizons | `508933` | off (opt-in) | LOD render distance. **Use 2.x** — 3.0.x crashes the JVM on DT world entry. **Pinned** to a 2.x file. |
-| Tectonic | `686836` | off (opt-in) | Terrain generator. Needs **Compatible Terrain** ON in DT settings to take effect; its **Lithostitched** dependency ships enabled (above). **Pinned**. |
+| Effortless Building | `302113` | off (opt-in) | Client-side building QoL (multi-block placement modes, mirror / array / radial). No dependencies. **Pinned** (4.2 — one multi-loader jar covers Fabric + NeoForge). |
+| Punchy! | `1374153` | off (opt-in) | First-person animation overhaul (swing/movement animations, visible hands with held items). Client-only render (`server_side=unsupported`, auto-skipped on dedicated servers), no dependencies. ARR licence, but the author explicitly permits modpack inclusion. **Pinned** (2.7d). |
+| WorldEdit | `225608` | off (opt-in) | In-game map editor (`//set`, `//copy`, brushes, schematics). Powerful and destructive, so opt-in — and its block writes know nothing about Sable sub-levels, so editing a **moving carriage** is unverified; use it on the static world. No dependencies (one multi-loader NeoForge/Fabric jar). **Pinned** (7.3.8 — the newest 1.21.1 build; 7.4.x is MC 26.x only). |
+| Just Enough Items (JEI) | `238222` | off (opt-in) | Recipe / item lookup overlay. Opt-in because it restyles every inventory screen — a change players should choose. No dependencies. 1.21.1 builds are published on the **beta** channel only (JEI ships no release-channel build for this MC line), same as Iris here. **Pinned** (19.39.0.372) — ⚠️ NOT the newest: JEI raised its NeoForge floor to `[21.1.238,)` in 19.42.0.379 (2026-07-27) and DT ships `neo_version=21.1.228`, so anything newer hard-fails at load with "Mod jei requires neoforge 21.1.238 or above". 19.39.0.372 is the last build declaring `[21.0.118-beta,)`. Re-check this pin whenever `neo_version` moves. |
 
 …plus NeoForge as the modloader (`neoforge-<neo_version>`) and the Minecraft version,
 both read from `gradle.properties`.
@@ -70,9 +73,9 @@ Each non-core mod is an entry in `modpack.config.json` → `optional_mods[]` car
 `"required"` boolean. [`build-manifest.py`](../scripts/modpack/build-manifest.py) copies that
 flag straight into the manifest:
 
-- **Enabled by default, and mandatory (`required:true`)** — the four sibling mods **Adventure
-  Item Names**, **Adventure Item Stats**, **Interactive Player Mobs** and **Ender Chest
-  Persistence**. These are not companions: DT declares them as hard dependencies and will not
+- **Enabled by default, and mandatory (`required:true`)** — the five sibling mods **Adventure
+  Item Names**, **Adventure Item Stats**, **Interactive Player Mobs**, **Ender Chest
+  Persistence** and **Trade Everything**. These are not companions: DT declares them as hard dependencies and will not
   load without them, so shipping any of them `required:false` (i.e. switched OFF) would break
   the pack outright.
 - **Enabled by default (`required:true`)** — AppleSkin, FerriteCore, ModernFix, **Sodium**
@@ -83,12 +86,11 @@ flag straight into the manifest:
   (block/item tooltip HUD) paired with **Jade Sable Compat** (the client-only mod that fixes Jade's
   tooltips on the moving train — the reason Jade is no longer opt-in), **Kinetic
   Hosting Integration** (partner banner on the multiplayer menu), plus their inert library deps
-  **CreativeCore** (AmbientSounds), **Iceberg** (Advancement Plaques) and **Lithostitched**
-  (Tectonic). The libraries ship enabled so their dependent loads on a default install
-  (CreativeCore — AmbientSounds is on; Iceberg — AP is on) and so enabling an opt-in stays
-  one-click (Lithostitched — Tectonic is off, but its lib is already present).
-- **Bundled but off by default (`required:false`)** — Mouse Tweaks, Distant Horizons,
-  Tectonic. Shipped in the pack so a player can flip them on with one click, but inert until they
+  **CreativeCore** (AmbientSounds) and **Iceberg** (Advancement Plaques). The libraries ship
+  enabled so their dependent loads on a default install (CreativeCore — AmbientSounds is on;
+  Iceberg — AP is on).
+- **Bundled but off by default (`required:false`)** — Mouse Tweaks, Nemo's Inventory Sorting,
+  Distant Horizons, Effortless Building, Punchy!, WorldEdit, Just Enough Items (JEI). Shipped in the pack so a player can flip them on with one click, but inert until they
   do. (DT itself + Sable are hardcoded `required:true` in the builder.)
 
 ## Declared dependencies (CurseForge "Relations")
@@ -106,10 +108,9 @@ un-bundled, each is a manifest `files` entry, and CurseForge auto-creates the re
 manifest — so listing them here too would duplicate it (see the rule in the paragraph below).
 
 Everything in `optional_mods[]` (AppleSkin, FerriteCore, ModernFix, Advancement Plaques, Iceberg,
-Lithostitched, Mouse Tweaks, Jade, Jade Sable Compat, Distant Horizons, Tectonic) is a manifest **file**, so
+Mouse Tweaks, Jade, Jade Sable Compat, Distant Horizons) is a manifest **file**, so
 CurseForge auto-creates its relation from the manifest — these must therefore **not** be repeated
-in `curseforge_relations`. (Iceberg is bundled as Advancement Plaques' library dependency;
-Lithostitched as Tectonic's.)
+in `curseforge_relations`. (Iceberg is bundled as Advancement Plaques' library dependency.)
 
 ### Bundled mods must be mod dependencies
 
@@ -122,7 +123,7 @@ The declared type is **`optional` by default** — regardless of whether the pac
 enabled (`required:true`) or off (`required:false`), the mod's relationship to a companion is
 "optional" either way, because DT runs fine without it.
 
-The exception is the four sibling mods, which DT genuinely cannot run without. They carry
+The exception is the five sibling mods, which DT genuinely cannot run without. They carry
 `"dependency_type": "required"` in `modpack.config.json` and are declared `<slug>(required)` in
 `release.yml`. That `required` declaration is what makes the CurseForge and Modrinth apps
 auto-install them — the whole point of un-bundling.
@@ -142,23 +143,104 @@ This is enforced in CI by **`scripts/modpack/check-relations.py`** (the `modpack
 a bundled mod is missing its `<slug>(optional)` relation — the gap that shipped AppleSkin
 undeclared in PR #390. So each `optional_mods` entry **must carry a `slug`** (its CurseForge URL
 slug). The library deps are bundled too, so they are likewise declared `iceberg(optional)` (for
-Advancement Plaques) and `lithostitched(optional)` (for Tectonic).
+Advancement Plaques).
 
-## How it deploys (15 min after every mod release)
+## How it deploys (after every real mod release, once the DT file is approved)
 
 ```
-release.yml (real release OR auto-release cascade tick)
+release.yml (REAL release only — cascade ticks are skipped for CurseForge)
   └─ mc-publish uploads the DT jar to CurseForge  → file ID
   └─ dispatches release-modpack.yml with that file ID
-        └─ waits 15 min   (lets CurseForge approve the DT file first)
+        └─ scripts/modpack/wait-for-approval.py → polls until CurseForge APPROVES that file
         └─ scripts/modpack/build-manifest.py   → manifest.json
         └─ zip  manifest.json + overrides/      → dungeon-train-<version>.zip
         └─ scripts/modpack/publish-curseforge.sh → uploads to project 1556213
+        └─ scripts/modpack/reconcile.py --verify → confirms it actually went PUBLIC
 ```
 
-The 15-minute wait is the `delay_minutes` input on
-[`release-modpack.yml`](../.github/workflows/release-modpack.yml) (default `15`).
-Every mod release triggers it — including the ~22 quiet auto-release cascade ticks.
+### The approval gate
+
+A pack manifest that references an **unapproved** DT file is rejected outright:
+
+> `Invalid manifest.json file: References file with invalid status: 8715518 (projectID 1527512).`
+
+This step used to be a fixed `sleep 15m` — a guess at how long approval takes. When approval
+took longer, or never came at all (every DT file after v0.625.0 in Aug 2026 was uploaded but
+never approved), the pack was built around an unapproved file, uploaded, and rejected
+afterwards — leaving the workflow green and the release silently missing from the pack.
+
+`wait-for-approval.py` asks the real question instead, and **fails the run** if the answer is
+still no when `approval_timeout_minutes` (default `60`) runs out. Nothing is uploaded, so the
+fix is to get the file approved in the author dashboard and re-dispatch the workflow for that
+tag. It reads `api.curseforge.com` when `CURSEFORGE_API_KEY` is set (authoritative:
+`fileStatus == 4`), otherwise the caching cfwidget mirror — where the file appearing proves
+approval but its absence may just be cache lag. It fails closed either way, because a needless
+re-dispatch is cheap and a silently missing pack version is not.
+
+**The CurseForge pack publishes only on real, operator-dispatched releases.** The
+dispatch step in `release.yml` is gated on `inputs.auto == false`, so the ~22 quiet
+auto-release cascade ticks no longer each push a pack version. The **Modrinth** pack is
+not gated and still follows every release, so the two packs' version lists differ by
+design — that is expected, not drift.
+
+## ⚠️ Upload accepted ≠ pack published
+
+A `200` from CurseForge's `/upload-file` only means the file was *accepted*. CurseForge
+validates `manifest.json` asynchronously and can reject the file afterwards:
+
+> Invalid manifest.json file: 500 - `{"errorCode":500,"errorMessage":"An unhandled exception occurred while processing the request."}`
+
+When that happens the workflow stays **green**, nothing is logged, and the release is
+simply missing from the pack. In Aug 2026 this silently cost 13 consecutive releases
+(the pack sat on v0.592.0 while the mod shipped v0.613.0) and 86 versions that exist on
+Modrinth have no CurseForge counterpart.
+
+**What it actually was (2026-08-22).** Re-uploading the *identical* manifest for v0.613.0 a day
+later was **accepted** — the pack went from 260 to 261 files. Every one of the 33
+project/file ids in that manifest resolves to a real public file, and the only config change
+across the accept→reject boundary was a pin bump plus the removal of two mods. So the rejections
+were a **transient CurseForge-side fault**, not a bad manifest on our side. Missing versions can
+therefore be recovered by simply re-uploading them.
+
+Two guards now cover it:
+
+| Guard | Where | What it catches |
+|---|---|---|
+| `reconcile.py --verify <tag>` | last step of `release-modpack.yml` | polls the public listing for up to 30 min and **fails that release's run** if the version never appears |
+| `modpack-reconcile.yml` | scheduled every 6h | drift backstop — prints published-vs-released for both packs, fails after a 7-day CurseForge stall |
+
+Check drift yourself at any time:
+
+```bash
+python3 scripts/modpack/reconcile.py
+```
+
+### ⚠️ Set `CURSEFORGE_API_KEY` to make verification authoritative
+
+`reconcile.py` reads CurseForge's own API when the `CURSEFORGE_API_KEY` secret is set, and
+otherwise falls back to the keyless **cfwidget** mirror. (`CURSEFORGE_TOKEN` is an *upload*
+credential and cannot read listings.)
+
+**cfwidget caches and lags badly.** During the 2026-08-22 live test it still reported 260 files
+/ v0.592.0 for a full 30 minutes after curseforge.com already listed 261 / v0.613.0. A cache
+cannot prove absence, so without an API key `--verify` downgrades a negative result to
+`INCONCLUSIVE`: it prints a warning with a link to check by hand and **does not fail the
+release**. Set the secret and the check becomes authoritative — a genuine rejection then fails
+the run, which is the whole point.
+
+If verification fails, open the pack's file list in CurseForge Studio — a rejected file
+shows the reason inline. A rejection with a `500` body is CurseForge-side; the manifest
+we send is validated against the platform before upload and every referenced
+project/file id resolves.
+
+## Transient upload failures
+
+Both publish scripts share [`../scripts/modpack/lib/upload-retry.sh`](../scripts/modpack/lib/upload-retry.sh):
+3 attempts with 15s/45s backoff, retrying **only** 5xx and curl transport faults. `4xx`
+is never retried — a client error means our payload is wrong, so re-sending it just
+burns attempts (the historic `errorCode 1002 "Invalid JSON"` outage needed a code fix,
+not a retry). Before this, a single blip lost that release's pack version permanently:
+63 of 346 runs failed that way.
 
 ## ⚠️ Sable-pin coupling
 
@@ -242,21 +324,22 @@ Keep the two in sync so both packs ship the same build. A stale pin just ships a
   AmbientSounds works on a default install. (AmbientSounds' jar is large — ~81 MB of bundled audio.)
 - **Advancement Plaques ↔ Iceberg.** AP requires Iceberg `[1.2.2,)` (not jarJar'd inside AP) —
   keep the bundled Iceberg at or above that. Both ship `required:true` so AP works on a default install.
-- **Tectonic ↔ Lithostitched.** Tectonic requires Lithostitched `[1.6.0,)`; keep the bundled
-  Lithostitched file at or above that. Bumping Tectonic? Re-check its `mods.toml` dependency range.
 
 ## Files
 
 | File | Purpose |
 |---|---|
-| `modpack.config.json` | Editable config (drives **both** packs): pack name/author, DT project IDs, the pinned Sable project/file/version + `modrinth_project`/`modrinth_version`, `optional_mods` (every non-core bundled mod, each with a `slug` for the consistency guard, a `required` flag — `true` = enabled by default, `false` = shipped-but-off opt-in — and a `modrinth_project`/`modrinth_version` pin; the four sibling mods additionally carry `dependency_type: required` plus `version` + `gradle_property` for the floor guard), and `curseforge_relations` (sable only). |
-| `overrides/` | Config files copied verbatim into the player's instance on install (shared by both packs). Currently ships `config/smoothswapping.json` (tuned Smooth Swapping) and `config/khi.toml` (the Kinetic Hosting affiliate URL + banner text, so every install gets the partner link pre-filled), plus the localization compat packs — see below. |
-| `overrides/resourcepacks/DungeonTrain-zh_cn-compat.zip` | zh_cn translations for the bundled **companion** mods (Jade, Tectonic, Distant Horizons, Controlling, ModernFix, CreativeCore, Sable). Dungeon Train's own namespaces (+ AIN/PlayerMob/DiscordPresence) ship their zh_cn `lang/` inside the mod jar, so they're not in here. **Auto-enabled by a client-side one-shot** in the mod (`CompanionResourcePackAutoEnabler`) — it selects this pack the first time it's found and writes a marker so it never fights a player who later disables it. This replaces a shipped `options.txt` (which a launcher would copy wholesale and reset the player's other options); the hook only ever touches the resource-pack selection. |
+| `modpack.config.json` | Editable config (drives **both** packs): pack name/author, DT project IDs, the pinned Sable project/file/version + `modrinth_project`/`modrinth_version`, `optional_mods` (every non-core bundled mod, each with a `slug` for the consistency guard, a `required` flag — `true` = enabled by default, `false` = shipped-but-off opt-in — and a `modrinth_project`/`modrinth_version` pin; the five sibling mods additionally carry `dependency_type: required` plus `version` + `gradle_property` for the floor guard), and `curseforge_relations` (sable only). |
+| `overrides/` | Config files copied verbatim into the player's instance on install (shared by both packs). Currently ships `config/smoothswapping.json` (tuned Smooth Swapping) and `config/khi.toml` (the Kinetic Hosting affiliate URL + banner text, so every install gets the partner link pre-filled), plus the localization compat packs — see below. The tree is **allowlisted** — `check-overrides.py` fails CI on any file not named in its `ALLOWED` list, so a config the mod holds to its defaults can never be shipped here by accident. |
+| `overrides/resourcepacks/DungeonTrain-zh_cn-compat.zip` | zh_cn translations for the bundled **companion** mods (Jade, Distant Horizons, Controlling, ModernFix, CreativeCore, Sable). The shipped zips also still carry legacy `tectonic` keys from when the pack bundled Tectonic — inert now that it is gone (a lang overlay for an absent mod does nothing), and left in place so the zips stay byte-identical. Dungeon Train's own namespaces (+ AIN/PlayerMob/DiscordPresence) ship their zh_cn `lang/` inside the mod jar, so they're not in here. **Auto-enabled by a client-side one-shot** in the mod (`CompanionResourcePackAutoEnabler`) — it selects this pack the first time it's found and writes a marker so it never fights a player who later disables it. This replaces a shipped `options.txt` (which a launcher would copy wholesale and reset the player's other options); the hook only ever touches the resource-pack selection. |
 | `../scripts/modpack/build-manifest.py` | CurseForge: renders `manifest.json` from this config + `gradle.properties` + the release's DT file ID. |
 | `../scripts/modpack/build-mrpack.py` | Modrinth: renders `modrinth.index.json` from this config + `gradle.properties` + the release's DT Modrinth version (resolving each pin's URL/hashes from the Modrinth API). `--check-config` validates pins with no network (CI). |
 | `../scripts/modpack/check-relations.py` | CI guard: every `optional_mods` entry must also be an `<slug>(optional)` dependency of the mod in `release.yml`. Run by the `modpack-checks` job. |
+| `../scripts/modpack/check-overrides.py` | CI guard: every file under `overrides/` must be allowlisted. The pack copies that tree verbatim into each player's instance, so shipping a config the mod holds to its defaults (e.g. `adventureitemstats.properties` — see `AisDataIntegrity`) would put **every pack user** into Free Play. Adding a new override means adding it to `ALLOWED` first. Run by the `modpack-checks` job and again before each pack publish. |
 | `../scripts/modpack/publish-curseforge.sh` | Zips + uploads the CurseForge pack using `CURSEFORGE_TOKEN`. |
 | `../scripts/modpack/publish-modrinth.sh` | Zips the `.mrpack` + uploads to Modrinth using `MODRINTH_TOKEN`. |
+| `../scripts/modpack/lib/upload-retry.sh` | Shared curl-upload helper: retries 5xx + transport faults, never 4xx. Sourced by both publish scripts. |
+| `../scripts/modpack/reconcile.py` | `--verify <tag>` confirms an uploaded version actually went public (run by `release-modpack.yml`); with no args, prints a published-vs-released drift report for both packs. |
 
 ## Local test (no upload)
 
@@ -301,9 +384,9 @@ Each `optional_mods` entry (and `sable`) carries `modrinth_project` (slug) + `mo
 (the version id), pinned to the **same build the CurseForge pack ships**. The DT mod is the only
 un-pinned reference: its Modrinth version id is passed in per release. Refresh a pin the same way
 as a CurseForge pin — open `https://modrinth.com/mod/<slug>/versions`, filter to **NeoForge
-1.21.1**, and copy the version id from the version URL (`/version/<id>`). Two slugs differ from
-their CurseForge slug: **FerriteCore** is `ferrite-core` and **Distant Horizons** is
-`distanthorizons` on Modrinth.
+1.21.1**, and copy the version id from the version URL (`/version/<id>`). Three slugs differ from
+their CurseForge slug: **FerriteCore** is `ferrite-core`, **Distant Horizons** is
+`distanthorizons`, and **Punchy!** is `punchy-fpa` on Modrinth.
 
 CI guards the pins: `build-mrpack.py --check-config` (in the `modpack-checks` job) fails the build
 if any mod is missing its `modrinth_project`/`modrinth_version`, so a new companion can't silently
@@ -316,9 +399,9 @@ instead of CurseForge's single `required` flag. `build-mrpack.py` derives it
 
 - **client** is always `required` (bundled-enabled) or `optional` (opt-in) — never `unsupported`.
   The pack mirrors CurseForge (every bundled mod is in the player's single-player-capable instance).
-  We deliberately ignore a mod's own `client_side=unsupported`: some libraries (e.g. **Lithostitched**,
-  a worldgen lib) declare it yet are needed by the integrated server in single-player, and dropping
-  them would break the one-click opt-ins that depend on them (Tectonic needs Lithostitched).
+  We deliberately ignore a mod's own `client_side=unsupported`: a worldgen library can declare it
+  yet still be needed by the integrated server in single-player, and dropping it would break
+  whichever bundled mod depends on it.
 - **server** respects `server_side=unsupported`, so genuinely client-only mods (AmbientSounds'
   ~84 MB of audio, the inventory/HUD QoL mods) are skipped on dedicated servers.
 

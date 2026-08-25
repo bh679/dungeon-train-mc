@@ -11,7 +11,7 @@ project pages get credited), which means the pack must list them explicitly:
     (the freshly uploaded CurseForge file, surfaced by mc-publish in ``release.yml``).
   * Sable — an un-bundled runtime dep, *pinned* in ``modpack.config.json`` to the
     exact version DT is built against (PolyForm Shield forbids bundling it).
-  * Each ``optional_mods`` entry — including the four siblings, which carry
+  * Each ``optional_mods`` entry — including the five siblings, which carry
     ``required: true`` so the pack ships them switched ON (a CurseForge ``required:false``
     entry ships a mod *disabled*, which for a hard dependency would break the pack).
 
@@ -106,8 +106,8 @@ def build_manifest(
     #   required=True  → installed & ENABLED by default (QoL/perf/cosmetic companions:
     #                    AppleSkin, FerriteCore, ModernFix, Advancement Plaques).
     #   required=False → bundled but DISABLED by default; the CurseForge launcher offers them
-    #                    as opt-in at install (Mouse Tweaks, Jade, Distant Horizons, Tectonic,
-    #                    Lithostitched). NOTE: in the CurseForge app required=False means the
+    #                    as opt-in at install (Mouse Tweaks, Distant Horizons, Effortless
+    #                    Building). NOTE: in the CurseForge app required=False means the
     #                    mod ships OFF — see modpack/README.md. Pins maintained like Sable.
     for opt in config.get("optional_mods", []):
         files.append(

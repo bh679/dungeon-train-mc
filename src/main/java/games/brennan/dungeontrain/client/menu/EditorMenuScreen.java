@@ -35,6 +35,15 @@ public final class EditorMenuScreen implements MenuScreen {
      */
     private static final double WALLS_ROW_PANEL_WIDTH = 2.6;
 
+    /**
+     * Panel width while the Copies Block row is showing.
+     *
+     * <p>The same width the Walls row asks for. The row named a block id when it was added, which
+     * needed more than forty characters; it names the gesture now — {@code Blocks: + held} — and the
+     * palette itself is shown as icons on the plot panel, so there is nothing here to size for.</p>
+     */
+    private static final double COPIES_BLOCK_ROW_PANEL_WIDTH = WALLS_ROW_PANEL_WIDTH;
+
     @Override public String title() { return "Editor"; }
 
     @Override public List<CommandMenuEntry> entries() {
@@ -106,6 +115,15 @@ public final class EditorMenuScreen implements MenuScreen {
                     "dungeontrain editor part rename",
                     "", name));
             }
+            // Undo | Redo — steps the per-plot editor history. Mirrors the
+            // Ctrl/Cmd+Z / Ctrl/Cmd+Y keybindings through the same commands, so
+            // the two surfaces cannot drift apart.
+            out.add(new CommandMenuEntry.Split(
+                new CommandMenuEntry.Run("Undo", "dungeontrain editor undo"),
+                new CommandMenuEntry.Run("Redo", "dungeontrain editor redo"),
+                0.50
+            ));
+
             addMirrorToggles(out);
             out.add(new CommandMenuEntry.DrillIn("Package", new PackageListScreen()));
             out.add(new CommandMenuEntry.Run("Exit", "dungeontrain editor exit"));
@@ -119,6 +137,15 @@ public final class EditorMenuScreen implements MenuScreen {
             0.80
         ));
         out.add(myBuildsEntry());
+
+        // Undo | Redo — steps the per-plot editor history. Mirrors the
+        // Ctrl/Cmd+Z / Ctrl/Cmd+Y keybindings through the same commands, so
+        // the two surfaces cannot drift apart.
+        out.add(new CommandMenuEntry.Split(
+            new CommandMenuEntry.Run("Undo", "dungeontrain editor undo"),
+            new CommandMenuEntry.Run("Redo", "dungeontrain editor redo"),
+            0.50
+        ));
 
         // Reset | Clear — paired destructive actions. Reset deletes the
         // on-disk template; Clear wipes interior blocks to air. Clear is
@@ -195,8 +222,18 @@ public final class EditorMenuScreen implements MenuScreen {
             if (modeRow != null) out.add(modeRow);
             CommandMenuEntry copiesRow = copiesRowFor(EditorStatusHudOverlay.roomMode());
             if (copiesRow != null) out.add(copiesRow);
+            CommandMenuEntry copiesFloorRow = copiesBlockRowFor(EditorStatusHudOverlay.roomMode(),
+                games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane.FLOOR);
+            if (copiesFloorRow != null) out.add(copiesFloorRow);
+            CommandMenuEntry copiesRoofRow = copiesBlockRowFor(EditorStatusHudOverlay.roomMode(),
+                games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane.ROOF);
+            if (copiesRoofRow != null) out.add(copiesRoofRow);
             CommandMenuEntry contentsRow = roomContentsRowFor(EditorStatusHudOverlay.roomMode());
             if (contentsRow != null) out.add(contentsRow);
+            CommandMenuEntry booksRow = roomBooksRowFor(EditorStatusHudOverlay.roomMode());
+            if (booksRow != null) out.add(booksRow);
+            CommandMenuEntry skyRow = roomSkyRowFor(EditorStatusHudOverlay.roomMode());
+            if (skyRow != null) out.add(skyRow);
             CommandMenuEntry exitsRow = exitsRowFor(EditorStatusHudOverlay.roomMode());
             if (exitsRow != null) out.add(exitsRow);
             CommandMenuEntry exitEveryRow = exitEveryTripleFor(EditorStatusHudOverlay.roomMode());
@@ -257,6 +294,10 @@ public final class EditorMenuScreen implements MenuScreen {
      * structural blocks across an axis; the {@code V} toggle additionally mirrors
      * the per-cell variant pools (opt-in — off by default). Toggle state (and the
      * green on-tint) is the server-pushed {@link EditorStatusHudOverlay} mirror flags.
+     *
+     * <p>The trailing {@code Rebuild} row runs {@code editor mirror rebuild}, which
+     * re-mirrors the plot from its master octant on demand — saving no longer does
+     * that implicitly.</p>
      */
     private static void addMirrorToggles(List<CommandMenuEntry> out) {
         out.add(new CommandMenuEntry.Label("Mirror"));
@@ -270,6 +311,9 @@ public final class EditorMenuScreen implements MenuScreen {
         CommandMenuEntry v = new CommandMenuEntry.Toggle("V", EditorStatusHudOverlay.mirrorVariants(),
             "dungeontrain editor mirror v on", "dungeontrain editor mirror v off", false);
         out.add(new CommandMenuEntry.Quad(x, y, z, v, 0.25, 0.50, 0.75));
+        // Explicit re-mirror. Saving no longer rebuilds the far half from the
+        // master octant, so this is the (deliberate) way to force it.
+        out.add(new CommandMenuEntry.Run("Rebuild", "dungeontrain editor mirror rebuild"));
     }
 
     /**
@@ -369,12 +413,15 @@ public final class EditorMenuScreen implements MenuScreen {
         if (mode == null || EditorStatusPacket.NO_MODE.equals(mode)) {
             return CommandMenuLayout.PANEL_WIDTH;
         }
-        return Math.max(CommandMenuLayout.PANEL_WIDTH, WALLS_ROW_PANEL_WIDTH);
+        double widest = EditorPlotLabelsRenderer.hasCopiesBlockRowFor(mode)
+            ? Math.max(WALLS_ROW_PANEL_WIDTH, COPIES_BLOCK_ROW_PANEL_WIDTH)
+            : WALLS_ROW_PANEL_WIDTH;
+        return Math.max(CommandMenuLayout.PANEL_WIDTH, widest);
     }
 
     /**
-     * The Copies row, or null unless the walls are set to repeat the whole room — the only mode that
-     * makes copies for the setting to describe.
+     * The Copies row, or null unless the walls are set to one of the two endless modes — the only
+     * ones that append tiles for the setting to describe.
      */
     static CommandMenuEntry copiesRowFor(String currentMode) {
         if (currentMode == null || EditorStatusPacket.NO_MODE.equals(currentMode)) return null;
@@ -384,6 +431,30 @@ public final class EditorMenuScreen implements MenuScreen {
         return new CommandMenuEntry.Stay(
             EditorPlotLabelsRenderer.copiesLabel(currentMode),
             "dungeontrain editor portals copies next");
+    }
+
+    /**
+     * One plane's Block row, or null unless Copies is set to Single — the one value that reads a
+     * block. The Floor and Roof rows are this same shape, aimed at their own plane.
+     *
+     * <p>A picker, not a cycle: the value is any block in the registry, so tapping the row takes
+     * whatever the author is holding rather than stepping to a "next" nobody could enumerate. The
+     * menu is opened by a key toggle rather than by holding a tool, so their main hand is free for
+     * the block itself. <b>Edit</b> opens the Block Variant menu on that plane, which is how one
+     * block becomes a variant of several.</p>
+     */
+    static CommandMenuEntry copiesBlockRowFor(
+        String currentMode, games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane plane
+    ) {
+        if (currentMode == null || EditorStatusPacket.NO_MODE.equals(currentMode)) return null;
+        if (!EditorPlotLabelsRenderer.hasCopiesBlockRowFor(currentMode)) return null;
+        // Value on the left, a way into its editor on the right — the same Split the Books row uses.
+        return new CommandMenuEntry.Split(
+            new CommandMenuEntry.Stay(EditorPlotLabelsRenderer.copiesBlockLabel(plane),
+                "dungeontrain editor portals copies " + plane.id() + " held"),
+            new CommandMenuEntry.Stay("Edit",
+                "dungeontrain editor portals copies " + plane.id() + " edit"),
+            0.72);
     }
 
     /**
@@ -398,6 +469,45 @@ public final class EditorMenuScreen implements MenuScreen {
         return new CommandMenuEntry.Stay(
             EditorPlotLabelsRenderer.roomContentsLabel(currentMode),
             "dungeontrain editor portals contents next");
+    }
+
+    /**
+     * The Books row — whether every book found in the room is by one author, and how that author is
+     * chosen.
+     *
+     * <p>Shown for every portal room, on the same reasoning as Contents, and deliberately NOT gated
+     * on the room being furnished: a room can hold books without drawing a contents template, since
+     * its own template may have shelves stamped into it.</p>
+     */
+    static CommandMenuEntry roomBooksRowFor(String currentMode) {
+        if (currentMode == null || EditorStatusPacket.NO_MODE.equals(currentMode)) return null;
+        CommandMenuEntry cycle = new CommandMenuEntry.Stay(
+            EditorPlotLabelsRenderer.roomBooksLabel(currentMode),
+            "dungeontrain editor portals books next");
+        // Off has no dials, so the row is the value alone. Once the room stocks an author the Edit
+        // button rides beside it rather than taking a row of its own — the weights and the author band
+        // belong to the value next to them.
+        if (!games.brennan.dungeontrain.portal.PortalRoomSettings.parse(currentMode)
+                .books().weightsApply()) {
+            return cycle;
+        }
+        return new CommandMenuEntry.Split(cycle,
+            new CommandMenuEntry.DrillIn("Edit", new PortalRoomBooksScreen(currentMode)),
+            0.72);
+    }
+
+    /**
+     * The Sky row — whether the room is lit as though it stood outdoors, and under which sky.
+     *
+     * <p>Shown for every portal room, on the same reasoning as Contents and Books: the sky a room
+     * stands under is a statement about the place it is pretending to be, not about how it seals or
+     * what is furnished into it.</p>
+     */
+    static CommandMenuEntry roomSkyRowFor(String currentMode) {
+        if (currentMode == null || EditorStatusPacket.NO_MODE.equals(currentMode)) return null;
+        return new CommandMenuEntry.Stay(
+            EditorPlotLabelsRenderer.roomSkyLabel(currentMode),
+            "dungeontrain editor portals sky next");
     }
 
     /**

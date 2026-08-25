@@ -47,6 +47,13 @@ import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
  * ({@link SnapshotTag#GEAR}); reading a narrative book ({@link SnapshotTag#LORE});
  * and a periodic baseline ({@link SnapshotTag#SCENIC}).</p>
  *
+ * <p>Two more arrive from the server as cues ({@code net.SnapshotCuePacket} → {@link #cue}),
+ * because only the server can see them: changing a drifting carriage
+ * ({@link SnapshotTag#BUILDING}) and arriving inside a Train Dimension
+ * ({@link SnapshotTag#THRESHOLD}). A cue is handled before the aboard/near-a-carriage gate — a
+ * Train Dimension's room body sits in the world basement, nowhere near a carriage — but is
+ * otherwise held to the same cooldowns and performance gate as everything else.</p>
+ *
  * <p><b>Arrival shot:</b> the very first capture of a run is guaranteed — once the player is aboard
  * and back in control (after the intro cinematic, which this director sits out, or immediately when
  * the cinematic is off) one {@link SnapshotTag#SCENIC} shot is taken. It first waits for the
@@ -87,6 +94,12 @@ public final class RideSnapshotDirector {
     private static final int SKIP_FALLBACK_THRESHOLD = 5;
     /** Clamp for {@link #skipsInARow} — no need to keep counting past the threshold. */
     private static final int SKIP_CAP = 5;
+    /**
+     * How long a server cue stays armed (~15 s). Long enough to outlast several
+     * {@link #COOLDOWN_GLOBAL} retries while the player walks around the room and a clean angle
+     * opens up; short enough that a cue can't surface as a photo of somewhere else entirely.
+     */
+    private static final long CUE_LIFETIME_TICKS = 300L;
     /** Loaded carriages the arrival shot waits for (the player's own + the next one back). */
     private static final int ARRIVAL_MIN_CARRIAGES = 2;
     /** Diagnostic cap when counting loaded carriages — no need to scan past a handful. */
@@ -119,6 +132,14 @@ public final class RideSnapshotDirector {
     private static volatile boolean socialPending; // gift / interaction with a player-mob
     private static volatile boolean combatPending; // first strike on a mob
     private static volatile boolean potPending;    // hit a decorated pot
+    /** Tag cued by the server ({@code net.SnapshotCuePacket}), or null when nothing is outstanding. */
+    private static volatile SnapshotTag cuedTag;
+    /** Reason text that came with {@link #cuedTag} — chat-log only. */
+    private static volatile String cuedReason = "";
+    /** Where {@link #cuedTag}'s camera may stand — see {@link SnapshotFraming}. */
+    private static volatile SnapshotFraming cuedFraming = SnapshotFraming.NONE;
+    /** Game tick after which an unhonoured cue is given up on; {@code MIN_VALUE} when none is pending. */
+    private static volatile long cuedUntil = Long.MIN_VALUE;
     private static String pendingReason = "";
 
     private RideSnapshotDirector() {}
@@ -169,6 +190,21 @@ public final class RideSnapshotDirector {
         if (ClientDisplayConfig.isRideSnapshotDiskOffloadEnabled() && fallbackMenuOpen
                 && !RideSnapshotGallery.isFrozen() && performanceHighEnoughToFlush(mc)) {
             RideSnapshotGallery.flushSomeToDisk(1);
+        }
+
+        // Server-cued shot (a drifting carriage changed, a Train Dimension entered). Taken BEFORE
+        // the aboard/near gate below: a Train Dimension's room body is stamped into the world
+        // basement, far under the carriages, so a player standing in one is nowhere near a carriage
+        // AABB and that gate would swallow every THRESHOLD cue. Everything else still applies — the
+        // arrival shot keeps the run's first capture, and the global back-off, the per-tag cooldown
+        // and the perf gate all get their say. A cue that isn't due is dropped, not queued.
+        SnapshotTag cued = cuedTag;
+        if (cued != null) {
+            if (level.getGameTime() > cuedUntil) {
+                clearCue();
+            } else if (takeCuedShot(mc, level, cued, normalScreenOk)) {
+                return;
+            }
         }
 
         Vec3 ppos = player.position();
@@ -238,6 +274,59 @@ public final class RideSnapshotDirector {
             skipsInARow = Math.min(skipsInARow + 1, SKIP_CAP);
             lastAny = now;
         }
+    }
+
+    /**
+     * Queue a shot the <em>server</em> has asked for — see {@code net.SnapshotCuePacket}. Called off
+     * the network thread's {@code enqueueWork}, so the fields are volatile and the work itself waits
+     * for the next client tick.
+     *
+     * <p>Last cue wins: these moments are seconds apart at the closest, and a stale one is worth
+     * less than the one that just happened.</p>
+     */
+    public static void cue(SnapshotTag tag, String reason, SnapshotFraming framing) {
+        if (tag == null) return;
+        Minecraft mc = Minecraft.getInstance();
+        long now = mc.level != null ? mc.level.getGameTime() : 0L;
+        cuedReason = reason == null ? "" : reason;
+        cuedFraming = framing == null ? SnapshotFraming.NONE : framing;
+        cuedUntil = now + CUE_LIFETIME_TICKS;
+        cuedTag = tag;
+    }
+
+    /** Drop the outstanding cue — honoured, expired, or the run ended. */
+    private static void clearCue() {
+        cuedTag = null;
+        cuedFraming = SnapshotFraming.NONE;
+        cuedReason = "";
+        cuedUntil = Long.MIN_VALUE;
+    }
+
+    /**
+     * Act on a server cue: capture it, spend it on the perf gate, or leave it be. Returns true when
+     * the tick's work is done (a request was made or the shot was skipped for performance) and false
+     * when the cue wasn't due, in which case the caller carries on with the normal decision path.
+     */
+    private static boolean takeCuedShot(Minecraft mc, ClientLevel level, SnapshotTag cued, boolean normalScreenOk) {
+        // The arrival shot owns the run's first capture; a cue must not jump ahead of it.
+        if (!arrivalCaptured || !normalScreenOk) return false;
+        long now = level.getGameTime();
+        if (!dueSince(lastAny, now, COOLDOWN_GLOBAL)) return false;
+        if (!due(cued, now, VersionHudOverlay.travelledCarriageIndex())) return false;
+
+        lastAny = now;
+        if (performanceOk(mc)) {
+            // The cue stays armed: the render-time pass can still reject every angle (too dark, boxed
+            // in, or — for THRESHOLD — every clear angle standing in a corridor or the copy next
+            // door), and that silently drops the request. A one-shot moment can't be asked for again,
+            // so it is retried on the global back-off until it commits or CUE_LIFETIME_TICKS is up.
+            RideSnapshotCapture.request(cued, cuedFraming);
+            pendingReason = cuedReason;
+        } else {
+            COOLDOWNS.onSkipped(cued, now);
+            skipsInARow = Math.min(skipsInARow + 1, SKIP_CAP);
+        }
+        return true;
     }
 
     /** Is the client (and, in single-player, the integrated server) running well enough to spend a capture? */
@@ -312,6 +401,8 @@ public final class RideSnapshotDirector {
         int progress = VersionHudOverlay.travelledCarriageIndex();
         countTotal++;
         skipsInARow = 0; // a committed shot breaks the perf-skip streak (resets the menu fallback)
+        if (tag == cuedTag) clearCue(); // the cue got its photo
+
         arrivalCaptured = true; // the run's first committed shot is the arrival shot (the only requester until now)
         COOLDOWNS.onCommitted(tag, now, progress);
         if (tag == SnapshotTag.GEAR) snapshotArmor(mc.player);
@@ -422,6 +513,7 @@ public final class RideSnapshotDirector {
         COOLDOWNS.reset();
         for (int i = 0; i < lastArmor.length; i++) lastArmor[i] = ItemStack.EMPTY;
         socialPending = combatPending = potPending = false;
+        clearCue();
         pendingReason = "";
     }
 }

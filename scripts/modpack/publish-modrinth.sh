@@ -29,6 +29,10 @@
 
 set -euo pipefail
 
+# Retrying upload helper (retries 5xx / transport faults, never 4xx). See lib/upload-retry.sh.
+# shellcheck source=lib/upload-retry.sh
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/upload-retry.sh"
+
 API="https://api.modrinth.com/v2"
 OVERRIDES_DIR="modpack/overrides"
 CHANGELOG=""
@@ -126,13 +130,13 @@ fi
 printf '%s' "$METADATA" > "$WORKDIR/data.json"
 
 # --- Upload ---
-RESPONSE=$(curl -sS -w $'\n%{http_code}' \
+upload_with_retry "Modrinth modpack upload" \
   -H "Authorization: $MODRINTH_TOKEN" \
   -F "data=<$WORKDIR/data.json;type=application/json" \
   -F "file=@$MRPACK_PATH;type=application/x-modrinth-modpack+zip;filename=$MRPACK_NAME" \
-  "$API/version")
-HTTP_CODE=$(printf '%s' "$RESPONSE" | tail -n1)
-BODY=$(printf '%s' "$RESPONSE" | sed '$d')
+  "$API/version"
+HTTP_CODE="$UPLOAD_HTTP_CODE"
+BODY="$UPLOAD_BODY"
 
 if [ "$HTTP_CODE" != "200" ] && [ "$HTTP_CODE" != "201" ]; then
   echo "::error::Modrinth modpack upload failed (HTTP $HTTP_CODE): $BODY"

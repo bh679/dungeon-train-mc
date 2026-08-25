@@ -71,6 +71,9 @@ public final class CarriagePartVariantBlocks {
     /** pos → lock-id (≥1 = locked, 0/missing = unlocked). See {@link CarriageVariantBlocks#lockIdAt}. */
     private final Map<BlockPos, Integer> lockIds;
 
+    /** v9 lock-group reference resolution over {@link #entries} / {@link #lockIds}. */
+    private final VariantGroupResolver groupRefs;
+
     /**
      * Per-template editor mirror axes, applied live and as a save-time backstop
      * by {@link EditorMirror}. Optional top-level {@code "mirror": {x,y,z}}
@@ -90,6 +93,7 @@ public final class CarriagePartVariantBlocks {
                                       boolean mirrorX, boolean mirrorY, boolean mirrorZ, boolean mirrorVariants) {
         this.entries = entries;
         this.lockIds = lockIds;
+        this.groupRefs = new VariantGroupResolver(entries, lockIds);
         this.mirrorX = mirrorX;
         this.mirrorY = mirrorY;
         this.mirrorZ = mirrorZ;
@@ -295,10 +299,12 @@ public final class CarriagePartVariantBlocks {
             if (s == null) throw new IllegalArgumentException("null state");
         }
         entries.put(localPos.immutable(), List.copyOf(states));
+        groupRefs.invalidate();
     }
 
     public synchronized boolean remove(BlockPos localPos) {
         lockIds.remove(localPos);
+        groupRefs.invalidate();
         return entries.remove(localPos) != null;
     }
 
@@ -311,6 +317,7 @@ public final class CarriagePartVariantBlocks {
         int n = entries.size();
         entries.clear();
         lockIds.clear();
+        groupRefs.invalidate();
         return n;
     }
 
@@ -330,6 +337,7 @@ public final class CarriagePartVariantBlocks {
         if (lockId < 0) lockId = 0;
         if (lockId == 0) lockIds.remove(localPos);
         else lockIds.put(localPos.immutable(), lockId);
+        groupRefs.invalidate();
     }
 
     /** Positions sharing the given lock-id. Empty for {@code lockId == 0}. */
@@ -355,20 +363,18 @@ public final class CarriagePartVariantBlocks {
         return n;
     }
 
-    /** Deterministic pick — same {@code (worldSeed, carriageIndex, localPos|lockId)} → same state across reloads. */
+    /**
+     * Deterministic pick — same {@code (worldSeed, carriageIndex, localPos|lockId)} → same state across reloads.
+     * v9 lock-group references are filtered and followed by {@link VariantGroupResolver}.
+     */
     public VariantState resolve(BlockPos localPos, long worldSeed, int carriageIndex) {
-        List<VariantState> states = entries.get(localPos);
-        if (states == null || states.isEmpty()) return null;
-        int lockId = lockIdAt(localPos);
-        int idx;
-        if (lockId > 0) {
-            int[] weights = new int[states.size()];
-            for (int i = 0; i < states.size(); i++) weights[i] = states.get(i).weight();
-            idx = CarriageVariantBlocks.pickIndexFromLockGroup(lockId, worldSeed, carriageIndex, weights);
-        } else {
-            idx = CarriageVariantBlocks.pickIndexWeighted(localPos, worldSeed, carriageIndex, states);
-        }
-        return states.get(idx);
+        return groupRefs.resolve(localPos, lockIdAt(localPos), entries.get(localPos),
+            worldSeed, carriageIndex);
+    }
+
+    /** This sidecar's lock groups, for callers that follow references themselves (e.g. the editor preview). */
+    public VariantGroupResolver groupRefs() {
+        return groupRefs;
     }
 
     public synchronized void save(CarriagePartKind kind, String name) throws IOException {
@@ -409,7 +415,8 @@ public final class CarriagePartVariantBlocks {
             kind.id(), name, file);
     }
 
-    private String toJsonText() {
+    /** Serialised form of this sidecar as {@link #save} would write it. Used by the editor undo history. */
+    String toJsonText() {
         // Hand-written so the v2 mixed-array form (bare strings + objects) stays
         // diff-clean against existing v1 files. Same shape as CarriageVariantBlocks#toJson.
         StringBuilder sb = new StringBuilder(256);

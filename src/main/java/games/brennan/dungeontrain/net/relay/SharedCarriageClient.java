@@ -76,6 +76,25 @@ public final class SharedCarriageClient {
     }
 
     /**
+     * Who died aboard a leased carriage: the most recent distinct travellers, newest first, plus the
+     * lifetime total. Display names only, resolved relay-side for the same reason {@link Credits} are —
+     * these deaths happened in worlds this server has never seen.
+     *
+     * <p>{@code names} holds at most 5, while {@code total} counts every death, including those by a
+     * player who never granted network consent and so has no name to show. A carriage nobody has died
+     * in yields {@link #EMPTY}, and so does an older relay's lease response — in both cases the game
+     * shows no death line at all.</p>
+     */
+    public record Deaths(List<String> names, int total) {
+        public static final Deaths EMPTY = new Deaths(List.of(), 0);
+
+        /** True when at least one death is worth telling the player about. */
+        public boolean hasAny() {
+            return total > 0;
+        }
+    }
+
+    /**
      * A leased pooled carriage: id + token + its base blocks blob + dims, plus the delta log to fold on
      * top ({@code baseSeq} is the relay drop-watermark; the mod applies deltas with {@code seq > baseSeq}
      * in seq order). See {@code CarriageBlockSnapshot.applyDeltaCells}.
@@ -83,10 +102,12 @@ public final class SharedCarriageClient {
      * <p>{@code owner} is the build's author uuid as the relay recorded it at submit (empty when the
      * relay didn't report one). It lets the spawn path tell a player "you built this" even when the
      * lease came from the ordinary unfiltered pool. {@code credits} is who built and changed it, by
-     * display name, for the on-enter credit line.</p>
+     * display name, for the on-enter credit line, and {@code deaths} is who died aboard it, for the
+     * line after that.</p>
      */
     public record PoolLease(int id, String token, String blocks, int l, int h, int w,
-                            int baseSeq, List<DeltaRec> deltas, String owner, Credits credits) {}
+                            int baseSeq, List<DeltaRec> deltas, String owner, Credits credits,
+                            Deaths deaths) {}
 
     /** Outcome of a delta POST: transport status + whether the holder should re-baseline (soft/hard). */
     public record DeltaResult(CallStatus status, boolean compactNeeded, boolean mustCompact) {}
@@ -347,7 +368,8 @@ public final class SharedCarriageClient {
             int baseSeq = o.has("baseSeq") && !o.get("baseSeq").isJsonNull() ? o.get("baseSeq").getAsInt() : 0;
             String owner = o.has("owner") && !o.get("owner").isJsonNull() ? o.get("owner").getAsString() : "";
             return Optional.of(new PoolLease(o.get("id").getAsInt(), o.get("token").getAsString(),
-                    o.get("blocks").getAsString(), dl, dh, dw, baseSeq, parseDeltas(o), owner, parseCredits(o)));
+                    o.get("blocks").getAsString(), dl, dh, dw, baseSeq, parseDeltas(o), owner,
+                    parseCredits(o), parseDeaths(o)));
         });
     }
 
@@ -373,6 +395,32 @@ public final class SharedCarriageClient {
             if (c.has("editorCount") && !c.get("editorCount").isJsonNull()) count = c.get("editorCount").getAsInt();
         } catch (RuntimeException ignored) { /* garbage count → fall back to what we can actually name */ }
         return new Credits(creator, List.copyOf(editors), Math.max(count, editors.size()));
+    }
+
+    /**
+     * Parse the {@code deaths:{names[],total}} block off a lease response. Forgiving on exactly the same
+     * terms as {@link #parseCredits}: a relay older than this mod omits it, so anything missing or
+     * garbled yields {@link Deaths#EMPTY} and the game behaves as it did before the death log existed.
+     *
+     * <p>{@code total} is floored at the number of names actually parsed — a garbled count must never
+     * make the game claim fewer deaths than it is about to name.</p>
+     */
+    private static Deaths parseDeaths(JsonObject o) {
+        if (!o.has("deaths") || !o.get("deaths").isJsonObject()) return Deaths.EMPTY;
+        JsonObject d = o.getAsJsonObject("deaths");
+        List<String> names = new java.util.ArrayList<>();
+        if (d.has("names") && d.get("names").isJsonArray()) {
+            for (JsonElement el : d.getAsJsonArray("names")) {
+                if (el == null || !el.isJsonPrimitive()) continue;
+                String name = sanitizeName(el.getAsString());
+                if (!name.isEmpty()) names.add(name);
+            }
+        }
+        int total = 0;
+        try {
+            if (d.has("total") && !d.get("total").isJsonNull()) total = d.get("total").getAsInt();
+        } catch (RuntimeException ignored) { /* garbage total → fall back to what we can actually name */ }
+        return new Deaths(List.copyOf(names), Math.max(total, names.size()));
     }
 
     /** A string field, or {@code ""} when absent/null — tolerates a relay that predates the field. */
@@ -485,7 +533,27 @@ public final class SharedCarriageClient {
         return statusPost("/carriages/return", body);
     }
 
-    // ---- report (fire-and-forget) ----
+    // ---- death / report (fire-and-forget) ----
+
+    /**
+     * Record that a player died aboard this leased carriage. Fire-and-forget like {@link #report}, and
+     * for a stronger reason: a Dungeon Train death tears the world down shortly afterwards, so there is
+     * no later tick to retry on and nothing to hand a result to. The relay counts each call once, so a
+     * dropped call loses one death and a retried one would invent a second — hence exactly one send.
+     *
+     * <p>{@code uuid} and {@code name} are the DEAD player, not this world's lease holder; both are
+     * omitted for a player without network consent, and the relay then counts the death without naming
+     * anyone.</p>
+     */
+    public static void death(int id, String token, String uuid, String name) {
+        JsonObject body = new JsonObject();
+        body.addProperty("id", id);
+        body.addProperty("token", token);
+        if (uuid != null && !uuid.isEmpty()) body.addProperty("uuid", uuid);
+        if (name != null && !name.isEmpty()) body.addProperty("name", name);
+        post("/carriages/death", body); // ignore result
+    }
+
 
     public static void report(int id, String reporterUuid, String reason) {
         JsonObject body = new JsonObject();

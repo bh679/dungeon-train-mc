@@ -8,7 +8,8 @@ which references mods by ``projectID`` + ``fileID`` — Modrinth references each
 at build time from the *pinned Modrinth version id* of each mod (``modpack.config.json``),
 exactly mirroring the builds the CurseForge pack ships.
 
-Dungeon Train jarJars only DiscordPresence + joml-primitives *inside* its own jar; the sibling
+Dungeon Train jarJars DiscordPresence + TradeEverything + EdibleBackpacks + joml-primitives
+*inside* its own jar; the sibling
 mods AIN/AIS/PlayerMob/EnderChestPersistence are un-bundled required downloads (so their own
 project pages get credited), so the pack lists:
 
@@ -121,9 +122,9 @@ def compute_env(*, required: bool, client_side: str, server_side: str) -> dict[s
     * **client** is always ``desired`` — never ``unsupported``. The pack mirrors the CurseForge
       pack, which installs every bundled mod into the player's (single-player-capable) instance.
       We deliberately ignore the mod's own ``client_side`` here: several bundled libraries declare
-      ``client_side=unsupported`` (e.g. Lithostitched, a worldgen lib) yet ARE needed by the
+      ``client_side=unsupported`` (typically worldgen libs) yet ARE needed by the
       integrated server in single-player, so excluding them would break the one-click opt-ins that
-      depend on them (Tectonic needs Lithostitched). None of the curated mods crash on a client.
+      depend on them. None of the curated mods crash on a client.
     * **server** respects ``server_side=unsupported`` so genuinely client-only mods (AmbientSounds'
       ~84 MB of audio, the inventory/HUD QoL mods) are skipped on dedicated servers rather than
       shipped uselessly; otherwise it is ``desired``.

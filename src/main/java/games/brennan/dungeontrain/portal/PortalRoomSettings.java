@@ -5,24 +5,25 @@ import games.brennan.dungeontrain.track.variant.TrackVariantWeights;
 
 /**
  * Everything a {@code portal_room} variant says about its own boundary: what it does at its walls,
- * — for {@link PortalRoomMode#ENDLESS_REPETITION} — whether the copies it makes are identical or
- * rolled afresh, whether the room is furnished from the ordinary contents pool, and — for either
- * endless mode — how many extra ways back to the train it scatters through its copies.
+ * — for either endless mode — whether the tiles it appends are identical or rolled afresh, whether
+ * the room is furnished from the ordinary contents pool, how many extra ways back to the train it
+ * scatters through its copies, whether every book inside it is by one author, and whether it is lit
+ * as though it stood outdoors.
  *
- * <h2>All four live in the one {@code mode} tag</h2>
- * <p>On disk that reads {@code "mode": "endless_repetition/dynamic/fit/random:12"}, or just
- * {@code "mode": "endless_repetition"} when the three trailing settings are at their defaults.
+ * <h2>All six live in the one {@code mode} tag</h2>
+ * <p>On disk that reads {@code "mode": "endless_repetition/dynamic/fit/random:12/signature/day"}, or
+ * just {@code "mode": "endless_repetition"} when the five trailing settings are at their defaults.
  * {@code TemplateMeta.mode} is documented as an <i>opaque per-kind tag</i> — what it contains is the
  * owning kind's business — so encoding several settings in it is exactly what that field is for, and
  * it keeps a record shared by carriages and contents from growing fields only portal rooms will ever
  * read.</p>
  *
- * <p>They are still separate controls in the editor: a Walls row, a Contents row, and — when the
- * walls repeat — a Copies row and an Exits row. Only the storage is shared.</p>
+ * <p>They are still separate controls in the editor: a Walls row, a Contents row, a Books row, and —
+ * when the walls repeat — a Copies row and an Exits row. Only the storage is shared.</p>
  *
- * <p><b>Trailing segments are optional on the way in.</b> Every tag written before Contents or Exits
- * existed has one, two or three segments and still parses, to a room that behaves exactly as it
- * did.</p>
+ * <p><b>Trailing segments are optional on the way in.</b> Every tag written before Contents, Exits,
+ * Books or Sky existed has one to five segments and still parses, to a room that behaves exactly as
+ * it did.</p>
  *
  * <h2>Exits is the one setting whose default depends on another</h2>
  * <p>An absent Exits segment does not mean "off", it means "whatever this mode wants" — see
@@ -35,15 +36,19 @@ import games.brennan.dungeontrain.track.variant.TrackVariantWeights;
  * @param copies   what its copies are, when it makes any
  * @param contents whether it is furnished from the contents pool, and how
  * @param exits    how many extra corridors back to the train it lays, and how far apart
+ * @param books    whether every book found inside is by one author, and how that author is picked
+ * @param sky      whether it is lit as though it stood outdoors, and under which sky
  */
 public record PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
-                                 PortalRoomContents contents, PortalRoomExits exits) {
+                                 PortalRoomContents contents, PortalRoomExits exits,
+                                 PortalRoomBooks books, PortalRoomSky sky) {
 
     /** Separates the mode from the settings that follow it in the stored tag. */
     private static final String SEPARATOR = "/";
 
     public static final PortalRoomSettings DEFAULT = new PortalRoomSettings(
-        PortalRoomMode.DEFAULT, PortalRoomCopies.DEFAULT, PortalRoomContents.DEFAULT, null);
+        PortalRoomMode.DEFAULT, PortalRoomCopies.DEFAULT, PortalRoomContents.DEFAULT, null,
+        PortalRoomBooks.DEFAULT, PortalRoomSky.NONE);
 
     public PortalRoomSettings {
         if (mode == null) mode = PortalRoomMode.DEFAULT;
@@ -52,17 +57,33 @@ public record PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
         // After the mode has been settled, never before: a null here means "this room said nothing
         // about its exits", and what that resolves to is the mode's business.
         if (exits == null) exits = mode.defaultExits();
+        if (books == null) books = PortalRoomBooks.DEFAULT;
+        if (sky == null) sky = PortalRoomSky.NONE;
     }
 
     /** The boundary settings alone, unfurnished — the pair this record was before Contents existed. */
     public PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies) {
-        this(mode, copies, PortalRoomContents.DEFAULT, null);
+        this(mode, copies, PortalRoomContents.DEFAULT, null, PortalRoomBooks.DEFAULT,
+            PortalRoomSky.NONE);
     }
 
     /** The three settings this record carried before Exits existed, at the mode's own default. */
     public PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
                               PortalRoomContents contents) {
-        this(mode, copies, contents, null);
+        this(mode, copies, contents, null, PortalRoomBooks.DEFAULT, PortalRoomSky.NONE);
+    }
+
+    /** The four settings this record carried before Books existed, with no author lock. */
+    public PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
+                              PortalRoomContents contents, PortalRoomExits exits) {
+        this(mode, copies, contents, exits, PortalRoomBooks.DEFAULT, PortalRoomSky.NONE);
+    }
+
+    /** The five settings this record carried before Sky existed, lit only by its own lamps. */
+    public PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
+                              PortalRoomContents contents, PortalRoomExits exits,
+                              PortalRoomBooks books) {
+        this(mode, copies, contents, exits, books, PortalRoomSky.NONE);
     }
 
     /**
@@ -81,7 +102,9 @@ public record PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
             PortalRoomContents.parse(segment(parts, 2)),
             // Null rather than PortalRoomExits.parse(null): an absent segment must reach the
             // constructor as "unsaid" so the mode's default applies, not as a value of its own.
-            exitsSegment == null ? null : PortalRoomExits.parse(exitsSegment));
+            exitsSegment == null ? null : PortalRoomExits.parse(exitsSegment),
+            PortalRoomBooks.parse(segment(parts, 4)),
+            PortalRoomSky.parse(segment(parts, 5)));
     }
 
     /** Segment {@code index} of a split tag, or null when the tag is shorter than that. */
@@ -110,8 +133,24 @@ public record PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
      * mode already says, and writing it out would put a segment in every such tag for nothing.</p>
      */
     public String toTag() {
-        PortalRoomCopies effectiveCopies = copiesApply() ? copies : PortalRoomCopies.DEFAULT;
+        PortalRoomCopies effectiveCopies = effectiveCopies();
         PortalRoomExits effectiveExits = effectiveExits();
+        if (sky.lights()) {
+            return mode.id() + SEPARATOR + effectiveCopies.id() + SEPARATOR + contents.id()
+                + SEPARATOR + effectiveExits.id() + SEPARATOR + books.id() + SEPARATOR + sky.id();
+        }
+        // Value equality, not identity: PortalRoomBooks is a record, and parsing an "off" segment
+        // builds a NEW instance equal to DEFAULT rather than returning it. An identity test here has
+        // any tag that has ever carried a books segment re-writing itself one segment longer for
+        // good — which switching Sky on and back off is now an easy way to trigger, since doing so
+        // writes the books placeholder on the way through.
+        if (!PortalRoomBooks.DEFAULT.equals(books)) {
+            // Exits is written out as whatever it effectively is, even when that is the mode's own
+            // default: a later segment cannot be written without the earlier ones in front of it,
+            // and parse reads that placeholder back as the same value it stood in for.
+            return mode.id() + SEPARATOR + effectiveCopies.id() + SEPARATOR + contents.id()
+                + SEPARATOR + effectiveExits.id() + SEPARATOR + books.id();
+        }
         if (!effectiveExits.equals(mode.defaultExits())) {
             return mode.id() + SEPARATOR + effectiveCopies.id() + SEPARATOR + contents.id()
                 + SEPARATOR + effectiveExits.id();
@@ -119,13 +158,48 @@ public record PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
         if (contents != PortalRoomContents.DEFAULT) {
             return mode.id() + SEPARATOR + effectiveCopies.id() + SEPARATOR + contents.id();
         }
-        if (effectiveCopies == PortalRoomCopies.DEFAULT) return mode.id();
+        if (effectiveCopies.equals(PortalRoomCopies.DEFAULT)) return mode.id();
         return mode.id() + SEPARATOR + effectiveCopies.id();
     }
 
-    /** True when the Copies control applies at all — only Endless Repetition makes copies of a room. */
+    /** True when the Copies control applies at all — either endless mode appends tiles to roll. */
     public boolean copiesApply() {
-        return mode.tilesWholeRoom();
+        return mode.copiesApply();
+    }
+
+    /**
+     * What this room actually does about its copies: {@link #copies} where every part of it applies,
+     * and {@link PortalRoomCopies#DEFAULT} where it does not.
+     *
+     * <p>Read this rather than {@link #copies} anywhere the answer drives block writes, for the same
+     * reason {@link #effectiveExits} exists: a room carries whatever setting it was last given, and
+     * honouring one the current walls cannot use writes the wrong blocks.</p>
+     *
+     * <p>Two ways for it not to apply. A room that appends no tiles at all has nothing for the
+     * setting to describe. And {@link PortalRoomCopies.Kind#SINGLE} is
+     * {@link PortalRoomMode#ENDLESS_OPEN}'s alone — under Endless Repetition it would append solid
+     * cubes where rooms should be, so it reads back as Exact there.</p>
+     */
+    public PortalRoomCopies effectiveCopies() {
+        if (!copiesApply()) return PortalRoomCopies.DEFAULT;
+        boolean singleHere = !copies.repeatsOneBlock() || mode.singleCopiesApply();
+        return singleHere ? copies : PortalRoomCopies.DEFAULT;
+    }
+
+    /**
+     * The same settings at the next Copies value — what the editor's one cycling button steps to.
+     *
+     * <p>Asked of the settings rather than of {@link PortalRoomCopies} directly because the list of
+     * available values depends on the walls, and the walls live here. Single is skipped under a mode
+     * that cannot use it, so the button never stops on an option that means nothing.</p>
+     */
+    public PortalRoomSettings nextCopies() {
+        return withCopies(copies.next(mode.singleCopiesApply()));
+    }
+
+    /** The same settings with {@link PortalRoomCopies.Kind#SINGLE}'s block set to {@code blockId}. */
+    public PortalRoomSettings withCopiesBlock(String blockId) {
+        return withCopies(copies.withBlock(blockId));
     }
 
     /** True when the Exits control applies at all — only an endless room has anywhere to put one. */
@@ -157,18 +231,26 @@ public record PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
      */
     public PortalRoomSettings withMode(PortalRoomMode newMode) {
         boolean inherited = exits.equals(mode.defaultExits());
-        return new PortalRoomSettings(newMode, copies, contents, inherited ? null : exits);
+        return new PortalRoomSettings(newMode, copies, contents, inherited ? null : exits, books, sky);
     }
 
     public PortalRoomSettings withCopies(PortalRoomCopies newCopies) {
-        return new PortalRoomSettings(mode, newCopies, contents, exits);
+        return new PortalRoomSettings(mode, newCopies, contents, exits, books, sky);
     }
 
     public PortalRoomSettings withContents(PortalRoomContents newContents) {
-        return new PortalRoomSettings(mode, copies, newContents, exits);
+        return new PortalRoomSettings(mode, copies, newContents, exits, books, sky);
     }
 
     public PortalRoomSettings withExits(PortalRoomExits newExits) {
-        return new PortalRoomSettings(mode, copies, contents, newExits);
+        return new PortalRoomSettings(mode, copies, contents, newExits, books, sky);
+    }
+
+    public PortalRoomSettings withBooks(PortalRoomBooks newBooks) {
+        return new PortalRoomSettings(mode, copies, contents, exits, newBooks, sky);
+    }
+
+    public PortalRoomSettings withSky(PortalRoomSky newSky) {
+        return new PortalRoomSettings(mode, copies, contents, exits, books, newSky);
     }
 }

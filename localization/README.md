@@ -22,7 +22,7 @@ machine-translated and which a human has checked.
 
 Nothing in this directory ships in the jar (only `src/main/resources` and
 `src/main/templates` enter the build). This is repo-side bookkeeping; the shipped,
-player-visible counterparts live in
+player-visible counterparts are the [manifests](#shipped-manifests) and
 `src/main/resources/assets/dungeontrain/localization_credits/<locale>.json`:
 
 - the locale-LEVEL `human_reviewed` flag (hand-maintained judgment call) that drives
@@ -59,6 +59,37 @@ file** (so provenance diffs align line-for-line with lang-file diffs), raw UTF-8
   restamps.)
 - `en_us` is the source language, not a translation — it has no sidecar, and CI
   rejects one.
+
+## Shipped manifests
+
+The credit counts above answer *how much* of a locale is machine-translated. The in-game
+translation editor needs *which lines* — so `stamp-provenance.py` also generates
+`src/main/resources/assets/dungeontrain/localization_provenance/<locale>.json`, the one
+part of this per-line system that enters the jar:
+
+```json
+{
+  "_note": "Generated from … — do not hand-edit. \"*\" = every unit in that body is AI-authored and unreviewed.",
+  "locale": "de_de",
+  "lang": { "dungeontrain": "*", "adventureitemnames": "*", "playermob": "*", "discordpresence": "*" },
+  "books": "*"
+}
+```
+
+- One manifest per locale spans **both** bodies — every lang namespace plus the narrative
+  books — because the editor lists them in one screen.
+- Each value is `"*"` (every unit in that body is AI-authored and unreviewed), `[]`, or an
+  explicit list of keys / book paths. `"*"` is what keeps these small: 17 locales are wholly
+  machine-translated, so they collapse to a few hundred bytes; only zh_cn and zh_tw carry
+  real lists.
+- A body with **no sidecar** for that locale is omitted entirely, so "absent" (DiscordPresence
+  has no `zh_cn` here) stays distinguishable from "nothing needs review".
+- Generated, like the credit counts — **never hand-edit**. Both `stamp-provenance.py` and
+  `stamp-narrative-provenance.py` rebuild every manifest on every run, whatever their
+  `--locale`/`--namespace` filter, and `check-provenance.py` **hard-fails** on drift, a
+  missing manifest, or an orphan. It checks both bodies (`check-narrative-provenance.py`
+  has no view of the lang namespaces, so it cannot be the one to do it).
+- Build/compact rules are tested in `scripts/localization/test_provenance_io.py`.
 
 ## Author registry — `authors.json`
 
@@ -181,6 +212,38 @@ value change vs the commit that stamped the current reviewer. Proved by
 **and** reviewer) and stamps `verdict: ok` rows as reviewed with their original author kept — both
 through `stamp-provenance.py`, so the registry and credit-count rules stay in one place.
 Sibling namespaces can only report `needs_first_review`: their English lives in their own repos.
+
+**Importing what players fixed in-game** — the other return leg. Translations submitted from the
+in-game editor and approved on the explorer's `#/translations` page are served to players by the
+relay, but they change nothing here: the shipped text, the sidecars and the generated Credits page
+all stay as if the work never happened. `import-approved-translations.py` closes that loop.
+
+```bash
+export DUNGEONTRAIN_RELAY_ADMIN_BASE='https://…/<admin cap>'   # env only — it carries the cap
+python3 scripts/localization/import-approved-translations.py --dry-run
+python3 scripts/localization/import-approved-translations.py [--register-new]
+```
+
+It reads the approved queue per locale, writes each approved value into its lang file (or the
+dotted field of its book), and stamps the translator through `stamp-provenance.py` /
+`stamp-narrative-provenance.py` — so the shipped `translation_contributors.json` behind the
+Credits page picks up their name *and* their per-language percentage on the next build. Run it
+before cutting a release; review the `git diff`, which is the whole change.
+
+Three refusals are the point of the script:
+
+- **An unregistered name fails the run.** `--register-new` adds them as plain `"human"`; a
+  translator who gave a profile URL still needs the object form written in by hand.
+- **A stale approval is skipped**, not shipped: every submission stores the English it was
+  translated from, and when `en_us` has changed since, the approval answers a question no longer
+  being asked (the relay-side twin of `source_changed_since_review` above).
+- **Nothing is reformatted.** Every write is a text-level edit of one value, so the blank-line
+  grouping, the CRLF files and the untouched lines all survive.
+
+An approval whose submitter unticked "credit me" arrives with no name; those lines are stamped to
+a registered **`Anonymous contributor`** rather than left reading as machine translation. A book
+whose every editable field an import replaced takes the translator as its author; one where they
+fixed a line or two records them as its reviewer, since narrative provenance is per book.
 
 ## Backfill notes (July 2026)
 

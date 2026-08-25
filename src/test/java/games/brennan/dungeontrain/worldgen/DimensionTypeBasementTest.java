@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.worldgen;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import games.brennan.dungeontrain.portal.PortalRoomLayout;
+import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.portal.PortalTwinLanes;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -41,6 +42,9 @@ final class DimensionTypeBasementTest {
     /** Every DT preset builds to the same sky ceiling; the basement is added below, not stolen above. */
     private static final int DT_SKY_TOP = 320;
 
+    /** The default carriage size, which is what the built-in room is measured against. */
+    private static final CarriageDims DEFAULT_DIMS = CarriageDims.DEFAULT;
+
     @Test
     @DisplayName("every DT dimension type is a legal one vanilla will load")
     void dimensionTypesAreLegal() throws IOException {
@@ -64,6 +68,12 @@ final class DimensionTypeBasementTest {
     @Test
     @DisplayName("every preset's basement is deep enough for all six twin lanes")
     void basementHoldsEveryLane() throws IOException {
+        // Measured at the built-in room's height, not at PortalRoomLayout.MAX_HEIGHT: lane spacing
+        // follows the room now (PortalTwinLanes.laneHeight), so the six-lane guarantee is about the
+        // room a world stamps when nothing taller has been authored. A world that does author a
+        // taller room knowingly spends lanes on it.
+        int builtIn = PortalRoomLayout.builtInSize(DEFAULT_DIMS).getY();
+
         for (Path f : dimensionTypes()) {
             String name = f.getFileName().toString();
             int minY = read(f).get("min_y").getAsInt();
@@ -71,14 +81,33 @@ final class DimensionTypeBasementTest {
 
             assertTrue(bedrockY > minY,
                 name + ": dimension type must run below its noise settings, or there is no basement");
-            assertEquals(PortalTwinLanes.MAX_LANES, PortalTwinLanes.usableLanes(minY, bedrockY),
+            assertEquals(PortalTwinLanes.MAX_LANES,
+                PortalTwinLanes.usableLanes(minY, bedrockY, builtIn),
                 name + ": basement holds " + (bedrockY - minY) + " blocks, too few for every lane");
 
             int topLane = PortalTwinLanes.twinFloorY(minY, bedrockY,
-                (PortalTwinLanes.MAX_LANES - 1) * 4, 4);
-            assertTrue(PortalTwinLanes.fitsUnderWorld(
-                    minY, bedrockY, topLane, PortalRoomLayout.MAX_HEIGHT),
+                (PortalTwinLanes.MAX_LANES - 1) * 4, 4, builtIn);
+            assertTrue(PortalTwinLanes.fitsUnderWorld(minY, bedrockY, topLane, builtIn),
                 name + ": the highest lane would push a room up through the bedrock");
+        }
+    }
+
+    @Test
+    @DisplayName("every preset can stand up a room taller than the built-in one")
+    void basementLeavesHeadroomToAuthorInto() throws IOException {
+        int builtIn = PortalRoomLayout.builtInSize(DEFAULT_DIMS).getY();
+
+        for (Path f : dimensionTypes()) {
+            String name = f.getFileName().toString();
+            int minY = read(f).get("min_y").getAsInt();
+            int bedrockY = read(noiseFor(f)).getAsJsonObject("noise").get("min_y").getAsInt();
+            int tallest = PortalTwinLanes.maxStructureHeight(minY, bedrockY);
+
+            assertTrue(tallest > builtIn,
+                name + ": holds only " + tallest + " blocks, no taller than the built-in room");
+            assertTrue(PortalTwinLanes.fitsUnderWorld(
+                    minY, bedrockY, PortalTwinLanes.floorY(minY), tallest),
+                name + ": its own tallest structure would reach the bedrock");
         }
     }
 
@@ -116,44 +145,13 @@ final class DimensionTypeBasementTest {
         return noise;
     }
 
-    /**
-     * The DT overworld presets — every dimension type paired with a noise settings file of the same
-     * name.
-     *
-     * <p>Pairing rather than listing the folder, because not everything in it is a stretch of the
-     * train's world. {@code builder.json} is the Train Builder's workshop: a fixed-time flat world
-     * with no noise settings, no terrain, and no portals, so every invariant below — a basement
-     * under the bedrock, six twin lanes in it, terrain that stops at the same ceiling — is a
-     * question that does not apply to it. Asserting them anyway would fail the build for a file that
-     * is behaving correctly.</p>
-     *
-     * <p>The pairing is the test, not a way around it: a real overworld preset that lost its noise
-     * settings would silently drop out of this list, so {@link #everyOverworldPresetIsChecked}
-     * pins the count.</p>
-     */
     private static List<Path> dimensionTypes() throws IOException {
         List<Path> out = new ArrayList<>();
         try (Stream<Path> files = Files.list(repoFile(DIM_TYPES))) {
-            files.filter(p -> p.getFileName().toString().endsWith(".json"))
-                .filter(p -> Files.isRegularFile(repoFile(NOISE).resolve(p.getFileName())))
-                .forEach(out::add);
+            files.filter(p -> p.getFileName().toString().endsWith(".json")).forEach(out::add);
         }
         assertFalse(out.isEmpty(), "no dimension types found under " + DIM_TYPES);
         return out;
-    }
-
-    @Test
-    @DisplayName("every noise settings preset has a dimension type checked against it")
-    void everyOverworldPresetIsChecked() throws IOException {
-        // The backstop on the pairing above: an overworld preset whose dimension type went missing —
-        // or was renamed out of step with its noise settings — would leave the basement invariants
-        // untested for that stretch of the world rather than failing.
-        List<Path> noiseFiles = new ArrayList<>();
-        try (Stream<Path> files = Files.list(repoFile(NOISE))) {
-            files.filter(p -> p.getFileName().toString().endsWith(".json")).forEach(noiseFiles::add);
-        }
-        assertEquals(noiseFiles.size(), dimensionTypes().size(),
-            "every noise settings file must have a dimension type of the same name beside it");
     }
 
     private static JsonObject read(Path file) throws IOException {

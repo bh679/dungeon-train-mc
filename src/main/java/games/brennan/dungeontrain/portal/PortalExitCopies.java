@@ -31,12 +31,27 @@ public record PortalExitCopies(Set<Site> sites) {
     /** Nothing standing — what every structure starts and ends as. */
     public static final PortalExitCopies NONE = new PortalExitCopies(Set.of());
 
-    /** Farthest first, ties broken on coordinates and role so a tick's choice is deterministic. */
-    private static Comparator<Site> orderFarthestFrom(Tile centre) {
-        return Comparator.comparingInt((Site s) -> s.chebyshevTo(centre))
+    /**
+     * Farthest first, ties broken on coordinates and role so a tick's choice is deterministic.
+     *
+     * <p>Distance is to the <b>nearest</b> of the centres, so with two players in one room the copy
+     * shed first is the one furthest from either of them rather than the one furthest from whichever
+     * was listed first.</p>
+     */
+    private static Comparator<Site> orderFarthestFrom(Set<Tile> centres) {
+        return Comparator.comparingInt((Site s) -> chebyshevToNearest(s, centres))
             .thenComparingInt(s -> s.tile().x())
             .thenComparingInt(s -> s.tile().z())
             .thenComparing(Site::role);
+    }
+
+    /** How far {@code site}'s anchor is from the closest of {@code centres}, in tiles. */
+    private static int chebyshevToNearest(Site site, Set<Tile> centres) {
+        int best = Integer.MAX_VALUE;
+        for (Tile centre : centres) {
+            best = Math.min(best, site.chebyshevTo(centre));
+        }
+        return best;
     }
 
     public PortalExitCopies {
@@ -81,7 +96,7 @@ public record PortalExitCopies(Set<Site> sites) {
      * player sheds what they have left behind rather than what is beside them.</p>
      */
     public Site nextToRemove(Tile centre, int radius, int reach) {
-        return nextToRemove(centre, radius, reach, site -> true);
+        return nextToRemove(Set.of(centre), radius, reach, site -> true);
     }
 
     /**
@@ -97,11 +112,26 @@ public record PortalExitCopies(Set<Site> sites) {
      * tile a player is standing in, for the same kind of reason.</p>
      */
     public Site nextToRemove(Tile centre, int radius, int reach, Predicate<Site> removable) {
+        return nextToRemove(Set.of(centre), radius, reach, removable);
+    }
+
+    /**
+     * As {@link #nextToRemove(Tile, int, int, Predicate)} for a room with several people in it: a
+     * copy is offered up only when its anchor is more than {@code radius + reach} from <b>every</b>
+     * centre.
+     *
+     * <p>The same safety rule {@code PortalRoomTiling} applies to tiles, and it matters more here,
+     * not less: a player standing in a copy's corridor resolves to a tile that corridor reaches into,
+     * and erasing the corridor around them drops them to the world floor. Following one centre, that
+     * is exactly what happened to everybody but the first player in the room.</p>
+     */
+    public Site nextToRemove(Set<Tile> centres, int radius, int reach, Predicate<Site> removable) {
+        if (centres.isEmpty()) return null;
         int hold = radius + Math.max(0, reach);
-        Comparator<Site> order = orderFarthestFrom(centre);
+        Comparator<Site> order = orderFarthestFrom(centres);
         Site worst = null;
         for (Site site : sites) {
-            if (site.chebyshevTo(centre) <= hold) continue;
+            if (chebyshevToNearest(site, centres) <= hold) continue;
             if (worst != null && order.compare(site, worst) <= 0) continue;
             if (!removable.test(site)) continue;
             worst = site;
@@ -117,7 +147,7 @@ public record PortalExitCopies(Set<Site> sites) {
      * gone.</p>
      */
     public Site farthestFrom(Tile centre) {
-        Comparator<Site> order = orderFarthestFrom(centre);
+        Comparator<Site> order = orderFarthestFrom(Set.of(centre));
         Site worst = null;
         for (Site site : sites) {
             if (worst != null && order.compare(site, worst) <= 0) continue;

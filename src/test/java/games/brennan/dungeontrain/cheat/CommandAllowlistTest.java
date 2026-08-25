@@ -51,6 +51,11 @@ class CommandAllowlistTest {
         assertTrue(CommandAllowlist.taints("dungeontrain speed 12"));
         assertTrue(CommandAllowlist.taints("dungeontrain carriages 8"));
         assertTrue(CommandAllowlist.taints("dungeontrain tracks off"));
+        // Retuning how often portals arrive re-shapes the run, so it has to route through the Free
+        // Play prompt like any other. The world-level taint that PortalCommand adds on top only
+        // fires once the command actually runs, which this gate is what allows.
+        assertTrue(CommandAllowlist.taints("dungeontrain portal carriage 5"));
+        assertTrue(CommandAllowlist.taints("dungeontrain portal carriage creative 5"));
         assertTrue(CommandAllowlist.taints("dt spawn"));               // alias
         assertTrue(CommandAllowlist.taints("dungeontrain:spawn"));     // namespaced root alias
     }
@@ -142,6 +147,14 @@ class CommandAllowlistTest {
     }
 
     @Test
+    @DisplayName("/fixconfig (config-reset Free Play fix action) is allowed")
+    void fixConfigAllowed() {
+        // Putting the config back the way it shipped must never taint the run it repairs.
+        assertFalse(CommandAllowlist.taints("fixconfig"));
+        assertFalse(CommandAllowlist.taints("/fixconfig"));
+    }
+
+    @Test
     @DisplayName("/playanimation (cosmetic entity animation) is allowed")
     void playAnimationAllowed() {
         assertFalse(CommandAllowlist.taints("playanimation @s minecraft:humanoid.emote sneeze"));
@@ -180,6 +193,40 @@ class CommandAllowlistTest {
         assertTrue(CommandAllowlist.taints("kill @e"));
         assertTrue(CommandAllowlist.taints("kill SomePlayer"));
         assertTrue(CommandAllowlist.taints("/kill @e[type=zombie]"));
+    }
+
+    @Test
+    @DisplayName("WorldEdit's // commands taint — the modpack's map editor needs no special case")
+    void worldEditCommandsTaint() {
+        // WorldEdit registers into the vanilla dispatcher (CommandWrapper -> Commands.literal),
+        // so CommandEvent fires and the deny-by-default allowlist covers it with no WorldEdit
+        // -specific code. These pin that down: an allowlist edit must not silently un-gate it.
+        assertTrue(CommandAllowlist.taints("//set stone"));
+        assertTrue(CommandAllowlist.taints("//replace dirt stone"));
+        assertTrue(CommandAllowlist.taints("//brush sphere stone 5"));
+        assertTrue(CommandAllowlist.taints("//paste"));
+        assertTrue(CommandAllowlist.taints("//undo"));
+        // Selection / info commands taint too — the prompt lands the moment WorldEdit is touched.
+        assertTrue(CommandAllowlist.taints("//wand"));
+        assertTrue(CommandAllowlist.taints("//pos1"));
+        assertTrue(CommandAllowlist.taints("//size"));
+        // …as do the non-slash-prefixed roots.
+        assertTrue(CommandAllowlist.taints("worldedit reload"));
+        assertTrue(CommandAllowlist.taints("we reload"));
+    }
+
+    @Test
+    @DisplayName("/customcontent never taints — it is the way OUT of Free Play")
+    void customContentNeverTaints() {
+        // The Free Play notice links straight to this command. Tainting a player for clicking the
+        // "turn my custom content off" line would be exactly backwards — same reasoning that keeps
+        // /fixaisconfig allowlisted. It is a ROOT command, not a /dt subcommand, because /dt is
+        // gated at permission 2 and the player it exists for is an ordinary survival player.
+        assertFalse(CommandAllowlist.taints("/customcontent off"));
+        assertFalse(CommandAllowlist.taints("/customcontent on"));
+        assertFalse(CommandAllowlist.taints("/customcontent status"));
+        // …while the DT authoring commands still do.
+        assertTrue(CommandAllowlist.taints("/dt package disable my-pack"));
     }
 
     @Test

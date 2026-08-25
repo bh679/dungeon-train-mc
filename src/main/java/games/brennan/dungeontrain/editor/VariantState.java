@@ -57,12 +57,21 @@ import org.jetbrains.annotations.Nullable;
  *       entries: at spawn the cell drops out-of-band eggs from its candidate
  *       pool before the weighted pick. The default band {@code (0, ALL)} is
  *       omitted from JSON, so v7 files load and re-save diff-clean.</li>
+ *   <li>v9 — adds an optional per-entry {@code groupRef} (≥ 0, default 0):
+ *       a <b>lock-group reference</b>. When {@code groupRef > 0} the entry is
+ *       not a value of its own — if the cell's roll lands on it, the block
+ *       placed is whatever the lock group with that id resolved to. The
+ *       {@code state} field still carries a placeholder (the referenced
+ *       group's first state, captured at authoring time) so the editor can
+ *       draw an icon and clearing the ref leaves a sane block. Omitted from
+ *       JSON when 0, so v8 files round-trip diff-clean. See
+ *       {@link CarriageVariantBlocks#resolveGroupRef}.</li>
  * </ul></p>
  */
 public record VariantState(BlockState state, @Nullable CompoundTag blockEntityNbt, int weight,
                            VariantRotation rotation, @Nullable String linkedLootPrefabId,
                            @Nullable ResourceLocation entityId, VariantHalf half,
-                           VariantDifficulty difficulty) {
+                           VariantDifficulty difficulty, int groupRef) {
 
     public VariantState {
         if (entityId != null) {
@@ -85,6 +94,15 @@ public record VariantState(BlockState state, @Nullable CompoundTag blockEntityNb
         }
         if (half == null) half = VariantHalf.NONE;
         if (difficulty == null) difficulty = VariantDifficulty.NONE;
+        if (groupRef < 0) groupRef = 0;
+    }
+
+    /** Eight-arg overload defaulting {@code groupRef} to 0 (not a lock-group reference). */
+    public VariantState(BlockState state, @Nullable CompoundTag blockEntityNbt, int weight,
+                        VariantRotation rotation, @Nullable String linkedLootPrefabId,
+                        @Nullable ResourceLocation entityId, VariantHalf half,
+                        VariantDifficulty difficulty) {
+        this(state, blockEntityNbt, weight, rotation, linkedLootPrefabId, entityId, half, difficulty, 0);
     }
 
     /** Seven-arg overload defaulting {@code difficulty} to {@link VariantDifficulty#NONE}. */
@@ -167,11 +185,20 @@ public record VariantState(BlockState state, @Nullable CompoundTag blockEntityNb
         return entityId != null;
     }
 
+    /**
+     * True when this entry is a v9 lock-group reference — picking it means
+     * "render whatever lock group {@link #groupRef} resolved to" rather than
+     * placing this entry's own {@link #state}.
+     */
+    public boolean isGroupRef() {
+        return groupRef > 0;
+    }
+
     /** True when the entry has no extras over v1 — drives bare-string vs object-form JSON serialisation. */
     public boolean isPlainBareString() {
         return blockEntityNbt == null && weight == 1 && rotation.isDefault()
             && linkedLootPrefabId == null && entityId == null && half.isDefault()
-            && difficulty.isDefault();
+            && difficulty.isDefault() && groupRef == 0;
     }
 
     /**
@@ -180,31 +207,53 @@ public record VariantState(BlockState state, @Nullable CompoundTag blockEntityNb
      * is preserved. Not meaningful for mob entries (their state is the sentinel).
      */
     public VariantState withState(BlockState newState, @Nullable CompoundTag newBlockEntityNbt) {
-        return new VariantState(newState, newBlockEntityNbt, weight, rotation, linkedLootPrefabId, entityId, half, difficulty);
+        return new VariantState(newState, newBlockEntityNbt, weight, rotation, linkedLootPrefabId, entityId, half, difficulty, groupRef);
     }
 
     /** Return a copy with {@code weight} replaced (clamped ≥ 1 by the canonical constructor). */
     public VariantState withWeight(int newWeight) {
-        return new VariantState(state, blockEntityNbt, newWeight, rotation, linkedLootPrefabId, entityId, half, difficulty);
+        return new VariantState(state, blockEntityNbt, newWeight, rotation, linkedLootPrefabId, entityId, half, difficulty, groupRef);
     }
 
     /** Return a copy with {@code rotation} replaced. */
     public VariantState withRotation(VariantRotation newRotation) {
-        return new VariantState(state, blockEntityNbt, weight, newRotation, linkedLootPrefabId, entityId, half, difficulty);
+        return new VariantState(state, blockEntityNbt, weight, newRotation, linkedLootPrefabId, entityId, half, difficulty, groupRef);
     }
 
     /** Return a copy with {@code linkedLootPrefabId} replaced ({@code null} clears the link). */
     public VariantState withLinkedLootPrefabId(@Nullable String newLinkedLootPrefabId) {
-        return new VariantState(state, blockEntityNbt, weight, rotation, newLinkedLootPrefabId, entityId, half, difficulty);
+        return new VariantState(state, blockEntityNbt, weight, rotation, newLinkedLootPrefabId, entityId, half, difficulty, groupRef);
     }
 
     /** Return a copy with {@code half} replaced. */
     public VariantState withHalf(VariantHalf newHalf) {
-        return new VariantState(state, blockEntityNbt, weight, rotation, linkedLootPrefabId, entityId, newHalf, difficulty);
+        return new VariantState(state, blockEntityNbt, weight, rotation, linkedLootPrefabId, entityId, newHalf, difficulty, groupRef);
     }
 
     /** Return a copy with {@code difficulty} replaced (only meaningful for mob entries). */
     public VariantState withDifficulty(VariantDifficulty newDifficulty) {
-        return new VariantState(state, blockEntityNbt, weight, rotation, linkedLootPrefabId, entityId, half, newDifficulty);
+        return new VariantState(state, blockEntityNbt, weight, rotation, linkedLootPrefabId, entityId, half, newDifficulty, groupRef);
+    }
+
+    /**
+     * Return a copy with {@code groupRef} replaced. Pass 0 to clear the
+     * reference — the entry then places its own {@link #state} again, which is
+     * why the placeholder is kept alongside the ref rather than discarded.
+     */
+    public VariantState withGroupRef(int newGroupRef) {
+        return new VariantState(state, blockEntityNbt, weight, rotation, linkedLootPrefabId, entityId, half, difficulty, newGroupRef);
+    }
+
+    /**
+     * Lock-group reference factory: an entry that defers to lock group
+     * {@code groupRef}. {@code placeholder} is the referenced group's first
+     * state, kept for the editor icon and as the fallback if the ref is later
+     * cleared.
+     */
+    public static VariantState ofGroupRef(int groupRef, BlockState placeholder) {
+        if (groupRef <= 0) throw new IllegalArgumentException("groupRef must be > 0");
+        if (placeholder == null) throw new IllegalArgumentException("placeholder");
+        return new VariantState(placeholder, null, 1, VariantRotation.NONE, null, null,
+            VariantHalf.NONE, VariantDifficulty.NONE, groupRef);
     }
 }

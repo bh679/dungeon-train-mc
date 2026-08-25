@@ -79,6 +79,8 @@ public final class DungeonTrainConfig {
     public static final boolean DEFAULT_FIRST_LEVEL_NO_HOSTILES = true;
     public static final boolean DEFAULT_FIRST_LEVEL_EASY_MOBS = true;
     public static final boolean DEFAULT_FIRST_LEVEL_STARTER_LOOT = true;
+    /** Each vanilla difficulty is its own profile — separate Ender Chest and carried loadout. */
+    public static final boolean DEFAULT_DIFFICULTY_ISOLATED_STASH = true;
     // Onboarding stage lengths in carriages of player progress (independent of carriagesPerTier).
     public static final int MIN_ONBOARDING_STAGE_CARRIAGES = 0;
     public static final int MAX_ONBOARDING_STAGE_CARRIAGES = 1000;
@@ -154,6 +156,9 @@ public final class DungeonTrainConfig {
     public static final double MIN_SHARED_CARRIAGE_POOL_CHANCE = 0.0;
     public static final double MAX_SHARED_CARRIAGE_POOL_CHANCE = 1.0;
     /** Default probability a shared-carriage slot places a build authored by a player in this world. */
+    public static final int DEFAULT_SHARED_CARRIAGE_MAX_ENTITIES = 64;
+    public static final int MIN_SHARED_CARRIAGE_MAX_ENTITIES = 0;
+    public static final int MAX_SHARED_CARRIAGE_MAX_ENTITIES = 512;
     public static final double DEFAULT_SHARED_CARRIAGE_OWN_CHANCE = 0.30;
     public static final double MIN_SHARED_CARRIAGE_OWN_CHANCE = 0.0;
     public static final double MAX_SHARED_CARRIAGE_OWN_CHANCE = 1.0;
@@ -176,6 +181,23 @@ public final class DungeonTrainConfig {
     public static final int DEFAULT_SHARED_BOOK_REPEAT_GROUPS = 2;
     public static final int MIN_SHARED_BOOK_REPEAT_GROUPS = 1;
     public static final int MAX_SHARED_BOOK_REPEAT_GROUPS = 64;
+
+    /**
+     * How many approved books an author must have written for a portal room to lock to them.
+     *
+     * <p>A room wants a catalogue, not a shelf. Locking to somebody with two books hands those two out
+     * over and over, so the Random Player and Random Signature settings draw only from authors above
+     * this bar. The Current Player setting has no bar — finding your OWN two books in a room is the
+     * point of it — and rotates to a random author for a player who has written nothing.</p>
+     *
+     * <p>Strictly more than, not at least: 10 means an author needs an eleventh book to qualify.</p>
+     */
+    public static final int DEFAULT_PORTAL_ROOM_AUTHOR_MIN_BOOKS = 10;
+    public static final int MIN_PORTAL_ROOM_AUTHOR_MIN_BOOKS = 0;
+    public static final int MAX_PORTAL_ROOM_AUTHOR_MIN_BOOKS = 1000;
+
+    /** Default master for portal rooms whose template asks to stand under a sky of its own. */
+    public static final boolean DEFAULT_PORTAL_ROOM_DAYLIGHT = true;
 
     /** Default master for serving approved player-written narrative series back on narrative lecterns. */
     public static final boolean DEFAULT_DISCOVER_NARRATIVES_ENABLED = true;
@@ -241,6 +263,7 @@ public final class DungeonTrainConfig {
     public static final ModConfigSpec.BooleanValue FIRST_LEVEL_EASY_MOBS;
     public static final ModConfigSpec.IntValue FIRST_LEVEL_EASY_MOBS_CARRIAGES;
     public static final ModConfigSpec.BooleanValue FIRST_LEVEL_STARTER_LOOT;
+    public static final ModConfigSpec.BooleanValue DIFFICULTY_ISOLATED_STASH;
     public static final ModConfigSpec.IntValue RANDOM_BOOK_FROM_BOOKSHELF_ONE_IN;
     public static final ModConfigSpec.BooleanValue DEATH_REPORT_TO_DISCORD;
     public static final ModConfigSpec.BooleanValue FREE_PLAY_NOTICE_TO_DISCORD;
@@ -255,10 +278,13 @@ public final class DungeonTrainConfig {
     public static final ModConfigSpec.BooleanValue LETTERS_ENABLED;
     public static final ModConfigSpec.DoubleValue SHARED_BOOK_LOOT_MAX_CHANCE;
     public static final ModConfigSpec.IntValue SHARED_BOOK_REPEAT_GROUPS;
+    public static final ModConfigSpec.IntValue PORTAL_ROOM_AUTHOR_MIN_BOOKS;
+    public static final ModConfigSpec.BooleanValue PORTAL_ROOM_DAYLIGHT;
     public static final ModConfigSpec.BooleanValue SHARED_CARRIAGES_ENABLED;
     public static final ModConfigSpec.BooleanValue BUILDER_PROFILE_ENABLED;
     public static final ModConfigSpec.DoubleValue SHARED_CARRIAGE_POOL_CHANCE;
     public static final ModConfigSpec.DoubleValue SHARED_CARRIAGE_OWN_CHANCE;
+    public static final ModConfigSpec.IntValue SHARED_CARRIAGE_MAX_ENTITIES;
     public static final ModConfigSpec.BooleanValue DISCOVER_NARRATIVES_ENABLED;
     public static final ModConfigSpec.DoubleValue NARRATIVE_DISCOVERY_RAMP_THRESHOLD;
     public static final ModConfigSpec.BooleanValue DIFFICULTY_LEVEL_NOTICE_TO_DISCORD;
@@ -292,6 +318,7 @@ public final class DungeonTrainConfig {
         FIRST_LEVEL_EASY_MOBS = pair.getLeft().firstLevelEasyMobs;
         FIRST_LEVEL_EASY_MOBS_CARRIAGES = pair.getLeft().firstLevelEasyMobsCarriages;
         FIRST_LEVEL_STARTER_LOOT = pair.getLeft().firstLevelStarterLoot;
+        DIFFICULTY_ISOLATED_STASH = pair.getLeft().difficultyIsolatedStash;
         RANDOM_BOOK_FROM_BOOKSHELF_ONE_IN = pair.getLeft().randomBookFromBookshelfOneIn;
         DEATH_REPORT_TO_DISCORD = pair.getLeft().deathReportToDiscord;
         FREE_PLAY_NOTICE_TO_DISCORD = pair.getLeft().freePlayNoticeToDiscord;
@@ -306,10 +333,13 @@ public final class DungeonTrainConfig {
         LETTERS_ENABLED = pair.getLeft().lettersEnabled;
         SHARED_BOOK_LOOT_MAX_CHANCE = pair.getLeft().sharedBookLootMaxChance;
         SHARED_BOOK_REPEAT_GROUPS = pair.getLeft().sharedBookRepeatGroups;
+        PORTAL_ROOM_AUTHOR_MIN_BOOKS = pair.getLeft().portalRoomAuthorMinBooks;
+        PORTAL_ROOM_DAYLIGHT = pair.getLeft().portalRoomDaylight;
         SHARED_CARRIAGES_ENABLED = pair.getLeft().sharedCarriagesEnabled;
         BUILDER_PROFILE_ENABLED = pair.getLeft().builderProfileEnabled;
         SHARED_CARRIAGE_POOL_CHANCE = pair.getLeft().sharedCarriagePoolChance;
         SHARED_CARRIAGE_OWN_CHANCE = pair.getLeft().sharedCarriageOwnChance;
+        SHARED_CARRIAGE_MAX_ENTITIES = pair.getLeft().sharedCarriageMaxEntities;
         DISCOVER_NARRATIVES_ENABLED = pair.getLeft().discoverNarrativesEnabled;
         NARRATIVE_DISCOVERY_RAMP_THRESHOLD = pair.getLeft().narrativeDiscoveryRampThreshold;
         DIFFICULTY_LEVEL_NOTICE_TO_DISCORD = pair.getLeft().difficultyLevelNoticeToDiscord;
@@ -359,7 +389,7 @@ public final class DungeonTrainConfig {
                 .comment("Number of carriages per tier step. tierIndex = floor(abs(pIdx) / carriagesPerTier), clamped to the loaded tier list. Game default 20; set to 1 for fast-paced/testing progression.")
                 .defineInRange("carriagesPerTier", DEFAULT_CARRIAGES_PER_TIER, MIN_CARRIAGES_PER_TIER, MAX_CARRIAGES_PER_TIER);
         ModConfigSpec.IntValue difficultyTravelledOffset = b
-                .comment("Signed offset (in carriages) added to every player's live travelled-carriage progress for difficulty purposes: the game behaves as if each player had travelled this many extra carriages. Shifts the boarding HUD (Diff-Car + Diff-Level), the onboarding stages (no-hostiles/slimes), mob gearing, villager trade caps, carriage-distance achievements, and Discord level-up posts — all together. 0 (default) = fully automatic. Set via /dungeontrain difficulty <tier>, which recomputes this as (target carriages for the requested tier - current raw progress) so the effective tier becomes exactly what was requested at that moment; the offset then stays fixed while real travel keeps moving the effective value, until the next command invocation re-anchors it. /dungeontrain difficulty auto resets this to 0. Does NOT affect the deterministic per-carriage world-gen tier (that keys off carriage position, not player progress).")
+                .comment("Signed offset (in carriages) added to every player's live travelled-carriage progress for difficulty purposes: the game behaves as if each player had travelled this many extra carriages. Shifts the boarding HUD (Diff-Car + Diff-Level), the onboarding stages (no-hostiles/slimes), mob gearing, villager trade caps, carriage-distance achievements, and Discord level-up posts — all together. 0 (default) = fully automatic. Set via /dungeontrain difficulty <tier>, which recomputes this as (target carriages for the requested tier - current raw progress) so the effective tier becomes exactly what was requested at that moment; the offset then stays fixed while real travel keeps moving the effective value, until the next command invocation re-anchors it. /dungeontrain difficulty auto resets this to 0. This entry is a MIRROR of per-world state (stored in the world's dungeontrain_world.dat): it is re-read from the world you load, so an offset set in one world never carries into another, and it is cleared when a new run starts (respawn after death, when you're the only player online). Does NOT affect the deterministic per-carriage world-gen tier (that keys off carriage position, not player progress).")
                 .defineInRange("difficultyTravelledOffset", DEFAULT_DIFFICULTY_TRAVELLED_OFFSET, MIN_DIFFICULTY_TRAVELLED_OFFSET, MAX_DIFFICULTY_TRAVELLED_OFFSET);
         ModConfigSpec.BooleanValue difficultyAffectsBabyMobs = b
                 .comment("When true, baby mobs (zombies, piglins, etc.) also receive difficulty gear and effects. Default false to avoid silly visuals (baby zombies in netherite).")
@@ -370,6 +400,9 @@ public final class DungeonTrainConfig {
         ModConfigSpec.BooleanValue difficultyScaleHostileGearPastCap = b
                 .comment("When true, hostile carriage mobs keep gaining gear strength after their armor/weapon material caps at netherite (difficulty level 50): each rolled equipment piece gets a flat per-tier primary-stat bonus (attack damage on weapons, armor on armor) scaled by how far the tier is past the cap, so difficulty keeps climbing beyond ~level 50 instead of plateauing. Tiers 50 and below are unchanged. Reuses the same AIS stat-scaling PlayerMobs already receive. Default true; set false to restore the original behavior where hostile gear stops improving at netherite.")
                 .define("difficultyScaleHostileGearPastCap", DEFAULT_DIFFICULTY_SCALE_HOSTILE_GEAR_PAST_CAP);
+        ModConfigSpec.BooleanValue difficultyIsolatedStash = b
+                .comment("When true, each vanilla difficulty (Peaceful/Easy/Normal/Hard) is its own self-contained profile: it has its own Ender Chest, and — with keepInventory on — its own carried inventory + XP, so gear farmed on an easy run can't be brought to a hard one. Changing difficulty in-game swaps both (the old difficulty's are stored, the new difficulty's are loaded) and tells the player in chat. Normal keeps using the existing un-suffixed storage, so no current stash moves or disappears; the other three difficulties start empty. Companion to the echo partition in PlayerMob (reincarnationDifficultyIsolation), which keeps each difficulty's echoes to itself. Set false to share one stash and one loadout across all difficulties, as builds before this did.")
+                .define("difficultyIsolatedStash", DEFAULT_DIFFICULTY_ISOLATED_STASH);
         ModConfigSpec.BooleanValue villagerTradeScalingEnabled = b
                 .comment("When true, items SOLD by train villagers scale with the villager's own carriage position: sold gear is (re-)enchanted with power that steps up every villagerTradeScalingTiersPerStep difficulty tiers once the carriage is at least villagerTradeScalingMinCarriage from spawn, receives AIS stat bonuses matching the carriage's difficulty tier (same scaling as mob gear and chest loot), and emerald costs grow with the enchant value (2^(level-1) emeralds per enchant, paid in emerald blocks past 64). Trades bought FROM players and non-emerald costs are unaffected.")
                 .define("villagerTradeScalingEnabled", DEFAULT_VILLAGER_TRADE_SCALING_ENABLED);
@@ -460,6 +493,25 @@ public final class DungeonTrainConfig {
                         "pickups, so a nearly-exhausted pool could hand back a book they had just received.")
                 .defineInRange("sharedBookRepeatGroups", DEFAULT_SHARED_BOOK_REPEAT_GROUPS,
                         MIN_SHARED_BOOK_REPEAT_GROUPS, MAX_SHARED_BOOK_REPEAT_GROUPS);
+        ModConfigSpec.IntValue portalRoomAuthorMinBooks = b
+                .comment("How many approved community books an author must have written before a dimensional carriage whose Books",
+                        "setting is `player` or `signature` will lock to them. Strictly MORE than this, so 10 means an",
+                        "eleventh book is needed to qualify. A room wants a catalogue rather than a shelf: locking to",
+                        "somebody with two books hands those two out over and over. The `self` setting ignores this — finding",
+                        "your own books in a room is the point of it — and falls back to a random qualifying author for the",
+                        "many players who have written nothing. Lower this on a small or private server where nobody has",
+                        "written ten books yet; 0 lets any author with a single book fill a room.")
+                .defineInRange("portalRoomAuthorMinBooks", DEFAULT_PORTAL_ROOM_AUTHOR_MIN_BOOKS,
+                        MIN_PORTAL_ROOM_AUTHOR_MIN_BOOKS, MAX_PORTAL_ROOM_AUTHOR_MIN_BOOKS);
+        ModConfigSpec.BooleanValue portalRoomDaylight = b
+                .comment("Light dimensional carriages whose template asks for a sky. Only templates that opt in are affected",
+                        "(the Sky segment of their `mode` tag); every other room is lit exactly as before. Each player's",
+                        "own lightmap is lifted toward that sky while they are inside the room, and eased back as they",
+                        "leave — no block is changed, no light is stored, and no game logic (mob spawns, the clock) is",
+                        "affected. Set false to turn the whole mechanism off, which also switches off the vanilla",
+                        "lighting hook it installs — worth trying first if another lighting mod misbehaves.",
+                        "Default true.")
+                .define("portalRoomDaylight", DEFAULT_PORTAL_ROOM_DAYLIGHT);
         ModConfigSpec.BooleanValue discoverNarrativesEnabled = b
                 .comment("Serve approved player-written narrative series back on narrative lecterns. When true, a lectern",
                         "may (weighted + tapered like shared-book loot, at LETTER granularity) lock to a player's narrative",
@@ -494,6 +546,14 @@ public final class DungeonTrainConfig {
                         "relay is unreachable, the slot silently falls back — to an own build if one is ready, else fresh.")
                 .defineInRange("sharedCarriagePoolChance", DEFAULT_SHARED_CARRIAGE_POOL_CHANCE,
                         MIN_SHARED_CARRIAGE_POOL_CHANCE, MAX_SHARED_CARRIAGE_POOL_CHANCE);
+        ModConfigSpec.IntValue sharedCarriageMaxEntities = b
+                .comment("How many free ENTITIES (armor stands, item frames, paintings, mobs) a shared carriage may carry",
+                        "into the community pool. They are captured with the build, drawn in the web preview, and spawned",
+                        "back when another world leases it. The cap bounds both the upload size and what a single build can",
+                        "release into someone else's world; anything past it is left behind with a warning. Default 64.",
+                        "0 disables entity capture entirely — shared builds then travel as bare blocks, as they did before.")
+                .defineInRange("sharedCarriageMaxEntities", DEFAULT_SHARED_CARRIAGE_MAX_ENTITIES,
+                        MIN_SHARED_CARRIAGE_MAX_ENTITIES, MAX_SHARED_CARRIAGE_MAX_ENTITIES);
         ModConfigSpec.DoubleValue sharedCarriageOwnChance = b
                 .comment("The probability a shared-carriage slot leases back a build authored by a player currently in this",
                         "world — so you meet the rooms you made, rather than losing them into a pool of thousands. A build is",
@@ -583,17 +643,18 @@ public final class DungeonTrainConfig {
         b.pop();
         return new Holder(configVersion, numCarriages, speed, trainY, generateTracks, generateTunnels, generationMode, groupSize,
                 difficultyEnabled, carriagesPerTier, difficultyTravelledOffset, difficultyAffectsBabyMobs, progressionLevelDelay,
-                difficultyScaleHostileGearPastCap,
+                difficultyScaleHostileGearPastCap, difficultyIsolatedStash,
                 villagerTradeScalingEnabled, villagerTradeScalingMinCarriage, villagerTradeScalingTiersPerStep,
                 firstLevelNoHostiles, firstLevelNoHostilesCarriages, firstLevelEasyMobs, firstLevelEasyMobsCarriages,
                 firstLevelStarterLoot, randomBookFromBookshelfOneIn, deathReportToDiscord,
                 freePlayNoticeToDiscord, devMessageConsentToDiscord, echoEncounterToDiscord, worldJoinReportToDiscord,
                 worldInfoToRelay, shareBooksEnabled, discoverSharedBooksEnabled, deathNotesEnabled,
                 loveNotesEnabled, lettersEnabled,
-                sharedBookLootMaxChance, sharedBookRepeatGroups, discoverNarrativesEnabled, narrativeDiscoveryRampThreshold,
+                sharedBookLootMaxChance, sharedBookRepeatGroups, portalRoomAuthorMinBooks, portalRoomDaylight,
+                discoverNarrativesEnabled, narrativeDiscoveryRampThreshold,
                 difficultyLevelNoticeToDiscord, introCinematicEnabled, introCinematicDurationTicks,
                 introCinematicChunkPreloadEnabled, sharedCarriagesEnabled, sharedCarriagePoolChance,
-                sharedCarriageOwnChance, builderProfileEnabled);
+                sharedCarriageOwnChance, sharedCarriageMaxEntities, builderProfileEnabled);
     }
 
     /**
@@ -630,6 +691,11 @@ public final class DungeonTrainConfig {
         double v = isLoaded() ? SHARED_CARRIAGE_OWN_CHANCE.get() : DEFAULT_SHARED_CARRIAGE_OWN_CHANCE;
         double own = Math.max(MIN_SHARED_CARRIAGE_OWN_CHANCE, Math.min(MAX_SHARED_CARRIAGE_OWN_CHANCE, v));
         return Math.min(own, 1.0 - getSharedCarriagePoolChance());
+    }
+
+    /** How many entities a shared carriage may carry into (and out of) the community pool. */
+    public static int getSharedCarriageMaxEntities() {
+        return isLoaded() ? SHARED_CARRIAGE_MAX_ENTITIES.get() : DEFAULT_SHARED_CARRIAGE_MAX_ENTITIES;
     }
 
     public static int getNumCarriages() {
@@ -675,6 +741,12 @@ public final class DungeonTrainConfig {
      * achievements, Discord). 0 (default) = no adjustment. Re-anchored by
      * {@code /dungeontrain difficulty <tier>}; cleared to 0 by
      * {@code /dungeontrain difficulty auto}.
+     *
+     * <p>This global config entry is a <strong>mirror</strong> of per-world state — the
+     * authoritative copy lives in {@code DungeonTrainWorldData}. Write it through
+     * {@code DifficultyOffset.set}, never this class directly, so the two stay in step;
+     * {@code DifficultyOffsetLifecycle} re-mirrors it on world load and clears it on
+     * respawn.</p>
      */
     public static int getDifficultyTravelledOffset() {
         return isLoaded() ? DIFFICULTY_TRAVELLED_OFFSET.get() : DEFAULT_DIFFICULTY_TRAVELLED_OFFSET;
@@ -724,6 +796,14 @@ public final class DungeonTrainConfig {
     /** Length (carriages of player progress) of the slimes stage, following the no-hostiles stage. */
     public static int getFirstLevelEasyMobsCarriages() {
         return isLoaded() ? FIRST_LEVEL_EASY_MOBS_CARRIAGES.get() : DEFAULT_FIRST_LEVEL_EASY_MOBS_CARRIAGES;
+    }
+
+    /**
+     * When true, each vanilla difficulty gets its own Ender Chest and its own carried loadout — see
+     * {@code DifficultyPartition}. Normal keeps the pre-partition storage keys.
+     */
+    public static boolean getDifficultyIsolatedStash() {
+        return isLoaded() ? DIFFICULTY_ISOLATED_STASH.get() : DEFAULT_DIFFICULTY_ISOLATED_STASH;
     }
 
     /** When true, rich loot/loot_irongold carriage chests roll the starter prefab during the gentle opening window. */
@@ -801,6 +881,17 @@ public final class DungeonTrainConfig {
     public static int getSharedBookRepeatGroups() {
         int v = isLoaded() ? SHARED_BOOK_REPEAT_GROUPS.get() : DEFAULT_SHARED_BOOK_REPEAT_GROUPS;
         return Math.max(MIN_SHARED_BOOK_REPEAT_GROUPS, Math.min(MAX_SHARED_BOOK_REPEAT_GROUPS, v));
+    }
+
+    /** Approved books an author needs before a Random Player / Random Signature room will lock to them. */
+    public static int getPortalRoomAuthorMinBooks() {
+        int v = isLoaded() ? PORTAL_ROOM_AUTHOR_MIN_BOOKS.get() : DEFAULT_PORTAL_ROOM_AUTHOR_MIN_BOOKS;
+        return Math.max(MIN_PORTAL_ROOM_AUTHOR_MIN_BOOKS, Math.min(MAX_PORTAL_ROOM_AUTHOR_MIN_BOOKS, v));
+    }
+
+    /** Whether portal rooms that ask for a sky get one; falls back to the hardcoded default pre-load. */
+    public static boolean isPortalRoomDaylight() {
+        return isLoaded() ? PORTAL_ROOM_DAYLIGHT.get() : DEFAULT_PORTAL_ROOM_DAYLIGHT;
     }
 
     /**
@@ -963,6 +1054,7 @@ public final class DungeonTrainConfig {
             ModConfigSpec.BooleanValue difficultyAffectsBabyMobs,
             ModConfigSpec.IntValue progressionLevelDelay,
             ModConfigSpec.BooleanValue difficultyScaleHostileGearPastCap,
+            ModConfigSpec.BooleanValue difficultyIsolatedStash,
             ModConfigSpec.BooleanValue villagerTradeScalingEnabled,
             ModConfigSpec.IntValue villagerTradeScalingMinCarriage,
             ModConfigSpec.IntValue villagerTradeScalingTiersPerStep,
@@ -985,6 +1077,8 @@ public final class DungeonTrainConfig {
             ModConfigSpec.BooleanValue lettersEnabled,
             ModConfigSpec.DoubleValue sharedBookLootMaxChance,
             ModConfigSpec.IntValue sharedBookRepeatGroups,
+            ModConfigSpec.IntValue portalRoomAuthorMinBooks,
+            ModConfigSpec.BooleanValue portalRoomDaylight,
             ModConfigSpec.BooleanValue discoverNarrativesEnabled,
             ModConfigSpec.DoubleValue narrativeDiscoveryRampThreshold,
             ModConfigSpec.BooleanValue difficultyLevelNoticeToDiscord,
@@ -994,6 +1088,7 @@ public final class DungeonTrainConfig {
             ModConfigSpec.BooleanValue sharedCarriagesEnabled,
             ModConfigSpec.DoubleValue sharedCarriagePoolChance,
             ModConfigSpec.DoubleValue sharedCarriageOwnChance,
+            ModConfigSpec.IntValue sharedCarriageMaxEntities,
             ModConfigSpec.BooleanValue builderProfileEnabled
     ) {}
 }

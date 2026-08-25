@@ -70,8 +70,8 @@ public final class PortalEntityTransit {
             // takes nothing in, but everything already in the room can still come back out. Without
             // this a villager led in before the break would be walled off from the train while its
             // player walked back through.
-            if (move.toFrame() == PortalFrames.FRAME_TWIN
-                && PortalSever.isSevered(level, carriageIndex)) {
+            if (PortalSever.blocksMove(move.toFrame(),
+                PortalSever.isSevered(level, carriageIndex))) {
                 continue;
             }
 

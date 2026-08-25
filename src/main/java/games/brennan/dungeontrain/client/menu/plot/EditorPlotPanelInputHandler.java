@@ -152,7 +152,18 @@ public final class EditorPlotPanelInputHandler {
             case HEIGHT_TYPE -> openAxisEntry(entry, "height", "Height", entry.roomHeight());
             case MODE_CYCLE -> dispatchModeCycle(entry);
             case COPIES_CYCLE -> dispatchCopiesCycle(entry);
+            case COPIES_FLOOR_HELD -> dispatchCopiesBlockHeld(entry,
+                games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane.FLOOR);
+            case COPIES_FLOOR_EDIT -> dispatchCopiesBlockEdit(entry,
+                games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane.FLOOR);
+            case COPIES_ROOF_HELD -> dispatchCopiesBlockHeld(entry,
+                games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane.ROOF);
+            case COPIES_ROOF_EDIT -> dispatchCopiesBlockEdit(entry,
+                games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane.ROOF);
             case ROOM_CONTENTS_CYCLE -> dispatchRoomContentsCycle(entry);
+            case ROOM_BOOKS_CYCLE -> dispatchRoomBooksCycle(entry);
+            case ROOM_BOOKS_EDIT -> openBookMix(entry);
+            case ROOM_SKY_CYCLE -> dispatchRoomSkyCycle(entry);
             case EXITS_CYCLE -> dispatchExitsCycle(entry);
             case EXIT_EVERY_DEC -> dispatchExitEvery(entry, "dec");
             case EXIT_EVERY_INC -> dispatchExitEvery(entry, "inc");
@@ -214,11 +225,57 @@ public final class EditorPlotPanelInputHandler {
         CommandRunner.run(cmd);
     }
 
+    /** Set the Copies block of the portal room the player is standing in to what they are holding. */
+    private static void dispatchCopiesBlockHeld(
+        EditorPlotLabelsPacket.Entry entry,
+        games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane plane
+    ) {
+        String cmd = EditorPlotTeleport.copiesBlockHeldCommandFor(entry.category(), plane);
+        if (cmd == null) return;
+        CommandRunner.run(cmd);
+    }
+
+    /** Open the Block Variant menu on that block, so it can be turned into a variant. */
+    private static void dispatchCopiesBlockEdit(
+        EditorPlotLabelsPacket.Entry entry,
+        games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane plane
+    ) {
+        String cmd = EditorPlotTeleport.copiesBlockEditCommandFor(entry.category(), plane);
+        if (cmd == null) return;
+        CommandRunner.run(cmd);
+    }
+
     /** Step the portal room the player is standing in to the next Contents value. */
     private static void dispatchRoomContentsCycle(EditorPlotLabelsPacket.Entry entry) {
         String cmd = EditorPlotTeleport.roomContentsCycleCommandFor(entry.category());
         if (cmd == null) return;
         CommandRunner.run(cmd);
+    }
+
+    /** Step the portal room the player is standing in to the next Books value. */
+    private static void dispatchRoomBooksCycle(EditorPlotLabelsPacket.Entry entry) {
+        String cmd = EditorPlotTeleport.roomBooksCycleCommandFor(entry.category());
+        if (cmd == null) return;
+        CommandRunner.run(cmd);
+    }
+
+    /** Step the portal room the player is standing in to the next Sky value. */
+    private static void dispatchRoomSkyCycle(EditorPlotLabelsPacket.Entry entry) {
+        String cmd = EditorPlotTeleport.roomSkyCycleCommandFor(entry.category());
+        if (cmd == null) return;
+        CommandRunner.run(cmd);
+    }
+
+    /**
+     * Open the weights-and-band editor for the room the player is standing in.
+     *
+     * <p>The world panel has no typing of its own, so the Edit half of the Books row hands off to the
+     * keyboard menu — the same route the number between a stepper's arrows already takes.</p>
+     */
+    private static void openBookMix(EditorPlotLabelsPacket.Entry entry) {
+        if (!"PORTALS".equals(entry.category())) return;
+        CommandMenuState.openAt(
+            new games.brennan.dungeontrain.client.menu.PortalRoomBooksScreen(entry.roomMode()));
     }
 
     /** Step the portal room the player is standing in to the next Exits value. */

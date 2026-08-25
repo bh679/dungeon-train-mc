@@ -6456,39 +6456,164 @@
       "released_at": "2026-08-09T08:49:33Z"
     },
     {
-      "id": "whole-carriage-template",
+      "id": "death-screen-modrec-after-donate",
       "version": "0.552.0",
-      "type": "feat",
-      "title": "Save a carriage whole \u2014 shell and interior together",
-      "summary": "The Train Builder's Whole Carriage mode now saves what you actually built. Until now the interior you furnished was stored and then covered over by an unrelated room the next time that carriage spawned; a whole carriage is now its own kind of template, holding the shell and everything inside it as one piece. Saved builds also show up in the New screen's picker under the stage presets, so you can start a new carriage from one you already made.",
+      "type": "refactor",
+      "title": "Mod recommendations now come after the support page",
+      "summary": "On the death screen, the page asking which of your other mods you'd recommend now appears after the support page, just before you board again. Same pages, new order.",
       "highlights": [
-        "Whole Carriage builds keep their interior instead of having a random room stamped over it",
-        "Start a new build from a carriage you saved earlier, listed under the stage presets"
+        "Mod recommendations moved after 'support the line'"
       ],
-      "pr": 932,
+      "pr": 934,
       "date": "2026-08-11",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.552.0",
+      "released_at": "2026-08-11T14:48:13Z"
     },
     {
-      "id": "builder-open-template-library",
+      "id": "in-game-translation-editor",
       "version": "0.552.0",
       "type": "feat",
-      "title": "Open a build you already made",
-      "summary": "The Train Builder's Open button now shows your library instead of the mode picker. Choose what you're working on \u2014 the same choices the New and Save screens give you \u2014 and everything of that kind appears below as a wall of pictures, using the photo taken when each one was saved. Click one and it loads into the world already named, so saving writes back to it rather than leaving you with a copy. Carriage rooms that hold sub-variants have a button in the corner to look inside them. Track and tunnel templates are listed too, though editing those here is still to come.",
+      "title": "Fix your language's own text, from inside the game",
+      "summary": "Dungeon Train speaks nineteen languages besides English, and most of those lines were written by a machine. If one of them reads wrong to you, you can now fix it yourself: Options \u2192 Language \u2192 Help Translate opens the mod's whole vocabulary, line by line, with the English original beside each one and your language's current wording ready to edit. Send your fixes in and, once a human has read them, they reach everyone playing in that language \u2014 no update to install. Your name goes on them in the credits, unless you would rather it did not.",
       "highlights": [
-        "Open lists every template of the kind you pick, with the photo taken when it was saved",
-        "Opening a build names it, so Save writes back to that template instead of making a copy",
-        "Look inside a carriage room's sub-variants from the corner button on its tile",
-        "Photos filled in for templates that had none now show the right build, not the one before it",
-        "Track and tunnel templates appear for reference \u2014 editing them in the builder is still to come"
+        "Help Translate sits on the language screen, and on the title screen beside the language button",
+        "Every line the mod ships, with filters for what a human has never checked",
+        "Work in a batch and send it when it is ready \u2014 nothing leaves the game until you press Submit",
+        "Approved fixes arrive when the game starts or you change language",
+        "A fix applies to the version it was written against and later ones, so an old fix never overwrites newer wording",
+        "Export and import the files if you would rather work outside the game",
+        "Translators are named in the credits, and the language list's AI marker retreats as lines get human-checked",
+        "Submitting needs network consent, like everything else that carries your name"
       ],
-      "pr": 937,
       "date": "2026-08-11",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.552.0",
+      "released_at": "2026-08-11T14:48:13Z"
+    },
+    {
+      "id": "difficulty-isolated-profiles",
+      "version": "0.554.0",
+      "type": "feat",
+      "title": "Each difficulty is now its own run",
+      "summary": "Peaceful, Easy, Normal and Hard each keep their own gear, XP, Ender Chest and echoes. Switch difficulty and you switch profiles \u2014 what you were carrying is waiting for you when you switch back, and nothing you farmed on an easier setting comes with you.",
+      "highlights": [
+        "Your Ender Chest is now per-difficulty, and so is the inventory and XP carried between runs when keepInventory is on.",
+        "An Ender Chest that isn't your default one says so in its title \u2014 \"Ender Chest (Hard)\", \"(Adventure \u00b7 Hard)\" or \"(Free Play)\" \u2014 so an empty chest never looks like lost items.",
+        "Echoes only return on the difficulty they died on, so a Hard run never meets a Peaceful ghost.",
+        "Changing difficulty in-game tells you in chat which profile you moved to and where your gear is waiting.",
+        "Normal keeps everything you already have \u2014 existing Ender Chests and past lives all belong to Normal, so nothing goes missing."
+      ],
+      "date": "2026-08-12",
+      "released": true,
+      "released_in": "v0.556.0",
+      "released_at": "2026-08-12T15:07:04Z"
+    },
+    {
+      "id": "multiplayer-death-screen",
+      "version": "0.553.0",
+      "type": "feat",
+      "title": "The death screen recap now works in multiplayer",
+      "summary": "Dying on a server used to give you Minecraft's plain death screen. Now you get the same end-of-run recap singleplayer gets \u2014 your fall, your deeds, your cargo, your ride photos and the rest \u2014 with Respawn in place of the board-a-new-train button, since a server world isn't yours to restart.",
+      "highlights": [
+        "The narrative death screen now appears on LAN and dedicated servers",
+        "Respawn replaces Board anew there, and the delete-world toggle is hidden"
+      ],
+      "pr": 948,
+      "date": "2026-08-12",
+      "released": true,
+      "released_in": "v0.556.0",
+      "released_at": "2026-08-12T15:07:04Z"
+    },
+    {
+      "id": "difficulty-offset-world-scoped",
+      "version": "0.555.0",
+      "type": "fix",
+      "title": "Difficulty set by command no longer follows you into a new world or a new life",
+      "summary": "Setting the difficulty by command \u2014 /dungeontrain difficulty, or the difficulty /dtp applies when it drops you somewhere far down the line \u2014 used to be written once and left everywhere: start a brand-new world and it opened at whatever tier you last set, and dying didn't undo it either, so a fresh run carried on at a difficulty it never earned. That setting now belongs to the world you set it in. A new world starts on automatic, dying puts you back on automatic, and the world you set it in still remembers it when you come back.",
+      "highlights": [
+        "A newly created world no longer inherits a difficulty set in another world",
+        "Dying resets the difficulty back to automatic \u2014 the new run scales from real travel again",
+        "Reloading the world you set it in keeps the difficulty you set",
+        "On a server with other players still riding, one player's death leaves the difficulty alone"
+      ],
+      "date": "2026-08-12",
+      "released": true,
+      "released_in": "v0.556.0",
+      "released_at": "2026-08-12T15:07:04Z"
+    },
+    {
+      "id": "train-dimensions-update",
+      "version": "0.556.0",
+      "type": "feat",
+      "title": "Train Dimensions \u2014 doors on the train that open somewhere else",
+      "summary": "Somewhere past your first stretch of track, a corridor between two carriages stops being a corridor. Walk it and the sound of the train falls away behind you, and you come out in a room that could never have fitted inside the carriage you stepped into \u2014 a hall, a library, a place of beams and sculk, some of them going on for as long as you care to keep walking. What you find is drawn from how far you have come, so late portals open onto places the early ones never do, and every portal rolls its own room: chests you loot stay looted when you walk back in. The train keeps rolling while you look around, and the ground you cover in there counts toward your journey. Nothing strands you \u2014 there is always a way back out \u2014 and if you would rather the door weren't there at all, breaking through the corridor's outer wall closes that portal for good.",
+      "highlights": [],
+      "date": "2026-08-12",
+      "released": true,
+      "released_in": "v0.556.0",
+      "released_at": "2026-08-12T15:07:04Z"
+    },
+    {
+      "id": "middleclick-copy-block-variants",
+      "version": "0.556.0",
+      "type": "feat",
+      "title": "Editor: middle-click copies a cell's block variants",
+      "summary": "In the block-variant editor, middle-clicking a cell that has variants now puts that cell's whole variant list in your hand as a clipboard item \u2014 no opening the Z menu, no hunting through your backpack for it. If the same clipboard is already on your hotbar it just switches to that slot, and middle-clicking anything else still does a normal pick-block.",
+      "highlights": [
+        "Middle-click a variant cell to copy it straight to your hotbar",
+        "Switches to the matching clipboard when you already have one",
+        "Vanilla pick-block still works on every other block"
+      ],
+      "pr": 959,
+      "date": "2026-08-12",
+      "released": true,
+      "released_in": "v0.556.0",
+      "released_at": "2026-08-12T15:07:04Z"
+    },
+    {
+      "id": "portal-room-resize-both-ends",
+      "version": "0.556.0",
+      "type": "feat",
+      "title": "Resizing a portal room now grows it from both ends",
+      "summary": "In the room editor, the length and width steppers alternate which wall moves, so a room grows outwards from what you have built instead of always off the far end. Shrinking is no longer one-way: the row you crop is remembered for this world, and stepping the size back up puts those blocks, their variants and their chest contents back exactly as they were. Resizing also keeps whatever you have built since your last save, and Reset now puts a room's dimensions back along with its blocks.",
+      "highlights": [
+        "Length and width grow and shrink from alternating ends; height still moves only its ceiling",
+        "A row removed by shrinking comes back if you grow the room again",
+        "Resizing no longer discards edits made since your last save",
+        "Reset restores the saved size, not just the saved blocks"
+      ],
+      "date": "2026-08-12",
+      "released": true,
+      "released_in": "v0.556.0",
+      "released_at": "2026-08-12T15:07:04Z"
+    },
+    {
+      "id": "tradeeverything-0-3-0-bump",
+      "version": "0.556.0",
+      "type": "feat",
+      "title": "Villagers price up the item you are holding",
+      "summary": "Updated the bundled Trade Everything mod. A villager's Trade Anything slot now cycles through what it will take and previews the price for the item you are currently holding, so you can see what a trade is worth before you make it.",
+      "highlights": [
+        "Held-item price preview in the Trade Anything slot",
+        "Cycling Trade Anything icon"
+      ],
+      "date": "2026-08-12",
+      "released": true,
+      "released_in": "v0.556.0",
+      "released_at": "2026-08-12T15:07:04Z"
+    },
+    {
+      "id": "pathssmall-room-variant-pass",
+      "version": "0.556.0",
+      "type": "content",
+      "title": "More variety in one of the small path rooms",
+      "summary": "A pass over the pathssmall portal room: more of its blocks now vary between copies, and more of its containers roll from curated pools, so repeat visits look and loot differently.",
+      "highlights": [],
+      "date": "2026-08-12",
+      "released": true,
+      "released_in": "v0.556.0",
+      "released_at": "2026-08-12T15:07:04Z"
     },
     {
       "id": "portal-sever-on-shell-break",
@@ -6504,9 +6629,9 @@
       ],
       "pr": 899,
       "date": "2026-08-07",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.556.0",
+      "released_at": "2026-08-12T15:07:04Z"
     },
     {
       "id": "portal-swap-no-flash",
@@ -6520,9 +6645,9 @@
       ],
       "pr": 902,
       "date": "2026-08-07",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.556.0",
+      "released_at": "2026-08-12T15:07:04Z"
     },
     {
       "id": "portal-room-enemies-and-varied-corridors",
@@ -6536,9 +6661,9 @@
       ],
       "pr": 903,
       "date": "2026-08-07",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.556.0",
+      "released_at": "2026-08-12T15:07:04Z"
     },
     {
       "id": "bedrockless-fog-falloff",
@@ -6552,9 +6677,9 @@
         "Fixed: the fog used to cut out the moment you stepped off the structure, instead of thickening"
       ],
       "date": "2026-08-08",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.556.0",
+      "released_at": "2026-08-12T15:07:04Z"
     },
     {
       "id": "portal-room-placed-once",
@@ -6568,9 +6693,9 @@
         "Portal rooms are built once instead of being repeatedly re-laid as the train moves"
       ],
       "date": "2026-08-08",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.556.0",
+      "released_at": "2026-08-12T15:07:04Z"
     },
     {
       "id": "portal-tunnel-music-fade",
@@ -6585,9 +6710,9 @@
       ],
       "pr": 909,
       "date": "2026-08-08",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.556.0",
+      "released_at": "2026-08-12T15:07:04Z"
     },
     {
       "id": "portal-rooms-not-off-the-train",
@@ -6602,9 +6727,9 @@
       ],
       "pr": 910,
       "date": "2026-08-08",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.556.0",
+      "released_at": "2026-08-12T15:07:04Z"
     },
     {
       "id": "portal-endless-tunnel-surrounds",
@@ -6618,9 +6743,9 @@
         "The way back to the train is still a wall with a door in it, unchanged"
       ],
       "date": "2026-08-08",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.556.0",
+      "released_at": "2026-08-12T15:07:04Z"
     },
     {
       "id": "no-mobs-under-bedrock",
@@ -6634,9 +6759,9 @@
         "A portal room's own mobs, and any you lead in yourself, are untouched"
       ],
       "date": "2026-08-08",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.556.0",
+      "released_at": "2026-08-12T15:07:04Z"
     },
     {
       "id": "nothing-generates-under-bedrock",
@@ -6651,9 +6776,9 @@
       ],
       "pr": 911,
       "date": "2026-08-08",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.556.0",
+      "released_at": "2026-08-12T15:07:04Z"
     },
     {
       "id": "portal-room-cave-noises",
@@ -6668,9 +6793,9 @@
         "Controlled by the Ambient volume slider, like cave noises anywhere else"
       ],
       "date": "2026-08-08",
-      "released": false,
-      "released_in": null,
-      "released_at": null,
+      "released": true,
+      "released_in": "v0.556.0",
+      "released_at": "2026-08-12T15:07:04Z",
       "pr": 916
     },
     {
@@ -6684,9 +6809,9 @@
         "Rooms you have already looted stay looted when you walk back in"
       ],
       "date": "2026-08-09",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.556.0",
+      "released_at": "2026-08-12T15:07:04Z"
     },
     {
       "id": "portal-room-stage-gating",
@@ -6702,9 +6827,9 @@
       ],
       "pr": 924,
       "date": "2026-08-09",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.556.0",
+      "released_at": "2026-08-12T15:07:04Z"
     },
     {
       "id": "portal-room-furnishing-breaks-plates",
@@ -6718,9 +6843,9 @@
       ],
       "pr": 927,
       "date": "2026-08-09",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.556.0",
+      "released_at": "2026-08-12T15:07:04Z"
     },
     {
       "id": "portal-room-extra-exits",
@@ -6737,9 +6862,9 @@
       ],
       "pr": 928,
       "date": "2026-08-09",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.556.0",
+      "released_at": "2026-08-12T15:07:04Z"
     },
     {
       "id": "portal-room-contents-curation",
@@ -6755,9 +6880,9 @@
       ],
       "pr": 930,
       "date": "2026-08-11",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.556.0",
+      "released_at": "2026-08-12T15:07:04Z"
     },
     {
       "id": "portal-doorway-stays-with-its-carriage",
@@ -6771,231 +6896,1775 @@
       ],
       "pr": 935,
       "date": "2026-08-11",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.556.0",
+      "released_at": "2026-08-12T15:07:04Z"
     },
     {
-      "id": "builder-no-welcome-book",
-      "version": "0.552.0",
-      "type": "fix",
-      "title": "No welcome lightning in the Train Builder",
-      "summary": "Stepping into the Train Builder no longer greets you with a lightning strike and a welcome book. That opening belongs to a run, not to a workspace \u2014 the bolt was landing on the build platform and the book was dropping as a loose item on top of whatever you were building. The Builder now starts quiet. Normal runs still open the way they always have.",
-      "highlights": [
-        "The welcome lightning strike and starting book no longer fire in the Train Builder, on entering or after respawning"
-      ],
-      "date": "2026-08-12",
-      "released": false,
-      "released_in": null,
-      "released_at": null
-    },
-    {
-      "id": "builder-open-single-carriage",
-      "version": "0.552.0",
-      "type": "fix",
-      "title": "Open the one thing you picked, and see the train around it",
-      "summary": "Opening a carriage room from outside the train used to fill the track with a whole run of carriages, which made it hard to tell whether the template you clicked had loaded at all. Now the builder parks exactly the one thing you opened, and draws the rest of the train \u2014 the carriages either side and the flatbed ends that cap them \u2014 as faint ghosts, so you can still judge how your build reads in a run without being able to edit anything but your own. Clicking a stage now opens the carriages inside it instead of starting an unrelated new build, browsing a carriage under one stage no longer leaves the next thing you open wearing that stage's parts, and from inside a carriage the builder offers only what you can actually author in there. There's a Ghost Train toggle in the pause menu if you'd rather see just your build.",
-      "highlights": [
-        "Opening a carriage room or a part parks that one carriage, not a full run",
-        "The rest of the train is drawn as ghost blocks, flatbed ends included \u2014 toggle it from the pause menu",
-        "Clicking a stage opens the carriages under it instead of starting a new build",
-        "A carriage browsed under one stage no longer dresses the next build you open in that stage's parts",
-        "Inside a carriage, the builder offers rooms and parts \u2014 not the carriage shell you're standing in",
-        "Opening a saved carriage that can't be read at this world's size now says so instead of quietly loading an empty one"
-      ],
-      "pr": 946,
-      "date": "2026-08-12",
-      "released": false,
-      "released_in": null,
-      "released_at": null
-    },
-    {
-      "id": "portal-room-builder-editing",
+      "id": "portal-min-difficulty-gate",
       "version": "0.552.0",
       "type": "feat",
-      "title": "Build portal rooms in the Train Builder",
-      "summary": "The Train Builder's Train Dimensions mode now opens the rooms behind a portal. They are listed by what each one does at its walls \u2014 Bedrock, Void, Endless or Repeating \u2014 and picking a kind shows every room built that way. Open one and it stands in front of you in empty space, with its own boundary drawn around it as a see-through preview: the bedrock shell that seals it, the floor and ceiling of an open plain, or the room repeating away into the distance. You can resize it and save it back.",
+      "title": "Portals stay out of your opening carriages",
+      "summary": "Hallway portals no longer turn up in the first stretch of the train. Nothing before difficulty level 2 \u2014 around sixty carriages in \u2014 holds a portal, so you get to know the train before something that plainly isn't part of it opens up in the middle of it. Past that point portals arrive on their usual sporadic cadence, counted from where they start rather than from the station, so the first one doesn't keep you waiting twice.",
       "highlights": [
-        "Train Dimensions lists portal rooms by kind: Bedrock, Void, Endless, Repeating",
-        "Open a portal room, resize its length, height and width, and save it back",
-        "A see-through preview shows what the room does at its walls, built from its own blocks",
-        "Builder worlds start you hovering, so an empty one can't drop you"
+        "Portals no longer generate before difficulty level 2 (~60 carriages in)",
+        "The first portal past that point arrives on the normal cadence, not after a second wait"
       ],
-      "pr": 950,
+      "pr": 944,
       "date": "2026-08-12",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.556.0",
+      "released_at": "2026-08-12T15:07:04Z"
     },
     {
-      "id": "builder-open-clears-scene",
-      "version": "0.552.0",
-      "type": "fix",
-      "title": "Opening a build in the Train Builder clears the scene first",
-      "summary": "Open now hands you the template you opened and nothing else. Anything left standing from the last build \u2014 blocks stacked on the platform, a block floating over the train, mobs or armour stands that wandered in \u2014 used to survive an Open and sit alongside the new build. The platform and the track stay put.",
-      "highlights": [
-        "Stray blocks left outside a build are cleared when you open something.",
-        "Leftover mobs, armour stands and dropped items are cleared too.",
-        "Opening a smaller portal room no longer leaves the previous room's shell around it."
-      ],
-      "date": "2026-08-12",
-      "released": false,
-      "released_in": null,
-      "released_at": null
-    },
-    {
-      "id": "builder-3d-template-tiles",
-      "version": "0.552.0",
+      "id": "impossible-room-advancements",
+      "version": "0.554.0",
       "type": "feat",
-      "title": "Train Builder shows saved builds as 3D models",
-      "summary": "The Open screen's grid used to show a screenshot of each saved build, taken from wherever the camera happened to be pointing. Each tile now shows the build itself as a turntable model, framed to fit, built from the blocks the template actually contains.",
+      "title": "The rooms beyond the corridors count toward your journey, and two new advancements",
+      "summary": "Step through a carriage corridor into one of the rooms that could never fit inside it and the train keeps rolling without you \u2014 but until now, everything you travelled while you were in there counted for nothing. It counts now: you cover as much ground as the train does while you look around. Two new advancements come with it, one for going inside at all, and one for finding your way out somewhere far from where you came in.",
       "highlights": [
-        "Tiles show the real build instead of a photo of it, so nothing is cut off or shot from a bad angle.",
-        "Hover a tile to turn the model and see the other side.",
-        "A template edited outside the builder shows its new shape straight away."
+        "Time and distance now keep counting while you are inside one of the impossible rooms",
+        "New advancement: 'Train inside a train?' for stepping out of a corridor into a room that could never have fitted in the carriage",
+        "New advancement: 'A new way out' for leaving one of those rooms by a corridor at least 50 blocks from the one you entered through"
       ],
-      "pr": 956,
+      "pr": 953,
       "date": "2026-08-12",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.556.0",
+      "released_at": "2026-08-12T15:07:04Z"
     },
     {
-      "id": "builder-scene-matches-its-mode",
-      "version": "0.552.0",
+      "id": "portal-severed-walkthrough-and-diagnostics",
+      "version": "0.554.0",
       "type": "fix",
-      "title": "The Train Builder world always matches the mode you are in",
-      "summary": "Switching between building a carriage and building a dimensional carriage now rebuilds the world around you. Coming out of Train Dimensions puts the grass platform and the track back \u2014 the track used to stay missing, leaving the train parked on nothing \u2014 and going into it clears them away, so a portal room stands in empty space instead of on a lawn. The same is true whichever way you get there: New, Open, a mode switch, or reopening a saved builder world all leave you with a world the mode can explain. Reopening a builder world now reloads the build from the template it was saved as, so anything built since your last Save is not kept.",
+      "title": "A broken portal can be walked through, and portals stop failing silently",
+      "summary": "Breaking open a portal corridor's shell still closes the portal for good, but the pair no longer leaves three carriages of dead end behind it: the blocks between its two doors are removed, so you can walk straight through the group and carry on down the train. Separately, a portal you lingered in could quietly stop working \u2014 its destination was left behind as the train rolled on, and walking past the midpoint then did nothing at all. It now keeps up with you.",
       "highlights": [
-        "Leaving Train Dimensions puts the platform and the track back under the train.",
-        "Entering Train Dimensions clears the platform, so a portal room stands in open space.",
-        "New, Open, mode switches and reopening a world all reset the scene the same way.",
-        "Reopening a builder world reloads the saved template \u2014 unsaved changes are not kept."
+        "A severed portal opens into a walk-through instead of a dead end",
+        "Portals no longer stop working if you linger in the corridor before crossing"
+      ],
+      "pr": 957,
+      "date": "2026-08-12",
+      "released": true,
+      "released_in": "v0.556.0",
+      "released_at": "2026-08-12T15:07:04Z"
+    },
+    {
+      "id": "support-page-help-translate",
+      "version": "0.557.0",
+      "type": "feat",
+      "title": "Help Translate on the Ways to Help page",
+      "summary": "If you play Dungeon Train in a language that was machine-translated, the Ways to Help page now offers you the translation editor directly - so fixing the lines that read wrong sits alongside donating, sharing and feedback as a way to help. The page also scrolls now, and its Done button stays put at the bottom instead of sliding off the edge of a small window.",
+      "highlights": [
+        "New \"Help Translate\" section on the Ways to Help page, shown when your language still has AI-translated lines nobody has reviewed",
+        "The Ways to Help page scrolls, and Done is pinned to the bottom so it can never be pushed off-screen"
+      ],
+      "pr": 964,
+      "date": "2026-08-14",
+      "released": true,
+      "released_in": "v0.557.0",
+      "released_at": "2026-08-14T12:26:13Z"
+    },
+    {
+      "id": "video-tools-menu-page",
+      "version": "0.557.0",
+      "type": "feat",
+      "title": "Video Tools page for content creators",
+      "summary": "A new Video Tools button on the title menu, for anyone filming Dungeon Train. Each of the two filming commands gets a tile playing a clip of what it actually looks like \u2014 cinematographer mode, which flies you through the train in spectator with every door swinging open ahead of you, and the intro cinematic, which you can replay from anywhere in a run. Click a tile for the full rundown. The page also points you at #streams-and-media-of-dungeontrain to share what you make, and at the dev if you need a hand with a shot.",
+      "highlights": [
+        "New Video Tools page on the title menu, with an animated tile per filming command",
+        "/dt cinematographer \u2014 spectator flight with auto-opening doors (including on the moving train), an adjustable door radius, and clear-view for shots through walls",
+        "/dt cinematic \u2014 replay the intro cinematic from anywhere, or press C in spectator",
+        "Flags that cinematographer mode puts the run into Free Play, while replaying the cinematic does not",
+        "Discord moves to a logomark button above Credits, freeing its old slot for Video Tools"
+      ],
+      "date": "2026-08-13",
+      "released": true,
+      "released_in": "v0.557.0",
+      "released_at": "2026-08-14T12:26:13Z",
+      "pr": 963
+    },
+    {
+      "id": "placed-armor-stands-ride-trains",
+      "version": "0.558.0",
+      "type": "fix",
+      "title": "Armor stands you place on a train now stay with the train",
+      "summary": "Placing an armor stand inside a carriage used to look like nothing happened \u2014 the stand really was created, but it ended up in the carriage's internal building space rather than on the train you were standing on, where nobody could ever see it. Placed stands now ride the carriage they were put on, staying put as the train moves and surviving a reload.",
+      "highlights": [
+        "Armor stands can be placed and displayed inside carriages",
+        "Placed stands stay locked to their carriage while the train moves",
+        "They survive carriage unloading and world reload"
       ],
       "date": "2026-08-15",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.558.0",
+      "released_at": "2026-08-15T01:38:28Z"
     },
     {
-      "id": "builder-menu-default-template",
-      "version": "0.552.0",
+      "id": "building-threshold-ride-photos",
+      "version": "0.559.0",
       "type": "feat",
-      "title": "Train Builder tiles open with something already on the track",
-      "summary": "Picking a tile on the Train Builder menu now loads that mode's default template instead of dropping you into an empty sandbox \u2014 a carriage, a room, a track tile, or a portal room. Builds still start unnamed, so your first Save asks what to call it.",
+      "title": "Ride photos for building in a drifting carriage, and for arriving in a Train Dimension",
+      "summary": "The camera that quietly takes photos of your run now watches for two more moments. Leave your marks on a drifting carriage \u2014 somebody else's build that has come to your train \u2014 and it takes a photo of the work. Walk a hallway portal and stay a while in the room on the other side, and it takes a wide shot of wherever you have ended up. Both turn up in your gallery and on the death screen with the rest of the run. The Train Dimension photo waits until you have actually walked in and looked around, so it shows the room rather than the doorway, and it is framed to stay inside the room you are standing in rather than the identical one next door.",
       "highlights": [
-        "Each Train Builder tile arrives with a template loaded",
-        "Train Dimensions opens a portal room rather than the tunnel mouth",
-        "Fixed a crash when a track template was open in the builder"
+        "New photo taken when you build in a drifting carriage",
+        "New photo taken once you have arrived inside a Train Dimension",
+        "Train Dimension photos are framed from inside the room you are in, never from the copy next door or from inside a corridor"
       ],
       "date": "2026-08-15",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.559.0",
+      "released_at": "2026-08-15T03:09:02Z"
     },
     {
-      "id": "builder-open-mode-strip",
-      "version": "0.552.0",
+      "id": "short-portal-carriage-and-facing-swap",
+      "version": "0.560.0",
       "type": "feat",
-      "title": "Train Builder's Open screen shows every mode at once",
-      "summary": "The Open screen used to lead with a single tile you clicked to cycle between Train Outside, Inside Carriage, Tracks & Tunnels and Train Dimensions \u2014 so only one was ever on screen, and getting to the one you wanted meant clicking blind through the rest. All four now sit in a row along the top. The one you're browsing is the large captioned tile; the others are small thumbnails that name themselves when you hover them. Click a thumbnail and it grows where it already sits, so a mode is always where you last left it.",
+      "title": "Shorter portal carriages, and a seamless crossing",
+      "summary": "Portal corridors now come in two lengths. Alongside the long corridor that stretches into the carriage behind it, there is a new one exactly the size of an ordinary carriage \u2014 and each portal on the train picks between them, so they no longer all feel the same. Crossing one is smoother too: the door ahead of you is always a real one, changing your mind partway along works, and standing in a doorway never moves you.",
       "highlights": [
-        "All four builder modes visible at once on the Open screen",
-        "Pick a mode directly instead of cycling through the others to reach it",
-        "Switching modes no longer leaves a stale track-group button above an unrelated list"
+        "A new carriage-length portal corridor, with its own interior and ten furnishing variants",
+        "Roughly half of the portals you meet are the new shorter kind",
+        "Change your mind partway along a portal corridor and walk straight back out onto the train",
+        "The door in front of you is always one that opens \u2014 no more walking into a dead one",
+        "Standing in a portal doorway no longer moves you"
       ],
-      "pr": 981,
+      "pr": 967,
+      "date": "2026-08-15",
+      "released": true,
+      "released_in": "v0.560.0",
+      "released_at": "2026-08-15T03:43:22Z"
+    },
+    {
+      "id": "variant-option-group-refs",
+      "version": "0.561.0",
+      "type": "content",
+      "title": "Portal-side carriages hang together",
+      "summary": "Blocks in the portal-side carriages no longer each pick their own look in isolation \u2014 some of them now follow the carriage's stonework, so a run of wall or floor reads as one surface instead of a patchwork. Which blocks follow and which stay independent varies per carriage, so the effect changes as you ride.",
+      "highlights": [
+        "Portal-side contents now share their look between blocks rather than rolling each one separately"
+      ],
+      "pr": 969,
+      "date": "2026-08-15",
+      "released": true,
+      "released_in": "v0.561.0",
+      "released_at": "2026-08-15T05:00:03Z"
+    },
+    {
+      "id": "portal-room-train-waits",
+      "version": "0.562.0",
+      "type": "fix",
+      "title": "Train Dimensions: the way back always works",
+      "summary": "Every corridor in a Train Dimension now takes you back aboard \u2014 the one you came in through and the extra ways out scattered deep in the room \u2014 however long you stay or how far you wander. Before, a room you had gone far enough into could quietly lose its train, leaving you sealed in with nowhere left to walk.",
+      "highlights": [
+        "Corridor copies deep in an endless room always lead back to the train",
+        "No more getting stranded in a Train Dimension you walked too far into",
+        "Untested in multiplayer \u2014 how this behaves with several players on one train is not yet known"
+      ],
+      "pr": 970,
+      "date": "2026-08-15",
+      "released": true,
+      "released_in": "v0.562.0",
+      "released_at": "2026-08-15T05:50:06Z"
+    },
+    {
+      "id": "portal-room-keeps-its-train",
+      "version": "0.563.0",
+      "type": "fix",
+      "title": "Train Dimensions: fixed rooms losing their train",
+      "summary": "Fixes the way a Train Dimension could lose the carriages it belongs to while you were still inside it, leaving you sealed in a room whose corridors led nowhere. The room now keeps hold of its part of the train for as long as you are in there \u2014 and in the unlikely event it loses it anyway, you are put back on the train instead of left with no way out.",
+      "highlights": [
+        "Fixed a room losing its train while you were inside it",
+        "Fixed being left with no way out when it happened \u2014 you are returned to the train instead",
+        "Untested in multiplayer \u2014 how this behaves with several players on one train is not yet known"
+      ],
+      "pr": 974,
+      "date": "2026-08-15",
+      "released": true,
+      "released_in": "v0.563.0",
+      "released_at": "2026-08-15T11:21:49Z"
+    },
+    {
+      "id": "portal-room-rescue-lands-you-safely",
+      "version": "0.564.0",
+      "type": "fix",
+      "title": "Train Dimensions: improvements to the lost-train fix",
+      "summary": "Improves the recent fix for a Train Dimension losing its train: being put back on board no longer hurts you, and it asks less of the game while it finds the way back.",
+      "highlights": [],
+      "date": "2026-08-15",
+      "released": true,
+      "released_in": "v0.564.0",
+      "released_at": "2026-08-16T04:13:12Z"
+    },
+    {
+      "id": "bedrock-lock-sealed-all-round",
+      "version": "0.565.0",
+      "type": "fix",
+      "title": "Sealed Train Dimensions are properly sealed",
+      "summary": "The bedrock around a sealed Train Dimension now covers its hallways and end faces too, instead of stopping at the room \u2014 so there is no longer a wall you can mine through to get out.",
+      "highlights": [],
+      "pr": 978,
       "date": "2026-08-16",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.565.0",
+      "released_at": "2026-08-16T06:19:01Z"
     },
     {
-      "id": "builder-open-tiles-per-row",
-      "version": "0.552.0",
-      "type": "feat",
-      "title": "Set how many template tiles fill a row in the Train Builder's Open screen",
-      "summary": "The Open screen's template grid now fills your window instead of sitting in a fixed block, and a small numbered button beside the controls sets how many tiles go in a row \u2014 anywhere from two big ones to six. Left-click for more, right-click or shift-click for fewer, and it cycles round at both ends. Handy when a track kind has thirty variants under it and you know your own builds by their photos. Your choice is remembered across worlds.",
+      "id": "train-dimension-room-loot-stats",
+      "version": "0.566.0",
+      "type": "fix",
+      "title": "Train Dimension loot now matches its carriage",
+      "summary": "Chests inside a Train Dimension now roll their loot to the stage of the portal carriage you walked in through, so they're worth what a carriage's chests are worth at that point in the run. Which room you get, and how it is built, is unchanged.",
       "highlights": [
-        "The Open screen's grid fills the window, so tiles grow with your resolution",
-        "A new button sets 2 to 6 tiles per row \u2014 left-click for more, right-click or shift-click for fewer",
-        "The setting follows you across worlds"
+        "Train Dimension room loot now scales to the portal carriage you entered from",
+        "Enchantment levels in those rooms are capped to the run's progression again"
       ],
-      "pr": 984,
+      "pr": 977,
       "date": "2026-08-16",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.566.0",
+      "released_at": "2026-08-16T07:12:21Z"
     },
     {
-      "id": "builder-relay-profiles",
-      "version": "0.552.0",
-      "type": "feat",
-      "title": "Your Train Builder creations follow you",
-      "summary": "Builds you make in the Train Builder are now saved to your own profile, so they travel with you between worlds instead of living on one machine. A new My Builds screen shows everything you've made, and lets you submit a carriage to the train so it can turn up in anyone's run.",
+      "id": "x-menu-creative-only",
+      "version": "0.567.0",
+      "type": "fix",
+      "title": "Debug command menu is creative-only",
+      "summary": "The X debug/command menu no longer opens outside creative mode. Shift+X previously bypassed the creative gate and opened it in survival; that override is gone, and the menu now closes itself if you drop out of creative while it is open.",
       "highlights": [
-        "Saving in the Train Builder uploads the build to your profile \u2014 carriages, rooms, parts, track, tunnels and portal rooms alike",
-        "My Builds, from the builder's pause menu: every build you've made, with the ones already on the train marked",
-        "Submit to the Train puts a carriage of yours into the shared pool, and you can take it back off again",
-        "Building the outside of a train now saves the whole run as one build, instead of keeping only the carriage you last touched"
+        "X and Shift+X no longer open the debug menu in survival",
+        "The menu closes automatically when you leave creative"
       ],
-      "pr": 992,
+      "pr": 985,
+      "date": "2026-08-18",
+      "released": true,
+      "released_in": "v0.567.0",
+      "released_at": "2026-08-19T03:21:52Z"
+    },
+    {
+      "id": "train-engine-volume",
+      "version": "0.567.0",
+      "type": "feat",
+      "title": "Train engine volume slider",
+      "summary": "The train's engine loop now has its own volume, so you can turn the train down without turning the whole world's ambience down with it. It sits in Options > Music & Sounds beside the other volumes, and is repeated in Options > Dungeon Train and the in-world X menu. Sliding it to OFF stops the engine entirely; everything else about how the sound behaves - loudest in a carriage, fading out as you walk away, quiet in a Train Dimension room - is unchanged, just quieter or louder overall.",
+      "highlights": [
+        "New Dungeon Train Engine volume slider in Options > Music & Sounds",
+        "Separate from the Ambient slider, so cave and mob sounds keep their own level",
+        "OFF silences the engine completely"
+      ],
+      "pr": 986,
       "date": "2026-08-19",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.567.0",
+      "released_at": "2026-08-19T03:21:52Z"
     },
     {
-      "id": "builder-structure-updates",
-      "version": "0.552.0",
+      "id": "unsigned-book-shelf-message",
+      "version": "0.568.0",
       "type": "feat",
-      "title": "The scenery around your build keeps up with it",
-      "summary": "In the Train Builder, the carriages either side of you, the line running away from a track tile and the tunnels flanking a tunnel section are all built from the template you have open \u2014 so now they follow it as you build. Place a block and the copies gain it. A new Updates control in the Esc menu, under Structures, chooses between Instant, On Save and Never.",
+      "title": "The train tells you when a book went unsigned",
+      "summary": "Shelve a book & quill you wrote in but never signed, and a quiet line tells you the train won't carry it. Signing is what sends a book out into the world \u2014 an unsigned one just sits on the shelf, and now the game says so instead of leaving you guessing.",
       "highlights": [
-        "Instant by default: the surrounds redraw about four times a second as you place and break blocks",
-        "On Save shows the last version you committed, for comparing what you have against what you kept",
-        "Never holds the version you opened, to keep the original beside the one you are making",
-        "Works whether the structures are ghosts or solid blocks",
-        "Editing a track tile now shows a line made of that tile, instead of whatever the world seed rolled"
+        "Putting a written-in but unsigned book & quill into a chiseled bookshelf shows one of five lines",
+        "Nothing else changes: the book still goes on the shelf and can be taken back out"
       ],
-      "pr": 998,
-      "date": "2026-08-20",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "pr": 987,
+      "date": "2026-08-19",
+      "released": true,
+      "released_in": "v0.570.0",
+      "released_at": "2026-08-19T05:49:57Z"
     },
     {
-      "id": "builder-quiet-rules-on-load",
-      "version": "0.552.0",
-      "type": "fix",
-      "title": "Builder worlds keep the clock and weather stopped",
-      "summary": "A Train Builder world switched off the day/night cycle, weather and mob spawning when it was created, and never checked again \u2014 so a builder world made before those defaults existed, or one where the game rules had been changed, could still have the light moving under a build. The builder now re-applies those three rules every time it loads.",
+      "id": "house-portal-room",
+      "version": "0.569.0",
+      "type": "content",
+      "title": "The house \u2014 a player-built room",
+      "summary": "Built in the Train Editor by Twitch streamer xxx606xxx_, and the first player-made package to ship with Dungeon Train.",
+      "highlights": [],
+      "pr": 988,
+      "date": "2026-08-19",
+      "released": true,
+      "released_in": "v0.570.0",
+      "released_at": "2026-08-19T05:49:57Z"
+    },
+    {
+      "id": "portal-room-author-library",
+      "version": "0.571.0",
+      "type": "feat",
+      "title": "Portal rooms can be one author's library",
+      "summary": "A portal room can now be a single community author's library. Its bookshelves are stocked with that person's whole catalogue and every shelf past the end of it is left empty, so a hall of bare shelves with a dozen books in it tells you exactly how much they wrote. The room announces whose library you have walked into.",
       "highlights": [
-        "Day/night cycle, weather and mob spawning stay off in a builder world",
-        "Applies to older builder worlds on load, not just newly-created ones"
+        "New Books setting on portal rooms in the editor: off, or an author mix.",
+        "The room rolls between your own writing and somebody else's, and each room sets its own odds \u2014 a study can lean toward your own shelves while a great hall leans toward strangers.",
+        "Rooms can ask for a particular kind of author: at least this many books written, and at most that many, so a modest private collection stays modest.",
+        "Written nothing yourself? The room quietly picks somebody else rather than standing empty."
+      ],
+      "date": "2026-08-19",
+      "released": true,
+      "released_in": "v0.574.0",
+      "released_at": "2026-08-19T15:32:25Z"
+    },
+    {
+      "id": "trap-parkour-portal-rooms",
+      "version": "0.572.0",
+      "type": "content",
+      "title": "Two new Train Dimension rooms",
+      "summary": "Two more rooms can turn up behind a Train Dimension portal. One is a trap room, sealed on every side in bedrock. The other is a parkour room with nothing around it at all - no walls, no shell, just empty space out past the fog. Both start showing up from level 10, and both are uncommon, so the rooms you already know still make up most of what you walk into.",
+      "highlights": [
+        "New trap room, sealed all the way round in bedrock",
+        "New parkour room, hanging in open space with no shell around it",
+        "Both appear from level 10 onward"
+      ],
+      "pr": 989,
+      "date": "2026-08-19",
+      "released": true,
+      "released_in": "v0.574.0",
+      "released_at": "2026-08-19T15:32:25Z"
+    },
+    {
+      "id": "dimensional-carriages-lil-detective-crunch",
+      "version": "0.573.0",
+      "type": "feat",
+      "title": "New dimensional carriages by Lil Detective Crunch",
+      "summary": "Two new dimensional carriages built by Lil Detective Crunch now ride the train, one of them stocked with nether-themed loot and mobs.",
+      "highlights": [
+        "Two new dimensional carriages by Lil Detective Crunch"
+      ],
+      "pr": 993,
+      "date": "2026-08-19",
+      "released": true,
+      "released_in": "v0.574.0",
+      "released_at": "2026-08-19T15:32:25Z"
+    },
+    {
+      "id": "nether-band-lava-flowrate",
+      "version": "0.574.0",
+      "type": "fix",
+      "title": "Nether lava fix",
+      "summary": "Lava in the Nether band now behaves the way it should.",
+      "date": "2026-08-19",
+      "released": true,
+      "released_in": "v0.574.0",
+      "released_at": "2026-08-19T15:32:25Z"
+    },
+    {
+      "id": "translation-submission-original",
+      "version": "0.575.0",
+      "type": "feat",
+      "title": "Better review for player translation fixes",
+      "summary": "When you correct a machine-translated string in the in-game translation editor, your client now also reports the AI text you replaced. The reviewer sees your fix side by side with the original instead of on its own, so genuine corrections are easier to tell apart and quicker to approve.",
+      "highlights": [],
+      "pr": 995,
+      "date": "2026-08-19",
+      "released": true,
+      "released_in": "v0.575.0",
+      "released_at": "2026-08-19T16:00:27Z"
+    },
+    {
+      "id": "editor-save-no-mirror-rebuild",
+      "version": "0.576.0",
+      "type": "fix",
+      "title": "Saving in the editor no longer re-mirrors your build",
+      "summary": "Hitting Save in an in-game editor used to rebuild the mirrored half of the plot from the master octant first, quietly overwriting anything you had deliberately made asymmetric \u2014 and anything placed by a route the live mirror doesn't watch, like a clipboard paste or an edit made before you turned the axis on. Save now captures the plot exactly as you left it. When you do want the far half rebuilt from the master, ask for it: the new Mirror -> Rebuild button in the editor menu, or /dungeontrain editor mirror rebuild.",
+      "highlights": [
+        "Save captures the plot as it stands \u2014 mirroring no longer runs behind your back",
+        "New on-demand re-mirror: Mirror -> Rebuild in the editor menu, or /dungeontrain editor mirror rebuild",
+        "Live mirroring while you build is unchanged"
+      ],
+      "pr": 996,
+      "date": "2026-08-20",
+      "released": true,
+      "released_in": "v0.576.0",
+      "released_at": "2026-08-20T10:57:57Z"
+    },
+    {
+      "id": "nether-band-structures",
+      "version": "0.577.0",
+      "type": "feat",
+      "title": "Fortresses and bastions in the Nether",
+      "summary": "The Nether crossing is no longer empty country. Nether fortresses, bastion remnants, nether fossils and ruined portals now generate out there \u2014 the real ones, with their own loot, their blaze spawners and wither skeleton halls, their piglin brutes and Pigstep. Fortresses stand on their own bridge supports over the lava, and where one happens to lie across the line, the train tunnels straight through it.",
+      "highlights": [
+        "Nether fortresses generate in the Nether crossing, with blazes, wither skeletons and their loot",
+        "Bastion remnants, complete with piglin brutes, treasure rooms and the netherite upgrade template",
+        "Nether fossils in soul sand valleys, and ruined portals with their blackstone and loot",
+        "Ride straight through a fortress that lands across the tracks"
+      ],
+      "pr": 997,
+      "date": "2026-08-20",
+      "released": true,
+      "released_in": "v0.577.0",
+      "released_at": "2026-08-20T11:59:47Z"
+    },
+    {
+      "id": "effortless-building-optional",
+      "version": "0.578.0",
+      "type": "chore",
+      "title": "Effortless Building now bundled in the modpack (off by default)",
+      "summary": "The Dungeon Train modpack now ships Effortless Building alongside the rest of the pack, switched off. Flip it on in the launcher's mod list if you want its building tools \u2014 multi-block placement, mirrors and arrays \u2014 while you build out your train.",
+      "highlights": [
+        "Effortless Building included in the pack, disabled by default \u2014 one click to enable"
+      ],
+      "pr": 999,
+      "date": "2026-08-20",
+      "released": true,
+      "released_in": "v0.578.0",
+      "released_at": "2026-08-20T12:54:15Z"
+    },
+    {
+      "id": "portal-room-height-80",
+      "version": "0.579.0",
+      "type": "feat",
+      "title": "Dimensional carriages can be built up to 80 blocks tall",
+      "summary": "The room inside a dimensional carriage was capped at 11 blocks tall. It can now be built up to 80.",
+      "highlights": [],
+      "pr": 1000,
+      "date": "2026-08-20",
+      "released": true,
+      "released_in": "v0.579.0",
+      "released_at": "2026-08-20T13:13:59Z"
+    },
+    {
+      "id": "impossible-item-stats-guard",
+      "version": "0.580.0",
+      "type": "fix",
+      "title": "Portal room chests no longer hold gear with impossible stats",
+      "summary": "A Train Dimension room could hand you gear with absurd stat values \u2014 a diamond chestplate with over four million armour. The items were stored inside the room itself, so they turned up for everyone who found that chest. Affected rooms are repaired, and any room still holding such an item now rolls it again at the difficulty of where you found it, so it arrives as ordinary loot. Gear you find deep in a run still scales exactly as it did.",
+      "highlights": [
+        "Fixed a Train Dimension room that held gear with impossible stat values",
+        "Rooms still holding such an item now reroll it as ordinary loot",
+        "Items can no longer be generated with impossible stats in the first place"
+      ],
+      "date": "2026-08-20",
+      "released": true,
+      "released_in": "v0.580.0",
+      "released_at": "2026-08-20T13:28:18Z"
+    },
+    {
+      "id": "ain-0-48",
+      "version": "0.581.0",
+      "type": "chore",
+      "title": "New supporter names and the Archivist",
+      "summary": "Twelve more Discord supporters join the item name pool, along with the Archivist Society and Archivist and Detective titles.",
+      "highlights": [
+        "Requires Adventure Item Names 0.48.0"
+      ],
+      "pr": 1002,
+      "date": "2026-08-20",
+      "released": true,
+      "released_in": "v0.581.0",
+      "released_at": "2026-08-21T01:16:10Z"
+    },
+    {
+      "id": "nether-band-dimensional-carriage-spawns",
+      "version": "0.582.0",
+      "type": "fix",
+      "title": "Nether band mobs no longer spawn in dimensional carriages",
+      "summary": "Ghasts, zombified piglins and magma cubes could spawn inside a dimensional carriage while the train crossed the Nether band. They no longer do.",
+      "highlights": [],
+      "pr": 1003,
+      "date": "2026-08-21",
+      "released": true,
+      "released_in": "v0.584.0",
+      "released_at": "2026-08-21T03:12:02Z"
+    },
+    {
+      "id": "drifting-carriage-chat-limit",
+      "version": "0.583.0",
+      "type": "fix",
+      "title": "Drifting-carriage messages no longer flood chat",
+      "summary": "Walking a run of drifting carriages used to fill chat with a new gray line every few seconds. Those messages are now capped at three per ten seconds, so the train still tells you when you have stepped into someone else's carriage without burying everything else you were reading.",
+      "highlights": [
+        "Drifting-carriage entry messages capped at 3 per 10 seconds"
+      ],
+      "pr": 1005,
+      "date": "2026-08-21",
+      "released": true,
+      "released_in": "v0.584.0",
+      "released_at": "2026-08-21T03:12:02Z"
+    },
+    {
+      "id": "carriage-crops-stay-planted",
+      "version": "0.584.0",
+      "type": "fix",
+      "title": "Crops saved into carriage templates stay planted",
+      "summary": "Wheat, carrots, potatoes and beetroot saved into a carriage template no longer break the moment the carriage appears \u2014 farm carriages now ride the train intact. Crops inside a carriage no longer need light to stay planted, so an unlit farm carriage keeps its crops at the age you saved them. They still need light to grow, and still need farmland underneath: break the soil and the crop pops just like anywhere else. Also fixes saved crops vanishing from the carriage editor when you reopened a template.",
+      "highlights": [
+        "Wheat and other crops saved into carriage templates stay planted",
+        "Crops in an unlit carriage keep their saved growth stage (they still need light to grow)",
+        "Crops no longer vanish from a template when reopened in the carriage editor"
+      ],
+      "pr": 1004,
+      "date": "2026-08-21",
+      "released": true,
+      "released_in": "v0.584.0",
+      "released_at": "2026-08-21T03:12:02Z"
+    },
+    {
+      "id": "end-city-rarity-tuning",
+      "version": "0.585.0",
+      "type": "content",
+      "title": "End city adjustments",
+      "summary": "End city adjustments.",
+      "highlights": [
+        "End city adjustments."
+      ],
+      "date": "2026-08-21",
+      "released": true,
+      "released_in": "v0.585.0",
+      "released_at": "2026-08-21T04:21:37Z"
+    },
+    {
+      "id": "skybox-blocks",
+      "version": "0.586.0",
+      "type": "feat",
+      "title": "More skies for dimensions",
+      "summary": "New sky options for dimensions.",
+      "highlights": [],
+      "date": "2026-08-21",
+      "released": true,
+      "released_in": "v0.586.0",
+      "released_at": "2026-08-21T05:05:55Z"
+    },
+    {
+      "id": "passenger-log-short-run-filter",
+      "version": "0.587.0",
+      "type": "feat",
+      "title": "Fewer trivial runs in the passenger log",
+      "summary": "The public passenger log now only carries runs that got somewhere. A run that ends before carriage 100 stays off the feed \u2014 whether you died, quit, or abandoned it \u2014 so the log fills with journeys instead of false starts. The one exception: if another player's echo strikes you down, your run is posted however early it happened.",
+      "highlights": [
+        "Runs ending before carriage 100 no longer post to the public passenger log",
+        "Being killed by an echo always posts, at any carriage count"
+      ],
+      "pr": 1010,
+      "date": "2026-08-21",
+      "released": true,
+      "released_in": "v0.587.0",
+      "released_at": "2026-08-21T06:22:32Z"
+    },
+    {
+      "id": "upside-down-portal-rooms-above-bedrock",
+      "version": "0.588.0",
+      "type": "fix",
+      "title": "Improving dimensional carriages in the Upside Down",
+      "summary": "Improving dimensional carriages in the Upside Down.",
+      "date": "2026-08-21",
+      "released": true,
+      "released_in": "v0.589.0",
+      "released_at": "2026-08-21T07:33:45Z",
+      "pr": 1012
+    },
+    {
+      "id": "player-portal-rooms-house",
+      "version": "0.589.0",
+      "type": "content",
+      "title": "Six player-built portal rooms",
+      "summary": "Six new portal rooms, designed and built by players in the in-game editor \u2014 thanks to Autistic Mime, General Efficiency and Lil Detective Crunch. Which one you find depends on how far down the line you are, so the further you ride the stranger they get.",
+      "highlights": [
+        "Built by Autistic Mime, General Efficiency and Lil Detective Crunch",
+        "Six new rooms, each gated by distance",
+        "New loot: an End-themed chest, a gambling chest, and a mixed-blocks chest",
+        "Their chests were rebuilt clean \u2014 the authors' worlds had baked in gear with impossible stats"
+      ],
+      "date": "2026-08-21",
+      "released": true,
+      "released_in": "v0.589.0",
+      "released_at": "2026-08-21T07:33:45Z"
+    },
+    {
+      "id": "liquids-in-carriages",
+      "version": "0.590.0",
+      "type": "feat",
+      "title": "Water and lava in carriages",
+      "summary": "Carriages can now feature water and lava. Train builders can drop a liquid into a block variant, so a carriage might roll a flooded floor, a lava channel, or stay dry \u2014 and the liquid always arrives as a proper source block rather than a puddle that drains away.",
+      "highlights": [
+        "Water and lava can be used as block variants in carriages.",
+        "Liquids always place as full source blocks, so they don't drain away."
+      ],
+      "pr": 1011,
+      "date": "2026-08-21",
+      "released": true,
+      "released_in": "v0.591.0",
+      "released_at": "2026-08-21T09:13:18Z"
+    },
+    {
+      "id": "skybox-survival-targeting",
+      "version": "0.591.0",
+      "type": "feat",
+      "title": "Sky block and portal room tweaks",
+      "summary": "Small adjustments to sky blocks and portal rooms.",
+      "highlights": [],
+      "date": "2026-08-21",
+      "released": true,
+      "released_in": "v0.591.0",
+      "released_at": "2026-08-21T09:13:18Z"
+    },
+    {
+      "id": "edible-backpacks",
+      "version": "0.592.0",
+      "type": "feat",
+      "title": "Edible Backpacks",
+      "summary": "Apple packs now turn up in train loot. Eat one and you gain an extra backpack slot for the rest of your run \u2014 storage that lives in two panels either side of your inventory screen, growing a column at a time as you eat more. Golden apple packs are worth nine slots in a single bite, and nine ordinary packs craft into one. Die and the backpack goes with you, space and all, so what you carry in it is a real bet.",
+      "highlights": [
+        "Eat an apple pack for an extra inventory slot that lasts the rest of your run (up to 108)",
+        "Storage panels sit either side of the inventory screen and hide with the recipe book",
+        "Golden apple packs grant nine slots at once; craft one from nine ordinary packs",
+        "Dying costs you the backpack: both its contents and the space itself"
+      ],
+      "date": "2026-08-21",
+      "released": true,
+      "released_in": "v0.592.0",
+      "released_at": "2026-08-21T11:09:14Z"
+    },
+    {
+      "id": "ain-0-49",
+      "version": "0.593.0",
+      "type": "chore",
+      "title": "Three more supporter names",
+      "summary": "Three more Discord supporters join the item name pool: mel, banguela, and morpheus the 3 feeted cat.",
+      "highlights": [
+        "Adventure Item Names 0.49.0 adds the new names \u2014 0.48.0 still works, it just never rolls them"
+      ],
+      "date": "2026-08-21",
+      "released": true,
+      "released_in": "v0.596.0",
+      "released_at": "2026-08-21T12:31:57Z"
+    },
+    {
+      "id": "tradeeverything-0-5-0-bump",
+      "version": "0.593.0",
+      "type": "feat",
+      "title": "Refill the Trade Anything slot with one key",
+      "summary": "Updated the bundled Trade Everything mod. Tap space over a villager's Trade Anything slot to top it back up from your inventory instead of dragging stacks in one at a time, and obsidian now has a set trade value.",
+      "highlights": [
+        "Space-bar refill for the Trade Anything slot",
+        "Obsidian trades at 4 per emerald"
+      ],
+      "date": "2026-08-21",
+      "released": true,
+      "released_in": "v0.596.0",
+      "released_at": "2026-08-21T12:31:57Z"
+    },
+    {
+      "id": "clientcommands-cheat-blacklist",
+      "version": "0.594.0",
+      "type": "feat",
+      "title": "clientcommands counts as a cheat mod",
+      "summary": "Playing with clientcommands installed now puts the session into Free Play.",
+      "highlights": [],
+      "pr": 1018,
+      "date": "2026-08-21",
+      "released": true,
+      "released_in": "v0.596.0",
+      "released_at": "2026-08-21T12:31:57Z"
+    },
+    {
+      "id": "remove-tectonic-from-modpack",
+      "version": "0.595.0",
+      "type": "chore",
+      "title": "Tectonic removed from the modpack",
+      "summary": "The modpack no longer bundles Tectonic or Lithostitched. Dungeon Train still works with Tectonic if you install it yourself; if you had it switched on, it goes away on your next pack update.",
+      "highlights": [],
+      "pr": 1017,
+      "date": "2026-08-21",
+      "released": true,
+      "released_in": "v0.596.0",
+      "released_at": "2026-08-21T12:31:57Z"
+    },
+    {
+      "id": "new-advancements-batch",
+      "version": "0.596.0",
+      "type": "feat",
+      "title": "Seven new advancements",
+      "summary": "Three chase the bundled Edible Backpacks: eat one, craft the compressed nine-slot version, then unlock every backpack slot there is. Two reward riding past 100 and 1,000 carriages without opening a single chest or barrel (vases don't count). One is granted when you die more than 1,000 carriages into a life that never touched an ender chest. And one is for finding the train engine volume slider.",
+      "highlights": [
+        "Apples? / Hungry for Apples / Got Apples \u2014 the edible backpack chain",
+        "Not My Chest / Still Not My Chest \u2014 100 and 1,000 carriages without looting a chest or barrel",
+        "Contained Loop \u2014 a 1,000+ carriage life that never opened an ender chest",
+        "Sound Check \u2014 change the train engine volume"
+      ],
+      "pr": 1019,
+      "date": "2026-08-21",
+      "released": true,
+      "released_in": "v0.596.0",
+      "released_at": "2026-08-21T12:31:57Z"
+    },
+    {
+      "id": "raveroom-content",
+      "version": "0.596.0",
+      "type": "content",
+      "title": "Rave room",
+      "summary": "A new carriage room stocked with music discs \u2014 the full vanilla set, occasionally worn or enchanted.",
+      "highlights": [],
+      "pr": 1019,
+      "date": "2026-08-21",
+      "released": true,
+      "released_in": "v0.596.0",
+      "released_at": "2026-08-21T12:31:57Z"
+    },
+    {
+      "id": "drifting-carriage-death-log",
+      "pr": 1020,
+      "version": "0.597.0",
+      "type": "feat",
+      "title": "Drifting carriages remember who died in them",
+      "summary": "A drifting carriage already tells you a little about itself when you step aboard \u2014 that somebody built it, and who. It now tells you one more thing: who died in it. These are real deaths, in other people's runs, in worlds you will never see; the carriage carried the fact along with the build. A carriage nobody has died in says nothing at all, which makes the ones that do speak worth reading.",
+      "highlights": [
+        "Stepping into a drifting carriage names the travellers whose runs ended there",
+        "The death log travels with the build, so it reaches you from other players' worlds",
+        "Deaths by players who have not shared their name are counted, never named"
+      ],
+      "date": "2026-08-21",
+      "released": true,
+      "released_in": "v0.599.0",
+      "released_at": "2026-08-21T14:55:36Z"
+    },
+    {
+      "id": "shared-carriage-entities",
+      "version": "0.598.0",
+      "type": "feat",
+      "title": "Shared carriages bring their furnishings with them",
+      "summary": "A community carriage used to travel as bare blocks: the armor stands, item frames, paintings and animals someone decorated their room with were left behind when the build shipped to another world. Now they come too \u2014 a shared carriage arrives furnished, exactly as its builder left it.",
+      "highlights": [
+        "Armor stands, item frames, paintings, end crystals and mobs inside a shared carriage are saved with the build and placed back when another world receives it.",
+        "They ride the moving train with the carriage, rather than being left standing on the tracks.",
+        "The carriage browser's 3D preview now shows them, labelled by type and custom name, with a toggle to hide the labels.",
+        "Server owners can cap how many travel per carriage (sharedCarriageMaxEntities, default 64) or turn the whole thing off with 0."
+      ],
+      "date": "2026-08-21",
+      "released": true,
+      "released_in": "v0.599.0",
+      "released_at": "2026-08-21T14:55:36Z"
+    },
+    {
+      "id": "emerald-block-trade-balance",
+      "version": "0.599.0",
+      "type": "fix",
+      "title": "Emerald blocks trade at their real value",
+      "summary": "Villagers could hand you a whole emerald block (worth 9 emeralds) for a stack of cheap goods once their trade list included an emerald-block price. The Trade Anything slot now treats emerald blocks as currency rather than tradeable goods, and pays out in emeralds when a payout block would be worth more than everything you put in. Genuinely valuable items \u2014 netherite gear and the like \u2014 still pay out in blocks.",
+      "highlights": [
+        "A stack of wheat now pays out in emeralds instead of minting an emerald block.",
+        "High-value items still pay out in emerald blocks, at nine emeralds per block."
+      ],
+      "pr": 1022,
+      "date": "2026-08-21",
+      "released": true,
+      "released_in": "v0.599.0",
+      "released_at": "2026-08-21T14:55:36Z"
+    },
+    {
+      "id": "nemos-inventory-sorting-modpack",
+      "version": "0.600.0",
+      "type": "chore",
+      "title": "Nemo's Inventory Sorting available in the modpack",
+      "summary": "The Dungeon Train modpack now offers Nemo's Inventory Sorting as an optional add-on. Turn it on in the launcher's optional-mods list to get one-click sort buttons on your inventory and any chest \u2014 handy when a loot run leaves your carriage storage a mess. It's off by default, so nothing changes unless you opt in.",
+      "highlights": [
+        "New opt-in companion mod: Nemo's Inventory Sorting (client-side, 1.8.2.1)",
+        "Adds sort buttons to inventory and container screens",
+        "Ships switched off \u2014 enable it in the launcher's optional mods list"
+      ],
+      "date": "2026-08-21",
+      "released": true,
+      "released_in": "v0.600.0",
+      "released_at": "2026-08-21T15:05:53Z"
+    },
+    {
+      "id": "punchy-modpack-optin",
+      "version": "0.601.0",
+      "type": "feat",
+      "title": "Punchy! now in the modpack (off by default)",
+      "summary": "The Dungeon Train modpack now ships Punchy!, a first-person animation mod that adds weight and personality to swinging, mining and movement. It's included but switched off \u2014 flip it on in your launcher's mod list if you want it.",
+      "highlights": [
+        "Punchy! 2.7d bundled in both the CurseForge and Modrinth packs",
+        "Disabled by default \u2014 enable it with one click, no extra download",
+        "Client-side only, so it's skipped on dedicated servers"
+      ],
+      "pr": 1024,
+      "date": "2026-08-21",
+      "released": true,
+      "released_in": "v0.601.0",
+      "released_at": "2026-08-21T15:14:13Z"
+    },
+    {
+      "id": "edible-backpack-rarity",
+      "version": "0.602.0",
+      "type": "chore",
+      "title": "Edible backpacks are rarer",
+      "summary": "The edible backpack turned up in almost every other chest. Its odds are now cut across the general, iron/gold and pot loot pools, and it no longer appears in the starter chest \u2014 so finding one feels like a find again.",
+      "highlights": [
+        "Edible backpack far less common in chests",
+        "No longer handed out in the starter chest"
+      ],
+      "pr": 1025,
+      "date": "2026-08-21",
+      "released": true,
+      "released_in": "v0.602.0",
+      "released_at": "2026-08-21T15:39:10Z"
+    },
+    {
+      "id": "miniword-portal-room",
+      "version": "0.602.0",
+      "type": "content",
+      "title": "Miniword \u2014 a new House portal room",
+      "summary": "Step through a portal into Miniword, a hand-built world in a box and by far the largest portal room in the game at 48x30x48. It turns up as a House room from Diff-Level 12 onward.",
+      "highlights": [
+        "New Miniword portal room \u2014 a 48x30x48 build, the biggest room in Dungeon Train",
+        "Appears among the House portal rooms from Diff-Level 12"
+      ],
+      "pr": 1026,
+      "date": "2026-08-21",
+      "released": true,
+      "released_in": "v0.602.0",
+      "released_at": "2026-08-21T15:39:10Z"
+    },
+    {
+      "id": "veinminer-freeplay-blacklist",
+      "version": "0.603.0",
+      "type": "feat",
+      "title": "Vein miner mods now trigger Free Play",
+      "summary": "Playing with a vein miner installed runs the session in Free Play.",
+      "highlights": [],
+      "pr": 1027,
+      "date": "2026-08-21",
+      "released": true,
+      "released_in": "v0.603.0",
+      "released_at": "2026-08-21T15:48:13Z"
+    },
+    {
+      "id": "difficulty-change-confirmation",
+      "version": "0.604.0",
+      "type": "feat",
+      "title": "Difficulty changes now ask first",
+      "summary": "Changing difficulty swaps your gear, XP and Ender Chest. It now warns you before it does \u2014 and the gear you leave behind is no longer lost.",
+      "highlights": [],
+      "pr": 1028,
+      "date": "2026-08-21",
+      "released": true,
+      "released_in": "v0.604.0",
+      "released_at": "2026-08-21T15:55:41Z"
+    },
+    {
+      "id": "trade-everything-separate-download",
+      "version": "0.605.0",
+      "type": "feat",
+      "title": "Trade Everything is now its own download",
+      "summary": "Trade Everything \u2014 the mod that gives every villager a \"Trade Anything\" slot \u2014 used to ride along inside Dungeon Train's own file. It now installs alongside Dungeon Train as its own mod, so it shows up in your mod list and gets credited for its own downloads. The CurseForge and Modrinth apps fetch it for you automatically; if you install by hand, grab Trade Everything (0.7.0 or newer) with Dungeon Train.",
+      "highlights": [
+        "The CurseForge and Modrinth apps install Trade Everything for you \u2014 nothing to do.",
+        "Installing manually? Add Trade Everything 0.7.0+ next to Dungeon Train, or the game will tell you it's missing on launch.",
+        "Villager payouts fixed: selling no longer hands back emerald blocks priced as ordinary goods.",
+        "Bookshelves are now valued at 3 per emerald."
+      ],
+      "date": "2026-08-21",
+      "released": true,
+      "released_in": "v0.605.0",
+      "released_at": "2026-08-22T03:00:00Z"
+    },
+    {
+      "id": "instant-respawn-new-world",
+      "version": "0.606.0",
+      "type": "feat",
+      "title": "Immediate Respawn now rolls straight into a new run",
+      "summary": "Turn on Minecraft's Immediate Respawn game rule and dying skips the death screen entirely \u2014 the world is discarded and a fresh Dungeon Train run starts on the spot, the same reboard the death screen's \"Board anew\" button performs. Previously the rule dropped you back into the world you had just died in, the one way a run could outlive your death. Multiplayer is unchanged: on a server you do not host, Immediate Respawn still respawns you as vanilla does.",
+      "highlights": [
+        "Immediate Respawn ends the run and starts a new world, no button press",
+        "Holding Shift while you die keeps the current game mode, as on the reboard chip",
+        "Remote servers keep vanilla Immediate Respawn behaviour"
       ],
       "date": "2026-08-22",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.606.0",
+      "released_at": "2026-08-22T03:15:31Z"
     },
     {
-      "id": "editor-relay-profile",
-      "version": "0.552.0",
-      "type": "feat",
-      "title": "Your Train Editor builds follow you",
-      "summary": "Saving in the Train Editor now also keeps a copy on your Dungeon Train profile, the way the Train Builder already did. Your builds follow you between worlds instead of living in one save folder, and a carriage you are happy with can be put on the train for everyone. Builds stay private to you until you submit one.",
+      "id": "remove-backpack-loot-substitution",
+      "version": "0.607.0",
+      "type": "fix",
+      "title": "Edible backpacks come from loot tables only",
+      "summary": "Edible backpacks were being swapped into 1.5% of every loot slot in the game, on top of the chests and pots that were meant to carry them. That global substitution is gone \u2014 backpacks now turn up only where the loot tables actually list them, so finding one means something again.",
       "highlights": [
-        "Editor saves upload to your profile \u2014 carriages, rooms, parts, track and portal rooms alike",
-        "My Builds is on the pause menu in creative, so you can see what you have made and put a carriage on the train",
-        "Only the templates you made yourself are uploaded, never Dungeon Train's own",
-        "The relay being down can never cost you a save \u2014 the file on your machine is the build"
+        "Edible backpacks no longer replace random items in unrelated containers",
+        "Backpacks still appear in the loot chests, iron/gold chests and decorated pots that list them"
       ],
-      "pr": 1071,
+      "pr": 1032,
+      "date": "2026-08-22",
+      "released": true,
+      "released_in": "v0.607.0",
+      "released_at": "2026-08-22T04:56:27Z"
+    },
+    {
+      "id": "book-text-sanitization",
+      "version": "0.608.0",
+      "type": "fix",
+      "title": "Community books can't break your game \u2014 and can still be styled",
+      "summary": "Books written by other players are now cleaned up before they reach you. Certain characters could previously hide text on a page or stack accent marks until it overflowed, and an emoji landing in exactly the wrong spot in a long title could crash the game outright. That's all handled now, on the server and in the mod. Colour codes and right-to-left writing still work exactly as they did \u2014 the cleanup is aimed at characters that do nothing but cause trouble. Ordinary books are unaffected.",
+      "highlights": [
+        "Colour and style codes still work in your book's pages \u2014 they're only stripped from titles and author names, where they leaked out into chat and tooltips",
+        "Invisible padding characters are removed from titles, authors and pages; right-to-left writing and emoji sequences are left alone",
+        "An emoji in a long title or a full page can no longer crash the game",
+        "Books already in the community pool are cleaned as they're handed out \u2014 nothing needed re-uploading"
+      ],
+      "pr": 1033,
+      "date": "2026-08-22",
+      "released": true,
+      "released_in": "v0.612.0",
+      "released_at": "2026-08-22T06:52:30Z"
+    },
+    {
+      "id": "book-reader-reports",
+      "version": "0.609.0",
+      "type": "feat",
+      "title": "Report a community book",
+      "summary": "Community books written by other players now carry a report button beside the thumbs up and down. A thumbs down says a book was weak; reporting says it should not be in the pool at all. Enough reports, relative to how many people have read it, pull the book from circulation and put it in front of a human.",
+      "highlights": [
+        "A report icon sits under the thumbs on the train's question page, on player-written books only",
+        "It takes two clicks \u2014 the first arms it, the second sends \u2014 and there is no hotkey, so a slip cannot report a book",
+        "Reporting does not cast a vote; the two are separate verdicts",
+        "Reports are weighed against readers, so a well-read book is not pulled by a handful of complaints"
+      ],
+      "date": "2026-08-22",
+      "released": true,
+      "released_in": "v0.612.0",
+      "released_at": "2026-08-22T06:52:30Z"
+    },
+    {
+      "id": "endless-open-copies-control",
+      "version": "0.610.0",
+      "type": "feat",
+      "title": "Open-plain portal rooms can vary their floor",
+      "summary": "Endless Open portal rooms can now reroll their floor and ceiling per tile instead of repeating one pattern to the horizon.",
+      "highlights": [],
+      "pr": 1036,
+      "date": "2026-08-22",
+      "released": true,
+      "released_in": "v0.612.0",
+      "released_at": "2026-08-22T06:52:30Z"
+    },
+    {
+      "id": "worldedit-modpack-optional",
+      "version": "0.611.0",
+      "type": "feat",
+      "title": "WorldEdit available in the modpack",
+      "summary": "The modpack now ships WorldEdit as an optional extra. It's switched off by default \u2014 tick it on in the launcher's optional-mods list if you want an in-game map editor for building. Best used off the moving train: WorldEdit's block edits aren't aware of the train's physics sub-level.",
+      "highlights": [
+        "WorldEdit bundled in the modpack, off by default",
+        "Enable it from the optional-mods list in the CurseForge/Modrinth launcher"
+      ],
+      "pr": 1031,
+      "date": "2026-08-22",
+      "released": true,
+      "released_in": "v0.612.0",
+      "released_at": "2026-08-22T06:52:30Z"
+    },
+    {
+      "id": "creative-mod-free-play-gate",
+      "version": "0.612.0",
+      "type": "feat",
+      "title": "Using a creative mod asks first",
+      "summary": "Using WorldEdit or Effortless Building now asks whether you want to enter Free Play, the same way switching to Creative does. Decline and nothing happens. Having them installed changes nothing on its own.",
+      "highlights": [
+        "Ordinary building with Effortless Building is still normal play"
+      ],
+      "date": "2026-08-22",
+      "released": true,
+      "released_in": "v0.612.0",
+      "released_at": "2026-08-22T06:52:30Z"
+    },
+    {
+      "id": "banner-backpack-emerald-values",
+      "version": "0.613.0",
+      "type": "feat",
+      "title": "Villager trade tweaks",
+      "summary": "Adjusted what villagers pay for a few items in the Trade Anything slot.",
+      "highlights": [],
+      "date": "2026-08-22",
+      "released": true,
+      "released_in": "v0.613.0",
+      "released_at": "2026-08-22T09:09:00Z"
+    },
+    {
+      "id": "player-head-death-skins",
+      "version": "0.613.0",
+      "type": "feat",
+      "title": "Player heads remember who died there",
+      "summary": "The player heads scattered through the train are no longer anonymous. Each one now wears the face and name of a real player whose run ended at that same carriage \u2014 the fourth carriage remembers people who fell in a fourth carriage. Mine one and the head keeps them, so you can carry a fallen traveller with you or set them up somewhere of your choosing.",
+      "highlights": [
+        "Heads in carriage N show players who died at carriage N",
+        "A mined head keeps its face and name, and can be placed anywhere",
+        "Falls back to the bundled skins when there is nobody to remember yet"
+      ],
+      "pr": 1040,
+      "date": "2026-08-22",
+      "released": true,
+      "released_in": "v0.613.0",
+      "released_at": "2026-08-22T09:09:00Z"
+    },
+    {
+      "id": "portal-carriage-loot-reroll",
+      "version": "0.614.0",
+      "type": "fix",
+      "title": "Portal corridor loot variety",
+      "summary": "Chests in a portal's corridors now roll different contents from portal to portal, instead of the same ones every time.",
+      "date": "2026-08-22",
+      "released": true,
+      "released_in": "v0.619.0",
+      "released_at": "2026-08-22T14:38:59Z"
+    },
+    {
+      "id": "bilibili-link-chinese-clients",
+      "version": "0.615.0",
+      "type": "feat",
+      "title": "Bilibili link for Chinese-language players",
+      "summary": "Playing in Chinese? There's now a Bilibili button on the main menu, just above Discord \u2014 Discord doesn't work in mainland China, so that one was a dead end. It only shows up on Chinese-language clients; everyone else's menu is unchanged.",
+      "highlights": [
+        "New Bilibili button on the main menu, above Discord",
+        "Shows only on Chinese-language clients (\u7b80\u4f53\u4e2d\u6587, \u7e41\u9ad4\u4e2d\u6587, \u6587\u8a00\u6587)",
+        "Discord stays where it is \u2014 the Bilibili link is added, not swapped in"
+      ],
+      "pr": 1042,
+      "date": "2026-08-22",
+      "released": true,
+      "released_in": "v0.619.0",
+      "released_at": "2026-08-22T14:38:59Z"
+    },
+    {
+      "id": "endless-open-single-block-variant",
+      "version": "0.616.0",
+      "type": "feat",
+      "title": "Endless Open rooms can repeat a single block variant",
+      "summary": "An endless open portal room can now be set to repeat one block instead of the room you arrived in \u2014 an open plain of sandstone, or of a mix you build yourself. The room you walk into keeps everything its author built; only the ground stretching away from it goes uniform. The block can be a full block variant, with weights, facings and even gaps, authored in the same block-variant menu the rest of the editor uses.",
+      "highlights": [
+        "Copies: a new Single option for Endless Open rooms",
+        "Repeat one block, or a whole block variant with weights and facings",
+        "Air in the variant leaves gaps in the plain",
+        "The default portal room now opens onto a lit plain of shroomlight and blackstone"
+      ],
+      "pr": 1044,
+      "date": "2026-08-22",
+      "released": true,
+      "released_in": "v0.619.0",
+      "released_at": "2026-08-22T14:38:59Z"
+    },
+    {
+      "id": "translation-replies-and-good-as-is",
+      "version": "0.617.0",
+      "type": "feat",
+      "title": "Reviewers can reply to translators, and translators can retire good AI lines",
+      "summary": "The in-game translation editor now carries a conversation. When a reviewer turns down a translation you sent, they can say why \u2014 and that reply comes back to your client, marked against the line it is about, readable in the list and above the box when you open it, with a note on the title screen when something new is waiting. And when a machine-translated line is already correct, you can now say so: 'Good As Is' retires it from your queue so it stops coming back, and you can put it back at any time.",
+      "highlights": [
+        "Reviewers can reply to a translation, and the reply reaches the translator's client",
+        "A title-screen note tells you when a reviewer has written back",
+        "'Good As Is' retires a machine-translated line that needs no fixing \u2014 reversible, and per install"
+      ],
+      "pr": 1043,
+      "date": "2026-08-22",
+      "released": true,
+      "released_in": "v0.619.0",
+      "released_at": "2026-08-22T14:38:59Z"
+    },
+    {
+      "id": "curseforge-modpack-publish-reliability",
+      "version": "0.618.0",
+      "type": "ci",
+      "title": "CurseForge modpack keeps up with releases again",
+      "summary": "The CurseForge modpack had quietly stopped updating \u2014 it sat on v0.592.0 while the mod shipped v0.613.0, because CurseForge was accepting our uploads and then rejecting them behind the scenes with no error anywhere we could see. Uploads now retry when the platform hiccups, and every upload is checked afterwards to confirm it actually went live, so the pack can't silently fall behind again.",
+      "highlights": [
+        "CurseForge modpack is publishing again",
+        "Failed uploads retry instead of losing that version",
+        "A pack version that never goes live now fails loudly"
+      ],
+      "pr": 1046,
+      "date": "2026-08-22",
+      "released": true,
+      "released_in": "v0.619.0",
+      "released_at": "2026-08-22T14:38:59Z"
+    },
+    {
+      "id": "localize-recent-text-19-locales",
+      "version": "0.619.0",
+      "type": "feat",
+      "title": "Three weeks of new text, now in all 19 languages",
+      "summary": "Everything added since early August was English-only outside en_us \u2014 the seven new advancements, the Video Tools page, the skybox blocks, the difficulty-change warning, the drifting-carriage death lines, the community-book report button and more. All of it is now translated into every language Dungeon Train ships in, along with ten in-world books that had never been localized. Machine-translated and marked as such, so the in-game translation editor lists them for human review.",
+      "highlights": [
+        "115 newly translated interface lines in each of the 19 languages",
+        "Ten new books \u2014 including The Drifting Carriages and the cursed and loved starting books \u2014 now read in your language",
+        "New Quiet Rules and Train Glossary entries translated to match the English originals"
+      ],
+      "date": "2026-08-22",
+      "released": true,
+      "released_in": "v0.619.0",
+      "released_at": "2026-08-22T14:38:59Z"
+    },
+    {
+      "id": "jei-optional-modpack",
+      "version": "0.620.0",
+      "type": "feat",
+      "title": "JEI, ready to switch on",
+      "summary": "The modpack now ships Just Enough Items, off by default. Tick it on at install for recipe and item lookup \u2014 press R on any item to see how it's made.",
+      "highlights": [
+        "Bundled with the modpack, switched off by default."
+      ],
+      "pr": 1048,
+      "date": "2026-08-22",
+      "released": true,
+      "released_in": "v0.625.0",
+      "released_at": "2026-08-22T16:12:08Z"
+    },
+    {
+      "id": "editor-undo-redo",
+      "version": "0.621.0",
+      "type": "feat",
+      "title": "Undo and redo in the train editor",
+      "summary": "The in-world editor now has an undo history on Ctrl+Z and Ctrl+Y (Cmd+Z / Cmd+Y on Mac), with an Undo | Redo row in the editor's X menu. It covers block edits, whole-plot actions like Clear and Reset, block variants, and menu changes such as weights, stage links, loot tables and part assignments. Undo works from anywhere \u2014 change something, walk away, and you can still take it back.",
+      "highlights": [
+        "Ctrl/Cmd+Z and Ctrl/Cmd+Y, rebindable from the vanilla Controls screen",
+        "Blocks, whole-plot Clear and Reset, block variants, and menu changes all undo",
+        "A mirrored edit undoes as one step, not one per reflected cell",
+        "Broken containers come back with their contents intact",
+        "Works from anywhere, not just while standing in the plot"
+      ],
+      "date": "2026-08-22",
+      "released": true,
+      "released_in": "v0.625.0",
+      "released_at": "2026-08-22T16:12:08Z"
+    },
+    {
+      "id": "sable-205-physics-update",
+      "version": "0.622.0",
+      "type": "chore",
+      "title": "Sable updated to 2.0.5",
+      "summary": "Dungeon Train now runs on Sable 2.0.5, which fixes several upstream crashes \u2014 most notably a panic when you close the CurseForge or Modrinth launcher before entering a world. Sable is a required download, so update it too.",
+      "highlights": [
+        "Fixes the crash from closing the launcher before joining a world",
+        "Requires Sable 2.0.5 \u2014 the modpack updates it for you"
+      ],
+      "pr": 1050,
+      "date": "2026-08-22",
+      "released": true,
+      "released_in": "v0.625.0",
+      "released_at": "2026-08-22T16:12:08Z"
+    },
+    {
+      "id": "carriage-pivot-pin",
+      "version": "0.622.0",
+      "type": "fix",
+      "title": "Carriages no longer shift when their blocks change",
+      "summary": "Blowing up or mining blocks on a carriage could shove the whole carriage sideways, and the shift survived a save and reload. Beds in the Nether and End were the loudest case, but creepers, trap TNT and ordinary mining did it too.",
+      "highlights": [],
+      "pr": 1050,
+      "date": "2026-08-22",
+      "released": true,
+      "released_in": "v0.625.0",
+      "released_at": "2026-08-22T16:12:08Z"
+    },
+    {
+      "id": "single-copies-floor-roof",
+      "version": "0.622.0",
+      "type": "feat",
+      "title": "Endless plains can have a different floor and roof",
+      "summary": "A repeating plain's floor and roof are now set separately in the editor, and either one can be air.",
+      "highlights": [],
+      "pr": 1051,
+      "date": "2026-08-22",
+      "released": true,
+      "released_in": "v0.625.0",
+      "released_at": "2026-08-22T16:12:08Z"
+    },
+    {
+      "id": "deserter-hall",
+      "version": "0.622.0",
+      "type": "content",
+      "title": "The deserter's hall by MacaroniWithTheMayonnaise",
+      "summary": "A new portal room behind house doors: a spruce hall built by MacaroniWithTheMayonnaise, with the deserter's journal still inside.",
+      "highlights": [
+        "Built by MacaroniWithTheMayonnaise"
+      ],
+      "pr": 1051,
+      "date": "2026-08-22",
+      "released": true,
+      "released_in": "v0.625.0",
+      "released_at": "2026-08-22T16:12:08Z"
+    },
+    {
+      "id": "restore-backpack-loot-weights",
+      "version": "0.624.0",
+      "type": "chore",
+      "title": "Edible backpacks are findable again",
+      "summary": "Edible backpacks turn up in loot chests, iron/gold chests, decorated pots and the starter chest at their original rates again.",
+      "highlights": [],
+      "date": "2026-08-22",
+      "released": true,
+      "released_in": "v0.625.0",
+      "released_at": "2026-08-22T16:12:08Z",
+      "pr": 1054
+    },
+    {
+      "id": "portal-room-daylight",
+      "version": "0.625.0",
+      "type": "feat",
+      "title": "Dimensional carriages can stand under their own sky",
+      "summary": "A dimensional carriage's template now chooses the sky it stands under \u2014 ordinary daylight, daylight that follows the world clock, or a Nether or End cast. The light eases in as you step inside and eases back out as you leave for the corridor home. The mini-world carriage is the first to use it.",
+      "highlights": [
+        "The mini-world dimensional carriage is now daylit",
+        "Room builders get a Sky control in the dimensional carriage editor",
+        "Turn it off server-wide with the new portalRoomDaylight setting"
+      ],
+      "pr": 1052,
+      "date": "2026-08-22",
+      "released": true,
+      "released_in": "v0.625.0",
+      "released_at": "2026-08-22T16:12:08Z"
+    },
+    {
+      "id": "pause-menu-version-label",
+      "version": "0.626.0",
+      "type": "feat",
+      "title": "Version number now shown on the pause menu",
+      "summary": "The Dungeon Train version line that sits in the corner of the main menu now also appears on the pause menu, so you can check which build you are on without leaving your run. It carries the same update notice as the title screen \u2014 if a newer release is out, the line turns amber and clicking it opens the download page for wherever you installed the mod.",
+      "highlights": [
+        "Version number added to the pause (Esc) menu, matching the main menu",
+        "Shows the same clickable 'update available' notice as the title screen",
+        "Visible in multiplayer as well as singleplayer"
+      ],
+      "pr": 1055,
+      "date": "2026-08-22",
+      "released": true,
+      "released_in": "v0.627.0",
+      "released_at": "2026-08-23T07:53:19Z"
+    },
+    {
+      "id": "portal-room-tiles-multiplayer",
+      "version": "0.627.0",
+      "type": "fix",
+      "title": "Endless portal rooms no longer vanish under other players",
+      "summary": "In multiplayer, the endless portal rooms only followed one player \u2014 usually the host. Anyone else could watch the floor disappear from around them and drop out of the world, and the room stopped growing ahead of them. Every player in the room now gets their own window of rooms.",
+      "highlights": [
+        "The floor around you is never cleared while you are standing near it, whoever else is in the room",
+        "The room keeps building ahead of every player exploring it, not just the first one in",
+        "Extra corridors are held open the same way, so the way back does not disappear behind you"
+      ],
+      "pr": 1056,
+      "date": "2026-08-23",
+      "released": true,
+      "released_in": "v0.627.0",
+      "released_at": "2026-08-23T07:53:19Z"
+    },
+    {
+      "id": "mod-hack-report-icon",
+      "version": "0.628.0",
+      "type": "feat",
+      "title": "Flag a cheat mod from the death screen",
+      "summary": "The Mod Recommendations page now works both ways. Alongside recommending a mod to the creator, each of your installed mods carries a small warning icon \u2014 click it to flag that mod as a cheat or hack, say what it lets you do, and send. Flagged mods sink to the bottom of the grid with a warning mark, the way recommended ones keep their tick.",
+      "highlights": [
+        "Report any installed mod as a cheat or hack, with a reason",
+        "Recommendations are unchanged \u2014 the tile body still recommends"
+      ],
+      "pr": 1057,
+      "date": "2026-08-23",
+      "released": true,
+      "released_in": "v0.628.0",
+      "released_at": "2026-08-23T08:01:10Z"
+    },
+    {
+      "id": "config-integrity-free-play",
+      "version": "0.629.0",
+      "type": "feat",
+      "title": "Changed settings now show at launch, with one-click restore",
+      "summary": "Dungeon Train's difficulty settings are what your advancements and lifetime stats are measured against, so a world running with them changed now plays in Free Play \u2014 the same rule that already applied to Adventure Item Stats. If your settings differ, the game tells you on the title screen, lists exactly what changed, and offers to put them back. Your own settings are always backed up first, never deleted, so you can rename a file back to restore them. Settings that don't affect balance \u2014 visual options, Discord and telemetry toggles, and the content filters \u2014 are unaffected.",
+      "highlights": [
+        "Changed difficulty settings are shown at launch, not discovered mid-run",
+        "One-click restore to defaults, with your old settings kept as backups",
+        "Keeping your changes is remembered, so you're only asked again if something else changes",
+        "New /fixconfig command does the same restore from in-game"
+      ],
+      "pr": 1058,
+      "date": "2026-08-23",
+      "released": true,
+      "released_in": "v0.630.0",
+      "released_at": "2026-08-23T13:40:00Z"
+    },
+    {
+      "id": "own-books-shelf-and-controls",
+      "version": "0.630.0",
+      "type": "feat",
+      "title": "Find the books you wrote, even the ones the train hasn't let out",
+      "summary": "Your own library rooms now stock the books you wrote that the train is still deciding about \u2014 or has decided against. Open one and its last page tells you where it stands, in the train's own words. You can also take one of your released books back out of circulation whenever you like.",
+      "highlights": [
+        "Books you wrote that are pending, undecided or refused now appear on your own library shelves instead of vanishing the moment you sign them.",
+        "The last page of one of your books says where it stands: still being read, undecided, or turned away \u2014 in orange, or red once it is a no.",
+        "Made Private: take one of your released books off the line so only you can find it. Reversible \u2014 the padlock shows what it will do before you click it.",
+        "Protest a verdict you disagree with, on a book the train has actually read. It asks a person to look again; it does not overturn anything by itself.",
+        "No thumbs on a book you wrote \u2014 rating your own work was never the point, and it skewed which books everyone else was shown."
+      ],
+      "date": "2026-08-23",
+      "released": true,
+      "released_in": "v0.630.0",
+      "released_at": "2026-08-23T13:40:00Z"
+    },
+    {
+      "id": "own-book-vote-counters",
+      "version": "0.631.0",
+      "type": "feat",
+      "title": "See how your own books are landing",
+      "summary": "The last page of a book you wrote now shows its thumbs up and thumbs down count. The numbers refresh whenever you pick the book up.",
+      "highlights": [
+        "Vote counts sit where the voting buttons are on other people's books \u2014 yours report, they don't ask.",
+        "A released book of yours shows its tally even at zero, so \"nobody has voted yet\" is something you can actually see."
+      ],
+      "date": "2026-08-23",
+      "released": true,
+      "released_in": "v0.631.0",
+      "released_at": "2026-08-23T14:25:53Z"
+    },
+    {
+      "id": "portal-library-weights-restored",
+      "version": "0.631.0",
+      "type": "fix",
+      "title": "Portal room variety restored",
+      "summary": "Since v0.630.0 portal rooms had been coming up as libraries far more often than intended, and those libraries always drew from your own shelf instead of mixing in other writers. Test settings had been shipped as real content by mistake. The original room weights are back.",
+      "highlights": [
+        "Libraries are rare again, and the rooms you meet are varied again.",
+        "Library rooms go back to mostly showing other people's writing, with your own as the occasional treat."
+      ],
+      "date": "2026-08-23",
+      "released": true,
+      "released_in": "v0.631.0",
+      "released_at": "2026-08-23T14:25:53Z"
+    },
+    {
+      "id": "custom-train-content-free-play",
+      "version": "0.632.0",
+      "type": "feat",
+      "title": "Custom train content now asks before it changes your run",
+      "summary": "If you've built your own carriages in the Train Editor \u2014 or installed someone else's pack \u2014 starting a world now asks what you want to do with them. Continue and you play with your creations, but the run counts as Free Play: it won't add to your profile or global stats. Disable them and the world runs the built-in designs, and your stats count as normal. Tick 'Remember decision' and it won't ask again; you can change your mind any time in Options, or with /customcontent.",
+      "highlights": [
+        "A prompt at the start of any world running custom train content, with Continue / Disable Custom Changes and a Remember decision checkbox.",
+        "Playing with custom content is Free Play \u2014 advancements still earn live, but they don't count towards your profile or global totals.",
+        "Disabling is per-world and reversible: the world falls back to the built-in designs, and /customcontent on brings yours back.",
+        "A new Custom Train Content row in Options -> Dungeon Train sets what happens by default."
+      ],
+      "pr": 1061,
+      "date": "2026-08-23",
+      "released": true,
+      "released_in": "v0.632.0",
+      "released_at": "2026-08-23T15:15:10Z"
+    },
+    {
+      "id": "editor-plot-transforms",
+      "version": "0.632.0",
+      "type": "feat",
+      "title": "Move, turn and mirror a whole template in the editor",
+      "summary": "The train editor can now rearrange the plot you are standing in, instead of you rebuilding it block by block. Offset slides the build and wraps it at the plot edges, rotate turns it, and flip mirrors it \u2014 and any of the three is a single Ctrl+Z away from being undone.",
+      "highlights": [
+        "/dt editor offset <x> <y> <z> slides the build, wrapping at the plot faces so nothing is lost",
+        "/dt editor rotate 90|180|270 turns the build; a quarter turn needs a square plot, so carriages take 180",
+        "/dt editor flip x|y|z mirrors the build, vertical flips included",
+        "Variant pools, lock groups and container loot pools travel with the blocks \u2014 the build stays wired up"
+      ],
+      "pr": 1062,
+      "date": "2026-08-23",
+      "released": true,
+      "released_in": "v0.632.0",
+      "released_at": "2026-08-23T15:15:10Z"
+    },
+    {
+      "id": "editor-out-of-plot-ghosts",
+      "version": "0.633.0",
+      "type": "feat",
+      "title": "Blocks left outside a template plot show up red",
+      "summary": "Only what sits inside a plot is saved into the template. Anything outside it now wears a red ghost, from anywhere in the editor.",
+      "highlights": [],
+      "date": "2026-08-23",
+      "released": true,
+      "released_in": "v0.633.0",
+      "released_at": "2026-08-23T15:37:53Z"
+    },
+    {
+      "id": "video-tools-reset",
+      "version": "0.634.0",
+      "type": "feat",
+      "title": "Reset your progress",
+      "summary": "A Reset Everything button on the Video Tools page. Wipes your advancements, stats, story progress, Ender Chest and past lives, and deletes your Dungeon Train worlds, so the game treats you as a first-time player again.",
+      "highlights": [
+        "Names every world it will delete and makes you type DELETE first \u2014 there is no undo",
+        "Worlds without Dungeon Train in them are left alone"
+      ],
+      "pr": 1065,
+      "date": "2026-08-23",
+      "released": true,
+      "released_in": "v0.634.0",
+      "released_at": "2026-08-23T16:20:06Z"
+    },
+    {
+      "id": "portal-self-shelf-consent",
+      "version": "0.635.0",
+      "type": "fix",
+      "title": "Dimensional carriage libraries follow your network-access choice",
+      "summary": "A dimensional carriage that stocks its shelves from your own writing has to ask the server which books are yours, which means sending your player ID. It now does that only if you allowed network access; if you declined, the carriage stocks from another player's library instead.",
+      "highlights": [],
+      "pr": 1067,
+      "date": "2026-08-23",
+      "released": true,
+      "released_in": "v0.639.0",
+      "released_at": "2026-08-24T11:57:21Z"
+    },
+    {
+      "id": "translation-search-and-scrollbar",
+      "version": "0.637.0",
+      "type": "fix",
+      "title": "Translation editor keeps your search, and its scrollbars work",
+      "summary": "Opening a string in the translation editor no longer wipes what you typed in the search box or your place in the list \u2014 both are still there when you come back. The editor's two lists also have working scrollbars now: clicking or dragging the bar scrolls, instead of selecting the row hiding behind it.",
+      "highlights": [
+        "Search text and scroll position survive opening a string",
+        "Scrollbars are clickable and draggable in both the strings list and the sent column"
+      ],
+      "pr": 1070,
       "date": "2026-08-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.639.0",
+      "released_at": "2026-08-24T11:57:21Z"
+    },
+    {
+      "id": "portal-rate-one-knob",
+      "version": "0.638.0",
+      "type": "feat",
+      "title": "Dimensional carriages, and more of them in Creative",
+      "summary": "The room between a portal's two corridors is now called a dimensional carriage in-game, matching what the notes have been calling it. In Creative they arrive on an exact beat \u2014 every 5 carriage groups \u2014 instead of at random, so you always know where the next one is. Survival is unchanged. Set the rate for a world with /dungeontrain portal carriage <n>; doing so puts the world into Free Play.",
+      "highlights": [],
+      "pr": 1066,
+      "date": "2026-08-24",
+      "released": true,
+      "released_in": "v0.639.0",
+      "released_at": "2026-08-24T11:57:21Z"
+    },
+    {
+      "id": "author-library-language-filter",
+      "version": "0.639.0",
+      "type": "feat",
+      "title": "Library rooms stock authors you can read",
+      "summary": "A library portal room fills its shelves with one community author's whole catalogue \u2014 and now it only ever picks somebody writing in your game's language. Play in \u4e2d\u6587 and the room is a Chinese author's library; play in English and it is an English one. When nobody writes in your language yet, the room falls back to an English author rather than standing empty.",
+      "highlights": [
+        "Author libraries are chosen in your language, not just filtered afterwards",
+        "The book count on the room's author is now the count in your language",
+        "Your own library room still shows everything you have written, in any language"
+      ],
+      "pr": 1072,
+      "date": "2026-08-24",
+      "released": true,
+      "released_in": "v0.639.0",
+      "released_at": "2026-08-24T11:57:21Z"
+    },
+    {
+      "id": "curseforge-pack-approval-gate",
+      "version": "0.640.0",
+      "type": "ci",
+      "title": "Modpack releases stop silently going missing from CurseForge",
+      "summary": "The CurseForge modpack is published from a manifest that points at that release's Dungeon Train file. If CurseForge has not approved that file yet, it rejects the whole pack \u2014 quietly, after the upload looked fine. The release pipeline now waits for the file to actually be approved before building the pack, and stops with a clear reason if it never is, instead of shipping nothing and reporting success.",
+      "highlights": [
+        "Pack uploads no longer reference an unapproved mod file",
+        "A stuck release fails loudly instead of going silently missing"
+      ],
+      "pr": 1073,
+      "date": "2026-08-24",
+      "released": true,
+      "released_in": "v0.640.0",
+      "released_at": "2026-08-24T13:01:12Z"
+    },
+    {
+      "id": "language-search-and-translation-requests",
+      "version": "0.640.0",
+      "type": "feat",
+      "title": "Find your language, and ask for one that isn't there",
+      "summary": "The language list has a search box and a filter, every language can now be translated instead of only the nineteen we ship, and translators who volunteered since the last release are named in the credits.",
+      "highlights": [
+        "Search the language list by name, by country, or by locale code \u2014 in your own language or in English. \"French\", \"Franz\u00f6sisch\", \"Germany\" and \"Switzerland\" all find what you would expect, and one country brings up every language spoken there.",
+        "A filter beside the search: all languages, ones with machine translation still waiting on a human, ones a person has been through, and ones with no translation at all.",
+        "The translation editor opens on ANY language, not just the ones Dungeon Train ships. Every line is listed, blank where nothing has been translated yet \u2014 including book prose, which was previously invisible if a language had never touched it.",
+        "No machine translation for your language? A button asks for one, and shows how many other players have asked for the same.",
+        "Credits now name every translator whose work has been approved, not only those whose work had shipped when the build was made."
+      ],
+      "date": "2026-08-24",
+      "released": true,
+      "released_in": "v0.640.0",
+      "released_at": "2026-08-24T13:01:12Z"
+    },
+    {
+      "id": "russian-numeral-declension",
+      "version": "0.641.0",
+      "type": "fix",
+      "title": "Numbers read correctly in languages that decline them",
+      "summary": "Counts in chat and on the death screen now take the grammatical form your language actually wants. Russian says \u00ab1 \u0440\u0430\u0437\u00bb, \u00ab2 \u0440\u0430\u0437\u0430\u00bb, \u00ab5 \u0440\u0430\u0437\u00bb instead of forcing everything into one of two English shapes, and the death-screen epitaph reads \u00ab\u0432\u0442\u043e\u0440\u043e\u0439, \u043a\u0442\u043e \u043f\u0430\u043b\u00bb rather than \u00ab\u0434\u0432\u0430-\u0439\u00bb. English was quietly wrong here too \u2014 it used to say \"the twoth to fall\". Languages that don't inflect for number, like Japanese and Chinese, are unaffected.",
+      "highlights": [
+        "Russian and Polish counts decline properly \u2014 one, few and many forms, including the teens and the second decade",
+        "Death-screen epitaphs spell real ordinals: \u00ab\u0432\u0442\u043e\u0440\u043e\u0439, \u043a\u0442\u043e \u043f\u0430\u043b\u00bb, \"the second to fall\"",
+        "Elapsed times, book stats, and shared-carriage death lines all follow the reader's own language"
+      ],
+      "pr": 1076,
+      "date": "2026-08-24",
+      "released": true,
+      "released_in": "v0.642.0",
+      "released_at": "2026-08-24T14:55:08Z"
+    },
+    {
+      "id": "editor-package-save-keeps-your-work",
+      "version": "0.641.0",
+      "type": "fix",
+      "title": "Saving a train package no longer loses your work",
+      "summary": "Saving in the Train Editor's Packages menu is now purely additive \u2014 it never deletes or moves anything you have built. Edits you make after saving a package now land in that package, so they stick.",
+      "highlights": [
+        "Saving under a new name makes a copy; the package you saved from stays exactly where it was, along with its .zip snapshot.",
+        "Your first save copies your in-progress work into the new package instead of moving it, leaving the originals in place as a backup.",
+        "Portal room, tunnel, track and pillar edits \u2014 including removing a block variant \u2014 are now written into the package you have active, instead of silently going somewhere the game was not reading.",
+        "Saving over a package name that only exists as a .zip is now refused rather than overwriting that .zip.",
+        "If a save cannot finish, your previous snapshot is left untouched instead of being deleted first.",
+        "The Packages menu now shows Save only on the active package's row, so it can no longer look like it will save a different one.",
+        "The custom train content prompt no longer appears when your run is already Free Play, where it had nothing left to ask."
+      ],
+      "date": "2026-08-24",
+      "released": true,
+      "released_in": "v0.642.0",
+      "released_at": "2026-08-24T14:55:08Z"
+    },
+    {
+      "id": "editor-authored-books-burn-in-live-train",
+      "version": "0.642.0",
+      "type": "feat",
+      "title": "Hand-written lore books can be stocked in train loot chests",
+      "summary": "Books written and signed inside an editor plot are now ordinary written books while you build with them \u2014 they no longer catch fire when you read or drop them, so you can proof-read one and place it in a carriage's chest. Once that carriage rides the live train, the first player to take the book out of the chest arms it, and it burns after being read like any other book you find out there.",
+      "highlights": [
+        "Books signed in an editor plot no longer burn while you're building",
+        "Authored books can be stocked in a carriage's loot chest and saved into the template",
+        "Found on the live train, they still burn after reading"
+      ],
+      "pr": 1080,
+      "date": "2026-08-24",
+      "released": true,
+      "released_in": "v0.642.0",
+      "released_at": "2026-08-24T14:55:08Z"
+    },
+    {
+      "id": "scribble-book-tools",
+      "version": "0.642.0",
+      "type": "feat",
+      "title": "Better book writing",
+      "summary": "Writing a book in-game is far less painful. The Dungeon Train modpack now bundles Scribble, which adds page insert and delete, undo and redo, and the ability to save a book to a file and load it back later. Books you write still look exactly the same to everyone else, whether or not they have the mod.",
+      "highlights": [
+        "Insert and delete pages anywhere in a book, instead of only adding to the end",
+        "Undo and redo while writing",
+        "Save a book to a file and load it back into a fresh book and quill",
+        "Scribble's colour picker is switched off, so book text stays vanilla black \u2014 set colorPickerVisible in your Dungeon Train client config to bring it back"
+      ],
+      "pr": 1079,
+      "date": "2026-08-24",
+      "released": true,
+      "released_in": "v0.642.0",
+      "released_at": "2026-08-24T14:55:08Z"
+    },
+    {
+      "id": "tamed-animals-death-report",
+      "version": "0.643.0",
+      "type": "feat",
+      "title": "Every animal you tame is counted in your death report",
+      "summary": "Tame a wolf, a cat, a horse \u2014 anything \u2014 and it is tallied for the life you are living. When that life ends, the count appears on your death screen and in your death report alongside the rest of the run: how far you got, what you fought, what you carried. A life spent making friends of animals now leaves a mark in the record, not just in the moment.",
+      "highlights": [
+        "Taming anything counts toward the life you are currently living, and resets when you die.",
+        "The tally shows on the in-game death screen and in the Discord death report."
+      ],
+      "date": "2026-08-24",
+      "released": true,
+      "released_in": "v0.643.0",
+      "released_at": "2026-08-24T15:19:07Z"
+    },
+    {
+      "id": "echo-pets-return-on-the-train",
+      "version": "0.643.0",
+      "type": "feat",
+      "title": "Your pets come back with your echo",
+      "summary": "The animals you tamed are remembered when you die. When an echo of that life returns to the train, up to three of your pets walk back on with it \u2014 loyal to the echo exactly as they were to you. They follow it down the carriage, teleport to it when they fall behind, and turn on anyone who attacks it. Mounts stay behind unless you gave them a name: a horse you never named was transport, not a companion.",
+      "highlights": [
+        "Up to three tamed animals return alongside an echo of the life that tamed them.",
+        "They follow, teleport and defend exactly as pets do for a living player.",
+        "Unnamed mounts are left behind; a named one comes back with you.",
+        "Taming counts as kindness, so a life spent befriending animals returns friendlier.",
+        "Requires Interactive Player Mobs 0.92.0 or newer."
+      ],
+      "date": "2026-08-24",
+      "released": true,
+      "released_in": "v0.643.0",
+      "released_at": "2026-08-24T15:19:07Z"
+    },
+    {
+      "id": "portal-room-from-ordinary-carriage",
+      "version": "0.644.0",
+      "type": "fix",
+      "title": "Only dimensional carriages take you to their rooms",
+      "summary": "An ordinary carriage could send you into a dimensional carriage's room without you ever walking through one. It no longer can.",
+      "highlights": [],
+      "pr": 1081,
+      "date": "2026-08-24",
+      "released": true,
+      "released_in": "v0.644.0",
+      "released_at": "2026-08-24T15:34:13Z"
+    },
+    {
+      "id": "duplicate-book-upload-suspension",
+      "version": "0.645.0",
+      "type": "feat",
+      "title": "The train refuses a book you have already sent",
+      "summary": "Send the train the same book twice and it now says no, and stops taking your writing for a while \u2014 thirty seconds the first time, doubling with each repeat, up to an hour. While it is refusing you, the Sign button in the book screen turns red and will not press, with the time left on it, so you never burn a book for nothing. Someone else writing out a book they found in loot is not affected: only re-sending your OWN book counts.",
+      "highlights": [
+        "A re-upload of your own book is refused instead of silently ignored",
+        "Uploads pause for 30s, doubling per repeat, capped at an hour and forgotten after a clean week",
+        "The Sign button goes red and dead while paused, and frees itself when the time is up",
+        "Lectern letters, Death Notes and Love Notes are all paused too"
+      ],
+      "pr": 1082,
+      "date": "2026-08-24",
+      "released": true,
+      "released_in": "v0.646.0",
+      "released_at": "2026-08-24T23:55:25Z"
+    },
+    {
+      "id": "cat-content-netherite-scrap-loot",
+      "version": "0.645.0",
+      "type": "content",
+      "title": "A cat rides the train, and netherite scrap turns up in loot",
+      "summary": "Carriages that carried cows may now carry a cat instead \u2014 or, rarely, an ocelot. Netherite scrap has also been added to the loot tables.",
+      "highlights": [
+        "New cat carriage content, with a rare ocelot variant",
+        "Netherite scrap added to prefab loot"
+      ],
+      "pr": 1082,
+      "date": "2026-08-24",
+      "released": true,
+      "released_in": "v0.646.0",
+      "released_at": "2026-08-24T23:55:25Z"
+    },
+    {
+      "id": "book-upload-retry-not-duplicate",
+      "version": "0.646.0",
+      "type": "fix",
+      "title": "A book the train never confirmed is no longer counted twice",
+      "summary": "If the train stored your book but the reply never got back to you \u2014 a restart, a timeout, a bad connection \u2014 your game sends it again, as it always has. That resend was being read as you uploading the same book twice, and it briefly cost four writers an upload pause they had not earned. Each upload now carries a handle the train recognises, so a resend is understood as the same book arriving again rather than a new offence.",
+      "highlights": [
+        "A re-sent upload is recognised as a retry and never counts as a duplicate"
+      ],
+      "pr": 1083,
+      "date": "2026-08-24",
+      "released": true,
+      "released_in": "v0.646.0",
+      "released_at": "2026-08-24T23:55:25Z"
+    },
+    {
+      "id": "custom-content-choice-before-world",
+      "version": "0.647.0",
+      "type": "fix",
+      "title": "Choose your train before the world starts",
+      "summary": "If you've made your own train designs, Dungeon Train now asks what you want to do the moment you start a run \u2014 not after the world has already been built around the answer. Pick Custom Train to play your designs, or Default Train to play the built-in ones with your stats counting as normal.",
+      "highlights": [
+        "The question is asked when you press New World or reboard, so choosing Default Train means a world that never loads the custom content at all.",
+        "Two clear cards instead of a wall of text, with a ? button explaining what Free Play costs.",
+        "The Free Play badge no longer lingers on saves where it no longer applies \u2014 it clears itself on your next login."
+      ],
+      "date": "2026-08-25",
+      "released": true,
+      "released_in": "v0.647.0",
+      "released_at": "2026-08-25T07:24:46Z"
+    },
+    {
+      "id": "custom-content-prompt-every-route",
+      "version": "0.648.0",
+      "type": "fix",
+      "title": "The train question now shows up wherever a run starts",
+      "summary": "The choice between your own train designs and the built-in ones is now offered on every route that begins a run \u2014 including Minecraft's own Create New World screen, which used to ask only after the world had been built. Backing out with Escape returns you to the menu you came from and creates nothing.",
+      "highlights": [
+        "Create New World from the vanilla menu now asks before the world is generated, like Dungeon Train's own New World button does.",
+        "The Train Editor no longer asks. Editor worlds are creative, so they are Free Play anyway and always load your designs.",
+        "Dying with immediate respawn on reuses your last answer instead of interrupting the reboard."
+      ],
+      "date": "2026-08-25",
+      "released": true,
+      "released_in": "v0.648.0",
+      "released_at": "2026-08-25T09:08:12Z"
+    },
+    {
+      "id": "vote-page-follows-book",
+      "version": "0.649.0",
+      "type": "fix",
+      "title": "The vote page lines up with the book again",
+      "summary": "After reading a community book, the train's vote page sat in the wrong place \u2014 its question could land on top of the \"Page 2 of 2\" line, and at some window sizes the thumbs drifted off the page entirely and stopped responding where you clicked them. The page now follows the book wherever it sits, including when Scribble's centred book layout moves it.",
+      "highlights": [
+        "The train's question no longer collides with the page counter",
+        "The thumbs and the report button now click where they are drawn, at every window size and GUI scale"
+      ],
+      "pr": 1085,
+      "date": "2026-08-25",
+      "released": true,
+      "released_in": "v0.650.0",
+      "released_at": "2026-08-25T10:05:21Z"
+    },
+    {
+      "id": "abandon-run-death-screen",
+      "version": "0.649.0",
+      "type": "fix",
+      "title": "Abandoning a run always shows the recap",
+      "summary": "With the Immediate Respawn game rule on, choosing \"Abandon This Run\" from the pause menu used to drop you straight into a fresh world, skipping the end-of-run recap entirely. Now it takes you to the death screen like any other run ending, so you can read the recap and choose when to board again. Immediate Respawn also carries over into each new world the train makes for you, instead of quietly switching itself off after the first one.",
+      "highlights": [
+        "Abandon This Run now opens the death screen even with Immediate Respawn on",
+        "Dying normally still rolls straight into a fresh world when Immediate Respawn is on",
+        "The Immediate Respawn setting now sticks across every world in a run chain"
+      ],
+      "date": "2026-08-25",
+      "released": true,
+      "released_in": "v0.650.0",
+      "released_at": "2026-08-25T10:05:21Z"
+    },
+    {
+      "id": "translate-source-scroll-resize",
+      "version": "0.650.0",
+      "type": "fix",
+      "title": "Translators can read the whole English string again",
+      "summary": "The translation editor used to cut the English off after six lines, so the mod's longest strings \u2014 the books \u2014 could not be read in full by the person being asked to translate them. Nothing is truncated now: the text grows to fit, scrolls when there is more of it, and the divider between it and your translation can be dragged to give either side more room.",
+      "highlights": [
+        "The English on the translate screen is no longer cut off \u2014 it scrolls instead",
+        "Drag the divider to trade room between the original text and your translation",
+        "The \"unreviewed machine translation\" warning stays visible while you scroll"
+      ],
+      "pr": 1088,
+      "date": "2026-08-25",
+      "released": true,
+      "released_in": "v0.650.0",
+      "released_at": "2026-08-25T10:05:21Z"
+    },
+    {
+      "id": "translation-variable-hover",
+      "version": "0.651.0",
+      "type": "feat",
+      "title": "Translation editor explains every variable",
+      "summary": "In the translation editor, the placeholders in an English string are now underlined, and hovering one says what the game actually puts there with a few real examples. Where the value is itself a translated phrase, the example is shown in the language you are translating into, with the English beside it.",
+      "highlights": [
+        "Placeholders like %s and %1$s are underlined in the English source",
+        "Hover a placeholder for what it holds, plus two or three real example values",
+        "Examples that are themselves translated show in your language and in English"
+      ],
+      "date": "2026-08-25",
+      "released": true,
+      "released_in": "v0.651.0",
+      "released_at": "2026-08-25T10:30:12Z"
+    },
+    {
+      "id": "translation-source-link",
+      "version": "0.652.0",
+      "type": "feat",
+      "title": "Jump from a translation to its source",
+      "summary": "The translation editor now shows a View source link beside the English heading. It opens a search of the Dungeon Train repository for that string's key, so you can see where the game actually uses the line you are translating.",
+      "highlights": [
+        "View source link on the heading row of the translation editor",
+        "Finds both the English entry and every place the code uses it"
+      ],
+      "date": "2026-08-25",
+      "released": true,
+      "released_in": "v0.652.0",
+      "released_at": "2026-08-25T10:46:10Z"
     }
   ]
 }

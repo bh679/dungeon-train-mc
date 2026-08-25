@@ -17,9 +17,13 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  * combines these with the COMMON config (enabled / fade / core) to fade the sky
  * and fog toward the End look across the band. {@code trainY} is the carriage height,
  * needed client-side to place the upside-down mirror plane for the exit-crossfade
- * render Y-split. Sent once on login.
+ * render Y-split; {@code bedrockY} is the world's terrain floor, which the client
+ * cannot derive (it lives on the chunk generator) and which bounds the sealed space
+ * portal twins are stamped into — the one part of an upside-down band that must
+ * <em>not</em> render flipped. Sent once on login.
  */
-public record VoidBandSyncPacket(int carriageLength, boolean startsWithTrain, int trainY) implements CustomPacketPayload {
+public record VoidBandSyncPacket(int carriageLength, boolean startsWithTrain, int trainY,
+                                 int bedrockY) implements CustomPacketPayload {
 
     public static final Type<VoidBandSyncPacket> TYPE =
             new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "void_band_sync"));
@@ -30,8 +34,10 @@ public record VoidBandSyncPacket(int carriageLength, boolean startsWithTrain, in
                         buf.writeVarInt(packet.carriageLength);
                         buf.writeBoolean(packet.startsWithTrain);
                         buf.writeVarInt(packet.trainY);
+                        buf.writeInt(packet.bedrockY);
                     },
-                    buf -> new VoidBandSyncPacket(buf.readVarInt(), buf.readBoolean(), buf.readVarInt())
+                    buf -> new VoidBandSyncPacket(
+                            buf.readVarInt(), buf.readBoolean(), buf.readVarInt(), buf.readInt())
             );
 
     @Override
@@ -43,7 +49,7 @@ public record VoidBandSyncPacket(int carriageLength, boolean startsWithTrain, in
         ctx.enqueueWork(() -> {
             ClientVoidBand.update(packet.carriageLength, packet.startsWithTrain);
             ClientNetherBand.update(packet.startsWithTrain);
-            ClientUpsideDownBand.update(packet.startsWithTrain, packet.trainY);
+            ClientUpsideDownBand.update(packet.startsWithTrain, packet.trainY, packet.bedrockY);
         });
     }
 }

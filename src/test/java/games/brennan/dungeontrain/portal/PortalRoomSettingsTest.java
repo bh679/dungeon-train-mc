@@ -41,10 +41,22 @@ class PortalRoomSettingsTest {
     void nonRepeatingRoomsRoundTripAsBareIds() {
         assertEquals("bedrock_lock",
             new PortalRoomSettings(PortalRoomMode.BEDROCK_LOCK, PortalRoomCopies.DYNAMIC).toTag());
-        assertEquals("endless_open",
-            new PortalRoomSettings(PortalRoomMode.ENDLESS_OPEN, PortalRoomCopies.DYNAMIC).toTag());
         assertEquals("bedrockless",
             new PortalRoomSettings(PortalRoomMode.BEDROCKLESS, PortalRoomCopies.DYNAMIC).toTag());
+    }
+
+    @Test
+    @DisplayName("Endless Open keeps a Copies choice now — it appends tiles for the setting to roll")
+    void endlessOpenKeepsItsSubMode() {
+        // It used to flatten to "endless_open", because Copies was gated on the mode tiling the WHOLE
+        // room. An open tile is only the floor and the ceiling, but those cells roll from the variant
+        // sidecar like any other, so the choice means something and has to survive the round trip.
+        assertEquals("endless_open/dynamic",
+            new PortalRoomSettings(PortalRoomMode.ENDLESS_OPEN, PortalRoomCopies.DYNAMIC).toTag());
+        assertEquals("endless_open",
+            new PortalRoomSettings(PortalRoomMode.ENDLESS_OPEN, PortalRoomCopies.EXACT).toTag());
+        assertEquals(PortalRoomCopies.DYNAMIC,
+            PortalRoomSettings.parse("endless_open/dynamic").copies());
     }
 
     @Test
@@ -60,14 +72,16 @@ class PortalRoomSettingsTest {
     @DisplayName("Every settings triple round-trips through its tag")
     void roundTrip() {
         for (PortalRoomMode mode : PortalRoomMode.values()) {
-            for (PortalRoomCopies copies : PortalRoomCopies.values()) {
+            for (PortalRoomCopies copies : everyCopiesValue()) {
                 for (PortalRoomContents contents : PortalRoomContents.values()) {
                     PortalRoomSettings original = new PortalRoomSettings(mode, copies, contents);
                     PortalRoomSettings back = PortalRoomSettings.parse(original.toTag());
                     assertEquals(mode, back.mode(), original.toTag());
-                    // The sub-mode only survives where it means anything; elsewhere it reads as default.
-                    assertEquals(original.copiesApply() ? copies : PortalRoomCopies.DEFAULT,
-                        back.copies(), original.toTag());
+                    // The sub-mode only survives where it means anything; elsewhere it reads as
+                    // default. Two ways for it not to mean anything, both of them effectiveCopies':
+                    // walls that append no tiles at all, and Single under Endless Repetition, where
+                    // a tile is a whole room and one block for it would be a solid cube.
+                    assertEquals(original.effectiveCopies(), back.copies(), original.toTag());
                     assertEquals(contents, back.contents(), original.toTag());
                 }
             }
@@ -93,7 +107,7 @@ class PortalRoomSettingsTest {
         assertSame(PortalRoomContents.DEFAULT, PortalRoomSettings.parse("endless_open").contents());
         PortalRoomSettings twoPart = PortalRoomSettings.parse("endless_repetition/dynamic");
         assertSame(PortalRoomMode.ENDLESS_REPETITION, twoPart.mode());
-        assertSame(PortalRoomCopies.DYNAMIC, twoPart.copies());
+        assertEquals(PortalRoomCopies.DYNAMIC, twoPart.copies());
         assertSame(PortalRoomContents.DEFAULT, twoPart.contents());
     }
 
@@ -102,7 +116,7 @@ class PortalRoomSettingsTest {
     void contentsParseIsTotal() {
         PortalRoomSettings s = PortalRoomSettings.parse("endless_repetition/dynamic/tyle");
         assertSame(PortalRoomMode.ENDLESS_REPETITION, s.mode());
-        assertSame(PortalRoomCopies.DYNAMIC, s.copies());
+        assertEquals(PortalRoomCopies.DYNAMIC, s.copies());
         assertSame(PortalRoomContents.DEFAULT, s.contents());
     }
 
@@ -112,24 +126,24 @@ class PortalRoomSettingsTest {
         PortalRoomSettings all = new PortalRoomSettings(
             PortalRoomMode.ENDLESS_REPETITION, PortalRoomCopies.DYNAMIC, PortalRoomContents.FIT);
         assertSame(PortalRoomContents.FIT, all.withMode(PortalRoomMode.BEDROCKLESS).contents());
-        assertSame(PortalRoomCopies.DYNAMIC, all.withMode(PortalRoomMode.BEDROCKLESS).copies());
+        assertEquals(PortalRoomCopies.DYNAMIC, all.withMode(PortalRoomMode.BEDROCKLESS).copies());
         assertSame(PortalRoomContents.FIT, all.withCopies(PortalRoomCopies.EXACT).contents());
         assertSame(PortalRoomMode.ENDLESS_REPETITION,
             all.withContents(PortalRoomContents.OFF).mode());
-        assertSame(PortalRoomCopies.DYNAMIC, all.withContents(PortalRoomContents.OFF).copies());
+        assertEquals(PortalRoomCopies.DYNAMIC, all.withContents(PortalRoomContents.OFF).copies());
     }
 
     @Test
     @DisplayName("Parsing is total on both halves — a hand-edited typo stamps a room, not an error")
     void parseIsTotal() {
         assertSame(PortalRoomMode.DEFAULT, PortalRoomSettings.parse(null).mode());
-        assertSame(PortalRoomCopies.DEFAULT, PortalRoomSettings.parse(null).copies());
+        assertEquals(PortalRoomCopies.DEFAULT, PortalRoomSettings.parse(null).copies());
         assertSame(PortalRoomMode.DEFAULT, PortalRoomSettings.parse("nonsense/rubbish").mode());
-        assertSame(PortalRoomCopies.DEFAULT, PortalRoomSettings.parse("nonsense/rubbish").copies());
+        assertEquals(PortalRoomCopies.DEFAULT, PortalRoomSettings.parse("nonsense/rubbish").copies());
         // A good mode with a misspelt sub-mode keeps the mode.
         assertSame(PortalRoomMode.ENDLESS_REPETITION,
             PortalRoomSettings.parse("endless_repetition/dinamic").mode());
-        assertSame(PortalRoomCopies.DEFAULT,
+        assertEquals(PortalRoomCopies.DEFAULT,
             PortalRoomSettings.parse("endless_repetition/dinamic").copies());
     }
 
@@ -193,7 +207,7 @@ class PortalRoomSettingsTest {
     void exitsParseIsTotal() {
         PortalRoomSettings s = PortalRoomSettings.parse("endless_repetition/dynamic/tile/randm:nine");
         assertSame(PortalRoomMode.ENDLESS_REPETITION, s.mode());
-        assertSame(PortalRoomCopies.DYNAMIC, s.copies());
+        assertEquals(PortalRoomCopies.DYNAMIC, s.copies());
         assertSame(PortalRoomContents.TILE, s.contents());
         assertEquals(PortalRoomExits.Kind.ON, s.exits().kind());
         assertEquals(PortalRoomExits.DEFAULT_EVERY, s.exits().every());
@@ -234,11 +248,225 @@ class PortalRoomSettingsTest {
         assertEquals(PortalRoomExits.Kind.OFF, offMode.effectiveExits().kind());
     }
 
+    // ---- the author lock ----
+
+    /**
+     * Every Books value worth sweeping: each kind at its default weights, plus the widest weighting
+     * Random can carry — which is what makes the longest-tag assertion below a real worst case.
+     */
+    /**
+     * Every Copies value worth sweeping: each kind, and Single at the longest block id it will
+     * store — the worst case for the tag, and so for the packet cap.
+     */
+    private static java.util.List<PortalRoomCopies> everyCopiesValue() {
+        java.util.List<PortalRoomCopies> out = new java.util.ArrayList<>();
+        for (PortalRoomCopies.Kind kind : PortalRoomCopies.Kind.values()) {
+            out.add(PortalRoomCopies.of(kind));
+        }
+        out.add(new PortalRoomCopies(PortalRoomCopies.Kind.SINGLE, LONGEST_BLOCK_ID));
+        return out;
+    }
+
+    /** A block id of exactly {@link PortalRoomCopies#BLOCK_ID_MAX} characters. */
+    private static final String LONGEST_BLOCK_ID =
+        "minecraft:" + "a".repeat(PortalRoomCopies.BLOCK_ID_MAX - "minecraft:".length());
+
+    private static java.util.List<PortalRoomBooks> everyBooksValue() {
+        java.util.List<PortalRoomBooks> out = new java.util.ArrayList<>();
+        for (PortalRoomBooks.Kind kind : PortalRoomBooks.Kind.values()) {
+            out.add(new PortalRoomBooks(kind));
+            out.add(new PortalRoomBooks(kind, PortalRoomBooks.MAX_WEIGHT,
+                PortalRoomBooks.MAX_WEIGHT, PortalRoomBooks.MAX_WEIGHT,
+                PortalRoomBooks.MAX_BOOK_BOUND, PortalRoomBooks.MAX_BOOK_BOUND));
+        }
+        return out;
+    }
+
     @Test
-    @DisplayName("Only Endless Repetition makes copies, so only it has a Copies control")
-    void copiesApplyOnlyToRepetition() {
+    @DisplayName("Books is only written when a room actually locks its books")
+    void booksOnlyWrittenWhenSet() {
+        // Off is the default, so every tag written before this setting existed is re-written unchanged.
+        assertEquals("bedrock_lock", PortalRoomSettings.parse("bedrock_lock").toTag());
+        assertEquals("endless_repetition/dynamic/fit",
+            PortalRoomSettings.parse("endless_repetition/dynamic/fit").toTag());
+
+        // Set, and the earlier segments appear in front of it as placeholders — including an Exits
+        // segment the author never chose, because a positional segment cannot be skipped.
+        assertEquals("bedrock_lock/exact/off/off/mix",
+            PortalRoomSettings.parse("bedrock_lock")
+                .withBooks(new PortalRoomBooks(PortalRoomBooks.Kind.MIX)).toTag());
+    }
+
+    @Test
+    @DisplayName("Every five-part settings tag round-trips")
+    void booksRoundTrip() {
+        for (PortalRoomMode mode : PortalRoomMode.values()) {
+            for (PortalRoomContents contents : PortalRoomContents.values()) {
+                for (PortalRoomBooks books : everyBooksValue()) {
+                    PortalRoomSettings original = PortalRoomSettings.DEFAULT.withMode(mode)
+                        .withContents(contents).withBooks(books);
+                    PortalRoomSettings back = PortalRoomSettings.parse(original.toTag());
+                    assertEquals(mode, back.mode(), original.toTag());
+                    assertEquals(contents, back.contents(), original.toTag());
+                    assertEquals(books.kind(), back.books().kind(), original.toTag());
+                    // Weights survive only where they mean something — off Random they are not
+                    // written at all, so that a tag from before Random existed needs no migration.
+                    if (books.weightsApply()) {
+                        assertEquals(books, back.books(), original.toTag());
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("Tags written before Books existed still read, as rooms that lock nothing")
+    void tagsWithoutBooksReadAsUnlocked() {
+        assertSame(PortalRoomBooks.Kind.OFF, PortalRoomSettings.parse("bedrock_lock").books().kind());
+        assertSame(PortalRoomBooks.Kind.OFF, PortalRoomSettings.parse("endless_repetition/dynamic").books().kind());
+        assertSame(PortalRoomBooks.Kind.OFF, PortalRoomSettings.parse("endless_repetition/dynamic/fit").books().kind());
+        assertSame(PortalRoomBooks.Kind.OFF,
+            PortalRoomSettings.parse("endless_repetition/dynamic/fit/random:12").books().kind());
+    }
+
+    @Test
+    @DisplayName("A misspelt Books segment leaves the room unlocked without losing the rest")
+    void booksParseIsTotal() {
+        PortalRoomSettings s = PortalRoomSettings.parse("endless_repetition/dynamic/tile/on/mixx");
+        assertSame(PortalRoomMode.ENDLESS_REPETITION, s.mode());
+        assertEquals(PortalRoomCopies.DYNAMIC, s.copies());
+        assertSame(PortalRoomContents.TILE, s.contents());
+        assertEquals(PortalRoomExits.Kind.ON, s.exits().kind());
+        assertSame(PortalRoomBooks.Kind.OFF, s.books().kind());
+    }
+
+    @Test
+    @DisplayName("Setting the author lock leaves every other control alone")
+    void withBooksLeavesTheRestAlone() {
+        PortalRoomSettings before = PortalRoomSettings.DEFAULT
+            .withMode(PortalRoomMode.ENDLESS_REPETITION)
+            .withCopies(PortalRoomCopies.DYNAMIC)
+            .withContents(PortalRoomContents.TILE)
+            .withExits(new PortalRoomExits(PortalRoomExits.Kind.RANDOM, 9));
+        PortalRoomSettings after = before.withBooks(new PortalRoomBooks(PortalRoomBooks.Kind.MIX));
+
+        assertSame(before.mode(), after.mode());
+        assertSame(before.copies(), after.copies());
+        assertSame(before.contents(), after.contents());
+        assertEquals(before.exits(), after.exits());
+        assertSame(PortalRoomBooks.Kind.MIX, after.books().kind());
+        // ...and it survives a walls change, which re-derives Exits but has no opinion on books.
+        assertSame(PortalRoomBooks.Kind.MIX,
+            after.withMode(PortalRoomMode.BEDROCK_LOCK).books().kind());
+    }
+
+    @Test
+    @DisplayName("The longest tag any room can write still fits the editor status packet")
+    void longestTagFitsThePacket() {
+        // The packet caps this string, and every segment eats into that cap — so the worst case is
+        // asserted here rather than reasoned about, and a future seventh setting fails this test
+        // first instead of failing a writeUtf on a live server. Sky is in the product because it is
+        // the one that pushed the worst case up by a whole segment when it was added.
+        String longest = "";
+        for (PortalRoomMode mode : PortalRoomMode.values()) {
+            for (PortalRoomCopies copies : everyCopiesValue()) {
+                for (PortalRoomContents contents : PortalRoomContents.values()) {
+                    for (PortalRoomBooks books : everyBooksValue()) {
+                        for (PortalRoomSky sky : PortalRoomSky.values()) {
+                            PortalRoomExits widest = new PortalRoomExits(PortalRoomExits.Kind.RANDOM,
+                                PortalRoomExits.MAX_EVERY, PortalRoomExits.MOVE_ALWAYS);
+                            String tag = new PortalRoomSettings(mode, copies, contents, widest,
+                                books, sky).toTag();
+                            if (tag.length() > longest.length()) longest = tag;
+                        }
+                    }
+                }
+            }
+        }
+        assertTrue(longest.length() <= games.brennan.dungeontrain.net.EditorStatusPacket.MODE_TAG_MAX,
+            "longest room tag '" + longest + "' is " + longest.length() + " chars, over the packet cap");
+    }
+
+    // ---- Single, which is Endless Open's alone ----
+
+    @Test
+    @DisplayName("An Endless Open room keeps Single, and the block it repeats, through a round trip")
+    void singleRoundTripsUnderEndlessOpen() {
+        PortalRoomSettings open = PortalRoomSettings.DEFAULT
+            .withMode(PortalRoomMode.ENDLESS_OPEN)
+            .withCopies(new PortalRoomCopies(PortalRoomCopies.Kind.SINGLE, "minecraft:sandstone"));
+
+        assertEquals("endless_open/single:minecraft:sandstone", open.toTag());
+
+        PortalRoomSettings back = PortalRoomSettings.parse(open.toTag());
+        assertEquals(PortalRoomCopies.Kind.SINGLE, back.effectiveCopies().kind());
+        assertEquals("minecraft:sandstone", back.effectiveCopies().blockId());
+    }
+
+    @Test
+    @DisplayName("Endless Repetition reads Single back as Exact — a tile there is a whole room")
+    void singleDoesNotApplyUnderEndlessRepetition() {
+        PortalRoomSettings repetition = PortalRoomSettings.DEFAULT
+            .withMode(PortalRoomMode.ENDLESS_REPETITION)
+            .withCopies(new PortalRoomCopies(PortalRoomCopies.Kind.SINGLE, "minecraft:sandstone"));
+
+        assertEquals(PortalRoomCopies.Kind.EXACT, repetition.effectiveCopies().kind());
+        // And the tag written is the effective value, so nothing downstream has to re-derive it.
+        assertEquals("endless_repetition", repetition.toTag());
+    }
+
+    @Test
+    @DisplayName("A sealed room reads Single back as Exact too — it appends no tiles at all")
+    void singleDoesNotApplyWithoutTiling() {
+        PortalRoomSettings sealed = PortalRoomSettings.DEFAULT
+            .withMode(PortalRoomMode.BEDROCK_LOCK)
+            .withCopies(PortalRoomCopies.of(PortalRoomCopies.Kind.SINGLE));
+
+        assertEquals(PortalRoomCopies.DEFAULT, sealed.effectiveCopies());
+    }
+
+    @Test
+    @DisplayName("The Copies cycle offers Single under Endless Open and skips it everywhere else")
+    void copiesCycleOffersSingleOnlyWhereItApplies() {
+        PortalRoomSettings open = PortalRoomSettings.DEFAULT.withMode(PortalRoomMode.ENDLESS_OPEN);
+        assertEquals(PortalRoomCopies.Kind.DYNAMIC, open.nextCopies().copies().kind());
+        assertEquals(PortalRoomCopies.Kind.SINGLE, open.nextCopies().nextCopies().copies().kind());
+
+        PortalRoomSettings repetition =
+            PortalRoomSettings.DEFAULT.withMode(PortalRoomMode.ENDLESS_REPETITION);
+        assertEquals(PortalRoomCopies.Kind.DYNAMIC, repetition.nextCopies().copies().kind());
+        // Straight back to Exact rather than stopping on an option this mode cannot use.
+        assertEquals(PortalRoomCopies.Kind.EXACT,
+            repetition.nextCopies().nextCopies().copies().kind());
+    }
+
+    @Test
+    @DisplayName("A walls change carries the block across in hand, and drops it once saved elsewhere")
+    void theBlockSurvivesAWallsChangeButNotASaveUnderOtherWalls() {
+        PortalRoomSettings open = PortalRoomSettings.DEFAULT
+            .withMode(PortalRoomMode.ENDLESS_OPEN)
+            .withCopiesBlock("minecraft:sandstone");
+
+        // In hand, the trip is lossless: withMode changes what the setting means, not what it says.
+        PortalRoomSettings andBack = open
+            .withMode(PortalRoomMode.ENDLESS_REPETITION)
+            .withMode(PortalRoomMode.ENDLESS_OPEN);
+        assertEquals("minecraft:sandstone", andBack.copies().blockId());
+
+        // Saved under walls that cannot use it, it is not written — the same rule Copies has always
+        // followed for a room whose walls stopped repeating, and the same one Exits follows. An
+        // author who parks a room on Endless Repetition picks their block again on the way back.
+        String parked = open.withMode(PortalRoomMode.ENDLESS_REPETITION).toTag();
+        assertEquals(PortalRoomCopies.DEFAULT_BLOCK,
+            PortalRoomSettings.parse(parked).withMode(PortalRoomMode.ENDLESS_OPEN)
+                .copies().blockId());
+    }
+
+    @Test
+    @DisplayName("Both endless modes append tiles, so both have a Copies control")
+    void copiesApplyToBothEndlessModes() {
         assertTrue(PortalRoomSettings.DEFAULT.withMode(PortalRoomMode.ENDLESS_REPETITION).copiesApply());
-        assertFalse(PortalRoomSettings.DEFAULT.withMode(PortalRoomMode.ENDLESS_OPEN).copiesApply());
+        assertTrue(PortalRoomSettings.DEFAULT.withMode(PortalRoomMode.ENDLESS_OPEN).copiesApply());
         assertFalse(PortalRoomSettings.DEFAULT.withMode(PortalRoomMode.BEDROCK_LOCK).copiesApply());
         assertFalse(PortalRoomSettings.DEFAULT.withMode(PortalRoomMode.BEDROCKLESS).copiesApply());
     }
@@ -271,6 +499,20 @@ class PortalRoomSettingsTest {
         assertTrue(seen.size() > 40, "only " + seen.size() + " distinct rolls across 49 copies");
         assertNotEquals(s.variantIndexFor(PortalRoomTiling.Tile.BASE, PAIR),
             s.variantIndexFor(new PortalRoomTiling.Tile(1, 0), PAIR));
+    }
+
+    @Test
+    @DisplayName("Endless Open honours Copies too — its floor and ceiling reroll per tile")
+    void endlessOpenRollsPerTileUnderDynamic() {
+        PortalRoomTiling.Tile away = new PortalRoomTiling.Tile(2, -1);
+
+        PortalStructure dynamic = structure(PortalRoomMode.ENDLESS_OPEN, PortalRoomCopies.DYNAMIC);
+        assertNotEquals(dynamic.variantIndexFor(PortalRoomTiling.Tile.BASE, PAIR),
+            dynamic.variantIndexFor(away, PAIR));
+
+        PortalStructure exact = structure(PortalRoomMode.ENDLESS_OPEN, PortalRoomCopies.EXACT);
+        assertEquals(exact.variantIndexFor(PortalRoomTiling.Tile.BASE, PAIR),
+            exact.variantIndexFor(away, PAIR));
     }
 
     @Test
@@ -330,5 +572,89 @@ class PortalRoomSettingsTest {
             PortalRoomTiling.base());
         assertNotEquals(a.variantIndexFor(PortalRoomTiling.Tile.BASE, PAIR),
             b.variantIndexFor(PortalRoomTiling.Tile.BASE, PAIR));
+    }
+
+    @Test
+    @DisplayName("A room says nothing about its sky unless its template asked for one")
+    void skyDefaultsToOff() {
+        assertSame(PortalRoomSky.NONE, PortalRoomSettings.DEFAULT.sky());
+        assertSame(PortalRoomSky.NONE, PortalRoomSettings.parse("bedrockless").sky());
+        // Every tag written before Sky existed — one to five segments — still reads as an unlit room.
+        assertSame(PortalRoomSky.NONE, PortalRoomSettings.parse("endless_repetition/dynamic").sky());
+        assertSame(PortalRoomSky.NONE,
+            PortalRoomSettings.parse("endless_repetition/dynamic/fit/on/mix").sky());
+        // ...and is re-written unchanged, rather than growing a segment for nothing.
+        assertEquals("bedrockless", PortalRoomSettings.parse("bedrockless").toTag());
+    }
+
+    @Test
+    @DisplayName("A sky round-trips through the tag, placeholders and all")
+    void skyRoundTrips() {
+        for (PortalRoomSky sky : PortalRoomSky.values()) {
+            PortalRoomSettings original = PortalRoomSettings.DEFAULT.withSky(sky);
+            assertSame(sky, PortalRoomSettings.parse(original.toTag()).sky(), original.toTag());
+        }
+        // The segments are positional, so the four in front of Sky are written as their own
+        // defaults and must read back as exactly that.
+        PortalRoomSettings day = PortalRoomSettings.DEFAULT.withSky(PortalRoomSky.DAY);
+        PortalRoomSettings back = PortalRoomSettings.parse(day.toTag());
+        assertEquals(PortalRoomSettings.DEFAULT.copies(), back.copies());
+        assertSame(PortalRoomSettings.DEFAULT.contents(), back.contents());
+        assertEquals(PortalRoomSettings.DEFAULT.books(), back.books());
+    }
+
+    @Test
+    @DisplayName("The shipped tags the templates were opted in with mean what they say")
+    void shippedSkyTagsParse() {
+        assertSame(PortalRoomSky.DAY,
+            PortalRoomSettings.parse("bedrockless/exact/off/off/off/day").sky());
+        assertSame(PortalRoomSky.END,
+            PortalRoomSettings.parse("bedrockless/exact/off/off/off/end").sky());
+        assertSame(PortalRoomSky.DAY,
+            PortalRoomSettings.parse("bedrock_lock/exact/off/off/off/day").sky());
+        // window_contents carries a real Contents value in front of its sky.
+        PortalRoomSettings furnished =
+            PortalRoomSettings.parse("bedrockless/exact/fit/off/off/day");
+        assertSame(PortalRoomSky.DAY, furnished.sky());
+        assertSame(PortalRoomContents.FIT, furnished.contents());
+    }
+
+    @Test
+    @DisplayName("An unreadable sky stamps an unlit room rather than failing the pair's stamp")
+    void skyParseIsTotal() {
+        assertSame(PortalRoomSky.NONE,
+            PortalRoomSettings.parse("bedrockless/exact/off/off/off/daylihgt").sky());
+        assertSame(PortalRoomSky.NONE, PortalRoomSky.parse(""));
+        assertSame(PortalRoomSky.NONE, PortalRoomSky.parse(null));
+        // What a client on a different build than the server is sent.
+        assertSame(PortalRoomSky.NONE, PortalRoomSky.byOrdinal(-1));
+        assertSame(PortalRoomSky.NONE, PortalRoomSky.byOrdinal(99));
+        assertSame(PortalRoomSky.DAY, PortalRoomSky.byOrdinal(PortalRoomSky.DAY.ordinal()));
+    }
+
+    @Test
+    @DisplayName("Only the clock-following sky lets the lightmap darken")
+    void onlyCyclePinsNothing() {
+        assertFalse(PortalRoomSky.NONE.pinsDaylight());
+        assertFalse(PortalRoomSky.CYCLE.pinsDaylight());
+        assertTrue(PortalRoomSky.CYCLE.lights());
+        assertTrue(PortalRoomSky.DAY.pinsDaylight());
+        assertTrue(PortalRoomSky.NETHER.pinsDaylight());
+        assertTrue(PortalRoomSky.END.pinsDaylight());
+    }
+
+    @Test
+    @DisplayName("Switching a sky on and back off leaves the tag exactly as it found it")
+    void skyRoundTripLeavesNoChurn() {
+        // Regression: toTag used to test the Books segment by identity, and parse builds a new
+        // instance for an "off" segment rather than returning DEFAULT. Cycling Sky writes that
+        // placeholder on the way through, so a room set to Daylight and back used to come to rest
+        // one segment longer than it started — permanent churn in weights.json for no change at all.
+        for (String original : new String[]{"bedrock_lock", "endless_open/single:minecraft:stone",
+                "endless_repetition/dynamic", "bedrockless/exact/fit"}) {
+            String lit = PortalRoomSettings.parse(original).withSky(PortalRoomSky.DAY).toTag();
+            String back = PortalRoomSettings.parse(lit).withSky(PortalRoomSky.NONE).toTag();
+            assertEquals(original, back, "round tripped via " + lit);
+        }
     }
 }

@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 3,
+  "selfWeight": 1,
+  "variants": [
+    {
+      "id": "ps2",
+      "weight": 1
+    },
+    {
+      "id": "ps3",
+      "weight": 1
+    },
+    {
+      "id": "ps4",
+      "weight": 1
+    },
+    {
+      "id": "ps5",
+      "weight": 1
+    },
+    {
+      "id": "ps6",
+      "weight": 1
+    },
+    {
+      "id": "ps7",
+      "weight": 2
+    },
+    {
+      "id": "psseating",
+      "weight": 1
+    },
+    {
+      "id": "psseating2",
+      "weight": 1
+    },
+    {
+      "id": "pstun",
+      "weight": 1
+    },
+    {
+      "id": "pstun2",
+      "weight": 1
+    }
+  ]
+}

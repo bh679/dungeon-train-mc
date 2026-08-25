@@ -1,0 +1,11 @@
+{
+  "id": "no_one_came_back",
+  "title": "Keiner zurück",
+  "author": "Brennan Hatton",
+  "generation": 0,
+  "weight": 1,
+  "variants": [
+    "Du hast einen Namen aufgeschrieben.\nErinnerst du dich?\n\n%TARGET%.\nDu schriebst %TARGET%.\n\nEs hat gewirkt.\nNicht so, wie du batest.\nSo, wie es das tut.\n\nDu starbst in Waggon %CARRIAGE%.\nEtwas von dir blieb dort.\n%GEAR%\n\nEs wartete %DAYS% Tage.\n\nDann betrat %TARGET% Waggon %CARRIAGE%, in einer Welt, die du nie sehen wirst.\n\n%STORY%\n\nUnd dort hört das Papier auf.\n\nIch weiß nicht, wie es ausging.\nDu auch nicht.\n\nDas ist der Handel, den du geschlossen hast.",
+    "Willkommen zurück.\nWas ist der Zug?\nWarum bist du hier?\nWas hast du getan?\n\nNur eine davon hat sich geändert.\n\n%TARGET% traf dich in Waggon %CARRIAGE%.\n\nNicht dich.\nDen Teil von dir, der zurückblieb.\n\n%DAYS% Tage hat er gewartet.\nGeduldiges Ding.\nEr hatte dein Gesicht.\n\n%STORY%\n\n.\n\nIch würde dir sagen, wer davongegangen ist.\n\nNiemand hat es aufgeschrieben."
+  ]
+}

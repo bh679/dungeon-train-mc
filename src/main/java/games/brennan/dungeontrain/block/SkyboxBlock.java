@@ -1,0 +1,129 @@
+package games.brennan.dungeontrain.block;
+
+import com.mojang.serialization.MapCodec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.RenderShape;
+import net.minecraft.world.level.block.state.BlockBehaviour;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.shapes.CollisionContext;
+import net.minecraft.world.phys.shapes.EntityCollisionContext;
+import net.minecraft.world.phys.shapes.Shapes;
+import net.minecraft.world.phys.shapes.VoxelShape;
+
+/**
+ * A solid, unmineable full cube that reads as a hole punched through the world:
+ * look at it and you see the skybox, even when there is terrain — or a carriage
+ * wall — directly behind it.
+ *
+ * <p>The block itself contributes <em>no</em> chunk geometry
+ * ({@link RenderShape#INVISIBLE}); the sky effect is produced entirely on the
+ * client by
+ * {@link games.brennan.dungeontrain.client.skybox.SkyboxPunchRenderer}, which
+ * writes the cube's faces into the depth buffer (colour writes masked off) in the
+ * gap between vanilla drawing the sky and drawing terrain. Everything behind the
+ * cube then fails the depth test and the already-painted sky survives; everything
+ * in front draws normally.</p>
+ *
+ * <p>Note what is deliberately <b>not</b> set on the block properties in
+ * {@link games.brennan.dungeontrain.registry.ModBlocks}: {@code noOcclusion()}.
+ * Unlike a barrier we <em>want</em> vanilla to treat this as opaque, so it culls
+ * neighbouring block faces and whole chunk sections behind it — that culling is
+ * free correctness on top of the depth punch, not a conflict with it.</p>
+ */
+public class SkyboxBlock extends Block {
+
+    public static final MapCodec<SkyboxBlock> CODEC = RecordCodecBuilder.mapCodec(
+        instance -> instance.group(
+            SkyboxSky.CODEC.fieldOf("sky").forGetter(SkyboxBlock::sky),
+            propertiesCodec()
+        ).apply(instance, SkyboxBlock::new)
+    );
+
+    private final SkyboxSky sky;
+
+    public SkyboxBlock(SkyboxSky sky, BlockBehaviour.Properties properties) {
+        super(properties);
+        this.sky = sky;
+    }
+
+    /** Which sky this block's hole shows. Drives its stencil ref at render time. */
+    public SkyboxSky sky() {
+        return sky;
+    }
+
+    @Override
+    protected MapCodec<? extends Block> codec() {
+        return CODEC;
+    }
+
+    /** No baked model — the depth punch is the entire visual. */
+    @Override
+    protected RenderShape getRenderShape(BlockState state) {
+        return RenderShape.INVISIBLE;
+    }
+
+    /**
+     * The outline / raycast shape — <b>creative only</b>. In survival the ray passes straight
+     * through, so hovering a skybox block draws no selection box: the black outline across a
+     * patch of sky is precisely the tell that breaks the illusion.
+     *
+     * <p>Same shape vanilla's {@code LightBlock} uses to hide itself unless you hold a light.
+     * Note the consequence: with no outline shape the survival ray continues past the block
+     * and hits whatever is behind it, which the depth punch has hidden — so a player can
+     * interact with a block they cannot see, within reach. Accepted deliberately in favour of
+     * an unbroken sky.</p>
+     */
+    @Override
+    protected VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+        return isCreativePlayer(context) ? Shapes.block() : Shapes.empty();
+    }
+
+    /**
+     * Always a full cube.
+     *
+     * <p>Must be stated explicitly and <b>must not</b> be left to default: {@code
+     * BlockBehaviour}'s default collision shape is {@code state.getShape(level, pos)}, which is
+     * empty in survival — the block would silently become walk-through.</p>
+     */
+    @Override
+    protected VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+        return Shapes.block();
+    }
+
+    /**
+     * Always a full cube, for the same reason as {@link #getCollisionShape} — the default is
+     * also {@code getShape}.
+     *
+     * <p>This one is load-bearing for the feature rather than merely correct: occlusion is what
+     * culls the neighbouring block faces and the chunk sections behind the hole. Let it fall
+     * through to the survival-empty shape and every sky window grows a border of stone edges.</p>
+     */
+    @Override
+    protected VoxelShape getOcclusionShape(BlockState state, BlockGetter level, BlockPos pos) {
+        return Shapes.block();
+    }
+
+    /**
+     * {@code CollisionContext.empty()} is an {@link EntityCollisionContext} carrying a null
+     * entity, so every context-free {@code getShape} call answers "not creative" — which is
+     * why the two overrides above exist.
+     */
+    private static boolean isCreativePlayer(CollisionContext context) {
+        return context instanceof EntityCollisionContext entityContext
+            && entityContext.getEntity() instanceof Player player
+            && player.isCreative();
+    }
+
+    /**
+     * Full brightness, so the block casts no ambient-occlusion darkening onto the
+     * blocks around the hole. Vanilla {@code BarrierBlock} does the same.
+     */
+    @Override
+    protected float getShadeBrightness(BlockState state, BlockGetter level, BlockPos pos) {
+        return 1.0F;
+    }
+}

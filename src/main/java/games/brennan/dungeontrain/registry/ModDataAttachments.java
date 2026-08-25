@@ -137,6 +137,40 @@ public final class ModDataAttachments {
                 .build()
         );
 
+    /**
+     * Travelled-carriage reading (the same {@code effectiveTravelled} value the carts tiers use) at
+     * the moment this player last opened a chest or barrel this life. The "no container" streak is
+     * {@code effectiveTravelled - this}, driving the {@code no_container_100} / {@code no_container_1000}
+     * advancements ("Not My Chest" / "Still Not My Chest"). Decorated pots deliberately do NOT touch it —
+     * vases are fair game.
+     *
+     * <p>Its own attachment rather than a {@link games.brennan.dungeontrain.player.PlayerRunState} field
+     * because that codec is at its 16-field cap (see {@link #RUN_SPAWN_X}). Serialized so the streak
+     * survives a mid-run logout, and <b>no</b> {@code copyOnDeath}: the respawn clone starts at 0, which
+     * is exactly the per-life reset wanted — the travelled counter resets with it.</p>
+     */
+    public static final Supplier<AttachmentType<Integer>> CARTS_AT_LAST_CONTAINER_OPEN =
+        TYPES.register("carts_at_last_container_open",
+            () -> AttachmentType.<Integer>builder(() -> 0)
+                .serialize(Codec.INT)
+                .build()
+        );
+
+    /**
+     * Per-life flag: has this player opened an ender chest during the current life? Gates
+     * {@code contained_loop} ("Contained Loop"), granted on death after 1000+ carriages travelled
+     * without ever dipping into the (cross-life, EnderChestPersistence-backed) ender-chest stash.
+     *
+     * <p>Serialized so a mid-life logout can't launder the flag away, and <b>no</b> {@code copyOnDeath}
+     * so every new life starts clean.</p>
+     */
+    public static final Supplier<AttachmentType<Boolean>> OPENED_ENDER_CHEST_THIS_LIFE =
+        TYPES.register("opened_ender_chest_this_life",
+            () -> AttachmentType.<Boolean>builder(() -> Boolean.FALSE)
+                .serialize(Codec.BOOL)
+                .build()
+        );
+
     private ModDataAttachments() {}
 
     public static void register(IEventBus modBus) {

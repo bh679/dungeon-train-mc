@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 3,
+  "pools": {
+  },
+  "links": {
+    "39,2,4": "gamble"
+  }
+}

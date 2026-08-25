@@ -51,8 +51,10 @@ import java.util.concurrent.ConcurrentHashMap;
  * <p>Each spawned group is its own Sable sub-level holding {@code groupSize}
  * adjacent carriages — see
  * {@link TrainAssembler#spawnGroup(ServerLevel, BlockPos, Vector3dc, int, int, CarriageDims, UUID)}.
- * The group's blocks are placed once at assembly and never modified after,
- * so the per-sub-level MassTracker / rotationPoint stays constant.</p>
+ * Assembly places the group's blocks once, so appending never disturbs an
+ * existing group's MassTracker / rotationPoint. Later block changes do move it,
+ * and are corrected by
+ * {@link games.brennan.dungeontrain.ship.sable.CarriagePivotPin}.</p>
  *
  * <p>Append-only: never erases. Walking back over a previously-spawned
  * group shows it intact.</p>
@@ -940,6 +942,7 @@ public final class TrainCarriageAppender {
      * those have no contents and are skipped without a log line.</p>
      */
     private static void firePendingContentsEntitySpawns(ServerLevel level, TrainTransformProvider provider) {
+        firePendingRelayEntitySpawns(level, provider); // leased builds' own entities, same settle point
         PendingContentsEntitySpawn[] pending = provider.takePendingContentsEntitySpawns();
         if (pending == null) return;
         int fired = 0;
@@ -961,6 +964,36 @@ public final class TrainCarriageAppender {
         // already been atomically taken, so this can't double-spawn). Gated by
         // a 1-in-N config roll inside the spawner.
         PlayerMobGroupSpawner.maybeSpawnForGroup(level, provider, pending);
+    }
+
+    /**
+     * Spawn the entities of every LEASED carriage in this group — the armor stands, item frames and mobs
+     * the world that authored the build had standing in it, captured into the relay blob and put back
+     * here. Fires from the same settle point, and for the same reason, as the contents spawns above.
+     *
+     * <p>A leased carriage that carried no entities has no pending record at all, so the common case
+     * costs nothing. Failures are logged and skipped: the blocks are already down, and a build missing an
+     * item frame is a far better outcome than a group that never finishes spawning.</p>
+     */
+    private static void firePendingRelayEntitySpawns(ServerLevel level, TrainTransformProvider provider) {
+        PendingRelayEntitySpawn[] pending = provider.takePendingRelayEntitySpawns();
+        if (pending == null) return;
+        int spawned = 0;
+        int slots = 0;
+        for (PendingRelayEntitySpawn p : pending) {
+            if (p == null) continue;
+            slots++;
+            try {
+                spawned += CarriageEntitySnapshot.spawn(level, p.shipyardOrigin(), p.ents(), p.carriagePIdx());
+            } catch (Throwable t) {
+                LOGGER.warn("[DungeonTrain] Deferred relay-entity spawn failed for pIdx={} origin={}: {}",
+                    p.carriagePIdx(), p.shipyardOrigin(), t.toString());
+            }
+        }
+        if (slots > 0) {
+            LOGGER.info("[DungeonTrain] Placement tracker: spawned {} entity(s) for {} leased carriage(s) in group anchorPIdx={}",
+                spawned, slots, provider.getPIdx());
+        }
     }
 
     /**

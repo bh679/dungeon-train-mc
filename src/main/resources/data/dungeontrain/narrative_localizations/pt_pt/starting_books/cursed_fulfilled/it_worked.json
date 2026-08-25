@@ -1,0 +1,11 @@
+{
+  "id": "it_worked",
+  "title": "Resultou",
+  "author": "Brennan Hatton",
+  "generation": 0,
+  "weight": 1,
+  "variants": [
+    "Resultou.\n\n%TARGET% está morto.\n\nNão estavas lá.\nJá estavas morto.\n\nCarruagem %CARRIAGE%.\nO número em que morreste passou a ser o número em que morreram.\n\nEsperou %DAYS% dias para o fazer.\n%GEAR%\n\nFoi assim que aconteceu.\n\n%STORY%\n\nNão te parece estranho?\nAlgo com a tua cara,\nnum mundo que nunca viste,\na acabar o que começaste.\n\nNão tens de te sentir bem com isso.\nNão tens de te sentir mal com isso.\n\nSó tens de saber.\n\nAgora sabes.",
+    "Bem-vindo de volta ao Dungeon Train\nO que é o comboio?\nPorque estás aqui?\nO que escreveste?\nSão todas boas perguntas\n\nEscreveste %TARGET%.\n\n%DAYS% dias depois, na carruagem %CARRIAGE%, o papel tinha razão.\n\n%STORY%\n\nNormalmente não tem.\n\nEu sou papel.\nRaramente tenho razão.\n\nDaquela vez tive.\n\nDorme bem."
+  ]
+}

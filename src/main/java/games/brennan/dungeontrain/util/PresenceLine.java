@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.util;
 
+import games.brennan.dungeontrain.narrative.PluralRules;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 
@@ -76,8 +77,12 @@ public final class PresenceLine {
      * The {@code @}-tag reply as a localized, styled {@link Component} — green when online now, gray when
      * recently seen — or {@code null} to stay silent. Uses {@code chat.dungeontrain.presence.*} keys so the
      * line renders in each client's own language; the duration is a nested {@link #agoComponent}.
+     *
+     * <p>{@code locale} is the RECIPIENT's client language, needed only so the duration picks the
+     * grammatical-number form that language wants ("2 минуты" but "5 минут").</p>
      */
-    public static Component recentLine(Optional<Boolean> online, Optional<Instant> lastSeen, Instant now) {
+    public static Component recentLine(String locale, Optional<Boolean> online,
+                                       Optional<Instant> lastSeen, Instant now) {
         Presence p = decide(online, lastSeen, now);
         if (p == null) {
             return null;
@@ -85,7 +90,7 @@ public final class PresenceLine {
         if (p.onlineNow()) {
             return Component.translatable("chat.dungeontrain.presence.online_now").withStyle(ChatFormatting.GREEN);
         }
-        return Component.translatable("chat.dungeontrain.presence.was_online", agoComponent(p.ago()))
+        return Component.translatable("chat.dungeontrain.presence.was_online", agoComponent(locale, p.ago()))
             .withStyle(ChatFormatting.GRAY);
     }
 
@@ -122,12 +127,15 @@ public final class PresenceLine {
 
     /**
      * The elapsed {@link Duration} as a localized "N unit" {@link Component} — "7 minutes" / "7 分钟" — via
-     * the {@code chat.dungeontrain.time.*} keys, picking the singular or plural key by count. Passed as the
-     * {@code %s} argument of the presence lines so the whole sentence renders in the client's language.
+     * the {@code chat.dungeontrain.time.<unit>.*} keys, whose grammatical-number suffix
+     * {@link PluralRules} picks for {@code locale}. Passed as the {@code %s} argument of the presence
+     * lines so the whole sentence renders in the client's language.
+     *
+     * <p>{@code locale} is the RECIPIENT's client language ({@code ""} when unknown, falling back to the
+     * English one/other rule) — these lines are built server-side and read somewhere else.</p>
      */
-    public static Component agoComponent(Duration d) {
+    public static Component agoComponent(String locale, Duration d) {
         Elapsed e = largestUnit(d);
-        String key = e.unit().name() + (e.count() == 1L ? "" : "s");
-        return Component.translatable("chat.dungeontrain.time." + key, e.count());
+        return PluralRules.clause(locale, "chat.dungeontrain.time." + e.unit().name(), e.count());
     }
 }

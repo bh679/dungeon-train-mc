@@ -62,7 +62,9 @@ public final class PortalExitCopyTiler {
      * so this must not return an equal-but-new record when it did nothing.</p>
      *
      * @param standingIn the tiles players are currently in; empty means nobody is inside, which is
-     *                   the signal to drain
+     *                   the signal to drain. Every one of them is a centre — a copy is held while it
+     *                   is close to anybody, and laid where it is near anybody, so a second player is
+     *                   not standing in a corridor the window forgot about
      * @param radius     how far the window reaches — the copy's own hold distance is this plus the
      *                   reach
      * @param neighbours every other live structure, so a copy is never stamped onto one
@@ -81,16 +83,14 @@ public final class PortalExitCopyTiler {
             return drain(level, dims, structure, standingIn, pairKey);
         }
 
-        Tile centre = standingIn.iterator().next();
-
-        Site next = nextToAdd(level, dims, structure, centre, radius, neighbours, pairKey);
+        Site next = nextToAdd(level, dims, structure, standingIn, radius, neighbours, pairKey);
         if (next != null) return stamp(level, dims, structure, next, pairKey);
 
         // A copy somebody is bound to stays, however far outside the window it has fallen. Stepping
         // onto the train empties the room, which collapses the radius to APPROACH_RADIUS and would
         // otherwise retire the copy they had just that second walked out of — so the way back in
         // would always lead to the original, and the binding could never do its job.
-        Site stale = standing.nextToRemove(centre, radius, reachOf(structure, dims),
+        Site stale = standing.nextToRemove(standingIn, radius, reachOf(structure, dims),
             site -> !PortalExitBindings.anyBoundTo(pairKey, site.tile()));
         if (stale != null) return erase(level, dims, structure, stale);
 
@@ -123,8 +123,8 @@ public final class PortalExitCopyTiler {
     }
 
     /**
-     * The next copy to lay: the nearest site to {@code centre} that a standing tile owes, is inside
-     * {@code radius}, is not up yet, and can be built — or {@code null}.
+     * The next copy to lay: the nearest site to any of {@code centres} that a standing tile owes, is
+     * inside {@code radius} of one of them, is not up yet, and can be built — or {@code null}.
      *
      * <p><b>Nearest first, explicitly.</b> {@code PortalRoomTiling} fills its window nearest-first,
      * but its resident set is a {@code Set.copyOf} and so has no order to inherit — iterating it and
@@ -140,11 +140,13 @@ public final class PortalExitCopyTiler {
      * observed live at one full corridor stamp and erase every tick, 113 of them at a single site in
      * a five-minute session. Adding inside {@code radius} and removing beyond
      * {@code radius + reach} leaves the reach as a hysteresis band between the two rules, which is
-     * what stops them arguing.</p>
+     * what stops them arguing. The band survives the move to several centres unchanged: adding is
+     * inside {@code radius} of <i>any</i> occupant and removing is beyond {@code radius + reach} of
+     * <i>every</i> one, so the two rules still cannot both fire on the same site.</p>
      */
     private static Site nextToAdd(ServerLevel level, CarriageDims dims, PortalStructure structure,
-                                  Tile centre, int radius, Collection<PortalStructure> neighbours,
-                                  int pairKey) {
+                                  Set<Tile> centres, int radius,
+                                  Collection<PortalStructure> neighbours, int pairKey) {
         PortalExitCopies standing = structure.exitCopies();
         long seed = PortalExitSites.seedFor(level.getSeed(), pairKey, structure.roomName());
         Site best = null;
@@ -159,8 +161,8 @@ public final class PortalExitCopyTiler {
                     && site.tile().equals(structure.exitTile())) {
                     continue;
                 }
-                if (site.chebyshevTo(centre) > radius) continue;
-                if (best != null && nearestTo(centre).compare(site, best) >= 0) continue;
+                if (chebyshevToNearest(site, centres) > radius) continue;
+                if (best != null && nearestTo(centres).compare(site, best) >= 0) continue;
                 if (!canStamp(level, dims, structure, site, neighbours)) continue;
                 best = site;
             }
@@ -168,12 +170,24 @@ public final class PortalExitCopyTiler {
         return best;
     }
 
-    /** Nearest first, ties broken on coordinates and role so a tick's choice is deterministic. */
-    private static Comparator<Site> nearestTo(Tile centre) {
-        return Comparator.comparingInt((Site s) -> s.chebyshevTo(centre))
+    /**
+     * Nearest first — to whichever occupant is closest — with ties broken on coordinates and role so
+     * a tick's choice is deterministic.
+     */
+    private static Comparator<Site> nearestTo(Set<Tile> centres) {
+        return Comparator.comparingInt((Site s) -> chebyshevToNearest(s, centres))
             .thenComparingInt(s -> s.tile().x())
             .thenComparingInt(s -> s.tile().z())
             .thenComparing(Site::role);
+    }
+
+    /** How far {@code site}'s anchor is from the closest of {@code centres}, in tiles. */
+    private static int chebyshevToNearest(Site site, Set<Tile> centres) {
+        int best = Integer.MAX_VALUE;
+        for (Tile centre : centres) {
+            best = Math.min(best, site.chebyshevTo(centre));
+        }
+        return best;
     }
 
     private static PortalStructure stamp(ServerLevel level, CarriageDims dims,
@@ -205,14 +219,14 @@ public final class PortalExitCopyTiler {
     /** Every block this copy occupies — read off the same mask that protects it while it stands. */
     private static BoundingBox copyBox(PortalStructure structure, CarriageDims dims, Site site) {
         return PortalCorridorMask.forCorridor(
-            structure.shadowAt(site.tile()), dims, PortalCarriageBuilder.layoutFor(dims),
+            structure.shadowAt(site.tile()), dims, PortalCarriageBuilder.layoutFor(dims, structure.kind()),
             PortalCarriageBuilder.plugDepth(), site.role()).bounds();
     }
 
     /** How far, in tiles, a copy's blocks reach past the room it opens into. */
     private static int reachOf(PortalStructure structure, CarriageDims dims) {
         return PortalExitSites.tileReach(
-            PortalCorridorSize.corridorLength(dims), structure.roomLength(),
+            PortalCorridorSize.corridorLength(dims, structure.kind()), structure.roomLength(),
             PortalCarriageBuilder.plugDepth());
     }
 

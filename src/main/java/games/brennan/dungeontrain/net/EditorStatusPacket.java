@@ -78,14 +78,20 @@ public record EditorStatusPacket(String category, String model, String modelId, 
     /**
      * Wire length cap on {@link #roomMode}.
      *
-     * <p>Sized for the tag rather than guessed at. {@code PortalRoomSettings} packs four settings
-     * into one {@code /}-separated string, and its longest form —
-     * {@code endless_repetition/dynamic/tile/random:64} — is forty-one characters. The cap was 32
-     * when the tag topped out at thirty-one, which left it one setting away from
-     * {@code writeUtf} throwing on a perfectly ordinary room. This has headroom for the next
-     * segment; {@link EditorPlotLabelsPacket} carries the same tag and must keep the same cap.</p>
+     * <p>Sized for the tag rather than guessed at. {@code PortalRoomSettings} packs five settings
+     * into one {@code /}-separated string, and its longest form is now the Copies segment carrying a
+     * block id — {@code endless_open/single:<id>/tile/random:64:10/mix:99:99:99:999:999}, which at
+     * {@code PortalRoomCopies.BLOCK_ID_MAX} runs to about a hundred and thirty characters. The cap
+     * was 32 when the tag topped out at thirty-one, which left it one setting away from
+     * {@code writeUtf} throwing on a perfectly ordinary room; 64 stopped fitting the moment Books
+     * grew its author range, and 96 stopped fitting the moment Single let an author name a block.
+     * This has headroom for the next segment; {@link EditorPlotLabelsPacket} carries the same tag
+     * and must keep the same cap.</p>
+     *
+     * <p>{@code PortalRoomSettingsTest.longestTagFitsThePacket} sweeps every settings combination
+     * against this number, so a future setting fails a test rather than a live {@code writeUtf}.</p>
      */
-    public static final int MODE_TAG_MAX = 64;
+    public static final int MODE_TAG_MAX = 160;
 
     /** {@code maxLevel} sentinel mirroring {@code TemplateGate.ALL} — "no upper level bound". */
     public static final int MAX_LEVEL_ALL = -1;

@@ -183,6 +183,19 @@ public final class PlayerPlayedMarker {
             .resolve(uuid.toString() + PROPS_EXT);
     }
 
+    /**
+     * Forget the player entirely — both the {@code .properties} marker and the legacy {@code .flag}
+     * — so {@link #hasPlayed} reads false again and the next world welcomes them as a new player.
+     * Used by the Video Tools profile reset.
+     *
+     * @return {@code true} when at least one file was removed.
+     */
+    public static boolean deleteFor(UUID uuid) throws IOException {
+        boolean props = Files.deleteIfExists(propsPath(uuid));
+        boolean legacy = Files.deleteIfExists(legacyFlagPath(uuid));
+        return props || legacy;
+    }
+
     private static Path legacyFlagPath(UUID uuid) {
         return FMLPaths.GAMEDIR.get()
             .resolve(MOD_DIR)

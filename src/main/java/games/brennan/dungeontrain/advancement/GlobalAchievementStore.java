@@ -144,6 +144,19 @@ public final class GlobalAchievementStore {
         return true;
     }
 
+    /**
+     * Delete the whole sidecar for {@code playerUuid}. Unlike {@link #remove}, this drops every
+     * grant at once — used by the Video Tools profile reset, where the point is that the login
+     * replay in {@code AchievementEvents} has nothing left to replay.
+     *
+     * <p>Reads are file-backed with no cache, so unlinking the file is the entire operation.</p>
+     *
+     * @return {@code true} when a file was actually removed.
+     */
+    public static synchronized boolean deleteFor(UUID playerUuid) throws IOException {
+        return Files.deleteIfExists(file(playerUuid));
+    }
+
     private static void writeAtomic(UUID playerUuid, Set<ResourceLocation> granted) {
         Path path = file(playerUuid);
         try {

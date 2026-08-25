@@ -32,6 +32,10 @@
 
 set -euo pipefail
 
+# Retrying upload helper (retries 5xx / transport faults, never 4xx). See lib/upload-retry.sh.
+# shellcheck source=lib/upload-retry.sh
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/upload-retry.sh"
+
 API="https://minecraft.curseforge.com/api"
 OVERRIDES_DIR="modpack/overrides"
 CONFIG="modpack/modpack.config.json"
@@ -153,13 +157,13 @@ echo "Declaring $REL_COUNT CurseForge relation(s): $(printf '%s' "$RELATIONS_PRO
 # the mod's own upload via mc-publish never hit it — different HTTP client, no curl -F quirk.)
 META_FILE="$WORKDIR/curseforge-metadata.json"
 printf '%s' "$METADATA" > "$META_FILE"
-RESPONSE=$(curl -sS -w $'\n%{http_code}' \
+upload_with_retry "CurseForge modpack upload" \
   -H "X-Api-Token: $CURSEFORGE_TOKEN" \
   -F "metadata=<$META_FILE;type=application/json" \
   -F "file=@$ZIP_PATH" \
-  "$API/projects/$CURSEFORGE_MODPACK_PROJECT_ID/upload-file")
-HTTP_CODE=$(printf '%s' "$RESPONSE" | tail -n1)
-BODY=$(printf '%s' "$RESPONSE" | sed '$d')
+  "$API/projects/$CURSEFORGE_MODPACK_PROJECT_ID/upload-file"
+HTTP_CODE="$UPLOAD_HTTP_CODE"
+BODY="$UPLOAD_BODY"
 
 if [ "$HTTP_CODE" != "200" ]; then
   echo "::error::CurseForge modpack upload failed (HTTP $HTTP_CODE): $BODY"

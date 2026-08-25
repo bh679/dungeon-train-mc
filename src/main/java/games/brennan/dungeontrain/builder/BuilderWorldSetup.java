@@ -1094,7 +1094,7 @@ public final class BuilderWorldSetup {
         // change to the world, not to the template — PortalRoomSizes keeps it pending until a save
         // spends it, and without this it would follow the room into its next open and read as a
         // save that never happened.
-        PortalRoomSizes.clearPending(name);
+        PortalRoomSizes.revert(name);
         PortalRoomTemplateStore.get(level, name, dims);
         Vec3i size = PortalRoomSizes.sizeOf(name, dims);
 

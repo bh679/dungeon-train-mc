@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.editor;
 
+import games.brennan.dungeontrain.discord.WorldInfoReporter;
 import games.brennan.discordpresence.discord.DiscordService;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.util.PresenceLine;
@@ -21,7 +22,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Supplier;
+import java.util.function.Function;
 
 /**
  * Sends a friendly onboarding message in chat after a player first enters the Dungeon Train editor
@@ -63,7 +64,12 @@ public final class EditorWelcome {
     private static final Map<UUID, Long> NEXT_SEND = new ConcurrentHashMap<>();
 
     /** One queued welcome line: the ticks to wait before it shows, and a supplier built fresh at send time. */
-    private record Line(long delayTicks, Supplier<Component> supplier) {}
+    /**
+     * One welcome line: how long to wait before it shows, and how to build it at send time. The builder
+     * takes the recipient, not nothing, because the presence line's duration has to be declined in that
+     * player's own language (see {@link #buildPresenceLine}).
+     */
+    private record Line(long delayTicks, Function<ServerPlayer, Component> supplier) {}
 
     /**
      * The first time {@code player} enters the editor this session, queue the welcome lines and
@@ -96,7 +102,7 @@ public final class EditorWelcome {
             Deque<Line> lines = e.getValue();
             Line current = lines.poll(); // the line whose delay just elapsed
             if (current != null) {
-                Component comp = current.supplier().get();
+                Component comp = current.supplier().apply(p);
                 if (comp != null) p.sendSystemMessage(comp); // null (e.g. unknown presence) → skip, don't send blank
             }
             Line following = lines.peek();
@@ -117,18 +123,18 @@ public final class EditorWelcome {
      * The welcome, one {@link Line} per entry — each carrying the delay before it shows and a supplier
      * evaluated at send time. The first waits {@link #WELCOME_DELAY_TICKS}; body lines
      * {@link #LINE_GAP_TICKS}; the trailing presence line {@link #PRESENCE_DELAY_TICKS} (a longer beat).
-     * The presence supplier is {@link #buildPresenceLine() omitted} (returns {@code null}) when
+     * The presence supplier is {@link #buildPresenceLine omitted} (returns {@code null}) when
      * Brennan's Discord presence is unknown.
      */
     private static List<Line> welcomeLines() {
         return List.of(
-            new Line(WELCOME_DELAY_TICKS, () -> Component.literal("Welcome to the Dungeon Train Editor!")
+            new Line(WELCOME_DELAY_TICKS, p -> Component.literal("Welcome to the Dungeon Train Editor!")
                 .withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD)),
-            new Line(LINE_GAP_TICKS, () -> Component.literal("This is a full editor for everything in the train.")),
-            new Line(LINE_GAP_TICKS, () -> Component.literal("From train carriage templates to custom loot tables editor.")),
-            new Line(LINE_GAP_TICKS, () -> Component.literal("If you have any questions - message Brennan in here with ")
+            new Line(LINE_GAP_TICKS, p -> Component.literal("This is a full editor for everything in the train.")),
+            new Line(LINE_GAP_TICKS, p -> Component.literal("From train carriage templates to custom loot tables editor.")),
+            new Line(LINE_GAP_TICKS, p -> Component.literal("If you have any questions - message Brennan in here with ")
                 .append(mentionTag())),
-            new Line(LINE_GAP_TICKS, () -> Component.literal(
+            new Line(LINE_GAP_TICKS, p -> Component.literal(
                 "He will be very enthusiastic that you're using the editor and do what he can to support you!")),
             new Line(PRESENCE_DELAY_TICKS, EditorWelcome::buildPresenceLine));
     }
@@ -155,7 +161,7 @@ public final class EditorWelcome {
      * query seam ({@link DiscordService#isDiscordUserOnline}/{@link DiscordService#lastSeenOnline}), or
      * {@code null} when presence is unknown so the welcome omits the line entirely.
      */
-    private static Component buildPresenceLine() {
+    private static Component buildPresenceLine(ServerPlayer player) {
         DiscordService dp = DiscordService.get();
         if (dp.isDiscordUserOnline(DungeonTrain.BRENNAN_DISCORD_ID).orElse(false)) {
             return Component.translatable("chat.dungeontrain.presence.online_now")
@@ -163,7 +169,8 @@ public final class EditorWelcome {
         }
         Optional<Instant> seen = dp.lastSeenOnline(DungeonTrain.BRENNAN_DISCORD_ID);
         if (seen.isPresent()) {
-            Component ago = PresenceLine.agoComponent(Duration.between(seen.get(), Instant.now()));
+            Component ago = PresenceLine.agoComponent(
+                WorldInfoReporter.clientLanguage(player), Duration.between(seen.get(), Instant.now()));
             return Component.translatable("chat.dungeontrain.presence.last_seen", ago)
                 .withStyle(ChatFormatting.GRAY);
         }

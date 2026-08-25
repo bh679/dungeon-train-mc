@@ -46,13 +46,14 @@ repositories {
         }
     }
 
-    // AdventureItemNames is GitHub-Releases-only until Modrinth/CurseForge
-    // approval lands. Ivy patternLayout maps the coordinates
-    // bh679:adventureitemnames:<v> to the release asset URL
-    // https://github.com/bh679/adventureitemnames-mc/releases/download/v<v>/adventureitemnames-neoforge-<v>.jar.
+    // Flat-named bh679 sibling releases. Ivy patternLayout maps the coordinates
+    // bh679:<module>:<v> to the release asset URL
+    // https://github.com/bh679/<module>-mc/releases/download/v<v>/<module>-neoforge-<v>.jar.
     // metadataSources { artifact() } lets Gradle resolve directly from the jar
     // (no ivy.xml exists at the URL). content { includeGroup } scopes probes to
     // bh679 only so Gradle won't hit GitHub for every dependency.
+    // Siblings that ship multi-MC-version releases (suffixed asset names) are excluded
+    // here and get their own repo below.
     ivy {
         name = 'GitHubReleases'
         url = 'https://github.com/'
@@ -63,7 +64,25 @@ repositories {
         content {
             includeGroup 'bh679'
             excludeModule('bh679', 'playermob')
+            excludeModule('bh679', 'adventureitemnames')
         }
+    }
+
+    // adventureitemnames-mc 0.46.0+ added Minecraft 1.20.1 builds, so its NeoForge asset name
+    // gained a `+<mcversion>` suffix (adventureitemnames-neoforge-0.48.0+1.21.1.jar) instead of
+    // the flat adventureitemnames-neoforge-<v>.jar of 0.45.0 and earlier — same break PlayerMob
+    // hit at its 0.48.0. This is why the auto-release cascade sat on AIN 0.45.0 from 0.46.0's
+    // release (2026-06-23) until this repo was added: every tick's verification build failed to
+    // resolve the bumped coordinate and reverted itself, silently and without a diff.
+    // Separate ivy repo, scoped to just the adventureitemnames module, pinned to DT's MC version.
+    ivy {
+        name = 'GitHubReleasesAdventureItemNames'
+        url = 'https://github.com/'
+        patternLayout {
+            artifact "[organization]/[module]-mc/releases/download/v[revision]/[module]-neoforge-[revision]+${minecraft_version}.[ext]"
+        }
+        metadataSources { artifact() }
+        content { includeModule('bh679', 'adventureitemnames') }
     }
 
     // playermob-mc 0.48.0+ ships builds for multiple MC versions per release, so its
@@ -275,7 +294,8 @@ dependencies {
     // so compat.PlayerMobSocialBridge references it directly — no extra dep needed.
 
     // Discord Presence (Discord join/online/death notifications + reactions) —
-    // the ONE sibling still bundled via jarJar. Its Modrinth project is not public
+    // one of the two siblings still bundled via jarJar (with EdibleBackpacks below;
+    // TradeEverything graduated to an external dep). Its Modrinth project is not public
     // yet (the `discordpresence` slug there belongs to an unrelated third-party
     // mod), so making it an external required dep would leave Modrinth users with
     // no way to obtain it. Unbundle once that listing goes live — at which point
@@ -292,11 +312,22 @@ dependencies {
     // isolation. Extracted from DT; same external-required-dep contract as AIN/AIS/PMOB above.
     implementation "bh679:enderchestpersistence:${enderchestpersistence_version}"
 
-    // TradeEverything — the villager "Trade Anything" slot. TEMPORARILY jarJar-bundled
-    // (like DiscordPresence) until its Modrinth/CurseForge listings are approved; then
-    // flip to the external-required-dep contract (AIN/AIS/PMOB/ECP) + modpack entry.
+    // TradeEverything — the villager "Trade Anything" slot (any item exchanges for goods
+    // the villager buys, priced by material worth). Same external-required-dep contract as
+    // AIN/AIS/PMOB/ECP above; fetched via the shared bh679 Ivy repo (flat asset
+    // tradeeverything-neoforge-<v>.jar). Un-bundled from jarJar once the Modrinth
+    // (trade-everything) and CurseForge (1622962) listings went live, so the launchers
+    // auto-install it and TE's own project page gets the download credit.
+    // DT compiles against games.brennan.tradeeverything.api.TradeEverythingApi
+    // (compat.TradeEverythingBridge values written books).
     implementation "bh679:tradeeverything:${tradeeverything_version}"
-    jarJar(group: 'bh679', name: 'tradeeverything', version: tradeeverything_version)
+
+    // EdibleBackpacks — eat a backpack for +1 persistent backpack slot. TEMPORARILY
+    // jarJar-bundled (like DiscordPresence) until its Modrinth/CurseForge
+    // listings are approved; then flip to the external-required-dep contract + modpack
+    // entry. DT compiles against EdibleBackpacksApi to opt DT worlds into reset-on-death.
+    implementation "bh679:ediblebackpacks:${ediblebackpacks_version}"
+    jarJar(group: 'bh679', name: 'ediblebackpacks', version: ediblebackpacks_version)
 
     // Compile against the companion math types extracted from Sable's
     // jar-in-jar bundle. compileOnly because at runtime the companion is
@@ -311,6 +342,16 @@ dependencies {
     testImplementation platform('org.junit:junit-bom:5.10.2')
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+    // joml-primitives again, this time for the JUnit launcher. It is `compileOnly` +
+    // `additionalRuntimeClasspath` above, and the test launcher inherits from `runtimeClasspath` but
+    // not from the moddev-specific one — so without this the type is simply absent under
+    // `./gradlew test`. That is not a theoretical gap: FML resolves the descriptor of every declared
+    // method when it registers an `@EventBusSubscriber`, so one method signature naming `AABBdc`
+    // fails DT's whole construction with a NoClassDefFoundError, and every test in the run reports
+    // "Could not start Gradle Test Executor" instead of naming the cause. Test-scoped, so nothing
+    // about the shipped jar or either run classpath changes.
+    testImplementation 'org.joml:joml-primitives:1.10.0'
 }
 
 tasks.named('test', Test).configure {
@@ -370,6 +411,7 @@ tasks.register('generateModMetadata', ProcessResources) {
         discordpresence_version          : discordpresence_version,
         enderchestpersistence_version    : enderchestpersistence_version,
         tradeeverything_version          : tradeeverything_version,
+        ediblebackpacks_version          : ediblebackpacks_version,
         // Declared-minimum floors for the five EXTERNAL sibling deps. Deliberately
         // separate from the *_version values above (which the auto-release cascade
         // bumps freely) — see gradle.properties for the rationale.
@@ -377,6 +419,7 @@ tasks.register('generateModMetadata', ProcessResources) {
         adventureitemstats_min_version    : adventureitemstats_min_version,
         playermob_min_version             : playermob_min_version,
         enderchestpersistence_min_version : enderchestpersistence_min_version,
+        tradeeverything_min_version       : tradeeverything_min_version,
     ]
     inputs.properties replaceProperties
     expand replaceProperties

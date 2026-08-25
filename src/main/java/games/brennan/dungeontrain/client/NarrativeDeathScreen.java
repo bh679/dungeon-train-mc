@@ -31,7 +31,10 @@ import games.brennan.dungeontrain.client.snapshot.SnapshotMeta;
 import games.brennan.dungeontrain.client.snapshot.SnapshotTag;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.net.DeathStatsPacket;
+import net.minecraft.ChatFormatting;
 import net.minecraft.Util;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -73,10 +76,13 @@ import java.util.concurrent.ThreadLocalRandom;
  * {@link DeathScreenLayoutHandler}).
  *
  * <p>Pages, in order: <b>the fall</b> (this-life headline stats) → <b>the
- * deeds</b> (this-life combat + carried loadout) → <b>all your lives</b>
- * (cross-world lifetime totals) → one page per unanswered feedback-survey
- * question (driven by the bundled Discord Presence survey, submitted through
- * its public API) → <b>the platform</b> (Board anew / Leave). A single centered
+ * deeds</b> (this-life combat + carried loadout) → <b>the cargo</b> (this-life
+ * loot + advancements) → <b>all your lives</b> (cross-world lifetime totals) →
+ * one page per unanswered feedback-survey question (driven by the bundled
+ * Discord Presence survey, submitted through its public API) → <b>support the
+ * line</b> (the donation ledger, flow-gated) → <b>the recommendations</b> (only
+ * when the player runs mods that aren't ours) → <b>the platform</b> (Board anew
+ * / Leave). A single centered
  * <i>Next Screen</i> advances; a bare back-arrow returns; <i>reboard</i> and
  * <i>leave the line</i> sit in the top corner throughout.</p>
  *
@@ -292,8 +298,14 @@ public final class NarrativeDeathScreen extends Screen {
     // DONATE page: the in-body Contribute button (opens the Revolut donate link), the per-tile
     // hover-tooltip regions, and the scrollable supporter-name list state.
     private Rect donateRect;
-    // Top-bar "$" chip — always present (every page), jumps to the donation page.
+    // Top-bar "$" chip — final (platform) page only, jumps to the donation page. It is what
+    // keeps the ledger reachable on the deaths where donateInFlow gated the page out of the
+    // normal flow.
     private Rect dollarRect;
+    // Ticks since the screen opened, for the respawn hold-off (see runEndReady).
+    private int ticksOpen;
+    /** Vanilla's death-screen button delay — one second before an exit control may fire. */
+    private static final int RESPAWN_DELAY_TICKS = 20;
     // Whether the donation page appears in the normal Next-Screen flow this death (the gate). When
     // false it's skipped in-flow but still reachable via the top-bar "$" chip.
     private boolean donateInFlow;
@@ -323,7 +335,7 @@ public final class NarrativeDeathScreen extends Screen {
     private int gearAdvMaxScroll = 0;       // scroll clamp bound, set during drawGear
     private int cargoRowY = -1;             // top y of row 1 (equipment + cargo icons), for tooltips
     private int cargoSx = -1;               // start x of the equipment slots, for tooltips
-    private Rect containersRect, booksRect, writtenRect; // chest / book / written-book cargo-icon hover regions (tooltips)
+    private Rect containersRect, booksRect, writtenRect, tamedRect; // chest / book / written-book / tamed cargo-icon hover regions (tooltips)
     /** All-lives (LIVES) page icon-row hover regions + their tooltip keys, rebuilt each frame in {@link #drawLives}. */
     private record LifeStat(Rect rect, String tipKey) {}
     private final List<LifeStat> lifeStats = new ArrayList<>();
@@ -346,15 +358,16 @@ public final class NarrativeDeathScreen extends Screen {
         for (SurveyQuestionPayload.Entry e : SurveyClientState.questions()) {
             list.add(Page.survey(e));
         }
+        // "Support the line" — the donation ledger. Always in the list (so the "$" chip can always
+        // reach it); whether it appears in the normal Next-Screen flow is gated by donateInFlow
+        // (see shouldShowDonate). advance()/back() find it by kind(), not index, so the pages
+        // after it can move freely.
+        list.add(Page.of(Kind.DONATE));
         // "The recommendations" — only for players running mods that aren't ours. On a clean
         // Dungeon Train / modpack install there is nothing to ask about and the page never exists.
         if (modRec != null && !modRec.isEmpty()) {
             list.add(Page.of(Kind.MODREC));
         }
-        // "Support the line" — the donation ledger, just before the platform send-off. Always in
-        // the list (so the platform button can always reach it); whether it appears in the normal
-        // Next-Screen flow is gated by donateInFlow (see shouldShowDonate).
-        list.add(Page.of(Kind.DONATE));
         list.add(Page.of(Kind.PLATFORM));
         return list;
     }
@@ -531,11 +544,45 @@ public final class NarrativeDeathScreen extends Screen {
 
     @Override
     public void tick() {
+        ticksOpen++;
         // The death packet + survey questions arrive a tick or two after the
         // screen opens. If the survey set changed, rebuild so the pages match.
         if (SurveyClientState.questions().size() != lastSurveyCount) {
             this.rebuildWidgets();
         }
+    }
+
+    /** True when this death is on a remote (LAN / dedicated) server rather than our own. */
+    private static boolean remote() {
+        return Minecraft.getInstance().getSingleplayerServer() == null;
+    }
+
+    /**
+     * The run-ending control's label. On our own world it reboards — a fresh run in a fresh
+     * save. On a server the world isn't ours to recreate, so it becomes vanilla's own respawn
+     * action, borrowing vanilla's strings (already translated everywhere, and the wording a
+     * player expects from a server death). {@code shortForm} picks the top-bar chip's label.
+     */
+    private static Component runEndLabel(boolean shortForm) {
+        if (!remote()) {
+            return Component.translatable(shortForm
+                    ? "gui.dungeontrain.death.reboard"
+                    : "gui.dungeontrain.death.board_anew");
+        }
+        Minecraft mc = Minecraft.getInstance();
+        boolean hardcore = mc.level != null && mc.level.getLevelData().isHardcore();
+        return Component.translatable(hardcore ? "deathScreen.spectate" : "deathScreen.respawn");
+    }
+
+    /**
+     * Whether the run-ending control may fire yet. Vanilla holds its death-screen exit buttons
+     * inactive for the first second ({@code DeathScreen.delayTicker}) so a click already in
+     * flight when the player died can't skip the screen entirely; the same reasoning applies
+     * to a respawn, which here IS that exit. Reboard is unaffected — it hands off to a world
+     * load that the player can't have queued a click for.
+     */
+    private boolean runEndReady() {
+        return !remote() || ticksOpen >= RESPAWN_DELAY_TICKS;
     }
 
     @Override
@@ -605,6 +652,7 @@ public final class NarrativeDeathScreen extends Screen {
         containersRect = null;
         booksRect = null;
         writtenRect = null;
+        tamedRect = null;
         lifeStats.clear();
         seeAllRect = null;
         advViewport = null;
@@ -1003,7 +1051,7 @@ public final class NarrativeDeathScreen extends Screen {
         ItemStack[] gear = { s.mostUsedWeapon(), s.armorHead(), s.armorChest(), s.armorLegs(), s.armorFeet() };
         int gap = 6, cargoGap = 12;
         int equipW = gear.length * SLOT + (gear.length - 1) * gap;   // 5 worn slots
-        int cargoW = 3 * SLOT + 2 * gap;                             // chest + book + written book
+        int cargoW = 4 * SLOT + 3 * gap;                             // chest + book + written book + tamed
         int rowW = equipW + cargoGap + cargoW;
         int sx = left + (w - rowW) / 2;
         this.cargoRowY = y;
@@ -1020,9 +1068,11 @@ public final class NarrativeDeathScreen extends Screen {
         int chestX = sx + equipW + cargoGap;
         int bookX = chestX + SLOT + gap;
         int writtenX = bookX + SLOT + gap;
+        int tamedX = writtenX + SLOT + gap;
         drawSlot(g, chestX, y);
         drawSlot(g, bookX, y);
         drawSlot(g, writtenX, y);
+        drawSlot(g, tamedX, y);
         if (showItems) {
             ItemStack chest = new ItemStack(Items.CHEST);
             ItemStack book = new ItemStack(Items.ENCHANTED_BOOK);
@@ -1033,10 +1083,14 @@ public final class NarrativeDeathScreen extends Screen {
             g.renderItemDecorations(this.font, book, bookX + 1, y + 1, Integer.toString(s.booksRead()));
             g.renderItem(written, writtenX + 1, y + 1);
             g.renderItemDecorations(this.font, written, writtenX + 1, y + 1, Integer.toString(s.booksWritten()));
+            ItemStack tamed = new ItemStack(Items.LEAD); // the taming item — animals you took in
+            g.renderItem(tamed, tamedX + 1, y + 1);
+            g.renderItemDecorations(this.font, tamed, tamedX + 1, y + 1, Integer.toString(s.tamedCount()));
         }
         this.containersRect = new Rect(chestX, y, SLOT, SLOT);
         this.booksRect = new Rect(bookX, y, SLOT, SLOT);
         this.writtenRect = new Rect(writtenX, y, SLOT, SLOT);
+        this.tamedRect = new Rect(tamedX, y, SLOT, SLOT);
         y += SLOT + 12;
 
         // ---- Row 2: Dungeon Train advancements earned this life (scrollable) + see-all button.
@@ -1392,6 +1446,20 @@ public final class NarrativeDeathScreen extends Screen {
         return below;
     }
 
+    /**
+     * Point the comment box's hint and narration at the question the live selection actually asks —
+     * a recommendation's "why" or a hack report's "what does it let you do". Called on every
+     * selection change; the box itself is built once in {@link #init()}.
+     */
+    private void retargetModCommentPrompt() {
+        if (modCommentBox == null || modRec == null) return;
+        Component prompt = Component.translatable(modRec.isReportingHack()
+                ? "gui.dungeontrain.death.modrec.hack_why"
+                : "gui.dungeontrain.death.modrec.why");
+        modCommentBox.setMessage(prompt);
+        modCommentBox.setHint(prompt);
+    }
+
     /** Position an optional EditBox, or park it off-screen when the page gave it no slot (y &lt; 0). */
     private void placeBox(EditBox box, int x, int y, int w) {
         if (box == null) return;
@@ -1619,13 +1687,14 @@ public final class NarrativeDeathScreen extends Screen {
         y += 14;
         // Board anew — the prominent action, front and centre under the epitaph. Hold
         // Shift to preserve the current game mode instead of forcing Survival — the
-        // button turns blue to signal that.
+        // button turns blue to signal that. On a server it is vanilla's Respawn instead,
+        // where Shift means nothing (see runEndLabel).
         boolean shiftHeld = Screen.hasShiftDown();
+        boolean shiftReboard = shiftHeld && !remote();
         int baW = 180, baH = 22;
-        boardAnewRect = drawBevel(g, cx - baW / 2, y, baW, baH,
-                Component.translatable("gui.dungeontrain.death.board_anew"),
-                shiftHeld ? BTN_PRI_SHIFT_BG : BTN_PRI_BG,
-                shiftHeld ? BTN_PRI_SHIFT_LIGHT : BTN_PRI_LIGHT,
+        boardAnewRect = drawBevel(g, cx - baW / 2, y, baW, baH, runEndLabel(false),
+                shiftReboard ? BTN_PRI_SHIFT_BG : BTN_PRI_BG,
+                shiftReboard ? BTN_PRI_SHIFT_LIGHT : BTN_PRI_LIGHT,
                 BTN_DARK, 0xFFFFFFFF);
         y += baH + 8;
         // Leave the line — smaller, secondary, beneath it. Hold Shift to convert it
@@ -1651,8 +1720,11 @@ public final class NarrativeDeathScreen extends Screen {
         // and turns the reboard chip blue — signalling reboard will preserve the current
         // game mode instead of forcing Survival.
         boolean shiftHeld = Screen.hasShiftDown();
+        // Shift's reboard meaning (preserve the current game mode) belongs to launchWorld, which
+        // only runs locally — on a server the chip respawns and Shift must not restyle it.
+        boolean shiftReboard = shiftHeld && !remote();
         Component leave = Component.translatable(shiftHeld ? "menu.quit" : "gui.dungeontrain.death.leave");
-        Component reboard = Component.translatable("gui.dungeontrain.death.reboard");
+        Component reboard = runEndLabel(true);
         int leaveW = this.font.width(leave) + 16;
         int reboardW = this.font.width(reboard) + 16;
         int leaveX = this.width - 10 - leaveW;
@@ -1660,17 +1732,24 @@ public final class NarrativeDeathScreen extends Screen {
         leaveRect = shiftHeld
                 ? drawChip(g, leaveX, 8, leave, CHIP_LV_QUIT_BG, CHIP_LV_QUIT_BORDER, CHIP_LV_QUIT_TEXT)
                 : drawChip(g, leaveX, 8, leave, CHIP_LV_BORDER, CHIP_LV_TEXT);
-        reboardRect = shiftHeld
+        reboardRect = shiftReboard
                 ? drawChip(g, reboardX, 8, reboard, CHIP_RB_SHIFT_BORDER, CHIP_RB_SHIFT_TEXT)
                 : drawChip(g, reboardX, 8, reboard, CHIP_RB_BORDER, CHIP_RB_TEXT);
 
         // Trash toggle immediately left of reboard: delete the old world's save
         // when reboarding? On (default) draws in the reboard accent; off draws
-        // muted with a strike. Persists to the client config on click.
-        boolean deleteOn = ClientDisplayConfig.isDeleteWorldOnReboard();
-        int trashW = 14;
-        int trashX = reboardX - 6 - trashW;
-        deleteWorldRect = drawTrashChip(g, trashX, 8, deleteOn);
+        // muted with a strike. Persists to the client config on click. Absent on a
+        // server, where there is no save of ours to delete and nothing reboards.
+        // Left edge of the leftmost chip so far — what the photos / "$" chips hang off, so they
+        // close the gap themselves when the trash toggle isn't drawn.
+        int chipLeftX = reboardX;
+        deleteWorldRect = null;
+        if (!remote()) {
+            boolean deleteOn = ClientDisplayConfig.isDeleteWorldOnReboard();
+            int trashW = 14;
+            chipLeftX = reboardX - 6 - trashW;
+            deleteWorldRect = drawTrashChip(g, chipLeftX, 8, deleteOn);
+        }
 
         // "photos" → ride-photo gallery. Only on the final platform page, and only
         // when this run actually captured photos to browse.
@@ -1679,15 +1758,16 @@ public final class NarrativeDeathScreen extends Screen {
         if (onPlatform && !RideSnapshotGallery.isEmpty()) {
             Component photos = Component.translatable("gui.dungeontrain.death.narr.photos", RideSnapshotGallery.size());
             int photosW = this.font.width(photos) + 16;
-            int photosX = trashX - 6 - photosW;
+            int photosX = chipLeftX - 6 - photosW;
             photosRect = drawChip(g, photosX, 8, photos, CHIP_PH_BORDER, CHIP_PH_TEXT);
         }
 
         // "$" → the donation page (the engine room). Final (platform) page only, same chip style,
-        // immediately left of the photos chip (or the trash chip when no photos were captured).
+        // immediately left of the photos chip (or of whatever chip precedes it when no photos
+        // were captured).
         dollarRect = null;
         if (onPlatform) {
-            int anchorX = photosRect != null ? photosRect.x() : trashX;
+            int anchorX = photosRect != null ? photosRect.x() : chipLeftX;
             Component dollar = Component.literal("$");
             int dollarW = this.font.width(dollar) + 16;
             dollarRect = drawChip(g, anchorX - 6 - dollarW, 8, dollar, CHIP_PH_BORDER, CHIP_PH_TEXT);
@@ -1845,9 +1925,14 @@ public final class NarrativeDeathScreen extends Screen {
             }
             if (page.kind() == Kind.MODREC && modRec != null) {
                 if (modRecPage.sendAt(mx, my)) { sendModRecommendation(); return true; }
-                String modId = modRecPage.tileAt(mx, my);
+                // The ⚠ icon lives inside its tile's rect, so it has to win the hit test.
+                String hackId = modRecPage.hackAt(mx, my);
+                String modId = hackId != null ? hackId : modRecPage.tileAt(mx, my);
                 if (modId != null) {
-                    modRec.toggle(modId);
+                    if (hackId != null) modRec.toggleHack(modId); else modRec.toggle(modId);
+                    // The prompt has to follow the mode: "why I'd recommend it" and "what it lets
+                    // you do" are different questions and the box is built once, in init().
+                    retargetModCommentPrompt();
                     // The state cleared the text; the widgets have to follow, or the old comment
                     // would re-arm Send for the newly selected mod.
                     if (modCommentBox != null) modCommentBox.setValue(modRec.comment());
@@ -1981,11 +2066,34 @@ public final class NarrativeDeathScreen extends Screen {
         BugLogReporter.maybeReport(e, score);
     }
 
+    /**
+     * The run-ending action. Locally that means a fresh world; on a server, where the world
+     * isn't ours to recreate, it means vanilla's respawn — the same funnel step either way
+     * ({@code TARGET_BOARD_ANEW}: the player ended the run from this screen), so the death
+     * funnel stays comparable across both.
+     */
     private void boardAnew() {
+        if (!runEndReady()) return;
         UiAnalytics.click(UiAnalytics.SURFACE_DEATH_SCREEN, UiAnalytics.TARGET_BOARD_ANEW);
         leavePageAnalytics(); // terminal exit — close the current page's dwell
+        if (remote()) {
+            respawn();
+            return;
+        }
         boolean keepMode = Screen.hasShiftDown();
         DeathScreenLayoutHandler.launchWorld(this, false, !keepMode);
+    }
+
+    /**
+     * Respawn on a server: vanilla's own action, then close the screen. In hardcore the server
+     * answers by putting the player into spectator rather than respawning them — which is what
+     * vanilla's Spectate button does too, since it calls exactly this.
+     */
+    private void respawn() {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null) return;
+        mc.player.respawn();
+        mc.setScreen(null);
     }
 
     private void leave() {
@@ -2043,10 +2151,13 @@ public final class NarrativeDeathScreen extends Screen {
     private void sendModRecommendation() {
         if (modRec == null || !modRec.canSend()) return;
         boolean requested = modRec.isRequesting();
+        boolean hack = modRec.isReportingHack();
         String modId = requested ? "" : modRec.selected();
         String name = modRec.selectedName();
-        DungeonTrainNet.sendToServer(new ModRecommendPacket(modId, name, modRec.comment().trim(), requested));
-        UiAnalytics.click(UiAnalytics.SURFACE_DEATH_SCREEN, UiAnalytics.TARGET_MOD_RECOMMEND);
+        DungeonTrainNet.sendToServer(
+                new ModRecommendPacket(modId, name, modRec.comment().trim(), requested, hack));
+        UiAnalytics.click(UiAnalytics.SURFACE_DEATH_SCREEN,
+                hack ? UiAnalytics.TARGET_MOD_HACK_REPORT : UiAnalytics.TARGET_MOD_RECOMMEND);
         modRec.markSent();
         if (modCommentBox != null) modCommentBox.setValue("");
         if (modNameBox != null) modNameBox.setValue("");
@@ -2270,6 +2381,20 @@ public final class NarrativeDeathScreen extends Screen {
         }
         if (writtenRect != null && writtenRect.has(mouseX, mouseY)) {
             g.renderTooltip(this.font, Component.translatable("gui.dungeontrain.death.narr.tip_written"), mouseX, mouseY);
+            return;
+        }
+        if (tamedRect != null && tamedRect.has(mouseX, mouseY)) {
+            // The headline, then one line per remembered species — the run keeps a capped list, so a
+            // very long run names its first few and the count above stays exact.
+            List<Component> lines = new ArrayList<>();
+            lines.add(Component.translatable("gui.dungeontrain.death.narr.tip_tamed"));
+            for (ResourceLocation id : s.tamedAnimals()) {
+                EntityType<?> type = BuiltInRegistries.ENTITY_TYPE.get(id);
+                if (type != null) {
+                    lines.add(type.getDescription().copy().withStyle(ChatFormatting.GRAY));
+                }
+            }
+            g.renderComponentTooltip(this.font, lines, mouseX, mouseY);
             return;
         }
         if (advViewport != null && advViewport.has(mouseX, mouseY)) {

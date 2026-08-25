@@ -1,12 +1,17 @@
 {
   "schemaVersion": 1,
   "excluded": [
+    "books",
     "cows",
+    "craft",
     "default",
+    "dirt",
     "ender",
     "features",
+    "maze",
     "narrative",
     "nature",
-    "portal"
+    "portal",
+    "shop"
   ]
 }

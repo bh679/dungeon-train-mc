@@ -4,12 +4,16 @@ import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.editor.CarriageTemplateStore;
+import games.brennan.dungeontrain.event.PortalCarriageEvents;
+import games.brennan.dungeontrain.cheat.PortalTuningIntegrity;
 import games.brennan.dungeontrain.portal.PortalAnchors;
 import games.brennan.dungeontrain.portal.PortalBuilder;
 import games.brennan.dungeontrain.portal.PortalCarriageBuilder;
 import games.brennan.dungeontrain.portal.PortalCarriageSelection;
+import games.brennan.dungeontrain.portal.PortalCorridorKind;
 import games.brennan.dungeontrain.portal.PortalCorridorSize;
 import games.brennan.dungeontrain.train.CarriageDims;
+import games.brennan.dungeontrain.train.CarriageVariant;
 import games.brennan.dungeontrain.train.CarriageVariantRegistry;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.core.BlockPos;
@@ -86,18 +90,27 @@ public final class PortalCommand {
             .then(Commands.literal("carriage")
                 .then(Commands.literal("off")
                     .executes(ctx -> runCarriage(ctx.getSource(), PortalCarriageSelection.CARRIAGE_EVERY_OFF)))
-                // Counted in GROUPS, not carriages, and a rate rather than a period: a portal is a
-                // whole group (entry, one cart, exit), and one group in <every> wins one by lottery,
-                // so 1 means every group holds one. Twins no longer collide at close rates because
+                // Counted in GROUPS, not carriages: a portal is a whole group (entry, one cart,
+                // exit), so 1 means every group holds one. Survival draws one group in <every> by
+                // lottery; creative takes it as an exact period instead — see
+                // PortalCarriageSelection.rateFor. Twins no longer collide at close rates because
                 // each group takes its own Y lane — see PortalCarriageEvents.twinFloorY.
                 .then(Commands.argument("every", IntegerArgumentType.integer(1, 64))
                     .executes(ctx -> runCarriage(ctx.getSource(),
                         IntegerArgumentType.getInteger(ctx, "every")))))
+            .then(Commands.literal("diagnose").executes(ctx -> runDiagnose(ctx.getSource())))
             .then(Commands.literal("severed")
                 .executes(ctx -> runSeveredList(ctx.getSource()))
                 .then(Commands.literal("list").executes(ctx -> runSeveredList(ctx.getSource())))
                 .then(Commands.literal("clear").executes(ctx -> runSeveredClear(ctx.getSource()))))
-            .then(Commands.literal("savetemplate").executes(ctx -> runSaveTemplate(ctx.getSource())))
+            // Which corridor to capture. Bare defaults to the long one, which is what this command
+            // captured before the short kind existed and what most authoring still means.
+            .then(Commands.literal("savetemplate")
+                .executes(ctx -> runSaveTemplate(ctx.getSource(), PortalCorridorKind.LONG))
+                .then(Commands.literal("long")
+                    .executes(ctx -> runSaveTemplate(ctx.getSource(), PortalCorridorKind.LONG)))
+                .then(Commands.literal("short")
+                    .executes(ctx -> runSaveTemplate(ctx.getSource(), PortalCorridorKind.SHORT))))
             .then(Commands.literal("list").executes(ctx -> runList(ctx.getSource())))
             .then(Commands.literal("clear").executes(ctx -> runClear(ctx.getSource())))
             .then(Commands.literal("tp")
@@ -190,7 +203,7 @@ public final class PortalCommand {
      * carriage's blocks live in a Sable sub-level, not the world, so {@code fillFromWorld} cannot see
      * them.</p>
      */
-    private static int runSaveTemplate(CommandSourceStack source) {
+    private static int runSaveTemplate(CommandSourceStack source, PortalCorridorKind kind) {
         ServerPlayer player;
         try {
             player = source.getPlayerOrException();
@@ -209,24 +222,26 @@ public final class PortalCommand {
             player.blockPosition().getZ());
 
         try {
-            PortalCarriageBuilder.stampBuiltInForCapture(level, scratch, dims);
+            PortalCarriageBuilder.stampBuiltInForCapture(level, scratch, dims, kind);
 
-            // The CORRIDOR's box, not the carriage's — a corridor runs past its slot into the cart
-            // between a portal's pair, and capturing dims.length() would save a truncated one that
-            // the size gate then rejects, silently dropping every corridor back to the built-in.
-            CarriageDims corridor = PortalCorridorSize.corridorDims(dims);
+            // This KIND's corridor box, not the carriage's — a LONG corridor runs past its slot into
+            // the cart between a portal's pair, and capturing dims.length() would save a truncated
+            // one that the size gate then rejects, silently dropping every corridor back to the
+            // built-in.
+            CarriageDims corridor = PortalCorridorSize.corridorDims(dims, kind);
             StructureTemplate template = new StructureTemplate();
             template.fillFromWorld(level, scratch,
                 new Vec3i(corridor.length(), corridor.height(), corridor.width()),
                 /*withEntities*/ false, /*toIgnore*/ null);
 
-            CarriageTemplateStore.save(PortalCarriageBuilder.portalVariant(), template);
+            CarriageVariant variant = PortalCarriageBuilder.portalVariant(kind);
+            CarriageTemplateStore.save(variant, template);
             CarriageVariantRegistry.reload();
 
             source.sendSuccess(() -> Component.literal(
-                "Saved " + CarriageTemplateStore.fileFor(PortalCarriageBuilder.portalVariant())
-                    + ". Edit it with /dungeontrain editor carriage portal — every portal corridor "
-                    + "and its twin stamp from it."), true);
+                "Saved " + CarriageTemplateStore.fileFor(variant)
+                    + ". Edit it with /dungeontrain editor carriage " + variant.id()
+                    + " — every portal corridor of that kind, and its twin, stamps from it."), true);
             return 1;
         } catch (Exception e) {
             LOGGER.error("[DungeonTrain] portal savetemplate failed", e);
@@ -235,12 +250,13 @@ public final class PortalCommand {
                 .withStyle(ChatFormatting.RED));
             return 0;
         } finally {
-            PortalCarriageBuilder.clearBox(level, scratch, dims);
+            PortalCarriageBuilder.clearBox(level, scratch, dims, kind);
         }
     }
 
     private static int runCarriage(CommandSourceStack source, int every) {
         PortalRegistry.get(source.getLevel()).setCarriageEvery(every);
+        PortalTuningIntegrity.markTuned(source.getLevel());
 
         if (every == PortalCarriageSelection.CARRIAGE_EVERY_OFF) {
             source.sendSuccess(() -> Component.literal(
@@ -259,11 +275,12 @@ public final class PortalCommand {
             source.sendSuccess(() -> Component.literal(
                 "  → that is denser than the " + PortalCarriageSelection.MIN_GROUP_GAP
                     + "-group minimum spacing allows, so portals will land exactly every "
-                    + PortalCarriageSelection.MIN_GROUP_GAP + "th group.")
+                    + PortalCarriageSelection.MIN_GROUP_GAP + "th group in survival.")
                 .withStyle(ChatFormatting.YELLOW), false);
         } else if (every > 1) {
             source.sendSuccess(() -> Component.literal(
-                "  → never closer than " + PortalCarriageSelection.MIN_GROUP_GAP + " groups apart.")
+                "  → in survival, never closer than " + PortalCarriageSelection.MIN_GROUP_GAP
+                    + " groups apart. In creative, exactly every " + every + " groups.")
                 .withStyle(ChatFormatting.GRAY), false);
         }
         return 1;
@@ -276,13 +293,16 @@ public final class PortalCommand {
         source.sendSuccess(() -> Component.literal(every == PortalCarriageSelection.CARRIAGE_EVERY_OFF
             ? "Portal carriages: off"
             : "Portal carriages: 1 carriage group in " + every + ", at random"), false);
-        // Says so out loud, because otherwise dense portals on a dev build read as the rate being
-        // broken rather than as the testing cadence doing its job.
-        if (PortalCarriageSelection.isDevCreative(source.getLevel())) {
+        // Says so out loud while it is in force, because otherwise portals arriving on a metronome
+        // reads as the "at random" above being broken.
+        if (every != PortalCarriageSelection.CARRIAGE_EVERY_OFF
+                && PortalCarriageSelection.isAllCreative(source.getLevel())) {
+            int creative = PortalCarriageSelection.isDevCreative(source.getLevel())
+                    && !registry.isCarriageEverySet()
+                ? PortalCarriageSelection.DEV_CREATIVE_EVERY : every;
             source.sendSuccess(() -> Component.literal(
-                "  → dev build, everyone in creative: overridden to every "
-                    + PortalCarriageSelection.DEV_CREATIVE_EVERY + "nd group. Switch to survival for "
-                    + "the real rate.")
+                "  → everyone here is in creative, so it is exactly every " + creative
+                    + " groups rather than a draw. Switch to survival for the lottery.")
                 .withStyle(ChatFormatting.YELLOW), false);
         }
         source.sendSuccess(() -> Component.literal(spacing == PortalAnchors.SPACING_OFF
@@ -312,6 +332,43 @@ public final class PortalCommand {
      * The corridors whose way in has been broken open. Reports both directions explicitly, because
      * "severed" reads as fully dead and it is not — the way out of a severed corridor still works.
      */
+    /**
+     * Say why the nearest portal is or is not working, from where the caller is standing.
+     *
+     * <p>The in-game half of {@link games.brennan.dungeontrain.portal.PortalSwapDiagnostics}: that
+     * names a refusal <i>after</i> it happens, in the log; this answers the same question while the
+     * player is still standing in the corridor, and covers the states that produce no refusal at all
+     * because the swap was never attempted — a group culled, a structure never placed, or a stretch of
+     * track that was never eligible for a portal in the first place.</p>
+     *
+     * <p>The report itself is assembled by
+     * {@link games.brennan.dungeontrain.event.PortalCarriageEvents#diagnose}, which owns the live
+     * state it describes.</p>
+     */
+    private static int runDiagnose(CommandSourceStack source) {
+        ServerPlayer player;
+        try {
+            player = source.getPlayerOrException();
+        } catch (Exception e) {
+            source.sendFailure(Component.literal(
+                "This command must be run by a player — it reports on the portal nearest to you."));
+            return 0;
+        }
+
+        List<String> report = PortalCarriageEvents.diagnose(source.getLevel(), player);
+        source.sendSuccess(() -> Component.literal("Portal diagnosis:")
+            .withStyle(ChatFormatting.AQUA), false);
+        for (String line : report) {
+            source.sendSuccess(() -> Component.literal(line), false);
+        }
+        // Also to the log, where it can be pasted into a bug report alongside the refusal lines the
+        // swap itself writes — the two together are the whole picture, and a screenshot of chat is
+        // not something anyone can grep.
+        LOGGER.info("[DungeonTrain] Portal diagnosis for {}:\n  {}",
+            player.getName().getString(), String.join("\n  ", report));
+        return report.size();
+    }
+
     private static int runSeveredList(CommandSourceStack source) {
         List<Integer> severed = PortalRegistry.get(source.getLevel()).severed();
         if (severed.isEmpty()) {

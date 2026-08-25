@@ -74,6 +74,9 @@ public final class CarriageContentsVariantBlocks {
     /** pos → lock-id (≥1 = locked, 0/missing = unlocked). See {@link CarriageVariantBlocks#lockIdAt}. */
     private final Map<BlockPos, Integer> lockIds;
 
+    /** v9 lock-group reference resolution over {@link #entries} / {@link #lockIds}. */
+    private final VariantGroupResolver groupRefs;
+
     /**
      * Per-template editor mirror axes, applied live and as a save-time backstop
      * by {@link EditorMirror}. Optional top-level {@code "mirror": {x,y,z}}
@@ -93,6 +96,7 @@ public final class CarriageContentsVariantBlocks {
                                           boolean mirrorX, boolean mirrorY, boolean mirrorZ, boolean mirrorVariants) {
         this.entries = entries;
         this.lockIds = lockIds;
+        this.groupRefs = new VariantGroupResolver(entries, lockIds);
         this.mirrorX = mirrorX;
         this.mirrorY = mirrorY;
         this.mirrorZ = mirrorZ;
@@ -298,10 +302,12 @@ public final class CarriageContentsVariantBlocks {
             if (s == null) throw new IllegalArgumentException("null state");
         }
         entries.put(localPos.immutable(), List.copyOf(states));
+        groupRefs.invalidate();
     }
 
     public synchronized boolean remove(BlockPos localPos) {
         lockIds.remove(localPos);
+        groupRefs.invalidate();
         return entries.remove(localPos) != null;
     }
 
@@ -315,6 +321,7 @@ public final class CarriageContentsVariantBlocks {
         int n = entries.size();
         entries.clear();
         lockIds.clear();
+        groupRefs.invalidate();
         return n;
     }
 
@@ -330,6 +337,7 @@ public final class CarriageContentsVariantBlocks {
         if (lockId < 0) lockId = 0;
         if (lockId == 0) lockIds.remove(localPos);
         else lockIds.put(localPos.immutable(), lockId);
+        groupRefs.invalidate();
     }
 
     public synchronized java.util.Set<BlockPos> positionsWithLockId(int lockId) {
@@ -394,18 +402,19 @@ public final class CarriageContentsVariantBlocks {
         return pickFrom(localPos, worldSeed, carriageIndex, eligible);
     }
 
-    /** Shared weighted/locked pick over an explicit (already difficulty-filtered) candidate list. */
+    /**
+     * Shared weighted/locked pick over an explicit (already difficulty-filtered)
+     * candidate list. v9 lock-group references are then filtered for liveness
+     * and followed by {@link VariantGroupResolver} — the two filters compose:
+     * the difficulty band narrows the pool first, the reference check second.
+     */
     private VariantState pickFrom(BlockPos localPos, long worldSeed, int carriageIndex, List<VariantState> states) {
-        int lockId = lockIdAt(localPos);
-        int idx;
-        if (lockId > 0) {
-            int[] weights = new int[states.size()];
-            for (int i = 0; i < states.size(); i++) weights[i] = states.get(i).weight();
-            idx = CarriageVariantBlocks.pickIndexFromLockGroup(lockId, worldSeed, carriageIndex, weights);
-        } else {
-            idx = CarriageVariantBlocks.pickIndexWeighted(localPos, worldSeed, carriageIndex, states);
-        }
-        return states.get(idx);
+        return groupRefs.resolve(localPos, lockIdAt(localPos), states, worldSeed, carriageIndex);
+    }
+
+    /** This sidecar's lock groups, for callers that follow references themselves (e.g. the editor preview). */
+    public VariantGroupResolver groupRefs() {
+        return groupRefs;
     }
 
     public synchronized void save(CarriageContents contents) throws IOException {
@@ -436,7 +445,8 @@ public final class CarriageContentsVariantBlocks {
         LOGGER.info("[DungeonTrain] Wrote bundled contents variant sidecar for {} to {}", contents.id(), file);
     }
 
-    private String toJsonText() {
+    /** Serialised form of this sidecar as {@link #save} would write it. Used by the editor undo history. */
+    String toJsonText() {
         // Hand-written to keep the v2 mixed-array form (bare strings + objects)
         // diff-clean against existing files. Same shape as
         // CarriagePartVariantBlocks#save / CarriageVariantBlocks#toJson.

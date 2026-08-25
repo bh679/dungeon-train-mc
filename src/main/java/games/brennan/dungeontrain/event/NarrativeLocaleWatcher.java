@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.narrative.AinLocaleOverlay;
 import games.brennan.dungeontrain.narrative.DeathLoreStore;
 import games.brennan.dungeontrain.narrative.NarrativeContentLocale;
+import games.brennan.dungeontrain.narrative.NarrativeTranslationOverrides;
 import games.brennan.dungeontrain.narrative.RandomBookRegistry;
 import games.brennan.dungeontrain.narrative.StartingBookRegistry;
 import games.brennan.dungeontrain.narrative.StoryRegistry;
@@ -72,6 +73,22 @@ public final class NarrativeLocaleWatcher {
     }
 
     /**
+     * Re-read the four prose registries for the current content locale, picking up any
+     * translation-editor book overrides along the way.
+     *
+     * <p>Split out of {@link #reevaluate} so an in-world book edit can reuse it — the locale has
+     * not changed in that case, so that method's "did it change?" guard would skip the very
+     * reload that makes the edit visible. Server thread only.</p>
+     */
+    public static void reloadProse(ResourceManager rm) {
+        NarrativeTranslationOverrides.refresh();
+        StoryRegistry.load(rm);
+        RandomBookRegistry.load(rm);
+        StartingBookRegistry.load(rm);
+        DeathLoreStore.load(rm);
+    }
+
+    /**
      * Resolve the host locale, normalise to a supported content locale (else English), and reload the
      * prose registries only when that differs from the currently-applied locale. Runs on the server
      * thread; safe to call frequently — it's a no-op once the locale has settled.
@@ -84,10 +101,7 @@ public final class NarrativeLocaleWatcher {
         if (desired.equals(NarrativeContentLocale.current())) return;
 
         NarrativeContentLocale.set(desired);
-        StoryRegistry.load(rm);
-        RandomBookRegistry.load(rm);
-        StartingBookRegistry.load(rm);
-        DeathLoreStore.load(rm);
+        reloadProse(rm);
         // AIN item names / mob titles: overlaid via AIN's session-overlay API (host-keyed, English
         // players untouched), NOT a global datapack override. Guarded — a cross-mod API failure
         // must degrade to English names, never disrupt the server tick.

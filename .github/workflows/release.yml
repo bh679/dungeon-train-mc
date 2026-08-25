@@ -246,12 +246,14 @@ jobs:
             adventure-items-stats(required)
             interactive-player-mobs(required)
             ender-chest-persistence(required)
+            trade-everything(required)
           curseforge-dependencies: |
             sable(required)
             adventure-item-names(required)
             adventure-item-stats(required)
             interactive-player-mobs(required)
             ender-chest-persistence(required)
+            trade-everything(required)
             appleskin(optional)
             ferritecore(optional)
             modernfix(optional)
@@ -262,11 +264,10 @@ jobs:
             advancement-plaques(optional)
             iceberg(optional)
             distant-horizons(optional)
-            tectonic(optional)
+            nemos-inventory-sorting(optional)
             mouse-tweaks(optional)
             jade(optional)
             jade-sable-compat(optional)
-            lithostitched(optional)
             controlling(optional)
             searchables(optional)
             equipment-compare(optional)
@@ -276,21 +277,35 @@ jobs:
             smooth-swapping(optional)
             overloaded-armor-bar(optional)
             kinetic-hosting-integration(optional)
+            effortless-building(optional)
+            punchy(optional)
+            worldedit(optional)
+            jei(optional)
+            scribble(optional)
           java: 21
           retry-attempts: 2
           retry-delay: 10000
           fail-mode: warn
 
-      # Mirror every mod release into the CurseForge modpack. Dispatches
-      # release-modpack.yml (which waits ~15 min for CurseForge to approve the DT
-      # file, then publishes a matching modpack version bundling that file + pinned
-      # Sable). Fires for EVERY release — real and auto-release cascade alike — but
-      # only when the CurseForge mod upload actually produced a file id: mc-publish
-      # uses fail-mode: warn, so a CurseForge hiccup leaves curseforge-version empty
-      # and we skip the modpack rather than reference a file that never uploaded.
+      # Mirror REAL (operator-dispatched) mod releases into the CurseForge modpack.
+      # Dispatches release-modpack.yml (which polls until CurseForge has APPROVED the
+      # DT file — a pack referencing an unapproved file is rejected — then publishes a
+      # matching modpack version bundling that file + pinned Sable).
+      #
+      # Gated on inputs.auto == false, so the ~22 micro-releases per auto-release
+      # cascade no longer each push a pack version. Every CurseForge pack upload is a
+      # roll of the dice against a validation pipeline that returns sporadic 500s and
+      # rejects the file afterwards; publishing 22x per cascade multiplied that
+      # exposure for versions nobody installs deliberately. The Modrinth dispatch below
+      # is intentionally NOT gated — it has no rejection problem and stays in sync.
+      #
+      # Also gated on the CurseForge mod upload actually producing a file id:
+      # mc-publish uses fail-mode: warn, so a CurseForge hiccup leaves
+      # curseforge-version empty and we skip the modpack rather than reference a file
+      # that never uploaded.
       # Requires actions: write (added to this job's permissions) to dispatch.
       - name: Dispatch modpack release
-        if: ${{ success() && steps.publish_check.outputs.curseforge == 'true' && steps.mcpublish.outputs.curseforge-version != '' }}
+        if: ${{ success() && inputs.auto == false && steps.publish_check.outputs.curseforge == 'true' && steps.mcpublish.outputs.curseforge-version != '' }}
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ env.RELEASE_TAG }}

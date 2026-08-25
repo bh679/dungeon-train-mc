@@ -71,12 +71,20 @@ public final class TemplateStores {
         reloadRegistries();
         reloadWeights();
 
+        // A pack may have just been saved, imported, enabled or disabled — re-scan what counts as
+        // custom content so the Free Play gate reflects the new state on the very next read.
+        games.brennan.dungeontrain.cheat.EditorContentIntegrity.invalidate();
+
         // Plot snapshots are post-stamp baselines. Active-package switches
         // (and enable/disable) change what's loaded, so a stale snapshot
         // would compare the next re-stamp against block state from the
         // previous package's template and read as "unsaved". Wipe so the
         // next visit captures a fresh baseline.
         EditorPlotSnapshots.clearAll();
+        // Same reasoning for the undo history: the templates behind every plot
+        // have changed, so steps recorded against the old ones are meaningless.
+        games.brennan.dungeontrain.editor.EditorEditHistory.clearAll();
+        games.brennan.dungeontrain.editor.EditorEditRecorder.discardPending();
 
         LOGGER.info(
             "[DungeonTrain] Reload complete — {} package(s) processed, {} new file(s), {} skipped, {} rejected.",

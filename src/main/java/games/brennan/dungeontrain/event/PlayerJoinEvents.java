@@ -7,6 +7,8 @@ import games.brennan.dungeontrain.builder.BuilderSpawn;
 import games.brennan.dungeontrain.builder.BuilderWorldSetup;
 import games.brennan.dungeontrain.debug.DebugFlags;
 import games.brennan.dungeontrain.editor.EditorWelcome;
+import games.brennan.dungeontrain.narrative.BookUploadSuspensions;
+import games.brennan.dungeontrain.net.BookSuspensionSyncPacket;
 import games.brennan.dungeontrain.net.BuilderBoundsPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.VoidBandSyncPacket;
@@ -197,16 +199,21 @@ public final class PlayerJoinEvents {
         DebugFlags.sendSnapshotTo(player);
         // Sync the disintegration-band geometry (per-world carriage length + train
         // flag) so the client can fade the sky/fog toward the End across the band.
-        DungeonTrainWorldData bandData = DungeonTrainWorldData.get(player.serverLevel().getServer().overworld());
-        DungeonTrainNet.sendTo(player, new VoidBandSyncPacket(bandData.dims().length(), bandData.startsWithTrain(), bandData.getTrainY()));
+        ServerLevel bandLevel = player.serverLevel().getServer().overworld();
+        DungeonTrainWorldData bandData = DungeonTrainWorldData.get(bandLevel);
+        // bedrockY comes off the overworld's chunk generator, which the client has no access to; it
+        // bounds the sealed space portal twins stand in, and the band's block-render flip has to
+        // leave that space alone. See ClientUpsideDownBand#isInTwinSpace.
+        DungeonTrainNet.sendTo(player, new VoidBandSyncPacket(bandData.dims().length(),
+                bandData.startsWithTrain(), bandData.getTrainY(), WorldFloor.bedrockY(bandLevel)));
         // Reopening a saved Train Builder world: re-stamp it from what the world records it is
         // holding, so a world always comes back up as a scene its mode can explain rather than as
         // whatever the last session's blocks happened to be. No-op in every ordinary world, and in
         // a builder world created this session (BuilderSetupPacket owns that one).
-        BuilderWorldSetup.reopen(player.serverLevel().getServer().overworld());
+        BuilderWorldSetup.reopen(bandLevel);
         // Train Builder build volumes — empty (and therefore inert) in every ordinary world. After
         // the reopen above, so the volumes describe the scene that is actually standing.
-        BuilderBoundsPacket.sendTo(player, player.serverLevel().getServer().overworld());
+        BuilderBoundsPacket.sendTo(player, bandLevel);
         // Reopening a builder world: no setup packet fires for one that is already stamped, so this
         // is the only chance to leave the player hovering rather than dropping into the void.
         BuilderSpawn.startFlying(player);
@@ -217,6 +224,13 @@ public final class PlayerJoinEvents {
         // template. A freshly created one is still void at this point — BuilderSetupPacket
         // triggers that one after it stamps.
         BuilderCinematicService.queueOnJoin(player);
+        // Re-assert any open book-upload pause (BookUploadSuspensions) so a reconnect mid-window
+        // doesn't hand the player back a working Sign button. Cleared when there is none, since the
+        // client keeps its own copy across worlds.
+        long suspendedFor = BookUploadSuspensions.remainingSec(player.getUUID());
+        DungeonTrainNet.sendTo(player, suspendedFor > 0
+                ? BookSuspensionSyncPacket.of(suspendedFor, 0)
+                : BookSuspensionSyncPacket.cleared());
         // Only queue the train-placement retry loop in worlds that actually have a train.
         // Otherwise every join to an editor or builder world burns MAX_RETRY_TICKS (5 s) of
         // per-tick lookups that can never succeed, and ends in a timeout log that reads like
@@ -238,6 +252,10 @@ public final class PlayerJoinEvents {
             PoliticalFilterMirror.forget(player.getUUID());
             ContentModeMirror.forget(player.getUUID());
             SharedBookReadMirror.forget(player.getUUID());
+            // Which library they were last told about. Dropped so somebody who logs out inside a
+            // locked room is greeted again when they come back — the line is the only thing that
+            // says whose books these are, and a rejoin is exactly when it is worth repeating.
+            games.brennan.dungeontrain.narrative.PortalLibraryGreeter.forget(player.getUUID());
         }
     }
 

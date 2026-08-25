@@ -22,9 +22,10 @@ import java.util.List;
  *   <li>{@link #mirrorEditLive} — live, as the author adds / removes a variant
  *       (called from {@link VariantBlockInteractions} and
  *       {@link VariantBlockBreakHandler}); and</li>
- *   <li>{@link #rebuildFromMaster} — a save-time backstop run from each editor's
- *       {@code save()} that makes the far half's pools an exact reflection of
- *       the authored low-octant master, regardless of edit history.</li>
+ *   <li>{@link #rebuildFromMaster} — an on-demand rebuild run from
+ *       {@link EditorMirrorRebuild} (the {@code editor mirror rebuild} command)
+ *       that makes the far half's pools an exact reflection of the authored
+ *       low-octant master, regardless of edit history.</li>
  * </ul>
  *
  * <p>Both are gated on {@code plot.mirrorVariants() && (mirrorX|Y|Z)} — with the
@@ -71,7 +72,7 @@ public final class EditorVariantMirror {
                     EditorMirror.reflectStates(updatedOrNull, img.flipX(), img.flipY(), img.flipZ());
                 plot.put(img.local(), reflected);
                 plot.setLockId(img.local(), srcLockId); // 0 clears — mirrors the source's lock state
-                SilentBlockOps.setBlockSilent(level, tgtWorld, reflected.get(0).state());
+                stampMirrorBase(level, tgtWorld, reflected.get(0).state());
             }
             changed = true;
         }
@@ -80,7 +81,7 @@ public final class EditorVariantMirror {
 
     /**
      * Rebuild the far-half variant pools from the authored low-octant master,
-     * reflecting across the enabled axes. Run from each editor's {@code save()}
+     * reflecting across the enabled axes. Run from {@link EditorMirrorRebuild}
      * <em>before</em> the structural {@link EditorMirror#rebuildFromMaster}: it
      * writes (or clears) the far cells' pools + base blocks, after which the
      * caller recomputes its marker set so the structural pass skips the
@@ -115,7 +116,7 @@ public final class EditorVariantMirror {
                             plot.setLockId(img.local(), masterLockId); // join the master's lock group
                             BlockPos tgtWorld = origin.offset(
                                 img.local().getX(), img.local().getY(), img.local().getZ());
-                            SilentBlockOps.setBlockSilent(level, tgtWorld, reflected.get(0).state());
+                            stampMirrorBase(level, tgtWorld, reflected.get(0).state());
                         }
                         changed = true;
                     }
@@ -123,6 +124,22 @@ public final class EditorVariantMirror {
             }
         }
         if (changed) trySave(plot);
+    }
+
+    /**
+     * Stamp a mirrored cell's cosmetic base block, skipping liquids.
+     *
+     * <p>The reflected pool is written to the sidecar either way — this only governs the block the
+     * author sees in the plot. A liquid stamped from <i>here</i> would flow: this path goes through
+     * {@code setBlockSilent}, so {@code LiquidBlock.onPlace} schedules a fluid tick, and spread
+     * water would be baked into the saved template. {@link VariantEditorPreviewTicker} stamps
+     * liquids section-local instead, which schedules nothing — so leave the cell to its next 1 Hz
+     * pass. Costs at most a second of delay.</p>
+     */
+    private static void stampMirrorBase(ServerLevel level, BlockPos tgtWorld,
+                                        net.minecraft.world.level.block.state.BlockState state) {
+        if (VariantLiquids.isLiquid(state)) return;
+        SilentBlockOps.setBlockSilent(level, tgtWorld, state);
     }
 
     private static void trySave(BlockVariantPlot plot) {

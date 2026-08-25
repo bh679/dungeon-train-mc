@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "excluded": [
+    "enemies",
+    "narrative",
+    "portal",
+    "portal_short"
+  ]
+}

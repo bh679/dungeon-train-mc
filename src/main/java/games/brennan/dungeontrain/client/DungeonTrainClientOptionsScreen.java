@@ -2,8 +2,12 @@ package games.brennan.dungeontrain.client;
 
 import games.brennan.discordpresence.client.NetworkConsentScreen;
 import games.brennan.discordpresence.config.DiscordPresenceClientConfig;
+import games.brennan.dungeontrain.client.localization.edit.TranslationScreen;
+import games.brennan.dungeontrain.client.localization.edit.TranslationTarget;
+import games.brennan.dungeontrain.client.sound.TrainVolumeOption;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.config.ContentMode;
+import games.brennan.dungeontrain.config.CustomContentPreference;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.CycleButton;
 import net.minecraft.client.gui.components.Tooltip;
@@ -12,6 +16,7 @@ import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Vanilla-{@link Screen} home for Dungeon Train's client settings, opened from a "Dungeon Train…" button
@@ -63,6 +68,27 @@ public final class DungeonTrainClientOptionsScreen extends Screen {
                 .setTooltip(tip("gui.dungeontrain.options.editor_settings.tip"));
         y += ROW_GAP;
 
+        // Train engine volume. Literally the same widget vanilla's Music & Sounds screen carries
+        // (put there by SoundOptionsScreenTrainVolumeMixin) — one OptionInstance definition over
+        // one config accessor, so a player who came looking here rather than there finds the same
+        // control at the same value. Its tooltip is baked into the option, not set here.
+        addRenderableWidget(TrainVolumeOption.forModScreen()
+                .createButton(this.minecraft.options, left, y, ROW_W));
+        y += ROW_GAP;
+
+        // Translation editor. Shown only when there is a language to edit — on en_us in a release
+        // build there is none and the row would be a dead end; a dev build points it at the dev
+        // target instead so the editor is testable with the UI still in English.
+        String translateTarget = TranslationTarget.resolveForClient();
+        if (!translateTarget.isEmpty()) {
+            addRenderableWidget(Button.builder(
+                            Component.translatable("gui.dungeontrain.options.translate"),
+                            b -> this.minecraft.setScreen(new TranslationScreen(this, translateTarget)))
+                    .bounds(left, y, ROW_W, ROW_H).build())
+                    .setTooltip(tip("gui.dungeontrain.options.translate.tip"));
+            y += ROW_GAP;
+        }
+
         // Master network / internet-connection switch (DP's one-time "use the internet?" consent). OFF
         // revokes immediately; turning it ON routes through DP's informed consent screen rather than
         // silently granting — granting network access gates leaderboard / dev chat / book share / telemetry.
@@ -100,6 +126,20 @@ public final class DungeonTrainClientOptionsScreen extends Screen {
                 .setTooltip(Tooltip.create(Component.translatable("gui.dungeontrain.options.content_mode.tip")));
         y += ROW_GAP;
 
+        // Custom Train Content — the standing answer to the start-of-world prompt shown when the
+        // player has Train Editor edits or an imported dtpack. This is the "can be changed in
+        // options" half of that prompt's "Remember decision" checkbox.
+        addRenderableWidget(CycleButton.<CustomContentPreference>builder(
+                        DungeonTrainClientOptionsScreen::customContentLabel)
+                .withValues(List.of(CustomContentPreference.ASK, CustomContentPreference.CONTINUE,
+                        CustomContentPreference.DISABLE))
+                .withInitialValue(ClientDisplayConfig.getCustomContentPreference())
+                .create(left, y, ROW_W, ROW_H,
+                        Component.translatable("gui.dungeontrain.options.custom_content"),
+                        (btn, pref) -> ClientDisplayConfig.setCustomContentPreference(pref)))
+                .setTooltip(tip("gui.dungeontrain.options.custom_content.tip"));
+        y += ROW_GAP;
+
         // Snapshot chat log ON/OFF.
         addRenderableWidget(CycleButton.onOffBuilder(ClientDisplayConfig.isRideSnapshotChatLogEnabled())
                 .create(left, y, ROW_W, ROW_H, Component.translatable("gui.dungeontrain.options.snapshot_chat_log"),
@@ -128,6 +168,12 @@ public final class DungeonTrainClientOptionsScreen extends Screen {
     }
 
     /** Localized name for a content mode — same keys the first-launch consent card's question uses. */
+    /** ASK / CONTINUE / DISABLE, each with its own translated label. */
+    private static Component customContentLabel(CustomContentPreference preference) {
+        return Component.translatable("gui.dungeontrain.options.custom_content."
+                + preference.name().toLowerCase(Locale.ROOT));
+    }
+
     private static Component contentModeLabel(ContentMode mode) {
         return Component.translatable(mode.isKid()
                 ? "gui.dungeontrain.content_mode.kid"

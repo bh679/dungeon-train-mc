@@ -231,7 +231,7 @@ public enum EditorCategory {
     /**
      * Erase every known editor plot in every category — footprints + barrier
      * cages all go back to air. Called when the player exits the editor and
-     * when switching categories so stale models don't pile up at Y=250. Cheap
+     * when switching categories so stale models don't pile up at the plot floor. Cheap
      * — the total is a handful of plots ({@code CarriageVariantRegistry} size
      * + 3 pillars + 2 tunnels).
      */
@@ -241,6 +241,14 @@ public enum EditorCategory {
         // an empty snapshot so the labels disappear in lockstep with the
         // structures.
         EditorStampedCategoryState.clear();
+        // Nothing is stamped any more, so there is nothing left for a block to be outside of —
+        // every ghost would now be pointing at a plot that no longer exists.
+        EditorStrayBlocks.clear();
+        // Every plot below is about to be torn down, so every undo step recorded
+        // against one would now write into an empty plot floor. Staleness would
+        // catch that on use; dropping the history here is the honest signal.
+        EditorEditHistory.clearAll();
+        EditorEditRecorder.discardPending();
         for (CarriageVariant v : CarriageVariantRegistry.allVariants()) {
             CarriageEditor.clearPlot(overworld, v, dims);
         }

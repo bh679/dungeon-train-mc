@@ -252,13 +252,16 @@ Separate from the mod, there are **two modpacks** published from one config
   pin), so config entries carry `modrinth_project`+`modrinth_version` alongside the CurseForge
   `project_id`/`file_id`. First publish is a **draft** → enters Modrinth's modpack review queue.
 
-After every successful mod upload (real releases AND the ~22 auto-release cascade ticks),
-`release.yml` dispatches **`release-modpack.yml`** (CurseForge — waits ~15 min for CurseForge to
-approve the new DT file) and **`release-modpack-modrinth.yml`** (Modrinth — no wait), each
-gated on that platform's mod upload having produced a file/version id. Both bundle that release's
+After a successful mod upload `release.yml` dispatches **`release-modpack.yml`** (CurseForge —
+polls until CurseForge approves the new DT file, and fails without uploading if it never does) and **`release-modpack-modrinth.yml`**
+(Modrinth — no wait), each gated on that platform's mod upload having produced a file/version id.
+**Modrinth fires for every release including the ~22 cascade ticks; CurseForge fires only for
+real, operator-dispatched releases** (`inputs.auto == false`) — CurseForge's pack validation
+returns sporadic 500s and silently rejects files, so the cascade is kept out of it. The two packs'
+version lists therefore differ by design. Both bundle that release's
 DT file + Sable + the pinned sibling and companion mods. Core entries are
-**Dungeon Train + Sable** (DT jarJars only DiscordPresence + joml-primitives); the sibling mods
-**AIN/AIS/PMOB/ECP are un-bundled required downloads**, declared `<slug>(required)` so the
+**Dungeon Train + Sable** (DT jarJars only DiscordPresence + EdibleBackpacks + joml-primitives);
+the sibling mods **AIN/AIS/PMOB/ECP/TE are un-bundled required downloads**, declared `<slug>(required)` so the
 CurseForge/Modrinth apps auto-install them and each sibling's own page gets the download credit.
 On top of those, `modpack.config.json` → `optional_mods[]` bundles the siblings (each carrying
 `dependency_type: required` + a `gradle_property` floor) and the companions, each with a
@@ -266,16 +269,16 @@ On top of those, `modpack.config.json` → `optional_mods[]` bundles the sibling
 ⚠️ In the CurseForge app `required:false` ships a mod **OFF** (opt-in), not on — a companion
 that should be **on by default must be `required:true`**. See `modpack/README.md` §"Enabled vs
 disabled by default" for the two-tier roster (enabled: AppleSkin/FerriteCore/ModernFix/
-Advancement Plaques + inert library deps Iceberg & Lithostitched; opt-in: Mouse Tweaks/Jade/
-Distant Horizons/Tectonic). Library deps of a bundled mod ship `required:true` so the dependent
-loads (Advancement Plaques needs Iceberg; Tectonic needs Lithostitched).
+Advancement Plaques + inert library dep Iceberg; opt-in: Mouse Tweaks/Distant Horizons/
+Effortless Building). Library deps of a bundled mod ship `required:true` so the dependent
+loads (Advancement Plaques needs Iceberg).
 
 - Source + config live in `modpack/` (see `modpack/README.md`); CurseForge upload uses
   `CURSEFORGE_TOKEN`, Modrinth upload reuses `MODRINTH_TOKEN`.
 - **Sable-pin coupling:** when you bump `sable_version` in `gradle.properties`, also update
   `modpack/modpack.config.json` → `sable.file_id` (CurseForge) **and** `sable.modrinth_version`
   (Modrinth) — both modpacks pin Sable to the tested version. Flagged in `gradle.properties`.
-- **Sibling-mod floors:** AIN/AIS/PMOB/ECP each have TWO versions in `gradle.properties`.
+- **Sibling-mod floors:** AIN/AIS/PMOB/ECP/TE each have TWO versions in `gradle.properties`.
   `<mod>_version` is what DT compiles/dev-runs against and the auto-release cascade bumps it every
   tick; `<mod>_min_version` is the floor end users must clear, rendered into `neoforge.mods.toml`
   as `[x,)`. They are separate on purpose — if mods.toml tracked `<mod>_version`, every cascade
@@ -291,7 +294,25 @@ loads (Advancement Plaques needs Iceberg; Tectonic needs Lithostitched).
   `dependency_type` (mod won't load without it) answer different questions — don't conflate them.
   Enforced in CI (`modpack-checks` job in `build.yml`): `check-relations.py` (CurseForge dep) +
   `build-mrpack.py --check-config` (Modrinth pins present) + `check-pins.py` (Sable chain +
-  sibling floors).
+  sibling floors) + `check-overrides.py` (allowlist for `modpack/overrides/`).
+- **`modpack/overrides/` is allowlisted.** The tree ships verbatim to every player, so a config
+  file DT holds to its defaults landing there would put the whole player base into Free Play
+  (`adventureitemstats.properties` → `AisDataIntegrity`). `check-overrides.py` fails CI on any
+  file not in its `ALLOWED` list — adding an override means allowlisting it deliberately.
+- **A CurseForge upload returning 200 is NOT a publish.** CurseForge validates the manifest
+  asynchronously and can reject the file afterwards (`Invalid manifest.json file: 500 - "…An
+  unhandled exception occurred…"`), leaving the workflow green and the release missing from the
+  pack — this is how the pack silently fell 13 releases behind in Aug 2026. `release-modpack.yml`
+  now polls the public listing after uploading (`scripts/modpack/reconcile.py --verify`) and fails
+  the run if the version never appears. `modpack-reconcile.yml` re-checks every 6h as a backstop.
+  Run the drift report any time with `python3 scripts/modpack/reconcile.py`.
+  A 2026-08-22 re-upload of the identical rejected manifest was **accepted**, so those rejections
+  were a transient CurseForge fault — missing versions can be recovered by re-uploading.
+  ⚠️ **Set the `CURSEFORGE_API_KEY` secret.** Without it the check reads the cached cfwidget
+  mirror, which lagged 30+ min in testing; a cache can't prove absence, so `--verify` reports
+  INCONCLUSIVE and won't fail the run. With the key it is authoritative.
+- Both publish scripts retry transient 5xx/transport failures via
+  `scripts/modpack/lib/upload-retry.sh` (never 4xx — a bad payload stays bad).
 - Manual test: `gh workflow run release-modpack.yml --ref <branch> -f tag=v<ver>
   -f dt_file_id=<id> -f dry_run=true` (CurseForge); `gh workflow run
   release-modpack-modrinth.yml --ref <branch> -f tag=v<ver> -f dt_modrinth_version=<id>

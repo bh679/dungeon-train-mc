@@ -14,6 +14,7 @@ import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import org.slf4j.Logger;
 
 import java.util.Collection;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -27,7 +28,8 @@ import java.util.Set;
  *
  * <p>Copies are only ever added while somebody is near the pair — a ring of them
  * ({@link PortalRoomTiling#APPROACH_RADIUS}) for a player approaching the carriage, the full window
- * once one is actually inside. A structure with a player in it is already pinned against being
+ * once one is actually inside. With several players in one room there is a window around each of
+ * them rather than around whichever the server happened to list first; see {@link #tick}. A structure with a player in it is already pinned against being
  * re-stamped by {@code PortalCarriageEvents}, so the expensive path (the train drifting far enough to
  * rebuild the whole thing) never meets a tiled structure. That is not a coincidence to be preserved
  * by review: {@link #drainedEnoughToRestamp} is the gate, and a structure that still has copies
@@ -101,9 +103,11 @@ public final class PortalRoomTiler {
      * now stands.
      *
      * @param standingIn the tiles players are currently in — empty means nobody is inside, which is
-     *                   the signal to drain. The first is where the window centres; the rest are
-     *                   simply never erased, because clearing a copy takes its floor with it and
-     *                   would drop whoever was standing there onto the rock at the world floor.
+     *                   the signal to drain. <b>Every</b> one of them is a centre: the window is the
+     *                   union of a square around each, so nothing within {@code radius} of anybody is
+     *                   ever erased and the room grows ahead of all of them. Clearing a copy takes its
+     *                   floor with it, so a tile retired beside somebody is a step into the world
+     *                   floor.
      * @param radius     how far the window reaches — {@link PortalRoomTiling#MAX_RADIUS} for somebody
      *                   actually in the room, {@link PortalRoomTiling#APPROACH_RADIUS} for somebody
      *                   merely near the carriage
@@ -128,17 +132,17 @@ public final class PortalRoomTiler {
         }
         if (standingIn.isEmpty()) return drain(level, dims, structure, standingIn, pairKey);
 
-        // With two players walking opposite ways the window can only follow one of them. It follows
-        // the first, and the other is held up by whatever budget is left — but never dropped, since
-        // the tile they are in is spared below.
-        Tile centre = standingIn.iterator().next();
+        // Every occupant is a centre. Two players walking opposite ways get a window each — the
+        // budget scales with the number of them (PortalRoomTiling#budgetTiles) so neither is starved
+        // by the other, and the retire rule below spares everything near either of them regardless of
+        // what the budget says.
         PortalRoomTiling tiling = structure.tiling();
 
         // Build ahead of the player before shedding what is behind them. What is ahead is what they
         // can see — the fog sits at the edge of what has been built — whereas what is behind is
         // already out of sight. When the budget is spent this finds nothing, and the retire below
         // frees a slot for the next tick, so a sliding window still slides.
-        Tile next = tiling.nextToAdd(centre, radius, structure.tileBudget(),
+        Tile next = tiling.nextToAdd(standingIn, radius, structure.tileBudget(standingIn.size()),
             candidate -> canStamp(level, dims, structure, candidate, neighbours));
         if (next != null) return stampTile(level, dims, structure, next, pairKey);
 
@@ -150,7 +154,10 @@ public final class PortalRoomTiler {
         // Also spared: the room this pair's own exit corridor opens into, when it stands somewhere
         // other than beside the base tile. That corridor is the way onward, and a mouth opening onto
         // the empty basement is a way onward that drops you out of the world.
-        Tile stale = tiling.nextToRemove(centre, radius,
+        // The occupied tiles themselves need no explicit sparing any more — they are centres, so
+        // nextToRemove will not offer one up. Kept all the same: it costs a set lookup and it states
+        // the rule at the point somebody reading the erase path will look for it.
+        Tile stale = tiling.nextToRemove(standingIn, radius,
             candidate -> !standingIn.contains(candidate)
                 && !candidate.equals(structure.exitTile())
                 && !PortalExitBindings.anyBoundTo(pairKey, candidate));
@@ -191,19 +198,31 @@ public final class PortalRoomTiler {
      */
     private static PortalStructure stampTile(ServerLevel level, CarriageDims dims,
                                              PortalStructure structure, Tile tile, int pairKey) {
-        PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims);
+        PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims, structure.kind());
         BlockPos origin = structure.tileOrigin(dims, layout, tile);
         Vec3i size = structure.roomSize();
 
         PortalCorridorMask clearMask = maskFor(structure, dims, tile);
-        PortalCorridorMask writeMask = writeMaskFor(structure, clearMask, origin, size);
+        // Resolved once, before the mask is chosen, because the two answers have to agree: the mask
+        // only swallows the whole tile when there is genuinely a block to put back afterwards. A
+        // name that no longer resolves — a mod uninstalled between two launches, a hand-edited tag —
+        // falls through to stamping the room as it always did, rather than to a floorless tile.
+        PortalRoomCopiesVariant single = singlePalette(structure);
+        PortalCorridorMask writeMask =
+            writeMaskFor(structure, clearMask, origin, size, !single.isEmpty());
         PortalCarriageBuilder.stampRoomAt(level, origin, dims, structure.roomName(), size,
             /*relight*/ true, clearMask, writeMask, structure.variantIndexFor(tile, pairKey),
             pairKey, tile,
             PortalRoomMobs.liveCount(level, PortalCarriageBuilder.footprintOf(level, structure, dims), pairKey),
             // The structure's own setting, not a fresh read of the variant: a portal already standing
             // keeps what it was built with, the same promise planStructure makes about the room.
-            structure.settings().contents());
+            structure.settings().contents(), structure.settings().books());
+
+        // After the stamp, not instead of it: the stamp is what clears the rock this tile landed in,
+        // and under Single its write half put nothing back. These two planes are the whole of what
+        // an appended tile is in that case.
+        PortalRoomSinglePlanes.write(level, origin, size, single, clearMask, /*relight*/ true,
+            level.getSeed(), structure.variantIndexFor(tile, pairKey));
 
         PortalStructure grown = structure.withTiling(structure.tiling().with(tile));
         refreshFacesAround(level, dims, grown, tile);
@@ -215,6 +234,13 @@ public final class PortalRoomTiler {
      * {@link PortalRoomMode#ENDLESS_OPEN} — everything strictly between the tile's floor and its
      * ceiling.
      *
+     * <p>Under {@link PortalRoomCopies.Kind#SINGLE} it is the <b>whole</b> tile instead, planes
+     * included: those are written afterwards from one block, so the stamp has nothing to contribute
+     * and laying the authored floor first would only be work to overwrite. {@code singlePlanes} is
+     * passed in rather than read off the structure because the caller has already had to resolve the
+     * block — a mask that swallowed a tile for a block that turned out not to exist would leave a
+     * hole in the plain.</p>
+     *
      * <p>Tested against {@code ENDLESS_OPEN} rather than {@code !tilesWholeRoom()}, which is also
      * true of {@link PortalRoomMode#BEDROCK_LOCK} and is only unreachable for it because
      * {@link #tick} returns early for a mode that does not tile at all. That is a trap waiting for
@@ -225,13 +251,40 @@ public final class PortalRoomTiler {
     // space with the rock the copy landed in.
     static PortalCorridorMask writeMaskFor(PortalStructure structure,
                                            PortalCorridorMask clearMask,
-                                           BlockPos origin, Vec3i size) {
+                                           BlockPos origin, Vec3i size,
+                                           boolean singlePlanes) {
         if (structure.mode() != PortalRoomMode.ENDLESS_OPEN) return clearMask;
+        if (singlePlanes) {
+            // The whole box, floor and roof included. Under Single the two planes are written
+            // afterwards from one block (PortalRoomSinglePlanes), so there is nothing the stamp
+            // should put anywhere in this tile — and masking the planes as well as the interior is
+            // what keeps the authored floor from being laid down first and immediately overwritten.
+            return clearMask.plus(new BoundingBox(
+                origin.getX(), origin.getY(), origin.getZ(),
+                origin.getX() + size.getX() - 1,
+                origin.getY() + size.getY() - 1,
+                origin.getZ() + size.getZ() - 1));
+        }
         return clearMask.plus(new BoundingBox(
             origin.getX(), origin.getY() + 1, origin.getZ(),
             origin.getX() + size.getX() - 1,
             origin.getY() + size.getY() - 2,
             origin.getZ() + size.getZ() - 1));
+    }
+
+    /**
+     * The variant this structure's appended tiles are floored and roofed from, or empty when it does
+     * not repeat one — or names one nothing answers to.
+     *
+     * <p>{@link PortalStructure#copies} rather than the raw setting, so a room whose walls were
+     * changed away from Endless Open since it was authored stamps as Endless Open's neighbour would
+     * rather than as a mode that cannot use the setting at all.</p>
+     */
+    private static PortalRoomCopiesVariant singlePalette(PortalStructure structure) {
+        if (structure.mode() != PortalRoomMode.ENDLESS_OPEN) return PortalRoomCopiesVariant.empty();
+        PortalRoomCopies copies = structure.copies();
+        if (!copies.repeatsOneBlock()) return PortalRoomCopiesVariant.empty();
+        return PortalRoomCopiesVariant.forRoom(structure.roomName(), copies);
     }
 
     /**
@@ -274,7 +327,7 @@ public final class PortalRoomTiler {
      */
     private static PortalStructure eraseTile(ServerLevel level, CarriageDims dims,
                                              PortalStructure structure, Tile tile, int pairKey) {
-        PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims);
+        PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims, structure.kind());
         BlockPos origin = structure.tileOrigin(dims, layout, tile);
         Vec3i size = structure.roomSize();
 
@@ -483,7 +536,7 @@ public final class PortalRoomTiler {
      */
     private static void eachFaceCell(ServerLevel level, CarriageDims dims, PortalStructure structure,
                                      Tile tile, int dx, int dz, boolean interiorOnly, FaceCell body) {
-        PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims);
+        PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims, structure.kind());
         BlockPos origin = structure.tileOrigin(dims, layout, tile);
         Vec3i size = structure.roomSize();
         // Masked here rather than in each of the three face operations, so none of them can forget:
@@ -547,7 +600,7 @@ public final class PortalRoomTiler {
 
     /** A copy's world box, with the block of margin its closed faces and skin occupy. */
     private static BoundingBox tileBox(CarriageDims dims, PortalStructure structure, Tile tile) {
-        PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims);
+        PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims, structure.kind());
         BlockPos origin = structure.tileOrigin(dims, layout, tile);
         Vec3i size = structure.roomSize();
         return new BoundingBox(

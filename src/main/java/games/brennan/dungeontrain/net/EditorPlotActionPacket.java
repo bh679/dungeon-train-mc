@@ -108,6 +108,10 @@ public record EditorPlotActionPacket(
                     sender.getName().getString());
                 return;
             }
+            // Save / Reset / Clear / Enter from the plot panel all write config
+            // files; arm the snapshot before dispatching so they are undoable.
+            games.brennan.dungeontrain.editor.EditorEditRecorder.notePendingConfig(
+                sender, packet.action().name().toLowerCase(java.util.Locale.ROOT));
             MinecraftServer server = sender.getServer();
             if (server == null) return;
             ServerLevel overworld = server.overworld();
@@ -282,7 +286,7 @@ public record EditorPlotActionPacket(
             return;
         }
         String name = packet.modelName;
-        String label = "portal room '" + name + "'";
+        String label = "dimensional carriage '" + name + "'";
         switch (packet.action) {
             case SAVE -> SaveCommand.saveOnePlayerVisible(sender, new Template.PortalRoom(name));
             case RESET -> ResetCommand.resetToSavedPlayerVisible(sender, new Template.PortalRoom(name));

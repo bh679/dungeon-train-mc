@@ -6,7 +6,7 @@ import games.brennan.dungeontrain.train.CarriageDims;
  * Shared layout constants for every editor (carriage, contents, parts,
  * track-side). The single {@link #GAP} value is the empty-block separation
  * between any two adjacent template footprints — same on every axis,
- * across every editor — so the world above {@code y=250} reads as a
+ * across every editor — so the world above {@link #PLOT_Y} reads as a
  * uniform grid.
  *
  * <p>The three editor categories (CARRIAGES, CONTENTS, TRACKS) each own a
@@ -19,7 +19,7 @@ import games.brennan.dungeontrain.train.CarriageDims;
  * the single source of truth — each editor reads its baseline from here
  * rather than hard-coding a number.</p>
  *
- * <p>Layout (all at {@code Y=250}, in {@code +Z} order):
+ * <p>Layout (all at {@link #PLOT_Y}, in {@code +Z} order):
  * <ul>
  *   <li>{@code Z=0..MAX_WIDTH-1} — carriage row (CARRIAGES view)</li>
  *   <li>{@code Z=PARTS_FIRST_Z..CARRIAGES_VIEW_MAX_Z} — parts grid
@@ -96,6 +96,21 @@ public final class EditorLayout {
 
     /** First Z slot of the track-side row (TRACKS view). */
     public static final int TRACKS_FIRST_Z = CONTENTS_VIEW_MAX_Z + GAP;
+
+    /**
+     * Shared plot floor for every editor — the Y every plot's origin sits at.
+     *
+     * <p>Set by the tallest thing a plot has to stand up, which is a portal room at
+     * {@link games.brennan.dungeontrain.portal.PortalRoomLayout#MAX_HEIGHT} (80): a plot floor plus
+     * that has to stay under the build ceiling (320 in every DT preset), and 230 leaves ten blocks
+     * of margin. It was 250, which capped an authored room at 70 — a ceiling nothing about rooms
+     * asked for, and one an author hit with no way to see why.</p>
+     *
+     * <p>Low enough for the sky, still far above anything gameplay does: trains run at y=78 by
+     * default. {@code VariantOverlayRenderer.EDITOR_Y_MIN} derives its "is this player up at the
+     * editor" short-circuit from this, so the two cannot drift apart.</p>
+     */
+    public static final int PLOT_Y = 230;
 
     private EditorLayout() {}
 }

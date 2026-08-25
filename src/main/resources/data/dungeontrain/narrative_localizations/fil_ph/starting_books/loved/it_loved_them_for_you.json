@@ -1,0 +1,11 @@
+{
+  "id": "it_loved_them_for_you",
+  "title": "Minahal Para Sa'yo",
+  "author": "Brennan Hatton",
+  "generation": 0,
+  "weight": 1,
+  "variants": [
+    "Maupo ka muna.\n\nHindi dahil masama ito.\n\n\nBuhay si %TARGET%.\n\nWala kang kinalaman doon.\n\nO ikaw ang buong dahilan noon, depende kung paano mo bibilangin.\n\n\nBumagsak ka sa bagon %CARRIAGE%.\n%DAYS% araw na ang nakalipas, humigit-kumulang.\n\nMay naiwang bagay.\n%GEAR%\n\n\nNatagpuan nito sila.\n\n%STORY%\n\n\nWala itong hiniling sa kanila.\n\nIniabot nito ang lahat ng hawak nito at humarang sa pagitan nila at ng buong bagon.\n\n\nIkaw iyon.\nSa paraang iyon.\n\nAng bahaging hindi kailangang buhay para tuparin ang isang pangako.\n\n\nBalang araw ay may sasabihan sila tungkol dito.\n\nMamamali sila sa pangalan mo.",
+    "May mga bagay na hindi mo mapapanood.\n\nIsa ito.\n\n\nNarating ni %TARGET% ang bagon %CARRIAGE% sa mundong hindi ito.\n\nMay bagay na suot ang mukha mo na naghihintay na roon.\n\n\n%DAYS% araw itong nakatayo roon.\n%GEAR%\n\nWala roong para sa pakikipaglaban.\n\n\n%STORY%\n\n\nIto ang masasabi ko sa iyo.\n\nKilala nito sila.\nHindi sa paraang kilala mo ang isang tao.\nSa paraang kilala ng silid ang araw.\n\n\nAt saka huminto ang papel.\n\nHindi ko alam kung naintindihan nila. Hindi ko alam kung may nagsabi sa kanila kung kaninong mukha iyon.\n\n\nMay minahal ka papasok sa dilim.\n\nDinala ito ng dilim."
+  ]
+}

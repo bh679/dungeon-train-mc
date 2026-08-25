@@ -41,7 +41,10 @@ import org.spongepowered.asm.mixin.Unique;
  * the band repeats forever via {@code Math.floorMod}, so those huge coordinates wrap back into the
  * cycle and can land <em>inside</em> the band. A world-X gate alone therefore flips the whole train.
  * {@link #dungeontrain$isSubLevelBlock} cancels the flip for any block inside the Sable plot grid, so
- * the train stays upright as the stable frame of reference while the world inverts around it. Purely
+ * the train stays upright as the stable frame of reference while the world inverts around it. The
+ * same cancellation covers {@linkplain ClientUpsideDownBand#isInTwinSpace twin space} — the sealed
+ * world the portal system's twin corridors are stamped into, which must match those upright
+ * carriages exactly. Purely
  * client-side and cosmetic; supersedes the old block-state {@code verticalFlip} in
  * {@code WorldUpsideDownEvents}.</p>
  */
@@ -64,7 +67,13 @@ public abstract class ModelBlockRendererUpsideDownMixin {
         // that wrap into the band via the cycle's modulo, so the world-X gate above can't tell them
         // apart. Cancel the flip for any block in the plot grid so the train stays upright. Evaluated
         // only when a flip would otherwise happen (rare, meshed-once) — the no-flip hot path is untouched.
-        boolean flip = bandFlip && !dungeontrain$isSubLevelBlock(pos);
+        // ...nor twin space: the portal system's twin corridors are world blocks that must stay
+        // block-for-block identical to the carriage they stand in for, and the carriage is excluded
+        // just below. Flipping one and not the other makes the crossing visible. Sealed inside their
+        // own shell either way, so nothing of the band's look is lost.
+        boolean flip = bandFlip
+                && !ClientUpsideDownBand.isInTwinSpace(pos.getY())
+                && !dungeontrain$isSubLevelBlock(pos);
         if (!flip) {
             original.call(level, model, state, pos, poseStack, consumer, checkSides, random, seed, packedOverlay, modelData, renderType);
             return;

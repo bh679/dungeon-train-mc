@@ -8,7 +8,7 @@ import net.minecraft.util.RandomSource;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Function;
+import java.util.function.BiFunction;
 import java.util.function.Predicate;
 
 /**
@@ -27,11 +27,13 @@ import java.util.function.Predicate;
  *
  * <p><b>Localization.</b> Each variant, and the count-driven sub-phrases it embeds, is a
  * {@link Component#translatable} key under {@code chat.dungeontrain.familiar_book.*}. The line is built
- * on the server (it picks the random variant and the singular/plural form by count) but rendered on the
- * client in that client's language — so a Chinese client sees Chinese. English pluralization
+ * on the server (it picks the random variant and the grammatical-number form by count) but rendered on
+ * the client in that client's language — so a Chinese client sees Chinese. Pluralization
  * (person/people, has/have, time/times) is collapsed into single count-selected sub-keys
- * ({@code held.one}/{@code held.other}, {@code times.one}/{@code times.other}), which languages without
- * that distinction simply map to one string.</p>
+ * ({@code held.*}, {@code times.*}), whose suffix {@link PluralRules} chooses from the READER's locale:
+ * English asks for {@code .one}/{@code .other}, Russian also for {@code .few}/{@code .many}, Japanese
+ * only for {@code .other}. That is why every entry point here takes the recipient's locale — the server's
+ * own language is not the one the line will be read in.</p>
  */
 public final class FamiliarBookMessage {
 
@@ -40,87 +42,93 @@ public final class FamiliarBookMessage {
     /** Common prefix for every familiar-book lang key. */
     private static final String KEY = "chat.dungeontrain.familiar_book.";
 
+    /** {@code render} takes the reader's locale first, since every count-driven clause needs it. */
     private record Variant(Predicate<BookStatsClient.Stats> eligible,
-                           Function<BookStatsClient.Stats, MutableComponent> render) {}
+                           BiFunction<String, BookStatsClient.Stats, MutableComponent> render) {}
 
     private static final List<Variant> VARIANTS = List.of(
         // read to completion (the base example)
         new Variant(s -> s.completers() > 0,
-            s -> Component.translatable(KEY + "1", heldClause(s.held()), s.completers())),
+            (l, s) -> Component.translatable(KEY + "1", heldClause(l, s.held()), s.completers())),
         new Variant(s -> s.completers() > 0,
-            s -> Component.translatable(KEY + "2", heldClause(s.held()), s.completers())),
+            (l, s) -> Component.translatable(KEY + "2", heldClause(l, s.held()), s.completers())),
         // longest single read
         new Variant(s -> s.longestReadMs() > 0,
-            s -> Component.translatable(KEY + "3", heldClause(s.held()), duration(s.longestReadMs()))),
+            (l, s) -> Component.translatable(KEY + "3", heldClause(l, s.held()), duration(s.longestReadMs()))),
         new Variant(s -> s.longestReadMs() > 0,
-            s -> Component.translatable(KEY + "4", heldClause(s.held()), duration(s.longestReadMs()))),
+            (l, s) -> Component.translatable(KEY + "4", heldClause(l, s.held()), duration(s.longestReadMs()))),
         // longest time on one page (+ which page, 1-based)
         new Variant(s -> s.longestPageMs() > 0,
-            s -> Component.translatable(KEY + "5", heldClause(s.held()), s.longestPageIndex() + 1,
+            (l, s) -> Component.translatable(KEY + "5", heldClause(l, s.held()), s.longestPageIndex() + 1,
                 duration(s.longestPageMs()))),
         new Variant(s -> s.longestPageMs() > 0,
-            s -> Component.translatable(KEY + "6", heldClause(s.held()), s.longestPageIndex() + 1,
+            (l, s) -> Component.translatable(KEY + "6", heldClause(l, s.held()), s.longestPageIndex() + 1,
                 duration(s.longestPageMs()))),
         // total opens
         new Variant(s -> s.opens() > 0,
-            s -> Component.translatable(KEY + "7", heldClause(s.held()), timesClause(s.opens()))),
+            (l, s) -> Component.translatable(KEY + "7", heldClause(l, s.held()), timesClause(l, s.opens()))),
         // page turns
         new Variant(s -> s.pageTurns() > 0,
-            s -> Component.translatable(KEY + "8", heldClause(s.held()), timesClause(s.pageTurns()))),
+            (l, s) -> Component.translatable(KEY + "8", heldClause(l, s.held()), timesClause(l, s.pageTurns()))),
         // re-reads
         new Variant(s -> s.rereads() > 0,
-            s -> Component.translatable(KEY + "9", heldClause(s.held()), timesClause(s.rereads()))),
+            (l, s) -> Component.translatable(KEY + "9", heldClause(l, s.held()), timesClause(l, s.rereads()))),
         // held-count only — always eligible, the fallback
         new Variant(s -> true,
-            s -> Component.translatable(KEY + "10", heldClause(s.held()))),
+            (l, s) -> Component.translatable(KEY + "10", heldClause(l, s.held()))),
         // up/down votes — eligible once the book has ANY vote; the sum gate means a book voted only one
         // way still surfaces ("…5 up, 0 down"), which is real information to the author.
         new Variant(s -> s.votesUp() + s.votesDown() > 0,
-            s -> Component.translatable(KEY + "11", heldClause(s.held()),
-                upClause(s.votesUp()), downClause(s.votesDown()))),
+            (l, s) -> Component.translatable(KEY + "11", heldClause(l, s.held()),
+                upClause(l, s.votesUp()), downClause(l, s.votesDown()))),
         new Variant(s -> s.votesUp() + s.votesDown() > 0,
-            s -> Component.translatable(KEY + "12", heldClause(s.held()),
-                upClause(s.votesUp()), downClause(s.votesDown()))),
+            (l, s) -> Component.translatable(KEY + "12", heldClause(l, s.held()),
+                upClause(l, s.votesUp()), downClause(l, s.votesDown()))),
         // compact scoreboard voice — bare "N up, N down".
         new Variant(s -> s.votesUp() + s.votesDown() > 0,
-            s -> Component.translatable(KEY + "13", heldClause(s.held()),
+            (l, s) -> Component.translatable(KEY + "13", heldClause(l, s.held()),
                 upShort(s.votesUp()), downShort(s.votesDown())))
     );
 
     /**
      * Build the gray familiar-book line for {@code stats}, choosing a random variant among those whose
      * stat is meaningful. Never returns null — the held-count variant is always eligible.
+     *
+     * <p>{@code locale} is the RECIPIENT's client language (see {@code WorldInfoReporter.clientLanguage}),
+     * used only to pick the grammatical-number form of each count clause; {@code ""} when unknown, which
+     * falls back to the English one/other rule.</p>
      */
-    public static Component build(BookStatsClient.Stats stats, RandomSource rng) {
+    public static Component build(String locale, BookStatsClient.Stats stats, RandomSource rng) {
         List<Variant> eligible = new ArrayList<>();
         for (Variant v : VARIANTS) if (v.eligible().test(stats)) eligible.add(v);
         Variant chosen = eligible.get(rng.nextInt(eligible.size()));
-        return chosen.render().apply(stats).withStyle(ChatFormatting.GRAY);
+        return chosen.render().apply(locale, stats).withStyle(ChatFormatting.GRAY);
     }
 
     // ---- small grammar / formatting helpers -------------------------------------
-    // Each returns a translatable sub-component so the client renders it in its own language. English
-    // plural/agreement is selected by count here (server-side) and baked into one lang key, since the
-    // held count also fixes the verb — languages without agreement map both keys to the same string.
+    // Each returns a translatable sub-component so the client renders it in its own language. The
+    // grammatical-number form is selected by count here (server-side) against the reader's locale and
+    // baked into one lang key, since the held count also fixes the verb — languages that don't inflect
+    // for number define only the .other form and get it for every count.
 
     /** "1 person has" / "N people have" as one unit (person/people + has/have agreement). */
-    private static MutableComponent heldClause(int n) {
-        return Component.translatable(KEY + (n == 1 ? "held.one" : "held.other"), n);
+    private static MutableComponent heldClause(String locale, int n) {
+        return PluralRules.clause(locale, KEY + "held", n);
     }
 
-    /** "1 time" / "N times". */
-    private static MutableComponent timesClause(int n) {
-        return Component.translatable(KEY + (n == 1 ? "times.one" : "times.other"), n);
+    /** "1 time" / "N times" — Russian's раз / раза / раз. */
+    private static MutableComponent timesClause(String locale, int n) {
+        return PluralRules.clause(locale, KEY + "times", n);
     }
 
     /** "1 reader thumbed it up" / "N readers thumbed it up". */
-    private static MutableComponent upClause(int n) {
-        return Component.translatable(KEY + (n == 1 ? "up.one" : "up.other"), n);
+    private static MutableComponent upClause(String locale, int n) {
+        return PluralRules.clause(locale, KEY + "up", n);
     }
 
     /** "1 thumbed it down" / "N thumbed it down". */
-    private static MutableComponent downClause(int n) {
-        return Component.translatable(KEY + (n == 1 ? "down.one" : "down.other"), n);
+    private static MutableComponent downClause(String locale, int n) {
+        return PluralRules.clause(locale, KEY + "down", n);
     }
 
     /** Compact scoreboard form: "N up" (no singular/plural — one key). */

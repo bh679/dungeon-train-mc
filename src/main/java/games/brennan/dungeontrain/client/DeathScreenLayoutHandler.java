@@ -8,6 +8,7 @@ import games.brennan.dungeontrain.client.builder.BuilderWorldCheck;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
+import games.brennan.dungeontrain.net.DeathStatsPacket;
 import games.brennan.dungeontrain.player.PendingInventory;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.Shipyard;
@@ -17,6 +18,7 @@ import games.brennan.dungeontrain.train.TrainTransformProvider;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.world.StartingDimension;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.client.gui.screens.DeathScreen;
 import net.minecraft.client.gui.screens.GenericMessageScreen;
 import net.minecraft.client.gui.screens.Screen;
@@ -46,6 +48,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ScreenEvent;
+import net.neoforged.neoforge.network.registration.NetworkRegistry;
 import org.slf4j.Logger;
 
 import java.util.Optional;
@@ -56,21 +59,30 @@ import java.util.function.Function;
 
 /**
  * Replaces the vanilla {@link DeathScreen} with {@link NarrativeDeathScreen} —
- * the paginated "the Dungeon Train asks" recap — on singleplayer Dungeon Train
- * worlds. In Dungeon Train, dying ends the run: the narrative screen offers
- * "Board anew" (a fresh world) and "Leave the line" (the title screen), with no
- * respawn-in-place, so hardcore worlds get the same treatment.
+ * the paginated "the Dungeon Train asks" recap — on Dungeon Train worlds. In
+ * singleplayer, dying ends the run: the narrative screen offers "Board anew" (a
+ * fresh world) and "Leave the line" (the title screen), with no respawn-in-place,
+ * so hardcore worlds get the same treatment. When the {@code doImmediateRespawn}
+ * game rule is on there is no screen to press a button on, so
+ * {@link InstantRespawnReboard} fires the same fresh-world reboard automatically —
+ * except for a deliberately abandoned run, which it routes back to this screen.
  *
  * <p>This class also owns the world-transition plumbing the narrative screen
  * calls: {@link #launchWorld} creates a fresh save (carrying forward the current
- * world's vanilla + Dungeon Train settings via {@code PendingWorldChoices}; the
- * new save always starts in the Overworld), and {@link #goToTitleScreen} exits
+ * world's vanilla + Dungeon Train settings via {@code PendingWorldChoices} and
+ * {@link CarriedRules}; the new save always starts in the Overworld), and
+ * {@link #goToTitleScreen} exits
  * to the title. Both run the Sable sub-level pre-drain so the integrated server
  * tears down cleanly (see {@link #preDrainTrainSubLevels}).</p>
  *
- * <p>LAN / dedicated-server death screens are left untouched — we can't recreate
- * a world we don't own; the singleplayer guard ({@code getSingleplayerServer()})
- * gates the swap.</p>
+ * <p><b>LAN / dedicated servers get the screen too</b>, so a multiplayer player
+ * sees the same recap, survey, ride photos and donation page a singleplayer one
+ * does. What changes there is the run-ending control: a world we don't own can't
+ * be recreated, so "Board anew" becomes vanilla's Respawn (see
+ * {@code NarrativeDeathScreen.remote()}), and the delete-on-reboard toggle is
+ * hidden. The swap is gated on the server actually running Dungeon Train — a
+ * server without it never sends {@link DeathStatsPacket}, and a recap with no
+ * run behind it is worse than the vanilla screen.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class DeathScreenLayoutHandler {
@@ -114,15 +126,14 @@ public final class DeathScreenLayoutHandler {
     private DeathScreenLayoutHandler() {}
 
     /**
-     * Swap the vanilla death screen for the narrative one as it opens. Guarded
-     * to singleplayer (integrated server present). The new screen is not a
-     * {@link DeathScreen}, so the re-fired {@code Opening} event for it is a
-     * no-op — no recursion.
+     * Swap the vanilla death screen for the narrative one as it opens. The new
+     * screen is not a {@link DeathScreen}, so the re-fired {@code Opening} event
+     * for it is a no-op — no recursion.
      */
     @SubscribeEvent
     public static void onScreenOpening(ScreenEvent.Opening event) {
         if (!(event.getNewScreen() instanceof DeathScreen)) return;
-        if (Minecraft.getInstance().getSingleplayerServer() == null) return;
+        if (!dungeonTrainWorld()) return;
         // Train Builder worlds keep the vanilla death screen. The narrative screen is about a
         // run — what you did, how far you got, boarding anew — and a build sandbox has no run
         // to narrate. This one guard covers everything downstream of the swap: the narrative
@@ -131,11 +142,52 @@ public final class DeathScreenLayoutHandler {
         event.setNewScreen(new NarrativeDeathScreen());
     }
 
+    /**
+     * Whether this death happened on a world Dungeon Train is running. Always true in
+     * singleplayer (our own integrated server); on a remote server it asks whether the
+     * connection negotiated DT's own channel, which is the client-side way to know the
+     * server has the mod. Without that check a DT client joining any other server would
+     * be handed a run recap the server never sent stats for.
+     */
+    private static boolean dungeonTrainWorld() {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.getSingleplayerServer() != null) return true;
+        ClientPacketListener connection = mc.getConnection();
+        return connection != null
+                && NetworkRegistry.hasChannel(connection, DeathStatsPacket.TYPE.id());
+    }
+
     public static void launchWorld(Screen lastScreen, boolean sameSeed) {
         launchWorld(lastScreen, sameSeed, false);
     }
 
     public static void launchWorld(Screen lastScreen, boolean sameSeed, boolean forceSurvival) {
+        launchWorld(lastScreen, sameSeed, forceSurvival, true);
+    }
+
+    /**
+     * @param ask whether the custom-content question may be put to the player. False for the
+     *            automatic reboard ({@code InstantRespawnReboard}), which fires with nobody at a
+     *            menu: there is no screen to return to if they back out, and the reboard cannot
+     *            re-fire once scheduled. That path reuses the last answer instead.
+     */
+    public static void launchWorld(Screen lastScreen, boolean sameSeed, boolean forceSurvival,
+                                   boolean ask) {
+        if (!ask) {
+            CustomContentGate.answerFromMemory();
+            launchWorldNow(lastScreen, sameSeed, forceSurvival);
+            return;
+        }
+        // Reboard is one of the two moments a run starts, so it is one of the two moments the
+        // custom-content question gets asked — before the next world exists, while "run without my
+        // changes" is still an answer that can be honoured. Nothing to ask → falls straight through.
+        if (CustomContentGate.askFirst(lastScreen, () -> launchWorldNow(lastScreen, sameSeed, forceSurvival))) {
+            return;
+        }
+        launchWorldNow(lastScreen, sameSeed, forceSurvival);
+    }
+
+    private static void launchWorldNow(Screen lastScreen, boolean sameSeed, boolean forceSurvival) {
         Minecraft mc = Minecraft.getInstance();
         MinecraftServer server = mc.getSingleplayerServer();
         if (server == null) {
@@ -171,14 +223,16 @@ public final class DeathScreenLayoutHandler {
 
         // When the current world has keepInventory on, snapshot the player's
         // inventory + XP (consumed on the next world's first login by
-        // KeepInventoryCarryEvents) and create the next world with keepInventory
-        // on too.
-        boolean keepInventory = captureKeepInventory(server);
+        // KeepInventoryCarryEvents). Both carried rules come back in one read.
+        CarriedRules carried = captureCarriedRules(server);
 
         String name = WORLD_NAME_PREFIX + System.currentTimeMillis();
         GameRules gameRules = new GameRules();
-        if (keepInventory) {
+        if (carried.keepInventory()) {
             gameRules.getRule(GameRules.RULE_KEEPINVENTORY).set(true, null);
+        }
+        if (carried.immediateRespawn()) {
+            gameRules.getRule(GameRules.RULE_DO_IMMEDIATE_RESPAWN).set(true, null);
         }
         GameType gameType = forceSurvival ? GameType.SURVIVAL : cur.gameType();
         LevelSettings settings = new LevelSettings(
@@ -337,19 +391,35 @@ public final class DeathScreenLayoutHandler {
     }
 
     /**
-     * Read the current world's {@code keepInventory} gamerule and, when on,
-     * snapshot the local player's inventory + experience into
-     * {@link PendingInventory} so {@link games.brennan.dungeontrain.event.KeepInventoryCarryEvents}
-     * can re-apply it on the next world's first login. Returns the gamerule
-     * value so the caller can mirror it onto the new world's {@link GameRules}.
+     * The dying world's game rules that the next run world inherits. A run chain is
+     * one continuous game as far as the player is concerned, so a rule they set on
+     * one world must not be quietly dropped by the reboard.
+     *
+     * @param keepInventory   {@code keepInventory} — paired with the inventory snapshot
+     *                        {@link #captureCarriedRules} takes.
+     * @param immediateRespawn {@code doImmediateRespawn} — without carrying this, the first
+     *                        automatic reboard would turn the player's own setting off.
      */
-    private static boolean captureKeepInventory(MinecraftServer server) {
+    private record CarriedRules(boolean keepInventory, boolean immediateRespawn) {
+        static final CarriedRules NONE = new CarriedRules(false, false);
+    }
+
+    /**
+     * Read the current world's carried game rules and, when {@code keepInventory} is
+     * on, snapshot the local player's inventory + experience into
+     * {@link PendingInventory} so {@link games.brennan.dungeontrain.event.KeepInventoryCarryEvents}
+     * can re-apply it on the next world's first login. Returns the rule values so the
+     * caller can mirror them onto the new world's {@link GameRules}.
+     */
+    private static CarriedRules captureCarriedRules(MinecraftServer server) {
         UUID localId = Minecraft.getInstance().player != null
                 ? Minecraft.getInstance().player.getUUID() : null;
-        CompletableFuture<Boolean> result = new CompletableFuture<>();
+        CompletableFuture<CarriedRules> result = new CompletableFuture<>();
         server.execute(() -> {
             try {
-                boolean keep = server.getGameRules().getBoolean(GameRules.RULE_KEEPINVENTORY);
+                GameRules rules = server.getGameRules();
+                boolean keep = rules.getBoolean(GameRules.RULE_KEEPINVENTORY);
+                boolean immediateRespawn = rules.getBoolean(GameRules.RULE_DO_IMMEDIATE_RESPAWN);
                 if (keep && localId != null) {
                     ServerPlayer player = server.getPlayerList().getPlayer(localId);
                     if (player != null) {
@@ -361,18 +431,18 @@ public final class DeathScreenLayoutHandler {
                 } else {
                     PendingInventory.clear();
                 }
-                result.complete(keep);
+                result.complete(new CarriedRules(keep, immediateRespawn));
             } catch (Throwable t) {
-                LOGGER.warn("DeathScreenLayout: keepInventory capture failed; new world will not carry inventory", t);
+                LOGGER.warn("DeathScreenLayout: game-rule capture failed; new world will use defaults", t);
                 PendingInventory.clear();
-                result.complete(false);
+                result.complete(CarriedRules.NONE);
             }
         });
         try {
             return result.get(10, TimeUnit.SECONDS);
         } catch (Exception e) {
-            LOGGER.warn("DeathScreenLayout: keepInventory capture wait timed out or errored", e);
-            return false;
+            LOGGER.warn("DeathScreenLayout: game-rule capture wait timed out or errored", e);
+            return CarriedRules.NONE;
         }
     }
 

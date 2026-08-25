@@ -34,6 +34,7 @@ public final class PortalRegistry extends SavedData {
     private static final String TAG_PORTALS = "portals";
     private static final String TAG_AUTO_SPACING = "autoSpacing";
     private static final String TAG_CARRIAGE_EVERY = "carriageEvery";
+    private static final String TAG_CARRIAGE_EVERY_SET = "carriageEverySet";
     private static final String TAG_ORIGIN_X = "originX";
     private static final String TAG_FLOOR_Y = "floorY";
     private static final String TAG_ORIGIN_Z = "originZ";
@@ -42,6 +43,7 @@ public final class PortalRegistry extends SavedData {
     private static final String TAG_HEIGHT = "height";
     private static final String TAG_DELTA_Y = "deltaY";
     private static final String TAG_SEVERED = "severed";
+    private static final String TAG_STAMPED_PORTAL_PARTS = "stampedPortalParts";
 
     private final List<PortalGeometry> portals = new ArrayList<>();
 
@@ -61,6 +63,29 @@ public final class PortalRegistry extends SavedData {
     private final Set<Integer> severedCarriages = new HashSet<>();
 
     /**
+     * Carriage indices that were actually <b>stamped</b> as part of a portal group — the two
+     * corridors and the cart between them — as opposed to indices the selection lottery merely
+     * believes should be.
+     *
+     * <p><b>Why the verdict has to be recorded rather than re-derived.</b>
+     * {@link PortalCarriageSelection#rateFor} reads the level's live game modes, so the same
+     * carriage index answers differently once a player switches to creative, joins, or quits. The
+     * blocks do not change with it: they were stamped once, by whatever the verdict was at the time.
+     * {@code PortalCarriageEvents} builds its swap plane every tick, and re-deriving there meant an
+     * ordinary carriage could grow a portal frame it had no corridor for — and teleport whoever
+     * walked down it into a pocket room. Recorded at stamp time and read back, the two can no longer
+     * disagree.</p>
+     *
+     * <p>The same reasoning {@link PortalCarriageSelection#corridorKindFor} is memoised under, one
+     * level up: that keeps a pair's corridor <i>shape</i> from moving mid-session, this keeps its
+     * <i>existence</i> from moving.</p>
+     *
+     * <p>Cleared for an index the rolling window re-stamps as an ordinary carriage, so the record
+     * always describes what is standing there now, not what once was.</p>
+     */
+    private final Set<Integer> stampedPortalParts = new HashSet<>();
+
+    /**
      * Anchor-grid spacing for auto-spawning, or {@link PortalAnchors#SPACING_OFF}. Persisted so the
      * setting survives a reload — otherwise a world would quietly stop spawning portals (or start
      * again) depending on when it was last saved.
@@ -74,6 +99,17 @@ public final class PortalRegistry extends SavedData {
      * carriage under a player standing in it.
      */
     private int carriageEvery = PortalCarriageSelection.DEFAULT_CARRIAGE_EVERY;
+
+    /**
+     * True once someone has set the rate by hand, as opposed to inheriting the shipped default.
+     *
+     * <p>Load-bearing on a dev build only, and only in creative: that build substitutes its own dense
+     * testing cadence for the world's rate, and it must not do so once a rate has been asked for
+     * explicitly — otherwise {@code portal carriage 7} silently does nothing in the dev client, which
+     * is the one place it most needs to be testable. See
+     * {@link PortalCarriageSelection#rateFor}.</p>
+     */
+    private boolean carriageEverySet = false;
 
     /**
      * Default anchor spacing for the free-standing portals that generate beside the track.
@@ -143,9 +179,19 @@ public final class PortalRegistry extends SavedData {
     }
 
     public synchronized void setCarriageEvery(int every) {
-        if (carriageEvery == every) return;
+        // The "set by hand" flag is recorded even when the value is unchanged: asking for the rate
+        // the world already had is still asking, and on a dev build it is how a tester turns the
+        // substituted testing cadence off.
+        boolean firstSet = !carriageEverySet;
+        carriageEverySet = true;
+        if (carriageEvery == every && !firstSet) return;
         carriageEvery = every;
         setDirty();
+    }
+
+    /** True once the rate was set by hand rather than inherited — see {@link #carriageEverySet}. */
+    public synchronized boolean isCarriageEverySet() {
+        return carriageEverySet;
     }
 
     /** True if this carriage's corridor no longer takes anyone in. The way out is never severed. */
@@ -175,6 +221,28 @@ public final class PortalRegistry extends SavedData {
         return restored;
     }
 
+    /**
+     * True if this carriage index was stamped as part of a portal group and still is — the
+     * authoritative answer for anything running after placement. See {@link #stampedPortalParts}.
+     */
+    public synchronized boolean isStampedPortalPart(int carriageIndex) {
+        return stampedPortalParts.contains(carriageIndex);
+    }
+
+    /**
+     * Record what was just stamped at this carriage index.
+     *
+     * <p>Called from {@code CarriagePlacer} for <b>every</b> carriage it places, portal or not: the
+     * negative is as load-bearing as the positive, because an index the rolling window brings back
+     * round as an ordinary carriage must stop answering yes.</p>
+     */
+    public synchronized void noteStamped(int carriageIndex, boolean portalPart) {
+        boolean changed = portalPart
+            ? stampedPortalParts.add(carriageIndex)
+            : stampedPortalParts.remove(carriageIndex);
+        if (changed) setDirty();
+    }
+
     /** Forget every portal, returning how many were dropped. Blocks already stamped are left alone. */
     public synchronized int clear() {
         int removed = portals.size();
@@ -193,10 +261,20 @@ public final class PortalRegistry extends SavedData {
         if (tag.contains(TAG_CARRIAGE_EVERY)) {
             data.carriageEvery = tag.getInt(TAG_CARRIAGE_EVERY);
         }
+        // Absent on worlds saved before the flag existed. Those stored a rate unconditionally, so
+        // whether it was chosen or inherited is unknowable — false is the safe read, since it only
+        // affects which cadence a dev build shows in creative.
+        data.carriageEverySet = tag.getBoolean(TAG_CARRIAGE_EVERY_SET);
         // Absent in worlds saved before severing existed, which read back as "nothing severed" —
         // the right answer for a world where no corridor had ever been broken into.
         for (int carriageIndex : tag.getIntArray(TAG_SEVERED)) {
             data.severedCarriages.add(carriageIndex);
+        }
+        // Absent in worlds saved before the stamp record existed. Those read back as "nothing
+        // recorded", and PortalCarriageEvents confirms such a carriage against its own blocks once
+        // before trusting it — see PortalStampRecord.
+        for (int carriageIndex : tag.getIntArray(TAG_STAMPED_PORTAL_PARTS)) {
+            data.stampedPortalParts.add(carriageIndex);
         }
         if (!tag.contains(TAG_PORTALS)) return data;
 
@@ -227,7 +305,10 @@ public final class PortalRegistry extends SavedData {
     public synchronized CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
         tag.putInt(TAG_AUTO_SPACING, autoSpacing);
         tag.putInt(TAG_CARRIAGE_EVERY, carriageEvery);
+        tag.putBoolean(TAG_CARRIAGE_EVERY_SET, carriageEverySet);
         tag.putIntArray(TAG_SEVERED, severedCarriages.stream().mapToInt(Integer::intValue).toArray());
+        tag.putIntArray(TAG_STAMPED_PORTAL_PARTS,
+            stampedPortalParts.stream().mapToInt(Integer::intValue).toArray());
 
         ListTag list = new ListTag();
         for (PortalGeometry geo : portals) {

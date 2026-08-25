@@ -20,8 +20,14 @@ import games.brennan.dungeontrain.editor.CarriageVariantBlocks;
 import games.brennan.dungeontrain.editor.CarriageVariantContentsAllowStore;
 import games.brennan.dungeontrain.editor.CarriageVariantPartsStore;
 import games.brennan.dungeontrain.editor.EditorCategory;
+import games.brennan.dungeontrain.editor.EditorEditApplier;
+import games.brennan.dungeontrain.editor.EditorEditHistory;
+import games.brennan.dungeontrain.editor.EditorPlotTransform;
+import games.brennan.dungeontrain.editor.EditorPlotTransformer;
+import games.brennan.dungeontrain.editor.EditorRegionDiff;
 import games.brennan.dungeontrain.editor.PortalRoomEditor;
 import games.brennan.dungeontrain.portal.PortalRoomLayout;
+import games.brennan.dungeontrain.portal.PortalRoomResize;
 import games.brennan.dungeontrain.editor.EditorDevMode;
 import games.brennan.dungeontrain.editor.EditorStampedCategoryState;
 import games.brennan.dungeontrain.editor.EditorWelcome;
@@ -34,6 +40,7 @@ import games.brennan.dungeontrain.editor.TrackEditor;
 import games.brennan.dungeontrain.editor.TrackTemplateStore;
 import games.brennan.dungeontrain.editor.TunnelEditor;
 import games.brennan.dungeontrain.editor.TunnelTemplateStore;
+import games.brennan.dungeontrain.editor.EditorStrayBlocks;
 import games.brennan.dungeontrain.editor.VariantOverlayRenderer;
 import games.brennan.dungeontrain.editor.VariantState;
 import games.brennan.dungeontrain.track.PillarAdjunct;
@@ -63,11 +70,14 @@ import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.ResourceLocationArgument;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.Vec3i;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import org.slf4j.Logger;
@@ -184,8 +194,8 @@ public final class EditorCommand {
 
     private static final SuggestionProvider<CommandSourceStack> PORTAL_ROOM_COPIES_SUGGESTIONS =
         (ctx, builder) -> {
-            for (games.brennan.dungeontrain.portal.PortalRoomCopies c
-                    : games.brennan.dungeontrain.portal.PortalRoomCopies.values()) {
+            for (games.brennan.dungeontrain.portal.PortalRoomCopies.Kind c
+                    : games.brennan.dungeontrain.portal.PortalRoomCopies.Kind.values()) {
                 builder.suggest(c.id());
             }
             return builder.buildFuture();
@@ -200,12 +210,34 @@ public final class EditorCommand {
             return builder.buildFuture();
         };
 
+    private static final SuggestionProvider<CommandSourceStack> PORTAL_ROOM_SKY_SUGGESTIONS =
+        (ctx, builder) -> {
+            for (games.brennan.dungeontrain.portal.PortalRoomSky sky
+                    : games.brennan.dungeontrain.portal.PortalRoomSky.values()) {
+                builder.suggest(sky.id());
+            }
+            return builder.buildFuture();
+        };
+
     private static final SuggestionProvider<CommandSourceStack> PORTAL_ROOM_EXITS_SUGGESTIONS =
         (ctx, builder) -> {
             for (games.brennan.dungeontrain.portal.PortalRoomExits.Kind k
                     : games.brennan.dungeontrain.portal.PortalRoomExits.Kind.values()) {
                 builder.suggest(k.id());
             }
+            return builder.buildFuture();
+        };
+
+    private static final SuggestionProvider<CommandSourceStack> PORTAL_ROOM_BOOKS_SUGGESTIONS =
+        (ctx, builder) -> {
+            for (games.brennan.dungeontrain.portal.PortalRoomBooks.Kind k
+                    : games.brennan.dungeontrain.portal.PortalRoomBooks.Kind.values()) {
+                builder.suggest(k.id());
+            }
+            // The compound form, so the whole setting is reachable from the command line rather than
+            // only from the edit screen: weights then the band of author.
+            builder.suggest("mix:2:1:1");
+            builder.suggest("mix:2:1:1:10:50");
             return builder.buildFuture();
         };
 
@@ -396,13 +428,20 @@ public final class EditorCommand {
             .executes(ctx -> runEnterCategory(ctx.getSource(), EditorCategory.CARRIAGES))
             .then(Commands.literal("carriages")
                 .executes(ctx -> runEnterCategory(ctx.getSource(), EditorCategory.CARRIAGES)))
+            // Red ghosts over blocks left outside the plots. Its own toggle rather than a rider on
+            // the variant overlay: that one hides annotations, this one hides a warning.
+            .then(Commands.literal("strays")
+                .then(Commands.literal("on").executes(ctx -> runStrayGhosts(ctx.getSource(), true)))
+                .then(Commands.literal("off").executes(ctx -> runStrayGhosts(ctx.getSource(), false))))
             // Position-resolved mirror toggle — works in any editor plot. Backs
             // the X-menu Mirror X / Y / Z toggles for every category.
             .then(Commands.literal("mirror")
                 .then(mirrorAxisNode("x"))
                 .then(mirrorAxisNode("y"))
                 .then(mirrorAxisNode("z"))
-                .then(mirrorAxisNode("v")))
+                .then(mirrorAxisNode("v"))
+                .then(Commands.literal("rebuild")
+                    .executes(ctx -> runMirrorRebuild(ctx.getSource()))))
             .then(attachTrackVariantNodes(Commands.literal("tracks")
                 .executes(ctx -> runEnterCategory(ctx.getSource(), EditorCategory.TRACKS))))
             // PORTALS takes the same (kind, name) variant subcommands — the pocket room is a
@@ -415,9 +454,9 @@ public final class EditorCommand {
                         .suggests(PORTAL_ROOM_NAME_SUGGESTIONS)
                         .executes(ctx -> runPortalRoomEnter(ctx.getSource(),
                             StringArgumentType.getString(ctx, "name")))))
-                .then(portalSizeNode("length", PortalRoomEditor.Axis.LENGTH))
-                .then(portalSizeNode("width", PortalRoomEditor.Axis.WIDTH))
-                .then(portalSizeNode("height", PortalRoomEditor.Axis.HEIGHT))
+                .then(portalSizeNode("length", PortalRoomResize.Axis.LENGTH))
+                .then(portalSizeNode("width", PortalRoomResize.Axis.WIDTH))
+                .then(portalSizeNode("height", PortalRoomResize.Axis.HEIGHT))
                 // All three at once, in the order the menus label them.
                 .then(Commands.literal("size")
                     .then(Commands.argument("length", IntegerArgumentType.integer(1, 512))
@@ -441,6 +480,18 @@ public final class EditorCommand {
                 .then(Commands.literal("copies")
                     .then(Commands.literal("next")
                         .executes(ctx -> runPortalRoomCopiesCycle(ctx.getSource())))
+                    // Which block Single repeats. Its own branch rather than a second argument on
+                    // the setter above, so the setter stays a bare word and a block id — which
+                    // carries a colon — never has to survive StringArgumentType.word().
+                    //
+                    // `block` sets both planes at once, which is what it has always meant and what
+                    // "I just want one material" still wants. `floor` and `roof` are the same three
+                    // verbs aimed at one plane each.
+                    .then(copiesPlaneNode("block", null))
+                    .then(copiesPlaneNode("floor",
+                        games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane.FLOOR))
+                    .then(copiesPlaneNode("roof",
+                        games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane.ROOF))
                     .then(Commands.argument("copies", StringArgumentType.word())
                         .suggests(PORTAL_ROOM_COPIES_SUGGESTIONS)
                         .executes(ctx -> runPortalRoomCopies(ctx.getSource(),
@@ -454,6 +505,15 @@ public final class EditorCommand {
                         .suggests(PORTAL_ROOM_CONTENTS_SUGGESTIONS)
                         .executes(ctx -> runPortalRoomContents(ctx.getSource(),
                             StringArgumentType.getString(ctx, "contents")))))
+                // Whether the room is lit as though it stood outdoors, and under which sky. Off by
+                // default, which is every room lit only by whatever its own build gives it.
+                .then(Commands.literal("sky")
+                    .then(Commands.literal("next")
+                        .executes(ctx -> runPortalRoomSkyCycle(ctx.getSource())))
+                    .then(Commands.argument("sky", StringArgumentType.word())
+                        .suggests(PORTAL_ROOM_SKY_SUGGESTIONS)
+                        .executes(ctx -> runPortalRoomSky(ctx.getSource(),
+                            StringArgumentType.getString(ctx, "sky")))))
                 // How many extra ways back to the train an endless room scatters through its copies.
                 // Means nothing under the modes that do not repeat.
                 .then(Commands.literal("exits")
@@ -486,6 +546,26 @@ public final class EditorCommand {
                             games.brennan.dungeontrain.portal.PortalRoomExits.MOVE_ALWAYS))
                         .executes(ctx -> runPortalRoomExitMove(ctx.getSource(),
                             IntegerArgumentType.getInteger(ctx, "chance")))))
+                // Whether every book found in the room is by one author, and how that author is
+                // picked. Off by default — the ordinary mixed community pool.
+                .then(Commands.literal("books")
+                    .then(Commands.literal("next")
+                        .executes(ctx -> runPortalRoomBooksCycle(ctx.getSource())))
+                    .then(Commands.argument("books", StringArgumentType.word())
+                        .suggests(PORTAL_ROOM_BOOKS_SUGGESTIONS)
+                        .executes(ctx -> runPortalRoomBooks(ctx.getSource(),
+                            StringArgumentType.getString(ctx, "books")))))
+                // The three shares of the author roll, and the band of author a room will accept.
+                // All five mean nothing while Books is Off, which is why the edit screen is only
+                // reachable from a room that stocks an author at all.
+                .then(portalRoomBookWeightNode("booksself",
+                    games.brennan.dungeontrain.portal.PortalRoomBooks.Share.SELF))
+                .then(portalRoomBookWeightNode("booksplayer",
+                    games.brennan.dungeontrain.portal.PortalRoomBooks.Share.PLAYER))
+                .then(portalRoomBookWeightNode("bookssignature",
+                    games.brennan.dungeontrain.portal.PortalRoomBooks.Share.SIGNATURE))
+                .then(portalRoomBookBoundNode("booksmin", true))
+                .then(portalRoomBookBoundNode("booksmax", false))
                 // Sub-variants: one named room standing for several designs, drawn by weight.
                 .then(portalRoomGroupNode()))
             .then(Commands.literal("architecture")
@@ -507,10 +587,39 @@ public final class EditorCommand {
             .then(Commands.literal("reset")
                 .then(Commands.argument("variant", StringArgumentType.word())
                     .suggests(VARIANT_SUGGESTIONS)
-                    .executes(ctx -> runReset(ctx.getSource(),
-                        StringArgumentType.getString(ctx, "variant")))))
+                    .executes(ctx -> EditorRegionDiff.recording(ctx.getSource(), "Reset",
+                        () -> runReset(ctx.getSource(),
+                            StringArgumentType.getString(ctx, "variant"))))))
             .then(Commands.literal("clear")
-                .executes(ctx -> runClear(ctx.getSource())))
+                .executes(ctx -> EditorRegionDiff.recording(ctx.getSource(), "Clear",
+                    () -> runClear(ctx.getSource()))))
+            .then(Commands.literal("offset")
+                .then(Commands.argument("x", IntegerArgumentType.integer())
+                    .then(Commands.argument("y", IntegerArgumentType.integer())
+                        .then(Commands.argument("z", IntegerArgumentType.integer())
+                            .executes(ctx -> runTransform(ctx.getSource(),
+                                EditorPlotTransform.offset(
+                                    IntegerArgumentType.getInteger(ctx, "x"),
+                                    IntegerArgumentType.getInteger(ctx, "y"),
+                                    IntegerArgumentType.getInteger(ctx, "z"))))))))
+            .then(Commands.literal("rotate")
+                .then(Commands.literal("90").executes(ctx -> runTransform(ctx.getSource(),
+                    EditorPlotTransform.rotation(90))))
+                .then(Commands.literal("180").executes(ctx -> runTransform(ctx.getSource(),
+                    EditorPlotTransform.rotation(180))))
+                .then(Commands.literal("270").executes(ctx -> runTransform(ctx.getSource(),
+                    EditorPlotTransform.rotation(270)))))
+            .then(Commands.literal("flip")
+                .then(Commands.literal("x").executes(ctx -> runTransform(ctx.getSource(),
+                    EditorPlotTransform.flip(Direction.Axis.X))))
+                .then(Commands.literal("y").executes(ctx -> runTransform(ctx.getSource(),
+                    EditorPlotTransform.flip(Direction.Axis.Y))))
+                .then(Commands.literal("z").executes(ctx -> runTransform(ctx.getSource(),
+                    EditorPlotTransform.flip(Direction.Axis.Z)))))
+            .then(Commands.literal("undo")
+                .executes(ctx -> runUndoRedo(ctx.getSource(), /*redoing*/ false)))
+            .then(Commands.literal("redo")
+                .executes(ctx -> runUndoRedo(ctx.getSource(), /*redoing*/ true)))
             .then(Commands.literal("new")
                 .then(Commands.argument("name", StringArgumentType.word())
                     .executes(ctx -> runNew(ctx.getSource(),
@@ -980,6 +1089,51 @@ public final class EditorCommand {
             ).withStyle(ChatFormatting.RED));
             return 0;
         }
+    }
+
+    /**
+     * Re-mirror the plot the player is standing in from its authored master
+     * octant — {@code /dungeontrain editor mirror rebuild}, also the X-menu's
+     * Mirror → Rebuild row.
+     *
+     * <p>This used to happen implicitly inside every editor {@code save()},
+     * which made saving destructive: deliberate asymmetry (and anything placed
+     * by a path the live mirror handlers never see — clipboard paste,
+     * {@code /fill}, edits made before the axis was toggled on) was silently
+     * overwritten from the master. Saving now captures the plot as it stands,
+     * and the rebuild happens only when asked for here.</p>
+     *
+     * <p>World-only: the author still hits Save to capture the result.</p>
+     */
+    private static int runMirrorRebuild(CommandSourceStack source) {
+        ServerPlayer player = source.getPlayer();
+        if (player == null) {
+            source.sendFailure(Component.literal("This command must be run by a player."));
+            return 0;
+        }
+        CarriageDims dims = DungeonTrainWorldData.get(player.serverLevel()).dims();
+        games.brennan.dungeontrain.editor.BlockVariantPlot plot =
+            games.brennan.dungeontrain.editor.BlockVariantPlot.resolveAt(player, dims);
+        if (plot == null) {
+            source.sendFailure(Component.literal("Stand inside an editor plot to rebuild its mirror.")
+                .withStyle(ChatFormatting.RED));
+            return 0;
+        }
+        // Rebuild rewrites every image octant in one pass; the region diff around
+        // it is what makes that one Ctrl+Z rather than an unrecoverable pass.
+        boolean[] rebuilt = new boolean[1];
+        EditorRegionDiff.record(player, "Mirror rebuild", plot.key(),
+            () -> rebuilt[0] = games.brennan.dungeontrain.editor.EditorMirrorRebuild.run(
+                player.serverLevel(), plot));
+        if (!rebuilt[0]) {
+            source.sendFailure(Component.literal(
+                "Editor: no mirror axis is on for this plot — turn on X, Y or Z first.")
+                .withStyle(ChatFormatting.RED));
+            return 0;
+        }
+        source.sendSuccess(() -> Component.literal("Editor: mirrored " + plot.key() + " from master")
+            .withStyle(ChatFormatting.GREEN), true);
+        return 1;
     }
 
     /** Brigadier subtree: {@code <axis> on|off} → {@link #runMirrorAtPosition} (position-resolved). */
@@ -2675,6 +2829,16 @@ public final class EditorCommand {
             && local.getZ() >= 0 && local.getZ() < size.getZ();
     }
 
+    private static int runStrayGhosts(CommandSourceStack source, boolean on) {
+        ServerPlayer player = requirePlayer(source);
+        if (player == null) return 0;
+        EditorStrayBlocks.setEnabled(player.getUUID(), on);
+        source.sendSuccess(() -> Component.literal(
+            "Out-of-plot ghosts: " + (on ? "ON" : "off") + "."
+        ), false);
+        return 1;
+    }
+
     private static int runVariantOverlay(CommandSourceStack source, boolean on) {
         ServerPlayer player = requirePlayer(source);
         if (player == null) return 0;
@@ -3460,7 +3624,7 @@ public final class EditorCommand {
                 final String id = roomName;
                 final int n = cleared;
                 source.sendSuccess(() -> Component.literal(
-                    "Editor: cleared all blocks in portal room '" + id + "'"
+                    "Editor: cleared all blocks in dimensional carriage '" + id + "'"
                         + (n > 0 ? " (and " + n + " authored entr" + (n == 1 ? "y" : "ies") + ")." : ".")
                 ).withStyle(ChatFormatting.GREEN), true);
                 return 1;
@@ -3474,7 +3638,7 @@ public final class EditorCommand {
         }
 
         source.sendFailure(Component.literal(
-            "editor clear: stand inside a carriage / contents / parts / portal room plot first."
+            "editor clear: stand inside a carriage / contents / parts / dimensional carriage plot first."
         ));
         return 0;
     }
@@ -3668,13 +3832,13 @@ public final class EditorCommand {
                                                   String rawContents, boolean on) {
         String room = rawRoom == null ? "" : rawRoom.trim();
         if (room.isEmpty()) {
-            source.sendFailure(Component.literal("Name a portal room."));
+            source.sendFailure(Component.literal("Name a dimensional carriage."));
             return 0;
         }
         if (!games.brennan.dungeontrain.track.variant.TrackVariantRegistry
                 .namesFor(games.brennan.dungeontrain.track.variant.TrackKind.PORTAL_ROOM)
                 .contains(room)) {
-            source.sendFailure(Component.literal("Unknown portal room '" + room + "'."));
+            source.sendFailure(Component.literal("Unknown dimensional carriage '" + room + "'."));
             return 0;
         }
         CarriageContents contents = parseContents(source, rawContents);
@@ -3697,7 +3861,7 @@ public final class EditorCommand {
                 ? current.withAllowed(contents.id())
                 : current.withExcluded(contents.id());
             games.brennan.dungeontrain.editor.PortalRoomContentsAllowStore.save(room, updated);
-            String summary = "Portal room '" + room + "' content '" + contents.id() + "': "
+            String summary = "Dimensional carriage '" + room + "' content '" + contents.id() + "': "
                 + (on ? "ALLOWED" : "EXCLUDED");
             source.sendSuccess(() -> Component.literal(summary)
                 .withStyle(on ? ChatFormatting.GREEN : ChatFormatting.YELLOW), true);
@@ -5055,11 +5219,11 @@ public final class EditorCommand {
         if (player == null) return 0;
         if (games.brennan.dungeontrain.track.variant.TrackVariantRegistry
                 .find(games.brennan.dungeontrain.track.variant.TrackKind.PORTAL_ROOM, name).isEmpty()) {
-            source.sendFailure(Component.literal("Unknown portal room '" + name + "'."));
+            source.sendFailure(Component.literal("Unknown dimensional carriage '" + name + "'."));
             return 0;
         }
         games.brennan.dungeontrain.editor.PortalRoomEditor.enter(player, name);
-        source.sendSuccess(() -> Component.literal("Editor: entered portal room '" + name + "'."), true);
+        source.sendSuccess(() -> Component.literal("Editor: entered dimensional carriage '" + name + "'."), true);
         return 1;
     }
 
@@ -5159,7 +5323,7 @@ public final class EditorCommand {
         java.util.Optional<String> found = games.brennan.dungeontrain.track.variant.TrackVariantRegistry
             .find(PORTAL_ROOM_KIND, raw);
         if (found.isEmpty()) {
-            source.sendFailure(Component.literal("Unknown portal room '" + raw + "'.")
+            source.sendFailure(Component.literal("Unknown dimensional carriage '" + raw + "'.")
                 .withStyle(ChatFormatting.RED));
             return null;
         }
@@ -5394,7 +5558,7 @@ public final class EditorCommand {
         }
         if (games.brennan.dungeontrain.track.variant.TrackKind.DEFAULT_NAME.equals(child)) {
             source.sendFailure(Component.literal(
-                "'default' cannot be a sub-variant — it is the fallback every portal room falls back to.")
+                "'default' cannot be a sub-variant — it is the fallback every dimensional carriage falls back to.")
                 .withStyle(ChatFormatting.RED));
             return 0;
         }
@@ -5425,7 +5589,7 @@ public final class EditorCommand {
                 .orElse(games.brennan.dungeontrain.track.variant.TrackVariantGroup.EMPTY)
                 .withMember(new games.brennan.dungeontrain.track.variant.TrackVariantGroup.Member(child, weight));
         return savePortalRoomGroup(source, parent, updated,
-            "Editor: portal room '" + parent + "' → added sub-variant '" + child + "' (weight=" + weight
+            "Editor: dimensional carriage '" + parent + "' → added sub-variant '" + child + "' (weight=" + weight
                 + ", " + updated.members().size() + " sub-variant"
                 + (updated.members().size() == 1 ? "" : "s") + " + the parent itself).");
     }
@@ -5461,7 +5625,7 @@ public final class EditorCommand {
             return 0;
         }
         if (games.brennan.dungeontrain.track.variant.TrackVariantRegistry.contains(PORTAL_ROOM_KIND, key)) {
-            source.sendFailure(Component.literal("Portal room '" + key + "' already exists.")
+            source.sendFailure(Component.literal("Dimensional carriage '" + key + "' already exists.")
                 .withStyle(ChatFormatting.RED));
             return 0;
         }
@@ -5555,7 +5719,7 @@ public final class EditorCommand {
 
         games.brennan.dungeontrain.editor.PortalRoomEditor.enter(player, key);
         source.sendSuccess(() -> Component.literal(
-            "Editor: created portal room sub-variant '" + key + "' under '" + parent
+            "Editor: created dimensional carriage sub-variant '" + key + "' under '" + parent
                 + "' (copied from '" + seedRoom + "') — teleported to its plot.")
             .withStyle(ChatFormatting.GREEN), true);
         return 1;
@@ -5575,7 +5739,7 @@ public final class EditorCommand {
         java.util.Optional<games.brennan.dungeontrain.track.variant.TrackVariantGroup> existing =
             games.brennan.dungeontrain.editor.TrackVariantGroupStore.get(PORTAL_ROOM_KIND, parent);
         if (existing.isEmpty()) {
-            source.sendFailure(Component.literal("Portal room '" + parent + "' has no sub-variants.")
+            source.sendFailure(Component.literal("Dimensional carriage '" + parent + "' has no sub-variants.")
                 .withStyle(ChatFormatting.YELLOW));
             return 0;
         }
@@ -5598,7 +5762,7 @@ public final class EditorCommand {
         }
         String label = isSelf ? "the parent's own share" : "'" + child + "'";
         return savePortalRoomGroup(source, parent, updated,
-            "Editor: portal room '" + parent + "' → " + label + " weight=" + stored + ".");
+            "Editor: dimensional carriage '" + parent + "' → " + label + " weight=" + stored + ".");
     }
 
     /** Read-modify-write nudge for a sub-variant's weight (or the parent's own share). */
@@ -5611,7 +5775,7 @@ public final class EditorCommand {
         java.util.Optional<games.brennan.dungeontrain.track.variant.TrackVariantGroup> existing =
             games.brennan.dungeontrain.editor.TrackVariantGroupStore.get(PORTAL_ROOM_KIND, parent);
         if (existing.isEmpty()) {
-            source.sendFailure(Component.literal("Portal room '" + parent + "' has no sub-variants.")
+            source.sendFailure(Component.literal("Dimensional carriage '" + parent + "' has no sub-variants.")
                 .withStyle(ChatFormatting.YELLOW));
             return 0;
         }
@@ -5648,7 +5812,7 @@ public final class EditorCommand {
             return 0;
         }
         return savePortalRoomGroup(source, parent, existing.get().withoutMember(child),
-            "Editor: portal room '" + parent + "' → removed sub-variant '" + child
+            "Editor: dimensional carriage '" + parent + "' → removed sub-variant '" + child
                 + "' (it is a top-level room again).");
     }
 
@@ -5660,11 +5824,11 @@ public final class EditorCommand {
             games.brennan.dungeontrain.editor.TrackVariantGroupStore.get(PORTAL_ROOM_KIND, parent);
         if (existing.isEmpty() || existing.get().isEmpty()) {
             source.sendSuccess(() -> Component.literal(
-                "Portal room '" + parent + "' has no sub-variants."), false);
+                "Dimensional carriage '" + parent + "' has no sub-variants."), false);
             return 1;
         }
         games.brennan.dungeontrain.track.variant.TrackVariantGroup group = existing.get();
-        StringBuilder sb = new StringBuilder("Portal room '").append(parent).append("' sub-variants: ")
+        StringBuilder sb = new StringBuilder("Dimensional carriage '").append(parent).append("' sub-variants: ")
             .append(parent).append(" (self) = ").append(group.selfWeight());
         for (games.brennan.dungeontrain.track.variant.TrackVariantGroup.Member m : group.members()) {
             sb.append(", ").append(m.id()).append(" = ").append(m.weight());
@@ -5679,7 +5843,7 @@ public final class EditorCommand {
         String parent = parsePortalRoom(source, parentRaw);
         if (parent == null) return 0;
         if (!games.brennan.dungeontrain.editor.TrackVariantGroupStore.exists(PORTAL_ROOM_KIND, parent)) {
-            source.sendFailure(Component.literal("Portal room '" + parent + "' has no sub-variants.")
+            source.sendFailure(Component.literal("Dimensional carriage '" + parent + "' has no sub-variants.")
                 .withStyle(ChatFormatting.YELLOW));
             return 0;
         }
@@ -5700,7 +5864,7 @@ public final class EditorCommand {
             return 0;
         }
         source.sendSuccess(() -> Component.literal(
-            "Editor: portal room '" + parent + "' → sub-variants cleared (the rooms themselves are kept).")
+            "Editor: dimensional carriage '" + parent + "' → sub-variants cleared (the carriages themselves are kept).")
             .withStyle(ChatFormatting.GREEN), true);
         return 1;
     }
@@ -5726,7 +5890,7 @@ public final class EditorCommand {
         if (name == null) return 0;
         games.brennan.dungeontrain.portal.PortalRoomSettings current =
             games.brennan.dungeontrain.portal.PortalRoomSettings.of(name);
-        return applyPortalRoomSettings(source, name, current.withCopies(current.copies().next()));
+        return applyPortalRoomSettings(source, name, current.nextCopies());
     }
 
     /** {@code /dt editor portals contents next} — step the Contents setting. */
@@ -5736,6 +5900,15 @@ public final class EditorCommand {
         games.brennan.dungeontrain.portal.PortalRoomSettings current =
             games.brennan.dungeontrain.portal.PortalRoomSettings.of(name);
         return applyPortalRoomSettings(source, name, current.withContents(current.contents().next()));
+    }
+
+    /** {@code /dt editor portals sky next} — step Off → Daylight → Day/Night → Nether → End. */
+    private static int runPortalRoomSkyCycle(CommandSourceStack source) {
+        String name = portalRoomPlotUnderPlayer(source);
+        if (name == null) return 0;
+        games.brennan.dungeontrain.portal.PortalRoomSettings current =
+            games.brennan.dungeontrain.portal.PortalRoomSettings.of(name);
+        return applyPortalRoomSettings(source, name, current.withSky(current.sky().next()));
     }
 
     /** {@code /dt editor portals exits next} — step On → Random → Off, keeping the spacing. */
@@ -5829,20 +6002,326 @@ public final class EditorCommand {
             games.brennan.dungeontrain.portal.PortalRoomSettings.of(name).withContents(wanted));
     }
 
-    /** {@code /dt editor portals copies <exact|dynamic>} — set it outright. */
+    /**
+     * {@code /dt editor portals sky <none|day|cycle|nether|end>} — set it outright.
+     *
+     * <p>Compared on the parsed id rather than trusting {@code parse} outright, for the reason the
+     * contents setter does the same: parsing is deliberately total, so a typo would otherwise
+     * silently set the room to Off and report success.</p>
+     */
+    private static int runPortalRoomSky(CommandSourceStack source, String raw) {
+        String name = portalRoomPlotUnderPlayer(source);
+        if (name == null) return 0;
+
+        games.brennan.dungeontrain.portal.PortalRoomSky wanted =
+            games.brennan.dungeontrain.portal.PortalRoomSky.parse(raw);
+        if (!wanted.id().equalsIgnoreCase(raw.trim())) {
+            source.sendFailure(Component.literal(
+                "Unknown sky option '" + raw + "'. Try none, day, cycle, nether or end."));
+            return 0;
+        }
+        return applyPortalRoomSettings(source, name,
+            games.brennan.dungeontrain.portal.PortalRoomSettings.of(name).withSky(wanted));
+    }
+
+    /**
+     * {@code /dt editor portals copies <exact|dynamic|single>} — set it outright, keeping the block.
+     *
+     * <p>Compared on the KIND rather than the whole id, for the same reason the books setter is:
+     * {@code single}'s id() carries the block it repeats, and rejecting the bare word would be
+     * rejecting the only spelling the suggestions offer.</p>
+     */
     private static int runPortalRoomCopies(CommandSourceStack source, String raw) {
         String name = portalRoomPlotUnderPlayer(source);
         if (name == null) return 0;
 
-        games.brennan.dungeontrain.portal.PortalRoomCopies wanted =
-            games.brennan.dungeontrain.portal.PortalRoomCopies.parse(raw);
-        if (!wanted.id().equalsIgnoreCase(raw.trim())) {
+        games.brennan.dungeontrain.portal.PortalRoomCopies.Kind wanted =
+            games.brennan.dungeontrain.portal.PortalRoomCopies.Kind.parse(raw);
+        if (!wanted.id().equalsIgnoreCase(kindOf(raw))) {
             source.sendFailure(Component.literal(
-                "Unknown copies option '" + raw + "'. Try exact or dynamic."));
+                "Unknown copies option '" + raw + "'. Try exact, dynamic or single."));
+            return 0;
+        }
+        games.brennan.dungeontrain.portal.PortalRoomSettings current =
+            games.brennan.dungeontrain.portal.PortalRoomSettings.of(name);
+        return applyPortalRoomSettings(source, name,
+            current.withCopies(current.copies().withKind(wanted)));
+    }
+
+    /**
+     * One plane's three verbs: {@code held}, {@code edit} and a block id.
+     *
+     * <p>{@code plane} null means both planes — the {@code block} branch, which is what Single had
+     * before the floor and the roof were authored apart and is still the one-material gesture. The
+     * three branches are identical bar that argument, so they are built once rather than written out
+     * three times over.</p>
+     */
+    private static LiteralArgumentBuilder<CommandSourceStack> copiesPlaneNode(
+        String literal,
+        @javax.annotation.Nullable games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane plane
+    ) {
+        return Commands.literal(literal)
+            .then(Commands.literal("held")
+                .executes(ctx -> runPortalRoomCopiesBlockHeld(ctx.getSource(), plane)))
+            .then(Commands.literal("edit")
+                .executes(ctx -> runPortalRoomCopiesBlockEdit(ctx.getSource(), plane)))
+            .then(Commands.argument("block", StringArgumentType.greedyString())
+                .executes(ctx -> runPortalRoomCopiesBlock(ctx.getSource(), plane,
+                    StringArgumentType.getString(ctx, "block"))));
+    }
+
+    /**
+     * {@code /dt editor portals copies block held} — set Single's block to what the author is
+     * holding.
+     *
+     * <p>Three things are worth holding, and one of them is nothing. A plain <b>block</b> is the
+     * ordinary case. A <b>variant clipboard</b>, copied from a cell by the Block Variant menu,
+     * brings that cell's whole candidate list over in one gesture — the same value the Edit button
+     * authors in place. An <b>empty hand</b> sets the plane to air: a floor of gaps, or a roof that
+     * is open sky.</p>
+     *
+     * <p>Empty-hand-means-air is not invented here — it is what the Block Variant menu's Add does
+     * with an empty hand, down to the same command-block sentinel, so the gesture an author already
+     * knows from every other cell in the game means the same thing on these two rows.</p>
+     *
+     * <p>The held item rather than a typed id because this is a picking gesture, and the author is
+     * already standing in the plot with their palette in their hotbar. The menu is opened by a key
+     * toggle rather than by holding a tool, so the main hand is free.</p>
+     */
+    private static int runPortalRoomCopiesBlockHeld(
+        CommandSourceStack source,
+        @javax.annotation.Nullable games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane plane
+    ) {
+        String name = portalRoomPlotUnderPlayer(source);
+        if (name == null) return 0;
+
+        ServerPlayer player = source.getPlayer();
+        if (player == null) {
+            source.sendFailure(Component.literal("Only a player can pick a block from their hand."));
+            return 0;
+        }
+        ItemStack held = player.getMainHandItem();
+
+        if (held.isEmpty()) {
+            // The empty-placeholder sentinel, stored verbatim: PortalRoomSinglePlanes translates it
+            // to a no-cascade air write at stamp time, exactly as applyRoomVariants does for a cell.
+            // Air is a candidate like any other here, so this is authoring the plane rather than
+            // clearing it — the row keeps showing a value, and the plane is deliberately empty
+            // rather than merely unset.
+            return savePortalRoomCopiesVariant(source, name, plane, java.util.List.of(
+                new games.brennan.dungeontrain.editor.VariantState(
+                    net.minecraft.world.level.block.Blocks.COMMAND_BLOCK.defaultBlockState(), null)));
+        }
+
+        if (held.getItem() instanceof games.brennan.dungeontrain.item.VariantClipboardItem) {
+            java.util.List<games.brennan.dungeontrain.editor.VariantState> states =
+                games.brennan.dungeontrain.item.VariantClipboardItem.decodeStates(
+                    games.brennan.dungeontrain.item.VariantClipboardItem.readClipboardTag(held));
+            if (states.isEmpty()) {
+                source.sendFailure(Component.literal("That clipboard is empty."));
+                return 0;
+            }
+            return savePortalRoomCopiesVariant(source, name, plane, states);
+        }
+        if (held.getItem() instanceof BlockItem blockItem) {
+            return savePortalRoomCopiesVariant(source, name, plane, java.util.List.of(
+                new games.brennan.dungeontrain.editor.VariantState(
+                    blockItem.getBlock().defaultBlockState(), null)));
+        }
+        source.sendFailure(Component.literal(
+            "Hold a block, or a variant copied from a cell — or nothing at all for air — "
+                + "then press this again."));
+        return 0;
+    }
+
+    /** {@code /dt editor portals copies <block|floor|roof> <id>} — set it by name, for a script. */
+    private static int runPortalRoomCopiesBlock(
+        CommandSourceStack source,
+        @javax.annotation.Nullable games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane plane,
+        String raw
+    ) {
+        String name = portalRoomPlotUnderPlayer(source);
+        if (name == null) return 0;
+
+        java.util.Optional<net.minecraft.world.level.block.state.BlockState> state =
+            games.brennan.dungeontrain.portal.PortalRoomSinglePlanes.stateFor(raw);
+        if (state.isEmpty()) {
+            source.sendFailure(Component.literal(
+                "'" + raw + "' is not a block this world knows about."));
+            return 0;
+        }
+        return savePortalRoomCopiesVariant(source, name, plane, java.util.List.of(
+            new games.brennan.dungeontrain.editor.VariantState(state.get(), null)));
+    }
+
+    /**
+     * {@code /dt editor portals copies block edit} — open the Block Variant menu on this room's
+     * Copies block.
+     *
+     * <p>The same menu that authors every other cell in the game, pointed at a one-cell plot
+     * ({@code PortalRoomCopiesPlot}). Add, weights, rotation modes and Copy all work there, so
+     * turning the one block into a variant needs no authoring surface of its own.</p>
+     */
+    private static int runPortalRoomCopiesBlockEdit(
+        CommandSourceStack source,
+        @javax.annotation.Nullable games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane plane
+    ) {
+        String name = portalRoomPlotUnderPlayer(source);
+        if (name == null) return 0;
+        ServerPlayer player = source.getPlayer();
+        if (player == null) {
+            source.sendFailure(Component.literal("Only a player can open the variant menu."));
+            return 0;
+        }
+        // Both-planes has no menu of its own — one panel authors one cell, so `block edit` opens
+        // the floor and the row's own Edit buttons are how the roof is reached.
+        games.brennan.dungeontrain.editor.BlockVariantMenuController.openForCopies(player, name,
+            plane == null ? games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane.FLOOR : plane);
+        return 1;
+    }
+
+    /**
+     * Store {@code states} as what one of this room's planes repeats — or both of them, when
+     * {@code plane} is null.
+     *
+     * <p>Read-modify-write on the room's existing palettes rather than a fresh value, so setting the
+     * roof leaves the floor exactly as it was. The plane not named keeps whatever it had, which is
+     * the whole point of authoring the two apart.</p>
+     *
+     * <p>Replaces rather than appends within a plane: the value is one block, and the Block Variant
+     * menu is what turns it into several. Two writers, one whole-value handoff each.</p>
+     *
+     * <p>Nothing is rejected on content. An entry that resolves to air is a gap the author asked
+     * for, not a mistake to catch here.</p>
+     */
+    private static int savePortalRoomCopiesVariant(
+        CommandSourceStack source, String name,
+        @javax.annotation.Nullable games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane plane,
+        java.util.List<games.brennan.dungeontrain.editor.VariantState> states
+    ) {
+        games.brennan.dungeontrain.portal.PortalRoomCopiesVariant current =
+            games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.forRoom(
+                name, games.brennan.dungeontrain.portal.PortalRoomSettings.of(name).copies());
+        games.brennan.dungeontrain.portal.PortalRoomCopiesVariant variant = plane == null
+            ? games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.of(states)
+            : current.withStates(plane, states);
+        try {
+            variant.save(name);
+            if (EditorDevMode.isEnabled()) variant.saveToSource(name);
+        } catch (IOException e) {
+            source.sendFailure(Component.literal(
+                "Could not save the copies blocks for dimensional carriage '" + name + "': " + e.getMessage()));
+            return 0;
+        }
+        games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.invalidate(name);
+        String what = plane == null ? "floor and roof" : plane.displayName().toLowerCase(java.util.Locale.ROOT);
+        source.sendSuccess(() -> Component.literal(
+            "Editor: dimensional carriage '" + name + "' copies " + what + " is now "
+                + copiesPaletteText(variant,
+                    plane == null ? games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane.FLOOR : plane))
+            .withStyle(ChatFormatting.GREEN), true);
+        return 1;
+    }
+
+    /**
+     * One plane's palette as text — with the empty-placeholder sentinel read back as {@code air}.
+     *
+     * <p>The sentinel is a command block on disk and a gap at stamp time, and the id is what the
+     * author would be shown otherwise. Telling them their roof is now {@code minecraft:command_block}
+     * describes the storage rather than the choice.</p>
+     */
+    private static String copiesPaletteText(
+        games.brennan.dungeontrain.portal.PortalRoomCopiesVariant variant,
+        games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane plane
+    ) {
+        java.util.List<games.brennan.dungeontrain.editor.VariantState> states = variant.states(plane);
+        if (states.isEmpty()) return "unset";
+        java.util.List<String> out = new java.util.ArrayList<>(states.size());
+        for (games.brennan.dungeontrain.editor.VariantState st : states) {
+            out.add(games.brennan.dungeontrain.editor.CarriageVariantBlocks.isEmptyPlaceholder(st.state())
+                ? "air"
+                : net.minecraft.core.registries.BuiltInRegistries.BLOCK
+                    .getKey(st.state().getBlock()).toString());
+        }
+        return String.join(", ", out);
+    }
+
+    /**
+     * The two Copies palettes for the status line — {@code "stone"} when both planes agree, and
+     * {@code "floor stone, roof glass"} when they do not.
+     *
+     * <p>Named separately only when they differ: a room whose planes match is the ordinary case, and
+     * spelling out "floor X, roof X" for it would put the split in front of every author who never
+     * asked for it.</p>
+     */
+    private static String copiesPalettesText(
+        String name, games.brennan.dungeontrain.portal.PortalRoomSettings settings
+    ) {
+        games.brennan.dungeontrain.portal.PortalRoomCopiesVariant variant =
+            games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.forRoom(name, settings.copies());
+        String floor = copiesPaletteText(variant,
+            games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane.FLOOR);
+        String roof = copiesPaletteText(variant,
+            games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane.ROOF);
+        if (floor.equals(roof)) return floor;
+        return "floor " + floor + "; roof " + roof;
+    }
+
+    /** {@code /dt editor portals books next} — step the author lock. */
+    private static int runPortalRoomBooksCycle(CommandSourceStack source) {
+        String name = portalRoomPlotUnderPlayer(source);
+        if (name == null) return 0;
+        games.brennan.dungeontrain.portal.PortalRoomSettings current =
+            games.brennan.dungeontrain.portal.PortalRoomSettings.of(name);
+        return applyPortalRoomSettings(source, name, current.withBooks(current.books().next()));
+    }
+
+    /** {@code /dt editor portals books <off|self|player|signature>} — set it outright. */
+    private static int runPortalRoomBooks(CommandSourceStack source, String raw) {
+        String name = portalRoomPlotUnderPlayer(source);
+        if (name == null) return 0;
+
+        games.brennan.dungeontrain.portal.PortalRoomBooks wanted =
+            games.brennan.dungeontrain.portal.PortalRoomBooks.parse(raw);
+        // parse is total by design, so a typo would silently set the default rather than complain.
+        // Compare on the KIND rather than the whole id: `random:1:1:1` is a legitimate spelling that
+        // id() collapses back to the bare `random`, and rejecting it would be rejecting what the
+        // weight steppers themselves send.
+        if (!wanted.kind().id().equalsIgnoreCase(kindOf(raw))) {
+            source.sendFailure(Component.literal(
+                "Unknown books option '" + raw + "'. Try off, mix, "
+                + "mix:<self>:<player>:<signature>, or mix:<self>:<player>:<signature>:<min>:<max>."));
             return 0;
         }
         return applyPortalRoomSettings(source, name,
-            games.brennan.dungeontrain.portal.PortalRoomSettings.of(name).withCopies(wanted));
+            games.brennan.dungeontrain.portal.PortalRoomSettings.of(name).withBooks(wanted));
+    }
+
+    /** The kind half of a books argument — everything before the first weight separator. */
+    private static String kindOf(String raw) {
+        String text = raw == null ? "" : raw.trim();
+        int colon = text.indexOf(':');
+        return colon < 0 ? text : text.substring(0, colon);
+    }
+
+    /**
+     * {@code /dt editor portals books<self|player|signature> <inc|dec|N>} — one weight of a Random
+     * room's roll.
+     *
+     * <p>One handler for all three: the rows are identical but for which share they name, and three
+     * copies of this would be three places for the clamp or the plot lookup to drift apart.</p>
+     */
+    private static int runPortalRoomBookWeight(CommandSourceStack source,
+                                               games.brennan.dungeontrain.portal.PortalRoomBooks.Share which,
+                                               int delta, Integer exact) {
+        String name = portalRoomPlotUnderPlayer(source);
+        if (name == null) return 0;
+        games.brennan.dungeontrain.portal.PortalRoomSettings current =
+            games.brennan.dungeontrain.portal.PortalRoomSettings.of(name);
+        games.brennan.dungeontrain.portal.PortalRoomBooks books = current.books();
+        int wanted = exact != null ? exact : books.weightFor(which) + delta;
+        return applyPortalRoomSettings(source, name,
+            current.withBooks(books.withWeightFor(which, wanted)));
     }
 
     /** {@code /dt editor portals mode <mode>} — set it outright. */
@@ -5856,7 +6335,7 @@ public final class EditorCommand {
         // Worth complaining about here: the player typed something and meant it.
         if (!wanted.id().equalsIgnoreCase(raw.trim())) {
             source.sendFailure(Component.literal(
-                "Unknown portal room mode '" + raw + "'. Try bedrock_lock, endless_repetition or endless_open."));
+                "Unknown dimensional carriage mode '" + raw + "'. Try bedrock_lock, endless_repetition or endless_open."));
             return 0;
         }
         return applyPortalRoomSettings(source, name,
@@ -5873,11 +6352,16 @@ public final class EditorCommand {
                 settings.toTag());
         } catch (IOException e) {
             source.sendFailure(Component.literal(
-                "Could not save the settings for portal room '" + name + "': " + e.getMessage()));
+                "Could not save the settings for dimensional carriage '" + name + "': " + e.getMessage()));
             return 0;
         }
         // The Copies and Exits halves are only worth reporting when they mean anything.
-        String copies = settings.copiesApply() ? ", copies: " + settings.copies().displayName() : "";
+        String copies = settings.copiesApply()
+            ? ", copies: " + settings.copies().displayName()
+                + (settings.effectiveCopies().repeatsOneBlock()
+                    ? " (" + copiesPalettesText(name, settings) + ")"
+                    : "")
+            : "";
         String contents = ", contents: " + settings.contents().displayName();
         String exits = settings.exitsApply()
             ? ", exits: " + settings.exits().displayName()
@@ -5885,9 +6369,24 @@ public final class EditorCommand {
                 + (settings.exits().effectiveMoveChance() > 0
                     ? ", moved exit " + settings.exits().moveChance() + "/10" : "")
             : "";
+        // Only worth a word when the room actually locks: "books: Off" on every message would be
+        // noise on the four rooms out of five that never touch this.
+        String books = settings.books().locks()
+            ? ", books: " + settings.books().displayName()
+                + " (" + settings.books().selfWeight() + "/" + settings.books().playerWeight()
+                + "/" + settings.books().signatureWeight() + ")"
+                + ", authors with " + settings.books().minBooks() + "+"
+                + (settings.books().maxBooks() == games.brennan.dungeontrain.portal.PortalRoomBooks.NO_MAXIMUM
+                    ? "" : "\u2013" + settings.books().maxBooks())
+                + " books"
+            : "";
+        // Same rule as Books: only worth a word when the room actually asks for a sky.
+        String sky = settings.sky().lights()
+            ? ", sky: " + settings.sky().displayName()
+            : "";
         source.sendSuccess(() -> Component.literal(
-            "Portal room '" + name + "' walls: " + settings.mode().displayName() + copies + contents
-            + exits
+            "Dimensional carriage '" + name + "' walls: " + settings.mode().displayName() + copies + contents
+            + exits + books + sky
             + ". Portals already standing keep the settings they were built with — this takes effect "
             + "on the next one the train reaches." + subVariantNote(name)
         ).withStyle(ChatFormatting.GREEN), true);
@@ -5923,7 +6422,7 @@ public final class EditorCommand {
         String name = PortalRoomEditor.plotContaining(player.blockPosition(), dims);
         if (name == null) {
             source.sendFailure(Component.literal(
-                "Stand in a portal room plot first — /dt editor portals."));
+                "Stand in a dimensional carriage plot first — /dt editor portals."));
         }
         return name;
     }
@@ -5935,18 +6434,80 @@ public final class EditorCommand {
      * one so the menu steppers can be tapped. All three land on
      * {@link PortalRoomEditor#setSize}, which clamps to what this world's corridor allows.</p>
      */
+    /**
+     * One share of a Random room's roll — {@code inc}, {@code dec} or an outright number.
+     *
+     * <p>Three identical nodes built from one place for the same reason
+     * {@link #runPortalRoomBookWeight} is one handler: the only thing that differs between Self,
+     * Player and Signature here is which share the number lands on.</p>
+     */
+    private static LiteralArgumentBuilder<CommandSourceStack> portalRoomBookWeightNode(
+        String literal, games.brennan.dungeontrain.portal.PortalRoomBooks.Share which
+    ) {
+        return Commands.literal(literal)
+            .then(Commands.literal("inc")
+                .executes(ctx -> runPortalRoomBookWeight(ctx.getSource(), which, +1, null)))
+            .then(Commands.literal("dec")
+                .executes(ctx -> runPortalRoomBookWeight(ctx.getSource(), which, -1, null)))
+            .then(Commands.argument("weight", IntegerArgumentType.integer(
+                    games.brennan.dungeontrain.portal.PortalRoomBooks.MIN_WEIGHT,
+                    games.brennan.dungeontrain.portal.PortalRoomBooks.MAX_WEIGHT))
+                .executes(ctx -> runPortalRoomBookWeight(ctx.getSource(), which, 0,
+                    IntegerArgumentType.getInteger(ctx, "weight"))));
+    }
+
+    /**
+     * One end of the band of author a room accepts — {@code inc}, {@code dec} or an outright number.
+     *
+     * <p>Same shape as the weight node next to it: the only difference is which number it lands on,
+     * so both go through one handler rather than four near-copies.</p>
+     */
+    private static LiteralArgumentBuilder<CommandSourceStack> portalRoomBookBoundNode(
+        String literal, boolean minimum
+    ) {
+        return Commands.literal(literal)
+            .then(Commands.literal("inc")
+                .executes(ctx -> runPortalRoomBookBound(ctx.getSource(), minimum, +1, null)))
+            .then(Commands.literal("dec")
+                .executes(ctx -> runPortalRoomBookBound(ctx.getSource(), minimum, -1, null)))
+            .then(Commands.argument("books", IntegerArgumentType.integer(
+                    games.brennan.dungeontrain.portal.PortalRoomBooks.MIN_BOOK_BOUND,
+                    games.brennan.dungeontrain.portal.PortalRoomBooks.MAX_BOOK_BOUND))
+                .executes(ctx -> runPortalRoomBookBound(ctx.getSource(), minimum, 0,
+                    IntegerArgumentType.getInteger(ctx, "books"))));
+    }
+
+    /** {@code /dt editor portals books<min|max> <inc|dec|N>} — the band of author this room accepts. */
+    private static int runPortalRoomBookBound(CommandSourceStack source, boolean minimum,
+                                              int delta, Integer exact) {
+        String name = portalRoomPlotUnderPlayer(source);
+        if (name == null) return 0;
+        games.brennan.dungeontrain.portal.PortalRoomSettings current =
+            games.brennan.dungeontrain.portal.PortalRoomSettings.of(name);
+        games.brennan.dungeontrain.portal.PortalRoomBooks books = current.books();
+        int at = minimum ? books.minBooks() : books.maxBooks();
+        int wanted = exact != null ? exact : at + delta;
+        return applyPortalRoomSettings(source, name, current.withBooks(
+            minimum ? books.withMinBooks(wanted) : books.withMaxBooks(wanted)));
+    }
+
     private static LiteralArgumentBuilder<CommandSourceStack> portalSizeNode(
-        String literal, PortalRoomEditor.Axis axis
+        String literal, PortalRoomResize.Axis axis
     ) {
         return Commands.literal(literal)
             .then(Commands.literal("inc").executes(ctx -> runPortalRoomSizeStep(ctx.getSource(), axis, +1)))
             .then(Commands.literal("dec").executes(ctx -> runPortalRoomSizeStep(ctx.getSource(), axis, -1)))
-            // Loosest floor of any axis, not the length's — this node is shared by length, width
-            // and height, and a parser bound is a silent rejection where clampSize is a visible
-            // one. PortalRoomLayout.clampSize stays the single authority on what is legal.
+            // Loosest floor AND ceiling of any axis, not the length's — this node is shared by
+            // length, width and height, and a parser bound is a silent rejection where clampSize is
+            // a visible one. PortalRoomLayout.clampSize stays the single authority on what is legal.
+            //
+            // The ceiling was MAX_LENGTH (48), which was fine while every axis capped there; height
+            // now goes to MAX_HEIGHT (80), and `portals height 70` was refused by the parser with
+            // "Integer must not be more than 48" before the clamp could say anything.
             .then(Commands.argument("blocks", IntegerArgumentType.integer(
                     Math.min(PortalRoomLayout.MIN_LENGTH, PortalRoomLayout.MIN_HEIGHT),
-                    PortalRoomLayout.MAX_LENGTH))
+                    Math.max(PortalRoomLayout.MAX_LENGTH,
+                        Math.max(PortalRoomLayout.MAX_WIDTH, PortalRoomLayout.MAX_HEIGHT))))
                 .executes(ctx -> runPortalRoomSize(ctx.getSource(), axis,
                     IntegerArgumentType.getInteger(ctx, "blocks"))));
     }
@@ -5967,7 +6528,7 @@ public final class EditorCommand {
         String name = PortalRoomEditor.plotContaining(player.blockPosition(), dims);
         if (name == null) {
             source.sendFailure(Component.literal(
-                "Stand in a portal room plot first — /dt editor portals."));
+                "Stand in a dimensional carriage plot first — /dt editor portals."));
             return 0;
         }
 
@@ -5976,25 +6537,49 @@ public final class EditorCommand {
         boolean clamped = !applied.equals(wanted);
         String note = clamped
             ? " (clamped from " + length + " " + width + " " + height
-                + " — the room must still seal the corridor mouth and fit its Y lane)"
+                + " — the room must still seal the corridor mouth, and fit under the sky)"
             : "";
         source.sendSuccess(() -> Component.literal(
-            "Portal room '" + name + "' is now " + applied.getX() + " long, " + applied.getZ()
+            "Dimensional carriage '" + name + "' is now " + applied.getX() + " long, " + applied.getZ()
             + " wide, " + applied.getY() + " tall" + note
             + ". What you built is still there — /dt save to keep the new size."
         ).withStyle(ChatFormatting.GREEN), true);
         return 1;
     }
 
+    /**
+     * Which faces a resize moved, as a sentence fragment — or empty when nothing changed.
+     *
+     * <p>Worth saying out loud because it is not what the steppers used to do: growth landed on the
+     * far face every time, and an author who has built against one wall wants to know which way the
+     * room just opened. A shrink also says that the row is recoverable, since it no longer looks
+     * like one from the world.</p>
+     */
+    private static String describeFaces(CarriageDims dims, PortalRoomResize.Axis axis,
+                                        int before, int after) {
+        java.util.List<PortalRoomResize.Step> steps = PortalRoomResize.plan(
+            dims, axis, PortalRoomResize.with(net.minecraft.core.Vec3i.ZERO, axis, before), after);
+        if (steps.isEmpty()) return "";
+        long min = steps.stream().filter(s -> s.side() == PortalRoomResize.Side.MIN).count();
+        long max = steps.size() - min;
+        // Height never alternates — its floor is the corridor's, so only the ceiling can move.
+        String where = axis == PortalRoomResize.Axis.HEIGHT ? "the ceiling"
+            : min > 0 && max > 0 ? "both ends"
+            : min > 0 ? "the near end" : "the far end";
+        return steps.get(0).grow()
+            ? " Grown at " + where + "."
+            : " Cropped at " + where + " — step back up and those blocks come back.";
+    }
+
     /** Nudge one axis of the room plot the player is standing in by {@code delta}. */
-    private static int runPortalRoomSizeStep(CommandSourceStack source, PortalRoomEditor.Axis axis, int delta) {
+    private static int runPortalRoomSizeStep(CommandSourceStack source, PortalRoomResize.Axis axis, int delta) {
         ServerPlayer player = requirePlayer(source);
         if (player == null) return 0;
         CarriageDims dims = DungeonTrainWorldData.get(source.getServer().overworld()).dims();
         String name = PortalRoomEditor.plotContaining(player.blockPosition(), dims);
         if (name == null) {
             source.sendFailure(Component.literal(
-                "Stand in a portal room plot first — /dt editor portals."));
+                "Stand in a dimensional carriage plot first — /dt editor portals."));
             return 0;
         }
         int current = PortalRoomEditor.axisOf(PortalRoomEditor.plotSize(name, dims), axis);
@@ -6005,11 +6590,11 @@ public final class EditorCommand {
      * {@code /dt editor portals length|width|height <blocks>} — restamp the room plot the player is
      * standing in with that axis set.
      *
-     * <p>Destructive: the box changes size, so the plot goes back to the built-in room at the new
-     * size. Nothing is written to disk until the next {@code /dt save}, which is what makes the
-     * size permanent.</p>
+     * <p>Non-destructive: the live room is carried across, length and width alternate which face
+     * moves, and a shrink files the row it removes so stepping back up returns it. Nothing is written
+     * to disk until the next {@code /dt save}, which is what makes the size permanent.</p>
      */
-    private static int runPortalRoomSize(CommandSourceStack source, PortalRoomEditor.Axis axis, int blocks) {
+    private static int runPortalRoomSize(CommandSourceStack source, PortalRoomResize.Axis axis, int blocks) {
         ServerPlayer player = requirePlayer(source);
         if (player == null) return 0;
         ServerLevel overworld = source.getServer().overworld();
@@ -6018,18 +6603,20 @@ public final class EditorCommand {
         String name = PortalRoomEditor.plotContaining(player.blockPosition(), dims);
         if (name == null) {
             source.sendFailure(Component.literal(
-                "Stand in a portal room plot first — /dt editor portals."));
+                "Stand in a dimensional carriage plot first — /dt editor portals."));
             return 0;
         }
 
+        int before = PortalRoomEditor.axisOf(PortalRoomEditor.plotSize(name, dims), axis);
         net.minecraft.core.Vec3i applied = PortalRoomEditor.setSize(overworld, name, axis, blocks, dims);
         int value = PortalRoomEditor.axisOf(applied, axis);
         String axisName = axis.name().toLowerCase(Locale.ROOT);
         String note = value == blocks ? ""
-            : " (clamped from " + blocks + " — the room must still seal the corridor mouth and fit its Y lane)";
+            : " (clamped from " + blocks + " — the room must still seal the corridor mouth, and fit under the sky)";
+        String faces = describeFaces(dims, axis, before, value);
         source.sendSuccess(() -> Component.literal(
-            "Portal room '" + name + "' " + axisName + " is now " + value + note
-            + ". What you built is still there — /dt save to keep the new size."
+            "Dimensional carriage '" + name + "' " + axisName + " is now " + value + note + "." + faces
+            + " What you built is still there — /dt save to keep the new size."
         ).withStyle(ChatFormatting.GREEN), true);
         return 1;
     }
@@ -6292,4 +6879,149 @@ public final class EditorCommand {
         double tz = origin.getZ() + fp.getZ() / 2.0;
         player.teleportTo(overworld, tx, ty, tz, player.getYRot(), player.getXRot());
     }
+
+    /**
+     * {@code /dungeontrain editor undo|redo} — step the editor history for the
+     * plot the player is standing in.
+     *
+     * <p>Both the Ctrl/Cmd+Z keybinding and the X-menu's Undo | Redo row come
+     * through here, so there is one server-side path and the two surfaces
+     * cannot drift. Feedback goes to the action bar rather than chat: an author
+     * undoing a run of edits should not have to watch their chat fill up.</p>
+     */
+    /**
+     * Rearrange the plot the player is standing in — {@code offset}, {@code rotate}
+     * and {@code flip} all land here, differing only in the
+     * {@link EditorPlotTransform} they carry.
+     *
+     * <p>Recorded through {@link EditorRegionDiff} so the whole rearrangement —
+     * blocks, variant sidecar and container pools — comes back on one Ctrl+Z.
+     * The wrapper is entered only once the transform is known to apply, so a
+     * rejected quarter turn does not push an empty step.</p>
+     */
+    private static int runTransform(CommandSourceStack source, EditorPlotTransform transform) {
+        ServerPlayer player = requirePlayer(source);
+        if (player == null) return 0;
+        ServerLevel level = source.getServer().overworld();
+
+        EditorPlotTransformer.Region region =
+            EditorPlotTransformer.resolve(player, level).orElse(null);
+        if (region == null) {
+            source.sendFailure(Component.literal(
+                "Not in an editor plot — stand inside the template you want to move."
+            ).withStyle(ChatFormatting.RED));
+            return 0;
+        }
+        if (transform.isIdentity()) {
+            source.sendFailure(Component.literal(
+                transform.label() + " would leave the plot exactly as it is."
+            ).withStyle(ChatFormatting.RED));
+            return 0;
+        }
+        String rejection = transform.rejection(region.size());
+        if (rejection != null) {
+            source.sendFailure(Component.literal(
+                "Cannot " + transform.label().toLowerCase(Locale.ROOT) + ": " + rejection + "."
+            ).withStyle(ChatFormatting.RED));
+            return 0;
+        }
+
+        // Say so up front rather than letting the author find out at Ctrl+Z: a
+        // plot bigger than the history's per-step cell cap runs unrecorded, and
+        // EditorRegionDiff drops that plot's history when it happens.
+        if (region.volume() > EditorEditHistory.MAX_CELLS_PER_STEP) {
+            source.sendSuccess(() -> Component.literal(
+                "Heads up: this plot is too big to record (" + region.volume()
+                    + " cells) — this cannot be undone."
+            ).withStyle(ChatFormatting.YELLOW), false);
+        }
+
+        return EditorRegionDiff.recording(source, transform.label(),
+            () -> applyTransform(source, level, region, transform));
+    }
+
+    /** The recorded half of {@link #runTransform} — see there for the guards. */
+    private static int applyTransform(CommandSourceStack source, ServerLevel level,
+                                      EditorPlotTransformer.Region region,
+                                      EditorPlotTransform transform) {
+        EditorPlotTransformer.Result result;
+        try {
+            result = EditorPlotTransformer.apply(level, region, transform);
+        } catch (IOException e) {
+            // The blocks have already moved by the time a sidecar write can
+            // fail, so this is a partial apply — say which half, and leave the
+            // history step to put both back.
+            LOGGER.error("[DungeonTrain] editor transform ({}) failed to save a sidecar",
+                transform.label(), e);
+            source.sendFailure(Component.literal(
+                transform.label() + ": blocks moved but a sidecar could not be saved — "
+                    + e.getMessage() + ". Undo with Ctrl+Z."
+            ).withStyle(ChatFormatting.RED));
+            return 0;
+        }
+
+        StringBuilder message = new StringBuilder("Editor: ")
+            .append(transform.label()).append(" — ").append(result.cells())
+            .append(result.cells() == 1 ? " block" : " blocks");
+        if (result.variantEntries() > 0) {
+            message.append(", ").append(result.variantEntries()).append(" variant ")
+                .append(result.variantEntries() == 1 ? "entry" : "entries");
+        }
+        if (result.pools() > 0) {
+            message.append(", ").append(result.pools()).append(" container ")
+                .append(result.pools() == 1 ? "pool" : "pools");
+        }
+        message.append('.');
+        source.sendSuccess(() -> Component.literal(message.toString())
+            .withStyle(ChatFormatting.GREEN), true);
+
+        if (result.entities() > 0) {
+            source.sendSuccess(() -> Component.literal(
+                "  " + result.entities() + " entit" + (result.entities() == 1 ? "y" : "ies")
+                    + " in the plot stayed put — undo has no record of entities, so moving them "
+                    + "would strand them on a Ctrl+Z."
+            ).withStyle(ChatFormatting.YELLOW), false);
+        }
+        if (region.mirrored()) {
+            source.sendSuccess(() -> Component.literal(
+                "  This plot has a mirror axis on — the two halves may no longer agree. "
+                    + "Run /dt editor mirror rebuild if you want them re-derived."
+            ).withStyle(ChatFormatting.YELLOW), false);
+        }
+        return 1;
+    }
+
+    private static int runUndoRedo(CommandSourceStack source, boolean redoing) {
+        ServerPlayer player = requirePlayer(source);
+        if (player == null) return 0;
+
+        EditorEditApplier.Result result = redoing
+            ? EditorEditApplier.redo(player)
+            : EditorEditApplier.undo(player);
+        String verb = redoing ? "Redo" : "Undo";
+
+        switch (result.outcome()) {
+            case DONE -> {
+                // Name the plot: the author may be nowhere near it, so "Undo: Place"
+                // alone would not say what just changed.
+                actionBar(player, verb + ": " + result.label() + " — " + result.plotKey(),
+                    ChatFormatting.GREEN);
+                return 1;
+            }
+            case NOTHING -> actionBar(player, "Nothing to " + verb.toLowerCase(Locale.ROOT),
+                ChatFormatting.GRAY);
+            case STALE -> actionBar(player,
+                "Editor history is out of date — " + result.plotKey() + " was rebuilt",
+                ChatFormatting.YELLOW);
+            case FAILED -> actionBar(player, verb + " partly failed — see the log",
+                ChatFormatting.RED);
+        }
+        return 0;
+    }
+
+    /** Overlay text above the hotbar — the editor's usual channel for transient feedback. */
+    private static void actionBar(ServerPlayer player, String text, ChatFormatting colour) {
+        player.displayClientMessage(Component.literal(text).withStyle(colour), true);
+    }
+
 }

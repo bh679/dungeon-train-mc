@@ -9,6 +9,7 @@ import games.brennan.dungeontrain.narrative.BookReadMarkerTag;
 import games.brennan.dungeontrain.narrative.BookVoteTag;
 import games.brennan.dungeontrain.discord.DeathNoteReporter;
 import games.brennan.dungeontrain.narrative.BurnableBookTag;
+import games.brennan.dungeontrain.narrative.EditorAuthoredBookTag;
 import games.brennan.dungeontrain.narrative.CursedBookFactory;
 import games.brennan.dungeontrain.narrative.CursedStoryPool;
 import games.brennan.dungeontrain.narrative.CursedStoryTag;
@@ -594,7 +595,8 @@ public final class StartingBookEvents {
      * chest break, a broken lectern popping its locked book, anything that
      * calls {@code Level.addFreshEntity}). When the entity is an
      * {@link ItemEntity} carrying a burnable book ({@link BurnableBookTag} —
-     * starting / random / player-written / discovered-shared / narrative),
+     * starting / random / player-written / discovered-shared / editor-authored /
+     * narrative),
      * register it in {@link #BURN_ENTITIES} so the burn lifecycle picks it
      * up on the next tick.
      *
@@ -654,7 +656,7 @@ public final class StartingBookEvents {
 
     /**
      * Credits the "burned without reading" milestone when {@code stack} is a
-     * starting/random/player-written/discovered-shared book (the immediate-burn
+     * starting/random/player-written/discovered-shared/editor-authored book (the immediate-burn
      * {@link SharedBookTag} contribution copy is excluded — burning that is the
      * intended outcome of signing, not an avoided read) that was never opened via
      * {@link BookReadMarkerTag}, and the drop was player-initiated (Q-throw, the
@@ -670,7 +672,8 @@ public final class StartingBookEvents {
         boolean countsForMilestone = StartingBookTag.isStartingBook(stack)
                 || RandomBookTag.read(stack).isPresent()
                 || PlayerWrittenBookTag.isPlayerWritten(stack)
-                || SharedBookFoundTag.isFound(stack);
+                || SharedBookFoundTag.isFound(stack)
+                || EditorAuthoredBookTag.isAuthored(stack);
         if (!countsForMilestone) return;
         if (BookReadMarkerTag.isOpened(stack)) return;
         if (!(item.getOwner() instanceof ServerPlayer player)) return;

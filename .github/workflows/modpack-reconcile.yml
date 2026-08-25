@@ -1,0 +1,48 @@
+name: Modpack Reconcile
+
+# Backstop for silently-lost modpack versions.
+#
+# The primary guard is the "Verify the pack version actually published" step in
+# release-modpack.yml, which fails that release's run when CurseForge accepts an upload
+# and then rejects it during validation. This workflow is the coarse net underneath: it
+# compares what is PUBLICLY listed on both modpack platforms against the GitHub releases,
+# so a stall that slips past the per-release check still surfaces on its own.
+#
+# The report always prints in full — scan it to see drift early. The job only FAILS on a
+# prolonged CurseForge stall (see the threshold below), which is deliberately generous:
+# since the auto-release cascade no longer publishes CurseForge pack versions, a quiet
+# stretch with no operator-dispatched release is normal and must not page anyone.
+
+on:
+  schedule:
+    - cron: "17 */6 * * *"   # every 6 hours, off the hour to dodge the rush
+  workflow_dispatch:
+    inputs:
+      fail_if_stale_hours:
+        description: "Fail if CurseForge has published nothing newer than this many hours AND is behind the newest release. 0 = report only."
+        required: false
+        type: string
+        default: "168"
+
+jobs:
+  reconcile:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compare published modpack versions against releases
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          CURSEFORGE_MODPACK_PROJECT_ID: ${{ vars.CURSEFORGE_MODPACK_PROJECT_ID }}
+          MODRINTH_MODPACK_PROJECT_ID: ${{ vars.MODRINTH_MODPACK_PROJECT_ID }}
+          # Optional: official CurseForge read API. Without it the script falls back to
+          # the keyless cfwidget mirror. CURSEFORGE_TOKEN is an UPLOAD credential and
+          # cannot read listings, so it is deliberately not passed here.
+          CURSEFORGE_API_KEY: ${{ secrets.CURSEFORGE_API_KEY }}
+          # 7 days by default: long enough that a cascade-only stretch never trips it,
+          # short enough to catch a real outage well before it costs a dozen releases.
+          STALE_HOURS: ${{ inputs.fail_if_stale_hours || '168' }}
+        run: |
+          python3 scripts/modpack/reconcile.py --fail-if-stale-hours "$STALE_HOURS"

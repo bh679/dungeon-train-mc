@@ -7,6 +7,7 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.tree.LiteralCommandNode;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
+import games.brennan.dungeontrain.difficulty.DifficultyOffset;
 import games.brennan.dungeontrain.difficulty.DifficultyProgression;
 import games.brennan.dungeontrain.event.CinematicIntroService;
 import games.brennan.dungeontrain.event.DtpPlacementService;
@@ -242,7 +243,7 @@ public final class TrainCommand {
      * @return how many remembered shared-carriage ids were forgotten
      */
     private static int resetRunState(MinecraftServer server) {
-        DungeonTrainConfig.setDifficultyTravelledOffset(DungeonTrainConfig.DEFAULT_DIFFICULTY_TRAVELLED_OFFSET);
+        DifficultyOffset.clear(server);
         int forgotten = DungeonTrainWorldData.get(server.overworld()).clearUsedCarriageIds();
         LOGGER.info("[DungeonTrain] spawn reset: difficulty offset cleared; forgot {} used shared-carriage id(s)",
             forgotten);
@@ -341,7 +342,7 @@ public final class TrainCommand {
         int offset = DifficultyProgression.travelledOffsetForRequestedTier(
             requestedTier, rawTravelled,
             DungeonTrainConfig.getCarriagesPerTier(), DungeonTrainConfig.getProgressionLevelDelay());
-        DungeonTrainConfig.setDifficultyTravelledOffset(offset);
+        DifficultyOffset.set(source.getServer(), offset);
 
         LOGGER.info("[DungeonTrain] /dungeontrain difficulty {} — travelled-offset set to {} (raw progress {} carriages); treating players as difficulty {}",
             requestedTier, offset, rawTravelled, requestedTier);
@@ -356,7 +357,7 @@ public final class TrainCommand {
     }
 
     private static int runDifficultyAuto(CommandSourceStack source) {
-        DungeonTrainConfig.setDifficultyTravelledOffset(DungeonTrainConfig.DEFAULT_DIFFICULTY_TRAVELLED_OFFSET);
+        DifficultyOffset.clear(source.getServer());
 
         LOGGER.info("[DungeonTrain] /dungeontrain difficulty auto — travelled-offset cleared; resuming fully automatic scaling");
         source.sendSuccess(() -> Component.literal(

@@ -91,8 +91,21 @@ public final class EditorPlotLabelsRenderer {
         MODE_CYCLE,
         /** The sub-mode row — only shown while the mode makes copies. */
         COPIES_CYCLE,
+        /** The floor row under it — sets the floor palette from the hand. */
+        COPIES_FLOOR_HELD,
+        /** The Edit half of that row — opens the Block Variant menu on the floor palette. */
+        COPIES_FLOOR_EDIT,
+        /** The roof row — the same two halves, aimed at the plane over the player's head. */
+        COPIES_ROOF_HELD,
+        COPIES_ROOF_EDIT,
         /** The furnishing row — whether the room takes a contents template, and how it is fitted. */
         ROOM_CONTENTS_CYCLE,
+        /** The sky row — whether the room is lit as though it stood outdoors, and under which sky. */
+        ROOM_SKY_CYCLE,
+        /** The author-lock row — whether the room stocks its shelves from one person. */
+        ROOM_BOOKS_CYCLE,
+        /** The Edit half of that row — the weights and the band, which only a stocking room has. */
+        ROOM_BOOKS_EDIT,
         /** The extra-corridors row — only shown while the walls repeat. */
         EXITS_CYCLE,
         /** The stepper for how far apart those extra corridors go. */
@@ -114,9 +127,16 @@ public final class EditorPlotLabelsRenderer {
      * {@link #rows} now, so the three cannot drift.</p>
      */
     public enum RowKind {
-        NAME, WEIGHT, LENGTH, WIDTH, HEIGHT, MODE, COPIES, ROOM_CONTENTS, EXITS, EXIT_EVERY,
-        EXIT_MOVE, ENTER, ACTION, CONTENTS
+        NAME, WEIGHT, LENGTH, WIDTH, HEIGHT, MODE, COPIES, COPIES_FLOOR, COPIES_ROOF, ROOM_CONTENTS,
+        ROOM_BOOKS, ROOM_SKY, EXITS, EXIT_EVERY, EXIT_MOVE, ENTER, ACTION, CONTENTS
     }
+
+    /**
+     * How much of the Books row the value keeps when an Edit button shares it. Wide enough for
+     * "Books: Author Mix" at the panel's text scale, leaving a button that is still comfortably
+     * clickable.
+     */
+    private static final double BOOKS_CYCLE_SHARE = 0.72;
 
     /** The rows {@code entry} shows, top to bottom. */
     public static RowKind[] rows(EditorPlotLabelsPacket.Entry entry) {
@@ -131,7 +151,13 @@ public final class EditorPlotLabelsRenderer {
         }
         if (hasModeRow(entry)) buf[n++] = RowKind.MODE;
         if (hasCopiesRow(entry)) buf[n++] = RowKind.COPIES;
+        if (hasCopiesBlockRow(entry)) {
+            buf[n++] = RowKind.COPIES_FLOOR;
+            buf[n++] = RowKind.COPIES_ROOF;
+        }
         if (hasRoomContentsRow(entry)) buf[n++] = RowKind.ROOM_CONTENTS;
+        if (hasRoomBooksRow(entry)) buf[n++] = RowKind.ROOM_BOOKS;
+        if (hasRoomSkyRow(entry)) buf[n++] = RowKind.ROOM_SKY;
         if (hasExitsRow(entry)) buf[n++] = RowKind.EXITS;
         if (hasExitEveryRow(entry)) buf[n++] = RowKind.EXIT_EVERY;
         if (hasExitMoveRow(entry)) buf[n++] = RowKind.EXIT_MOVE;
@@ -186,8 +212,8 @@ public final class EditorPlotLabelsRenderer {
     }
 
     /**
-     * Whether the Copies row shows: only when the walls repeat the whole room, since that is the
-     * only mode that makes copies for the setting to describe.
+     * Whether the Copies row shows: only when the walls are endless, since those are the only modes
+     * that append tiles for the setting to describe.
      */
     public static boolean hasCopiesRow(EditorPlotLabelsPacket.Entry entry) {
         return hasModeRow(entry)
@@ -199,6 +225,79 @@ public final class EditorPlotLabelsRenderer {
     public static String copiesLabel(String modeTag) {
         return "Copies: " + games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag)
             .copies().displayName();
+    }
+
+    /**
+     * Whether the Floor and Roof rows show: only while the Copies row above them says Single, the
+     * one value that reads a block. The two always appear together — a tile has both planes, and an
+     * author who has set only one still needs to see that the other is unset.
+     *
+     * <p>Hidden rather than dimmed under the other two, the same way the Copies row itself is absent
+     * rather than greyed out under walls that make no copies — a block for tiles that are copies of
+     * the room is a control with nothing on the other end of it.</p>
+     */
+    public static boolean hasCopiesBlockRow(EditorPlotLabelsPacket.Entry entry) {
+        return hasCopiesRow(entry) && hasCopiesBlockRowFor(entry.roomMode());
+    }
+
+    /**
+     * The same question asked of a mode tag alone — what the command menu has to hand.
+     *
+     * <p>{@code effectiveCopies} and not the raw value, so a room still carrying Single from before
+     * its walls were changed to Endless Repetition does not show a block row for a setting that mode
+     * cannot use.</p>
+     */
+    public static boolean hasCopiesBlockRowFor(String modeTag) {
+        games.brennan.dungeontrain.portal.PortalRoomSettings settings =
+            games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag);
+        return settings.copiesApply() && settings.effectiveCopies().repeatsOneBlock();
+    }
+
+    /**
+     * True when {@code blockId} is the empty-placeholder sentinel — the author asked for air.
+     *
+     * <p>Id-only because that is all the row is sent: the label packet carries one block id per
+     * plane for the icon, never a state. Same three command-block kinds
+     * {@code CarriageVariantBlocks.isEmptyPlaceholder} covers, which is where the sentinel is
+     * defined.</p>
+     */
+    public static boolean isAirSentinelId(String blockId) {
+        return "minecraft:command_block".equals(blockId)
+            || "minecraft:chain_command_block".equals(blockId)
+            || "minecraft:repeating_command_block".equals(blockId);
+    }
+
+    /** Where the icon sits on a Copies plane row — right of its "Floor:" / "Roof:" label. */
+    private static double copiesIconCentre(double halfW) {
+        return -halfW + halfW * 0.75;
+    }
+
+    /**
+     * Where the Edit half of a Copies plane row starts.
+     *
+     * <p>{@link #BOOKS_CYCLE_SHARE}, the same split the Books row uses, so the two read as one
+     * pattern: a value on the left, a way into its editor on the right.</p>
+     */
+    private static double copiesEditLeft(double halfW) {
+        return booksEditLeft(halfW);
+    }
+
+    /** True when {@code hitX} lands on a Copies plane row's Edit button rather than its value. */
+    public static boolean copiesBlockHitIsEdit(double halfW, double hitX) {
+        return hitX >= copiesEditLeft(halfW);
+    }
+
+    /**
+     * What the Blocks row reads where it cannot draw icons — the command menu, which is text-only.
+     *
+     * <p>Names the gesture rather than the value. The value lives server-side and may be a variant
+     * of several candidates; the plot panel shows it as an icon, and a text row that tried to would
+     * either be a namespaced id forty characters long or, worse, the id in the mode tag — which
+     * stops being the answer the moment a variant is authored. Saying what the row does is honest
+     * at every width.</p>
+     */
+    public static String copiesBlockLabel(games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane plane) {
+        return plane.displayName() + ": + held";
     }
 
     /**
@@ -216,6 +315,40 @@ public final class EditorPlotLabelsRenderer {
     public static String roomContentsLabel(String modeTag) {
         return "Contents: " + games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag)
             .contents().displayName();
+    }
+
+    /**
+     * Whether the Books row shows: on every portal room, on the same reasoning as Contents.
+     *
+     * <p>Not gated on the room being furnished. A room can hold books without drawing a contents
+     * template — its own {@code .nbt} may have shelves stamped into it — so gating on Contents would
+     * hide the control on exactly the hand-authored libraries most likely to want it.</p>
+     */
+    public static boolean hasRoomBooksRow(EditorPlotLabelsPacket.Entry entry) {
+        return hasModeRow(entry);
+    }
+
+    /** What the Books row reads, e.g. {@code "Books: Random Signature"}. */
+    public static String roomBooksLabel(String modeTag) {
+        return "Books: " + games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag)
+            .books().displayName();
+    }
+
+    /**
+     * Whether the Sky row shows: on every portal room, on the same reasoning as Contents and Books.
+     *
+     * <p>Not gated on the room's walls or on what is inside it. Any room can be lit as though it
+     * stood outdoors — that is a statement about the place the room is pretending to be, not about
+     * how it seals or what it is furnished with.</p>
+     */
+    public static boolean hasRoomSkyRow(EditorPlotLabelsPacket.Entry entry) {
+        return hasModeRow(entry);
+    }
+
+    /** What the Sky row reads, e.g. {@code "Sky: Daylight"}. */
+    public static String roomSkyLabel(String modeTag) {
+        return "Sky: " + games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag)
+            .sky().displayName();
     }
 
     /**
@@ -337,6 +470,16 @@ public final class EditorPlotLabelsRenderer {
     /** Horizontal padding inside each row. */
     static final double PAD_X = 0.10;
 
+    /**
+     * Icon edge length and slot pitch on the Copies Block row, in panel-local units.
+     *
+     * <p>Matched to {@code StagePanelMenuRenderer}'s strip so the two read as one control at two
+     * sizes rather than as two controls.</p>
+     */
+    public static final double COPIES_ICON_SIZE = ROW_H * 0.8;
+    public static final double COPIES_ICON_SLOT = ROW_H;
+
+
     /** Backdrop fill for the whole panel. */
     private static final int BACKDROP_COLOR = 0xC8000000;
     /** Tint fill behind the hovered cell — copied from the part menu's hover yellow. */
@@ -363,6 +506,8 @@ public final class EditorPlotLabelsRenderer {
     private static final int ARROW_COLOR = 0xFFFFFFFF;
     private static final int BUTTON_TEXT_COLOR = 0xFFFFFFFF;
     private static final int BUTTON_TEXT_DIM_COLOR = 0xFFAAAAAA;
+    /** The Copies Block row's "nothing here yet" hint — dimmer than a value. */
+    private static final int LABEL_COLOR = 0xFFAAAAAA;
 
     private static volatile List<EditorPlotLabelsPacket.Entry> CACHE = List.of();
     private static volatile Hovered HOVERED = Hovered.NONE;
@@ -474,6 +619,11 @@ public final class EditorPlotLabelsRenderer {
         }
         if (hasCopiesRow(entry)) {
             w = Math.max(w, measure.applyAsInt(copiesLabel(entry.roomMode())) * TEXT_SCALE + 2 * PAD_X);
+        }
+        if (hasCopiesBlockRow(entry)) {
+            // Label, one icon, and an Edit button — the same three-part shape the Books row has.
+            w = Math.max(w, (measure.applyAsInt("Block:") + measure.applyAsInt("Edit")) * TEXT_SCALE
+                + 4 * PAD_X + COPIES_ICON_SLOT);
         }
         if (hasExitsRow(entry)) {
             w = Math.max(w, measure.applyAsInt(exitsLabel(entry.roomMode())) * TEXT_SCALE + 2 * PAD_X);
@@ -601,7 +751,13 @@ public final class EditorPlotLabelsRenderer {
             // costs no more clicks than aiming at an arrow for it.
             case MODE -> CellKind.MODE_CYCLE;
             case COPIES -> CellKind.COPIES_CYCLE;
+            case COPIES_FLOOR -> copiesBlockHitIsEdit(halfW, hitX)
+                ? CellKind.COPIES_FLOOR_EDIT : CellKind.COPIES_FLOOR_HELD;
+            case COPIES_ROOF -> copiesBlockHitIsEdit(halfW, hitX)
+                ? CellKind.COPIES_ROOF_EDIT : CellKind.COPIES_ROOF_HELD;
             case ROOM_CONTENTS -> CellKind.ROOM_CONTENTS_CYCLE;
+            case ROOM_BOOKS -> roomBooksRowCell(entry, hitX, halfW);
+            case ROOM_SKY -> CellKind.ROOM_SKY_CYCLE;
             case EXITS -> CellKind.EXITS_CYCLE;
             case EXIT_EVERY -> stepperCell(hitX, halfW,
                 CellKind.EXIT_EVERY_DEC, CellKind.EXIT_EVERY_INC, CellKind.EXIT_EVERY_TYPE);
@@ -628,6 +784,30 @@ public final class EditorPlotLabelsRenderer {
         if (hitX < -halfW + third) return dec;
         if (hitX > halfW - third) return inc;
         return middle;
+    }
+
+    /**
+     * The Books row is one button while the room stocks nothing, and two once it does — the value on
+     * the left, an Edit button on the right for the weights and the author band.
+     *
+     * <p>Inline rather than a row of its own: the dials belong to the value beside them, and a room
+     * that stocks nothing should not grow a row for settings that mean nothing.</p>
+     */
+    private static CellKind roomBooksRowCell(EditorPlotLabelsPacket.Entry entry, double hitX, double halfW) {
+        if (!hasBookEditButton(entry)) return CellKind.ROOM_BOOKS_CYCLE;
+        return hitX < booksEditLeft(halfW) ? CellKind.ROOM_BOOKS_CYCLE : CellKind.ROOM_BOOKS_EDIT;
+    }
+
+    /** Where the Edit half of the Books row starts. */
+    private static double booksEditLeft(double halfW) {
+        return -halfW + BOOKS_CYCLE_SHARE * (halfW * 2.0);
+    }
+
+    /** True when the Books row carries its Edit button — only a room that stocks an author has dials. */
+    public static boolean hasBookEditButton(EditorPlotLabelsPacket.Entry entry) {
+        return hasRoomBooksRow(entry)
+            && games.brennan.dungeontrain.portal.PortalRoomSettings.parse(entry.roomMode())
+                .books().weightsApply();
     }
 
     private static CellKind actionRowCell(double hitX, double halfW) {
@@ -776,12 +956,47 @@ public final class EditorPlotLabelsRenderer {
                     drawQuad(ps, buffer, -halfW + 0.01, rBot + 0.005, halfW - 0.01, rTop - 0.005, bg);
                     drawCenteredText(ps, buffer, font, copiesLabel(entry.roomMode()), 0, rCY, WEIGHT_COLOR);
                 }
+                // Floor and Roof — the two variants Single repeats, as icons. Clicking a row takes
+                // what the author is holding (a block, or a variant copied from a cell); its Edit
+                // half opens the Block Variant menu on that plane alone.
+                case COPIES_FLOOR -> drawCopiesPlaneRow(ps, buffer, font, halfW, rBot, rTop, rCY,
+                    hovered, "Floor:", entry.copiesFloorBlock(),
+                    CellKind.COPIES_FLOOR_HELD, CellKind.COPIES_FLOOR_EDIT);
+                case COPIES_ROOF -> drawCopiesPlaneRow(ps, buffer, font, halfW, rBot, rTop, rCY,
+                    hovered, "Roof:", entry.copiesRoofBlock(),
+                    CellKind.COPIES_ROOF_HELD, CellKind.COPIES_ROOF_EDIT);
                 // Contents — whether this room is furnished from the contents pool, and how a
                 // furnishing smaller than the room is fitted into it. Off by default.
                 case ROOM_CONTENTS -> {
                     int bg = hovered == CellKind.ROOM_CONTENTS_CYCLE ? HOVER_COLOR : BUTTON_BG;
                     drawQuad(ps, buffer, -halfW + 0.01, rBot + 0.005, halfW - 0.01, rTop - 0.005, bg);
                     drawCenteredText(ps, buffer, font, roomContentsLabel(entry.roomMode()), 0, rCY, WEIGHT_COLOR);
+                }
+                // Books — whether this room stocks its shelves from one author. Off by default, and
+                // once it is not, the row carries an Edit button for the weights and the author band.
+                case ROOM_BOOKS -> {
+                    if (hasBookEditButton(entry)) {
+                        double split = booksEditLeft(halfW);
+                        int valueBg = hovered == CellKind.ROOM_BOOKS_CYCLE ? HOVER_COLOR : BUTTON_BG;
+                        int editBg = hovered == CellKind.ROOM_BOOKS_EDIT ? HOVER_COLOR : BUTTON_BG;
+                        drawQuad(ps, buffer, -halfW + 0.01, rBot + 0.005, split - 0.005, rTop - 0.005, valueBg);
+                        drawQuad(ps, buffer, split + 0.005, rBot + 0.005, halfW - 0.01, rTop - 0.005, editBg);
+                        drawCenteredText(ps, buffer, font, roomBooksLabel(entry.roomMode()),
+                            (-halfW + split) / 2.0, rCY, WEIGHT_COLOR);
+                        drawCenteredText(ps, buffer, font, "Edit",
+                            (split + halfW) / 2.0, rCY, BUTTON_TEXT_COLOR);
+                    } else {
+                        int bg = hovered == CellKind.ROOM_BOOKS_CYCLE ? HOVER_COLOR : BUTTON_BG;
+                        drawQuad(ps, buffer, -halfW + 0.01, rBot + 0.005, halfW - 0.01, rTop - 0.005, bg);
+                        drawCenteredText(ps, buffer, font, roomBooksLabel(entry.roomMode()), 0, rCY, WEIGHT_COLOR);
+                    }
+                }
+                // Sky — whether this room is lit as though it stood outdoors, and under which sky.
+                // Off by default, which is every room lit only by whatever its own build gives it.
+                case ROOM_SKY -> {
+                    int bg = hovered == CellKind.ROOM_SKY_CYCLE ? HOVER_COLOR : BUTTON_BG;
+                    drawQuad(ps, buffer, -halfW + 0.01, rBot + 0.005, halfW - 0.01, rTop - 0.005, bg);
+                    drawCenteredText(ps, buffer, font, roomSkyLabel(entry.roomMode()), 0, rCY, WEIGHT_COLOR);
                 }
                 // Exits — how many extra ways back to the train this room scatters through its
                 // copies. Only an endless room has anywhere to put one.
@@ -883,6 +1098,60 @@ public final class EditorPlotLabelsRenderer {
             drawCenteredText(ps, buffer, font, "R", resetCX, aCY, BUTTON_TEXT_COLOR);
             drawCenteredText(ps, buffer, font, "C", clearCX, aCY, BUTTON_TEXT_COLOR);
         }
+    }
+
+    /**
+     * One Copies plane row: its label and icon on the left, an Edit button on the right.
+     *
+     * <p>Floor and Roof are the same row bar their label, their icon and which two cells they
+     * report — written once so the two cannot drift apart in geometry, which is what the hit-test
+     * assumes when it splits both of them at {@link #copiesEditLeft}.</p>
+     */
+    private static void drawCopiesPlaneRow(
+        PoseStack ps, MultiBufferSource buffer, Font font,
+        double halfW, double rBot, double rTop, double rCY,
+        CellKind hovered, String label, String block,
+        CellKind heldCell, CellKind editCell
+    ) {
+        double split = copiesEditLeft(halfW);
+        int valueBg = hovered == heldCell ? HOVER_COLOR : BUTTON_BG;
+        drawQuad(ps, buffer, -halfW + 0.01, rBot + 0.005, split - 0.005, rTop - 0.005, valueBg);
+        drawLeftText(ps, buffer, font, label, -halfW + PAD_X, rCY, WEIGHT_COLOR);
+
+        if (block.isEmpty()) {
+            // Nothing set yet: say what to do rather than showing an empty slot.
+            drawLeftText(ps, buffer, font, "hold one", copiesIconCentre(halfW) - PAD_X,
+                rCY, LABEL_COLOR);
+        } else if (isAirSentinelId(block)) {
+            // The plane is authored as air. Drawing the sentinel's own icon would put a command
+            // block in the author's roof row, which is a block they never chose; the Block Variant
+            // menu calls this entry "nothing" and so does this row.
+            drawLeftText(ps, buffer, font, "nothing", copiesIconCentre(halfW) - PAD_X,
+                rCY, WEIGHT_COLOR);
+        } else {
+            MenuBlockIcons.drawBlockIcon(ps, buffer, block, copiesIconCentre(halfW),
+                rCY, COPIES_ICON_SIZE);
+        }
+
+        int editBg = hovered == editCell ? HOVER_COLOR : BUTTON_BG;
+        drawQuad(ps, buffer, split + 0.005, rBot + 0.005, halfW - 0.01, rTop - 0.005, editBg);
+        drawCenteredText(ps, buffer, font, "Edit", (split + halfW) / 2.0, rCY, BUTTON_TEXT_COLOR);
+    }
+
+    /** {@link #drawCenteredText} anchored at its left edge — what a row with a strip beside it needs. */
+    private static void drawLeftText(
+        PoseStack ps, MultiBufferSource buffer, Font font,
+        String text, double worldX, double worldY, int colour
+    ) {
+        ps.pushPose();
+        ps.translate(worldX, worldY, 0.001f);
+        float scale = (float) TEXT_SCALE;
+        ps.scale(scale, -scale, scale);
+        float y = -font.lineHeight / 2f;
+        Matrix4f mat = ps.last().pose();
+        font.drawInBatch(text, 0, y, colour, false, mat, buffer,
+            Font.DisplayMode.SEE_THROUGH, 0, LightTexture.FULL_BRIGHT);
+        ps.popPose();
     }
 
     private static void drawCenteredText(

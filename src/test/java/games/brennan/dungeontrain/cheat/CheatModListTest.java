@@ -65,6 +65,31 @@ class CheatModListTest {
     }
 
     @Test
+    @DisplayName("curated baked IDs are present in effective()")
+    void bakedCurationPresent() {
+        Set<String> eff = CheatModList.effective();
+        assertTrue(eff.contains("clientcommands"), "clientcommands is blacklisted");
+        assertTrue(eff.contains("baritone"), "baritone is blacklisted");
+        assertTrue(eff.contains("veinminer"), "veinminer is blacklisted");
+        assertTrue(eff.contains("ftbultimine"), "ftbultimine is blacklisted");
+        assertTrue(eff.contains("oreexcavation"), "oreexcavation is blacklisted");
+        assertTrue(eff.contains("veinmining"), "veinmining is blacklisted");
+    }
+
+    @Test
+    @DisplayName("no library / loader ID leaked into the baked list")
+    void noLibraryIdsBaked() {
+        // The vein-miner IDs were harvested from mods.toml files, where a mod's own modId sits
+        // beside its dependencies'. A dependency ID slipping in would flip Free Play on for every
+        // install of an innocent mod that depends on it — the one way this list can do damage.
+        for (String lib : List.of("minecraft", "neoforge", "forge", "collective", "architectury",
+                "tconstruct", "kotlinforforge", "midnightlib", "rickcore", "create", "amber",
+                "konfig", "shouldersurfing")) {
+            assertFalse(CheatModList.BAKED.contains(lib), lib + " is a dependency, not a cheat mod");
+        }
+    }
+
+    @Test
     @DisplayName("toJson -> parse round-trips a mod-ID set")
     void jsonRoundTrip() {
         Set<String> ids = Set.of("xray", "freecam", "baritone");

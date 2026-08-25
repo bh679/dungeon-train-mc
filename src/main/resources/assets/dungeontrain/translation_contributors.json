@@ -7,8 +7,8 @@
       "languages": [
         {
           "locale": "zh_cn",
-          "contributed": 1031,
-          "total": 1129
+          "contributed": 1018,
+          "total": 1321
         }
       ]
     },
@@ -18,12 +18,22 @@
         {
           "locale": "zh_cn",
           "contributed": 14,
-          "total": 1129
+          "total": 1321
         },
         {
           "locale": "zh_tw",
           "contributed": 14,
-          "total": 1129
+          "total": 1321
+        }
+      ]
+    },
+    {
+      "name": "Run_xu",
+      "languages": [
+        {
+          "locale": "zh_cn",
+          "contributed": 2,
+          "total": 1321
         }
       ]
     }

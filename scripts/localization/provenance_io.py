@@ -28,8 +28,15 @@ GENERATED integer fields (``total_keys``, ``ai_authored``, ``ai_unreviewed``)
 summarizing each sidecar — stamped by stamp-provenance.py, hard-checked by
 check-provenance.py, and rendered in-game as the blue AI-fraction ring around the
 DT logo in the language-selection list.
+
+Those counts answer "how much of this locale is machine-translated"; the in-game
+translation editor needs the finer question "WHICH lines are". That is the shipped
+``localization_provenance/<locale>.json`` manifest (see build_manifest) — the only
+part of this per-line system that enters the jar, and likewise generated, never
+hand-edited.
 """
 import json
+import re
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -42,6 +49,9 @@ DEFAULT_AUTHORS_FILE = REPO_ROOT / "localization" / "authors.json"
 DEFAULT_CREDITS_DIR = ASSETS_DIR / "dungeontrain" / "localization_credits"
 # The single generated, shipped translator-credits file (human-grouped) the Credits page reads.
 DEFAULT_CONTRIBUTORS_FILE = DEFAULT_CREDITS_DIR.parent / "translation_contributors.json"
+# Generated, shipped per-locale manifests of which units are AI-authored-and-unreviewed —
+# what the in-game translation editor filters on. See build_manifest.
+DEFAULT_MANIFEST_DIR = ASSETS_DIR / "dungeontrain" / "localization_provenance"
 
 # Long-form narrative book translations (data/, not assets/) — one JSON per book per
 # locale under a locale dir. Tracked per-book, so their sidecars are keyed by the book's
@@ -370,6 +380,148 @@ def write_contributors(path: Path, data: dict) -> None:
     path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
 
+# A body whose every unit is AI-authored-and-unreviewed, written instead of listing them
+# all. 17 of the 19 locales are in exactly that state, so this is what keeps the shipped
+# manifests to a few hundred bytes each rather than ~45 KB.
+MANIFEST_ALL = "*"
+
+MANIFEST_NOTE = (
+    "Generated from localization/provenance + localization/narrative_provenance by "
+    "scripts/localization/stamp-provenance.py — do not hand-edit. \"*\" = every unit in "
+    "that body is AI-authored and unreviewed."
+)
+
+
+def ai_unreviewed_keys(prov: dict, authors: dict[str, str]) -> list[str]:
+    """The sidecar's AI-authored-and-unreviewed keys, in sidecar (= lang file) order.
+
+    The per-unit form of ai_counts' third element, and the same predicate: author
+    registered "ai" AND reviewer empty. Tolerant of shape errors, like ai_counts.
+    """
+    out: list[str] = []
+    for key, entry in prov.items():
+        if not isinstance(entry, dict):
+            continue
+        if authors.get(entry.get("author")) == "ai" and not entry.get("reviewer"):
+            out.append(key)
+    return out
+
+
+def compact_flags(total: int, flagged: list[str]) -> str | list[str]:
+    """``flagged`` as the manifest writes it: MANIFEST_ALL when it covers the whole body.
+
+    ``total`` is the body's unit count. An empty body is never "all" — "everything in
+    nothing" would read in-game as "this whole locale is unreviewed machine output".
+    """
+    if total > 0 and len(flagged) == total:
+        return MANIFEST_ALL
+    return flagged
+
+
+def expand_flags(value, units: list[str]) -> list[str]:
+    """The inverse of compact_flags: a manifest value back to an explicit key list.
+
+    ``units`` is the body's full unit list, returned as-is for MANIFEST_ALL.
+    """
+    if value == MANIFEST_ALL:
+        return list(units)
+    return list(value) if isinstance(value, list) else []
+
+
+def build_manifest(locale: str, authors: dict[str, str],
+                   ns_list: list[Namespace] | None = None,
+                   narrative_prov_dir: Path = DEFAULT_NARRATIVE_PROVENANCE_DIR) -> dict:
+    """The canonical shipped manifest for one locale, derived purely from the sidecars.
+
+    Spans BOTH provenance bodies — every lang namespace plus the narrative books — because
+    the in-game editor lists all of them in one screen and needs one lookup. That is why
+    this lives here rather than in either stamp script: both of them rebuild it, and
+    check-provenance.py verifies it, from this single definition.
+
+    A body with no sidecar for this locale is omitted rather than emitted empty (e.g.
+    discordpresence has no zh_cn — its Chinese lives in its own repo), so "absent" stays
+    distinguishable from "nothing needs review".
+    """
+    manifest: dict = {"_note": MANIFEST_NOTE, "locale": locale}
+
+    lang: dict[str, str | list[str]] = {}
+    for ns in ns_list if ns_list is not None else namespaces():
+        prov_path = ns.prov_dir / f"{locale}.json"
+        if not prov_path.is_file():
+            continue
+        prov = load_provenance(prov_path)
+        lang[ns.name] = compact_flags(len(prov), ai_unreviewed_keys(prov, authors))
+    manifest["lang"] = lang
+
+    books_path = narrative_prov_dir / f"{locale}.json"
+    if books_path.is_file():
+        books = load_provenance(books_path)
+        manifest["books"] = compact_flags(len(books), ai_unreviewed_keys(books, authors))
+    return manifest
+
+
+def build_all_manifests(authors: dict[str, str], lang_dir: Path = DEFAULT_LANG_DIR,
+                        ns_list: list[Namespace] | None = None,
+                        narrative_prov_dir: Path = DEFAULT_NARRATIVE_PROVENANCE_DIR
+                        ) -> dict[str, dict]:
+    """locale -> manifest, for every locale that ships a lang file (the credits locale set)."""
+    return {
+        locale: build_manifest(locale, authors, ns_list, narrative_prov_dir)
+        for locale in locales(lang_dir)
+    }
+
+
+def load_manifest(path: Path) -> dict:
+    """Parse a shipped provenance manifest. Raises ValueError on a non-object root."""
+    with open(path, encoding="utf-8") as f:
+        data = json.load(f)
+    if not isinstance(data, dict):
+        raise ValueError(f"{path}: expected a JSON object")
+    return data
+
+
+def write_manifest(path: Path, manifest: dict) -> None:
+    """Write a manifest in the shipped format: indent-2, raw UTF-8, trailing newline."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+
+def refresh_manifests(authors: dict[str, str], lang_dir: Path = DEFAULT_LANG_DIR,
+                      ns_list: list[Namespace] | None = None,
+                      narrative_prov_dir: Path = DEFAULT_NARRATIVE_PROVENANCE_DIR,
+                      manifest_dir: Path = DEFAULT_MANIFEST_DIR) -> list[Path]:
+    """Rebuild every shipped manifest; returns the paths that changed (written or deleted).
+
+    Global by design, and called by BOTH stamp scripts whatever their --locale/--namespace
+    filter: one manifest spans every lang namespace plus the books, so a narrative-only
+    stamp still has to rewrite it. Byte-identical writes are skipped so untouched locales
+    never churn, and a manifest whose locale no longer ships a lang file is deleted rather
+    than left behind as a stale jar asset.
+
+    Lives here rather than in either stamp script because the two cannot import each other
+    (both filenames are hyphenated) — and because a second copy of this logic is exactly how
+    the two bodies would drift apart.
+    """
+    built = build_all_manifests(authors, lang_dir, ns_list, narrative_prov_dir)
+    changed: list[Path] = []
+    for locale, manifest in built.items():
+        path = manifest_dir / f"{locale}.json"
+        if path.is_file():
+            try:
+                if load_manifest(path) == manifest:
+                    continue
+            except (json.JSONDecodeError, ValueError):
+                pass  # unparseable -> rewrite
+        write_manifest(path, manifest)
+        changed.append(path)
+    if manifest_dir.is_dir():
+        for path in sorted(manifest_dir.glob("*.json")):
+            if path.stem not in built:
+                path.unlink()
+                changed.append(path)
+    return changed
+
+
 def write_provenance(path: Path, prov: dict) -> None:
     """Write a sidecar in the canonical one-entry-per-line format.
 
@@ -392,3 +544,181 @@ def write_provenance(path: Path, prov: dict) -> None:
     lines.append("}")
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+# ---- editing the translated content itself -----------------------------------
+#
+# The two scripts that write a human's translation back into the repo —
+# apply-review-csv.py (the CSV return leg) and import-approved-translations.py (the
+# relay return leg) — need the same edits, so they live here rather than in either one.
+
+NS_PREFIX = re.compile(r"^\[([a-z]+)\]\s+(.*)$")
+
+
+def split_namespace(key: str) -> tuple[str, str]:
+    """``"[playermob] some.key"`` -> ("playermob", "some.key"); bare keys -> dungeontrain."""
+    m = NS_PREFIX.match(key)
+    return (m.group(1), m.group(2)) if m else ("dungeontrain", key)
+
+
+def set_lang_value(path: Path, key: str, value: str) -> bool:
+    """Replace one key's value in a lang file, preserving formatting and line endings.
+
+    A text-level edit rather than a load/dump round trip: the lang files carry blank-line
+    grouping that json.dump would flatten, and zh_cn.json is CRLF. Returns False when the
+    key is not in the file — the caller reports it rather than inventing a line.
+    """
+    raw = read_verbatim(path)
+    eol = "\r\n" if "\r\n" in raw else "\n"
+    lines = raw.replace("\r\n", "\n").split("\n")
+    needle = json.dumps(key, ensure_ascii=False) + ":"
+    for i, line in enumerate(lines):
+        if line.strip().startswith(needle):
+            comma = "," if line.rstrip().endswith(",") else ""
+            lines[i] = f"  {json.dumps(key, ensure_ascii=False)}: {json.dumps(value, ensure_ascii=False)}{comma}"
+            write_verbatim(path, eol.join(lines))
+            return True
+    return False
+
+
+def read_verbatim(path: Path) -> str:
+    """A file's text with its line endings intact.
+
+    ``newline=""`` matters on the READ as much as the write: without it Python turns CRLF into
+    LF before any caller can look, so a CRLF file's endings are undetectable and it gets
+    silently rewritten end to end. Spelled with ``open`` rather than ``Path.read_text(newline=)``
+    because that keyword landed in 3.13 and CI runs older.
+    """
+    with open(path, encoding="utf-8", newline="") as f:
+        return f.read()
+
+
+def write_verbatim(path: Path, text: str) -> None:
+    """Write ``text`` with its line endings exactly as given — see read_verbatim."""
+    with open(path, "w", encoding="utf-8", newline="") as f:
+        f.write(text)
+
+
+# Mirrors NarrativeBookFields.STRUCTURAL_KEYS / UNUSED_KEY on the client: ids and layout
+# hints validate-locale.py requires to match the reference byte-for-byte, plus retired
+# prose no player ever sees. The editor never offers these, so an approved unit naming one
+# did not come from the editor.
+BOOK_STRUCTURAL_KEYS = frozenset({"id", "ref", "page", "_translator_note"})
+BOOK_UNUSED_KEY = "unused"
+
+
+def set_book_field(book: dict | list, field: str, value: str) -> bool:
+    """Set one dotted-path string leaf of a parsed narrative book, in place.
+
+    ``field`` is the path the in-game editor submits (``title``, ``variants.0``,
+    ``letters.2.variants.1``, ``0.narration``) — integer segments index arrays, everything
+    else is an object key. Returns False, changing nothing, unless the path already resolves
+    to a string leaf: this only ever REPLACES existing prose. Creating a path would invent
+    structure the English book does not have, and validate-locale.py would reject it.
+    """
+    if not field:
+        return False
+    segments = field.split(".")
+    node = book
+    for segment in segments[:-1]:
+        node = _book_child(node, segment)
+        if node is None:
+            return False
+    last = segments[-1]
+    if isinstance(node, list):
+        if not last.isdigit():
+            return False
+        index = int(last)
+        if index >= len(node) or not isinstance(node[index], str):
+            return False
+        node[index] = value
+        return True
+    if isinstance(node, dict):
+        if last in BOOK_STRUCTURAL_KEYS or last == BOOK_UNUSED_KEY:
+            return False
+        if not isinstance(node.get(last), str):
+            return False
+        node[last] = value
+        return True
+    return False
+
+
+def _book_child(node, segment: str):
+    """One step down a book's tree, or None when the segment does not resolve."""
+    if isinstance(node, list):
+        return node[int(segment)] if segment.isdigit() and int(segment) < len(node) else None
+    if isinstance(node, dict):
+        if segment in BOOK_STRUCTURAL_KEYS or segment == BOOK_UNUSED_KEY:
+            return None
+        return node.get(segment)
+    return None
+
+
+def set_book_field_text(text: str, field: str, value: str) -> str | None:
+    """One book's raw text with ``field`` replaced, or None when it cannot be done safely.
+
+    Books are edited at the text level for the same reason lang files are: 36 of them group
+    array entries with blank lines and 34 are CRLF, both of which a json.dumps round trip
+    would silently rewrite end to end. So this swaps the ENCODED old string for the encoded
+    new one, and only when that encoding occurs exactly once — two identical prose strings in
+    one book make the target ambiguous, and guessing would corrupt the wrong variant.
+
+    The result is parsed and compared against the tree the edit was supposed to produce, so a
+    replacement that landed anywhere unintended returns None instead of being written.
+    """
+    try:
+        book = json.loads(text)
+    except json.JSONDecodeError:
+        return None
+    old = book_field_value(book, field)
+    if old is None:
+        return None
+    if old == value:
+        return text  # already the approved text — nothing to write, and not an error
+    encoded_old = json.dumps(old, ensure_ascii=False)
+    if text.count(encoded_old) != 1:
+        return None
+    edited = text.replace(encoded_old, json.dumps(value, ensure_ascii=False))
+    if not set_book_field(book, field, value):
+        return None
+    try:
+        if json.loads(edited) != book:
+            return None
+    except json.JSONDecodeError:
+        return None
+    return edited
+
+
+def book_field_value(book: dict | list, field: str) -> str | None:
+    """The string at ``field``'s dotted path, or None when it is not an editable string leaf."""
+    if not field:
+        return None
+    node = book
+    for segment in field.split("."):
+        node = _book_child(node, segment)
+        if node is None:
+            return None
+    return node if isinstance(node, str) else None
+
+
+def book_string_fields(node, path: str = "", depth: int = 0) -> list[str]:
+    """Every editable dotted field path in a parsed book, in document order.
+
+    The Python side of NarrativeBookFields.flatten — same walk, same exclusions, same depth
+    guard. Used to tell a book whose every field an import replaced (the translator becomes
+    its author) from one where it fixed a line or two (the author stands, they reviewed it).
+    """
+    if depth > 8:
+        return []
+    out: list[str] = []
+    if isinstance(node, dict):
+        for key, child in node.items():
+            if key in BOOK_STRUCTURAL_KEYS or key == BOOK_UNUSED_KEY:
+                continue
+            out += book_string_fields(child, f"{path}.{key}" if path else key, depth + 1)
+    elif isinstance(node, list):
+        for i, child in enumerate(node):
+            out += book_string_fields(child, f"{path}.{i}" if path else str(i), depth + 1)
+    elif isinstance(node, str) and path:
+        out.append(path)
+    return out

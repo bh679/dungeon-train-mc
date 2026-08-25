@@ -45,7 +45,8 @@ jobs:
   # parallel with `build`. check-relations.py enforces the invariant that every modpack
   # Include (optional_mods) is also declared as a dependency of the mod in release.yml
   # (the bug that shipped AppleSkin un-declared in PR #390); check-pins.py guards both
-  # the exact Sable chain and the un-bundled sibling mods' minimum-version floors.
+  # the exact Sable chain and the un-bundled sibling mods' minimum-version floors;
+  # check-overrides.py allowlists the overrides/ tree the pack ships verbatim to players.
   modpack-checks:
     runs-on: ubuntu-latest
     permissions:
@@ -61,10 +62,17 @@ jobs:
         # project+version pin (which would silently drop it from the .mrpack). No network.
         run: python3 scripts/modpack/build-mrpack.py --check-config
 
+      - name: Modpack override allowlist
+        # overrides/ is copied verbatim into every player's instance, so a config file the mod
+        # holds to its defaults (adventureitemstats.properties today — see AisDataIntegrity)
+        # would put EVERY pack user into Free Play. Strict allowlist: any new override file
+        # fails until it is added to ALLOWED in the script. No network.
+        run: python3 scripts/modpack/check-overrides.py
+
       - name: Dependency version pins (Sable chain + sibling floors)
         # Two checks. (1) Sable: fails if sable_mod_version (DT's exact mods.toml lock) or
         # the modpack's sable.version drift from gradle.properties sable_version.
-        # (2) Siblings: fails if a modpack-pinned AIN/AIS/PMOB/ECP build is OLDER than the
+        # (2) Siblings: fails if a modpack-pinned AIN/AIS/PMOB/ECP/TE build is OLDER than the
         # <mod>_min_version floor DT declares — i.e. the pack would ship a sibling the mod
         # refuses to load against. No network.
         run: python3 scripts/modpack/check-pins.py
@@ -73,12 +81,18 @@ jobs:
         run: |
           python3 scripts/modpack/test_build_manifest.py
           python3 scripts/modpack/test_check_relations.py
+          python3 scripts/modpack/test_check_overrides.py
           python3 scripts/modpack/test_build_mrpack.py
           python3 scripts/modpack/test_check_pins.py
+          python3 scripts/modpack/test_upload_retry.py
+          python3 scripts/modpack/test_reconcile.py
+          python3 scripts/modpack/test_wait_for_approval.py
 
   # Stdlib-only Python guard for the translation provenance sidecars (who translated / who
   # human-reviewed each string). Two flavours, both under localization/ and both repo-side
-  # only (never shipped):
+  # only (the sidecars never ship — but the generated manifests derived from them, at
+  # assets/dungeontrain/localization_provenance/, do, and check-provenance.py fails on any
+  # drift between the two since the in-game translation editor filters on them):
   #   * per-LINE, for the flat-key UI lang files — dungeontrain at
   #     localization/provenance/<locale>.json plus each sibling mod (AIN/PlayerMob/
   #     DiscordPresence, whose translations are committed here) at
@@ -108,3 +122,5 @@ jobs:
           python3 scripts/localization/test_stamp_provenance.py
           python3 scripts/localization/test_check_narrative_provenance.py
           python3 scripts/localization/test_stamp_narrative_provenance.py
+          python3 scripts/localization/test_provenance_io.py
+          python3 scripts/localization/test_import_approved_translations.py

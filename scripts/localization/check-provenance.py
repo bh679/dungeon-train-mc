@@ -30,6 +30,11 @@ flag, the counts are machine-derived from the sidecars, so any mismatch means so
 forgot to run stamp-provenance.py (or hand-edited a generated field) and the jar
 would ship a player-visible lie.
 
+The shipped ``localization_provenance/<locale>.json`` manifests — which the in-game
+translation editor filters on — are held to that same hard standard, and are checked
+HERE across both provenance bodies: one manifest covers the lang namespaces AND the
+narrative books, and check-narrative-provenance.py cannot see the lang side.
+
 Usage:
   python3 scripts/localization/check-provenance.py
   python3 scripts/localization/check-provenance.py --report
@@ -171,6 +176,46 @@ def check_credit_counts(locale: str, prov: dict, authors: dict[str, str],
                 f"{locale}: {path.name}: shipped counts ({fmt(values)}) don't match "
                 f"provenance ({fmt(expected)}) — {FIX_HINT_COUNTS}"
             )
+    return errors
+
+
+def check_manifests(authors: dict[str, str], lang_dir: Path, manifest_dir: Path,
+                    ns_list: list[provenance_io.Namespace] | None,
+                    narrative_prov_dir: Path) -> list[str]:
+    """Hard lockstep between the shipped provenance manifests and every sidecar.
+
+    Same standard as the generated credit counts, for the same reason: the in-game
+    translation editor filters on these, so a stale manifest either hides lines that need
+    translating or invites a translator to redo work a human already reviewed.
+
+    Deliberately spans BOTH bodies — lang namespaces and narrative books — even though this
+    script otherwise only owns the lang side. One manifest covers both, so verifying half of
+    it would leave the other half unguarded (check-narrative-provenance.py has no view of the
+    lang namespaces, so it cannot be the one to do this).
+    """
+    built = provenance_io.build_all_manifests(authors, lang_dir, ns_list, narrative_prov_dir)
+    errors: list[str] = []
+    for locale, manifest in built.items():
+        path = manifest_dir / f"{locale}.json"
+        if not path.is_file():
+            errors.append(f"{locale}: missing generated manifest at "
+                          f"{manifest_dir.name}/{path.name} — {FIX_HINT_COUNTS}")
+            continue
+        try:
+            shipped = provenance_io.load_manifest(path)
+        except (json.JSONDecodeError, ValueError) as exc:
+            errors.append(f"{locale}: unparseable manifest — {exc} — {FIX_HINT_COUNTS}")
+            continue
+        if shipped != manifest:
+            errors.append(
+                f"{locale}: shipped {manifest_dir.name}/{path.name} is out of date with the "
+                f"provenance sidecars — {FIX_HINT_COUNTS}"
+            )
+    if manifest_dir.is_dir():
+        for path in sorted(manifest_dir.glob("*.json")):
+            if path.stem not in built:
+                errors.append(f"{path.name}: orphan manifest — no matching lang file "
+                              f"— {FIX_HINT_COUNTS}")
     return errors
 
 
@@ -337,6 +382,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--provenance-dir", type=Path, default=None)
     parser.add_argument("--credits-dir", type=Path, default=None)
     parser.add_argument("--contributors-file", type=Path, default=None)
+    parser.add_argument("--manifest-dir", type=Path, default=None,
+                        help="where the shipped localization_provenance manifests live "
+                             "(default: the assets dir; skipped on an explicit --lang-dir run)")
+    parser.add_argument("--narrative-provenance-dir", type=Path,
+                        default=provenance_io.DEFAULT_NARRATIVE_PROVENANCE_DIR,
+                        help="narrative sidecars behind each manifest's 'books' field")
     parser.add_argument("--authors-file", type=Path, default=provenance_io.DEFAULT_AUTHORS_FILE)
     parser.add_argument("--namespace", action="append",
                         help="restrict to namespace(s); default all "
@@ -380,6 +431,20 @@ def main(argv: list[str] | None = None) -> int:
         ns_errors, checkable = check_namespace(ns, args, authors, urls)
         errors.extend(ns_errors)
         checkable_by_ns.append((ns, checkable))
+
+    # Global (one manifest per locale spans every namespace + the books), so checked once
+    # here rather than per namespace, and only once the sidecars themselves are clean —
+    # a manifest rebuilt from a broken sidecar would just be noise on top of the real error.
+    if not errors and (args.manifest_dir is not None or not args.single_namespace):
+        errors.extend(check_manifests(
+            authors,
+            # An explicit --lang-dir run is self-contained (the tests): it checks only that
+            # workspace's namespace. Otherwise the manifest spans the FULL table, never the
+            # --namespace-filtered subset, because one manifest covers all of them.
+            ns_list[0].lang_dir if args.single_namespace else provenance_io.DEFAULT_LANG_DIR,
+            args.manifest_dir or provenance_io.DEFAULT_MANIFEST_DIR,
+            ns_list if args.single_namespace else None,
+            args.narrative_provenance_dir))
 
     if errors:
         print("Provenance check FAILED:", file=sys.stderr)

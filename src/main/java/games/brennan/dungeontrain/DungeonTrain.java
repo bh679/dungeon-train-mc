@@ -220,6 +220,12 @@ public class DungeonTrain {
     public DungeonTrain(IEventBus modBus, ModContainer modContainer) {
         modBus.addListener(this::commonSetup);
 
+        // Bundled Edible Backpacks: in Dungeon Train, backpack space resets on
+        // death (the standalone mod's default is persist-through-death). This
+        // only steers the sibling's `resetOnDeath = DEFAULT` config value — a
+        // server operator's explicit ON/OFF still wins.
+        games.brennan.ediblebackpacks.EdibleBackpacksApi.setHostDefaultResetOnDeath(true);
+
         // First DeferredRegister in the project — wires the variant
         // clipboard item produced by the block-variant menu's Copy button.
         ModItems.register(modBus);
@@ -324,6 +330,11 @@ public class DungeonTrain {
         // jarJar, so NamingConfig is always present — no ModList.isLoaded guard
         // needed. The gate is a cheap tag-prefix scan (TrainMembership).
         NamingConfig.registerMobNameGate(TrainMembership::isOnTrain);
+
+        // Watch the relay's answer to a book upload: a re-upload of a book this player already sent
+        // is refused and pauses their uploads, and the writer is told in chat (see
+        // SharedBookSubmitResponses). Registration only — no network, no game state.
+        games.brennan.dungeontrain.net.relay.SharedBookSubmitResponses.register();
 
         // Point the bundled Discord Presence at Dungeon Train's central relay feed: every DT install
         // reports joins / deaths / advancements / chat to one community Discord via the relay at
@@ -519,15 +530,16 @@ public class DungeonTrain {
             }
         }
 
-        // Value DT narrative books in Trade Everything's villager "Trade Anything"
-        // slot (flat 6-payout-items-per-book). TE is bundled (jarJar), but tolerate
-        // a build predating the valuation API: degrade to default valuation.
+        // Price DT-relevant items in Trade Everything's villager "Trade Anything"
+        // slot (narrative books, ominous banners, edible backpacks). TE is bundled
+        // (jarJar), but tolerate a build predating the valuation API: degrade to
+        // default valuation.
         if (ModList.get().isLoaded("tradeeverything")) {
             try {
                 TradeEverythingBridge.install();
             } catch (Throwable t) {
                 LOGGER.warn("TradeEverything present but valuation API unavailable ({}); "
-                        + "narrative-book trade value defaults apply.", t.toString());
+                        + "default trade values apply.", t.toString());
             }
         }
 

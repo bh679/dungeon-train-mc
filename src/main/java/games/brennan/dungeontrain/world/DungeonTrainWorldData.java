@@ -71,6 +71,9 @@ public final class DungeonTrainWorldData extends SavedData {
     private static final String TAG_BUILDER_STRUCTURE_MODE = "builderStructureMode";
     private static final String TAG_BUILDER_STRUCTURE_REFRESH = "builderStructureRefresh";
     private static final String TAG_BUILDER_RELAY_BUILDS = "builderRelayBuilds";
+    private static final String TAG_DIFFICULTY_TRAVELLED_OFFSET = "difficultyTravelledOffset";
+    private static final String TAG_CUSTOM_CONTENT_CHOICE = "customContentChoice";
+    private static final String TAG_PORTAL_RATE_TUNED = "portalRateTuned";
 
     private int trainY;
     private boolean startsWithTrain;
@@ -171,6 +174,36 @@ public final class DungeonTrainWorldData extends SavedData {
     private Boolean breakBlocksOnContactOverride;
     /** Per-world one-shot: true once the join-info report (DT version + train seed + mods) has been posted to Discord. */
     private boolean joinReportPosted;
+    /**
+     * Per-world admin difficulty travelled-offset (carriages) — the authoritative copy of
+     * {@code DungeonTrainConfig.DIFFICULTY_TRAVELLED_OFFSET}, which is a GLOBAL server-config
+     * value and would otherwise leak an offset set in one world into every other world.
+     * Written through {@code DifficultyOffset.set}; mirrored back into the config on world load
+     * by {@code DifficultyOffsetLifecycle}. 0 = fully automatic.
+     */
+    private int difficultyTravelledOffset;
+
+    /**
+     * This world's answer to the custom-Train-Editor-content prompt. Absent on every world saved
+     * before the feature landed → {@link CustomContentChoice#UNSET} → the prompt fires on the next
+     * join. Written through {@code EditorContentIntegrity.setWorldChoice}, which also mirrors it
+     * into the static the Free Play gate reads.
+     */
+    private CustomContentChoice customContentChoice = CustomContentChoice.UNSET;
+
+    /**
+     * True once someone has retuned how often portals arrive in this world
+     * ({@code /dungeontrain portal carriage …}).
+     *
+     * <p>A property of the <b>world</b>, not of whoever typed the command: the track everyone rides
+     * was laid at a rate DT did not balance, so the whole world is Free Play. Read it through
+     * {@code PortalTuningIntegrity} rather than here — that class caches it so the Free Play gate
+     * doesn't touch SavedData on hot paths.</p>
+     *
+     * <p><b>One-way.</b> Setting the rate back changes nothing already generated, so there is no
+     * un-tuning a world.</p>
+     */
+    private boolean portalRateTuned = false;
 
     /**
      * Transient scheduling set of chunk keys ({@link net.minecraft.world.level.ChunkPos#toLong}) whose
@@ -293,7 +326,7 @@ public final class DungeonTrainWorldData extends SavedData {
         readyMirrorChunks.remove(chunkKey);
     }
 
-    private static DungeonTrainWorldData createDefault() {
+    static DungeonTrainWorldData createDefault() {
         return new DungeonTrainWorldData(
                 DungeonTrainConfig.getTrainY(),
                 true,
@@ -303,7 +336,7 @@ public final class DungeonTrainWorldData extends SavedData {
         );
     }
 
-    private static DungeonTrainWorldData load(CompoundTag tag) {
+    static DungeonTrainWorldData load(CompoundTag tag) {
         int y = tag.contains(TAG_TRAIN_Y)
             ? clampY(tag.getInt(TAG_TRAIN_Y))
             : DungeonTrainConfig.getTrainY();
@@ -339,6 +372,18 @@ public final class DungeonTrainWorldData extends SavedData {
         if (tag.contains(TAG_JOIN_REPORT_POSTED)) {
             data.joinReportPosted = tag.getBoolean(TAG_JOIN_REPORT_POSTED);
         }
+        // Absent on worlds saved before the offset became per-world → 0 → fully automatic,
+        // which is exactly the reset those worlds should get.
+        if (tag.contains(TAG_DIFFICULTY_TRAVELLED_OFFSET)) {
+            data.difficultyTravelledOffset = clampDifficultyOffset(tag.getInt(TAG_DIFFICULTY_TRAVELLED_OFFSET));
+        }
+        // Absent on legacy worlds → UNSET → the custom-content prompt fires on the next join.
+        if (tag.contains(TAG_CUSTOM_CONTENT_CHOICE)) {
+            data.customContentChoice = CustomContentChoice.fromNbt(tag.getString(TAG_CUSTOM_CONTENT_CHOICE));
+        }
+        // Absent on every world saved before the rate was settable → false, which is correct: those
+        // worlds ran at the rate DT balanced.
+        data.portalRateTuned = tag.getBoolean(TAG_PORTAL_RATE_TUNED);
         // getIntArray returns an empty array for an absent key, so worlds saved before shared carriages
         // simply start having placed nothing.
         data.usedCarriageIds.loadFrom(tag.getIntArray(TAG_USED_CARRIAGE_IDS));
@@ -410,6 +455,9 @@ public final class DungeonTrainWorldData extends SavedData {
             tag.putBoolean(TAG_BREAK_BLOCKS_ON_CONTACT_OVERRIDE, breakBlocksOnContactOverride);
         }
         tag.putBoolean(TAG_JOIN_REPORT_POSTED, joinReportPosted);
+        tag.putInt(TAG_DIFFICULTY_TRAVELLED_OFFSET, difficultyTravelledOffset);
+        tag.putString(TAG_CUSTOM_CONTENT_CHOICE, customContentChoice.nbtId());
+        tag.putBoolean(TAG_PORTAL_RATE_TUNED, portalRateTuned);
         tag.putIntArray(TAG_USED_CARRIAGE_IDS, usedCarriageIds.toIntArray());
         if (!builderRelayBuilds.isEmpty()) {
             tag.put(TAG_BUILDER_RELAY_BUILDS, builderRelayBuilds.toTag());
@@ -450,134 +498,6 @@ public final class DungeonTrainWorldData extends SavedData {
         return tag;
     }
 
-    /** Train Builder mode id, or null in an ordinary world. See {@code BuilderMode#fromId}. */
-    public String builderMode() {
-        return builderMode;
-    }
-
-    public void setBuilderMode(String modeId) {
-        this.builderMode = modeId;
-        setDirty();
-    }
-
-    /** Registered variant id the builder world was stamped from, or null outside a builder world. */
-    public String builderVariant() {
-        return builderVariant;
-    }
-
-    public void setBuilderVariant(String variantId) {
-        this.builderVariant = variantId;
-        setDirty();
-    }
-
-    /** What the current build saves as; null/empty for an unnamed draft. */
-    public String builderName() {
-        return builderName;
-    }
-
-    public void setBuilderName(String name) {
-        this.builderName = name;
-        setDirty();
-    }
-
-    /** Mirror setting for the current build. See {@code BuilderMirrorFlags} for why it lives here. */
-    public BuilderMirrorFlags builderMirror() {
-        return BuilderMirrorFlags.unpack(builderMirror);
-    }
-
-    public void setBuilderMirror(BuilderMirrorFlags flags) {
-        this.builderMirror = flags == null ? 0 : flags.pack();
-        setDirty();
-    }
-
-    /** What kind of template this build becomes on Save; null outside a builder world. */
-    public String builderSubType() {
-        return builderSubType;
-    }
-
-    /** Part kind for a parts build, or null/empty when this build isn't a part. */
-    public String builderPartKind() {
-        return builderPartKind;
-    }
-
-    /** Record what kind of carriage template this build is. Clears any track kind — see the twin below. */
-    public void setBuilderSubType(String subTypeId, String partKindId) {
-        this.builderSubType = subTypeId;
-        this.builderPartKind = partKindId;
-        if (subTypeId != null && !subTypeId.isEmpty()) {
-            this.builderTrackKind = "";
-        }
-        setDirty();
-    }
-
-    /** Track kind for a track build, or null/empty when this build is part of a carriage. */
-    public String builderTrackKind() {
-        return builderTrackKind;
-    }
-
-    /**
-     * Record which track kind is on the plot.
-     *
-     * <p>Clears the carriage sub type at the same time, because the two are alternatives and a build
-     * that is both would be read as whichever the caller asked about first — the exact ambiguity
-     * that would have Save write a tunnel into the carriage store.</p>
-     */
-    public void setBuilderTrackKind(String trackKindId) {
-        this.builderTrackKind = trackKindId;
-        if (trackKindId != null && !trackKindId.isEmpty()) {
-            this.builderSubType = "";
-            this.builderPartKind = "";
-        }
-        setDirty();
-    }
-
-    /** Carriages parked on the track, or {@code -1} when no stamp has recorded a count yet. */
-    public int builderCarriages() {
-        return builderCarriages;
-    }
-
-    /** Record what was just stamped. Callers pass the count they actually laid down, including 0. */
-    public void setBuilderCarriages(int carriages) {
-        this.builderCarriages = Math.max(0, carriages);
-        setDirty();
-    }
-
-    /**
-     * What this world does with the structures around the build, or null/empty when it has never
-     * been told. See {@code BuilderStructureMode#orDefault}, which is what every reader goes through.
-     */
-    public String builderStructureMode() {
-        return builderStructureMode;
-    }
-
-    public void setBuilderStructureMode(String modeId) {
-        this.builderStructureMode = modeId;
-        setDirty();
-    }
-
-    /**
-     * When the structures re-read their template, or null/empty when never told. See
-     * {@code BuilderStructureRefresh#orDefault}, which is what every reader goes through.
-     */
-    public String builderStructureRefresh() {
-        return builderStructureRefresh;
-    }
-
-    public void setBuilderStructureRefresh(String refreshId) {
-        this.builderStructureRefresh = refreshId;
-        setDirty();
-    }
-
-    /** Stage the current build was started for, or null/empty when none was picked. */
-    public String builderStage() {
-        return builderStage;
-    }
-
-    public void setBuilderStage(String stageId) {
-        this.builderStage = stageId;
-        setDirty();
-    }
-
     public int getTrainY() {
         return trainY;
     }
@@ -598,10 +518,60 @@ public final class DungeonTrainWorldData extends SavedData {
         return startingDimension;
     }
 
+    /**
+     * This world's answer to the custom-content prompt. Read it through
+     * {@code EditorContentIntegrity} rather than here — that class caches it so the Free Play
+     * gate doesn't touch SavedData on hot paths.
+     */
+    public CustomContentChoice customContentChoice() {
+        return customContentChoice;
+    }
+
+    /** True once this world's portal rate has been retuned — see {@link #portalRateTuned}. */
+    public boolean isPortalRateTuned() {
+        return portalRateTuned;
+    }
+
+    /** Record the retuning. One-way: there is no path back to false. */
+    public void markPortalRateTuned() {
+        if (portalRateTuned) return;
+        portalRateTuned = true;
+        setDirty();
+    }
+
+    /** Record the player's answer. Called from {@code EditorContentIntegrity.setWorldChoice}. */
+    public void setCustomContentChoice(CustomContentChoice choice) {
+        if (choice == null || this.customContentChoice == choice) return;
+        this.customContentChoice = choice;
+        setDirty();
+    }
+
     public void setStartingDimension(StartingDimension d) {
         if (d == null || this.startingDimension == d) return;
         this.startingDimension = d;
         setDirty();
+    }
+
+    /**
+     * This world's admin difficulty travelled-offset in carriages; 0 = fully automatic.
+     * Mirrored into the global server config on world load — read it through
+     * {@code DungeonTrainConfig.getDifficultyTravelledOffset()} everywhere else.
+     */
+    public int getDifficultyTravelledOffset() {
+        return difficultyTravelledOffset;
+    }
+
+    /** Store the world's difficulty travelled-offset (clamped to the config's range). */
+    public void setDifficultyTravelledOffset(int value) {
+        int clamped = clampDifficultyOffset(value);
+        if (this.difficultyTravelledOffset == clamped) return;
+        this.difficultyTravelledOffset = clamped;
+        setDirty();
+    }
+
+    private static int clampDifficultyOffset(int value) {
+        return Math.max(DungeonTrainConfig.MIN_DIFFICULTY_TRAVELLED_OFFSET,
+                Math.min(DungeonTrainConfig.MAX_DIFFICULTY_TRAVELLED_OFFSET, value));
     }
 
     /** This world's PlayerMob 1-in-N override, or null when the world follows the global default. */

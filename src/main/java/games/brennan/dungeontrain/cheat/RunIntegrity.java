@@ -25,6 +25,11 @@ import org.slf4j.Logger;
  * ({@link ModDataAttachments#RUN_CHEATED}): once set it survives relog and
  * respawn; a brand-new world / run starts clean.</p>
  *
+ * <p>The taint also arrives session-wide, without touching the player, from
+ * {@link AisDataIntegrity} (modified AIS config), {@link CheatModIntegrity}
+ * (known cheat mods) and {@link EditorContentIntegrity} (custom Train Editor
+ * content). Those clear themselves when the cause goes away.</p>
+ *
  * <p>While cheated, advancements still earn live (the advancement screen works
  * in any mode), but they are <b>not</b> written to the cross-world
  * {@code GlobalAchievementStore} profile, and the global lifetime stats in
@@ -42,13 +47,22 @@ public final class RunIntegrity {
      * Is this player's current run Free Play? True when the run is permanently
      * cheated ({@link #isPermanentlyCheated}), OR when the whole server session
      * is Free Play because AIS data was changed
-     * ({@link AisDataIntegrity#isSessionFreePlay}) or a known cheat mod is
-     * installed ({@link CheatModIntegrity#isSessionFreePlay}). Every persistence
-     * gate keys off this, so the session taints inherit all Free Play behaviour.
+     * ({@link AisDataIntegrity#isSessionFreePlay}), DT's own balance config was
+     * changed ({@link DtConfigIntegrity#isSessionFreePlay}), a known cheat mod is
+     * installed ({@link CheatModIntegrity#isSessionFreePlay}), or custom Train
+     * Editor content is active ({@link EditorContentIntegrity#isSessionFreePlay}),
+     * OR the world's portal rate has been retuned
+     * ({@link PortalTuningIntegrity#isWorldFreePlay} — per-world and permanent
+     * rather than per-session and derived, see that class).
+     * Every persistence gate keys off this, so the session taints inherit all
+     * Free Play behaviour.
      */
     public static boolean isCheated(ServerPlayer player) {
         return AisDataIntegrity.isSessionFreePlay()
+            || DtConfigIntegrity.isSessionFreePlay()
             || CheatModIntegrity.isSessionFreePlay()
+            || EditorContentIntegrity.isSessionFreePlay()
+            || PortalTuningIntegrity.isWorldFreePlay()
             || isPermanentlyCheated(player);
     }
 
@@ -72,18 +86,59 @@ public final class RunIntegrity {
      * @param cause a soft localized phrase naming what started Free Play (e.g.
      *              "You switched to Creative.") — shown after the title.
      */
+    /**
+     * Is the run already Free Play for some reason <em>other than</em> the custom Train Editor
+     * content itself?
+     *
+     * <p>Exists because {@link #isVisiblySessionFreePlay} can't answer this one:
+     * {@link EditorContentIntegrity#isSessionFreePlay} is true whenever custom content is loading,
+     * so asking it at the custom-content prompt always says "already Free Play" and the prompt
+     * would never appear. This is {@link #isCheated} with that one term removed.</p>
+     *
+     * <p>The caller that matters is the join-time custom-content prompt: its whole question is
+     * "keep your designs and run as Free Play, or drop them and keep your stats". When the run is
+     * Free Play anyway — creative mode, a cheat mod, a retuned config — there is nothing left to
+     * trade, so asking is just a modal in the way.</p>
+     */
+    public static boolean isFreePlayApartFromCustomContent(ServerPlayer player) {
+        return AisDataIntegrity.isSessionFreePlay()
+            || DtConfigIntegrity.isSessionFreePlay()
+            || CheatModIntegrity.isSessionFreePlay()
+            || PortalTuningIntegrity.isWorldFreePlay()
+            || isPermanentlyCheated(player);
+    }
+
+    /**
+     * Is the session <em>already visibly</em> Free Play — i.e. the player has been told so and has
+     * the effect — for a reason that has nothing to do with them? Callers use this to skip a
+     * confirmation prompt that would have nothing to confirm, and to record the permanent taint
+     * quietly instead of notifying twice.
+     *
+     * <p>Covers the AIS-config, DT-config, custom-editor-content and retuned-portal-rate taints. Deliberately
+     * <b>not</b> {@link CheatModIntegrity} — that source predates this helper and still takes the
+     * prompt / notify path; folding it in would change its Discord reporting, which is a separate
+     * call.</p>
+     */
+    public static boolean isVisiblySessionFreePlay() {
+        return AisDataIntegrity.isSessionFreePlay()
+            || DtConfigIntegrity.isSessionFreePlay()
+            || EditorContentIntegrity.isSessionFreePlay()
+            || PortalTuningIntegrity.isWorldFreePlay();
+    }
+
     public static void markCheated(ServerPlayer player, Component cause) {
         // Idempotence keys off the permanent attachment, NOT isCheated(): during
-        // a session-only AIS taint a tainting action must still be recorded
-        // permanently, or restoring the AIS config would forget it.
+        // a session-only config taint a tainting action must still be recorded
+        // permanently, or restoring the config would forget it.
         if (isPermanentlyCheated(player)) return;
         player.setData(ModDataAttachments.RUN_CHEATED.get(), Boolean.TRUE);
         applyFreePlayEffect(player);
         LOGGER.info("[DungeonTrain] Run is now Free Play for {} — {}",
             player.getName().getString(), cause.getString());
-        if (AisDataIntegrity.isSessionFreePlay()) {
-            // Already visibly in Free Play this session (AIS notice on join) —
-            // record the permanent taint quietly, no second chat line / Discord post.
+        if (isVisiblySessionFreePlay()) {
+            // Already visibly in Free Play this session (the AIS, DT-config or custom-content
+            // notice on join) — record the permanent taint quietly, no second chat line /
+            // Discord post.
             return;
         }
         sendFreePlayNotice(player, cause);
@@ -117,6 +172,33 @@ public final class RunIntegrity {
         player.addEffect(new MobEffectInstance(
             ModMobEffects.FREE_PLAY, -1, 0,
             /* ambient */ true, /* visible particles */ false, /* showIcon */ true));
+    }
+
+    /**
+     * Take the {@code Free Play} marker off. Only ever correct once the run has genuinely stopped
+     * being Free Play — {@code CheatDetectionEvents.onEffectRemove} still cancels any removal
+     * while {@link #isCheated}, so this cannot be used to shed the badge on a cheated run.
+     */
+    public static void clearFreePlayEffect(ServerPlayer player) {
+        player.removeEffect(ModMobEffects.FREE_PLAY);
+    }
+
+    /**
+     * Make the badge agree with the run, in whichever direction it currently disagrees.
+     *
+     * <p>The effect is infinite and saved on the player, but nothing used to take it off again —
+     * so a run that <em>stopped</em> being Free Play (custom content disabled, a config restored)
+     * kept the icon for the life of the save, and every player reasonably read that as "still
+     * stuck in Free Play". Reconciling on login, on respawn, and after anything that can change
+     * the answer is what closes that: existing saves carrying an orphan badge shed it the next
+     * time they log in.</p>
+     */
+    public static void reconcileFreePlayEffect(ServerPlayer player) {
+        if (isCheated(player)) {
+            applyFreePlayEffect(player);
+        } else {
+            clearFreePlayEffect(player);
+        }
     }
 
     /**

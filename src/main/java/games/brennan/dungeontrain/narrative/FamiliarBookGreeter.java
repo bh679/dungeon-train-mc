@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.narrative;
 
+import games.brennan.dungeontrain.discord.WorldInfoReporter;
 import games.brennan.dungeontrain.event.NetworkConsentMirror;
 import games.brennan.dungeontrain.net.relay.BookStatsClient;
 import net.minecraft.core.component.DataComponents;
@@ -41,7 +42,11 @@ public final class FamiliarBookGreeter {
     public static void maybeGreet(ServerPlayer player, ItemStack stack) {
         OptionalInt idOpt = SharedBookReadTag.readId(stack);
         if (idOpt.isEmpty()) return;
-        if (isGreeted(stack)) return;                        // this exact copy already greeted
+        // NOTE: the greeted marker no longer short-circuits the whole method — it gates the MESSAGE
+        // only (below). The same reply also carries the 👍/👎 tally the vote page shows this book's
+        // author, and that wants refreshing every time the book is picked up, not once in its life.
+        // A stack that has sat in a chest for a week would otherwise report what it was worth when it
+        // was shelved, forever.
         if (!NetworkConsentMirror.isGranted(player)) return; // the lookup sends the player's uuid
         int id = idOpt.getAsInt();
         UUID uuid = player.getUUID();
@@ -51,9 +56,12 @@ public final class FamiliarBookGreeter {
             // Back onto the server thread before touching the player / stack.
             player.server.execute(() -> {
                 if (player.hasDisconnected()) return;
+                // Always refresh the counters — cheap, idempotent, and the whole point of re-asking.
+                BookVoteCountsTag.stamp(stack, stats.votesUp(), stats.votesDown());
                 if (isGreeted(stack)) return; // lost a race with a concurrent equip — show once
                 markGreeted(stack);
-                player.sendSystemMessage(FamiliarBookMessage.build(stats, player.getRandom()));
+                player.sendSystemMessage(FamiliarBookMessage.build(
+                        WorldInfoReporter.clientLanguage(player), stats, player.getRandom()));
             });
         });
     }

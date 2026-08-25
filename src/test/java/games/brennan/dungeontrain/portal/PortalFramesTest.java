@@ -5,8 +5,10 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Pure-math tests for {@link PortalFrames} — the carriage↔twin mapping that replaces the
@@ -402,6 +404,138 @@ final class PortalFramesTest {
         // The carriage half is never overridden.
         assertEquals(f.floorSurfaceY(PortalFrames.FRAME_CARRIAGE),
             f.floorSurfaceY(PortalFrames.FRAME_CARRIAGE, COPY), 1e-9);
+    }
+
+    // ---- the facing rule, which is the PLAYER path ----------------------------
+
+    /** Faces {@code +X} — the direction of travel, and the room for an ENTRY pair. */
+    private static final float TOWARD_ROOM = -90f;
+    private static final float TOWARD_TRAIN = 90f;
+    private static final float ACROSS = 0f;
+
+    @Test
+    @DisplayName("Walking in facing the room sends a player to the twin, well before the midpoint")
+    void facingTheRoomCrossesEarly() {
+        PortalFrames f = frames();
+        // Local X 2 — nowhere near the 4.5 midpoint, so the positional rule would do nothing here.
+        double x = CAR_X + 2, y = CAR_Y + FEET_Y, z = CAR_Z + WALK_Z;
+        assertNull(f.requiredMove(x, y, z), "the midpoint rule must NOT fire this early");
+
+        PortalFrames.Move move = f.requiredMoveFacing(x, y, z, TOWARD_ROOM);
+        assertNotNull(move);
+        assertEquals(PortalFrames.FRAME_TWIN, move.toFrame());
+        assertTrue(move.byFacing(), "the caller uses this to pick which cooldown applies");
+        // The local offset is carried across untouched, which is what keeps the swap invisible.
+        assertEquals(TWIN_X + 2, move.x(), 1e-9);
+        assertEquals(TWIN_Z + WALK_Z, move.z(), 1e-9);
+    }
+
+    @Test
+    @DisplayName("Turning round in the twin sends a player back to the carriage, wherever they stand")
+    void turningRoundReturnsYou() {
+        PortalFrames f = frames();
+        PortalFrames.Move move = f.requiredMoveFacing(
+            TWIN_X + 6, TWIN_Y + FEET_Y, TWIN_Z + WALK_Z, TOWARD_TRAIN);
+        assertNotNull(move);
+        assertEquals(PortalFrames.FRAME_CARRIAGE, move.toFrame());
+        assertEquals(CAR_X + 6, move.x(), 1e-9);
+    }
+
+    @Test
+    @DisplayName("Nothing to do when the player is already where the rule wants them")
+    void alreadySatisfied() {
+        PortalFrames f = frames();
+        // Facing the room, already in the twin.
+        assertNull(f.requiredMoveFacing(TWIN_X + 6, TWIN_Y + FEET_Y, TWIN_Z + WALK_Z, TOWARD_ROOM));
+        // Facing the train, already in the carriage.
+        assertNull(f.requiredMoveFacing(CAR_X + 2, CAR_Y + FEET_Y, CAR_Z + WALK_Z, TOWARD_TRAIN));
+        // In neither corridor.
+        assertNull(f.requiredMoveFacing(CAR_X + 40, CAR_Y + FEET_Y, CAR_Z + WALK_Z, TOWARD_ROOM));
+    }
+
+    /**
+     * The rule is total, so looking across the corridor still decides — by which end you are nearer.
+     * Before the middle the train has it, after the middle the room does. There is nowhere in a
+     * corridor a player can stand and belong to neither copy.
+     */
+    @Test
+    @DisplayName("Looking across the corridor goes to whichever end you are nearer")
+    void perpendicularStillDecides() {
+        PortalFrames f = frames();
+        // Near the train, in the twin: perpendicular sends you back to the carriage.
+        PortalFrames.Move back = f.requiredMoveFacing(
+            TWIN_X + 1.5, TWIN_Y + FEET_Y, TWIN_Z + WALK_Z, ACROSS);
+        assertNotNull(back);
+        assertEquals(PortalFrames.FRAME_CARRIAGE, back.toFrame());
+
+        // Near the room, in the carriage: perpendicular sends you across.
+        PortalFrames.Move over = f.requiredMoveFacing(
+            CAR_X + 6.5, CAR_Y + FEET_Y, CAR_Z + WALK_Z, ACROSS);
+        assertNotNull(over);
+        assertEquals(PortalFrames.FRAME_TWIN, over.toFrame());
+    }
+
+    /**
+     * The property the whole rule rests on: the swap preserves both the local offset and the yaw, so
+     * asking again at the destination has to answer "nothing to do". Without it a facing swap would
+     * re-fire every tick, which is the failure the positional rule needs its hysteresis band for.
+     */
+    @Test
+    @DisplayName("Applying a facing move twice is a no-op")
+    void facingMoveIsIdempotent() {
+        PortalFrames f = frames();
+        for (float yaw : new float[] {TOWARD_ROOM, TOWARD_TRAIN, ACROSS, 45f, -135f}) {
+            for (double local : new double[] {0.5, 1.5, 3, 4.5, 6, 7.5, 8.5}) {
+                PortalFrames.Move first = f.requiredMoveFacing(
+                    CAR_X + local, CAR_Y + FEET_Y, CAR_Z + WALK_Z, yaw);
+                if (first == null) continue;
+                assertNull(f.requiredMoveFacing(first.x(), first.y(), first.z(), yaw),
+                    "yaw " + yaw + " at local " + local + " asked to move twice");
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("The EXIT role mirrors the facing rule, as it mirrors the midpoint one")
+    void facingMirrorsForExit() {
+        PortalFrames f = exitFrames();
+        // For an EXIT pair the room is toward -X, so facing -X is what puts you in the copy.
+        PortalFrames.Move in = f.requiredMoveFacing(
+            CAR_X + 6, CAR_Y + FEET_Y, CAR_Z + WALK_Z, TOWARD_TRAIN);
+        assertNotNull(in);
+        assertEquals(PortalFrames.FRAME_TWIN, in.toFrame());
+
+        PortalFrames.Move out = f.requiredMoveFacing(
+            TWIN_X + 2, TWIN_Y + FEET_Y, TWIN_Z + WALK_Z, TOWARD_ROOM);
+        assertNotNull(out);
+        assertEquals(PortalFrames.FRAME_CARRIAGE, out.toFrame());
+    }
+
+    @Test
+    @DisplayName("A facing move redirects into a copy, and keeps its facing flag on the way")
+    void facingMoveRedirects() {
+        PortalFrames f = frames();
+        PortalFrames.Move move = f.requiredMoveFacing(
+            CAR_X + 3, CAR_Y + FEET_Y, CAR_Z + WALK_Z, TOWARD_ROOM);
+        PortalFrames.Move redirected = f.redirectedTo(move, COPY);
+
+        assertEquals(PortalFrames.FRAME_TWIN, redirected.toFrame());
+        assertEquals(COPY.x() + 3, redirected.x(), 1e-9);
+        assertTrue(redirected.byFacing(),
+            "losing the flag here would put a redirected swap back on the 1s cooldown");
+    }
+
+    @Test
+    @DisplayName("The midpoint rule is untouched, and is what entities still run on")
+    void theEntityPathStillCarriesNoFacingFlag() {
+        PortalFrames f = frames();
+        PortalFrames.Move move = f.requiredMove(CAR_X + LAYOUT.midX() + SWAP_PAST,
+            CAR_Y + FEET_Y, CAR_Z + WALK_Z);
+        assertNotNull(move);
+        assertEquals(PortalFrames.FRAME_TWIN, move.toFrame());
+        assertFalse(move.byFacing(),
+            "PortalEntityTransit's moves must answer to the full round-trip cooldown, not the "
+                + "short facing floor");
     }
 
     /** Just past the band, so the position is unambiguously on one side of the line. */

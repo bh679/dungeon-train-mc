@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.editor;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.portal.PortalCorridorKind;
 import games.brennan.dungeontrain.portal.PortalCorridorSize;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriagePlacer;
@@ -43,7 +44,7 @@ public final class CarriageEditor {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    private static final int PLOT_Y = 250;
+    private static final int PLOT_Y = EditorLayout.PLOT_Y;
     private static final int PLOT_Z = 0;
     private static final int FIRST_PLOT_X = 0;
 
@@ -122,7 +123,7 @@ public final class CarriageEditor {
      * longer portal-corridor plot cannot reach its neighbour whatever order the registry is in.
      */
     private static int plotStep(CarriageDims dims) {
-        return PortalCorridorSize.corridorLength(dims) + EditorLayout.GAP;
+        return PortalCorridorSize.corridorLength(dims, PortalCorridorKind.LONG) + EditorLayout.GAP;
     }
 
     /**
@@ -284,7 +285,7 @@ public final class CarriageEditor {
         BlockState air = Blocks.AIR.defaultBlockState();
         // Erased at the widest plot size — the loop works by index and cannot know which of the
         // shifted variants was the long portal-corridor plot, and clearing extra air is harmless.
-        CarriageDims widest = PortalCorridorSize.corridorDims(dims);
+        CarriageDims widest = PortalCorridorSize.corridorDims(dims, PortalCorridorKind.LONG);
         for (int i = oldDeletedIndex; i < oldCount; i++) {
             BlockPos pos = new BlockPos(FIRST_PLOT_X + i * plotStep(dims), PLOT_Y, PLOT_Z);
             CarriagePlacer.eraseAt(level, pos, widest);
@@ -334,22 +335,11 @@ public final class CarriageEditor {
         BlockPos origin = plotOrigin(variant, dims);
         if (origin == null) throw new IOException("Unknown variant '" + variant.id() + "'.");
 
-        // Apply the editor mirror (save-time backstop to live mirroring) before
-        // capture so the stored template is symmetric per the sidecar's enabled
-        // axes. No-op when all axes are off (the carriage default).
         // The plot's own box — longer than a carriage for the portal corridor, so the capture below
         // saves the whole corridor rather than its first nine blocks, and the sidecar keeps entries
         // authored in the part of the plot that is past a carriage's length.
         CarriageDims box = plotDims(variant, dims);
         CarriageVariantBlocks sidecar = CarriageVariantBlocks.loadFor(variant, box);
-        // "V" toggle: mirror the variant pools first so the structural pass below
-        // sees (and preserves) the freshly-reflected far cells via markersOf.
-        EditorVariantMirror.rebuildFromMaster(overworld, new BlockVariantPlot.CarriagePlot(
-            variant, origin, new Vec3i(box.length(), box.height(), box.width()), dims));
-        EditorMirror.rebuildFromMaster(overworld, origin,
-            new Vec3i(box.length(), box.height(), box.width()),
-            sidecar.mirrorX(), sidecar.mirrorY(), sidecar.mirrorZ(),
-            EditorMirror.markersOf(sidecar.entries()));
 
         StructureTemplate template = captureTemplate(overworld, origin, box);
         CarriageTemplateStore.save(variant, template);

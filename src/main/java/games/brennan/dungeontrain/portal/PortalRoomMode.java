@@ -13,13 +13,16 @@ import java.util.Locale;
  *
  * <h2>What each mode does</h2>
  * <ul>
- *   <li>{@link #BEDROCK_LOCK} — a one-block bedrock skin outside the room box. No repetition. The
- *       default, and the closest to how every room behaved before this existed.</li>
+ *   <li>{@link #BEDROCK_LOCK} — a one-block bedrock skin outside the whole structure: the room box,
+ *       the two corridors standing off its ends, and the plugs beyond their outer doors. No
+ *       repetition. The default, and the closest to how every room behaved before this existed.</li>
  *   <li>{@link #ENDLESS_REPETITION} — the whole room repeats as a grid of copies around the base
  *       tile, seams between neighbours carved open, tiles appended as the player approaches an
  *       edge.</li>
  *   <li>{@link #ENDLESS_OPEN} — the same grid, but only the floor and ceiling planes repeat. No side
- *       walls at all, so it reads as an open plain rather than a hall of rooms.</li>
+ *       walls at all, so it reads as an open plain rather than a hall of rooms. Those two planes are
+ *       still rolled per tile or once for the whole grid as {@link PortalRoomCopies} says — see
+ *       {@link #copiesApply}.</li>
  *   <li>{@link #BEDROCKLESS} — {@link #BEDROCK_LOCK} with the bedrock taken away: no repetition, and
  *       nothing at all around the room for {@link PortalRoomLayout#VOID_CLEARANCE} blocks.</li>
  * </ul>
@@ -32,14 +35,15 @@ import java.util.Locale;
  * which is what makes it hold in a Compatible Terrain world, where the basement does not exist and a
  * twin sits inside solid rock.</p>
  *
- * <p>The clearance is horizontal only. Pairs are spread over Y lanes
- * {@link PortalRoomLayout#TWIN_LANE_HEIGHT} apart, so clearing the same distance vertically would
- * empty the lane above and below — the collision the lanes exist to prevent. What a player sees is a
+ * <p>The clearance is horizontal only. Pairs are spread over Y lanes only
+ * {@link PortalTwinLanes#laneHeight} apart — one block more than the structure itself — so clearing
+ * the same distance vertically would empty the lane above and below — the collision the lanes exist to prevent. What a player sees is a
  * flat void, and with the fog at the same distance its ceiling is never in view.</p>
  *
  * <h2>Why the tiling grid is X and Z but never Y</h2>
- * <p>Portal pairs are spread over Y lanes {@link PortalRoomLayout#TWIN_LANE_HEIGHT} apart, and
- * {@code PortalCarriageBuilder.eraseTwin} sweeps one row past a structure's top. Vertical repetition
+ * <p>Portal pairs are spread over Y lanes {@link PortalTwinLanes#laneHeight} apart — one block more
+ * than the structure itself — and {@code PortalCarriageBuilder.eraseTwin} sweeps one row past a
+ * structure's top. Vertical repetition
  * would reach into the lane above, which is the collision the lanes exist to prevent. Keeping the
  * grid horizontal makes that safe by construction rather than by a check that could drift.</p>
  *
@@ -119,6 +123,25 @@ public enum PortalRoomMode {
     }
 
     /**
+     * True when the two corridors standing off the room's ±X ends are sealed along with it — a
+     * bedrock skin around each, and bedrock rather than ordinary rock in the plug behind its dead
+     * outer door.
+     *
+     * <p>The room's own skin stops at those ends, because they are the corridor door planes. So a
+     * room "sealed in unbreakable rock" used to have two corridors of ordinary stone brick hanging
+     * off it, each backed by three blocks of deepslate — a player could mine sideways through a
+     * corridor wall, or straight through the plug, and walk out of the lock. The whole structure is
+     * wrapped now, not the room alone.</p>
+     *
+     * <p>A predicate of its own rather than the complement of {@link #clearsSurroundings}: the two
+     * endless modes seal nothing at all — their boundary is the next copy of the room — and their
+     * corridors stay as they are.</p>
+     */
+    public boolean sealsCorridors() {
+        return this == BEDROCK_LOCK;
+    }
+
+    /**
      * True when a tiled face with no neighbour is closed off rather than left open.
      *
      * <p>{@link #ENDLESS_OPEN} is the one that says no: that is what "the walls are open" means, and
@@ -135,13 +158,43 @@ public enum PortalRoomMode {
     }
 
     /**
+     * True when the Copies control applies at all — either mode that appends tiles.
+     *
+     * <p>{@link #tiles} and deliberately not {@link #tilesWholeRoom}, which is what this used to be
+     * gated on. The two answer different questions: {@code tilesWholeRoom} is what an appended tile
+     * <i>contains</i>, while Copies is how whatever it contains is <i>rolled</i>. An
+     * {@link #ENDLESS_OPEN} tile contains only the floor and the ceiling — and those cells go through
+     * the variant sidecar exactly as any other cell does, so whether they reroll per tile is a live
+     * question for it too. Gated on the narrower predicate, an open plain could only ever repeat one
+     * floor out to the fog, with no way for an author to say otherwise.</p>
+     */
+    public boolean copiesApply() {
+        return tiles();
+    }
+
+    /**
+     * True when {@link PortalRoomCopies.Kind#SINGLE} is one of the answers this mode can give.
+     *
+     * <p>{@link #ENDLESS_OPEN} alone. Single replaces an appended tile's floor and ceiling with one
+     * block, and floor-and-ceiling is the whole of what an Endless Open tile is. An
+     * {@link #ENDLESS_REPETITION} tile is a whole room — walls, furnishing, chests — so the same
+     * setting there would append solid cubes of stone to the end of a hall, which is not a room and
+     * not somewhere a player can walk.</p>
+     *
+     * <p>Narrower than {@link #copiesApply} on purpose, and asked separately rather than folded into
+     * it: a Repetition room is still asked whether its copies are Exact or Dynamic. What differs is
+     * only which answers are on the list.</p>
+     */
+    public boolean singleCopiesApply() {
+        return this == ENDLESS_OPEN;
+    }
+
+    /**
      * True when the Exits control applies at all — only a room that repeats has anywhere to put an
      * extra way back to the train.
      *
-     * <p>Both tiling modes, unlike {@code PortalRoomSettings.copiesApply}, which is
-     * {@link #tilesWholeRoom} — what Copies describes is what an appended tile <i>contains</i>, which
-     * {@link #ENDLESS_OPEN} decides for itself. Getting lost is not a property of the walls, so a
-     * question about the way out is asked of any endless room.</p>
+     * <p>Both tiling modes, the same set {@link #copiesApply} covers. Getting lost is not a property
+     * of the walls, so a question about the way out is asked of any endless room.</p>
      */
     public boolean exitsApply() {
         return tiles();

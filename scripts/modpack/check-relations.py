@@ -11,7 +11,7 @@ shipping silently.
 
 The expected relation type is per-entry: ``optional`` by default (a recommended companion),
 or ``required`` for entries carrying ``"dependency_type": "required"`` — the un-bundled
-sibling mods AIN/AIS/PlayerMob/EnderChestPersistence, which DT hard-depends on. See
+sibling mods AIN/AIS/PlayerMob/EnderChestPersistence/TradeEverything, which DT hard-depends on. See
 ``expected_dependency_type``.
 
 This is intentionally one-directional: an Include implies a mod optional dependency, but a

@@ -101,15 +101,38 @@ public final class RelayOutbox {
      */
     @FunctionalInterface
     interface BatchSender {
-        CompletableFuture<BatchResult> send(String url, String ndjson);
+        CompletableFuture<RelayResponse> send(String url, String ndjson);
     }
 
-    /** HTTP status + body of a {@code /telemetry/batch} POST. */
-    record BatchResult(int status, String body) {}
+    /**
+     * JSON transport that exposes the RESPONSE, used for the one-off paths a {@link ResponseHandler} is
+     * watching ({@code /books/submit} — the relay answers a duplicate upload with a suspension verdict
+     * the game has to tell the player about). Identical to {@link Sender} on the wire; it just keeps the
+     * body instead of throwing it away, so only handler-watched paths pay for reading it.
+     */
+    @FunctionalInterface
+    interface BodySender {
+        CompletableFuture<RelayResponse> send(String url, String body);
+    }
+
+    /**
+     * Callback for a delivered one-off POST on a watched path: the REQUEST body is passed back alongside
+     * the response so a handler can recover who the item was about (the relay's answer need not repeat
+     * it). Invoked on the HTTP client's thread — a handler that touches game state must hop to the
+     * server thread itself. Never invoked for batched telemetry, and never allowed to throw into the
+     * queue (see {@link #sendOne}).
+     */
+    @FunctionalInterface
+    public interface ResponseHandler {
+        void onResponse(String requestBody, int status, String responseBody);
+    }
+
+    /** HTTP status + body of one relay POST (negative status on a network-level failure). */
+    record RelayResponse(int status, String body) {}
 
     private static final RelayOutbox INSTANCE = new RelayOutbox(
-            RelayOutbox::defaultFile, defaultSender(), defaultBatchSender(), DungeonTrain::relayBaseUrl,
-            System::currentTimeMillis);
+            RelayOutbox::defaultFile, defaultSender(), defaultBatchSender(), defaultBodySender(),
+            DungeonTrain::relayBaseUrl, System::currentTimeMillis);
 
     public static RelayOutbox get() {
         return INSTANCE;
@@ -120,6 +143,9 @@ public final class RelayOutbox {
     private final Supplier<Path> fileSupplier;
     private final Sender sender;
     private final BatchSender batchSender;
+    private final BodySender bodySender;
+    /** path -> handler for one-off POSTs whose response the game acts on. Empty for every other path. */
+    private final Map<String, ResponseHandler> responseHandlers = new ConcurrentHashMap<>();
     private final Supplier<String> baseUrl;
     private final LongSupplier nowMs;
     private Path file;
@@ -136,11 +162,28 @@ public final class RelayOutbox {
     /** Package-private for tests — additionally inject the batch transport. */
     RelayOutbox(Supplier<Path> fileSupplier, Sender sender, BatchSender batchSender,
                 Supplier<String> baseUrl, LongSupplier nowMs) {
+        this(fileSupplier, sender, batchSender, defaultBodySender(), baseUrl, nowMs);
+    }
+
+    /** Package-private for tests — additionally inject the response-exposing transport. */
+    RelayOutbox(Supplier<Path> fileSupplier, Sender sender, BatchSender batchSender, BodySender bodySender,
+                Supplier<String> baseUrl, LongSupplier nowMs) {
         this.fileSupplier = fileSupplier;
         this.sender = sender;
         this.batchSender = batchSender;
+        this.bodySender = bodySender;
         this.baseUrl = baseUrl;
         this.nowMs = nowMs;
+    }
+
+    /**
+     * Watch {@code path}: every future delivery on it reports its response to {@code handler} (last
+     * registration wins). Registered once at mod init; a path with no handler keeps the cheaper
+     * status-only transport and behaves exactly as before.
+     */
+    public void onResponse(String path, ResponseHandler handler) {
+        if (path == null || path.isBlank() || handler == null) return;
+        responseHandlers.put(path, handler);
     }
 
     /**
@@ -239,7 +282,26 @@ public final class RelayOutbox {
             return; // a prior flush is still delivering this one
         }
         String url = base + it.path();
+        ResponseHandler handler = responseHandlers.get(it.path());
         try {
+            if (handler != null) {
+                bodySender.send(url, it.body()).whenComplete((resp, t) -> {
+                    inFlight.remove(it.key());
+                    if (t != null || resp == null) {
+                        return; // transport failed unexpectedly → keep for the next flush
+                    }
+                    // The handler runs BEFORE the queue verdict so the game reacts even to a 4xx the
+                    // queue is about to drop — that rejection is the whole point of watching the path.
+                    try {
+                        handler.onResponse(it.body(), resp.status(), resp.body());
+                    } catch (Throwable ht) {
+                        LOGGER.debug("[DungeonTrain] relay outbox response handler for {} threw: {}",
+                                it.path(), ht.toString());
+                    }
+                    onResult(it, resp.status());
+                });
+                return;
+            }
             sender.send(url, it.body()).whenComplete((status, t) -> {
                 inFlight.remove(it.key());
                 if (t == null && status != null) {
@@ -280,7 +342,7 @@ public final class RelayOutbox {
                 if (t != null || res == null) {
                     return; // transport failed unexpectedly → keep all for the next flush
                 }
-                handleBatchResult(base, toSend, res);
+                handleRelayResponse(base, toSend, res);
             });
         } catch (Throwable t) {
             for (Item it : toSend) {
@@ -291,10 +353,10 @@ public final class RelayOutbox {
     }
 
     /** Apply a completed batch POST: per-item verdicts on 2xx, individual fallback on 404/405/413/501, else hold. */
-    private void handleBatchResult(String base, List<Item> sent, BatchResult res) {
+    private void handleRelayResponse(String base, List<Item> sent, RelayResponse res) {
         int status = res.status();
         if (status >= 200 && status < 300 && res.body() != null) {
-            Map<String, Integer> byKey = parseBatchResults(res.body());
+            Map<String, Integer> byKey = parseRelayResponses(res.body());
             for (Item it : sent) {
                 Integer st = byKey.get(it.key());
                 if (st != null) {
@@ -338,7 +400,7 @@ public final class RelayOutbox {
     }
 
     /** Parse {@code {results:[{key,status}]}} into a key→status map. Malformed → empty (all kept for retry). */
-    private static Map<String, Integer> parseBatchResults(String body) {
+    private static Map<String, Integer> parseRelayResponses(String body) {
         Map<String, Integer> out = new HashMap<>();
         try {
             JsonElement arr = JsonParser.parseString(body).getAsJsonObject().get("results");
@@ -523,6 +585,28 @@ public final class RelayOutbox {
         };
     }
 
+    private static BodySender defaultBodySender() {
+        // Same HTTP/1.1 pinning + JSON content type as defaultSender(); the response body is kept so a
+        // watched path's handler can read the relay's verdict. Network failure → status -1, null body.
+        HttpClient http = HttpClient.newBuilder()
+                .version(HttpClient.Version.HTTP_1_1)
+                .connectTimeout(CONNECT_TIMEOUT)
+                .build();
+        return (url, body) -> {
+            HttpRequest req = HttpRequest.newBuilder(URI.create(url))
+                    .timeout(REQUEST_TIMEOUT)
+                    .header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(body))
+                    .build();
+            return http.sendAsync(req, HttpResponse.BodyHandlers.ofString())
+                    .thenApply(resp -> new RelayResponse(resp.statusCode(), resp.body()))
+                    .exceptionally(e -> {
+                        LOGGER.debug("[DungeonTrain] relay outbox POST {} failed: {}", url, e.toString());
+                        return new RelayResponse(-1, null);
+                    });
+        };
+    }
+
     private static BatchSender defaultBatchSender() {
         // Same HTTP/1.1 pinning as defaultSender(); NDJSON body, and the response body is kept so the
         // per-item {key,status} verdicts can be applied. Network failure → status -1, null body.
@@ -537,10 +621,10 @@ public final class RelayOutbox {
                     .POST(HttpRequest.BodyPublishers.ofString(ndjson))
                     .build();
             return http.sendAsync(req, HttpResponse.BodyHandlers.ofString())
-                    .thenApply(resp -> new BatchResult(resp.statusCode(), resp.body()))
+                    .thenApply(resp -> new RelayResponse(resp.statusCode(), resp.body()))
                     .exceptionally(e -> {
                         LOGGER.debug("[DungeonTrain] relay outbox batch POST {} failed: {}", url, e.toString());
-                        return new BatchResult(-1, null);
+                        return new RelayResponse(-1, null);
                     });
         };
     }

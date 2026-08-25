@@ -21,11 +21,15 @@ import java.util.Map;
  * <p><b>One roll per pair, and it has to be.</b> A corridor exists twice — as a carriage on the
  * train and as a static twin underground — and the two are stamped by independent calls. They must
  * produce identical blocks or the crossing tears open, which is the same reason
- * {@code PortalCarriageBuilder}'s {@code CONTENTS_SEED} and {@code CONTENTS_INDEX} are fixed. Both
- * sites can name the portal without any state passing between them, because {@code pairKey} is a
- * pure function of the carriage index ({@code PortalCarriageRole.entryIndexOf}). A pair's entry and
- * exit corridors share that key, so they share a member too — which suits a corridor whose geometry
- * is already mirror-symmetric between the two roles.</p>
+ * {@code PortalCarriageBuilder.stampCorridorContents} keys its per-cell rolls on nothing but
+ * {@code (trainSeed, corridorIndex)} — both pure. Both sites can name the portal without any state
+ * passing between them, because {@code pairKey} is a pure function of the carriage index
+ * ({@code PortalCarriageRole.entryIndexOf}).</p>
+ *
+ * <p>The <b>template</b> is drawn once per pair, so a portal's entry and exit corridors are furnished
+ * from the same member — which suits a corridor whose geometry is already mirror-symmetric between
+ * the two roles. Where they part company is the per-cell picks <i>within</i> that member, which key
+ * on the corridor's own index and so differ between the two ends. One shape, two furnishings.</p>
  *
  * <p><b>Memoised, not merely deterministic.</b> A pure function of {@code (worldSeed, pairKey)} would
  * give the same answer every time only for as long as the group file does. Caching the draw means an
@@ -51,8 +55,15 @@ public final class PortalCorridorContents {
 
     private PortalCorridorContents() {}
 
-    /** The contents both of this pair's corridors — and both of their twins — are furnished with. */
-    public static synchronized CarriageContents forPair(ServerLevel level, int pairKey) {
+    /**
+     * The contents both of this pair's corridors — and both of their twins — are furnished with.
+     *
+     * <p>The parent is the one authored for this pair's {@link PortalCorridorKind}: the two kinds
+     * furnish different-sized interiors, so they cannot draw from the same group. The pair's kind is
+     * itself fixed for the life of the pair, so this does not weaken the memoisation below.</p>
+     */
+    public static synchronized CarriageContents forPair(ServerLevel level, PortalCorridorKind kind,
+                                                        int pairKey) {
         long worldSeed = level.getSeed();
         if (seed == null || seed != worldSeed) {
             PICKS.clear();
@@ -62,7 +73,7 @@ public final class PortalCorridorContents {
         CarriageContents cached = PICKS.get(pairKey);
         if (cached != null) return cached;
 
-        CarriageContents parent = PortalCarriageBuilder.portalContents();
+        CarriageContents parent = PortalCarriageBuilder.portalContents(kind);
         // Ungated on purpose. A member's gate is tested against a spawn context, and the two stamp
         // sites do not share one — the carriage goes down when the train spawns, the twin from the
         // portal tick handler. Gating here could let them draw differently, which is the single

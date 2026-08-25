@@ -1,6 +1,14 @@
 {
+  "abandonedroom": {
+    "weight": 1,
+    "mode": "bedrock_lock"
+  },
+  "backrooms": {
+    "weight": 1,
+    "mode": "endless_repetition/dynamic"
+  },
   "beam": {
-    "weight": 3,
+    "weight": 4,
     "minLevel": 1,
     "maxLevel": 20,
     "mode": "bedrockless"
@@ -13,12 +21,16 @@
     "weight": 1,
     "mode": "bedrockless"
   },
+  "biggerlibrary": {
+    "weight": 1,
+    "mode": "bedrock_lock"
+  },
   "blocks": {
     "weight": 1,
     "mode": "endless_repetition"
   },
   "book": {
-    "weight": 2,
+    "weight": 4,
     "minLevel": 3,
     "mode": "endless_repetition"
   },
@@ -26,7 +38,29 @@
     "weight": 1,
     "mode": "endless_repetition"
   },
+  "cvspharmacy": {
+    "weight": 1,
+    "minLevel": 131,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "END",
+      "UPSIDE_DOWN",
+      "CHUNCKS"
+    ],
+    "mode": "bedrock_lock"
+  },
   "default": {
+    "weight": 2,
+    "phases": [
+      "OVERWORLD",
+      "NETHER",
+      "VOID",
+      "END"
+    ],
+    "mode": "endless_open/single:minecraft:stone"
+  },
+  "defaultweird": {
     "weight": 1,
     "phases": [
       "OVERWORLD",
@@ -36,45 +70,87 @@
     ],
     "mode": "bedrock_lock"
   },
-  "distantenemies": {
+  "deserter": {
     "weight": 1,
+    "mode": "endless_open/single:minecraft:stone"
+  },
+  "distantenemies": {
+    "weight": 2,
     "minLevel": 1,
     "mode": "endless_repetition/dynamic"
   },
+  "end": {
+    "weight": 1,
+    "mode": "bedrockless"
+  },
+  "house": {
+    "weight": 1,
+    "mode": "bedrock_lock"
+  },
   "labrynth": {
-    "weight": 5,
+    "weight": 3,
     "mode": "endless_repetition/dynamic"
   },
   "library_dimension": {
-    "weight": 2,
+    "weight": 3,
     "minLevel": 5,
     "mode": "endless_repetition/dynamic"
   },
+  "midlibrary": {
+    "weight": 1,
+    "mode": "bedrock_lock/exact/off/off/mix:3:1:1:24:120"
+  },
+  "miniword": {
+    "weight": 1,
+    "mode": "bedrock_lock/exact/off/off/off/day"
+  },
   "nobeam": {
     "weight": 1,
+    "mode": "bedrockless"
+  },
+  "parkour": {
+    "weight": 1,
+    "minLevel": 10,
     "mode": "bedrockless"
   },
   "paths": {
     "weight": 1,
     "mode": "endless_repetition/dynamic"
   },
-  "pathsmol": {
-    "weight": 1,
-    "mode": "bedrock_lock"
-  },
   "patterns": {
     "weight": 1,
     "minLevel": 5,
     "mode": "endless_repetition"
   },
+  "randomized": {
+    "weight": 1,
+    "mode": "endless_repetition/dynamic/fit"
+  },
+  "sanemaze": {
+    "weight": 1,
+    "mode": "bedrock_lock"
+  },
   "singlepillar": {
-    "weight": 2,
+    "weight": 4,
     "minLevel": 2,
     "maxLevel": 40,
     "mode": "endless_open"
   },
+  "smalllibrary": {
+    "weight": 1,
+    "mode": "bedrock_lock/exact/off/off/mix:3:1:1:10:24"
+  },
+  "trap": {
+    "weight": 1,
+    "minLevel": 10,
+    "mode": "bedrock_lock"
+  },
+  "upsidedown": {
+    "weight": 1,
+    "mode": "bedrock_lock"
+  },
   "window": {
-    "weight": 5,
+    "weight": 2,
     "maxLevel": 10,
     "mode": "bedrockless"
   },

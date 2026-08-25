@@ -4,6 +4,7 @@
   "features": [
     "dungeontrain:nether_transition",
     "dungeontrain:disintegration",
+    "dungeontrain:nether_structures",
     "dungeontrain:track_bed"
   ],
   "step": "top_layer_modification"

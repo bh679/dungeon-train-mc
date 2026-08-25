@@ -38,6 +38,18 @@ class EditorPlotLabelsRendererTest {
             inPlot, false, false, length, width, height, mode);
     }
 
+    /** A portal-room entry whose two Copies palettes both show {@code block}. */
+    private static EditorPlotLabelsPacket.Entry entryWithBlock(String mode, String block) {
+        return entryWithBlocks(mode, block, block);
+    }
+
+    /** A portal-room entry whose floor and roof icons differ. */
+    private static EditorPlotLabelsPacket.Entry entryWithBlocks(String mode, String floor, String roof) {
+        return new EditorPlotLabelsPacket.Entry(
+            POS, "default", 1, "PORTALS", "portal_room", "default",
+            true, false, false, 11, 13, 7, mode, floor, roof);
+    }
+
     private static EditorPlotLabelsPacket.Entry portalInPlot() {
         return entry("PORTALS", true, 1, 11, 13, 7);
     }
@@ -49,13 +61,13 @@ class EditorPlotLabelsRendererTest {
     }
 
     @Test
-    @DisplayName("A portal room in-plot shows name, weight, L/W/H, Walls, Contents, Enter and actions")
+    @DisplayName("A portal room in-plot shows name, weight, L/W/H, Walls, Contents, Books, Sky, Enter and actions")
     void portalInPlot_rowOrder() {
         assertArrayEquals(
             new RowKind[]{RowKind.NAME, RowKind.WEIGHT, RowKind.LENGTH, RowKind.WIDTH,
-                RowKind.HEIGHT, RowKind.MODE, RowKind.ROOM_CONTENTS, RowKind.ENTER, RowKind.ACTION},
+                RowKind.HEIGHT, RowKind.MODE, RowKind.ROOM_CONTENTS, RowKind.ROOM_BOOKS, RowKind.ROOM_SKY, RowKind.ENTER, RowKind.ACTION},
             EditorPlotLabelsRenderer.rows(portalInPlot()));
-        assertEquals(9, EditorPlotLabelsRenderer.rowCount(portalInPlot()));
+        assertEquals(11, EditorPlotLabelsRenderer.rowCount(portalInPlot()));
     }
 
     @Test
@@ -97,31 +109,83 @@ class EditorPlotLabelsRendererTest {
     }
 
     @Test
-    @DisplayName("Endless Repetition grows a Copies row under Walls; the other modes do not")
-    void copiesRowOnlyForRepetition() {
+    @DisplayName("Both endless modes grow a Copies row under Walls; the sealed ones do not")
+    void copiesRowForBothEndlessModes() {
         // Endless Repetition defaults to laying extra corridors, so it grows the Exits row AND its
         // spacing stepper as well as Copies.
         assertArrayEquals(
             new RowKind[]{RowKind.NAME, RowKind.WEIGHT, RowKind.LENGTH, RowKind.WIDTH,
-                RowKind.HEIGHT, RowKind.MODE, RowKind.COPIES, RowKind.ROOM_CONTENTS,
+                RowKind.HEIGHT, RowKind.MODE, RowKind.COPIES, RowKind.ROOM_CONTENTS, RowKind.ROOM_BOOKS, RowKind.ROOM_SKY,
                 RowKind.EXITS, RowKind.EXIT_EVERY, RowKind.ENTER, RowKind.ACTION},
             EditorPlotLabelsRenderer.rows(
                 entry("PORTALS", true, 1, 11, 13, 7, "endless_repetition")));
 
         // Endless Open is endless, so it is asked about Exits — and answers Off, which takes the
-        // spacing stepper with it. It still makes no whole-room copies, so no Copies row.
+        // spacing stepper with it. It appends tiles of floor and ceiling, so it IS asked about
+        // Copies: those cells roll from the variant sidecar like any others.
         assertArrayEquals(
             new RowKind[]{RowKind.NAME, RowKind.WEIGHT, RowKind.LENGTH, RowKind.WIDTH,
-                RowKind.HEIGHT, RowKind.MODE, RowKind.ROOM_CONTENTS, RowKind.EXITS,
-                RowKind.ENTER, RowKind.ACTION},
+                RowKind.HEIGHT, RowKind.MODE, RowKind.COPIES, RowKind.ROOM_CONTENTS,
+                RowKind.ROOM_BOOKS, RowKind.ROOM_SKY, RowKind.EXITS, RowKind.ENTER, RowKind.ACTION},
             EditorPlotLabelsRenderer.rows(entry("PORTALS", true, 1, 11, 13, 7, "endless_open")));
+
+        // Single adds a Floor row and a Roof row directly under Copies, because that is the one
+        // Copies value with blocks to name. The rows either side of them must not shift — the row
+        // walk is shared by the count, the hit test and the draw, so an insert in the wrong place
+        // lands clicks elsewhere.
+        assertArrayEquals(
+            new RowKind[]{RowKind.NAME, RowKind.WEIGHT, RowKind.LENGTH, RowKind.WIDTH,
+                RowKind.HEIGHT, RowKind.MODE, RowKind.COPIES, RowKind.COPIES_FLOOR,
+                RowKind.COPIES_ROOF,
+                RowKind.ROOM_CONTENTS, RowKind.ROOM_BOOKS, RowKind.ROOM_SKY, RowKind.EXITS, RowKind.ENTER,
+                RowKind.ACTION},
+            EditorPlotLabelsRenderer.rows(
+                entry("PORTALS", true, 1, 11, 13, 7, "endless_open/single:minecraft:sandstone")));
+
+        // Under Endless Repetition the same stored tag means Exact, so there is no block to show.
+        assertArrayEquals(
+            new RowKind[]{RowKind.NAME, RowKind.WEIGHT, RowKind.LENGTH, RowKind.WIDTH,
+                RowKind.HEIGHT, RowKind.MODE, RowKind.COPIES, RowKind.ROOM_CONTENTS,
+                RowKind.ROOM_BOOKS, RowKind.ROOM_SKY, RowKind.EXITS, RowKind.EXIT_EVERY, RowKind.ENTER,
+                RowKind.ACTION},
+            EditorPlotLabelsRenderer.rows(entry("PORTALS", true, 1, 11, 13, 7,
+                "endless_repetition/single:minecraft:sandstone")));
 
         // Bedrock Lock repeats nothing, so it has neither.
         assertArrayEquals(
             new RowKind[]{RowKind.NAME, RowKind.WEIGHT, RowKind.LENGTH, RowKind.WIDTH,
-                RowKind.HEIGHT, RowKind.MODE, RowKind.ROOM_CONTENTS, RowKind.ENTER,
+                RowKind.HEIGHT, RowKind.MODE, RowKind.ROOM_CONTENTS, RowKind.ROOM_BOOKS, RowKind.ROOM_SKY, RowKind.ENTER,
                 RowKind.ACTION},
             EditorPlotLabelsRenderer.rows(entry("PORTALS", true, 1, 11, 13, 7, "bedrock_lock")));
+    }
+
+    @Test
+    @DisplayName("The Books row is one button while the room stocks nothing, and two once it does")
+    void booksRowGrowsAnInlineEditButton() {
+        double halfW = EditorPlotLabelsRenderer.MIN_HALF_W;
+
+        // Off: no dials, so no button — the whole row cycles wherever the click lands.
+        EditorPlotLabelsPacket.Entry off =
+            entry("PORTALS", true, 1, 11, 13, 7, "bedrock_lock/exact/off/off/off");
+        assertFalse(EditorPlotLabelsRenderer.hasBookEditButton(off));
+        double offY = rowCentreY(off, indexOf(EditorPlotLabelsRenderer.rows(off), RowKind.ROOM_BOOKS));
+        for (double x : new double[]{-halfW + 0.05, 0.0, halfW - 0.05}) {
+            assertEquals(CellKind.ROOM_BOOKS_CYCLE, EditorPlotLabelsRenderer.cellAt(off, halfW, x, offY));
+        }
+
+        // Stocking an author: the value keeps the left of the row, Edit takes the right.
+        EditorPlotLabelsPacket.Entry mix =
+            entry("PORTALS", true, 1, 11, 13, 7, "bedrock_lock/exact/off/off/mix:2:3:1");
+        assertTrue(EditorPlotLabelsRenderer.hasBookEditButton(mix));
+        RowKind[] rows = EditorPlotLabelsRenderer.rows(mix);
+        double mixY = rowCentreY(mix, indexOf(rows, RowKind.ROOM_BOOKS));
+        assertEquals(CellKind.ROOM_BOOKS_CYCLE,
+            EditorPlotLabelsRenderer.cellAt(mix, halfW, -halfW + 0.05, mixY));
+        assertEquals(CellKind.ROOM_BOOKS_EDIT,
+            EditorPlotLabelsRenderer.cellAt(mix, halfW, halfW - 0.05, mixY));
+
+        // ...and it stays ONE row: nothing below it shifted to make room for a button.
+        assertArrayEquals(EditorPlotLabelsRenderer.rows(off), rows);
     }
 
     @Test
@@ -188,7 +252,7 @@ class EditorPlotLabelsRendererTest {
             entry("PORTALS", true, 1, 11, 13, 7, "endless_repetition/dynamic/off/random:4:6");
         assertArrayEquals(
             new RowKind[]{RowKind.NAME, RowKind.WEIGHT, RowKind.LENGTH, RowKind.WIDTH,
-                RowKind.HEIGHT, RowKind.MODE, RowKind.COPIES, RowKind.ROOM_CONTENTS,
+                RowKind.HEIGHT, RowKind.MODE, RowKind.COPIES, RowKind.ROOM_CONTENTS, RowKind.ROOM_BOOKS, RowKind.ROOM_SKY,
                 RowKind.EXITS, RowKind.EXIT_EVERY, RowKind.EXIT_MOVE, RowKind.ENTER, RowKind.ACTION},
             EditorPlotLabelsRenderer.rows(random));
         assertEquals("Moved exit: 6/10", EditorPlotLabelsRenderer.exitMoveLabel(random.roomMode()));
@@ -296,7 +360,7 @@ class EditorPlotLabelsRendererTest {
         EditorPlotLabelsPacket.Entry on = entry("PORTALS", true, 1, 11, 13, 7, "bedrock_lock/exact/fit");
         assertArrayEquals(
             new RowKind[]{RowKind.NAME, RowKind.WEIGHT, RowKind.LENGTH, RowKind.WIDTH,
-                RowKind.HEIGHT, RowKind.MODE, RowKind.ROOM_CONTENTS, RowKind.ENTER,
+                RowKind.HEIGHT, RowKind.MODE, RowKind.ROOM_CONTENTS, RowKind.ROOM_BOOKS, RowKind.ROOM_SKY, RowKind.ENTER,
                 RowKind.ACTION, RowKind.CONTENTS},
             EditorPlotLabelsRenderer.rows(on));
 
@@ -338,6 +402,48 @@ class EditorPlotLabelsRendererTest {
     }
 
     @Test
+    @DisplayName("The Block row splits into a value half and an Edit half")
+    void copiesBlockRowSplitsIntoValueAndEdit() {
+        EditorPlotLabelsPacket.Entry e =
+            entryWithBlock("endless_open/single", "minecraft:sandstone");
+        double halfW = EditorPlotLabelsRenderer.MIN_HALF_W;
+
+        // Left of the split sets the block from the hand; right of it opens the variant menu.
+        assertFalse(EditorPlotLabelsRenderer.copiesBlockHitIsEdit(halfW, -halfW + 0.05));
+        assertTrue(EditorPlotLabelsRenderer.copiesBlockHitIsEdit(halfW, halfW - 0.05));
+
+        RowKind[] rows = EditorPlotLabelsRenderer.rows(e);
+        double y = rowCentreY(e, indexOf(rows, RowKind.COPIES_FLOOR));
+        assertEquals(CellKind.COPIES_FLOOR_HELD,
+            EditorPlotLabelsRenderer.cellAt(e, halfW, -halfW + 0.05, y));
+        assertEquals(CellKind.COPIES_FLOOR_EDIT,
+            EditorPlotLabelsRenderer.cellAt(e, halfW, halfW - 0.05, y));
+
+        // The Roof row is the same two halves, one row down — and a click on it must not report the
+        // floor's cells, or authoring the roof would quietly rewrite the ground.
+        double roofY = rowCentreY(e, indexOf(rows, RowKind.COPIES_ROOF));
+        assertEquals(CellKind.COPIES_ROOF_HELD,
+            EditorPlotLabelsRenderer.cellAt(e, halfW, -halfW + 0.05, roofY));
+        assertEquals(CellKind.COPIES_ROOF_EDIT,
+            EditorPlotLabelsRenderer.cellAt(e, halfW, halfW - 0.05, roofY));
+
+        // And the rows either side of it still land where they did.
+        assertEquals(CellKind.COPIES_CYCLE, EditorPlotLabelsRenderer.cellAt(e, halfW, 0.0,
+            rowCentreY(e, indexOf(rows, RowKind.COPIES))));
+        assertEquals(CellKind.ROOM_CONTENTS_CYCLE, EditorPlotLabelsRenderer.cellAt(e, halfW, 0.0,
+            rowCentreY(e, indexOf(rows, RowKind.ROOM_CONTENTS))));
+    }
+
+    @Test
+    @DisplayName("An unset Copies block still splits — the row is usable before anything is chosen")
+    void copiesBlockRowSplitsWhenUnset() {
+        EditorPlotLabelsPacket.Entry e = entryWithBlock("endless_open/single", "");
+        double halfW = EditorPlotLabelsRenderer.MIN_HALF_W;
+        assertFalse(EditorPlotLabelsRenderer.copiesBlockHitIsEdit(halfW, -halfW + 0.05));
+        assertTrue(EditorPlotLabelsRenderer.copiesBlockHitIsEdit(halfW, halfW - 0.05));
+    }
+
+    @Test
     @DisplayName("Both rows read their own half of the one stored tag")
     void rowsReadTheirOwnHalfOfTheTag() {
         assertEquals("Walls: Endless Repetition",
@@ -346,6 +452,57 @@ class EditorPlotLabelsRendererTest {
             EditorPlotLabelsRenderer.copiesLabel("endless_repetition/dynamic"));
         // No sub-mode stored is the default, not a blank.
         assertEquals("Copies: Exact", EditorPlotLabelsRenderer.copiesLabel("endless_repetition"));
+
+        assertEquals("Copies: Single",
+            EditorPlotLabelsRenderer.copiesLabel("endless_open/single:minecraft:sandstone"));
+        // The plane rows name the gesture, not the value: each palette is a variant of up to
+        // MAX_ENTRIES candidates that lives server-side, and the plot panel draws it as icons.
+        assertEquals("Floor: + held", EditorPlotLabelsRenderer.copiesBlockLabel(
+            games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane.FLOOR));
+        assertEquals("Roof: + held", EditorPlotLabelsRenderer.copiesBlockLabel(
+            games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane.ROOF));
+    }
+
+    @Test
+    @DisplayName("The air sentinel is recognised by id, so a plane set to air reads as nothing")
+    void airSentinelIsRecognised() {
+        // All three command-block kinds are the empty-placeholder sentinel, and the row is only
+        // ever sent an id — so the check has to work off the id alone.
+        assertTrue(EditorPlotLabelsRenderer.isAirSentinelId("minecraft:command_block"));
+        assertTrue(EditorPlotLabelsRenderer.isAirSentinelId("minecraft:chain_command_block"));
+        assertTrue(EditorPlotLabelsRenderer.isAirSentinelId("minecraft:repeating_command_block"));
+
+        // An ordinary block is not, and neither is the unset case — those are three distinct
+        // things the row draws differently: an icon, the word "nothing", and the "hold one" hint.
+        assertFalse(EditorPlotLabelsRenderer.isAirSentinelId("minecraft:stone"));
+        assertFalse(EditorPlotLabelsRenderer.isAirSentinelId(""));
+        assertFalse(EditorPlotLabelsRenderer.isAirSentinelId(null));
+    }
+
+    @Test
+    @DisplayName("One plane set to air leaves the other's icon alone")
+    void planesCarryTheirOwnIcons() {
+        EditorPlotLabelsPacket.Entry e = entryWithBlocks(
+            "endless_open/single", "minecraft:stone", "minecraft:command_block");
+
+        assertEquals("minecraft:stone", e.copiesFloorBlock());
+        assertTrue(EditorPlotLabelsRenderer.isAirSentinelId(e.copiesRoofBlock()));
+        assertFalse(EditorPlotLabelsRenderer.isAirSentinelId(e.copiesFloorBlock()),
+            "a roof of air must not read back as a floor of air");
+    }
+
+    @Test
+    @DisplayName("The Block row shows only where Single is what the walls actually do")
+    void copiesBlockRowFollowsTheEffectiveValue() {
+        assertTrue(EditorPlotLabelsRenderer.hasCopiesBlockRowFor(
+            "endless_open/single:minecraft:sandstone"));
+        assertFalse(EditorPlotLabelsRenderer.hasCopiesBlockRowFor("endless_open/dynamic"));
+        assertFalse(EditorPlotLabelsRenderer.hasCopiesBlockRowFor("endless_open"));
+        // Stored but not usable: Endless Repetition reads Single back as Exact, so no block row.
+        assertFalse(EditorPlotLabelsRenderer.hasCopiesBlockRowFor(
+            "endless_repetition/single:minecraft:sandstone"));
+        assertFalse(EditorPlotLabelsRenderer.hasCopiesBlockRowFor(
+            "bedrock_lock/single:minecraft:sandstone"));
     }
 
     @Test
@@ -525,5 +682,30 @@ class EditorPlotLabelsRendererTest {
             if (rows[i] == kind) return i;
         }
         throw new AssertionError("row " + kind + " not present");
+    }
+
+    @Test
+    @DisplayName("The Sky row shows on every portal room and reads back what the tag says")
+    void skyRowShowsOnEveryPortalRoomAndReadsItsValue() {
+        // Every wall mode, on the same reasoning as Contents and Books: the sky a room stands under
+        // is not a property of how it seals.
+        for (String mode : new String[]{"bedrock_lock", "bedrockless", "endless_open",
+                "endless_repetition"}) {
+            assertTrue(EditorPlotLabelsRenderer.hasRoomSkyRow(
+                entry("PORTALS", true, 1, 11, 13, 7, mode)), mode);
+        }
+        // ...and on nothing else.
+        assertFalse(EditorPlotLabelsRenderer.hasRoomSkyRow(
+            entry("PORTALS", false, 1, 11, 13, 7, "bedrock_lock")));
+
+        assertEquals("Sky: Off", EditorPlotLabelsRenderer.roomSkyLabel("bedrock_lock"));
+        assertEquals("Sky: Daylight",
+            EditorPlotLabelsRenderer.roomSkyLabel("bedrock_lock/exact/off/off/off/day"));
+        assertEquals("Sky: Day/Night",
+            EditorPlotLabelsRenderer.roomSkyLabel("bedrock_lock/exact/off/off/off/cycle"));
+        assertEquals("Sky: Nether",
+            EditorPlotLabelsRenderer.roomSkyLabel("bedrock_lock/exact/off/off/off/nether"));
+        assertEquals("Sky: End",
+            EditorPlotLabelsRenderer.roomSkyLabel("bedrock_lock/exact/off/off/off/end"));
     }
 }

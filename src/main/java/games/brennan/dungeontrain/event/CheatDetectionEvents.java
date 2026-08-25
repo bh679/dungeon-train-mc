@@ -4,6 +4,8 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.cheat.AisDataIntegrity;
 import games.brennan.dungeontrain.cheat.CheatModIntegrity;
 import games.brennan.dungeontrain.cheat.CommandAllowlist;
+import games.brennan.dungeontrain.cheat.DtConfigIntegrity;
+import games.brennan.dungeontrain.cheat.PortalTuningIntegrity;
 import games.brennan.dungeontrain.cheat.RunIntegrity;
 import games.brennan.dungeontrain.compat.EnderChestLockBridge;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
@@ -52,6 +54,11 @@ import java.util.concurrent.ConcurrentHashMap;
  *       run-scoped effect is re-applied if already Free Play.</li>
  *   <li>{@link PlayerEvent.PlayerRespawnEvent} — re-applies the effect after a
  *       death clears it, while the run is still Free Play.</li>
+ *   <li>{@link #requestFreePlayConfirm} — the same prompt for a tainting action that
+ *       is <b>not</b> a command and cannot be replayed: a creative mod's features being
+ *       used (see {@link games.brennan.dungeontrain.compat.EffortlessBuildingGate}).
+ *       WorldEdit needs nothing here — its whole surface is commands, so the
+ *       {@link CommandEvent} path above already covers it.</li>
  * </ul>
  *
  * @see RunIntegrity
@@ -60,8 +67,21 @@ import java.util.concurrent.ConcurrentHashMap;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class CheatDetectionEvents {
 
-    /** A tainting command held per-player while its Free Play confirmation is open. */
-    private record Pending(String rawCommand, String label) {}
+    /**
+     * A tainting action held per-player while its Free Play confirmation is open.
+     *
+     * <p>{@code rawCommand} is the command to re-dispatch once the player confirms, or
+     * {@code null} for a cause that cannot be replayed — a creative-mod action
+     * ({@link #requestFreePlayConfirm}) was cancelled outright, so the player simply
+     * repeats the click after confirming.</p>
+     */
+    private record Pending(String rawCommand, String label) {
+
+        /** A non-replayable cause: nothing is re-run on confirm. */
+        static Pending action(String label) {
+            return new Pending(null, label);
+        }
+    }
 
     private static final Map<UUID, Pending> PENDING = new ConcurrentHashMap<>();
 
@@ -75,11 +95,11 @@ public final class CheatDetectionEvents {
         if (RunIntegrity.isPermanentlyCheated(player)) return; // already recorded — let it run (incl. re-dispatch)
         if (!CommandAllowlist.taints(event.getParseResults())) return;
 
-        if (AisDataIntegrity.isSessionFreePlay()) {
-            // The session is already Free Play (AIS data changed) — there is
-            // nothing to confirm or back out of. Just record the permanent taint
-            // (quiet — markCheated skips the notice during a session taint) and
-            // let the command run.
+        if (RunIntegrity.isVisiblySessionFreePlay()) {
+            // The session is already Free Play (AIS data changed, or custom editor content is
+            // active) — there is nothing to confirm or back out of. Just record the permanent
+            // taint (quiet — markCheated skips the notice during a session taint) and let the
+            // command run.
             RunIntegrity.markCheated(player, Component.translatable(
                 "chat.dungeontrain.free_play.cause.command",
                 CommandAllowlist.label(event.getParseResults())));
@@ -94,16 +114,49 @@ public final class CheatDetectionEvents {
         DungeonTrainNet.sendTo(player, new ShowFreePlayConfirmPacket(label));
     }
 
+    /**
+     * Ask the player to confirm Free Play for an action that is <b>not</b> a command — a
+     * creative-mod feature (Effortless Building's build modes and modifiers) whose use DT
+     * gates the same way it gates {@code /give}. The caller must already have cancelled the
+     * action: unlike the command path there is nothing to replay, so on confirm the run just
+     * goes Free Play and the player repeats the click. Backing out leaves the run untouched
+     * and the next use prompts again.
+     *
+     * <p>No-ops when the run is already permanently cheated (the caller should let the action
+     * through in that case), and records the taint quietly without a prompt while a session-only
+     * taint is active — mirroring {@link #onCommand}.</p>
+     *
+     * @param label what the player did, shown on the confirm screen (e.g. {@code "Effortless Building"})
+     * @return true when a prompt was sent and the action should stay cancelled; false when the
+     *         caller may let the action run
+     */
+    public static boolean requestFreePlayConfirm(ServerPlayer player, String label) {
+        if (RunIntegrity.isPermanentlyCheated(player)) return false;
+        if (RunIntegrity.isVisiblySessionFreePlay()) {
+            // Already Free Play for the session — nothing to confirm or back out of.
+            RunIntegrity.markCheated(player, Component.translatable(
+                "chat.dungeontrain.free_play.cause.creative_mod", label));
+            return false;
+        }
+        PENDING.put(player.getUUID(), Pending.action(label));
+        DungeonTrainNet.sendTo(player, new ShowFreePlayConfirmPacket(label));
+        return true;
+    }
+
     /** Called from {@code FreePlayConfirmResponsePacket} on the server thread. */
     public static void onConfirmResponse(ServerPlayer player, boolean confirmed) {
         Pending pending = PENDING.remove(player.getUUID());
         if (pending == null) return;
-        if (!confirmed) return; // backed out — the command stayed canceled
+        if (!confirmed) return; // backed out — the action stayed canceled
+        boolean replayable = pending.rawCommand() != null;
         RunIntegrity.markCheated(player, Component.translatable(
-            "chat.dungeontrain.free_play.cause.command", pending.label()));
+            replayable ? "chat.dungeontrain.free_play.cause.command"
+                       : "chat.dungeontrain.free_play.cause.creative_mod",
+            pending.label()));
         // Lock the live Ender Chest onto the Free Play (creative) slot now, before
         // the held command runs — the legit chest is hidden the instant the run trips.
         EnderChestLockBridge.engage(player);
+        if (!replayable) return; // creative-mod action: cancelled outright, the player repeats it
         // Re-run the held command. isCheated is now true, so onCommand won't re-gate it.
         MinecraftServer server = player.getServer();
         if (server != null) {
@@ -146,6 +199,25 @@ public final class CheatDetectionEvents {
                     .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
                         Component.literal("/fixaisconfig")))));
         }
+        if (DtConfigIntegrity.isSessionFreePlay()) {
+            // Session-only DT-config taint (parallel to the AIS block above): markCheated never
+            // runs in this path, so apply the effect and explain WHY here, once per login — with
+            // the exact changed settings and a one-click fix action.
+            RunIntegrity.applyFreePlayEffect(player);
+            RunIntegrity.sendFreePlayNotice(player,
+                Component.translatable("chat.dungeontrain.free_play.cause.dt_config"));
+            player.sendSystemMessage(Component.translatable(
+                    "chat.dungeontrain.free_play.dt_config_changed",
+                    String.join(", ", DtConfigIntegrity.deviations()))
+                .withStyle(ChatFormatting.GRAY));
+            player.sendSystemMessage(Component.translatable("chat.dungeontrain.free_play.dt_config_fix")
+                .withStyle(style -> style
+                    .withColor(ChatFormatting.AQUA)
+                    .withUnderlined(true)
+                    .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/fixconfig"))
+                    .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+                        Component.literal("/fixconfig")))));
+        }
         if (CheatModIntegrity.isSessionFreePlay()) {
             // Session-only cheat-mod taint (parallel to the AIS block above): markCheated never
             // runs in this path, so apply the effect and explain WHY here, once per login — naming
@@ -160,6 +232,17 @@ public final class CheatDetectionEvents {
             player.sendSystemMessage(Component.translatable("chat.dungeontrain.free_play.cheat_mods_fix")
                 .withStyle(ChatFormatting.GRAY));
         }
+        if (PortalTuningIntegrity.isWorldFreePlay()) {
+            // World-level portal-rate taint. Unlike the three above this one is permanent and
+            // belongs to the world, so it reaches players who never ran anything — which is exactly
+            // why it has to explain itself on every join. No one-click fix: the track this world
+            // generated is already in the save.
+            RunIntegrity.applyFreePlayEffect(player);
+            RunIntegrity.sendFreePlayNotice(player,
+                Component.translatable("chat.dungeontrain.free_play.cause.portal_rate"));
+            player.sendSystemMessage(Component.translatable("chat.dungeontrain.free_play.portal_rate_changed")
+                .withStyle(ChatFormatting.GRAY));
+        }
         if (RunIntegrity.isPermanentlyCheated(player)) {
             RunIntegrity.applyFreePlayEffect(player); // re-apply across relog
             return;
@@ -169,6 +252,12 @@ public final class CheatDetectionEvents {
         // AchievementEvents' default-priority sidecar absorb/replay reads it).
         // During a session taint this still records the permanent flag, quietly.
         markGameModeFreePlay(player, player.gameMode.getGameModeForPlayer());
+        // Everything above this line can only ever ADD Free Play. This is the one place that takes
+        // the badge back OFF: the effect is infinite and saved on the player, so a run whose cause
+        // has since gone away — custom content disabled, a config put back — used to carry the icon
+        // for the life of the save and read, correctly enough, as "still stuck in Free Play".
+        // Reconciling here means those saves heal themselves on the next login.
+        RunIntegrity.reconcileFreePlayEffect(player);
     }
 
     @SubscribeEvent
@@ -194,9 +283,14 @@ public final class CheatDetectionEvents {
     }
 
     private static void markGameModeFreePlay(ServerPlayer player, GameType mode) {
-        if (mode == GameType.CREATIVE || mode == GameType.SPECTATOR) {
+        if (isTaintingMode(mode)) {
             RunIntegrity.markCheated(player, Component.translatable(
                 "chat.dungeontrain.free_play.cause.gamemode", mode.getLongDisplayName()));
         }
+    }
+
+    /** The two modes that make a run Free Play on their own. */
+    private static boolean isTaintingMode(GameType mode) {
+        return mode == GameType.CREATIVE || mode == GameType.SPECTATOR;
     }
 }

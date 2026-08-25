@@ -1,0 +1,11 @@
+{
+  "id": "they_didnt_want_it",
+  "title": "Não Quiseram Ser Amados",
+  "author": "Brennan Hatton",
+  "generation": 0,
+  "weight": 1,
+  "variants": [
+    "Aquilo os encontrou.\nEles o mataram.\n\n\nEssa é a versão curta.\n\nAqui vai a longa.\n\n%STORY%\n\n\nVagão %CARRIAGE%.\n\n%DAYS% dias de espera para cerca de um minuto de erro.\n\n\nNo começo não revidou.\nNão revida, no começo.\n%GEAR%\n\n\nTalvez eles não soubessem.\n\nUma coisa morta se aproxima usando um rosto e estende algo.\n\nA maioria das pessoas ataca.\n\n\nEu gostaria de te dizer que eles sabiam e fizeram mesmo assim.\n\nIsso é pior, e não sei se é verdade.\n\n\n%TARGET% tem a sua letra guardada num baú em algum lugar.\n\nEles acham que é um troféu.",
+    "%TARGET% o matou.\n\n\nVocê deve saber que foi rápido.\n\n%DAYS% dias de espera, e depois nada muito demorado.\n\n\n%STORY%\n\n\nEu fico pensando no instante anterior.\n\nAquilo tinha algo nas mãos para eles.\n%GEAR%\n\nAinda estava segurando.\n\n\nAs pessoas neste trem não recebem muitos presentes.\n\nRecebem emboscadas.\n\nAprendem a distinguir uma da outra no chute.\n\n\nChutaram errado.\n\n\nVocê os perdoaria.\n\nÉ essa a coisa irritante em você."
+  ]
+}

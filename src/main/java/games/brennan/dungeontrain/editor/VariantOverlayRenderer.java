@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.net.BlockVariantLockIdsPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.EditorPlotLabelsPacket;
+import games.brennan.dungeontrain.net.EditorStrayBlocksPacket;
 import games.brennan.dungeontrain.net.EditorStatusPacket;
 import games.brennan.dungeontrain.template.TemplateGate;
 import games.brennan.dungeontrain.worldgen.TrainPhase;
@@ -137,6 +138,14 @@ public final class VariantOverlayRenderer {
     /** Per-player dedup key for the part-visibility mirror — just {@code EditorPartVisibility.generation()}. */
     private static final Map<UUID, String> LAST_PART_VIS_KEY = new HashMap<>();
 
+    /**
+     * Per-player dedup key for the red stray-block ghosts — {@code EditorStrayBlocks.generation()}.
+     * {@code null} or absent means "last sent was empty (or none yet)", which is also how the
+     * toggle works: turning the ghosts off clears the key (and sends the empty packet once), so
+     * turning them back on pushes again without the sweep having to move.
+     */
+    private static final Map<UUID, String> LAST_STRAYS_KEY = new HashMap<>();
+
     private VariantOverlayRenderer() {}
 
     /**
@@ -159,6 +168,7 @@ public final class VariantOverlayRenderer {
         LAST_TYPE_MENUS_KEY.clear();
         LAST_STAGE_STRIPS_KEY.clear();
         LAST_PART_VIS_KEY.clear();
+        LAST_STRAYS_KEY.clear();
     }
 
     /** Toggle the overlay for {@code player}. {@code on == true} resumes rendering. */
@@ -193,18 +203,21 @@ public final class VariantOverlayRenderer {
         clearTypeMenusIfStale(player);
         clearStageStripsIfStale(player);
         clearPartVisibilityIfStale(player);
+        clearStraysIfStale(player);
     }
 
     /**
      * Minimum player Y for the editor overlay to do any work. Every editor plot
-     * sits in the sky at {@code PLOT_Y = 250} (see {@link EditorLayout}); gameplay
-     * and trains run far below. A player under this line can't be at a plot, so the
-     * per-player {@code plotContaining} locate cascade is skipped entirely for them.
+     * sits in the sky at {@link EditorLayout#PLOT_Y}; gameplay and trains run far
+     * below. A player under this line can't be at a plot, so the per-player
+     * {@code plotContaining} locate cascade is skipped entirely for them.
      * That cascade used to run every tick for every player even during normal play
      * with the editor closed (~9ms/tick on a long train — the profiler's "overlay"
-     * cost). Set a few blocks below 250 for standing-on-the-plot-floor margin.
+     * cost). A few blocks below the floor for standing-on-the-plot-floor margin —
+     * derived rather than written out, because a gate left ABOVE the plot floor
+     * would silently disable labels and menus for a player standing on their plot.
      */
-    private static final int EDITOR_Y_MIN = 245;
+    private static final int EDITOR_Y_MIN = EditorLayout.PLOT_Y - 5;
 
     /**
      * Call once per server level tick. Cheap when no players are up at the editor
@@ -222,8 +235,10 @@ public final class VariantOverlayRenderer {
         // ticks are one long comparison.
         StagePanelController.resyncIfStale(level.getServer());
 
+        sweepStrays(level, dims, players);
+
         for (ServerPlayer player : players) {
-            // Editor plots live in the sky at PLOT_Y=250; trains run far below. Skip the whole
+            // Editor plots live in the sky at EditorLayout.PLOT_Y; trains run far below. Skip the whole
             // editor-overlay locate cascade for anyone not up at the build area — this is the
             // ~9ms/tick the profiler flagged, which ran unconditionally during normal play.
             // forget() clears any lingering editor HUD once on the way out, then no-ops (cheap
@@ -238,6 +253,7 @@ public final class VariantOverlayRenderer {
             pushTypeMenusSnapshot(player, dims);
             pushStageStripsSnapshot(player, level);
             pushPartVisibilitySnapshot(player);
+            pushStraysSnapshot(player);
 
             if (!isEnabled(player)) {
                 clearHoverIfStale(player);
@@ -691,6 +707,10 @@ public final class VariantOverlayRenderer {
                 .append('@').append(l.roomLength()).append('x').append(l.roomHeight())
                 .append('x').append(l.roomWidth())
                 .append('/').append(l.roomMode())
+                // Both blocks too, or setting one would not re-push and its row would keep showing
+                // the icon it had.
+                .append('/').append(l.copiesFloorBlock())
+                .append('/').append(l.copiesRoofBlock())
                 .append(l.inPlot() ? "*" : "").append(';');
         }
         String snapshotKey = keyBuf.toString();
@@ -710,7 +730,8 @@ public final class VariantOverlayRenderer {
                 l.worldPos(), l.name(), l.weight(),
                 l.category(), l.modelId(), l.modelName(),
                 l.inPlot(), l.isUser(), l.isImported(),
-                l.roomLength(), l.roomWidth(), l.roomHeight(), l.roomMode()));
+                l.roomLength(), l.roomWidth(), l.roomHeight(), l.roomMode(),
+                l.copiesFloorBlock(), l.copiesRoofBlock()));
         }
         EditorPlotLabels.Label first = labels.get(0);
         LOGGER.info("[DungeonTrain] EditorPlotLabels: send {} entries (category {}, first '{}' weight={} @ {}) to {}",
@@ -879,6 +900,57 @@ public final class VariantOverlayRenderer {
         if (LAST_PART_VIS_KEY.remove(player.getUUID()) != null) {
             DungeonTrainNet.sendTo(player,
                 games.brennan.dungeontrain.net.PartVisibilityPacket.empty());
+        }
+    }
+
+    /**
+     * Advance the stray-block sweep by one tick's budget, if there is anything for it to find.
+     *
+     * <p>Runs once per level rather than per player — the answer is a property of the world, not
+     * of who is looking at it. Gated on the overworld (every plot is stamped there), on a category
+     * actually being stamped, and on somebody being up at the build area: a normal play session
+     * never reaches {@link EditorStrayBlocks#sweepStep}, and neither does an editor world nobody
+     * is currently in.</p>
+     */
+    private static void sweepStrays(ServerLevel level, CarriageDims dims, List<ServerPlayer> players) {
+        if (!level.dimension().equals(net.minecraft.world.level.Level.OVERWORLD)) return;
+        if (EditorStampedCategoryState.current().isEmpty()) return;
+        for (ServerPlayer player : players) {
+            if (player.getBlockY() >= EDITOR_Y_MIN) {
+                EditorStrayBlocks.sweepStep(level, dims);
+                return;
+            }
+        }
+    }
+
+    /**
+     * Push the red-ghost snapshot when the sweep has moved. A player with the ghosts toggled off
+     * goes down the clear path instead, which drops their dedup key — so the packet that turns
+     * them off is sent exactly once, and turning them back on re-pushes immediately.
+     */
+    private static void pushStraysSnapshot(ServerPlayer player) {
+        UUID uuid = player.getUUID();
+        boolean on = EditorStrayBlocks.isEnabled(uuid);
+        if (!on) {
+            clearStraysIfStale(player);
+            return;
+        }
+        String key = "g" + EditorStrayBlocks.generation();
+        if (key.equals(LAST_STRAYS_KEY.get(uuid))) return;
+
+        List<BlockPos> strays = EditorStrayBlocks.snapshot();
+        if (strays.isEmpty()) {
+            clearStraysIfStale(player);
+            return;
+        }
+        LAST_STRAYS_KEY.put(uuid, key);
+        DungeonTrainNet.sendTo(player, new EditorStrayBlocksPacket(strays));
+    }
+
+    /** Send the empty ghost packet if the player previously had a non-empty snapshot. */
+    private static void clearStraysIfStale(ServerPlayer player) {
+        if (LAST_STRAYS_KEY.remove(player.getUUID()) != null) {
+            DungeonTrainNet.sendTo(player, EditorStrayBlocksPacket.empty());
         }
     }
 

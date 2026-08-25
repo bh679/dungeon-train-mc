@@ -1,8 +1,11 @@
 package games.brennan.dungeontrain.event;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.train.CarriageDims;
+import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.DisintegrationBand;
 import games.brennan.dungeontrain.worldgen.NetherBand;
+import games.brennan.dungeontrain.worldgen.WorldFloor;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.server.level.ServerLevel;
@@ -19,7 +22,10 @@ import net.minecraft.world.level.biome.Biomes;
 import net.minecraft.world.phys.AABB;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import games.brennan.dungeontrain.worldgen.structure.BandStructureSpawns;
+import net.minecraft.world.entity.MobCategory;
 import net.neoforged.neoforge.event.entity.living.FinalizeSpawnEvent;
+import net.neoforged.neoforge.event.entity.living.MobSpawnEvent;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
 
 import java.util.List;
@@ -54,6 +60,17 @@ import java.util.List;
  * ({@link NetherBand#isInNetherBiome}, the same {@code netherRamp ≥ 0.5} zone this spawner uses), so
  * they survive intact. Every other roster mob (zombified piglins, magma cubes, skeletons, endermen,
  * ghasts) already behaves correctly outside the Nether.</p>
+ *
+ * <p><b>Never below the world floor, never in a portal room.</b> Candidate heights come from the
+ * player's own Y, so a player who steps through a portal mid-band would otherwise have the band
+ * spawned around them down in the basement — the empty space under the bedrock row that the portal
+ * system stamps its twin structures into ({@link WorldFloor}). {@code BasementSpawnGuard} and
+ * {@code PortalRoomSpawnGuard} already forbid exactly that, but neither can see these mobs: this
+ * class builds them itself and calls {@link Mob#finalizeSpawn} directly with
+ * {@link MobSpawnType#EVENT}, so {@code FinalizeSpawnEvent} never fires. Hence its own copy of the
+ * rule — {@link #blockedSpawnSite} — applied to every candidate position, plus an early-out for a
+ * player who is themselves under the floor. Both are no-ops in a world with no basement
+ * (Compatible Terrain), where the portal half of the test is the one that fires.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class NetherMobSpawner {
@@ -174,10 +191,18 @@ public final class NetherMobSpawner {
         if (NetherBand.startX(level) == NetherBand.OFF) return;
 
         RandomSource rng = level.getRandom();
+        // Resolved once per tick, not per candidate: both are level-wide and neither can change
+        // between attempts within a tick.
+        int bedrockY = WorldFloor.bedrockY(level);
+        CarriageDims dims = DungeonTrainWorldData.get(level).dims();
+
         for (ServerPlayer player : level.players()) {
             int px = (int) Math.floor(player.getX());
             if (NetherBand.netherRampAt(level, px) < SPAWN_INTENSITY_THRESHOLD) continue;
             if (DisintegrationBand.middleRampAt(level, px) > 0.0) continue;
+            // A player under the floor is in the basement — a portal room, almost always. Every
+            // candidate height is derived from theirs, so there is nothing legal to find down here.
+            if (WorldFloor.isBelowFloor(player.getBlockY(), bedrockY)) continue;
 
             AABB around = player.getBoundingBox().inflate(SPAWN_RADIUS);
             List<Mob> nearby = level.getEntitiesOfClass(Mob.class, around,
@@ -193,7 +218,7 @@ public final class NetherMobSpawner {
             boolean ghastsAllowed = ghastsNearby < ghastCapFor(pass);
 
             for (int i = 0; i < TRIES; i++) {
-                trySpawnNear(level, player, rng, ghastsAllowed, pass);
+                trySpawnNear(level, player, rng, ghastsAllowed, pass, dims, bedrockY);
             }
         }
     }
@@ -207,12 +232,37 @@ public final class NetherMobSpawner {
         if (!level.dimension().equals(Level.OVERWORLD)) return;
         int x = (int) Math.floor(event.getX());
         if (NetherBand.heightRampAt(level, x) > 0.0 && DisintegrationBand.middleRampAt(level, x) <= 0.0) {
+            // A Nether fortress runs its own roster through its spawn_overrides, exactly as it does in the
+            // Nether. Blanket-cancelling the band would eat those too, and the fortresses would stand empty.
+            BlockPos pos = BlockPos.containing(event.getX(), event.getY(), event.getZ());
+            if (BandStructureSpawns.inMonsterSpawningStructure(level, pos)) return;
             event.setSpawnCancelled(true);
         }
     }
 
+    /**
+     * Inside a band structure that defines its own monster spawns, let the placement check pass the way it
+     * would in the Nether.
+     *
+     * <p>Wither skeletons and skeletons spawn through {@code Monster.checkMonsterSpawnRules}, which refuses
+     * under sky light. The real Nether has none, so the rule never bites there; the band core lies under the
+     * overworld sky, so without this the open half of a fortress stays empty all day while the enclosed half
+     * fills up. The spawn <em>list</em> is still the fortress's own, so allowing the check can only admit
+     * the mobs that belong there.</p>
+     */
+    @SubscribeEvent
+    public static void onSpawnPlacementCheck(MobSpawnEvent.SpawnPlacementCheck event) {
+        MobSpawnType type = event.getSpawnType();
+        if (type != MobSpawnType.NATURAL && type != MobSpawnType.CHUNK_GENERATION) return;
+        if (event.getEntityType().getCategory() != MobCategory.MONSTER) return;
+        ServerLevel level = event.getLevel().getLevel();
+        if (BandStructureSpawns.inMonsterSpawningStructure(level, event.getPos())) {
+            event.setResult(MobSpawnEvent.SpawnPlacementCheck.Result.SUCCEED);
+        }
+    }
+
     private static void trySpawnNear(ServerLevel level, ServerPlayer player, RandomSource rng,
-                                     boolean ghastsAllowed, long pass) {
+                                     boolean ghastsAllowed, long pass, CarriageDims dims, int bedrockY) {
         int dx = rng.nextInt(2 * SPAWN_RADIUS + 1) - SPAWN_RADIUS;
         int dz = rng.nextInt(2 * SPAWN_RADIUS + 1) - SPAWN_RADIUS;
         if (dx * dx + dz * dz < MIN_SPAWN_DIST * MIN_SPAWN_DIST) return;
@@ -238,6 +288,9 @@ public final class NetherMobSpawner {
             int startY = player.getBlockY() + 4 + rng.nextInt(8);
             for (int y = startY; y <= player.getBlockY() + GHAST_POCKET_CEILING; y++) {
                 BlockPos air = new BlockPos(wx, y, wz);
+                // `continue`, not `return`: the scan runs upward, so a blocked low pocket is no
+                // reason to give up on the legal ones above it.
+                if (blockedSpawnSite(dims, bedrockY, air)) continue;
                 if (hasRoomFor(level, EntityType.GHAST, air)) {
                     spawn(level, EntityType.GHAST, air, rng);
                     return;
@@ -250,12 +303,34 @@ public final class NetherMobSpawner {
         EntityType<? extends Mob>[] roster = groundMobsFor(biome);
         for (int y = player.getBlockY() + FLOOR_SEARCH_UP; y >= player.getBlockY() - FLOOR_SEARCH_DOWN; y--) {
             BlockPos feet = new BlockPos(wx, y, wz);
+            if (blockedSpawnSite(dims, bedrockY, feet)) continue;
             if (!level.getBlockState(feet.below()).blocksMotion()) continue;
             if (!level.getBlockState(feet).isAir() || !level.getBlockState(feet.above()).isAir()) continue;
             EntityType<? extends Mob> type = roster[rng.nextInt(roster.length)];
             spawn(level, type, feet, rng);
             return;
         }
+    }
+
+    /**
+     * True for a position the band must not spawn into — the basement under the world floor, or a
+     * portal structure.
+     *
+     * <p>Two tests rather than one because neither contains the other, the same split
+     * {@code BasementSpawnGuard} and {@code PortalRoomSpawnGuard} make for ambient spawns. A portal
+     * room in a basement world sits wholly below {@code bedrockY}, so the depth test alone covers
+     * it; a Compatible Terrain world has no basement at all, its rooms are cut into rock well above
+     * the floor, and there only {@link PortalCarriageEvents#isInsidePortalStructure} fires. That
+     * query is the broad one — room, corridors, every tiled copy, and the Bedrockless void
+     * clearance — so a mob can't arrive just outside the wall either.</p>
+     *
+     * <p>Probed at the column centre, the position {@link #spawn} hands to {@link Mob#moveTo},
+     * so the test matches where the mob actually lands.</p>
+     */
+    private static boolean blockedSpawnSite(CarriageDims dims, int bedrockY, BlockPos pos) {
+        if (WorldFloor.isBelowFloor(pos.getY(), bedrockY)) return true;
+        return PortalCarriageEvents.isInsidePortalStructure(
+                dims, pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5);
     }
 
     /**

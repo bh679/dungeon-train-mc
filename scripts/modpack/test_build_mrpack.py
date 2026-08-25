@@ -60,8 +60,9 @@ def test_env_server_unsupported_is_respected():
 
 
 def test_env_client_unsupported_is_ignored():
-    # Lithostitched declares client_side=unsupported but is needed by the integrated server in
-    # single-player; the pack keeps it present client-side (mirrors the CurseForge pack).
+    # A worldgen library may declare client_side=unsupported yet still be needed by the
+    # integrated server in single-player; the pack keeps it present client-side (mirrors
+    # the CurseForge pack).
     assert bm.compute_env(required=True, client_side="unsupported", server_side="required") == {
         "client": "required", "server": "required",
     }
@@ -300,7 +301,7 @@ def test_real_config_every_mod_has_modrinth_pins():
         assert opt.get("modrinth_version"), f"{opt.get('name')} missing modrinth_version"
     # Hard pins mirrored from the CurseForge pack.
     sable = cfg["sable"]
-    assert sable["modrinth_version"] == "6PfAtJN1", sable  # Sable 2.0.2+mc1.21.1
+    assert sable["modrinth_version"] == "U678xqle", sable  # Sable 2.0.5+mc1.21.1
     by_slug = {o["slug"]: o for o in cfg["optional_mods"]}
     assert by_slug["jade"]["modrinth_version"] == "yd8FKCmx"            # Jade 15.10.5 (Sable compat)
     assert by_slug["distant-horizons"]["modrinth_version"] == "75PXmyqH"  # DH 2.4.3-b (2.x only)

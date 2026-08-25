@@ -48,6 +48,13 @@ public final class ClientDisplayConfig {
     /** Step applied per click of the menu's {@code [-]} / {@code [+]} buttons. */
     public static final double STEP = 0.10;
 
+    /** Silent. A real setting, not a "not configured" sentinel — see {@link #getTrainEngineVolume()}. */
+    public static final double MIN_TRAIN_ENGINE_VOLUME = 0.0;
+    /** The engine at the volume the distance curve computes, unscaled. */
+    public static final double MAX_TRAIN_ENGINE_VOLUME = 1.0;
+    /** Ships unscaled — the curve in {@code TrainEngineSound} is the intended mix. */
+    public static final double DEFAULT_TRAIN_ENGINE_VOLUME = 1.0;
+
     public static final ModConfigSpec SPEC;
     public static final ModConfigSpec.DoubleValue ALL_SCALE;
     public static final ModConfigSpec.DoubleValue WORLDSPACE_CHANNEL;
@@ -72,9 +79,12 @@ public final class ClientDisplayConfig {
     public static final ModConfigSpec.IntValue RIDE_SNAPSHOT_MAX_RESOLUTION;
     public static final ModConfigSpec.BooleanValue FRAMERATE_THROTTLE_ENABLED;
     public static final ModConfigSpec.IntValue FRAMERATE_THROTTLE_FPS;
+    public static final ModConfigSpec.DoubleValue TRAIN_ENGINE_VOLUME;
     public static final ModConfigSpec.BooleanValue DELETE_WORLD_ON_REBOARD;
     /** Tiles per row in the Train Builder's Open screen grid. See {@link #getBuilderTilesPerRow()}. */
     public static final ModConfigSpec.IntValue BUILDER_TILES_PER_ROW;
+    public static final ModConfigSpec.BooleanValue SKYBOX_PUNCH_ENABLED;
+    public static final ModConfigSpec.BooleanValue SCRIBBLE_COLOR_PICKER_VISIBLE;
     /**
      * Relay pool ids of community (player-written) books this player has read, stored as decimal strings.
      * GLOBAL client-side read history — persists across worlds and servers (unlike the retired per-world
@@ -90,6 +100,21 @@ public final class ClientDisplayConfig {
      * state above; the server learns it per-player via {@code ContentModeSyncPacket}.
      */
     public static final ModConfigSpec.EnumValue<ContentMode> CONTENT_MODE;
+    /**
+     * The config deviation the player last chose to keep, as a stable signature (see
+     * {@code ConfigDeviationPromptHandler}). Empty when they have never dismissed the launch
+     * prompt. Signature rather than a plain opt-out flag so a NEW change is still surfaced —
+     * dismissing once doesn't silently sign the player up to every future edit.
+     */
+    public static final ModConfigSpec.ConfigValue<String> CONFIG_DEVIATION_ACKNOWLEDGED;
+
+    /**
+     * Remembered answer to the custom-Train-Editor-content prompt — see
+     * {@link CustomContentPreference}. {@code ASK} means keep prompting.
+     */
+    public static final ModConfigSpec.EnumValue<CustomContentPreference> CUSTOM_CONTENT_PREFERENCE;
+    /** The last answer actually given, whether or not it was remembered. */
+    public static final ModConfigSpec.EnumValue<CustomContentPreference> CUSTOM_CONTENT_LAST_ANSWER;
 
     /**
      * Whether the player wants community content the relay tagged as politically sensitive filtered
@@ -140,12 +165,18 @@ public final class ClientDisplayConfig {
         RIDE_SNAPSHOT_MAX_RESOLUTION = pair.getLeft().rideSnapshotMaxResolution;
         FRAMERATE_THROTTLE_ENABLED = pair.getLeft().framerateThrottleEnabled;
         FRAMERATE_THROTTLE_FPS = pair.getLeft().framerateThrottleFps;
+        TRAIN_ENGINE_VOLUME = pair.getLeft().trainEngineVolume;
         DELETE_WORLD_ON_REBOARD = pair.getLeft().deleteWorldOnReboard;
         BUILDER_TILES_PER_ROW = pair.getLeft().builderTilesPerRow;
+        SKYBOX_PUNCH_ENABLED = pair.getLeft().skyboxPunchEnabled;
+        SCRIBBLE_COLOR_PICKER_VISIBLE = pair.getLeft().scribbleColorPickerVisible;
         SHARED_BOOKS_READ = pair.getLeft().sharedBooksRead;
         DEATH_SCREEN_LAST_NPS = pair.getLeft().deathScreenLastNps;
         POLITICAL_FILTER = pair.getLeft().politicalFilter;
         CONTENT_MODE = pair.getLeft().contentMode;
+        CUSTOM_CONTENT_PREFERENCE = pair.getLeft().customContentPreference;
+        CUSTOM_CONTENT_LAST_ANSWER = pair.getLeft().customContentLastAnswer;
+        CONFIG_DEVIATION_ACKNOWLEDGED = pair.getLeft().configDeviationAcknowledged;
     }
 
     private ClientDisplayConfig() {}
@@ -242,6 +273,25 @@ public final class ClientDisplayConfig {
                         FramerateThrottle.MIN_THROTTLE_FPS, FramerateThrottle.MAX_THROTTLE_FPS);
         b.pop();
 
+        b.push("sound");
+        ModConfigSpec.DoubleValue trainEngineVolume = b
+                .comment("How loud the train engine loop plays, 0.0 (off) to 1.0 (unscaled). Multiplies the volume Dungeon Train already computes from your distance to the nearest carriage, so the falloff and the in-carriage maximum keep their shape - this only scales the whole curve. Separate from vanilla's Ambient slider, which also moves cave sounds and mob ambience. 0.0 stops the sound outright rather than looping it silently. Also settable in Options -> Music & Sounds, in Options -> Dungeon Train..., and in the X menu -> Options.")
+                .defineInRange("trainEngineVolume", DEFAULT_TRAIN_ENGINE_VOLUME,
+                        MIN_TRAIN_ENGINE_VOLUME, MAX_TRAIN_ENGINE_VOLUME);
+        b.pop();
+
+        b.push("skybox");
+        ModConfigSpec.BooleanValue skyboxPunchEnabled = b
+                .comment("Let Skybox Blocks show the real sky through them. The effect writes the block's shape into the depth buffer just after the sky is drawn, so whatever sits behind it is never drawn over the sky. Set false to turn Skybox Blocks into plain invisible solid blocks instead - the escape hatch if the effect misbehaves with your graphics setup. Automatically off while a shader pack is loaded, which needs its own handling.")
+                .define("punchEnabled", true);
+        b.pop();
+
+        b.push("scribble");
+        ModConfigSpec.BooleanValue scribbleColorPickerVisible = b
+                .comment("Show the Scribble mod's 16-swatch colour picker on the book-writing screen. Off by default: Dungeon Train keeps the book screen close to vanilla, and the picker is the one part of Scribble that changes what a book LOOKS like rather than how it is edited. No in-game control by design — flip this by hand to get the swatches back. Has no effect unless the Scribble mod is installed.")
+                .define("colorPickerVisible", false);
+        b.pop();
+
         b.push("world");
         ModConfigSpec.BooleanValue deleteWorldOnReboard = b
                 .comment("Delete the old world's save folder when reboarding (creating a fresh world) from the death screen. Dungeon Train is designed around a new world per run, so this defaults on to keep the world list and disk clean. Only auto-generated \"<prefix> <timestamp>\" saves (Dungeon Train / Dev World / World) are ever deleted — renamed or hand-made worlds and editor worlds are always kept. Toggleable in-game via the trash icon next to the reboard button.")
@@ -286,6 +336,26 @@ public final class ClientDisplayConfig {
                 .defineEnum("mode", ContentMode.ADULT);
         b.pop();
 
+        b.push("customContent");
+        ModConfigSpec.EnumValue<CustomContentPreference> customContentPreference = b
+                .comment("What to do when a world starts with custom Train Editor content active",
+                         "(your own edits, or an imported dtpack).",
+                         "ASK (default) — show the prompt each time a world is entered for the first time.",
+                         "CONTINUE — always play with the custom content. Those runs are Free Play: they",
+                         "  earn advancements live but don't count towards your cross-world profile or stats.",
+                         "DISABLE — always turn custom content off, so the world runs the bundled game and",
+                         "  your stats count. Set from the prompt's \"Remember decision\" checkbox, or the",
+                         "Custom Train Content row in Options -> Dungeon Train...")
+                .defineEnum("preference", CustomContentPreference.ASK);
+        ModConfigSpec.EnumValue<CustomContentPreference> customContentLastAnswer = b
+                .comment("The last answer you gave the custom-content prompt, recorded whether or not",
+                         "you ticked \"Remember decision\". Reused when a run reboards automatically",
+                         "(immediate respawn), where there is no menu to ask from.",
+                         "ASK means you have never answered. Managed automatically — not meant to be",
+                         "edited by hand.")
+                .defineEnum("lastAnswer", CustomContentPreference.ASK);
+        b.pop();
+
         b.push("deathScreen");
         ModConfigSpec.IntValue deathScreenLastNps = b
                 .comment("Internal: the player's most recent NPS (\"how likely to recommend\") answer, 0-10, or -1 if never answered. Used to decide when the death-screen donation page appears. Managed automatically.")
@@ -302,16 +372,27 @@ public final class ClientDisplayConfig {
                 .defineEnum("politicalFilter", PoliticalFilter.UNSET);
         b.pop();
 
+        b.push("configIntegrity");
+        ModConfigSpec.ConfigValue<String> configDeviationAcknowledged = b
+                .comment("Internal: the Dungeon Train config change you last chose to keep at the launch prompt,",
+                         "recorded as a signature of exactly what had been changed. The prompt stays quiet while",
+                         "the config still matches that, and asks again if you change something else. Empty = never",
+                         "dismissed. Managed automatically — clear it by hand to be asked again.")
+                .define("deviationAcknowledged", "");
+        b.pop();
+
         return new Holder(allScale, worldspaceChannel, hudChannel, developerPopupShownBefore, developerPopupOptedOut, freePlayConfirmOptedOut,
                 devConsentGranted, devConsentGrantSession, devConsentLastMsgToDev, openedAdvancementsBefore,
                 rideSnapshotsEnabled, rideSnapshotIntervalSeconds, rideSnapshotMaxStored, rideSnapshotChatLog,
                 rideSnapshotMinFps, rideSnapshotMinTps,
                 rideSnapshotDiskOffload, rideSnapshotFlushMinFps, rideSnapshotFlushMinTps, rideSnapshotMaxOnDisk,
                 rideSnapshotMaxResolution,
-                framerateThrottleEnabled, framerateThrottleFps, deleteWorldOnReboard,
+                framerateThrottleEnabled, framerateThrottleFps, trainEngineVolume, skyboxPunchEnabled, scribbleColorPickerVisible, deleteWorldOnReboard,
                 builderTilesPerRow,
                 sharedBooksRead,
-                deathScreenLastNps, politicalFilter, contentMode);
+                deathScreenLastNps, politicalFilter, contentMode, customContentPreference,
+                customContentLastAnswer,
+                configDeviationAcknowledged);
     }
 
     /**
@@ -426,6 +507,25 @@ public final class ClientDisplayConfig {
         FREE_PLAY_CONFIRM_OPTED_OUT.save();
     }
 
+    // ----- Config deviation prompt (see client/ConfigDeviationPromptHandler) -----
+
+    /**
+     * The deviation signature the player last chose to keep, or {@code ""} when they have never
+     * dismissed the prompt. Compared against the CURRENT signature, so changing the config again
+     * re-arms the prompt.
+     */
+    public static String getConfigDeviationAcknowledged() {
+        return isLoaded() ? CONFIG_DEVIATION_ACKNOWLEDGED.get() : "";
+    }
+
+    /** Remember this exact deviation as "keep my changes". Pass {@code ""} to re-arm the prompt. */
+    public static void setConfigDeviationAcknowledged(String signature) {
+        if (!isLoaded()) return;
+        if (CONFIG_DEVIATION_ACKNOWLEDGED.get().equals(signature)) return; // skip a needless TOML write
+        CONFIG_DEVIATION_ACKNOWLEDGED.set(signature);
+        CONFIG_DEVIATION_ACKNOWLEDGED.save();
+    }
+
     // ----- Political content filter (see client/PoliticalFilterPrefs) -----
 
     /**
@@ -504,6 +604,36 @@ public final class ClientDisplayConfig {
         if (!isLoaded()) return;
         if (OPENED_ADVANCEMENTS_BEFORE.get() == value) return;
         OPENED_ADVANCEMENTS_BEFORE.set(value);
+        OPENED_ADVANCEMENTS_BEFORE.save();
+    }
+
+    /**
+     * Put every "you have seen this once already" client flag back to its first-run value: the
+     * advancements-keybind hint, the developer-popup and Free Play confirm opt-outs, and the last NPS
+     * answer. Used by the Video Tools profile reset, whose whole job is making the mod behave as if
+     * this install had never been played.
+     *
+     * <p>Deliberately narrow: display preferences the player tuned (snapshots, framerate, filters)
+     * are choices, not progress, and are left alone. One {@code .save()} covers the whole TOML.</p>
+     */
+    /**
+     * True when any first-run flag has moved off its fresh-install value — i.e. there is something
+     * for {@link #resetFirstRunFlags} to do. Lets the reset screen say "nothing to reset" honestly.
+     */
+    public static boolean hasFirstRunFlagsSet() {
+        if (!isLoaded()) return false;
+        return OPENED_ADVANCEMENTS_BEFORE.get()
+            || DEVELOPER_POPUP_OPTED_OUT.get()
+            || FREE_PLAY_CONFIRM_OPTED_OUT.get()
+            || DEATH_SCREEN_LAST_NPS.get() >= 0;
+    }
+
+    public static void resetFirstRunFlags() {
+        if (!isLoaded()) return;
+        OPENED_ADVANCEMENTS_BEFORE.set(false);
+        DEVELOPER_POPUP_OPTED_OUT.set(false);
+        FREE_PLAY_CONFIRM_OPTED_OUT.set(false);
+        DEATH_SCREEN_LAST_NPS.set(-1);
         OPENED_ADVANCEMENTS_BEFORE.save();
     }
 
@@ -623,7 +753,79 @@ public final class ClientDisplayConfig {
         FRAMERATE_THROTTLE_FPS.save();
     }
 
+    // ----- Train engine volume (see client/sound/TrainEngineVolume) -----
+
+    /**
+     * How loud the train engine loop plays: {@code 0.0} (off) to {@code 1.0} (the computed curve,
+     * unscaled). Multiplies what {@code TrainEngineSound} works out from the player's distance to the
+     * nearest carriage.
+     *
+     * <p>Defaults to {@link #DEFAULT_TRAIN_ENGINE_VOLUME} ({@code 1.0}) <b>including pre-load</b>, and
+     * that direction matters: {@code 0.0} is a real setting meaning silence, so a config that hasn't
+     * loaded yet must read as full rather than accidentally muting the engine for the first ticks of a
+     * world. The opposite fail-safe to {@link #isFramerateThrottleEnabled()}, for the same reason it is
+     * the opposite there — a missing config should leave behaviour alone, and here "alone" is loud.</p>
+     */
+    public static double getTrainEngineVolume() {
+        return isLoaded() ? snapToTenth(TRAIN_ENGINE_VOLUME.get()) : DEFAULT_TRAIN_ENGINE_VOLUME;
+    }
+
+    /**
+     * Persist the engine volume, clamped and snapped to a tenth like the display scales.
+     *
+     * <p>Idempotent, and here that is load-bearing rather than tidiness: the vanilla-style slider on
+     * the sound screen calls this continuously while it is dragged. Snapping to tenths bounds a whole
+     * drag to eleven distinct values, and skipping the unchanged write bounds it to eleven TOML
+     * writes.</p>
+     */
+    public static void setTrainEngineVolume(double value) {
+        if (!isLoaded()) return;
+        double snapped = snapToTenth(Math.max(MIN_TRAIN_ENGINE_VOLUME,
+                Math.min(MAX_TRAIN_ENGINE_VOLUME, value)));
+        if (TRAIN_ENGINE_VOLUME.get() == snapped) return;
+        TRAIN_ENGINE_VOLUME.set(snapped);
+        TRAIN_ENGINE_VOLUME.save();
+        // "Sound Check" — the server can't see a client-config change, so tell it.
+        // Loaded lazily here: this setter only ever runs on a client (the spec is a
+        // CLIENT config), so a dedicated server never touches the client class.
+        games.brennan.dungeontrain.client.sound.TrainVolumeAdvancement.onVolumeChanged();
+    }
+
     // ----- Delete old world on reboard (death-screen trash toggle) -----
+
+    /**
+     * Should Skybox Blocks punch a hole to the sky? Defaults to {@code true}, and to
+     * {@code true} pre-load as well — the block is inert without it, so the safe
+     * fallback is the effect being on.
+     */
+    public static boolean isSkyboxPunchEnabled() {
+        return !isLoaded() || SKYBOX_PUNCH_ENABLED.get();
+    }
+
+    /**
+     * Show Scribble's colour-swatch grid on the book-writing screen? Defaults to {@code false}.
+     *
+     * <p>Note this reads {@code isLoaded() &&}, not the {@code !isLoaded() ||} form used by the
+     * defaults-on flags above: the hidden default has to hold on the very first frame too, before
+     * the client TOML is loaded, or the swatches would flash in on a fresh install.</p>
+     *
+     * <p>Read by {@link games.brennan.dungeontrain.client.ScribbleColorPickerToggle}. Inert
+     * without the Scribble mod, which is a modpack companion rather than a dependency.</p>
+     */
+    public static boolean isScribbleColorPickerVisible() {
+        return isLoaded() && SCRIBBLE_COLOR_PICKER_VISIBLE.get();
+    }
+
+    /**
+     * Persist the Scribble colour-picker toggle. Idempotent: skips the {@code .save()} (a TOML
+     * write) when the value is unchanged. Currently only reachable by editing the TOML; see ScribbleColorPickerToggle.SHOW_TOGGLE_BUTTON.
+     */
+    public static void setScribbleColorPickerVisible(boolean value) {
+        if (!isLoaded()) return;
+        if (SCRIBBLE_COLOR_PICKER_VISIBLE.get() == value) return;
+        SCRIBBLE_COLOR_PICKER_VISIBLE.set(value);
+        SCRIBBLE_COLOR_PICKER_VISIBLE.save();
+    }
 
     /**
      * Delete the old world's save when reboarding? Defaults to {@code true} (also pre-load) —
@@ -705,6 +907,48 @@ public final class ClientDisplayConfig {
         CONTENT_MODE.save();
     }
 
+    // ----- Custom Train Editor content prompt (see CustomContentPromptClient) -----
+
+    /**
+     * This client's remembered answer to the custom-content prompt. Defaults to
+     * {@link CustomContentPreference#ASK}, including before the config loads — a pre-load read must
+     * never silently answer a prompt on the player's behalf.
+     */
+    public static CustomContentPreference getCustomContentPreference() {
+        return isLoaded() ? CUSTOM_CONTENT_PREFERENCE.get() : CustomContentPreference.ASK;
+    }
+
+    /**
+     * Persist the remembered answer. Idempotent — skips the TOML write when unchanged. Driven by
+     * the prompt's "Remember decision" checkbox and by the Options row; no-op pre-load.
+     */
+    public static void setCustomContentPreference(CustomContentPreference preference) {
+        if (!isLoaded() || preference == null) return;
+        if (CUSTOM_CONTENT_PREFERENCE.get() == preference) return;
+        CUSTOM_CONTENT_PREFERENCE.set(preference);
+        CUSTOM_CONTENT_PREFERENCE.save();
+    }
+
+    /**
+     * The last answer the player actually gave the prompt, recorded on every answer rather than
+     * only on "Remember decision". {@link CustomContentPreference#ASK} means never answered.
+     *
+     * <p>Exists because the remembered <em>preference</em> can't serve this: it is only written
+     * when the checkbox is ticked, so a player who answers each world individually has no recorded
+     * answer at all — and the automatic reboard has no menu to ask from.</p>
+     */
+    public static CustomContentPreference getLastCustomContentAnswer() {
+        return isLoaded() ? CUSTOM_CONTENT_LAST_ANSWER.get() : CustomContentPreference.ASK;
+    }
+
+    /** Record an answer. Idempotent; no-op pre-load. */
+    public static void setLastCustomContentAnswer(CustomContentPreference answer) {
+        if (!isLoaded() || answer == null) return;
+        if (CUSTOM_CONTENT_LAST_ANSWER.get() == answer) return;
+        CUSTOM_CONTENT_LAST_ANSWER.set(answer);
+        CUSTOM_CONTENT_LAST_ANSWER.save();
+    }
+
     // ----- Global client-side community-book read history (see SharedBookReadSyncClient / SharedBookReadMirror) -----
 
     /**
@@ -767,11 +1011,17 @@ public final class ClientDisplayConfig {
             ModConfigSpec.IntValue rideSnapshotMaxResolution,
             ModConfigSpec.BooleanValue framerateThrottleEnabled,
             ModConfigSpec.IntValue framerateThrottleFps,
+            ModConfigSpec.DoubleValue trainEngineVolume,
+            ModConfigSpec.BooleanValue skyboxPunchEnabled,
+            ModConfigSpec.BooleanValue scribbleColorPickerVisible,
             ModConfigSpec.BooleanValue deleteWorldOnReboard,
             ModConfigSpec.IntValue builderTilesPerRow,
             ModConfigSpec.ConfigValue<List<? extends String>> sharedBooksRead,
             ModConfigSpec.IntValue deathScreenLastNps,
             ModConfigSpec.EnumValue<PoliticalFilter> politicalFilter,
-            ModConfigSpec.EnumValue<ContentMode> contentMode
+            ModConfigSpec.EnumValue<ContentMode> contentMode,
+            ModConfigSpec.EnumValue<CustomContentPreference> customContentPreference,
+            ModConfigSpec.EnumValue<CustomContentPreference> customContentLastAnswer,
+            ModConfigSpec.ConfigValue<String> configDeviationAcknowledged
     ) {}
 }

@@ -1,0 +1,293 @@
+package games.brennan.dungeontrain.client;
+
+import games.brennan.dungeontrain.config.ClientDisplayConfig;
+import games.brennan.dungeontrain.config.CustomContentPreference;
+import games.brennan.dungeontrain.net.CustomContentChoicePacket;
+import games.brennan.dungeontrain.net.DungeonTrainNet;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.Checkbox;
+import net.minecraft.client.gui.components.Tooltip;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.FormattedCharSequence;
+
+import java.util.List;
+import java.util.function.Consumer;
+
+/**
+ * "Custom train content" — shown once per world when Train Editor content (the
+ * player's own edits or an imported dtpack) is in play.
+ *
+ * <p>Two modes, differing only in where the answer goes. <b>Pre-world</b> is the
+ * one players normally see: {@link CustomContentGate} puts it up when they press
+ * New World or reboard, so the answer is recorded before the world is created and
+ * "disable" means a world that never loads the content. <b>Join-time</b> is the
+ * fallback for worlds that reach login unanswered — a multiplayer server, or a
+ * world created through the vanilla world list — where the answer goes back over
+ * the network to {@code CustomContentPromptEvents}.</p>
+ *
+ * <p>Continue plays the world with that content, which keeps the run in Free
+ * Play. Disable Custom Changes turns the content off for this world from here
+ * on, so the bundled game runs and stats count. A "Remember decision" checkbox
+ * persists the answer to {@link ClientDisplayConfig} and is changeable later in
+ * Options → Dungeon Train.</p>
+ *
+ * <p>Drawn with the same vanilla tooltip frame as {@link FreePlayConfirmScreen}
+ * so the two prompts read as one family of UI.</p>
+ */
+public final class CustomContentPromptScreen extends Screen {
+
+    // Vanilla tooltip palette — kept in step with FreePlayConfirmScreen.
+    private static final int FRAME_BG = 0xF0100010;
+    private static final int FRAME_BORDER_TOP = 0x505000FF;
+    private static final int FRAME_BORDER_BOTTOM = 0x5028007F;
+
+    private static final int TITLE_TEAL = 0xFF5BC8C2;
+    private static final int COLOUR_PACKAGES = 0xFF7E7E8C;
+    private static final int COLOUR_SEPARATOR = 0x40FFFFFF;
+    /**
+     * Ring drawn just outside the "Remember decision" box. Vanilla's checkbox sprite has a dim
+     * grey border that all but disappears against this panel's near-black fill, and the checkbox
+     * is the one control here whose state the player has to read at a glance.
+     */
+    private static final int COLOUR_CHECKBOX_OUTLINE = 0xFFD0D0D8;
+    /** Tick drawn over the box when it's ticked — vanilla's own is a muted grey at this size. */
+    private static final int COLOUR_CHECKBOX_TICK = 0xFFFFFFFF;
+    /** U+2713. Already proven to render in this game by the book-vote "Reported" label. */
+    private static final String TICK = "\u2713";
+
+    private static final int MAX_PANEL_W = 240;
+    private static final int PADDING = 12;
+    private static final int LINE_GAP = 1;
+    private static final int SECTION_GAP = 7;
+    private static final int TITLE_SEP_GAP = 6;
+    private static final int CHECKBOX_H = 20;
+    /** Gap between the two answer cards. */
+    private static final int CARD_GAP = 8;
+    /** Square "?" button at the right end of the checkbox row. */
+    private static final int INFO_SIZE = 20;
+
+    /**
+     * The badge the player actually wears in a Free Play run — so the card shows the consequence
+     * rather than describing it.
+     */
+    private static final ResourceLocation ICON_CUSTOM =
+        ResourceLocation.fromNamespaceAndPath("dungeontrain", "icon/free_play");
+    private static final ResourceLocation ICON_DEFAULT =
+        ResourceLocation.fromNamespaceAndPath("dungeontrain", "icon/default_train");
+
+    /** "Freeplay" — the same teal as the title, so it reads as the flagged state. */
+    private static final int COLOUR_TAG_FREEPLAY = 0xFF5BC8C2;
+    /** "Live" — green: this run counts. */
+    private static final int COLOUR_TAG_LIVE = 0xFF7FD97F;
+
+    private final String packages;
+    /**
+     * Pre-world mode: where to send the answer, and where to go if the player backs out. Both null
+     * in join-time mode, where the answer goes to the server and there is nothing to back out of.
+     */
+    private final Consumer<Boolean> onAnswer;
+    private final Screen parent;
+    private Checkbox rememberBox;
+    private boolean responded = false;
+
+    // Layout, computed in init() and reused by render().
+    private int panelX, panelY, panelW, panelH;
+    private int titleRelY, packagesRelY;
+    private List<FormattedCharSequence> packageLines = List.of();
+
+    /** Join-time: the world is already running, and the answer goes back over the network. */
+    public CustomContentPromptScreen(String packages) {
+        this(packages, null, null);
+    }
+
+    /**
+     * Pre-world ({@link CustomContentGate}): no world exists yet, so the answer goes to
+     * {@code onAnswer} — which records it for the world about to be created and then starts it —
+     * and backing out returns to {@code parent} without starting anything.
+     */
+    public CustomContentPromptScreen(String packages, Screen parent, Consumer<Boolean> onAnswer) {
+        super(Component.translatable("gui.dungeontrain.custom_content.title"));
+        this.packages = packages;
+        this.parent = parent;
+        this.onAnswer = onAnswer;
+    }
+
+    @Override
+    protected void init() {
+        panelW = Math.min(MAX_PANEL_W, this.width - 40);
+        int innerW = panelW - 2 * PADDING;
+        int lh = this.font.lineHeight;
+
+        packageLines = packages.isBlank()
+            ? List.of()
+            : this.font.split(Component.translatable("gui.dungeontrain.custom_content.packages", packages), innerW);
+
+        int cardH = ContentChoiceCard.heightFor(lh);
+
+        int y = PADDING;
+        titleRelY = y;    y += lh + TITLE_SEP_GAP;
+        packagesRelY = y; y += packageLines.size() * (lh + LINE_GAP);
+        if (!packageLines.isEmpty()) y += SECTION_GAP;
+        int checkboxRelY = y; y += CHECKBOX_H + SECTION_GAP;
+        int cardsRelY = y;    y += cardH + PADDING;
+        panelH = y;
+
+        panelX = (this.width - panelW) / 2;
+        panelY = (this.height - panelH) / 2;
+
+        rememberBox = Checkbox.builder(
+                Component.translatable("gui.dungeontrain.custom_content.remember"), this.font)
+            .pos(panelX + PADDING, panelY + checkboxRelY)
+            .selected(!ClientDisplayConfig.getCustomContentPreference().asks())
+            .build();
+        addRenderableWidget(rememberBox);
+
+        // Why this popup exists, and what "Freeplay" costs — the one thing the two cards can't
+        // say in a word each. Parked on the checkbox row rather than added as another paragraph:
+        // Tooltip shows on hover AND on focus, and clicking focuses, so a no-op press covers both
+        // the hover and the click the player might try.
+        Button info = Button.builder(Component.literal("?"), b -> {})
+            .bounds(panelX + PADDING + innerW - INFO_SIZE, panelY + checkboxRelY,
+                INFO_SIZE, INFO_SIZE)
+            .build();
+        info.setTooltip(Tooltip.create(
+            Component.translatable("gui.dungeontrain.custom_content.info")));
+        addRenderableWidget(info);
+
+        // One row, two cards. Left keeps the player's designs and gives up the stats; right plays
+        // the shipped game and keeps them.
+        int cardW = (innerW - CARD_GAP) / 2;
+        int cardY = panelY + cardsRelY;
+        addRenderableWidget(new ContentChoiceCard(
+            panelX + PADDING, cardY, cardW, cardH,
+            ICON_CUSTOM,
+            Component.translatable("gui.dungeontrain.custom_content.card.custom.name"),
+            Component.translatable("gui.dungeontrain.custom_content.card.custom.tag"),
+            COLOUR_TAG_FREEPLAY,
+            () -> respond(true)));
+        addRenderableWidget(new ContentChoiceCard(
+            panelX + PADDING + cardW + CARD_GAP, cardY, cardW, cardH,
+            ICON_DEFAULT,
+            Component.translatable("gui.dungeontrain.custom_content.card.default.name"),
+            Component.translatable("gui.dungeontrain.custom_content.card.default.tag"),
+            COLOUR_TAG_LIVE,
+            () -> respond(false)));
+    }
+
+    private void respond(boolean keepContent) {
+        if (responded) return;
+        responded = true;
+        // Recorded on every answer, not just remembered ones: the automatic reboard has no menu to
+        // ask from and reuses this, and a player who decides per-world never ticks the checkbox.
+        ClientDisplayConfig.setLastCustomContentAnswer(
+            keepContent ? CustomContentPreference.CONTINUE : CustomContentPreference.DISABLE);
+        if (rememberBox != null && rememberBox.selected()) {
+            ClientDisplayConfig.setCustomContentPreference(
+                keepContent ? CustomContentPreference.CONTINUE : CustomContentPreference.DISABLE);
+        }
+        if (onAnswer != null) {
+            // Pre-world: the callback records the answer for the world about to be created and
+            // starts it, which replaces this screen. Nothing to send and nothing to close.
+            onAnswer.accept(keepContent);
+            return;
+        }
+        CustomContentPromptClient.answered();
+        DungeonTrainNet.sendToServer(new CustomContentChoicePacket(keepContent));
+        onClose();
+    }
+
+    /**
+     * What dismissing means depends on which question this is.
+     *
+     * <p><b>Join-time:</b> ESC answers "continue" rather than cancelling. There is nothing to back
+     * out of — the world is already running with the content — so dismissing must mean "leave
+     * things as they are", not silently disable someone's builds.</p>
+     *
+     * <p><b>Pre-world:</b> nothing has started, so dismissing backs out of starting it. No answer
+     * is recorded and the player lands back where they were; pressing New World again asks again.
+     * Answering "continue" for them here would be the one reading they did not choose — it would
+     * start a Free Play run off an ESC keypress.</p>
+     */
+    @Override
+    public void onClose() {
+        if (onAnswer != null) {
+            // Backing out is not an answer. Clear the slot so an earlier one can't be consumed by
+            // a world started afterwards through a route that skips the gate (the vanilla world
+            // list), which would apply a choice never given for that world.
+            PendingCustomContentChoice.clear();
+            this.minecraft.setScreen(parent);
+            return;
+        }
+        if (!responded) {
+            responded = true;
+            CustomContentPromptClient.answered();
+            DungeonTrainNet.sendToServer(new CustomContentChoicePacket(true));
+        }
+        super.onClose();
+    }
+
+    /**
+     * The panel is background, not foreground. Drawing it in {@code render} after
+     * {@code super.render} painted it over the widgets: its fill is 94% opaque
+     * ({@link #FRAME_BG}), and GuiGraphics flushes flat fills after textured quads, so the card
+     * icons ended up beneath it at ~6% visibility however late they were drawn. Text survived
+     * only because glyphs flush in a later pass again. Here the frame lands before the widgets
+     * and the ordering problem disappears.
+     */
+    @Override
+    public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+        super.renderBackground(g, mouseX, mouseY, partialTick);
+        drawFrame(g, panelX, panelY, panelX + panelW, panelY + panelH);
+    }
+
+    @Override
+    public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+        super.render(g, mouseX, mouseY, partialTick);
+
+        int cx = panelX + panelW / 2;
+        int lh = this.font.lineHeight;
+
+        g.drawCenteredString(this.font, this.title, cx, panelY + titleRelY, TITLE_TEAL);
+        int sepY = panelY + titleRelY + lh + 2;
+        g.fill(panelX + 10, sepY, panelX + panelW - 10, sepY + 1, COLOUR_SEPARATOR);
+
+        drawLines(g, packageLines, cx, panelY + packagesRelY, COLOUR_PACKAGES, lh);
+
+        // Sits one pixel OUTSIDE the sprite rather than on top of it: GuiGraphics flushes textured
+        // quads after flat fills, so anything drawn over the sprite's own footprint would end up
+        // beneath it however late we draw.
+        if (rememberBox != null) {
+            int box = rememberBox.getHeight();
+            g.renderOutline(rememberBox.getX() - 1, rememberBox.getY() - 1,
+                box + 2, box + 2, COLOUR_CHECKBOX_OUTLINE);
+            if (rememberBox.selected()) {
+                // Text, not a fill: glyphs are drawn over widget sprites (the same reason item
+                // stack counts sit on top of item icons), so this lands above vanilla's muted tick
+                // instead of under it.
+                g.drawCenteredString(this.font, TICK,
+                    rememberBox.getX() + box / 2,
+                    rememberBox.getY() + (box - lh) / 2 + 1,
+                    COLOUR_CHECKBOX_TICK);
+            }
+        }
+    }
+
+    private void drawLines(GuiGraphics g, List<FormattedCharSequence> lines, int cx, int y, int colour, int lh) {
+        for (FormattedCharSequence line : lines) {
+            g.drawCenteredString(this.font, line, cx, y, colour);
+            y += lh + LINE_GAP;
+        }
+    }
+
+    /** Vanilla tooltip-style frame: dark fill + purple gradient border. */
+    private static void drawFrame(GuiGraphics g, int x0, int y0, int x1, int y1) {
+        g.fill(x0, y0, x1, y1, FRAME_BG);
+        g.fill(x0, y0, x1, y0 + 1, FRAME_BORDER_TOP);
+        g.fill(x0, y1 - 1, x1, y1, FRAME_BORDER_BOTTOM);
+        g.fillGradient(x0, y0 + 1, x0 + 1, y1 - 1, FRAME_BORDER_TOP, FRAME_BORDER_BOTTOM);
+        g.fillGradient(x1 - 1, y0 + 1, x1, y1 - 1, FRAME_BORDER_TOP, FRAME_BORDER_BOTTOM);
+    }
+}

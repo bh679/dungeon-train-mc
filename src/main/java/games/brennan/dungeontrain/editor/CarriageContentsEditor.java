@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.editor;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.portal.PortalCarriageBuilder;
+import games.brennan.dungeontrain.portal.PortalCorridorKind;
 import games.brennan.dungeontrain.portal.PortalCorridorSize;
 import games.brennan.dungeontrain.train.CarriageContents;
 import games.brennan.dungeontrain.train.CarriageContentsRegistry;
@@ -43,7 +44,7 @@ public final class CarriageContentsEditor {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    private static final int PLOT_Y = 250;
+    private static final int PLOT_Y = EditorLayout.PLOT_Y;
     /**
      * Contents row Z-origin — sourced from {@link
      * EditorLayout#CONTENTS_FIRST_Z}. Sits in its own Z range past the
@@ -92,7 +93,7 @@ public final class CarriageContentsEditor {
      * longer portal-corridor plot cannot reach its neighbour whatever order the registry is in.
      */
     private static int plotStep(CarriageDims dims) {
-        return PortalCorridorSize.corridorLength(dims) + EditorLayout.GAP;
+        return PortalCorridorSize.corridorLength(dims, PortalCorridorKind.LONG) + EditorLayout.GAP;
     }
 
     /**
@@ -107,9 +108,8 @@ public final class CarriageContentsEditor {
      * with a carriage built around it.</p>
      */
     public static CarriageVariant shellFor(CarriageContents contents) {
-        return CarriageContentsPlacer.isPortalContents(contents)
-            ? PortalCarriageBuilder.portalVariant()
-            : DEFAULT_SHELL;
+        PortalCorridorKind kind = CarriageContentsPlacer.portalCorridorKindOf(contents);
+        return kind == null ? DEFAULT_SHELL : PortalCarriageBuilder.portalVariant(kind);
     }
 
     /**
@@ -161,7 +161,7 @@ public final class CarriageContentsEditor {
         BlockState air = Blocks.AIR.defaultBlockState();
         // Erased at the widest plot size — the loop works by index and cannot know which of the
         // shifted contents was the long portal one, and clearing extra air is harmless.
-        CarriageDims widest = PortalCorridorSize.corridorDims(dims);
+        CarriageDims widest = PortalCorridorSize.corridorDims(dims, PortalCorridorKind.LONG);
         for (int i = oldDeletedIndex; i < oldCount; i++) {
             BlockPos pos = new BlockPos(FIRST_PLOT_X + i * plotStep(dims), PLOT_Y, PLOT_Z);
             CarriagePlacer.eraseAt(level, pos, widest);
@@ -360,23 +360,6 @@ public final class CarriageContentsEditor {
         CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
         BlockPos origin = plotOrigin(contents, dims);
         if (origin == null) throw new IOException("Unknown contents '" + contents.id() + "'.");
-
-        // Editor mirror save-time backstop to live mirroring — runs on the
-        // interior region (origin+1, interior size), matching the sidecar's
-        // interior-relative cells. No-op when all axes are off (default).
-        {
-            BlockPos mirrorOrigin = origin.offset(1, 1, 1);
-            net.minecraft.core.Vec3i mirrorSize = CarriageContentsPlacer.interiorSizeFor(contents, dims);
-            CarriageContentsVariantBlocks mirrorSidecar =
-                CarriageContentsVariantBlocks.loadFor(contents, mirrorSize);
-            // "V" toggle: mirror the variant pools first so the structural pass
-            // below preserves the freshly-reflected far cells via markersOf.
-            EditorVariantMirror.rebuildFromMaster(overworld,
-                new BlockVariantPlot.ContentsPlot(contents, mirrorOrigin, mirrorSize));
-            EditorMirror.rebuildFromMaster(overworld, mirrorOrigin, mirrorSize,
-                mirrorSidecar.mirrorX(), mirrorSidecar.mirrorY(), mirrorSidecar.mirrorZ(),
-                EditorMirror.markersOf(mirrorSidecar.entries()));
-        }
 
         // The contents' own box — captures the whole corridor interior for the portal contents
         // rather than its first seven blocks, which the size gate would then reject on load.
