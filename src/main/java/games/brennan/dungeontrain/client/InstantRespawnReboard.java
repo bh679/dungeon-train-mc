@@ -93,7 +93,12 @@ public final class InstantRespawnReboard {
                 false,
                 // Same Shift contract as the death screen's reboard chip: held
                 // preserves the current game mode, otherwise the next run is survival.
-                !Screen.hasShiftDown()));
+                !Screen.hasShiftDown(),
+                // Never ask here. Vanilla's death screen is suppressed on this path, so there is
+                // no menu to return to if the player dismisses a prompt, and launchScheduled above
+                // is already set — a dismissal would strand them dead with no way to reboard. The
+                // last answer is reused instead.
+                false));
         return true;
     }
 
