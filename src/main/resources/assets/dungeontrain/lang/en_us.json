@@ -1345,6 +1345,8 @@
   "gui.dungeontrain.translate.revert_all.detail": "This throws away %s edit(s) and puts the shipped translation back. It cannot be undone.",
   "gui.dungeontrain.translate.edit.label": "Your translation",
   "gui.dungeontrain.translate.edit.hint": "Type the translation here",
+  "gui.dungeontrain.translate.edit.resize": "Resize",
+  "gui.dungeontrain.translate.edit.resize.tip": "Drag to trade room between the English and your translation — down for more English, up for a bigger box. It stays where you put it.",
   "gui.dungeontrain.translate.edit.source": "English",
   "gui.dungeontrain.translate.edit.source_ai": "English — current translation is AI, unreviewed",
   "gui.dungeontrain.translate.edit.save": "Save",
