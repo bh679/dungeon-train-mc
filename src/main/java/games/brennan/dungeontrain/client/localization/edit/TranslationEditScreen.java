@@ -7,6 +7,7 @@ import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.FormattedText;
 
 /**
  * Edits one translation unit: the English above, the translation below, and nothing else.
@@ -73,9 +74,13 @@ public final class TranslationEditScreen extends Screen {
             : Component.translatable("gui.dungeontrain.translate.edit.source");
         sourcePane = TranslationSourcePane.wrap(font, contentWidth, heading,
             unit.aiUnreviewed() ? AI_COLOUR : LABEL_COLOUR,
+            // Styled, not flat: every %s in the English is underlined and hovers what the game
+            // actually puts there. A translator who cannot tell a placeholder from prose moves it
+            // into a slot the real value does not fit — the commonest way a translation breaks.
             unit.source().isEmpty()
-                ? Component.translatable("gui.dungeontrain.translate.no_source").getString()
-                : unit.source(),
+                ? FormattedText.of(
+                    Component.translatable("gui.dungeontrain.translate.no_source").getString())
+                : TranslationVariableText.decorate(unit.id(), unit.source(), locale),
             replyBy, reply == null ? "" : reply.note());
 
         int bottomRow = height - MARGIN - ROW_H;

@@ -10,6 +10,7 @@ import net.minecraft.client.gui.navigation.FocusNavigationEvent;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.FormattedText;
+import net.minecraft.network.chat.Style;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.util.Mth;
 
@@ -52,15 +53,20 @@ public final class TranslationSourcePane extends AbstractWidget {
      * Wrap the text for a pane {@code width} wide. Split from the constructor because the screen
      * has to know how tall the wrapped text wants to be before it can decide how tall to make the
      * pane — see {@link TranslationSourceLayout#viewportHeight}.
+     *
+     * <p>{@code source} is {@link FormattedText} rather than a plain string because the English
+     * arrives styled: its format placeholders are underlined and carry a tooltip of what the game
+     * puts there (see {@link TranslationVariableText}). Splitting keeps the style on every
+     * character, which is what makes {@link #styleAt} able to find the hovered one.</p>
      */
     public static TranslationSourcePane wrap(Font font, int width, Component heading,
-                                             int headingColour, String source,
+                                             int headingColour, FormattedText source,
                                              Component replyBy, String reply) {
         // Always wrap as though the bar were there. Wrapping to the full width when it is absent
         // would make the text reflow the moment scrolling appeared, which is a feedback loop.
         int textWidth = Math.max(8, width - SCROLLBAR_W - 2);
         return new TranslationSourcePane(font, width, heading, headingColour,
-            font.split(FormattedText.of(source), textWidth),
+            font.split(source, textWidth),
             replyBy,
             reply == null || reply.isEmpty()
                 ? List.<FormattedCharSequence>of()
@@ -137,6 +143,39 @@ public final class TranslationSourcePane extends AbstractWidget {
         g.disableScissor();
         scrollbar.render(g, getX(), bodyY(), width, bodyHeight(), contentHeight - headerHeight(),
             scroll, maxScroll());
+
+        // Outside the scissor, so a tooltip on the last visible line is not clipped by the pane
+        // it belongs to.
+        Style hovered = styleAt(mouseX, mouseY);
+        if (hovered != null && hovered.getHoverEvent() != null) {
+            g.renderComponentHoverEffect(font, hovered, mouseX, mouseY);
+        }
+    }
+
+    /**
+     * The {@link Style} under the mouse within the English, or null — how an underlined
+     * placeholder finds its tooltip. Scroll-aware, and bounded by the visible body, so a line
+     * scrolled out of sight cannot be hovered through the heading.
+     *
+     * <p>The same shape as {@code SupportScreen.styleAt} and {@code CreditsScreen}: locate the
+     * line by height, reject anything past the end of the drawn text, then ask the splitter which
+     * style sits at that width.</p>
+     */
+    private Style styleAt(double mouseX, double mouseY) {
+        if (mouseY < bodyY() || mouseY >= getY() + height) {
+            return null;
+        }
+        int y = bodyY() - scroll;
+        for (FormattedCharSequence line : sourceLines) {
+            if (mouseY >= y && mouseY < y + font.lineHeight) {
+                if (mouseX < getX() || mouseX >= getX() + font.width(line)) {
+                    return null;
+                }
+                return font.getSplitter().componentStyleAtWidth(line, (int) (mouseX - getX()));
+            }
+            y += font.lineHeight;
+        }
+        return null;
     }
 
     /**

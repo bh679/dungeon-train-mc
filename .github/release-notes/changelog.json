@@ -8634,6 +8634,22 @@
       "released": true,
       "released_in": "v0.650.0",
       "released_at": "2026-08-25T10:05:21Z"
+    },
+    {
+      "id": "translation-variable-hover",
+      "version": "0.651.0",
+      "type": "feat",
+      "title": "Translation editor explains every variable",
+      "summary": "In the translation editor, the placeholders in an English string are now underlined, and hovering one says what the game actually puts there with a few real examples. Where the value is itself a translated phrase, the example is shown in the language you are translating into, with the English beside it.",
+      "highlights": [
+        "Placeholders like %s and %1$s are underlined in the English source",
+        "Hover a placeholder for what it holds, plus two or three real example values",
+        "Examples that are themselves translated show in your language and in English"
+      ],
+      "date": "2026-08-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
