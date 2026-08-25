@@ -92,7 +92,7 @@
     "mode": "endless_repetition/dynamic"
   },
   "library_dimension": {
-    "weight": 3,
+    "weight": 39,
     "minLevel": 5,
     "mode": "endless_repetition/dynamic"
   },
@@ -122,6 +122,10 @@
     "minLevel": 5,
     "mode": "endless_repetition"
   },
+  "pretty": {
+    "weight": 1,
+    "mode": "endless_repetition/dynamic"
+  },
   "randomized": {
     "weight": 1,
     "mode": "endless_repetition/dynamic/fit"
@@ -141,7 +145,7 @@
     "mode": "bedrock_lock/exact/off/off/mix:3:1:1:10:24"
   },
   "trap": {
-    "weight": 1,
+    "weight": 2,
     "minLevel": 10,
     "mode": "bedrock_lock"
   },
