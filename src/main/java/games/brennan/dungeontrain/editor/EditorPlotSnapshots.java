@@ -1,11 +1,15 @@
 package games.brennan.dungeontrain.editor;
 
+import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.template.TemplateDecor;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 
 import javax.annotation.Nullable;
 import java.util.HashMap;
@@ -33,6 +37,7 @@ import java.util.Map;
  * snapshot will refill at that moment. Server-restart-with-active-edits
  * is not a workflow we currently support.</p>
  */
+@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class EditorPlotSnapshots {
 
     /** {@code "carriages:standard"} → block-pos → state. Air positions excluded. */
@@ -139,10 +144,26 @@ public final class EditorPlotSnapshots {
         DECOR.remove(key);
     }
 
-    /** Wipe all snapshots — called on server stop. */
+    /** Wipe all snapshots. */
     public static synchronized void clearAll() {
         SNAPSHOTS.clear();
         DECOR.clear();
+    }
+
+    /**
+     * Drop every snapshot when the integrated server stops.
+     *
+     * <p>The javadoc has claimed this happened since the class was written, but nothing actually
+     * called it. On a dedicated server that was harmless — the JVM dies with the map. In a
+     * single-player session it is not: the client process survives quitting to title, so
+     * baselines from world A were still in the map when world B loaded. Keys collide by design
+     * (both worlds have {@code carriages:standard}, and every Train Builder world has
+     * {@code builder:carriage:0}), so world B's freshly-stamped plots would be compared against
+     * world A's edits and reported as unsaved.</p>
+     */
+    @SubscribeEvent
+    public static void onServerStopped(ServerStoppedEvent event) {
+        clearAll();
     }
 
     /** Stable key for a (category, model) pair. */

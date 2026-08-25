@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import dev.ryanhcode.sable.api.sublevel.ServerSubLevelContainer;
 import dev.ryanhcode.sable.api.sublevel.SubLevelContainer;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.client.builder.BuilderWorldCheck;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
@@ -133,6 +134,11 @@ public final class DeathScreenLayoutHandler {
     public static void onScreenOpening(ScreenEvent.Opening event) {
         if (!(event.getNewScreen() instanceof DeathScreen)) return;
         if (!dungeonTrainWorld()) return;
+        // Train Builder worlds keep the vanilla death screen. The narrative screen is about a
+        // run — what you did, how far you got, boarding anew — and a build sandbox has no run
+        // to narrate. This one guard covers everything downstream of the swap: the narrative
+        // pages, the survey, mod recommendations, the support card, and reboard.
+        if (BuilderWorldCheck.isBuilderWorld()) return;
         event.setNewScreen(new NarrativeDeathScreen());
     }
 

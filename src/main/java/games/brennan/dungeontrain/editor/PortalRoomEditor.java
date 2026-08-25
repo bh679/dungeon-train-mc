@@ -7,6 +7,8 @@ import games.brennan.dungeontrain.portal.PortalCorridorMask;
 import games.brennan.dungeontrain.portal.PortalRoomLayout;
 import games.brennan.dungeontrain.portal.PortalRoomResize;
 import games.brennan.dungeontrain.portal.PortalRoomSizes;
+import games.brennan.dungeontrain.editor.relay.EditorRelaySave;
+import games.brennan.dungeontrain.template.Template;
 import games.brennan.dungeontrain.template.TemplateDecor;
 import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.track.variant.TrackVariantBlocks;
@@ -184,10 +186,38 @@ public final class PortalRoomEditor {
         BlockPos origin = plotOrigin(name, dims);
         Vec3i size = plotSize(name, dims);
 
-        EditorPlotEntityClearer.discardNonPlayersIn(overworld, origin, size);
-        PortalCarriageBuilder.stampRoomAt(overworld, origin, dims, name, size, /*relight*/ true);
-        setOutline(overworld, origin, size, OUTLINE_BLOCK);
+        stampRoomInto(overworld, origin, size, name, dims, /*outline*/ true);
         captureSnapshot(overworld, origin, size, name);
+    }
+
+    /**
+     * Stamp {@code name}'s room into any level at any origin — the body {@link #stampPlot} used to
+     * be, with the editor's plot column no longer assumed.
+     *
+     * <p>Split out for the Train Builder, which opens a room into a builder world rather than the
+     * editor's overworld. Sharing the body rather than writing a second one is what keeps the two
+     * surfaces stamping the same blocks: {@code stampRoomAt} composes the template with its
+     * per-cell variant sidecar, and a re-implementation would be a second answer to a question that
+     * already has one.</p>
+     *
+     * <p><b>Does not snapshot.</b> The dirty-check baseline is keyed by surface —
+     * {@link #snapshotKey} for an editor plot, {@code BuilderDirtyCheck.snapshotKey} for a builder
+     * volume — and they live in one global {@code EditorPlotSnapshots} store. Capturing the editor's
+     * key here would mean stamping a room in a builder world silently re-baselines the editor's plot
+     * against blocks from another dimension. Each caller captures its own.</p>
+     *
+     * @param outline whether to cage the box in bedrock. True for an editor plot, where the cage
+     *                separates neighbouring plots on a shared column; false for the builder, whose
+     *                one room has no neighbour and whose edge is drawn by the out-of-bounds wash
+     *                instead
+     */
+    public static void stampRoomInto(ServerLevel level, BlockPos origin, Vec3i size, String name,
+                                     CarriageDims dims, boolean outline) {
+        EditorPlotEntityClearer.discardNonPlayersIn(level, origin, size);
+        PortalCarriageBuilder.stampRoomAt(level, origin, dims, name, size, /*relight*/ true);
+        if (outline) {
+            setOutline(level, origin, size, OUTLINE_BLOCK);
+        }
     }
 
     /**
@@ -604,9 +634,7 @@ public final class PortalRoomEditor {
         BlockPos origin = plotOrigin(name, dims);
         Vec3i size = plotSize(name, dims);
 
-        StructureTemplate template = TemplateDecor.capture(overworld, origin, size, Blocks.STRUCTURE_VOID);
-
-        PortalRoomTemplateStore.save(name, template);
+        SaveResult result = saveRoomFrom(overworld, origin, size, name);
 
         // The saved size is the authored one now. A row filed by an earlier shrink would put blocks
         // back that the author has deliberately stepped away from and then saved without.
@@ -614,8 +642,31 @@ public final class PortalRoomEditor {
 
         captureSnapshot(overworld, origin, size, name);
 
+        // …and, when they have opted in, to the player's relay profile. Hooked here rather than at
+        // the callers because both ways in land on this method — see EditorRelaySave.
+        EditorRelaySave.afterSave(player, new Template.PortalRoom(name));
         LOGGER.info("[DungeonTrain] Editor save: {} -> portal room '{}' template ({}x{}x{})",
             player.getName().getString(), name, size.getX(), size.getY(), size.getZ());
+        return result;
+    }
+
+    /**
+     * Capture the box at {@code origin} as {@code name}'s template — the disk-writing half of
+     * {@link #save}, with the editor's plot column and its player no longer assumed.
+     *
+     * <p>Split out for the Train Builder, which writes the same file from a builder world.</p>
+     *
+     * <p>Does not snapshot, for the reason {@link #stampRoomInto} gives, and does not touch the
+     * resize memory — both are the editor plot's bookkeeping, and a builder world has neither.</p>
+     */
+    public static SaveResult saveRoomFrom(ServerLevel level, BlockPos origin, Vec3i size, String name)
+            throws IOException {
+        // Through TemplateDecor, not a bare fillFromWorld: the raw call passes includeEntities=false
+        // and so drops the room's item frames and paintings. Folded in here rather than at the
+        // caller so the Train Builder's save keeps them too.
+        StructureTemplate template = TemplateDecor.capture(level, origin, size, Blocks.STRUCTURE_VOID);
+
+        PortalRoomTemplateStore.save(name, template);
 
         if (!EditorDevMode.isEnabled()) return SaveResult.skipped();
         try {

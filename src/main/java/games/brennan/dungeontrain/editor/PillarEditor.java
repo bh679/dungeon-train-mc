@@ -13,6 +13,8 @@ import games.brennan.dungeontrain.track.variant.TrackVariantRegistry;
 import games.brennan.dungeontrain.track.variant.TrackVariantStore;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
+import games.brennan.dungeontrain.editor.relay.EditorRelaySave;
+import games.brennan.dungeontrain.template.Template;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Vec3i;
@@ -258,6 +260,9 @@ public final class PillarEditor {
 
         games.brennan.dungeontrain.advancement.ModAdvancementTriggers.EDITOR_ACTION.get()
             .trigger(player, "made_pillar");
+        // …and, when they have opted in, to the player's relay profile. Hooked here rather than at
+        // the callers because both ways in land on this method — see EditorRelaySave.
+        EditorRelaySave.afterSave(player, new Template.Pillar(section, name));
         LOGGER.info("[DungeonTrain] Pillar editor save: {} -> {}/{} (1x{}x{})",
             player.getName().getString(), section.id(), name,
             section.height(), dims.width());
@@ -442,6 +447,9 @@ public final class PillarEditor {
 
         games.brennan.dungeontrain.advancement.ModAdvancementTriggers.EDITOR_ACTION.get()
             .trigger(player, "made_stair");
+        // …and, when they have opted in, to the player's relay profile. Hooked here rather than at
+        // the callers because both ways in land on this method — see EditorRelaySave.
+        EditorRelaySave.afterSave(player, new Template.Adjunct(adjunct, name));
         LOGGER.info("[DungeonTrain] Pillar editor save adjunct: {} -> {}/{} ({}x{}x{})",
             player.getName().getString(), adjunct.id(), name,
             adjunct.xSize(), adjunct.ySize(), adjunct.zSize());

@@ -480,9 +480,11 @@ public final class EditorDirtyCheck {
      * Translate a {@link Template} into the {@link DirtyEntry#modelId()}
      * key the dirty scan produces — so save-all can membership-test
      * {@link #unsavedModelIds} directly. Returns {@code null} for
-     * {@link games.brennan.dungeontrain.template.TemplateKind#PART}: the
-     * scan passes don't cover parts, so callers must keep their existing
-     * filter (e.g. empty-plot) for that kind.
+     * {@link games.brennan.dungeontrain.template.TemplateKind#PART} and
+     * {@link games.brennan.dungeontrain.template.TemplateKind#WHOLE_CARRIAGE}: the scan passes
+     * don't cover parts, and whole carriages have no editor plot to scan at all — they live in
+     * builder worlds, whose dirty tracking is {@code BuilderDirtyCheck}. Callers must keep their
+     * existing filter (e.g. empty-plot) for those kinds.
      */
     public static String dirtyKeyFor(Template model) {
         return switch (model.kind()) {
@@ -490,7 +492,7 @@ public final class EditorDirtyCheck {
             case TRACK -> "track." + model.variantName();
             case PILLAR, STAIRS, STAIRS_ENTRANCE, TUNNEL, PORTAL_ROOM ->
                 model.id() + "." + model.variantName();
-            case PART -> null;
+            case PART, WHOLE_CARRIAGE -> null;
         };
     }
 

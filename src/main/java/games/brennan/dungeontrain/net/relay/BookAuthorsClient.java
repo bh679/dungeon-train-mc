@@ -72,10 +72,43 @@ public final class BookAuthorsClient {
     }
 
     /**
-     * Fetch the authors within this room's book range and hand the list to
+     * One directory reply: who it named, whether the relay actually answered, and whether it had to
+     * go outside the band to answer at all.
+     *
+     * <p><b>Why {@code answered} exists.</b> "The relay says nobody qualifies" and "the call failed"
+     * want opposite things from the caller — the first is a settled fact to act on, the second is a
+     * reason to ask again later. This used to call back with an empty list for both, and the caller
+     * cached it: one timeout left every author-locked room in the world with bare shelves until the
+     * server restarted. A failed fetch is now {@link #failed()}, which is not an answer.</p>
+     *
+     * <p><b>{@code relaxed}</b> is the relay saying it found nobody inside {@code min}..{@code max}
+     * and dropped the floor to name somebody in the reader's language rather than serve an empty
+     * room. It matters here because the caller re-checks the band itself
+     * ({@link games.brennan.dungeontrain.portal.PortalRoomBooks#accepts}) — applying that check to a
+     * relaxed page would throw the answer away and leave exactly the bare room the relay was
+     * avoiding. Absent from an older relay's reply, which reads as {@code false}: such a relay never
+     * relaxes, so nothing is discarded that would not have been anyway.</p>
+     */
+    public record Page(List<Author> authors, boolean answered, boolean relaxed) {
+
+        /** The relay answered — with this list, which may be empty ("asked, nobody qualifies"). */
+        public static Page of(List<Author> authors, boolean relaxed) {
+            return new Page(List.copyOf(authors), true, relaxed);
+        }
+
+        /** No answer: timed out, non-2xx, or unparseable. NOT the same as an empty answer. */
+        public static Page failed() {
+            return new Page(List.of(), false, false);
+        }
+    }
+
+    /**
+     * Fetch the authors within this room's book range and hand the {@link Page} to
      * {@code callback} (invoked on the HTTP completion thread — the caller must hop back to the server
      * thread before touching game state). No-throw: a failed / slow / malformed / non-2xx fetch calls
-     * back with an empty list rather than not at all, so a caller waiting on it is never left hanging.
+     * back with {@link Page#failed()} rather than not at all, so a caller waiting on it is never left
+     * hanging — and, unlike the empty list this used to hand back, is never mistaken for the relay
+     * saying nobody qualifies.
      *
      * @param kind     {@code "player"}, {@code "signature"} or {@code "self"} — see
      *                 {@link games.brennan.dungeontrain.portal.PortalRoomBooks.Share#directoryKind()}
@@ -93,7 +126,7 @@ public final class BookAuthorsClient {
      *                 a writer's own library is their own writing whatever language it is in.
      */
     public static void fetch(String kind, int minBooks, int maxBooks, UUID uuid, boolean kidSafe,
-                             String lang, Consumer<List<Author>> callback) {
+                             String lang, Consumer<Page> callback) {
         // `self` is the only kind that names the caller, so it is the only one whose entries may be
         // marked `mine` — see parse(String, boolean).
         final boolean self = "self".equals(kind);
@@ -106,7 +139,9 @@ public final class BookAuthorsClient {
                     .build();
             HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString())
                     .whenComplete((resp, err) -> {
-                        List<Author> out = List.of();
+                        // Stays `failed` unless a 2xx body actually parses — every other path here is
+                        // "we do not know", which the caller must not cache as "nobody qualifies".
+                        Page out = Page.failed();
                         try {
                             if (err != null) {
                                 LOGGER.debug("[DungeonTrain] book-authors fetch failed: {}", err.toString());
@@ -130,7 +165,7 @@ public final class BookAuthorsClient {
             // guard is released and the next attempt can run.
             LOGGER.debug("[DungeonTrain] book-authors fetch failed to start: {}", t.toString());
             try {
-                callback.accept(List.of());
+                callback.accept(Page.failed());
             } catch (Throwable ignored) {
                 // nothing left to do
             }
@@ -160,7 +195,11 @@ public final class BookAuthorsClient {
     }
 
     /**
-     * Parse {@code {ok, authors:[{token,name,count}]}}; anything malformed yields an empty list.
+     * Parse {@code {ok, authors:[{token,name,count}], relaxed}}; anything malformed yields
+     * {@link Page#failed()} — a reply we could not read is not a reply saying nobody qualifies.
+     *
+     * <p>{@code relaxed} absent reads as false, which is what a relay older than the field means:
+     * it has no relaxation to report.</p>
      *
      * <p>{@code mine} is stamped here, from the KIND THAT WAS ASKED FOR, and nowhere else. It has to
      * be decided at the source: a {@code player}-kind directory contains every author including the
@@ -170,12 +209,14 @@ public final class BookAuthorsClient {
      * answer "no" while that page was still in flight and flip afterwards, which is exactly the window
      * in which a catalogue gets cached under the wrong key.</p>
      */
-    static List<Author> parse(String body, boolean mine) {
+    static Page parse(String body, boolean mine) {
         JsonElement root = JsonParser.parseString(body);
-        if (!root.isJsonObject()) return List.of();
+        if (!root.isJsonObject()) return Page.failed();
         JsonObject obj = root.getAsJsonObject();
-        if (!obj.has("ok") || !obj.get("ok").getAsBoolean()) return List.of();
-        if (!obj.has("authors") || !obj.get("authors").isJsonArray()) return List.of();
+        if (!obj.has("ok") || !obj.get("ok").getAsBoolean()) return Page.failed();
+        if (!obj.has("authors") || !obj.get("authors").isJsonArray()) return Page.failed();
+        boolean relaxed = obj.has("relaxed") && obj.get("relaxed").isJsonPrimitive()
+            && obj.get("relaxed").getAsBoolean();
         List<Author> out = new ArrayList<>();
         for (JsonElement el : obj.getAsJsonArray("authors")) {
             if (!el.isJsonObject()) continue;
@@ -197,6 +238,6 @@ public final class BookAuthorsClient {
             }
             out.add(new Author(token, name, count, mine));
         }
-        return List.copyOf(out);
+        return Page.of(out, relaxed);
     }
 }

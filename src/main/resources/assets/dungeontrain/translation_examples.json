@@ -2680,5 +2680,136 @@
         "Aether Trains"
       ]
     }
+  },
+  "gui.dungeontrain.builder.profile.saved": {
+    "1": {
+      "label": "the build that was saved and uploaded",
+      "examples": [
+        "Brick Carriage",
+        "Long Hall"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.profile.upload_failed": {
+    "1": {
+      "label": "the build that saved locally but could not be uploaded",
+      "examples": [
+        "Brick Carriage",
+        "Long Hall"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.profile.too_big": {
+    "1": {
+      "label": "the build that is too large for the relay to accept",
+      "examples": [
+        "Brick Carriage",
+        "Long Hall"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.profile.gone": {
+    "1": {
+      "label": "the build that is no longer on the relay",
+      "examples": [
+        "Brick Carriage",
+        "Long Hall"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.profile.in_use": {
+    "1": {
+      "label": "the build that is currently out on another player's train",
+      "examples": [
+        "Brick Carriage",
+        "Long Hall"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.info.size": {
+    "1": {
+      "label": "the build's length in blocks",
+      "examples": [
+        "9",
+        "24"
+      ]
+    },
+    "2": {
+      "label": "the build's height in blocks",
+      "examples": [
+        "5",
+        "12"
+      ]
+    },
+    "3": {
+      "label": "the build's width in blocks",
+      "examples": [
+        "5",
+        "7"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.info.weight": {
+    "1": {
+      "label": "how often the train picks this build, as a spawn weight",
+      "examples": [
+        "10",
+        "2.5"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.new.saved_build": {
+    "1": {
+      "label": "the name of one of the player's own saved builds",
+      "examples": [
+        "Brick Carriage",
+        "Long Hall"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.room_size.tooltip": {
+    "1": {
+      "label": "which side of the room this button resizes — a translated axis name",
+      "examples": [
+        "Length",
+        "Height"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.saved": {
+    "1": {
+      "label": "the build that was saved",
+      "examples": [
+        "Brick Carriage",
+        "Long Hall"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.save_failed": {
+    "1": {
+      "label": "why the save was refused",
+      "examples": [
+        "no carriage variant",
+        "name already taken"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.open_failed": {
+    "1": {
+      "label": "the build that could not be opened",
+      "examples": [
+        "Brick Carriage",
+        "Long Hall"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.unsaved.title": {
+    "1": {
+      "label": "how many carriages have unsaved changes",
+      "examples": [
+        "1",
+        "3"
+      ]
+    }
   }
 }

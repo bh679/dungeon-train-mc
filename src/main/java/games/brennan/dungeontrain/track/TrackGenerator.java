@@ -153,7 +153,8 @@ public final class TrackGenerator {
      * flat terrain lands on a multiple of this value (otherwise stairs never
      * appear). 40 blocks ≈ 5 flat-terrain pillar slots.
      */
-    private static final int MIN_STAIRS_SPACING = 100;
+    /** Public so the builder's ghost preview spaces its staircases the way the world does. */
+    public static final int MIN_STAIRS_SPACING = 100;
 
     private TrackGenerator() {}
 
@@ -206,10 +207,13 @@ public final class TrackGenerator {
 
     /**
      * Pure helper: {@code height < 5} → 8 (base), else {@code height + 8}
-     * clamped to {@link #MAX_PILLAR_SPACING}. Exposed package-private for unit
-     * tests.
+     * clamped to {@link #MAX_PILLAR_SPACING}.
+     *
+     * <p>Public because the Train Builder's ghost preview lays its columns out with it. A preview
+     * that copied the formula would be a second source of truth for the thing it exists to be
+     * faithful to, and the two would drift the first time this one was tuned.</p>
      */
-    static int computeSpacing(int height) {
+    public static int computeSpacing(int height) {
         if (height < TALL_PILLAR_HEIGHT_THRESHOLD) return BASE_PILLAR_SPACING;
         int spacing = height + BASE_PILLAR_SPACING;
         return Math.min(spacing, MAX_PILLAR_SPACING);
@@ -217,10 +221,12 @@ public final class TrackGenerator {
 
     /**
      * Pure helper: one pillar-block of thickness per 6 blocks of spacing,
-     * minimum 1. 8→1, 13→2, 18→3, 24→4, 30→5. Exposed package-private for
-     * unit tests.
+     * minimum 1. 8→1, 13→2, 18→3, 24→4, 30→5.
+     *
+     * <p>Public for the same reason as {@link #computeSpacing} — the builder's ghost preview
+     * measures its columns with it.</p>
      */
-    static int computeThickness(int spacing) {
+    public static int computeThickness(int spacing) {
         return Math.max(1, spacing / 6);
     }
 
@@ -239,10 +245,11 @@ public final class TrackGenerator {
      *
      * <p>Index 0 is the column immediately beside the pillar's footprint edge;
      * higher indices step further into the gap. The same profile is mirrored
-     * onto both X sides. Pure + package-private for unit testing, matching
-     * {@link #computeSpacing}/{@link #computeThickness}.</p>
+     * onto both X sides. Pure and public, matching
+     * {@link #computeSpacing}/{@link #computeThickness} — the builder's ghost preview draws the
+     * arch from this very profile rather than from a copy of it.</p>
      */
-    static int[] archProfile(int height) {
+    public static int[] archProfile(int height) {
         if (height < TALL_PILLAR_HEIGHT_THRESHOLD) return new int[0];
         if (height >= TALL_ARCH_HEIGHT_THRESHOLD) return new int[] {5, 3, 2, 1, 1, 1};
         return new int[] {3, 2, 1, 1};
@@ -517,16 +524,6 @@ public final class TrackGenerator {
             worldSeed, idx);
     }
 
-    private static boolean placeTrackColumn(
-        ServerLevel level,
-        int worldX,
-        int worldZ,
-        TrackGeometry g,
-        TilePaint paint
-    ) {
-        return placeTrackColumn(level, null, worldX, worldZ, g, paint);
-    }
-
     /**
      * Place the bed + rail of one track column from the authored tile {@code paint}.
      *
@@ -536,6 +533,8 @@ public final class TrackGenerator {
      *              Nether-band chunks). {@code null} keeps the worldgen / fill-render-distance behaviour
      *              ({@link SilentBlockOps#setBlockSilent}, which relights). The caller guarantees every
      *              written position lies inside {@code chunk}.
+     * @param tally optional diagnostic counters — every branch below that declines to write a cell
+     *              is otherwise invisible. See {@link PaintTally}.
      */
     private static boolean placeTrackColumn(
         ServerLevel level,
@@ -543,14 +542,18 @@ public final class TrackGenerator {
         int worldX,
         int worldZ,
         TrackGeometry g,
-        TilePaint paint
+        TilePaint paint,
+        @Nullable PaintTally tally
     ) {
         Shipyard shipyard = Shipyards.of(level);
         BlockPos bedPos = new BlockPos(worldX, g.bedY(), worldZ);
 
         // Skip ship-owned positions — never mutate voxels that belong to our
         // train or any other ship sharing this dimension.
-        if (shipyard.isInShip(bedPos)) return false;
+        if (shipyard.isInShip(bedPos)) {
+            if (tally != null) tally.bedShipSkip++;
+            return false;
+        }
 
         int zOff = worldZ - g.trackZMin();
         int xMod = Math.floorMod(worldX, TrackPlacer.TILE_LENGTH);
@@ -559,10 +562,15 @@ public final class TrackGenerator {
             ? paint.cells().get()[xMod][0][zOff]
             : TrackPalette.BED;
         bedState = paint.resolveComposite(bedState, xMod, 0, zOff, worldX, g.bedY(), worldZ);
-        if (bedState != null) {
+        if (bedState == null) {
+            if (tally != null) tally.bedNull++;
+        } else {
             BlockState existingBed = level.getBlockState(bedPos);
             if (!existingBed.is(bedState.getBlock())) {
                 writeTrackCell(level, chunk, bedPos, bedState);
+                if (tally != null) tally.bedWrites++;
+            } else if (tally != null) {
+                tally.bedAlready++;
             }
         }
 
@@ -575,12 +583,19 @@ public final class TrackGenerator {
             railState = null;
         }
         railState = paint.resolveComposite(railState, xMod, 1, zOff, worldX, g.railY(), worldZ);
-        if (railState != null) {
+        if (railState == null) {
+            if (tally != null) tally.railNull++;
+        } else {
             BlockPos railPos = new BlockPos(worldX, g.railY(), worldZ);
-            if (!shipyard.isInShip(railPos)) {
+            if (shipyard.isInShip(railPos)) {
+                if (tally != null) tally.railShipSkip++;
+            } else {
                 BlockState existingRail = level.getBlockState(railPos);
                 if (!existingRail.is(railState.getBlock())) {
                     writeTrackCell(level, chunk, railPos, railState);
+                    if (tally != null) tally.railWrites++;
+                } else if (tally != null) {
+                    tally.railAlready++;
                 }
             }
         }
@@ -1067,7 +1082,7 @@ public final class TrackGenerator {
      * in-chunk deviation preserve the ≥60 spacing floor. Splitmix64 finalizer, same constants
      * as {@code DungeonTrainWorldData.deriveGenerationSeed}.
      */
-    static int stairsAnchorPhase(long worldSeed) {
+    public static int stairsAnchorPhase(long worldSeed) {
         long h = worldSeed ^ 0x5741A1525354A952L; // "STAIRS" salt
         h = (h ^ (h >>> 30)) * 0xBF58476D1CE4E5B9L;
         h = (h ^ (h >>> 27)) * 0x94D049BB133111EBL;
@@ -1080,7 +1095,7 @@ public final class TrackGenerator {
      * range contains none. Ranges narrower than MIN_STAIRS_SPACING (a 16-wide chunk) contain
      * at most one anchor. Pure function of (worldSeed, range) — every run agrees.
      */
-    static int stairsAnchorInRange(long worldSeed, int minX, int maxX) {
+    public static int stairsAnchorInRange(long worldSeed, int minX, int maxX) {
         int phase = stairsAnchorPhase(worldSeed);
         int k = Math.floorDiv(minX - phase + MIN_STAIRS_SPACING - 1, MIN_STAIRS_SPACING);
         int anchor = k * MIN_STAIRS_SPACING + phase;
@@ -1092,7 +1107,7 @@ public final class TrackGenerator {
      * the line, preserving the pre-determinism aesthetic) XOR one seed-derived world bit so
      * different worlds don't all start on the same side. {@code true} = -Z.
      */
-    static boolean stairsSideForAnchor(long worldSeed, int anchorX) {
+    public static boolean stairsSideForAnchor(long worldSeed, int anchorX) {
         int slot = Math.floorDiv(anchorX - stairsAnchorPhase(worldSeed), MIN_STAIRS_SPACING);
         long h = worldSeed ^ 0x53494445B17L; // "SIDE" salt
         h = (h ^ (h >>> 30)) * 0xBF58476D1CE4E5B9L;
@@ -1841,11 +1856,53 @@ public final class TrackGenerator {
      * that Z to form a "doorway" gap that the player walks through when
      * exiting the staircase into the corridor.
      */
-    private static int downStairsOriginZ(boolean flipped, TrackGeometry g) {
+    /**
+     * Lowest Z of a down-stairs shaft.
+     *
+     * <p>Public so the Train Builder's preview places its shaft where the world would. Everything
+     * about a down-staircase is offsets from the line, and a preview that recomputed them would be
+     * a second answer to a question that has one.</p>
+     */
+    public static int downStairsOriginZ(boolean flipped, TrackGeometry g) {
         return flipped ? g.trackZMin() - STAIRS_Z - 1 : g.trackZMax() + 2;
     }
 
     /** Center Z of the 3-wide down-stair footprint on the assigned side. */
+    /** Lowest X of a down-stairs shaft, centred on the column it drops beside. */
+    public static int downStairsOriginX(int centerX) {
+        return centerX - 1;
+    }
+
+    /** Floor of the shaft — the deck the staircase starts from, two above the bed. */
+    public static int downStairsFloorY(TrackGeometry g) {
+        return g.bedY() + 2;
+    }
+
+    /** Highest row of the shaft — one below the surface the entrance caps it with. */
+    public static int downStairsTopInclusive(int surfaceY) {
+        return surfaceY - 1;
+    }
+
+    /**
+     * Lowest corner of the entrance pavilion capping a shaft.
+     *
+     * <p>A 5×5 centred on the 3×3 shaft, dropped {@link #ENTRANCE_OVERLAP_Y} so its bottom rows sit
+     * inside the top of the staircase — which is what makes the two read as one structure rather
+     * than a hut balanced over a hole.</p>
+     */
+    public static BlockPos downStairsEntranceOrigin(int originX, int originZ, int surfaceY) {
+        return new BlockPos(originX - 1, surfaceY - ENTRANCE_OVERLAP_Y, originZ - 1);
+    }
+
+    /** Footprint of the shaft on X and Z — the staircase's own, since it is what runs down it. */
+    public static int shaftFootprintX() {
+        return STAIRS_X;
+    }
+
+    public static int shaftFootprintZ() {
+        return STAIRS_Z;
+    }
+
     private static int downStairsCenterZ(boolean flipped, TrackGeometry g) {
         return downStairsOriginZ(flipped, g) + (STAIRS_Z - 1) / 2;
     }
@@ -1974,6 +2031,43 @@ public final class TrackGenerator {
     }
 
     /**
+     * Mutable tally of what a run of {@link #ensureTracksForChunk} calls actually did — every way
+     * the painter can decline to write a cell, counted separately.
+     *
+     * <p>Diagnostic only, and the reason it exists: the painter is silent about all of them. A
+     * corridor that comes out completely empty looks exactly like one that was already correct,
+     * which is how the builder's mode switch could restore the platform and quietly leave the
+     * track unlaid.</p>
+     */
+    public static final class PaintTally {
+        public int chunks;
+        public int notInCorridor;
+        public int notResident;
+        public int columns;
+        public int tilesWithCells;
+        public int tilesFallback;
+        public int bedShipSkip;
+        public int railShipSkip;
+        public int bedNull;
+        public int railNull;
+        public int bedAlready;
+        public int railAlready;
+        public int bedWrites;
+        public int railWrites;
+
+        @Override
+        public String toString() {
+            return "chunks=" + chunks + " notInCorridor=" + notInCorridor
+                + " notResident=" + notResident + " columns=" + columns
+                + " tiles(cells/fallback)=" + tilesWithCells + "/" + tilesFallback
+                + " shipSkip(bed/rail)=" + bedShipSkip + "/" + railShipSkip
+                + " null(bed/rail)=" + bedNull + "/" + railNull
+                + " already(bed/rail)=" + bedAlready + "/" + railAlready
+                + " wrote(bed/rail)=" + bedWrites + "/" + railWrites;
+        }
+    }
+
+    /**
      * Ensure tracks exist in the given chunk for {@code g}. Hit the provider's
      * cache first — chunks already processed exit in O(1). On miss, precompute
      * pillar positions in the chunk ± {@link #PILLAR_SCAN_MARGIN} and walk
@@ -1986,8 +2080,25 @@ public final class TrackGenerator {
         TrackGeometry g,
         Set<Long> filledChunks
     ) {
+        ensureTracksForChunk(level, chunkX, chunkZ, g, filledChunks, null);
+    }
+
+    /**
+     * As above, reporting into {@code tally} what the sweep did and every cell it declined to
+     * write. Callers that stamp a corridor they expect to see (the Train Builder) pass one so an
+     * empty result is visible; the runtime sweep passes {@code null} and behaves exactly as before.
+     */
+    public static void ensureTracksForChunk(
+        ServerLevel level,
+        int chunkX,
+        int chunkZ,
+        TrackGeometry g,
+        Set<Long> filledChunks,
+        @Nullable PaintTally tally
+    ) {
         long chunkKey = ChunkPos.asLong(chunkX, chunkZ);
         if (filledChunks.contains(chunkKey)) return;
+        if (tally != null) tally.chunks++;
 
         int chunkMinX = chunkX << 4;
         int chunkMaxX = chunkMinX + 15;
@@ -1997,6 +2108,7 @@ public final class TrackGenerator {
         // Z-corridor intersection test — mark out-of-corridor chunks as
         // processed too so we never look at them again.
         if (chunkMaxZ < g.trackZMin() || chunkMinZ > g.trackZMax()) {
+            if (tally != null) tally.notInCorridor++;
             filledChunks.add(chunkKey);
             return;
         }
@@ -2009,7 +2121,14 @@ public final class TrackGenerator {
         // spikes when flying over freshly-streaming chunks. Returning
         // here keeps the chunk in pending; the next 10-tick sweep
         // retries once it's FULL.
-        if (level.getChunkSource().getChunkNow(chunkX, chunkZ) == null) return;
+        //
+        // Expected and frequent on the runtime sweep, which is why it is silent — but a caller
+        // that forced the chunk itself and still lands here has a real problem, so it goes in the
+        // tally for that caller to report.
+        if (level.getChunkSource().getChunkNow(chunkX, chunkZ) == null) {
+            if (tally != null) tally.notResident++;
+            return;
+        }
 
         int zLo = Math.max(g.trackZMin(), chunkMinZ);
         int zHi = Math.min(g.trackZMax(), chunkMaxZ);
@@ -2037,13 +2156,18 @@ public final class TrackGenerator {
         for (int localX = 0; localX < 16; localX++) {
             int worldX = chunkMinX + localX;
             long tileIndex = Math.floorDiv((long) worldX, (long) TrackPlacer.TILE_LENGTH);
+            int knownTiles = tilePaints.size();
             TilePaint paint = tilePaints.computeIfAbsent(
                 tileIndex,
                 idx -> buildTilePaint(level, dims, worldSeed, idx, tileFootprint)
             );
+            if (tally != null && tilePaints.size() != knownTiles) {
+                if (paint.cells().isPresent()) tally.tilesWithCells++; else tally.tilesFallback++;
+            }
 
             for (int worldZ = zLo; worldZ <= zHi; worldZ++) {
-                placeTrackColumn(level, worldX, worldZ, g, paint);
+                if (tally != null) tally.columns++;
+                placeTrackColumn(level, null, worldX, worldZ, g, paint, tally);
             }
         }
 
@@ -2081,7 +2205,7 @@ public final class TrackGenerator {
                     return new TilePaint(cells, sidecar, worldSeed, idx);
                 }
             );
-            placeTrackColumn(level, chunk, worldX, worldZ, g, paint);
+            placeTrackColumn(level, chunk, worldX, worldZ, g, paint, null);
         }
     }
 
