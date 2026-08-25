@@ -25,14 +25,6 @@ import org.slf4j.Logger;
  * ({@link ModDataAttachments#RUN_CHEATED}): once set it survives relog and
  * respawn; a brand-new world / run starts clean.</p>
  *
- * <p><b>One exception, and only one.</b> The Train Editor forces the player into
- * creative to edit a plot, and restores their game mode and inventory when they
- * leave — DT put them there and nothing came out of it. A run tainted by nothing
- * but that carries {@link ModDataAttachments#RUN_CHEATED_EDITOR_ONLY} as well
- * ({@link #markEditorCheated}), and turning the custom content off hands the run
- * back ({@link #clearEditorOnlyTaint}). Any other cause revokes the exemption for
- * good, including one committed after the editor session.</p>
- *
  * <p>The taint also arrives session-wide, without touching the player, from
  * {@link AisDataIntegrity} (modified AIS config), {@link CheatModIntegrity}
  * (known cheat mods) and {@link EditorContentIntegrity} (custom Train Editor
@@ -135,11 +127,6 @@ public final class RunIntegrity {
     }
 
     public static void markCheated(ServerPlayer player, Component cause) {
-        // Whatever this cause is, it is not the editor's own forced game-mode switch, so the run
-        // loses the editor-only exemption — and it must lose it BEFORE the early return below,
-        // or a real cheat committed during an editor-tainted run would leave the exemption
-        // standing and hand the player a clean run they didn't earn.
-        revokeEditorOnlyExemption(player);
         // Idempotence keys off the permanent attachment, NOT isCheated(): during
         // a session-only config taint a tainting action must still be recorded
         // permanently, or restoring the config would forget it.
@@ -157,71 +144,6 @@ public final class RunIntegrity {
         sendFreePlayNotice(player, cause);
         // Mirror the transition to Discord (best-effort; never disrupts the run state above).
         FreePlayReport.post(player, cause);
-    }
-
-    // ---- The editor-only taint ----
-
-    /**
-     * Taint the run for an <b>authoring session</b> — the Train Editor forcing the player into
-     * creative to edit a plot ({@code CarriageEditor.rememberReturn} and the tunnel / portal-room
-     * equivalents), or one of the editor-authoring commands that leads straight into one.
-     *
-     * <p>Identical to {@link #markCheated} in every visible way — same flag, same effect, same
-     * notice — but it also records that <em>this</em> is why, so turning the custom content off
-     * later can hand the run back ({@link #clearEditorOnlyTaint}). It is only safe to hand back
-     * because the editor restores the player's inventory and game mode on exit: DT put them in
-     * creative, and nothing came out of it.</p>
-     *
-     * <p>Never softens an existing taint: a run already cheated for some other reason stays that
-     * way, so entering the editor from a run that was already dirty changes nothing.</p>
-     */
-    public static void markEditorCheated(ServerPlayer player, Component cause) {
-        if (isPermanentlyCheated(player)) return; // an existing taint is never downgraded to "just editing"
-        player.setData(ModDataAttachments.RUN_CHEATED_EDITOR_ONLY.get(), Boolean.TRUE);
-        player.setData(ModDataAttachments.RUN_CHEATED.get(), Boolean.TRUE);
-        applyFreePlayEffect(player);
-        LOGGER.info("[DungeonTrain] Run is now Free Play for {} (editor authoring — reversible) — {}",
-            player.getName().getString(), cause.getString());
-        if (isVisiblySessionFreePlay()) return; // already told them this session
-        sendFreePlayNotice(player, cause);
-        FreePlayReport.post(player, cause);
-    }
-
-    /**
-     * Is this run cheated <em>only</em> because of a Train Editor authoring session, and therefore
-     * still recoverable? Both halves are required: the exemption flag means nothing without the
-     * taint it qualifies.
-     */
-    public static boolean isEditorOnlyCheated(ServerPlayer player) {
-        return isPermanentlyCheated(player)
-            && Boolean.TRUE.equals(player.getData(ModDataAttachments.RUN_CHEATED_EDITOR_ONLY.get()));
-    }
-
-    /**
-     * Permanently disqualify this run from {@link #clearEditorOnlyTaint}. Called for every taint
-     * cause that isn't the editor's own switch, and when an editor session ends without its
-     * restoring exit (a logout inside the editor) — an un-restored session can't be vouched for.
-     */
-    public static void revokeEditorOnlyExemption(ServerPlayer player) {
-        if (!Boolean.TRUE.equals(player.getData(ModDataAttachments.RUN_CHEATED_EDITOR_ONLY.get()))) return;
-        player.setData(ModDataAttachments.RUN_CHEATED_EDITOR_ONLY.get(), Boolean.FALSE);
-        LOGGER.info("[DungeonTrain] {} no longer qualifies for the editor-only Free Play exemption.",
-            player.getName().getString());
-    }
-
-    /**
-     * Give the run back, when the only thing that ever took it was an editor session. Clears the
-     * permanent taint and reconciles the badge; a no-op (returning false) for every other run, so
-     * callers can offer this unconditionally and let it decide.
-     */
-    public static boolean clearEditorOnlyTaint(ServerPlayer player) {
-        if (!isEditorOnlyCheated(player)) return false;
-        player.setData(ModDataAttachments.RUN_CHEATED.get(), Boolean.FALSE);
-        player.setData(ModDataAttachments.RUN_CHEATED_EDITOR_ONLY.get(), Boolean.FALSE);
-        LOGGER.info("[DungeonTrain] Run is no longer Free Play for {} — the only cause was a Train "
-            + "Editor session and its content is now off.", player.getName().getString());
-        reconcileFreePlayEffect(player);
-        return true;
     }
 
     /**

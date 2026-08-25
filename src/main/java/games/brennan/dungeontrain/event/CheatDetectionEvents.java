@@ -8,7 +8,6 @@ import games.brennan.dungeontrain.cheat.DtConfigIntegrity;
 import games.brennan.dungeontrain.cheat.PortalTuningIntegrity;
 import games.brennan.dungeontrain.cheat.RunIntegrity;
 import games.brennan.dungeontrain.compat.EnderChestLockBridge;
-import games.brennan.dungeontrain.editor.EditorSessionGuard;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.ShowFreePlayConfirmPacket;
 import games.brennan.dungeontrain.registry.ModMobEffects;
@@ -76,11 +75,11 @@ public final class CheatDetectionEvents {
      * ({@link #requestFreePlayConfirm}) was cancelled outright, so the player simply
      * repeats the click after confirming.</p>
      */
-    private record Pending(String rawCommand, String label, boolean editorAuthoring) {
+    private record Pending(String rawCommand, String label) {
 
         /** A non-replayable cause: nothing is re-run on confirm. */
         static Pending action(String label) {
-            return new Pending(null, label, false);
+            return new Pending(null, label);
         }
     }
 
@@ -93,25 +92,17 @@ public final class CheatDetectionEvents {
         CommandSourceStack source = event.getParseResults().getContext().getSource();
         ServerPlayer player = source.getPlayer();
         if (player == null) return;                 // console / command block / function
+        if (RunIntegrity.isPermanentlyCheated(player)) return; // already recorded — let it run (incl. re-dispatch)
         if (!CommandAllowlist.taints(event.getParseResults())) return;
-
-        boolean editorAuthoring = CommandAllowlist.isEditorAuthoring(event.getParseResults());
-
-        if (RunIntegrity.isPermanentlyCheated(player)) {
-            // Already recorded — let it run (incl. the re-dispatch). One thing still changes,
-            // though: a tainting command that isn't the editor's own costs the run its editor-only
-            // exemption. Without this the early return would let /give during or after an editor
-            // session ride through the hand-back and come out the other side as a clean run.
-            revokeExemptionUnlessEditor(player, editorAuthoring);
-            return;
-        }
 
         if (RunIntegrity.isVisiblySessionFreePlay()) {
             // The session is already Free Play (AIS data changed, or custom editor content is
             // active) — there is nothing to confirm or back out of. Just record the permanent
             // taint (quiet — markCheated skips the notice during a session taint) and let the
             // command run.
-            markCommandFreePlay(player, CommandAllowlist.label(event.getParseResults()), editorAuthoring);
+            RunIntegrity.markCheated(player, Component.translatable(
+                "chat.dungeontrain.free_play.cause.command",
+                CommandAllowlist.label(event.getParseResults())));
             return;
         }
 
@@ -119,35 +110,8 @@ public final class CheatDetectionEvents {
         event.setCanceled(true);
         String raw = event.getParseResults().getReader().getString();
         String label = CommandAllowlist.label(event.getParseResults());
-        PENDING.put(player.getUUID(), new Pending(raw, label, editorAuthoring));
+        PENDING.put(player.getUUID(), new Pending(raw, label));
         DungeonTrainNet.sendTo(player, new ShowFreePlayConfirmPacket(label));
-    }
-
-    /**
-     * Record a command's taint, as the reversible editor-authoring kind when that is what it is.
-     * Opening the editor is the one taint DT inflicts on the player itself — see
-     * {@link RunIntegrity#markEditorCheated} — so it must not go through the general path, which
-     * would strip the exemption the moment it granted it.
-     */
-    private static void markCommandFreePlay(ServerPlayer player, String label, boolean editorAuthoring) {
-        Component cause = Component.translatable("chat.dungeontrain.free_play.cause.command", label);
-        if (editorAuthoring) {
-            RunIntegrity.markEditorCheated(player, cause);
-        } else {
-            RunIntegrity.markCheated(player, cause);
-        }
-    }
-
-    /**
-     * The counterpart to {@link RunIntegrity#markCheated}'s own revoke, for the paths that never
-     * reach it: every guard in this class returns early once the run is already permanently
-     * cheated, because the taint is recorded and there is nothing left to record. That reasoning
-     * holds for the taint and not for the exemption — a second, real cheat is exactly what must
-     * stop an editor-tainted run from being handed back.
-     */
-    private static void revokeExemptionUnlessEditor(ServerPlayer player, boolean editorAuthoring) {
-        if (editorAuthoring) return;
-        RunIntegrity.revokeEditorOnlyExemption(player);
     }
 
     /**
@@ -167,12 +131,7 @@ public final class CheatDetectionEvents {
      *         caller may let the action run
      */
     public static boolean requestFreePlayConfirm(ServerPlayer player, String label) {
-        if (RunIntegrity.isPermanentlyCheated(player)) {
-            // Using a creative mod's features is never editor authoring, so it costs the run its
-            // editor-only exemption even though the taint itself is already recorded.
-            revokeExemptionUnlessEditor(player, false);
-            return false;
-        }
+        if (RunIntegrity.isPermanentlyCheated(player)) return false;
         if (RunIntegrity.isVisiblySessionFreePlay()) {
             // Already Free Play for the session — nothing to confirm or back out of.
             RunIntegrity.markCheated(player, Component.translatable(
@@ -190,14 +149,10 @@ public final class CheatDetectionEvents {
         if (pending == null) return;
         if (!confirmed) return; // backed out — the action stayed canceled
         boolean replayable = pending.rawCommand() != null;
-        if (pending.editorAuthoring()) {
-            markCommandFreePlay(player, pending.label(), true);
-        } else {
-            RunIntegrity.markCheated(player, Component.translatable(
-                replayable ? "chat.dungeontrain.free_play.cause.command"
-                           : "chat.dungeontrain.free_play.cause.creative_mod",
-                pending.label()));
-        }
+        RunIntegrity.markCheated(player, Component.translatable(
+            replayable ? "chat.dungeontrain.free_play.cause.command"
+                       : "chat.dungeontrain.free_play.cause.creative_mod",
+            pending.label()));
         // Lock the live Ender Chest onto the Free Play (creative) slot now, before
         // the held command runs — the legit chest is hidden the instant the run trips.
         EnderChestLockBridge.engage(player);
@@ -214,15 +169,7 @@ public final class CheatDetectionEvents {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         // Gate on the PERMANENT taint: during a session-only AIS taint a
         // creative/spectator switch must still be recorded permanently.
-        if (RunIntegrity.isPermanentlyCheated(player)) {
-            // Switching into creative/spectator by hand costs the editor-only exemption — but the
-            // editor's own switch, made while its session is open, is the very thing the exemption
-            // is granted for and must not revoke it.
-            if (isTaintingMode(event.getNewGameMode()) && !EditorSessionGuard.isInSession(player)) {
-                revokeExemptionUnlessEditor(player, false);
-            }
-            return;
-        }
+        if (RunIntegrity.isPermanentlyCheated(player)) return;
         markGameModeFreePlay(player, event.getNewGameMode());
         // If that just tripped Free Play (creative/spectator), lock the Ender Chest.
         // Runs before ECP's LOW-priority game-mode swap, while the old mode is still

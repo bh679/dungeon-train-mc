@@ -151,34 +151,26 @@ public final class CustomContentPromptEvents {
 
     /**
      * Settle everyone's Free Play state after this world's content choice changed — from the
-     * prompt or from {@code /customcontent}. Two things happen here, and both are the point of the
-     * choice being offered at all:
+     * prompt or from {@code /customcontent}.
      *
-     * <ul>
-     *   <li>A run whose <em>only</em> taint was a Train Editor session is handed back
-     *       ({@link RunIntegrity#clearEditorOnlyTaint}) now that the content it authored is off.
-     *       Without this, "disable my changes and play normally" was a promise the game couldn't
-     *       keep: the editor's own forced creative switch had already marked the run for good.</li>
-     *   <li>Everyone's badge is reconciled. It is an infinite saved effect, so a player whose run
-     *       just stopped being Free Play would otherwise wear it for the life of the save.</li>
-     * </ul>
+     * <p>Turning the content off can end a session-only taint
+     * ({@link games.brennan.dungeontrain.cheat.EditorContentIntegrity#isSessionFreePlay}), and the
+     * badge is an infinite saved effect that nothing else takes off — so a player whose run just
+     * stopped being Free Play would otherwise wear it for the life of the save. A run tainted
+     * <em>permanently</em> is never handed back here: the permanent taint has no way out, by
+     * design, whatever its cause.</p>
      *
      * <p>Per-world decision, so it runs for every online player, not just whoever answered.</p>
      */
     public static void onChoiceApplied(MinecraftServer server) {
         if (server == null) return;
         for (ServerPlayer p : server.getPlayerList().getPlayers()) {
-            boolean restored = RunIntegrity.clearEditorOnlyTaint(p);
             RunIntegrity.reconcileFreePlayEffect(p);
             // The Ender Chest slot is derived from isCheated, but the live chest only follows on a
             // refresh — the same call CheatDetectionEvents makes when a run trips Free Play, run
-            // here for the trip back so a restored run gets its legit chest returned, not the
-            // creative one it was locked onto. No-op when the slot is unchanged.
+            // here so a run that just left a session-only taint gets its legit chest back rather
+            // than the creative one it was locked onto. No-op when the slot is unchanged.
             EnderChestLockBridge.engage(p);
-            if (restored) {
-                p.sendSystemMessage(Component.translatable("chat.dungeontrain.custom_content.run_restored")
-                    .withStyle(ChatFormatting.GREEN));
-            }
         }
     }
 

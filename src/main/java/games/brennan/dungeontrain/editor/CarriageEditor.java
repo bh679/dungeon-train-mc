@@ -10,7 +10,6 @@ import games.brennan.dungeontrain.train.CarriageVariantRegistry;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
-import net.minecraft.nbt.ListTag;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -49,13 +48,7 @@ public final class CarriageEditor {
 
     private static final BlockState OUTLINE_BLOCK = Blocks.BEDROCK.defaultBlockState();
 
-    /**
-     * @param inventory the pre-entry inventory to restore on exit, or {@code null} when the player
-     *                  was already in creative and the editor forced nothing — see
-     *                  {@link EditorSessionGuard}
-     */
-    public record Session(ResourceKey<Level> dimension, Vec3 pos, float yaw, float pitch,
-                          GameType previousGameType, ListTag inventory) {}
+    public record Session(ResourceKey<Level> dimension, Vec3 pos, float yaw, float pitch, GameType previousGameType) {}
 
     private static final Map<UUID, Session> SESSIONS = new HashMap<>();
 
@@ -74,15 +67,16 @@ public final class CarriageEditor {
     static void rememberReturn(ServerPlayer player) {
         if (SESSIONS.containsKey(player.getUUID())) return;
         GameType previous = player.gameMode.getGameModeForPlayer();
-        ListTag inventory = EditorSessionGuard.beginCreative(player, previous);
         SESSIONS.put(player.getUUID(), new Session(
             player.level().dimension(),
             player.position(),
             player.getYRot(),
             player.getXRot(),
-            previous,
-            inventory
+            previous
         ));
+        if (previous != GameType.CREATIVE) {
+            player.setGameMode(GameType.CREATIVE);
+        }
     }
 
     /**
@@ -538,7 +532,6 @@ public final class CarriageEditor {
         if (player.gameMode.getGameModeForPlayer() != session.previousGameType()) {
             player.setGameMode(session.previousGameType());
         }
-        EditorSessionGuard.endCreative(player, session.inventory());
         VariantOverlayRenderer.forget(player);
         return true;
     }

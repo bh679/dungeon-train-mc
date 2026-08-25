@@ -13,7 +13,6 @@ import games.brennan.dungeontrain.tunnel.TunnelPlacer.TunnelVariant;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
-import net.minecraft.nbt.ListTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
@@ -49,12 +48,7 @@ public final class TunnelEditor {
 
     private static final BlockState OUTLINE_BLOCK = Blocks.BEDROCK.defaultBlockState();
 
-    /**
-     * @param inventory the pre-entry inventory to restore on exit, or {@code null} when the player
-     *                  was already in creative — see {@link EditorSessionGuard}
-     */
-    public record Session(ResourceKey<Level> dimension, Vec3 pos, float yaw, float pitch,
-                          GameType previousGameType, ListTag inventory) {}
+    public record Session(ResourceKey<Level> dimension, Vec3 pos, float yaw, float pitch, GameType previousGameType) {}
 
     /** Resolved variant + name pair for a player position. */
     public record TunnelPlot(TunnelVariant variant, String name) {}
@@ -126,15 +120,16 @@ public final class TunnelEditor {
 
         if (!SESSIONS.containsKey(player.getUUID())) {
             GameType previous = player.gameMode.getGameModeForPlayer();
-            ListTag inventory = EditorSessionGuard.beginCreative(player, previous);
             SESSIONS.put(player.getUUID(), new Session(
                 player.level().dimension(),
                 player.position(),
                 player.getYRot(),
                 player.getXRot(),
-                previous,
-                inventory
+                previous
             ));
+            if (previous != GameType.CREATIVE) {
+                player.setGameMode(GameType.CREATIVE);
+            }
         }
 
         stampPlot(overworld, variant);
@@ -304,7 +299,6 @@ public final class TunnelEditor {
         if (player.gameMode.getGameModeForPlayer() != session.previousGameType()) {
             player.setGameMode(session.previousGameType());
         }
-        EditorSessionGuard.endCreative(player, session.inventory());
         return true;
     }
 
