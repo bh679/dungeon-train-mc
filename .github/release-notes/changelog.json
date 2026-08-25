@@ -8569,6 +8569,22 @@
       "released": true,
       "released_in": "v0.647.0",
       "released_at": "2026-08-25T07:24:46Z"
+    },
+    {
+      "id": "abandon-run-death-screen",
+      "version": "0.648.0",
+      "type": "fix",
+      "title": "Abandoning a run always shows the recap",
+      "summary": "With the Immediate Respawn game rule on, choosing \"Abandon This Run\" from the pause menu used to drop you straight into a fresh world, skipping the end-of-run recap entirely. Now it takes you to the death screen like any other run ending, so you can read the recap and choose when to board again. Immediate Respawn also carries over into each new world the train makes for you, instead of quietly switching itself off after the first one.",
+      "highlights": [
+        "Abandon This Run now opens the death screen even with Immediate Respawn on",
+        "Dying normally still rolls straight into a fresh world when Immediate Respawn is on",
+        "The Immediate Respawn setting now sticks across every world in a run chain"
+      ],
+      "date": "2026-08-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
