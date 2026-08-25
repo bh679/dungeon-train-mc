@@ -8585,6 +8585,22 @@
       "released": true,
       "released_in": "v0.648.0",
       "released_at": "2026-08-25T09:08:12Z"
+    },
+    {
+      "id": "vote-page-follows-book",
+      "version": "0.649.0",
+      "type": "fix",
+      "title": "The vote page lines up with the book again",
+      "summary": "After reading a community book, the train's vote page sat in the wrong place \u2014 its question could land on top of the \"Page 2 of 2\" line, and at some window sizes the thumbs drifted off the page entirely and stopped responding where you clicked them. The page now follows the book wherever it sits, including when Scribble's centred book layout moves it.",
+      "highlights": [
+        "The train's question no longer collides with the page counter",
+        "The thumbs and the report button now click where they are drawn, at every window size and GUI scale"
+      ],
+      "pr": 1085,
+      "date": "2026-08-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
