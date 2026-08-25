@@ -8665,6 +8665,24 @@
       "released": true,
       "released_in": "v0.652.0",
       "released_at": "2026-08-25T10:46:10Z"
+    },
+    {
+      "id": "author-locked-library-rooms-empty",
+      "version": "0.653.0",
+      "type": "fix",
+      "title": "Library rooms have their books back",
+      "summary": "Portal library rooms had been turning up with completely bare shelves. They are stocked again \u2014 and when nobody has written enough books in your language to fill one, the room now settles for the closest author it can find instead of standing empty. Expect a shorter shelf in that case rather than none at all. A dropped connection to the community book service no longer empties every library in your world for the rest of the session either; a room that comes up short quietly tries again a few minutes later.",
+      "highlights": [
+        "Library rooms are stocked with books again instead of standing bare",
+        "If nobody writes enough in your language, the room picks the closest author it can rather than showing nothing \u2014 a shorter shelf you can read beats a full one you cannot",
+        "A hiccup reaching the community book service no longer leaves every library in the world empty until you restart",
+        "A library that finds nobody tries again a few minutes later, so one thin moment no longer settles it"
+      ],
+      "pr": 1091,
+      "date": "2026-08-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
