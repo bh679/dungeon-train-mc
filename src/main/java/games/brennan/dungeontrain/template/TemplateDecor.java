@@ -220,7 +220,17 @@ public final class TemplateDecor {
         // so doing this before the move is what turns a picture to face the mirrored wall.
         float yaw = entity.rotate(rotation);
         yaw += entity.mirror(mirror) - entity.getYRot();
-        entity.moveTo(at.x, at.y, at.z, yaw, entity.getXRot());
+        if (anchor == null) {
+            entity.moveTo(at.x, at.y, at.z, yaw, entity.getXRot());
+        } else {
+            // Deliberately NOT moveTo. A hanging entity takes the position it is handed as its
+            // anchor BLOCK, rounding it down; but `at` is the picture's centre, and an even-sized
+            // painting's centre sits half a block up and half a block along its wall from the block
+            // it hangs on. Rounding that lands one block high and one block over — which is exactly
+            // what a stamped painting did. The entity already derived its true position from the
+            // TileX/Y/Z rebased above when the NBT loaded, so there is nothing left to move.
+            entity.setYRot(yaw);
+        }
         if (mark != null) mark.accept(entity);
         if (!level.addFreshEntity(entity)) {
             LOGGER.debug("[DungeonTrain] template decor: level rejected {} at {}",
