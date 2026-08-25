@@ -22,6 +22,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.BookViewScreen;
 import net.minecraft.client.gui.screens.inventory.LecternScreen;
+import net.minecraft.client.gui.screens.inventory.PageButton;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.network.chat.Component;
@@ -75,18 +76,25 @@ public final class BookVoteClientEvents {
 
     // Book background geometry (BookViewScreen): 192px art anchored at ((width-192)/2, 2); the page
     // column is 114px wide starting 36px in, so the page's center X is left + 93.
+    //
+    // Every Y here is a DELTA from the top of the book, never a screen coordinate. The book is not
+    // reliably at BOOK_TOP — see bookTop(), which is where these are resolved against wherever it is
+    // really being drawn.
     private static final int BOOK_TOP = 2;
     private static final int PAGE_CENTER_X_OFFSET = 93;
     private static final int TEXT_X_OFFSET = 36;
     private static final int TEXT_WIDTH = 114;
-    private static final int PREFIX_Y = BOOK_TOP + 38;
-    private static final int PROMPT_Y = PREFIX_Y + 12;
+    private static final int PREFIX_DY = 38;
+    private static final int PROMPT_DY = PREFIX_DY + 12;
     private static final int BUTTON_SIZE = 18;
-    private static final int BUTTONS_Y = BOOK_TOP + 90;
+    private static final int BUTTONS_DY = 90;
     private static final int BUTTON_GAP = 20;            // between the two thumbs
-    private static final int LABELS_Y = BUTTONS_Y + BUTTON_SIZE + 6;
-    private static final int REPORT_Y = LABELS_Y + 12;   // its own row under the (Y)es/(N)o labels
-    private static final int REPORT_TEXT_Y = REPORT_Y + BUTTON_SIZE + 3; // confirmation line, when shown
+    private static final int LABELS_DY = BUTTONS_DY + BUTTON_SIZE + 6;
+    private static final int REPORT_DY = LABELS_DY + 12; // its own row under the (Y)es/(N)o labels
+    private static final int REPORT_TEXT_DY = REPORT_DY + BUTTON_SIZE + 3; // confirmation line, when shown
+    // Vanilla nails both page-turn buttons to this y in createPageControlButtons(), which is what
+    // makes the back button usable as a probe for how far the book has been moved. See bookTop().
+    private static final int VANILLA_PAGE_BUTTON_Y = 159;
 
     // Warm leather dim over the whole page (approved variant A) + the train's rust-orange voice.
     private static final int DIM_COLOR = 0x5A48220A;     // ARGB (72,34,10) @ alpha 90
@@ -213,7 +221,7 @@ public final class BookVoteClientEvents {
         int mouseY = event.getMouseY();
 
         // Warm leather dim over the page — visibly NOT the author's parchment.
-        gfx.fill(left + DIM_X1, BOOK_TOP + DIM_Y1, left + DIM_X2, BOOK_TOP + DIM_Y2, DIM_COLOR);
+        gfx.fill(left + DIM_X1, bookTop() + DIM_Y1, left + DIM_X2, bookTop() + DIM_Y2, DIM_COLOR);
 
         int centerX = left + PAGE_CENTER_X_OFFSET;
         // One of the reader's OWN books that the train has not released. It says where the book
@@ -227,7 +235,7 @@ public final class BookVoteClientEvents {
             // your own that is simply out on the line, which is news but not a warning.
             int statusColor = moderation == BookModerationState.DISLIKED ? COLOR_STATUS_REJECTED
                 : moderation.isWithheld() ? COLOR_STATUS_WAITING : COLOR_TEXT;
-            int sy = PREFIX_Y;
+            int sy = prefixY();
             for (FormattedCharSequence line : font.split(status, TEXT_WIDTH)) {
                 gfx.drawString(font, line, centerX - font.width(line) / 2, sy, statusColor, false);
                 sy += 9;
@@ -235,8 +243,8 @@ public final class BookVoteClientEvents {
         } else {
             // "The train asks," + this book's question, both centered in the page column.
             Component prefix = Component.translatable("gui.dungeontrain.book_vote.ask_prefix");
-            gfx.drawString(font, prefix, centerX - font.width(prefix) / 2, PREFIX_Y, COLOR_PREFIX, false);
-            int y = PROMPT_Y;
+            gfx.drawString(font, prefix, centerX - font.width(prefix) / 2, prefixY(), COLOR_PREFIX, false);
+            int y = promptY();
             Component prompt = Component.translatable("gui.dungeontrain.book_vote.prompt." + promptIndex);
             for (FormattedCharSequence line : font.split(prompt, TEXT_WIDTH)) {
                 gfx.drawString(font, line, centerX - font.width(line) / 2, y, COLOR_TEXT, false);
@@ -250,13 +258,13 @@ public final class BookVoteClientEvents {
         if (!moderation.isOwn()) {
             boolean upLit = selectedVote == 1 || inUpButton(mouseX, mouseY);
             boolean downLit = selectedVote == -1 || inDownButton(mouseX, mouseY);
-            gfx.blitSprite(upLit ? UP_HIGHLIGHTED_SPRITE : UP_SPRITE, upX(), BUTTONS_Y, BUTTON_SIZE, BUTTON_SIZE);
-            gfx.blitSprite(downLit ? DOWN_HIGHLIGHTED_SPRITE : DOWN_SPRITE, downX(), BUTTONS_Y, BUTTON_SIZE, BUTTON_SIZE);
+            gfx.blitSprite(upLit ? UP_HIGHLIGHTED_SPRITE : UP_SPRITE, upX(), buttonsY(), BUTTON_SIZE, BUTTON_SIZE);
+            gfx.blitSprite(downLit ? DOWN_HIGHLIGHTED_SPRITE : DOWN_SPRITE, downX(), buttonsY(), BUTTON_SIZE, BUTTON_SIZE);
 
             Component yes = Component.translatable("gui.dungeontrain.book_vote.approve");
             Component no = Component.translatable("gui.dungeontrain.book_vote.reject");
-            gfx.drawString(font, yes, upX() + BUTTON_SIZE / 2 - font.width(yes) / 2, LABELS_Y, COLOR_TEXT, false);
-            gfx.drawString(font, no, downX() + BUTTON_SIZE / 2 - font.width(no) / 2, LABELS_Y, COLOR_TEXT, false);
+            gfx.drawString(font, yes, upX() + BUTTON_SIZE / 2 - font.width(yes) / 2, labelsY(), COLOR_TEXT, false);
+            gfx.drawString(font, no, downX() + BUTTON_SIZE / 2 - font.width(no) / 2, labelsY(), COLOR_TEXT, false);
         } else {
             renderVoteCounts(gfx, font);
         }
@@ -283,13 +291,13 @@ public final class BookVoteClientEvents {
         if (votesUp < 0 || votesDown < 0) return;
         if (moderation.isWithheld() && votesUp + votesDown == 0) return;
 
-        gfx.blitSprite(UP_SPRITE, upX(), BUTTONS_Y, BUTTON_SIZE, BUTTON_SIZE);
-        gfx.blitSprite(DOWN_SPRITE, downX(), BUTTONS_Y, BUTTON_SIZE, BUTTON_SIZE);
+        gfx.blitSprite(UP_SPRITE, upX(), buttonsY(), BUTTON_SIZE, BUTTON_SIZE);
+        gfx.blitSprite(DOWN_SPRITE, downX(), buttonsY(), BUTTON_SIZE, BUTTON_SIZE);
 
         Component up = Component.literal(Integer.toString(votesUp));
         Component down = Component.literal(Integer.toString(votesDown));
-        gfx.drawString(font, up, upX() + BUTTON_SIZE / 2 - font.width(up) / 2, LABELS_Y, COLOR_TEXT, false);
-        gfx.drawString(font, down, downX() + BUTTON_SIZE / 2 - font.width(down) / 2, LABELS_Y, COLOR_TEXT, false);
+        gfx.drawString(font, up, upX() + BUTTON_SIZE / 2 - font.width(up) / 2, labelsY(), COLOR_TEXT, false);
+        gfx.drawString(font, down, downX() + BUTTON_SIZE / 2 - font.width(down) / 2, labelsY(), COLOR_TEXT, false);
     }
 
     /**
@@ -321,7 +329,7 @@ public final class BookVoteClientEvents {
         boolean lit = !reported && (reportArmed || inReport(mouseX, mouseY));
         if (reported) gfx.setColor(1F, 1F, 1F, REPORTED_ALPHA);
         gfx.blitSprite(lit ? REPORT_HIGHLIGHTED_SPRITE : REPORT_SPRITE,
-            reportX(), REPORT_Y, BUTTON_SIZE, BUTTON_SIZE);
+            reportX(), reportY(), BUTTON_SIZE, BUTTON_SIZE);
         if (reported) gfx.setColor(1F, 1F, 1F, 1F);
 
         // Idle and hover stay wordless — the icon is the whole control. The confirmation line is the
@@ -330,7 +338,7 @@ public final class BookVoteClientEvents {
             ? Component.translatable("gui.dungeontrain.book_vote.reported")
             : reportArmed ? Component.translatable("gui.dungeontrain.book_vote.report_confirm") : null;
         if (line != null) {
-            gfx.drawString(font, line, centerX - font.width(line) / 2, REPORT_TEXT_Y,
+            gfx.drawString(font, line, centerX - font.width(line) / 2, reportTextY(),
                 reported ? COLOR_REPORTED : COLOR_REPORT_ARMED, false);
         } else if (lit) {
             // Hovering an unlabelled icon: say what it does before the player commits to finding out.
@@ -349,14 +357,14 @@ public final class BookVoteClientEvents {
         boolean lit = !protested && (reportArmed || inReport(mouseX, mouseY));
         if (protested) gfx.setColor(1F, 1F, 1F, REPORTED_ALPHA);
         gfx.blitSprite(lit ? REPORT_HIGHLIGHTED_SPRITE : REPORT_SPRITE,
-            reportX(), REPORT_Y, BUTTON_SIZE, BUTTON_SIZE);
+            reportX(), reportY(), BUTTON_SIZE, BUTTON_SIZE);
         if (protested) gfx.setColor(1F, 1F, 1F, 1F);
 
         Component line = protested
             ? Component.translatable("gui.dungeontrain.book_vote.protested")
             : reportArmed ? Component.translatable("gui.dungeontrain.book_vote.protest_confirm") : null;
         if (line != null) {
-            gfx.drawString(font, line, centerX - font.width(line) / 2, REPORT_TEXT_Y,
+            gfx.drawString(font, line, centerX - font.width(line) / 2, reportTextY(),
                 protested ? COLOR_REPORTED : COLOR_REPORT_ARMED, false);
         } else if (lit) {
             gfx.renderTooltip(font, Component.translatable("gui.dungeontrain.book_vote.protest"),
@@ -380,10 +388,10 @@ public final class BookVoteClientEvents {
         gfx.blitSprite(showLocked
                 ? (lit ? PRIVATE_LOCKED_HIGHLIGHTED_SPRITE : PRIVATE_LOCKED_SPRITE)
                 : (lit ? PRIVATE_UNLOCKED_HIGHLIGHTED_SPRITE : PRIVATE_UNLOCKED_SPRITE),
-            reportX(), REPORT_Y, BUTTON_SIZE, BUTTON_SIZE);
+            reportX(), reportY(), BUTTON_SIZE, BUTTON_SIZE);
         Component line = Component.translatable(isPrivate
             ? "gui.dungeontrain.book_vote.private_on" : "gui.dungeontrain.book_vote.private_off");
-        gfx.drawString(font, line, centerX - font.width(line) / 2, REPORT_TEXT_Y,
+        gfx.drawString(font, line, centerX - font.width(line) / 2, reportTextY(),
             isPrivate ? COLOR_REPORTED : COLOR_TEXT, false);
         if (lit) {
             gfx.renderTooltip(font, Component.translatable(isPrivate
@@ -558,6 +566,61 @@ public final class BookVoteClientEvents {
         return (screen.width - 192) / 2;
     }
 
+    /**
+     * Where the book is <b>actually</b> drawn, which is not always where vanilla puts it.
+     *
+     * <p>Scribble — bundled in the DT modpack, see {@link ScribbleColorPickerToggle} — ships
+     * {@code centerBookGui} ON by default, and slides the whole book-view GUI down by
+     * {@code (height - 192) / 3}: the background art, the page-turn and close buttons, and a matrix
+     * translate around everything {@code BookViewScreen.render} draws. We draw from
+     * {@code Render.Post}, which NeoForge fires <em>after</em> {@code render()} returns and therefore
+     * after Scribble has popped that matrix — so nothing shifts us and we have to follow the book
+     * ourselves. Left unhandled, the whole page detaches: at small offsets the train's line lands on
+     * vanilla's "Page N of N" indicator, and at larger ones the thumbs are drawn over empty screen
+     * while their hitboxes stay behind.</p>
+     *
+     * <p>Rather than ask Scribble — a soft dependency DT deliberately never links against — we read
+     * the answer off vanilla: the back page-turn button, which
+     * {@code createPageControlButtons()} fixes at {@link #VANILLA_PAGE_BUTTON_Y} and which any mod
+     * that re-centres the book must have moved by exactly the same amount. That makes this correct
+     * for re-centring mods generally, and an exact no-op ({@code bookTop() == BOOK_TOP}) when none is
+     * installed.</p>
+     */
+    private static int bookTop() {
+        PageButton back = ((BookViewScreenAccessor) (Object) screen).dungeontrain$getBackButton();
+        return back == null ? BOOK_TOP : BOOK_TOP + back.getY() - VANILLA_PAGE_BUTTON_Y;
+    }
+
+    /** "The train asks," — or, on one of your own books, where it stands. */
+    private static int prefixY() {
+        return bookTop() + PREFIX_DY;
+    }
+
+    /** The question itself, under the prefix. */
+    private static int promptY() {
+        return bookTop() + PROMPT_DY;
+    }
+
+    /** The 👍/👎 row. */
+    private static int buttonsY() {
+        return bookTop() + BUTTONS_DY;
+    }
+
+    /** The (Y)es/(N)o labels — or the vote tallies on a book of your own. */
+    private static int labelsY() {
+        return bookTop() + LABELS_DY;
+    }
+
+    /** The third control's row: report / protest / withdraw. */
+    private static int reportY() {
+        return bookTop() + REPORT_DY;
+    }
+
+    /** Its confirmation or status line, when there is one. */
+    private static int reportTextY() {
+        return bookTop() + REPORT_TEXT_DY;
+    }
+
     private static int upX() {
         return bookLeft() + PAGE_CENTER_X_OFFSET - BUTTON_SIZE - BUTTON_GAP / 2;
     }
@@ -567,11 +630,11 @@ public final class BookVoteClientEvents {
     }
 
     private static boolean inUpButton(int x, int y) {
-        return x >= upX() && x < upX() + BUTTON_SIZE && y >= BUTTONS_Y && y < BUTTONS_Y + BUTTON_SIZE;
+        return x >= upX() && x < upX() + BUTTON_SIZE && y >= buttonsY() && y < buttonsY() + BUTTON_SIZE;
     }
 
     private static boolean inDownButton(int x, int y) {
-        return x >= downX() && x < downX() + BUTTON_SIZE && y >= BUTTONS_Y && y < BUTTONS_Y + BUTTON_SIZE;
+        return x >= downX() && x < downX() + BUTTON_SIZE && y >= buttonsY() && y < buttonsY() + BUTTON_SIZE;
     }
 
     /** The report icon sits on the page's centre line, under the two thumbs. */
@@ -581,7 +644,7 @@ public final class BookVoteClientEvents {
 
     private static boolean inReport(int x, int y) {
         return x >= reportX() && x < reportX() + BUTTON_SIZE
-            && y >= REPORT_Y && y < REPORT_Y + BUTTON_SIZE;
+            && y >= reportY() && y < reportY() + BUTTON_SIZE;
     }
 
     private static boolean onVotePage() {
