@@ -63,12 +63,14 @@ import java.util.function.Function;
  * fresh world) and "Leave the line" (the title screen), with no respawn-in-place,
  * so hardcore worlds get the same treatment. When the {@code doImmediateRespawn}
  * game rule is on there is no screen to press a button on, so
- * {@link InstantRespawnReboard} fires the same fresh-world reboard automatically.
+ * {@link InstantRespawnReboard} fires the same fresh-world reboard automatically —
+ * except for a deliberately abandoned run, which it routes back to this screen.
  *
  * <p>This class also owns the world-transition plumbing the narrative screen
  * calls: {@link #launchWorld} creates a fresh save (carrying forward the current
- * world's vanilla + Dungeon Train settings via {@code PendingWorldChoices}; the
- * new save always starts in the Overworld), and {@link #goToTitleScreen} exits
+ * world's vanilla + Dungeon Train settings via {@code PendingWorldChoices} and
+ * {@link CarriedRules}; the new save always starts in the Overworld), and
+ * {@link #goToTitleScreen} exits
  * to the title. Both run the Sable sub-level pre-drain so the integrated server
  * tears down cleanly (see {@link #preDrainTrainSubLevels}).</p>
  *
@@ -199,14 +201,16 @@ public final class DeathScreenLayoutHandler {
 
         // When the current world has keepInventory on, snapshot the player's
         // inventory + XP (consumed on the next world's first login by
-        // KeepInventoryCarryEvents) and create the next world with keepInventory
-        // on too.
-        boolean keepInventory = captureKeepInventory(server);
+        // KeepInventoryCarryEvents). Both carried rules come back in one read.
+        CarriedRules carried = captureCarriedRules(server);
 
         String name = WORLD_NAME_PREFIX + System.currentTimeMillis();
         GameRules gameRules = new GameRules();
-        if (keepInventory) {
+        if (carried.keepInventory()) {
             gameRules.getRule(GameRules.RULE_KEEPINVENTORY).set(true, null);
+        }
+        if (carried.immediateRespawn()) {
+            gameRules.getRule(GameRules.RULE_DO_IMMEDIATE_RESPAWN).set(true, null);
         }
         GameType gameType = forceSurvival ? GameType.SURVIVAL : cur.gameType();
         LevelSettings settings = new LevelSettings(
@@ -365,19 +369,35 @@ public final class DeathScreenLayoutHandler {
     }
 
     /**
-     * Read the current world's {@code keepInventory} gamerule and, when on,
-     * snapshot the local player's inventory + experience into
-     * {@link PendingInventory} so {@link games.brennan.dungeontrain.event.KeepInventoryCarryEvents}
-     * can re-apply it on the next world's first login. Returns the gamerule
-     * value so the caller can mirror it onto the new world's {@link GameRules}.
+     * The dying world's game rules that the next run world inherits. A run chain is
+     * one continuous game as far as the player is concerned, so a rule they set on
+     * one world must not be quietly dropped by the reboard.
+     *
+     * @param keepInventory   {@code keepInventory} — paired with the inventory snapshot
+     *                        {@link #captureCarriedRules} takes.
+     * @param immediateRespawn {@code doImmediateRespawn} — without carrying this, the first
+     *                        automatic reboard would turn the player's own setting off.
      */
-    private static boolean captureKeepInventory(MinecraftServer server) {
+    private record CarriedRules(boolean keepInventory, boolean immediateRespawn) {
+        static final CarriedRules NONE = new CarriedRules(false, false);
+    }
+
+    /**
+     * Read the current world's carried game rules and, when {@code keepInventory} is
+     * on, snapshot the local player's inventory + experience into
+     * {@link PendingInventory} so {@link games.brennan.dungeontrain.event.KeepInventoryCarryEvents}
+     * can re-apply it on the next world's first login. Returns the rule values so the
+     * caller can mirror them onto the new world's {@link GameRules}.
+     */
+    private static CarriedRules captureCarriedRules(MinecraftServer server) {
         UUID localId = Minecraft.getInstance().player != null
                 ? Minecraft.getInstance().player.getUUID() : null;
-        CompletableFuture<Boolean> result = new CompletableFuture<>();
+        CompletableFuture<CarriedRules> result = new CompletableFuture<>();
         server.execute(() -> {
             try {
-                boolean keep = server.getGameRules().getBoolean(GameRules.RULE_KEEPINVENTORY);
+                GameRules rules = server.getGameRules();
+                boolean keep = rules.getBoolean(GameRules.RULE_KEEPINVENTORY);
+                boolean immediateRespawn = rules.getBoolean(GameRules.RULE_DO_IMMEDIATE_RESPAWN);
                 if (keep && localId != null) {
                     ServerPlayer player = server.getPlayerList().getPlayer(localId);
                     if (player != null) {
@@ -389,18 +409,18 @@ public final class DeathScreenLayoutHandler {
                 } else {
                     PendingInventory.clear();
                 }
-                result.complete(keep);
+                result.complete(new CarriedRules(keep, immediateRespawn));
             } catch (Throwable t) {
-                LOGGER.warn("DeathScreenLayout: keepInventory capture failed; new world will not carry inventory", t);
+                LOGGER.warn("DeathScreenLayout: game-rule capture failed; new world will use defaults", t);
                 PendingInventory.clear();
-                result.complete(false);
+                result.complete(CarriedRules.NONE);
             }
         });
         try {
             return result.get(10, TimeUnit.SECONDS);
         } catch (Exception e) {
-            LOGGER.warn("DeathScreenLayout: keepInventory capture wait timed out or errored", e);
-            return false;
+            LOGGER.warn("DeathScreenLayout: game-rule capture wait timed out or errored", e);
+            return CarriedRules.NONE;
         }
     }
 
