@@ -35,6 +35,43 @@ public final class CustomContentGate {
     private CustomContentGate() {}
 
     /**
+     * Answer without asking, for a run that starts with no one at the menu — the automatic reboard
+     * after a death with immediate respawn on ({@code InstantRespawnReboard}). Takes the remembered
+     * preference, else the last answer actually given, else declines.
+     *
+     * <p>Declining as the last resort is deliberate. Carrying a previous <em>ALLOW</em> forward is
+     * the player's own consent, given once and reused. Inventing one they never gave would put a
+     * run into Free Play that nobody agreed to, which is the one thing the ask-before-assign rule
+     * exists to stop. Only reachable on a first-ever death with immediate respawn already on.</p>
+     */
+    public static void answerFromMemory() {
+        try {
+            if (!EditorContentIntegrity.hasCustomContent()) {
+                PendingCustomContentChoice.clear();
+                return;
+            }
+        } catch (RuntimeException e) {
+            // Same guard askFirst makes, and it matters more here: this runs mid-reboard with the
+            // old world tearing down, and the reboard has already been scheduled. Leaving the slot
+            // clear lets the new world ask at join rather than failing the respawn outright.
+            LOGGER.warn("[DungeonTrain] Couldn't check for custom content during an automatic "
+                + "reboard; leaving the question to join time.", e);
+            PendingCustomContentChoice.clear();
+            return;
+        }
+        CustomContentPreference remembered = ClientDisplayConfig.getCustomContentPreference();
+        CustomContentPreference source = remembered.asks()
+            ? ClientDisplayConfig.getLastCustomContentAnswer()
+            : remembered;
+        CustomContentChoice choice = !source.asks() && source.keepsContent()
+            ? CustomContentChoice.ALLOW
+            : CustomContentChoice.DISABLE;
+        LOGGER.info("[DungeonTrain] Automatic reboard — reusing the last custom content answer "
+            + "without asking: {} (from {})", choice, source);
+        PendingCustomContentChoice.set(choice);
+    }
+
+    /**
      * Put the question before {@code launch}, if there is a question to put.
      *
      * <p>Callers use it as a guard clause: {@code if (askFirst(screen, this::go)) return; go();} —
