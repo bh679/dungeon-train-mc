@@ -30,6 +30,11 @@ import org.slf4j.Logger;
  * (known cheat mods) and {@link EditorContentIntegrity} (custom Train Editor
  * content). Those clear themselves when the cause goes away.</p>
  *
+ * <p>{@link OperatorIntegrity} (someone online has cheats) is session-wide too,
+ * but it is the one source that also stamps the player: each operator's own run
+ * is marked permanently, so {@code /op} → cheat → {@code /deop} can't launder
+ * it. Everyone else goes clean again once no operator is online.</p>
+ *
  * <p>While cheated, advancements still earn live (the advancement screen works
  * in any mode), but they are <b>not</b> written to the cross-world
  * {@code GlobalAchievementStore} profile, and the global lifetime stats in
@@ -49,8 +54,9 @@ public final class RunIntegrity {
      * is Free Play because AIS data was changed
      * ({@link AisDataIntegrity#isSessionFreePlay}), DT's own balance config was
      * changed ({@link DtConfigIntegrity#isSessionFreePlay}), a known cheat mod is
-     * installed ({@link CheatModIntegrity#isSessionFreePlay}), or custom Train
+     * installed ({@link CheatModIntegrity#isSessionFreePlay}), custom Train
      * Editor content is active ({@link EditorContentIntegrity#isSessionFreePlay}),
+     * or someone online has cheats ({@link OperatorIntegrity#isSessionFreePlay}),
      * OR the world's portal rate has been retuned
      * ({@link PortalTuningIntegrity#isWorldFreePlay} — per-world and permanent
      * rather than per-session and derived, see that class).
@@ -62,6 +68,7 @@ public final class RunIntegrity {
             || DtConfigIntegrity.isSessionFreePlay()
             || CheatModIntegrity.isSessionFreePlay()
             || EditorContentIntegrity.isSessionFreePlay()
+            || OperatorIntegrity.isSessionFreePlay()
             || PortalTuningIntegrity.isWorldFreePlay()
             || isPermanentlyCheated(player);
     }
@@ -104,6 +111,7 @@ public final class RunIntegrity {
         return AisDataIntegrity.isSessionFreePlay()
             || DtConfigIntegrity.isSessionFreePlay()
             || CheatModIntegrity.isSessionFreePlay()
+            || OperatorIntegrity.isSessionFreePlay()
             || PortalTuningIntegrity.isWorldFreePlay()
             || isPermanentlyCheated(player);
     }
@@ -114,7 +122,8 @@ public final class RunIntegrity {
      * confirmation prompt that would have nothing to confirm, and to record the permanent taint
      * quietly instead of notifying twice.
      *
-     * <p>Covers the AIS-config, DT-config, custom-editor-content and retuned-portal-rate taints. Deliberately
+     * <p>Covers the AIS-config, DT-config, custom-editor-content, operator-present and
+     * retuned-portal-rate taints. Deliberately
      * <b>not</b> {@link CheatModIntegrity} — that source predates this helper and still takes the
      * prompt / notify path; folding it in would change its Discord reporting, which is a separate
      * call.</p>
@@ -123,6 +132,7 @@ public final class RunIntegrity {
         return AisDataIntegrity.isSessionFreePlay()
             || DtConfigIntegrity.isSessionFreePlay()
             || EditorContentIntegrity.isSessionFreePlay()
+            || OperatorIntegrity.isSessionFreePlay()
             || PortalTuningIntegrity.isWorldFreePlay();
     }
 
