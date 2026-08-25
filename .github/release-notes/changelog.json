@@ -8582,6 +8582,38 @@
         "Dying with immediate respawn on reuses your last answer instead of interrupting the reboard."
       ],
       "date": "2026-08-25",
+      "released": true,
+      "released_in": "v0.648.0",
+      "released_at": "2026-08-25T09:08:12Z"
+    },
+    {
+      "id": "vote-page-follows-book",
+      "version": "0.649.0",
+      "type": "fix",
+      "title": "The vote page lines up with the book again",
+      "summary": "After reading a community book, the train's vote page sat in the wrong place \u2014 its question could land on top of the \"Page 2 of 2\" line, and at some window sizes the thumbs drifted off the page entirely and stopped responding where you clicked them. The page now follows the book wherever it sits, including when Scribble's centred book layout moves it.",
+      "highlights": [
+        "The train's question no longer collides with the page counter",
+        "The thumbs and the report button now click where they are drawn, at every window size and GUI scale"
+      ],
+      "pr": 1085,
+      "date": "2026-08-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "abandon-run-death-screen",
+      "version": "0.649.0",
+      "type": "fix",
+      "title": "Abandoning a run always shows the recap",
+      "summary": "With the Immediate Respawn game rule on, choosing \"Abandon This Run\" from the pause menu used to drop you straight into a fresh world, skipping the end-of-run recap entirely. Now it takes you to the death screen like any other run ending, so you can read the recap and choose when to board again. Immediate Respawn also carries over into each new world the train makes for you, instead of quietly switching itself off after the first one.",
+      "highlights": [
+        "Abandon This Run now opens the death screen even with Immediate Respawn on",
+        "Dying normally still rolls straight into a fresh world when Immediate Respawn is on",
+        "The Immediate Respawn setting now sticks across every world in a run chain"
+      ],
+      "date": "2026-08-25",
       "released": false,
       "released_in": null,
       "released_at": null
