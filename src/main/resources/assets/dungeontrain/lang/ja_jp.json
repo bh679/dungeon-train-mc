@@ -1265,7 +1265,7 @@
   "dungeontrain.leaderboard.playtime_run.header": "一度の旅で最も長く生き延びたのは誰か。",
   "dungeontrain.leaderboard.carriages_total.header": "到達した車両数を、すべての人生で合計したもの。",
   "dungeontrain.leaderboard.carriages_run.header": "一度の旅で最も遠くまで進んだのは誰か。",
-  "dungeontrain.leaderboard.distance_run.header": "一度の旅で出発点から最も遠くまで離れた距離（メートル）。",
+  "dungeontrain.leaderboard.distance_run.header": "一度の旅で出発点からどれだけ離れたか。",
   "dungeontrain.leaderboard.distance_total.header": "進んだ距離を、すべての人生で合計したもの。",
   "dungeontrain.leaderboard.pacifist_carriages.header": "誰も傷つけずに、一度の旅で最も遠くまで進んだのは誰か。",
   "dungeontrain.leaderboard.friends_run.header": "一度の旅で最も多くの友を得たのは誰か。",

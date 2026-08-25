@@ -1418,7 +1418,7 @@
   "dungeontrain.leaderboard.playtime_run.header": "The longest anyone has stayed alive in a single run.",
   "dungeontrain.leaderboard.carriages_total.header": "Carriages reached, added up over every life.",
   "dungeontrain.leaderboard.carriages_run.header": "The furthest anyone has got in one run.",
-  "dungeontrain.leaderboard.distance_run.header": "The furthest from the start of a run anyone has got, measured in metres.",
+  "dungeontrain.leaderboard.distance_run.header": "How far from the start anyone has got in one run.",
   "dungeontrain.leaderboard.distance_total.header": "Distance covered, added up over every life.",
   "dungeontrain.leaderboard.pacifist_carriages.header": "The furthest anyone has got in one run without harming a soul.",
   "dungeontrain.leaderboard.friends_run.header": "Who made the most friends in a single run.",

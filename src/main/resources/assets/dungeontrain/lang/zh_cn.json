@@ -1279,7 +1279,7 @@
   "dungeontrain.leaderboard.playtime_run.header": "谁在一次旅程中活得最久。",
   "dungeontrain.leaderboard.carriages_total.header": "抵达的车厢数，累计所有生命。",
   "dungeontrain.leaderboard.carriages_run.header": "谁在一次旅程中走得最远。",
-  "dungeontrain.leaderboard.distance_run.header": "谁在一次旅程中离出发点最远，以米计。",
+  "dungeontrain.leaderboard.distance_run.header": "一次旅程中离出发点最远走了多远。",
   "dungeontrain.leaderboard.distance_total.header": "走过的距离，累计所有生命。",
   "dungeontrain.leaderboard.pacifist_carriages.header": "谁在一次旅程中不伤一人，却走得最远。",
   "dungeontrain.leaderboard.friends_run.header": "谁在一次旅程中结交了最多朋友。",

@@ -1265,7 +1265,7 @@
   "dungeontrain.leaderboard.playtime_run.header": "Ai đã sống sót lâu nhất trong một chuyến đi.",
   "dungeontrain.leaderboard.carriages_total.header": "Số toa đã tới, cộng dồn qua mọi kiếp sống.",
   "dungeontrain.leaderboard.carriages_run.header": "Ai đã đi xa nhất trong một chuyến đi.",
-  "dungeontrain.leaderboard.distance_run.header": "Ai đi xa điểm khởi đầu nhất trong một chuyến đi, tính bằng mét.",
+  "dungeontrain.leaderboard.distance_run.header": "Ai đi xa điểm khởi đầu đến đâu trong một chuyến đi.",
   "dungeontrain.leaderboard.distance_total.header": "Quãng đường đã đi, cộng dồn qua mọi kiếp sống.",
   "dungeontrain.leaderboard.pacifist_carriages.header": "Ai đã đi xa nhất trong một chuyến mà không làm hại ai.",
   "dungeontrain.leaderboard.friends_run.header": "Ai kết được nhiều bạn nhất trong một chuyến đi.",

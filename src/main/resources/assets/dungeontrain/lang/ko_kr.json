@@ -1265,7 +1265,7 @@
   "dungeontrain.leaderboard.playtime_run.header": "한 번의 여정에서 가장 오래 살아남은 사람.",
   "dungeontrain.leaderboard.carriages_total.header": "도달한 객차 수를 모든 삶에 걸쳐 합한 것.",
   "dungeontrain.leaderboard.carriages_run.header": "한 번의 여정에서 가장 멀리 간 사람.",
-  "dungeontrain.leaderboard.distance_run.header": "한 번의 여정에서 출발점으로부터 가장 멀리 떨어진 거리(미터).",
+  "dungeontrain.leaderboard.distance_run.header": "한 번의 여정에서 출발점으로부터 얼마나 멀리 갔는지.",
   "dungeontrain.leaderboard.distance_total.header": "나아간 거리를 모든 삶에 걸쳐 합한 것.",
   "dungeontrain.leaderboard.pacifist_carriages.header": "누구도 해치지 않고 한 여정에서 가장 멀리 간 사람.",
   "dungeontrain.leaderboard.friends_run.header": "한 번의 여정에서 가장 많은 친구를 사귄 사람.",

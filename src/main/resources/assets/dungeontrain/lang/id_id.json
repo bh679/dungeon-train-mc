@@ -1265,7 +1265,7 @@
   "dungeontrain.leaderboard.playtime_run.header": "Siapa yang bertahan hidup paling lama dalam satu perjalanan.",
   "dungeontrain.leaderboard.carriages_total.header": "Gerbong yang dicapai, dijumlahkan dari seluruh kehidupan.",
   "dungeontrain.leaderboard.carriages_run.header": "Siapa yang paling jauh melaju dalam satu perjalanan.",
-  "dungeontrain.leaderboard.distance_run.header": "Siapa yang paling jauh dari titik awal dalam satu perjalanan, dalam meter.",
+  "dungeontrain.leaderboard.distance_run.header": "Sejauh apa seseorang pergi dari titik awal dalam satu perjalanan.",
   "dungeontrain.leaderboard.distance_total.header": "Jarak yang ditempuh, dijumlahkan dari semua kehidupan.",
   "dungeontrain.leaderboard.pacifist_carriages.header": "Siapa yang paling jauh melaju dalam satu perjalanan tanpa melukai siapa pun.",
   "dungeontrain.leaderboard.friends_run.header": "Siapa yang paling banyak berteman dalam satu perjalanan.",

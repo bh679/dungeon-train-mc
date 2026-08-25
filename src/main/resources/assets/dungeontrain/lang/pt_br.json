@@ -1277,7 +1277,7 @@
   "dungeontrain.leaderboard.playtime_run.header": "Quem sobreviveu por mais tempo em uma única corrida.",
   "dungeontrain.leaderboard.carriages_total.header": "Vagões alcançados, somados ao longo de todas as vidas.",
   "dungeontrain.leaderboard.carriages_run.header": "Quem chegou mais longe em uma única corrida.",
-  "dungeontrain.leaderboard.distance_run.header": "Quem mais se afastou do ponto de partida em uma única corrida, em metros.",
+  "dungeontrain.leaderboard.distance_run.header": "Quão longe do ponto de partida alguém chegou em uma corrida.",
   "dungeontrain.leaderboard.distance_total.header": "Distância percorrida, somada em todas as vidas.",
   "dungeontrain.leaderboard.pacifist_carriages.header": "Quem chegou mais longe em uma corrida sem machucar ninguém.",
   "dungeontrain.leaderboard.friends_run.header": "Quem fez mais amigos em uma única corrida.",

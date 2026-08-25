@@ -1277,7 +1277,7 @@
   "dungeontrain.leaderboard.playtime_run.header": "Wie het langst in leven bleef tijdens één rit.",
   "dungeontrain.leaderboard.carriages_total.header": "Bereikte wagons, opgeteld over alle levens.",
   "dungeontrain.leaderboard.carriages_run.header": "Wie het verst is gekomen in één rit.",
-  "dungeontrain.leaderboard.distance_run.header": "Wie zich in één run het verst van het startpunt heeft verwijderd, in meters.",
+  "dungeontrain.leaderboard.distance_run.header": "Hoe ver iemand in één run van het startpunt is gekomen.",
   "dungeontrain.leaderboard.distance_total.header": "Afgelegde afstand, opgeteld over alle levens.",
   "dungeontrain.leaderboard.pacifist_carriages.header": "Wie het verst is gekomen in één rit zonder iemand kwaad te doen.",
   "dungeontrain.leaderboard.friends_run.header": "Wie de meeste vrienden maakte in één rit.",
