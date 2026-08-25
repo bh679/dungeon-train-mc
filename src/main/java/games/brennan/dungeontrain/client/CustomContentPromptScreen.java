@@ -7,8 +7,10 @@ import games.brennan.dungeontrain.net.DungeonTrainNet;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Checkbox;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.FormattedCharSequence;
 
 import java.util.List;
@@ -43,8 +45,6 @@ public final class CustomContentPromptScreen extends Screen {
     private static final int FRAME_BORDER_BOTTOM = 0x5028007F;
 
     private static final int TITLE_TEAL = 0xFF5BC8C2;
-    private static final int COLOUR_BODY = 0xFFE0E0E0;
-    private static final int COLOUR_CONSEQ = 0xFFB8B8B8;
     private static final int COLOUR_PACKAGES = 0xFF7E7E8C;
     private static final int COLOUR_SEPARATOR = 0x40FFFFFF;
     /**
@@ -63,9 +63,25 @@ public final class CustomContentPromptScreen extends Screen {
     private static final int LINE_GAP = 1;
     private static final int SECTION_GAP = 7;
     private static final int TITLE_SEP_GAP = 6;
-    private static final int BUTTON_H = 20;
-    private static final int BUTTON_GAP = 4;
     private static final int CHECKBOX_H = 20;
+    /** Gap between the two answer cards. */
+    private static final int CARD_GAP = 8;
+    /** Square "?" button at the right end of the checkbox row. */
+    private static final int INFO_SIZE = 20;
+
+    /**
+     * The badge the player actually wears in a Free Play run — so the card shows the consequence
+     * rather than describing it.
+     */
+    private static final ResourceLocation ICON_CUSTOM =
+        ResourceLocation.fromNamespaceAndPath("dungeontrain", "icon/free_play");
+    private static final ResourceLocation ICON_DEFAULT =
+        ResourceLocation.fromNamespaceAndPath("dungeontrain", "icon/default_train");
+
+    /** "Freeplay" — the same teal as the title, so it reads as the flagged state. */
+    private static final int COLOUR_TAG_FREEPLAY = 0xFF5BC8C2;
+    /** "Live" — green: this run counts. */
+    private static final int COLOUR_TAG_LIVE = 0xFF7FD97F;
 
     private final String packages;
     /**
@@ -79,10 +95,7 @@ public final class CustomContentPromptScreen extends Screen {
 
     // Layout, computed in init() and reused by render().
     private int panelX, panelY, panelW, panelH;
-    private int titleRelY, bodyRelY, keepRelY, disableRelY, packagesRelY;
-    private List<FormattedCharSequence> bodyLines = List.of();
-    private List<FormattedCharSequence> keepLines = List.of();
-    private List<FormattedCharSequence> disableLines = List.of();
+    private int titleRelY, packagesRelY;
     private List<FormattedCharSequence> packageLines = List.of();
 
     /** Join-time: the world is already running, and the answer goes back over the network. */
@@ -108,23 +121,18 @@ public final class CustomContentPromptScreen extends Screen {
         int innerW = panelW - 2 * PADDING;
         int lh = this.font.lineHeight;
 
-        bodyLines = this.font.split(Component.translatable("gui.dungeontrain.custom_content.body"), innerW);
-        keepLines = this.font.split(Component.translatable("gui.dungeontrain.custom_content.keep"), innerW);
-        disableLines = this.font.split(Component.translatable("gui.dungeontrain.custom_content.disable"), innerW);
         packageLines = packages.isBlank()
             ? List.of()
             : this.font.split(Component.translatable("gui.dungeontrain.custom_content.packages", packages), innerW);
 
+        int cardH = ContentChoiceCard.heightFor(lh);
+
         int y = PADDING;
         titleRelY = y;    y += lh + TITLE_SEP_GAP;
-        bodyRelY = y;     y += bodyLines.size() * (lh + LINE_GAP) + SECTION_GAP;
-        keepRelY = y;     y += keepLines.size() * (lh + LINE_GAP);
-        disableRelY = y;  y += disableLines.size() * (lh + LINE_GAP) + SECTION_GAP;
         packagesRelY = y; y += packageLines.size() * (lh + LINE_GAP);
         if (!packageLines.isEmpty()) y += SECTION_GAP;
         int checkboxRelY = y; y += CHECKBOX_H + SECTION_GAP;
-        int continueRelY = y; y += BUTTON_H + BUTTON_GAP;
-        int disableBtnRelY = y; y += BUTTON_H + PADDING;
+        int cardsRelY = y;    y += cardH + PADDING;
         panelH = y;
 
         panelX = (this.width - panelW) / 2;
@@ -137,12 +145,36 @@ public final class CustomContentPromptScreen extends Screen {
             .build();
         addRenderableWidget(rememberBox);
 
-        addRenderableWidget(Button.builder(
-                Component.translatable("gui.dungeontrain.custom_content.continue"), b -> respond(true))
-            .bounds(panelX + PADDING, panelY + continueRelY, innerW, BUTTON_H).build());
-        addRenderableWidget(Button.builder(
-                Component.translatable("gui.dungeontrain.custom_content.disable_button"), b -> respond(false))
-            .bounds(panelX + PADDING, panelY + disableBtnRelY, innerW, BUTTON_H).build());
+        // Why this popup exists, and what "Freeplay" costs — the one thing the two cards can't
+        // say in a word each. Parked on the checkbox row rather than added as another paragraph:
+        // Tooltip shows on hover AND on focus, and clicking focuses, so a no-op press covers both
+        // the hover and the click the player might try.
+        Button info = Button.builder(Component.literal("?"), b -> {})
+            .bounds(panelX + PADDING + innerW - INFO_SIZE, panelY + checkboxRelY,
+                INFO_SIZE, INFO_SIZE)
+            .build();
+        info.setTooltip(Tooltip.create(
+            Component.translatable("gui.dungeontrain.custom_content.info")));
+        addRenderableWidget(info);
+
+        // One row, two cards. Left keeps the player's designs and gives up the stats; right plays
+        // the shipped game and keeps them.
+        int cardW = (innerW - CARD_GAP) / 2;
+        int cardY = panelY + cardsRelY;
+        addRenderableWidget(new ContentChoiceCard(
+            panelX + PADDING, cardY, cardW, cardH,
+            ICON_CUSTOM,
+            Component.translatable("gui.dungeontrain.custom_content.card.custom.name"),
+            Component.translatable("gui.dungeontrain.custom_content.card.custom.tag"),
+            COLOUR_TAG_FREEPLAY,
+            () -> respond(true)));
+        addRenderableWidget(new ContentChoiceCard(
+            panelX + PADDING + cardW + CARD_GAP, cardY, cardW, cardH,
+            ICON_DEFAULT,
+            Component.translatable("gui.dungeontrain.custom_content.card.default.name"),
+            Component.translatable("gui.dungeontrain.custom_content.card.default.tag"),
+            COLOUR_TAG_LIVE,
+            () -> respond(false)));
     }
 
     private void respond(boolean keepContent) {
@@ -189,10 +221,23 @@ public final class CustomContentPromptScreen extends Screen {
         super.onClose();
     }
 
+    /**
+     * The panel is background, not foreground. Drawing it in {@code render} after
+     * {@code super.render} painted it over the widgets: its fill is 94% opaque
+     * ({@link #FRAME_BG}), and GuiGraphics flushes flat fills after textured quads, so the card
+     * icons ended up beneath it at ~6% visibility however late they were drawn. Text survived
+     * only because glyphs flush in a later pass again. Here the frame lands before the widgets
+     * and the ordering problem disappears.
+     */
+    @Override
+    public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+        super.renderBackground(g, mouseX, mouseY, partialTick);
+        drawFrame(g, panelX, panelY, panelX + panelW, panelY + panelH);
+    }
+
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
         super.render(g, mouseX, mouseY, partialTick);
-        drawFrame(g, panelX, panelY, panelX + panelW, panelY + panelH);
 
         int cx = panelX + panelW / 2;
         int lh = this.font.lineHeight;
@@ -201,9 +246,6 @@ public final class CustomContentPromptScreen extends Screen {
         int sepY = panelY + titleRelY + lh + 2;
         g.fill(panelX + 10, sepY, panelX + panelW - 10, sepY + 1, COLOUR_SEPARATOR);
 
-        drawLines(g, bodyLines, cx, panelY + bodyRelY, COLOUR_BODY, lh);
-        drawLines(g, keepLines, cx, panelY + keepRelY, COLOUR_CONSEQ, lh);
-        drawLines(g, disableLines, cx, panelY + disableRelY, COLOUR_CONSEQ, lh);
         drawLines(g, packageLines, cx, panelY + packagesRelY, COLOUR_PACKAGES, lh);
 
         // Sits one pixel OUTSIDE the sprite rather than on top of it: GuiGraphics flushes textured
