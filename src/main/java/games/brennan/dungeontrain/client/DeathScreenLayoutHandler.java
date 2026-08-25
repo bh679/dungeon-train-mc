@@ -154,6 +154,16 @@ public final class DeathScreenLayoutHandler {
     }
 
     public static void launchWorld(Screen lastScreen, boolean sameSeed, boolean forceSurvival) {
+        // Reboard is one of the two moments a run starts, so it is one of the two moments the
+        // custom-content question gets asked — before the next world exists, while "run without my
+        // changes" is still an answer that can be honoured. Nothing to ask → falls straight through.
+        if (CustomContentGate.askFirst(lastScreen, () -> launchWorldNow(lastScreen, sameSeed, forceSurvival))) {
+            return;
+        }
+        launchWorldNow(lastScreen, sameSeed, forceSurvival);
+    }
+
+    private static void launchWorldNow(Screen lastScreen, boolean sameSeed, boolean forceSurvival) {
         Minecraft mc = Minecraft.getInstance();
         MinecraftServer server = mc.getSingleplayerServer();
         if (server == null) {

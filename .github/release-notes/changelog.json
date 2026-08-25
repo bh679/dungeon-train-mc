@@ -8553,6 +8553,22 @@
       "released": true,
       "released_in": "v0.646.0",
       "released_at": "2026-08-24T23:55:25Z"
+    },
+    {
+      "id": "custom-content-choice-before-world",
+      "version": "0.647.0",
+      "type": "fix",
+      "title": "Choose your train before the world starts",
+      "summary": "If you've made your own train designs, Dungeon Train now asks what you want to do the moment you start a run \u2014 not after the world has already been built around the answer. Pick Custom Train to play your designs, or Default Train to play the built-in ones with your stats counting as normal.",
+      "highlights": [
+        "The question is asked when you press New World or reboard, so choosing Default Train means a world that never loads the custom content at all.",
+        "Two clear cards instead of a wall of text, with a ? button explaining what Free Play costs.",
+        "The Free Play badge no longer lingers on saves where it no longer applies \u2014 it clears itself on your next login."
+      ],
+      "date": "2026-08-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
