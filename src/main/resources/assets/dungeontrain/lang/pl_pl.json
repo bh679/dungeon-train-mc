@@ -1289,6 +1289,8 @@
   "dungeontrain.leaderboard.playtime_run.header": "Kto przeżył najdłużej w jednym przejeździe.",
   "dungeontrain.leaderboard.carriages_total.header": "Osiągnięte wagony, zsumowane ze wszystkich żyć.",
   "dungeontrain.leaderboard.carriages_run.header": "Kto zaszedł najdalej w jednym przejeździe.",
+  "dungeontrain.leaderboard.distance_run.header": "Kto oddalił się najbardziej od miejsca startu w jednym przejeździe, w metrach.",
+  "dungeontrain.leaderboard.distance_total.header": "Pokonany dystans, zsumowany ze wszystkich żyć.",
   "dungeontrain.leaderboard.pacifist_carriages.header": "Kto zaszedł najdalej w jednym przejeździe, nie krzywdząc nikogo.",
   "dungeontrain.leaderboard.friends_run.header": "Kto zawarł najwięcej przyjaźni w jednym przejeździe.",
   "dungeontrain.leaderboard.friends_total.header": "Zawarte przyjaźnie, zsumowane ze wszystkich żyć.",

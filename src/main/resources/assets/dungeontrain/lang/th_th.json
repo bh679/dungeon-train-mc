@@ -1265,6 +1265,8 @@
   "dungeontrain.leaderboard.playtime_run.header": "ใครมีชีวิตรอดนานที่สุดในการเดินทางครั้งเดียว",
   "dungeontrain.leaderboard.carriages_total.header": "จำนวนตู้ที่ไปถึง รวมจากทุกชีวิต",
   "dungeontrain.leaderboard.carriages_run.header": "ใครไปได้ไกลที่สุดในการเดินทางครั้งเดียว",
+  "dungeontrain.leaderboard.distance_run.header": "ใครไปได้ไกลจากจุดเริ่มต้นมากที่สุดในการเดินทางครั้งเดียว วัดเป็นเมตร",
+  "dungeontrain.leaderboard.distance_total.header": "ระยะทางที่ผ่านไป รวมจากทุกชีวิต",
   "dungeontrain.leaderboard.pacifist_carriages.header": "ใครไปได้ไกลที่สุดในการเดินทางเดียวโดยไม่ทำร้ายผู้ใด",
   "dungeontrain.leaderboard.friends_run.header": "ใครผูกมิตรได้มากที่สุดในการเดินทางครั้งเดียว",
   "dungeontrain.leaderboard.friends_total.header": "มิตรที่ได้มา รวมจากทุกชีวิต",

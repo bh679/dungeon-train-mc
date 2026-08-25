@@ -1277,6 +1277,8 @@
   "dungeontrain.leaderboard.playtime_run.header": "Qui a survécu le plus longtemps en une seule partie.",
   "dungeontrain.leaderboard.carriages_total.header": "Wagons atteints, cumulés sur toutes les vies.",
   "dungeontrain.leaderboard.carriages_run.header": "Qui est allé le plus loin en une seule partie.",
+  "dungeontrain.leaderboard.distance_run.header": "Qui s'est le plus éloigné du point de départ d'une partie, en mètres.",
+  "dungeontrain.leaderboard.distance_total.header": "Distance parcourue, cumulée sur toutes les vies.",
   "dungeontrain.leaderboard.pacifist_carriages.header": "Qui est allé le plus loin en une partie sans faire de mal à personne.",
   "dungeontrain.leaderboard.friends_run.header": "Qui s'est fait le plus d'amis en une seule partie.",
   "dungeontrain.leaderboard.friends_total.header": "Amis rencontrés, cumulés sur toutes les vies.",

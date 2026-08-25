@@ -1289,6 +1289,8 @@
   "dungeontrain.leaderboard.playtime_run.header": "Кто дольше всех продержался за один заезд.",
   "dungeontrain.leaderboard.carriages_total.header": "Достигнутые вагоны, суммарно за все жизни.",
   "dungeontrain.leaderboard.carriages_run.header": "Кто дальше всех продвинулся за один заезд.",
+  "dungeontrain.leaderboard.distance_run.header": "Кто дальше всех удалился от точки старта за один заезд, в метрах.",
+  "dungeontrain.leaderboard.distance_total.header": "Пройденное расстояние, суммарно за все жизни.",
   "dungeontrain.leaderboard.pacifist_carriages.header": "Кто дальше всех продвинулся за заезд, не причинив никому вреда.",
   "dungeontrain.leaderboard.friends_run.header": "Кто завёл больше всего друзей за один заезд.",
   "dungeontrain.leaderboard.friends_total.header": "Заведённые друзья, суммарно за все жизни.",

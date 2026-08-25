@@ -14,7 +14,7 @@ import net.neoforged.neoforge.event.tick.ServerTickEvent;
  *
  * <p>Both halves are deliberately unhurried. The tick asks for at most one board every
  * {@link #REFRESH_PERIOD_TICKS} and only once a leaderboard book has actually been rolled into the
- * world, so the twenty-two boards cycle in about eleven minutes and a server whose loot never
+ * world, so the twenty-four boards cycle in about twelve minutes and a server whose loot never
  * produces one never contacts the relay at all. The relay serves these behind a five-minute edge
  * cache anyway — a board that is a few minutes old is not wrong in any way a reader could notice.</p>
  *

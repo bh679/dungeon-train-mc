@@ -1289,6 +1289,8 @@
   "dungeontrain.leaderboard.playtime_run.header": {"author": "Opus 5 (Claude)", "reviewer": ""},
   "dungeontrain.leaderboard.carriages_total.header": {"author": "Opus 5 (Claude)", "reviewer": ""},
   "dungeontrain.leaderboard.carriages_run.header": {"author": "Opus 5 (Claude)", "reviewer": ""},
+  "dungeontrain.leaderboard.distance_run.header": {"author": "Opus 5 (Claude)", "reviewer": ""},
+  "dungeontrain.leaderboard.distance_total.header": {"author": "Opus 5 (Claude)", "reviewer": ""},
   "dungeontrain.leaderboard.pacifist_carriages.header": {"author": "Opus 5 (Claude)", "reviewer": ""},
   "dungeontrain.leaderboard.friends_run.header": {"author": "Opus 5 (Claude)", "reviewer": ""},
   "dungeontrain.leaderboard.friends_total.header": {"author": "Opus 5 (Claude)", "reviewer": ""},

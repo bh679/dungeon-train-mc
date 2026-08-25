@@ -30,7 +30,7 @@ class DeathDetailReporterTest {
             210.5, 190.0);
 
     private static final DeathDetailReporter.Feats FEATS =
-            new DeathDetailReporter.Feats(2, 17L, 31, 24);
+            new DeathDetailReporter.Feats(2, 17L, 31, 24, 480000L);
 
     @Test
     @DisplayName("all 12 narrative fields round-trip verbatim")
@@ -99,6 +99,8 @@ class DeathDetailReporterTest {
         assertEquals(17L, out.get("lifeEchoesKilled").getAsLong());
         assertEquals(31, out.get("maxCarriagesNoChest").getAsInt());
         assertEquals(24, out.get("pacifistCarriages").getAsInt());
+        // Displacement, not the lifeDistance odometer that rides alongside it in the same payload.
+        assertEquals(480000L, out.get("lifeDistanceTravelled").getAsLong());
     }
 
     @Test
@@ -110,5 +112,6 @@ class DeathDetailReporterTest {
         assertEquals(0L, out.get("lifeEchoesKilled").getAsLong());
         assertEquals(0, out.get("maxCarriagesNoChest").getAsInt());
         assertEquals(0, out.get("pacifistCarriages").getAsInt());
+        assertEquals(0L, out.get("lifeDistanceTravelled").getAsLong());
     }
 }

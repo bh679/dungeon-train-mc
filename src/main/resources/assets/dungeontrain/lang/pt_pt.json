@@ -1277,6 +1277,8 @@
   "dungeontrain.leaderboard.playtime_run.header": "Quem sobreviveu mais tempo numa única viagem.",
   "dungeontrain.leaderboard.carriages_total.header": "Vagões alcançados, somados ao longo de todas as vidas.",
   "dungeontrain.leaderboard.carriages_run.header": "Quem chegou mais longe numa única viagem.",
+  "dungeontrain.leaderboard.distance_run.header": "Quem mais se afastou do ponto de partida numa única viagem, em metros.",
+  "dungeontrain.leaderboard.distance_total.header": "Distância percorrida, somada em todas as vidas.",
   "dungeontrain.leaderboard.pacifist_carriages.header": "Quem chegou mais longe numa viagem sem magoar ninguém.",
   "dungeontrain.leaderboard.friends_run.header": "Quem fez mais amigos numa única viagem.",
   "dungeontrain.leaderboard.friends_total.header": "Amigos feitos, somados ao longo de todas as vidas.",

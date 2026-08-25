@@ -19,6 +19,8 @@ public enum LeaderboardCategory {
     PLAYTIME_RUN("playtime_run", "Longest Single Run", Format.DURATION),
     CARRIAGES_TOTAL("carriages_total", "Carriages Reached", Format.COUNT),
     CARRIAGES_RUN("carriages_run", "Furthest In One Run", Format.COUNT),
+    DISTANCE_RUN("distance_run", "Furthest From The Start", Format.DISTANCE),
+    DISTANCE_TOTAL("distance_total", "Distance Covered, All Lives", Format.DISTANCE),
     PACIFIST_CARRIAGES("pacifist_carriages", "Furthest Without Harm", Format.COUNT),
     FRIENDS_RUN("friends_run", "Most Friends In One Run", Format.COUNT),
     FRIENDS_TOTAL("friends_total", "Most Friends Made", Format.COUNT),
@@ -39,7 +41,7 @@ public enum LeaderboardCategory {
     DONATIONS("donations", "Kindest Benefactors", Format.MONEY);
 
     /** How a board's numbers read. The score itself is always an integer on the wire. */
-    public enum Format { COUNT, DURATION, MONEY }
+    public enum Format { COUNT, DURATION, MONEY, DISTANCE }
 
     private final String id;
     private final String title;
@@ -88,6 +90,9 @@ public enum LeaderboardCategory {
         return switch (format) {
             case DURATION -> duration(score);
             case MONEY -> "$" + score;
+            // No space before the unit: the column is right-justified against a fixed margin, and
+            // every pixel it does not spend is one a long name gets to keep.
+            case DISTANCE -> score + "m";
             case COUNT -> Long.toString(score);
         };
     }

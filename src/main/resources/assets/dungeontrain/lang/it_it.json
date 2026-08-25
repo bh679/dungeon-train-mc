@@ -1277,6 +1277,8 @@
   "dungeontrain.leaderboard.playtime_run.header": "Chi è sopravvissuto più a lungo in una singola partita.",
   "dungeontrain.leaderboard.carriages_total.header": "Vagoni raggiunti, sommati su tutte le vite.",
   "dungeontrain.leaderboard.carriages_run.header": "Chi è arrivato più lontano in una sola partita.",
+  "dungeontrain.leaderboard.distance_run.header": "Chi si è allontanato di più dal punto di partenza in una sola partita, in metri.",
+  "dungeontrain.leaderboard.distance_total.header": "Distanza percorsa, sommata su tutte le vite.",
   "dungeontrain.leaderboard.pacifist_carriages.header": "Chi è arrivato più lontano in una partita senza far male a nessuno.",
   "dungeontrain.leaderboard.friends_run.header": "Chi ha fatto più amicizie in una singola partita.",
   "dungeontrain.leaderboard.friends_total.header": "Amicizie strette, sommate su tutte le vite.",

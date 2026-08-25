@@ -21,7 +21,8 @@ class LeaderboardCategoryTest {
 
     /** Must equal leaderboard.js's SCORE_CATEGORIES keys + RESIDENT_CATEGORIES, in any order. */
     private static final List<String> RELAY_IDS = List.of(
-        "playtime_total", "playtime_run", "carriages_total", "carriages_run", "pacifist_carriages",
+        "playtime_total", "playtime_run", "carriages_total", "carriages_run",
+        "distance_run", "distance_total", "pacifist_carriages",
         "friends_run", "friends_total", "lives", "chests_opened", "books_written", "books_read",
         "advancements", "echoes_killed_run", "echoes_killed_total", "carriages_no_chest",
         "deathnotes_written", "deathnotes_fought", "lovenotes_written", "lovenotes_received",
@@ -62,5 +63,6 @@ class LeaderboardCategoryTest {
         assertEquals("42", LeaderboardCategory.LIVES.render(42));
         assertEquals("2h 0m", LeaderboardCategory.PLAYTIME_RUN.render(7200));
         assertEquals("$120", LeaderboardCategory.DONATIONS.render(120));
+        assertEquals("8400m", LeaderboardCategory.DISTANCE_RUN.render(8400));
     }
 }

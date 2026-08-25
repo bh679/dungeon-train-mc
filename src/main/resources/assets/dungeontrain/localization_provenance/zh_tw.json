@@ -1269,6 +1269,8 @@
       "dungeontrain.leaderboard.playtime_run.header",
       "dungeontrain.leaderboard.carriages_total.header",
       "dungeontrain.leaderboard.carriages_run.header",
+      "dungeontrain.leaderboard.distance_run.header",
+      "dungeontrain.leaderboard.distance_total.header",
       "dungeontrain.leaderboard.pacifist_carriages.header",
       "dungeontrain.leaderboard.friends_run.header",
       "dungeontrain.leaderboard.friends_total.header",

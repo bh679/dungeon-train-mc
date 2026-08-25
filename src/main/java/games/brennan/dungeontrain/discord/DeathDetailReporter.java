@@ -54,7 +54,7 @@ public final class DeathDetailReporter {
     }
 
     /**
-     * The four per-death figures the public leaderboards need that {@link DeathStatsPacket} does not
+     * The five per-death figures the public leaderboards need that {@link DeathStatsPacket} does not
      * carry. Kept off the packet on purpose: the death screen doesn't display any of them, and the
      * packet is synced to every dying client, so widening it would spend bandwidth on values nothing
      * renders. They are read straight off the run state at the death site instead.
@@ -62,9 +62,16 @@ public final class DeathDetailReporter {
      * <p>{@code echoesKilled} and {@code maxCarriagesNoChest} are this run's; {@code lifeEchoesKilled}
      * is the cross-world total (accrued live at each kill, like echoes encountered);
      * {@code pacifistCarriages} is this run's carriages passed while dealing no damage at all.</p>
+     *
+     * <p>{@code lifeDisplacement} is metres of DISPLACEMENT summed over every life — how far from
+     * where each life began the player got, not how far they walked. This run's own displacement is
+     * already on {@code /telemetry/run-summary} as {@code distanceTravelled}, so only the lifetime
+     * sum needs carrying here. Neither is the {@code lifeDistance} odometer sent above, which is a
+     * path length a player inflates by pacing a carriage.</p>
      */
-    public record Feats(int echoesKilled, long lifeEchoesKilled, int maxCarriagesNoChest, int pacifistCarriages) {
-        static final Feats NONE = new Feats(0, 0L, 0, 0);
+    public record Feats(int echoesKilled, long lifeEchoesKilled, int maxCarriagesNoChest, int pacifistCarriages,
+                        long lifeDisplacement) {
+        static final Feats NONE = new Feats(0, 0L, 0, 0, 0L);
     }
 
     private DeathDetailReporter() {}
@@ -134,11 +141,12 @@ public final class DeathDetailReporter {
         body.addProperty("lifeDamageTaken", s.lifeDamageTaken());
 
         // Leaderboard-only figures. New in this payload, so every board built on them starts empty
-        // and fills from here forward — there is no history to backfill for any of the four.
+        // and fills from here forward — there is no history to backfill for any of the five.
         body.addProperty("echoesKilled", feats.echoesKilled());
         body.addProperty("lifeEchoesKilled", feats.lifeEchoesKilled());
         body.addProperty("maxCarriagesNoChest", feats.maxCarriagesNoChest());
         body.addProperty("pacifistCarriages", feats.pacifistCarriages());
+        body.addProperty("lifeDistanceTravelled", feats.lifeDisplacement());
         return body;
     }
 

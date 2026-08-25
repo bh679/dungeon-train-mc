@@ -1277,6 +1277,8 @@
   "dungeontrain.leaderboard.playtime_run.header": "Wer in einem einzigen Lauf am längsten überlebt hat.",
   "dungeontrain.leaderboard.carriages_total.header": "Erreichte Waggons, über alle Leben zusammengezählt.",
   "dungeontrain.leaderboard.carriages_run.header": "Wer es in einem Lauf am weitesten geschafft hat.",
+  "dungeontrain.leaderboard.distance_run.header": "Wer sich in einem Lauf am weitesten vom Startpunkt entfernt hat, in Metern.",
+  "dungeontrain.leaderboard.distance_total.header": "Zurückgelegte Strecke, über alle Leben zusammengezählt.",
   "dungeontrain.leaderboard.pacifist_carriages.header": "Wer es in einem Lauf am weitesten geschafft hat, ohne einer Seele zu schaden.",
   "dungeontrain.leaderboard.friends_run.header": "Wer in einem einzigen Lauf die meisten Freunde gefunden hat.",
   "dungeontrain.leaderboard.friends_total.header": "Gewonnene Freunde, über alle Leben zusammengezählt.",

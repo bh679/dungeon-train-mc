@@ -112,7 +112,7 @@ public final class LeaderboardPool {
 
     /**
      * Fetch at most ONE board, rotating through the categories. Called on the shared-book refresh
-     * tick, so the whole set cycles in about eleven minutes and no tick ever issues more than one
+     * tick, so the whole set cycles in about twelve minutes and no tick ever issues more than one
      * request. Does nothing until a book has actually been rolled.
      */
     public static void warmNext() {
