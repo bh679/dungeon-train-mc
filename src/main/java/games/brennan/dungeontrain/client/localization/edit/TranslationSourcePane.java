@@ -90,20 +90,37 @@ public final class TranslationSourcePane extends AbstractWidget {
     public void place(int x, int y, int height) {
         setX(x);
         setY(y);
-        setHeight(height);
+        setHeight(Math.max(headerHeight(), height));
         scroll = Mth.clamp(scroll, 0, maxScroll());
     }
 
+    /**
+     * The heading is not part of what scrolls. "English — current translation is AI, unreviewed"
+     * is the reason the string is in the queue, and it would be the first thing to slide out of
+     * sight on exactly the long text that needs scrolling.
+     */
+    private int headerHeight() {
+        return font.lineHeight + GAP;
+    }
+
+    private int bodyY() {
+        return getY() + headerHeight();
+    }
+
+    private int bodyHeight() {
+        return Math.max(0, height - headerHeight());
+    }
+
     private int maxScroll() {
-        return TranslationSourceLayout.maxScroll(contentHeight, height);
+        return TranslationSourceLayout.maxScroll(
+            contentHeight - headerHeight(), bodyHeight());
     }
 
     @Override
     protected void renderWidget(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
-        g.enableScissor(getX(), getY(), getX() + width, getY() + height);
-        int y = getY() - scroll;
-        g.drawString(font, heading, getX(), y, headingColour, false);
-        y += font.lineHeight + GAP;
+        g.drawString(font, heading, getX(), getY(), headingColour, false);
+        g.enableScissor(getX(), bodyY(), getX() + width, getY() + height);
+        int y = bodyY() - scroll;
         for (FormattedCharSequence line : sourceLines) {
             g.drawString(font, line, getX(), y, SOURCE_COLOUR, false);
             y += font.lineHeight;
@@ -118,7 +135,8 @@ public final class TranslationSourcePane extends AbstractWidget {
             }
         }
         g.disableScissor();
-        scrollbar.render(g, getX(), getY(), width, height, contentHeight, scroll, maxScroll());
+        scrollbar.render(g, getX(), bodyY(), width, bodyHeight(), contentHeight - headerHeight(),
+            scroll, maxScroll());
     }
 
     /**
@@ -132,7 +150,8 @@ public final class TranslationSourcePane extends AbstractWidget {
             return false;
         }
         scrollbar.begin();
-        scroll = scrollbar.scrollFor(mouseY, getY(), height, contentHeight, maxScroll());
+        scroll = scrollbar.scrollFor(mouseY, bodyY(), bodyHeight(), contentHeight - headerHeight(),
+            maxScroll());
         return true;
     }
 
@@ -142,7 +161,8 @@ public final class TranslationSourcePane extends AbstractWidget {
         if (!scrollbar.isDragging()) {
             return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
         }
-        scroll = scrollbar.scrollFor(mouseY, getY(), height, contentHeight, maxScroll());
+        scroll = scrollbar.scrollFor(mouseY, bodyY(), bodyHeight(), contentHeight - headerHeight(),
+            maxScroll());
         return true;
     }
 
