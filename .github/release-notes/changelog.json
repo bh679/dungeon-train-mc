@@ -8662,9 +8662,9 @@
         "Finds both the English entry and every place the code uses it"
       ],
       "date": "2026-08-25",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.652.0",
+      "released_at": "2026-08-25T10:46:10Z"
     }
   ]
 }
