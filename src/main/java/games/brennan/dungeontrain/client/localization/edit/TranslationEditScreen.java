@@ -7,10 +7,6 @@ import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.FormattedText;
-import net.minecraft.util.FormattedCharSequence;
-
-import java.util.List;
 
 /**
  * Edits one translation unit: the English above, the translation below, and nothing else.
@@ -28,25 +24,29 @@ public final class TranslationEditScreen extends Screen {
     private static final int GAP = 4;
     private static final int TOP = 30;
     private static final int LABEL_COLOUR = 0xFFA0A0A0;
-    private static final int SOURCE_COLOUR = 0xFFFFFFFF;
     private static final int NOTE_COLOUR = 0xFFD8A657;
     private static final int AI_COLOUR = 0xFF5B9BD5;
-    /** The reviewer's reply — the explorer's own note colour, and the list widget's ● tag. */
-    private static final int REPLY_COLOUR = 0xFFE8A33D;
-    /** Lines of English shown before it is truncated; the longest shipped string is ~314 chars. */
-    private static final int MAX_SOURCE_LINES = 6;
-    /** Lines of a reviewer's reply shown before it is truncated; the relay caps one at 1000 chars. */
-    private static final int MAX_REPLY_LINES = 4;
+    /** The gap between the English and the edit box, which is also the divider's grab area. */
+    private static final int SPLITTER_H = GAP * 3;
+
+    /**
+     * The height the translator last dragged the English to, or null while they never have.
+     *
+     * <p>Static on purpose, and only for as long as the game is running: having to re-drag the
+     * divider on every string would make dragging it not worth doing. Re-clamped on every
+     * {@code init}, so a resized window or a shorter string cannot strand it out of range.</p>
+     */
+    private static Integer preferredPaneHeight;
 
     private final TranslationScreen parent;
     private final String locale;
     private final TranslationUnit unit;
 
     private MultiLineEditBox editor;
-    private List<FormattedCharSequence> sourceLines = List.of();
-    /** The reviewer's reply about this string, wrapped; empty when nobody has written one. */
-    private List<FormattedCharSequence> replyLines = List.of();
-    private Component replyBy = CommonComponents.EMPTY;
+    /** The English, and any reviewer's reply about it — the whole of it, scrolled if need be. */
+    private TranslationSourcePane sourcePane;
+    /** Null when the English already fits and there is nothing to trade between the two. */
+    private TranslationPaneSplitter splitter;
     /** Flips between "good as is" and "put it back"; relabelled in place, never rebuilt. */
     private Button dismissButton;
 
@@ -60,35 +60,49 @@ public final class TranslationEditScreen extends Screen {
     @Override
     protected void init() {
         int contentWidth = width - MARGIN * 2;
-        sourceLines = font.split(FormattedText.of(unit.source().isEmpty()
-            ? Component.translatable("gui.dungeontrain.translate.no_source").getString()
-            : unit.source()), contentWidth);
-        if (sourceLines.size() > MAX_SOURCE_LINES) {
-            sourceLines = sourceLines.subList(0, MAX_SOURCE_LINES);
-        }
 
         // A reviewer's reply about this exact string, if there is one. It goes ABOVE the box the
         // player is about to type in, because it is the reason they are here — a rejection they
         // could not otherwise explain (see TranslationReviewNotes).
         TranslationSubmissionsClient.ReviewNote reply = TranslationReviewNotes.forUnit(unit);
-        if (reply != null) {
-            replyLines = font.split(FormattedText.of(reply.note()), contentWidth);
-            if (replyLines.size() > MAX_REPLY_LINES) {
-                replyLines = replyLines.subList(0, MAX_REPLY_LINES);
-            }
-            replyBy = Component.translatable("gui.dungeontrain.translate.edit.reply",
+        Component replyBy = reply == null ? CommonComponents.EMPTY
+            : Component.translatable("gui.dungeontrain.translate.edit.reply",
                 reply.noteBy() == null || reply.noteBy().isBlank() ? "admin" : reply.noteBy());
+        Component heading = unit.aiUnreviewed()
+            ? Component.translatable("gui.dungeontrain.translate.edit.source_ai")
+            : Component.translatable("gui.dungeontrain.translate.edit.source");
+        sourcePane = TranslationSourcePane.wrap(font, contentWidth, heading,
+            unit.aiUnreviewed() ? AI_COLOUR : LABEL_COLOUR,
+            unit.source().isEmpty()
+                ? Component.translatable("gui.dungeontrain.translate.no_source").getString()
+                : unit.source(),
+            replyBy, reply == null ? "" : reply.note());
+
+        int bottomRow = height - MARGIN - ROW_H;
+        int noteHeight = noteHeight();
+        // What is left for the English once the box the translator types in keeps its two rows.
+        int available = bottomRow - GAP - noteHeight - ROW_H * 2 - SPLITTER_H - TOP;
+        int content = sourcePane.contentHeight();
+        int paneHeight = preferredPaneHeight == null
+            ? TranslationSourceLayout.viewportHeight(content, height, available, font.lineHeight)
+            : TranslationSourceLayout.draggedHeight(
+                preferredPaneHeight, content, available, font.lineHeight);
+        sourcePane.place(MARGIN, TOP, paneHeight);
+        addRenderableWidget(sourcePane);
+
+        // Only where there is something to trade. A short string whose English already fits has
+        // no room to give the edit box, so it gets a plain gap rather than a handle that does
+        // nothing when pulled.
+        if (TranslationSourceLayout.isResizable(content, available, font.lineHeight)) {
+            splitter = addRenderableWidget(new TranslationPaneSplitter(
+                MARGIN, TOP + paneHeight, contentWidth, SPLITTER_H, this::onSplitterDragged));
+            splitter.setTooltip(Tooltip.create(
+                Component.translatable("gui.dungeontrain.translate.edit.resize.tip")));
         } else {
-            replyLines = List.of();
-            replyBy = CommonComponents.EMPTY;
+            splitter = null;
         }
 
-        int replyHeight = replyLines.isEmpty() ? 0
-            : font.lineHeight * (replyLines.size() + 1) + GAP * 2;
-        int editorTop = TOP + font.lineHeight * (sourceLines.size() + 2) + GAP * 3 + replyHeight;
-        int bottomRow = height - MARGIN - ROW_H;
-        int noteHeight = unit.type() == TranslationUnit.Type.BOOK
-            || !TranslationOverrides.isLive(locale) ? font.lineHeight + GAP : 0;
+        int editorTop = TOP + paneHeight + SPLITTER_H;
         int editorHeight = Math.max(ROW_H * 2, bottomRow - GAP - noteHeight - editorTop);
 
         editor = new MultiLineEditBox(font, MARGIN, editorTop, contentWidth, editorHeight,
@@ -120,6 +134,48 @@ public final class TranslationEditScreen extends Screen {
         x += buttonWidth + GAP;
         addRenderableWidget(Button.builder(CommonComponents.GUI_CANCEL, b -> onClose())
             .bounds(x, bottomRow, buttonWidth, ROW_H).build());
+    }
+
+    /**
+     * Give the keyboard back after a drag or a scroll.
+     *
+     * <p>Clicking the divider or the source scrollbar makes it the focused child, which silently
+     * leaves the translator typing into nothing. Handing focus back has to wait for the release —
+     * moving it mid-drag would end the drag it is meant to be following.</p>
+     */
+    @Override
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        boolean handled = super.mouseReleased(mouseX, mouseY, button);
+        if (getFocused() == splitter || getFocused() == sourcePane) {
+            setFocused(editor);
+        }
+        return handled;
+    }
+
+    /**
+     * Follow the divider. The widgets are moved where they stand rather than rebuilt: a rebuild
+     * would throw away what the translator has typed and where their cursor is, which is a high
+     * price for dragging a line.
+     */
+    private void onSplitterDragged(double mouseY) {
+        int bottomRow = height - MARGIN - ROW_H;
+        int noteHeight = noteHeight();
+        int available = bottomRow - GAP - noteHeight - ROW_H * 2 - SPLITTER_H - TOP;
+        int paneHeight = TranslationSourceLayout.draggedHeight(
+            (int) Math.round(mouseY) - TOP, sourcePane.contentHeight(), available, font.lineHeight);
+        preferredPaneHeight = paneHeight;
+
+        sourcePane.place(MARGIN, TOP, paneHeight);
+        splitter.setY(TOP + paneHeight);
+        int editorTop = TOP + paneHeight + SPLITTER_H;
+        editor.setY(editorTop);
+        editor.setHeight(Math.max(ROW_H * 2, bottomRow - GAP - noteHeight - editorTop));
+    }
+
+    /** The one-line warning under the edit box, when this string gets one. */
+    private int noteHeight() {
+        return unit.type() == TranslationUnit.Type.BOOK || !TranslationOverrides.isLive(locale)
+            ? font.lineHeight + GAP : 0;
     }
 
     private boolean isDismissed() {
@@ -186,27 +242,6 @@ public final class TranslationEditScreen extends Screen {
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
         super.render(g, mouseX, mouseY, partialTick);
         g.drawCenteredString(font, title, width / 2, 8, 0xFFFFFFFF);
-
-        int y = TOP;
-        Component heading = unit.aiUnreviewed()
-            ? Component.translatable("gui.dungeontrain.translate.edit.source_ai")
-            : Component.translatable("gui.dungeontrain.translate.edit.source");
-        g.drawString(font, heading, MARGIN, y, unit.aiUnreviewed() ? AI_COLOUR : LABEL_COLOUR, false);
-        y += font.lineHeight + GAP;
-        for (FormattedCharSequence line : sourceLines) {
-            g.drawString(font, line, MARGIN, y, SOURCE_COLOUR, false);
-            y += font.lineHeight;
-        }
-
-        if (!replyLines.isEmpty()) {
-            y += GAP;
-            g.drawString(font, replyBy, MARGIN, y, REPLY_COLOUR, false);
-            y += font.lineHeight;
-            for (FormattedCharSequence line : replyLines) {
-                g.drawString(font, line, MARGIN, y, SOURCE_COLOUR, false);
-                y += font.lineHeight;
-            }
-        }
 
         Component note = null;
         if (!TranslationOverrides.isLive(locale)) {
