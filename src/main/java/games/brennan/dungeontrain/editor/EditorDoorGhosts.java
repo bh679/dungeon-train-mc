@@ -70,7 +70,9 @@ public final class EditorDoorGhosts {
     // --- Snapshot ------------------------------------------------------------
 
     /**
-     * Every door cell of every registered portal room plot, at the current world dims.
+     * The lower cell of every corridor door at every registered portal room plot, at the current
+     * world dims — two per room. The renderer draws the door's upper half from the block above, so
+     * a base is the whole door.
      *
      * <p>Absolute positions, like {@link EditorStrayBlocks#snapshot}: the ghosts are drawn in world
      * space, and a door cell sits one column <i>outside</i> its plot, so it has no plot-local
@@ -82,12 +84,12 @@ public final class EditorDoorGhosts {
      */
     public static List<BlockPos> snapshot(CarriageDims dims) {
         List<String> names = PortalRoomEditor.names();
-        List<BlockPos> out = new ArrayList<>(names.size() * PortalRoomDoorCells.CELLS_PER_ROOM);
+        List<BlockPos> out = new ArrayList<>(names.size() * 2);
         for (String name : names) {
             BlockPos origin = PortalRoomEditor.plotOrigin(name, dims);
             if (origin == null) continue;
             Vec3i size = PortalRoomEditor.plotSize(name, dims);
-            out.addAll(PortalRoomDoorCells.forRoom(origin, size));
+            out.addAll(PortalRoomDoorCells.doorBases(origin, size));
         }
         return out;
     }

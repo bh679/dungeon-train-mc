@@ -13,9 +13,13 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Server → client snapshot of the cells the two portal corridor doors occupy at each portal-room
- * editor plot. Drives the amber ghost cubes that show an author where the corridors open onto the
+ * Server → client snapshot of where the two portal corridor doors stand at each portal-room editor
+ * plot. Drives the translucent door ghosts that show an author where the corridors open onto the
  * room they are building.
+ *
+ * <p>Each position is a door's <b>lower</b> cell; the renderer draws the upper half from the block
+ * above it. One position per door rather than one per cell, because a door is one object — see
+ * {@link games.brennan.dungeontrain.portal.PortalRoomDoorCells#doorBases}.</p>
  *
  * <p>Positions are absolute, like {@link EditorStrayBlocksPacket}'s, and here they have to be: a
  * door cell sits one column <b>outside</b> its plot's box, so it has no plot-local coordinate. An

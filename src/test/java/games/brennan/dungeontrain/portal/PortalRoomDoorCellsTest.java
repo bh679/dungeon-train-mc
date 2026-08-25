@@ -34,6 +34,26 @@ class PortalRoomDoorCellsTest {
     }
 
     @Test
+    @DisplayName("doorBases names one cell per door — the lower half, with the upper implied above it")
+    void doorBases_areTheLowerCellOfEachDoor() {
+        BlockPos origin = new BlockPos(100, -60, 40);
+        Vec3i size = PortalRoomLayout.builtInSize(DEFAULT_DIMS);
+
+        List<BlockPos> bases = PortalRoomDoorCells.doorBases(origin, size);
+        List<BlockPos> all = PortalRoomDoorCells.forRoom(origin, size);
+
+        assertEquals(2, bases.size(), "one base per door, not one per cell");
+        assertEquals(List.of(new BlockPos(99, -59, 46), new BlockPos(111, -59, 46)), bases);
+
+        // The contract the renderer leans on: base plus the block above it is exactly the door.
+        for (BlockPos base : bases) {
+            assertTrue(all.contains(base), base + " must be a door cell");
+            assertTrue(all.contains(base.above()), base.above() + " must be the door's upper half");
+        }
+        assertEquals(all.size(), bases.size() * PortalRoomDoorCells.CELLS_PER_DOOR);
+    }
+
+    @Test
     @DisplayName("The door line is the same line roomOrigin centres the interior on, at every legal width")
     void doorZ_agreesWithRoomOriginCentring() {
         BlockPos entry = new BlockPos(0, 0, 0);

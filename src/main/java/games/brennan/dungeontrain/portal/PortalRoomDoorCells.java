@@ -71,6 +71,24 @@ public final class PortalRoomDoorCells {
     }
 
     /**
+     * The two <b>lower</b> door cells — one per end, in the same order {@link #forRoom} uses.
+     *
+     * <p>What the editor overlay actually ships, because a door is one object rather than two cells:
+     * the upper half is always the block above the lower, so naming the base says which half each
+     * cell is without a flag per position. {@link #forRoom} stays the full cell list for anything
+     * asking "is this cell a doorway", which is a different question.</p>
+     */
+    public static List<BlockPos> doorBases(BlockPos roomOrigin, Vec3i size) {
+        List<BlockPos> all = forRoom(roomOrigin, size);
+        if (all.isEmpty()) return List.of();
+        List<BlockPos> bases = new ArrayList<>(2);
+        for (int i = 0; i < all.size(); i += CELLS_PER_DOOR) {
+            bases.add(all.get(i));
+        }
+        return bases;
+    }
+
+    /**
      * World Z of the walkway centre line the two doorways sit on — the line an authored room must
      * leave clear from end to end.
      */
