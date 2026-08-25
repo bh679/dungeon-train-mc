@@ -2,7 +2,12 @@ package games.brennan.dungeontrain.client;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.builder.BuilderMode;
+import games.brennan.dungeontrain.builder.BuilderQuietRules;
+import games.brennan.dungeontrain.builder.BuilderWorldLayout;
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
+import games.brennan.dungeontrain.config.DungeonTrainConfig;
+import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.perf.PerfTestMode;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
@@ -82,6 +87,7 @@ public final class DevQuickWorldHandler {
             Component.literal("⏱").withStyle(ChatFormatting.BOLD);
 
     private static final String EDITOR_WORLD_PREFIX = "train editor ";
+    private static final String BUILDER_WORLD_PREFIX = "train builder ";
 
     private static final int GAP = 4;
 
@@ -93,6 +99,17 @@ public final class DevQuickWorldHandler {
     private static final ResourceKey<WorldPreset> DT_COMPAT_PRESET = ResourceKey.create(
             Registries.WORLD_PRESET,
             ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "dungeon_train_compat"));
+
+    /**
+     * Train Builder world: overworld only, 96 blocks tall, and pure void — everything in it
+     * (platform, track, carriages) is stamped once by {@code BuilderWorldSetup} when the client
+     * reports which mode was picked. Deliberately absent from the
+     * {@code minecraft:worldgen/world_preset/normal} tag, so it never shows up in the vanilla
+     * World Type cycle — the builder tiles are its only entry point.
+     */
+    private static final ResourceKey<WorldPreset> DT_BUILDER_PRESET = ResourceKey.create(
+            Registries.WORLD_PRESET,
+            ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "dungeon_train_builder"));
 
     private static WeakReference<Button> singleplayerRef = new WeakReference<>(null);
     private static WeakReference<Button> creativeNewWorldRef = new WeakReference<>(null);
@@ -203,7 +220,7 @@ public final class DevQuickWorldHandler {
     }
 
     static void launchEditorWorld(Screen lastScreen) {
-        String name = nextEditorWorldName();
+        String name = nextWorldName(EDITOR_WORLD_PREFIX);
         LevelSettings settings = new LevelSettings(
                 name,
                 GameType.CREATIVE,
@@ -215,13 +232,65 @@ public final class DevQuickWorldHandler {
         openLevel(name, settings, lastScreen, PerfTestMode.ENABLED);
     }
 
-    private static String nextEditorWorldName() {
+    /**
+     * Create the world a Train Builder mode is edited in: the smallest, quietest world that can
+     * hold what you're building.
+     *
+     * <ul>
+     *   <li><b>No train.</b> {@link PendingWorldChoices} is armed with
+     *       {@code startsWithTrain = false}, which {@code WorldLifecycleEvents} commits into
+     *       {@code DungeonTrainWorldData} on the overworld's Load. That one flag suppresses the
+     *       bootstrap spawn, the track corridor and every band — the builder never wanted a
+     *       train in view, and generating one is pure cost.</li>
+     *   <li><b>One dimension, 100 blocks tall, void</b> apart from a 300×300 platform — see
+     *       {@link #DT_BUILDER_PRESET}.</li>
+     *   <li><b>Always noon</b> (fixed in the dimension type) and <b>no clock, weather or natural
+     *       mob spawning</b> — see {@link BuilderQuietRules}, which
+     *       {@code BuilderQuietRuleEvents} re-applies on every start of a builder world, so this
+     *       creation-time bake is the default rather than the only enforcement.</li>
+     *   <li>Random seed — unlike the perf world, nothing here benefits from an identical
+     *       world every run.</li>
+     * </ul>
+     *
+     * <p>The chosen {@code mode} is not written into the world; the client-side
+     * {@link EditorAutoOpenHandler} carries it across the load and acts on arrival.</p>
+     */
+    public static void launchBuilderWorld(Screen lastScreen, BuilderMode mode) {
+        String name = nextWorldName(BUILDER_WORLD_PREFIX);
+        LOGGER.info("Builder world: creating '{}' (void platform, creative, no train) for mode '{}'",
+                name, mode.id());
+
+        // isPresent() requires all five fields, so pass defaults for the four we don't care
+        // about — a partial set would be ignored and the world would spawn a train.
+        PendingWorldChoices.set(
+                BuilderWorldLayout.TRAIN_Y,
+                false,
+                CarriageDims.DEFAULT,
+                DungeonTrainConfig.DEFAULT_GENERATION_MODE,
+                DungeonTrainConfig.DEFAULT_GROUP_SIZE);
+
+        GameRules rules = new GameRules();
+        BuilderQuietRules.apply(rules, null);   // no server yet — world is still being created
+
+        LevelSettings settings = new LevelSettings(
+                name,
+                GameType.CREATIVE,
+                false,
+                Difficulty.PEACEFUL,
+                true,
+                rules,
+                WorldDataConfiguration.DEFAULT);
+        openLevel(name, settings, lastScreen, DT_BUILDER_PRESET, false);
+    }
+
+    /** Lowest unused {@code <prefix><n>}, so repeat launches never reuse or clobber a save. */
+    private static String nextWorldName(String prefix) {
         LevelStorageSource source = Minecraft.getInstance().getLevelSource();
         int i = 1;
-        while (source.levelExists(EDITOR_WORLD_PREFIX + i)) {
+        while (source.levelExists(prefix + i)) {
             i++;
         }
-        return EDITOR_WORLD_PREFIX + i;
+        return prefix + i;
     }
 
     private static void launchCreativeWorld(Screen lastScreen) {
@@ -284,45 +353,59 @@ public final class DevQuickWorldHandler {
      *             unchanged; the dev perf button passes {@code true} directly.
      */
     private static void openLevel(String name, LevelSettings settings, Screen lastScreen, boolean perf) {
+        // A perf world is flat AND pinned-seed; those two happen to coincide there but are
+        // independent choices, so the overload below takes them separately.
+        // Flat wins over the compatible-terrain toggle for a perf world: the point is to remove
+        // chunk generation from the measurement, and Compatible Terrain is still noise terrain.
+        ResourceKey<WorldPreset> preset = perf
+                ? PerfTestMode.FLAT_PRESET
+                : (DungeonTrainCommonConfig.getDefaultCompatibleTerrain()
+                    ? DT_COMPAT_PRESET : DT_DEFAULT_PRESET);
+        openLevel(name, settings, lastScreen, preset, perf);
+    }
+
+    /**
+     * @param preset     world preset to generate with; falls back to the vanilla NORMAL
+     *                   dimensions if it isn't in the registry
+     * @param pinnedSeed use {@link PerfTestMode#seed()} instead of a random one. A pinned seed
+     *                   makes every benchmark run lay out an identical world AND an identical
+     *                   train — {@code DungeonTrainWorldData} derives the train's
+     *                   {@code generationSeed} from the world seed, so this one value covers
+     *                   both. Every non-benchmark launch keeps a random seed.
+     */
+    private static void openLevel(String name, LevelSettings settings, Screen lastScreen,
+                                  ResourceKey<WorldPreset> preset, boolean pinnedSeed) {
         // New World is one of the two moments a run starts, so it is one of the two moments the
         // custom-content question gets asked — before the world exists, while "run without my
         // changes" is an answer that can still be honoured. Nothing to ask → falls straight through.
         if (CustomContentGate.askFirst(settings.gameType(), lastScreen,
-                () -> openLevelNow(name, settings, lastScreen, perf))) {
+                () -> openLevelNow(name, settings, lastScreen, preset, pinnedSeed))) {
             return;
         }
-        openLevelNow(name, settings, lastScreen, perf);
+        openLevelNow(name, settings, lastScreen, preset, pinnedSeed);
     }
 
-    private static void openLevelNow(String name, LevelSettings settings, Screen lastScreen, boolean perf) {
+    private static void openLevelNow(String name, LevelSettings settings, Screen lastScreen,
+                                     ResourceKey<WorldPreset> preset, boolean pinnedSeed) {
         Minecraft mc = Minecraft.getInstance();
         mc.options.tutorialStep = TutorialSteps.NONE;
         mc.options.save();
-        // A pinned seed makes every benchmark run lay out an identical world AND an identical train
-        // — DungeonTrainWorldData derives the train's generationSeed from the world seed, so this
-        // one value covers both. Normal launches keep a random seed.
-        WorldOptions options = perf
+        WorldOptions options = pinnedSeed
                 ? new WorldOptions(PerfTestMode.seed(), true, false)
                 : WorldOptions.defaultWithRandomSeed();
         WorldOpenFlows flows = mc.createWorldOpenFlows();
-        flows.createFreshLevel(name, settings, options, dtPresetDimensions(perf), lastScreen);
+        flows.createFreshLevel(name, settings, options, presetDimensions(preset), lastScreen);
     }
 
-    private static Function<RegistryAccess, WorldDimensions> dtPresetDimensions(boolean perf) {
+    private static Function<RegistryAccess, WorldDimensions> presetDimensions(ResourceKey<WorldPreset> key) {
         return registryAccess -> {
             Registry<WorldPreset> presetRegistry =
                     registryAccess.registryOrThrow(Registries.WORLD_PRESET);
-            // Flat wins over the compatible-terrain toggle for a perf world: the point is to remove
-            // chunk generation from the measurement, and Compatible Terrain is still noise terrain.
-            ResourceKey<WorldPreset> key = perf
-                    ? PerfTestMode.FLAT_PRESET
-                    : (DungeonTrainCommonConfig.getDefaultCompatibleTerrain()
-                        ? DT_COMPAT_PRESET : DT_DEFAULT_PRESET);
             Optional<Holder.Reference<WorldPreset>> dt = presetRegistry.getHolder(key);
             if (dt.isPresent()) {
                 return dt.get().value().createWorldDimensions();
             }
-            LOGGER.warn("Quick-world: DT default preset not in registry; falling back to NORMAL.");
+            LOGGER.warn("Quick-world: preset {} not in registry; falling back to NORMAL.", key.location());
             return WorldPresets.createNormalWorldDimensions(registryAccess);
         };
     }

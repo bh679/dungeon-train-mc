@@ -142,6 +142,187 @@ public final class SharedCarriageClient {
         });
     }
 
+    // ---- Train Builder profiles (upload / list / publish / claim) ----
+
+    /**
+     * One of this player's builds as the relay lists it — metadata only, no blocks. The mirror of the
+     * relay's {@code listByOwner} row, minus the fields nothing in game reads.
+     *
+     * @param visibility {@code published} once it has been submitted to the train, else {@code profile}
+     * @param flag       the moderation verdict; a flagged build is withheld from the pool however
+     *                   published it is, which is the only way the player can be told why theirs
+     *                   isn't turning up
+     */
+    public record ProfileBuild(int id, String kind, String subKind, String buildName, String visibility,
+                               String source, String stage, String flag, int l, int h, int w,
+                               int changeCount, long updatedTs) {}
+
+    /**
+     * Upload a Train Builder save. {@code visibility} is {@code profile} for a build that is only in
+     * its author's profile so far; {@code kind}/{@code subKind}/{@code buildName} say which template it
+     * is, so a later save of the same template updates this row instead of making a second one.
+     *
+     * <p>Resolves to the relay's {@code (id, token, secret)}. The <b>secret</b> is the durable owner
+     * capability and is issued exactly once, here — {@link games.brennan.dungeontrain.builder.relay.BuilderRelayBuilds}
+     * persists it, because nothing can re-derive it and without it the build can never be published or
+     * claimed back.</p>
+     */
+    public static CompletableFuture<Optional<BuildUpload>> submitBuild(String ownerUuid, String ownerName,
+                                                                       String blocksBase64, int l, int h, int w,
+                                                                       String text, String stage, String mode,
+                                                                       String kind, String subKind, String buildName,
+                                                                       String visibility) {
+        JsonObject body = new JsonObject();
+        body.addProperty("uuid", ownerUuid == null ? "" : ownerUuid);
+        if (ownerName != null && !ownerName.isEmpty()) body.addProperty("name", ownerName);
+        body.addProperty("world", WORLD);
+        body.addProperty("blocks", blocksBase64);
+        body.add("dims", dims(l, h, w));
+        if (text != null && !text.isEmpty()) body.addProperty("text", text);
+        if (stage != null && !stage.isEmpty()) body.addProperty("stage", stage);
+        if (mode != null && !mode.isEmpty()) body.addProperty("mode", mode);
+        body.addProperty("kind", kind == null ? "" : kind);
+        if (subKind != null && !subKind.isEmpty()) body.addProperty("subKind", subKind);
+        if (buildName != null && !buildName.isEmpty()) body.addProperty("buildName", buildName);
+        body.addProperty("visibility", visibility == null ? "" : visibility);
+        // What made it. The relay keeps builder uploads and in-play captures in separate dedupe scopes,
+        // so an identical blob never collapses one into the other.
+        body.addProperty("source", "builder");
+        return post("/carriages/submit", body).thenApply(resp -> {
+            JsonObject o = okJson(resp);
+            if (o == null || !o.has("id")) {
+                logFailure("/carriages/submit", resp);
+                return Optional.empty();
+            }
+            return Optional.of(new BuildUpload(o.get("id").getAsInt(), str(o, "token"), str(o, "secret"),
+                    o.has("deduped") && o.get("deduped").getAsBoolean()));
+        });
+    }
+
+    /** What a build upload got back: the relay's id, the lease token, and the durable owner secret. */
+    public record BuildUpload(int id, String token, String secret, boolean deduped) {}
+
+    /**
+     * Every build the relay holds for {@code ownerUuid} — what the builder's My Builds screen lists.
+     *
+     * <p>Resolves to {@code null} when the relay could not be reached or its answer was unusable, and to
+     * an empty list when this player simply has no builds. The screen says different things about those
+     * two, so they must not collapse into one another.</p>
+     */
+    public static CompletableFuture<List<ProfileBuild>> listMine(String ownerUuid) {
+        JsonObject body = new JsonObject();
+        body.addProperty("uuid", ownerUuid == null ? "" : ownerUuid);
+        return post("/carriages/mine", body).thenApply(resp -> {
+            JsonObject o = okJson(resp);
+            if (o == null || !o.has("carriages") || !o.get("carriages").isJsonArray()) return null;
+            List<ProfileBuild> out = new java.util.ArrayList<>();
+            for (JsonElement el : o.getAsJsonArray("carriages")) {
+                if (!el.isJsonObject()) continue;
+                JsonObject r = el.getAsJsonObject();
+                if (!r.has("id")) continue;
+                JsonObject d = r.has("dims") && r.get("dims").isJsonObject() ? r.getAsJsonObject("dims") : null;
+                out.add(new ProfileBuild(r.get("id").getAsInt(), str(r, "kind"), str(r, "subKind"),
+                        str(r, "buildName"), str(r, "visibility"), str(r, "source"), str(r, "stage"),
+                        str(r, "flag"), intOf(d, "l"), intOf(d, "h"), intOf(d, "w"),
+                        intOf(r, "changeCount"), longOf(r, "updatedTs")));
+            }
+            return List.copyOf(out);
+        });
+    }
+
+    /**
+     * Put one of this player's builds on the train, or take it back to their profile. Authed by the
+     * build's owner {@code secret}.
+     *
+     * <p>{@link VisibilityResult#inUse()} is an ordinary answer rather than a failure: a build another
+     * world is actively holding cannot be withdrawn without stranding that session's edits, so the
+     * player is told to try again rather than the relay silently doing nothing.</p>
+     */
+    public static CompletableFuture<VisibilityResult> publish(int id, String secret, boolean publish) {
+        JsonObject body = new JsonObject();
+        body.addProperty("id", id);
+        body.addProperty("secret", secret == null ? "" : secret);
+        body.addProperty("publish", publish);
+        return post("/carriages/publish", body).thenApply(resp -> {
+            if (resp == null) return new VisibilityResult(CallStatus.ERROR, false, false, "");
+            int sc = resp.statusCode();
+            if (sc == 403) return new VisibilityResult(CallStatus.FORBIDDEN, false, false, "");
+            if (sc == 404) return new VisibilityResult(CallStatus.UNKNOWN, false, false, "");
+            JsonObject o = sc / 100 == 2 ? asObject(resp) : null;
+            if (o == null) return new VisibilityResult(CallStatus.ERROR, false, false, "");
+            boolean ok = o.has("ok") && o.get("ok").getAsBoolean();
+            boolean inUse = !ok && "in_use".equals(str(o, "reason"));
+            return new VisibilityResult(ok ? CallStatus.OK : CallStatus.ERROR, ok, inUse, str(o, "token"));
+        });
+    }
+
+    /**
+     * Outcome of a publish/withdraw: whether it took, whether the build is out on someone's train right
+     * now, and — on a withdraw — the fresh lease token the relay handed back so editing can continue.
+     */
+    public record VisibilityResult(CallStatus status, boolean ok, boolean inUse, String token) {}
+
+    /**
+     * Take a lease on one build this player owns, so a later save can write to it. Needed whenever the
+     * world isn't holding the lease already — after publishing (which frees it) or after the lease
+     * expired. {@link ClaimResult#inUse()} means another world has it right now.
+     */
+    public static CompletableFuture<ClaimResult> claim(int id, String secret, String holderUuid, String holderName) {
+        JsonObject body = new JsonObject();
+        body.addProperty("id", id);
+        body.addProperty("secret", secret == null ? "" : secret);
+        if (holderUuid != null && !holderUuid.isEmpty()) body.addProperty("uuid", holderUuid);
+        if (holderName != null && !holderName.isEmpty()) body.addProperty("name", holderName);
+        body.addProperty("world", WORLD);
+        return post("/carriages/claim", body).thenApply(resp -> {
+            if (resp == null) {
+                logFailure("/carriages/claim", null);
+                return new ClaimResult(CallStatus.ERROR, "", false);
+            }
+            int sc = resp.statusCode();
+            if (sc == 403) return new ClaimResult(CallStatus.FORBIDDEN, "", false);
+            if (sc == 404) return new ClaimResult(CallStatus.UNKNOWN, "", false);
+            JsonObject o = sc / 100 == 2 ? asObject(resp) : null;
+            if (o == null) {
+                logFailure("/carriages/claim", resp);
+                return new ClaimResult(CallStatus.ERROR, "", false);
+            }
+            boolean ok = o.has("ok") && o.get("ok").getAsBoolean();
+            return new ClaimResult(ok ? CallStatus.OK : CallStatus.ERROR, str(o, "token"),
+                    !ok && "in_use".equals(str(o, "reason")));
+        });
+    }
+
+    /** Outcome of a claim: the lease token when it succeeded, or why it didn't. */
+    public record ClaimResult(CallStatus status, String token, boolean inUse) {}
+
+    /** An int field, or 0 when absent/garbled — the same tolerance {@link #str} has for strings. */
+    private static int intOf(JsonObject o, String k) {
+        try {
+            return o != null && o.has(k) && !o.get(k).isJsonNull() ? o.get(k).getAsInt() : 0;
+        } catch (RuntimeException e) {
+            return 0;
+        }
+    }
+
+    private static long longOf(JsonObject o, String k) {
+        try {
+            return o != null && o.has(k) && !o.get(k).isJsonNull() ? o.get(k).getAsLong() : 0L;
+        } catch (RuntimeException e) {
+            return 0L;
+        }
+    }
+
+    /** The response body as a JSON object, or null — unlike {@link #okJson} this tolerates {@code ok:false}. */
+    private static JsonObject asObject(HttpResponse<String> resp) {
+        try {
+            JsonElement root = JsonParser.parseString(resp.body());
+            return root.isJsonObject() ? root.getAsJsonObject() : null;
+        } catch (Throwable t) {
+            return null;
+        }
+    }
+
     // ---- lease (pull an existing pooled carriage; PR C) ----
 
     /**
@@ -422,6 +603,32 @@ public final class SharedCarriageClient {
             if (sc == 404) return CallStatus.UNKNOWN;
             return CallStatus.ERROR;
         });
+    }
+
+    /**
+     * Say why a build-lifecycle call failed, at WARN.
+     *
+     * <p>{@link #post} reports the underlying exception at DEBUG, and the callers collapse every
+     * failure into a single "couldn't upload" for the player — so without this a timeout, a refused
+     * connection and an HTTP 400 are indistinguishable in the log, and diagnosing one means reading
+     * timestamps. Deliberately NOT inside {@link #post} or {@link #statusPost}: those also carry the
+     * in-play save/heartbeat/contribute traffic, which fails on a cadence for any offline player and
+     * would turn ordinary offline play into a wall of warnings. Uploading a build is rare and
+     * deliberate, so one line per failure earns its place.</p>
+     *
+     * @param resp the response, or null when there was none — timed out, or never connected
+     */
+    private static void logFailure(String path, HttpResponse<String> resp) {
+        if (resp == null) {
+            LOGGER.warn("[DungeonTrain] relay {} failed: no response (timed out after {}s, or could not connect)",
+                    path, REQUEST_TIMEOUT.toSeconds());
+            return;
+        }
+        String body = resp.body() == null ? "" : resp.body();
+        if (body.length() > 200) {
+            body = body.substring(0, 200) + "\u2026";
+        }
+        LOGGER.warn("[DungeonTrain] relay {} failed: HTTP {} {}", path, resp.statusCode(), body);
     }
 
     /** Parse a 2xx JSON object with {@code ok:true}, or null. */

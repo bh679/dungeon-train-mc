@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.event;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.builder.BuilderWorldLayout;
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.worldgen.ChuncksBand;
 import games.brennan.dungeontrain.worldgen.DisintegrationBand;
@@ -66,6 +67,10 @@ public final class BedrockFloorEvents {
                 || !DungeonTrain.MOD_ID.equals(dimTypeKey.get().location().getNamespace())) {
             return;
         }
+        // The Train Builder world is a DT dimension type in the overworld slot, so it passes both
+        // gates above — but it is meant to be void outside its one 300×300 platform. Floor it and
+        // the "platform in the void" becomes an infinite bedrock plane instead.
+        if (level.dimensionTypeRegistration().is(BuilderWorldLayout.BUILDER_DIMENSION_TYPE)) return;
 
         ChunkAccess chunk = event.getChunk();
         int chunkMinX = chunk.getPos().getMinBlockX();

@@ -19,7 +19,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "54";
+    public static final String PROTOCOL_VERSION = "55";
 
     private DungeonTrainNet() {}
 
@@ -176,6 +176,27 @@ public final class DungeonTrainNet {
 
         // Pause-menu "Abandon This Run": client → server kill request, ending the run via the death screen.
         registrar.playToServer(AbandonRunPacket.TYPE, AbandonRunPacket.STREAM_CODEC, AbandonRunPacket::handle);
+        registrar.playToServer(BuilderSetupPacket.TYPE, BuilderSetupPacket.STREAM_CODEC, BuilderSetupPacket::handle);
+        registrar.playToClient(BuilderBoundsPacket.TYPE, BuilderBoundsPacket.STREAM_CODEC, BuilderBoundsPacket::handle);
+        registrar.playToServer(BuilderSwitchPacket.TYPE, BuilderSwitchPacket.STREAM_CODEC, BuilderSwitchPacket::handle);
+        registrar.playToServer(BuilderDirtyRequestPacket.TYPE, BuilderDirtyRequestPacket.STREAM_CODEC, BuilderDirtyRequestPacket::handle);
+        registrar.playToServer(BuilderRoomSizePacket.TYPE, BuilderRoomSizePacket.STREAM_CODEC, BuilderRoomSizePacket::handle);
+        registrar.playToServer(BuilderStructureModePacket.TYPE, BuilderStructureModePacket.STREAM_CODEC, BuilderStructureModePacket::handle);
+        registrar.playToServer(BuilderStructureRefreshPacket.TYPE, BuilderStructureRefreshPacket.STREAM_CODEC, BuilderStructureRefreshPacket::handle);
+        registrar.playToClient(BuilderDirtyPacket.TYPE, BuilderDirtyPacket.STREAM_CODEC, BuilderDirtyPacket::handle);
+        registrar.playToServer(BuilderSavePacket.TYPE, BuilderSavePacket.STREAM_CODEC, BuilderSavePacket::handle);
+        registrar.playToServer(BuilderNewPacket.TYPE, BuilderNewPacket.STREAM_CODEC, BuilderNewPacket::handle);
+        registrar.playToServer(BuilderOpenPacket.TYPE, BuilderOpenPacket.STREAM_CODEC, BuilderOpenPacket::handle);
+        registrar.playToServer(BuilderRenamePacket.TYPE, BuilderRenamePacket.STREAM_CODEC, BuilderRenamePacket::handle);
+        registrar.playToClient(BuilderPhotoPacket.TYPE, BuilderPhotoPacket.STREAM_CODEC, BuilderPhotoPacket::handle);
+        registrar.playToClient(BuilderCinematicPacket.TYPE, BuilderCinematicPacket.STREAM_CODEC, BuilderCinematicPacket::handle);
+
+        // Train Builder profile ("My Builds"): the client asks, the server fetches from the relay and
+        // pushes the list back; the action packet publishes one build to the train or withdraws it.
+        // The relay client is server-side, so the screen can only ever ask through here.
+        registrar.playToServer(BuilderProfileRequestPacket.TYPE, BuilderProfileRequestPacket.STREAM_CODEC, BuilderProfileRequestPacket::handle);
+        registrar.playToClient(BuilderProfilePacket.TYPE, BuilderProfilePacket.STREAM_CODEC, BuilderProfilePacket::handle);
+        registrar.playToServer(BuilderProfileActionPacket.TYPE, BuilderProfileActionPacket.STREAM_CODEC, BuilderProfileActionPacket::handle);
 
         // Remote-echo encounter screenshot: server → player at first eye-contact to frame + capture the
         // echo; client → server with the resulting PNG, buffered on the encounter journal for its story embed.
