@@ -8617,6 +8617,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "translate-source-scroll-resize",
+      "version": "0.650.0",
+      "type": "fix",
+      "title": "Translators can read the whole English string again",
+      "summary": "The translation editor used to cut the English off after six lines, so the mod's longest strings \u2014 the books \u2014 could not be read in full by the person being asked to translate them. Nothing is truncated now: the text grows to fit, scrolls when there is more of it, and the divider between it and your translation can be dragged to give either side more room.",
+      "highlights": [
+        "The English on the translate screen is no longer cut off \u2014 it scrolls instead",
+        "Drag the divider to trade room between the original text and your translation",
+        "The \"unreviewed machine translation\" warning stays visible while you scroll"
+      ],
+      "pr": 1088,
+      "date": "2026-08-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
