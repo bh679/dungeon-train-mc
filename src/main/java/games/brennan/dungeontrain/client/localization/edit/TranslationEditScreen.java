@@ -68,7 +68,7 @@ public final class TranslationEditScreen extends Screen {
         sourceLines = font.split(unit.source().isEmpty()
             ? FormattedText.of(Component.translatable("gui.dungeontrain.translate.no_source")
                 .getString())
-            : TranslationVariableText.decorate(unit.id(), unit.source()), contentWidth);
+            : TranslationVariableText.decorate(unit.id(), unit.source(), locale), contentWidth);
         if (sourceLines.size() > MAX_SOURCE_LINES) {
             sourceLines = sourceLines.subList(0, MAX_SOURCE_LINES);
         }

@@ -30,7 +30,7 @@ public final class TranslationVariableText {
      * <p>A string with no placeholders comes back as one plain literal — no styling, no hover, and
      * the same rendering it had before this existed.</p>
      */
-    public static Component decorate(String key, String source) {
+    public static Component decorate(String key, String source, String locale) {
         if (source == null || source.isEmpty()) {
             return Component.empty();
         }
@@ -38,13 +38,16 @@ public final class TranslationVariableText {
         if (variables.isEmpty()) {
             return Component.literal(source);
         }
+        // One resolver for the whole line: an example that is itself a translated string is shown
+        // in the locale being edited, with the English beside it.
+        TranslationExampleValues values = TranslationExampleValues.forLocale(locale);
         MutableComponent out = Component.empty();
         int cursor = 0;
         for (TranslationVariable variable : variables) {
             if (variable.start() > cursor) {
                 out.append(Component.literal(source.substring(cursor, variable.start())));
             }
-            out.append(Component.literal(variable.token()).withStyle(styleFor(variable)));
+            out.append(Component.literal(variable.token()).withStyle(styleFor(variable, values)));
             cursor = variable.end();
         }
         if (cursor < source.length()) {
@@ -53,18 +56,18 @@ public final class TranslationVariableText {
         return out;
     }
 
-    private static Style styleFor(TranslationVariable variable) {
+    private static Style styleFor(TranslationVariable variable, TranslationExampleValues values) {
         return Style.EMPTY
             .withColor(VARIABLE_COLOUR)
             .withUnderlined(true)
-            .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, tooltip(variable)));
+            .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, tooltip(variable, values)));
     }
 
     /**
      * What the hover says: the token, what it holds, then the examples — or, when nothing is
      * curated for this slot, an honest line saying so rather than a tooltip that looks broken.
      */
-    private static Component tooltip(TranslationVariable variable) {
+    private static Component tooltip(TranslationVariable variable, TranslationExampleValues values) {
         MutableComponent out = Component.literal(variable.token())
             .withStyle(style -> style.withColor(VARIABLE_COLOUR).withBold(true));
         out.append(Component.literal("\n"));
@@ -81,8 +84,15 @@ public final class TranslationVariableText {
         out.append(Component.literal("\n"));
         out.append(Component.translatable("gui.dungeontrain.translate.edit.var.examples")
             .withStyle(ChatFormatting.GRAY));
-        for (String example : variable.examples()) {
-            out.append(Component.literal("\n  " + example).withStyle(ChatFormatting.YELLOW));
+        for (TranslationVariableExamples.Example example : variable.examples()) {
+            TranslationExampleValues.Rendered rendered = values.render(example);
+            out.append(Component.literal("\n  " + rendered.localized())
+                .withStyle(ChatFormatting.YELLOW));
+            if (rendered.differs()) {
+                // The English the label was written about, kept beside the locale's own wording.
+                out.append(Component.literal(" (" + rendered.english() + ")")
+                    .withStyle(ChatFormatting.GRAY));
+            }
         }
         return out;
     }

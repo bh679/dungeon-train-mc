@@ -60,12 +60,45 @@ public final class TranslationVariableExamples {
     private static volatile Map<String, Map<Integer, Entry>> entries = Map.of();
 
     /**
+     * One example value: either a literal, or a lang key to be rendered in the locale being edited.
+     *
+     * <p>The keyed form exists because some placeholders are filled with another translated string
+     * — "3 travellers" arrives as {@code …deaths.count.travellers.other}, which zh_cn renders as
+     * "3 名旅人". Showing a translator the English there describes a value they will never see.</p>
+     *
+     * @param text the literal value, or {@code ""} for a keyed example
+     * @param key  the lang key to render, or {@code ""} for a literal
+     * @param args the arguments that key's own placeholders take
+     */
+    public record Example(String text, String key, List<String> args) {
+        public Example {
+            text = text == null ? "" : text;
+            key = key == null ? "" : key;
+            args = args == null ? List.of() : List.copyOf(args);
+        }
+
+        /** A literal example — the same in every language, so it is shown as written. */
+        public static Example literal(String text) {
+            return new Example(text, "", List.of());
+        }
+
+        /** An example that is itself a translated string; see {@link TranslationExampleValues}. */
+        public static Example keyed(String key, List<String> args) {
+            return new Example("", key, args);
+        }
+
+        public boolean isKeyed() {
+            return !key.isEmpty();
+        }
+    }
+
+    /**
      * One slot's curated metadata.
      *
      * @param label    what the value is, in English ("a player name")
      * @param examples a few real values; may be empty when only a label is known
      */
-    public record Entry(String label, List<String> examples) {
+    public record Entry(String label, List<Example> examples) {
         public Entry {
             label = label == null ? "" : label;
             examples = examples == null ? List.of() : List.copyOf(examples);
@@ -158,11 +191,15 @@ public final class TranslationVariableExamples {
         JsonObject object = element.getAsJsonObject();
         String label = object.has("label") && object.get("label").isJsonPrimitive()
             ? object.get("label").getAsString() : "";
-        List<String> examples = new ArrayList<>();
+        List<Example> examples = new ArrayList<>();
         if (object.has("examples") && object.get("examples").isJsonArray()) {
-            for (JsonElement example : object.getAsJsonArray("examples")) {
-                if (example.isJsonPrimitive() && examples.size() < MAX_EXAMPLES) {
-                    examples.add(example.getAsString());
+            for (JsonElement item : object.getAsJsonArray("examples")) {
+                if (examples.size() >= MAX_EXAMPLES) {
+                    break;
+                }
+                Example example = parseExample(key, slot, item);
+                if (example != null) {
+                    examples.add(example);
                 }
             }
         }
@@ -170,5 +207,30 @@ public final class TranslationVariableExamples {
             return null; // nothing to show; treat as uncurated rather than as an empty tooltip
         }
         return new Entry(label, examples);
+    }
+
+    /** A bare string is a literal; an object names a lang key and the arguments it takes. */
+    private static Example parseExample(String key, int slot, JsonElement element) {
+        if (element.isJsonPrimitive()) {
+            return Example.literal(element.getAsString());
+        }
+        if (!element.isJsonObject()) {
+            return null;
+        }
+        JsonObject object = element.getAsJsonObject();
+        if (!object.has("key") || !object.get("key").isJsonPrimitive()) {
+            LOGGER.warn("[DungeonTrain] TranslationVariableExamples: {} slot {} has an example "
+                + "object with no key — skipped.", key, slot);
+            return null;
+        }
+        List<String> args = new ArrayList<>();
+        if (object.has("args") && object.get("args").isJsonArray()) {
+            for (JsonElement arg : object.getAsJsonArray("args")) {
+                if (arg.isJsonPrimitive()) {
+                    args.add(arg.getAsString());
+                }
+            }
+        }
+        return Example.keyed(object.get("key").getAsString(), args);
     }
 }

@@ -118,6 +118,35 @@ class TranslationVariableCoverageTest {
     }
 
     @Test
+    @DisplayName("every keyed example names a real key and passes it the arguments it takes")
+    void keyedExamplesResolve() throws IOException {
+        JsonObject english = english();
+        List<String> broken = new ArrayList<>();
+        for (var key : examples().entrySet()) {
+            for (var slot : key.getValue().entrySet()) {
+                for (var example : slot.getValue().examples()) {
+                    if (!example.isKeyed()) {
+                        continue;
+                    }
+                    JsonElement target = english.get(example.key());
+                    if (target == null || !target.isJsonPrimitive()) {
+                        broken.add(key.getKey() + " slot " + slot.getKey() + " -> "
+                            + example.key() + " (not in en_us.json)");
+                        continue;
+                    }
+                    int needed = TranslationVariableScanner.slotCount(target.getAsString());
+                    if (needed != example.args().size()) {
+                        broken.add(key.getKey() + " slot " + slot.getKey() + " -> " + example.key()
+                            + " takes " + needed + " arg(s), given " + example.args().size());
+                    }
+                }
+            }
+        }
+        assertTrue(broken.isEmpty(), "keyed examples that cannot render:\n  "
+            + String.join("\n  ", broken));
+    }
+
+    @Test
     @DisplayName("the file covers the strings this feature was built for")
     void coversTheWorkedExample() throws IOException {
         var slots = examples().get("chat.dungeontrain.familiar_book.4");

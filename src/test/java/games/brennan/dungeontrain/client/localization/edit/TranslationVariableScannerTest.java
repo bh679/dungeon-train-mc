@@ -75,14 +75,16 @@ class TranslationVariableScannerTest {
     @DisplayName("curated label and examples are attached to the slot they belong to")
     void lookupDecoratesEachSlot() {
         Map<Integer, TranslationVariableExamples.Entry> curated = Map.of(
-            2, new TranslationVariableExamples.Entry("a duration", List.of("3 minutes")));
+            2, new TranslationVariableExamples.Entry("a duration",
+                List.of(TranslationVariableExamples.Example.literal("3 minutes"))));
         List<TranslationVariable> found = TranslationVariableScanner.scan(
             "k", "%1$s held it; the longest reading ran %2$s.",
             (key, slot) -> curated.get(slot));
         assertFalse(found.get(0).hasLabel());
         assertFalse(found.get(0).hasExamples());
         assertEquals("a duration", found.get(1).label());
-        assertEquals(List.of("3 minutes"), found.get(1).examples());
+        assertEquals(List.of(TranslationVariableExamples.Example.literal("3 minutes")),
+            found.get(1).examples());
     }
 
     @Test

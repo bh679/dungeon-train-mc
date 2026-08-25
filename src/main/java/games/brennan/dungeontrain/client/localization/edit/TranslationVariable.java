@@ -17,10 +17,10 @@ import java.util.List;
  * @param token    the token exactly as it appears ({@code %s}, {@code %2$s})
  * @param label    what the value is, in English ("a player name"), or {@code ""} when nothing is
  *                 curated for this slot — the screen shows a localized generic label instead
- * @param examples a few real values, or empty when none are recorded for this slot
+ * @param examples a few real values, literal or keyed, or empty when none are recorded
  */
 public record TranslationVariable(int slot, int start, int end, String token, String label,
-                                  List<String> examples) {
+                                  List<TranslationVariableExamples.Example> examples) {
 
     public TranslationVariable {
         label = label == null ? "" : label;
