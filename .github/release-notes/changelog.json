@@ -8701,6 +8701,21 @@
       "released": true,
       "released_in": "v0.654.0",
       "released_at": "2026-08-25T15:37:51Z"
+    },
+    {
+      "id": "portal-room-door-ghosts",
+      "version": "0.655.0",
+      "type": "feat",
+      "title": "Portal room editor shows where the doors go",
+      "summary": "Authoring a dimensional carriage room now shows you the two corridor doorways it has to be built around. A translucent door stands in each opening \u2014 the same door the corridor really hangs \u2014 so a wall across the walkway centre line is something you see while you build rather than something you discover by walking a portal.",
+      "highlights": [
+        "Both corridor doorways are marked in every portal room plot, and follow the room as you resize it.",
+        "Toggle them with /dt editor doorghosts on|off \u2014 separate from the out-of-plot stray ghosts."
+      ],
+      "date": "2026-08-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
