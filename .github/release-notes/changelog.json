@@ -8706,9 +8706,11 @@
       "id": "train-builder-mode",
       "version": "0.655.0",
       "type": "feat",
-      "title": "The Train Builder",
-      "summary": "Build your own carriages, tracks and tunnels in a dedicated build world, then send them out to run on the train. Hold Shift on the title screen to open the Train Builder instead of the Train Editor, and find everything you've made under My Builds.",
+      "title": "The Train Builder (work in progress)",
+      "summary": "A soft release: the Train Builder is still in development and not yet fully functional, so expect rough edges and unfinished corners. It is a simpler way to build carriages, tracks and tunnels in a dedicated build world, and in time it is meant to replace the more complex Train Editor. For now both are here — hold Shift on the title screen to open the Builder, and find what you have made under My Builds.",
       "highlights": [
+        "Still in development and not fully functional — this is an early look, not a finished tool.",
+        "Intended to replace the more complex Train Editor eventually; until then the Editor remains the complete option.",
         "Hold Shift on the title screen and the Train Editor slot becomes the Train Builder.",
         "A My Builds screen, reachable from the editor menu (X) and the pause menu, lists everything you have saved.",
         "Build in a flat, empty world made for the job, with mirroring, resizable rooms and a live size and weight readout.",
