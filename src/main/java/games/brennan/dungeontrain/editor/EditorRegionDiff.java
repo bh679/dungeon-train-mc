@@ -30,6 +30,12 @@ import java.util.function.Supplier;
  * teaching every such op to report its own writes, this wraps the op and
  * diffs around it — which also picks up whatever the op did indirectly.</p>
  *
+ * <p>That last property is why <b>another mod's</b> writes ride this path too:
+ * {@link games.brennan.dungeontrain.compat.EffortlessBuildingHistory} records
+ * Effortless Building's builds by opening a capture around its packet handlers,
+ * with no knowledge of how that mod places blocks. See {@link #open} /
+ * {@link #close} for the split form it uses.</p>
+ *
  * <p>Diffing rather than storing the whole region keeps a step proportional to
  * what changed: re-stamping a plot that was already saved records nothing at
  * all.</p>
@@ -82,18 +88,78 @@ public final class EditorRegionDiff {
      */
     public static void record(ServerPlayer player, String label,
                               @Nullable String sidecarPlotKey, Runnable op) {
+        Capture capture = open(player, label, sidecarPlotKey);
+        // Deliberately not a try/finally: an op that throws has left the plot
+        // half-written, and pushing that as a step the author can Ctrl+Z into
+        // would invent an intent they never had. The capture is simply dropped —
+        // exactly what happened before this was split into open / close.
+        op.run();
+        close(player, capture);
+    }
+
+    // ─── Split capture, for callers that cannot wrap ───────────────────────
+
+    /**
+     * A capture opened over a plot and not yet closed — the plot's cells, the
+     * config tree and (optionally) a variant sidecar, all as they stood before
+     * the operation ran.
+     *
+     * <p>Opaque by design: nothing outside this class reads its contents, which
+     * is what keeps {@link Snapshot} private.</p>
+     */
+    public static final class Capture {
+        private final ServerLevel level;
+        private final EditorPlotScope scope;
+        private final String label;
+        @Nullable private final String sidecarPlotKey;
+        @Nullable private final String sidecarBefore;
+        private final Map<String, String> filesBefore;
+        private final Map<BlockPos, Snapshot> before;
+
+        private Capture(ServerLevel level, EditorPlotScope scope, String label,
+                        @Nullable String sidecarPlotKey, @Nullable String sidecarBefore,
+                        Map<String, String> filesBefore, Map<BlockPos, Snapshot> before) {
+            this.level = level;
+            this.scope = scope;
+            this.label = label;
+            this.sidecarPlotKey = sidecarPlotKey;
+            this.sidecarBefore = sidecarBefore;
+            this.filesBefore = filesBefore;
+            this.before = before;
+        }
+
+        /** Names the plot this capture covers, for a caller's log lines. */
+        public String plotKey() {
+            return scope.key();
+        }
+    }
+
+    /**
+     * Take the "before" half of a region capture.
+     *
+     * <p>The wrapping form {@link #record(ServerPlayer, String, String, Runnable)}
+     * is the one to reach for. This pair exists for callers that physically
+     * cannot wrap the operation — chiefly a Mixin on another mod's method, where
+     * the two halves must be driven from separate {@code HEAD} and
+     * {@code RETURN} injectors.</p>
+     *
+     * <p>Returns null when there is nothing to record against: the player is
+     * outside every plot, or the plot is larger than
+     * {@link EditorEditHistory#MAX_CELLS_PER_STEP} — in which case that plot's
+     * history is dropped, so a later undo cannot apply a step from before an
+     * unrecorded change. A null capture is safe to hand straight to
+     * {@link #close}, so callers need no branch of their own.</p>
+     */
+    @Nullable
+    public static Capture open(ServerPlayer player, String label, @Nullable String sidecarPlotKey) {
         ServerLevel level = player.serverLevel();
         Optional<EditorPlotScope> maybeScope = EditorPlotScope.resolveAt(player, level);
-        if (maybeScope.isEmpty()) {
-            op.run();
-            return;
-        }
+        if (maybeScope.isEmpty()) return null;
         EditorPlotScope scope = maybeScope.get();
 
         if (scope.volume() > EditorEditHistory.MAX_CELLS_PER_STEP) {
             EditorEditHistory.clearPlot(player.getUUID(), scope.key());
-            op.run();
-            return;
+            return null;
         }
 
         String sidecarBefore = sidecarPlotKey == null ? null : snapshotSidecar(level, sidecarPlotKey);
@@ -103,23 +169,36 @@ public final class EditorRegionDiff {
         // action. Nothing armed (a menu-driven op) means scanning now.
         Map<String, String> filesBefore = EditorEditRecorder.takePendingConfig(player);
         if (filesBefore == null) filesBefore = EditorConfigDiff.scan();
-        Map<BlockPos, Snapshot> before = scan(level, scope);
+        return new Capture(level, scope, label, sidecarPlotKey, sidecarBefore,
+            filesBefore, scan(level, scope));
+    }
 
-        op.run();
+    /**
+     * Close {@code capture}, pushing everything that changed since {@link #open}
+     * as one undo step.
+     *
+     * <p>A null capture is a no-op, and a capture over which nothing changed
+     * pushes nothing — {@link EditorEditHistory#push} drops empty steps. Both
+     * matter for the Mixin callers, whose {@code RETURN} injector fires on paths
+     * that did no work at all.</p>
+     */
+    public static void close(ServerPlayer player, @Nullable Capture capture) {
+        if (capture == null) return;
+        ServerLevel level = capture.level;
 
-        List<EditorEditHistory.Cell> cells = diff(level, before);
+        List<EditorEditHistory.Cell> cells = diff(level, capture.before);
         List<EditorEditHistory.FileSnapshot> files =
-            EditorConfigDiff.diff(filesBefore, EditorConfigDiff.scan());
+            EditorConfigDiff.diff(capture.filesBefore, EditorConfigDiff.scan());
         List<EditorEditHistory.SidecarSnapshot> sidecars = List.of();
-        if (sidecarPlotKey != null) {
-            String sidecarAfter = snapshotSidecar(level, sidecarPlotKey);
-            if (sidecarBefore != null && !sidecarBefore.equals(sidecarAfter)) {
+        if (capture.sidecarPlotKey != null) {
+            String sidecarAfter = snapshotSidecar(level, capture.sidecarPlotKey);
+            if (capture.sidecarBefore != null && !capture.sidecarBefore.equals(sidecarAfter)) {
                 sidecars = List.of(new EditorEditHistory.SidecarSnapshot(
-                    sidecarPlotKey, sidecarBefore, sidecarAfter));
+                    capture.sidecarPlotKey, capture.sidecarBefore, sidecarAfter));
             }
         }
         EditorEditHistory.push(player.getUUID(),
-            new EditorEditHistory.Step(scope.key(), label, cells, sidecars, files));
+            new EditorEditHistory.Step(capture.scope.key(), capture.label, cells, sidecars, files));
     }
 
     /** Every cell in the plot box, block-entity contents included. */
