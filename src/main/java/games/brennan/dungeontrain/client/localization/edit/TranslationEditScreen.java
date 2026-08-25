@@ -8,6 +8,7 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.FormattedText;
+import net.minecraft.network.chat.Style;
 import net.minecraft.util.FormattedCharSequence;
 
 import java.util.List;
@@ -60,9 +61,14 @@ public final class TranslationEditScreen extends Screen {
     @Override
     protected void init() {
         int contentWidth = width - MARGIN * 2;
-        sourceLines = font.split(FormattedText.of(unit.source().isEmpty()
-            ? Component.translatable("gui.dungeontrain.translate.no_source").getString()
-            : unit.source()), contentWidth);
+        // The English is a styled component, not flat text: every %s in it is underlined and
+        // carries a tooltip of what the game actually puts there (TranslationVariableText). A
+        // translator who cannot tell a placeholder from prose moves it into a slot the real value
+        // does not fit — which is the commonest way a translation breaks.
+        sourceLines = font.split(unit.source().isEmpty()
+            ? FormattedText.of(Component.translatable("gui.dungeontrain.translate.no_source")
+                .getString())
+            : TranslationVariableText.decorate(unit.id(), unit.source()), contentWidth);
         if (sourceLines.size() > MAX_SOURCE_LINES) {
             sourceLines = sourceLines.subList(0, MAX_SOURCE_LINES);
         }
@@ -221,6 +227,39 @@ public final class TranslationEditScreen extends Screen {
             g.drawString(font, note, MARGIN, height - MARGIN - ROW_H - GAP - font.lineHeight,
                 NOTE_COLOUR, false);
         }
+
+        // Last, so the tooltip sits over everything: what the underlined placeholder under the
+        // mouse actually holds at runtime.
+        Style hovered = variableStyleAt(mouseX, mouseY);
+        if (hovered != null && hovered.getHoverEvent() != null) {
+            g.renderComponentHoverEffect(font, hovered, mouseX, mouseY);
+        }
+    }
+
+    /** Where the English starts — the heading, then the gap {@link #render} leaves after it. */
+    private int sourceTop() {
+        return TOP + font.lineHeight + GAP;
+    }
+
+    /**
+     * The {@link Style} under the mouse within the English lines, or null. The same shape as
+     * {@code SupportScreen.styleAt} and {@code CreditsScreen}: find the line by height, reject
+     * anything past the end of the drawn text, then ask the splitter which style is at that width.
+     */
+    private Style variableStyleAt(double mouseX, double mouseY) {
+        int top = sourceTop();
+        for (int i = 0; i < sourceLines.size(); i++) {
+            int lineY = top + i * font.lineHeight;
+            if (mouseY < lineY || mouseY >= lineY + font.lineHeight) {
+                continue;
+            }
+            FormattedCharSequence line = sourceLines.get(i);
+            if (mouseX < MARGIN || mouseX >= MARGIN + font.width(line)) {
+                return null;
+            }
+            return font.getSplitter().componentStyleAtWidth(line, (int) (mouseX - MARGIN));
+        }
+        return null;
     }
 
     @Override
