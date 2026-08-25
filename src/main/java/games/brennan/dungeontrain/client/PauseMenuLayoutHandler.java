@@ -152,8 +152,14 @@ public final class PauseMenuLayoutHandler {
     /**
      * Close the pause screen first — in singleplayer that unpauses the integrated
      * server so it can process the kill — then ask the server to end the run.
+     *
+     * <p>The coming death is flagged as an abandon first: with the
+     * {@code doImmediateRespawn} game rule on, {@link InstantRespawnReboard} would
+     * otherwise reboard straight into a fresh world, and a player who deliberately
+     * ended the run should see the recap and pick what happens next.</p>
      */
     private static void abandonRun() {
+        InstantRespawnReboard.expectAbandonedRun();
         Minecraft.getInstance().setScreen(null);
         DungeonTrainNet.sendToServer(new AbandonRunPacket());
     }

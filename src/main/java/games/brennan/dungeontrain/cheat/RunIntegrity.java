@@ -175,6 +175,33 @@ public final class RunIntegrity {
     }
 
     /**
+     * Take the {@code Free Play} marker off. Only ever correct once the run has genuinely stopped
+     * being Free Play — {@code CheatDetectionEvents.onEffectRemove} still cancels any removal
+     * while {@link #isCheated}, so this cannot be used to shed the badge on a cheated run.
+     */
+    public static void clearFreePlayEffect(ServerPlayer player) {
+        player.removeEffect(ModMobEffects.FREE_PLAY);
+    }
+
+    /**
+     * Make the badge agree with the run, in whichever direction it currently disagrees.
+     *
+     * <p>The effect is infinite and saved on the player, but nothing used to take it off again —
+     * so a run that <em>stopped</em> being Free Play (custom content disabled, a config restored)
+     * kept the icon for the life of the save, and every player reasonably read that as "still
+     * stuck in Free Play". Reconciling on login, on respawn, and after anything that can change
+     * the answer is what closes that: existing saves carrying an orphan badge shed it the next
+     * time they log in.</p>
+     */
+    public static void reconcileFreePlayEffect(ServerPlayer player) {
+        if (isCheated(player)) {
+            applyFreePlayEffect(player);
+        } else {
+            clearFreePlayEffect(player);
+        }
+    }
+
+    /**
      * Should this advancement be written to the cross-world profile for this
      * player right now? Yes when the run is clean, OR when it's an
      * editor-authoring advancement (mode-agnostic). The display-present check

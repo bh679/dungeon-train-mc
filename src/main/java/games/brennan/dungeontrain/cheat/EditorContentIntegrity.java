@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.cheat;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.client.PendingCustomContentChoice;
 import games.brennan.dungeontrain.editor.PackageInfo;
 import games.brennan.dungeontrain.editor.PackageRegistry;
 import games.brennan.dungeontrain.editor.UserContentPaths;
@@ -39,12 +40,20 @@ import java.util.stream.Stream;
  * is <em>derived</em>, never stored on the player. Removing or disabling the
  * content restores normal play — nothing has to be un-marked.</p>
  *
- * <p>Unlike the other two, this one comes with a choice. On joining a world
- * with custom content the player is prompted ({@code ShowCustomContentPromptPacket})
- * to either continue in Free Play or disable the content for that world. The
- * answer is persisted per-world as a {@link CustomContentChoice} on
- * {@link DungeonTrainWorldData}, so the prompt appears once per world rather
- * than once per join.</p>
+ * <p>Unlike the other two, this one comes with a choice: continue in Free Play,
+ * or disable the content for this world. The answer is persisted per-world as a
+ * {@link CustomContentChoice} on {@link DungeonTrainWorldData}, so it is asked
+ * once per world rather than once per join.</p>
+ *
+ * <p><b>Asked before the world exists.</b> The normal path is
+ * {@code CustomContentGate}, which puts the question up when the player presses
+ * New World or reboards; the answer arrives here in {@code PendingCustomContentChoice}
+ * and is committed in {@link #onOverworldLoad}, ahead of {@code prepareLevels}.
+ * Asking at join instead — which is still the fallback, via
+ * {@code ShowCustomContentPromptPacket}, for multiplayer and for worlds created
+ * through the vanilla world list — meant the world had already generated from the
+ * content and the player was already in Free Play by the time they were offered
+ * the choice.</p>
  *
  * <p><b>Suppression</b> ({@link CustomContentChoice#DISABLE}) is enforced at a
  * single choke point: {@link UserContentPaths#searchDirs} returns nothing, so
@@ -198,7 +207,25 @@ public final class EditorContentIntegrity {
     public static void onOverworldLoad(LevelEvent.Load event) {
         if (!(event.getLevel() instanceof ServerLevel overworld)) return;
         if (!overworld.dimension().equals(Level.OVERWORLD)) return;
-        worldChoice = DungeonTrainWorldData.get(overworld).customContentChoice();
+
+        DungeonTrainWorldData data = DungeonTrainWorldData.get(overworld);
+        CustomContentChoice choice = data.customContentChoice();
+        if (!choice.isAnswered() && PendingCustomContentChoice.isPresent()) {
+            // Answered before this world existed — the player was asked when they pressed New World
+            // or reboarded (see CustomContentGate), which is the whole reason that ask was moved
+            // there. Committing it here, on the same event and before prepareLevels, is what makes
+            // "run without my changes" mean it: the world never stamps a carriage from content it
+            // declined, rather than declining after the fact.
+            choice = PendingCustomContentChoice.get();
+            data.setCustomContentChoice(choice);
+            LOGGER.info("[DungeonTrain] Committed the pre-world custom content choice: {}", choice);
+        }
+        // Consumed either way. A world that already has an answer keeps it — its own decision
+        // outranks one left over from a world creation that was abandoned — and a stale value must
+        // not survive to reach the world after that.
+        PendingCustomContentChoice.clear();
+
+        worldChoice = choice;
         if (worldChoice.suppressesContent()) {
             LOGGER.info("[DungeonTrain] This world has custom Train Editor content disabled — "
                 + "loading bundled content only.");

@@ -111,6 +111,8 @@ public final class ClientDisplayConfig {
      * {@link CustomContentPreference}. {@code ASK} means keep prompting.
      */
     public static final ModConfigSpec.EnumValue<CustomContentPreference> CUSTOM_CONTENT_PREFERENCE;
+    /** The last answer actually given, whether or not it was remembered. */
+    public static final ModConfigSpec.EnumValue<CustomContentPreference> CUSTOM_CONTENT_LAST_ANSWER;
 
     /**
      * Whether the player wants community content the relay tagged as politically sensitive filtered
@@ -170,6 +172,7 @@ public final class ClientDisplayConfig {
         POLITICAL_FILTER = pair.getLeft().politicalFilter;
         CONTENT_MODE = pair.getLeft().contentMode;
         CUSTOM_CONTENT_PREFERENCE = pair.getLeft().customContentPreference;
+        CUSTOM_CONTENT_LAST_ANSWER = pair.getLeft().customContentLastAnswer;
         CONFIG_DEVIATION_ACKNOWLEDGED = pair.getLeft().configDeviationAcknowledged;
     }
 
@@ -330,6 +333,13 @@ public final class ClientDisplayConfig {
                          "  your stats count. Set from the prompt's \"Remember decision\" checkbox, or the",
                          "Custom Train Content row in Options -> Dungeon Train...")
                 .defineEnum("preference", CustomContentPreference.ASK);
+        ModConfigSpec.EnumValue<CustomContentPreference> customContentLastAnswer = b
+                .comment("The last answer you gave the custom-content prompt, recorded whether or not",
+                         "you ticked \"Remember decision\". Reused when a run reboards automatically",
+                         "(immediate respawn), where there is no menu to ask from.",
+                         "ASK means you have never answered. Managed automatically — not meant to be",
+                         "edited by hand.")
+                .defineEnum("lastAnswer", CustomContentPreference.ASK);
         b.pop();
 
         b.push("deathScreen");
@@ -365,6 +375,7 @@ public final class ClientDisplayConfig {
                 rideSnapshotMaxResolution,
                 framerateThrottleEnabled, framerateThrottleFps, trainEngineVolume, skyboxPunchEnabled, scribbleColorPickerVisible, deleteWorldOnReboard, sharedBooksRead,
                 deathScreenLastNps, politicalFilter, contentMode, customContentPreference,
+                customContentLastAnswer,
                 configDeviationAcknowledged);
     }
 
@@ -874,6 +885,26 @@ public final class ClientDisplayConfig {
         CUSTOM_CONTENT_PREFERENCE.save();
     }
 
+    /**
+     * The last answer the player actually gave the prompt, recorded on every answer rather than
+     * only on "Remember decision". {@link CustomContentPreference#ASK} means never answered.
+     *
+     * <p>Exists because the remembered <em>preference</em> can't serve this: it is only written
+     * when the checkbox is ticked, so a player who answers each world individually has no recorded
+     * answer at all — and the automatic reboard has no menu to ask from.</p>
+     */
+    public static CustomContentPreference getLastCustomContentAnswer() {
+        return isLoaded() ? CUSTOM_CONTENT_LAST_ANSWER.get() : CustomContentPreference.ASK;
+    }
+
+    /** Record an answer. Idempotent; no-op pre-load. */
+    public static void setLastCustomContentAnswer(CustomContentPreference answer) {
+        if (!isLoaded() || answer == null) return;
+        if (CUSTOM_CONTENT_LAST_ANSWER.get() == answer) return;
+        CUSTOM_CONTENT_LAST_ANSWER.set(answer);
+        CUSTOM_CONTENT_LAST_ANSWER.save();
+    }
+
     // ----- Global client-side community-book read history (see SharedBookReadSyncClient / SharedBookReadMirror) -----
 
     /**
@@ -945,6 +976,7 @@ public final class ClientDisplayConfig {
             ModConfigSpec.EnumValue<PoliticalFilter> politicalFilter,
             ModConfigSpec.EnumValue<ContentMode> contentMode,
             ModConfigSpec.EnumValue<CustomContentPreference> customContentPreference,
+            ModConfigSpec.EnumValue<CustomContentPreference> customContentLastAnswer,
             ModConfigSpec.ConfigValue<String> configDeviationAcknowledged
     ) {}
 }
