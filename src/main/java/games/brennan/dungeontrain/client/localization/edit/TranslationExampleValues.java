@@ -16,6 +16,20 @@ import java.util.Map;
  * <p>Built once per screen open: assembling it reads the four namespaces' lang files twice (the
  * locale and English), which is the same work {@link TranslationCatalog} does and far too much to
  * repeat per tooltip.</p>
+ *
+ * <h2>Known limitation: vanilla-owned values stay English</h2>
+ * Only this repo's namespaces ({@link TranslationCatalog#NAMESPACES}) are read, so a handful of
+ * curated examples that stand for VANILLA-translated values are written as English literals in
+ * {@code translation_examples.json} and shown as such — game modes ({@code gameMode.*}),
+ * difficulties ({@code options.difficulty.*}), {@code options.on}/{@code options.off}, and
+ * {@code container.enderchest} — as is {@code @Dev} ({@code discordpresence.chattag.dev}), whose
+ * English lives in the sibling mod's own repo and so cannot be checked by the coverage guard.
+ *
+ * <p>Deliberate, not an oversight: they are short UI words rather than grammatical clauses, so a
+ * translator is not going to mis-fit one the way they might mis-fit "3 travellers". Closing it
+ * would mean adding {@code minecraft} to the namespaces read here and relaxing the guard for keys
+ * whose English this repo does not ship. The data file is strict JSON and cannot carry a comment,
+ * which is why the note lives here.</p>
  */
 public final class TranslationExampleValues {
 
