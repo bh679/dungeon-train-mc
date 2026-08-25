@@ -8650,6 +8650,21 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "translation-source-link",
+      "version": "0.652.0",
+      "type": "feat",
+      "title": "Jump from a translation to its source",
+      "summary": "The translation editor now shows a View source link beside the English heading. It opens a search of the Dungeon Train repository for that string's key, so you can see where the game actually uses the line you are translating.",
+      "highlights": [
+        "View source link on the heading row of the translation editor",
+        "Finds both the English entry and every place the code uses it"
+      ],
+      "date": "2026-08-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
