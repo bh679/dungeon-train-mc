@@ -8598,9 +8598,9 @@
       ],
       "pr": 1085,
       "date": "2026-08-25",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.650.0",
+      "released_at": "2026-08-25T10:05:21Z"
     },
     {
       "id": "abandon-run-death-screen",
@@ -8614,9 +8614,9 @@
         "The Immediate Respawn setting now sticks across every world in a run chain"
       ],
       "date": "2026-08-25",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.650.0",
+      "released_at": "2026-08-25T10:05:21Z"
     },
     {
       "id": "translate-source-scroll-resize",
@@ -8631,9 +8631,9 @@
       ],
       "pr": 1088,
       "date": "2026-08-25",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.650.0",
+      "released_at": "2026-08-25T10:05:21Z"
     }
   ]
 }
