@@ -29,7 +29,12 @@ import net.minecraft.world.level.chunk.LevelChunk;
  * {@code setBlock} never re-triggers place/break subscribers — the same trick
  * {@code EditorMirrorLiveHandler} relies on.</p>
  *
- * <p>Block <i>state</i> only. A chest mirrors as a chest, not as its contents.</p>
+ * <p>Block <i>state</i> only. A chest mirrors as a chest, not as its contents — and it could not do
+ * otherwise, since both feeds fire during {@code Level.setBlock}, before {@code BlockItem} writes a
+ * placed shulker's items into the block entity. Containers are therefore handled a level up, by
+ * {@link PortalContainerLink}: the pair keeps one authoritative block entity and the other copy
+ * opens it. That is also what makes the silent clear below correct rather than lossy — the copy it
+ * wipes has already been emptied into the one being mined.</p>
  */
 public final class PortalEditMirror {
 
