@@ -8713,9 +8713,9 @@
         "Toggle them with /dt editor doorghosts on|off \u2014 separate from the out-of-plot stray ghosts."
       ],
       "date": "2026-08-25",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.657.0",
+      "released_at": "2026-08-25T16:16:41Z"
     },
     {
       "id": "train-builder-mode",
@@ -8733,9 +8733,9 @@
       ],
       "pr": 1093,
       "date": "2026-08-25",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.657.0",
+      "released_at": "2026-08-25T16:16:41Z"
     },
     {
       "id": "sibling-mod-update-eb-011-te-09",
@@ -8750,9 +8750,9 @@
       ],
       "pr": 1095,
       "date": "2026-08-25",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.657.0",
+      "released_at": "2026-08-25T16:16:41Z"
     }
   ]
 }
