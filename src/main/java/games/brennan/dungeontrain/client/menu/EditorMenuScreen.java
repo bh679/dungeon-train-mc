@@ -756,12 +756,16 @@ public final class EditorMenuScreen implements MenuScreen {
      * itself was always world-agnostic; only the builder's button was, so the editor gets its own
      * rather than a copy of it.</p>
      *
+     * <p>Package-private rather than private because {@link MainMenuScreen} offers the same row at
+     * the root of the worldspace menu, for a player who is not standing in a plot. One definition,
+     * so the two rows cannot drift into saying different things or opening different screens.</p>
+     *
      * <p>A {@link CommandMenuEntry.ClientAction} opening a vanilla screen has precedent in
      * {@code CommandMenuState.beginTyping}. The worldspace menu is closed first: it is drawn in the
      * world and raycast for input, so leaving it up behind a screen would leave two things reading
      * the mouse. A null parent means Back returns to the game.</p>
      */
-    private static CommandMenuEntry myBuildsEntry() {
+    static CommandMenuEntry myBuildsEntry() {
         return new CommandMenuEntry.ClientAction(
             Component.translatable("gui.dungeontrain.builder.profile").getString(),
             () -> {

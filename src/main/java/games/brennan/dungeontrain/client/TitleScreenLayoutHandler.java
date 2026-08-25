@@ -41,10 +41,10 @@ import java.util.List;
  * {@code TitleScreenCreditsButton}), where its logomark says what a word had to
  * say here.</p>
  *
- * <p>The first slot holds a {@link TrainBuilderMenuButton}: normally <b>Train Editor</b>; on a dev
- * build, holding Shift turns it into <b>Train Builder</b>, opening {@link TrainBuilderScreen}. The
- * Editor leads because it is the finished tool, and the Builder hides behind a dev-only Shift while
- * it is still being built. The editor path launches a fresh creative world via
+ * <p>The first slot holds a {@link TrainBuilderMenuButton}: normally <b>Train Editor</b>, and
+ * <b>Train Builder</b> while Shift is held, opening {@link TrainBuilderScreen}. The Editor leads
+ * because it is the finished tool; the Builder sits behind Shift while it is still being built.
+ * The editor path launches a fresh creative world via
  * {@link DevQuickWorldHandler#launchEditorWorld(Screen)} — which names the
  * world "train editor N" using the lowest unused index — and arms
  * {@link EditorDevMode#queueOnForNextStart()} so editor mode is forced on
@@ -155,10 +155,10 @@ public final class TitleScreenLayoutHandler {
         quit.setY(rowY);
         quit.setWidth(thirdW);
 
-        // Train Editor by default; on a dev build, holding Shift swaps this same widget to the
-        // unfinished Train Builder. The slot is only half a row wide (Video Tools has the other
-        // half), so a second button would not fit alongside it. Constructor argument order is
-        // (openBuilder, openEditor) — which of the two is the default lives in the button.
+        // Train Editor by default; holding Shift swaps this same widget to the unfinished Train
+        // Builder. The slot is only half a row wide (Video Tools has the other half), so a second
+        // button would not fit alongside it. Constructor argument order is (openBuilder,
+        // openEditor) — which of the two is the default lives in the button.
         TrainBuilderMenuButton editor = new TrainBuilderMenuButton(slotX, slotY, halfW, slotH,
                 () -> openBuilder(titleScreen),
                 () -> openEditor(titleScreen));

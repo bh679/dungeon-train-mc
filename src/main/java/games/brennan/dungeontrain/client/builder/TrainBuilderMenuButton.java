@@ -8,15 +8,17 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
 /**
- * The title-screen slot button that is normally <b>Train Editor</b> and, on a dev build while
- * Shift is held, becomes <b>Train Builder</b>.
+ * The title-screen slot button that is normally <b>Train Editor</b> and, while Shift is held,
+ * becomes <b>Train Builder</b>.
  *
  * <p>The Editor is the default because it is the finished tool. The Builder is still being built,
- * so it sits behind Shift — and because the reveal also requires a dev build, a release jar never
- * offers it at all. That is the point: an unfinished tool should not be the first thing a player
- * meets on the title screen.</p>
+ * so it sits behind Shift rather than in front of a player who never asked for it — but Shift is
+ * now the whole gate. It used to also require a dev build, which meant a shipped jar offered the
+ * Builder by no route at all; anyone who wanted to try it had to build the mod from source. An
+ * unfinished tool should not be the first thing a player meets on the title screen, and it should
+ * not be unreachable either.</p>
  *
- * <p>One widget rather than two: the slot is only half a button wide (Discord takes the other
+ * <p>One widget rather than two: the slot is only half a button wide (Video Tools takes the other
  * half), so a third button would not fit, and the swap mirrors the Shift affordance
  * {@code DevQuickWorldHandler} already uses on the row above.</p>
  *
@@ -45,22 +47,18 @@ public final class TrainBuilderMenuButton extends DarkTintedButton {
     /**
      * Whether the Train Builder is revealed instead of the editor.
      *
-     * <p>Pure and package-visible for tests: {@code branch} is {@code VersionInfo.BRANCH}, baked
-     * at build time, and only the literal {@code main} ref counts as a release build. A null or
-     * {@code "?"} branch (git detection failed) is treated as a dev build — the same
-     * fail-open direction {@code EditorMenuScreen.shouldShowDevModeToggle} takes, since hiding a
-     * developer affordance from a developer is the worse error.</p>
-     *
-     * <p>Because a release build never reveals, a {@code main} jar offers only the Train Editor
-     * from this slot. The Builder is reachable there by no other route — which is deliberate while
-     * it is unfinished, and is the thing to revisit when it ships.</p>
+     * <p>Pure and package-visible for tests. Shift alone decides, on every build: the branch check
+     * this used to carry ({@code VersionInfo.BRANCH}, baked at build time) made the Builder
+     * unreachable from a released jar, which is a stronger statement than "hidden by default" and
+     * not the one that was wanted. The slot still says <b>Train Editor</b> until a player holds a
+     * modifier key, so nothing meets them by accident.</p>
      */
-    public static boolean shouldRevealBuilder(String branch, boolean shiftDown) {
-        return shiftDown && !"main".equals(branch);
+    public static boolean shouldRevealBuilder(boolean shiftDown) {
+        return shiftDown;
     }
 
     private boolean builderRevealed() {
-        return shouldRevealBuilder(games.brennan.dungeontrain.client.VersionInfo.BRANCH, Screen.hasShiftDown());
+        return shouldRevealBuilder(Screen.hasShiftDown());
     }
 
     @Override
