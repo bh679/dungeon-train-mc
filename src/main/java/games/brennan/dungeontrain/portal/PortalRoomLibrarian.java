@@ -19,6 +19,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Stocks each standing library room, and keeps trying until it can.
@@ -43,28 +44,43 @@ import java.util.concurrent.ConcurrentHashMap;
  * directory page that expires (see {@code PortalRoomAuthorLocks.EMPTY_PAGE_TTL_MS}), so a room met
  * while the corpus was thin — or while the relay was unwell — can fill itself minutes later instead
  * of standing bare until the server restarts, which is what dropping it here used to mean. Kept
- * bounded by {@link #MAX_PENDING_ROOMS}, since nothing calls {@link #forget} and pair keys climb for
- * as long as a train runs.</p>
+ * bounded by {@link #MAX_PENDING_ROOMS}, since nothing calls {@link #forget} and rooms keep being
+ * registered for as long as a train runs.</p>
  */
 public final class PortalRoomLibrarian {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    /** A room waiting to be stocked: where it stands and what its author is drawn from. */
-    private record Pending(BlockPos origin, Vec3i size, PortalRoomBooks books) {}
+    /**
+     * A room waiting to be stocked: where it stands, what its author is drawn from, and WHEN it was
+     * registered.
+     *
+     * <p>{@code seq} is a monotonic registration stamp, and it is what {@link #evictOldest} orders
+     * on. It cannot order on the pair key: keys run OUTWARD from the origin in both directions —
+     * a train standing at pairs -6, -3, 3, 6 is ordinary — so the smallest key is the furthest
+     * carriage one way, not the room registered longest ago. Ordering on the key evicted the NEWEST
+     * room for a player travelling in the negative direction.</p>
+     */
+    private record Pending(BlockPos origin, Vec3i size, PortalRoomBooks books, long seq) {}
 
     /**
      * How many rooms may be waiting for their books at once.
      *
      * <p>Bounded because a room that finds no author now STAYS pending — it is waiting on a corpus
-     * that may grow, not giving up — while pair keys climb for as long as a train runs and nothing
-     * calls {@link #forget}. Well above the handful of rooms that can be standing at once; past it
-     * the lowest pair key goes, which is the room the train left behind furthest back.</p>
+     * that may grow, not giving up — while rooms keep being registered for as long as a train runs
+     * and nothing calls {@link #forget}. Well above the handful of rooms that can be standing at
+     * once; past it the room registered longest ago goes, whichever direction it lies in.</p>
      */
     static final int MAX_PENDING_ROOMS = 32;
 
     /** pair key → the room still waiting for its books. */
     private static final Map<Integer, Pending> PENDING = new ConcurrentHashMap<>();
+
+    /**
+     * Hands out {@link Pending#seq}. Monotonic for the life of the process, which is all eviction
+     * order needs — it is only ever compared against other live entries, never persisted.
+     */
+    private static final AtomicLong REGISTRATIONS = new AtomicLong();
 
     /**
      * Rooms that have already had their "no author in this band" line logged.
@@ -91,22 +107,34 @@ public final class PortalRoomLibrarian {
             PENDING.remove(pairKey);
             return;
         }
-        PENDING.put(pairKey, new Pending(origin.immutable(), size, books));
+        // A re-stamped room is registered afresh, so it takes a new seq and goes to the back of the
+        // eviction queue — it is the most recently seen room, whatever it was before.
+        PENDING.put(pairKey, new Pending(origin.immutable(), size, books,
+            REGISTRATIONS.incrementAndGet()));
         evictOldest();
     }
 
     /**
-     * Keep {@link #PENDING} inside {@link #MAX_PENDING_ROOMS}, dropping the lowest pair keys first.
+     * Keep {@link #PENDING} inside {@link #MAX_PENDING_ROOMS}, dropping the room registered longest
+     * ago first.
      *
-     * <p>Pair keys only climb, so the lowest is the oldest room — the one the train left behind
-     * furthest back, and the one least likely to still be standing. Only runs on {@link #register},
-     * which happens once per stamped room, so the cost never lands on the tick.</p>
+     * <p>Ordered on {@link Pending#seq}, NOT on the pair key. Pair keys run outward from the origin
+     * in both directions, so the smallest is the furthest carriage one way rather than the oldest
+     * room; ordering on it threw away the newest room for a player riding the negative direction.
+     * The registration stamp says what the key cannot: which of these rooms this train met first.</p>
+     *
+     * <p>Only runs on {@link #register}, which happens once per stamped room, so the cost never
+     * lands on the tick.</p>
      */
     private static void evictOldest() {
         while (PENDING.size() > MAX_PENDING_ROOMS) {
             Integer oldest = null;
-            for (Integer key : PENDING.keySet()) {
-                if (oldest == null || key < oldest) oldest = key;
+            long oldestSeq = Long.MAX_VALUE;
+            for (Map.Entry<Integer, Pending> entry : PENDING.entrySet()) {
+                if (entry.getValue().seq() < oldestSeq) {
+                    oldestSeq = entry.getValue().seq();
+                    oldest = entry.getKey();
+                }
             }
             if (oldest == null) return;
             PENDING.remove(oldest);
