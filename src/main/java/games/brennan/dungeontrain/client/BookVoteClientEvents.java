@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.client;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.mixin.client.BookViewScreenAccessor;
+import games.brennan.dungeontrain.narrative.BookKidRejectTag;
 import games.brennan.dungeontrain.narrative.BookModerationState;
 import games.brennan.dungeontrain.narrative.BookModerationTag;
 import games.brennan.dungeontrain.narrative.BookPrivateTag;
@@ -10,6 +11,7 @@ import games.brennan.dungeontrain.narrative.BookVoteCountsTag;
 import games.brennan.dungeontrain.narrative.BookReportTag;
 import games.brennan.dungeontrain.narrative.BookVoteTag;
 import games.brennan.dungeontrain.narrative.UnapprovedBookMessage;
+import games.brennan.dungeontrain.net.BookKidRejectPacket;
 import games.brennan.dungeontrain.net.BookPrivatePacket;
 import games.brennan.dungeontrain.net.BookProtestPacket;
 import games.brennan.dungeontrain.net.BookReportPacket;
@@ -110,9 +112,15 @@ public final class BookVoteClientEvents {
     private static final int COLOR_STATUS_REJECTED = 0x9E1B0C; // rejected
     private static final int COLOR_REPORTED = 0x4A423C;     // spent/grey once the report is in
     private static final float REPORTED_ALPHA = 0.4F;       // the icon, dimmed, after reporting
+    // The kid-reject icon is the report glyph's RED variant, worn permanently rather than only on
+    // hover — it is the one control on this page that is meant to look like a warning at rest. Held
+    // just off full brightness so that lighting it on hover still reads as a response.
+    private static final float KID_REST_ALPHA = 0.75F;
+    private static final int BUTTON_PAIR_GAP = 6;           // between report and kid-reject, when both show
     private static final int PROMPT_COUNT = 10;
     private static final int RESPONSE_COUNT = 10;        // per set (yes / no / general)
     private static final int REPORT_RESPONSE_COUNT = 5;  // train lines for a report
+    private static final int KID_REJECT_RESPONSE_COUNT = 3; // ...for a tester pulling one from Kid mode
     private static final int PROTEST_RESPONSE_COUNT = 5; // ...for an author's protest
     private static final int PRIVATE_RESPONSE_COUNT = 5; // ...for withdrawing / restoring your own
 
@@ -160,6 +168,11 @@ public final class BookVoteClientEvents {
     private static int votesUp = -1;
     private static int votesDown = -1;
     private static boolean reportArmed = false;          // first click armed it; a second commits
+    // The kid-safe tester's extra control (see ClientKidTester). Its own spent flag and its own
+    // armed flag: a half-made report and a half-made kid-reject are different half-made things, and
+    // sharing one flag between them would let a click on either finish the other.
+    private static boolean kidRejected = false;          // seeded from the stack's tag — one-way
+    private static boolean kidArmed = false;
 
     private BookVoteClientEvents() {}
 
@@ -182,6 +195,7 @@ public final class BookVoteClientEvents {
         OptionalInt vote = BookVoteTag.read(stack);
         selectedVote = vote.isPresent() ? vote.getAsInt() : 0;
         reported = BookReportTag.isReported(stack);
+        kidRejected = BookKidRejectTag.isKidRejected(stack);
         moderation = BookModerationTag.read(stack);
         isPrivate = BookPrivateTag.isPrivate(stack);
         protested = BookProtestTag.isProtested(stack);
@@ -211,7 +225,8 @@ public final class BookVoteClientEvents {
     public static void onScreenRenderPost(ScreenEvent.Render.Post event) {
         if (!active || event.getScreen() != screen) return;
         if (!onVotePage()) {
-            reportArmed = false; // turning off the page abandons a half-made report
+            reportArmed = false; // turning off the page abandons a half-made report...
+            kidArmed = false;    // ...and a half-made kid-reject
             return;
         }
         GuiGraphics gfx = event.getGuiGraphics();
@@ -325,26 +340,60 @@ public final class BookVoteClientEvents {
             return;
         }
         // The report icon — cream and wordless at rest, red on hover or once armed, dimmed and inert
-        // once spent. Words appear only in the two states that need them (see below).
-        boolean lit = !reported && (reportArmed || inReport(mouseX, mouseY));
+        // once spent. Words appear only in the states that need them (see below).
+        boolean reportLit = !reported && (reportArmed || inReport(mouseX, mouseY));
         if (reported) gfx.setColor(1F, 1F, 1F, REPORTED_ALPHA);
-        gfx.blitSprite(lit ? REPORT_HIGHLIGHTED_SPRITE : REPORT_SPRITE,
+        gfx.blitSprite(reportLit ? REPORT_HIGHLIGHTED_SPRITE : REPORT_SPRITE,
             reportX(), reportY(), BUTTON_SIZE, BUTTON_SIZE);
         if (reported) gfx.setColor(1F, 1F, 1F, 1F);
 
-        // Idle and hover stay wordless — the icon is the whole control. The confirmation line is the
-        // point of the second tap, and "Reported" is the only way a spent icon can say so.
-        Component line = reported
-            ? Component.translatable("gui.dungeontrain.book_vote.reported")
-            : reportArmed ? Component.translatable("gui.dungeontrain.book_vote.report_confirm") : null;
+        // The kid-safe tester's control, beside it: the same glyph in its red variant, worn at rest
+        // rather than only on hover. Two icons a few pixels apart have to be told apart at a glance,
+        // and colour is the only thing distinguishing them — so the red one is red always.
+        boolean paired = showKidReject();
+        boolean kidLit = paired && !kidRejected && (kidArmed || inKidReject(mouseX, mouseY));
+        if (paired) {
+            gfx.setColor(1F, 1F, 1F, kidRejected ? REPORTED_ALPHA : kidLit ? 1F : KID_REST_ALPHA);
+            gfx.blitSprite(REPORT_HIGHLIGHTED_SPRITE, kidRejectX(), reportY(), BUTTON_SIZE, BUTTON_SIZE);
+            gfx.setColor(1F, 1F, 1F, 1F);
+        }
+
+        // Idle and hover stay wordless — the icon is the whole control. A confirmation line is the
+        // point of the second tap, and a spent line is the only way a dimmed icon can say what it was.
+        Component line = actionLine(mouseX, mouseY);
         if (line != null) {
+            boolean armed = reportArmed || kidArmed;
             gfx.drawString(font, line, centerX - font.width(line) / 2, reportTextY(),
-                reported ? COLOR_REPORTED : COLOR_REPORT_ARMED, false);
-        } else if (lit) {
+                armed ? COLOR_REPORT_ARMED : COLOR_REPORTED, false);
+        } else if (kidLit && inKidReject(mouseX, mouseY)) {
+            gfx.renderTooltip(font, Component.translatable("gui.dungeontrain.book_vote.kid_reject"),
+                mouseX, mouseY);
+        } else if (reportLit) {
             // Hovering an unlabelled icon: say what it does before the player commits to finding out.
             gfx.renderTooltip(font, Component.translatable("gui.dungeontrain.book_vote.report"),
                 mouseX, mouseY);
         }
+    }
+
+    /**
+     * The one line under the report row, or null for the wordless idle state.
+     *
+     * <p>There is room for one line and there are two controls, so it has an order. An ARMED control
+     * speaks first — it is asking a question the player has to answer, and only one can ever be armed
+     * (arming either disarms the other). Otherwise a spent control names itself, and because the two
+     * verdicts are independent BOTH can be spent at once: the pointer breaks that tie, so hovering an
+     * icon answers "what did I already do here", and with the pointer elsewhere the report speaks,
+     * being the broader of the two.</p>
+     */
+    private static Component actionLine(int mouseX, int mouseY) {
+        if (kidArmed) return Component.translatable("gui.dungeontrain.book_vote.kid_reject_confirm");
+        if (reportArmed) return Component.translatable("gui.dungeontrain.book_vote.report_confirm");
+        if (kidRejected && showKidReject() && inKidReject(mouseX, mouseY)) {
+            return Component.translatable("gui.dungeontrain.book_vote.kid_rejected");
+        }
+        if (reported) return Component.translatable("gui.dungeontrain.book_vote.reported");
+        if (kidRejected && showKidReject()) return Component.translatable("gui.dungeontrain.book_vote.kid_rejected");
+        return null;
     }
 
     /**
@@ -428,14 +477,24 @@ public final class BookVoteClientEvents {
             event.setCanceled(true);
             clickSound();
             if (reportArmed) applyProtest(); else reportArmed = true;
+        } else if (showKidReject() && !kidRejected && inKidReject(mx, my)) {
+            // Two-tap, like a report, and for a stronger reason: this one is not undoable in-game and
+            // the relay acts on it immediately. Arming it disarms a half-made report, so the two
+            // controls can never both be one click from firing.
+            event.setCanceled(true);
+            clickSound();
+            reportArmed = false;
+            if (kidArmed) applyKidReject(); else kidArmed = true;
         } else if (!moderation.isOwn() && !reported && inReport(mx, my)) {
             // Two-tap: arm, then commit. A stray click anywhere else on the page disarms, so a
             // report always takes two deliberate clicks in the same spot.
             event.setCanceled(true);
             clickSound();
+            kidArmed = false;
             if (reportArmed) applyReport(); else reportArmed = true;
         } else {
             reportArmed = false;
+            kidArmed = false;
         }
     }
 
@@ -503,6 +562,34 @@ public final class BookVoteClientEvents {
             int pick = player.getRandom().nextInt(REPORT_RESPONSE_COUNT) + 1;
             player.displayClientMessage(
                 Component.translatable("gui.dungeontrain.book_vote.report_response." + pick)
+                    .withStyle(ChatFormatting.GRAY), false);
+        }
+    }
+
+    /**
+     * Commit the kid-reject: send the packet (the server re-checks the tester mark, stamps the tag and
+     * consent-gates the relay POST), close the book, then have the train acknowledge it.
+     *
+     * <p>No vote and no report is cast alongside. This says one narrow thing — keep this away from
+     * children — and the book stays exactly where it was for adults; folding a 👎 or a report into it
+     * would put verdicts on the record that the tester never gave. The train's answer says so, because
+     * a line implying the book had been pulled outright would be a promise the system does not keep.</p>
+     */
+    private static void applyKidReject() {
+        if (!active || kidRejected) return;
+        kidRejected = true;
+        kidArmed = false;
+        DungeonTrainNet.sendToServer(new BookKidRejectPacket(bookType, bookId));
+
+        Minecraft mc = Minecraft.getInstance();
+        LocalPlayer player = mc.player;
+        BookViewScreen closing = screen;
+        if (mc.screen == closing) mc.setScreen(null); // triggers Closing -> reset()
+
+        if (player != null) {
+            int pick = player.getRandom().nextInt(KID_REJECT_RESPONSE_COUNT) + 1;
+            player.displayClientMessage(
+                Component.translatable("gui.dungeontrain.book_vote.kid_reject_response." + pick)
                     .withStyle(ChatFormatting.GRAY), false);
         }
     }
@@ -637,13 +724,43 @@ public final class BookVoteClientEvents {
         return x >= downX() && x < downX() + BUTTON_SIZE && y >= buttonsY() && y < buttonsY() + BUTTON_SIZE;
     }
 
-    /** The report icon sits on the page's centre line, under the two thumbs. */
+    /**
+     * Whether a kid-safe tester's extra control belongs on this book — and so whether the row under
+     * the thumbs holds one icon or two.
+     *
+     * <p>Exactly the slot the ⚠ report occupies, and no other: never on a book of your own (you may
+     * not report your own writing either), never on one already withheld (that row is the author's
+     * protest). Rating your own book for somebody else's child is the same kind of nonsense as
+     * upvoting yourself.</p>
+     */
+    private static boolean showKidReject() {
+        return ClientKidTester.isTester() && !moderation.isOwn() && !moderation.isWithheld();
+    }
+
+    /**
+     * The report icon's left edge. Alone it sits on the page's centre line, exactly where it always
+     * has; paired with the kid-reject control the two straddle that line instead, the way the thumbs
+     * do. Nothing moves for a player who is not a tester, which is nearly everyone.
+     */
     private static int reportX() {
-        return bookLeft() + PAGE_CENTER_X_OFFSET - BUTTON_SIZE / 2;
+        int centre = bookLeft() + PAGE_CENTER_X_OFFSET;
+        return showKidReject()
+            ? centre - BUTTON_SIZE - BUTTON_PAIR_GAP / 2
+            : centre - BUTTON_SIZE / 2;
+    }
+
+    /** The kid-reject icon's left edge — the right half of the pair. Only meaningful when paired. */
+    private static int kidRejectX() {
+        return bookLeft() + PAGE_CENTER_X_OFFSET + BUTTON_PAIR_GAP / 2;
     }
 
     private static boolean inReport(int x, int y) {
         return x >= reportX() && x < reportX() + BUTTON_SIZE
+            && y >= reportY() && y < reportY() + BUTTON_SIZE;
+    }
+
+    private static boolean inKidReject(int x, int y) {
+        return x >= kidRejectX() && x < kidRejectX() + BUTTON_SIZE
             && y >= reportY() && y < reportY() + BUTTON_SIZE;
     }
 
@@ -676,6 +793,8 @@ public final class BookVoteClientEvents {
         promptIndex = 1;
         reported = false;
         reportArmed = false;
+        kidRejected = false;
+        kidArmed = false;
         moderation = BookModerationState.PUBLIC;
         isPrivate = false;
         protested = false;
