@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.mixin.client;
 
 import games.brennan.dungeontrain.bootstrap.BootstrapProgress;
+import games.brennan.dungeontrain.client.builder.BuilderWorldCheck;
 import games.brennan.dungeontrain.client.LoadingScreenTheme;
 import games.brennan.dungeontrain.client.LoadingSequenceProgress;
 import games.brennan.dungeontrain.client.LoadingStories;
@@ -63,6 +64,12 @@ public abstract class LevelLoadingScreenThemeMixin {
 
     @Inject(method = "render", at = @At("HEAD"), cancellable = true)
     private void dungeontrain$renderThemed(GuiGraphics g, int mouseX, int mouseY, float partialTick, CallbackInfo ci) {
+        // Train Builder worlds keep vanilla's chunk-dot screen. The themed screen is framing for
+        // a run — title, story, a train filling with carriages — and none of that is true of a
+        // build sandbox, which also loads too fast to read a story line anyway.
+        if (BuilderWorldCheck.isBuilderWorld()) {
+            return; // no ci.cancel() — vanilla renders
+        }
         LevelLoadingScreen self = (LevelLoadingScreen) (Object) this;
         Font font = Minecraft.getInstance().font;
 

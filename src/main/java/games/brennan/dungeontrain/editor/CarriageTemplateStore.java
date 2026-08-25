@@ -82,6 +82,15 @@ public final class CarriageTemplateStore {
     }
 
     /**
+     * This carriage template's raw NBT, with no dims gate — for showing the template rather than
+     * stamping it. See {@link TemplateNbt} for why the gate is skipped.
+     */
+    public static Optional<CompoundTag> rawTag(String id) {
+        return TemplateNbt.read(SUBDIR, id + EXT, RESOURCE_PREFIX + id + EXT,
+            "carriage template " + id);
+    }
+
+    /**
      * On-disk path to the bundled-resource copy of {@code type}'s template
      * inside the project source tree. Only meaningful in a dev checkout — see
      * {@link #sourceTreeAvailable()}. Only built-ins ship bundled copies.
@@ -251,7 +260,16 @@ public final class CarriageTemplateStore {
 
     /** Source-tree path for any variant — by {@code id()}, regardless of Builtin/Custom. */
     private static Path sourceFileForVariant(CarriageVariant variant) {
-        return sourceDirectory().resolve(variant.id() + EXT);
+        return sourceFileForId(variant.id());
+    }
+
+    /**
+     * Source-tree path for a template id, Builtin or Custom. Public counterpart to
+     * {@link #sourceFileFor(CarriageType)}, which only reaches the built-ins — mirrors
+     * {@code CarriageContentsStore.sourceFileForId}.
+     */
+    public static Path sourceFileForId(String id) {
+        return sourceDirectory().resolve(id + EXT);
     }
 
     public static synchronized boolean delete(CarriageVariant variant) throws IOException {

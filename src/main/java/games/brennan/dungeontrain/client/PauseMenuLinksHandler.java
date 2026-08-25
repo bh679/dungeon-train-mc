@@ -71,6 +71,11 @@ public final class PauseMenuLinksHandler {
         }
         // F3+ESC pauses without building any menu — nothing to replace, and warning here
         // would fire every time a player freezes the game to line up a screenshot.
+        // Builder worlds get a purpose-built pause menu that places Discord / Support itself;
+        // both handlers claiming the same slots would stack two buttons on top of each other.
+        if (games.brennan.dungeontrain.client.builder.BuilderPauseMenuHandler.handles(pauseScreen)) {
+            return;
+        }
         if (!pauseScreen.showsPauseMenu()) {
             return;
         }

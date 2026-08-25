@@ -6,7 +6,9 @@ import games.brennan.dungeontrain.net.CinematicIntroPacket;
 import games.brennan.dungeontrain.net.CinematicPreloadBeginPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.registry.ModDataAttachments;
+import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import org.slf4j.Logger;
 
@@ -99,6 +101,19 @@ public final class CinematicIntroService {
      * Trigger gate. Single switch point for the "frequency" decision — today:
      * config-enabled AND this player hasn't seen the intro in this world yet.
      */
+    /**
+     * Whether this world runs the auto-train system at all. Per-world choice, stored on the
+     * overworld's SavedData — the same flag {@code TrainBootstrapEvents} reads to decide whether
+     * to spawn anything.
+     */
+    private static boolean hasTrain(ServerPlayer player) {
+        MinecraftServer server = player.getServer();
+        if (server == null) return false;
+        ServerLevel overworld = server.overworld();
+        if (overworld == null) return false;
+        return DungeonTrainWorldData.get(overworld).startsWithTrain();
+    }
+
     public static boolean shouldPlay(ServerPlayer player) {
         if (!DungeonTrainConfig.isIntroCinematicEnabled()) return false;
         return !player.getData(ModDataAttachments.SEEN_INTRO_CINEMATIC.get());
@@ -117,6 +132,16 @@ public final class CinematicIntroService {
     public static void armPreloadIfNeeded(ServerPlayer player) {
         if (!DungeonTrainConfig.isIntroCinematicChunkPreloadEnabled()) return;
         if (!shouldPlay(player)) return;
+        // No train, no hold. The hold exists to cover the gap before the server places the
+        // player ON the train; in a world with startsWithTrain=false that placement never
+        // happens, so the client's gate would sit in PLACING until its hard cap — 1280 ticks,
+        // 64 seconds of loading screen on a world that was ready in two. Editor and Train
+        // Builder worlds were both paying that.
+        if (!hasTrain(player)) {
+            LOGGER.info("[DungeonTrain] Preload hold not armed for {} — world has no train",
+                player.getName().getString());
+            return;
+        }
         DungeonTrainNet.sendTo(player, new CinematicPreloadBeginPacket(PLACE_HOLD_TIMEOUT_TICKS));
         ACTIVE.add(player.getUUID());
         beginInvuln(player, PLACE_HOLD_TIMEOUT_TICKS);
