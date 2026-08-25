@@ -238,13 +238,19 @@ public final class TemplateDecor {
      * is how an item frame ends up invisible or popping off on the first block update.</p>
      */
     @Nullable
-    private static BlockPos anchorOf(CompoundTag entry, Mirror mirror, Rotation rotation,
-                                     BlockPos pivot, BlockPos origin) {
-        if (!entry.contains("blockPos", Tag.TAG_INT_ARRAY)) return null;
-        int[] local = entry.getIntArray("blockPos");
-        if (local.length != 3) return null;
+    static BlockPos anchorOf(CompoundTag entry, Mirror mirror, Rotation rotation,
+                             BlockPos pivot, BlockPos origin) {
+        // A LIST of three ints, not an int array: StructureTemplate.save writes blockPos through its
+        // own newIntegerList, the same shape it uses for pos. Reading it as TAG_INT_ARRAY silently
+        // matched nothing, so every anchor came back null and rebase skipped TileX/Y/Z below —
+        // leaving each picture nailed to the coordinates it was authored at, which only shows once a
+        // template is stamped somewhere other than where it was captured.
+        if (!entry.contains("blockPos", Tag.TAG_LIST)) return null;
+        ListTag local = entry.getList("blockPos", Tag.TAG_INT);
+        if (local.size() != 3) return null;
         return StructureTemplate
-            .transform(new BlockPos(local[0], local[1], local[2]), mirror, rotation, pivot)
+            .transform(new BlockPos(local.getInt(0), local.getInt(1), local.getInt(2)),
+                mirror, rotation, pivot)
             .offset(origin);
     }
 

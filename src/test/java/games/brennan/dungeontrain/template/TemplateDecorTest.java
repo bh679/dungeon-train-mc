@@ -3,14 +3,18 @@ package games.brennan.dungeontrain.template;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.DoubleTag;
+import net.minecraft.nbt.IntTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
+import net.minecraft.world.level.block.Mirror;
+import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.phys.Vec3;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -32,7 +36,13 @@ class TemplateDecorTest {
         pos.add(DoubleTag.valueOf(y));
         pos.add(DoubleTag.valueOf(z));
         e.put("pos", pos);
-        e.putIntArray("blockPos", new int[]{bx, by, bz});
+        // A LIST of ints, which is what StructureTemplate.save writes — an int array here would be a
+        // format this test invented, and would hide anchorOf reading the wrong tag type.
+        ListTag blockPos = new ListTag();
+        blockPos.add(IntTag.valueOf(bx));
+        blockPos.add(IntTag.valueOf(by));
+        blockPos.add(IntTag.valueOf(bz));
+        e.put("blockPos", blockPos);
         CompoundTag nbt = new CompoundTag();
         nbt.putString("id", id);
         nbt.putInt("TileX", bx);
@@ -130,5 +140,38 @@ class TemplateDecorTest {
         CompoundTag nbt = TemplateDecor.rebase(e, new Vec3(11, 12, 13), null);
         assertFalse(nbt.contains("TileX"));
         assertEquals(11.0, nbt.getList("Pos", Tag.TAG_DOUBLE).getDouble(0), 1e-9);
+    }
+
+    @Test
+    void theHangingAnchorIsReadOffTheEntryAndRebasedOntoTheStampOrigin() {
+        CompoundTag e = entry("minecraft:painting", 1.5, 2.0, 3.5, 1, 2, 3);
+        BlockPos anchor = TemplateDecor.anchorOf(
+            e, Mirror.NONE, Rotation.NONE, BlockPos.ZERO, new BlockPos(100, 64, -200));
+
+        // Template-local (1,2,3) stamped at (100,64,-200). A null here is the failure that put every
+        // picture back at the coordinates it was authored at.
+        assertEquals(new BlockPos(101, 66, -197), anchor);
+    }
+
+    @Test
+    void anEntryCarryingNoAnchorAtAllReadsBackAsNone() {
+        CompoundTag e = entry("minecraft:item_frame", 1, 2, 3, 1, 2, 3);
+        e.remove("blockPos");
+        assertNull(TemplateDecor.anchorOf(
+            e, Mirror.NONE, Rotation.NONE, BlockPos.ZERO, new BlockPos(100, 64, -200)));
+    }
+
+    @Test
+    void stampingSomewhereElseMovesTheAnchorByTheFullOriginDelta() {
+        // The portal-room case: one authored template stamped as many copies. Two different origins
+        // must not produce the same anchor, or every copy hangs its decor over the first copy.
+        CompoundTag e = entry("minecraft:item_frame", 1, 2, 3, 1, 2, 3);
+        BlockPos a = TemplateDecor.anchorOf(
+            e, Mirror.NONE, Rotation.NONE, BlockPos.ZERO, new BlockPos(0, 64, 0));
+        BlockPos b = TemplateDecor.anchorOf(
+            e, Mirror.NONE, Rotation.NONE, BlockPos.ZERO, new BlockPos(48, 64, 0));
+
+        assertNotEquals(a, b);
+        assertEquals(48, b.getX() - a.getX());
     }
 }

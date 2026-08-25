@@ -799,7 +799,7 @@ public final class CarriagePlacer {
             // Without this pre-clear, the base filter alone leaves whatever
             // was previously in those cells untouched.
             filter.ifPresent(p -> p.clearClaimedCellsSilently(level));
-            stampTemplate(level, origin, stored.get(), filter.orElse(null), relight);
+            stampTemplate(level, origin, stored.get(), filter.orElse(null), relight, /*decorBox*/ null);
             return "stored";
         }
         if (variant instanceof CarriageVariant.Builtin b) {
