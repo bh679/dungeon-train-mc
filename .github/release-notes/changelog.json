@@ -8683,6 +8683,22 @@
       "released": true,
       "released_in": "v0.653.0",
       "released_at": "2026-08-25T13:25:38Z"
+    },
+    {
+      "id": "sibling-mod-update-eb-011-te-09",
+      "version": "0.654.0",
+      "type": "fix",
+      "title": "Backpacks keep their contents, and villagers will price your own items",
+      "summary": "Dungeon Train now ships Edible Backpacks 0.11.0 and requires Trade Everything 0.9.0. The headline fix: anything stored in a backpack slot used to vanish after a relog or a respawn \u2014 it now survives both.",
+      "highlights": [
+        "Backpack contents are no longer lost when you relog or respawn.",
+        "The Upgraded Backpack recipe now takes a gold block in the middle of the 3x3 of backpacks.",
+        "A villager's Trade Anything slot cycles through the items you are carrying, each with its own price."
+      ],
+      "date": "2026-08-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
