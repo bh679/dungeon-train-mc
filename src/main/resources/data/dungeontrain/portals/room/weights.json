@@ -94,7 +94,7 @@
   "library_dimension": {
     "weight": 3,
     "minLevel": 5,
-    "mode": "endless_repetition/dynamic"
+    "mode": "endless_repetition/dynamic/off/on/off/none/repeated"
   },
   "midlibrary": {
     "weight": 1,

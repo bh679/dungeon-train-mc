@@ -160,13 +160,35 @@ public record PortalCorridorMask(List<BoundingBox> boxes) {
      */
     public static PortalCorridorMask forStructure(PortalStructure structure, CarriageDims dims,
                                                   PortalCarriageLayout layout, int plugDepth) {
+        return forStructure(structure, dims, layout, plugDepth, /*withSeals*/ true);
+    }
+
+    /**
+     * As {@link #forStructure(PortalStructure, CarriageDims, PortalCarriageLayout, int)}, with the
+     * seal planes optional.
+     *
+     * <p><b>Why a caller would drop them.</b> A seal plane sits exactly one column outside the base
+     * room box, which is exactly the wall plane of the room copy standing at tile {@code (±1, 0)}
+     * under {@link PortalRoomMode#ENDLESS_REPETITION}. Masked, that copy never writes the wall that
+     * touches the portal carriage — what stands there is the mouth's mirror fill, sourced from the
+     * base room's <i>opposite</i> end column and flattened to full blocks, so the authored wall does
+     * not repeat and a Dynamic copy shows the base room's roll rather than its own.</p>
+     *
+     * <p>The corridor box and the plug are never optional. Those hold the doorway and the corridor's
+     * own blocks, and a write into either is the thing this whole class exists to prevent. Only the
+     * ring around the mouth is released, and only to the room copy that owns that plane — which then
+     * repairs any air it leaves. See {@code PortalRoomSealRepair}.</p>
+     */
+    public static PortalCorridorMask forStructure(PortalStructure structure, CarriageDims dims,
+                                                  PortalCarriageLayout layout, int plugDepth,
+                                                  boolean withSeals) {
         // Each half off its own coordinate frame. The entry always stands beside the base room; the
         // exit stands beside whichever tile this pair put it at, and its seal ring has to fill THAT
         // room's cross-section rather than the base one's. Reading both off the same structure was
         // right only while an exit could not move.
-        return forCorridor(structure, dims, layout, plugDepth, PortalCarriageRole.ENTRY)
+        return forCorridor(structure, dims, layout, plugDepth, PortalCarriageRole.ENTRY, withSeals)
             .plus(forCorridor(structure.exitShadow(), dims, layout, plugDepth,
-                PortalCarriageRole.EXIT));
+                PortalCarriageRole.EXIT, withSeals));
     }
 
     /**
@@ -183,6 +205,18 @@ public record PortalCorridorMask(List<BoundingBox> boxes) {
     public static PortalCorridorMask forCorridor(PortalStructure structure, CarriageDims dims,
                                                  PortalCarriageLayout layout, int plugDepth,
                                                  PortalCarriageRole role) {
+        return forCorridor(structure, dims, layout, plugDepth, role, /*withSeals*/ true);
+    }
+
+    /**
+     * As {@link #forCorridor(PortalStructure, CarriageDims, PortalCarriageLayout, int,
+     * PortalCarriageRole)}, with the seal plane optional — see
+     * {@link #forStructure(PortalStructure, CarriageDims, PortalCarriageLayout, int, boolean)} for
+     * why anything would ask for it without.
+     */
+    public static PortalCorridorMask forCorridor(PortalStructure structure, CarriageDims dims,
+                                                 PortalCarriageLayout layout, int plugDepth,
+                                                 PortalCarriageRole role, boolean withSeals) {
         BlockPos corridor = role == PortalCarriageRole.ENTRY
             ? structure.origin()
             : structure.exitOrigin(dims);
@@ -214,15 +248,46 @@ public record PortalCorridorMask(List<BoundingBox> boxes) {
         // The mouth is the door plane facing the room: the far end of an entry corridor, the near end
         // of an exit one. The plug is always at the other end, behind the door that leads nowhere.
         boolean entry = role == PortalCarriageRole.ENTRY;
-        int sealX = entry ? maxX : minX;
+        int sealX = sealPlaneX(corridor, layout, role);
         int plugMinX = entry ? minX - plugDepth : maxX + 1;
         int plugMaxX = entry ? minX - 1 : maxX + plugDepth;
 
-        return new PortalCorridorMask(List.of(
-            new BoundingBox(minX, corridorMinY, corridorMinZ, maxX, corridorMaxY, corridorMaxZ),
-            new BoundingBox(plugMinX, corridorMinY, corridorMinZ - 1,
-                plugMaxX, corridorMaxY, corridorMaxZ + 1),
-            new BoundingBox(sealX, roomMinY, roomMinZ, sealX, roomMaxY, roomMaxZ)));
+        BoundingBox corridorBox =
+            new BoundingBox(minX, corridorMinY, corridorMinZ, maxX, corridorMaxY, corridorMaxZ);
+        BoundingBox plugBox = new BoundingBox(plugMinX, corridorMinY, corridorMinZ - 1,
+            plugMaxX, corridorMaxY, corridorMaxZ + 1);
+        if (!withSeals) return new PortalCorridorMask(List.of(corridorBox, plugBox));
+        return new PortalCorridorMask(List.of(corridorBox, plugBox,
+            seal(sealX, roomMinY, roomMinZ, roomMaxY, roomMaxZ)));
+    }
+
+    /**
+     * The single plane one corridor's seal ring fills, at {@code planeX} — the room's whole
+     * cross-section there.
+     *
+     * <p>Named rather than built inline so a caller that needs the seal alone can ask for it by name
+     * instead of reaching into {@link #boxes} by index. The list's order is not a contract, and a
+     * caller that assumed one would break silently the day a fourth box is added.</p>
+     */
+    public static BoundingBox seal(int planeX, int roomMinY, int roomMinZ,
+                                   int roomMaxY, int roomMaxZ) {
+        return new BoundingBox(planeX, roomMinY, roomMinZ, planeX, roomMaxY, roomMaxZ);
+    }
+
+    /**
+     * Where one corridor's seal plane stands, in world X — the far end of an entry corridor, the near
+     * end of an exit one.
+     *
+     * <p>The same number {@link #forCorridor} seals at and {@code PortalCarriageBuilder.stampCorridorHalf}
+     * writes at, read off the corridor origin rather than duplicated, so a caller asking "does this
+     * tile's wall plane coincide with a mouth?" cannot answer from a different geometry than the one
+     * that laid it.</p>
+     */
+    public static int sealPlaneX(BlockPos corridorOrigin, PortalCarriageLayout layout,
+                                 PortalCarriageRole role) {
+        return role == PortalCarriageRole.ENTRY
+            ? corridorOrigin.getX() + layout.length() - 1
+            : corridorOrigin.getX();
     }
 
     /**

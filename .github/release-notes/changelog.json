@@ -8891,8 +8891,24 @@
       "released_at": null
     },
     {
-      "id": "portal-room-editor-exit",
+      "id": "portal-room-walls-in-tiling",
       "version": "0.668.0",
+      "type": "feat",
+      "title": "Portal rooms can keep their own walls as they repeat",
+      "summary": "An endless portal room used to dissolve its own walls as it repeated \u2014 the wall between two copies was carved away so the space read as one continuous hall, taking whatever the builder had put on it with it. Rooms can now be built the other way instead: every copy keeps the walls it was drawn with, and you walk between copies through the doorways the builder left. Existing rooms are untouched.",
+      "highlights": [
+        "New Room Walls setting on a portal room: Merged (as before) or Kept",
+        "Kept rooms repeat their walls exactly, including the wall the way back to the train stands in",
+        "The library dimension now keeps its walls"
+      ],
+      "date": "2026-08-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "portal-room-editor-exit",
+      "version": "0.669.0",
       "type": "fix",
       "title": "Leaving the dimensional carriage editor works again",
       "summary": "Exiting the editor after opening a dimensional carriage directly now returns you to where you came from, in the game mode you were in. Before, it told you there was no session to exit and left you standing in the plot in creative.",
