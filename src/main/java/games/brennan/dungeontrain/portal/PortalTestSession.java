@@ -34,12 +34,46 @@ public final class PortalTestSession {
                           GameType previousGameType, PortalStructure structure, String roomName,
                           BlockPos arrival) {}
 
+    /**
+     * Pair key every test stamp is filed under.
+     *
+     * <p><b>It has to be a legal carriage index, not a sentinel.</b> The first attempt used
+     * {@code Integer.MIN_VALUE / 2}, on the reasoning that a value that extreme could never collide
+     * with a real group anchor. It does not collide, but the key does not stay a key: it is handed
+     * down to the contents roller and the variant placer, which read it as a <i>position on the
+     * track</i> and feed it to the difficulty frame. That logged two "cannot be a position on the
+     * track" errors per stamp and fell back to tier 0 anyway.</p>
+     *
+     * <p>So it is tier 0 deliberately instead — the origin, a real index, which rolls the same
+     * contents the fallback was already producing and says nothing to the log. It is also what
+     * makes a copy's {@code variantIndexFor(tile, pairKey)} meaningful rather than arbitrary.</p>
+     */
+    public static final int PAIR_KEY = 0;
+
     private static final Map<UUID, Session> SESSIONS = new ConcurrentHashMap<>();
 
     private PortalTestSession() {}
 
     public static void put(UUID player, Session session) {
         SESSIONS.put(player, session);
+    }
+
+    /**
+     * Replace the structure on a live session, leaving the return half alone.
+     *
+     * <p>The tiler is a fold — it returns a new structure carrying one more copy each tick — so the
+     * session has to keep the latest one or Back would sweep the box the room had when it was first
+     * stamped and leave the window standing.</p>
+     */
+    public static void updateStructure(UUID player, PortalStructure structure) {
+        SESSIONS.computeIfPresent(player, (id, session) -> new Session(
+            session.dimension(), session.pos(), session.yaw(), session.pitch(),
+            session.previousGameType(), structure, session.roomName(), session.arrival()));
+    }
+
+    /** Every live trip, for the ticker. */
+    public static java.util.Set<Map.Entry<UUID, Session>> entries() {
+        return SESSIONS.entrySet();
     }
 
     public static Session get(UUID player) {

@@ -52,20 +52,7 @@ public final class PortalTestCommand {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    /**
-     * Pair key for a test stamp.
-     *
-     * <p><b>It has to be a legal carriage index, not a sentinel.</b> The first attempt used
-     * {@code Integer.MIN_VALUE / 2} on the reasoning that a value that extreme could never collide
-     * with a real group anchor. It does not collide, but the key does not stay a key: it is handed
-     * down to the contents roller and the variant placer, which read it as a <i>position on the
-     * track</i> and feed it to the difficulty frame. That logged two "this cannot be a position on
-     * the track" errors per stamp and fell back to tier 0 anyway.</p>
-     *
-     * <p>So it is tier 0 deliberately instead — the origin, which is a real index, rolls the same
-     * contents the fallback was already producing, and says nothing to the log.</p>
-     */
-    private static final int TEST_PAIR_KEY = 0;
+
 
     /**
      * How far off the track band the test structure is stamped, in blocks of {@code +Z}.
@@ -119,12 +106,13 @@ public final class PortalTestCommand {
         PortalRoomSettings settings = PortalRoomSettings.of(roomName);
         PortalStructure structure = new PortalStructure(
             originFor(player, overworld, dims), roomName, roomSize, settings,
-            // The base tile only: copies and extra exits are a live-pair concern, and a room
-            // repeating into the basement is not what an author pressed this to look at.
+            // Starts at the base tile and grows from there: PortalTestTicker drives the real
+            // PortalRoomTiler around the player, so an endless room repeats here exactly as it does
+            // on the train, block variants and all.
             PortalRoomTiling.base(), games.brennan.dungeontrain.portal.PortalExitCopies.NONE,
             PortalRoomTiling.Tile.BASE);
 
-        PortalCarriageBuilder.stampPairStructure(overworld, structure, dims, TEST_PAIR_KEY);
+        PortalCarriageBuilder.stampPairStructure(overworld, structure, dims, PortalTestSession.PAIR_KEY);
 
         // In the ENTRY DOORWAY looking down the room, not dropped in the middle of it — the same
         // view an author gets walking in off the train, which is the one they are building for.
@@ -186,9 +174,13 @@ public final class PortalTestCommand {
         }
         DungeonTrainNet.sendTo(player, PortalTestSessionPacket.none());
 
-        // Sweep exactly what was stamped — the same box the live path measures a structure by.
-        BoundingBox footprint = PortalCarriageBuilder.footprintOf(overworld, session.structure(), dims);
-        int cleared = PortalClear.clearBox(overworld, footprint, PortalCorridorMask.NONE);
+        // Sweep the whole WINDOW, not just the base room. footprintOf is deliberately blind to
+        // tiling — copies are laid around the corridors rather than through them — so clearing only
+        // that box would leave every copy the ticker grew standing under the world. The structure
+        // knows its own tiled bounds; union them with the footprint and clear the lot. Blunt is
+        // right here: the test band holds nothing else to protect.
+        int cleared = PortalClear.clearBox(overworld, windowBox(overworld, session.structure(), dims),
+            PortalCorridorMask.NONE);
 
         LOGGER.info("[DungeonTrain] portal test back: returned {} to {} and cleared {} block(s) of '{}'",
             player.getName().getString(), fmt(session.pos()), cleared, session.roomName());
@@ -197,6 +189,20 @@ public final class PortalTestCommand {
             "Back at the plot — the test '" + session.roomName() + "' has been cleared away."
         ).withStyle(ChatFormatting.GRAY), false);
         return 1;
+    }
+
+    /** The footprint and every copy the tiler grew around it, as one box. */
+    private static BoundingBox windowBox(ServerLevel level, PortalStructure structure,
+                                         CarriageDims dims) {
+        BoundingBox footprint = PortalCarriageBuilder.footprintOf(level, structure, dims);
+        PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims, structure.kind());
+        return new BoundingBox(
+            Math.min(footprint.minX(), structure.tiledMinX(dims, layout) - 1),
+            footprint.minY(),
+            Math.min(footprint.minZ(), structure.tiledMinZ(dims, layout) - 1),
+            Math.max(footprint.maxX(), structure.tiledMaxX(dims, layout) + 1),
+            Math.max(footprint.maxY(), structure.origin().getY() + structure.roomSize().getY() + 1),
+            Math.max(footprint.maxZ(), structure.tiledMaxZ(dims, layout) + 1));
     }
 
     /**
