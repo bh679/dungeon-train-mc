@@ -8784,6 +8784,18 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "playermob-094-fire",
+      "version": "0.660.0",
+      "type": "chore",
+      "title": "PlayerMobs put flint and steel to work",
+      "summary": "Dungeon Train now requires PlayerMob 0.94.0, and both modpacks ship it: PlayerMobs pick up dropped flint and steel, cook their kills with it, torch enemies mid-fight, and stop to put fires out.",
+      "highlights": [],
+      "date": "2026-08-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
