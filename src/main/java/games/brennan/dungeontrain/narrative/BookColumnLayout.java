@@ -1,14 +1,14 @@
 package games.brennan.dungeontrain.narrative;
 
 /**
- * Two-column layout for a written book page — a name on the left, a right-justified number on the
- * right — for the leaderboard books.
+ * Text measurement for a written book page — how wide a string renders, how to cut one to the
+ * margin, and how to push one flush against the right edge — for the leaderboard books.
  *
  * <h2>Why this exists at all</h2>
  * <p>A book page is {@value #PAGE_WIDTH_PX} pixels wide and Minecraft's default font is
  * variable-width, so "pad with spaces until it looks right" does not survive contact with real
  * player names: {@code IIIIIIIIIIIIIIII} and {@code MMMMMMMMMMMMMMMM} are the same sixteen
- * characters and nowhere near the same width. Right-justifying a column therefore needs actual
+ * characters and nowhere near the same width. Right-justifying anything therefore needs actual
  * glyph advances.</p>
  *
  * <p>The obvious source for those is {@code net.minecraft.client.gui.Font#width}, and it is not
@@ -19,15 +19,16 @@ package games.brennan.dungeontrain.narrative;
  *
  * <h2>What "right-justified" means here, exactly</h2>
  * <p>Padding is made of spaces, and a space advances 4px, so a column edge can only ever be hit to
- * within 4px. This pads with the largest number of spaces that still fits, which leaves the number's
- * right edge 0–3px short of the margin — never over it, because overflowing wraps the line and
- * breaks the whole page. In practice that is under half a character of ragged edge and reads as a
- * straight column; it is not, and cannot be, pixel-exact.</p>
+ * within 4px. {@link #rightAlign} pads with the largest number of spaces that still fits, which
+ * leaves the value's right edge 0–3px short of the margin — never over it, because overflowing wraps
+ * the line and breaks the whole page. In practice that is under half a character of ragged edge and
+ * reads as a straight column; it is not, and cannot be, pixel-exact.</p>
  *
- * <p>Names too long for the space left over are truncated with an ellipsis. At {@value #PAGE_WIDTH_PX}px
- * a rank, a gap and a five-figure score leave roughly eleven characters of name, so truncation is
- * normal rather than exceptional — a sixteen-character name does not fit on a book page next to a
- * number and no amount of layout will make it.</p>
+ * <p>A leaderboard entry spends a whole line on the name and the next on the score, so a name has
+ * the full {@value #PAGE_WIDTH_PX}px to itself and only the longest are cut. That is the difference
+ * between showing {@code ThePenultimateCarriage} and showing {@code ThePenultim…}: sharing a line
+ * with a five-figure score left about eleven characters for a name, which most real names do not
+ * fit in.</p>
  */
 public final class BookColumnLayout {
 
@@ -108,28 +109,20 @@ public final class BookColumnLayout {
     }
 
     /**
-     * One leaderboard line: {@code left}, then as much space as fits, then {@code right} ending flush
-     * with the {@code widthPx} margin. {@code left} is truncated when it would not otherwise leave a
-     * gap of at least one space.
-     *
-     * <p>When {@code right} alone is wider than the line there is nothing sensible to lay out, so the
-     * number wins and the name is dropped — a rank with no score is useless, a score with no name is
-     * merely disappointing.</p>
+     * {@code value} pushed against the right-hand margin of a {@code widthPx} line, padded with
+     * leading spaces. A value already at or over the width is returned as-is rather than padded
+     * onto a second line — overflowing wraps, and a wrapped score would break the page's rhythm.
      */
-    public static String row(String left, String right, int widthPx) {
-        String value = right == null ? "" : right;
-        int valuePx = width(value);
-        if (valuePx >= widthPx) return value;
-
-        int room = widthPx - valuePx - SPACE_PX; // always leave at least one space between the two
-        String name = truncate(left == null ? "" : left, room);
-        int gapPx = widthPx - valuePx - width(name);
-        int spaces = gapPx / SPACE_PX; // floor: 0-3px short of the margin, never past it
-        return name + " ".repeat(Math.max(1, spaces)) + value;
+    public static String rightAlign(String value, int widthPx) {
+        if (value == null || value.isEmpty()) return "";
+        int px = width(value);
+        if (px >= widthPx) return value;
+        int spaces = (widthPx - px) / SPACE_PX; // floor: 0-3px short of the margin, never past it
+        return " ".repeat(spaces) + value;
     }
 
-    /** {@link #row(String, String, int)} at the full width of a book page. */
-    public static String row(String left, String right) {
-        return row(left, right, PAGE_WIDTH_PX);
+    /** {@link #rightAlign(String, int)} at the full width of a book page. */
+    public static String rightAlign(String value) {
+        return rightAlign(value, PAGE_WIDTH_PX);
     }
 }

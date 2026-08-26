@@ -48,7 +48,13 @@ public final class LeaderboardPool {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    /** Rows to ask for. Eight book pages at ~13 lines hold about this many. */
+    /**
+     * Rows to ask for — the relay's whole published slice, deliberately more than a book shows.
+     *
+     * <p>A book holds {@code LeaderboardBookFactory.MAX_ROWS} ranks, but asking for exactly that many
+     * would cost the relay MORE, not less: it serves the full board from one pre-serialized buffer
+     * and re-serializes per request for any shorter limit. Asking for all of it is the cheap path.</p>
+     */
     static final int FETCH_LIMIT = 100;
 
     /** A board older than this is refetched the next time its category is wanted. */

@@ -37,9 +37,25 @@ class LeaderboardBookFactoryTest {
             CAT, entries(LeaderboardBookFactory.MAX_ROWS), Optional.of(new LeaderboardPool.Standing(4, 12, 0)));
 
         assertEquals(LeaderboardBookFactory.PAGES + 1, pages.size(), "eight board pages plus the closing one");
-        // Page one spends lines on the heading, so it carries fewer ranks than the rest.
-        assertEquals(LeaderboardBookFactory.FIRST_PAGE_ROWS + 2, lines(pages.get(0)).length);
-        assertEquals(LeaderboardBookFactory.LINES_PER_PAGE, lines(pages.get(1)).length);
+        // Page one spends lines on the heading, so it carries fewer ranks than the rest. Two lines a
+        // rank, plus the heading line and the blank under it.
+        assertEquals(LeaderboardBookFactory.FIRST_PAGE_ROWS * LeaderboardBookFactory.LINES_PER_ENTRY + 2,
+            lines(pages.get(0)).length);
+        assertEquals(LeaderboardBookFactory.ROWS_PER_PAGE * LeaderboardBookFactory.LINES_PER_ENTRY,
+            lines(pages.get(1)).length);
+    }
+
+    @Test
+    @DisplayName("each rank is a name line with its score on the line below")
+    void everyRankIsTwoLines() {
+        List<Component> pages = LeaderboardBookFactory.pages(CAT, entries(6), Optional.empty());
+        String[] first = lines(pages.get(0));
+
+        // [0] heading, [1] blank, then name/score pairs.
+        assertTrue(first[2].startsWith("1. Player1"), "name line: " + first[2]);
+        assertTrue(first[3].endsWith("999"), "score line under it: '" + first[3] + "'");
+        assertTrue(first[3].startsWith(" "), "the score is pushed right, not left: '" + first[3] + "'");
+        assertTrue(first[4].startsWith("2. Player2"), "next name line: " + first[4]);
     }
 
     @Test
@@ -50,8 +66,9 @@ class LeaderboardBookFactoryTest {
         String[] second = lines(pages.get(1));
 
         assertTrue(first[2].startsWith("1. Player1"), first[2]);
-        assertTrue(first[first.length - 1].startsWith(LeaderboardBookFactory.FIRST_PAGE_ROWS + ". "),
-            "last line of page one: " + first[first.length - 1]);
+        // Last PAIR of page one is the final rank it carries: its name line, then its score.
+        assertTrue(first[first.length - 2].startsWith(LeaderboardBookFactory.FIRST_PAGE_ROWS + ". "),
+            "last name line of page one: " + first[first.length - 2]);
         assertTrue(second[0].startsWith((LeaderboardBookFactory.FIRST_PAGE_ROWS + 1) + ". "),
             "first line of page two: " + second[0]);
     }
@@ -61,7 +78,7 @@ class LeaderboardBookFactoryTest {
     void shortBoardEndsEarly() {
         List<Component> pages = LeaderboardBookFactory.pages(CAT, entries(3), Optional.empty());
         assertEquals(2, pages.size(), "one page of ranks plus the closing page");
-        assertEquals(5, lines(pages.get(0)).length, "heading, blank, three ranks");
+        assertEquals(8, lines(pages.get(0)).length, "heading, blank, three ranks of two lines each");
     }
 
     @Test
@@ -80,10 +97,12 @@ class LeaderboardBookFactoryTest {
                          new LeaderboardPool.Entry("日本語のプレイヤー", 1L),
                          new LeaderboardPool.Entry("i", 5L)),
             Optional.empty());
-        for (String line : lines(pages.get(0))) {
-            if (line.isEmpty() || !Character.isDigit(line.charAt(0))) continue; // heading, not a rank
-            assertTrue(BookColumnLayout.width(line) <= BookColumnLayout.PAGE_WIDTH_PX,
-                "over the margin: '" + line + "'");
+        // Skip the heading and the blank under it: the heading is a translatable the game wraps for
+        // itself, and with no language loaded it renders as its own (very long) key.
+        String[] laid = lines(pages.get(0));
+        for (int i = 2; i < laid.length; i++) {
+            assertTrue(BookColumnLayout.width(laid[i]) <= BookColumnLayout.PAGE_WIDTH_PX,
+                "over the margin: '" + laid[i] + "'");
         }
     }
 

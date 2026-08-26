@@ -9,21 +9,27 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * Builds a leaderboard book — one board, the top players, name left and score right, and a closing
- * line telling the reader where they stand.
+ * Builds a leaderboard book — one board, the top players, and a closing line telling the reader
+ * where they stand.
  *
  * <h2>Shape</h2>
+ * <p>Each entry takes {@value #LINES_PER_ENTRY} lines: the rank and name on one, the score
+ * right-aligned on the next. That costs half the ranks a shared line would fit and buys back the
+ * names — a name has the whole {@value BookColumnLayout#PAGE_WIDTH_PX}px to itself instead of
+ * whatever a five-figure score left over, so the great majority arrive intact rather than cut to
+ * eleven characters.</p>
+ *
  * <p>{@value #PAGES} pages of {@value #LINES_PER_PAGE} lines. Page one spends two of its lines on a
- * heading, so it carries ranks 1–{@value #FIRST_PAGE_ROWS} and the rest carry
- * {@value #LINES_PER_PAGE} each — {@value #MAX_ROWS} in all when the board is deep enough to fill
- * them. A shorter board simply ends early rather than padding out blank pages.</p>
+ * heading and one on the blank beneath it, so it carries ranks 1–{@value #FIRST_PAGE_ROWS} and the
+ * rest carry {@value #ROWS_PER_PAGE} each — {@value #MAX_ROWS} in all when the board is deep enough
+ * to fill them. A shorter board simply ends early rather than padding out blank pages.</p>
  *
  * <h2>Localisation</h2>
  * <p>Pages are {@link Component}s so the heading and the closing line resolve on the reader's own
  * client. The rows themselves are literal — a name and a number need no translating, and keeping
- * them literal is also what keeps the column aligned, since {@link BookColumnLayout} measures the
- * exact string it emits. The book's <em>title</em> is English: {@code WrittenBookContent} takes a
- * plain string, so there is nowhere for a translation to happen.</p>
+ * them literal is also what keeps the score column aligned, since {@link BookColumnLayout} measures
+ * the exact string it emits. The book's <em>title</em> is English: {@code WrittenBookContent} takes
+ * a plain string, so there is nowhere for a translation to happen.</p>
  */
 public final class LeaderboardBookFactory {
 
@@ -33,11 +39,17 @@ public final class LeaderboardBookFactory {
     /** Lines a written-book page fits at default font size. */
     static final int LINES_PER_PAGE = 13;
 
+    /** Lines one ranked entry occupies: the name, then the score under it. */
+    static final int LINES_PER_ENTRY = 2;
+
     /** Page one gives two lines to the heading and one to the blank beneath it. */
-    static final int FIRST_PAGE_ROWS = LINES_PER_PAGE - 3;
+    static final int FIRST_PAGE_ROWS = (LINES_PER_PAGE - 3) / LINES_PER_ENTRY;
+
+    /** Ranks every page after the first carries. The odd leftover line stays blank. */
+    static final int ROWS_PER_PAGE = LINES_PER_PAGE / LINES_PER_ENTRY;
 
     /** Ranks a full book holds. */
-    static final int MAX_ROWS = FIRST_PAGE_ROWS + (PAGES - 1) * LINES_PER_PAGE;
+    static final int MAX_ROWS = FIRST_PAGE_ROWS + (PAGES - 1) * ROWS_PER_PAGE;
 
     /** Credited author. Nobody wrote this; something counted it. */
     private static final String AUTHOR = "The Tallyman";
@@ -72,17 +84,19 @@ public final class LeaderboardBookFactory {
     static List<Component> pages(LeaderboardCategory category,
                                  List<LeaderboardPool.Entry> entries,
                                  Optional<LeaderboardPool.Standing> mine) {
+        // Two lines per rank, in order, so a page is just a slice of this list taken in pairs.
         List<String> rows = new ArrayList<>();
         int shown = Math.min(entries.size(), MAX_ROWS);
         for (int i = 0; i < shown; i++) {
             LeaderboardPool.Entry e = entries.get(i);
-            rows.add(BookColumnLayout.row((i + 1) + ". " + e.name(), category.render(e.score())));
+            rows.add(BookColumnLayout.truncate((i + 1) + ". " + e.name(), BookColumnLayout.PAGE_WIDTH_PX));
+            rows.add(BookColumnLayout.rightAlign(category.render(e.score())));
         }
 
         List<Component> pages = new ArrayList<>();
         int at = 0;
         for (int page = 0; page < PAGES && at < rows.size(); page++) {
-            int room = page == 0 ? FIRST_PAGE_ROWS : LINES_PER_PAGE;
+            int room = (page == 0 ? FIRST_PAGE_ROWS : ROWS_PER_PAGE) * LINES_PER_ENTRY;
             int end = Math.min(rows.size(), at + room);
             Component body = Component.literal(String.join("\n", rows.subList(at, end)));
             pages.add(page == 0

@@ -10,6 +10,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * Layout tests for {@link BookColumnLayout}. Pure arithmetic over a fixed glyph table — no
  * Minecraft bootstrap, which is the whole reason the table exists rather than a call to
  * {@code Font#width}.
+ *
+ * <p>An entry now spends one line on the name and the next on the score, so the two things measured
+ * here are "does a name fit its own line" and "does a value land on the margin" — not the old
+ * name-and-number-on-one-line row.
  */
 class BookColumnLayoutTest {
 
@@ -35,40 +39,46 @@ class BookColumnLayoutTest {
     }
 
     @Test
-    @DisplayName("a row never exceeds the page width, for any name")
-    void rowNeverOverflows() {
+    @DisplayName("a name line never exceeds the page width, for any name")
+    void nameLineNeverOverflows() {
         for (String name : new String[]{
-            "Ada", "MMMMMMMMMMMMMMMM", "iiiiiiiiiiiiiiii", "日本語のプレイヤー", "", "x".repeat(64),
+            "Ada", "MMMMMMMMMMMMMMMM", "iiiiiiiiiiiiiiii", "\u65e5\u672c\u8a9e\u306e\u30d7\u30ec\u30a4\u30e4\u30fc", "", "x".repeat(64),
         }) {
-            String row = BookColumnLayout.row("1. " + name, "123456", W);
-            assertTrue(BookColumnLayout.width(row) <= W,
-                "'" + name + "' laid out to " + BookColumnLayout.width(row) + "px, over the " + W + "px margin");
+            String line = BookColumnLayout.truncate("1. " + name, W);
+            assertTrue(BookColumnLayout.width(line) <= W,
+                "'" + name + "' laid out to " + BookColumnLayout.width(line) + "px, over the " + W + "px margin");
         }
     }
 
     @Test
-    @DisplayName("the value lands within one space of the margin — as close as space padding allows")
+    @DisplayName("a name gets the whole line now it no longer shares one with a score")
+    void nameKeepsTheWholeLine() {
+        String line = "1. FirstClassGhost";
+        // Fits alone at 91px, and would NOT have fitted beside a five-figure score: that shared a
+        // line, so the name only ever had W minus the score minus a space to live in.
+        int sharedRoom = W - BookColumnLayout.width("61200m") - 4;
+        assertTrue(BookColumnLayout.width(line) > sharedRoom, "this example no longer proves anything");
+        assertEquals(line, BookColumnLayout.truncate(line, W), "a name this long must survive on its own line");
+    }
+
+    @Test
+    @DisplayName("a right-aligned value lands within one space of the margin")
     void valueSitsAtTheMargin() {
-        String row = BookColumnLayout.row("1. Ada", "1234", W);
-        int px = BookColumnLayout.width(row);
-        assertTrue(px > W - 4 && px <= W, "expected 0-3px short of " + W + ", got " + px);
+        for (String value : new String[]{"1234", "37d 12h", "$500", "61200m", "7"}) {
+            String line = BookColumnLayout.rightAlign(value, W);
+            int px = BookColumnLayout.width(line);
+            assertTrue(px > W - 4 && px <= W, "'" + value + "' landed at " + px + "px, expected 0-3px short of " + W);
+            assertTrue(line.endsWith(value), "the value must survive alignment: " + line);
+        }
     }
 
     @Test
-    @DisplayName("a long name is truncated with an ellipsis rather than pushing the number off the line")
-    void longNameTruncates() {
-        String row = BookColumnLayout.row("100. ABCDEFGHIJKLMNOP", "999999", W);
-        assertTrue(row.contains("…"), "expected an ellipsis in: " + row);
-        assertTrue(row.endsWith("999999"), "the number must survive truncation: " + row);
-        assertTrue(BookColumnLayout.width(row) <= W);
-    }
-
-    @Test
-    @DisplayName("a name that fits is left exactly as written")
-    void shortNameUntouched() {
-        String row = BookColumnLayout.row("1. Ada", "7", W);
-        assertTrue(row.startsWith("1. Ada "), row);
-        assertTrue(!row.contains("…"));
+    @DisplayName("a value wider than the page is left alone rather than padded onto a second line")
+    void oversizeValueIsNotPadded() {
+        String huge = "9".repeat(40);
+        assertEquals(huge, BookColumnLayout.rightAlign(huge, W));
+        assertEquals("", BookColumnLayout.rightAlign("", W));
+        assertEquals("", BookColumnLayout.rightAlign(null, W));
     }
 
     @Test
@@ -78,17 +88,4 @@ class BookColumnLayoutTest {
         assertEquals("", BookColumnLayout.truncate("", 100));
     }
 
-    @Test
-    @DisplayName("a value wider than the page keeps the number and drops the name")
-    void oversizeValueWins() {
-        String huge = "9".repeat(40);
-        assertEquals(huge, BookColumnLayout.row("1. Ada", huge, W));
-    }
-
-    @Test
-    @DisplayName("there is always at least one space between the columns")
-    void alwaysAGap() {
-        String row = BookColumnLayout.row("1. MMMMMMMMMMMMMMMMMM", "999999", W);
-        assertTrue(row.contains(" 999999"), "columns must not run together: " + row);
-    }
 }
