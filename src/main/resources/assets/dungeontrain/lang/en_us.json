@@ -667,6 +667,7 @@
   "gui.dungeontrain.death.narr.donate_loading": "The ledger is still being tallied…",
   "gui.dungeontrain.death.narr.donate_button": "Contribute",
   "gui.dungeontrain.death.narr.donate_chip_tip": "Support the creator",
+  "gui.dungeontrain.death.narr.donate_hours": "%s hours of work have gone into this train so far.",
   "gui.dungeontrain.death.narr.donate_options_sub": "Every contribution keeps the rails lit and the train running. Choose how you'd like to help.",
   "gui.dungeontrain.death.narr.donate_revolut": "Direct Donation",
   "gui.dungeontrain.death.narr.donate_patreon": "Patreon",

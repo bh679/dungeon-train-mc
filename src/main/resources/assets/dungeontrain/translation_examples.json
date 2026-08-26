@@ -2811,5 +2811,14 @@
         "3"
       ]
     }
+  },
+  "gui.dungeontrain.death.narr.donate_hours": {
+    "1": {
+      "label": "total hours of development, already grouped for the reader's locale",
+      "examples": [
+        "1,394",
+        "2.700"
+      ]
+    }
   }
 }
