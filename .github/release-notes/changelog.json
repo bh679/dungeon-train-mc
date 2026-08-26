@@ -8871,6 +8871,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "dimensional-carriage-light-fade",
+      "version": "0.667.0",
+      "type": "fix",
+      "title": "Dimensional carriage lighting fades instead of jumping",
+      "summary": "Walking into a dimensional carriage no longer snaps the lighting. The corridor now fades once from the light of the world the train is running through to the light of the room at the far end, so crossing between the carriage and its copy is something you feel rather than something you see happen. Turn it off with the new crossingFade client setting.",
+      "highlights": [
+        "One smooth lighting fade along the corridor instead of a jump",
+        "The change is gradual with distance, from the train door to the room door",
+        "Turning around mid-corridor no longer flashes the lighting",
+        "New crossingFade client setting restores the old hard cut"
+      ],
+      "pr": 1106,
+      "date": "2026-08-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

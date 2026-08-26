@@ -76,6 +76,10 @@ public final class PortalRoomFogEvents {
         // The daylit-room box is the same shape of cache with the same failure mode — a stale one
         // would leave the next world's lightmap lifted — so it goes on the same pass.
         ClientPortalRoomSky.reset();
+        // The corridor hold is not a region but has the same failure mode from the other direction:
+        // it is a live value with a countdown, and a client that logs out mid-corridor would carry a
+        // partly-eased lift into the next world's first second. Cleared outright for the same reason.
+        ClientPortalCrossing.reset();
         // The engine-audio region is the same shape of cache with the same failure mode — a stale one
         // would have the train audible in the next world's portal-shaped nowhere — so it goes too.
         ClientPortalTrainAudio.reset();
