@@ -3275,5 +3275,59 @@
         "Steve"
       ]
     }
+  },
+  "book.dungeontrain.statbook.stat.advancements.one": {
+    "1": {
+      "label": "Dungeon Train advancements the reader has earned this run",
+      "examples": [
+        "1",
+        "7"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.stat.advancements.other": {
+    "1": {
+      "label": "Dungeon Train advancements the reader has earned this run",
+      "examples": [
+        "1",
+        "7"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.stat.death_notes.one": {
+    "1": {
+      "label": "Death Notes the reader has signed this run",
+      "examples": [
+        "1",
+        "3"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.stat.death_notes.other": {
+    "1": {
+      "label": "Death Notes the reader has signed this run",
+      "examples": [
+        "1",
+        "3"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.stat.love_notes.one": {
+    "1": {
+      "label": "Love Notes the reader has signed this run",
+      "examples": [
+        "1",
+        "2"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.stat.love_notes.other": {
+    "1": {
+      "label": "Love Notes the reader has signed this run",
+      "examples": [
+        "1",
+        "2"
+      ]
+    }
   }
 }

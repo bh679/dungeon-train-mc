@@ -149,6 +149,47 @@ class RunStatSubjectTest {
     }
 
     @Test
+    @DisplayName("Every run-scoped leaderboard board has a subject that reports the reader's own number")
+    void everyRunBoardIsCovered() {
+        List<String> uncovered = new ArrayList<>();
+        for (LeaderboardCategory board : LeaderboardCategory.values()) {
+            if (board.scope() != LeaderboardCategory.Scope.RUN) continue;
+            boolean covered = false;
+            for (RunStatSubject s : RunStatSubject.values()) {
+                if (board.base().equals(s.boardBase())) { covered = true; break; }
+            }
+            if (!covered) uncovered.add(board.id());
+        }
+        // A board ranks players against each other; this book tells one player where they stand on
+        // their own. Adding the first without the second leaves a measured thing a player can be
+        // ranked on but never told about.
+        assertTrue(uncovered.isEmpty(),
+            "run-scoped boards with no stat-book subject: " + uncovered);
+    }
+
+    @Test
+    @DisplayName("No two subjects claim the same board")
+    void boardClaimsAreUnique() {
+        List<String> claimed = new ArrayList<>();
+        for (RunStatSubject s : RunStatSubject.values()) {
+            if (s.boardBase() == null) continue;
+            assertFalse(claimed.contains(s.boardBase()),
+                s.id() + " re-claims the board " + s.boardBase());
+            claimed.add(s.boardBase());
+            assertTrue(LeaderboardCategory.byId(s.boardBase()).isPresent()
+                    || anyBoardHasBase(s.boardBase()),
+                s.id() + " claims a board that does not exist: " + s.boardBase());
+        }
+    }
+
+    private static boolean anyBoardHasBase(String base) {
+        for (LeaderboardCategory c : LeaderboardCategory.values()) {
+            if (c.base().equals(base)) return true;
+        }
+        return false;
+    }
+
+    @Test
     @DisplayName("The worst-case English page still fits one written-book page")
     void englishFitsOnOnePage() throws IOException {
         JsonObject lang = JsonParser.parseString(

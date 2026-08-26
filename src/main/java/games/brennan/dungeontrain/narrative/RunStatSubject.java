@@ -39,25 +39,32 @@ public enum RunStatSubject {
 
     // id              key base         format           floor  extractor
     /** Net carriages travelled this life. Absolute: going backwards is still getting somewhere. */
-    CARRIAGE("carriage", Format.PLAIN, 1, s -> Math.abs(s.travelledCarriageIndex())),
+    CARRIAGE("carriage", Format.PLAIN, 1, s -> Math.abs(s.travelledCarriageIndex()), "carriages"),
 
     /** Seconds since the run began. The fallback subject — see {@link #eligible}. */
-    PLAYTIME("playtime", Format.DURATION, 60, s -> s.runTicks() / Ticks.PER_SECOND),
+    PLAYTIME("playtime", Format.DURATION, 60, s -> s.runTicks() / Ticks.PER_SECOND, "playtime"),
 
-    CHESTS("chests", Format.COUNT, 1, PlayerRunState::containersOpened),
+    CHESTS("chests", Format.COUNT, 1, PlayerRunState::containersOpened, "chests"),
     MOB_KILLS("mob_kills", Format.COUNT, 1, PlayerRunState::mobKills),
-    DISTANCE("distance", Format.COUNT, 100, s -> (long) s.distanceBlocks()),
-    BOOKS_READ("books_read", Format.COUNT, 1, PlayerRunState::booksReadCount),
-    BOOKS_WRITTEN("books_written", Format.COUNT, 1, PlayerRunState::booksWrittenCount),
-    FRIENDS("friends", Format.COUNT, 1, PlayerRunState::befriendedCount),
+    DISTANCE("distance", Format.COUNT, 100, s -> (long) s.distanceBlocks(), "distance"),
+    BOOKS_READ("books_read", Format.COUNT, 1, PlayerRunState::booksReadCount, "books_read"),
+    BOOKS_WRITTEN("books_written", Format.COUNT, 1, PlayerRunState::booksWrittenCount, "books_written"),
+    FRIENDS("friends", Format.COUNT, 1, PlayerRunState::befriendedCount, "friends"),
     ENCOUNTERS("encounters", Format.COUNT, 1, PlayerRunState::encounteredCount),
-    ECHOES("echoes", Format.COUNT, 1, PlayerRunState::echoesKilled),
+    ECHOES("echoes", Format.COUNT, 1, PlayerRunState::echoesKilled, "echoes_killed"),
     TAMED("tamed", Format.COUNT, 1, PlayerRunState::tamedCount),
     DAMAGE_TAKEN("damage_taken", Format.PLAIN, 10, s -> (long) s.damageTaken()),
     PLAYER_KILLS("player_kills", Format.COUNT, 1, PlayerRunState::playerKills),
-    NO_CHEST("no_chest", Format.COUNT, 3, PlayerRunState::maxCarriagesNoChest),
+    NO_CHEST("no_chest", Format.COUNT, 3, PlayerRunState::maxCarriagesNoChest, "carriages_no_chest"),
     BACKWARDS("backwards", Format.COUNT, 1, PlayerRunState::cartsBackwardSinceDeath),
-    PACIFIST("pacifist", Format.COUNT, 3, PlayerRunState::pacifistCarriages);
+    PACIFIST("pacifist", Format.COUNT, 3, PlayerRunState::pacifistCarriages, "pacifist_carriages"),
+
+    // The remaining leaderboard subjects that have a per-run twin at all. Every RUN-scoped board
+    // above already had one; these three are boards kept as lifetime tallies whose one-life half is
+    // nonetheless a real, countable thing — so Faulthurst can remark on it.
+    ADVANCEMENTS("advancements", Format.COUNT, 1, s -> s.earnedAdvancements().size(), "advancements"),
+    DEATH_NOTES("death_notes", Format.COUNT, 1, PlayerRunState::deathNotesWritten, "deathnotes_written"),
+    LOVE_NOTES("love_notes", Format.COUNT, 1, PlayerRunState::loveNotesWritten, "lovenotes_written");
 
     /**
      * Vanilla server tick rate — {@link #PLAYTIME} reports seconds, not ticks.
@@ -94,16 +101,38 @@ public enum RunStatSubject {
     private final Format format;
     private final long floor;
     private final ToLongFunction<PlayerRunState> extractor;
+    private final String boardBase;
 
     RunStatSubject(String id, Format format, long floor, ToLongFunction<PlayerRunState> extractor) {
+        this(id, format, floor, extractor, null);
+    }
+
+    RunStatSubject(String id, Format format, long floor, ToLongFunction<PlayerRunState> extractor,
+                   String boardBase) {
         this.id = id;
         this.format = format;
         this.floor = floor;
         this.extractor = extractor;
+        this.boardBase = boardBase;
     }
 
     /** Stable wire id — stamped into {@link RunStatBookTag} and used to build the lang key. */
     public String id() { return id; }
+
+    /**
+     * {@link LeaderboardCategory#base() The leaderboard subject} this is the one-life twin of, or
+     * {@code null} for the subjects the boards do not measure (damage taken, animals tamed, and the
+     * rest — worth remarking on, just not worth ranking).
+     *
+     * <p><b>This is the coverage contract.</b> Every {@code Scope.RUN} board must have a subject
+     * naming it, so a player can be told their own number for anything the game ranks them on;
+     * {@code RunStatSubjectTest} fails if a new run board is added without one. Boards kept as
+     * lifetime tallies are claimed here too where their one-life half is a real countable thing —
+     * advancements earned, notes signed — and left alone where it is not: how many people a note
+     * reached is answered by their save, not this one, and "lives spent" in one life is always
+     * one.</p>
+     */
+    public String boardBase() { return boardBase; }
 
     public Format format() { return format; }
 
