@@ -32,6 +32,9 @@ import net.neoforged.neoforge.event.level.BlockEvent;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class PortalContainerEvents {
 
+    /** TEMP DIAGNOSTIC — remove before merge. */
+    private static final org.slf4j.Logger LOGGER = com.mojang.logging.LogUtils.getLogger();
+
     private PortalContainerEvents() {}
 
     /**
@@ -59,6 +62,9 @@ public final class PortalContainerEvents {
         if (PortalContainerLink.containerAt(level, pos) == null) return;
 
         BlockPos canonical = cell.canonical();
+        // TEMP DIAGNOSTIC — remove before merge.
+        LOGGER.info("[DT-DIAG] corridor container click: clicked={} canonicalHere={} canonical={} shell={} eye={}",
+            pos, cell.canonicalHere(), canonical, cell.shell(), player.getEyePosition());
         PortalContainerLink.gatherInto(level, canonical, cell.shell());
 
         // Clicked the copy that holds the items: vanilla opens it, and vanilla's reach check is the
@@ -116,6 +122,17 @@ public final class PortalContainerEvents {
 
     @SubscribeEvent
     public static void onContainerClose(PlayerContainerEvent.Close event) {
+        // TEMP DIAGNOSTIC — remove before merge. Who actually closed this menu?
+        if (!(event.getContainer() instanceof net.minecraft.world.inventory.InventoryMenu)) {
+            StringBuilder sb = new StringBuilder();
+            StackTraceElement[] trace = new Throwable().getStackTrace();
+            for (int i = 0; i < Math.min(trace.length, 14); i++) {
+                sb.append("\n    at ").append(trace[i]);
+            }
+            LOGGER.info("[DT-DIAG] container CLOSE menu={} player={}{}",
+                event.getContainer().getClass().getSimpleName(),
+                event.getEntity().getName().getString(), sb);
+        }
         PortalRemoteViewers.closed(event.getEntity());
     }
 
