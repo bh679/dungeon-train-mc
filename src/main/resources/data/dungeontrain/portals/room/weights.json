@@ -142,7 +142,7 @@
   },
   "smalllibrary": {
     "weight": 1,
-    "mode": "bedrock_lock/exact/off/off/mix:3:1:1:10:24"
+    "mode": "bedrock_lock/exact/off/off/mix"
   },
   "trap": {
     "weight": 1,

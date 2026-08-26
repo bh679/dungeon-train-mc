@@ -112,7 +112,7 @@ public final class PortalRoomLibrarian {
     public static void register(int pairKey, BlockPos origin, Vec3i size, PortalRoomBooks books) {
         REPORTED_NONE.remove(pairKey);
         PLACED.remove(pairKey);
-        if (books == null || !books.stocks() || origin == null || size == null) {
+        if (books == null || !books.locks() || origin == null || size == null) {
             // A room re-stamped with the setting turned off must not keep an old pending record, or
             // it would be stocked from a decision its author has since taken back.
             PENDING.remove(pairKey);
@@ -122,9 +122,11 @@ public final class PortalRoomLibrarian {
         // eviction queue — it is the most recently seen room, whatever it was before.
         PENDING.put(pairKey, new Pending(origin.immutable(), size, books,
             REGISTRATIONS.incrementAndGet()));
-        // A stat room wants every board there is, and warmNext()'s one-per-tick rotation takes about
-        // twelve minutes to get through them. Ask for the set now, while the player is walking in.
-        if (books.kind() == PortalRoomBooks.Kind.STATS) PortalRoomStatShelves.requestBoards();
+        // The roll is deterministic on the pair key, so whether this room is the tally is knowable
+        // now — and if it is, it wants every board there is. warmNext()'s one-per-tick rotation takes
+        // about twelve minutes to get through them; ask for the set while the player is still walking
+        // in. (Only the roll, not the whole resolution, which needs a reader.)
+        if (books.resolveShare(pairKey).isStats()) PortalRoomStatShelves.requestBoards();
         evictOldest();
     }
 
@@ -203,17 +205,19 @@ public final class PortalRoomLibrarian {
             ServerPlayer reader = readerFor(players, pending.origin());
             if (reader == null) continue;
 
-            if (pending.books().kind() == PortalRoomBooks.Kind.STATS) {
+            // Resolve first, gate second. Which of the four shares this room came up is settled by
+            // the pair key alone, and the tally needs no community-book discovery — so gating on
+            // discovery before the roll is read would leave a stat room bare on a server that has
+            // simply turned sharing off.
+            PortalRoomAuthorLocks.Resolution resolved = PortalRoomAuthorLocks.resolve(
+                reader, pairKey, pending.books(), ContentModeMirror.isKid(reader));
+            if (resolved.outcome() == PortalRoomAuthorLocks.Outcome.STATS) {
                 stockStatRoom(level, pairKey, pending, reader);
                 continue;
             }
 
-            // Everything past here is the library room, which is the only kind that needs an author —
-            // and therefore the only kind community-book discovery gates.
+            // Everything past here wants an author, which is the only thing discovery gates.
             if (!SharedBookGate.canDiscover()) continue;   // discovery off — no author to stock from
-
-            PortalRoomAuthorLocks.Resolution resolved = PortalRoomAuthorLocks.resolve(
-                reader, pairKey, pending.books(), ContentModeMirror.isKid(reader));
             if (resolved.outcome() == PortalRoomAuthorLocks.Outcome.PENDING) continue;  // ask again
 
             if (resolved.outcome() == PortalRoomAuthorLocks.Outcome.NONE) {

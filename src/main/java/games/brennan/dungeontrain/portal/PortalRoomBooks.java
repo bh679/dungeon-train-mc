@@ -14,11 +14,17 @@ import java.util.Locale;
  * author and deals their whole catalogue across its chiseled bookshelves, leaving every shelf past
  * the end of it empty — which is what a dozen books in a great hall is supposed to say.</p>
  *
- * <h2>Two values, three shares</h2>
- * <p>There is no "always the current player" setting. A room is either off or a weighted mix of the
- * three ways to name an author, and a room that wants exactly one of them says so with the weights —
- * {@code 1:0:0} is "always the reader's own writing". One control with three dials beats four
- * controls that are secretly the same control.</p>
+ * <h2>Two values, four shares</h2>
+ * <p>There is no "always the current player" setting, and no separate Stat Room mode. A room is
+ * either off or a weighted mix of the four things its shelves can hold — three ways to name an
+ * author, plus the tally — and a room that wants exactly one of them says so with the weights:
+ * {@code 1:0:0:0} is "always the reader's own writing", {@code 0:0:0:1} is "always the tally". One
+ * control with four dials beats five controls that are secretly the same control.</p>
+ *
+ * <p><b>The tally is not an author.</b> {@link Share#STATS} stocks one book per leaderboard board and
+ * one per run stat — every number the mod reports — and nobody wrote any of it. It sits among the
+ * author shares because it answers their question (what is on these shelves?), not because it works
+ * the way they do: {@link PortalRoomAuthorLocks} branches away before it would look one up.</p>
  *
  * <p><b>Player and Signature are different questions.</b> A signature is free text typed at sign
  * time, so one account can write under several and several accounts can share one. The player share
@@ -34,15 +40,16 @@ import java.util.Locale;
  * <p>Stored as the fifth segment of the room's {@code mode} tag — see {@link PortalRoomSettings},
  * which owns the encoding.</p>
  *
- * @param kind            whether the room stocks its shelves from one author at all
+ * @param kind            whether the room stocks its shelves from one source at all
  * @param selfWeight      the reader's own share of the roll
  * @param playerWeight    a random account's share
  * @param signatureWeight a random pen name's share
+ * @param statsWeight     the tally's share — no author, every board and every run stat instead
  * @param minBooks        an eligible author has written MORE than this many approved books
  * @param maxBooks        ...and no more than this, or {@link #NO_MAXIMUM} for no upper bound
  */
 public record PortalRoomBooks(Kind kind, int selfWeight, int playerWeight, int signatureWeight,
-                              int minBooks, int maxBooks) {
+                              int statsWeight, int minBooks, int maxBooks) {
 
     /** Whether the room stocks its shelves from one author. */
     public enum Kind {
@@ -50,18 +57,8 @@ public record PortalRoomBooks(Kind kind, int selfWeight, int playerWeight, int s
         /** No author. The default, and what every room did before this existed. */
         OFF("off", "Off"),
 
-        /** One author, rolled per room against this setting's three weights. */
-        MIX("mix", "Author Mix"),
-
-        /**
-         * Every book the mod can write about a number: one per leaderboard board, one per run stat.
-         *
-         * <p>Nobody's catalogue, so none of the three weights or the book range mean anything here —
-         * see {@link PortalRoomBooks#weightsApply()}. What it stocks is fixed and known, which is the
-         * opposite of what {@link #MIX} is for: a Mix room is a different author every time, and a
-         * Stat Room is the same complete set every time.</p>
-         */
-        STATS("stats", "Stat Room");
+        /** One author — or the tally — rolled per room against this setting's four weights. */
+        MIX("mix", "Author Mix");
 
         private final String id;
         private final String displayName;
@@ -116,7 +113,18 @@ public record PortalRoomBooks(Kind kind, int selfWeight, int playerWeight, int s
         PLAYER("player", "Player"),
 
         /** One signature with an eligible number of approved books, whoever wrote under it. */
-        SIGNATURE("signature", "Signature");
+        SIGNATURE("signature", "Signature"),
+
+        /**
+         * Nobody. The room stocks the tally instead — one book per leaderboard board and one per run
+         * stat, which is every number the mod can report.
+         *
+         * <p>A fourth share rather than a fourth Books mode, because it is the same question the
+         * other three answer: what is on these shelves? Putting it here means a room can be mostly a
+         * library and occasionally the tally, and a room that wants to be one every time says so the
+         * way this setting has always said it — {@code 0:0:0:1}.</p>
+         */
+        STATS("stats", "Stats");
 
         private final String id;
         private final String displayName;
@@ -140,7 +148,17 @@ public record PortalRoomBooks(Kind kind, int selfWeight, int playerWeight, int s
             return this == SELF;
         }
 
-        /** The directory {@code kind} this share asks the relay for. */
+        /** True when this share names no author at all — the room stocks the tally instead. */
+        public boolean isStats() {
+            return this == STATS;
+        }
+
+        /**
+         * The directory {@code kind} this share asks the relay for.
+         *
+         * <p>Meaningless for {@link #STATS}, which has no author to look up. Every caller reaches it
+         * through a path that has already branched on {@link #isStats()}.</p>
+         */
         public String directoryKind() {
             return id;
         }
@@ -175,13 +193,21 @@ public record PortalRoomBooks(Kind kind, int selfWeight, int playerWeight, int s
         selfWeight = clampWeight(selfWeight);
         playerWeight = clampWeight(playerWeight);
         signatureWeight = clampWeight(signatureWeight);
+        statsWeight = clampWeight(statsWeight);
         minBooks = clampBound(minBooks);
         maxBooks = clampBound(maxBooks);
     }
 
     /** A kind at the default weights and the configured book range. */
     public PortalRoomBooks(Kind kind) {
-        this(kind, DEFAULT_WEIGHT, DEFAULT_WEIGHT, DEFAULT_WEIGHT, defaultMinBooks(), NO_MAXIMUM);
+        this(kind, DEFAULT_WEIGHT, DEFAULT_WEIGHT, DEFAULT_WEIGHT, DEFAULT_WEIGHT,
+            defaultMinBooks(), NO_MAXIMUM);
+    }
+
+    /** The six-field form this record had before the tally was one of the things it could roll. */
+    public PortalRoomBooks(Kind kind, int selfWeight, int playerWeight, int signatureWeight,
+                           int minBooks, int maxBooks) {
+        this(kind, selfWeight, playerWeight, signatureWeight, DEFAULT_WEIGHT, minBooks, maxBooks);
     }
 
     /**
@@ -204,26 +230,14 @@ public record PortalRoomBooks(Kind kind, int selfWeight, int playerWeight, int s
         return Math.max(MIN_BOOK_BOUND, Math.min(MAX_BOOK_BOUND, books));
     }
 
-    /**
-     * True when the room stocks its shelves from one community AUTHOR.
-     *
-     * <p>Deliberately narrower than {@link #stocks()}: everything downstream of this — resolving an
-     * author from the directory, the "a room of one author" greeting, the author line in the editor's
-     * status message — is meaningless for a room that stocks something other than a person's
-     * catalogue. A Stat Room fills its shelves and is not a library.</p>
-     */
+    /** True when the room stocks its own shelves at all — from an author, or from the tally. */
     public boolean locks() {
-        return kind == Kind.MIX;
-    }
-
-    /** True when the room fills its own shelves at all, by whatever means — everything but Off. */
-    public boolean stocks() {
         return kind != Kind.OFF;
     }
 
-    /** True when the weights and the book range mean anything: only an author mix rolls an author. */
+    /** True when the weights and the book range mean anything — everything but Off. */
     public boolean weightsApply() {
-        return kind == Kind.MIX;
+        return locks();
     }
 
     /** Human-readable label for the editor row. */
@@ -248,17 +262,20 @@ public record PortalRoomBooks(Kind kind, int selfWeight, int playerWeight, int s
         int self = selfWeight;
         int player = playerWeight;
         int signature = signatureWeight;
-        int total = self + player + signature;
+        int stats = statsWeight;
+        int total = self + player + signature + stats;
         if (total <= 0) {
             self = 1;
             player = 1;
             signature = 1;
-            total = 3;
+            stats = 1;
+            total = 4;
         }
         int roll = Math.floorMod(mix(seed), total);
         if (roll < self) return Share.SELF;
         if (roll < self + player) return Share.PLAYER;
-        return Share.SIGNATURE;
+        if (roll < self + player + signature) return Share.SIGNATURE;
+        return Share.STATS;
     }
 
     /** Splittable-mix so consecutive pair keys do not roll in a visible pattern. */
@@ -287,15 +304,27 @@ public record PortalRoomBooks(Kind kind, int selfWeight, int playerWeight, int s
         PortalRoomBooks legacy = legacyShareToken(parts[0]);
         if (legacy != null) return legacy;
 
-        // kind[:self:player:signature[:min:max]] — every group after the first is optional, so a
-        // shorter tag still reads, to the default for what it does not name.
+        // kind[:self:player:signature:stats[:min:max]] — every group after the first is optional, so
+        // a shorter tag still reads, to the default for what it does not name.
+        //
+        // LENGTH IS WHAT SAYS WHICH LAYOUT THIS IS. Before the tally was a share, the band sat at
+        // segments 4 and 5; it now sits at 5 and 6 with the stats weight in front of it. Six segments
+        // or fewer can only have been written under the old layout, seven only under this one — which
+        // is why {@link #id} writes one segment, four, or all seven, and never five or six. Reading a
+        // five-segment tag as the new layout would silently turn somebody's "authors with 10+ books"
+        // into "the tally, weighted 10".
+        int n = parts.length;
+        boolean tallyLayout = n >= 7;
+        int minIndex = tallyLayout ? 5 : 4;
+        int maxIndex = tallyLayout ? 6 : 5;
         return new PortalRoomBooks(
             Kind.parse(parts[0]),
-            parts.length > 1 ? parseInt(parts[1], DEFAULT_WEIGHT) : DEFAULT_WEIGHT,
-            parts.length > 2 ? parseInt(parts[2], DEFAULT_WEIGHT) : DEFAULT_WEIGHT,
-            parts.length > 3 ? parseInt(parts[3], DEFAULT_WEIGHT) : DEFAULT_WEIGHT,
-            parts.length > 4 ? parseInt(parts[4], defaultMinBooks()) : defaultMinBooks(),
-            parts.length > 5 ? parseInt(parts[5], NO_MAXIMUM) : NO_MAXIMUM);
+            n > 1 ? parseInt(parts[1], DEFAULT_WEIGHT) : DEFAULT_WEIGHT,
+            n > 2 ? parseInt(parts[2], DEFAULT_WEIGHT) : DEFAULT_WEIGHT,
+            n > 3 ? parseInt(parts[3], DEFAULT_WEIGHT) : DEFAULT_WEIGHT,
+            tallyLayout ? parseInt(parts[4], DEFAULT_WEIGHT) : DEFAULT_WEIGHT,
+            n > minIndex ? parseInt(parts[minIndex], defaultMinBooks()) : defaultMinBooks(),
+            n > maxIndex ? parseInt(parts[maxIndex], NO_MAXIMUM) : NO_MAXIMUM);
     }
 
     /** What {@link Kind#MIX} was called while it was one value among five. */
@@ -313,6 +342,7 @@ public record PortalRoomBooks(Kind kind, int selfWeight, int playerWeight, int s
                 share == Share.SELF ? 1 : 0,
                 share == Share.PLAYER ? 1 : 0,
                 share == Share.SIGNATURE ? 1 : 0,
+                share == Share.STATS ? 1 : 0,
                 defaultMinBooks(), NO_MAXIMUM);
         }
         return null;
@@ -337,20 +367,29 @@ public record PortalRoomBooks(Kind kind, int selfWeight, int playerWeight, int s
      * same defaults.</p>
      */
     public String id() {
-        if (!weightsApply()) return kind.id();
+        if (!locks()) return kind.id();
+        if (isEvenlyWeighted() && isDefaultRange()) return kind.id();
+
         String weights = kind.id() + PART_SEPARATOR + selfWeight
             + PART_SEPARATOR + playerWeight + PART_SEPARATOR + signatureWeight;
-        if (!isDefaultRange()) {
-            return weights + PART_SEPARATOR + minBooks + PART_SEPARATOR + maxBooks;
+
+        // Anything past the three original weights forces the FULL seven-segment form, band included,
+        // even at its defaults. Not tidiness: five and six segments are how the old layout wrote a
+        // band, so writing either here would make this room unreadable to {@link #parse}. At their
+        // defaults the band goes in as the placeholder, which parse reads back as the same defaults.
+        if (statsWeight != DEFAULT_WEIGHT || !isDefaultRange()) {
+            return weights + PART_SEPARATOR + statsWeight
+                + PART_SEPARATOR + minBooks + PART_SEPARATOR + maxBooks;
         }
-        return isEvenlyWeighted() ? kind.id() : weights;
+        return weights;
     }
 
     /** True when no share is favoured — the state a bare {@code mix} reads back as. */
     public boolean isEvenlyWeighted() {
         return selfWeight == DEFAULT_WEIGHT
             && playerWeight == DEFAULT_WEIGHT
-            && signatureWeight == DEFAULT_WEIGHT;
+            && signatureWeight == DEFAULT_WEIGHT
+            && statsWeight == DEFAULT_WEIGHT;
     }
 
     /** True when the room accepts whatever the server's floor accepts, with no ceiling. */
@@ -364,32 +403,41 @@ public record PortalRoomBooks(Kind kind, int selfWeight, int playerWeight, int s
     }
 
     public PortalRoomBooks withKind(Kind newKind) {
-        return new PortalRoomBooks(newKind, selfWeight, playerWeight, signatureWeight, minBooks, maxBooks);
+        return new PortalRoomBooks(newKind, selfWeight, playerWeight, signatureWeight, statsWeight,
+            minBooks, maxBooks);
     }
 
     public PortalRoomBooks withMinBooks(int books) {
-        return new PortalRoomBooks(kind, selfWeight, playerWeight, signatureWeight, books, maxBooks);
+        return new PortalRoomBooks(kind, selfWeight, playerWeight, signatureWeight, statsWeight,
+            books, maxBooks);
     }
 
     public PortalRoomBooks withMaxBooks(int books) {
-        return new PortalRoomBooks(kind, selfWeight, playerWeight, signatureWeight, minBooks, books);
+        return new PortalRoomBooks(kind, selfWeight, playerWeight, signatureWeight, statsWeight,
+            minBooks, books);
     }
 
-    /** This room's weight for {@code share} — the three rows read through one accessor. */
+    /** This room's weight for {@code share} — the four rows read through one accessor. */
     public int weightFor(Share share) {
         return switch (share) {
             case SELF -> selfWeight;
             case PLAYER -> playerWeight;
             case SIGNATURE -> signatureWeight;
+            case STATS -> statsWeight;
         };
     }
 
     /** This room with {@code share}'s weight set — the write half of {@link #weightFor}. */
     public PortalRoomBooks withWeightFor(Share share, int weight) {
         return switch (share) {
-            case SELF -> new PortalRoomBooks(kind, weight, playerWeight, signatureWeight, minBooks, maxBooks);
-            case PLAYER -> new PortalRoomBooks(kind, selfWeight, weight, signatureWeight, minBooks, maxBooks);
-            case SIGNATURE -> new PortalRoomBooks(kind, selfWeight, playerWeight, weight, minBooks, maxBooks);
+            case SELF -> new PortalRoomBooks(kind, weight, playerWeight, signatureWeight,
+                statsWeight, minBooks, maxBooks);
+            case PLAYER -> new PortalRoomBooks(kind, selfWeight, weight, signatureWeight,
+                statsWeight, minBooks, maxBooks);
+            case SIGNATURE -> new PortalRoomBooks(kind, selfWeight, playerWeight, weight,
+                statsWeight, minBooks, maxBooks);
+            case STATS -> new PortalRoomBooks(kind, selfWeight, playerWeight, signatureWeight,
+                weight, minBooks, maxBooks);
         };
     }
 }
