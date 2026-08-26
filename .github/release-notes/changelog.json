@@ -8921,6 +8921,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "faulthurst-stat-book",
+      "version": "0.669.0",
+      "type": "feat",
+      "title": "Faulthurst leaves you a note about your own run",
+      "summary": "A new book turns up in the train's loot, signed by Faulthurst. It greets you by name and names one real number from your current life \u2014 the carriage you've reached, how long you've been aboard, how many chests you've opened, the longest stretch you went without opening a thing. The number stays live while you carry the book and freezes the moment you read it, so what you find inside is your run exactly as it stood when you opened it.",
+      "highlights": [
+        "Eighteen things he might remark on, twelve of them the one-life half of a leaderboard board.",
+        "He never mentions something that hasn't happened \u2014 a number has to be worth a page before he'll write it down.",
+        "Seven ways he opens and twenty ways he signs off, from \"Keep it up.\" to \"Why?\"",
+        "Written in every language Dungeon Train speaks."
+      ],
+      "date": "2026-08-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
