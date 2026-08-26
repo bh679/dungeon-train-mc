@@ -1520,7 +1520,7 @@ public final class NarrativeDeathScreen extends Screen {
             MutableComponent line = Component.empty();
             for (int i = 0; i < done.size(); i++) {
                 if (i > 0) line.append(Component.literal(" · "));
-                line.append(Component.literal("✓ ")).append(FundingGoals.label(done.get(i)));
+                line.append(Component.literal("✓ ")).append(FundingGoals.doneLabel(done.get(i)));
             }
             y = drawCentered(g, line, cx, w, y, GOAL_DONE);
             y += 4;
