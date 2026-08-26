@@ -8753,6 +8753,23 @@
       "released": true,
       "released_in": "v0.657.0",
       "released_at": "2026-08-25T16:16:41Z"
+    },
+    {
+      "id": "engine-room-hours-spent",
+      "version": "0.658.0",
+      "type": "feat",
+      "title": "The engine room shows the hours behind the train",
+      "summary": "Once the month's running costs and the current funding goal are both covered, the engine room's ledger has nothing left to ask you for \u2014 so it shows you what your support has been paying for instead: the number of hours spent building Dungeon Train, its sibling mods and the server behind them. The goal you just funded slides down beside it, ticked off, the same way the running costs do.",
+      "highlights": [
+        "New Hours Spent tile on the death screen's DONATE page, once both funding goals are met",
+        "Counts every hour in which work was committed, across all of Dungeon Train's repos \u2014 an hour counts once, however much landed in it",
+        "The ticked-off running costs line now says This Month, so a covered month doesn't read as covered forever"
+      ],
+      "pr": 1097,
+      "date": "2026-08-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
