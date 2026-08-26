@@ -8845,6 +8845,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "technoblade-pig-names",
+      "version": "0.664.0",
+      "type": "content",
+      "title": "Technoblade pigs",
+      "summary": "Some of the named pigs riding the train answer to a more famous name. A small tribute, and a rare one \u2014 you will not meet one every trip.",
+      "highlights": [
+        "A named pig now has a 1-in-10 chance of carrying a Technoblade tribute name instead of its usual one",
+        "Six names in the pool, including Technoblade Never Dies and The Blood God",
+        "Pigs that were never named are untouched, and a pig's name is rolled once and never re-rolled on reload"
+      ],
+      "date": "2026-08-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
