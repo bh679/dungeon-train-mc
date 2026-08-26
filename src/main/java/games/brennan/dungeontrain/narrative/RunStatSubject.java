@@ -60,9 +60,8 @@ public enum RunStatSubject {
     PACIFIST("pacifist", Format.COUNT, 3, PlayerRunState::pacifistCarriages, "pacifist_carriages"),
 
     // The remaining leaderboard subjects that have a per-run twin at all. Every RUN-scoped board
-    // above already had one; these three are boards kept as lifetime tallies whose one-life half is
+    // above already had one; these two are boards kept as lifetime tallies whose one-life half is
     // nonetheless a real, countable thing — so Faulthurst can remark on it.
-    ADVANCEMENTS("advancements", Format.COUNT, 1, s -> s.earnedAdvancements().size(), "advancements"),
     DEATH_NOTES("death_notes", Format.COUNT, 1, PlayerRunState::deathNotesWritten, "deathnotes_written"),
     LOVE_NOTES("love_notes", Format.COUNT, 1, PlayerRunState::loveNotesWritten, "lovenotes_written");
 
@@ -128,9 +127,8 @@ public enum RunStatSubject {
      * naming it, so a player can be told their own number for anything the game ranks them on;
      * {@code RunStatSubjectTest} fails if a new run board is added without one. Boards kept as
      * lifetime tallies are claimed here too where their one-life half is a real countable thing —
-     * advancements earned, notes signed — and left alone where it is not: how many people a note
-     * reached is answered by their save, not this one, and "lives spent" in one life is always
-     * one.</p>
+     * the notes a player signs — and left alone where it is not: how many people a note reached is
+     * answered by their save, not this one, and "lives spent" in one life is always one.</p>
      */
     public String boardBase() { return boardBase; }
 

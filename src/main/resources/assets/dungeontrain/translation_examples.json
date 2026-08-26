@@ -3276,24 +3276,6 @@
       ]
     }
   },
-  "book.dungeontrain.statbook.stat.advancements.one": {
-    "1": {
-      "label": "Dungeon Train advancements the reader has earned this run",
-      "examples": [
-        "1",
-        "7"
-      ]
-    }
-  },
-  "book.dungeontrain.statbook.stat.advancements.other": {
-    "1": {
-      "label": "Dungeon Train advancements the reader has earned this run",
-      "examples": [
-        "1",
-        "7"
-      ]
-    }
-  },
   "book.dungeontrain.statbook.stat.death_notes.one": {
     "1": {
       "label": "Death Notes the reader has signed this run",
