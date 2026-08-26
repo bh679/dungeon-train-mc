@@ -243,13 +243,10 @@ public final class EditorMenuScreen implements MenuScreen {
             // Go and stand in a live one. Portals only, because that is the only category where
             // "the carriage" names something you can walk into.
             //
-            // Through the unsaved check rather than straight at the command: this leaves the plot
-            // and re-seeds the train, which costs in-world edits not yet on disk exactly the way a
-            // category switch does. With nothing dirty the check dispatches through in one click,
-            // so the clean case is still a plain button.
-            out.add(new CommandMenuEntry.DrillIn("Test the Carriage",
-                UnsavedCheckScreen.before(category, "dungeontrain portal test",
-                    "Save before testing?")));
+            // Straight at the command, with no save prompt in front of it: the editor keeps the
+            // author's work itself, so a confirmation here only asks a question that has already
+            // been answered.
+            out.add(new CommandMenuEntry.Run("Test the Carriage", "dungeontrain portal test"));
         }
 
         // Spawn gate — min/max Diff-Level steppers (same categories as Weight) plus a Phases
