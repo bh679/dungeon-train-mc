@@ -115,7 +115,8 @@ class EditorPlotLabelsRendererTest {
         // spacing stepper as well as Copies.
         assertArrayEquals(
             new RowKind[]{RowKind.NAME, RowKind.WEIGHT, RowKind.LENGTH, RowKind.WIDTH,
-                RowKind.HEIGHT, RowKind.MODE, RowKind.COPIES, RowKind.ROOM_CONTENTS, RowKind.ROOM_BOOKS, RowKind.ROOM_SKY,
+                RowKind.HEIGHT, RowKind.MODE, RowKind.COPIES, RowKind.DOOR_WALL,
+                RowKind.ROOM_CONTENTS, RowKind.ROOM_BOOKS, RowKind.ROOM_SKY,
                 RowKind.EXITS, RowKind.EXIT_EVERY, RowKind.ENTER, RowKind.ACTION},
             EditorPlotLabelsRenderer.rows(
                 entry("PORTALS", true, 1, 11, 13, 7, "endless_repetition")));
@@ -145,7 +146,8 @@ class EditorPlotLabelsRendererTest {
         // Under Endless Repetition the same stored tag means Exact, so there is no block to show.
         assertArrayEquals(
             new RowKind[]{RowKind.NAME, RowKind.WEIGHT, RowKind.LENGTH, RowKind.WIDTH,
-                RowKind.HEIGHT, RowKind.MODE, RowKind.COPIES, RowKind.ROOM_CONTENTS,
+                RowKind.HEIGHT, RowKind.MODE, RowKind.COPIES, RowKind.DOOR_WALL,
+                RowKind.ROOM_CONTENTS,
                 RowKind.ROOM_BOOKS, RowKind.ROOM_SKY, RowKind.EXITS, RowKind.EXIT_EVERY, RowKind.ENTER,
                 RowKind.ACTION},
             EditorPlotLabelsRenderer.rows(entry("PORTALS", true, 1, 11, 13, 7,
@@ -186,6 +188,33 @@ class EditorPlotLabelsRendererTest {
 
         // ...and it stays ONE row: nothing below it shifted to make room for a button.
         assertArrayEquals(EditorPlotLabelsRenderer.rows(off), rows);
+    }
+
+    @Test
+    @DisplayName("Door Wall shows under Endless Repetition alone — the one mode whose tiles have a wall")
+    void doorWallRowFollowsEndlessRepetitionOnly() {
+        assertTrue(EditorPlotLabelsRenderer.hasDoorWallRow(
+            entry("PORTALS", true, 1, 11, 13, 7, "endless_repetition")));
+        // Endless Open writes floor and ceiling and nothing between them, so a copy there has no wall
+        // to carry through the mouth's plane — the row would be a control over nothing.
+        for (String mode : new String[]{"endless_open", "bedrock_lock", "bedrockless"}) {
+            assertFalse(EditorPlotLabelsRenderer.hasDoorWallRow(
+                entry("PORTALS", true, 1, 11, 13, 7, mode)), mode);
+        }
+        // …and only from inside the plot, the Walls row's own rule.
+        assertFalse(EditorPlotLabelsRenderer.hasDoorWallRow(
+            entry("PORTALS", false, 1, 11, 13, 7, "endless_repetition")));
+    }
+
+    @Test
+    @DisplayName("A tag that never mentioned Door Wall reads Sealed — the row cannot imply a change")
+    void doorWallLabelDefaultsToSealed() {
+        assertEquals("Door Wall: Sealed",
+            EditorPlotLabelsRenderer.doorWallLabel("endless_repetition"));
+        assertEquals("Door Wall: Sealed",
+            EditorPlotLabelsRenderer.doorWallLabel("endless_repetition/dynamic"));
+        assertEquals("Door Wall: Repeated", EditorPlotLabelsRenderer.doorWallLabel(
+            "endless_repetition/dynamic/off/lattice:8/off/none/repeated"));
     }
 
     @Test
@@ -252,7 +281,8 @@ class EditorPlotLabelsRendererTest {
             entry("PORTALS", true, 1, 11, 13, 7, "endless_repetition/dynamic/off/random:4:6");
         assertArrayEquals(
             new RowKind[]{RowKind.NAME, RowKind.WEIGHT, RowKind.LENGTH, RowKind.WIDTH,
-                RowKind.HEIGHT, RowKind.MODE, RowKind.COPIES, RowKind.ROOM_CONTENTS, RowKind.ROOM_BOOKS, RowKind.ROOM_SKY,
+                RowKind.HEIGHT, RowKind.MODE, RowKind.COPIES, RowKind.DOOR_WALL,
+                RowKind.ROOM_CONTENTS, RowKind.ROOM_BOOKS, RowKind.ROOM_SKY,
                 RowKind.EXITS, RowKind.EXIT_EVERY, RowKind.EXIT_MOVE, RowKind.ENTER, RowKind.ACTION},
             EditorPlotLabelsRenderer.rows(random));
         assertEquals("Moved exit: 6/10", EditorPlotLabelsRenderer.exitMoveLabel(random.roomMode()));

@@ -116,6 +116,15 @@ public final class EditorPlotTeleport {
         return "dungeontrain editor portals contents next";
     }
 
+    /**
+     * As {@link #modeCycleCommandFor}, for whether a copy carries its own end wall through a corridor
+     * mouth's plane.
+     */
+    public static String doorWallCycleCommandFor(String category) {
+        if (!"PORTALS".equals(category)) return null;
+        return "dungeontrain editor portals doorwall next";
+    }
+
     /** As {@link #modeCycleCommandFor}, for whether the room is lit as though it stood outdoors. */
     public static String roomSkyCycleCommandFor(String category) {
         if (!"PORTALS".equals(category)) return null;
