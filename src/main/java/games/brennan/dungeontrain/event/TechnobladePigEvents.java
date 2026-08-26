@@ -20,7 +20,7 @@ import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
  * name AIN already applied — the {@code hasCustomName} check below is the whole
  * "when pigs are named" gate. Unnamed pigs are left completely alone, so the
  * effective rate is {@link #TECHNOBLADE_CHANCE} <em>of AIN's own</em> 5%
- * {@code MOB_PASSIVE} roll: roughly one pig in four hundred.</p>
+ * {@code MOB_PASSIVE} roll: roughly one pig in two hundred.</p>
  *
  * <p>Ordering is safe. AIN names via a mixin on {@code Mob#finalizeSpawn}, and
  * {@code CarriageContentsPlacer.spawnVariantMob} calls {@code finalizeSpawn}
@@ -42,7 +42,7 @@ public final class TechnobladePigEvents {
      * Chance that an already-named pig has its name replaced with a tribute
      * name. Conditional on AIN having named the pig at all.
      */
-    private static final float TECHNOBLADE_CHANCE = 0.05f;
+    private static final float TECHNOBLADE_CHANCE = 0.10f;
 
     /**
      * Scoreboard tag marking a pig whose roll has already happened — win or
