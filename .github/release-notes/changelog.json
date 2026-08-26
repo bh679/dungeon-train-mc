@@ -8907,6 +8907,22 @@
       "released_at": null
     },
     {
+      "id": "leaderboard-books-across-the-train",
+      "version": "0.669.0",
+      "type": "content",
+      "title": "The Tallyman's books turn up all over the train",
+      "summary": "Leaderboard books are no longer something you mostly find on a bookshelf. They now surface across the train's chests, pots and villager stashes, so a board can turn up wherever you are rather than only where the books are kept. Where a container already offered reading matter, the leaderboard book takes a share of that rather than adding to it, so your odds of finding some book are unchanged \u2014 only which book shifts.",
+      "highlights": [
+        "Leaderboard books can now be found in fishing, mining, villager, ore and pottery loot",
+        "Villager stashes get their first book of any kind",
+        "A leaderboard book can appear in the starting chest"
+      ],
+      "date": "2026-08-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "c-menu-item-icons",
       "version": "0.669.0",
       "type": "feat",
@@ -8916,6 +8932,7 @@
         "Item rows lead with the inventory icon \u2014 narrower panel, no overlapping text",
         "Click an icon to reveal its name; only that row's column widens"
       ],
+      "pr": 1111,
       "date": "2026-08-26",
       "released": false,
       "released_in": null,
