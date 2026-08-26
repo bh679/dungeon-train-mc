@@ -100,7 +100,7 @@ public final class LeaderboardPool {
      * Set once a leaderboard book actually exists somewhere in the world. Until then this pool makes
      * no requests at all: a server whose loot never rolls one should cost the relay nothing.
      */
-    private static volatile boolean wanted = true; // DEV: warm without waiting on a loot roll
+    private static volatile boolean wanted = false;
 
     /** Rotates {@link #warmNext()} through the categories so one tick is one request. */
     private static volatile int warmCursor = 0;
@@ -163,7 +163,7 @@ public final class LeaderboardPool {
         if (cached != null && System.currentTimeMillis() - cached.fetchedAt() < BOARD_TTL_MS) return;
         if (Boolean.TRUE.equals(IN_FLIGHT.putIfAbsent(category, Boolean.TRUE))) return;
         try {
-            String url = "https://brennan.games/api/dp-relay/adc3dc432f437e9401092c143dec86767dd06c2a5d94f48f" + "/leaderboard?cat=" + enc(category.id())
+            String url = DungeonTrain.relayBaseUrl() + "/leaderboard?cat=" + enc(category.id())
                     + "&limit=" + FETCH_LIMIT;
             get(url, body -> applyBoard(category, body), () -> IN_FLIGHT.remove(category),
                 "leaderboard[" + category.id() + "]");
@@ -180,7 +180,7 @@ public final class LeaderboardPool {
     public static void refreshRanks(UUID player, String name) {
         if (player == null) return;
         try {
-            String url = "https://brennan.games/api/dp-relay/adc3dc432f437e9401092c143dec86767dd06c2a5d94f48f" + "/leaderboard/me?uuid=" + enc(player.toString())
+            String url = DungeonTrain.relayBaseUrl() + "/leaderboard/me?uuid=" + enc(player.toString())
                     + (name == null || name.isBlank() ? "" : "&name=" + enc(name));
             get(url, body -> applyRanks(player, body), () -> {}, "leaderboard-ranks");
         } catch (Throwable t) {
