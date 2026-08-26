@@ -230,7 +230,7 @@ public final class PortalRoomTiler {
         // Then close whatever the copy's own wall left open in a mouth's seal plane. The plane may
         // not have air in it — it is the only thing between the room and the basement when the tile
         // beyond cannot be stamped — and an authored end wall legitimately does.
-        if (structure.mode().tilesWholeRoom()) {
+        if (structure.settings().effectiveDoorWall().repeats()) {
             PortalRoomSealRepair.repair(level, dims, structure, tile);
         }
 
@@ -315,20 +315,23 @@ public final class PortalRoomTiler {
      * room that repeats whole.
      *
      * <p>A seal plane stands one column outside the base room box, which is the wall plane of the copy
-     * at tile {@code (±1, 0)}. Masked, that copy never wrote the wall that touches the portal carriage
-     * and the mouth's flattened mirror fill stood in for it — so the authored wall did not repeat, and
-     * under {@link PortalRoomCopies.Kind#DYNAMIC} the wall a player saw was the base room's roll.
-     * Released, the copy lays its own. {@link PortalRoomSealRepair} then closes whatever air it left,
-     * so the plane keeps the one property it must have.</p>
+     * at tile {@code (±1, 0)}. Masked, that copy never writes the wall that touches the portal
+     * carriage and the mouth's flattened mirror fill stands in for it — so the authored wall does not
+     * repeat, and under {@link PortalRoomCopies.Kind#DYNAMIC} the wall a player sees is the base
+     * room's roll. Released, the copy lays its own, and {@link PortalRoomSealRepair} closes whatever
+     * air that leaves, so the plane keeps the one property it must have.</p>
      *
-     * <p><b>Only the seals, and only for {@link PortalRoomMode#ENDLESS_REPETITION}.</b> The corridor
-     * and plug boxes are never released — those hold the doorway. {@link PortalRoomMode#ENDLESS_OPEN}
-     * writes no walls at all, so it has nothing to repeat into the plane and keeps the seal that is
-     * standing.</p>
+     * <p><b>The author decides which.</b> {@link PortalRoomDoorWall} is the setting and it defaults to
+     * {@link PortalRoomDoorWall#SEALED} — the behaviour every room had before it existed — so this
+     * returns the full mask unless a room has asked for the other. Read through
+     * {@code effectiveDoorWall}, so a value left over from a mode that cannot use it is not honoured.</p>
+     *
+     * <p><b>Only the seals, ever.</b> The corridor and plug boxes are never released whatever the
+     * setting says — those hold the doorway.</p>
      */
     private static PortalCorridorMask stampMaskFor(PortalStructure structure, CarriageDims dims) {
         return PortalCarriageBuilder.allCorridorMask(
-            structure, dims, /*withSeals*/ !structure.mode().tilesWholeRoom());
+            structure, dims, /*withSeals*/ !structure.settings().effectiveDoorWall().repeats());
     }
 
     private static PortalCorridorMask maskFor(PortalStructure structure, CarriageDims dims,

@@ -352,6 +352,21 @@ public final class EditorPlotLabelsRenderer {
     }
 
     /**
+     * Whether the Door Wall row shows: only under Endless Repetition, the one mode whose appended
+     * tiles carry a wall of their own for the corridor mouth's plane to be filled from.
+     */
+    public static boolean hasDoorWallRow(String modeTag) {
+        if (modeTag == null) return false;
+        return games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag).doorWallApplies();
+    }
+
+    /** What the Door Wall row reads, e.g. {@code "Door Wall: Repeated"}. */
+    public static String doorWallLabel(String modeTag) {
+        return "Door Wall: " + games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag)
+            .effectiveDoorWall().displayName();
+    }
+
+    /**
      * Whether the Exits row shows: only while the walls repeat, since only an endless room has
      * anywhere to put an extra way back to the train.
      *

@@ -1029,9 +1029,14 @@ public final class PortalCarriageBuilder {
             PortalClear.clearBox(level, box, PortalCorridorMask.NONE);
         }
 
-        // Sealed against the shadow's own room, not the base one: this site is anchored at a tile
-        // that is standing, and the plane the seal fills is that copy's wall.
-        stampCorridorHalf(level, shadow, structure, dims, pairKey, site.role(), shadow);
+        // Sealed against the shadow's own room rather than the base one when the author asked for the
+        // copies to carry their own wall: this site is anchored at a tile that is standing, and the
+        // plane the seal fills is that copy's wall. Under the default the mouth seals as it always
+        // did, off the base room, so nothing an existing world is standing in changes.
+        PortalStructure sealSource = structure.settings().effectiveDoorWall().repeats()
+            ? shadow
+            : structure;
+        stampCorridorHalf(level, shadow, structure, dims, pairKey, site.role(), sealSource);
     }
 
     /**
