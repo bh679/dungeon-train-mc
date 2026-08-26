@@ -84,6 +84,7 @@ public final class ClientDisplayConfig {
     /** Tiles per row in the Train Builder's Open screen grid. See {@link #getBuilderTilesPerRow()}. */
     public static final ModConfigSpec.IntValue BUILDER_TILES_PER_ROW;
     public static final ModConfigSpec.BooleanValue SKYBOX_PUNCH_ENABLED;
+    public static final ModConfigSpec.BooleanValue PORTAL_CROSSING_FADE;
     public static final ModConfigSpec.BooleanValue SCRIBBLE_COLOR_PICKER_VISIBLE;
     /**
      * Relay pool ids of community (player-written) books this player has read, stored as decimal strings.
@@ -176,6 +177,7 @@ public final class ClientDisplayConfig {
         DELETE_WORLD_ON_REBOARD = pair.getLeft().deleteWorldOnReboard;
         BUILDER_TILES_PER_ROW = pair.getLeft().builderTilesPerRow;
         SKYBOX_PUNCH_ENABLED = pair.getLeft().skyboxPunchEnabled;
+        PORTAL_CROSSING_FADE = pair.getLeft().portalCrossingFade;
         SCRIBBLE_COLOR_PICKER_VISIBLE = pair.getLeft().scribbleColorPickerVisible;
         SHARED_BOOKS_READ = pair.getLeft().sharedBooksRead;
         DEATH_SCREEN_LAST_NPS = pair.getLeft().deathScreenLastNps;
@@ -294,6 +296,12 @@ public final class ClientDisplayConfig {
                 .define("punchEnabled", true);
         b.pop();
 
+        b.push("portal");
+        ModConfigSpec.BooleanValue portalCrossingFade = b
+                .comment("Fade a portal carriage's lighting into a flat hold as you walk toward the middle of its corridor, instead of leaving each copy lit by its own doorway. A portal carriage and the twin you are swapped into are built from the same blocks, but only one of them has a real door onto the train, so light leaks into one and not the other and the brightness can jump as you cross - most visibly near the train door, where turning round is enough to swap you. The hold is the same constant in both copies, so there is nothing left for the crossing to change; it ramps in from each doorway and is at full strength between the baffles. Set false for the old hard cut.")
+                .define("crossingFade", true);
+        b.pop();
+
         b.push("scribble");
         ModConfigSpec.BooleanValue scribbleColorPickerVisible = b
                 .comment("Show the Scribble mod's 16-swatch colour picker on the book-writing screen. Off by default: Dungeon Train keeps the book screen close to vanilla, and the picker is the one part of Scribble that changes what a book LOOKS like rather than how it is edited. No in-game control by design — flip this by hand to get the swatches back. Has no effect unless the Scribble mod is installed.")
@@ -405,7 +413,7 @@ public final class ClientDisplayConfig {
                 rideSnapshotMinFps, rideSnapshotMinTps,
                 rideSnapshotDiskOffload, rideSnapshotFlushMinFps, rideSnapshotFlushMinTps, rideSnapshotMaxOnDisk,
                 rideSnapshotMaxResolution,
-                framerateThrottleEnabled, framerateThrottleFps, trainEngineVolume, skyboxPunchEnabled, scribbleColorPickerVisible, deleteWorldOnReboard,
+                framerateThrottleEnabled, framerateThrottleFps, trainEngineVolume, skyboxPunchEnabled, portalCrossingFade, scribbleColorPickerVisible, deleteWorldOnReboard,
                 builderTilesPerRow,
                 sharedBooksRead,
                 deathScreenLastNps, politicalFilter, contentMode, customContentPreference,
@@ -836,6 +844,19 @@ public final class ClientDisplayConfig {
     }
 
     /**
+     * Should a portal corridor's lighting fade into a flat hold across its crossing? Defaults to
+     * {@code true}, and to {@code true} pre-load as well, on the same rule as the flag above: the
+     * effect is what stops the swap from popping, so the safe fallback while the TOML is still
+     * loading is the effect being on.
+     *
+     * <p>Read once per lightmap rebuild by {@code LightTexturePortalCrossingMixin} — about 20 times
+     * a second, which is why it is a plain flag read and not a listener.</p>
+     */
+    public static boolean isPortalCrossingFadeEnabled() {
+        return !isLoaded() || PORTAL_CROSSING_FADE.get();
+    }
+
+    /**
      * Show Scribble's colour-swatch grid on the book-writing screen? Defaults to {@code false}.
      *
      * <p>Note this reads {@code isLoaded() &&}, not the {@code !isLoaded() ||} form used by the
@@ -1046,6 +1067,7 @@ public final class ClientDisplayConfig {
             ModConfigSpec.IntValue framerateThrottleFps,
             ModConfigSpec.DoubleValue trainEngineVolume,
             ModConfigSpec.BooleanValue skyboxPunchEnabled,
+            ModConfigSpec.BooleanValue portalCrossingFade,
             ModConfigSpec.BooleanValue scribbleColorPickerVisible,
             ModConfigSpec.BooleanValue deleteWorldOnReboard,
             ModConfigSpec.IntValue builderTilesPerRow,

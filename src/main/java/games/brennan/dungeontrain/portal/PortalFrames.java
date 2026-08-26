@@ -124,6 +124,21 @@ public record PortalFrames(PortalCarriageLayout layout, Origin carriage, Origin 
         return FRAME_NONE;
     }
 
+    /**
+     * How strongly the corridor at this world position wants its lightmap held at a constant, or
+     * {@link PortalCrossingLight#OFF} when the position is in neither corridor.
+     *
+     * <p>Asked of whichever frame the position is physically in, and the answer is the same in
+     * either: the ramp is a function of corridor-local X and both frames are stamped from this one
+     * {@link PortalCarriageLayout}. That is not incidental — it is the whole reason the hold cannot
+     * pop when a player is swapped between them. See {@link PortalCrossingLight}.</p>
+     */
+    public double crossingIntensityAt(double wx, double wy, double wz) {
+        int frame = frameAt(wx, wy, wz);
+        if (frame == FRAME_NONE) return PortalCrossingLight.OFF;
+        return PortalCrossingLight.intensityAt(wx - originOf(frame).x(), layout);
+    }
+
     private boolean insideFrame(int frame, double wx, double wy, double wz) {
         Origin o = originOf(frame);
         return layout.insideCorridor(wx - o.x(), wy - o.y(), wz - o.z());
