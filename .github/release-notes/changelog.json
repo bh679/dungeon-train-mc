@@ -8771,6 +8771,19 @@
       "released": true,
       "released_in": "v0.658.0",
       "released_at": "2026-08-26T02:49:34Z"
+    },
+    {
+      "id": "engine-room-hours-spent",
+      "version": "0.659.0",
+      "type": "feat",
+      "title": "Hours spent on the engine room ledger",
+      "summary": "Once running costs and the current goal are both covered, the engine room shows the hours spent building Dungeon Train.",
+      "highlights": [],
+      "pr": 1097,
+      "date": "2026-08-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

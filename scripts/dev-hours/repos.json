@@ -1,0 +1,20 @@
+{
+  "comment": [
+    "Repos whose commit history counts toward the development-hours figure on the",
+    "Contribute screen. Paths are local to the maintainer's machine and are expanded",
+    "with ~; a repo that isn't checked out here is skipped with a warning, never a",
+    "hard failure. Hours are UNIONED across repos, so an hour spent committing to two",
+    "of these counts once.",
+    "MortalMe is deliberately absent: different game, not Dungeon Train work."
+  ],
+  "repos": [
+    { "name": "dungeon-train-mc",          "path": "~/Public/Dungeon Train" },
+    { "name": "adventureitemnames-mc",     "path": "~/Projects/adventureitemnames-mc" },
+    { "name": "adventureitemstats-mc",     "path": "~/Projects/adventureitemstats-mc" },
+    { "name": "playermob-mc",              "path": "~/Projects/playermob-mc" },
+    { "name": "enderchestpersistence-mc",  "path": "~/Projects/enderchestpersistence-mc" },
+    { "name": "TradeEverything",           "path": "~/Projects/TradeEverything" },
+    { "name": "discordpresence-mc",        "path": "~/Projects/discordpresence-mc" },
+    { "name": "dp-relay",                  "path": "~/Projects/dp-relay" }
+  ]
+}
