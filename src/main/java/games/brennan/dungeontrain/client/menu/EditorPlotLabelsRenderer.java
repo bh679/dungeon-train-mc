@@ -100,6 +100,8 @@ public final class EditorPlotLabelsRenderer {
         COPIES_ROOF_EDIT,
         /** The furnishing row — whether the room takes a contents template, and how it is fitted. */
         ROOM_CONTENTS_CYCLE,
+        /** The door-wall row — whether a copy carries its own wall through a corridor mouth. */
+        DOOR_WALL_CYCLE,
         /** The sky row — whether the room is lit as though it stood outdoors, and under which sky. */
         ROOM_SKY_CYCLE,
         /** The author-lock row — whether the room stocks its shelves from one person. */
@@ -127,8 +129,8 @@ public final class EditorPlotLabelsRenderer {
      * {@link #rows} now, so the three cannot drift.</p>
      */
     public enum RowKind {
-        NAME, WEIGHT, LENGTH, WIDTH, HEIGHT, MODE, COPIES, COPIES_FLOOR, COPIES_ROOF, ROOM_CONTENTS,
-        ROOM_BOOKS, ROOM_SKY, EXITS, EXIT_EVERY, EXIT_MOVE, ENTER, ACTION, CONTENTS
+        NAME, WEIGHT, LENGTH, WIDTH, HEIGHT, MODE, COPIES, COPIES_FLOOR, COPIES_ROOF, DOOR_WALL,
+        ROOM_CONTENTS, ROOM_BOOKS, ROOM_SKY, EXITS, EXIT_EVERY, EXIT_MOVE, ENTER, ACTION, CONTENTS
     }
 
     /**
@@ -155,6 +157,7 @@ public final class EditorPlotLabelsRenderer {
             buf[n++] = RowKind.COPIES_FLOOR;
             buf[n++] = RowKind.COPIES_ROOF;
         }
+        if (hasDoorWallRow(entry)) buf[n++] = RowKind.DOOR_WALL;
         if (hasRoomContentsRow(entry)) buf[n++] = RowKind.ROOM_CONTENTS;
         if (hasRoomBooksRow(entry)) buf[n++] = RowKind.ROOM_BOOKS;
         if (hasRoomSkyRow(entry)) buf[n++] = RowKind.ROOM_SKY;
@@ -349,6 +352,32 @@ public final class EditorPlotLabelsRenderer {
     public static String roomSkyLabel(String modeTag) {
         return "Sky: " + games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag)
             .sky().displayName();
+    }
+
+    /**
+     * Whether the Door Wall row shows on a plot panel: a portal room, in its plot, with its walls set
+     * to Endless Repetition.
+     *
+     * <p>Delegates to the tag-shaped test the command menu uses, so the two panels cannot come to
+     * disagree about when the setting is reachable.</p>
+     */
+    public static boolean hasDoorWallRow(EditorPlotLabelsPacket.Entry entry) {
+        return hasModeRow(entry) && hasDoorWallRow(entry.roomMode());
+    }
+
+    /**
+     * Whether the Door Wall row shows: only under Endless Repetition, the one mode whose appended
+     * tiles carry a wall of their own for the corridor mouth's plane to be filled from.
+     */
+    public static boolean hasDoorWallRow(String modeTag) {
+        if (modeTag == null) return false;
+        return games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag).doorWallApplies();
+    }
+
+    /** What the Room Walls row reads, e.g. {@code "Room Walls: Kept"}. */
+    public static String doorWallLabel(String modeTag) {
+        return "Room Walls: " + games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag)
+            .effectiveDoorWall().displayName();
     }
 
     /**
@@ -755,6 +784,7 @@ public final class EditorPlotLabelsRenderer {
                 ? CellKind.COPIES_FLOOR_EDIT : CellKind.COPIES_FLOOR_HELD;
             case COPIES_ROOF -> copiesBlockHitIsEdit(halfW, hitX)
                 ? CellKind.COPIES_ROOF_EDIT : CellKind.COPIES_ROOF_HELD;
+            case DOOR_WALL -> CellKind.DOOR_WALL_CYCLE;
             case ROOM_CONTENTS -> CellKind.ROOM_CONTENTS_CYCLE;
             case ROOM_BOOKS -> roomBooksRowCell(entry, hitX, halfW);
             case ROOM_SKY -> CellKind.ROOM_SKY_CYCLE;
@@ -990,6 +1020,14 @@ public final class EditorPlotLabelsRenderer {
                         drawQuad(ps, buffer, -halfW + 0.01, rBot + 0.005, halfW - 0.01, rTop - 0.005, bg);
                         drawCenteredText(ps, buffer, font, roomBooksLabel(entry.roomMode()), 0, rCY, WEIGHT_COLOR);
                     }
+                }
+                // Door Wall — whether the copies standing against the portal carriages carry their
+                // own end wall through the corridor mouth's plane. Sealed by default, which is what
+                // every room did before the setting existed.
+                case DOOR_WALL -> {
+                    int bg = hovered == CellKind.DOOR_WALL_CYCLE ? HOVER_COLOR : BUTTON_BG;
+                    drawQuad(ps, buffer, -halfW + 0.01, rBot + 0.005, halfW - 0.01, rTop - 0.005, bg);
+                    drawCenteredText(ps, buffer, font, doorWallLabel(entry.roomMode()), 0, rCY, WEIGHT_COLOR);
                 }
                 // Sky — whether this room is lit as though it stood outdoors, and under which sky.
                 // Off by default, which is every room lit only by whatever its own build gives it.

@@ -82,6 +82,7 @@
     "client.LightTextureNetherBandMixin",
     "client.LightTextureUpsideDownBandMixin",
     "client.LightTexturePortalRoomMixin",
+    "client.LightTexturePortalCrossingMixin",
     "client.LevelGetShadeMixin",
     "client.ModelBlockRendererUpsideDownMixin",
     "client.MinecraftFramerateThrottleMixin",

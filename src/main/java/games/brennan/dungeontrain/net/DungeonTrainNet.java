@@ -73,6 +73,10 @@ public final class DungeonTrainNet {
         // though it stood outdoors is named to the client as a box, and the client lifts its own
         // lightmap inside it. See client/ClientPortalRoomSky.
         registrar.playToClient(PortalRoomSkyPacket.TYPE, PortalRoomSkyPacket.STREAM_CODEC, PortalRoomSkyPacket::handle);
+        // …and the lightmap again for a portal CORRIDOR, which is the one portal region that cannot be
+        // sent as a box: it rides a Sable sub-level, so the box the client would test moves with the
+        // train every tick. The ramp itself is sent instead. See client/ClientPortalCrossing.
+        registrar.playToClient(PortalCrossingPacket.TYPE, PortalCrossingPacket.STREAM_CODEC, PortalCrossingPacket::handle);
         // …and the swap itself, which the client cannot infer from the position packet that carries it:
         // the renderer has to be told to finish its occlusion rebuild before drawing, or the first
         // frames in the twin draw nothing at all. See client/portal/ClientPortalSwap.

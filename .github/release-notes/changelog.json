@@ -8828,6 +8828,83 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "dpi-bypass-connection-notice",
+      "version": "0.663.0",
+      "type": "feat",
+      "title": "A heads-up when a connection blocker is in the way",
+      "summary": "If you run a DPI-bypass tool like zapret or GoodbyeDPI to reach Discord and YouTube, Dungeon Train now tells you once, on the title screen, that it may be sitting between you and brennan.games. Those tools reroute traffic at the driver level, and when they catch DT's traffic the online features don't fail loudly \u2014 community books, shared carriages and the rest just quietly never arrive. Now you get told why, instead of wondering where they went.",
+      "highlights": [
+        "One-time notice on the title screen, with a 'Don't show again' if you already know.",
+        "The check is local: it looks at the names of running programs on your own PC, and sends nothing anywhere.",
+        "Only shown if you've allowed the mod to use the network \u2014 otherwise there is nothing to interfere with."
+      ],
+      "pr": 1103,
+      "date": "2026-08-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "template-decor-frames-paintings",
+      "version": "0.664.0",
+      "type": "feat",
+      "title": "Paintings now stay put in dimensional carriages",
+      "summary": "Paintings and item frames hung in dimensional carriages now stick around properly.",
+      "highlights": [],
+      "pr": 1102,
+      "date": "2026-08-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "famous-pig-names",
+      "version": "0.665.0",
+      "type": "content",
+      "title": "",
+      "summary": "Some of the named pigs riding the train answer to a more famous name. A small tribute, and a rare one \u2014 you will not meet one every trip.",
+      "highlights": [],
+      "pr": 1104,
+      "date": "2026-08-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "dimensional-carriage-light-fade",
+      "version": "0.667.0",
+      "type": "fix",
+      "title": "Dimensional carriage lighting fades instead of jumping",
+      "summary": "Walking into a dimensional carriage no longer snaps the lighting. The corridor now fades once from the light of the world the train is running through to the light of the room at the far end, so crossing between the carriage and its copy is something you feel rather than something you see happen. Turn it off with the new crossingFade client setting.",
+      "highlights": [
+        "One smooth lighting fade along the corridor instead of a jump",
+        "The change is gradual with distance, from the train door to the room door",
+        "Turning around mid-corridor no longer flashes the lighting",
+        "New crossingFade client setting restores the old hard cut"
+      ],
+      "pr": 1106,
+      "date": "2026-08-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "portal-room-walls-in-tiling",
+      "version": "0.668.0",
+      "type": "feat",
+      "title": "Portal rooms can keep their own walls as they repeat",
+      "summary": "An endless portal room used to dissolve its own walls as it repeated \u2014 the wall between two copies was carved away so the space read as one continuous hall, taking whatever the builder had put on it with it. Rooms can now be built the other way instead: every copy keeps the walls it was drawn with, and you walk between copies through the doorways the builder left. Existing rooms are untouched.",
+      "highlights": [
+        "New Room Walls setting on a portal room: Merged (as before) or Kept",
+        "Kept rooms repeat their walls exactly, including the wall the way back to the train stands in",
+        "The library dimension now keeps its walls"
+      ],
+      "date": "2026-08-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

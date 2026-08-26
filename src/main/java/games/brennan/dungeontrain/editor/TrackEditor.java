@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.editor;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.template.TemplateDecor;
 import games.brennan.dungeontrain.track.TrackPalette;
 import games.brennan.dungeontrain.track.TrackPlacer;
 import games.brennan.dungeontrain.track.variant.TrackKind;
@@ -259,6 +260,7 @@ public final class TrackEditor {
         if (stored.isPresent()) {
             StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
             stored.get().placeInWorld(level, origin, origin, settings, level.getRandom(), 3);
+            TemplateDecor.replace(level, origin, stored.get(), settings, null);
             return;
         }
         // Fallback for unauthored "default" — hardcoded bed + 2-rail stamp.
@@ -274,10 +276,8 @@ public final class TrackEditor {
     }
 
     private static StructureTemplate captureTemplate(ServerLevel level, BlockPos origin, CarriageDims dims) {
-        StructureTemplate template = new StructureTemplate();
         Vec3i size = new Vec3i(TrackPlacer.TILE_LENGTH, TrackPlacer.HEIGHT, dims.width());
-        template.fillFromWorld(level, origin, size, false, Blocks.AIR);
-        return template;
+        return TemplateDecor.capture(level, origin, size, Blocks.AIR);
     }
 
     private static void setOutline(ServerLevel level, BlockPos origin, CarriageDims dims) {

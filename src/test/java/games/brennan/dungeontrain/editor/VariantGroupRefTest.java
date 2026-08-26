@@ -11,9 +11,11 @@ import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -32,6 +34,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * from the same pool. <b>Termination:</b> a reference graph is author-editable
  * and file-editable, so cycles are reachable; the pool must shed them before
  * the roll rather than dead-ending during the walk.</p>
+ *
+ * <p><b>Subset order</b> is the third: a group that references another
+ * requires it, and {@code analyse()} must order the sidecar so no group is
+ * resolved before the groups it requires. Liveness and every group's pool
+ * are derived along that order in one pass, so an order that regressed would
+ * quietly produce a half-resolved graph rather than an error.</p>
  *
  * <p>Uses {@link CarriageVariantBlocks} as the concrete sidecar (the other
  * three route through the same {@link VariantGroupResolver}), and needs a
@@ -239,6 +247,143 @@ final class VariantGroupRefTest {
             assertNull(sc.resolve(CELL_LOOSE, seed, 0),
                 "a cell with nothing but dead references has no value — the template block stands");
         }
+    }
+
+
+    // ---- subset order -------------------------------------------------------
+    //
+    // A group that references another requires it; the referenced group is that
+    // group's subset. analyse() orders the sidecar subset-first so liveness and
+    // the per-group pools can be derived in one forward pass.
+
+    /** Position of {@code lockId} in the graph's subset order. */
+    private static int orderOf(CarriageVariantBlocks sc, int lockId) {
+        int at = sc.groupRefs().graph().order().indexOf(lockId);
+        assertTrue(at >= 0, "lock-id " + lockId + " missing from the subset order");
+        return at;
+    }
+
+    @Test
+    @DisplayName("a chain orders subset-first, and every group in use appears exactly once")
+    void chainOrdersSubsetsFirst() {
+        // 3 → 2 → 1: group 1 has no subsets, so it leads; 3 requires 2 requires 1.
+        CarriageVariantBlocks sc = CarriageVariantBlocks.empty();
+        sc.put(CELL_1, groupOnePool());
+        sc.setLockId(CELL_1, 1);
+        sc.put(CELL_2, List.of(of(Blocks.OAK_PLANKS), ref(1)));
+        sc.setLockId(CELL_2, 2);
+        sc.put(CELL_3, List.of(of(Blocks.GLASS), ref(2)));
+        sc.setLockId(CELL_3, 3);
+
+        List<Integer> order = sc.groupRefs().graph().order();
+        assertEquals(List.of(1, 2, 3), order, "a straight chain must come out subset-first");
+        assertEquals(order.size(), new LinkedHashSet<>(order).size(), "a group was ordered twice");
+    }
+
+    @Test
+    @DisplayName("groups with no subsets lead, whatever order they were authored in")
+    void subsetFreeGroupsLead() {
+        // Authored dependents-first, and with an independent group last, so an
+        // order that merely echoed insertion order would fail this.
+        CarriageVariantBlocks sc = CarriageVariantBlocks.empty();
+        sc.put(CELL_3, List.of(of(Blocks.GLASS), ref(1), ref(2)));
+        sc.setLockId(CELL_3, 3);
+        sc.put(CELL_1, groupOnePool());
+        sc.setLockId(CELL_1, 1);
+        sc.put(CELL_2, List.of(of(Blocks.OAK_PLANKS), ref(1)));
+        sc.setLockId(CELL_2, 2);
+        sc.put(CELL_LOOSE, List.of(of(Blocks.BRICKS), of(Blocks.GRAVEL)));
+        sc.setLockId(CELL_LOOSE, 4);
+
+        assertTrue(orderOf(sc, 1) < orderOf(sc, 2), "1 is 2's subset and must precede it");
+        assertTrue(orderOf(sc, 2) < orderOf(sc, 3), "2 is 3's subset and must precede it");
+        assertTrue(orderOf(sc, 1) < orderOf(sc, 3), "1 is also 3's subset");
+        assertTrue(orderOf(sc, 4) < orderOf(sc, 3),
+            "a group with no subsets must lead one that has them");
+    }
+
+    @Test
+    @DisplayName("a mutual pair has no subsets at all — both edges are back-edges")
+    void mutualPairIsSubsetFree() {
+        // Rule 1 excludes both directions, so neither group requires the other
+        // and the order is free to list them in id order. The pair must still
+        // appear in full: an order that dropped a tangled group would take its
+        // pool with it.
+        CarriageVariantBlocks sc = CarriageVariantBlocks.empty();
+        sc.put(CELL_1, List.of(of(Blocks.STONE), ref(2)));
+        sc.setLockId(CELL_1, 1);
+        sc.put(CELL_2, List.of(of(Blocks.OAK_PLANKS), ref(1)));
+        sc.setLockId(CELL_2, 2);
+
+        List<Integer> order = sc.groupRefs().graph().order();
+        assertEquals(2, order.size(), "both halves of a mutual pair must be ordered");
+        assertTrue(order.containsAll(List.of(1, 2)));
+    }
+
+    @Test
+    @DisplayName("dangling and self references are not subsets and don't delay a group")
+    void deadReferencesAreNotSubsets() {
+        // Group 2's references go nowhere real, so it has nothing to wait for.
+        CarriageVariantBlocks sc = CarriageVariantBlocks.empty();
+        sc.put(CELL_1, groupOnePool());
+        sc.setLockId(CELL_1, 1);
+        sc.put(CELL_2, List.of(of(Blocks.OAK_PLANKS), ref(2), ref(9)));
+        sc.setLockId(CELL_2, 2);
+
+        List<Integer> order = sc.groupRefs().graph().order();
+        assertEquals(2, order.size());
+        assertTrue(order.containsAll(List.of(1, 2)));
+    }
+
+    // ---- precomputed pools --------------------------------------------------
+
+    @Test
+    @DisplayName("each group's precomputed pool is what filtering that group's list yields")
+    void precomputedPoolsMatchTheFilter() {
+        // Covers a plain group (1), a live reference (3 → 2), a partly-dead list
+        // (2, whose ref(9) dangles) and a wholly-dead one (4).
+        CarriageVariantBlocks sc = CarriageVariantBlocks.empty();
+        sc.put(CELL_1, groupOnePool());
+        sc.setLockId(CELL_1, 1);
+        sc.put(CELL_2, List.of(of(Blocks.OAK_PLANKS), ref(9)));
+        sc.setLockId(CELL_2, 2);
+        sc.put(CELL_3, List.of(of(Blocks.GLASS), ref(2)));
+        sc.setLockId(CELL_3, 3);
+        sc.put(CELL_LOOSE, List.of(ref(5), ref(9)));
+        sc.setLockId(CELL_LOOSE, 4);
+
+        VariantGroupResolver refs = sc.groupRefs();
+        VariantGroupRefs.Graph graph = refs.graph();
+        for (int id : graph.order()) {
+            List<VariantState> states = refs.statesForLockId(id);
+            assertNotNull(states, "group " + id + " is in the order but has no cells");
+            List<VariantState> expected = VariantGroupRefs.eligible(states, id, graph);
+            VariantGroupRefs.Pool pool = graph.poolFor(id);
+            if (expected.isEmpty()) {
+                assertNull(pool, "group " + id + " has nothing to roll, so it should have no pool");
+                continue;
+            }
+            assertNotNull(pool, "group " + id + " should have a precomputed pool");
+            assertEquals(expected, pool.entries(), "group " + id + "'s pool drifted from the filter");
+            int[] weights = new int[expected.size()];
+            for (int i = 0; i < expected.size(); i++) weights[i] = expected.get(i).weight();
+            assertArrayEquals(weights, pool.weights(), "group " + id + "'s weight column drifted");
+        }
+        assertNull(graph.poolFor(4), "a group with nothing but dead references has no pool");
+    }
+
+    @Test
+    @DisplayName("a reference-free group's pool reuses the group's own list, no copy")
+    void referenceFreePoolIsNotCopied() {
+        CarriageVariantBlocks sc = CarriageVariantBlocks.empty();
+        List<VariantState> pool = groupOnePool();
+        sc.put(CELL_1, pool);
+        sc.setLockId(CELL_1, 1);
+        sc.put(CELL_2, List.of(of(Blocks.OAK_PLANKS), ref(1)));
+        sc.setLockId(CELL_2, 2);
+
+        assertSame(sc.groupRefs().statesForLockId(1), sc.groupRefs().graph().poolFor(1).entries(),
+            "nothing needed dropping, so the pool must be the list itself");
     }
 
     @Test
