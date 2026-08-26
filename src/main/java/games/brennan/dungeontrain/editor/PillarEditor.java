@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.editor;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.template.PillarAdjunctTemplateId;
 import games.brennan.dungeontrain.template.PillarTemplateId;
+import games.brennan.dungeontrain.template.TemplateDecor;
 import games.brennan.dungeontrain.track.PillarAdjunct;
 import games.brennan.dungeontrain.track.PillarSection;
 import games.brennan.dungeontrain.track.TrackPalette;
@@ -309,6 +310,7 @@ public final class PillarEditor {
         if (stored.isPresent()) {
             StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
             stored.get().placeInWorld(level, origin, origin, settings, level.getRandom(), 3);
+            TemplateDecor.replace(level, origin, stored.get(), settings, null);
             return;
         }
         BlockState fallback = TrackPalette.PILLAR;
@@ -322,10 +324,8 @@ public final class PillarEditor {
     }
 
     private static StructureTemplate captureTemplate(ServerLevel level, BlockPos origin, PillarSection section, CarriageDims dims) {
-        StructureTemplate template = new StructureTemplate();
         Vec3i size = new Vec3i(1, section.height(), dims.width());
-        template.fillFromWorld(level, origin, size, false, Blocks.AIR);
-        return template;
+        return TemplateDecor.capture(level, origin, size, Blocks.AIR);
     }
 
     /**
@@ -498,6 +498,7 @@ public final class PillarEditor {
         if (stored.isPresent()) {
             StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
             stored.get().placeInWorld(level, origin, origin, settings, level.getRandom(), 3);
+            TemplateDecor.replace(level, origin, stored.get(), settings, null);
             return;
         }
         stampProceduralStairsFallback(level, origin, adjunct);
@@ -537,10 +538,8 @@ public final class PillarEditor {
     }
 
     private static StructureTemplate captureAdjunctTemplate(ServerLevel level, BlockPos origin, PillarAdjunct adjunct) {
-        StructureTemplate template = new StructureTemplate();
         Vec3i size = new Vec3i(adjunct.xSize(), adjunct.ySize(), adjunct.zSize());
-        template.fillFromWorld(level, origin, size, false, Blocks.AIR);
-        return template;
+        return TemplateDecor.capture(level, origin, size, Blocks.AIR);
     }
 
     private static void setOutlineAdjunct(ServerLevel level, BlockPos origin, PillarAdjunct adjunct) {

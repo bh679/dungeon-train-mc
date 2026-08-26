@@ -107,6 +107,13 @@ public final class ClientDisplayConfig {
      * dismissing once doesn't silently sign the player up to every future edit.
      */
     public static final ModConfigSpec.ConfigValue<String> CONFIG_DEVIATION_ACKNOWLEDGED;
+    /**
+     * Whether the player has dismissed the DPI-bypass warning for good (see
+     * {@code DpiBypassPromptHandler}). A plain opt-out rather than a signature: unlike a config
+     * deviation there is nothing here that can change into a NEW thing worth re-asking about — the
+     * tool is either running or it isn't, and someone who knows why it's running has heard enough.
+     */
+    public static final ModConfigSpec.BooleanValue DPI_BYPASS_WARNING_OPTED_OUT;
 
     /**
      * Remembered answer to the custom-Train-Editor-content prompt — see
@@ -177,6 +184,7 @@ public final class ClientDisplayConfig {
         CUSTOM_CONTENT_PREFERENCE = pair.getLeft().customContentPreference;
         CUSTOM_CONTENT_LAST_ANSWER = pair.getLeft().customContentLastAnswer;
         CONFIG_DEVIATION_ACKNOWLEDGED = pair.getLeft().configDeviationAcknowledged;
+        DPI_BYPASS_WARNING_OPTED_OUT = pair.getLeft().dpiBypassWarningOptedOut;
     }
 
     private ClientDisplayConfig() {}
@@ -381,6 +389,16 @@ public final class ClientDisplayConfig {
                 .define("deviationAcknowledged", "");
         b.pop();
 
+        b.push("connectionWarnings");
+        ModConfigSpec.BooleanValue dpiBypassWarningOptedOut = b
+                .comment("Internal: set when you dismiss the \"connection blocker detected\" notice for good.",
+                         "That notice appears on the title screen when a DPI-bypass tool (zapret, GoodbyeDPI)",
+                         "is running, because those tools can stop Dungeon Train reaching brennan.games. The",
+                         "check is local — a look at running process names, nothing sent anywhere. Set this",
+                         "back to false to be told again.")
+                .define("dpiBypassWarningOptedOut", false);
+        b.pop();
+
         return new Holder(allScale, worldspaceChannel, hudChannel, developerPopupShownBefore, developerPopupOptedOut, freePlayConfirmOptedOut,
                 devConsentGranted, devConsentGrantSession, devConsentLastMsgToDev, openedAdvancementsBefore,
                 rideSnapshotsEnabled, rideSnapshotIntervalSeconds, rideSnapshotMaxStored, rideSnapshotChatLog,
@@ -392,7 +410,7 @@ public final class ClientDisplayConfig {
                 sharedBooksRead,
                 deathScreenLastNps, politicalFilter, contentMode, customContentPreference,
                 customContentLastAnswer,
-                configDeviationAcknowledged);
+                configDeviationAcknowledged, dpiBypassWarningOptedOut);
     }
 
     /**
@@ -524,6 +542,21 @@ public final class ClientDisplayConfig {
         if (CONFIG_DEVIATION_ACKNOWLEDGED.get().equals(signature)) return; // skip a needless TOML write
         CONFIG_DEVIATION_ACKNOWLEDGED.set(signature);
         CONFIG_DEVIATION_ACKNOWLEDGED.save();
+    }
+
+    // ----- DPI-bypass warning (see client/DpiBypassPromptHandler) -----
+
+    /** Whether the player has told the DPI-bypass warning to stop appearing. */
+    public static boolean isDpiBypassWarningOptedOut() {
+        return isLoaded() && DPI_BYPASS_WARNING_OPTED_OUT.get();
+    }
+
+    /** Record "don't show again" (or clear it, to be warned once more next launch). */
+    public static void setDpiBypassWarningOptedOut(boolean value) {
+        if (!isLoaded()) return;
+        if (DPI_BYPASS_WARNING_OPTED_OUT.get() == value) return; // skip a needless TOML write
+        DPI_BYPASS_WARNING_OPTED_OUT.set(value);
+        DPI_BYPASS_WARNING_OPTED_OUT.save();
     }
 
     // ----- Political content filter (see client/PoliticalFilterPrefs) -----
@@ -1022,6 +1055,7 @@ public final class ClientDisplayConfig {
             ModConfigSpec.EnumValue<ContentMode> contentMode,
             ModConfigSpec.EnumValue<CustomContentPreference> customContentPreference,
             ModConfigSpec.EnumValue<CustomContentPreference> customContentLastAnswer,
-            ModConfigSpec.ConfigValue<String> configDeviationAcknowledged
+            ModConfigSpec.ConfigValue<String> configDeviationAcknowledged,
+            ModConfigSpec.BooleanValue dpiBypassWarningOptedOut
     ) {}
 }

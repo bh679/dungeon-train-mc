@@ -9,6 +9,10 @@
     {
       "id": "midlibrary",
       "weight": 1
+    },
+    {
+      "id": "pretty",
+      "weight": 1
     }
   ]
 }
