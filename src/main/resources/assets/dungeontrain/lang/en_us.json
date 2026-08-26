@@ -94,6 +94,7 @@
   "effect.dungeontrain.free_play.desc.1": "Advancements earned here won't be saved to your profile.",
   "effect.dungeontrain.free_play.desc.2": "Stats won't count toward your global totals.",
   "effect.dungeontrain.free_play.desc.3": "Your Ender Chest switches to your Creative one — your saved items stay safe.",
+  "effect.dungeontrain.free_play.trigger.hint": "Hold Shift for what triggered it",
   "effect.dungeontrain.free_play.trigger": "Triggered by: %s",
   "effect.dungeontrain.free_play.trigger.detail": "(%s)",
   "effect.dungeontrain.free_play.trigger.detail_more": "(%s, and %s more)",
