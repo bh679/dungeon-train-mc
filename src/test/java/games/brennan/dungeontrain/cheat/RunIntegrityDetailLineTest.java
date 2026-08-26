@@ -1,6 +1,10 @@
 package games.brennan.dungeontrain.cheat;
 
+import com.mojang.serialization.DataResult;
+import net.minecraft.nbt.NbtOps;
+import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.ComponentSerialization;
 import net.minecraft.network.chat.contents.TranslatableContents;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -11,6 +15,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * The specifics line under a Free Play cause — "which settings changed", "which cheat mod" — as
@@ -65,5 +70,26 @@ class RunIntegrityDetailLineTest {
         assertNotNull(line);
         assertEquals("effect.dungeontrain.free_play.trigger.detail_more", contents(line).getKey());
         assertArrayEquals(new Object[]{"a, b, c", 1}, contents(line).getArgs());
+    }
+
+    @Test
+    @DisplayName("A cause survives the save round-trip with its key and args — it is stored, not resolved")
+    void causeRoundTripsThroughNbt() {
+        // What ModDataAttachments.FREE_PLAY_CAUSE does on world save/load. Storing the Component
+        // rather than its resolved text is the whole reason the reader gets it in THEIR language,
+        // so the codec has to survive the trip with the arguments intact.
+        Component cause = Component.translatable(
+            "chat.dungeontrain.free_play.cause.command", "/give @s diamond 64");
+
+        DataResult<Tag> written = ComponentSerialization.CODEC.encodeStart(NbtOps.INSTANCE, cause);
+        assertTrue(written.isSuccess(), () -> "encode failed: " + written.error());
+
+        DataResult<Component> read = ComponentSerialization.CODEC
+            .parse(NbtOps.INSTANCE, written.getOrThrow());
+        assertTrue(read.isSuccess(), () -> "decode failed: " + read.error());
+
+        Component restored = read.getOrThrow();
+        assertEquals("chat.dungeontrain.free_play.cause.command", contents(restored).getKey());
+        assertArrayEquals(new Object[]{"/give @s diamond 64"}, contents(restored).getArgs());
     }
 }
