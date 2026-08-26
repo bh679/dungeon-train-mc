@@ -202,7 +202,10 @@ public final class PortalRoomTiler {
         BlockPos origin = structure.tileOrigin(dims, layout, tile);
         Vec3i size = structure.roomSize();
 
-        PortalCorridorMask clearMask = maskFor(structure, dims, tile);
+        // The mask the STAMP is made through, which is not the one the faces and the erase use: a
+        // copy under ENDLESS_REPETITION owns the seal plane at its own wall, and stampMaskFor is what
+        // hands it over. Everything else keeps the seals — see maskFor.
+        PortalCorridorMask clearMask = stampMaskFor(structure, dims);
         // Resolved once, before the mask is chosen, because the two answers have to agree: the mask
         // only swallows the whole tile when there is genuinely a block to put back afterwards. A
         // name that no longer resolves — a mod uninstalled between two launches, a hand-edited tag —
@@ -223,6 +226,13 @@ public final class PortalRoomTiler {
         // an appended tile is in that case.
         PortalRoomSinglePlanes.write(level, origin, size, single, clearMask, /*relight*/ true,
             level.getSeed(), structure.variantIndexFor(tile, pairKey));
+
+        // Then close whatever the copy's own wall left open in a mouth's seal plane. The plane may
+        // not have air in it — it is the only thing between the room and the basement when the tile
+        // beyond cannot be stamped — and an authored end wall legitimately does.
+        if (structure.mode().tilesWholeRoom()) {
+            PortalRoomSealRepair.repair(level, dims, structure, tile);
+        }
 
         PortalStructure grown = structure.withTiling(structure.tiling().with(tile));
         refreshFacesAround(level, dims, grown, tile);
@@ -300,6 +310,27 @@ public final class PortalRoomTiler {
      * be built around it exactly as the corridor row's is around the originals, or the stamp would
      * fill a working way back to the train with wall.</p>
      */
+    /**
+     * The mask a <b>copy's stamp</b> is made through: {@link #maskFor} without the seal planes, for a
+     * room that repeats whole.
+     *
+     * <p>A seal plane stands one column outside the base room box, which is the wall plane of the copy
+     * at tile {@code (±1, 0)}. Masked, that copy never wrote the wall that touches the portal carriage
+     * and the mouth's flattened mirror fill stood in for it — so the authored wall did not repeat, and
+     * under {@link PortalRoomCopies.Kind#DYNAMIC} the wall a player saw was the base room's roll.
+     * Released, the copy lays its own. {@link PortalRoomSealRepair} then closes whatever air it left,
+     * so the plane keeps the one property it must have.</p>
+     *
+     * <p><b>Only the seals, and only for {@link PortalRoomMode#ENDLESS_REPETITION}.</b> The corridor
+     * and plug boxes are never released — those hold the doorway. {@link PortalRoomMode#ENDLESS_OPEN}
+     * writes no walls at all, so it has nothing to repeat into the plane and keeps the seal that is
+     * standing.</p>
+     */
+    private static PortalCorridorMask stampMaskFor(PortalStructure structure, CarriageDims dims) {
+        return PortalCarriageBuilder.allCorridorMask(
+            structure, dims, /*withSeals*/ !structure.mode().tilesWholeRoom());
+    }
+
     private static PortalCorridorMask maskFor(PortalStructure structure, CarriageDims dims,
                                               Tile tile) {
         // Every tile, not just the corridor row. That shortcut was right only while both corridors

@@ -220,8 +220,18 @@ public final class PortalCarriageBuilder {
      * drained, say — is not quietly handed a mask that spares copies which are no longer there.</p>
      */
     public static PortalCorridorMask corridorMask(PortalStructure structure, CarriageDims dims) {
+        return corridorMask(structure, dims, /*withSeals*/ true);
+    }
+
+    /**
+     * As {@link #corridorMask(PortalStructure, CarriageDims)}, with the two mouths' seal planes
+     * optional — see
+     * {@link PortalCorridorMask#forStructure(PortalStructure, CarriageDims, PortalCarriageLayout, int, boolean)}.
+     */
+    public static PortalCorridorMask corridorMask(PortalStructure structure, CarriageDims dims,
+                                                  boolean withSeals) {
         return PortalCorridorMask.forStructure(
-            structure, dims, layoutFor(dims, structure.kind()), PLUG_DEPTH);
+            structure, dims, layoutFor(dims, structure.kind()), PLUG_DEPTH, withSeals);
     }
 
     /**
@@ -247,20 +257,41 @@ public final class PortalCarriageBuilder {
      * after it — so it is read fresh from the structure each time rather than fixed at build.</p>
      */
     public static PortalCorridorMask exitCopyMask(PortalStructure structure, CarriageDims dims) {
+        return exitCopyMask(structure, dims, /*withSeals*/ true);
+    }
+
+    /** As {@link #exitCopyMask(PortalStructure, CarriageDims)}, with the seal planes optional. */
+    public static PortalCorridorMask exitCopyMask(PortalStructure structure, CarriageDims dims,
+                                                  boolean withSeals) {
         PortalExitCopies copies = structure.exitCopies();
         if (copies.isEmpty()) return PortalCorridorMask.NONE;
         PortalCarriageLayout layout = layoutFor(dims, structure.kind());
         PortalCorridorMask mask = PortalCorridorMask.NONE;
         for (PortalExitSites.Site site : copies.sites()) {
             mask = mask.plus(PortalCorridorMask.forCorridor(
-                structure.shadowAt(site.tile()), dims, layout, PLUG_DEPTH, site.role()));
+                structure.shadowAt(site.tile()), dims, layout, PLUG_DEPTH, site.role(), withSeals));
         }
         return mask;
     }
 
     /** Everything any corridor of this structure owns: the base pair and every standing copy. */
     public static PortalCorridorMask allCorridorMask(PortalStructure structure, CarriageDims dims) {
-        return corridorMask(structure, dims).plus(exitCopyMask(structure, dims));
+        return allCorridorMask(structure, dims, /*withSeals*/ true);
+    }
+
+    /**
+     * As {@link #allCorridorMask(PortalStructure, CarriageDims)}, with every mouth's seal plane
+     * optional.
+     *
+     * <p>Only one caller passes {@code false}: the stamp of a room copy under
+     * {@link PortalRoomMode#ENDLESS_REPETITION}, whose own wall plane <i>is</i> a seal plane. Every
+     * other path — the face work, the erase, the corridor stamps — keeps them, because a seal is the
+     * only thing between an unbuilt tile and the basement.</p>
+     */
+    public static PortalCorridorMask allCorridorMask(PortalStructure structure, CarriageDims dims,
+                                                     boolean withSeals) {
+        return corridorMask(structure, dims, withSeals)
+            .plus(exitCopyMask(structure, dims, withSeals));
     }
 
     /**
@@ -918,6 +949,26 @@ public final class PortalCarriageBuilder {
     public static void stampCorridorHalf(ServerLevel level, PortalStructure structure,
                                          PortalStructure base, CarriageDims dims, int pairKey,
                                          PortalCarriageRole role) {
+        stampCorridorHalf(level, structure, base, dims, pairKey, role, base);
+    }
+
+    /**
+     * As {@link #stampCorridorHalf(ServerLevel, PortalStructure, PortalStructure, CarriageDims, int,
+     * PortalCarriageRole)}, naming which room the seal ring copies its blocks from.
+     *
+     * <p>Ordinarily the <b>base</b> room, for the reason {@link #sealFillSource} documents: a shadow's
+     * room is not always standing when its corridor is laid, and reading beside one that is not there
+     * copies raw basement rock.</p>
+     *
+     * <p>An <b>extra corridor</b> ({@link #stampExitCopy}) is the case where it is: a site is anchored
+     * at a tile that is standing by construction, and the seal plane it writes is that copy's own wall
+     * plane. Sourcing it from the base room there paints one copy's mouth with another copy's wall —
+     * visible under {@link PortalRoomCopies.Kind#DYNAMIC}, where every copy rolls its own, and in any
+     * room whose two ends differ.</p>
+     */
+    public static void stampCorridorHalf(ServerLevel level, PortalStructure structure,
+                                         PortalStructure base, CarriageDims dims, int pairKey,
+                                         PortalCarriageRole role, PortalStructure sealSource) {
         PortalCarriageLayout layout = layoutFor(dims, structure.kind());
         BlockPos roomOrigin = structure.roomOrigin(dims, layout);
         Vec3i roomSize = structure.roomSize();
@@ -930,9 +981,9 @@ public final class PortalCarriageBuilder {
         // corridor, so everything it does not already cover at the door plane has to be walled off,
         // leaving that plane — and the door hanging in it — untouched. The mouth is the far end of an
         // entry corridor and the near end of an exit one.
-        int sealX = entry ? corridorOrigin.getX() + layout.length() - 1 : corridorOrigin.getX();
+        int sealX = PortalCorridorMask.sealPlaneX(corridorOrigin, layout, role);
         sealCorridorMouth(level, sealX, corridorOrigin, dims, roomOrigin, roomSize,
-            base.roomOrigin(dims, layout), role);
+            sealSource.roomOrigin(dims, layout), role);
 
         // Dead space behind the door that leads nowhere, at the other end. Unbreakable under Bedrock
         // Lock: the room's own skin stops at its ±X ends, so the plugs are what closes off the two
@@ -978,7 +1029,9 @@ public final class PortalCarriageBuilder {
             PortalClear.clearBox(level, box, PortalCorridorMask.NONE);
         }
 
-        stampCorridorHalf(level, shadow, structure, dims, pairKey, site.role());
+        // Sealed against the shadow's own room, not the base one: this site is anchored at a tile
+        // that is standing, and the plane the seal fills is that copy's wall.
+        stampCorridorHalf(level, shadow, structure, dims, pairKey, site.role(), shadow);
     }
 
     /**
@@ -1972,7 +2025,10 @@ public final class PortalCarriageBuilder {
      * chests along the boundary, and a copied stair or torch keeps the facing it had and leaves a
      * hole besides.</p>
      */
-    private static BlockState sealFillFor(ServerLevel level, BlockPos baseRoomOrigin,
+    // Package-private rather than private: PortalRoomSealRepair fills the cells a room copy's own
+    // stamp left as air in the same plane, and it must do it by the same three-tier rule — a second
+    // implementation is a second chance to leave air in a plane that may not have any.
+    static BlockState sealFillFor(ServerLevel level, BlockPos baseRoomOrigin,
                                           BlockPos roomOrigin, Vec3i roomSize,
                                           PortalCarriageRole role, int y, int z, int floorY) {
         BlockPos wall = sealFillSource(baseRoomOrigin, roomOrigin, roomSize, role, y, z);
