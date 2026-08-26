@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.support;
 
+import games.brennan.dungeontrain.client.ClientLanguage;
 import games.brennan.dungeontrain.client.VersionInfo;
 import net.minecraft.network.chat.Component;
 
@@ -28,26 +29,44 @@ public final class DevHours {
         return VersionInfo.DEV_HOURS;
     }
 
-    /** The player-facing line, or empty when there is no figure worth showing. */
+    /** The player-facing line for this client, or empty when there is no figure worth showing. */
     public static Optional<Component> line() {
-        return line(hours());
+        return line(hours(), clientLocale());
     }
 
     /**
      * The player-facing line for an explicit count — the whole decision, kept pure so it can be
-     * tested without a baked jar.
+     * tested without a baked jar or a running client.
      *
-     * @param hours de-duplicated commit-hours; anything {@code <= 0} means "unknown"
+     * @param hours  de-duplicated commit-hours; anything {@code <= 0} means "unknown"
+     * @param locale the locale whose digit grouping to use
      */
-    public static Optional<Component> line(int hours) {
+    public static Optional<Component> line(int hours, Locale locale) {
         if (hours <= 0) return Optional.empty();
         return Optional.of(Component.translatable(
-                "gui.dungeontrain.death.narr.donate_hours", format(hours, Locale.getDefault())));
+                "gui.dungeontrain.death.narr.donate_hours", format(hours, locale)));
     }
 
     /** Group the count for readability ("1,394"), in whatever way {@code locale} groups digits. */
     public static String format(int hours, Locale locale) {
         return NumberFormat.getIntegerInstance(locale).format(hours);
+    }
+
+    /**
+     * Grouping follows the language the player chose <i>in Minecraft</i>, not the JVM default — a
+     * German client on an English machine should read "1.394". Falls back to the JVM default before
+     * the client is up or for a code Minecraft reports in an unexpected shape.
+     */
+    static Locale clientLocale() {
+        return localeOf(ClientLanguage.selected());
+    }
+
+    /** {@code "de_de"} -> {@code de-DE}. Null/blank/odd input yields the JVM default. */
+    static Locale localeOf(String minecraftCode) {
+        if (minecraftCode == null || minecraftCode.isBlank()) return Locale.getDefault();
+        String[] parts = minecraftCode.trim().split("_");
+        if (parts.length == 1) return Locale.of(parts[0]);
+        return Locale.of(parts[0], parts[1].toUpperCase(Locale.ROOT));
     }
 
     private DevHours() {}

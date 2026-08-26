@@ -26,13 +26,13 @@ class DevHoursTest {
     @Test
     void anUnknownCountShowsNothing() {
         // 0 is what build.gradle bakes when it could read neither the snapshot nor git.
-        assertFalse(DevHours.line(0).isPresent(), "0 means unknown — say nothing");
-        assertFalse(DevHours.line(-1).isPresent(), "a nonsense count must not reach a player");
+        assertFalse(DevHours.line(0, Locale.US).isPresent(), "0 means unknown — say nothing");
+        assertFalse(DevHours.line(-1, Locale.US).isPresent(), "a nonsense count must not reach a player");
     }
 
     @Test
     void aRealCountBecomesTheTranslatedLine() {
-        Optional<Component> line = DevHours.line(1394);
+        Optional<Component> line = DevHours.line(1394, Locale.US);
         assertTrue(line.isPresent());
         TranslatableContents contents = contentsOf(line.get());
         assertEquals("gui.dungeontrain.death.narr.donate_hours", contents.getKey());
@@ -41,7 +41,7 @@ class DevHoursTest {
 
     @Test
     void oneHourIsStillAFigureWorthShowing() {
-        assertTrue(DevHours.line(1).isPresent());
+        assertTrue(DevHours.line(1, Locale.US).isPresent());
     }
 
     @Test
@@ -54,6 +54,15 @@ class DevHoursTest {
     void groupingFollowsTheLocale() {
         // German groups with a full stop — the line must not hard-code an English separator.
         assertEquals("1.394", DevHours.format(1394, Locale.GERMANY));
+    }
+
+    @Test
+    void groupingFollowsTheLanguageChosenInMinecraft() {
+        assertEquals(Locale.GERMANY, DevHours.localeOf("de_de"));
+        assertEquals("de", DevHours.localeOf("de").getLanguage());
+        // Before the client is up there is no selected language — fall back, never crash.
+        assertEquals(Locale.getDefault(), DevHours.localeOf(null));
+        assertEquals(Locale.getDefault(), DevHours.localeOf("  "));
     }
 
     @Test
