@@ -3,8 +3,22 @@ package games.brennan.dungeontrain.portal;
 import java.util.Locale;
 
 /**
- * What the two room copies standing against the portal carriages do about the wall that touches them
- * — the mouth's own seal ring, or their own end wall carried on.
+ * Whether the portal room's own walls are included in the tiling — the tiler's to reshape, or the
+ * author's to keep.
+ *
+ * <h2>The two answers</h2>
+ * <p>{@link #SEALED} is what an endless room has always done: the wall between two copies is
+ * <b>carved away</b> ({@code PortalRoomTiler.carveSeam}), so a grid of rooms reads as one continuous
+ * hall, and a corridor mouth's plane belongs to the mouth rather than to the copy standing at it.
+ * Anything the author put on a wall goes with it — which is why a marked wall does not survive into
+ * the copies, while the block a torch hangs on does: the carve skips a cell whose front is not
+ * air.</p>
+ *
+ * <p>{@link #REPEATED} makes the walls part of what repeats. No seam is carved, no outer face is
+ * closed, and the mouth plane is stamped by the copy that owns it — so every tile is the room the
+ * author built, and players pass between copies through the openings the author drew.</p>
+ *
+ * <h2>The mouth plane is the same question asked of one column</h2>
  *
  * <h2>The plane this is about</h2>
  * <p>A corridor's seal ring fills the room's whole cross-section one column outside the base room box
@@ -38,11 +52,15 @@ import java.util.Locale;
  */
 public enum PortalRoomDoorWall {
 
-    /** The mouth keeps its seal ring. The default, and what every room did before this existed. */
-    SEALED("sealed", "Sealed"),
+    /**
+     * The walls are the tiler's. Seams between copies are carved open, outer faces are closed, and a
+     * corridor mouth's plane belongs to the mouth. The default, and what every room did before this
+     * existed.
+     */
+    SEALED("sealed", "Merged"),
 
-    /** The copy carries its own end wall through the plane instead. */
-    REPEATED("repeated", "Repeated");
+    /** The walls are the room's. Every tile keeps them exactly as the author built them. */
+    REPEATED("repeated", "Kept");
 
     /** What a variant with no door-wall segment — or an unreadable one — behaves as. */
     public static final PortalRoomDoorWall DEFAULT = SEALED;
@@ -82,12 +100,15 @@ public enum PortalRoomDoorWall {
         return DEFAULT;
     }
 
-    /** True when a copy writes its own wall into the mouth's plane. */
+    /**
+     * True when the room's walls are part of the tiling: no seam carved, no outer face closed, and a
+     * copy writes its own wall into a corridor mouth's plane.
+     */
     public boolean repeats() {
         return this == REPEATED;
     }
 
-    /** The value after this one, wrapping — what the editor's Door Wall button steps through. */
+    /** The value after this one, wrapping — what the editor's Room Walls button steps through. */
     public PortalRoomDoorWall next() {
         PortalRoomDoorWall[] all = values();
         return all[(ordinal() + 1) % all.length];

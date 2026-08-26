@@ -374,9 +374,9 @@ public final class EditorPlotLabelsRenderer {
         return games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag).doorWallApplies();
     }
 
-    /** What the Door Wall row reads, e.g. {@code "Door Wall: Repeated"}. */
+    /** What the Room Walls row reads, e.g. {@code "Room Walls: Kept"}. */
     public static String doorWallLabel(String modeTag) {
-        return "Door Wall: " + games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag)
+        return "Room Walls: " + games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag)
             .effectiveDoorWall().displayName();
     }
 

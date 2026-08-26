@@ -207,13 +207,13 @@ class EditorPlotLabelsRendererTest {
     }
 
     @Test
-    @DisplayName("A tag that never mentioned Door Wall reads Sealed — the row cannot imply a change")
+    @DisplayName("A tag that never mentioned Room Walls reads Merged — the row cannot imply a change")
     void doorWallLabelDefaultsToSealed() {
-        assertEquals("Door Wall: Sealed",
+        assertEquals("Room Walls: Merged",
             EditorPlotLabelsRenderer.doorWallLabel("endless_repetition"));
-        assertEquals("Door Wall: Sealed",
+        assertEquals("Room Walls: Merged",
             EditorPlotLabelsRenderer.doorWallLabel("endless_repetition/dynamic"));
-        assertEquals("Door Wall: Repeated", EditorPlotLabelsRenderer.doorWallLabel(
+        assertEquals("Room Walls: Kept", EditorPlotLabelsRenderer.doorWallLabel(
             "endless_repetition/dynamic/off/lattice:8/off/none/repeated"));
     }
 

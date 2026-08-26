@@ -418,14 +418,53 @@ public final class PortalRoomTiler {
      */
     private static void refreshFace(ServerLevel level, CarriageDims dims, PortalStructure structure,
                                     Tile tile, int dx, int dz) {
-        Tile neighbour = tile.offset(dx, dz);
-        if (structure.tiling().has(neighbour)) {
-            carveSeam(level, dims, structure, tile, dx, dz);
-        } else if (structure.mode().closesOuterFaces() && !vacatedByAMovedExit(structure, tile, dx)) {
-            closeFace(level, dims, structure, tile, dx, dz);
-        } else {
-            openFace(level, dims, structure, tile, dx, dz);
+        boolean hasNeighbour = structure.tiling().has(tile.offset(dx, dz));
+        switch (faceAction(structure, tile, dx, hasNeighbour)) {
+            case CARVE -> carveSeam(level, dims, structure, tile, dx, dz);
+            case CLOSE -> closeFace(level, dims, structure, tile, dx, dz);
+            case OPEN -> openFace(level, dims, structure, tile, dx, dz);
+            case NONE -> { }
         }
+    }
+
+    /** What {@link #refreshFace} does to one face. */
+    // Package-private, as is the method that decides it: this is the whole of the face rule and it is
+    // pure integer logic, so it is worth testing without a level standing up.
+    enum FaceAction {
+        /** Open the two wall columns between this copy and its neighbour. */
+        CARVE,
+        /** Wall off a face with nothing beyond it, from the room's own blocks. */
+        CLOSE,
+        /** Take the face away — {@link PortalRoomMode#ENDLESS_OPEN} only. */
+        OPEN,
+        /** Leave the face exactly as the stamp wrote it. */
+        NONE
+    }
+
+    /**
+     * Which of the three operations one face gets, or {@link FaceAction#NONE} for none of them.
+     *
+     * <p><b>{@link PortalRoomDoorWall#REPEATED} answers NONE for every face.</b> That setting says the
+     * room's own walls are part of the tiling, and a wall that is part of the tiling is one the tiler
+     * does not touch: the seam carve is what deletes the wall between two copies — which is what makes
+     * an ordinary endless room read as one continuous hall — and closing is what fills an authored
+     * opening at the outer edge.</p>
+     *
+     * <p><b>Why not "skip the carve, keep the close".</b> Closing only fills air whose mirror across
+     * the room is a full block. In a room with matching openings on both facing walls — which is what
+     * makes copies walkable at all — the mirror is air too, so it fills nothing and protects nothing.
+     * Where the two walls differ it <i>does</i> fill, bricking up an authored opening on a face that
+     * later gains a neighbour — and with the carve gone nothing would ever re-open it. It buys no
+     * safety and loses the author's doorway for good, so the kept-walls answer is to leave the face
+     * alone.</p>
+     */
+    static FaceAction faceAction(PortalStructure structure, Tile tile, int dx, boolean hasNeighbour) {
+        if (structure.settings().effectiveDoorWall().repeats()) return FaceAction.NONE;
+        if (hasNeighbour) return FaceAction.CARVE;
+        if (structure.mode().closesOuterFaces() && !vacatedByAMovedExit(structure, tile, dx)) {
+            return FaceAction.CLOSE;
+        }
+        return FaceAction.OPEN;
     }
 
     /**
