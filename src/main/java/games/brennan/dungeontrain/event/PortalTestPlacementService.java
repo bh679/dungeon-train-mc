@@ -29,12 +29,13 @@ import java.util.concurrent.ConcurrentHashMap;
  * portal, re-seeds the train and parks the player above the assembly footprint; this waits for the
  * corridor to actually exist, then puts them in front of its door.
  *
- * <p><b>Why it waits on the pair rather than on the train.</b> {@link DtpPlacementService} can land
- * as soon as a deck has settled, because any deck will do. Here the point is the corridor, and a
- * corridor is only half-real until {@code PortalCarriageEvents} has stamped its twin on approach and
- * published the pairing — Sable loads a fresh sub-level asynchronously, so that is several ticks
- * after the blocks are asked for. Landing early would drop the player beside an ordinary-looking
- * carriage that swallows them a second later.</p>
+ * <p><b>It waits for a deck, not for the corridor's pair.</b> An earlier version held out for the
+ * pairing to be published, on the grounds that the corridor is the whole point. That was
+ * self-defeating: a twin is stamped on <i>approach</i>, so the pair only goes live once somebody is
+ * near the carriage — and waiting for it kept the player parked 48 blocks above the track, which is
+ * sometimes near enough and sometimes not. Observed both ways on the same build. Landing first is
+ * what makes the pair happen, so that is what this does; the corridor finishes coming alive while
+ * the player is walking the few blocks to its door.</p>
  *
  * <p>The landing itself is the one {@link games.brennan.dungeontrain.portal.PortalRoomRescue} uses:
  * the settled flatbed deck nearest the entry carriage, plus a {@link SpawnDeckHoldPacket} — a deck
@@ -47,11 +48,10 @@ public final class PortalTestPlacementService {
     private static final Logger LOGGER = LogUtils.getLogger();
 
     /**
-     * Ticks to wait for the pair before landing the player anyway. 20 TPS, so 200 ≈ 10s — twice
-     * {@link DtpPlacementService}'s window, because this waits on the twin stamp as well as on the
-     * group settling.
+     * Ticks to wait for a settled deck before giving up. 20 TPS, so 100 ≈ 5s — the same window
+     * {@link DtpPlacementService} allows, because this now waits on the same thing it does.
      */
-    private static final int MAX_RETRY_TICKS = 200;
+    private static final int MAX_RETRY_TICKS = 100;
 
     /** The forced test group's entry corridor. See {@code PortalTestCommand}. */
     private static final int ENTRY_CARRIAGE_INDEX = 0;
@@ -110,16 +110,18 @@ public final class PortalTestPlacementService {
 
     /** @return true once the player has been placed — false to retry next tick. */
     private static boolean tryFinish(MinecraftServer server, ServerPlayer player, Pending pending) {
-        PortalPairIndex.Entry pair = PortalPairIndex.get(ENTRY_CARRIAGE_INDEX);
-        if (pair == null) return false; // corridor not paired yet — retry next tick
-
-        // The corridor's own live world X, not the spawn X: the train has been rolling for the
-        // ticks this spent waiting, and the deck worth landing on is the one beside the corridor
-        // now rather than the one beside where it was asked for.
+        // Land as soon as a deck has settled, WITHOUT waiting for the corridor's pair to publish.
+        //
+        // Waiting for it was self-defeating. A twin is stamped on APPROACH, so the pair only goes
+        // live once somebody is near the carriage — and this held the player at a holding spot 48
+        // blocks above the track while it waited for exactly that. Sometimes the approach range
+        // reached them up there and it paired in a few seconds; sometimes it did not and the whole
+        // ten-second window expired against a corridor that had been stamped and furnished the
+        // entire time. Landing first is what makes the pair happen.
         DungeonTrainWorldData data = DungeonTrainWorldData.get(server.overworld());
         PlayerJoinEvents.FlatbedTarget deck = PlayerJoinEvents.findNearestFlatbedTarget(
-            pending.trainLevel(), data, pair.carriageWorld().x);
-        if (deck == null) return false; // no settled deck yet — retry next tick
+            pending.trainLevel(), data, pending.spawnX());
+        if (deck == null) return false; // train not settled yet — retry next tick
 
         land(player, pending.trainLevel(), data, deck);
         player.sendSystemMessage(Component.literal(
@@ -127,39 +129,25 @@ public final class PortalTestPlacementService {
             .withStyle(ChatFormatting.AQUA));
 
         LOGGER.info("[DungeonTrain] portal test placed {} at the entry corridor's deck ({}, {}, {}), "
-                + "corridor at world X {}",
+                + "pair {}",
             player.getName().getString(), fmt(deck.x()), fmt(deck.y()), fmt(deck.z()),
-            fmt(pair.carriageWorld().x));
+            PortalPairIndex.get(ENTRY_CARRIAGE_INDEX) == null
+                ? "not live yet — it stamps as they approach" : "already live");
         return true;
     }
 
     /**
-     * Land them on the train anyway and say the corridor never turned up — a test spawn that
-     * produced no pair is itself the result worth reporting, and it is no reason to leave somebody
-     * parked in the sky.
+     * The train never settled anywhere in the window, so there is no deck to stand on. Release them
+     * where they are rather than leaving somebody parked in the sky.
      */
     private static void timeOut(MinecraftServer server, ServerPlayer player, Pending pending) {
-        DungeonTrainWorldData data = DungeonTrainWorldData.get(server.overworld());
-        PlayerJoinEvents.FlatbedTarget deck = PlayerJoinEvents.findNearestFlatbedTarget(
-            pending.trainLevel(), data, pending.spawnX());
-
-        if (deck != null) {
-            land(player, pending.trainLevel(), data, deck);
-            player.sendSystemMessage(Component.literal(
-                "The dimensional carriage never paired up — you're on the train at the spot it was "
-                    + "asked for. Check the log for portal stamp refusals, or try again.")
-                .withStyle(ChatFormatting.YELLOW));
-        } else {
-            player.setInvulnerable(false);
-            player.sendSystemMessage(Component.literal(
-                "The train didn't settle in time — you've been left at the holding spot. Try again.")
-                .withStyle(ChatFormatting.YELLOW));
-        }
-
-        LOGGER.warn("[DungeonTrain] portal test placement timed out for {} after {} ticks (pair {}, deck {})",
-            player.getName().getString(), MAX_RETRY_TICKS,
-            PortalPairIndex.get(ENTRY_CARRIAGE_INDEX) == null ? "never published" : "published late",
-            deck == null ? "none settled" : "landed");
+        player.setInvulnerable(false);
+        player.sendSystemMessage(Component.literal(
+            "The train didn't settle in time — you've been left at the holding spot. Try again.")
+            .withStyle(ChatFormatting.YELLOW));
+        LOGGER.warn("[DungeonTrain] portal test placement timed out for {} after {} ticks — "
+                + "no carriage group settled to land on",
+            player.getName().getString(), MAX_RETRY_TICKS);
     }
 
     private static void land(ServerPlayer player, ServerLevel trainLevel, DungeonTrainWorldData data,
