@@ -8921,6 +8921,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "freeplay-tooltip-trigger",
+      "version": "0.669.0",
+      "type": "feat",
+      "title": "The Free Play badge says why it's on",
+      "summary": "Hover the Free Play effect in your inventory and it now tells you what turned it on \u2014 the game mode you switched to, the command you ran, a changed setting, a cheat mod it found. Before, that reason was said once in chat and then scrolled away, so joining a world that was already in Free Play left you with a badge and no explanation. The tooltip also got shorter: the reason leads, the consequences fit on one line.",
+      "highlights": [
+        "The Free Play tooltip names what triggered it, including settings changed or cheat mods detected",
+        "The reason survives logging out, so a world you come back to still explains itself"
+      ],
+      "pr": 1110,
+      "date": "2026-08-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
