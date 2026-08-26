@@ -202,7 +202,10 @@ public final class PortalRoomTiler {
         BlockPos origin = structure.tileOrigin(dims, layout, tile);
         Vec3i size = structure.roomSize();
 
-        PortalCorridorMask clearMask = maskFor(structure, dims, tile);
+        // The mask the STAMP is made through, which is not the one the faces and the erase use: a
+        // copy under ENDLESS_REPETITION owns the seal plane at its own wall, and stampMaskFor is what
+        // hands it over. Everything else keeps the seals — see maskFor.
+        PortalCorridorMask clearMask = stampMaskFor(structure, dims);
         // Resolved once, before the mask is chosen, because the two answers have to agree: the mask
         // only swallows the whole tile when there is genuinely a block to put back afterwards. A
         // name that no longer resolves — a mod uninstalled between two launches, a hand-edited tag —
@@ -223,6 +226,13 @@ public final class PortalRoomTiler {
         // an appended tile is in that case.
         PortalRoomSinglePlanes.write(level, origin, size, single, clearMask, /*relight*/ true,
             level.getSeed(), structure.variantIndexFor(tile, pairKey));
+
+        // Then close whatever the copy's own wall left open in a mouth's seal plane. The plane may
+        // not have air in it — it is the only thing between the room and the basement when the tile
+        // beyond cannot be stamped — and an authored end wall legitimately does.
+        if (structure.settings().effectiveDoorWall().repeats()) {
+            PortalRoomSealRepair.repair(level, dims, structure, tile);
+        }
 
         PortalStructure grown = structure.withTiling(structure.tiling().with(tile));
         refreshFacesAround(level, dims, grown, tile);
@@ -300,6 +310,30 @@ public final class PortalRoomTiler {
      * be built around it exactly as the corridor row's is around the originals, or the stamp would
      * fill a working way back to the train with wall.</p>
      */
+    /**
+     * The mask a <b>copy's stamp</b> is made through: {@link #maskFor} without the seal planes, for a
+     * room that repeats whole.
+     *
+     * <p>A seal plane stands one column outside the base room box, which is the wall plane of the copy
+     * at tile {@code (±1, 0)}. Masked, that copy never writes the wall that touches the portal
+     * carriage and the mouth's flattened mirror fill stands in for it — so the authored wall does not
+     * repeat, and under {@link PortalRoomCopies.Kind#DYNAMIC} the wall a player sees is the base
+     * room's roll. Released, the copy lays its own, and {@link PortalRoomSealRepair} closes whatever
+     * air that leaves, so the plane keeps the one property it must have.</p>
+     *
+     * <p><b>The author decides which.</b> {@link PortalRoomDoorWall} is the setting and it defaults to
+     * {@link PortalRoomDoorWall#SEALED} — the behaviour every room had before it existed — so this
+     * returns the full mask unless a room has asked for the other. Read through
+     * {@code effectiveDoorWall}, so a value left over from a mode that cannot use it is not honoured.</p>
+     *
+     * <p><b>Only the seals, ever.</b> The corridor and plug boxes are never released whatever the
+     * setting says — those hold the doorway.</p>
+     */
+    private static PortalCorridorMask stampMaskFor(PortalStructure structure, CarriageDims dims) {
+        return PortalCarriageBuilder.allCorridorMask(
+            structure, dims, /*withSeals*/ !structure.settings().effectiveDoorWall().repeats());
+    }
+
     private static PortalCorridorMask maskFor(PortalStructure structure, CarriageDims dims,
                                               Tile tile) {
         // Every tile, not just the corridor row. That shortcut was right only while both corridors
@@ -384,14 +418,53 @@ public final class PortalRoomTiler {
      */
     private static void refreshFace(ServerLevel level, CarriageDims dims, PortalStructure structure,
                                     Tile tile, int dx, int dz) {
-        Tile neighbour = tile.offset(dx, dz);
-        if (structure.tiling().has(neighbour)) {
-            carveSeam(level, dims, structure, tile, dx, dz);
-        } else if (structure.mode().closesOuterFaces() && !vacatedByAMovedExit(structure, tile, dx)) {
-            closeFace(level, dims, structure, tile, dx, dz);
-        } else {
-            openFace(level, dims, structure, tile, dx, dz);
+        boolean hasNeighbour = structure.tiling().has(tile.offset(dx, dz));
+        switch (faceAction(structure, tile, dx, hasNeighbour)) {
+            case CARVE -> carveSeam(level, dims, structure, tile, dx, dz);
+            case CLOSE -> closeFace(level, dims, structure, tile, dx, dz);
+            case OPEN -> openFace(level, dims, structure, tile, dx, dz);
+            case NONE -> { }
         }
+    }
+
+    /** What {@link #refreshFace} does to one face. */
+    // Package-private, as is the method that decides it: this is the whole of the face rule and it is
+    // pure integer logic, so it is worth testing without a level standing up.
+    enum FaceAction {
+        /** Open the two wall columns between this copy and its neighbour. */
+        CARVE,
+        /** Wall off a face with nothing beyond it, from the room's own blocks. */
+        CLOSE,
+        /** Take the face away — {@link PortalRoomMode#ENDLESS_OPEN} only. */
+        OPEN,
+        /** Leave the face exactly as the stamp wrote it. */
+        NONE
+    }
+
+    /**
+     * Which of the three operations one face gets, or {@link FaceAction#NONE} for none of them.
+     *
+     * <p><b>{@link PortalRoomDoorWall#REPEATED} answers NONE for every face.</b> That setting says the
+     * room's own walls are part of the tiling, and a wall that is part of the tiling is one the tiler
+     * does not touch: the seam carve is what deletes the wall between two copies — which is what makes
+     * an ordinary endless room read as one continuous hall — and closing is what fills an authored
+     * opening at the outer edge.</p>
+     *
+     * <p><b>Why not "skip the carve, keep the close".</b> Closing only fills air whose mirror across
+     * the room is a full block. In a room with matching openings on both facing walls — which is what
+     * makes copies walkable at all — the mirror is air too, so it fills nothing and protects nothing.
+     * Where the two walls differ it <i>does</i> fill, bricking up an authored opening on a face that
+     * later gains a neighbour — and with the carve gone nothing would ever re-open it. It buys no
+     * safety and loses the author's doorway for good, so the kept-walls answer is to leave the face
+     * alone.</p>
+     */
+    static FaceAction faceAction(PortalStructure structure, Tile tile, int dx, boolean hasNeighbour) {
+        if (structure.settings().effectiveDoorWall().repeats()) return FaceAction.NONE;
+        if (hasNeighbour) return FaceAction.CARVE;
+        if (structure.mode().closesOuterFaces() && !vacatedByAMovedExit(structure, tile, dx)) {
+            return FaceAction.CLOSE;
+        }
+        return FaceAction.OPEN;
     }
 
     /**
