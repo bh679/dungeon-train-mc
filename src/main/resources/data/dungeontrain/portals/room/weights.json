@@ -98,7 +98,7 @@
   },
   "midlibrary": {
     "weight": 1,
-    "mode": "bedrock_lock/exact/off/off/mix:3:1:1:24:120"
+    "mode": "bedrock_lock/exact/off/off/mix:3:1:1:1:24:120"
   },
   "miniword": {
     "weight": 1,
@@ -142,7 +142,7 @@
   },
   "smalllibrary": {
     "weight": 1,
-    "mode": "bedrock_lock/exact/off/off/mix"
+    "mode": "bedrock_lock/exact/off/off/mix:1:1:1:0:10:0"
   },
   "trap": {
     "weight": 1,
