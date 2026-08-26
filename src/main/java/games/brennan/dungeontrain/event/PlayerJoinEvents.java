@@ -197,6 +197,16 @@ public final class PlayerJoinEvents {
         // Seed debug flags so the in-world Debug menu's Toggle states render
         // the correct value the first time it's opened on this client.
         DebugFlags.sendSnapshotTo(player);
+        // Somebody who quit standing in a test dimensional carriage comes back standing in it, and
+        // the client assumes no session until told otherwise — without this the Back row is gone and
+        // the only way out of a sealed basement is a manual /tp. The session itself is server-side
+        // and outlived their absence.
+        games.brennan.dungeontrain.portal.PortalTestSession.Session testTrip =
+            games.brennan.dungeontrain.portal.PortalTestSession.get(player.getUUID());
+        if (testTrip != null) {
+            DungeonTrainNet.sendTo(player, new games.brennan.dungeontrain.net.PortalTestSessionPacket(
+                true, testTrip.roomName()));
+        }
         // Sync the disintegration-band geometry (per-world carriage length + train
         // flag) so the client can fade the sky/fog toward the End across the band.
         ServerLevel bandLevel = player.serverLevel().getServer().overworld();

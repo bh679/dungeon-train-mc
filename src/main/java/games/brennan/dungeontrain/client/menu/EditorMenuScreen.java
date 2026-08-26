@@ -242,6 +242,11 @@ public final class EditorMenuScreen implements MenuScreen {
             if (exitEveryRow != null) out.add(exitEveryRow);
             CommandMenuEntry exitMoveRow = exitMoveTripleFor(EditorStatusHudOverlay.roomMode());
             if (exitMoveRow != null) out.add(exitMoveRow);
+            // Go and stand in one. Portals only, because that is the only category where "the
+            // carriage" names something you can walk into. It stamps the room the player is
+            // standing in — under the world, corridor each side, no train — so there is nothing
+            // to pick and no save prompt to answer.
+            out.add(new CommandMenuEntry.Run("Test the Carriage", "dungeontrain portal test"));
         }
 
         // Spawn gate — min/max Diff-Level steppers (same categories as Weight) plus a Phases

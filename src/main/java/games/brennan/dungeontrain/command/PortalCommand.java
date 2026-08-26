@@ -41,6 +41,8 @@ import java.util.List;
  *       compare the F3 readout against while walking through.</li>
  *   <li>{@code tp [index]} — back to a portal's entrance.</li>
  *   <li>{@code clear} — forget every portal. The stamped blocks stay; only the swapping stops.</li>
+ *   <li>{@code test} — spawn a dimensional carriage here and land at its door
+ *       ({@link PortalTestCommand}).</li>
  * </ul>
  *
  * <p>Registered as a subcommand node from {@link TrainCommand#register}, the same way
@@ -98,6 +100,9 @@ public final class PortalCommand {
                 .then(Commands.argument("every", IntegerArgumentType.integer(1, 64))
                     .executes(ctx -> runCarriage(ctx.getSource(),
                         IntegerArgumentType.getInteger(ctx, "every")))))
+            // Put one here and walk into it, without touching the world's stored rate — see
+            // PortalTestCommand for why that last part matters.
+            .then(PortalTestCommand.build())
             .then(Commands.literal("diagnose").executes(ctx -> runDiagnose(ctx.getSource())))
             .then(Commands.literal("severed")
                 .executes(ctx -> runSeveredList(ctx.getSource()))

@@ -8988,6 +8988,36 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "dimensional-carriage-test-button",
+      "version": "0.671.0",
+      "type": "feat",
+      "title": "Test the dimensional carriage you're building",
+      "summary": "Room authors get a Test the Carriage button in the editor menu. It stamps the dimensional carriage you have open \u2014 room, a corridor either side, its own walls mode, block variants, lighting and fog \u2014 and puts you in the doorway looking down it. The room repeats around you as you walk, the way it does on the train. Back returns you to the plot and clears it away.",
+      "highlights": [
+        "Shows in the editor menu while a dimensional carriage is open",
+        "No train needed \u2014 nothing to ride to and nothing to wait for",
+        "Same tiling, block variants, lighting and fog as the real thing"
+      ],
+      "date": "2026-08-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "portal-room-editor-exit",
+      "version": "0.671.0",
+      "type": "fix",
+      "title": "Leaving the dimensional carriage editor works again",
+      "summary": "Exiting the editor after opening a dimensional carriage directly now returns you to where you came from, in the game mode you were in. Before, it told you there was no session to exit and left you standing in the plot in creative.",
+      "highlights": [
+        "Only affected going straight to a room \u2014 /dungeontrain editor portals, or a room plot's Enter Inside"
+      ],
+      "date": "2026-08-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

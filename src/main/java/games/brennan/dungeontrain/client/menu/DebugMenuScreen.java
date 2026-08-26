@@ -5,7 +5,7 @@ import games.brennan.dungeontrain.client.DebugFlagsState;
 import java.util.List;
 
 /**
- * Drilled into from {@link MainMenuScreen} as "Debug". Surfaces the
+ * Drilled into from {@link MainMenuScreen} as "Test Live". Surfaces the
  * Wireframes sub-menu, the Chat Logs sub-menu, and the auto/manual spawn
  * switch — wireframes are exposed as a {@link CommandMenuEntry.DrillIn}
  * into {@link WireframesMenuScreen} so each overlay gets its own toggle
@@ -18,7 +18,8 @@ import java.util.List;
  */
 public final class DebugMenuScreen implements MenuScreen {
 
-    @Override public String title() { return "Debug"; }
+    // Matches the row label in MainMenuScreen: the breadcrumb reads back what was clicked.
+    @Override public String title() { return "Test Live"; }
 
     @Override public List<CommandMenuEntry> entries() {
         boolean manual = DebugFlagsState.manualSpawnMode();
