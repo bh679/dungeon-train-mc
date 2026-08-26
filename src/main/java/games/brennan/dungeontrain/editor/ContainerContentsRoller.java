@@ -1363,9 +1363,22 @@ public final class ContainerContentsRoller {
      */
     private static ItemStack bakeStatsBook(BlockPos localPos, long worldSeed,
                                            int carriageIndex, int slot) {
-        if (rollDoubleChance(0.5, localPos, worldSeed, carriageIndex, slot, SALT_STATS_BOOK_KIND)) {
+        boolean board = rollDoubleChance(0.5, localPos, worldSeed, carriageIndex, slot, SALT_STATS_BOOK_KIND);
+        if (board) {
             ItemStack leaderboard = bakeLeaderboardPlaceholder(localPos, worldSeed, carriageIndex, slot);
-            if (!leaderboard.isEmpty()) return leaderboard;
+            if (!leaderboard.isEmpty()) {
+                if (DebugFlags.logLootRolls()) {
+                    LOGGER.info("[DT-stats] kind=leaderboard carriageIdx={} localPos={} slot={}",
+                        carriageIndex, localPos, slot);
+                }
+                return leaderboard;
+            }
+        }
+        if (DebugFlags.logLootRolls()) {
+            // Worth distinguishing: "the flip said stat note" and "the flip said board and the local
+            // pool could not carry one" look identical in a chest and are very different problems.
+            LOGGER.info("[DT-stats] kind=stat carriageIdx={} localPos={} slot={} flip={}",
+                carriageIndex, localPos, slot, board ? "board-unavailable" : "stat");
         }
         return bakeStatBook(localPos, worldSeed, carriageIndex, slot);
     }
