@@ -3402,10 +3402,17 @@ public final class EditorCommand {
     private static int runExit(CommandSourceStack source) {
         ServerPlayer player = requirePlayer(source);
         if (player == null) return 0;
-        // Try tunnel-session first (separate session map from CarriageEditor).
-        // A user who entered a carriage plot, then a tunnel plot, needs to run
-        // exit twice to unwind both sessions.
-        boolean exited = TunnelEditor.exit(player) || CarriageEditor.exit(player);
+        // Three editors keep their own session map — PortalRoomEditor, TunnelEditor and
+        // CarriageEditor — and every one of them has to be in this chain or a player who entered
+        // through it never gets their position, dimension and game mode back. Portal rooms were
+        // missing here, so a direct `/dt editor portals` left the player stuck in the plot, in
+        // creative, told there was "no saved editor session".
+        //
+        // Each session restores its OWN entry point, so stacked sessions unwind one press at a
+        // time: a user who entered a carriage plot, then a tunnel or room plot, runs exit twice.
+        boolean exited = games.brennan.dungeontrain.editor.PortalRoomEditor.exit(player)
+            || TunnelEditor.exit(player)
+            || CarriageEditor.exit(player);
         if (!exited) {
             source.sendFailure(Component.literal(
                 "No saved editor session — nothing to exit to."
