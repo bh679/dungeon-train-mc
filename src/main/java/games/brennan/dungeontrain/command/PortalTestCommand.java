@@ -9,6 +9,7 @@ import games.brennan.dungeontrain.portal.PortalCarriageBuilder;
 import games.brennan.dungeontrain.portal.PortalCarriageLayout;
 import games.brennan.dungeontrain.portal.PortalClear;
 import games.brennan.dungeontrain.portal.PortalCorridorMask;
+import games.brennan.dungeontrain.portal.PortalRoomDoorCells;
 import games.brennan.dungeontrain.portal.PortalRoomSettings;
 import games.brennan.dungeontrain.portal.PortalRoomSizes;
 import games.brennan.dungeontrain.portal.PortalRoomTiling;
@@ -52,11 +53,19 @@ public final class PortalTestCommand {
     private static final Logger LOGGER = LogUtils.getLogger();
 
     /**
-     * Pair key for a test stamp. Reserved: real keys are group anchors derived from carriage
-     * indices, so a value this far out can never name one, and nothing in the live pair machinery
-     * will find a structure filed under it.
+     * Pair key for a test stamp.
+     *
+     * <p><b>It has to be a legal carriage index, not a sentinel.</b> The first attempt used
+     * {@code Integer.MIN_VALUE / 2} on the reasoning that a value that extreme could never collide
+     * with a real group anchor. It does not collide, but the key does not stay a key: it is handed
+     * down to the contents roller and the variant placer, which read it as a <i>position on the
+     * track</i> and feed it to the difficulty frame. That logged two "this cannot be a position on
+     * the track" errors per stamp and fell back to tier 0 anyway.</p>
+     *
+     * <p>So it is tier 0 deliberately instead — the origin, which is a real index, rolls the same
+     * contents the fallback was already producing, and says nothing to the log.</p>
      */
-    private static final int TEST_PAIR_KEY = Integer.MIN_VALUE / 2;
+    private static final int TEST_PAIR_KEY = 0;
 
     /**
      * How far off the track band the test structure is stamped, in blocks of {@code +Z}.
@@ -117,12 +126,17 @@ public final class PortalTestCommand {
 
         PortalCarriageBuilder.stampPairStructure(overworld, structure, dims, TEST_PAIR_KEY);
 
+        // In the ENTRY DOORWAY looking down the room, not dropped in the middle of it — the same
+        // view an author gets walking in off the train, which is the one they are building for.
+        // Geometry from PortalRoomDoorCells rather than arithmetic here: it is read off the code
+        // that actually puts the doors there, and it is swept against PortalRoomLayout for every
+        // legal width, so this cannot drift away from where the opening really is.
         PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims, structure.kind());
         BlockPos roomOrigin = structure.roomOrigin(dims, layout);
         BlockPos arrival = new BlockPos(
-            roomOrigin.getX() + roomSize.getX() / 2,
+            roomOrigin.getX() - 1,
             roomOrigin.getY() + 1,
-            roomOrigin.getZ() + roomSize.getZ() / 2);
+            PortalRoomDoorCells.doorZ(roomOrigin, roomSize));
 
         GameType previous = player.gameMode.getGameModeForPlayer();
         PortalTestSession.put(player.getUUID(), new PortalTestSession.Session(
@@ -139,7 +153,7 @@ public final class PortalTestCommand {
             player.getName().getString(), arrival);
 
         source.sendSuccess(() -> Component.literal(
-            "You're inside '" + roomName + "' — a corridor each side, no train attached. "
+            "You're in the doorway of '" + roomName + "' — a corridor each side, no train attached. "
                 + "Back in the menu returns you to the plot.").withStyle(ChatFormatting.AQUA), false);
         return 1;
     }
