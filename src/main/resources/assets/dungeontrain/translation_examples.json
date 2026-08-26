@@ -164,6 +164,39 @@
       ]
     }
   },
+  "effect.dungeontrain.free_play.trigger": {
+    "1": {
+      "label": "what put this run into Free Play",
+      "examples": [
+        "You switched to Creative Mode.",
+        "A known cheat mod is installed."
+      ]
+    }
+  },
+  "effect.dungeontrain.free_play.trigger.detail": {
+    "1": {
+      "label": "the changed settings or detected mods behind that trigger, comma-separated",
+      "examples": [
+        "maxEnchantLevel: 5 -> 100",
+        "Xaero's Minimap, JEI"
+      ]
+    }
+  },
+  "effect.dungeontrain.free_play.trigger.detail_more": {
+    "1": {
+      "label": "the first few changed settings or detected mods, comma-separated",
+      "examples": [
+        "maxEnchantLevel: 5 -> 100, mobHealth: 20 -> 2, lootRate: 1 -> 9"
+      ]
+    },
+    "2": {
+      "label": "how many more there are beyond the ones named",
+      "examples": [
+        "2",
+        "11"
+      ]
+    }
+  },
   "gui.dungeontrain.config_deviation.more": {
     "1": {
       "label": "how many more changed settings there are",
