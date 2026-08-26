@@ -8553,6 +8553,26 @@
       "released": true,
       "released_in": "v0.646.0",
       "released_at": "2026-08-24T23:55:25Z"
+    },
+    {
+      "id": "tallyman-leaderboard-books",
+      "version": "0.647.0",
+      "type": "feat",
+      "title": "The Tallyman's books \u2014 29 leaderboards riding the train",
+      "summary": "A new kind of book turns up in chests: a leaderboard, kept by The Tallyman. Each one covers a single board \u2014 furthest carriage, longest aboard, most chests opened, kindest benefactors and twenty-five more \u2014 lists the top players on it, and closes by telling you where you stand. If you are not on it, it says so rather than inventing a rank for you. Boards that make sense both ways come in a matched pair, one life and all lives, so you can see whether you are good at a run or good at the game. Among the new ones: distance covered, measured from where you started rather than by how far you have paced up and down a carriage.",
+      "highlights": [
+        "Leaderboard books spawn among the train's other random books",
+        "29 boards, many paired as one-life and all-lives",
+        "Distance covered now measures how far down the line you got, not steps taken",
+        "New boards for people cursed, lovers, most loved, and biggest single gift",
+        "Breaking a vase no longer ends a Walk Past The Loot streak \u2014 a vase is not loot",
+        "Every rank gets two lines, so long names are never truncated to fit a score"
+      ],
+      "pr": 1101,
+      "date": "2026-08-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
