@@ -8753,6 +8753,24 @@
       "released": true,
       "released_in": "v0.657.0",
       "released_at": "2026-08-25T16:16:41Z"
+    },
+    {
+      "id": "template-decor-frames-paintings",
+      "version": "0.658.0",
+      "type": "feat",
+      "title": "Your paintings and item frames now stay where you hang them",
+      "summary": "Decorate a carriage, a tunnel or a dimensional room and the pictures are part of the build. Item frames, glow item frames and paintings are now saved into the template when you save a room, and hung back up every time that room is built \u2014 so a wall you dressed comes back dressed instead of bare. Two placement bugs found along the way are fixed as well, so a picture is rebuilt on the same block you nailed it to rather than drifting to a neighbouring one.",
+      "highlights": [
+        "Item frames, glow item frames and paintings save into every template kind \u2014 carriages, carriage parts, tunnels, track, pillars, portal corridors and dimensional rooms",
+        "Pictures are rebuilt on the exact block you hung them on, at any location the room is rebuilt",
+        "The editor's unsaved-changes check now notices decoration, so hanging a painting and walking out no longer reads as nothing to save",
+        "New 'pretty' library room joins the dimensional library rooms"
+      ],
+      "pr": 1102,
+      "date": "2026-08-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
