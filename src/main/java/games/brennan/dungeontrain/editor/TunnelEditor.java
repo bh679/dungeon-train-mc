@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.editor;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.template.TemplateDecor;
 import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.track.variant.TrackVariantBlocks;
 import games.brennan.dungeontrain.track.variant.TrackVariantRegistry;
@@ -252,8 +253,7 @@ public final class TunnelEditor {
         TrackKind kind = TunnelTemplateStore.tunnelKind(variant);
         Vec3i size = new Vec3i(TunnelPlacer.LENGTH, TunnelPlacer.HEIGHT, TunnelPlacer.WIDTH);
 
-        StructureTemplate template = new StructureTemplate();
-        template.fillFromWorld(overworld, origin, size, false, Blocks.STRUCTURE_VOID);
+        StructureTemplate template = TemplateDecor.capture(overworld, origin, size, Blocks.STRUCTURE_VOID);
 
         TrackVariantStore.save(kind, name, template);
 
