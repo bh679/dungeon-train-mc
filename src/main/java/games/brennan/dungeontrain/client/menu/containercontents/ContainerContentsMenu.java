@@ -9,8 +9,10 @@ import net.minecraft.world.phys.Vec3;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 /**
  * Client singleton state for the container-contents world-space menu.
@@ -32,7 +34,11 @@ public final class ContainerContentsMenu {
         FILL_MAX,
         CLEAR,
         CLOSE,
-        ENTRY_NAME,
+        /**
+         * The item icon at the left of an entry row. Clicking toggles that row's
+         * expansion, which reveals the item's name beside the icon.
+         */
+        ENTRY_ICON,
         ENTRY_COUNT_MINUS,
         ENTRY_COUNT_PLUS,
         ENTRY_WEIGHT_MINUS,
@@ -76,6 +82,14 @@ public final class ContainerContentsMenu {
     private static Vec3 anchorNormal = new Vec3(0, 0, 1);
     @Nullable private static String linkedPrefabId;
 
+    /**
+     * Entry indices whose name is currently revealed beside the icon. Cleared
+     * whenever the entry list changes size, because a removal shifts every later
+     * index and a stale index would expand the wrong row. Same-size edits (count,
+     * weight, slot, chance bumps) keep the expansion.
+     */
+    private static final Set<Integer> expandedRows = new HashSet<>();
+
     private static Screen screen = Screen.ROOT;
     private static String searchBuffer = "";
     private static Hit hovered = Hit.NONE;
@@ -100,6 +114,14 @@ public final class ContainerContentsMenu {
 
     public static void setHovered(Hit h) { hovered = h == null ? Hit.NONE : h; }
 
+    /** True when entry {@code index}'s name is revealed beside its icon. */
+    public static boolean isExpanded(int index) { return expandedRows.contains(index); }
+
+    /** Reveal / hide the name for entry {@code index}. Purely client-side. */
+    public static void toggleExpanded(int index) {
+        if (!expandedRows.remove(index)) expandedRows.add(index);
+    }
+
     public static void applySync(ContainerContentsSyncPacket packet) {
         if (packet.localPos() == null) {
             active = false;
@@ -109,10 +131,12 @@ public final class ContainerContentsMenu {
             screen = Screen.ROOT;
             searchBuffer = "";
             hovered = Hit.NONE;
+            expandedRows.clear();
             return;
         }
         boolean newCell = !packet.plotKey().equals(plotKey)
             || !packet.localPos().equals(localPos);
+        boolean sizeChanged = packet.entries().size() != entries.size();
         active = true;
         plotKey = packet.plotKey();
         localPos = packet.localPos();
@@ -129,6 +153,7 @@ public final class ContainerContentsMenu {
             screen = Screen.ROOT;
             searchBuffer = "";
         }
+        if (newCell || sizeChanged) expandedRows.clear();
         hovered = Hit.NONE;
     }
 

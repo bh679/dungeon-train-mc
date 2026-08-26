@@ -26,7 +26,7 @@ import java.util.List;
  *
  * <ul>
  *   <li>Click on count or weight cell — server bumps by +1 (shift = -1).</li>
- *   <li>Click on the entry name — currently no-op (could preview later).</li>
+ *   <li>Click on the entry icon — toggles that row's name reveal (client-only).</li>
  *   <li>Click on × cell — remove entry.</li>
  *   <li>Click ADD — open search screen.</li>
  *   <li>Click CLEAR — wipe pool.</li>
@@ -183,6 +183,12 @@ public final class ContainerContentsMenuInputHandler {
                 int delta = shift ? -1 : 1;
                 DungeonTrainNet.sendToServer(new ContainerContentsEditPacket(
                     ContainerContentsEditPacket.Op.BUMP_WEIGHT, plotKey, local, hit.index(), "", delta));
+            }
+            case ENTRY_ICON -> {
+                if (hit.index() < 0 || hit.index() >= ContainerContentsMenu.entries().size()) return;
+                // Purely cosmetic and client-side — no packet, the next render
+                // picks the new width up from the shared layout.
+                ContainerContentsMenu.toggleExpanded(hit.index());
             }
             case ENTRY_REMOVE_X -> {
                 if (hit.index() < 0 || hit.index() >= ContainerContentsMenu.entries().size()) return;
