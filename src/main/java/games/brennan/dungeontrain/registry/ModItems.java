@@ -65,6 +65,27 @@ public final class ModItems {
         () -> new Item(new Item.Properties().stacksTo(1))
     );
 
+    /**
+     * Editor-only placeholder, third sibling to {@link #RANDOM_BOOK} and
+     * {@link #RANDOM_PLAYERBOOK}. Substituted at chest spawn time for a
+     * LEADERBOARD book — a ranked list of the top players in one category,
+     * fetched from the relay
+     * ({@link games.brennan.dungeontrain.narrative.LeaderboardPool}).
+     *
+     * <p>Placing this deliberately in the editor is the way to guarantee one;
+     * in ordinary loot they also turn up as a share of
+     * {@link #RANDOM_BOOK} rolls, which is what makes them feel like one of
+     * the random books rather than a separate find. Either way the actual
+     * board is chosen when a player first holds the stack — see
+     * {@link games.brennan.dungeontrain.narrative.LeaderboardBookPendingTag}.
+     * With no relay, the slot keeps the ordinary random book it baked as a
+     * fallback, so it is never wasted.</p>
+     */
+    public static final DeferredItem<Item> RANDOM_LEADERBOARD_BOOK = ITEMS.register(
+        "random_leaderboard_book",
+        () -> new Item(new Item.Properties().stacksTo(1))
+    );
+
     private ModItems() {}
 
     /** Call from the mod constructor to attach the {@link DeferredRegister} to the mod-event bus. */

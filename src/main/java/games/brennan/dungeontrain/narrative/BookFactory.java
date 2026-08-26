@@ -473,6 +473,57 @@ public final class BookFactory {
     }
 
     /**
+     * As {@link #buildPlainBook}, but for pages that are already {@link Component}s.
+     *
+     * <p>The difference that matters is not the type — it is that these pages are NOT re-flowed
+     * through {@link #paginate}. A caller reaching for this one has laid its pages out itself, to the
+     * pixel in the leaderboard books' case, and re-packing them by character count would undo exactly
+     * the work it did. So the caller owns page breaks here, and in exchange must not hand over a page
+     * the client cannot render.</p>
+     *
+     * <p>The reason to want {@code Component} pages at all: a {@code translatable} one resolves on the
+     * READER's client, so a generated book can be localised even though its title — which
+     * {@code WrittenBookContent} takes as a plain string — cannot be.</p>
+     *
+     * @param title  book title (clamped to {@link #MAX_TITLE_CHARS}); blank → "Untitled"
+     * @param author author credited on the book (clamped); blank → "Anonymous"
+     * @param pages  ready-to-render pages in order; {@code null}/empty → one blank page
+     */
+    public static ItemStack buildPlainBookComponents(String title, String author, List<Component> pages) {
+        String cleanTitle = BookSafeText.sanitizeName(title);
+        String cleanAuthor = BookSafeText.sanitizeName(author);
+        String safeTitle = cleanTitle.isBlank() ? "Untitled" : cleanTitle;
+        String safeAuthor = cleanAuthor.isBlank() ? "Anonymous" : cleanAuthor;
+
+        List<Filterable<Component>> bookPages = new ArrayList<>();
+        if (pages != null) {
+            for (Component page : pages) {
+                if (page == null) continue;
+                if (bookPages.size() >= MAX_PAGES) {
+                    LOGGER.warn("[DungeonTrain] buildPlainBookComponents: '{}' by '{}' exceeded {} pages — truncating",
+                        safeTitle, safeAuthor, MAX_PAGES);
+                    break;
+                }
+                bookPages.add(Filterable.passThrough(page));
+            }
+        }
+        if (bookPages.isEmpty()) {
+            bookPages.add(Filterable.passThrough(Component.literal("")));
+        }
+
+        WrittenBookContent content = new WrittenBookContent(
+            Filterable.passThrough(clampTitle(safeTitle)),
+            clampAuthor(safeAuthor),
+            /*generation*/ 0,
+            bookPages,
+            /*resolved*/ true
+        );
+        ItemStack stack = new ItemStack(Items.WRITTEN_BOOK);
+        stack.set(DataComponents.WRITTEN_BOOK_CONTENT, content);
+        return stack;
+    }
+
+    /**
      * Story basename = path tail of the registry id. Used for stamping the
      * identity NBT and for the progression data lookup.
      */

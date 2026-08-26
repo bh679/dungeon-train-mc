@@ -29,10 +29,13 @@ class DeathDetailReporterTest {
             6L, 30L, 4L, 40L,
             210.5, 190.0);
 
+    private static final DeathDetailReporter.Feats FEATS =
+            new DeathDetailReporter.Feats(2, 17L, 31, 24, 480000L);
+
     @Test
     @DisplayName("all 12 narrative fields round-trip verbatim")
     void narrativeFieldsRoundTrip() {
-        JsonObject out = DeathDetailReporter.buildPayload(UUID, NARRATIVE, STATS);
+        JsonObject out = DeathDetailReporter.buildPayload(UUID, NARRATIVE, STATS, FEATS);
 
         assertEquals(UUID, out.get("uuid").getAsString());
         assertEquals("fallQ", out.get("fallQuestion").getAsString());
@@ -52,7 +55,7 @@ class DeathDetailReporterTest {
     @Test
     @DisplayName("this-run stats round-trip verbatim")
     void thisRunStatsRoundTrip() {
-        JsonObject out = DeathDetailReporter.buildPayload(UUID, NARRATIVE, STATS);
+        JsonObject out = DeathDetailReporter.buildPayload(UUID, NARRATIVE, STATS, FEATS);
 
         assertEquals(3, out.get("mobKills").getAsInt());
         assertEquals(42.5, out.get("damageDealt").getAsDouble());
@@ -68,7 +71,7 @@ class DeathDetailReporterTest {
     @Test
     @DisplayName("lifetime totals round-trip verbatim")
     void lifetimeTotalsRoundTrip() {
-        JsonObject out = DeathDetailReporter.buildPayload(UUID, NARRATIVE, STATS);
+        JsonObject out = DeathDetailReporter.buildPayload(UUID, NARRATIVE, STATS, FEATS);
 
         assertEquals(7L, out.get("lifeDeaths").getAsLong());
         assertEquals(12L, out.get("lifeCarriages").getAsLong());
@@ -85,5 +88,30 @@ class DeathDetailReporterTest {
         assertEquals(40L, out.get("lifeAdvancements").getAsLong());
         assertEquals(210.5, out.get("lifeDamageDealt").getAsDouble());
         assertEquals(190.0, out.get("lifeDamageTaken").getAsDouble());
+    }
+
+    @Test
+    @DisplayName("leaderboard feats round-trip verbatim")
+    void leaderboardFeatsRoundTrip() {
+        JsonObject out = DeathDetailReporter.buildPayload(UUID, NARRATIVE, STATS, FEATS);
+
+        assertEquals(2, out.get("echoesKilled").getAsInt());
+        assertEquals(17L, out.get("lifeEchoesKilled").getAsLong());
+        assertEquals(31, out.get("maxCarriagesNoChest").getAsInt());
+        assertEquals(24, out.get("pacifistCarriages").getAsInt());
+        // Displacement, not the lifeDistance odometer that rides alongside it in the same payload.
+        assertEquals(480000L, out.get("lifeDistanceTravelled").getAsLong());
+    }
+
+    @Test
+    @DisplayName("a run with no feats still sends every field, as zero")
+    void absentFeatsStillReport() {
+        JsonObject out = DeathDetailReporter.buildPayload(UUID, NARRATIVE, STATS, DeathDetailReporter.Feats.NONE);
+
+        assertEquals(0, out.get("echoesKilled").getAsInt());
+        assertEquals(0L, out.get("lifeEchoesKilled").getAsLong());
+        assertEquals(0, out.get("maxCarriagesNoChest").getAsInt());
+        assertEquals(0, out.get("pacifistCarriages").getAsInt());
+        assertEquals(0L, out.get("lifeDistanceTravelled").getAsLong());
     }
 }

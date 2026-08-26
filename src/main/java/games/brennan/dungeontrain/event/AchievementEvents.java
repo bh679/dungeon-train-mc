@@ -173,9 +173,10 @@ public final class AchievementEvents {
         PlayerRunState run = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
         // Flat per-open counter for the death-screen summary — increments on
         // every (debounced) chest/barrel open, including repeats of the same
-        // position. Decorated-pot breaks feed the same counter from
-        // RunStatsEvents.onPotBreak.
-        run.incrementContainersOpened();
+        // position — AND ends the chest-free streak. Decorated-pot breaks feed
+        // the counter from RunStatsEvents.onPotBreak but leave the streak alone,
+        // which is the rule the advancement below has always used.
+        run.openedLootContainer();
         // Break the "no chest or barrel" streak: the next milestone is measured
         // from this carriage reading onward. Decorated pots never reach here —
         // vases are allowed (their breaks feed containersOpened from RunStatsEvents).

@@ -321,6 +321,14 @@ public final class NarrativeBookEvents {
             resolvePending(player, stack);
         }
 
+        // Pending LEADERBOARD book — same idea, different content: the board it is about is chosen from
+        // the stamped seed, and its closing line is this player's own rank. Nothing to fall through to
+        // on failure, because the placeholder already IS a real random book; it keeps its marker and
+        // the sweep retries once a board has been fetched.
+        if (LeaderboardBookPendingTag.isPending(stack)) {
+            resolveLeaderboardPending(player, stack);
+        }
+
         // Editor-authored lore books: arm the burn only once the book is held OUTSIDE an editor plot,
         // i.e. by a player who found it in a chest on the live train. Inside a plot this is a no-op,
         // so the author keeps working with an inert book (see EditorAuthoredBookTag).
@@ -413,16 +421,46 @@ public final class NarrativeBookEvents {
     public static void onPlayerTick(PlayerTickEvent.Post event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         if (player.tickCount % PENDING_SWEEP_INTERVAL_TICKS != 0) return;
-        // Cheap pre-checks before walking 37 slots: the feature must be on and the pool warm, or every
-        // resolve would fail anyway.
-        if (!SharedBookGate.canDiscover() || SharedBookPool.isEmpty()) return;
+        // Cheap pre-checks before walking 37 slots. The two kinds of pending book have DIFFERENT
+        // preconditions — community books need the shared pool warm, leaderboard books need a board —
+        // so a cold shared pool must not skip the walk entirely the way it used to.
+        boolean shared = SharedBookGate.canDiscover() && !SharedBookPool.isEmpty();
+        boolean boards = !LeaderboardPool.populated().isEmpty();
+        if (!shared && !boards) return;
         Inventory inv = player.getInventory();
         for (int i = 0; i < inv.getContainerSize(); i++) {
             ItemStack stack = inv.getItem(i);
             if (stack.isEmpty() || !stack.is(Items.WRITTEN_BOOK)) continue; // item check first — no NBT cost
-            if (!PlayerBookPendingTag.isPending(stack)) continue;
-            resolvePending(player, stack);
+            if (shared && PlayerBookPendingTag.isPending(stack)) {
+                resolvePending(player, stack);
+            } else if (boards && LeaderboardBookPendingTag.isPending(stack)) {
+                resolveLeaderboardPending(player, stack);
+            }
         }
+    }
+
+    /**
+     * Turn a pending placeholder into the leaderboard book its stamped seed names, for this reader.
+     *
+     * <p>Returns {@code false} — leaving the marker for a later retry — when no board has been fetched
+     * yet. That is the ordinary case for the first such book a world produces: the pool only starts
+     * asking once one exists, so the first find may well arrive before the first board does. The
+     * player is holding a perfectly good random book in the meantime.</p>
+     *
+     * <p>The identity markers of the random book it was standing in for are cleared: it is not that
+     * book any more, and leaving {@code dt_random_book*} behind would have the read-tracking credit a
+     * narrative variant nobody read.</p>
+     */
+    private static boolean resolveLeaderboardPending(ServerPlayer player, ItemStack stack) {
+        Optional<ItemStack> built = LeaderboardBookFactory.roll(
+                LeaderboardBookPendingTag.seed(stack, 0L), player.getUUID());
+        if (built.isEmpty()) return false;
+        stack.set(DataComponents.WRITTEN_BOOK_CONTENT,
+                built.get().get(DataComponents.WRITTEN_BOOK_CONTENT));
+        RandomBookTag.clearIdentity(stack);
+        LeaderboardBookPendingTag.clear(stack);
+        LOGGER.debug("[DungeonTrain] Leaderboard: resolved a board book for {}", player.getName().getString());
+        return true;
     }
 
     /**

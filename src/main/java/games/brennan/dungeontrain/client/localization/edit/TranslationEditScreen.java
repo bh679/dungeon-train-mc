@@ -15,6 +15,7 @@ import net.minecraft.network.chat.FormattedText;
 import net.minecraft.util.Mth;
 
 import java.net.URI;
+import java.util.List;
 
 /**
  * Edits one translation unit: the English above, the translation below, and nothing else.
@@ -36,6 +37,8 @@ public final class TranslationEditScreen extends Screen {
     private static final int AI_COLOUR = 0xFF5B9BD5;
     /** The gap between the English and the edit box, which is also the divider's grab area. */
     private static final int SPLITTER_H = GAP * 3;
+    /** The set readout's colour — the same blue the AI badge and the AI heading use. */
+    private static final int GROUP_COLOUR = AI_COLOUR;
 
     /**
      * The height the translator last dragged the English to, or null while they never have.
@@ -49,6 +52,14 @@ public final class TranslationEditScreen extends Screen {
     private final TranslationScreen parent;
     private final String locale;
     private final TranslationUnit unit;
+    /**
+     * The other variations of this same string, in catalog order — empty when there are none.
+     *
+     * <p>Handed in rather than derived here: {@link TranslationScreen} already holds the catalog's
+     * group index, and a second derivation is a second answer waiting to disagree with the first.
+     * </p>
+     */
+    private final List<TranslationUnit> groupMembers;
 
     private MultiLineEditBox editor;
     /** The English, and any reviewer's reply about it — the whole of it, scrolled if need be. */
@@ -57,17 +68,34 @@ public final class TranslationEditScreen extends Screen {
     private TranslationPaneSplitter splitter;
     /** Flips between "good as is" and "put it back"; relabelled in place, never rebuilt. */
     private Button dismissButton;
+    /** The set readout drawn in the strip, or null when this string is not one of a set. */
+    private Component setReadout;
+    /** The way on to the next variation; relabelled in place, like the dismiss button beside it. */
+    private Button nextButton;
 
-    public TranslationEditScreen(TranslationScreen parent, String locale, TranslationUnit unit) {
+    public TranslationEditScreen(TranslationScreen parent, String locale, TranslationUnit unit,
+                                 List<TranslationUnit> groupMembers) {
         super(Component.literal(unit.label()));
         this.parent = parent;
         this.locale = locale;
         this.unit = unit;
+        this.groupMembers = groupMembers == null ? List.of() : groupMembers;
+    }
+
+    /** Where the source pane starts — {@link #TOP}, or a row lower when the set strip is there. */
+    private int contentTop() {
+        return inSet() ? TOP + ROW_H + GAP : TOP;
+    }
+
+    private boolean inSet() {
+        return groupMembers.size() > 1;
     }
 
     @Override
     protected void init() {
         int contentWidth = width - MARGIN * 2;
+        int contentTop = contentTop();
+        addSetStrip(contentWidth);
 
         // A reviewer's reply about this exact string, if there is one. It goes ABOVE the box the
         // player is about to type in, because it is the reason they are here — a rejection they
@@ -93,13 +121,13 @@ public final class TranslationEditScreen extends Screen {
         int bottomRow = height - MARGIN - ROW_H;
         int noteHeight = noteHeight();
         // What is left for the English once the box the translator types in keeps its two rows.
-        int available = bottomRow - GAP - noteHeight - ROW_H * 2 - SPLITTER_H - TOP;
+        int available = bottomRow - GAP - noteHeight - ROW_H * 2 - SPLITTER_H - contentTop;
         int content = sourcePane.contentHeight();
         int paneHeight = preferredPaneHeight == null
             ? TranslationSourceLayout.viewportHeight(content, height, available, font.lineHeight)
             : TranslationSourceLayout.draggedHeight(
                 preferredPaneHeight, content, available, font.lineHeight);
-        sourcePane.place(MARGIN, TOP, paneHeight);
+        sourcePane.place(MARGIN, contentTop, paneHeight);
         addRenderableWidget(sourcePane);
         addSourceLink(contentWidth);
 
@@ -108,14 +136,14 @@ public final class TranslationEditScreen extends Screen {
         // nothing when pulled.
         if (TranslationSourceLayout.isResizable(content, available, font.lineHeight)) {
             splitter = addRenderableWidget(new TranslationPaneSplitter(
-                MARGIN, TOP + paneHeight, contentWidth, SPLITTER_H, this::onSplitterDragged));
+                MARGIN, contentTop + paneHeight, contentWidth, SPLITTER_H, this::onSplitterDragged));
             splitter.setTooltip(Tooltip.create(
                 Component.translatable("gui.dungeontrain.translate.edit.resize.tip")));
         } else {
             splitter = null;
         }
 
-        int editorTop = TOP + paneHeight + SPLITTER_H;
+        int editorTop = contentTop + paneHeight + SPLITTER_H;
         int editorHeight = Math.max(ROW_H * 2, bottomRow - GAP - noteHeight - editorTop);
 
         editor = new MultiLineEditBox(font, MARGIN, editorTop, contentWidth, editorHeight,
@@ -150,6 +178,101 @@ public final class TranslationEditScreen extends Screen {
     }
 
     /**
+     * The strip above the English: which variation of the set this is, and the way on to the next
+     * one that still wants a human.
+     *
+     * <p>Above rather than in the button row, because it is context for what is being read, not a
+     * fifth thing to do to it — and the row below is already four buttons wide.</p>
+     */
+    private void addSetStrip(int contentWidth) {
+        setReadout = null;
+        if (!inSet()) {
+            return;
+        }
+        Component label = Component.translatable("gui.dungeontrain.translate.group.next");
+        int buttonWidth = Math.min(contentWidth / 3, font.width(label) + ROW_H);
+        nextButton = addRenderableWidget(Button.builder(label, b -> goToNext())
+            .bounds(MARGIN + contentWidth - buttonWidth, TOP, buttonWidth, ROW_H).build());
+        refreshSetStrip();
+    }
+
+    /**
+     * Recompute what the strip says. Called on layout and again whenever this string's own standing
+     * changes under it — marking it good as is takes it off the set's tally, and a strip still
+     * counting it would be reporting work that is no longer there.
+     */
+    private void refreshSetStrip() {
+        if (!inSet()) {
+            return;
+        }
+        int position = TranslationGroups.indexIn(groupMembers, unit) + 1;
+        int waiting = TranslationGroups.needingReview(groupMembers,
+            TranslationOverrides.approvedFor(locale), this::isDismissed);
+        setReadout = waiting == 0
+            ? Component.translatable("gui.dungeontrain.translate.group.position",
+                position, groupMembers.size())
+            : Component.translatable("gui.dungeontrain.translate.group.position.needs",
+                position, groupMembers.size(), waiting);
+
+        // Everything else in the set has been seen to, so there is nowhere for this to go. Greyed
+        // rather than removed: a control that vanishes as you work reads as a bug.
+        TranslationUnit target = nextInSet();
+        nextButton.active = target != null;
+        nextButton.setTooltip(Tooltip.create(target == null
+            ? Component.translatable("gui.dungeontrain.translate.group.next.none")
+            : Component.translatable("gui.dungeontrain.translate.group.next.tip", waiting)));
+    }
+
+    private boolean isDismissed(TranslationUnit other) {
+        return TranslationDismissals.isDismissed(locale, other);
+    }
+
+    private TranslationUnit nextInSet() {
+        return TranslationGroups.nextNeedingReview(groupMembers, unit,
+            TranslationOverrides.approvedFor(locale), this::isDismissed);
+    }
+
+    /**
+     * Move on to the next variation that still needs a human, asking first if there is typing in
+     * the box that would be lost.
+     *
+     * <p>Asking rather than choosing for them: saving silently would put text into a submission the
+     * translator never decided to send, and discarding silently would throw away the work they came
+     * here to do. Neither is ours to pick.</p>
+     */
+    private void goToNext() {
+        TranslationUnit target = nextInSet();
+        if (target == null) {
+            return;
+        }
+        if (editor.getValue().equals(currentValue())) {
+            openInSet(target);
+            return;
+        }
+        minecraft.setScreen(new TranslationUnsavedScreen(choice -> {
+            switch (choice) {
+                case SAVE -> {
+                    store(editor.getValue());
+                    openInSet(target);
+                }
+                case DISCARD -> openInSet(target);
+                case STAY -> minecraft.setScreen(this);
+            }
+        }));
+    }
+
+    /**
+     * Open another member of the same set, keeping the list behind us as it was.
+     *
+     * <p>The list is told what changed first: the row we are leaving may have just dropped out of
+     * the queue, and it should say so by the time the translator returns to it.</p>
+     */
+    private void openInSet(TranslationUnit target) {
+        parent.onEditsChanged();
+        minecraft.setScreen(new TranslationEditScreen(parent, locale, target, groupMembers));
+    }
+
+    /**
      * The link to where this string lives in the repo, at the right of the heading row.
      *
      * <p>That row is the one part of the pane that does not scroll, so the link stays put while
@@ -166,7 +289,7 @@ public final class TranslationEditScreen extends Screen {
         // squeeze the heading out of existence on a narrow window.
         int linkWidth = Mth.clamp(font.width(label), 0, contentWidth / 2);
         PlainTextButton link = new PlainTextButton(
-            MARGIN + contentWidth - linkWidth, TOP, linkWidth, font.lineHeight,
+            MARGIN + contentWidth - linkWidth, contentTop(), linkWidth, font.lineHeight,
             label, b -> openSource(), font);
         link.setTooltip(Tooltip.create(
             Component.translatable("gui.dungeontrain.translate.edit.source_link.tip")));
@@ -209,14 +332,15 @@ public final class TranslationEditScreen extends Screen {
     private void onSplitterDragged(double mouseY) {
         int bottomRow = height - MARGIN - ROW_H;
         int noteHeight = noteHeight();
-        int available = bottomRow - GAP - noteHeight - ROW_H * 2 - SPLITTER_H - TOP;
-        int paneHeight = TranslationSourceLayout.draggedHeight(
-            (int) Math.round(mouseY) - TOP, sourcePane.contentHeight(), available, font.lineHeight);
+        int contentTop = contentTop();
+        int available = bottomRow - GAP - noteHeight - ROW_H * 2 - SPLITTER_H - contentTop;
+        int paneHeight = TranslationSourceLayout.draggedHeight((int) Math.round(mouseY) - contentTop,
+            sourcePane.contentHeight(), available, font.lineHeight);
         preferredPaneHeight = paneHeight;
 
-        sourcePane.place(MARGIN, TOP, paneHeight);
-        splitter.setY(TOP + paneHeight);
-        int editorTop = TOP + paneHeight + SPLITTER_H;
+        sourcePane.place(MARGIN, contentTop, paneHeight);
+        splitter.setY(contentTop + paneHeight);
+        int editorTop = contentTop + paneHeight + SPLITTER_H;
         editor.setY(editorTop);
         editor.setHeight(Math.max(ROW_H * 2, bottomRow - GAP - noteHeight - editorTop));
     }
@@ -251,6 +375,7 @@ public final class TranslationEditScreen extends Screen {
             TranslationDismissClient.send(locale, unit);
         }
         dismissButton.setMessage(dismissLabel());
+        refreshSetStrip();
         parent.onEditsChanged();
     }
 
@@ -261,25 +386,29 @@ public final class TranslationEditScreen extends Screen {
     }
 
     private void save() {
-        String value = editor.getValue();
-        // Saving text identical to the shipped translation is a revert, not an override: storing
-        // it would put the key in the submission and in the "edited" filter for no reason.
+        store(editor.getValue());
+        close();
+    }
+
+    private void revert() {
+        store(unit.shipped());
+        close();
+    }
+
+    /**
+     * Write {@code value} to this unit's override layer — the one place Save, Use Shipped and
+     * Save-and-continue all go through, so they cannot drift apart.
+     *
+     * <p>Storing text identical to the shipped translation is a revert, not an override: keeping it
+     * would put the key in the submission and in the "edited" filter for no reason.</p>
+     */
+    private void store(String value) {
         String toStore = value.equals(unit.shipped()) ? "" : value;
         if (unit.type() == TranslationUnit.Type.BOOK) {
             TranslationOverrides.setBookFor(locale, unit.id(), toStore);
         } else {
             TranslationOverrides.setLangFor(locale, unit.id(), toStore);
         }
-        close();
-    }
-
-    private void revert() {
-        if (unit.type() == TranslationUnit.Type.BOOK) {
-            TranslationOverrides.setBookFor(locale, unit.id(), "");
-        } else {
-            TranslationOverrides.setLangFor(locale, unit.id(), "");
-        }
-        close();
     }
 
     private void close() {
@@ -291,6 +420,10 @@ public final class TranslationEditScreen extends Screen {
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
         super.render(g, mouseX, mouseY, partialTick);
         g.drawCenteredString(font, title, width / 2, 8, 0xFFFFFFFF);
+        if (setReadout != null) {
+            g.drawString(font, setReadout, MARGIN, TOP + (ROW_H - font.lineHeight) / 2,
+                GROUP_COLOUR, false);
+        }
 
         Component note = null;
         if (!TranslationOverrides.isLive(locale)) {

@@ -4,6 +4,11 @@ import games.brennan.dungeontrain.net.relay.DonationSummaryClient.Goal;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import games.brennan.dungeontrain.RepoPaths;
+
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -108,5 +113,19 @@ final class FundingGoalsTest {
     @DisplayName("a goal id maps to its translation key")
     void labelKeyIsDerivedFromTheId() {
         assertEquals("gui.dungeontrain.death.narr.goal_dev_tools", FundingGoals.labelKey("dev_tools"));
+        assertEquals("gui.dungeontrain.death.narr.goal_dev_tools_done",
+                FundingGoals.doneLabelKey("dev_tools"));
+    }
+
+    @Test
+    @DisplayName("the recurring bill names its period on the ticked-off line, where no figure sits beside it")
+    void runningCostsHasASettledLineString() throws Exception {
+        // Ticked off with no period named, a RECURRING bill reads as settled for good. Every other
+        // rung is a one-off and correctly falls back to its ordinary label, so this is the one id
+        // the string has to exist for — a fallback here would be a wrong sentence, not a missing one.
+        String en = Files.readString(RepoPaths.root().resolve(
+                "src/main/resources/assets/dungeontrain/lang/en_us.json"), StandardCharsets.UTF_8);
+        assertTrue(en.contains('"' + FundingGoals.doneLabelKey(FundingGoals.RUNNING_COSTS) + '"'),
+                "en_us.json must carry the running-costs settled-line string");
     }
 }

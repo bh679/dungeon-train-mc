@@ -8755,18 +8755,75 @@
       "released_at": "2026-08-25T16:16:41Z"
     },
     {
-      "id": "template-decor-frames-paintings",
+      "id": "translation-groups",
       "version": "0.658.0",
       "type": "feat",
-      "title": "Your paintings and item frames now stay where you hang them",
-      "summary": "Decorate a carriage, a tunnel or a dimensional room and the pictures are part of the build. Item frames, glow item frames and paintings are now saved into the template when you save a room, and hung back up every time that room is built \u2014 so a wall you dressed comes back dressed instead of bare. Two placement bugs found along the way are fixed as well, so a picture is rebuilt on the same block you nailed it to rather than drifting to a neighbouring one.",
+      "title": "Translate a whole set of variations in one go",
+      "summary": "A lot of Dungeon Train's text is the same line written many different ways \u2014 thirteen wordings of one chat message, thirty-nine narrations for one death, a dozen alternative pages for one book. The translation editor used to list every one of them as an unrelated string. Now it knows they belong together: a button collapses each set into a single row, and inside a string a Next button walks you straight to the next variation that still needs a human, without going back to the list.",
       "highlights": [
-        "Item frames, glow item frames and paintings save into every template kind \u2014 carriages, carriage parts, tunnels, track, pillars, portal corridors and dimensional rooms",
-        "Pictures are rebuilt on the exact block you hung them on, at any location the room is rebuilt",
-        "The editor's unsaved-changes check now notices decoration, so hanging a painting and walking out no longer reads as nothing to save",
-        "New 'pretty' library room joins the dimensional library rooms"
+        "A grouping button beside the search box folds each set of variations into one row, badged with how many there are and how many still need review",
+        "Inside a string, a strip says which variation you are on, and Next opens the next one waiting on a translator",
+        "Next asks before it moves on if you have unsaved typing \u2014 save, discard, or stay",
+        "Grouping is off by default; the list you already know is unchanged until you turn it on"
       ],
-      "pr": 1102,
+      "pr": 1096,
+      "date": "2026-08-26",
+      "released": true,
+      "released_in": "v0.658.0",
+      "released_at": "2026-08-26T02:49:34Z"
+    },
+    {
+      "id": "engine-room-hours-spent",
+      "version": "0.659.0",
+      "type": "feat",
+      "title": "Hours spent on the engine room ledger",
+      "summary": "Once running costs and the current goal are both covered, the engine room shows the hours spent building Dungeon Train.",
+      "highlights": [],
+      "pr": 1097,
+      "date": "2026-08-26",
+      "released": true,
+      "released_in": "v0.660.0",
+      "released_at": "2026-08-26T05:12:33Z"
+    },
+    {
+      "id": "playermob-094-fire",
+      "version": "0.660.0",
+      "type": "chore",
+      "title": "PlayerMobs put flint and steel to work",
+      "summary": "Dungeon Train now requires PlayerMob 0.94.0, and both modpacks ship it: PlayerMobs pick up dropped flint and steel, cook their kills with it, torch enemies mid-fight, and stop to put fires out.",
+      "highlights": [],
+      "date": "2026-08-26",
+      "released": true,
+      "released_in": "v0.660.0",
+      "released_at": "2026-08-26T05:12:33Z"
+    },
+    {
+      "id": "offhand-shift-click-dupe",
+      "version": "0.661.0",
+      "type": "fix",
+      "title": "Fixed: offhand item duplication",
+      "summary": "Shift-clicking a stackable item out of your offhand slot no longer duplicates it. The bug doubled the stack every time and affected every player.",
+      "highlights": [],
+      "date": "2026-08-26",
+      "released": true,
+      "released_in": "v0.661.0",
+      "released_at": "2026-08-26T05:58:57Z"
+    },
+    {
+      "id": "tallyman-leaderboard-books",
+      "version": "0.662.0",
+      "type": "feat",
+      "title": "The Tallyman's books \u2014 29 leaderboards riding the train",
+      "summary": "A new kind of book turns up in chests: a leaderboard, kept by The Tallyman. Each one covers a single board \u2014 furthest carriage, longest aboard, most chests opened, kindest benefactors and twenty-five more \u2014 lists the top players on it, and closes by telling you where you stand. If you are not on it, it says so rather than inventing a rank for you. Boards that make sense both ways come in a matched pair, one life and all lives, so you can see whether you are good at a run or good at the game. Among the new ones: distance covered, measured from where you started rather than by how far you have paced up and down a carriage.",
+      "highlights": [
+        "Leaderboard books spawn among the train's other random books",
+        "29 boards, many paired as one-life and all-lives",
+        "Distance covered now measures how far down the line you got, not steps taken",
+        "New boards for people cursed, lovers, most loved, and biggest single gift",
+        "Breaking a vase no longer ends a Walk Past The Loot streak \u2014 a vase is not loot",
+        "Every rank gets two lines, so long names are never truncated to fit a score"
+      ],
+      "pr": 1101,
       "date": "2026-08-26",
       "released": false,
       "released_in": null,
