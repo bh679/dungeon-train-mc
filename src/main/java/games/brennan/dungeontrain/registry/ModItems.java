@@ -86,6 +86,27 @@ public final class ModItems {
         () -> new Item(new Item.Properties().stacksTo(1))
     );
 
+    /**
+     * Editor-only placeholder, sibling to {@link #RANDOM_LEADERBOARD_BOOK}. Substituted at chest
+     * spawn time for a FAULTHURST STAT BOOK — a one-page note, signed by the mod's watching
+     * narrator, naming one real number from the reader's current run
+     * ({@link games.brennan.dungeontrain.narrative.RunStatBookFactory}).
+     *
+     * <p>Placing this deliberately in the editor guarantees one; in ordinary loot they also turn up
+     * as a share of {@link #RANDOM_BOOK} rolls, which is what makes them feel like one of the random
+     * books rather than a separate find.</p>
+     *
+     * <p>Unlike the leaderboard book this needs nothing fetched — the run it reports on is always
+     * there — so the container bakes a real, readable, signed note immediately. What it cannot know
+     * is the READER, so the number is filled in when the book first reaches a hand and kept current
+     * until it is opened; see
+     * {@link games.brennan.dungeontrain.narrative.RunStatBookTag}.</p>
+     */
+    public static final DeferredItem<Item> RANDOM_STAT_BOOK = ITEMS.register(
+        "random_stat_book",
+        () -> new Item(new Item.Properties().stacksTo(1))
+    );
+
     private ModItems() {}
 
     /** Call from the mod constructor to attach the {@link DeferredRegister} to the mod-event bus. */

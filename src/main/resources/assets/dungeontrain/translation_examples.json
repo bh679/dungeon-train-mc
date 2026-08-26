@@ -2951,5 +2951,266 @@
         "100"
       ]
     }
+  },
+  "book.dungeontrain.statbook.stat.carriage": {
+    "1": {
+      "label": "the carriage number the reader has reached this run",
+      "examples": [
+        "14",
+        "137"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.stat.playtime": {
+    "1": {
+      "label": "how long the reader has been aboard this run, already formatted",
+      "examples": [
+        "2h 14m",
+        "43m"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.stat.damage_taken": {
+    "1": {
+      "label": "total damage the reader has taken this run, in health points",
+      "examples": [
+        "47",
+        "312"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.stat.chests.one": {
+    "1": {
+      "label": "chests and barrels the reader has opened this run",
+      "examples": [
+        "1",
+        "62"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.stat.chests.other": {
+    "1": {
+      "label": "chests and barrels the reader has opened this run",
+      "examples": [
+        "1",
+        "62"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.stat.mob_kills.one": {
+    "1": {
+      "label": "creatures the reader has killed this run",
+      "examples": [
+        "1",
+        "204"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.stat.mob_kills.other": {
+    "1": {
+      "label": "creatures the reader has killed this run",
+      "examples": [
+        "1",
+        "204"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.stat.distance.one": {
+    "1": {
+      "label": "blocks the reader has travelled this run",
+      "examples": [
+        "100",
+        "8400"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.stat.distance.other": {
+    "1": {
+      "label": "blocks the reader has travelled this run",
+      "examples": [
+        "100",
+        "8400"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.stat.books_read.one": {
+    "1": {
+      "label": "books the reader has read this run",
+      "examples": [
+        "1",
+        "9"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.stat.books_read.other": {
+    "1": {
+      "label": "books the reader has read this run",
+      "examples": [
+        "1",
+        "9"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.stat.books_written.one": {
+    "1": {
+      "label": "books the reader has written this run",
+      "examples": [
+        "1",
+        "4"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.stat.books_written.other": {
+    "1": {
+      "label": "books the reader has written this run",
+      "examples": [
+        "1",
+        "4"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.stat.friends.one": {
+    "1": {
+      "label": "passengers who have come to like the reader this run",
+      "examples": [
+        "1",
+        "6"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.stat.friends.other": {
+    "1": {
+      "label": "passengers who have come to like the reader this run",
+      "examples": [
+        "1",
+        "6"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.stat.encounters.one": {
+    "1": {
+      "label": "passengers the reader has come near this run",
+      "examples": [
+        "1",
+        "38"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.stat.encounters.other": {
+    "1": {
+      "label": "passengers the reader has come near this run",
+      "examples": [
+        "1",
+        "38"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.stat.echoes.one": {
+    "1": {
+      "label": "echoes the reader has put down this run",
+      "examples": [
+        "1",
+        "5"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.stat.echoes.other": {
+    "1": {
+      "label": "echoes the reader has put down this run",
+      "examples": [
+        "1",
+        "5"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.stat.tamed.one": {
+    "1": {
+      "label": "animals the reader has tamed this run",
+      "examples": [
+        "1",
+        "11"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.stat.tamed.other": {
+    "1": {
+      "label": "animals the reader has tamed this run",
+      "examples": [
+        "1",
+        "11"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.stat.player_kills.one": {
+    "1": {
+      "label": "passengers the reader has killed this run",
+      "examples": [
+        "1",
+        "17"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.stat.player_kills.other": {
+    "1": {
+      "label": "passengers the reader has killed this run",
+      "examples": [
+        "1",
+        "17"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.stat.no_chest.one": {
+    "1": {
+      "label": "the most carriages the reader has passed without opening anything",
+      "examples": [
+        "3",
+        "26"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.stat.no_chest.other": {
+    "1": {
+      "label": "the most carriages the reader has passed without opening anything",
+      "examples": [
+        "3",
+        "26"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.stat.backwards.one": {
+    "1": {
+      "label": "carriages the reader has walked back through this run",
+      "examples": [
+        "1",
+        "19"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.stat.backwards.other": {
+    "1": {
+      "label": "carriages the reader has walked back through this run",
+      "examples": [
+        "1",
+        "19"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.stat.pacifist.one": {
+    "1": {
+      "label": "carriages the reader has come without hurting anyone",
+      "examples": [
+        "3",
+        "44"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.stat.pacifist.other": {
+    "1": {
+      "label": "carriages the reader has come without hurting anyone",
+      "examples": [
+        "3",
+        "44"
+      ]
+    }
   }
 }
