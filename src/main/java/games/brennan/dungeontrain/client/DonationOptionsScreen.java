@@ -3,7 +3,6 @@ package games.brennan.dungeontrain.client;
 import games.brennan.dungeontrain.client.analytics.UiAnalytics;
 import games.brennan.dungeontrain.client.links.OfficialLinks;
 import games.brennan.dungeontrain.client.menu.ColorTintedButton;
-import games.brennan.dungeontrain.client.support.DevHours;
 import games.brennan.dungeontrain.client.support.PaymentLinks;
 import games.brennan.dungeontrain.client.support.SupportTier;
 import net.minecraft.Util;
@@ -44,24 +43,19 @@ public final class DonationOptionsScreen extends Screen {
     private static final int OVERLAY = 0xF2070C1E;
     private static final int TITLE   = 0xFFE0B56A;
     private static final int NARR    = 0xFFC7BDA7;
-    // Dimmer than the narration: the hours line is a footnote under the pitch, not part of it.
-    private static final int HOURS   = 0xFF8E8676;
     private static final float[] TINT_GREEN  = {0.30F, 0.80F, 0.35F}; // direct donation
     private static final float[] TINT_ORANGE = {1.00F, 0.47F, 0.38F}; // Patreon
     private static final float[] TINT_BLUE   = {0.35F, 0.62F, 1.00F}; // China payment — distinct from the green direct-donation button
 
     private final Screen parent;
-    // Text positions computed in init(), drawn in render() (title + subtitle + the
-    // development-hours footnote + a per-column description above each button).
+    // Text positions computed in init(), drawn in render() (title + subtitle + a per-column
+    // description above each button).
     private int titleY;
     private int subtitleTop;
-    private int hoursTop;
     private int descTop;
     private int leftColCenter;
     private int rightColCenter;
     private List<FormattedCharSequence> subtitleLines = List.of();
-    // Empty on a build that could not determine an hour count — see DevHours.
-    private List<FormattedCharSequence> hoursLines = List.of();
     private List<FormattedCharSequence> revolutDescLines = List.of();
     private List<FormattedCharSequence> patreonDescLines = List.of();
 
@@ -81,7 +75,6 @@ public final class DonationOptionsScreen extends Screen {
         int wrapW = Math.min(360, this.width - 80);
         subtitleLines = this.font.split(
                 Component.translatable("gui.dungeontrain.death.narr.donate_options_sub"), wrapW);
-        hoursLines = DevHours.line().map(line -> this.font.split(line, wrapW)).orElse(List.of());
 
         int rowW = Math.min(340, this.width - 60);
         int gap = 10;
@@ -119,17 +112,14 @@ public final class DonationOptionsScreen extends Screen {
         // descriptions, so it adds its own height plus a gap.
         int tierRowH = tiers ? bh + gap : 0;
         int subH = subtitleLines.size() * lineH;
-        // Absent entirely when there is no figure — no gap, no reserved height.
-        int hoursH = hoursLines.isEmpty() ? 0 : 4 + hoursLines.size() * lineH;
         int descH = descRows * lineH;
         int modeRowH = showModes ? descH + 4 + modeBh : 0;
-        int blockH = lineH + 6 + subH + hoursH + 12 + tierRowH + modeRowH + 12 + 20;
+        int blockH = lineH + 6 + subH + 12 + tierRowH + modeRowH + 12 + 20;
         int top = Math.max(20, (this.height - blockH) / 2);
 
         titleY = top;
         subtitleTop = titleY + lineH + 6;
-        hoursTop = subtitleTop + subH + 4;
-        int y = subtitleTop + subH + hoursH + 12;
+        int y = subtitleTop + subH + 12;
 
         if (tiers) {
             int tierEach = (rowW - gap * (SupportTier.values().length - 1)) / SupportTier.values().length;
@@ -195,11 +185,6 @@ public final class DonationOptionsScreen extends Screen {
         int y = subtitleTop;
         for (FormattedCharSequence line : subtitleLines) {
             g.drawString(this.font, line, cx - this.font.width(line) / 2, y, NARR, false);
-            y += lineH;
-        }
-        y = hoursTop;
-        for (FormattedCharSequence line : hoursLines) {
-            g.drawString(this.font, line, cx - this.font.width(line) / 2, y, HOURS, false);
             y += lineH;
         }
         // Per-column descriptions, sitting directly above their button.

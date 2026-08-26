@@ -1,47 +1,45 @@
 package games.brennan.dungeontrain.client.support;
 
-import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.contents.TranslatableContents;
 import org.junit.jupiter.api.Test;
 
 import java.util.Locale;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * The Contribute page's development-hours line. The figure is a fundraising claim, so the rule
- * that matters is what happens when the build could NOT determine one: show nothing at all,
- * rather than a zero or a number the build guessed at.
+ * The hours figure's two decisions: when it takes the engine-room ledger's lead slot, and how the
+ * number reads. The one that matters is the first — the tile displaces a funding goal, so it must
+ * only appear once that goal is actually settled, and never on a build that could not work out an
+ * hour count (which bakes 0, meaning unknown, not "no work").
  */
 class DevHoursTest {
 
-    private static TranslatableContents contentsOf(Component c) {
-        return assertInstanceOf(TranslatableContents.class, c.getContents());
+    @Test
+    void theHoursTileLeadsOnlyOnceBothRungsAreFunded() {
+        assertTrue(DevHours.takesGoalSlot(1394, true, true));
     }
 
     @Test
-    void anUnknownCountShowsNothing() {
-        // 0 is what build.gradle bakes when it could read neither the snapshot nor git.
-        assertFalse(DevHours.line(0, Locale.US).isPresent(), "0 means unknown — say nothing");
-        assertFalse(DevHours.line(-1, Locale.US).isPresent(), "a nonsense count must not reach a player");
+    void aGoalStillBeingAskedForKeepsTheLeadSlot() {
+        assertFalse(DevHours.takesGoalSlot(1394, true, false), "the goal is still the ask");
+        assertFalse(DevHours.takesGoalSlot(1394, false, false), "the server bill is still the ask");
+        // Belt and braces: the goal cannot outrank an unpaid bill, but if the relay ever reported
+        // that shape the bill must still lead.
+        assertFalse(DevHours.takesGoalSlot(1394, false, true));
     }
 
     @Test
-    void aRealCountBecomesTheTranslatedLine() {
-        Optional<Component> line = DevHours.line(1394, Locale.US);
-        assertTrue(line.isPresent());
-        TranslatableContents contents = contentsOf(line.get());
-        assertEquals("gui.dungeontrain.death.narr.donate_hours", contents.getKey());
-        assertEquals(1, contents.getArgs().length, "one argument: the hour count");
+    void anUnknownCountNeverTakesTheSlot() {
+        // 0 is what build.gradle bakes when it could read neither the snapshot nor git history.
+        assertFalse(DevHours.takesGoalSlot(0, true, true), "0 means unknown — leave the layout alone");
+        assertFalse(DevHours.takesGoalSlot(-1, true, true), "a nonsense count must not reach a player");
     }
 
     @Test
     void oneHourIsStillAFigureWorthShowing() {
-        assertTrue(DevHours.line(1, Locale.US).isPresent());
+        assertTrue(DevHours.takesGoalSlot(1, true, true));
     }
 
     @Test
@@ -51,13 +49,9 @@ class DevHoursTest {
     }
 
     @Test
-    void groupingFollowsTheLocale() {
-        // German groups with a full stop — the line must not hard-code an English separator.
-        assertEquals("1.394", DevHours.format(1394, Locale.GERMANY));
-    }
-
-    @Test
     void groupingFollowsTheLanguageChosenInMinecraft() {
+        // German groups with a full stop — the tile must not hard-code an English separator.
+        assertEquals("1.394", DevHours.format(1394, Locale.GERMANY));
         assertEquals(Locale.GERMANY, DevHours.localeOf("de_de"));
         assertEquals("de", DevHours.localeOf("de").getLanguage());
         // Before the client is up there is no selected language — fall back, never crash.

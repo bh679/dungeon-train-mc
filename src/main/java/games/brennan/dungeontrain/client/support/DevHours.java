@@ -2,25 +2,23 @@ package games.brennan.dungeontrain.client.support;
 
 import games.brennan.dungeontrain.client.ClientLanguage;
 import games.brennan.dungeontrain.client.VersionInfo;
-import net.minecraft.network.chat.Component;
 
 import java.text.NumberFormat;
 import java.util.Locale;
-import java.util.Optional;
 
 /**
- * The "how much work is behind this train" line on the Contribute page.
+ * How many hours of work are behind the train — the figure the engine-room ledger shows once the
+ * funding ladder has been climbed.
  *
- * <p>The figure is a count of <b>clock hours in which a commit landed</b>, unioned across every
- * repo the project spans (Dungeon Train, the sibling mods, the relay) so an hour spent committing
- * to two of them counts once. It is computed at build time — a committed snapshot of the sibling
- * repos' hours plus this checkout's live git history — and baked into the jar as
- * {@link VersionInfo#DEV_HOURS}. See {@code scripts/dev-hours/collect.py} and the {@code devHours}
- * closure in build.gradle.</p>
+ * <p>The unit is <b>clock hours in which a commit landed</b>, unioned across every repo the project
+ * spans (Dungeon Train, the sibling mods, the relay) so an hour spent committing to two of them
+ * counts once. Computed at build time — a committed snapshot of the sibling repos' hours plus this
+ * checkout's live git history — and baked into the jar as {@link VersionInfo#DEV_HOURS}. See
+ * {@code scripts/dev-hours/README.md}.</p>
  *
- * <p>A build that could read no history at all bakes {@code 0}. That is "unknown", not "no work":
- * {@link #line()} returns empty and the page shows nothing rather than boasting about zero hours
- * or a wrong number.</p>
+ * <p>A build that could read no history bakes {@code 0}. That is <b>unknown</b>, not "no work":
+ * {@link #takesGoalSlot} then keeps the ledger in the layout it had before this tile existed,
+ * rather than putting a zero in front of a would-be donor.</p>
  */
 public final class DevHours {
 
@@ -29,25 +27,33 @@ public final class DevHours {
         return VersionInfo.DEV_HOURS;
     }
 
-    /** The player-facing line for this client, or empty when there is no figure worth showing. */
-    public static Optional<Component> line() {
-        return line(hours(), clientLocale());
+    /**
+     * Whether the hours tile takes the ledger's lead slot — the one the current funding goal
+     * occupies until that goal is met.
+     *
+     * <p>The ledger climbs: the server bill leads until it is paid, then the next goal leads and
+     * the bill drops below it, ticked off. When that goal is met too there is nothing left to ask
+     * against, so the goal drops the same way and this is what leads instead — the work itself.</p>
+     *
+     * @param hours              the baked count; {@code 0} (unknown) declines the slot
+     * @param serverCostsMet     the running-cost rung is settled and no longer the ask
+     * @param activeGoalComplete the rung after it is funded too
+     */
+    public static boolean takesGoalSlot(int hours, boolean serverCostsMet, boolean activeGoalComplete) {
+        return hours > 0 && serverCostsMet && activeGoalComplete;
     }
 
-    /**
-     * The player-facing line for an explicit count — the whole decision, kept pure so it can be
-     * tested without a baked jar or a running client.
-     *
-     * @param hours  de-duplicated commit-hours; anything {@code <= 0} means "unknown"
-     * @param locale the locale whose digit grouping to use
-     */
-    public static Optional<Component> line(int hours, Locale locale) {
-        if (hours <= 0) return Optional.empty();
-        return Optional.of(Component.translatable(
-                "gui.dungeontrain.death.narr.donate_hours", format(hours, locale)));
+    /** The tile's figure for this client, grouped for the language chosen in Minecraft. */
+    public static String value() {
+        return value(clientLocale());
     }
 
     /** Group the count for readability ("1,394"), in whatever way {@code locale} groups digits. */
+    public static String value(Locale locale) {
+        return NumberFormat.getIntegerInstance(locale).format(hours());
+    }
+
+    /** As {@link #value(Locale)}, for an explicit count — kept pure for tests. */
     public static String format(int hours, Locale locale) {
         return NumberFormat.getIntegerInstance(locale).format(hours);
     }
