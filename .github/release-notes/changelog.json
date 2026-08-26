@@ -8937,6 +8937,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "c-menu-item-icons",
+      "version": "0.669.0",
+      "type": "feat",
+      "title": "Container menu now shows item icons",
+      "summary": "The container contents menu (C) lists each item by its inventory icon instead of its name, so rows stay compact and long item names no longer spill across the count and weight columns. Click an icon to reveal that item's name beside it; click again to hide it.",
+      "highlights": [
+        "Item rows lead with the inventory icon \u2014 narrower panel, no overlapping text",
+        "Click an icon to reveal its name; only that row's column widens"
+      ],
+      "pr": 1111,
+      "date": "2026-08-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
