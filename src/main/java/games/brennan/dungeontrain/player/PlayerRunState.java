@@ -73,6 +73,12 @@ import java.util.UUID;
  */
 public final class PlayerRunState {
 
+    /**
+     * How many tamed entity types the run remembers by name. The count itself is exact; this only
+     * bounds the list the death report names, which no surface shows more than a handful of.
+     */
+    private static final int TAMED_NAMES_CAP = 16;
+
     public static final Codec<PlayerRunState> CODEC = RecordCodecBuilder.create(instance -> instance.group(
         BlockPos.CODEC.listOf().optionalFieldOf("uniqueChests", List.of()).forGetter(PlayerRunState::uniqueChestsList),
         Codec.INT.optionalFieldOf("cartsSinceDeath", 0).forGetter(PlayerRunState::cartsSinceDeath),
@@ -196,6 +202,19 @@ public final class PlayerRunState {
      * already-served book be offered again, which is harmless.</p>
      */
     private final Map<Integer, Integer> servedBookToCarriage;
+    /**
+     * Animals tamed this run, in taming order — the death-screen and death-report "tamed" tally.
+     * {@link #tamedCount} is the true total; this list keeps only the first
+     * {@link #TAMED_NAMES_CAP} entity types, which is all the report ever names.
+     *
+     * <p><b>In-memory only — deliberately NOT in {@link #CODEC}</b> (the 16-field cap, see
+     * {@link #narrativeLetters}). Taming is a discrete, memorable act; the cost of not persisting
+     * is that taming then relogging mid-run resets the tally, exactly as for
+     * {@link #booksWrittenCount}.</p>
+     */
+    private final List<ResourceLocation> tamedAnimals;
+    /** Animals tamed this run — exact, even past {@link #TAMED_NAMES_CAP} named types. */
+    private int tamedCount;
 
     public PlayerRunState() {
         this.uniqueChests = new HashSet<>();
@@ -217,6 +236,8 @@ public final class PlayerRunState {
         this.echoesKilled = 0;
         this.carriagesSinceChest = 0;
         this.maxCarriagesNoChest = 0;
+        this.tamedAnimals = new ArrayList<>();
+        this.tamedCount = 0;
         this.narrativeLetters = new HashSet<>();
         this.earnedAdvancements = new LinkedHashSet<>();
         this.servedBookToCarriage = new HashMap<>();
@@ -257,9 +278,34 @@ public final class PlayerRunState {
         this.echoesKilled = 0;
         this.carriagesSinceChest = 0;
         this.maxCarriagesNoChest = 0;
+        this.tamedAnimals = new ArrayList<>();
+        this.tamedCount = 0;
         this.narrativeLetters = new HashSet<>();
         this.earnedAdvancements = new LinkedHashSet<>();
         this.servedBookToCarriage = new HashMap<>();
+    }
+
+    /**
+     * Record one animal tamed this run. The count is always incremented; the type is remembered by
+     * name only while the list is under {@link #TAMED_NAMES_CAP}.
+     *
+     * @return the new tamed total
+     */
+    public int recordTame(ResourceLocation entityType) {
+        if (tamedAnimals.size() < TAMED_NAMES_CAP) {
+            tamedAnimals.add(entityType);
+        }
+        return ++tamedCount;
+    }
+
+    /** Animals tamed this run. */
+    public int tamedCount() {
+        return tamedCount;
+    }
+
+    /** The tamed entity types, in taming order — at most {@link #TAMED_NAMES_CAP} of them. */
+    public List<ResourceLocation> tamedAnimals() {
+        return List.copyOf(tamedAnimals);
     }
 
     public Set<BlockPos> uniqueChests() {

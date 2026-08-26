@@ -42,7 +42,10 @@ public final class SharedBookReporter {
         try {
             if (playerId == null) return;
             String uuid = playerId.toString().replace("-", "");
-            JsonObject payload = buildPayload(uuid, author, title, pages, lang);
+            // One idempotency handle per SIGNING, minted here and carried in the body the outbox
+            // persists — so every at-least-once re-send of this upload carries the same key.
+            JsonObject payload = buildPayload(uuid, author, title, pages, lang,
+                    UUID.randomUUID().toString().replace("-", ""));
             post(uuid, payload.toString());
         } catch (Throwable t) {
             LOGGER.debug("[DungeonTrain] shared-book submit failed to build: {}", t.toString());
@@ -52,10 +55,18 @@ public final class SharedBookReporter {
     /**
      * Pure assembly of the {@code /books/submit} JSON body — package-private so the shape can be
      * unit-tested without a running server. Matches the relay contract exactly:
-     * {@code {"uuid","author","title","pages":[...],"lang"}}. A {@code null} author/title/lang is
+     * {@code {"uuid","author","title","pages":[...],"lang","key"}}. A {@code null} author/title/lang is
      * emitted as an empty string; a {@code null} pages list as an empty array.
+     *
+     * <p>{@code key} is the upload's IDEMPOTENCY handle. {@link RelayOutbox} is at-least-once: it holds
+     * an item until the relay confirms a 2xx, so a book the relay stored whose response never got home
+     * (a restart, a timeout, an aborted connection) is re-sent byte-for-byte. Because the key lives in
+     * the persisted BODY, every one of those re-sends carries the same value, and the relay can tell
+     * the retry apart from a real re-upload instead of suspending a writer for its own hiccup. A blank
+     * key is simply omitted — an older relay ignores the field either way.</p>
      */
-    static JsonObject buildPayload(String uuid, String author, String title, List<String> pages, String lang) {
+    static JsonObject buildPayload(String uuid, String author, String title, List<String> pages, String lang,
+                                   String key) {
         JsonObject body = new JsonObject();
         body.addProperty("uuid", uuid);
         body.addProperty("author", author == null ? "" : author);
@@ -68,6 +79,9 @@ public final class SharedBookReporter {
         }
         body.add("pages", pagesArr);
         body.addProperty("lang", lang == null ? "" : lang);
+        if (key != null && !key.isBlank()) {
+            body.addProperty("key", key);
+        }
         return body;
     }
 

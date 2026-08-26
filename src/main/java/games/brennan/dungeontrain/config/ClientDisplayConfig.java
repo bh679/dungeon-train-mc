@@ -82,6 +82,7 @@ public final class ClientDisplayConfig {
     public static final ModConfigSpec.DoubleValue TRAIN_ENGINE_VOLUME;
     public static final ModConfigSpec.BooleanValue DELETE_WORLD_ON_REBOARD;
     public static final ModConfigSpec.BooleanValue SKYBOX_PUNCH_ENABLED;
+    public static final ModConfigSpec.BooleanValue SCRIBBLE_COLOR_PICKER_VISIBLE;
     /**
      * Relay pool ids of community (player-written) books this player has read, stored as decimal strings.
      * GLOBAL client-side read history — persists across worlds and servers (unlike the retired per-world
@@ -163,6 +164,7 @@ public final class ClientDisplayConfig {
         TRAIN_ENGINE_VOLUME = pair.getLeft().trainEngineVolume;
         DELETE_WORLD_ON_REBOARD = pair.getLeft().deleteWorldOnReboard;
         SKYBOX_PUNCH_ENABLED = pair.getLeft().skyboxPunchEnabled;
+        SCRIBBLE_COLOR_PICKER_VISIBLE = pair.getLeft().scribbleColorPickerVisible;
         SHARED_BOOKS_READ = pair.getLeft().sharedBooksRead;
         DEATH_SCREEN_LAST_NPS = pair.getLeft().deathScreenLastNps;
         POLITICAL_FILTER = pair.getLeft().politicalFilter;
@@ -278,6 +280,12 @@ public final class ClientDisplayConfig {
                 .define("punchEnabled", true);
         b.pop();
 
+        b.push("scribble");
+        ModConfigSpec.BooleanValue scribbleColorPickerVisible = b
+                .comment("Show the Scribble mod's 16-swatch colour picker on the book-writing screen. Off by default: Dungeon Train keeps the book screen close to vanilla, and the picker is the one part of Scribble that changes what a book LOOKS like rather than how it is edited. No in-game control by design — flip this by hand to get the swatches back. Has no effect unless the Scribble mod is installed.")
+                .define("colorPickerVisible", false);
+        b.pop();
+
         b.push("world");
         ModConfigSpec.BooleanValue deleteWorldOnReboard = b
                 .comment("Delete the old world's save folder when reboarding (creating a fresh world) from the death screen. Dungeon Train is designed around a new world per run, so this defaults on to keep the world list and disk clean. Only auto-generated \"<prefix> <timestamp>\" saves (Dungeon Train / Dev World / World) are ever deleted — renamed or hand-made worlds and editor worlds are always kept. Toggleable in-game via the trash icon next to the reboard button.")
@@ -355,7 +363,7 @@ public final class ClientDisplayConfig {
                 rideSnapshotMinFps, rideSnapshotMinTps,
                 rideSnapshotDiskOffload, rideSnapshotFlushMinFps, rideSnapshotFlushMinTps, rideSnapshotMaxOnDisk,
                 rideSnapshotMaxResolution,
-                framerateThrottleEnabled, framerateThrottleFps, trainEngineVolume, skyboxPunchEnabled, deleteWorldOnReboard, sharedBooksRead,
+                framerateThrottleEnabled, framerateThrottleFps, trainEngineVolume, skyboxPunchEnabled, scribbleColorPickerVisible, deleteWorldOnReboard, sharedBooksRead,
                 deathScreenLastNps, politicalFilter, contentMode, customContentPreference,
                 configDeviationAcknowledged);
     }
@@ -768,6 +776,31 @@ public final class ClientDisplayConfig {
     }
 
     /**
+     * Show Scribble's colour-swatch grid on the book-writing screen? Defaults to {@code false}.
+     *
+     * <p>Note this reads {@code isLoaded() &&}, not the {@code !isLoaded() ||} form used by the
+     * defaults-on flags above: the hidden default has to hold on the very first frame too, before
+     * the client TOML is loaded, or the swatches would flash in on a fresh install.</p>
+     *
+     * <p>Read by {@link games.brennan.dungeontrain.client.ScribbleColorPickerToggle}. Inert
+     * without the Scribble mod, which is a modpack companion rather than a dependency.</p>
+     */
+    public static boolean isScribbleColorPickerVisible() {
+        return isLoaded() && SCRIBBLE_COLOR_PICKER_VISIBLE.get();
+    }
+
+    /**
+     * Persist the Scribble colour-picker toggle. Idempotent: skips the {@code .save()} (a TOML
+     * write) when the value is unchanged. Currently only reachable by editing the TOML; see ScribbleColorPickerToggle.SHOW_TOGGLE_BUTTON.
+     */
+    public static void setScribbleColorPickerVisible(boolean value) {
+        if (!isLoaded()) return;
+        if (SCRIBBLE_COLOR_PICKER_VISIBLE.get() == value) return;
+        SCRIBBLE_COLOR_PICKER_VISIBLE.set(value);
+        SCRIBBLE_COLOR_PICKER_VISIBLE.save();
+    }
+
+    /**
      * Delete the old world's save when reboarding? Defaults to {@code true} (also pre-load) —
      * Dungeon Train is a new-world-per-run game, so abandoned run saves are cleaned up unless
      * the player opts out via the death screen's trash toggle. The delete path itself carries
@@ -905,6 +938,7 @@ public final class ClientDisplayConfig {
             ModConfigSpec.IntValue framerateThrottleFps,
             ModConfigSpec.DoubleValue trainEngineVolume,
             ModConfigSpec.BooleanValue skyboxPunchEnabled,
+            ModConfigSpec.BooleanValue scribbleColorPickerVisible,
             ModConfigSpec.BooleanValue deleteWorldOnReboard,
             ModConfigSpec.ConfigValue<List<? extends String>> sharedBooksRead,
             ModConfigSpec.IntValue deathScreenLastNps,

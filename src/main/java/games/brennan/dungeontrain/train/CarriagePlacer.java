@@ -12,6 +12,7 @@ import games.brennan.dungeontrain.portal.PortalCarriageRole;
 import games.brennan.dungeontrain.portal.PortalCarriageSelection;
 import games.brennan.dungeontrain.portal.PortalCorridorKind;
 import games.brennan.dungeontrain.portal.PortalCorridorSize;
+import games.brennan.dungeontrain.portal.PortalRegistry;
 import games.brennan.dungeontrain.template.GateContext;
 import games.brennan.dungeontrain.template.TemplateKind;
 import games.brennan.dungeontrain.template.TemplateType;
@@ -270,12 +271,29 @@ public final class CarriagePlacer {
         CarriageDims dims, CarriageGenerationConfig config, int carriageIndex,
         boolean applyContents, boolean flatbedAtBack, boolean flatbedAtFront, int groupAnchorWorldX
     ) {
+        // The portal verdict, asked ONCE here and then written down.
+        //
+        // Everything that runs after placement — above all PortalCarriageEvents, which builds a
+        // corridor's swap plane every tick — reads the record rather than asking the lottery again.
+        // It has to: PortalCarriageSelection.rateFor folds in the level's live game modes, so the
+        // same index answers differently the moment somebody switches to creative, joins or quits,
+        // while the blocks stamped here do not change with it. Re-deriving at tick time is how an
+        // ordinary carriage grew a portal frame it had no corridor for and teleported whoever
+        // walked down it into a pocket room. See PortalRegistry#stampedPortalParts.
+        boolean portalCorridor = PortalCarriageSelection.isPortalCarriage(level, carriageIndex);
+        boolean portalMiddle = !portalCorridor
+            && PortalCarriageSelection.isPortalMiddle(level, carriageIndex);
+        // Recorded for every carriage, not only the portal ones: an index the rolling window brings
+        // back round as an ordinary carriage has to stop answering yes, or the swap plane outlives
+        // the corridor it was built for.
+        PortalRegistry.get(level).noteStamped(carriageIndex, portalCorridor || portalMiddle);
+
         // Portal carriages replace the whole carriage with a hallway-portal corridor
         // (games.brennan.dungeontrain.portal). Returning here deliberately skips the parts overlay,
         // the variant-block sidecar and the contents pass: the corridor's geometry IS the carriage,
         // and loot or furniture stamped into it would both block the walkway and break the
         // block-for-block match with its twin that the illusion depends on.
-        if (PortalCarriageSelection.isPortalCarriage(level, carriageIndex)) {
+        if (portalCorridor) {
             // A corridor is longer than the slot it was placed for and grows inward, into the cart
             // between the pair — so an ENTRY runs forward out of its slot and an EXIT starts before
             // its own (PortalCorridorSize). Both the stamp and the footprint sweep have to use that
@@ -315,7 +333,7 @@ public final class CarriagePlacer {
         // construction — the corridors either side swap a player out before they can reach it — so it
         // skips the same passes the corridors do. Furnishing a room nobody can enter with loot, and
         // trapping mobs in it, is the waste that pinning a portal to one group exists to remove.
-        if (PortalCarriageSelection.isPortalMiddle(level, carriageIndex)) {
+        if (portalMiddle) {
             PortalCarriageBuilder.stampMiddle(level, origin, dims,
                 PortalCarriageSelection.corridorKindFor(level,
                     PortalCarriageRole.entryIndexOf(carriageIndex, DungeonTrainConfig.getGroupSize())),

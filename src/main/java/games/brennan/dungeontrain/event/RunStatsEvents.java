@@ -27,6 +27,7 @@ import games.brennan.dungeontrain.registry.ModDataAttachments;
 import games.brennan.dungeontrain.util.SecondPersonDeathMessage;
 import games.brennan.playermob.entity.PlayerMobEntity;
 import net.minecraft.advancements.AdvancementHolder;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -349,7 +350,8 @@ public final class RunStatsEvents {
                     packet.deathCause(),
                     packet.distanceBlocks(), packet.runTicks(), packet.damageDealt(), packet.damageTaken(),
                     packet.containersOpened(), packet.booksRead(), advTitles,
-                    packet.playersEncountered(), packet.playersBefriended(), packet.playersKilled());
+                    packet.playersEncountered(), packet.playersBefriended(), packet.playersKilled(),
+                    packet.tamedCount());
             // Buffer the top-level report until the client sends this run's scenic ride photo
             // (DeathPhotoPacket); a 5s timeout posts it with the gear composite if the photo never comes.
             DeathReportBuffer.await(player, manifestTitle, manifestDesc, manifestFields, icons,
@@ -495,7 +497,9 @@ public final class RunStatsEvents {
                 deathCause,
                 side,
                 portrait,
-                run.earnedAdvancements()
+                run.earnedAdvancements(),
+                run.tamedCount(),
+                run.tamedAnimals()
         );
     }
 
@@ -514,7 +518,24 @@ public final class RunStatsEvents {
                 new DeathField("Players befriended", Integer.toString(packet.playersBefriended())),
                 new DeathField("Mobs killed", Integer.toString(packet.mobKills())),
                 new DeathField("Damage dealt", DeathReportFormat.damage(packet.damageDealt())),
-                new DeathField("Damage taken", DeathReportFormat.damage(packet.damageTaken())));
+                new DeathField("Damage taken", DeathReportFormat.damage(packet.damageTaken())),
+                new DeathField("Animals tamed", DeathReportFormat.tamed(
+                        packet.tamedCount(), tamedNames(packet))));
+    }
+
+    /**
+     * The names of the animal types this run tamed, in taming order — resolved server-side from the
+     * packet's entity-type ids, so the Discord report reads "Wolf, Horse" rather than raw ids. The
+     * list is capped by {@code PlayerRunState}, so a very long run names only its first few; the
+     * count beside it stays exact.
+     */
+    private static List<String> tamedNames(DeathStatsPacket packet) {
+        List<String> names = new ArrayList<>(packet.tamedAnimals().size());
+        for (ResourceLocation id : packet.tamedAnimals()) {
+            EntityType<?> type = BuiltInRegistries.ENTITY_TYPE.get(id);
+            names.add(type == null ? id.getPath() : type.getDescription().getString());
+        }
+        return names;
     }
 
     /** Most-used weapon + worn armor, for the report's composed item image. */

@@ -475,6 +475,16 @@ public final class PortalCarriageSelection {
      * train rather than to run it, and the alternative — a creative cadence that only takes effect
      * in a fresh world — is not what the mode is for.</p>
      *
+     * <p><b>This method answers about what to stamp NEXT, and about nothing that is already
+     * standing.</b> That distinction is load-bearing and used not to be drawn. {@code
+     * PortalCarriageEvents} re-derived the verdict every tick and built a corridor swap plane from
+     * it, so after a flip it claimed carriages that had been stamped as ordinary ones — and a swap
+     * plane covers a whole carriage interior, so walking down a normal carriage teleported the
+     * player into a pocket room. The verdict is now written down when the blocks are laid
+     * ({@link PortalRegistry#noteStamped}) and read back from there
+     * ({@link PortalStampRecord}); a mid-run switch moves what generates ahead, and re-decides
+     * nothing behind.</p>
+     *
      * <p><b>Every player, not any.</b> One carriage has one verdict — the invariant the placer, the
      * relay and the pair tick all lean on — so the cadence cannot be per-player. A survival player
      * sharing a level with a creative one therefore holds the whole level at the lottery rate. On a

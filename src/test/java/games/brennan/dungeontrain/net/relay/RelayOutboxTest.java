@@ -62,11 +62,11 @@ class RelayOutboxTest {
         }
 
         @Override
-        public CompletableFuture<RelayOutbox.BatchResult> send(String url, String ndjson) {
+        public CompletableFuture<RelayOutbox.RelayResponse> send(String url, String ndjson) {
             urls.add(url);
             bodies.add(ndjson);
             if (batchStatus < 200 || batchStatus >= 300) {
-                return CompletableFuture.completedFuture(new RelayOutbox.BatchResult(batchStatus, null));
+                return CompletableFuture.completedFuture(new RelayOutbox.RelayResponse(batchStatus, null));
             }
             StringBuilder sb = new StringBuilder("{\"results\":[");
             boolean first = true;
@@ -78,7 +78,7 @@ class RelayOutboxTest {
                 sb.append("{\"key\":\"").append(key).append("\",\"status\":").append(itemStatus).append('}');
             }
             sb.append("]}");
-            return CompletableFuture.completedFuture(new RelayOutbox.BatchResult(200, sb.toString()));
+            return CompletableFuture.completedFuture(new RelayOutbox.RelayResponse(200, sb.toString()));
         }
 
         int lastBatchLineCount() {
@@ -90,13 +90,13 @@ class RelayOutboxTest {
 
     /** Hands back batch futures the test completes by hand — for exercising the in-flight state. */
     private static final class ManualBatchSender implements RelayOutbox.BatchSender {
-        final List<CompletableFuture<RelayOutbox.BatchResult>> futures = new CopyOnWriteArrayList<>();
+        final List<CompletableFuture<RelayOutbox.RelayResponse>> futures = new CopyOnWriteArrayList<>();
         int calls;
 
         @Override
-        public CompletableFuture<RelayOutbox.BatchResult> send(String url, String ndjson) {
+        public CompletableFuture<RelayOutbox.RelayResponse> send(String url, String ndjson) {
             calls++;
-            CompletableFuture<RelayOutbox.BatchResult> f = new CompletableFuture<>();
+            CompletableFuture<RelayOutbox.RelayResponse> f = new CompletableFuture<>();
             futures.add(f);
             return f;
         }
@@ -104,11 +104,37 @@ class RelayOutboxTest {
 
     private static final RelayOutbox.Sender NOOP_SENDER = (url, body) -> CompletableFuture.completedFuture(200);
     private static final RelayOutbox.BatchSender NOOP_BATCH = (url, ndjson) ->
-            CompletableFuture.completedFuture(new RelayOutbox.BatchResult(200, "{\"results\":[]}"));
+            CompletableFuture.completedFuture(new RelayOutbox.RelayResponse(200, "{\"results\":[]}"));
 
     private static RelayOutbox outbox(Path file, RelayOutbox.Sender sender, RelayOutbox.BatchSender batch, LongSupplier clock) {
         Supplier<Path> fileSupplier = () -> file;
         return new RelayOutbox(fileSupplier, sender, batch, () -> BASE, clock);
+    }
+
+    /** Records every response-exposing send and answers with a caller-supplied status + body. */
+    private static final class RecordingBodySender implements RelayOutbox.BodySender {
+        final List<String> urls = new CopyOnWriteArrayList<>();
+        final List<String> bodies = new CopyOnWriteArrayList<>();
+        volatile int status;
+        volatile String responseBody;
+
+        RecordingBodySender(int status, String responseBody) {
+            this.status = status;
+            this.responseBody = responseBody;
+        }
+
+        @Override
+        public CompletableFuture<RelayOutbox.RelayResponse> send(String url, String body) {
+            urls.add(url);
+            bodies.add(body);
+            return CompletableFuture.completedFuture(new RelayOutbox.RelayResponse(status, responseBody));
+        }
+    }
+
+    private static RelayOutbox outbox(Path file, RelayOutbox.Sender sender, RelayOutbox.BatchSender batch,
+                                      RelayOutbox.BodySender body, LongSupplier clock) {
+        Supplier<Path> fileSupplier = () -> file;
+        return new RelayOutbox(fileSupplier, sender, batch, body, () -> BASE, clock);
     }
 
     // --- delivery through the batch path -------------------------------------------------------
@@ -190,7 +216,7 @@ class RelayOutboxTest {
 
         // Complete the held future with a per-item 2xx for the one queued key.
         String ndjson = "{\"results\":[{\"key\":\"" + queuedKey(file) + "\",\"status\":200}]}";
-        batch.futures.get(0).complete(new RelayOutbox.BatchResult(200, ndjson));
+        batch.futures.get(0).complete(new RelayOutbox.RelayResponse(200, ndjson));
         assertEquals(0, box.pendingCount(), "removed after the 2xx completes");
     }
 
@@ -369,5 +395,64 @@ class RelayOutboxTest {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    // --- watched paths: the response reaches a handler ------------------------------------------
+
+    @Test
+    void watchedPathReportsStatusAndBodyToItsHandler(@TempDir Path dir) {
+        Path file = dir.resolve("outbox.json");
+        RecordingBodySender body = new RecordingBodySender(409, "{\"error\":\"duplicate_book\"}");
+        RelayOutbox box = outbox(file, NOOP_SENDER, NOOP_BATCH, body, () -> 1_000L);
+        List<String> seen = new CopyOnWriteArrayList<>();
+        box.onResponse("/books/submit", (req, status, resp) -> seen.add(req + "|" + status + "|" + resp));
+
+        box.enqueue("/books/submit", "{\"uuid\":\"abc\"}");
+
+        assertEquals(1, body.urls.size(), "delivered on the response-exposing transport");
+        assertEquals(BASE + "/books/submit", body.urls.get(0));
+        assertEquals(List.of("{\"uuid\":\"abc\"}|409|{\"error\":\"duplicate_book\"}"), seen,
+                "the handler sees the REQUEST body alongside the relay's answer");
+        assertEquals(0, box.pendingCount(), "a 409 is non-retryable poison — dropped, not looped");
+    }
+
+    @Test
+    void watchedPathHoldsTheItemWhenTheRelayIsUnreachable(@TempDir Path dir) {
+        Path file = dir.resolve("outbox.json");
+        RecordingBodySender offline = new RecordingBodySender(-1, null);
+        RelayOutbox box = outbox(file, NOOP_SENDER, NOOP_BATCH, offline, () -> 1_000L);
+        List<String> seen = new CopyOnWriteArrayList<>();
+        box.onResponse("/books/submit", (req, status, resp) -> seen.add(String.valueOf(status)));
+
+        box.enqueue("/books/submit", "{\"uuid\":\"abc\"}");
+
+        assertEquals(List.of("-1"), seen, "a network failure is still reported (as a negative status)");
+        assertEquals(1, box.pendingCount(), "and the book stays queued for the next flush");
+    }
+
+    @Test
+    void aThrowingHandlerNeverBreaksTheQueue(@TempDir Path dir) {
+        Path file = dir.resolve("outbox.json");
+        RecordingBodySender body = new RecordingBodySender(200, "{\"ok\":true}");
+        RelayOutbox box = outbox(file, NOOP_SENDER, NOOP_BATCH, body, () -> 1_000L);
+        box.onResponse("/books/submit", (req, status, resp) -> { throw new IllegalStateException("boom"); });
+
+        box.enqueue("/books/submit", "{\"uuid\":\"abc\"}");
+
+        assertEquals(0, box.pendingCount(), "the 2xx still removed the item");
+    }
+
+    @Test
+    void unwatchedPathsKeepTheStatusOnlyTransport(@TempDir Path dir) {
+        Path file = dir.resolve("outbox.json");
+        RecordingSender single = new RecordingSender(200);
+        RecordingBodySender body = new RecordingBodySender(200, "{}");
+        RelayOutbox box = outbox(file, single, NOOP_BATCH, body, () -> 1_000L);
+        box.onResponse("/books/submit", (req, status, resp) -> { });
+
+        box.enqueue("/narratives/submit", "{\"uuid\":\"abc\"}");
+
+        assertEquals(1, single.urls.size(), "an unwatched one-off path is unchanged");
+        assertEquals(0, body.urls.size(), "and never pays for reading the response body");
     }
 }

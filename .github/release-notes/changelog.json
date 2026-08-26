@@ -8400,9 +8400,9 @@
       ],
       "pr": 1076,
       "date": "2026-08-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.642.0",
+      "released_at": "2026-08-24T14:55:08Z"
     },
     {
       "id": "editor-package-save-keeps-your-work",
@@ -8420,9 +8420,139 @@
         "The custom train content prompt no longer appears when your run is already Free Play, where it had nothing left to ask."
       ],
       "date": "2026-08-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.642.0",
+      "released_at": "2026-08-24T14:55:08Z"
+    },
+    {
+      "id": "editor-authored-books-burn-in-live-train",
+      "version": "0.642.0",
+      "type": "feat",
+      "title": "Hand-written lore books can be stocked in train loot chests",
+      "summary": "Books written and signed inside an editor plot are now ordinary written books while you build with them \u2014 they no longer catch fire when you read or drop them, so you can proof-read one and place it in a carriage's chest. Once that carriage rides the live train, the first player to take the book out of the chest arms it, and it burns after being read like any other book you find out there.",
+      "highlights": [
+        "Books signed in an editor plot no longer burn while you're building",
+        "Authored books can be stocked in a carriage's loot chest and saved into the template",
+        "Found on the live train, they still burn after reading"
+      ],
+      "pr": 1080,
+      "date": "2026-08-24",
+      "released": true,
+      "released_in": "v0.642.0",
+      "released_at": "2026-08-24T14:55:08Z"
+    },
+    {
+      "id": "scribble-book-tools",
+      "version": "0.642.0",
+      "type": "feat",
+      "title": "Better book writing",
+      "summary": "Writing a book in-game is far less painful. The Dungeon Train modpack now bundles Scribble, which adds page insert and delete, undo and redo, and the ability to save a book to a file and load it back later. Books you write still look exactly the same to everyone else, whether or not they have the mod.",
+      "highlights": [
+        "Insert and delete pages anywhere in a book, instead of only adding to the end",
+        "Undo and redo while writing",
+        "Save a book to a file and load it back into a fresh book and quill",
+        "Scribble's colour picker is switched off, so book text stays vanilla black \u2014 set colorPickerVisible in your Dungeon Train client config to bring it back"
+      ],
+      "pr": 1079,
+      "date": "2026-08-24",
+      "released": true,
+      "released_in": "v0.642.0",
+      "released_at": "2026-08-24T14:55:08Z"
+    },
+    {
+      "id": "tamed-animals-death-report",
+      "version": "0.643.0",
+      "type": "feat",
+      "title": "Every animal you tame is counted in your death report",
+      "summary": "Tame a wolf, a cat, a horse \u2014 anything \u2014 and it is tallied for the life you are living. When that life ends, the count appears on your death screen and in your death report alongside the rest of the run: how far you got, what you fought, what you carried. A life spent making friends of animals now leaves a mark in the record, not just in the moment.",
+      "highlights": [
+        "Taming anything counts toward the life you are currently living, and resets when you die.",
+        "The tally shows on the in-game death screen and in the Discord death report."
+      ],
+      "date": "2026-08-24",
+      "released": true,
+      "released_in": "v0.643.0",
+      "released_at": "2026-08-24T15:19:07Z"
+    },
+    {
+      "id": "echo-pets-return-on-the-train",
+      "version": "0.643.0",
+      "type": "feat",
+      "title": "Your pets come back with your echo",
+      "summary": "The animals you tamed are remembered when you die. When an echo of that life returns to the train, up to three of your pets walk back on with it \u2014 loyal to the echo exactly as they were to you. They follow it down the carriage, teleport to it when they fall behind, and turn on anyone who attacks it. Mounts stay behind unless you gave them a name: a horse you never named was transport, not a companion.",
+      "highlights": [
+        "Up to three tamed animals return alongside an echo of the life that tamed them.",
+        "They follow, teleport and defend exactly as pets do for a living player.",
+        "Unnamed mounts are left behind; a named one comes back with you.",
+        "Taming counts as kindness, so a life spent befriending animals returns friendlier.",
+        "Requires Interactive Player Mobs 0.92.0 or newer."
+      ],
+      "date": "2026-08-24",
+      "released": true,
+      "released_in": "v0.643.0",
+      "released_at": "2026-08-24T15:19:07Z"
+    },
+    {
+      "id": "portal-room-from-ordinary-carriage",
+      "version": "0.644.0",
+      "type": "fix",
+      "title": "Only dimensional carriages take you to their rooms",
+      "summary": "An ordinary carriage could send you into a dimensional carriage's room without you ever walking through one. It no longer can.",
+      "highlights": [],
+      "pr": 1081,
+      "date": "2026-08-24",
+      "released": true,
+      "released_in": "v0.644.0",
+      "released_at": "2026-08-24T15:34:13Z"
+    },
+    {
+      "id": "duplicate-book-upload-suspension",
+      "version": "0.645.0",
+      "type": "feat",
+      "title": "The train refuses a book you have already sent",
+      "summary": "Send the train the same book twice and it now says no, and stops taking your writing for a while \u2014 thirty seconds the first time, doubling with each repeat, up to an hour. While it is refusing you, the Sign button in the book screen turns red and will not press, with the time left on it, so you never burn a book for nothing. Someone else writing out a book they found in loot is not affected: only re-sending your OWN book counts.",
+      "highlights": [
+        "A re-upload of your own book is refused instead of silently ignored",
+        "Uploads pause for 30s, doubling per repeat, capped at an hour and forgotten after a clean week",
+        "The Sign button goes red and dead while paused, and frees itself when the time is up",
+        "Lectern letters, Death Notes and Love Notes are all paused too"
+      ],
+      "pr": 1082,
+      "date": "2026-08-24",
+      "released": true,
+      "released_in": "v0.646.0",
+      "released_at": "2026-08-24T23:55:25Z"
+    },
+    {
+      "id": "cat-content-netherite-scrap-loot",
+      "version": "0.645.0",
+      "type": "content",
+      "title": "A cat rides the train, and netherite scrap turns up in loot",
+      "summary": "Carriages that carried cows may now carry a cat instead \u2014 or, rarely, an ocelot. Netherite scrap has also been added to the loot tables.",
+      "highlights": [
+        "New cat carriage content, with a rare ocelot variant",
+        "Netherite scrap added to prefab loot"
+      ],
+      "pr": 1082,
+      "date": "2026-08-24",
+      "released": true,
+      "released_in": "v0.646.0",
+      "released_at": "2026-08-24T23:55:25Z"
+    },
+    {
+      "id": "book-upload-retry-not-duplicate",
+      "version": "0.646.0",
+      "type": "fix",
+      "title": "A book the train never confirmed is no longer counted twice",
+      "summary": "If the train stored your book but the reply never got back to you \u2014 a restart, a timeout, a bad connection \u2014 your game sends it again, as it always has. That resend was being read as you uploading the same book twice, and it briefly cost four writers an upload pause they had not earned. Each upload now carries a handle the train recognises, so a resend is understood as the same book arriving again rather than a new offence.",
+      "highlights": [
+        "A re-sent upload is recognised as a retry and never counts as a duplicate"
+      ],
+      "pr": 1083,
+      "date": "2026-08-24",
+      "released": true,
+      "released_in": "v0.646.0",
+      "released_at": "2026-08-24T23:55:25Z"
     }
   ]
 }
