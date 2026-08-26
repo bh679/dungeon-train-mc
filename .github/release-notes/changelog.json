@@ -9018,6 +9018,19 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "discord-embed-links-to-release",
+      "version": "0.672.0",
+      "type": "fix",
+      "title": "Discord announcements link to the release they announce",
+      "summary": "The release announcement in Discord now opens that exact build's release page. It used to open the Downloads page, which always showed the newest build \u2014 so an older announcement sent you somewhere else.",
+      "highlights": [],
+      "pr": 1116,
+      "date": "2026-08-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
