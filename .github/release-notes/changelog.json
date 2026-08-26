@@ -8889,6 +8889,20 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "portal-room-editor-exit",
+      "version": "0.668.0",
+      "type": "fix",
+      "title": "Leaving the dimensional carriage editor works again",
+      "summary": "Exiting the editor after opening a dimensional carriage directly now returns you to where you came from, in the game mode you were in. Before, it told you there was no session to exit and left you standing in the plot in creative.",
+      "highlights": [
+        "Only affected going straight to a room \u2014 /dungeontrain editor portals, or a room plot's Enter Inside"
+      ],
+      "date": "2026-08-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
