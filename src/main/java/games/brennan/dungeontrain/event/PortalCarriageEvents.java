@@ -2165,6 +2165,12 @@ public final class PortalCarriageEvents {
                 + ", the room claims everything within " + fmt(cone) + "° of its axis in this block");
             out.add("    entities here still swap on the midpoint: " + fmt(layout.midX()) + " ±"
                 + fmt(PortalFrames.SWAP_HYSTERESIS));
+            // The lighting hold, on the same "quote the real function, never a second copy" rule as
+            // the two lines above. It is the one part of the corridor a player can SEE working and
+            // cannot otherwise measure — the whole point of it is that nothing appears to happen.
+            out.add("    lighting hold: " + fmt(PortalCrossingLight.intensityAt(localX, layout) * 100)
+                + "% (full from block " + layout.nearBaffleX() + " to "
+                + layout.farBaffleX() + ", nothing at either door plane)");
 
             if (structure != null) {
                 BlockPos twinOrigin = role == PortalCarriageRole.ENTRY
