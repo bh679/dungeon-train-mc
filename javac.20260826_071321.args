@@ -1,0 +1,7 @@
+-proc:none
+-nowarn
+-Xmaxerrs
+100000
+-d
+/tmp/claude-0/-home-user/179eac06-fdc9-55e4-9aa6-44046c52cc70/scratchpad/perfile
+src/main/java/games/brennan/dungeontrain/editor/ContainerContentsRoller.java

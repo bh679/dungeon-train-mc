@@ -22,9 +22,9 @@ import java.util.Set;
  * {@link #headerKey() header}, and the span is said once, in one place, by {@link Scope}:</p>
  *
  * <ul>
- *   <li>{@link Scope#RUN} — one life. Title gains {@value Scope#RUN_TITLE_SUFFIX}; the heading is
+ *   <li>{@link Scope#RUN} — one life. Title gains {@code ", One Life"}; the heading is
  *       wrapped by {@code dungeontrain.leaderboard.scope.run}.</li>
- *   <li>{@link Scope#TOTAL} — every life. Title gains {@value Scope#TOTAL_TITLE_SUFFIX}; the heading
+ *   <li>{@link Scope#TOTAL} — every life. Title gains {@code ", All Lives"}; the heading
  *       is wrapped by {@code dungeontrain.leaderboard.scope.total}.</li>
  *   <li>{@link Scope#NONE} — the boards measured over no span of play at all: translations and
  *       donations, which are contributions rather than runs. Nothing is appended.</li>
@@ -95,13 +95,25 @@ public enum LeaderboardCategory {
      */
     public enum Scope {
         NONE(null, ""),
-        RUN("dungeontrain.leaderboard.scope.run", RUN_TITLE_SUFFIX),
-        TOTAL("dungeontrain.leaderboard.scope.total", TOTAL_TITLE_SUFFIX);
+        RUN("dungeontrain.leaderboard.scope.run", Suffix.RUN),
+        TOTAL("dungeontrain.leaderboard.scope.total", Suffix.TOTAL);
 
-        /** Appended to the English cover title of every one-life board. */
-        static final String RUN_TITLE_SUFFIX = ", One Life";
-        /** Appended to the English cover title of every all-lives board. */
-        static final String TOTAL_TITLE_SUFFIX = ", All Lives";
+        /**
+         * The suffixes, one class removed from the constants that use them.
+         *
+         * <p>Not stylistic: an enum constant may not read a static field of its own enum, because
+         * the constants are initialised before the fields are. Holding them here makes the
+         * reference legal while keeping them named — the alternative is two bare literals in the
+         * constant list, which is where a mismatched pair would hide.</p>
+         */
+        private static final class Suffix {
+            /** Appended to the English cover title of every one-life board. */
+            static final String RUN = ", One Life";
+            /** Appended to the English cover title of every all-lives board. */
+            static final String TOTAL = ", All Lives";
+
+            private Suffix() {}
+        }
 
         private final String key;
         private final String titleSuffix;
