@@ -73,6 +73,12 @@ public final class RideSnapshotCapture {
     private static volatile Consumer<byte[]> pendingSubjectCallback;
     private static int subjectRetries;                 // render frames left to find a clean angle
 
+    // ── Explicit-pose capture: the caller already knows exactly where the camera goes ──
+    private static volatile CinematicCameraController.Pose pendingPose;
+    private static volatile Consumer<NativeImage> pendingPoseCallback;
+    /** Earliest {@code System.nanoTime()} the armed pose may fire — see {@link #requestPoseCapture}. */
+    private static volatile long pendingPoseReadyAt;
+
     private RideSnapshotCapture() {}
 
     // ── Mixin hooks (camera override) ────────────────────────────────────
@@ -110,8 +116,55 @@ public final class RideSnapshotCapture {
         subjectRetries = SUBJECT_CAPTURE_RETRY_FRAMES;
     }
 
-    /** A normal gallery shot, or a targeted echo capture, is queued or in flight. */
-    public static boolean hasPending() { return pendingTag != null || pendingSubjectCallback != null; }
+    /**
+     * Queue a shot from an <b>exact</b> camera pose and hand the raw frame to {@code onImage}.
+     *
+     * <p>Unlike every other entry point here, nothing is framed for you: no {@link SnapshotCamera}
+     * search, no lighting or occlusion check, no retry. The caller already knows where the camera
+     * goes — the Train Builder's template photo reuses the very pose its opening cinematic ends on —
+     * and a "no clean angle found" answer would silently drop a shot the user explicitly asked for.
+     * A fixed pose can't fail, so this arms and fires on the next render frame.</p>
+     *
+     * <p>The callback <b>owns the image</b> and must close it.</p>
+     */
+    public static void requestPoseCapture(CinematicCameraController.Pose pose, Consumer<NativeImage> onImage) {
+        requestPoseCapture(pose, 0, onImage);
+    }
+
+    /**
+     * As above, but hold fire for {@code settleMillis} first.
+     *
+     * <p>For a caller that has just <em>changed the world</em> and wants a picture of the result.
+     * Block data reaches the client almost instantly on an integrated server, but the visible
+     * geometry is rebuilt a beat later — and there is no cheap "section/mesh built" query to wait on,
+     * least of all one that survives Sodium (which Sable bundles) replacing the section renderer. So
+     * readiness is a settle heuristic here, exactly as it is for the arrival shot.</p>
+     *
+     * <p>Without it the shot lands on the frame after the request and photographs the <em>previous</em>
+     * contents of the volume — which, for the Train Builder's Open, meant every template that had no
+     * photo yet got issued a picture of the template it replaced.</p>
+     *
+     * <p>Wall-clock rather than a frame count on purpose: frames are FPS-dependent, and the wait is
+     * for a rebuild whose duration isn't. Nothing is on screen during the wait — the capture is an
+     * extra off-screen pass — so erring long is free.</p>
+     */
+    public static void requestPoseCapture(CinematicCameraController.Pose pose, long settleMillis,
+                                          Consumer<NativeImage> onImage) {
+        if (pose == null || onImage == null) return;
+        pendingPose = pose;
+        pendingPoseReadyAt = System.nanoTime() + Math.max(0L, settleMillis) * 1_000_000L;
+        pendingPoseCallback = onImage;
+    }
+
+    /** Whether an armed pose has finished settling and may fire this frame. */
+    private static boolean poseReady() {
+        return pendingPoseCallback != null && System.nanoTime() >= pendingPoseReadyAt;
+    }
+
+    /** A gallery shot, a targeted echo capture, or an explicit-pose capture is queued or in flight. */
+    public static boolean hasPending() {
+        return pendingTag != null || pendingSubjectCallback != null || pendingPoseCallback != null;
+    }
 
     /**
      * {@code renderLevel} HEAD. If a shot is pending, render one extra full pass from the snapshot
@@ -133,7 +186,18 @@ public final class RideSnapshotCapture {
         // shot — and owns this frame's slot whether or not it arms (bounded retry handles giving up), so
         // a gallery shot never sneaks in under it. ──
         Consumer<byte[]> subjectCb = null;
-        if (pendingSubjectCallback != null) {
+        Consumer<NativeImage> imageCb = null;
+        if (poseReady()) {
+            // First: an explicit pose is already resolved, so once its settle window has passed this
+            // always arms and always completes this frame. It can't starve the others by retrying.
+            // While it is still settling the branch is simply skipped, so a gallery or echo shot may
+            // take the frame — they build their own poses and are unaffected by the wait.
+            captureTag = SnapshotTag.SOCIAL;
+            capturePose = pendingPose;
+            imageCb = pendingPoseCallback;
+            pendingPoseCallback = null;
+            pendingPose = null;
+        } else if (pendingSubjectCallback != null) {
             Entity subject = level.getEntity(pendingSubjectId);
             CinematicCameraController.Pose pose = (subject != null && subject.isAlive())
                     ? SnapshotCamera.poseFor(level, SUBJECT_TAG, subject, partialTick)
@@ -176,7 +240,7 @@ public final class RideSnapshotCapture {
             // HEAD hook short-circuits on the `capturing` guard, so this runs exactly once.
             mc.getMainRenderTarget().bindWrite(true);
             gr.renderLevel(deltaTracker);
-            grab(mc, level, subjectCb);
+            grab(mc, level, subjectCb, imageCb);
         } catch (Exception e) {
             LOGGER.warn("[DungeonTrain] Ride snapshot capture failed", e);
         } finally {
@@ -188,15 +252,22 @@ public final class RideSnapshotCapture {
         }
     }
 
-    /** Read back the just-rendered snapshot-pose frame and route it to the gallery or echo callback. */
-    private static void grab(Minecraft mc, ClientLevel level, Consumer<byte[]> subjectCb) {
+    /** Read back the just-rendered snapshot-pose frame and route it to the gallery or a callback. */
+    private static void grab(Minecraft mc, ClientLevel level,
+                             Consumer<byte[]> subjectCb, Consumer<NativeImage> imageCb) {
         NativeImage full = Screenshot.takeScreenshot(mc.getMainRenderTarget());
-        // Echo/portrait captures stay at the base edge (kept small for the packet); gallery shots go
-        // hi-res when Distant Horizons + shaders/Fabulous make the extra pixels worthwhile.
-        int edge = targetEdge(subjectCb != null);
+        // Echo/portrait and template-photo captures stay at the base edge; gallery shots go hi-res
+        // when Distant Horizons + shaders/Fabulous make the extra pixels worthwhile.
+        int edge = targetEdge(subjectCb != null || imageCb != null);
         NativeImage shot = downscale(full, edge);
         if (shot != full) full.close();   // downscale returns src as-is when already small
 
+        if (imageCb != null) {
+            // Explicit-pose capture: the caller wants the pixels, not a gallery entry or an encoded
+            // blob. Ownership transfers with them — closing here would hand over a freed image.
+            imageCb.accept(shot);
+            return;
+        }
         if (subjectCb != null) {
             // Targeted echo capture: JPEG-encode the grabbed frame and hand it to the callback —
             // it never enters the gallery, so we own and must close this NativeImage.

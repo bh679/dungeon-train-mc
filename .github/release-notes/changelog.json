@@ -8555,24 +8555,259 @@
       "released_at": "2026-08-24T23:55:25Z"
     },
     {
-      "id": "tallyman-leaderboard-books",
+      "id": "custom-content-choice-before-world",
       "version": "0.647.0",
-      "type": "feat",
-      "title": "The Tallyman's books \u2014 29 leaderboards riding the train",
-      "summary": "A new kind of book turns up in chests: a leaderboard, kept by The Tallyman. Each one covers a single board \u2014 furthest carriage, longest aboard, most chests opened, kindest benefactors and twenty-five more \u2014 lists the top players on it, and closes by telling you where you stand. If you are not on it, it says so rather than inventing a rank for you. Boards that make sense both ways come in a matched pair, one life and all lives, so you can see whether you are good at a run or good at the game. Among the new ones: distance covered, measured from where you started rather than by how far you have paced up and down a carriage.",
+      "type": "fix",
+      "title": "Choose your train before the world starts",
+      "summary": "If you've made your own train designs, Dungeon Train now asks what you want to do the moment you start a run \u2014 not after the world has already been built around the answer. Pick Custom Train to play your designs, or Default Train to play the built-in ones with your stats counting as normal.",
       "highlights": [
-        "Leaderboard books spawn among the train's other random books",
-        "29 boards, many paired as one-life and all-lives",
-        "Distance covered now measures how far down the line you got, not steps taken",
-        "New boards for people cursed, lovers, most loved, and biggest single gift",
-        "Breaking a vase no longer ends a Walk Past The Loot streak \u2014 a vase is not loot",
-        "Every rank gets two lines, so long names are never truncated to fit a score"
+        "The question is asked when you press New World or reboard, so choosing Default Train means a world that never loads the custom content at all.",
+        "Two clear cards instead of a wall of text, with a ? button explaining what Free Play costs.",
+        "The Free Play badge no longer lingers on saves where it no longer applies \u2014 it clears itself on your next login."
       ],
-      "pr": 1101,
+      "date": "2026-08-25",
+      "released": true,
+      "released_in": "v0.647.0",
+      "released_at": "2026-08-25T07:24:46Z"
+    },
+    {
+      "id": "custom-content-prompt-every-route",
+      "version": "0.648.0",
+      "type": "fix",
+      "title": "The train question now shows up wherever a run starts",
+      "summary": "The choice between your own train designs and the built-in ones is now offered on every route that begins a run \u2014 including Minecraft's own Create New World screen, which used to ask only after the world had been built. Backing out with Escape returns you to the menu you came from and creates nothing.",
+      "highlights": [
+        "Create New World from the vanilla menu now asks before the world is generated, like Dungeon Train's own New World button does.",
+        "The Train Editor no longer asks. Editor worlds are creative, so they are Free Play anyway and always load your designs.",
+        "Dying with immediate respawn on reuses your last answer instead of interrupting the reboard."
+      ],
+      "date": "2026-08-25",
+      "released": true,
+      "released_in": "v0.648.0",
+      "released_at": "2026-08-25T09:08:12Z"
+    },
+    {
+      "id": "vote-page-follows-book",
+      "version": "0.649.0",
+      "type": "fix",
+      "title": "The vote page lines up with the book again",
+      "summary": "After reading a community book, the train's vote page sat in the wrong place \u2014 its question could land on top of the \"Page 2 of 2\" line, and at some window sizes the thumbs drifted off the page entirely and stopped responding where you clicked them. The page now follows the book wherever it sits, including when Scribble's centred book layout moves it.",
+      "highlights": [
+        "The train's question no longer collides with the page counter",
+        "The thumbs and the report button now click where they are drawn, at every window size and GUI scale"
+      ],
+      "pr": 1085,
+      "date": "2026-08-25",
+      "released": true,
+      "released_in": "v0.650.0",
+      "released_at": "2026-08-25T10:05:21Z"
+    },
+    {
+      "id": "abandon-run-death-screen",
+      "version": "0.649.0",
+      "type": "fix",
+      "title": "Abandoning a run always shows the recap",
+      "summary": "With the Immediate Respawn game rule on, choosing \"Abandon This Run\" from the pause menu used to drop you straight into a fresh world, skipping the end-of-run recap entirely. Now it takes you to the death screen like any other run ending, so you can read the recap and choose when to board again. Immediate Respawn also carries over into each new world the train makes for you, instead of quietly switching itself off after the first one.",
+      "highlights": [
+        "Abandon This Run now opens the death screen even with Immediate Respawn on",
+        "Dying normally still rolls straight into a fresh world when Immediate Respawn is on",
+        "The Immediate Respawn setting now sticks across every world in a run chain"
+      ],
+      "date": "2026-08-25",
+      "released": true,
+      "released_in": "v0.650.0",
+      "released_at": "2026-08-25T10:05:21Z"
+    },
+    {
+      "id": "translate-source-scroll-resize",
+      "version": "0.650.0",
+      "type": "fix",
+      "title": "Translators can read the whole English string again",
+      "summary": "The translation editor used to cut the English off after six lines, so the mod's longest strings \u2014 the books \u2014 could not be read in full by the person being asked to translate them. Nothing is truncated now: the text grows to fit, scrolls when there is more of it, and the divider between it and your translation can be dragged to give either side more room.",
+      "highlights": [
+        "The English on the translate screen is no longer cut off \u2014 it scrolls instead",
+        "Drag the divider to trade room between the original text and your translation",
+        "The \"unreviewed machine translation\" warning stays visible while you scroll"
+      ],
+      "pr": 1088,
+      "date": "2026-08-25",
+      "released": true,
+      "released_in": "v0.650.0",
+      "released_at": "2026-08-25T10:05:21Z"
+    },
+    {
+      "id": "translation-variable-hover",
+      "version": "0.651.0",
+      "type": "feat",
+      "title": "Translation editor explains every variable",
+      "summary": "In the translation editor, the placeholders in an English string are now underlined, and hovering one says what the game actually puts there with a few real examples. Where the value is itself a translated phrase, the example is shown in the language you are translating into, with the English beside it.",
+      "highlights": [
+        "Placeholders like %s and %1$s are underlined in the English source",
+        "Hover a placeholder for what it holds, plus two or three real example values",
+        "Examples that are themselves translated show in your language and in English"
+      ],
+      "date": "2026-08-25",
+      "released": true,
+      "released_in": "v0.651.0",
+      "released_at": "2026-08-25T10:30:12Z"
+    },
+    {
+      "id": "translation-source-link",
+      "version": "0.652.0",
+      "type": "feat",
+      "title": "Jump from a translation to its source",
+      "summary": "The translation editor now shows a View source link beside the English heading. It opens a search of the Dungeon Train repository for that string's key, so you can see where the game actually uses the line you are translating.",
+      "highlights": [
+        "View source link on the heading row of the translation editor",
+        "Finds both the English entry and every place the code uses it"
+      ],
+      "date": "2026-08-25",
+      "released": true,
+      "released_in": "v0.652.0",
+      "released_at": "2026-08-25T10:46:10Z"
+    },
+    {
+      "id": "author-locked-library-rooms-empty",
+      "version": "0.653.0",
+      "type": "fix",
+      "title": "Library rooms have their books back",
+      "summary": "Portal library rooms had been turning up with completely bare shelves. They are stocked again \u2014 and when nobody has written enough books in your language to fill one, the room now settles for the closest author it can find instead of standing empty. Expect a shorter shelf in that case rather than none at all. A dropped connection to the community book service no longer empties every library in your world for the rest of the session either; a room that comes up short quietly tries again a few minutes later.",
+      "highlights": [
+        "Library rooms are stocked with books again instead of standing bare",
+        "If nobody writes enough in your language, the room picks the closest author it can rather than showing nothing \u2014 a shorter shelf you can read beats a full one you cannot",
+        "A hiccup reaching the community book service no longer leaves every library in the world empty until you restart",
+        "A library that finds nobody tries again a few minutes later, so one thin moment no longer settles it"
+      ],
+      "pr": 1091,
+      "date": "2026-08-25",
+      "released": true,
+      "released_in": "v0.653.0",
+      "released_at": "2026-08-25T13:25:38Z"
+    },
+    {
+      "id": "editor-undo-effortless-building",
+      "version": "0.654.0",
+      "type": "feat",
+      "title": "Ctrl+Z takes back Effortless Building work in the editor",
+      "summary": "Building part of a carriage with Effortless Building and then pressing Ctrl+Z used to undo whatever you'd placed by hand before it, leaving the Effortless Building work sitting there. It now goes on the editor's own undo stack like everything else \u2014 one press takes back a whole line, cube or mirrored build, and Ctrl+Y puts it back.",
+      "highlights": [
+        "Effortless Building builds and breaks are undoable with the editor's Ctrl+Z / Ctrl+Y",
+        "A whole multi-block build is one press, mirrored copies included",
+        "Effortless Building's own undo can itself be taken back",
+        "Applies to work inside an editor plot; building out past the plot is unchanged"
+      ],
+      "pr": 1092,
+      "date": "2026-08-25",
+      "released": true,
+      "released_in": "v0.654.0",
+      "released_at": "2026-08-25T15:37:51Z"
+    },
+    {
+      "id": "portal-room-door-ghosts",
+      "version": "0.655.0",
+      "type": "feat",
+      "title": "Portal room editor shows where the doors go",
+      "summary": "Authoring a dimensional carriage room now shows you the two corridor doorways it has to be built around. A translucent door stands in each opening \u2014 the same door the corridor really hangs \u2014 so a wall across the walkway centre line is something you see while you build rather than something you discover by walking a portal.",
+      "highlights": [
+        "Both corridor doorways are marked in every portal room plot, and follow the room as you resize it.",
+        "Toggle them with /dt editor doorghosts on|off \u2014 separate from the out-of-plot stray ghosts."
+      ],
+      "date": "2026-08-25",
+      "released": true,
+      "released_in": "v0.657.0",
+      "released_at": "2026-08-25T16:16:41Z"
+    },
+    {
+      "id": "train-builder-mode",
+      "version": "0.656.0",
+      "type": "feat",
+      "title": "The Train Builder (work in progress)",
+      "summary": "A soft release: the Train Builder is still in development and not yet fully functional, so expect rough edges and unfinished corners. It is a simpler way to build carriages, tracks and tunnels in a dedicated build world, and in time it is meant to replace the more complex Train Editor. For now both are here \u2014 hold Shift on the title screen to open the Builder, and find what you have made under My Builds.",
+      "highlights": [
+        "Still in development and not fully functional \u2014 this is an early look, not a finished tool.",
+        "Intended to replace the more complex Train Editor eventually; until then the Editor remains the complete option.",
+        "Hold Shift on the title screen and the Train Editor slot becomes the Train Builder.",
+        "A My Builds screen, reachable from the editor menu (X) and the pause menu, lists everything you have saved.",
+        "Build in a flat, empty world made for the job, with mirroring, resizable rooms and a live size and weight readout.",
+        "Save a whole carriage in one piece \u2014 shell and interior together \u2014 as well as individual parts, tracks and tunnels."
+      ],
+      "pr": 1093,
+      "date": "2026-08-25",
+      "released": true,
+      "released_in": "v0.657.0",
+      "released_at": "2026-08-25T16:16:41Z"
+    },
+    {
+      "id": "sibling-mod-update-eb-011-te-09",
+      "version": "0.657.0",
+      "type": "fix",
+      "title": "Backpacks keep their contents, and villagers will price your own items",
+      "summary": "Dungeon Train now ships Edible Backpacks 0.11.0 and requires Trade Everything 0.9.0. The headline fix: anything stored in a backpack slot used to vanish after a relog or a respawn \u2014 it now survives both.",
+      "highlights": [
+        "Backpack contents are no longer lost when you relog or respawn.",
+        "The Upgraded Backpack recipe now takes a gold block in the middle of the 3x3 of backpacks.",
+        "A villager's Trade Anything slot cycles through the items you are carrying, each with its own price."
+      ],
+      "pr": 1095,
+      "date": "2026-08-25",
+      "released": true,
+      "released_in": "v0.657.0",
+      "released_at": "2026-08-25T16:16:41Z"
+    },
+    {
+      "id": "translation-groups",
+      "version": "0.658.0",
+      "type": "feat",
+      "title": "Translate a whole set of variations in one go",
+      "summary": "A lot of Dungeon Train's text is the same line written many different ways \u2014 thirteen wordings of one chat message, thirty-nine narrations for one death, a dozen alternative pages for one book. The translation editor used to list every one of them as an unrelated string. Now it knows they belong together: a button collapses each set into a single row, and inside a string a Next button walks you straight to the next variation that still needs a human, without going back to the list.",
+      "highlights": [
+        "A grouping button beside the search box folds each set of variations into one row, badged with how many there are and how many still need review",
+        "Inside a string, a strip says which variation you are on, and Next opens the next one waiting on a translator",
+        "Next asks before it moves on if you have unsaved typing \u2014 save, discard, or stay",
+        "Grouping is off by default; the list you already know is unchanged until you turn it on"
+      ],
+      "pr": 1096,
       "date": "2026-08-26",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.658.0",
+      "released_at": "2026-08-26T02:49:34Z"
+    },
+    {
+      "id": "engine-room-hours-spent",
+      "version": "0.659.0",
+      "type": "feat",
+      "title": "Hours spent on the engine room ledger",
+      "summary": "Once running costs and the current goal are both covered, the engine room shows the hours spent building Dungeon Train.",
+      "highlights": [],
+      "pr": 1097,
+      "date": "2026-08-26",
+      "released": true,
+      "released_in": "v0.660.0",
+      "released_at": "2026-08-26T05:12:33Z"
+    },
+    {
+      "id": "playermob-094-fire",
+      "version": "0.660.0",
+      "type": "chore",
+      "title": "PlayerMobs put flint and steel to work",
+      "summary": "Dungeon Train now requires PlayerMob 0.94.0, and both modpacks ship it: PlayerMobs pick up dropped flint and steel, cook their kills with it, torch enemies mid-fight, and stop to put fires out.",
+      "highlights": [],
+      "date": "2026-08-26",
+      "released": true,
+      "released_in": "v0.660.0",
+      "released_at": "2026-08-26T05:12:33Z"
+    },
+    {
+      "id": "offhand-shift-click-dupe",
+      "version": "0.661.0",
+      "type": "fix",
+      "title": "Fixed: offhand item duplication",
+      "summary": "Shift-clicking a stackable item out of your offhand slot no longer duplicates it. The bug doubled the stack every time and affected every player.",
+      "highlights": [],
+      "date": "2026-08-26",
+      "released": true,
+      "released_in": "v0.661.0",
+      "released_at": "2026-08-26T05:58:57Z"
     }
   ]
 }

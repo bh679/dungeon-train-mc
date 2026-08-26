@@ -62,6 +62,8 @@
     "CreateWorldScreenWorldTabMixin",
     "client.CreateWorldScreenMixin",
     "client.CreateWorldScreenDefaultPresetMixin",
+    "client.CreateWorldScreenCustomContentMixin",
+    "client.CreateWorldScreenInvoker",
     "client.CreativeModeInventoryScreenPrefabMixin",
     "client.CreativeModeInventoryScreenAccessor",
     "client.AbstractContainerScreenPrefabTintMixin",

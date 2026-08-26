@@ -81,6 +81,8 @@ public final class ClientDisplayConfig {
     public static final ModConfigSpec.IntValue FRAMERATE_THROTTLE_FPS;
     public static final ModConfigSpec.DoubleValue TRAIN_ENGINE_VOLUME;
     public static final ModConfigSpec.BooleanValue DELETE_WORLD_ON_REBOARD;
+    /** Tiles per row in the Train Builder's Open screen grid. See {@link #getBuilderTilesPerRow()}. */
+    public static final ModConfigSpec.IntValue BUILDER_TILES_PER_ROW;
     public static final ModConfigSpec.BooleanValue SKYBOX_PUNCH_ENABLED;
     public static final ModConfigSpec.BooleanValue SCRIBBLE_COLOR_PICKER_VISIBLE;
     /**
@@ -111,6 +113,8 @@ public final class ClientDisplayConfig {
      * {@link CustomContentPreference}. {@code ASK} means keep prompting.
      */
     public static final ModConfigSpec.EnumValue<CustomContentPreference> CUSTOM_CONTENT_PREFERENCE;
+    /** The last answer actually given, whether or not it was remembered. */
+    public static final ModConfigSpec.EnumValue<CustomContentPreference> CUSTOM_CONTENT_LAST_ANSWER;
 
     /**
      * Whether the player wants community content the relay tagged as politically sensitive filtered
@@ -163,6 +167,7 @@ public final class ClientDisplayConfig {
         FRAMERATE_THROTTLE_FPS = pair.getLeft().framerateThrottleFps;
         TRAIN_ENGINE_VOLUME = pair.getLeft().trainEngineVolume;
         DELETE_WORLD_ON_REBOARD = pair.getLeft().deleteWorldOnReboard;
+        BUILDER_TILES_PER_ROW = pair.getLeft().builderTilesPerRow;
         SKYBOX_PUNCH_ENABLED = pair.getLeft().skyboxPunchEnabled;
         SCRIBBLE_COLOR_PICKER_VISIBLE = pair.getLeft().scribbleColorPickerVisible;
         SHARED_BOOKS_READ = pair.getLeft().sharedBooksRead;
@@ -170,6 +175,7 @@ public final class ClientDisplayConfig {
         POLITICAL_FILTER = pair.getLeft().politicalFilter;
         CONTENT_MODE = pair.getLeft().contentMode;
         CUSTOM_CONTENT_PREFERENCE = pair.getLeft().customContentPreference;
+        CUSTOM_CONTENT_LAST_ANSWER = pair.getLeft().customContentLastAnswer;
         CONFIG_DEVIATION_ACKNOWLEDGED = pair.getLeft().configDeviationAcknowledged;
     }
 
@@ -292,6 +298,17 @@ public final class ClientDisplayConfig {
                 .define("deleteOnReboard", true);
         b.pop();
 
+        b.push("builderOpen");
+        // The bounds are duplicated from BuilderTemplateGridLayout's MIN_COLUMNS/MAX_COLUMNS rather
+        // than shared, because that class is client-only and package-private while this config is
+        // common-side. Safe to duplicate: this range only rejects a hand-edited value, and the grid
+        // clamps whatever it is handed anyway — so a drift here can widen what the file accepts, not
+        // what the screen draws.
+        ModConfigSpec.IntValue builderTilesPerRow = b
+                .comment("How many template tiles per row the Train Builder's Open screen lays out. The grid block stays the same width whichever you pick, so a higher number shows more of a library at once by making each tile smaller. Set in-game from the numbered button beside the Open screen's controls (left-click for more, right-click for fewer) — on a small window or a high GUI scale the count stops below 6, where a further column would no longer fit.")
+                .defineInRange("tilesPerRow", 3, 2, 6);
+        b.pop();
+
         b.push("sharedBooks");
         ModConfigSpec.ConfigValue<List<? extends String>> sharedBooksRead = b
                 .comment("Relay pool ids (as strings) of community player-written books you've read. GLOBAL read",
@@ -330,6 +347,13 @@ public final class ClientDisplayConfig {
                          "  your stats count. Set from the prompt's \"Remember decision\" checkbox, or the",
                          "Custom Train Content row in Options -> Dungeon Train...")
                 .defineEnum("preference", CustomContentPreference.ASK);
+        ModConfigSpec.EnumValue<CustomContentPreference> customContentLastAnswer = b
+                .comment("The last answer you gave the custom-content prompt, recorded whether or not",
+                         "you ticked \"Remember decision\". Reused when a run reboards automatically",
+                         "(immediate respawn), where there is no menu to ask from.",
+                         "ASK means you have never answered. Managed automatically — not meant to be",
+                         "edited by hand.")
+                .defineEnum("lastAnswer", CustomContentPreference.ASK);
         b.pop();
 
         b.push("deathScreen");
@@ -363,8 +387,11 @@ public final class ClientDisplayConfig {
                 rideSnapshotMinFps, rideSnapshotMinTps,
                 rideSnapshotDiskOffload, rideSnapshotFlushMinFps, rideSnapshotFlushMinTps, rideSnapshotMaxOnDisk,
                 rideSnapshotMaxResolution,
-                framerateThrottleEnabled, framerateThrottleFps, trainEngineVolume, skyboxPunchEnabled, scribbleColorPickerVisible, deleteWorldOnReboard, sharedBooksRead,
+                framerateThrottleEnabled, framerateThrottleFps, trainEngineVolume, skyboxPunchEnabled, scribbleColorPickerVisible, deleteWorldOnReboard,
+                builderTilesPerRow,
+                sharedBooksRead,
                 deathScreenLastNps, politicalFilter, contentMode, customContentPreference,
+                customContentLastAnswer,
                 configDeviationAcknowledged);
     }
 
@@ -821,6 +848,34 @@ public final class ClientDisplayConfig {
         DELETE_WORLD_ON_REBOARD.save();
     }
 
+    // ----- Train Builder Open screen: tiles per row -----
+
+    /**
+     * Tiles per row in the Open screen's template grid. Defaults to 3 — today's fixed count — both
+     * before the config loads and when it never does, so a client with no config file draws the
+     * grid it has always drawn.
+     *
+     * <p>The player's raw choice, which is not necessarily what is on screen: a narrow window or a
+     * high GUI scale can hold fewer columns than this, and {@code BuilderTemplateGridLayout} clamps
+     * to what fits. Storing the ask rather than the clamped result is deliberate — a count saturated
+     * away by a small window comes back when the window grows again.</p>
+     */
+    public static int getBuilderTilesPerRow() {
+        return isLoaded() ? BUILDER_TILES_PER_ROW.get() : 3;
+    }
+
+    /**
+     * Persist the tiles-per-row choice. Idempotent — skips the TOML write when unchanged, because
+     * this is driven by a button a player clicks repeatedly while watching the grid reflow.
+     */
+    public static void setBuilderTilesPerRow(int value) {
+        if (!isLoaded()) return;
+        int clamped = Math.max(2, Math.min(6, value));
+        if (BUILDER_TILES_PER_ROW.get() == clamped) return;
+        BUILDER_TILES_PER_ROW.set(clamped);
+        BUILDER_TILES_PER_ROW.save();
+    }
+
     // ----- Content mode (Adult / Kid) — see ContentMode -----
 
     /**
@@ -872,6 +927,26 @@ public final class ClientDisplayConfig {
         if (CUSTOM_CONTENT_PREFERENCE.get() == preference) return;
         CUSTOM_CONTENT_PREFERENCE.set(preference);
         CUSTOM_CONTENT_PREFERENCE.save();
+    }
+
+    /**
+     * The last answer the player actually gave the prompt, recorded on every answer rather than
+     * only on "Remember decision". {@link CustomContentPreference#ASK} means never answered.
+     *
+     * <p>Exists because the remembered <em>preference</em> can't serve this: it is only written
+     * when the checkbox is ticked, so a player who answers each world individually has no recorded
+     * answer at all — and the automatic reboard has no menu to ask from.</p>
+     */
+    public static CustomContentPreference getLastCustomContentAnswer() {
+        return isLoaded() ? CUSTOM_CONTENT_LAST_ANSWER.get() : CustomContentPreference.ASK;
+    }
+
+    /** Record an answer. Idempotent; no-op pre-load. */
+    public static void setLastCustomContentAnswer(CustomContentPreference answer) {
+        if (!isLoaded() || answer == null) return;
+        if (CUSTOM_CONTENT_LAST_ANSWER.get() == answer) return;
+        CUSTOM_CONTENT_LAST_ANSWER.set(answer);
+        CUSTOM_CONTENT_LAST_ANSWER.save();
     }
 
     // ----- Global client-side community-book read history (see SharedBookReadSyncClient / SharedBookReadMirror) -----
@@ -940,11 +1015,13 @@ public final class ClientDisplayConfig {
             ModConfigSpec.BooleanValue skyboxPunchEnabled,
             ModConfigSpec.BooleanValue scribbleColorPickerVisible,
             ModConfigSpec.BooleanValue deleteWorldOnReboard,
+            ModConfigSpec.IntValue builderTilesPerRow,
             ModConfigSpec.ConfigValue<List<? extends String>> sharedBooksRead,
             ModConfigSpec.IntValue deathScreenLastNps,
             ModConfigSpec.EnumValue<PoliticalFilter> politicalFilter,
             ModConfigSpec.EnumValue<ContentMode> contentMode,
             ModConfigSpec.EnumValue<CustomContentPreference> customContentPreference,
+            ModConfigSpec.EnumValue<CustomContentPreference> customContentLastAnswer,
             ModConfigSpec.ConfigValue<String> configDeviationAcknowledged
     ) {}
 }

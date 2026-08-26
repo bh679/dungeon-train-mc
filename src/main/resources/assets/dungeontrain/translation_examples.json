@@ -1,0 +1,2881 @@
+{
+  "echo.dungeontrain.mob_name": {
+    "1": {
+      "label": "the player this echo is a copy of",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "chat.dungeontrain.free_play.cause.gamemode": {
+    "1": {
+      "label": "the game mode the player switched to",
+      "examples": [
+        "Creative",
+        "Spectator"
+      ]
+    }
+  },
+  "chat.dungeontrain.free_play.cause.command": {
+    "1": {
+      "label": "the command that was run",
+      "examples": [
+        "/gamemode creative",
+        "/give @s diamond 64"
+      ]
+    }
+  },
+  "chat.dungeontrain.free_play.cause.creative_mod": {
+    "1": {
+      "label": "the cheat-mod action that was used",
+      "examples": [
+        "JEI cheat mode",
+        "an item-spawn button"
+      ]
+    }
+  },
+  "chat.dungeontrain.free_play.cheat_mods": {
+    "1": {
+      "label": "the cheat mods that were found, comma-separated",
+      "examples": [
+        "JEI (cheat mode)",
+        "JEI, Xaero's Minimap"
+      ]
+    }
+  },
+  "container.dungeontrain.enderchest.profile": {
+    "1": {
+      "label": "the chest's ordinary title",
+      "examples": [
+        "Ender Chest"
+      ]
+    },
+    "2": {
+      "label": "which chest this is — difficulty, game mode, or Free Play",
+      "examples": [
+        "Hard",
+        {
+          "key": "container.dungeontrain.enderchest.free_play",
+          "args": []
+        },
+        "Hard · Creative"
+      ]
+    }
+  },
+  "gui.dungeontrain.difficulty_confirm.title": {
+    "1": {
+      "label": "a difficulty name",
+      "examples": [
+        "Hard",
+        "Peaceful",
+        "Normal"
+      ]
+    }
+  },
+  "gui.dungeontrain.difficulty_confirm.empty": {
+    "1": {
+      "label": "a difficulty name",
+      "examples": [
+        "Hard",
+        "Peaceful",
+        "Normal"
+      ]
+    }
+  },
+  "gui.dungeontrain.difficulty_confirm.kept": {
+    "1": {
+      "label": "a difficulty name",
+      "examples": [
+        "Hard",
+        "Peaceful",
+        "Normal"
+      ]
+    }
+  },
+  "chat.dungeontrain.difficulty_profile.swapped": {
+    "1": {
+      "label": "the difficulty just switched to",
+      "examples": [
+        "Hard",
+        "Easy"
+      ]
+    },
+    "2": {
+      "label": "the difficulty left behind",
+      "examples": [
+        "Normal",
+        "Hard"
+      ]
+    }
+  },
+  "chat.dungeontrain.free_play.ais_changed": {
+    "1": {
+      "label": "the Adventure Item Stats settings that were changed",
+      "examples": [
+        "maxEnchantLevel: 5 -> 100"
+      ]
+    }
+  },
+  "chat.dungeontrain.free_play.dt_config_changed": {
+    "1": {
+      "label": "the Dungeon Train settings that were changed",
+      "examples": [
+        "trainSpeed: 1.0 -> 12.0"
+      ]
+    }
+  },
+  "command.dungeontrain.fix_ais.backup": {
+    "1": {
+      "label": "the backup file's name",
+      "examples": [
+        "adventureitemstats.properties.bak"
+      ]
+    }
+  },
+  "command.dungeontrain.fix_config.backup": {
+    "1": {
+      "label": "the settings file",
+      "examples": [
+        "dungeontrain-common.toml"
+      ]
+    },
+    "2": {
+      "label": "the name it was kept under",
+      "examples": [
+        "dungeontrain-common.toml.bak"
+      ]
+    }
+  },
+  "command.dungeontrain.fix_config.fail": {
+    "1": {
+      "label": "the settings files that could not be moved",
+      "examples": [
+        "dungeontrain-common.toml, adventureitemstats.properties"
+      ]
+    }
+  },
+  "gui.dungeontrain.free_play.confirm.trigger": {
+    "1": {
+      "label": "what would trip Free Play",
+      "examples": [
+        "/gamemode creative",
+        "JEI cheat mode"
+      ]
+    }
+  },
+  "gui.dungeontrain.config_deviation.more": {
+    "1": {
+      "label": "how many more changed settings there are",
+      "examples": [
+        "3",
+        "12"
+      ]
+    }
+  },
+  "gui.dungeontrain.config_deviation.done.backup": {
+    "1": {
+      "label": "the settings file",
+      "examples": [
+        "dungeontrain-common.toml"
+      ]
+    },
+    "2": {
+      "label": "where it was moved to",
+      "examples": [
+        "dungeontrain-common.toml.bak"
+      ]
+    }
+  },
+  "chat.dungeontrain.portal_library.1": {
+    "1": {
+      "label": "the author every book in the room is signed by",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "chat.dungeontrain.portal_library.2": {
+    "1": {
+      "label": "the author every book in the room is signed by",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "chat.dungeontrain.portal_library.3": {
+    "1": {
+      "label": "the author every book in the room is signed by",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "chat.dungeontrain.portal_library.4": {
+    "1": {
+      "label": "the author every book in the room is signed by",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "chat.dungeontrain.portal_library.5": {
+    "1": {
+      "label": "the author every book in the room is signed by",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "chat.dungeontrain.advancements_hint.1": {
+    "1": {
+      "label": "the advancements key, as this player has it bound",
+      "examples": [
+        "L",
+        "F",
+        "Right Ctrl"
+      ]
+    }
+  },
+  "chat.dungeontrain.advancements_hint.2": {
+    "1": {
+      "label": "the advancements key, as this player has it bound",
+      "examples": [
+        "L",
+        "F",
+        "Right Ctrl"
+      ]
+    }
+  },
+  "chat.dungeontrain.advancements_hint.3": {
+    "1": {
+      "label": "the advancements key, as this player has it bound",
+      "examples": [
+        "L",
+        "F",
+        "Right Ctrl"
+      ]
+    }
+  },
+  "chat.dungeontrain.advancements_hint.4": {
+    "1": {
+      "label": "the advancements key, as this player has it bound",
+      "examples": [
+        "L",
+        "F",
+        "Right Ctrl"
+      ]
+    }
+  },
+  "chat.dungeontrain.advancements_hint.5": {
+    "1": {
+      "label": "the advancements key, as this player has it bound",
+      "examples": [
+        "L",
+        "F",
+        "Right Ctrl"
+      ]
+    }
+  },
+  "chat.dungeontrain.advancements_hint.6": {
+    "1": {
+      "label": "the advancements key, as this player has it bound",
+      "examples": [
+        "L",
+        "F",
+        "Right Ctrl"
+      ]
+    }
+  },
+  "chat.dungeontrain.advancements_hint.7": {
+    "1": {
+      "label": "the advancements key, as this player has it bound",
+      "examples": [
+        "L",
+        "F",
+        "Right Ctrl"
+      ]
+    }
+  },
+  "chat.dungeontrain.advancements_hint.8": {
+    "1": {
+      "label": "the advancements key, as this player has it bound",
+      "examples": [
+        "L",
+        "F",
+        "Right Ctrl"
+      ]
+    }
+  },
+  "chat.dungeontrain.advancements_hint.9": {
+    "1": {
+      "label": "the advancements key, as this player has it bound",
+      "examples": [
+        "L",
+        "F",
+        "Right Ctrl"
+      ]
+    }
+  },
+  "chat.dungeontrain.advancements_hint.10": {
+    "1": {
+      "label": "the advancements key, as this player has it bound",
+      "examples": [
+        "L",
+        "F",
+        "Right Ctrl"
+      ]
+    }
+  },
+  "chat.dungeontrain.advancements_hint.11": {
+    "1": {
+      "label": "the advancements key, as this player has it bound",
+      "examples": [
+        "L",
+        "F",
+        "Right Ctrl"
+      ]
+    }
+  },
+  "chat.dungeontrain.advancements_hint.12": {
+    "1": {
+      "label": "the advancements key, as this player has it bound",
+      "examples": [
+        "L",
+        "F",
+        "Right Ctrl"
+      ]
+    }
+  },
+  "chat.dungeontrain.familiar_book.1": {
+    "1": {
+      "label": "how many people have held the book, as a whole clause",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.familiar_book.held.other",
+          "args": [
+            "3"
+          ]
+        },
+        {
+          "key": "chat.dungeontrain.familiar_book.held.one",
+          "args": [
+            "1"
+          ]
+        }
+      ]
+    },
+    "2": {
+      "label": "how many readers finished it",
+      "examples": [
+        "2",
+        "17"
+      ]
+    }
+  },
+  "chat.dungeontrain.familiar_book.2": {
+    "1": {
+      "label": "how many people have held the book, as a whole clause",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.familiar_book.held.other",
+          "args": [
+            "3"
+          ]
+        },
+        {
+          "key": "chat.dungeontrain.familiar_book.held.one",
+          "args": [
+            "1"
+          ]
+        }
+      ]
+    },
+    "2": {
+      "label": "how many readers finished it",
+      "examples": [
+        "2",
+        "17"
+      ]
+    }
+  },
+  "chat.dungeontrain.familiar_book.3": {
+    "1": {
+      "label": "how many people have held the book, as a whole clause",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.familiar_book.held.other",
+          "args": [
+            "3"
+          ]
+        },
+        {
+          "key": "chat.dungeontrain.familiar_book.held.one",
+          "args": [
+            "1"
+          ]
+        }
+      ]
+    },
+    "2": {
+      "label": "a reading time",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.familiar_book.dur.ms",
+          "args": [
+            "12",
+            "30"
+          ]
+        },
+        {
+          "key": "chat.dungeontrain.familiar_book.dur.hm",
+          "args": [
+            "1",
+            "5"
+          ]
+        },
+        {
+          "key": "chat.dungeontrain.familiar_book.dur.s",
+          "args": [
+            "45"
+          ]
+        }
+      ]
+    }
+  },
+  "chat.dungeontrain.familiar_book.4": {
+    "1": {
+      "label": "how many people have held the book, as a whole clause",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.familiar_book.held.other",
+          "args": [
+            "3"
+          ]
+        },
+        {
+          "key": "chat.dungeontrain.familiar_book.held.one",
+          "args": [
+            "1"
+          ]
+        }
+      ]
+    },
+    "2": {
+      "label": "a reading time",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.familiar_book.dur.ms",
+          "args": [
+            "12",
+            "30"
+          ]
+        },
+        {
+          "key": "chat.dungeontrain.familiar_book.dur.hm",
+          "args": [
+            "1",
+            "5"
+          ]
+        },
+        {
+          "key": "chat.dungeontrain.familiar_book.dur.s",
+          "args": [
+            "45"
+          ]
+        }
+      ]
+    }
+  },
+  "chat.dungeontrain.familiar_book.5": {
+    "1": {
+      "label": "how many people have held the book, as a whole clause",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.familiar_book.held.other",
+          "args": [
+            "3"
+          ]
+        },
+        {
+          "key": "chat.dungeontrain.familiar_book.held.one",
+          "args": [
+            "1"
+          ]
+        }
+      ]
+    },
+    "2": {
+      "label": "the page number they lingered on",
+      "examples": [
+        "4",
+        "12"
+      ]
+    },
+    "3": {
+      "label": "a reading time",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.familiar_book.dur.ms",
+          "args": [
+            "12",
+            "30"
+          ]
+        },
+        {
+          "key": "chat.dungeontrain.familiar_book.dur.hm",
+          "args": [
+            "1",
+            "5"
+          ]
+        },
+        {
+          "key": "chat.dungeontrain.familiar_book.dur.s",
+          "args": [
+            "45"
+          ]
+        }
+      ]
+    }
+  },
+  "chat.dungeontrain.familiar_book.6": {
+    "1": {
+      "label": "how many people have held the book, as a whole clause",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.familiar_book.held.other",
+          "args": [
+            "3"
+          ]
+        },
+        {
+          "key": "chat.dungeontrain.familiar_book.held.one",
+          "args": [
+            "1"
+          ]
+        }
+      ]
+    },
+    "2": {
+      "label": "the page number they lingered on",
+      "examples": [
+        "4",
+        "12"
+      ]
+    },
+    "3": {
+      "label": "a reading time",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.familiar_book.dur.ms",
+          "args": [
+            "12",
+            "30"
+          ]
+        },
+        {
+          "key": "chat.dungeontrain.familiar_book.dur.hm",
+          "args": [
+            "1",
+            "5"
+          ]
+        },
+        {
+          "key": "chat.dungeontrain.familiar_book.dur.s",
+          "args": [
+            "45"
+          ]
+        }
+      ]
+    }
+  },
+  "chat.dungeontrain.familiar_book.7": {
+    "1": {
+      "label": "how many people have held the book, as a whole clause",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.familiar_book.held.other",
+          "args": [
+            "3"
+          ]
+        },
+        {
+          "key": "chat.dungeontrain.familiar_book.held.one",
+          "args": [
+            "1"
+          ]
+        }
+      ]
+    },
+    "2": {
+      "label": "a count of times, as a whole clause",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.familiar_book.times.other",
+          "args": [
+            "9"
+          ]
+        },
+        {
+          "key": "chat.dungeontrain.familiar_book.times.one",
+          "args": [
+            "1"
+          ]
+        }
+      ]
+    }
+  },
+  "chat.dungeontrain.familiar_book.8": {
+    "1": {
+      "label": "how many people have held the book, as a whole clause",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.familiar_book.held.other",
+          "args": [
+            "3"
+          ]
+        },
+        {
+          "key": "chat.dungeontrain.familiar_book.held.one",
+          "args": [
+            "1"
+          ]
+        }
+      ]
+    },
+    "2": {
+      "label": "a count of times, as a whole clause",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.familiar_book.times.other",
+          "args": [
+            "9"
+          ]
+        },
+        {
+          "key": "chat.dungeontrain.familiar_book.times.one",
+          "args": [
+            "1"
+          ]
+        }
+      ]
+    }
+  },
+  "chat.dungeontrain.familiar_book.9": {
+    "1": {
+      "label": "how many people have held the book, as a whole clause",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.familiar_book.held.other",
+          "args": [
+            "3"
+          ]
+        },
+        {
+          "key": "chat.dungeontrain.familiar_book.held.one",
+          "args": [
+            "1"
+          ]
+        }
+      ]
+    },
+    "2": {
+      "label": "a count of times, as a whole clause",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.familiar_book.times.other",
+          "args": [
+            "9"
+          ]
+        },
+        {
+          "key": "chat.dungeontrain.familiar_book.times.one",
+          "args": [
+            "1"
+          ]
+        }
+      ]
+    }
+  },
+  "chat.dungeontrain.familiar_book.10": {
+    "1": {
+      "label": "how many people have held the book, as a whole clause",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.familiar_book.held.other",
+          "args": [
+            "3"
+          ]
+        },
+        {
+          "key": "chat.dungeontrain.familiar_book.held.one",
+          "args": [
+            "1"
+          ]
+        }
+      ]
+    }
+  },
+  "chat.dungeontrain.familiar_book.11": {
+    "1": {
+      "label": "how many people have held the book, as a whole clause",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.familiar_book.held.other",
+          "args": [
+            "3"
+          ]
+        },
+        {
+          "key": "chat.dungeontrain.familiar_book.held.one",
+          "args": [
+            "1"
+          ]
+        }
+      ]
+    },
+    "2": {
+      "label": "the thumbs-up clause",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.familiar_book.up.other",
+          "args": [
+            "5"
+          ]
+        },
+        {
+          "key": "chat.dungeontrain.familiar_book.up.one",
+          "args": [
+            "1"
+          ]
+        }
+      ]
+    },
+    "3": {
+      "label": "the thumbs-down clause",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.familiar_book.down.other",
+          "args": [
+            "2"
+          ]
+        }
+      ]
+    }
+  },
+  "chat.dungeontrain.familiar_book.12": {
+    "1": {
+      "label": "how many people have held the book, as a whole clause",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.familiar_book.held.other",
+          "args": [
+            "3"
+          ]
+        },
+        {
+          "key": "chat.dungeontrain.familiar_book.held.one",
+          "args": [
+            "1"
+          ]
+        }
+      ]
+    },
+    "2": {
+      "label": "the thumbs-up clause",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.familiar_book.up.other",
+          "args": [
+            "5"
+          ]
+        },
+        {
+          "key": "chat.dungeontrain.familiar_book.up.one",
+          "args": [
+            "1"
+          ]
+        }
+      ]
+    },
+    "3": {
+      "label": "the thumbs-down clause",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.familiar_book.down.other",
+          "args": [
+            "2"
+          ]
+        }
+      ]
+    }
+  },
+  "chat.dungeontrain.familiar_book.13": {
+    "1": {
+      "label": "how many people have held the book, as a whole clause",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.familiar_book.held.other",
+          "args": [
+            "3"
+          ]
+        },
+        {
+          "key": "chat.dungeontrain.familiar_book.held.one",
+          "args": [
+            "1"
+          ]
+        }
+      ]
+    },
+    "2": {
+      "label": "the short thumbs-up score",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.familiar_book.up.short",
+          "args": [
+            "5"
+          ]
+        }
+      ]
+    },
+    "3": {
+      "label": "the short thumbs-down score",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.familiar_book.down.short",
+          "args": [
+            "2"
+          ]
+        }
+      ]
+    }
+  },
+  "chat.dungeontrain.familiar_book.held.one": {
+    "1": {
+      "label": "a count of one",
+      "examples": [
+        "1"
+      ]
+    }
+  },
+  "chat.dungeontrain.familiar_book.held.other": {
+    "1": {
+      "label": "how many people held it",
+      "examples": [
+        "3",
+        "24"
+      ]
+    }
+  },
+  "chat.dungeontrain.familiar_book.times.one": {
+    "1": {
+      "label": "a count of one",
+      "examples": [
+        "1"
+      ]
+    }
+  },
+  "chat.dungeontrain.familiar_book.times.other": {
+    "1": {
+      "label": "how many times",
+      "examples": [
+        "2",
+        "17"
+      ]
+    }
+  },
+  "chat.dungeontrain.familiar_book.up.one": {
+    "1": {
+      "label": "a count of one",
+      "examples": [
+        "1"
+      ]
+    }
+  },
+  "chat.dungeontrain.familiar_book.up.other": {
+    "1": {
+      "label": "how many readers voted it up",
+      "examples": [
+        "5",
+        "31"
+      ]
+    }
+  },
+  "chat.dungeontrain.familiar_book.down.one": {
+    "1": {
+      "label": "a count of one",
+      "examples": [
+        "1"
+      ]
+    }
+  },
+  "chat.dungeontrain.familiar_book.down.other": {
+    "1": {
+      "label": "how many voted it down",
+      "examples": [
+        "2",
+        "9"
+      ]
+    }
+  },
+  "chat.dungeontrain.familiar_book.up.short": {
+    "1": {
+      "label": "how many thumbs up",
+      "examples": [
+        "5"
+      ]
+    }
+  },
+  "chat.dungeontrain.familiar_book.down.short": {
+    "1": {
+      "label": "how many thumbs down",
+      "examples": [
+        "2"
+      ]
+    }
+  },
+  "chat.dungeontrain.familiar_book.dur.h": {
+    "1": {
+      "label": "whole hours",
+      "examples": [
+        "1",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.familiar_book.dur.hm": {
+    "1": {
+      "label": "whole hours",
+      "examples": [
+        "1",
+        "2"
+      ]
+    },
+    "2": {
+      "label": "the remaining minutes",
+      "examples": [
+        "5",
+        "42"
+      ]
+    }
+  },
+  "chat.dungeontrain.familiar_book.dur.m": {
+    "1": {
+      "label": "whole minutes",
+      "examples": [
+        "12",
+        "48"
+      ]
+    }
+  },
+  "chat.dungeontrain.familiar_book.dur.ms": {
+    "1": {
+      "label": "whole minutes",
+      "examples": [
+        "3",
+        "12"
+      ]
+    },
+    "2": {
+      "label": "the remaining seconds",
+      "examples": [
+        "7",
+        "45"
+      ]
+    }
+  },
+  "chat.dungeontrain.familiar_book.dur.s": {
+    "1": {
+      "label": "seconds",
+      "examples": [
+        "45",
+        "9"
+      ]
+    }
+  },
+  "chat.dungeontrain.deathnote.taken": {
+    "1": {
+      "label": "the player named on the Death Note",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "chat.dungeontrain.lovenote.taken": {
+    "1": {
+      "label": "the player named on the Love Note",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "chat.dungeontrain.shared_carriage.new.1": {
+    "1": {
+      "label": "the carriage noun for this line, from shared_carriage.noun.*",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.1",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.2",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.3",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.4",
+          "args": []
+        }
+      ]
+    }
+  },
+  "chat.dungeontrain.shared_carriage.new.2": {
+    "1": {
+      "label": "the carriage noun for this line, from shared_carriage.noun.*",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.1",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.2",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.3",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.4",
+          "args": []
+        }
+      ]
+    }
+  },
+  "chat.dungeontrain.shared_carriage.new.3": {
+    "1": {
+      "label": "the carriage noun for this line, from shared_carriage.noun.*",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.1",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.2",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.3",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.4",
+          "args": []
+        }
+      ]
+    }
+  },
+  "chat.dungeontrain.shared_carriage.new.4": {
+    "1": {
+      "label": "the carriage noun for this line, from shared_carriage.noun.*",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.1",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.2",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.3",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.4",
+          "args": []
+        }
+      ]
+    }
+  },
+  "chat.dungeontrain.shared_carriage.new.5": {
+    "1": {
+      "label": "the carriage noun for this line, from shared_carriage.noun.*",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.1",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.2",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.3",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.4",
+          "args": []
+        }
+      ]
+    }
+  },
+  "chat.dungeontrain.shared_carriage.new.6": {
+    "1": {
+      "label": "the carriage noun for this line, from shared_carriage.noun.*",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.1",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.2",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.3",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.4",
+          "args": []
+        }
+      ]
+    }
+  },
+  "chat.dungeontrain.shared_carriage.seen.1": {
+    "1": {
+      "label": "the carriage noun for this line, from shared_carriage.noun.*",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.1",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.2",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.3",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.4",
+          "args": []
+        }
+      ]
+    }
+  },
+  "chat.dungeontrain.shared_carriage.seen.2": {
+    "1": {
+      "label": "the carriage noun for this line, from shared_carriage.noun.*",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.1",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.2",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.3",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.4",
+          "args": []
+        }
+      ]
+    }
+  },
+  "chat.dungeontrain.shared_carriage.seen.3": {
+    "1": {
+      "label": "the carriage noun for this line, from shared_carriage.noun.*",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.1",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.2",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.3",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.4",
+          "args": []
+        }
+      ]
+    }
+  },
+  "chat.dungeontrain.shared_carriage.seen.4": {
+    "1": {
+      "label": "the carriage noun for this line, from shared_carriage.noun.*",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.1",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.2",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.3",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.4",
+          "args": []
+        }
+      ]
+    }
+  },
+  "chat.dungeontrain.shared_carriage.seen.5": {
+    "1": {
+      "label": "the carriage noun for this line, from shared_carriage.noun.*",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.1",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.2",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.3",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.4",
+          "args": []
+        }
+      ]
+    }
+  },
+  "chat.dungeontrain.shared_carriage.seen.6": {
+    "1": {
+      "label": "the carriage noun for this line, from shared_carriage.noun.*",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.1",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.2",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.3",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.4",
+          "args": []
+        }
+      ]
+    }
+  },
+  "chat.dungeontrain.shared_carriage.credit.creator.1": {
+    "1": {
+      "label": "the player who built the carriage",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "chat.dungeontrain.shared_carriage.credit.creator.2": {
+    "1": {
+      "label": "the player who built the carriage",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "chat.dungeontrain.shared_carriage.credit.creator.3": {
+    "1": {
+      "label": "the player who built the carriage",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "chat.dungeontrain.shared_carriage.credit.creator.4": {
+    "1": {
+      "label": "the player who built the carriage",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "chat.dungeontrain.shared_carriage.credit.editors.1": {
+    "1": {
+      "label": "the players who changed it since, as a list",
+      "examples": [
+        "Alex",
+        "Alex and Mika",
+        "Alex, Mika and Sam"
+      ]
+    }
+  },
+  "chat.dungeontrain.shared_carriage.credit.editors.2": {
+    "1": {
+      "label": "the players who changed it since, as a list",
+      "examples": [
+        "Alex",
+        "Alex and Mika",
+        "Alex, Mika and Sam"
+      ]
+    }
+  },
+  "chat.dungeontrain.shared_carriage.credit.editors.3": {
+    "1": {
+      "label": "the players who changed it since, as a list",
+      "examples": [
+        "Alex",
+        "Alex and Mika",
+        "Alex, Mika and Sam"
+      ]
+    }
+  },
+  "chat.dungeontrain.shared_carriage.credit.editors.4": {
+    "1": {
+      "label": "the players who changed it since, as a list",
+      "examples": [
+        "Alex",
+        "Alex and Mika",
+        "Alex, Mika and Sam"
+      ]
+    }
+  },
+  "chat.dungeontrain.shared_carriage.credit.editors_alone.1": {
+    "1": {
+      "label": "the players who changed it since, as a list",
+      "examples": [
+        "Alex",
+        "Alex and Mika",
+        "Alex, Mika and Sam"
+      ]
+    }
+  },
+  "chat.dungeontrain.shared_carriage.credit.editors_alone.2": {
+    "1": {
+      "label": "the players who changed it since, as a list",
+      "examples": [
+        "Alex",
+        "Alex and Mika",
+        "Alex, Mika and Sam"
+      ]
+    }
+  },
+  "chat.dungeontrain.shared_carriage.credit.more": {
+    "1": {
+      "label": "the players named in full",
+      "examples": [
+        "Alex, Mika"
+      ]
+    },
+    "2": {
+      "label": "how many more there were, as a clause",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.shared_carriage.credit.more.count.other",
+          "args": [
+            "3"
+          ]
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.credit.more.count.one",
+          "args": [
+            "1"
+          ]
+        }
+      ]
+    }
+  },
+  "chat.dungeontrain.shared_carriage.credit.more.count.one": {
+    "1": {
+      "label": "a count of one",
+      "examples": [
+        "1"
+      ]
+    }
+  },
+  "chat.dungeontrain.shared_carriage.credit.more.count.other": {
+    "1": {
+      "label": "how many other players",
+      "examples": [
+        "3",
+        "11"
+      ]
+    }
+  },
+  "chat.dungeontrain.shared_carriage.deaths.one.1": {
+    "1": {
+      "label": "the player who died here",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "chat.dungeontrain.shared_carriage.deaths.one.2": {
+    "1": {
+      "label": "the player who died here",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "chat.dungeontrain.shared_carriage.deaths.one.3": {
+    "1": {
+      "label": "the player who died here",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "chat.dungeontrain.shared_carriage.deaths.one.4": {
+    "1": {
+      "label": "the player who died here",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "chat.dungeontrain.shared_carriage.deaths.few.1": {
+    "1": {
+      "label": "how many died, as a whole clause",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.shared_carriage.deaths.count.travellers.other",
+          "args": [
+            "3"
+          ]
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.deaths.count.runs.other",
+          "args": [
+            "4"
+          ]
+        }
+      ]
+    },
+    "2": {
+      "label": "the names of the dead",
+      "examples": [
+        "Alex, Mika and Sam"
+      ]
+    }
+  },
+  "chat.dungeontrain.shared_carriage.deaths.few.2": {
+    "1": {
+      "label": "how many died, as a whole clause",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.shared_carriage.deaths.count.travellers.other",
+          "args": [
+            "3"
+          ]
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.deaths.count.runs.other",
+          "args": [
+            "4"
+          ]
+        }
+      ]
+    },
+    "2": {
+      "label": "the names of the dead",
+      "examples": [
+        "Alex, Mika and Sam"
+      ]
+    }
+  },
+  "chat.dungeontrain.shared_carriage.deaths.few.3": {
+    "1": {
+      "label": "how many died, as a whole clause",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.shared_carriage.deaths.count.travellers.other",
+          "args": [
+            "3"
+          ]
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.deaths.count.runs.other",
+          "args": [
+            "4"
+          ]
+        }
+      ]
+    },
+    "2": {
+      "label": "the names of the dead",
+      "examples": [
+        "Alex, Mika and Sam"
+      ]
+    }
+  },
+  "chat.dungeontrain.shared_carriage.deaths.few.4": {
+    "1": {
+      "label": "how many died, as a whole clause",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.shared_carriage.deaths.count.travellers.other",
+          "args": [
+            "3"
+          ]
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.deaths.count.runs.other",
+          "args": [
+            "4"
+          ]
+        }
+      ]
+    },
+    "2": {
+      "label": "the names of the dead",
+      "examples": [
+        "Alex, Mika and Sam"
+      ]
+    }
+  },
+  "chat.dungeontrain.shared_carriage.deaths.unnamed.1": {
+    "1": {
+      "label": "how many died, as a whole clause",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.shared_carriage.deaths.count.travellers.other",
+          "args": [
+            "3"
+          ]
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.deaths.count.runs.other",
+          "args": [
+            "4"
+          ]
+        }
+      ]
+    }
+  },
+  "chat.dungeontrain.shared_carriage.deaths.unnamed.2": {
+    "1": {
+      "label": "how many died, as a whole clause",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.shared_carriage.deaths.count.travellers.other",
+          "args": [
+            "3"
+          ]
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.deaths.count.runs.other",
+          "args": [
+            "4"
+          ]
+        }
+      ]
+    }
+  },
+  "chat.dungeontrain.shared_carriage.deaths.unnamed.3": {
+    "1": {
+      "label": "how many times it has happened, as a clause",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.shared_carriage.deaths.count.times.other",
+          "args": [
+            "6"
+          ]
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.deaths.count.times.one",
+          "args": [
+            "1"
+          ]
+        }
+      ]
+    }
+  },
+  "chat.dungeontrain.shared_carriage.deaths.count.travellers.one": {
+    "1": {
+      "label": "a count of one",
+      "examples": [
+        "1"
+      ]
+    }
+  },
+  "chat.dungeontrain.shared_carriage.deaths.count.travellers.other": {
+    "1": {
+      "label": "how many travellers",
+      "examples": [
+        "3",
+        "18"
+      ]
+    }
+  },
+  "chat.dungeontrain.shared_carriage.deaths.count.runs.one": {
+    "1": {
+      "label": "a count of one",
+      "examples": [
+        "1"
+      ]
+    }
+  },
+  "chat.dungeontrain.shared_carriage.deaths.count.runs.other": {
+    "1": {
+      "label": "how many runs",
+      "examples": [
+        "4",
+        "26"
+      ]
+    }
+  },
+  "chat.dungeontrain.shared_carriage.deaths.count.times.one": {
+    "1": {
+      "label": "a count of one",
+      "examples": [
+        "1"
+      ]
+    }
+  },
+  "chat.dungeontrain.shared_carriage.deaths.count.times.other": {
+    "1": {
+      "label": "how many times",
+      "examples": [
+        "6",
+        "40"
+      ]
+    }
+  },
+  "chat.dungeontrain.shared_carriage.own.1": {
+    "1": {
+      "label": "the carriage noun for this line, from shared_carriage.noun.*",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.1",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.2",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.3",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.4",
+          "args": []
+        }
+      ]
+    }
+  },
+  "chat.dungeontrain.shared_carriage.own.2": {
+    "1": {
+      "label": "the carriage noun for this line, from shared_carriage.noun.*",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.1",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.2",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.3",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.4",
+          "args": []
+        }
+      ]
+    }
+  },
+  "chat.dungeontrain.shared_carriage.own.3": {
+    "1": {
+      "label": "the carriage noun for this line, from shared_carriage.noun.*",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.1",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.2",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.3",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.4",
+          "args": []
+        }
+      ]
+    }
+  },
+  "chat.dungeontrain.shared_carriage.own.4": {
+    "1": {
+      "label": "the carriage noun for this line, from shared_carriage.noun.*",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.1",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.2",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.3",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.4",
+          "args": []
+        }
+      ]
+    }
+  },
+  "chat.dungeontrain.shared_carriage.own.5": {
+    "1": {
+      "label": "the carriage noun for this line, from shared_carriage.noun.*",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.1",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.2",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.3",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.4",
+          "args": []
+        }
+      ]
+    }
+  },
+  "chat.dungeontrain.shared_carriage.own.6": {
+    "1": {
+      "label": "the carriage noun for this line, from shared_carriage.noun.*",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.1",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.2",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.3",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.4",
+          "args": []
+        }
+      ]
+    }
+  },
+  "chat.dungeontrain.letter.sealed": {
+    "1": {
+      "label": "the letter's title",
+      "examples": [
+        "A Note From The Rails",
+        "For whoever finds this"
+      ]
+    },
+    "2": {
+      "label": "which letter this is in this life",
+      "examples": [
+        "1",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.book_suspended.duplicate": {
+    "1": {
+      "label": "how long the pause still has to run",
+      "examples": [
+        "4m 30s",
+        "45s",
+        "2h"
+      ]
+    }
+  },
+  "chat.dungeontrain.book_suspended.blocked": {
+    "1": {
+      "label": "how long the pause still has to run",
+      "examples": [
+        "4m 30s",
+        "45s",
+        "2h"
+      ]
+    }
+  },
+  "chat.dungeontrain.book_suspended.letter": {
+    "1": {
+      "label": "how long the pause still has to run",
+      "examples": [
+        "4m 30s",
+        "45s",
+        "2h"
+      ]
+    }
+  },
+  "chat.dungeontrain.book_suspended.signing": {
+    "1": {
+      "label": "how long the pause still has to run",
+      "examples": [
+        "4m 30s",
+        "45s",
+        "2h"
+      ]
+    }
+  },
+  "dungeontrain.floor_y.value": {
+    "1": {
+      "label": "the train's Y level",
+      "examples": [
+        "64",
+        "-12"
+      ]
+    }
+  },
+  "gui.dungeontrain.version.update": {
+    "1": {
+      "label": "the newest version number",
+      "examples": [
+        "0.648.0"
+      ]
+    }
+  },
+  "gui.dungeontrain.menu_chat.unread": {
+    "1": {
+      "label": "how many unread messages",
+      "examples": [
+        "1",
+        "7"
+      ]
+    }
+  },
+  "gui.dungeontrain.menu_chat.popup": {
+    "1": {
+      "label": "the message the developer sent",
+      "examples": [
+        "Thanks for playing!"
+      ]
+    }
+  },
+  "gui.dungeontrain.menu_chat.attachment": {
+    "1": {
+      "label": "the attached file's name",
+      "examples": [
+        "train-layout.png"
+      ]
+    }
+  },
+  "gui.dungeontrain.death.narr.photos": {
+    "1": {
+      "label": "how many photos this ride captured",
+      "examples": [
+        "7",
+        "23"
+      ]
+    }
+  },
+  "gui.dungeontrain.death.gallery.subtitle": {
+    "1": {
+      "label": "how many photos were captured",
+      "examples": [
+        "7",
+        "23"
+      ]
+    }
+  },
+  "gui.dungeontrain.death.gallery.status_saved": {
+    "1": {
+      "label": "the file it was saved as",
+      "examples": [
+        "dungeontrain-ride-3.png"
+      ]
+    }
+  },
+  "gui.dungeontrain.death.gallery.status_saved_count": {
+    "1": {
+      "label": "how many photos were saved",
+      "examples": [
+        "7"
+      ]
+    }
+  },
+  "death.attack.dungeontrain.abandoned": {
+    "1": {
+      "label": "the player who died",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "death.attack.dungeontrain.abandoned.player": {
+    "1": {
+      "label": "the player who died",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "death.attack.dungeontrain.stepped_off": {
+    "1": {
+      "label": "the player who died",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "death.attack.dungeontrain.stepped_off.player": {
+    "1": {
+      "label": "the player who died",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "death.attack.dungeontrain.left_the_line": {
+    "1": {
+      "label": "the player who died",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "death.attack.dungeontrain.left_the_line.player": {
+    "1": {
+      "label": "the player who died",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "death.attack.dungeontrain.walked_away": {
+    "1": {
+      "label": "the player who died",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "death.attack.dungeontrain.walked_away.player": {
+    "1": {
+      "label": "the player who died",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "gui.dungeontrain.support.financial.desc": {
+    "1": {
+      "label": "the server-host affiliate link",
+      "examples": [
+        "bisecthosting.com/brennan"
+      ]
+    }
+  },
+  "gui.dungeontrain.support.financial.desc.cn": {
+    "1": {
+      "label": "the server-host affiliate link",
+      "examples": [
+        "bisecthosting.com/brennan"
+      ]
+    }
+  },
+  "gui.dungeontrain.support.feedback.desc": {
+    "1": {
+      "label": "the Discord invite link",
+      "examples": [
+        "discord.gg/dungeontrain"
+      ]
+    }
+  },
+  "gui.dungeontrain.credits.team.person": {
+    "1": {
+      "label": "the person's name",
+      "examples": [
+        "Brennan Hatton",
+        "Mika"
+      ]
+    },
+    "2": {
+      "label": "what they did",
+      "examples": [
+        "Music",
+        "Voice acting"
+      ]
+    }
+  },
+  "gui.dungeontrain.credits.translations.person_line": {
+    "1": {
+      "label": "the translator's name",
+      "examples": [
+        "Mika"
+      ]
+    },
+    "2": {
+      "label": "the languages they worked on",
+      "examples": [
+        "Polish, Czech"
+      ]
+    }
+  },
+  "gui.dungeontrain.credits.translations.lang_percent": {
+    "1": {
+      "label": "the language",
+      "examples": [
+        "Polish",
+        "日本語"
+      ]
+    },
+    "2": {
+      "label": "how much of it is translated",
+      "examples": [
+        "87%",
+        "100%"
+      ]
+    }
+  },
+  "gui.dungeontrain.video_tools.share.desc": {
+    "1": {
+      "label": "the Discord invite link",
+      "examples": [
+        "discord.gg/dungeontrain"
+      ]
+    }
+  },
+  "gui.dungeontrain.video_tools.reset.worlds_header": {
+    "1": {
+      "label": "how many worlds will be deleted",
+      "examples": [
+        "4"
+      ]
+    }
+  },
+  "gui.dungeontrain.video_tools.reset.kept": {
+    "1": {
+      "label": "how many other worlds are left alone",
+      "examples": [
+        "2"
+      ]
+    }
+  },
+  "gui.dungeontrain.video_tools.reset.prompt": {
+    "1": {
+      "label": "the word that has to be typed to confirm",
+      "examples": [
+        "DELETE"
+      ]
+    }
+  },
+  "gui.dungeontrain.video_tools.reset.done_worlds": {
+    "1": {
+      "label": "how many worlds were deleted",
+      "examples": [
+        "4"
+      ]
+    }
+  },
+  "gui.dungeontrain.video_tools.reset.done_profile": {
+    "1": {
+      "label": "how many profile items were cleared",
+      "examples": [
+        "12"
+      ]
+    }
+  },
+  "gui.dungeontrain.options.preview": {
+    "1": {
+      "label": "the carriage length",
+      "examples": [
+        "9"
+      ]
+    },
+    "2": {
+      "label": "the carriage width",
+      "examples": [
+        "5"
+      ]
+    },
+    "3": {
+      "label": "the carriage height",
+      "examples": [
+        "6"
+      ]
+    }
+  },
+  "gui.dungeontrain.options.range_hint": {
+    "1": {
+      "label": "lowest train Y",
+      "examples": [
+        "0"
+      ]
+    },
+    "2": {
+      "label": "highest train Y",
+      "examples": [
+        "200"
+      ]
+    },
+    "3": {
+      "label": "shortest length",
+      "examples": [
+        "3"
+      ]
+    },
+    "4": {
+      "label": "longest length",
+      "examples": [
+        "32"
+      ]
+    },
+    "5": {
+      "label": "narrowest width",
+      "examples": [
+        "3"
+      ]
+    },
+    "6": {
+      "label": "widest width",
+      "examples": [
+        "32"
+      ]
+    },
+    "7": {
+      "label": "lowest height",
+      "examples": [
+        "3"
+      ]
+    },
+    "8": {
+      "label": "tallest height",
+      "examples": [
+        "24"
+      ]
+    },
+    "9": {
+      "label": "smallest group size",
+      "examples": [
+        "1"
+      ]
+    },
+    "10": {
+      "label": "largest group size",
+      "examples": [
+        "8"
+      ]
+    }
+  },
+  "gui.dungeontrain.settings.range_hint": {
+    "1": {
+      "label": "fewest carriages",
+      "examples": [
+        "1"
+      ]
+    },
+    "2": {
+      "label": "most carriages",
+      "examples": [
+        "64"
+      ]
+    },
+    "3": {
+      "label": "slowest speed",
+      "examples": [
+        "0.5"
+      ]
+    },
+    "4": {
+      "label": "fastest speed",
+      "examples": [
+        "20"
+      ]
+    },
+    "5": {
+      "label": "lowest train Y",
+      "examples": [
+        "0"
+      ]
+    },
+    "6": {
+      "label": "highest train Y",
+      "examples": [
+        "200"
+      ]
+    },
+    "7": {
+      "label": "smallest group size",
+      "examples": [
+        "1"
+      ]
+    },
+    "8": {
+      "label": "largest group size",
+      "examples": [
+        "8"
+      ]
+    },
+    "9": {
+      "label": "fewest PlayerMobs",
+      "examples": [
+        "0"
+      ]
+    },
+    "10": {
+      "label": "most PlayerMobs",
+      "examples": [
+        "16"
+      ]
+    }
+  },
+  "chat.dungeontrain.dev_message.consent_prompt": {
+    "1": {
+      "label": "the chat tag to type, in this player's own language",
+      "examples": [
+        "@Dev",
+        "@开发者"
+      ]
+    }
+  },
+  "chat.dungeontrain.presence.was_online": {
+    "1": {
+      "label": "how long ago, as a whole clause",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.time.minute.other",
+          "args": [
+            "5"
+          ]
+        },
+        {
+          "key": "chat.dungeontrain.time.hour.other",
+          "args": [
+            "2"
+          ]
+        },
+        {
+          "key": "chat.dungeontrain.time.day.one",
+          "args": [
+            "1"
+          ]
+        }
+      ]
+    }
+  },
+  "chat.dungeontrain.presence.last_seen": {
+    "1": {
+      "label": "how long ago, as a whole clause",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.time.minute.other",
+          "args": [
+            "5"
+          ]
+        },
+        {
+          "key": "chat.dungeontrain.time.hour.other",
+          "args": [
+            "2"
+          ]
+        },
+        {
+          "key": "chat.dungeontrain.time.day.one",
+          "args": [
+            "1"
+          ]
+        }
+      ]
+    }
+  },
+  "chat.dungeontrain.time.second.one": {
+    "1": {
+      "label": "a count of one",
+      "examples": [
+        "1"
+      ]
+    }
+  },
+  "chat.dungeontrain.time.second.other": {
+    "1": {
+      "label": "how many seconds",
+      "examples": [
+        "45",
+        "12"
+      ]
+    }
+  },
+  "chat.dungeontrain.time.minute.one": {
+    "1": {
+      "label": "a count of one",
+      "examples": [
+        "1"
+      ]
+    }
+  },
+  "chat.dungeontrain.time.minute.other": {
+    "1": {
+      "label": "how many minutes",
+      "examples": [
+        "5",
+        "40"
+      ]
+    }
+  },
+  "chat.dungeontrain.time.hour.one": {
+    "1": {
+      "label": "a count of one",
+      "examples": [
+        "1"
+      ]
+    }
+  },
+  "chat.dungeontrain.time.hour.other": {
+    "1": {
+      "label": "how many hours",
+      "examples": [
+        "2",
+        "13"
+      ]
+    }
+  },
+  "chat.dungeontrain.time.day.one": {
+    "1": {
+      "label": "a count of one",
+      "examples": [
+        "1"
+      ]
+    }
+  },
+  "chat.dungeontrain.time.day.other": {
+    "1": {
+      "label": "how many days",
+      "examples": [
+        "3",
+        "21"
+      ]
+    }
+  },
+  "gui.dungeontrain.options.value_row": {
+    "1": {
+      "label": "the setting's name",
+      "examples": [
+        "Train Speed",
+        "Carriage Length"
+      ]
+    },
+    "2": {
+      "label": "its value",
+      "examples": [
+        "12",
+        "ON"
+      ]
+    }
+  },
+  "gui.dungeontrain.options.internet": {
+    "1": {
+      "label": "whether it is on",
+      "examples": [
+        "ON",
+        "OFF"
+      ]
+    }
+  },
+  "gui.dungeontrain.translate.button.tooltip": {
+    "1": {
+      "label": "a language name",
+      "examples": [
+        "Polski",
+        "日本語",
+        "Deutsch"
+      ]
+    }
+  },
+  "gui.dungeontrain.translate.switch.message": {
+    "1": {
+      "label": "the language picked to translate",
+      "examples": [
+        "Polski"
+      ]
+    },
+    "2": {
+      "label": "the language the game is running in",
+      "examples": [
+        "English"
+      ]
+    }
+  },
+  "gui.dungeontrain.translate.switch.yes": {
+    "1": {
+      "label": "a language name",
+      "examples": [
+        "Polski",
+        "日本語",
+        "Deutsch"
+      ]
+    }
+  },
+  "gui.dungeontrain.translate.switch.no": {
+    "1": {
+      "label": "a language name",
+      "examples": [
+        "Polski",
+        "日本語",
+        "Deutsch"
+      ]
+    }
+  },
+  "gui.dungeontrain.translate.subtitle": {
+    "1": {
+      "label": "the locale being edited",
+      "examples": [
+        "ru_ru",
+        "pl_pl"
+      ]
+    },
+    "2": {
+      "label": "how many strings the list is showing",
+      "examples": [
+        "1422",
+        "37"
+      ]
+    },
+    "3": {
+      "label": "how many this player has edited",
+      "examples": [
+        "12",
+        "0"
+      ]
+    }
+  },
+  "gui.dungeontrain.translate.request.count": {
+    "1": {
+      "label": "how many players have asked for it",
+      "examples": [
+        "37",
+        "1"
+      ]
+    }
+  },
+  "gui.dungeontrain.translate.request.sent.count": {
+    "1": {
+      "label": "how many players have asked for it",
+      "examples": [
+        "37",
+        "1"
+      ]
+    }
+  },
+  "gui.dungeontrain.translate.list.narration": {
+    "1": {
+      "label": "how many strings are in the list",
+      "examples": [
+        "1422"
+      ]
+    }
+  },
+  "gui.dungeontrain.translate.revert_all.detail": {
+    "1": {
+      "label": "how many edits will be thrown away",
+      "examples": [
+        "12"
+      ]
+    }
+  },
+  "gui.dungeontrain.translate.edit.reply": {
+    "1": {
+      "label": "who wrote the reply",
+      "examples": [
+        "admin",
+        "Brennan"
+      ]
+    }
+  },
+  "gui.dungeontrain.translate.replies.detail": {
+    "1": {
+      "label": "how many have a reply",
+      "examples": [
+        "3"
+      ]
+    }
+  },
+  "gui.dungeontrain.translate.files.exported": {
+    "1": {
+      "label": "how many lines",
+      "examples": [
+        "1422"
+      ]
+    },
+    "2": {
+      "label": "how many books",
+      "examples": [
+        "48"
+      ]
+    }
+  },
+  "gui.dungeontrain.translate.files.imported": {
+    "1": {
+      "label": "how many lines",
+      "examples": [
+        "1422"
+      ]
+    },
+    "2": {
+      "label": "how many book fields",
+      "examples": [
+        "96"
+      ]
+    }
+  },
+  "gui.dungeontrain.translate.submit.subtitle": {
+    "1": {
+      "label": "the locale being sent",
+      "examples": [
+        "ru_ru"
+      ]
+    },
+    "2": {
+      "label": "how many edits are ready",
+      "examples": [
+        "12"
+      ]
+    }
+  },
+  "gui.dungeontrain.translate.submit.queued": {
+    "1": {
+      "label": "how many edits were sent",
+      "examples": [
+        "12"
+      ]
+    }
+  },
+  "gui.dungeontrain.translate.submit.pending": {
+    "1": {
+      "label": "how many are still waiting to send",
+      "examples": [
+        "3"
+      ]
+    }
+  },
+  "gui.dungeontrain.translate.sent.narration": {
+    "1": {
+      "label": "how many submissions",
+      "examples": [
+        "4"
+      ]
+    }
+  },
+  "gui.dungeontrain.translate.sent.units": {
+    "1": {
+      "label": "how many changes it carried",
+      "examples": [
+        "12"
+      ]
+    }
+  },
+  "gui.dungeontrain.translate.sent.partial": {
+    "1": {
+      "label": "how many were accepted",
+      "examples": [
+        "8"
+      ]
+    },
+    "2": {
+      "label": "how many were sent",
+      "examples": [
+        "12"
+      ]
+    }
+  },
+  "chat.dungeontrain.custom_content.packages": {
+    "1": {
+      "label": "the custom content packs, comma-separated",
+      "examples": [
+        "Aether Trains",
+        "Aether Trains, Brennan's Extras"
+      ]
+    }
+  },
+  "chat.dungeontrain.custom_content.now_disabled": {
+    "1": {
+      "label": "the player who turned custom content off",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "gui.dungeontrain.custom_content.packages": {
+    "1": {
+      "label": "the custom content packs, comma-separated",
+      "examples": [
+        "Aether Trains",
+        "Aether Trains, Brennan's Extras"
+      ]
+    }
+  },
+  "commands.dungeontrain.customcontent.status.on": {
+    "1": {
+      "label": "the custom content packs, comma-separated",
+      "examples": [
+        "Aether Trains",
+        "Aether Trains, Brennan's Extras"
+      ]
+    }
+  },
+  "commands.dungeontrain.customcontent.status.off": {
+    "1": {
+      "label": "the packs installed but not loading",
+      "examples": [
+        "Aether Trains"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.profile.saved": {
+    "1": {
+      "label": "the build that was saved and uploaded",
+      "examples": [
+        "Brick Carriage",
+        "Long Hall"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.profile.upload_failed": {
+    "1": {
+      "label": "the build that saved locally but could not be uploaded",
+      "examples": [
+        "Brick Carriage",
+        "Long Hall"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.profile.too_big": {
+    "1": {
+      "label": "the build that is too large for the relay to accept",
+      "examples": [
+        "Brick Carriage",
+        "Long Hall"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.profile.gone": {
+    "1": {
+      "label": "the build that is no longer on the relay",
+      "examples": [
+        "Brick Carriage",
+        "Long Hall"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.profile.in_use": {
+    "1": {
+      "label": "the build that is currently out on another player's train",
+      "examples": [
+        "Brick Carriage",
+        "Long Hall"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.info.size": {
+    "1": {
+      "label": "the build's length in blocks",
+      "examples": [
+        "9",
+        "24"
+      ]
+    },
+    "2": {
+      "label": "the build's height in blocks",
+      "examples": [
+        "5",
+        "12"
+      ]
+    },
+    "3": {
+      "label": "the build's width in blocks",
+      "examples": [
+        "5",
+        "7"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.info.weight": {
+    "1": {
+      "label": "how often the train picks this build, as a spawn weight",
+      "examples": [
+        "10",
+        "2.5"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.new.saved_build": {
+    "1": {
+      "label": "the name of one of the player's own saved builds",
+      "examples": [
+        "Brick Carriage",
+        "Long Hall"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.room_size.tooltip": {
+    "1": {
+      "label": "which side of the room this button resizes — a translated axis name",
+      "examples": [
+        "Length",
+        "Height"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.saved": {
+    "1": {
+      "label": "the build that was saved",
+      "examples": [
+        "Brick Carriage",
+        "Long Hall"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.save_failed": {
+    "1": {
+      "label": "why the save was refused",
+      "examples": [
+        "no carriage variant",
+        "name already taken"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.open_failed": {
+    "1": {
+      "label": "the build that could not be opened",
+      "examples": [
+        "Brick Carriage",
+        "Long Hall"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.unsaved.title": {
+    "1": {
+      "label": "how many carriages have unsaved changes",
+      "examples": [
+        "1",
+        "3"
+      ]
+    }
+  },
+  "gui.dungeontrain.translate.group.count": {
+    "1": {
+      "label": "how many variations are in the set",
+      "examples": [
+        "13",
+        "4"
+      ]
+    }
+  },
+  "gui.dungeontrain.translate.group.needs": {
+    "1": {
+      "label": "how many of them still need a human",
+      "examples": [
+        "8",
+        "1"
+      ]
+    }
+  },
+  "gui.dungeontrain.translate.group.position": {
+    "1": {
+      "label": "which variation this is",
+      "examples": [
+        "3",
+        "1"
+      ]
+    },
+    "2": {
+      "label": "how many there are",
+      "examples": [
+        "13",
+        "4"
+      ]
+    }
+  },
+  "gui.dungeontrain.translate.group.position.needs": {
+    "1": {
+      "label": "which variation this is",
+      "examples": [
+        "3",
+        "1"
+      ]
+    },
+    "2": {
+      "label": "how many there are",
+      "examples": [
+        "13",
+        "4"
+      ]
+    },
+    "3": {
+      "label": "how many of them still need a human",
+      "examples": [
+        "8",
+        "1"
+      ]
+    }
+  },
+  "gui.dungeontrain.translate.group.next.tip": {
+    "1": {
+      "label": "how many of the set still need a human",
+      "examples": [
+        "8",
+        "1"
+      ]
+    }
+  }
+}

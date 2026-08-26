@@ -1,18 +1,13 @@
 package games.brennan.dungeontrain.client.menu;
 
 import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
-import games.brennan.dungeontrain.editor.CarriageContentsGroupStore;
 import games.brennan.dungeontrain.editor.EditorCategory;
+import games.brennan.dungeontrain.editor.EditorTemplateLists;
 import games.brennan.dungeontrain.template.Template;
-import games.brennan.dungeontrain.train.CarriageContents;
-import games.brennan.dungeontrain.train.CarriageContentsRegistry;
-import games.brennan.dungeontrain.train.CarriageVariant;
-import games.brennan.dungeontrain.train.CarriageVariantRegistry;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.Set;
 
 /**
  * Drilldown reached from {@link EnterCategoryMenuScreen} when the player
@@ -26,12 +21,14 @@ import java.util.Set;
  * {@link EditorStatusHudOverlay#modelId()}) is rendered with the highlighted
  * tint so the player can see at a glance where they are in the list.</p>
  *
- * <p>Sources used per category:
+ * <p>Sources used per category — carriages and contents come from
+ * {@link EditorTemplateLists}, which the Train Builder's New screen also reads so the two can't
+ * disagree about what exists:
  * <ul>
- *   <li>{@code carriages} — {@link CarriageVariantRegistry#allVariants()},
+ *   <li>{@code carriages} — {@link EditorTemplateLists#carriages()},
  *       dispatched via {@code /dt editor enter &lt;variant&gt;}.</li>
- *   <li>{@code contents} — {@link CarriageContentsRegistry#allContents()}
- *       minus group members (sub-variants), dispatched via
+ *   <li>{@code contents} — {@link EditorTemplateLists#contents()}, which is
+ *       already minus group members (sub-variants), dispatched via
  *       {@code /dt editor contents enter &lt;contents&gt;}. A group parent
  *       drills into {@link ContentsSubVariantScreen} listing its members
  *       instead of dispatching directly.</li>
@@ -59,23 +56,19 @@ public final class CategoryTemplatesScreen implements MenuScreen {
         List<CommandMenuEntry> out = new ArrayList<>();
         switch (categoryId) {
             case "carriages" -> {
-                for (CarriageVariant v : CarriageVariantRegistry.allVariants()) {
+                for (String id : EditorTemplateLists.carriages()) {
                     out.add(new CommandMenuEntry.Run(
-                        v.id(),
-                        "dungeontrain editor enter " + v.id(),
-                        v.id().equals(activeId)));
+                        id,
+                        "dungeontrain editor enter " + id,
+                        id.equals(activeId)));
                 }
             }
             case "contents" -> {
-                // Only top-level parents/leaves appear here — group members
-                // (sub-variants) are reached by drilling into their parent, so
-                // they're filtered out (mirrors CarriageContentsAllowScreen and
-                // the spawn-time pick in CarriageContentsRegistry.buildPickContext).
-                Set<String> children = CarriageContentsGroupStore.allChildIds();
-                for (CarriageContents c : CarriageContentsRegistry.allContents()) {
-                    String id = c.id();
-                    if (children.contains(id)) continue;
-                    if (CarriageContentsGroupStore.exists(id)) {
+                // Top-level parents/leaves only — group members (sub-variants) are reached by
+                // drilling into their parent. That filtering rule lives in EditorTemplateLists so
+                // the Train Builder's picker applies the same one.
+                for (String id : EditorTemplateLists.contents()) {
+                    if (EditorTemplateLists.isContentsGroup(id)) {
                         // Group parent (e.g. maze) — drill into its sub-variants.
                         out.add(new CommandMenuEntry.DrillIn(
                             id,

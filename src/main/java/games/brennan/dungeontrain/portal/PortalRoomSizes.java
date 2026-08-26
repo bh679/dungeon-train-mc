@@ -95,6 +95,17 @@ public final class PortalRoomSizes {
      * <p>What the editor's Reset needs. {@link #settle} also clears the override, but only because a
      * save has just made a new size authoritative — calling it here would bake the abandoned resize
      * in as the known size, which is the opposite of a reset.</p>
+     *
+     * <p>The Train Builder calls it for the same reason on a different beat: it opens a room from
+     * disk, so a footprint changed with the size steppers and then walked away from must not follow
+     * the room into its next open. In the editor the plot <em>is</em> the working copy and a pending
+     * size is meant to outlive a restamp; in the builder the template is the working copy and Save
+     * is what commits to it.</p>
+     *
+     * <p>{@link #PENDING} is process-wide and shared between the two, so this drops an editor's
+     * in-flight resize of the same room as well. A builder world and an editor session are never
+     * live at the same time, but the coupling is real and worth knowing about rather than
+     * discovering.</p>
      */
     public static void revert(String name) {
         if (name == null) return;

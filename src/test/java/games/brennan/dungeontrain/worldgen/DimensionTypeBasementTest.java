@@ -45,6 +45,18 @@ final class DimensionTypeBasementTest {
     /** The default carriage size, which is what the built-in room is measured against. */
     private static final CarriageDims DEFAULT_DIMS = CarriageDims.DEFAULT;
 
+    /**
+     * Dimension types that are not overworld presets. A void world generates no terrain, so it has
+     * no noise settings to sit below and no basement to stamp portal twins into — the three
+     * basement invariants below are about a world it isn't.
+     *
+     * <p>The Train Builder's build platform is the only one today: {@code dungeon_train_builder}
+     * pairs it with a {@code minecraft:flat} generator holding zero layers. It is still held to
+     * {@link #dimensionTypesAreLegal()}, because vanilla's codec rejects an illegal dimension
+     * whatever generates into it.</p>
+     */
+    private static final java.util.Set<String> VOID_DIMENSIONS = java.util.Set.of("builder.json");
+
     @Test
     @DisplayName("every DT dimension type is a legal one vanilla will load")
     void dimensionTypesAreLegal() throws IOException {
@@ -60,6 +72,11 @@ final class DimensionTypeBasementTest {
             assertTrue(minY + height <= MAX_TOP, name + ": top is above vanilla's limit");
             assertTrue(d.get("logical_height").getAsInt() <= height,
                 name + ": logical_height must fit inside the world");
+            if (VOID_DIMENSIONS.contains(name)) {
+                // No terrain to sit under, so no basement and no shared ceiling to hold it to.
+                // It still may not poke out through vanilla's roof, asserted above.
+                continue;
+            }
             assertEquals(DT_SKY_TOP, minY + height,
                 name + ": the basement goes below the world, it does not lower the sky");
         }
@@ -74,7 +91,7 @@ final class DimensionTypeBasementTest {
         // taller room knowingly spends lanes on it.
         int builtIn = PortalRoomLayout.builtInSize(DEFAULT_DIMS).getY();
 
-        for (Path f : dimensionTypes()) {
+        for (Path f : overworldPresets()) {
             String name = f.getFileName().toString();
             int minY = read(f).get("min_y").getAsInt();
             int bedrockY = read(noiseFor(f)).getAsJsonObject("noise").get("min_y").getAsInt();
@@ -97,7 +114,7 @@ final class DimensionTypeBasementTest {
     void basementLeavesHeadroomToAuthorInto() throws IOException {
         int builtIn = PortalRoomLayout.builtInSize(DEFAULT_DIMS).getY();
 
-        for (Path f : dimensionTypes()) {
+        for (Path f : overworldPresets()) {
             String name = f.getFileName().toString();
             int minY = read(f).get("min_y").getAsInt();
             int bedrockY = read(noiseFor(f)).getAsJsonObject("noise").get("min_y").getAsInt();
@@ -114,7 +131,7 @@ final class DimensionTypeBasementTest {
     @Test
     @DisplayName("terrain generation is untouched — noise settings still start at the bedrock")
     void noiseSettingsAreUnchanged() throws IOException {
-        for (Path f : dimensionTypes()) {
+        for (Path f : overworldPresets()) {
             JsonObject noise = read(noiseFor(f)).getAsJsonObject("noise");
             String name = f.getFileName().toString();
             // The noise region is what NoiseSettings.clampToHeightAccessor intersects with the level,
@@ -143,6 +160,31 @@ final class DimensionTypeBasementTest {
         assertTrue(Files.isRegularFile(noise),
             "no noise settings alongside " + dimensionType.getFileName());
         return noise;
+    }
+
+    /**
+     * The DT overworld presets — every dimension type except the void worlds, which have no
+     * terrain and so none of the basement geometry the invariants here describe.
+     */
+    private static List<Path> overworldPresets() throws IOException {
+        List<Path> all = dimensionTypes();
+        List<Path> out = new ArrayList<>(all.size());
+        List<String> voidsSeen = new ArrayList<>();
+        for (Path p : all) {
+            String name = p.getFileName().toString();
+            if (VOID_DIMENSIONS.contains(name)) {
+                voidsSeen.add(name);
+            } else {
+                out.add(p);
+            }
+        }
+        // A rename would otherwise quietly re-admit a void world to the basement invariants, or
+        // quietly exempt nothing at all. Neither should pass in silence.
+        assertEquals(VOID_DIMENSIONS.size(), voidsSeen.size(),
+            "VOID_DIMENSIONS names a dimension type that no longer exists: expected "
+                + VOID_DIMENSIONS + ", found " + voidsSeen);
+        assertFalse(out.isEmpty(), "no overworld presets found under " + DIM_TYPES);
+        return out;
     }
 
     private static List<Path> dimensionTypes() throws IOException {

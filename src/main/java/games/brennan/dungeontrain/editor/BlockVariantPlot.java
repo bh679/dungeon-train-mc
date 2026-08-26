@@ -252,6 +252,14 @@ public interface BlockVariantPlot {
      */
     static @Nullable BlockVariantPlot resolveAt(ServerPlayer player, CarriageDims dims) {
         BlockPos pos = player.blockPosition();
+        // A builder world holds one build and has no plot grid, so it answers from world data
+        // instead of from where the player stands — that's what makes mirror work out on the
+        // platform. Checked first, and it costs ordinary worlds one dimension comparison.
+        if (player.level() instanceof net.minecraft.server.level.ServerLevel serverLevel) {
+            games.brennan.dungeontrain.builder.BuilderCarriagePlot builderPlot =
+                games.brennan.dungeontrain.builder.BuilderCarriagePlot.of(serverLevel, pos, dims);
+            if (builderPlot != null) return builderPlot;
+        }
         CarriageVariant carriage = CarriageEditor.plotContaining(pos, dims);
         if (carriage != null) {
             BlockPos origin = CarriageEditor.plotOrigin(carriage, dims);
@@ -465,7 +473,13 @@ public interface BlockVariantPlot {
         private final Vec3i footprint;
         private final TrackVariantBlocks sidecar;
 
-        TrackPlot(TrackKind kind, String name, BlockPos origin, Vec3i footprint) {
+        /**
+         * Public because the origin is a parameter, and the Train Builder authors these track
+         * templates somewhere else entirely — on a plot at ground level rather than in the editor's
+         * Y=250 grid. {@link #forKey} can't serve it: that resolver asks {@link TrackSidePlots} where
+         * the plot is, which is the one thing a builder plot answers differently.
+         */
+        public TrackPlot(TrackKind kind, String name, BlockPos origin, Vec3i footprint) {
             this.kind = kind;
             this.name = name;
             this.origin = origin;

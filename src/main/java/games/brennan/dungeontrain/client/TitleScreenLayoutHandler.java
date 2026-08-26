@@ -4,6 +4,8 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.cheat.CheatModListFetcher;
 import games.brennan.dungeontrain.client.analytics.UiAnalytics;
+import games.brennan.dungeontrain.client.builder.TrainBuilderMenuButton;
+import games.brennan.dungeontrain.client.builder.TrainBuilderScreen;
 import games.brennan.dungeontrain.client.links.OfficialLinks;
 import games.brennan.dungeontrain.client.menu.DarkTintedButton;
 import games.brennan.dungeontrain.client.videotools.VideoToolsScreen;
@@ -30,14 +32,19 @@ import java.util.List;
 
 /**
  * Restructures the title screen so the NeoForge "Mods" button slot is replaced
- * by a 50/50 split of <b>Dungeon Train Editor</b> + <b>Video Tools</b>, and the
+ * by a 50/50 split of <b>Train Editor</b> + <b>Video Tools</b>, and the
  * vanilla Options/Quit row absorbs the displaced Mods button as a 33/33/33
  * split of <b>Mods | Options | Quit Game</b>.
  *
  * <p>Video Tools opens the filming guide for content creators. It holds the slot
  * Discord used to occupy — Discord now rides the icon column above Credits (see
  * {@code TitleScreenCreditsButton}), where its logomark says what a word had to
- * say here. The Editor button launches a fresh creative world via
+ * say here.</p>
+ *
+ * <p>The first slot holds a {@link TrainBuilderMenuButton}: normally <b>Train Editor</b>, and
+ * <b>Train Builder</b> while Shift is held, opening {@link TrainBuilderScreen}. The Editor leads
+ * because it is the finished tool; the Builder sits behind Shift while it is still being built.
+ * The editor path launches a fresh creative world via
  * {@link DevQuickWorldHandler#launchEditorWorld(Screen)} — which names the
  * world "train editor N" using the lowest unused index — and arms
  * {@link EditorDevMode#queueOnForNextStart()} so editor mode is forced on
@@ -54,7 +61,6 @@ public final class TitleScreenLayoutHandler {
     private static final Logger LOGGER = LogUtils.getLogger();
 
     private static final Component VIDEO_TOOLS_LABEL = Component.translatable("gui.dungeontrain.video_tools.button");
-    private static final Component EDITOR_LABEL = Component.translatable("gui.dungeontrain.editor_button");
 
     private static final Component MODS_KEY = Component.translatable("fml.menu.mods");
     private static final Component OPTIONS_KEY = Component.translatable("menu.options");
@@ -149,8 +155,13 @@ public final class TitleScreenLayoutHandler {
         quit.setY(rowY);
         quit.setWidth(thirdW);
 
-        DarkTintedButton editor = new DarkTintedButton(slotX, slotY, halfW, slotH,
-                EDITOR_LABEL, b -> openEditor(titleScreen));
+        // Train Editor by default; holding Shift swaps this same widget to the unfinished Train
+        // Builder. The slot is only half a row wide (Video Tools has the other half), so a second
+        // button would not fit alongside it. Constructor argument order is (openBuilder,
+        // openEditor) — which of the two is the default lives in the button.
+        TrainBuilderMenuButton editor = new TrainBuilderMenuButton(slotX, slotY, halfW, slotH,
+                () -> openBuilder(titleScreen),
+                () -> openEditor(titleScreen));
         event.addListener(editor);
 
         // Video Tools — the filming guide for content creators. Holds the slot Discord used to
@@ -170,6 +181,11 @@ public final class TitleScreenLayoutHandler {
             }
         }
         return null;
+    }
+
+    private static void openBuilder(Screen parent) {
+        LOGGER.info("TitleScreenLayout: Train Builder button clicked — opening the builder picker");
+        Minecraft.getInstance().setScreen(new TrainBuilderScreen(parent));
     }
 
     private static void openEditor(Screen parent) {
