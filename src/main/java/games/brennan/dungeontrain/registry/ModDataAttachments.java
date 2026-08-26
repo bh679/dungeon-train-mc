@@ -4,6 +4,8 @@ import com.mojang.serialization.Codec;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.player.PlayerBiomeProgress;
 import games.brennan.dungeontrain.player.PlayerRunState;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.ComponentSerialization;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.attachment.AttachmentType;
 import net.neoforged.neoforge.registries.DeferredRegister;
@@ -86,6 +88,32 @@ public final class ModDataAttachments {
         TYPES.register("run_cheated",
             () -> AttachmentType.<Boolean>builder(() -> Boolean.FALSE)
                 .serialize(Codec.BOOL)
+                .copyOnDeath()
+                .build()
+        );
+
+    /**
+     * Why this player's run went Free Play — the same soft cause phrase the chat notice showed at
+     * the moment it tripped (e.g. "You switched to Creative Mode.", "You used /give."). Recorded by
+     * {@link games.brennan.dungeontrain.cheat.RunIntegrity#markCheated} next to {@link #RUN_CHEATED},
+     * which it exists to explain, and read back for the Free Play effect's hover tooltip
+     * ({@code client/FreePlayTooltip}) — the one surface that can still answer "why?" long after the
+     * chat line has scrolled away.
+     *
+     * <p>Stored as a {@link Component} via {@link ComponentSerialization#CODEC} rather than a plain
+     * string, so the translatable key and its arguments survive the save and the reader localizes it
+     * in <em>their</em> language.</p>
+     *
+     * <p>Serialized and {@code copyOnDeath}, exactly like the flag it accompanies. <b>Presence is the
+     * "recorded yet?" flag</b> (same idiom as {@link #RUN_SPAWN_X}) — always test {@code hasData}
+     * before {@code getData}, since {@code getData} materialises the empty default. Saves tainted
+     * before this attachment existed have the flag with no cause; that case falls back to a generic
+     * line rather than showing nothing.</p>
+     */
+    public static final Supplier<AttachmentType<Component>> FREE_PLAY_CAUSE =
+        TYPES.register("free_play_cause",
+            () -> AttachmentType.<Component>builder(() -> Component.empty())
+                .serialize(ComponentSerialization.CODEC)
                 .copyOnDeath()
                 .build()
         );

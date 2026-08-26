@@ -8894,10 +8894,10 @@
       "id": "portal-room-walls-in-tiling",
       "version": "0.668.0",
       "type": "feat",
-      "title": "Portal rooms can keep their own walls as they repeat",
-      "summary": "An endless portal room used to dissolve its own walls as it repeated \u2014 the wall between two copies was carved away so the space read as one continuous hall, taking whatever the builder had put on it with it. Rooms can now be built the other way instead: every copy keeps the walls it was drawn with, and you walk between copies through the doorways the builder left. Existing rooms are untouched.",
+      "title": "Dimensional carriages can keep their own walls as they repeat",
+      "summary": "An endless dimensional carriage used to dissolve its own walls as it repeated \u2014 the wall between two copies was carved away so the space read as one continuous hall, taking whatever the builder had put on it with it. Rooms can now be built the other way instead: every copy keeps the walls it was drawn with, and you walk between copies through the doorways the builder left. Existing rooms are untouched.",
       "highlights": [
-        "New Room Walls setting on a portal room: Merged (as before) or Kept",
+        "New Room Walls setting on a dimensional carriage: Merged (as before) or Kept",
         "Kept rooms repeat their walls exactly, including the wall the way back to the train stands in",
         "The library dimension now keeps its walls"
       ],
@@ -8907,9 +8907,92 @@
       "released_at": null
     },
     {
-      "id": "dimensional-carriage-test-button",
+      "id": "leaderboard-books-across-the-train",
       "version": "0.669.0",
-      "type": "chore",
+      "type": "content",
+      "title": "The Tallyman's books turn up all over the train",
+      "summary": "Leaderboard books are no longer something you mostly find on a bookshelf. They now surface across the train's chests, pots and villager stashes, so a board can turn up wherever you are rather than only where the books are kept. Where a container already offered reading matter, the leaderboard book takes a share of that rather than adding to it, so your odds of finding some book are unchanged \u2014 only which book shifts.",
+      "highlights": [
+        "Leaderboard books can now be found in fishing, mining, villager, ore and pottery loot",
+        "Villager stashes get their first book of any kind",
+        "A leaderboard book can appear in the starting chest"
+      ],
+      "date": "2026-08-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "freeplay-tooltip-trigger",
+      "version": "0.669.0",
+      "type": "feat",
+      "title": "The Free Play badge says why it's on",
+      "summary": "Hover the Free Play effect in your inventory and it now tells you what turned it on \u2014 the game mode you switched to, the command you ran, a changed setting, a cheat mod it found. Before, that reason was said once in chat and then scrolled away, so joining a world that was already in Free Play left you with a badge and no explanation. The tooltip also got shorter: the reason leads, the consequences fit on one line.",
+      "highlights": [
+        "The Free Play tooltip names what triggered it, including settings changed or cheat mods detected",
+        "The reason survives logging out, so a world you come back to still explains itself"
+      ],
+      "pr": 1110,
+      "date": "2026-08-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "c-menu-item-icons",
+      "version": "0.669.0",
+      "type": "feat",
+      "title": "Container menu now shows item icons",
+      "summary": "The container contents menu (C) lists each item by its inventory icon instead of its name, so rows stay compact and long item names no longer spill across the count and weight columns. Click an icon to reveal that item's name beside it; click again to hide it.",
+      "highlights": [
+        "Item rows lead with the inventory icon \u2014 narrower panel, no overlapping text",
+        "Click an icon to reveal its name; only that row's column widens"
+      ],
+      "pr": 1111,
+      "date": "2026-08-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "faulthurst-stat-book",
+      "version": "0.669.0",
+      "type": "feat",
+      "title": "Faulthurst leaves you a note about your own run",
+      "summary": "A new book turns up in the train's loot, signed by Faulthurst. It greets you by name and names one real number from your current life \u2014 the carriage you've reached, how long you've been aboard, how many chests you've opened, the longest stretch you went without opening a thing. The number stays live while you carry the book and freezes the moment you read it, so what you find inside is your run exactly as it stood when you opened it.",
+      "highlights": [
+        "Eighteen things he might remark on, twelve of them the one-life half of a leaderboard board.",
+        "He never mentions something that hasn't happened \u2014 a number has to be worth a page before he'll write it down.",
+        "Seven ways he opens and twenty ways he signs off, from \"Keep it up.\" to \"Why?\"",
+        "Written in every language Dungeon Train speaks."
+      ],
+      "pr": 1113,
+      "date": "2026-08-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "stats-book-and-tally-rooms",
+      "version": "0.670.0",
+      "type": "feat",
+      "title": "A book that counts, and a room full of them",
+      "summary": "Chests, pots and bookshelves now turn up Stats Books. Open one and it is a coin-flip: either a tall leaderboard, ranking every player on the train and closing on where you stand \u2014 or a short note from Faulthurst about your own run, naming one real number from it. You never know which until you read it. Dimensional carriages can now be stocked with the whole tally instead of one author's writing: every leaderboard and every run stat the train keeps, 47 books, shelved in one room with a note on the lectern explaining what you have walked into. Room authors set how often that happens in the Books screen.",
+      "highlights": [
+        "New Stats Book, found in loot \u2014 half leaderboard, half a note about your own run",
+        "Leaderboard books moved out of the random-book pool onto their own loot entry",
+        "Dimensional carriages can shelve the complete tally: 29 leaderboards + 18 run stats",
+        "Stats joins Self, Player and Signature as a fourth share in a room's Books mix"
+      ],
+      "date": "2026-08-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "dimensional-carriage-test-button",
+      "version": "0.671.0",
+      "type": "feat",
       "title": "Test the dimensional carriage you're building",
       "summary": "Room authors get a Test the Carriage button in the editor menu. It stamps the dimensional carriage you have open \u2014 room, a corridor either side, its own walls mode, block variants, lighting and fog \u2014 and puts you in the doorway looking down it. The room repeats around you as you walk, the way it does on the train. Back returns you to the plot and clears it away.",
       "highlights": [
@@ -8924,7 +9007,7 @@
     },
     {
       "id": "portal-room-editor-exit",
-      "version": "0.669.0",
+      "version": "0.671.0",
       "type": "fix",
       "title": "Leaving the dimensional carriage editor works again",
       "summary": "Exiting the editor after opening a dimensional carriage directly now returns you to where you came from, in the game mode you were in. Before, it told you there was no session to exit and left you standing in the plot in creative.",

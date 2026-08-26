@@ -19,7 +19,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "55";
+    public static final String PROTOCOL_VERSION = "56";
 
     private DungeonTrainNet() {}
 
@@ -244,6 +244,10 @@ public final class DungeonTrainNet {
 
         // Editor middle-click: copy the looked-at cell's variants into the hotbar (C2S).
         registrar.playToServer(BlockVariantCopyPickPacket.TYPE, BlockVariantCopyPickPacket.STREAM_CODEC, BlockVariantCopyPickPacket::handle);
+
+        // Why this run is in Free Play, server → client, pushed whenever the badge goes on or off.
+        // Feeds the effect's hover tooltip — see FreePlayCausePacket.
+        registrar.playToClient(FreePlayCausePacket.TYPE, FreePlayCausePacket.STREAM_CODEC, FreePlayCausePacket::handle);
     }
 
     /** Convenience: send a payload to the server (client → server). */

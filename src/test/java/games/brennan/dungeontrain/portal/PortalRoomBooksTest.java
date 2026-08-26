@@ -21,8 +21,15 @@ class PortalRoomBooksTest {
     /** The configured floor a freshly authored room starts at — read, not assumed, so the test tracks it. */
     private static final int DEFAULT_MIN = PortalRoomBooks.defaultMinBooks();
 
+    /** A mix weighted across the three AUTHOR shares, with the tally at its default share. */
     private static PortalRoomBooks mix(int self, int player, int signature) {
         return new PortalRoomBooks(Kind.MIX, self, player, signature, DEFAULT_MIN,
+            PortalRoomBooks.NO_MAXIMUM);
+    }
+
+    /** A mix weighted across all four shares, tally included. */
+    private static PortalRoomBooks mix(int self, int player, int signature, int stats) {
+        return new PortalRoomBooks(Kind.MIX, self, player, signature, stats, DEFAULT_MIN,
             PortalRoomBooks.NO_MAXIMUM);
     }
 
@@ -59,11 +66,77 @@ class PortalRoomBooksTest {
     }
 
     @Test
-    @DisplayName("Off is the default and the only kind that does not stock an author")
+    @DisplayName("Off is the default and the only kind that does not stock its shelves")
     void offIsTheOnlyUnlockedKind() {
         assertSame(Kind.OFF, PortalRoomBooks.DEFAULT.kind());
         assertFalse(PortalRoomBooks.DEFAULT.locks());
         assertTrue(new PortalRoomBooks(Kind.MIX).locks());
+    }
+
+    @Test
+    @DisplayName("Stats is a fourth share, and it defaults to 1 like the other three")
+    void statsIsAShareAtTheDefaultWeight() {
+        PortalRoomBooks mix = new PortalRoomBooks(Kind.MIX);
+        assertEquals(PortalRoomBooks.DEFAULT_WEIGHT, mix.statsWeight());
+        assertEquals(PortalRoomBooks.DEFAULT_WEIGHT, mix.weightFor(Share.STATS));
+        assertTrue(mix.isEvenlyWeighted(), "all four at the default is still 'nothing favoured'");
+        // ...and it is the only share with nobody behind it.
+        assertTrue(Share.STATS.isStats());
+        for (Share other : new Share[]{Share.SELF, Share.PLAYER, Share.SIGNATURE}) {
+            assertFalse(other.isStats(), other.id());
+        }
+    }
+
+    @Test
+    @DisplayName("Zeroing the other three makes every roll the tally")
+    void allStatsWeightRollsStatsEveryTime() {
+        PortalRoomBooks always = new PortalRoomBooks(Kind.MIX, 0, 0, 0, 1, 10, 0);
+        for (int pair = -50; pair <= 50; pair++) {
+            assertSame(Share.STATS, always.resolveShare(pair), "pair " + pair);
+        }
+        // ...and zeroing STATS alone takes it back out of the roll entirely.
+        PortalRoomBooks never = new PortalRoomBooks(Kind.MIX, 1, 1, 1, 0, 10, 0);
+        for (int pair = -50; pair <= 50; pair++) {
+            assertFalse(never.resolveShare(pair).isStats(), "pair " + pair);
+        }
+    }
+
+    @Test
+    @DisplayName("All four weights at zero still rolls, evenly, across all four")
+    void allZeroWeightsRollEvenlyAcrossFour() {
+        PortalRoomBooks contradictory = new PortalRoomBooks(Kind.MIX, 0, 0, 0, 0, 10, 0);
+        Set<Share> seen = new HashSet<>();
+        for (int pair = -400; pair <= 400; pair++) seen.add(contradictory.resolveShare(pair));
+        assertEquals(Set.of(Share.values()), seen, "a contradictory room must not resolve to nothing");
+    }
+
+    @Test
+    @DisplayName("A non-default stats weight forces the full seven-segment tag, band included")
+    void statsWeightForcesTheLongForm() {
+        // Five and six segments are how the OLD layout wrote a band. Writing either here would make
+        // the room unreadable, so anything past the three original weights writes all seven.
+        String tag = new PortalRoomBooks(Kind.MIX, 1, 1, 1, 4, DEFAULT_MIN, 0).id();
+        assertEquals(7, tag.split(":", -1).length, tag);
+        assertEquals(new PortalRoomBooks(Kind.MIX, 1, 1, 1, 4, DEFAULT_MIN, 0),
+            PortalRoomBooks.parse(tag));
+    }
+
+    @Test
+    @DisplayName("Tags written before Stats existed still mean exactly what they said")
+    void oldLayoutTagsStillReadTheirBand() {
+        // The dangerous one: six segments, where the last two are the BAND and not stats+min.
+        PortalRoomBooks old = PortalRoomBooks.parse("mix:2:3:1:5:40");
+        assertEquals(2, old.selfWeight());
+        assertEquals(3, old.playerWeight());
+        assertEquals(1, old.signatureWeight());
+        assertEquals(5, old.minBooks(), "segment 4 is min under the old layout, not the stats weight");
+        assertEquals(40, old.maxBooks());
+        assertEquals(PortalRoomBooks.DEFAULT_WEIGHT, old.statsWeight());
+
+        // Five segments — a min with no max — is the same trap one shorter.
+        PortalRoomBooks shorter = PortalRoomBooks.parse("mix:2:3:1:5");
+        assertEquals(5, shorter.minBooks());
+        assertEquals(PortalRoomBooks.DEFAULT_WEIGHT, shorter.statsWeight());
     }
 
     @Test
@@ -96,11 +169,14 @@ class PortalRoomBooksTest {
         assertEquals("mix:2:1:1", mix(2, 1, 1).id());
         assertEquals("mix:0:3:7", mix(0, 3, 7).id());
 
-        // A band forces the weights in front of it, at their defaults if that is what they are.
-        assertEquals("mix:1:1:1:5:40",
+        // A band forces every weight in front of it, at their defaults if that is what they are —
+        // and since the tally's weight now sits between the two groups, that means all seven
+        // segments. Five or six would be read back as the OLD layout and mean something else.
+        assertEquals("mix:1:1:1:1:5:40",
             new PortalRoomBooks(Kind.MIX, 1, 1, 1, 5, 40).id());
-        assertEquals("mix:2:3:1:5:0",
-            new PortalRoomBooks(Kind.MIX, 2, 3, 1, 5, PortalRoomBooks.NO_MAXIMUM).id());
+        assertEquals("mix:2:3:1:1:5:0",
+            new PortalRoomBooks(Kind.MIX, 2, 3, 1, PortalRoomBooks.NO_MAXIMUM + 5,
+                PortalRoomBooks.NO_MAXIMUM).id());
     }
 
     @Test
@@ -196,8 +272,9 @@ class PortalRoomBooksTest {
         }
 
         // ...and a single non-zero weight makes the roll a certainty — this is how a room says
-        // "always my own writing", which is why there is no separate setting for it.
-        PortalRoomBooks onlySelf = mix(4, 0, 0);
+        // "always my own writing", which is why there is no separate setting for it. All THREE of the
+        // others have to be zeroed for that, the tally included.
+        PortalRoomBooks onlySelf = mix(4, 0, 0, 0);
         for (long seed = 0; seed < 200; seed++) {
             assertSame(Share.SELF, onlySelf.resolveShare(seed));
         }
@@ -206,9 +283,9 @@ class PortalRoomBooksTest {
     @Test
     @DisplayName("All-zero weights roll evenly rather than resolving to nothing")
     void allZeroWeightsRollUniformly() {
-        // An author who zeroes all three has said something contradictory; the useful reading is "no
+        // An author who zeroes all four has said something contradictory; the useful reading is "no
         // preference". A room that could not pick an author because of arithmetic would look broken.
-        Map<Share, Integer> counts = tally(mix(0, 0, 0), 3000);
+        Map<Share, Integer> counts = tally(mix(0, 0, 0, 0), 3000);
         for (Share share : Share.values()) {
             assertTrue(counts.getOrDefault(share, 0) > 0, share + " never came up");
         }

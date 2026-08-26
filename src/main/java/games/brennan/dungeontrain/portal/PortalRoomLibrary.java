@@ -20,6 +20,7 @@ import org.slf4j.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Supplier;
 
 /**
  * Deals one author's catalogue across a room's chiseled bookshelves.
@@ -61,21 +62,43 @@ public final class PortalRoomLibrary {
         }
         // The note that says what the room is, before any shelf does. Placed even when the catalogue
         // is short — a room with two books on its shelves is exactly the room the note explains.
-        dressLecterns(level, origin, size, authorName, pairKey);
+        dressLecterns(level, origin, size, () -> PortalLibraryTribute.buildStack(authorName, pairKey));
         List<BlockPos> shelves = shelvesIn(level, origin, size);
         if (shelves.isEmpty()) return 0;
 
         List<SharedBookPool.PoolBook> order = dealOrder(catalogue, pairKey);
+        List<ItemStack> stacks = new ArrayList<>(order.size());
+        for (SharedBookPool.PoolBook book : order) stacks.add(bookStack(book));
+        int placed = placeInto(level, shelves, stacks);
+        LOGGER.info("[DungeonTrain] Portal room {} stocked {} of {} book(s) across {} shelves",
+            pairKey, placed, order.size(), shelves.size());
+        return placed;
+    }
+
+    /**
+     * Write {@code stacks} into the free slots of {@code shelves}, in order, and return how many
+     * landed.
+     *
+     * <p>Shared with {@link PortalRoomStatShelves} rather than reimplemented there, because the two
+     * fiddly parts are the same whatever the books are: never writing over a slot the template
+     * already filled, and re-syncing the blockstate afterwards.</p>
+     *
+     * <p>Stops when it runs out of either shelves or stacks, so a room with fewer slots than books
+     * simply holds the front of the list — and a caller filling the same room a second time can hand
+     * over only what is new, since the slots already written are no longer free.</p>
+     */
+    static int placeInto(ServerLevel level, List<BlockPos> shelves, List<ItemStack> stacks) {
+        if (level == null || shelves == null || stacks == null || stacks.isEmpty()) return 0;
         int placed = 0;
         for (BlockPos shelf : shelves) {
-            if (placed >= order.size()) break;
+            if (placed >= stacks.size()) break;
             if (!(level.getBlockEntity(shelf) instanceof ChiseledBookShelfBlockEntity be)) continue;
             boolean touched = false;
-            for (int slot = 0; slot < be.getContainerSize() && placed < order.size(); slot++) {
+            for (int slot = 0; slot < be.getContainerSize() && placed < stacks.size(); slot++) {
                 // Never over an authored book: a template that already put something on this shelf
                 // said so deliberately, and the catalogue fills what is free around it.
                 if (!be.getItem(slot).isEmpty()) continue;
-                be.setItem(slot, bookStack(order.get(placed++)));
+                be.setItem(slot, stacks.get(placed++));
                 touched = true;
             }
             if (touched) {
@@ -86,8 +109,6 @@ public final class PortalRoomLibrary {
                 ChiseledBookshelfSync.syncIfNeeded(level, shelf);
             }
         }
-        LOGGER.info("[DungeonTrain] Portal room {} stocked {} of {} book(s) across {} shelves",
-            pairKey, placed, order.size(), shelves.size());
         return placed;
     }
 
@@ -100,9 +121,13 @@ public final class PortalRoomLibrary {
      *
      * <p>A lectern the template already stood a book on is left alone — an author who put something
      * there meant it, and this note is not more important than what they wrote.</p>
+     *
+     * <p>WHICH note is the caller's business: a library room explains an author, a stat room explains
+     * a tally, and the only thing they share is where the explanation goes. Taken as a supplier so a
+     * room with no lecterns at all builds no book.</p>
      */
-    private static void dressLecterns(ServerLevel level, BlockPos origin, Vec3i size,
-                                      String authorName, int pairKey) {
+    static void dressLecterns(ServerLevel level, BlockPos origin, Vec3i size,
+                              Supplier<ItemStack> note) {
         BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
         for (int dy = 0; dy < size.getY(); dy++) {
             for (int dz = 0; dz < size.getZ(); dz++) {
@@ -111,7 +136,7 @@ public final class PortalRoomLibrary {
                     if (!level.getBlockState(cursor).hasBlockEntity()) continue;
                     if (!(level.getBlockEntity(cursor) instanceof LecternBlockEntity lectern)) continue;
                     if (lectern.hasBook()) continue;
-                    lectern.setBook(PortalLibraryTribute.buildStack(authorName, pairKey));
+                    lectern.setBook(note.get());
                     lectern.setChanged();
                     // Vanilla only flips HAS_BOOK from the player-interaction path, exactly like the
                     // chiseled bookshelf's slot-occupied properties — so an undressed lectern would
@@ -137,7 +162,7 @@ public final class PortalRoomLibrary {
      * slot. Bottom-up so a short catalogue fills the shelves a player is looking at rather than the
      * ones above their head.</p>
      */
-    private static List<BlockPos> shelvesIn(ServerLevel level, BlockPos origin, Vec3i size) {
+    static List<BlockPos> shelvesIn(ServerLevel level, BlockPos origin, Vec3i size) {
         List<BlockPos> out = new ArrayList<>();
         if (level == null || origin == null || size == null) return out;
         BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();

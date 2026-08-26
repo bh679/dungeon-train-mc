@@ -581,15 +581,17 @@ public final class EditorCommand {
                         .suggests(PORTAL_ROOM_BOOKS_SUGGESTIONS)
                         .executes(ctx -> runPortalRoomBooks(ctx.getSource(),
                             StringArgumentType.getString(ctx, "books")))))
-                // The three shares of the author roll, and the band of author a room will accept.
-                // All five mean nothing while Books is Off, which is why the edit screen is only
-                // reachable from a room that stocks an author at all.
+                // The four shares of the roll — three ways to name an author, plus the tally —
+                // and the band of author a room will accept. All six mean nothing while Books is
+                // Off, which is why the edit screen is only reachable from a room that stocks at all.
                 .then(portalRoomBookWeightNode("booksself",
                     games.brennan.dungeontrain.portal.PortalRoomBooks.Share.SELF))
                 .then(portalRoomBookWeightNode("booksplayer",
                     games.brennan.dungeontrain.portal.PortalRoomBooks.Share.PLAYER))
                 .then(portalRoomBookWeightNode("bookssignature",
                     games.brennan.dungeontrain.portal.PortalRoomBooks.Share.SIGNATURE))
+                .then(portalRoomBookWeightNode("booksstats",
+                    games.brennan.dungeontrain.portal.PortalRoomBooks.Share.STATS))
                 .then(portalRoomBookBoundNode("booksmin", true))
                 .then(portalRoomBookBoundNode("booksmax", false))
                 // Sub-variants: one named room standing for several designs, drawn by weight.
@@ -6447,7 +6449,7 @@ public final class EditorCommand {
         String books = settings.books().locks()
             ? ", books: " + settings.books().displayName()
                 + " (" + settings.books().selfWeight() + "/" + settings.books().playerWeight()
-                + "/" + settings.books().signatureWeight() + ")"
+                + "/" + settings.books().signatureWeight() + "/" + settings.books().statsWeight() + ")"
                 + ", authors with " + settings.books().minBooks() + "+"
                 + (settings.books().maxBooks() == games.brennan.dungeontrain.portal.PortalRoomBooks.NO_MAXIMUM
                     ? "" : "\u2013" + settings.books().maxBooks())

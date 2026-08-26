@@ -157,6 +157,22 @@ public final class PlayerRunState {
      */
     private int booksWrittenCount;
     /**
+     * Death Notes and Love Notes this player has SIGNED this run — the per-run twins of the
+     * {@code deathnotes_written} / {@code lovenotes_written} leaderboards, and what a Faulthurst
+     * stat book reports for them.
+     *
+     * <p>Only the WRITING half of each note subject has a per-run meaning at all: how many people
+     * a note reached, and how the fight ended in their world, are answered by their save and not
+     * this one.</p>
+     *
+     * <p><b>In-memory only — deliberately NOT in {@link #CODEC}</b> (the 16-field cap, see
+     * {@link #narrativeLetters}), exactly as for {@link #booksWrittenCount} beside them: signing a
+     * note is a rare discrete act, and the only cost is that signing one then relogging mid-run
+     * resets the tally.</p>
+     */
+    private int deathNotesWritten;
+    private int loveNotesWritten;
+    /**
      * Visual identity of the PlayerMob that likes this player most this run — the
      * death-screen "friend" portrait — captured while it is loaded near the player
      * and only kept when its feeling clears the friend threshold (see
@@ -540,6 +556,24 @@ public final class PlayerRunState {
         return ++booksWrittenCount;
     }
 
+    /** Death Notes signed this run. */
+    public int deathNotesWritten() {
+        return deathNotesWritten;
+    }
+
+    public int incrementDeathNotesWritten() {
+        return ++deathNotesWritten;
+    }
+
+    /** Love Notes signed this run. */
+    public int loveNotesWritten() {
+        return loveNotesWritten;
+    }
+
+    public int incrementLoveNotesWritten() {
+        return ++loveNotesWritten;
+    }
+
     /**
      * Record a narrative letter (key {@code storyBasename + "#" + letterIndex})
      * read at a lectern this run.
@@ -705,6 +739,8 @@ public final class PlayerRunState {
         containersOpened = 0;
         booksReadCount = 0;
         booksWrittenCount = 0;
+        deathNotesWritten = 0;
+        loveNotesWritten = 0;
         narrativeLetters.clear();
         earnedAdvancements.clear();
         servedBookToCarriage.clear();

@@ -154,13 +154,22 @@ public final class PortalRoomAuthorLocks {
         /** A fetch is on its way. Ask again. */
         PENDING,
         /** The directory has answered and nobody in it qualifies. Asking again will not help. */
-        NONE
+        NONE,
+        /**
+         * The room's roll came up {@link PortalRoomBooks.Share#STATS}: no author was looked for and
+         * none will be. The caller stocks the tally instead.
+         *
+         * <p>Distinct from {@link #NONE}, which means an author WAS looked for and the directory had
+         * nobody — that room stays pending in case the corpus grows. This one is settled.</p>
+         */
+        STATS
     }
 
     /** {@link Outcome} plus the author, when there is one. */
     public record Resolution(Outcome outcome, BookAuthorsClient.Author author) {
         static final Resolution PENDING = new Resolution(Outcome.PENDING, null);
         static final Resolution NONE = new Resolution(Outcome.NONE, null);
+        static final Resolution STATS = new Resolution(Outcome.STATS, null);
 
         static Resolution of(BookAuthorsClient.Author author) {
             return new Resolution(Outcome.RESOLVED, author);
@@ -194,6 +203,9 @@ public final class PortalRoomAuthorLocks {
                                      PortalRoomBooks books, boolean kidSafe) {
         if (player == null || books == null || !books.locks()) return Resolution.NONE;
         PortalRoomBooks.Share share = effectiveShare(pairKey, books);
+        // The tally has no author, so everything below this line — the directory, the lock cache, the
+        // rejection rotation — has nothing to work on. Branch before any of it is touched.
+        if (share.isStats()) return Resolution.STATS;
         Key key = keyFor(pairKey, player, share);
 
         BookAuthorsClient.Author held = LOCKS.get(key);
