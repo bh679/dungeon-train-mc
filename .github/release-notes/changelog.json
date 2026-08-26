@@ -8905,6 +8905,20 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "dimensional-carriage-test-button",
+      "version": "0.669.0",
+      "type": "chore",
+      "title": "A button that puts a dimensional carriage in front of you",
+      "summary": "Room authors and testers get a Test the Carriage button \u2014 in the X menu under Test Live, and on the editor side panel while a dimensional carriage is open. It spawns one where you are standing and drops you at its entry corridor. It does not change the world's portal rate, so it never puts the world into Free Play.",
+      "highlights": [
+        "The X menu's Debug drill-in is now called Test Live"
+      ],
+      "date": "2026-08-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
