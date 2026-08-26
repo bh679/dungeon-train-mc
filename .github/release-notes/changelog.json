@@ -8755,8 +8755,26 @@
       "released_at": "2026-08-25T16:16:41Z"
     },
     {
-      "id": "engine-room-hours-spent",
+      "id": "translation-groups",
       "version": "0.658.0",
+      "type": "feat",
+      "title": "Translate a whole set of variations in one go",
+      "summary": "A lot of Dungeon Train's text is the same line written many different ways \u2014 thirteen wordings of one chat message, thirty-nine narrations for one death, a dozen alternative pages for one book. The translation editor used to list every one of them as an unrelated string. Now it knows they belong together: a button collapses each set into a single row, and inside a string a Next button walks you straight to the next variation that still needs a human, without going back to the list.",
+      "highlights": [
+        "A grouping button beside the search box folds each set of variations into one row, badged with how many there are and how many still need review",
+        "Inside a string, a strip says which variation you are on, and Next opens the next one waiting on a translator",
+        "Next asks before it moves on if you have unsaved typing \u2014 save, discard, or stay",
+        "Grouping is off by default; the list you already know is unchanged until you turn it on"
+      ],
+      "pr": 1096,
+      "date": "2026-08-26",
+      "released": true,
+      "released_in": "v0.658.0",
+      "released_at": "2026-08-26T02:49:34Z"
+    },
+    {
+      "id": "engine-room-hours-spent",
+      "version": "0.659.0",
       "type": "feat",
       "title": "Hours spent on the engine room ledger",
       "summary": "Once running costs and the current goal are both covered, the engine room shows the hours spent building Dungeon Train.",
