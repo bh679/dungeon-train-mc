@@ -37,6 +37,49 @@ class PortalRoomSettingsTest {
     // ---- the stored tag ----
 
     @Test
+    @DisplayName("Door Wall is absent from every tag ever written, and reads back Sealed")
+    void doorWallDefaultsSealedForEveryLegacyTag() {
+        // The setting changes what is standing in a world that already exists, so this is the test
+        // that matters: nothing written before it existed may come back as anything but Sealed.
+        for (String tag : new String[] {
+            "bedrock_lock", "bedrockless", "endless_open", "endless_repetition",
+            "endless_repetition/dynamic", "endless_repetition/dynamic/fit",
+            "endless_repetition/dynamic/fit/random:12",
+            // The books segment's canonical form, not the "signature" alias — PortalRoomBooks
+            // normalises that on the way in, which is its own business and not this test's subject.
+            "endless_repetition/dynamic/fit/random:12/mix:0:0:1",
+            "endless_repetition/dynamic/fit/random:12/mix:0:0:1/day",
+        }) {
+            assertEquals(PortalRoomDoorWall.SEALED, PortalRoomSettings.parse(tag).doorWall(), tag);
+            assertEquals(tag, PortalRoomSettings.parse(tag).toTag(), tag + " round-trips unchanged");
+        }
+    }
+
+    @Test
+    @DisplayName("Repeated is written as the seventh segment, with the six in front of it")
+    void repeatedDoorWallRoundTrips() {
+        String tag = new PortalRoomSettings(PortalRoomMode.ENDLESS_REPETITION,
+            PortalRoomCopies.DYNAMIC, PortalRoomContents.DEFAULT, null, PortalRoomBooks.DEFAULT,
+            PortalRoomSky.NONE, PortalRoomDoorWall.REPEATED).toTag();
+        assertEquals(7, tag.split("/", -1).length, tag);
+        assertTrue(tag.endsWith("/repeated"), tag);
+        assertEquals(PortalRoomDoorWall.REPEATED, PortalRoomSettings.parse(tag).doorWall());
+        assertEquals(tag, PortalRoomSettings.parse(tag).toTag());
+    }
+
+    @Test
+    @DisplayName("The longest tag the setting can produce still fits the packet's cap")
+    void longestTagFitsTheModeTagCap() {
+        String tag = new PortalRoomSettings(PortalRoomMode.ENDLESS_REPETITION,
+            new PortalRoomCopies(PortalRoomCopies.Kind.SINGLE,
+                "a".repeat(PortalRoomCopies.BLOCK_ID_MAX)),
+            PortalRoomContents.DEFAULT, null, PortalRoomBooks.DEFAULT, PortalRoomSky.END,
+            PortalRoomDoorWall.REPEATED).toTag();
+        assertTrue(tag.length() <= games.brennan.dungeontrain.net.EditorStatusPacket.MODE_TAG_MAX,
+            "tag is " + tag.length() + " chars: " + tag);
+    }
+
+    @Test
     @DisplayName("A room that does not repeat stores the bare mode id it always did")
     void nonRepeatingRoomsRoundTripAsBareIds() {
         assertEquals("bedrock_lock",

@@ -38,17 +38,20 @@ import games.brennan.dungeontrain.track.variant.TrackVariantWeights;
  * @param exits    how many extra corridors back to the train it lays, and how far apart
  * @param books    whether every book found inside is by one author, and how that author is picked
  * @param sky      whether it is lit as though it stood outdoors, and under which sky
+ * @param doorWall whether the copies standing against the portal carriages carry their own end wall
+ *                 through the corridor mouth's plane, or leave it to the mouth's seal ring
  */
 public record PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
                                  PortalRoomContents contents, PortalRoomExits exits,
-                                 PortalRoomBooks books, PortalRoomSky sky) {
+                                 PortalRoomBooks books, PortalRoomSky sky,
+                                 PortalRoomDoorWall doorWall) {
 
     /** Separates the mode from the settings that follow it in the stored tag. */
     private static final String SEPARATOR = "/";
 
     public static final PortalRoomSettings DEFAULT = new PortalRoomSettings(
         PortalRoomMode.DEFAULT, PortalRoomCopies.DEFAULT, PortalRoomContents.DEFAULT, null,
-        PortalRoomBooks.DEFAULT, PortalRoomSky.NONE);
+        PortalRoomBooks.DEFAULT, PortalRoomSky.NONE, PortalRoomDoorWall.DEFAULT);
 
     public PortalRoomSettings {
         if (mode == null) mode = PortalRoomMode.DEFAULT;
@@ -59,31 +62,42 @@ public record PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
         if (exits == null) exits = mode.defaultExits();
         if (books == null) books = PortalRoomBooks.DEFAULT;
         if (sky == null) sky = PortalRoomSky.NONE;
+        if (doorWall == null) doorWall = PortalRoomDoorWall.DEFAULT;
+    }
+
+    /** The six settings this record carried before Door Wall existed, with the mouth's seal kept. */
+    public PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
+                              PortalRoomContents contents, PortalRoomExits exits,
+                              PortalRoomBooks books, PortalRoomSky sky) {
+        this(mode, copies, contents, exits, books, sky, PortalRoomDoorWall.DEFAULT);
     }
 
     /** The boundary settings alone, unfurnished — the pair this record was before Contents existed. */
     public PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies) {
         this(mode, copies, PortalRoomContents.DEFAULT, null, PortalRoomBooks.DEFAULT,
-            PortalRoomSky.NONE);
+            PortalRoomSky.NONE, PortalRoomDoorWall.DEFAULT);
     }
 
     /** The three settings this record carried before Exits existed, at the mode's own default. */
     public PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
                               PortalRoomContents contents) {
-        this(mode, copies, contents, null, PortalRoomBooks.DEFAULT, PortalRoomSky.NONE);
+        this(mode, copies, contents, null, PortalRoomBooks.DEFAULT, PortalRoomSky.NONE,
+            PortalRoomDoorWall.DEFAULT);
     }
 
     /** The four settings this record carried before Books existed, with no author lock. */
     public PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
                               PortalRoomContents contents, PortalRoomExits exits) {
-        this(mode, copies, contents, exits, PortalRoomBooks.DEFAULT, PortalRoomSky.NONE);
+        this(mode, copies, contents, exits, PortalRoomBooks.DEFAULT, PortalRoomSky.NONE,
+            PortalRoomDoorWall.DEFAULT);
     }
 
     /** The five settings this record carried before Sky existed, lit only by its own lamps. */
     public PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
                               PortalRoomContents contents, PortalRoomExits exits,
                               PortalRoomBooks books) {
-        this(mode, copies, contents, exits, books, PortalRoomSky.NONE);
+        this(mode, copies, contents, exits, books, PortalRoomSky.NONE,
+            PortalRoomDoorWall.DEFAULT);
     }
 
     /**
@@ -104,7 +118,8 @@ public record PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
             // constructor as "unsaid" so the mode's default applies, not as a value of its own.
             exitsSegment == null ? null : PortalRoomExits.parse(exitsSegment),
             PortalRoomBooks.parse(segment(parts, 4)),
-            PortalRoomSky.parse(segment(parts, 5)));
+            PortalRoomSky.parse(segment(parts, 5)),
+            PortalRoomDoorWall.parse(segment(parts, 6)));
     }
 
     /** Segment {@code index} of a split tag, or null when the tag is shorter than that. */
@@ -135,6 +150,15 @@ public record PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
     public String toTag() {
         PortalRoomCopies effectiveCopies = effectiveCopies();
         PortalRoomExits effectiveExits = effectiveExits();
+        PortalRoomDoorWall effectiveDoorWall = effectiveDoorWall();
+        if (effectiveDoorWall != PortalRoomDoorWall.DEFAULT) {
+            // The longest tag this class writes. Every earlier segment goes out at whatever it
+            // effectively is — a later segment cannot be written without the ones in front of it,
+            // and each parse reads its own placeholder back as the same value.
+            return mode.id() + SEPARATOR + effectiveCopies.id() + SEPARATOR + contents.id()
+                + SEPARATOR + effectiveExits.id() + SEPARATOR + books.id() + SEPARATOR + sky.id()
+                + SEPARATOR + effectiveDoorWall.id();
+        }
         if (sky.lights()) {
             return mode.id() + SEPARATOR + effectiveCopies.id() + SEPARATOR + contents.id()
                 + SEPARATOR + effectiveExits.id() + SEPARATOR + books.id() + SEPARATOR + sky.id();
@@ -160,6 +184,33 @@ public record PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
         }
         if (effectiveCopies.equals(PortalRoomCopies.DEFAULT)) return mode.id();
         return mode.id() + SEPARATOR + effectiveCopies.id();
+    }
+
+    /**
+     * True when the Door Wall control applies at all.
+     *
+     * <p>{@link PortalRoomMode#ENDLESS_REPETITION} alone. The setting describes what an appended copy
+     * does with its <b>own end wall</b>, and that is the only mode whose tiles carry one:
+     * {@link PortalRoomMode#ENDLESS_OPEN} writes floor and ceiling and nothing else, so it has no
+     * wall to carry through the plane and the mouth's ring is all there could ever be. The two
+     * non-tiling modes append nothing at all.</p>
+     */
+    public boolean doorWallApplies() {
+        return mode.tilesWholeRoom();
+    }
+
+    /**
+     * What this room actually does at the corridor mouths: {@link #doorWall} where the control
+     * applies, and {@link PortalRoomDoorWall#DEFAULT} where it does not.
+     *
+     * <p>Read this rather than {@link #doorWall} anywhere the answer drives block writes, for the
+     * same reason {@link #effectiveCopies} and {@link #effectiveExits} exist. A room whose walls were
+     * changed from Endless Repetition to Endless Open still carries whatever Door Wall value it had,
+     * and honouring it there would hand a copy a plane it has no wall to fill — which is a hole in
+     * the one boundary that may not have one.</p>
+     */
+    public PortalRoomDoorWall effectiveDoorWall() {
+        return doorWallApplies() ? doorWall : PortalRoomDoorWall.DEFAULT;
     }
 
     /** True when the Copies control applies at all — either endless mode appends tiles to roll. */
@@ -231,26 +282,36 @@ public record PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
      */
     public PortalRoomSettings withMode(PortalRoomMode newMode) {
         boolean inherited = exits.equals(mode.defaultExits());
-        return new PortalRoomSettings(newMode, copies, contents, inherited ? null : exits, books, sky);
+        return new PortalRoomSettings(newMode, copies, contents, inherited ? null : exits, books, sky,
+            doorWall);
     }
 
     public PortalRoomSettings withCopies(PortalRoomCopies newCopies) {
-        return new PortalRoomSettings(mode, newCopies, contents, exits, books, sky);
+        return new PortalRoomSettings(mode, newCopies, contents, exits, books, sky, doorWall);
     }
 
     public PortalRoomSettings withContents(PortalRoomContents newContents) {
-        return new PortalRoomSettings(mode, copies, newContents, exits, books, sky);
+        return new PortalRoomSettings(mode, copies, newContents, exits, books, sky, doorWall);
     }
 
     public PortalRoomSettings withExits(PortalRoomExits newExits) {
-        return new PortalRoomSettings(mode, copies, contents, newExits, books, sky);
+        return new PortalRoomSettings(mode, copies, contents, newExits, books, sky, doorWall);
     }
 
     public PortalRoomSettings withBooks(PortalRoomBooks newBooks) {
-        return new PortalRoomSettings(mode, copies, contents, exits, newBooks, sky);
+        return new PortalRoomSettings(mode, copies, contents, exits, newBooks, sky, doorWall);
     }
 
     public PortalRoomSettings withSky(PortalRoomSky newSky) {
-        return new PortalRoomSettings(mode, copies, contents, exits, books, newSky);
+        return new PortalRoomSettings(mode, copies, contents, exits, books, newSky, doorWall);
+    }
+
+    public PortalRoomSettings withDoorWall(PortalRoomDoorWall newDoorWall) {
+        return new PortalRoomSettings(mode, copies, contents, exits, books, sky, newDoorWall);
+    }
+
+    /** The same settings at the next Door Wall value — what the editor's one cycling button steps to. */
+    public PortalRoomSettings nextDoorWall() {
+        return withDoorWall(doorWall.next());
     }
 }

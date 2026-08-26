@@ -8871,6 +8871,40 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "dimensional-carriage-light-fade",
+      "version": "0.667.0",
+      "type": "fix",
+      "title": "Dimensional carriage lighting fades instead of jumping",
+      "summary": "Walking into a dimensional carriage no longer snaps the lighting. The corridor now fades once from the light of the world the train is running through to the light of the room at the far end, so crossing between the carriage and its copy is something you feel rather than something you see happen. Turn it off with the new crossingFade client setting.",
+      "highlights": [
+        "One smooth lighting fade along the corridor instead of a jump",
+        "The change is gradual with distance, from the train door to the room door",
+        "Turning around mid-corridor no longer flashes the lighting",
+        "New crossingFade client setting restores the old hard cut"
+      ],
+      "pr": 1106,
+      "date": "2026-08-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "portal-room-walls-in-tiling",
+      "version": "0.668.0",
+      "type": "feat",
+      "title": "Portal rooms can keep their own walls as they repeat",
+      "summary": "An endless portal room used to dissolve its own walls as it repeated \u2014 the wall between two copies was carved away so the space read as one continuous hall, taking whatever the builder had put on it with it. Rooms can now be built the other way instead: every copy keeps the walls it was drawn with, and you walk between copies through the doorways the builder left. Existing rooms are untouched.",
+      "highlights": [
+        "New Room Walls setting on a portal room: Merged (as before) or Kept",
+        "Kept rooms repeat their walls exactly, including the wall the way back to the train stands in",
+        "The library dimension now keeps its walls"
+      ],
+      "date": "2026-08-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

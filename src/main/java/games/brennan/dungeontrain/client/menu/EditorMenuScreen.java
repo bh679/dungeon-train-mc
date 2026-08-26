@@ -228,6 +228,8 @@ public final class EditorMenuScreen implements MenuScreen {
             CommandMenuEntry copiesRoofRow = copiesBlockRowFor(EditorStatusHudOverlay.roomMode(),
                 games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane.ROOF);
             if (copiesRoofRow != null) out.add(copiesRoofRow);
+            CommandMenuEntry doorWallRow = doorWallRowFor(EditorStatusHudOverlay.roomMode());
+            if (doorWallRow != null) out.add(doorWallRow);
             CommandMenuEntry contentsRow = roomContentsRowFor(EditorStatusHudOverlay.roomMode());
             if (contentsRow != null) out.add(contentsRow);
             CommandMenuEntry booksRow = roomBooksRowFor(EditorStatusHudOverlay.roomMode());
@@ -462,6 +464,22 @@ public final class EditorMenuScreen implements MenuScreen {
             new CommandMenuEntry.Stay("Edit",
                 "dungeontrain editor portals copies " + plane.id() + " edit"),
             0.72);
+    }
+
+    /**
+     * The Door Wall row, or null unless the walls are set to Endless Repetition — the one mode whose
+     * appended tiles carry a wall of their own.
+     *
+     * <p>Sits directly under Copies, beside which it belongs: both describe what an appended tile is
+     * made of. Off by default, so a room that has never been given the setting shows "Sealed" and
+     * behaves exactly as it always did.</p>
+     */
+    static CommandMenuEntry doorWallRowFor(String currentMode) {
+        if (currentMode == null || EditorStatusPacket.NO_MODE.equals(currentMode)) return null;
+        if (!EditorPlotLabelsRenderer.hasDoorWallRow(currentMode)) return null;
+        return new CommandMenuEntry.Stay(
+            EditorPlotLabelsRenderer.doorWallLabel(currentMode),
+            "dungeontrain editor portals doorwall next");
     }
 
     /**
