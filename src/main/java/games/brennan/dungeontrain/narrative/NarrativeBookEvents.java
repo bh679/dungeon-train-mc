@@ -426,7 +426,8 @@ public final class NarrativeBookEvents {
         // so a cold shared pool must not skip the walk entirely the way it used to.
         boolean shared = SharedBookGate.canDiscover() && !SharedBookPool.isEmpty();
         boolean boards = !LeaderboardPool.populated().isEmpty();
-        if (!shared && !boards) return;
+        // No early return on !shared && !boards any more: a Faulthurst stat book has no pool to be
+        // warm — the run it reports on is always there — so its refresh must run on every sweep.
         Inventory inv = player.getInventory();
         for (int i = 0; i < inv.getContainerSize(); i++) {
             ItemStack stack = inv.getItem(i);
@@ -435,6 +436,11 @@ public final class NarrativeBookEvents {
                 resolvePending(player, stack);
             } else if (boards && LeaderboardBookPendingTag.isPending(stack)) {
                 resolveLeaderboardPending(player, stack);
+            } else if (RunStatBookTag.is(stack)) {
+                // Keeps the number current until the book is opened; a no-op once it is, and a no-op
+                // whenever the count has not moved (RunStatBookFactory.refresh compares the RENDERED
+                // value, so a steady book costs a comparison and never touches the stack).
+                RunStatBookFactory.refresh(stack, player);
             }
         }
     }

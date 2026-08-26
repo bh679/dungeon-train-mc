@@ -46,6 +46,16 @@ public final class DeathNoteSigning {
         // insensitive via NoteKind.of). Signing the note is the rewarded action.
         ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, signedActionId(kind));
 
+        // Per-run tally, for the Faulthurst stat book's twin of the notes-written leaderboards.
+        // Counted here rather than at delivery for the same reason the advancement is: signing is
+        // the act, and whether the note ever finds a target is somebody else's world's business.
+        var run = player.getData(games.brennan.dungeontrain.registry.ModDataAttachments.PLAYER_RUN_STATE.get());
+        if (kind == NoteKind.LOVE) {
+            run.incrementLoveNotesWritten();
+        } else {
+            run.incrementDeathNotesWritten();
+        }
+
         // Consume the writable book & quill — the player keeps nothing (as when signing a shared book).
         writable.shrink(1);
 

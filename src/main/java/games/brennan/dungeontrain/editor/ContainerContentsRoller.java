@@ -51,6 +51,7 @@ import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.event.SharedBookGate;
 import games.brennan.dungeontrain.narrative.NarrativeProgressData;
 import games.brennan.dungeontrain.narrative.LeaderboardBookPendingTag;
+import games.brennan.dungeontrain.narrative.RunStatBookFactory;
 import games.brennan.dungeontrain.narrative.LeaderboardPool;
 import games.brennan.dungeontrain.narrative.RandomBookFactory;
 import games.brennan.dungeontrain.narrative.RandomBookRegistry;
@@ -94,6 +95,7 @@ public final class ContainerContentsRoller {
     /** Salt for the random-book placeholder substitution. */
     private static final long SALT_RANDOM_BOOK = 0xB0011AB1ECAFEBE0L;
     private static final long SALT_LEADERBOARD_BOOK = 0x1EADE7B0A2DB00C5L;
+    private static final long SALT_STAT_BOOK = 0x5A7B00C0FA017A11L;
     /** Salt for the "shared vs local pool" coin-flip on a placeholder book roll. */
     private static final long SALT_SHARED_BOOK_CHANCE = 0x5A1EDB00C0FFEE12L;
 
@@ -905,6 +907,12 @@ public final class ContainerContentsRoller {
             return bakeLeaderboardPlaceholder(localPos, worldSeed, carriageIndex, slot);
         }
 
+        // Editor-only placeholder dungeontrain:random_stat_book — a deliberately-placed Faulthurst stat
+        // book. Same bake as the random_book share above, minus the coin flip: somebody asked for one.
+        if (item == ModItems.RANDOM_STAT_BOOK.get()) {
+            return bakeStatBook(localPos, worldSeed, carriageIndex, slot);
+        }
+
         if (item == ModItems.RANDOM_PLAYERBOOK.get()) {
             if (SharedBookGate.canDiscover()) {
                 // Always defer to per-player selection at hand-time. Bake a local placeholder so the slot
@@ -1330,6 +1338,23 @@ public final class ContainerContentsRoller {
      * <p>Returns empty only when the local random-book pool itself is empty, which leaves the caller
      * to fall through rather than drop a useless placeholder into the world.</p>
      */
+    /**
+     * Bake a Faulthurst stat book for this slot.
+     *
+     * <p>Simpler than {@link #bakeLeaderboardPlaceholder} in the one way that matters: nothing has to
+     * be fetched, so this always produces a real, readable, signed book and never returns empty. The
+     * seed fixes the note's WORDING — its opener and its closing remark — here and for good.</p>
+     *
+     * <p>What a container cannot know is the READER, and the number is about them. So the book leaves
+     * here with no stat line at all — an opener and a follow-up, which is a terse but honest scrap —
+     * and {@code RunStatBookEvents} fills the number in the moment it reaches a hand, keeping it
+     * current until the book is opened. See {@code RunStatBookTag}.</p>
+     */
+    private static ItemStack bakeStatBook(BlockPos localPos, long worldSeed,
+                                          int carriageIndex, int slot) {
+        return RunStatBookFactory.create(mix(localPos, worldSeed, carriageIndex, slot, SALT_STAT_BOOK));
+    }
+
     private static ItemStack bakeLeaderboardPlaceholder(BlockPos localPos, long worldSeed,
                                                         int carriageIndex, int slot) {
         long seed = mix(localPos, worldSeed, carriageIndex, slot, SALT_LEADERBOARD_BOOK);
