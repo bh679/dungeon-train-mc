@@ -129,7 +129,6 @@ public final class DungeonTrainConfig {
      * all books instead of staying community-heavy. Default 0.75.
      */
     public static final double DEFAULT_LEADERBOARD_BOOK_LOOT_CHANCE = 0.10;
-    public static final double DEFAULT_STAT_BOOK_LOOT_CHANCE = 0.08;
     public static final double DEFAULT_SHARED_BOOK_LOOT_MAX_CHANCE = 0.75;
     public static final double MIN_SHARED_BOOK_LOOT_CHANCE = 0.0;
     public static final double MAX_SHARED_BOOK_LOOT_CHANCE = 1.0;
@@ -279,7 +278,6 @@ public final class DungeonTrainConfig {
     public static final ModConfigSpec.BooleanValue LOVE_NOTES_ENABLED;
     public static final ModConfigSpec.BooleanValue LETTERS_ENABLED;
     public static final ModConfigSpec.DoubleValue LEADERBOARD_BOOK_LOOT_CHANCE;
-    public static final ModConfigSpec.DoubleValue STAT_BOOK_LOOT_CHANCE;
     public static final ModConfigSpec.DoubleValue SHARED_BOOK_LOOT_MAX_CHANCE;
     public static final ModConfigSpec.IntValue SHARED_BOOK_REPEAT_GROUPS;
     public static final ModConfigSpec.IntValue PORTAL_ROOM_AUTHOR_MIN_BOOKS;
@@ -336,7 +334,6 @@ public final class DungeonTrainConfig {
         LOVE_NOTES_ENABLED = pair.getLeft().loveNotesEnabled;
         LETTERS_ENABLED = pair.getLeft().lettersEnabled;
         LEADERBOARD_BOOK_LOOT_CHANCE = pair.getLeft().leaderboardBookLootChance;
-        STAT_BOOK_LOOT_CHANCE = pair.getLeft().statBookLootChance;
         SHARED_BOOK_LOOT_MAX_CHANCE = pair.getLeft().sharedBookLootMaxChance;
         SHARED_BOOK_REPEAT_GROUPS = pair.getLeft().sharedBookRepeatGroups;
         PORTAL_ROOM_AUTHOR_MIN_BOOKS = pair.getLeft().portalRoomAuthorMinBooks;
@@ -484,14 +481,6 @@ public final class DungeonTrainConfig {
                         "The roll only fires when the relay has actually served a board; offline, or before the first board",
                         "arrives, the slot silently keeps the ordinary random book it would otherwise have held.")
                 .defineInRange("leaderboardBookLootChance", DEFAULT_LEADERBOARD_BOOK_LOOT_CHANCE, 0.0, 1.0);
-        ModConfigSpec.DoubleValue statBookLootChance = b
-                .comment("Per-roll chance that a random book found in loot is instead a FAULTHURST STAT BOOK — a one-page",
-                        "note, signed by the mod's narrator, naming one real number from the finder's current run (the",
-                        "carriage they have reached, how long they have been aboard, how many chests they have opened, and",
-                        "so on). Default 0.08 (8% of random books). Set 0.0 to turn them off entirely.",
-                        "Unlike leaderboard books these need nothing fetched — the run they report on is always there — so",
-                        "the roll always produces a book, offline included.")
-                .defineInRange("statBookLootChance", DEFAULT_STAT_BOOK_LOOT_CHANCE, 0.0, 1.0);
         ModConfigSpec.DoubleValue sharedBookLootMaxChance = b
                 .comment("The STARTING maximum per-roll chance that a chest book comes from the shared community pool instead",
                         "of the local narrative pool. The effective chance SCALES with progress: 0% when none of the hardcoded",
@@ -672,7 +661,6 @@ public final class DungeonTrainConfig {
                 worldInfoToRelay, shareBooksEnabled, discoverSharedBooksEnabled, deathNotesEnabled,
                 loveNotesEnabled, lettersEnabled,
                 leaderboardBookLootChance,
-                statBookLootChance,
                 sharedBookLootMaxChance, sharedBookRepeatGroups, portalRoomAuthorMinBooks, portalRoomDaylight,
                 discoverNarrativesEnabled, narrativeDiscoveryRampThreshold,
                 difficultyLevelNoticeToDiscord, introCinematicEnabled, introCinematicDurationTicks,
@@ -901,12 +889,6 @@ public final class DungeonTrainConfig {
         return Math.max(0.0, Math.min(1.0, v));
     }
 
-    /** Per-roll chance a random book in loot is a Faulthurst stat book instead. Clamped to [0,1]. */
-    public static double getStatBookLootChance() {
-        double v = isLoaded() ? STAT_BOOK_LOOT_CHANCE.get() : DEFAULT_STAT_BOOK_LOOT_CHANCE;
-        return Math.max(0.0, Math.min(1.0, v));
-    }
-
     public static double getSharedBookLootMaxChance() {
         double v = isLoaded() ? SHARED_BOOK_LOOT_MAX_CHANCE.get() : DEFAULT_SHARED_BOOK_LOOT_MAX_CHANCE;
         return Math.max(MIN_SHARED_BOOK_LOOT_CHANCE, Math.min(MAX_SHARED_BOOK_LOOT_CHANCE, v));
@@ -1111,7 +1093,6 @@ public final class DungeonTrainConfig {
             ModConfigSpec.BooleanValue loveNotesEnabled,
             ModConfigSpec.BooleanValue lettersEnabled,
             ModConfigSpec.DoubleValue leaderboardBookLootChance,
-            ModConfigSpec.DoubleValue statBookLootChance,
             ModConfigSpec.DoubleValue sharedBookLootMaxChance,
             ModConfigSpec.IntValue sharedBookRepeatGroups,
             ModConfigSpec.IntValue portalRoomAuthorMinBooks,

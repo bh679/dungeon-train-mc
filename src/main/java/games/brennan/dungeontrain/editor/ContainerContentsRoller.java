@@ -872,14 +872,6 @@ public final class ContainerContentsRoller {
                 if (!leaderboard.isEmpty()) return leaderboard;
                 // Local pool empty — fall through to the normal random-book path rather than an empty slot.
             }
-            // A further share are FAULTHURST STAT BOOKS — a note naming one number from the finder's own
-            // run. Same reasoning as the leaderboard share above: a distinct kind of find that should feel
-            // like one of the random books rather than a separate item. Unlike that one it can never fail,
-            // because there is no pool to be empty — so it returns unconditionally.
-            if (rollDoubleChance(DungeonTrainConfig.getStatBookLootChance(), localPos, worldSeed,
-                                 carriageIndex, slot, SALT_STAT_BOOK)) {
-                return bakeStatBook(localPos, worldSeed, carriageIndex, slot);
-            }
             // Community shared-books DISCOVERY: when the server has opted in and the per-roll coin-flip
             // hits the read-scaled chance (0% until hardcoded random books get read, up to the config
             // max at 100% read), substitute an approved community book from the relay pool (crediting
