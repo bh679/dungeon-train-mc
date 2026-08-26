@@ -14,7 +14,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * <p>{@code event.PortalContainerEvents} redirects a click on a corridor's twin-side container to
  * the canonical block entity in the carriage's sub-level plot — see {@link PortalContainerLink}. The
  * two copies are nowhere near each other in coordinates, and vanilla shuts a menu the moment its
- * viewer is out of reach of the block backing it: {@code ServerPlayer.doTick} tests
+ * viewer is out of reach of the block backing it: {@code ServerPlayer.tick} tests
  * {@code containerMenu.stillValid(this)} every tick, which for a container bottoms out in a distance
  * check against the block entity's own position. A remotely opened menu would slam shut on the very
  * next tick.</p>

@@ -19,7 +19,7 @@ import org.spongepowered.asm.mixin.injection.At;
  *
  * <p>A corridor's container and its twin's are one inventory — {@link PortalContainerLink} — so a
  * click on the twin copy is redirected to the canonical block entity in the carriage's sub-level
- * plot. Those two sit nowhere near each other in coordinates, and {@code ServerPlayer.doTick} closes
+ * plot. Those two sit nowhere near each other in coordinates, and {@code ServerPlayer.tick} closes
  * any menu whose {@code stillValid} fails, which for a container is a reach check against the block
  * entity's own position. Without this the redirected menu would shut on the next tick, every time.</p>
  *
@@ -43,7 +43,7 @@ public abstract class ServerPlayerPortalContainerReachMixin {
     private static final double CONTAINER_REACH_PADDING = 4.0;
 
     @WrapOperation(
-        method = "doTick",
+        method = "tick()V",
         at = @At(value = "INVOKE",
             target = "Lnet/minecraft/world/inventory/AbstractContainerMenu;"
                 + "stillValid(Lnet/minecraft/world/entity/player/Player;)Z"))
