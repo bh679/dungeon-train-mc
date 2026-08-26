@@ -2811,5 +2811,71 @@
         "3"
       ]
     }
+  },
+  "gui.dungeontrain.translate.group.count": {
+    "1": {
+      "label": "how many variations are in the set",
+      "examples": [
+        "13",
+        "4"
+      ]
+    }
+  },
+  "gui.dungeontrain.translate.group.needs": {
+    "1": {
+      "label": "how many of them still need a human",
+      "examples": [
+        "8",
+        "1"
+      ]
+    }
+  },
+  "gui.dungeontrain.translate.group.position": {
+    "1": {
+      "label": "which variation this is",
+      "examples": [
+        "3",
+        "1"
+      ]
+    },
+    "2": {
+      "label": "how many there are",
+      "examples": [
+        "13",
+        "4"
+      ]
+    }
+  },
+  "gui.dungeontrain.translate.group.position.needs": {
+    "1": {
+      "label": "which variation this is",
+      "examples": [
+        "3",
+        "1"
+      ]
+    },
+    "2": {
+      "label": "how many there are",
+      "examples": [
+        "13",
+        "4"
+      ]
+    },
+    "3": {
+      "label": "how many of them still need a human",
+      "examples": [
+        "8",
+        "1"
+      ]
+    }
+  },
+  "gui.dungeontrain.translate.group.next.tip": {
+    "1": {
+      "label": "how many of the set still need a human",
+      "examples": [
+        "8",
+        "1"
+      ]
+    }
   }
 }
