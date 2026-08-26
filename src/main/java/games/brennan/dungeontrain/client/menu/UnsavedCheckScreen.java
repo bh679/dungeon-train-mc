@@ -12,7 +12,8 @@ import java.util.Set;
 
 /**
  * Confirmation screen drilled into from {@link EnterCategoryMenuScreen}
- * before {@code /dt editor &lt;targetCategory&gt;} runs. The category
+ * before {@code /dt editor &lt;targetCategory&gt;} runs — or, via
+ * {@link #before}, in front of any other action that would cost unsaved work. The category
  * switch wipes every plot via
  * {@link games.brennan.dungeontrain.editor.EditorCategory#clearAllPlots},
  * which silently destroys in-world edits not yet saved to disk. This
@@ -52,16 +53,39 @@ import java.util.Set;
 public final class UnsavedCheckScreen implements MenuScreen {
 
     private final String targetCategory;
+    /** The command the Continue row — and the clean-state bypass — dispatches. */
+    private final String followUpCommand;
+    private final String title;
     private boolean requestSent = false;
     private boolean bypassDispatched = false;
     /** Model ids the user has already clicked Save on this session. Greys out the row's Save button. */
     private final Set<String> savedThisSession = new HashSet<>();
 
     public UnsavedCheckScreen(String targetCategory) {
-        this.targetCategory = targetCategory;
+        this(targetCategory, "dungeontrain editor " + targetCategory, "Save before switch?");
     }
 
-    @Override public String title() { return "Save before switch?"; }
+    /**
+     * The same check in front of an action that is not a category switch.
+     *
+     * <p>{@code targetCategory} still decides how a dirty row is labelled — a row from another
+     * category is prefixed with its own, so "what is this?" has an answer — but what happens after
+     * Continue is the caller's command. The editor side panel's "Test the Carriage" row is the
+     * first of these: it leaves the plot and re-seeds the train, which costs unsaved work exactly
+     * the way a category switch does.</p>
+     */
+    public static UnsavedCheckScreen before(String targetCategory, String followUpCommand,
+                                            String title) {
+        return new UnsavedCheckScreen(targetCategory, followUpCommand, title);
+    }
+
+    private UnsavedCheckScreen(String targetCategory, String followUpCommand, String title) {
+        this.targetCategory = targetCategory;
+        this.followUpCommand = followUpCommand;
+        this.title = title;
+    }
+
+    @Override public String title() { return title; }
 
     @Override public List<CommandMenuEntry> entries() {
         if (!requestSent) {
@@ -86,7 +110,7 @@ public final class UnsavedCheckScreen implements MenuScreen {
             // prevents the dispatch firing twice on the same screen.
             if (!bypassDispatched) {
                 bypassDispatched = true;
-                CommandRunner.run("dungeontrain editor " + targetCategory);
+                CommandRunner.run(followUpCommand);
                 CommandMenuState.close();
             }
             return List.of(new CommandMenuEntry.Loading("Entering..."));
@@ -156,8 +180,7 @@ public final class UnsavedCheckScreen implements MenuScreen {
         out.add(new CommandMenuEntry.Label(""));
 
         String continueLabel = anyOutstanding ? "Don't save - continue" : "Continue";
-        out.add(new CommandMenuEntry.Run(continueLabel,
-            "dungeontrain editor " + targetCategory));
+        out.add(new CommandMenuEntry.Run(continueLabel, followUpCommand));
         out.add(new CommandMenuEntry.Back("< Back"));
         return out;
     }

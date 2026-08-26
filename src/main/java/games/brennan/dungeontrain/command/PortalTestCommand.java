@@ -3,6 +3,10 @@ package games.brennan.dungeontrain.command;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
+import games.brennan.dungeontrain.editor.CarriageEditor;
+import games.brennan.dungeontrain.editor.EditorCategory;
+import games.brennan.dungeontrain.editor.PortalRoomEditor;
+import games.brennan.dungeontrain.editor.TunnelEditor;
 import games.brennan.dungeontrain.event.PortalTestPlacementService;
 import games.brennan.dungeontrain.portal.PortalCarriageSelection;
 import games.brennan.dungeontrain.portal.PortalForcedGroups;
@@ -104,6 +108,11 @@ public final class PortalTestCommand {
         int trainY = data.getTrainY();
         TrackGeometry geometry = TrackGeometry.from(dims, trainY);
 
+        // Leave the editor first if they are in it — the menu's "Test the Carriage" row is reachable
+        // from inside a portal-room plot, and a player teleported to the train with a session still
+        // open behind them keeps the editor's game mode and leaves their plots standing in the sky.
+        boolean leftEditor = exitEditorSession(player, server);
+
         // Last press wins rather than accumulating: pressing the button twice should replace the test
         // carriage, not litter the track with forced groups.
         PortalForcedGroups.clear();
@@ -144,6 +153,12 @@ public final class PortalTestCommand {
 
         PortalTestPlacementService.enqueue(player, trainLevel, spawnX);
 
+        if (leftEditor) {
+            source.sendSuccess(() -> Component.literal(
+                "Left the editor first — plots cleared, and you're back off creative if that is where "
+                    + "you started.").withStyle(ChatFormatting.GRAY), false);
+        }
+
         source.sendSuccess(() -> Component.literal(
             "Spawning a dimensional carriage here — you'll land in front of its entry corridor once "
                 + "the pair goes live. Walk straight in. The world's portal rate is unchanged."), true);
@@ -157,5 +172,26 @@ public final class PortalTestCommand {
                 .withStyle(ChatFormatting.YELLOW), false);
         }
         return 1;
+    }
+
+    /**
+     * Unwind whichever editor session this player has open, and clear the plots behind them.
+     *
+     * <p>The same sequence {@code EditorCommand.runExit} runs, with {@link PortalRoomEditor} tried
+     * first because a portal room is where this command is most likely to be pressed from.</p>
+     *
+     * @return true if a session was actually unwound
+     */
+    private static boolean exitEditorSession(ServerPlayer player, MinecraftServer server) {
+        boolean exited = PortalRoomEditor.exit(player)
+            || TunnelEditor.exit(player)
+            || CarriageEditor.exit(player);
+        if (!exited) return false;
+
+        ServerLevel overworld = server.overworld();
+        EditorCategory.clearAllPlots(overworld, DungeonTrainWorldData.get(overworld).dims());
+        LOGGER.info("[DungeonTrain] portal test: unwound {}'s editor session before re-seeding",
+            player.getName().getString());
+        return true;
     }
 }

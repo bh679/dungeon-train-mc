@@ -5,22 +5,24 @@ import games.brennan.dungeontrain.client.DebugFlagsState;
 import java.util.List;
 
 /**
- * Drilled into from {@link MainMenuScreen} as "Debug". Surfaces the
+ * Drilled into from {@link MainMenuScreen} as "Test Live". Surfaces the
  * Wireframes sub-menu, the Chat Logs sub-menu, and the auto/manual spawn
  * switch — wireframes are exposed as a {@link CommandMenuEntry.DrillIn}
  * into {@link WireframesMenuScreen} so each overlay gets its own toggle
  * plus an "All On / All Off" master, and chat logs follow the same
  * pattern via {@link ChatLogsMenuScreen} for the spawn / collision chat
  * broadcasts. The Manual Spawn flag stays inline because there's only
- * one of it and it's the only non-grouped server-side debug toggle. Spawn
- * Dimensional Carriage re-seeds the train around a forced portal group and
- * drops you at its entry corridor — see {@code PortalTestCommand}. All
+ * one of it and it's the only non-grouped server-side debug toggle. Test the
+ * Carriage re-seeds the train around a forced portal group and drops you at
+ * its entry corridor — see {@code PortalTestCommand}; the same row is on the
+ * editor side panel while a portal room is open. All
  * flags live in {@link games.brennan.dungeontrain.debug.DebugFlags}
  * server-side and are mirrored on the client by {@link DebugFlagsState}.
  */
 public final class DebugMenuScreen implements MenuScreen {
 
-    @Override public String title() { return "Debug"; }
+    // Matches the row label in MainMenuScreen: the breadcrumb reads back what was clicked.
+    @Override public String title() { return "Test Live"; }
 
     @Override public List<CommandMenuEntry> entries() {
         boolean manual = DebugFlagsState.manualSpawnMode();
@@ -38,7 +40,7 @@ public final class DebugMenuScreen implements MenuScreen {
                 "dungeontrain debug loot-rolls on",
                 "dungeontrain debug loot-rolls off"
             ),
-            new CommandMenuEntry.Run("Spawn Dimensional Carriage", "dungeontrain portal test"),
+            new CommandMenuEntry.Run("Test the Carriage", "dungeontrain portal test"),
             new CommandMenuEntry.Run("Debug Scan", "dungeontrain debug scan"),
             new CommandMenuEntry.Back("< Back")
         );

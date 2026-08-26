@@ -5,7 +5,8 @@ import java.util.List;
 /**
  * Root menu shown when the player is NOT in an editor plot. Kept minimal
  * per the spec — one Editor button, a Train submenu, and a Debug Scan
- * shortcut. Editor-only actions (devmode, save, reset, category switch)
+ * shortcut. The debug drill-in is labelled <b>Test Live</b>: what is behind
+ * it is testing against a running world, and "Debug" undersold that. Editor-only actions (devmode, save, reset, category switch)
  * live in {@link EditorMenuScreen} and are only reachable while in an
  * editor plot.
  *
@@ -26,7 +27,7 @@ public final class MainMenuScreen implements MenuScreen {
             EditorMenuScreen.myBuildsEntry(),
             new CommandMenuEntry.DrillIn("Train", new TrainMenuScreen()),
             new CommandMenuEntry.DrillIn("Options", new OptionsMenuScreen()),
-            new CommandMenuEntry.DrillIn("Debug", new DebugMenuScreen())
+            new CommandMenuEntry.DrillIn("Test Live", new DebugMenuScreen())
         );
     }
 }
