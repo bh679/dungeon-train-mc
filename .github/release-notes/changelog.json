@@ -8805,9 +8805,9 @@
       "summary": "Shift-clicking a stackable item out of your offhand slot no longer duplicates it. The bug doubled the stack every time and affected every player.",
       "highlights": [],
       "date": "2026-08-26",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.661.0",
+      "released_at": "2026-08-26T05:58:57Z"
     }
   ]
 }
