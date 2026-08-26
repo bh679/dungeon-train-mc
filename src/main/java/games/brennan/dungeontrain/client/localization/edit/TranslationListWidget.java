@@ -53,6 +53,8 @@ public final class TranslationListWidget extends AbstractWidget {
     /** This player has read the machine translation and let it stand. */
     private static final String DISMISSED_TAG = "\u2713";
     private static final int DISMISSED_COLOUR = 0xFF7F7F7F;
+    /** Separates the two halves of a collapsed row's badge: how many, and how many still waiting. */
+    private static final String BADGE_SEPARATOR = " \u00b7 ";
 
     private final Font font;
     private final Consumer<TranslationUnit> onSelect;
@@ -67,6 +69,11 @@ public final class TranslationListWidget extends AbstractWidget {
     private java.util.function.Predicate<TranslationUnit> dismissed = (u) -> false;
     /** A row's reviewer reply, or null/blank when there is none; never null itself. */
     private java.util.function.Function<TranslationUnit, String> noteText = (u) -> null;
+    /**
+     * What set each row stands for while the list is collapsed, or null while it is not. A row whose
+     * lookup returns null is an ordinary string standing for itself — see {@link TranslationGroups}.
+     */
+    private java.util.function.Function<TranslationUnit, TranslationGroups.Badge> groupBadge;
     /** True while any VISIBLE row has a reply — recomputed in {@link #setUnits}. */
     private boolean showingNotes;
     private int scroll;
@@ -107,6 +114,18 @@ public final class TranslationListWidget extends AbstractWidget {
      */
     public void setNoteText(java.util.function.Function<TranslationUnit, String> lookup) {
         this.noteText = lookup == null ? (u) -> null : lookup;
+    }
+
+    /**
+     * Turn the collapsed-row badge on (a lookup) or off (null).
+     *
+     * <p>A lookup rather than a field on the row, because the counts move under the list: marking a
+     * variation good as is has to take it off its set's tally without the row it was counted on
+     * being rebuilt.</p>
+     */
+    public void setGroupBadge(
+        java.util.function.Function<TranslationUnit, TranslationGroups.Badge> lookup) {
+        this.groupBadge = lookup;
     }
 
     /** Replace the visible rows, keeping the scroll position where it still makes sense. */
@@ -188,9 +207,19 @@ public final class TranslationListWidget extends AbstractWidget {
         // Line 1: the key, plus the row's badges right-aligned so the eye can scan a column of
         // them. Right to left, in the order they matter: a reviewer's reply is the one thing here
         // somebody is waiting on the player for, so it sits outermost.
-        g.drawString(font, font.plainSubstrByWidth(unit.label(), textWidth - 32),
+        // The set this row stands for, outside the per-string marks: it is a statement about
+        // several strings, and reading it as a badge on this one would be wrong. Measured before
+        // the key is drawn, because the key has to give it the room rather than run under it.
+        String badge = badgeText(unit);
+        int tagRoom = 32 + (badge == null ? 0 : font.width(badge) + PAD);
+        g.drawString(font, font.plainSubstrByWidth(unit.label(), Math.max(0, textWidth - tagRoom)),
             textX, lineY, KEY_COLOUR, false);
         int tagX = getX() + width - SCROLLBAR_W - 3;
+        if (badge != null) {
+            tagX -= font.width(badge);
+            g.drawString(font, badge, tagX, lineY, badgeColour(unit), false);
+            tagX -= PAD;
+        }
         if (hasNote(unit)) {
             tagX -= font.width(NOTE_TAG);
             g.drawString(font, NOTE_TAG, tagX, lineY, NOTE_COLOUR, false);
@@ -231,6 +260,28 @@ public final class TranslationListWidget extends AbstractWidget {
             g.drawString(font, oneLine(NOTE_TAG + " " + note, textWidth), textX, lineY,
                 NOTE_COLOUR, false);
         }
+    }
+
+    /**
+     * {@code ×13 · 8 need review} for a collapsed row, or null for a row standing for itself.
+     * The second half is dropped once the set is done — a tally of zero is not news.
+     */
+    private String badgeText(TranslationUnit unit) {
+        TranslationGroups.Badge badge = groupBadge == null ? null : groupBadge.apply(unit);
+        if (badge == null || badge.size() < 2) {
+            return null;
+        }
+        String count = Component.translatable(
+            "gui.dungeontrain.translate.group.count", badge.size()).getString();
+        return badge.needingReview() == 0 ? count
+            : count + BADGE_SEPARATOR + Component.translatable(
+                "gui.dungeontrain.translate.group.needs", badge.needingReview()).getString();
+    }
+
+    /** Blue while the set has work left in it, the same blue the AI tag uses; grey once it has not. */
+    private int badgeColour(TranslationUnit unit) {
+        TranslationGroups.Badge badge = groupBadge == null ? null : groupBadge.apply(unit);
+        return badge != null && badge.needingReview() > 0 ? AI_COLOUR : SHIPPED_COLOUR;
     }
 
     /** Collapse newlines so a multi-paragraph book variant still occupies exactly one line. */
