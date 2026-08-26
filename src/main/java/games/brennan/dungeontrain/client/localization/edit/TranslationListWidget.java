@@ -47,6 +47,10 @@ public final class TranslationListWidget extends AbstractWidget {
     /** The same blue the language list's AI-fraction ring uses. */
     private static final int AI_COLOUR = 0xFF5B9BD5;
     private static final String AI_TAG = "AI";
+    /** Nothing has been written here at all — the emptiest kind of work still to do. */
+    private static final String UNTRANSLATED_TAG = "NEW";
+    /** The line is still the English source, word for word. */
+    private static final String SAME_AS_SOURCE_TAG = "EN";
     /** A reviewer has written back about this string — see TranslationReviewNotes. */
     private static final String NOTE_TAG = "\u25CF";
     private static final int NOTE_COLOUR = 0xFFE8A33D;
@@ -233,6 +237,14 @@ public final class TranslationListWidget extends AbstractWidget {
         } else if (TranslationFilters.needsHuman(unit, approved)) {
             tagX -= font.width(AI_TAG);
             g.drawString(font, AI_TAG, tagX, lineY, AI_COLOUR, false);
+        } else if (TranslationFilters.untranslated(unit, approved)) {
+            // Why this row is in the queue at all. AI keeps the branch above it: where a string is
+            // both flagged and blank, which machine wrote it is the more useful fact.
+            tagX -= font.width(UNTRANSLATED_TAG);
+            g.drawString(font, UNTRANSLATED_TAG, tagX, lineY, AI_COLOUR, false);
+        } else if (TranslationFilters.sameAsSource(unit, approved)) {
+            tagX -= font.width(SAME_AS_SOURCE_TAG);
+            g.drawString(font, SAME_AS_SOURCE_TAG, tagX, lineY, SHIPPED_COLOUR, false);
         }
         lineY += font.lineHeight;
 

@@ -83,4 +83,73 @@ public final class TranslationFilters {
                                      java.util.function.Predicate<TranslationUnit> dismissed) {
         return needsHuman(unit, approved) && (dismissed == null || !dismissed.test(unit));
     }
+
+    /**
+     * What this locale currently shows for {@code unit}, before this player's own pending work —
+     * the approved override if somebody's fix has been released, otherwise what the jar ships.
+     *
+     * <p>The APPROVED layer, never the merged one, for the same reason {@link #needsHuman} uses it:
+     * every question below is about whether the LANGUAGE still needs this string done, and a
+     * translator's own unsaved edit is the work, not the answer to it.</p>
+     */
+    private static String currentText(TranslationUnit unit, TranslationEdits approved) {
+        String override = overrideOf(unit, approved);
+        return override != null ? override : unit.shipped();
+    }
+
+    /** Whether nothing has been written here at all — no shipped text, no approved fix. */
+    public static boolean untranslated(TranslationUnit unit, TranslationEdits approved) {
+        if (unit == null) {
+            return false;
+        }
+        String current = currentText(unit, approved);
+        return current == null || current.isBlank();
+    }
+
+    /**
+     * Whether this locale's text is still the English source, word for word.
+     *
+     * <p>Usually a line that was copied across and never touched. Sometimes it is genuinely correct
+     * — a proper noun, a bare {@code %s} — and the queue has an answer for that already: the
+     * translator marks it <b>good as is</b> and {@link TranslationDismissals} takes it out for
+     * good. Better to ask once about a name than to leave a whole file of untouched English
+     * invisible.</p>
+     *
+     * <p>Requires a source to compare against: the sibling mods' units carry {@code source = ""}
+     * because their English lives in their own repos, and without this guard every one of them
+     * would match on the empty string.</p>
+     */
+    public static boolean sameAsSource(TranslationUnit unit, TranslationEdits approved) {
+        if (unit == null || unit.source() == null || unit.source().isBlank()) {
+            return false;
+        }
+        String current = currentText(unit, approved);
+        return current != null && current.trim().equals(unit.source().trim());
+    }
+
+    /**
+     * The editor's working queue — everything this language still has left to do.
+     *
+     * <p>Broader than {@link #needsHuman} on purpose. That one asks the narrow provenance question
+     * ("is this machine translation nobody has checked?"), which is the right question for the AI
+     * review filter and the wrong one for the queue: a key the locale has never had, and a line
+     * still sitting in English, carry no provenance entry at all, so the filter meant to surface
+     * the outstanding work was the one place they could not be seen.</p>
+     *
+     * <p>Dismissals apply here exactly as they do to {@link #needsHuman}: a speaker who has read
+     * the line and let it stand has done the review, whichever of the three reasons put it in
+     * front of them.</p>
+     *
+     * @param dismissed this locale's dismissals, or null to ask the unfiltered question
+     */
+    public static boolean stillToDo(TranslationUnit unit, TranslationEdits approved,
+                                    java.util.function.Predicate<TranslationUnit> dismissed) {
+        if (unit == null) {
+            return false;
+        }
+        boolean outstanding = needsHuman(unit, approved)
+            || untranslated(unit, approved)
+            || sameAsSource(unit, approved);
+        return outstanding && (dismissed == null || !dismissed.test(unit));
+    }
 }

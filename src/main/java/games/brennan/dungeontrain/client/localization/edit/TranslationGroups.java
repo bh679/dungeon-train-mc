@@ -38,8 +38,12 @@ public final class TranslationGroups {
      * What a collapsed row reports about the set behind it: how many variations there are, and how
      * many of them still want a human.
      *
+     * <p>"Wants a human" here is the queue's broad question ({@link TranslationFilters#stillToDo}),
+     * not the narrow provenance one: a set of twenty strings nobody has translated yet would
+     * otherwise badge "0 waiting" while being entirely outstanding work.</p>
+     *
      * @param size          members in the set — always 2 or more, since a set of one is not a set
-     * @param needingReview how many of them {@link TranslationFilters#needsHuman} still holds for
+     * @param needingReview how many of them {@link TranslationFilters#stillToDo} still holds for
      */
     public record Badge(int size, int needingReview) {}
 
@@ -151,7 +155,7 @@ public final class TranslationGroups {
                                     Predicate<TranslationUnit> dismissed) {
         int count = 0;
         for (TranslationUnit unit : members == null ? List.<TranslationUnit>of() : members) {
-            if (TranslationFilters.needsHuman(unit, approved, dismissed)) {
+            if (TranslationFilters.stillToDo(unit, approved, dismissed)) {
                 count++;
             }
         }
@@ -179,7 +183,7 @@ public final class TranslationGroups {
             if (from >= 0 && sameUnit(candidate, current)) {
                 continue; // came all the way round to where we started
             }
-            if (TranslationFilters.needsHuman(candidate, approved, dismissed)) {
+            if (TranslationFilters.stillToDo(candidate, approved, dismissed)) {
                 return candidate;
             }
         }
@@ -216,8 +220,8 @@ public final class TranslationGroups {
             }
             TranslationUnit held = representative.get(key);
             if (held == null
-                || (!TranslationFilters.needsHuman(held, approved, dismissed)
-                    && TranslationFilters.needsHuman(unit, approved, dismissed))) {
+                || (!TranslationFilters.stillToDo(held, approved, dismissed)
+                    && TranslationFilters.stillToDo(unit, approved, dismissed))) {
                 representative.put(key, unit);
             }
         }

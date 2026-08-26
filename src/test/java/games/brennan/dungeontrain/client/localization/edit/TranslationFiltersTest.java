@@ -10,8 +10,10 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * What the translation editor's "Needs a human" queue does and does not ask a volunteer to work on.
- * Pure — no Minecraft bootstrap, which is the reason the predicate lives outside the screen.
+ * What the translation editor's queues do and do not ask a volunteer to work on — the narrow
+ * "Needs a human" one (AI provenance) and the broad "Still to do" one (that, plus everything
+ * blank or still in English). Pure — no Minecraft bootstrap, which is the reason the predicates
+ * live outside the screen.
  */
 class TranslationFiltersTest {
 
@@ -106,6 +108,118 @@ class TranslationFiltersTest {
         assertNull(TranslationFilters.overrideOf(langUnit("gui.a", true), null));
         // No dismissal set at all asks the plain question rather than throwing.
         assertTrue(TranslationFilters.needsHuman(langUnit("gui.a", true), null, null));
+    }
+
+    // ---- the working queue: everything still to do ----------------------------------------------
+
+    private static TranslationUnit langUnit(String key, String source, String shipped,
+                                            boolean aiUnreviewed) {
+        return new TranslationUnit(TranslationUnit.Type.LANG, "dungeontrain", key,
+            source, shipped, aiUnreviewed);
+    }
+
+    @Test
+    @DisplayName("a key this locale has never had is still to do, though provenance says nothing")
+    void untranslatedIsStillToDo() {
+        // The bug this covers: the catalog emits these units (English keys the locale is missing),
+        // provenance has no entry for them, and the filter meant to surface the outstanding work
+        // was the one place they could not be seen.
+        TranslationUnit unit = langUnit("gui.a", "Depart", "", false);
+        TranslationEdits none = TranslationEdits.empty("de_de");
+        assertTrue(TranslationFilters.untranslated(unit, none));
+        assertTrue(TranslationFilters.stillToDo(unit, none, null));
+        assertFalse(TranslationFilters.needsHuman(unit, none), "the AI queue is unchanged");
+    }
+
+    @Test
+    @DisplayName("an approved fix fills a blank string, so it is no longer still to do")
+    void approvedFillsTheBlank() {
+        TranslationUnit unit = langUnit("gui.a", "Depart", "", false);
+        assertFalse(TranslationFilters.untranslated(unit, approvedLang("gui.a", "Abfahren")));
+        assertFalse(TranslationFilters.stillToDo(unit, approvedLang("gui.a", "Abfahren"), null));
+        // ...but only for that key.
+        assertTrue(TranslationFilters.stillToDo(unit, approvedLang("gui.b", "Ankommen"), null));
+    }
+
+    @Test
+    @DisplayName("whitespace is not a translation")
+    void blankIsBlank() {
+        assertTrue(TranslationFilters.untranslated(langUnit("gui.a", "Depart", "   ", false),
+            TranslationEdits.empty("de_de")));
+    }
+
+    @Test
+    @DisplayName("a line still sitting in English is still to do")
+    void sameAsSourceIsStillToDo() {
+        TranslationUnit unit = langUnit("gui.a", "Depart", "Depart", false);
+        TranslationEdits none = TranslationEdits.empty("de_de");
+        assertTrue(TranslationFilters.sameAsSource(unit, none));
+        assertTrue(TranslationFilters.stillToDo(unit, none, null));
+        // Once somebody translates it, it leaves.
+        assertFalse(TranslationFilters.sameAsSource(langUnit("gui.a", "Depart", "Abfahren", false),
+            none));
+        assertFalse(TranslationFilters.stillToDo(langUnit("gui.a", "Depart", "Abfahren", false),
+            none, null));
+    }
+
+    @Test
+    @DisplayName("a unit with no English to compare against never matches on the empty string")
+    void siblingUnitsWithoutSourceAreNotEnglishMatches() {
+        // The sibling mods' English lives in their own repos, so their units carry source = "".
+        // Without the guard every one of them would read as "still in English".
+        TranslationUnit translated = langUnit("item.x", "", "Abfahren", false);
+        TranslationEdits none = TranslationEdits.empty("de_de");
+        assertFalse(TranslationFilters.sameAsSource(translated, none));
+        assertFalse(TranslationFilters.stillToDo(translated, none, null));
+        // Blank on both sides is still outstanding — via untranslated, never via sameAsSource.
+        TranslationUnit blank = langUnit("item.y", "", "", false);
+        assertFalse(TranslationFilters.sameAsSource(blank, none));
+        assertTrue(TranslationFilters.stillToDo(blank, none, null));
+    }
+
+    @Test
+    @DisplayName("good as is takes a blank string out of the queue like any other")
+    void dismissalAppliesToTheBroadQueue() {
+        // A proper noun or a bare %s is legitimately identical to English; the mark is how a
+        // translator says so once and stops being asked.
+        TranslationUnit unit = langUnit("gui.a", "Depart", "Depart", false);
+        TranslationEdits none = TranslationEdits.empty("de_de");
+        assertTrue(TranslationFilters.stillToDo(unit, none, (u) -> false));
+        assertFalse(TranslationFilters.stillToDo(unit, none, (u) -> true));
+    }
+
+    @Test
+    @DisplayName("the AI queue is a subset of the work queue, not a rival to it")
+    void aiQueueIsIncluded() {
+        TranslationUnit unit = langUnit("gui.a", true); // translated, flagged AI-unreviewed
+        TranslationEdits none = TranslationEdits.empty("de_de");
+        assertTrue(TranslationFilters.needsHuman(unit, none));
+        assertTrue(TranslationFilters.stillToDo(unit, none, null));
+        // A reviewed, translated, non-English string is in neither.
+        TranslationUnit done = langUnit("gui.b", false);
+        assertFalse(TranslationFilters.stillToDo(done, none, null));
+    }
+
+    @Test
+    @DisplayName("book fields ask the same questions against their own body")
+    void bookFieldsUseTheirOwnBodyForTheQueueToo() {
+        TranslationUnit unit = new TranslationUnit(TranslationUnit.Type.BOOK, "dungeontrain",
+            "random_books/lost#title", "The Lost Conductor", "", false);
+        assertTrue(TranslationFilters.stillToDo(unit, TranslationEdits.empty("de_de"), null));
+        // An approval in the LANG map must not fill a BOOK field.
+        assertTrue(TranslationFilters.stillToDo(unit,
+            new TranslationEdits("de_de", Map.of("random_books/lost#title", "x"), Map.of()), null));
+        assertFalse(TranslationFilters.stillToDo(unit,
+            new TranslationEdits("de_de", Map.of(), Map.of("random_books/lost#title", "x")), null));
+    }
+
+    @Test
+    @DisplayName("the broad queue survives a missing unit or layer rather than throwing")
+    void broadQueueNullsAreSafe() {
+        assertFalse(TranslationFilters.stillToDo(null, TranslationEdits.empty("de_de"), null));
+        assertFalse(TranslationFilters.untranslated(null, TranslationEdits.empty("de_de")));
+        assertFalse(TranslationFilters.sameAsSource(null, TranslationEdits.empty("de_de")));
+        assertTrue(TranslationFilters.stillToDo(langUnit("gui.a", "Depart", "", false), null, null));
     }
 
     // ---- which languages the editor opens on ----------------------------------------------------

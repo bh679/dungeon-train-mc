@@ -213,7 +213,10 @@ public final class TranslationScreen extends Screen {
         // translation for. For one it ships nothing for, that queue is empty by definition — every
         // string needs a human — and opening on it would show a translator an empty screen for a
         // language with a thousand blank lines in it.
-        this.stateFilter = hasAiQueue() ? StateFilter.AI_UNREVIEWED : StateFilter.ALL;
+        // No machine translation to review: land on the working queue rather than the unfiltered
+        // catalog. ALL was only ever the default here because TODO used to be empty on a locale
+        // with no manifest — now it holds every untranslated string, which is the job.
+        this.stateFilter = hasAiQueue() ? StateFilter.AI_UNREVIEWED : StateFilter.TODO;
     }
 
     /** Whether this locale has machine translation to review at all — see {@link #offeredStates}. */
@@ -794,7 +797,11 @@ public final class TranslationScreen extends Screen {
             // Both work queues drop a string this player has marked good as is — that IS the
             // review they were being asked for, and asking again is what the mark exists to stop.
             // ALL still shows it (tagged ✓), so a dismissal is never a way to lose a string.
-            case TODO -> TranslationFilters.needsHuman(unit, approved, this::isDismissed)
+            // Deliberately the BROAD question, not the AI one: a key this locale has never had and
+            // a line still sitting in English are the plainest work there is, and neither carries a
+            // provenance entry — so the filter meant to surface the outstanding work was the one
+            // place they could not be seen. See TranslationFilters#stillToDo.
+            case TODO -> TranslationFilters.stillToDo(unit, approved, this::isDismissed)
                 && overrideOf(unit, edits) == null;
             case AI_UNREVIEWED -> TranslationFilters.needsHuman(unit, approved, this::isDismissed);
             case EDITED -> overrideOf(unit, edits) != null;
