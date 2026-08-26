@@ -1281,9 +1281,11 @@
   "dungeontrain.leaderboard.lovenotes_written.header": {"author": "Opus 5 (Claude)", "reviewer": ""},
   "dungeontrain.leaderboard.lovenotes_received.header": {"author": "Opus 5 (Claude)", "reviewer": ""},
   "dungeontrain.leaderboard.lovenotes_people.header": {"author": "Opus 5 (Claude)", "reviewer": ""},
+  "dungeontrain.leaderboard.lovenotes_admirers.header": {"author": "Opus 5 (Claude)", "reviewer": ""},
   "dungeontrain.leaderboard.book_votes.header": {"author": "Opus 5 (Claude)", "reviewer": ""},
   "dungeontrain.leaderboard.translations.header": {"author": "Opus 5 (Claude)", "reviewer": ""},
   "dungeontrain.leaderboard.donations.header": {"author": "Opus 5 (Claude)", "reviewer": ""},
+  "dungeontrain.leaderboard.donations_single.header": {"author": "Opus 5 (Claude)", "reviewer": ""},
   "dungeontrain.leaderboard.you": {"author": "Opus 5 (Claude)", "reviewer": ""},
   "dungeontrain.leaderboard.you_unranked": {"author": "Opus 5 (Claude)", "reviewer": ""},
   "dungeontrain.leaderboard.you_beyond": {"author": "Opus 5 (Claude)", "reviewer": ""}

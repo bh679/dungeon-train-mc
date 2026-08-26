@@ -440,9 +440,27 @@ public final class PlayerRunState {
         return trainTimeTicks;
     }
 
+    /**
+     * Count one container toward the death-screen tally. Does NOT touch the chest-free streak —
+     * {@link #openedLootContainer()} is the one that ends it.
+     */
     public int incrementContainersOpened() {
-        carriagesSinceChest = 0; // the streak is over — the high-water mark keeps what it was worth
         return ++containersOpened;
+    }
+
+    /**
+     * Count a chest or barrel: the tally, and the end of the chest-free streak.
+     *
+     * <p>Separate from {@link #incrementContainersOpened()} because a decorated pot is not loot in
+     * the sense this streak means. The "Contained Loop" advancement has always let vases pass — only
+     * the chest/barrel path stamps its marker — while the streak behind the leaderboard board reset
+     * on anything that raised the counter, so smashing a vase quietly ended a run the advancement
+     * considered still alive. Two streaks under one name, disagreeing. Now they agree, and the board
+     * means what its heading says: chests and barrels.</p>
+     */
+    public int openedLootContainer() {
+        carriagesSinceChest = 0; // the streak is over — the high-water mark keeps what it was worth
+        return incrementContainersOpened();
     }
 
     /** Echoes killed this run. */

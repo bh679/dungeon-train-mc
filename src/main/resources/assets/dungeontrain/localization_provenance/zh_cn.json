@@ -265,9 +265,11 @@
       "dungeontrain.leaderboard.lovenotes_written.header",
       "dungeontrain.leaderboard.lovenotes_received.header",
       "dungeontrain.leaderboard.lovenotes_people.header",
+      "dungeontrain.leaderboard.lovenotes_admirers.header",
       "dungeontrain.leaderboard.book_votes.header",
       "dungeontrain.leaderboard.translations.header",
       "dungeontrain.leaderboard.donations.header",
+      "dungeontrain.leaderboard.donations_single.header",
       "dungeontrain.leaderboard.you",
       "dungeontrain.leaderboard.you_unranked",
       "dungeontrain.leaderboard.you_beyond"

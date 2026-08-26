@@ -75,15 +75,19 @@ public enum LeaderboardCategory {
     // The note and vote boards are lifetime tallies: they accumulate across lives the same way
     // chests and books do, so they carry Scope.TOTAL. Alone they say nothing about it (see
     // labelsSpan), but the scope is what makes a one-life half of any of them expressible at all.
-    DEATHNOTES_WRITTEN("deathnotes_written", "deathnotes_written", "Most Curses Written", Scope.TOTAL, Format.COUNT),
+    DEATHNOTES_WRITTEN("deathnotes_written", "deathnotes_written", "Most Death Notes", Scope.TOTAL, Format.COUNT),
     DEATHNOTES_FOUGHT("deathnotes_fought", "deathnotes_fought", "Most Curses Survived", Scope.TOTAL, Format.COUNT),
     DEATHNOTES_PEOPLE("deathnotes_people", "deathnotes_people", "Most People Cursed", Scope.TOTAL, Format.COUNT),
-    LOVENOTES_WRITTEN("lovenotes_written", "lovenotes_written", "Most Blessings Written", Scope.TOTAL, Format.COUNT),
-    LOVENOTES_RECEIVED("lovenotes_received", "lovenotes_received", "Most Blessings Received", Scope.TOTAL, Format.COUNT),
-    LOVENOTES_PEOPLE("lovenotes_people", "lovenotes_people", "Most People Blessed", Scope.TOTAL, Format.COUNT),
+    LOVENOTES_WRITTEN("lovenotes_written", "lovenotes_written", "Most Love Notes Written", Scope.TOTAL, Format.COUNT),
+    LOVENOTES_RECEIVED("lovenotes_received", "lovenotes_received", "Most Love Notes Received", Scope.TOTAL, Format.COUNT),
+    LOVENOTES_PEOPLE("lovenotes_people", "lovenotes_people", "Most Lovers", Scope.TOTAL, Format.COUNT),
+    LOVENOTES_ADMIRERS("lovenotes_admirers", "lovenotes_admirers", "Most Loved", Scope.TOTAL, Format.COUNT),
     BOOK_VOTES("book_votes", "book_votes", "Best Loved Writers", Scope.TOTAL, Format.COUNT),
     TRANSLATIONS("translations", "translations", "Most Words Translated", Scope.NONE, Format.COUNT),
-    DONATIONS("donations", "donations", "Kindest Benefactors", Scope.NONE, Format.MONEY);
+    // All-time given, and the biggest one gift. Two subjects rather than a scoped pair: the span
+    // vocabulary is a LIFE, and a payment is not one - "Kindest Benefactors, One Life" is nonsense.
+    DONATIONS("donations", "donations", "Kindest Benefactors", Scope.NONE, Format.MONEY),
+    DONATIONS_SINGLE("donations_single", "donations_single", "Biggest Single Gift", Scope.NONE, Format.MONEY);
 
     /**
      * Which span of play a board measures — the flag that turns a pair of boards into one subject
