@@ -12,8 +12,9 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * Holds the world lightmap at a constant while the camera is in the middle of a portal corridor, so
- * that being swapped between the corridor and its twin cannot change what is drawn.
+ * Carries the world lightmap across a portal corridor as one transition — the world the train runs
+ * in at one door, the portal room at the other — which is also what stops being swapped between the
+ * corridor and its twin from changing what is drawn.
  *
  * <p>The fifth sibling of {@link LightTextureUpsideDownBandMixin},
  * {@link LightTextureEndBandMixin}, {@link LightTextureNetherBandMixin} and
@@ -31,10 +32,16 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * players actually walk through.</p>
  *
  * <p>Lifting the lightmap's floor toward a fixed white by a fixed amount says nothing about where
- * the camera is, so it lands identically in both copies. Ramped in by {@code PortalCrossingLight} —
- * nothing at either door plane, full from the baffles inward — it fades the corridor's own lighting
- * out as the player walks in and back in as they leave, and across the middle, where the swap
- * happens, there is nothing left for the swap to change.</p>
+ * the camera is, so it lands identically in both copies — and {@code PortalCrossingLight} decides
+ * how much of it to apply from corridor-local X and the pair's role alone, which a swap preserves
+ * exactly. Whatever each copy's own lighting is doing, the part of it this replaces is the same in
+ * both, so there is nothing there for the swap to change.</p>
+ *
+ * <p><b>The ramp runs straight through</b>: nothing at the train-side door plane, full at the
+ * room-side one. A corridor is the walk between two different places and reads as one change of
+ * lighting between them. An earlier version held at full across the middle and fell away at both
+ * ends, which made a player crossing it feel two transitions per carriage where the place has one
+ * boundary.</p>
  *
  * <p><b>A floor lift, not a wash.</b> {@code Vector3f.lerp} toward white raises the dark end of the
  * range and leaves what is already bright where it is, so a lit corridor keeps its own character and

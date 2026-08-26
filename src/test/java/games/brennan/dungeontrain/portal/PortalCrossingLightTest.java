@@ -7,11 +7,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Pure-math tests for {@link PortalCrossingLight} — the ramp that stops a portal swap from popping.
+ * Pure-math tests for {@link PortalCrossingLight} — the single train-to-room transition a portal
+ * corridor carries its lighting across.
  *
- * <p>The property that actually matters is the last one: the ramp must read the same on both sides
- * of a swap. Everything above it is the shape that makes that property useful rather than trivially
- * true (a constant zero would also never pop, and would also never help).</p>
+ * <p>Two properties matter, and they pull in different directions. The ramp must read the same on
+ * both sides of a swap, or the swap pops; and it must never fall anywhere along the walk, or the
+ * player feels two transitions per carriage instead of one. A constant satisfies the first and is
+ * useless, which is why {@link #rampNeverFalls} and {@link #rampSpansTheCorridor} are here beside
+ * {@link #survivesASwap}.</p>
  */
 final class PortalCrossingLightTest {
 
@@ -20,69 +23,80 @@ final class PortalCrossingLightTest {
     }
 
     /**
-     * The doorways are the one place a teleport has a fixed reference right in front of the player
-     * to be noticed against ({@link PortalFacing#FIRST_RAMP_BLOCK}), and they are also where the two
-     * copies genuinely differ — one opens onto the train, the other onto a plug. Holding the
-     * lighting there would flatten a difference the player is about to see anyway.
+     * The two ends of the ramp. This is the shape the whole feature is about: the train-side door
+     * plane reads as the world the train is running in, the room-side one as the room, and the walk
+     * between them is the transition.
      */
     @Test
-    @DisplayName("both door planes hold nothing")
-    void doorPlanesAreOff() {
+    @DisplayName("the ramp runs from nothing at the train door to full at the room door")
+    void rampSpansTheCorridor() {
         for (int length : new int[] {7, 9, 13, 16}) {
             PortalCarriageLayout l = layout(length);
+
+            // ENTRY puts the train at low local X, EXIT at high — the mirror PortalFacing carries.
             assertEquals(PortalCrossingLight.OFF,
-                PortalCrossingLight.intensityAt(l.nearDoorX() + 0.5, l), 1e-9,
-                "near door at length " + length);
+                PortalCrossingLight.intensityAt(l.nearDoorX() + 0.5, l, PortalCarriageRole.ENTRY),
+                1e-9, "ENTRY train door at length " + length);
+            assertEquals(1.0,
+                PortalCrossingLight.intensityAt(l.farDoorX() + 0.5, l, PortalCarriageRole.ENTRY),
+                1e-9, "ENTRY room door at length " + length);
+
             assertEquals(PortalCrossingLight.OFF,
-                PortalCrossingLight.intensityAt(l.farDoorX() + 0.5, l), 1e-9,
-                "far door at length " + length);
+                PortalCrossingLight.intensityAt(l.farDoorX() + 0.5, l, PortalCarriageRole.EXIT),
+                1e-9, "EXIT train door at length " + length);
+            assertEquals(1.0,
+                PortalCrossingLight.intensityAt(l.nearDoorX() + 0.5, l, PortalCarriageRole.EXIT),
+                1e-9, "EXIT room door at length " + length);
         }
     }
 
     /**
-     * The plateau is the baffle-to-baffle stretch, which is exactly what
-     * {@link PortalCarriageLayout#isCrossingZone} claims for the lantern floor. Two definitions of
-     * "the middle" would be free to drift apart.
+     * <b>One transition, not two.</b> The bug this pins is the shape the ramp used to have: it held
+     * at full across the middle and fell away at both ends, so a player walking a corridor crossed
+     * it twice — up on the way in and down on the way out — and felt two lighting changes per
+     * carriage where the place has one boundary to cross. Any fall anywhere along the walk is that
+     * bug coming back.
      */
     @Test
-    @DisplayName("the hold is at full strength from each baffle inward, crossing zone included")
-    void plateauCoversTheCrossingZone() {
-        for (int length : new int[] {9, 13, 16}) {
-            PortalCarriageLayout l = layout(length);
-            for (int x = l.nearBaffleX(); x <= l.farBaffleX(); x++) {
-                assertEquals(1.0, PortalCrossingLight.intensityAt(x + 0.5, l), 1e-9,
-                    "block " + x + " at length " + length);
+    @DisplayName("the ramp never falls anywhere along the corridor, in either role")
+    void rampNeverFalls() {
+        for (PortalCarriageRole role : PortalCarriageRole.values()) {
+            for (int length : new int[] {7, 9, 13, 16}) {
+                PortalCarriageLayout l = layout(length);
+                // Walked in the direction the player does: from the train door toward the room.
+                int from = role == PortalCarriageRole.ENTRY ? l.nearDoorX() : l.farDoorX();
+                int step = role == PortalCarriageRole.ENTRY ? 1 : -1;
+
+                double previous = -1.0;
+                for (int i = 0; i < length; i++) {
+                    int x = from + i * step;
+                    double t = PortalCrossingLight.intensityAt(x + 0.5, l, role);
+                    assertTrue(t >= previous,
+                        "fell at block " + x + " (" + role + ", length " + length + ")");
+                    assertTrue(t >= 0.0 && t <= 1.0,
+                        "out of range at block " + x + " (" + role + ", length " + length + ")");
+                    previous = t;
+                }
+                assertEquals(1.0, previous, 1e-9,
+                    "did not reach the room end (" + role + ", length " + length + ")");
             }
-            assertTrue(l.isCrossingZone((int) Math.floor(l.midX())));
-        }
-    }
-
-    @Test
-    @DisplayName("the ramp rises monotonically from each door to the plateau")
-    void rampIsMonotonic() {
-        PortalCarriageLayout l = layout(13);
-        double previous = -1.0;
-        for (int x = l.nearDoorX(); x <= (int) Math.floor(l.midX()); x++) {
-            double t = PortalCrossingLight.intensityAt(x + 0.5, l);
-            assertTrue(t >= previous, "fell at block " + x);
-            assertTrue(t >= 0.0 && t <= 1.0, "out of range at block " + x);
-            previous = t;
         }
     }
 
     /**
-     * The corridor is symmetric and so is the ramp: an ENTRY corridor and an EXIT one are stamped
-     * from the same source and lit the same, so a ramp that could tell them apart would be
-     * describing something that is not there.
+     * The two roles are the same ramp read from opposite ends — the mirror
+     * {@link PortalFacing#axisTowardRoom} carries, and what lets a player walk train → room → train
+     * without the lighting running backwards under them halfway.
      */
     @Test
-    @DisplayName("the ramp is a mirror about the corridor's middle")
-    void rampIsSymmetric() {
+    @DisplayName("the roles mirror each other about the corridor's middle")
+    void rolesMirror() {
         PortalCarriageLayout l = layout(13);
         for (int x = 0; x < l.length(); x++) {
-            assertEquals(PortalCrossingLight.intensityAt(x + 0.5, l),
-                PortalCrossingLight.intensityAt((l.length() - 1 - x) + 0.5, l), 1e-9,
-                "block " + x + " does not mirror");
+            assertEquals(
+                PortalCrossingLight.intensityAt(x + 0.5, l, PortalCarriageRole.ENTRY),
+                PortalCrossingLight.intensityAt((l.length() - 1 - x) + 0.5, l, PortalCarriageRole.EXIT),
+                1e-9, "block " + x + " does not mirror");
         }
     }
 
@@ -95,9 +109,9 @@ final class PortalCrossingLightTest {
     @DisplayName("sub-block movement inside one block does not move the ramp")
     void quantisedToTheBlock() {
         PortalCarriageLayout l = layout(13);
-        double at = PortalCrossingLight.intensityAt(1.01, l);
-        assertEquals(at, PortalCrossingLight.intensityAt(1.5, l), 1e-9);
-        assertEquals(at, PortalCrossingLight.intensityAt(1.99, l), 1e-9);
+        double at = PortalCrossingLight.intensityAt(1.01, l, PortalCarriageRole.ENTRY);
+        assertEquals(at, PortalCrossingLight.intensityAt(1.5, l, PortalCarriageRole.ENTRY), 1e-9);
+        assertEquals(at, PortalCrossingLight.intensityAt(1.99, l, PortalCarriageRole.ENTRY), 1e-9);
     }
 
     /** Positions past either end clamp to the end block rather than running negative or past 1. */
@@ -105,10 +119,11 @@ final class PortalCrossingLightTest {
     @DisplayName("positions outside the corridor clamp to its end blocks")
     void clampsOutsideTheCorridor() {
         PortalCarriageLayout l = layout(9);
-        assertEquals(PortalCrossingLight.intensityAt(0.5, l),
-            PortalCrossingLight.intensityAt(-4.0, l), 1e-9);
-        assertEquals(PortalCrossingLight.intensityAt(l.farDoorX() + 0.5, l),
-            PortalCrossingLight.intensityAt(l.length() + 4.0, l), 1e-9);
+        PortalCarriageRole role = PortalCarriageRole.ENTRY;
+        assertEquals(PortalCrossingLight.intensityAt(0.5, l, role),
+            PortalCrossingLight.intensityAt(-4.0, l, role), 1e-9);
+        assertEquals(PortalCrossingLight.intensityAt(l.farDoorX() + 0.5, l, role),
+            PortalCrossingLight.intensityAt(l.length() + 4.0, l, role), 1e-9);
     }
 
     /**

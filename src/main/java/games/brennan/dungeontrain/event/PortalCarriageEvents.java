@@ -2168,9 +2168,9 @@ public final class PortalCarriageEvents {
             // The lighting hold, on the same "quote the real function, never a second copy" rule as
             // the two lines above. It is the one part of the corridor a player can SEE working and
             // cannot otherwise measure — the whole point of it is that nothing appears to happen.
-            out.add("    lighting hold: " + fmt(PortalCrossingLight.intensityAt(localX, layout) * 100)
-                + "% (full from block " + layout.nearBaffleX() + " to "
-                + layout.farBaffleX() + ", nothing at either door plane)");
+            out.add("    lighting: " + fmt(PortalCrossingLight.intensityAt(localX, layout, role) * 100)
+                + "% of the way from the train's world to the room's (0% at the train-side door "
+                + "plane, 100% at the room-side one, one transition, never falling)");
 
             if (structure != null) {
                 BlockPos twinOrigin = role == PortalCarriageRole.ENTRY
