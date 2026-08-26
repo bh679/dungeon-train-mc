@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -30,6 +31,7 @@ class LeaderboardCategoryTest {
         "distance_run", "distance_total", "pacifist_carriages",
         "friends_run", "friends_total", "lives", "chests_opened", "books_written", "books_read",
         "advancements", "echoes_killed_run", "echoes_killed_total", "carriages_no_chest",
+        "chests_run",
         "deathnotes_written", "deathnotes_fought", "lovenotes_written", "lovenotes_received",
         "book_votes", "translations", "donations");
 
@@ -57,8 +59,9 @@ class LeaderboardCategoryTest {
     void titlesAreUsable() {
         Set<String> titles = new HashSet<>();
         for (LeaderboardCategory c : LeaderboardCategory.values()) {
-            assertTrue(c.title().length() <= 32,
-                c.title() + " is " + c.title().length() + " characters, too long for a book title");
+            assertTrue(c.title().length() <= BookFactory.MAX_TITLE_CHARS,
+                c.title() + " is " + c.title().length() + " characters; vanilla caps a book title at "
+                    + BookFactory.MAX_TITLE_CHARS);
             assertTrue(titles.add(c.title()), "duplicate title: " + c.title());
         }
     }
@@ -82,6 +85,27 @@ class LeaderboardCategoryTest {
                     e.getKey() + " is shared by boards with different base titles");
             }
         }
+    }
+
+    @Test
+    @DisplayName("a lone board says nothing about its span; a paired one says it on both halves")
+    void onlyPairedBoardsLabelTheirSpan() {
+        for (LeaderboardCategory c : LeaderboardCategory.values()) {
+            if (c.spanLabel() != LeaderboardCategory.SpanLabel.AUTO) continue;
+            assertEquals(c.isPaired() && c.scope() != LeaderboardCategory.Scope.NONE, c.labelsSpan(),
+                c.id() + ": a span is only worth saying where there is a twin to say it against");
+        }
+        // Chests has both halves now, so both say which is which.
+        assertTrue(LeaderboardCategory.CHESTS_OPENED.labelsSpan());
+        assertTrue(LeaderboardCategory.CHESTS_RUN.labelsSpan());
+        assertEquals("Most Chests Opened, All Lives", LeaderboardCategory.CHESTS_OPENED.title());
+        assertEquals("Most Chests Opened, One Life", LeaderboardCategory.CHESTS_RUN.title());
+        // These have no twin, so the qualifier would be answering nothing.
+        assertFalse(LeaderboardCategory.LIVES.labelsSpan());
+        assertEquals("Most Lives Spent", LeaderboardCategory.LIVES.title());
+        assertNull(LeaderboardCategory.LIVES.scopeKey());
+        assertFalse(LeaderboardCategory.PACIFIST_CARRIAGES.labelsSpan());
+        assertEquals("Furthest Pacifist", LeaderboardCategory.PACIFIST_CARRIAGES.title());
     }
 
     @Test

@@ -1278,7 +1278,7 @@
   "dungeontrain.leaderboard.books_written.header": {"author": "Opus 5 (Claude)", "reviewer": ""},
   "dungeontrain.leaderboard.carriages.header": {"author": "Opus 5 (Claude)", "reviewer": ""},
   "dungeontrain.leaderboard.carriages_no_chest.header": {"author": "Opus 5 (Claude)", "reviewer": ""},
-  "dungeontrain.leaderboard.chests_opened.header": {"author": "Opus 5 (Claude)", "reviewer": ""},
+  "dungeontrain.leaderboard.chests.header": {"author": "Opus 5 (Claude)", "reviewer": ""},
   "dungeontrain.leaderboard.distance.header": {"author": "Opus 5 (Claude)", "reviewer": ""},
   "dungeontrain.leaderboard.echoes_killed.header": {"author": "Opus 5 (Claude)", "reviewer": ""},
   "dungeontrain.leaderboard.friends.header": {"author": "Opus 5 (Claude)", "reviewer": ""},

@@ -1,7 +1,11 @@
 package games.brennan.dungeontrain.narrative;
 
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * The leaderboard boards a {@link LeaderboardBookFactory leaderboard book} can be about — one entry
@@ -26,10 +30,18 @@ import java.util.Optional;
  *       donations). Nothing is appended.</li>
  * </ul>
  *
+ * <p>Both are subject to {@link #labelsSpan()}: a {@code RUN} board with no {@code TOTAL} twin keeps
+ * its scope for what it measures, but says nothing about it on the cover.</p>
+ *
  * <p>The point is that a wording change lands once instead of twice, and the two halves of a pair
  * cannot drift apart: "Furthest Distance, One Life" and "Furthest Distance, All Lives" are the same
  * five words plus the flag. It also cuts the translated headings from one per board to one per
- * subject — nineteen instead of twenty-four — with the two span sentences translated once each.</p>
+ * subject, with the two span sentences translated once each.</p>
+ *
+ * <p><b>A lone board says nothing about its span.</b> The span is a qualifier, and on a subject with
+ * only one board there is nothing to qualify against — "Most Books Read, All Lives" spends five
+ * words answering a question nobody asked. So the label is applied only where the subject has both
+ * halves, and {@link SpanLabel} is the per-board override for the cases where that reads wrong.</p>
  *
  * <p>The scope sentence is a FORMAT with a {@code %s}, not a suffix glued on in code, so a
  * translator can put the span first where the language wants it there.</p>
@@ -52,7 +64,8 @@ public enum LeaderboardCategory {
     FRIENDS_RUN("friends_run", "friends", "Friendliest Passenger", Scope.RUN, Format.COUNT),
     FRIENDS_TOTAL("friends_total", "friends", "Friendliest Passenger", Scope.TOTAL, Format.COUNT),
     LIVES("lives", "lives", "Most Lives Spent", Scope.TOTAL, Format.COUNT),
-    CHESTS_OPENED("chests_opened", "chests_opened", "Most Chests Opened", Scope.TOTAL, Format.COUNT),
+    CHESTS_OPENED("chests_opened", "chests", "Most Chests Opened", Scope.TOTAL, Format.COUNT),
+    CHESTS_RUN("chests_run", "chests", "Most Chests Opened", Scope.RUN, Format.COUNT),
     BOOKS_WRITTEN("books_written", "books_written", "Most Books Written", Scope.TOTAL, Format.COUNT),
     BOOKS_READ("books_read", "books_read", "Most Books Read", Scope.TOTAL, Format.COUNT),
     ADVANCEMENTS("advancements", "advancements", "Most Advancements", Scope.TOTAL, Format.COUNT),
@@ -98,6 +111,23 @@ public enum LeaderboardCategory {
         public String titleSuffix() { return titleSuffix; }
     }
 
+    /**
+     * Whether a board says its span out loud.
+     *
+     * <p>The span is a qualifier, and a qualifier with nothing to qualify against is noise: on a
+     * subject that only has one board, "One Life" answers a question nobody was asking. So the
+     * default is {@link #AUTO} — say it only where there is a twin to be told apart from — and the
+     * other two values are the override for when that reads wrong.</p>
+     */
+    public enum SpanLabel {
+        /** Say the span only when this subject has both halves. The default, and usually right. */
+        AUTO,
+        /** Say it even alone — for a board whose span a reader would otherwise assume wrongly. */
+        ALWAYS,
+        /** Never say it, even paired — for a subject whose titles already carry the distinction. */
+        NEVER,
+    }
+
     /** How a board's numbers read. The score itself is always an integer on the wire. */
     public enum Format { COUNT, DURATION, MONEY, DISTANCE }
 
@@ -105,14 +135,34 @@ public enum LeaderboardCategory {
     private final String base;
     private final String baseTitle;
     private final Scope scope;
+    private final SpanLabel spanLabel;
     private final Format format;
 
     LeaderboardCategory(String id, String base, String baseTitle, Scope scope, Format format) {
+        this(id, base, baseTitle, scope, format, SpanLabel.AUTO);
+    }
+
+    LeaderboardCategory(String id, String base, String baseTitle, Scope scope, Format format,
+                        SpanLabel spanLabel) {
         this.id = id;
         this.base = base;
         this.baseTitle = baseTitle;
         this.scope = scope;
+        this.spanLabel = spanLabel;
         this.format = format;
+    }
+
+    /**
+     * Subjects served by more than one board — the ones where a span actually distinguishes
+     * something. Filled after the constants exist, which is what a static block is for.
+     */
+    private static final Set<String> PAIRED_SUBJECTS;
+    static {
+        Map<String, Integer> counts = new HashMap<>();
+        for (LeaderboardCategory c : values()) counts.merge(c.base, 1, Integer::sum);
+        Set<String> paired = new HashSet<>();
+        counts.forEach((base, n) -> { if (n > 1) paired.add(base); });
+        PAIRED_SUBJECTS = Set.copyOf(paired);
     }
 
     /** The relay's category id. Must match {@code leaderboard.js}'s CATEGORIES exactly. */
@@ -129,8 +179,22 @@ public enum LeaderboardCategory {
 
     public Scope scope() { return scope; }
 
-    /** The book's cover title: the subject, then the span it was measured over. */
-    public String title() { return baseTitle + scope.titleSuffix(); }
+    public SpanLabel spanLabel() { return spanLabel; }
+
+    /**
+     * Whether this board appends its span to the title and wraps its heading in the span sentence.
+     * A lone board says nothing about its span unless {@link SpanLabel#ALWAYS} asks it to.
+     */
+    public boolean labelsSpan() {
+        if (scope == Scope.NONE || spanLabel == SpanLabel.NEVER) return false;
+        return spanLabel == SpanLabel.ALWAYS || PAIRED_SUBJECTS.contains(base);
+    }
+
+    /** Whether more than one board covers this subject. */
+    public boolean isPaired() { return PAIRED_SUBJECTS.contains(base); }
+
+    /** The book's cover title: the subject, and the span when there is one worth saying. */
+    public String title() { return baseTitle + (labelsSpan() ? scope.titleSuffix() : ""); }
 
     public Format format() { return format; }
 
@@ -145,7 +209,7 @@ public enum LeaderboardCategory {
      * Translation key of the sentence wrapping {@link #headerKey()} to say which span this board
      * covers, or {@code null} when the board has no span to say.
      */
-    public String scopeKey() { return scope.key(); }
+    public String scopeKey() { return labelsSpan() ? scope.key() : null; }
 
     /** Translation key for the closing line telling the reader where they stand. */
     public static final String YOU_KEY = "dungeontrain.leaderboard.you";
