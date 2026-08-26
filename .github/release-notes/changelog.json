@@ -8830,8 +8830,25 @@
       "released_at": null
     },
     {
-      "id": "template-decor-frames-paintings",
+      "id": "dpi-bypass-connection-notice",
       "version": "0.663.0",
+      "type": "feat",
+      "title": "A heads-up when a connection blocker is in the way",
+      "summary": "If you run a DPI-bypass tool like zapret or GoodbyeDPI to reach Discord and YouTube, Dungeon Train now tells you once, on the title screen, that it may be sitting between you and brennan.games. Those tools reroute traffic at the driver level, and when they catch DT's traffic the online features don't fail loudly \u2014 community books, shared carriages and the rest just quietly never arrive. Now you get told why, instead of wondering where they went.",
+      "highlights": [
+        "One-time notice on the title screen, with a 'Don't show again' if you already know.",
+        "The check is local: it looks at the names of running programs on your own PC, and sends nothing anywhere.",
+        "Only shown if you've allowed the mod to use the network \u2014 otherwise there is nothing to interfere with."
+      ],
+      "pr": 1103,
+      "date": "2026-08-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "template-decor-frames-paintings",
+      "version": "0.664.0",
       "type": "feat",
       "title": "Paintings now stay put in dimensional carriages",
       "summary": "Paintings and item frames hung in dimensional carriages now stick around properly.",

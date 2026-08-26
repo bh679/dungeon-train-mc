@@ -187,6 +187,15 @@
       ]
     }
   },
+  "gui.dungeontrain.dpi_bypass.body": {
+    "1": {
+      "label": "the bypass tool's program name, as it appears in the process list",
+      "examples": [
+        "winws.exe",
+        "goodbyedpi.exe"
+      ]
+    }
+  },
   "chat.dungeontrain.portal_library.1": {
     "1": {
       "label": "the author every book in the room is signed by",
