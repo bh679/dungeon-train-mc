@@ -54,3 +54,6 @@ localization/review/
 .claude/hook-versions.json
 .claude/scheduled_tasks.lock
 
+
+# javac argfile dumps (written when a compile is invoked by hand, never wanted)
+javac.*.args

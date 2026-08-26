@@ -39,6 +39,10 @@ public record RunPosition(@Nullable Integer spawnX,
     /**
      * Resolve the position fields for {@code player} at their current location. Never throws: any
      * failure degrades to omitted fields rather than disrupting death handling.
+     *
+     * <p>Resolve this ONCE per death and hand the result around — {@code RunStatsEvents} does, and
+     * both the reporters and the lifetime displacement counter read it. It is only valid before
+     * respawn, which re-stamps the origin this is measured from.</p>
      */
     public static RunPosition of(ServerPlayer player) {
         try {
@@ -49,6 +53,15 @@ public record RunPosition(@Nullable Integer spawnX,
         } catch (Throwable t) {
             return NONE;
         }
+    }
+
+    /**
+     * This life's forward progress as a leaderboard score: the displacement, floored at zero. A run
+     * that ended behind where it started, or one whose origin was never captured, contributes
+     * nothing — it does not eat into a lifetime total that only ever goes up.
+     */
+    public long forwardMetres() {
+        return distanceTravelled == null ? 0L : Math.max(0L, distanceTravelled.longValue());
     }
 
     /**
