@@ -392,13 +392,22 @@ public final class PortalCarriageSelection {
 
     /** True if this carriage is one of a portal's two corridors. */
     public static boolean isPortalCarriage(ServerLevel level, int carriageIndex) {
-        return isPortalCarriage(carriageIndex, DungeonTrainConfig.getGroupSize(), rateFor(level), generationSeed(level),
+        int groupSize = DungeonTrainConfig.getGroupSize();
+        if (isForcedGroup(carriageIndex, groupSize)) {
+            int slot = slotOf(carriageIndex, groupSize);
+            return slot == SLOT_ENTRY || slot == SLOT_EXIT;
+        }
+        return isPortalCarriage(carriageIndex, groupSize, rateFor(level), generationSeed(level),
                 firstEligibleGroup());
     }
 
     /** True if this carriage is the cart between a portal's two corridors. */
     public static boolean isPortalMiddle(ServerLevel level, int carriageIndex) {
-        return isPortalMiddle(carriageIndex, DungeonTrainConfig.getGroupSize(), rateFor(level), generationSeed(level),
+        int groupSize = DungeonTrainConfig.getGroupSize();
+        if (isForcedGroup(carriageIndex, groupSize)) {
+            return slotOf(carriageIndex, groupSize) == SLOT_MIDDLE;
+        }
+        return isPortalMiddle(carriageIndex, groupSize, rateFor(level), generationSeed(level),
                 firstEligibleGroup());
     }
 
@@ -411,6 +420,9 @@ public final class PortalCarriageSelection {
      * match its twin block-for-block, and the cart between two corridors is sealed space.</p>
      */
     public static boolean isPortalPart(ServerLevel level, int carriageIndex) {
+        if (isForcedGroup(carriageIndex, DungeonTrainConfig.getGroupSize())) {
+            return isPortalCarriage(level, carriageIndex) || isPortalMiddle(level, carriageIndex);
+        }
         return isPortalPart(carriageIndex, DungeonTrainConfig.getGroupSize(), rateFor(level), generationSeed(level),
                 firstEligibleGroup());
     }
@@ -427,8 +439,25 @@ public final class PortalCarriageSelection {
      * marches along the train and walks itself into the corridor regardless.</p>
      */
     public static boolean isPortalGroup(ServerLevel level, int carriageIndex) {
-        return isPortalGroup(carriageIndex, DungeonTrainConfig.getGroupSize(), rateFor(level), generationSeed(level),
+        int groupSize = DungeonTrainConfig.getGroupSize();
+        if (isForcedGroup(carriageIndex, groupSize)) return true;
+        return isPortalGroup(carriageIndex, groupSize, rateFor(level), generationSeed(level),
                 firstEligibleGroup());
+    }
+
+    /**
+     * True if a debug tool has forced this carriage's group to hold a portal — see
+     * {@link PortalForcedGroups}.
+     *
+     * <p>Asked <b>before</b> the rate and the Diff-Level gate, so a forced group is a portal in a
+     * world with portals switched off and on the opening stretch of track the gate reserves. The
+     * one rule it cannot override is the group-span one: a group too short to hold entry, cart and
+     * exit gets no portal at all rather than half of one, whoever asked.</p>
+     */
+    private static boolean isForcedGroup(int carriageIndex, int groupSize) {
+        if (PortalForcedGroups.isEmpty()) return false;
+        if (groupSize < PORTAL_GROUP_SPAN) return false;
+        return PortalForcedGroups.isForced(Math.floorDiv((long) carriageIndex, Math.max(1, groupSize)));
     }
 
     public static boolean isPortalCarriage(int carriageIndex, int groupSize, Rate rate, long worldSeed) {

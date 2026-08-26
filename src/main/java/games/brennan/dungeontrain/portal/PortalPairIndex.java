@@ -121,6 +121,11 @@ public final class PortalPairIndex {
         return ENTRIES.isEmpty();
     }
 
+    /** This carriage's live pairing, or {@code null} if it has no corridor standing right now. */
+    public static Entry get(int carriageIndex) {
+        return ENTRIES.get(carriageIndex);
+    }
+
     /** Every live pairing, for callers that have to test a position against all of them. */
     public static Iterable<Entry> all() {
         return ENTRIES.values();

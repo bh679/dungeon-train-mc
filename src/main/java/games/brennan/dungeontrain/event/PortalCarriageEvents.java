@@ -553,6 +553,9 @@ public final class PortalCarriageEvents {
         // The confirmation throttle keys on a group anchor, which names a different group in the
         // next world opened — a surviving entry would delay one legacy group's proof by a second.
         PortalStampRecord.reset();
+        // A test spawn is a thing this session asked for, not a thing the world is. Nothing about it
+        // should greet the next world opened.
+        games.brennan.dungeontrain.portal.PortalForcedGroups.clear();
     }
 
     @SubscribeEvent
