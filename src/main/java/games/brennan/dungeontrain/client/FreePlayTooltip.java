@@ -12,6 +12,8 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.GatherEffectScreenTooltipsEvent;
 
+import java.util.List;
+
 /**
  * Fills in the {@code Free Play} effect's inventory hover tooltip: what turned it on, then what it
  * costs. In-world the mouse is captured so the top-right HUD icon can't be hovered; this is the
@@ -30,11 +32,15 @@ import net.neoforged.neoforge.client.event.GatherEffectScreenTooltipsEvent;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class FreePlayTooltip {
 
+    /** What vanilla renders as an infinite effect's duration ({@code MobEffectUtil.formatDuration}). */
+    private static final String INFINITE_DURATION = "\u221e";
+
     private FreePlayTooltip() {}
 
     @SubscribeEvent
     public static void onGatherEffectTooltips(GatherEffectScreenTooltipsEvent event) {
         if (!event.getEffectInstance().getEffect().is(ModMobEffects.FREE_PLAY.getId())) return;
+        foldDurationIntoTitle(event.getTooltip());
         // Nothing to lead with when the server hasn't said why — a pre-update server, or a badge
         // that has outlived its cause. The consequence line below still stands on its own.
         for (FreePlayCause cause : FreePlayCauseClient.causes()) {
@@ -47,5 +53,23 @@ public final class FreePlayTooltip {
         }
         event.getTooltip().add(
             Component.translatable("effect.dungeontrain.free_play.desc.1").withStyle(ChatFormatting.GRAY));
+    }
+
+    /**
+     * Vanilla gives an effect two header lines — the name, then the duration on its own row. For an
+     * effect that lasts the whole run that second row is one glyph, and spending a line on it pushes
+     * the reason further from the name it explains. Folded onto the title row instead: {@code Free
+     * Play ∞}.
+     *
+     * <p>Recognises the row by that glyph rather than by its position, so if a future version (or
+     * another mod's tooltip event) puts something else second, the tooltip is left alone rather than
+     * silently swallowing a line.</p>
+     */
+    private static void foldDurationIntoTitle(List<Component> tooltip) {
+        if (tooltip.size() < 2 || !INFINITE_DURATION.equals(tooltip.get(1).getString().trim())) return;
+        tooltip.set(0, tooltip.get(0).copy()
+            .append(CommonComponents.SPACE)
+            .append(tooltip.get(1)));
+        tooltip.remove(1);
     }
 }
