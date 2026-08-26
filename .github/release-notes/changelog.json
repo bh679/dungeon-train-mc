@@ -8845,6 +8845,19 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "template-decor-frames-paintings",
+      "version": "0.664.0",
+      "type": "feat",
+      "title": "Paintings now stay put in dimensional carriages",
+      "summary": "Paintings and item frames hung in dimensional carriages now stick around properly.",
+      "highlights": [],
+      "pr": 1102,
+      "date": "2026-08-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

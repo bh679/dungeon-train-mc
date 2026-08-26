@@ -2,8 +2,10 @@ package games.brennan.dungeontrain.portal;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.editor.VariantState;
+import games.brennan.dungeontrain.template.TemplateDecor;
 import games.brennan.dungeontrain.train.CarriageContentsPlacer;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Vec3i;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
@@ -106,6 +108,34 @@ public final class PortalRoomMobs {
         LOGGER.info("[DungeonTrain] Portal pair {} copy {},{} spawned '{}' at {}",
             pairKey, tile.x(), tile.z(), picked.entityId(), worldPos);
         return true;
+    }
+
+    /**
+     * Claim the item frames and paintings a copy's stamp just hung.
+     *
+     * <p>{@link TemplateDecor} spawns a room's decoration as part of the block stamp and hands back
+     * no handle on what it made, so the mark is applied by looking for it — the same shape as
+     * {@link #isUnmarkedRoomMob}, and narrow in the same way: only decoration, only inside this
+     * copy's box, and only what carries no mark already, so a neighbouring copy's frame that this
+     * box happens to touch is never re-claimed.</p>
+     *
+     * <p>Without this a room's pictures would be spawned once per copy and taken away never — the
+     * reap is scoped by the mark, and an unmarked entity is invisible to it.</p>
+     *
+     * @return how many were marked
+     */
+    public static int markDecor(ServerLevel level, BlockPos origin, Vec3i size, int pairKey,
+                                PortalRoomTiling.Tile tile) {
+        AABB box = new AABB(
+            origin.getX(), origin.getY(), origin.getZ(),
+            origin.getX() + size.getX(), origin.getY() + size.getY(), origin.getZ() + size.getZ());
+        int marked = 0;
+        for (Entity entity : level.getEntities((Entity) null, box, TemplateDecor::isDecor)) {
+            if (entity.getPersistentData().contains(NBT_PAIR)) continue;
+            mark(entity.getPersistentData(), pairKey, tile);
+            marked++;
+        }
+        return marked;
     }
 
     /**

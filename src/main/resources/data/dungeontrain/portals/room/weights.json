@@ -122,6 +122,10 @@
     "minLevel": 5,
     "mode": "endless_repetition"
   },
+  "pretty": {
+    "weight": 1,
+    "mode": "endless_repetition/dynamic"
+  },
   "randomized": {
     "weight": 1,
     "mode": "endless_repetition/dynamic/fit"

@@ -4,6 +4,7 @@ import games.brennan.dungeontrain.editor.TunnelTemplateStore;
 import games.brennan.dungeontrain.ship.ShipFilterProcessor;
 import games.brennan.dungeontrain.ship.Shipyards;
 import games.brennan.dungeontrain.template.GateContext;
+import games.brennan.dungeontrain.template.TemplateDecor;
 import games.brennan.dungeontrain.template.TemplateKind;
 import games.brennan.dungeontrain.template.TemplateType;
 import games.brennan.dungeontrain.track.variant.TrackKind;
@@ -228,6 +229,9 @@ public final class TunnelPlacer {
         template.placeInWorld(level, origin, origin, settings,
             games.brennan.dungeontrain.worldgen.StampRandom.at(level.getSeed(), origin),
             Block.UPDATE_CLIENTS);
+        // The template's item frames and paintings, which no block pass writes. Under the same
+        // settings as the blocks, so a mirrored tunnel takes its pictures across with it.
+        TemplateDecor.replace(level, origin, template, settings, null);
         anchorAboveFootprintWorldgen(level, origin);
     }
 
@@ -418,6 +422,7 @@ public final class TunnelPlacer {
             .setLiquidSettings(LiquidSettings.IGNORE_WATERLOGGING);
         if (mirrorX) settings.setMirror(Mirror.FRONT_BACK);
         template.placeInWorld(level, origin, origin, settings, level.getRandom(), 3);
+        TemplateDecor.replace(level, origin, template, settings, null);
         anchorAboveFootprint(level, origin);
     }
 
