@@ -3,11 +3,16 @@ package games.brennan.dungeontrain.narrative;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -48,13 +53,50 @@ class LeaderboardCategoryTest {
     }
 
     @Test
-    @DisplayName("every board has a title that fits a book cover and a distinct header key")
-    void titlesAndKeysAreUsable() {
-        Set<String> keys = new HashSet<>();
+    @DisplayName("every board has a title that fits a book cover, and no two titles collide")
+    void titlesAreUsable() {
+        Set<String> titles = new HashSet<>();
         for (LeaderboardCategory c : LeaderboardCategory.values()) {
-            assertTrue(c.title().length() <= 32, c.title() + " is too long for a book title");
-            assertTrue(keys.add(c.headerKey()), "duplicate header key: " + c.headerKey());
+            assertTrue(c.title().length() <= 32,
+                c.title() + " is " + c.title().length() + " characters, too long for a book title");
+            assertTrue(titles.add(c.title()), "duplicate title: " + c.title());
         }
+    }
+
+    @Test
+    @DisplayName("a header key is shared only by a run/total pair of the same subject, never more")
+    void headerKeysArePerSubject() {
+        Map<String, List<LeaderboardCategory>> bySubject = new HashMap<>();
+        for (LeaderboardCategory c : LeaderboardCategory.values()) {
+            bySubject.computeIfAbsent(c.headerKey(), k -> new ArrayList<>()).add(c);
+        }
+        for (var e : bySubject.entrySet()) {
+            List<LeaderboardCategory> sharing = e.getValue();
+            assertTrue(sharing.size() <= 2, e.getKey() + " is shared by " + sharing.size() + " boards");
+            if (sharing.size() == 2) {
+                // The only reason to share is that one is the one-life half and the other the
+                // all-lives half of the same subject.
+                assertNotEquals(sharing.get(0).scope(), sharing.get(1).scope(),
+                    e.getKey() + " is shared by two boards of the same scope");
+                assertEquals(sharing.get(0).baseTitle(), sharing.get(1).baseTitle(),
+                    e.getKey() + " is shared by boards with different base titles");
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("scope decides the suffix and the wrapper key, and NONE adds neither")
+    void scopeDrivesTitleAndHeader() {
+        assertEquals("Furthest Distance, One Life", LeaderboardCategory.DISTANCE_RUN.title());
+        assertEquals("Furthest Distance, All Lives", LeaderboardCategory.DISTANCE_TOTAL.title());
+        // Same subject, so the same heading key - the scope key is the only difference.
+        assertEquals(LeaderboardCategory.DISTANCE_RUN.headerKey(),
+                     LeaderboardCategory.DISTANCE_TOTAL.headerKey());
+        assertNotEquals(LeaderboardCategory.DISTANCE_RUN.scopeKey(),
+                        LeaderboardCategory.DISTANCE_TOTAL.scopeKey());
+        // A board with no span says nothing about one.
+        assertEquals("Kindest Benefactors", LeaderboardCategory.DONATIONS.title());
+        assertNull(LeaderboardCategory.DONATIONS.scopeKey());
     }
 
     @Test

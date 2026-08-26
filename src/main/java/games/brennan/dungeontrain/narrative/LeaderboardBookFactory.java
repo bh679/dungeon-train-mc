@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.narrative;
 
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.world.item.ItemStack;
 
 import java.util.ArrayList;
@@ -99,12 +100,10 @@ public final class LeaderboardBookFactory {
             int room = (page == 0 ? FIRST_PAGE_ROWS : ROWS_PER_PAGE) * LINES_PER_ENTRY;
             int end = Math.min(rows.size(), at + room);
             Component body = Component.literal(String.join("\n", rows.subList(at, end)));
-            pages.add(page == 0
-                ? Component.translatable(category.headerKey()).append("\n\n").append(body)
-                : body);
+            pages.add(page == 0 ? heading(category).append("\n\n").append(body) : body);
             at = end;
         }
-        if (pages.isEmpty()) pages.add(Component.translatable(category.headerKey()));
+        if (pages.isEmpty()) pages.add(heading(category));
 
         // The reader's own standing closes the book. It goes on its own page rather than squeezed
         // under the last rows: a reader ranked 4,000th should not have to hunt for it at the bottom
@@ -121,6 +120,17 @@ public final class LeaderboardBookFactory {
                         Component.literal(Integer.toString(s.beyond()))))
             .orElseGet(() -> Component.translatable(LeaderboardCategory.YOU_UNRANKED_KEY)));
         return pages;
+    }
+
+    /**
+     * The board's heading: the subject's own line, wrapped by the sentence that says which span of
+     * play it covers. A pair of boards shares the subject line and differs only in the wrapper, so
+     * the wording is written once. A board with no span ({@code Scope.NONE}) is just the line.
+     */
+    static MutableComponent heading(LeaderboardCategory category) {
+        MutableComponent subject = Component.translatable(category.headerKey());
+        String scopeKey = category.scopeKey();
+        return scopeKey == null ? subject : Component.translatable(scopeKey, subject);
     }
 
     /** Splittable-mix, so neighbouring container slots do not all roll the same board. */
