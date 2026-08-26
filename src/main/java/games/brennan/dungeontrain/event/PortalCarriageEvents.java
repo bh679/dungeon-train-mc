@@ -1044,6 +1044,36 @@ public final class PortalCarriageEvents {
      * ask for. The sound rule is about the corridors and the walk out of them, which every portal
      * has.</p>
      */
+    /**
+     * Send one structure's fog, sky and train audio to whoever is inside it, and take all three back
+     * from whoever is not — the ambience half of {@link #tickRoomTiling}, for a caller that has
+     * exactly one structure rather than every live pair.
+     *
+     * <p><b>Why this exists rather than a second implementation.</b> The three senders below dedupe
+     * against {@link #LAST_FOG}, {@link #LAST_SKY} and {@link #LAST_TRAIN_AUDIO}, so a packet only
+     * goes out when the answer changes. A parallel copy in another class would not merely duplicate
+     * them, it would fight them over that state — and a test room lit differently from a live one is
+     * exactly the thing a test room must not be. {@code PortalTestTicker} calls this.</p>
+     *
+     * <p>The live tick keeps its own loop rather than calling this per pair: it accumulates the
+     * still-inside sets across every structure and clears once at the end, and clearing per pair
+     * would take the fog off a player standing in the next one.</p>
+     */
+    public static void sendRoomAmbience(CarriageDims dims, PortalCarriageLayout layout,
+                                        PortalStructure structure, List<ServerPlayer> players) {
+        Set<UUID> fogged = new HashSet<>();
+        Set<UUID> skied = new HashSet<>();
+        Set<UUID> inStructure = new HashSet<>();
+
+        sendFogFor(players, dims, layout, structure, fogged);
+        sendSkyFor(players, dims, layout, structure, skied);
+        sendTrainAudioFor(players, dims, structure, inStructure);
+
+        clearFogFor(players, fogged);
+        clearSkyFor(players, skied);
+        clearTrainAudioFor(players, inStructure);
+    }
+
     private static void sendTrainAudioFor(List<ServerPlayer> players, CarriageDims dims,
                                           PortalStructure structure, Set<UUID> inStructure) {
         AABB box = structureBox(dims, structure);

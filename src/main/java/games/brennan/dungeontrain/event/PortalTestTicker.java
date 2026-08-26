@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.event;
 
+import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.portal.PortalCarriageBuilder;
 import games.brennan.dungeontrain.portal.PortalCarriageLayout;
@@ -16,6 +17,7 @@ import net.minecraft.world.level.Level;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
+import org.slf4j.Logger;
 
 import java.util.List;
 import java.util.Map;
@@ -40,6 +42,8 @@ import java.util.UUID;
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class PortalTestTicker {
+
+    private static final Logger LOGGER = LogUtils.getLogger();
 
     private PortalTestTicker() {}
 
@@ -70,7 +74,16 @@ public final class PortalTestTicker {
                 PortalRoomTiling.MAX_RADIUS, List.of(), PortalTestSession.PAIR_KEY);
             if (next != structure) {
                 PortalTestSession.updateStructure(trip.getKey(), next);
+                // Nothing on the tiling path logs, so a run that grew a window and a run that grew
+                // nothing looked identical afterwards. One line per fold, and a fold is at most one
+                // per tick, so this stays quiet on a room that does not tile.
+                LOGGER.info("[DungeonTrain] portal test: tiled '{}' for {} — {} tile(s) standing",
+                    next.roomName(), player.getName().getString(), next.tiling().tiles().size());
             }
+
+            // The same fog, sky and train audio a live room sends its occupants, through the same
+            // senders — a room inspected under different light is a room inspected wrong.
+            PortalCarriageEvents.sendRoomAmbience(dims, layout, next, List.of(player));
         }
     }
 

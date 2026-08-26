@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.command;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.editor.PortalRoomEditor;
+import games.brennan.dungeontrain.event.PortalCarriageEvents;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.PortalTestSessionPacket;
 import games.brennan.dungeontrain.portal.PortalCarriageBuilder;
@@ -173,6 +174,14 @@ public final class PortalTestCommand {
             player.setGameMode(session.previousGameType());
         }
         DungeonTrainNet.sendTo(player, PortalTestSessionPacket.none());
+
+        // Take the room's fog, daylight and train audio back. The same call the ticker makes, run
+        // once more now that the player is standing outside the structure: the send pass finds
+        // nobody inside and the clear pass lifts all three. Without it the ticker simply stops —
+        // the session is gone — and they would walk around the plot still fogged.
+        PortalCarriageEvents.sendRoomAmbience(dims,
+            PortalCarriageBuilder.layoutFor(dims, session.structure().kind()),
+            session.structure(), java.util.List.of(player));
 
         // Sweep the whole WINDOW, not just the base room. footprintOf is deliberately blind to
         // tiling — copies are laid around the corridors rather than through them — so clearing only
