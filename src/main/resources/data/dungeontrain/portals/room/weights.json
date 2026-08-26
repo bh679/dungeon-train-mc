@@ -22,7 +22,7 @@
     "mode": "bedrockless"
   },
   "biggerlibrary": {
-    "weight": 1,
+    "weight": 500,
     "mode": "bedrock_lock"
   },
   "blocks": {
@@ -92,12 +92,12 @@
     "mode": "endless_repetition/dynamic"
   },
   "library_dimension": {
-    "weight": 3,
+    "weight": 2000,
     "minLevel": 5,
     "mode": "endless_repetition/dynamic"
   },
   "midlibrary": {
-    "weight": 1,
+    "weight": 500,
     "mode": "bedrock_lock/exact/off/off/mix:3:1:1:24:120"
   },
   "miniword": {
@@ -141,7 +141,7 @@
     "mode": "endless_open"
   },
   "smalllibrary": {
-    "weight": 1,
+    "weight": 500,
     "mode": "bedrock_lock/exact/off/off/mix:3:1:1:10:24"
   },
   "trap": {
