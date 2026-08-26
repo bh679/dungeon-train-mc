@@ -8825,9 +8825,9 @@
       ],
       "pr": 1101,
       "date": "2026-08-26",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.670.0",
+      "released_at": "2026-08-26T17:50:58Z"
     },
     {
       "id": "dpi-bypass-connection-notice",
@@ -8842,9 +8842,9 @@
       ],
       "pr": 1103,
       "date": "2026-08-26",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.670.0",
+      "released_at": "2026-08-26T17:50:58Z"
     },
     {
       "id": "template-decor-frames-paintings",
@@ -8855,9 +8855,9 @@
       "highlights": [],
       "pr": 1102,
       "date": "2026-08-26",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.670.0",
+      "released_at": "2026-08-26T17:50:58Z"
     },
     {
       "id": "famous-pig-names",
@@ -8868,9 +8868,9 @@
       "highlights": [],
       "pr": 1104,
       "date": "2026-08-26",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.670.0",
+      "released_at": "2026-08-26T17:50:58Z"
     },
     {
       "id": "dimensional-carriage-light-fade",
@@ -8886,9 +8886,9 @@
       ],
       "pr": 1106,
       "date": "2026-08-26",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.670.0",
+      "released_at": "2026-08-26T17:50:58Z"
     },
     {
       "id": "portal-room-walls-in-tiling",
@@ -8902,9 +8902,9 @@
         "The library dimension now keeps its walls"
       ],
       "date": "2026-08-26",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.670.0",
+      "released_at": "2026-08-26T17:50:58Z"
     },
     {
       "id": "leaderboard-books-across-the-train",
@@ -8918,9 +8918,9 @@
         "A leaderboard book can appear in the starting chest"
       ],
       "date": "2026-08-26",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.670.0",
+      "released_at": "2026-08-26T17:50:58Z"
     },
     {
       "id": "freeplay-tooltip-trigger",
@@ -8934,9 +8934,9 @@
       ],
       "pr": 1110,
       "date": "2026-08-26",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.670.0",
+      "released_at": "2026-08-26T17:50:58Z"
     },
     {
       "id": "c-menu-item-icons",
@@ -8950,9 +8950,9 @@
       ],
       "pr": 1111,
       "date": "2026-08-26",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.670.0",
+      "released_at": "2026-08-26T17:50:58Z"
     },
     {
       "id": "faulthurst-stat-book",
@@ -8968,9 +8968,9 @@
       ],
       "pr": 1113,
       "date": "2026-08-26",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.670.0",
+      "released_at": "2026-08-26T17:50:58Z"
     },
     {
       "id": "stats-book-and-tally-rooms",
@@ -8985,9 +8985,9 @@
         "Stats joins Self, Player and Signature as a fourth share in a room's Books mix"
       ],
       "date": "2026-08-26",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.670.0",
+      "released_at": "2026-08-26T17:50:58Z"
     },
     {
       "id": "dimensional-carriage-test-button",
