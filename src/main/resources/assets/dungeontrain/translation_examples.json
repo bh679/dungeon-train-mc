@@ -2877,5 +2877,70 @@
         "1"
       ]
     }
+  },
+  "dungeontrain.leaderboard.scope.run": {
+    "1": {
+      "label": "the board's own question, which this clause narrows to a single life",
+      "examples": [
+        {
+          "key": "dungeontrain.leaderboard.carriages.header",
+          "args": []
+        },
+        {
+          "key": "dungeontrain.leaderboard.chests.header",
+          "args": []
+        }
+      ]
+    }
+  },
+  "dungeontrain.leaderboard.scope.total": {
+    "1": {
+      "label": "the board's own question, which this clause widens to every life",
+      "examples": [
+        {
+          "key": "dungeontrain.leaderboard.carriages.header",
+          "args": []
+        },
+        {
+          "key": "dungeontrain.leaderboard.playtime.header",
+          "args": []
+        }
+      ]
+    }
+  },
+  "dungeontrain.leaderboard.you": {
+    "1": {
+      "label": "the reader's rank on this board, as a plain number",
+      "examples": [
+        "1",
+        "7",
+        "42"
+      ]
+    },
+    "2": {
+      "label": "the reader's own score, already formatted for this board",
+      "examples": [
+        "1284m",
+        "3h 12m",
+        "$25"
+      ]
+    }
+  },
+  "dungeontrain.leaderboard.you_beyond": {
+    "1": {
+      "label": "the reader's own score, already formatted for this board",
+      "examples": [
+        "96m",
+        "48m",
+        "$5"
+      ]
+    },
+    "2": {
+      "label": "how many ranks the book had room to print",
+      "examples": [
+        "47",
+        "100"
+      ]
+    }
   }
 }
