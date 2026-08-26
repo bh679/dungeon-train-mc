@@ -120,7 +120,8 @@ class PortalRoomAuthorLocksTest {
         for (int pair = 0; pair < 60; pair++) {
             seen.add(PortalRoomAuthorLocks.effectiveShare(pair, books));
         }
-        assertEquals(3, seen.size(), "an even three-way roll should reach all three across 60 rooms");
+        assertEquals(PortalRoomBooks.Share.values().length, seen.size(),
+            "an even roll should reach every share across 60 rooms — the tally included");
     }
 
     // ---- whose shelf a Self room is allowed to ask for ----

@@ -8971,6 +8971,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "stats-book-and-tally-rooms",
+      "version": "0.670.0",
+      "type": "feat",
+      "title": "A book that counts, and a room full of them",
+      "summary": "Chests, pots and bookshelves now turn up Stats Books. Open one and it is a coin-flip: either a tall leaderboard, ranking every player on the train and closing on where you stand \u2014 or a short note from Faulthurst about your own run, naming one real number from it. You never know which until you read it. Portal rooms can now be stocked with the whole tally instead of one author's writing: every leaderboard and every run stat the train keeps, 47 books, shelved in one room with a note on the lectern explaining what you have walked into. Room authors set how often that happens in the Books screen.",
+      "highlights": [
+        "New Stats Book, found in loot \u2014 half leaderboard, half a note about your own run",
+        "Leaderboard books moved out of the random-book pool onto their own loot entry",
+        "Portal rooms can shelve the complete tally: 29 leaderboards + 18 run stats",
+        "Stats joins Self, Player and Signature as a fourth share in a room's Books mix"
+      ],
+      "date": "2026-08-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

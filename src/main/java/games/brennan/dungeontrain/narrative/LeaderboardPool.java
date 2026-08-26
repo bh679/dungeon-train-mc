@@ -127,6 +127,25 @@ public final class LeaderboardPool {
         refresh(all[Math.floorMod(warmCursor++, all.length)]);
     }
 
+    /**
+     * Ask for every board at once, rather than one per tick.
+     *
+     * <p>For the one caller that needs the whole set and not a sample: a stat room, whose shelves are
+     * meant to hold every board there is. {@link #warmNext}'s rotation gets there eventually — about
+     * twelve minutes — which is fine for loot that only ever shows one board at a time and much too
+     * slow for a room a player is standing in.</p>
+     *
+     * <p>Cheap to call repeatedly: {@link #refresh} returns immediately for a board that is fresh or
+     * already in flight, so a room asking again every tick issues requests only for what has actually
+     * gone stale.</p>
+     */
+    public static void warmAll() {
+        if (!wanted) return;
+        for (LeaderboardCategory category : LeaderboardCategory.values()) {
+            refresh(category);
+        }
+    }
+
     /** The cached board for {@code category} — empty until a fetch succeeds. Never null. */
     public static Board board(LeaderboardCategory category) {
         return BOARDS.getOrDefault(category, Board.EMPTY);

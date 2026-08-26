@@ -107,6 +107,30 @@ public final class ModItems {
         () -> new Item(new Item.Properties().stacksTo(1))
     );
 
+    /**
+     * The loot-facing book, and the only one of these five that ordinary loot tables place: a
+     * coin-flip between the two above. Half the time the slot becomes a tall
+     * {@link #RANDOM_LEADERBOARD_BOOK} — a ranked board of the whole server — and half the time a
+     * one-page {@link #RANDOM_STAT_BOOK}, Faulthurst's note about the reader's own current run.
+     *
+     * <p>Two shapes of the same idea: here is a number about you, and here is what it means. Shipping
+     * them as ONE loot entry is what makes a chest able to offer either without the loot tables
+     * having to carry both and halve each one's weight — and it is why a player never learns which
+     * kind a given chest holds until they open it.</p>
+     *
+     * <p>The flip is deterministic on the same seed inputs as every other roll, so a chest at a given
+     * world seed always makes the same choice. When the leaderboard side cannot be baked (it needs a
+     * carrier book from the local random-book pool) the slot falls back to the stat note rather than
+     * going to waste — see {@code ContainerContentsRoller.bakeStatsBook}.</p>
+     *
+     * <p>The two siblings stay registered: placing one of THEM in the editor is how an author
+     * guarantees a specific kind, where this one deliberately refuses to promise.</p>
+     */
+    public static final DeferredItem<Item> STATS_BOOK = ITEMS.register(
+        "stats_book",
+        () -> new Item(new Item.Properties().stacksTo(1))
+    );
+
     private ModItems() {}
 
     /** Call from the mod constructor to attach the {@link DeferredRegister} to the mod-event bus. */

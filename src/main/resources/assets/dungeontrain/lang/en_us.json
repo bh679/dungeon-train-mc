@@ -1083,6 +1083,7 @@
   "item.dungeontrain.random_book": "Random Book",
   "item.dungeontrain.random_playerbook": "Random Player Book",
   "item.dungeontrain.random_leaderboard_book": "Random Leaderboard Book",
+  "item.dungeontrain.stats_book": "Stats Book",
   "gui.dungeontrain.prefab_tab.variants": "Block Variants",
   "gui.dungeontrain.prefab_tab.loot": "Containers / Loot",
   "gui.dungeontrain.prefab_tab.loot_entity": "Armor Stands / Item Frames",
