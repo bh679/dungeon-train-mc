@@ -1,7 +1,0 @@
--proc:none
--nowarn
--Xmaxerrs
-100000
--d
-/tmp/claude-0/-home-user/179eac06-fdc9-55e4-9aa6-44046c52cc70/scratchpad/javac-out2
-@/tmp/claude-0/-home-user/179eac06-fdc9-55e4-9aa6-44046c52cc70/scratchpad/srcs.txt
