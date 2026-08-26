@@ -8860,17 +8860,13 @@
       "released_at": null
     },
     {
-      "id": "template-item-frames-and-paintings",
+      "id": "famous-pig-names",
       "version": "0.665.0",
-      "type": "feat",
-      "title": "Item frames and paintings save into templates",
-      "summary": "Item frames and paintings placed in a template are now saved with it and stamped back when it is built \u2014 on carriages, carriage parts, tracks, tunnels and portal rooms alike. Decor that used to vanish on save, or come back a block off its hook, now lands where it was put. A new portal library room, pretty, ships alongside.",
-      "highlights": [
-        "Item frames and paintings persist in every template kind",
-        "Hanging decor lands on the anchor it was authored against, not one block off",
-        "New pretty portal library room",
-        "Library room group reweighted"
-      ],
+      "type": "content",
+      "title": "",
+      "summary": "Some of the named pigs riding the train answer to a more famous name. A small tribute, and a rare one \u2014 you will not meet one every trip.",
+      "highlights": [],
+      "pr": 1104,
       "date": "2026-08-26",
       "released": false,
       "released_in": null,
