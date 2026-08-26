@@ -121,7 +121,7 @@ public final class PlayerRunState {
      * putting one down are different feats, and only the second one is this.
      */
     private int echoesKilled;
-    /** Carriages passed since the last container was opened this run. Reset by {@link #incrementContainersOpened}. */
+    /** Carriages passed since the last loot container was opened this run. Reset by {@link #openedLootContainer}. */
     private int carriagesSinceChest;
     /** High-water mark of {@link #carriagesSinceChest} this run — the longest stretch gone without looting. */
     private int maxCarriagesNoChest;

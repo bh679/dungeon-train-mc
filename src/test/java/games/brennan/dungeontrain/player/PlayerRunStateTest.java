@@ -227,20 +227,39 @@ final class PlayerRunStateTest {
     }
 
     @Test
-    @DisplayName("the chest-free streak keeps its high-water mark when a container ends it")
+    @DisplayName("the chest-free streak keeps its high-water mark when a loot container ends it")
     void chestFreeStreakHighWaterMark() {
         PlayerRunState state = new PlayerRunState();
         state.recordCartMovement(5);
         state.recordCartMovement(4);
         assertEquals(9, state.maxCarriagesNoChest(), "nine carriages passed with nothing opened");
 
-        state.incrementContainersOpened(); // streak ends, the record it set does not
+        state.openedLootContainer(); // streak ends, the record it set does not
         assertEquals(9, state.maxCarriagesNoChest());
 
         state.recordCartMovement(3);
         assertEquals(9, state.maxCarriagesNoChest(), "a shorter later run does not beat the record");
         state.recordCartMovement(20);
         assertEquals(23, state.maxCarriagesNoChest(), "a longer one does");
+    }
+
+    @Test
+    @DisplayName("a vase counts as a container opened, but is not loot enough to end the streak")
+    void vaseCountsWithoutEndingTheChestFreeStreak() {
+        PlayerRunState state = new PlayerRunState();
+        state.recordCartMovement(6);
+
+        // The pot-break path. It tallies, because the player did open something...
+        assertEquals(1, state.incrementContainersOpened(), "the vase counts toward containers opened");
+        state.recordCartMovement(4);
+        assertEquals(10, state.maxCarriagesNoChest(),
+            "...but the streak ran straight through it — Walk Past The Loot is about leaving "
+                + "chests alone, and a vase is not loot");
+
+        // The chest path is the one that ends it, and tallies on the same counter.
+        assertEquals(2, state.openedLootContainer(), "a chest counts too");
+        state.recordCartMovement(2);
+        assertEquals(10, state.maxCarriagesNoChest(), "the chest reset it; two carriages do not beat ten");
     }
 
     @Test
