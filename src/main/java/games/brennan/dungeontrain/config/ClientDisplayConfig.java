@@ -81,6 +81,8 @@ public final class ClientDisplayConfig {
     public static final ModConfigSpec.IntValue FRAMERATE_THROTTLE_FPS;
     public static final ModConfigSpec.DoubleValue TRAIN_ENGINE_VOLUME;
     public static final ModConfigSpec.BooleanValue DELETE_WORLD_ON_REBOARD;
+    /** Tiles per row in the Train Builder's Open screen grid. See {@link #getBuilderTilesPerRow()}. */
+    public static final ModConfigSpec.IntValue BUILDER_TILES_PER_ROW;
     public static final ModConfigSpec.BooleanValue SKYBOX_PUNCH_ENABLED;
     public static final ModConfigSpec.BooleanValue SCRIBBLE_COLOR_PICKER_VISIBLE;
     /**
@@ -165,6 +167,7 @@ public final class ClientDisplayConfig {
         FRAMERATE_THROTTLE_FPS = pair.getLeft().framerateThrottleFps;
         TRAIN_ENGINE_VOLUME = pair.getLeft().trainEngineVolume;
         DELETE_WORLD_ON_REBOARD = pair.getLeft().deleteWorldOnReboard;
+        BUILDER_TILES_PER_ROW = pair.getLeft().builderTilesPerRow;
         SKYBOX_PUNCH_ENABLED = pair.getLeft().skyboxPunchEnabled;
         SCRIBBLE_COLOR_PICKER_VISIBLE = pair.getLeft().scribbleColorPickerVisible;
         SHARED_BOOKS_READ = pair.getLeft().sharedBooksRead;
@@ -295,6 +298,17 @@ public final class ClientDisplayConfig {
                 .define("deleteOnReboard", true);
         b.pop();
 
+        b.push("builderOpen");
+        // The bounds are duplicated from BuilderTemplateGridLayout's MIN_COLUMNS/MAX_COLUMNS rather
+        // than shared, because that class is client-only and package-private while this config is
+        // common-side. Safe to duplicate: this range only rejects a hand-edited value, and the grid
+        // clamps whatever it is handed anyway — so a drift here can widen what the file accepts, not
+        // what the screen draws.
+        ModConfigSpec.IntValue builderTilesPerRow = b
+                .comment("How many template tiles per row the Train Builder's Open screen lays out. The grid block stays the same width whichever you pick, so a higher number shows more of a library at once by making each tile smaller. Set in-game from the numbered button beside the Open screen's controls (left-click for more, right-click for fewer) — on a small window or a high GUI scale the count stops below 6, where a further column would no longer fit.")
+                .defineInRange("tilesPerRow", 3, 2, 6);
+        b.pop();
+
         b.push("sharedBooks");
         ModConfigSpec.ConfigValue<List<? extends String>> sharedBooksRead = b
                 .comment("Relay pool ids (as strings) of community player-written books you've read. GLOBAL read",
@@ -373,7 +387,9 @@ public final class ClientDisplayConfig {
                 rideSnapshotMinFps, rideSnapshotMinTps,
                 rideSnapshotDiskOffload, rideSnapshotFlushMinFps, rideSnapshotFlushMinTps, rideSnapshotMaxOnDisk,
                 rideSnapshotMaxResolution,
-                framerateThrottleEnabled, framerateThrottleFps, trainEngineVolume, skyboxPunchEnabled, scribbleColorPickerVisible, deleteWorldOnReboard, sharedBooksRead,
+                framerateThrottleEnabled, framerateThrottleFps, trainEngineVolume, skyboxPunchEnabled, scribbleColorPickerVisible, deleteWorldOnReboard,
+                builderTilesPerRow,
+                sharedBooksRead,
                 deathScreenLastNps, politicalFilter, contentMode, customContentPreference,
                 customContentLastAnswer,
                 configDeviationAcknowledged);
@@ -832,6 +848,34 @@ public final class ClientDisplayConfig {
         DELETE_WORLD_ON_REBOARD.save();
     }
 
+    // ----- Train Builder Open screen: tiles per row -----
+
+    /**
+     * Tiles per row in the Open screen's template grid. Defaults to 3 — today's fixed count — both
+     * before the config loads and when it never does, so a client with no config file draws the
+     * grid it has always drawn.
+     *
+     * <p>The player's raw choice, which is not necessarily what is on screen: a narrow window or a
+     * high GUI scale can hold fewer columns than this, and {@code BuilderTemplateGridLayout} clamps
+     * to what fits. Storing the ask rather than the clamped result is deliberate — a count saturated
+     * away by a small window comes back when the window grows again.</p>
+     */
+    public static int getBuilderTilesPerRow() {
+        return isLoaded() ? BUILDER_TILES_PER_ROW.get() : 3;
+    }
+
+    /**
+     * Persist the tiles-per-row choice. Idempotent — skips the TOML write when unchanged, because
+     * this is driven by a button a player clicks repeatedly while watching the grid reflow.
+     */
+    public static void setBuilderTilesPerRow(int value) {
+        if (!isLoaded()) return;
+        int clamped = Math.max(2, Math.min(6, value));
+        if (BUILDER_TILES_PER_ROW.get() == clamped) return;
+        BUILDER_TILES_PER_ROW.set(clamped);
+        BUILDER_TILES_PER_ROW.save();
+    }
+
     // ----- Content mode (Adult / Kid) — see ContentMode -----
 
     /**
@@ -971,6 +1015,7 @@ public final class ClientDisplayConfig {
             ModConfigSpec.BooleanValue skyboxPunchEnabled,
             ModConfigSpec.BooleanValue scribbleColorPickerVisible,
             ModConfigSpec.BooleanValue deleteWorldOnReboard,
+            ModConfigSpec.IntValue builderTilesPerRow,
             ModConfigSpec.ConfigValue<List<? extends String>> sharedBooksRead,
             ModConfigSpec.IntValue deathScreenLastNps,
             ModConfigSpec.EnumValue<PoliticalFilter> politicalFilter,

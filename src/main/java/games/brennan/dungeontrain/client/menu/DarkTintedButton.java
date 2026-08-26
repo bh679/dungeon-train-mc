@@ -20,9 +20,12 @@ import net.neoforged.api.distmarker.OnlyIn;
  * with {@code GuiGraphics.setColor(TINT, TINT, TINT, alpha)} applied before the
  * sprite blit, then restored to white before the label is drawn — so only the
  * background is darkened, label text stays crisp.</p>
+ *
+ * <p>Subclassable so a button can vary its own label or press behaviour per frame while keeping
+ * this background — see {@code TrainBuilderMenuButton}.</p>
  */
 @OnlyIn(Dist.CLIENT)
-public final class DarkTintedButton extends Button {
+public class DarkTintedButton extends Button {
 
     private static final WidgetSprites SPRITES = new WidgetSprites(
             ResourceLocation.withDefaultNamespace("widget/button"),

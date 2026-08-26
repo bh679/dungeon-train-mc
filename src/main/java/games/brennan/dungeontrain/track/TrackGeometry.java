@@ -14,7 +14,9 @@ import games.brennan.dungeontrain.train.CarriageDims;
  * <pre>
  *   y = railY   — vanilla rails at Z = trackZMin+1 and Z = trackZMax-1
  *   y = bedY    — 5-block-wide stone-brick bed (trackZMin..trackZMax)
- *   y &lt; bedY — pillars every 8 blocks on X, where ground sits below
+ *   y &lt; bedY — pillars where ground sits below, spaced by depth: every 8
+ *               blocks over shallow ground, widening with the column's height
+ *               (see {@code TrackGenerator.computeSpacing})
  * </pre>
  * Carriage voxels live at {@code y = origin.y ..  origin.y + HEIGHT - 1}, so
  * {@code bedY = origin.y - 2} and {@code railY = origin.y - 1} leave a

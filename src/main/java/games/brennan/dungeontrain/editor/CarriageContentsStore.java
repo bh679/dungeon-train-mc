@@ -77,6 +77,15 @@ public final class CarriageContentsStore {
     }
 
     /**
+     * This contents template's raw NBT, with no size gate — for showing the template rather than
+     * stamping it. See {@link TemplateNbt} for why the gate is skipped.
+     */
+    public static Optional<CompoundTag> rawTag(String id) {
+        return TemplateNbt.read(SUBDIR, id + EXT, RESOURCE_PREFIX + id + EXT,
+            "contents template " + id);
+    }
+
+    /**
      * On-disk path to the bundled-resource copy of {@code contents}'s template
      * inside the project source tree. Only meaningful in a dev checkout — see
      * {@link #sourceTreeAvailable()}.

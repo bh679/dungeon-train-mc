@@ -463,7 +463,14 @@ public final class PortalCarriageBuilder {
         return null;
     }
 
-    private static BlockState doorState(boolean lower) {
+    /**
+     * The door a corridor's end plane hangs, lower or upper half.
+     *
+     * <p>Public so the editor's door ghosts can draw the <b>same</b> door this places rather than a
+     * lookalike — {@code EditorDoorGhostRenderer} renders this very state translucently. A second
+     * definition on the client would be free to drift in facing, hinge or wood.</p>
+     */
+    public static BlockState doorState(boolean lower) {
         return Blocks.OAK_DOOR.defaultBlockState()
             .setValue(DoorBlock.FACING, Direction.EAST)
             .setValue(DoorBlock.HINGE, DoorHingeSide.LEFT)

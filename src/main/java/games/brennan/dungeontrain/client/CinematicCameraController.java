@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.client;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.net.BuilderCinematicPacket;
 import games.brennan.dungeontrain.net.CinematicDonePacket;
 import games.brennan.dungeontrain.net.CinematicIntroPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
@@ -19,12 +20,20 @@ import org.slf4j.Logger;
  * the result. {@link CinematicInputHandler} drives the tick clock, skip, and
  * input freeze. The player's body never moves here — only the render camera.</p>
  *
- * <p>Motion: from the sent ground-spawn pose the camera rises by
- * {@code riseHeight} and eases back by {@code pullBack} (along the fixed
- * frame-0 direction away from the player), while continuously aiming at the
- * <em>live</em> local player (offset up by {@code lookYOffset}). Because the
- * train carries the player forward, the aim pans to follow — the character and
- * train stay framed as the shot widens.</p>
+ * <p>Two shots share this machinery — one clock, one skip key, one release blend:</p>
+ * <ul>
+ *   <li><b>The join intro</b> ({@link #start}, {@link CinematicIntroPacket}). From the sent
+ *       ground-spawn pose the camera rises by {@code riseHeight} and eases back by
+ *       {@code pullBack} (along the fixed frame-0 direction away from the player), while
+ *       continuously aiming at the <em>live</em> local player (offset up by
+ *       {@code lookYOffset}). Because the train carries the player forward, the aim pans to
+ *       follow — the character and train stay framed as the shot widens.</li>
+ *   <li><b>The Train Builder arrival shot</b> ({@link #startFocusShot},
+ *       {@link BuilderCinematicPacket}). The camera lerps between two fixed world points while
+ *       holding its aim on a third — the template. Nothing in a builder world moves, so there
+ *       is no live target to track, and knowing both ends up front lets the shot land exactly
+ *       on the player's eye.</li>
+ * </ul>
  *
  * <p>All methods run on the client main thread (packet {@code enqueueWork},
  * client tick, render) — no cross-thread access.</p>
@@ -62,6 +71,14 @@ public final class CinematicCameraController {
     // Fixed (frame-0) horizontal direction the camera pulls back along.
     private static double backDirX;
     private static double backDirZ;
+
+    /**
+     * Focus-shot state. Both are null for the join intro, which tracks the live player instead;
+     * when {@code focusPoint} is set the camera lerps {@link #startPos} → {@link #endPos} and
+     * aims at {@code focusPoint} rather than at the player.
+     */
+    private static Vec3 focusPoint;
+    private static Vec3 endPos;
 
     // Clock / phase.
     private static int elapsedTicks;
@@ -101,6 +118,8 @@ public final class CinematicCameraController {
         pullBack = p.pullBack();
         lookYOffset = p.lookYOffset();
         durationTicks = Math.max(1, p.durationTicks());
+        focusPoint = null;
+        endPos = null;
 
         // Pull-back direction = away from the player at frame 0 (fixed for the run).
         double bdx = startPos.x - player.getX();
@@ -109,6 +128,48 @@ public final class CinematicCameraController {
         backDirX = blen > 1.0e-6 ? bdx / blen : 0.0;
         backDirZ = blen > 1.0e-6 ? bdz / blen : 0.0;
 
+        beginShot(mc, player);
+        LOGGER.info("[DungeonTrain] Intro cinematic start: cam={} yaw={} pitch={} rise={} pull={} dur={}t",
+            startPos, startYaw, startPitch, riseHeight, pullBack, durationTicks);
+    }
+
+    /**
+     * Begin the Train Builder arrival shot (called from {@link BuilderCinematicPacket#handle}).
+     *
+     * <p>Both ends of the move and the aim point are fully resolved server-side, so there is no
+     * frame-0 direction to capture and nothing to track: the camera simply eases from start to
+     * end while looking at the template.</p>
+     */
+    public static void startFocusShot(BuilderCinematicPacket p) {
+        Minecraft mc = Minecraft.getInstance();
+        LocalPlayer player = mc.player;
+        if (player == null) return;
+
+        startPos = new Vec3(p.camStartX(), p.camStartY(), p.camStartZ());
+        endPos = new Vec3(p.camEndX(), p.camEndY(), p.camEndZ());
+        focusPoint = new Vec3(p.focusX(), p.focusY(), p.focusZ());
+        durationTicks = Math.max(1, p.durationTicks());
+        // Unused by this shot, but they feed the shared maths — zero them so a previous run's
+        // values can't leak in.
+        riseHeight = 0.0;
+        pullBack = 0.0;
+        lookYOffset = 0.0;
+        backDirX = 0.0;
+        backDirZ = 0.0;
+
+        // Start already aimed at the template, which makes the shared start-blend a no-op —
+        // there is no ground pose to ease out of here, the shot opens on the subject.
+        float[] aim = lookAt(startPos, focusPoint);
+        startYaw = aim[0];
+        startPitch = aim[1];
+
+        beginShot(mc, player);
+        LOGGER.info("[DungeonTrain] Builder cinematic start: cam={} → {} focus={} dur={}t",
+            startPos, endPos, focusPoint, durationTicks);
+    }
+
+    /** Clock, input freeze, HUD hide and saved view — identical for both shots. */
+    private static void beginShot(Minecraft mc, LocalPlayer player) {
         elapsedTicks = 0;
         releasing = false;
         releaseTicks = 0;
@@ -125,8 +186,6 @@ public final class CinematicCameraController {
 
         CinematicSkipHudOverlay.reset();
         active = true;
-        LOGGER.info("[DungeonTrain] Intro cinematic start: cam={} yaw={} pitch={} rise={} pull={} dur={}t",
-            startPos, startYaw, startPitch, riseHeight, pullBack, durationTicks);
     }
 
     /** Advance the clock once per client tick. Called from {@link CinematicInputHandler}. */
@@ -194,6 +253,8 @@ public final class CinematicCameraController {
     public static void forceStop() {
         active = false;
         releasing = false;
+        focusPoint = null;
+        endPos = null;
         LocalPlayer player = Minecraft.getInstance().player;
         if (player != null && savedInput != null && player.input == FROZEN_INPUT) {
             player.input = savedInput;
@@ -206,6 +267,8 @@ public final class CinematicCameraController {
     private static void finishRelease(LocalPlayer player) {
         active = false;
         releasing = false;
+        focusPoint = null;
+        endPos = null;
         if (player != null) {
             if (savedInput != null && player.input == FROZEN_INPUT) {
                 player.input = savedInput;
@@ -230,11 +293,15 @@ public final class CinematicCameraController {
             return new Pose(startPos, startYaw, startPitch);
         }
 
-        // Live, interpolated local-player position; aim slightly up its body.
+        // Live, interpolated local-player position; aim slightly up its body. The focus shot
+        // holds a fixed world point instead — its subject doesn't move, and the player is stood
+        // still off to the side of it.
         double lpx = Mth.lerp(partialTick, player.xo, player.getX());
         double lpy = Mth.lerp(partialTick, player.yo, player.getY());
         double lpz = Mth.lerp(partialTick, player.zo, player.getZ());
-        Vec3 lookTarget = new Vec3(lpx, lpy + lookYOffset, lpz);
+        Vec3 lookTarget = focusPoint != null
+            ? focusPoint
+            : new Vec3(lpx, lpy + lookYOffset, lpz);
 
         if (releasing) {
             double tr = Mth.clamp((releaseTicks + partialTick) / (double) RELEASE_BLEND_TICKS, 0.0, 1.0);
@@ -249,10 +316,12 @@ public final class CinematicCameraController {
         double t = Mth.clamp((elapsedTicks + partialTick) / (double) durationTicks, 0.0, 1.0);
         double e = smoothstep(t);
 
-        Vec3 pos = new Vec3(
-            startPos.x + backDirX * pullBack * e,
-            startPos.y + riseHeight * e,
-            startPos.z + backDirZ * pullBack * e);
+        Vec3 pos = (endPos != null)
+            ? lerp(startPos, endPos, e)
+            : new Vec3(
+                startPos.x + backDirX * pullBack * e,
+                startPos.y + riseHeight * e,
+                startPos.z + backDirZ * pullBack * e);
 
         float[] yp = lookAt(pos, lookTarget);
         float yaw = yp[0];
