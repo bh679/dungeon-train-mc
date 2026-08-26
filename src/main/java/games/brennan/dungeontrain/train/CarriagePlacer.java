@@ -14,6 +14,7 @@ import games.brennan.dungeontrain.portal.PortalCorridorKind;
 import games.brennan.dungeontrain.portal.PortalCorridorSize;
 import games.brennan.dungeontrain.portal.PortalRegistry;
 import games.brennan.dungeontrain.template.GateContext;
+import games.brennan.dungeontrain.template.TemplateDecor;
 import games.brennan.dungeontrain.template.TemplateKind;
 import games.brennan.dungeontrain.template.TemplateType;
 import games.brennan.dungeontrain.worldgen.SilentBlockOps;
@@ -26,10 +27,12 @@ import net.minecraft.nbt.IntTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureProcessor;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
@@ -43,6 +46,7 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 
 /**
  * Carriage blueprint — a hollow box whose dimensions are captured per-world
@@ -448,6 +452,13 @@ public final class CarriagePlacer {
         // forced to the COMMAND_BLOCK sentinel by the canonical
         // VariantState constructor). Subject to the same 48-block player-
         // distance gate that wraps this entity pass.
+        // Decoration first, and deliberately BEFORE the portal early-return below. That return is a
+        // rule about MOBS, and decor inverts it: a corridor's twin stands in the world and so hangs
+        // its template's pictures at stamp time, which is precisely why the corridor riding the train
+        // has to hang the same ones here. A picture that appeared on one side of the crossing and not
+        // the other would break the illusion the twin exists to keep.
+        spawnShellAndPartsDecor(level, origin, variant, dims, config.seed(), carriageIndex, groupAnchorWorldX);
+
         // No part of a portal takes either pass — not the shell/parts mob spawn above, and not the
         // contents entities below. A mob standing in one corridor and not its twin is exactly the
         // difference a player would see at the crossing, and a mob in the cart between them would
@@ -460,6 +471,104 @@ public final class CarriagePlacer {
         }
         applyContents(level, origin, variant, dims, config, carriageIndex,
             /*placeBlocks*/ false, /*spawnEntities*/ true, groupAnchorWorldX);
+    }
+
+    /**
+     * Hang the shell's and every part's template decoration — item frames and paintings — on a
+     * carriage that has already been assembled into its Sable sub-level.
+     *
+     * <p><b>Why deferred.</b> A carriage's blocks are stamped in the source world and lifted into the
+     * sub-level the same tick, so anything spawned at stamp time is left standing on the track when
+     * the train pulls away. The decor therefore rides the same settle point the contents entities do
+     * ({@link #applyContentsEntitiesAt}), at the carriage's shipyard origin — the frame in which
+     * {@code TrainStaticContentsCarrier} re-anchors it every tick. An editor plot or a portal twin
+     * never moves, so those hang their decor at stamp time instead; see
+     * {@link #stampTemplate}.</p>
+     *
+     * <p>The tag is what makes it move. {@code TrainStaticContentsCarrier} carries item frames and
+     * paintings with their carriage only if they hold {@link CarriageContentsPlacer#contentsTagFor}
+     * and the spawn anchor beside it — untagged, a picture hangs in the air where the carriage used
+     * to be.</p>
+     */
+    private static void spawnShellAndPartsDecor(ServerLevel level, BlockPos origin,
+                                                CarriageVariant variant, CarriageDims dims,
+                                                long seed, int carriageIndex, int groupAnchorWorldX) {
+        try {
+            if (PortalCarriageSelection.isPortalCarriage(level, carriageIndex)) {
+                spawnCorridorDecor(level, origin, dims, carriageIndex);
+                return;
+            }
+            // The sealed cart between a pair's two corridors is deliberately left out: nobody can
+            // reach it (the corridors swap a player out first), which is the same reason it takes
+            // neither the contents pass nor the mob pass.
+            if (PortalCarriageSelection.isPortalMiddle(level, carriageIndex)) return;
+
+            CarriageTemplateStore.get(level, variant, variantDims(variant, dims))
+                .ifPresent(t -> TemplateDecor.spawn(level, origin, t, contentsMark(level, carriageIndex)));
+            spawnPartsDecor(level, origin, variant, dims, seed, carriageIndex, groupAnchorWorldX);
+        } catch (Throwable t) {
+            LOGGER.warn("[DungeonTrain] template decor: shell/parts pass failed at origin={} pIdx={}: {}",
+                origin, carriageIndex, t.toString());
+        }
+    }
+
+    /**
+     * A portal corridor's own decor, from the corridor variant's template at the corridor's box.
+     *
+     * <p>Not the slot's rolled variant and not the slot's origin: what stands in a portal slot is a
+     * corridor, and a corridor is longer than the slot it was placed for and grows into the cart
+     * between the pair. Both figures are re-derived exactly as {@code placeAtGuarded} derives them,
+     * from the carriage index alone, so this pass and the stamp agree without either consulting the
+     * other.</p>
+     */
+    private static void spawnCorridorDecor(ServerLevel level, BlockPos origin, CarriageDims dims,
+                                           int carriageIndex) {
+        int groupSize = DungeonTrainConfig.getGroupSize();
+        PortalCarriageRole role = PortalCarriageRole.roleFor(carriageIndex, groupSize);
+        int pairKey = PortalCarriageRole.entryIndexOf(carriageIndex, groupSize);
+        PortalCorridorKind kind = PortalCarriageSelection.corridorKindFor(level, pairKey);
+        BlockPos corridorOrigin =
+            origin.offset(PortalCorridorSize.originOffsetX(role, dims, kind), 0, 0);
+        CarriageVariant portal = PortalCarriageBuilder.portalVariant(kind);
+        CarriageTemplateStore.get(level, portal, PortalCorridorSize.corridorDims(dims, kind))
+            .ifPresent(t -> TemplateDecor.spawn(level, corridorOrigin, t,
+                contentsMark(level, carriageIndex)));
+    }
+
+    /** Every declared part's decoration, at the placement's own origin and under its own mirror. */
+    private static void spawnPartsDecor(ServerLevel level, BlockPos origin, CarriageVariant variant,
+                                        CarriageDims dims, long seed, int carriageIndex,
+                                        int groupAnchorWorldX) {
+        Optional<CarriagePartAssignment> assignment = CarriageVariantPartsStore.get(variant);
+        if (assignment.isEmpty()) return;
+        CarriagePartAssignment a = assignment.get();
+        if (a.allNone()) return;
+        GateContext gateCtx = partGateContext(level, carriageIndex, dims, groupAnchorWorldX);
+        Consumer<Entity> mark = contentsMark(level, carriageIndex);
+        for (CarriagePartKind kind : CarriagePartKind.values()) {
+            java.util.List<String> picks = a.pickPerPlacement(kind, seed, carriageIndex, gateCtx);
+            CarriagePartPlacer.spawnPartDecorAt(level, origin, kind, picks, dims, mark);
+        }
+    }
+
+    /**
+     * The claim a carriage's decor is spawned under: DT's contents tag plus the spawn anchor, in the
+     * shipyard frame, written with the same keys {@link CarriageContentsPlacer} uses. Read by
+     * {@code TrainStaticContentsCarrier}, which resolves the carriage owning that coordinate and
+     * re-anchors the entity from it every tick.
+     */
+    private static Consumer<Entity> contentsMark(ServerLevel level, int carriageIndex) {
+        String tag = CarriageContentsPlacer.contentsTagFor(carriageIndex);
+        long tick = level.getGameTime();
+        return entity -> {
+            entity.addTag(tag);
+            CompoundTag data = entity.getPersistentData();
+            data.putDouble(CarriageContentsPlacer.NBT_SPAWN_SHIPYARD_X, entity.getX());
+            data.putDouble(CarriageContentsPlacer.NBT_SPAWN_SHIPYARD_Y, entity.getY());
+            data.putDouble(CarriageContentsPlacer.NBT_SPAWN_SHIPYARD_Z, entity.getZ());
+            data.putLong(CarriageContentsPlacer.NBT_SPAWN_GAME_TICK, tick);
+            data.putInt(CarriageContentsPlacer.NBT_SPAWN_CARRIAGE_PIDX, carriageIndex);
+        };
     }
 
     /**
@@ -690,7 +799,7 @@ public final class CarriagePlacer {
             // Without this pre-clear, the base filter alone leaves whatever
             // was previously in those cells untouched.
             filter.ifPresent(p -> p.clearClaimedCellsSilently(level));
-            stampTemplate(level, origin, stored.get(), filter.orElse(null), relight);
+            stampTemplate(level, origin, stored.get(), filter.orElse(null), relight, /*decorBox*/ null);
             return "stored";
         }
         if (variant instanceof CarriageVariant.Builtin b) {
@@ -1345,7 +1454,7 @@ public final class CarriagePlacer {
      */
     public static void stampTemplateAt(ServerLevel level, BlockPos origin, StructureTemplate template,
                                        boolean relight) {
-        stampTemplate(level, origin, template, null, relight);
+        stampTemplate(level, origin, template, null, relight, /*decorBox*/ null);
     }
 
     /**
@@ -1355,17 +1464,44 @@ public final class CarriagePlacer {
      */
     public static void stampTemplateAt(ServerLevel level, BlockPos origin, StructureTemplate template,
                                        StructureProcessor processor, boolean relight) {
-        stampTemplate(level, origin, template, processor, relight);
+        stampTemplate(level, origin, template, processor, relight, /*decorBox*/ null);
+    }
+
+    /**
+     * {@link #stampTemplateAt} that also bounds where the template's decoration may land.
+     *
+     * <p>Only the portal room's resize path needs it, and for the same reason it needs
+     * {@code clipTo}: a template saved at one size being stamped into a smaller box has to be cut off
+     * at the box's edge. That processor cuts the blocks; {@code decorBox} cuts the pictures, which
+     * would otherwise be hung in the plot next door.</p>
+     */
+    public static void stampTemplateAt(ServerLevel level, BlockPos origin, StructureTemplate template,
+                                       StructureProcessor processor, boolean relight,
+                                       BoundingBox decorBox) {
+        stampTemplate(level, origin, template, processor, relight, decorBox);
     }
 
     private static void stampTemplate(ServerLevel level, BlockPos origin, StructureTemplate template,
-                                      StructureProcessor processor, boolean relight) {
+                                      StructureProcessor processor, boolean relight,
+                                      BoundingBox decorBox) {
         StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
         if (processor != null) settings.addProcessor(processor);
         if (relight) {
             stampTemplateRelit(level, origin, template, settings);
         } else {
             stampTemplateSectionLocal(level, origin, template, settings);
+        }
+        // The template's hung decoration — item frames and paintings, which are entities and so are
+        // not written by any block pass. {@code relight} is exactly the right condition: it already
+        // means "these blocks stay where they are put" (an editor plot, a portal twin, a portal room),
+        // and a picture may only be hung where its wall will still be. A carriage on the spawn path
+        // (relight=false) is lifted into a Sable sub-level the same tick, so its decor would be left
+        // standing on the track — that one spawns deferred, at shipyard coords, from
+        // {@link #applyContentsEntitiesAt}.
+        if (relight) {
+            StructurePlaceSettings decorSettings = new StructurePlaceSettings();
+            if (decorBox != null) decorSettings.setBoundingBox(decorBox);
+            TemplateDecor.replace(level, origin, template, decorSettings, /*mark*/ null);
         }
     }
 

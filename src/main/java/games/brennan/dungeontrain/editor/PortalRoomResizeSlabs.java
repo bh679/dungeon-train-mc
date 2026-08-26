@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.editor;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.portal.PortalRoomResize;
+import games.brennan.dungeontrain.template.TemplateDecor;
 import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.track.variant.TrackVariantBlocks;
 import games.brennan.dungeontrain.world.PortalRoomResizeMemory;
@@ -62,8 +63,7 @@ final class PortalRoomResizeSlabs {
         Vec3i slabSize = PortalRoomResize.with(sizeBefore, axis, 1);
         BlockPos slabOrigin = origin.offset(PortalRoomResize.along(axis, step.slabIndex()));
 
-        StructureTemplate blocks = new StructureTemplate();
-        blocks.fillFromWorld(overworld, slabOrigin, slabSize, false, Blocks.STRUCTURE_VOID);
+        StructureTemplate blocks = TemplateDecor.capture(overworld, slabOrigin, slabSize, Blocks.STRUCTURE_VOID);
 
         TrackVariantBlocks sidecar = TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, name, sizeBefore);
         TrackVariantBlocks slabSidecar = TrackVariantBlocks.emptyFor(TrackKind.PORTAL_ROOM);
@@ -137,6 +137,9 @@ final class PortalRoomResizeSlabs {
                 origin.getY() + sizeAfter.getY() - 1,
                 origin.getZ() + sizeAfter.getZ() - 1));
         blocks.placeInWorld(overworld, at, at, settings, overworld.getRandom(), 3);
+        // The row's own decoration comes back with it — a picture the author hung on the wall a
+        // shrink took away is part of the row, not of the box it was cut from.
+        TemplateDecor.replace(overworld, at, blocks, settings, null);
 
         TrackVariantBlocks sidecar = TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, name, sizeAfter);
         TrackVariantBlocks slabSidecar = TrackVariantBlocks.fromJsonText(
