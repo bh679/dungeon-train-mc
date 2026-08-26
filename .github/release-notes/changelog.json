@@ -8894,10 +8894,10 @@
       "id": "portal-room-walls-in-tiling",
       "version": "0.668.0",
       "type": "feat",
-      "title": "Portal rooms can keep their own walls as they repeat",
-      "summary": "An endless portal room used to dissolve its own walls as it repeated \u2014 the wall between two copies was carved away so the space read as one continuous hall, taking whatever the builder had put on it with it. Rooms can now be built the other way instead: every copy keeps the walls it was drawn with, and you walk between copies through the doorways the builder left. Existing rooms are untouched.",
+      "title": "Dimensional carriages can keep their own walls as they repeat",
+      "summary": "An endless dimensional carriage used to dissolve its own walls as it repeated \u2014 the wall between two copies was carved away so the space read as one continuous hall, taking whatever the builder had put on it with it. Rooms can now be built the other way instead: every copy keeps the walls it was drawn with, and you walk between copies through the doorways the builder left. Existing rooms are untouched.",
       "highlights": [
-        "New Room Walls setting on a portal room: Merged (as before) or Kept",
+        "New Room Walls setting on a dimensional carriage: Merged (as before) or Kept",
         "Kept rooms repeat their walls exactly, including the wall the way back to the train stands in",
         "The library dimension now keeps its walls"
       ],
@@ -8977,11 +8977,11 @@
       "version": "0.670.0",
       "type": "feat",
       "title": "A book that counts, and a room full of them",
-      "summary": "Chests, pots and bookshelves now turn up Stats Books. Open one and it is a coin-flip: either a tall leaderboard, ranking every player on the train and closing on where you stand \u2014 or a short note from Faulthurst about your own run, naming one real number from it. You never know which until you read it. Portal rooms can now be stocked with the whole tally instead of one author's writing: every leaderboard and every run stat the train keeps, 47 books, shelved in one room with a note on the lectern explaining what you have walked into. Room authors set how often that happens in the Books screen.",
+      "summary": "Chests, pots and bookshelves now turn up Stats Books. Open one and it is a coin-flip: either a tall leaderboard, ranking every player on the train and closing on where you stand \u2014 or a short note from Faulthurst about your own run, naming one real number from it. You never know which until you read it. Dimensional carriages can now be stocked with the whole tally instead of one author's writing: every leaderboard and every run stat the train keeps, 47 books, shelved in one room with a note on the lectern explaining what you have walked into. Room authors set how often that happens in the Books screen.",
       "highlights": [
         "New Stats Book, found in loot \u2014 half leaderboard, half a note about your own run",
         "Leaderboard books moved out of the random-book pool onto their own loot entry",
-        "Portal rooms can shelve the complete tally: 29 leaderboards + 18 run stats",
+        "Dimensional carriages can shelve the complete tally: 29 leaderboards + 18 run stats",
         "Stats joins Self, Player and Signature as a fourth share in a room's Books mix"
       ],
       "date": "2026-08-26",
