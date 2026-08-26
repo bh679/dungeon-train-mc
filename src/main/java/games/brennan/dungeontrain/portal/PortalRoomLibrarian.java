@@ -77,6 +77,16 @@ public final class PortalRoomLibrarian {
     private static final Map<Integer, Pending> PENDING = new ConcurrentHashMap<>();
 
     /**
+     * pair key → which books a stat room already holds, by {@code PortalRoomStatShelves} key.
+     *
+     * <p>A stat room is stocked over many ticks as its boards arrive, so unlike a library room it
+     * cannot simply drop out of {@link #PENDING} after one pass. This is what stops the second pass
+     * shelving a duplicate of everything the first pass placed. Empty for library rooms, which are
+     * stocked once and forgotten.</p>
+     */
+    private static final Map<Integer, Set<String>> PLACED = new ConcurrentHashMap<>();
+
+    /**
      * Hands out {@link Pending#seq}. Monotonic for the life of the process, which is all eviction
      * order needs — it is only ever compared against other live entries, never persisted.
      */
@@ -101,7 +111,8 @@ public final class PortalRoomLibrarian {
      */
     public static void register(int pairKey, BlockPos origin, Vec3i size, PortalRoomBooks books) {
         REPORTED_NONE.remove(pairKey);
-        if (books == null || !books.locks() || origin == null || size == null) {
+        PLACED.remove(pairKey);
+        if (books == null || !books.stocks() || origin == null || size == null) {
             // A room re-stamped with the setting turned off must not keep an old pending record, or
             // it would be stocked from a decision its author has since taken back.
             PENDING.remove(pairKey);
@@ -111,6 +122,9 @@ public final class PortalRoomLibrarian {
         // eviction queue — it is the most recently seen room, whatever it was before.
         PENDING.put(pairKey, new Pending(origin.immutable(), size, books,
             REGISTRATIONS.incrementAndGet()));
+        // A stat room wants every board there is, and warmNext()'s one-per-tick rotation takes about
+        // twelve minutes to get through them. Ask for the set now, while the player is walking in.
+        if (books.kind() == PortalRoomBooks.Kind.STATS) PortalRoomStatShelves.requestBoards();
         evictOldest();
     }
 
@@ -139,6 +153,7 @@ public final class PortalRoomLibrarian {
             if (oldest == null) return;
             PENDING.remove(oldest);
             REPORTED_NONE.remove(oldest);
+            PLACED.remove(oldest);
         }
     }
 
@@ -146,6 +161,7 @@ public final class PortalRoomLibrarian {
     public static void forget(int pairKey) {
         PENDING.remove(pairKey);
         REPORTED_NONE.remove(pairKey);
+        PLACED.remove(pairKey);
     }
 
     /**
@@ -180,13 +196,21 @@ public final class PortalRoomLibrarian {
      */
     public static void tick(ServerLevel level, List<ServerPlayer> players) {
         if (PENDING.isEmpty() || level == null || players == null || players.isEmpty()) return;
-        if (!SharedBookGate.canDiscover()) return;   // discovery off — no author to stock from
 
         for (Map.Entry<Integer, Pending> entry : new ArrayList<>(PENDING.entrySet())) {
             int pairKey = entry.getKey();
             Pending pending = entry.getValue();
             ServerPlayer reader = readerFor(players, pending.origin());
             if (reader == null) continue;
+
+            if (pending.books().kind() == PortalRoomBooks.Kind.STATS) {
+                stockStatRoom(level, pairKey, pending, reader);
+                continue;
+            }
+
+            // Everything past here is the library room, which is the only kind that needs an author —
+            // and therefore the only kind community-book discovery gates.
+            if (!SharedBookGate.canDiscover()) continue;   // discovery off — no author to stock from
 
             PortalRoomAuthorLocks.Resolution resolved = PortalRoomAuthorLocks.resolve(
                 reader, pairKey, pending.books(), ContentModeMirror.isKid(reader));
@@ -229,6 +253,42 @@ public final class PortalRoomLibrarian {
     }
 
     /**
+     * One incremental pass over a stat room: shelve whatever it is still missing.
+     *
+     * <p>Unlike the library room this runs again and again — a stat room's leaderboard books arrive
+     * from the relay over the first minutes, so one pass could only ever place the run-stat notes.
+     * The room leaves {@link #PENDING} on either of the two ways it can be finished: it holds the
+     * full set, or it turns out to have no shelves to hold anything.</p>
+     *
+     * <p>A room that is merely incomplete stays pending indefinitely, which is deliberate — a board
+     * the relay has not served yet is not a failure, and there is nothing to do about it but ask
+     * again. The pass costs a map lookup once the room is full, because it is no longer in the map.</p>
+     */
+    private static void stockStatRoom(ServerLevel level, int pairKey, Pending pending, ServerPlayer reader) {
+        Set<String> already = PLACED.getOrDefault(pairKey, Set.of());
+        PortalRoomStatShelves.Progress progress = PortalRoomStatShelves.stock(
+            level, pending.origin(), pending.size(), already, pairKey, reader.getUUID());
+        PLACED.put(pairKey, progress.placed());
+
+        if (progress.stalled()) {
+            // Nowhere to put a book — no shelves, or a template that spoke for every slot. More
+            // boards arriving will not change that, so stop asking rather than rescan the room's box
+            // on every tick for the rest of the session.
+            LOGGER.info("[DungeonTrain] Portal room {} is a stat room with no free shelf slots — "
+                + "it holds {} of {} book(s) and will not fill further",
+                pairKey, progress.placed().size(), PortalRoomStatShelves.FULL_SET);
+            PENDING.remove(pairKey);
+            return;
+        }
+        if (PortalRoomStatShelves.isComplete(progress.placed())) {
+            PENDING.remove(pairKey);
+            return;
+        }
+        // Still filling. Keep the boards coming rather than waiting on warmNext()'s rotation.
+        PortalRoomStatShelves.requestBoards();
+    }
+
+    /**
      * The rider a room is stocked for: whoever is nearest it.
      *
      * <p>Nearest rather than first-in-the-list because the Self share names "the player the room was
@@ -253,6 +313,7 @@ public final class PortalRoomLibrarian {
     public static void clear() {
         PENDING.clear();
         REPORTED_NONE.clear();
+        PLACED.clear();
     }
 
     /** Test hook: whether a pair is still waiting for its books. */

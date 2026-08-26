@@ -59,11 +59,39 @@ class PortalRoomBooksTest {
     }
 
     @Test
-    @DisplayName("Off is the default and the only kind that does not stock an author")
-    void offIsTheOnlyUnlockedKind() {
+    @DisplayName("Off is the default, and Mix is the only kind that stocks an AUTHOR")
+    void mixIsTheOnlyAuthorKind() {
         assertSame(Kind.OFF, PortalRoomBooks.DEFAULT.kind());
         assertFalse(PortalRoomBooks.DEFAULT.locks());
         assertTrue(new PortalRoomBooks(Kind.MIX).locks());
+        // A stat room fills its shelves without anybody having written what goes on them, so every
+        // author-shaped question downstream of locks() has to answer no for it.
+        assertFalse(new PortalRoomBooks(Kind.STATS).locks());
+    }
+
+    @Test
+    @DisplayName("Stocking is the broader question: everything but Off fills its own shelves")
+    void everythingButOffStocks() {
+        assertFalse(PortalRoomBooks.DEFAULT.stocks());
+        assertTrue(new PortalRoomBooks(Kind.MIX).stocks());
+        assertTrue(new PortalRoomBooks(Kind.STATS).stocks());
+    }
+
+    @Test
+    @DisplayName("The weights are a Mix-only control, so a stat room hides them")
+    void weightsApplyOnlyToMix() {
+        assertFalse(PortalRoomBooks.DEFAULT.weightsApply());
+        assertTrue(new PortalRoomBooks(Kind.MIX).weightsApply());
+        assertFalse(new PortalRoomBooks(Kind.STATS).weightsApply());
+    }
+
+    @Test
+    @DisplayName("A stat room stores as the bare token, weights and band left unwritten")
+    void statRoomStoresBare() {
+        assertEquals("stats", new PortalRoomBooks(Kind.STATS, 5, 0, 2, 3, 12).id());
+        assertSame(Kind.STATS, PortalRoomBooks.parse("stats").kind());
+        // Unrecognised is still Off, so a hand-edited typo cannot silently become a stat room.
+        assertSame(Kind.OFF, PortalRoomBooks.parse("statz").kind());
     }
 
     @Test

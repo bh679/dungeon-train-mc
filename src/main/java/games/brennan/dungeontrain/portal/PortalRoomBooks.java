@@ -51,7 +51,17 @@ public record PortalRoomBooks(Kind kind, int selfWeight, int playerWeight, int s
         OFF("off", "Off"),
 
         /** One author, rolled per room against this setting's three weights. */
-        MIX("mix", "Author Mix");
+        MIX("mix", "Author Mix"),
+
+        /**
+         * Every book the mod can write about a number: one per leaderboard board, one per run stat.
+         *
+         * <p>Nobody's catalogue, so none of the three weights or the book range mean anything here —
+         * see {@link PortalRoomBooks#weightsApply()}. What it stocks is fixed and known, which is the
+         * opposite of what {@link #MIX} is for: a Mix room is a different author every time, and a
+         * Stat Room is the same complete set every time.</p>
+         */
+        STATS("stats", "Stat Room");
 
         private final String id;
         private final String displayName;
@@ -194,14 +204,26 @@ public record PortalRoomBooks(Kind kind, int selfWeight, int playerWeight, int s
         return Math.max(MIN_BOOK_BOUND, Math.min(MAX_BOOK_BOUND, books));
     }
 
-    /** True when the room stocks its shelves from an author at all. */
+    /**
+     * True when the room stocks its shelves from one community AUTHOR.
+     *
+     * <p>Deliberately narrower than {@link #stocks()}: everything downstream of this — resolving an
+     * author from the directory, the "a room of one author" greeting, the author line in the editor's
+     * status message — is meaningless for a room that stocks something other than a person's
+     * catalogue. A Stat Room fills its shelves and is not a library.</p>
+     */
     public boolean locks() {
+        return kind == Kind.MIX;
+    }
+
+    /** True when the room fills its own shelves at all, by whatever means — everything but Off. */
+    public boolean stocks() {
         return kind != Kind.OFF;
     }
 
-    /** True when the weights and the book range mean anything — everything but Off. */
+    /** True when the weights and the book range mean anything: only an author mix rolls an author. */
     public boolean weightsApply() {
-        return locks();
+        return kind == Kind.MIX;
     }
 
     /** Human-readable label for the editor row. */
@@ -315,7 +337,7 @@ public record PortalRoomBooks(Kind kind, int selfWeight, int playerWeight, int s
      * same defaults.</p>
      */
     public String id() {
-        if (!locks()) return kind.id();
+        if (!weightsApply()) return kind.id();
         String weights = kind.id() + PART_SEPARATOR + selfWeight
             + PART_SEPARATOR + playerWeight + PART_SEPARATOR + signatureWeight;
         if (!isDefaultRange()) {
