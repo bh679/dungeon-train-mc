@@ -211,6 +211,15 @@ public final class EditorCommand {
             return builder.buildFuture();
         };
 
+    private static final SuggestionProvider<CommandSourceStack> PORTAL_ROOM_DOOR_WALL_SUGGESTIONS =
+        (ctx, builder) -> {
+            for (games.brennan.dungeontrain.portal.PortalRoomDoorWall doorWall
+                    : games.brennan.dungeontrain.portal.PortalRoomDoorWall.values()) {
+                builder.suggest(doorWall.id());
+            }
+            return builder.buildFuture();
+        };
+
     private static final SuggestionProvider<CommandSourceStack> PORTAL_ROOM_SKY_SUGGESTIONS =
         (ctx, builder) -> {
             for (games.brennan.dungeontrain.portal.PortalRoomSky sky
@@ -512,6 +521,16 @@ public final class EditorCommand {
                         .suggests(PORTAL_ROOM_CONTENTS_SUGGESTIONS)
                         .executes(ctx -> runPortalRoomContents(ctx.getSource(),
                             StringArgumentType.getString(ctx, "contents")))))
+                // Whether the copies standing against the portal carriages carry their own end wall
+                // through the corridor mouth's plane. Sealed by default — what every room did before
+                // the setting existed — and means nothing outside Endless Repetition.
+                .then(Commands.literal("doorwall")
+                    .then(Commands.literal("next")
+                        .executes(ctx -> runPortalRoomDoorWallCycle(ctx.getSource())))
+                    .then(Commands.argument("doorwall", StringArgumentType.word())
+                        .suggests(PORTAL_ROOM_DOOR_WALL_SUGGESTIONS)
+                        .executes(ctx -> runPortalRoomDoorWall(ctx.getSource(),
+                            StringArgumentType.getString(ctx, "doorwall")))))
                 // Whether the room is lit as though it stood outdoors, and under which sky. Off by
                 // default, which is every room lit only by whatever its own build gives it.
                 .then(Commands.literal("sky")
@@ -5917,6 +5936,36 @@ public final class EditorCommand {
         games.brennan.dungeontrain.portal.PortalRoomSettings current =
             games.brennan.dungeontrain.portal.PortalRoomSettings.of(name);
         return applyPortalRoomSettings(source, name, current.withContents(current.contents().next()));
+    }
+
+    /** {@code /dt editor portals doorwall next} — step Sealed → Repeated. */
+    private static int runPortalRoomDoorWallCycle(CommandSourceStack source) {
+        String name = portalRoomPlotUnderPlayer(source);
+        if (name == null) return 0;
+        return applyPortalRoomSettings(source, name,
+            games.brennan.dungeontrain.portal.PortalRoomSettings.of(name).nextDoorWall());
+    }
+
+    /**
+     * {@code /dt editor portals doorwall <sealed|repeated>} — set it outright.
+     *
+     * <p>Compared on the parsed id rather than trusting {@code parse} outright, for the reason the
+     * sky and contents setters do the same: parsing is deliberately total, so a typo would otherwise
+     * silently set the room to Sealed and report success.</p>
+     */
+    private static int runPortalRoomDoorWall(CommandSourceStack source, String raw) {
+        String name = portalRoomPlotUnderPlayer(source);
+        if (name == null) return 0;
+
+        games.brennan.dungeontrain.portal.PortalRoomDoorWall wanted =
+            games.brennan.dungeontrain.portal.PortalRoomDoorWall.parse(raw);
+        if (!wanted.id().equalsIgnoreCase(raw.trim())) {
+            source.sendFailure(Component.literal(
+                "Unknown door wall option '" + raw + "'. Try sealed or repeated."));
+            return 0;
+        }
+        return applyPortalRoomSettings(source, name,
+            games.brennan.dungeontrain.portal.PortalRoomSettings.of(name).withDoorWall(wanted));
     }
 
     /** {@code /dt editor portals sky next} — step Off → Daylight → Day/Night → Nether → End. */
