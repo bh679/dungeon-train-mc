@@ -2,76 +2,83 @@ package games.brennan.dungeontrain.command;
 
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.logging.LogUtils;
-import games.brennan.dungeontrain.config.DungeonTrainConfig;
-import games.brennan.dungeontrain.editor.CarriageEditor;
-import games.brennan.dungeontrain.editor.EditorCategory;
 import games.brennan.dungeontrain.editor.PortalRoomEditor;
-import games.brennan.dungeontrain.editor.TunnelEditor;
-import games.brennan.dungeontrain.event.PortalTestPlacementService;
-import games.brennan.dungeontrain.portal.PortalCarriageSelection;
-import games.brennan.dungeontrain.portal.PortalForcedGroups;
-import games.brennan.dungeontrain.track.TrackGeometry;
+import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.net.PortalTestSessionPacket;
+import games.brennan.dungeontrain.portal.PortalCarriageBuilder;
+import games.brennan.dungeontrain.portal.PortalCarriageLayout;
+import games.brennan.dungeontrain.portal.PortalClear;
+import games.brennan.dungeontrain.portal.PortalCorridorMask;
+import games.brennan.dungeontrain.portal.PortalRoomSettings;
+import games.brennan.dungeontrain.portal.PortalRoomSizes;
+import games.brennan.dungeontrain.portal.PortalRoomTiling;
+import games.brennan.dungeontrain.portal.PortalStructure;
+import games.brennan.dungeontrain.portal.PortalTestSession;
+import games.brennan.dungeontrain.portal.PortalTwinLanes;
 import games.brennan.dungeontrain.train.CarriageDims;
-import games.brennan.dungeontrain.train.TrainAssembler;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Vec3i;
 import net.minecraft.network.chat.Component;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import org.joml.Vector3d;
+import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.levelgen.structure.BoundingBox;
+import net.minecraft.world.phys.Vec3;
 import org.slf4j.Logger;
 
 /**
- * {@code /dungeontrain portal test} — put a dimensional carriage right here and walk into it.
+ * {@code /dungeontrain portal test} — stand inside the dimensional carriage you are editing, now.
  *
- * <p>Reaching a portal room otherwise means turning the rate on and riding until the lottery
- * yields one: in survival the draw is seeded, spaced by {@link PortalCarriageSelection#MIN_GROUP_GAP}
- * groups, and shut out entirely on the opening stretch of track
- * ({@link PortalCarriageSelection#firstEligibleGroup()}). This is the same thing on demand.</p>
+ * <p><b>No train.</b> An earlier version re-seeded one around a forced portal group and asked the
+ * author to walk in from a flatbed. That was a great deal of machinery — Sable sub-levels, the
+ * rolling window, the corridor swap — for a question that is only ever "does the room I am building
+ * look right", and it inherited every one of those parts as a way to fail. What an author walks
+ * around in is the <b>twin</b>: ordinary world blocks in sealed space under the bedrock, which
+ * {@link PortalCarriageBuilder#stampPairStructure} already lays down whole —
+ * {@code [plug][entry corridor][room][exit corridor][plug]}. The corridors either side are clones
+ * for context; nothing here is linked to a train and nothing swaps.</p>
  *
- * <p><b>It does not touch the world's portal rate.</b> {@code /dungeontrain portal carriage} is
- * persisted world state and calls {@code PortalTuningIntegrity.markTuned} — the
- * {@code free_play.cause.portal_rate} trip. A test button that put the world into Free Play would
- * be worse than no button. The group is forced through {@link PortalForcedGroups} instead, which
- * writes nothing down and lapses when the server stops.</p>
+ * <p><b>The plot is the argument.</b> The room stamped is whichever one the player is standing in,
+ * so there is nothing to pick and nothing to type.</p>
  *
- * <p><b>Why the seed group is the one forced.</b> {@link TrainAssembler#spawnTrain} derives its
- * initial pIdx from the spawner's X relative to the origin, and both come from the player here — so
- * a freshly-seeded train always puts <b>carriage 0</b> at the player's feet. Group ordinal 0 is
- * therefore exactly the group they are about to be standing beside, and the one worth forcing.</p>
- *
- * <p>Registered as a subcommand node from {@link PortalCommand#build}, and surfaced as the
- * "Spawn Dimensional Carriage" button in the Debug menu.</p>
+ * <p>{@code back} returns them and sweeps what was stamped. See {@link PortalTestSession}.</p>
  */
 public final class PortalTestCommand {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
     /**
-     * Vertical clearance above {@code trainY} for the holding spot. Comfortably above
-     * {@link CarriageDims#MAX_HEIGHT} so the player can never be inside the assembly footprint —
-     * {@link TrainAssembler} turns every world block in that volume into ship blocks and drags along
-     * whatever is caught inside it (issue #22). Same figure {@code /dtp} holds at.
+     * Pair key for a test stamp. Reserved: real keys are group anchors derived from carriage
+     * indices, so a value this far out can never name one, and nothing in the live pair machinery
+     * will find a structure filed under it.
      */
-    private static final int HOLD_Y_MARGIN = 48;
+    private static final int TEST_PAIR_KEY = Integer.MIN_VALUE / 2;
 
-    /** Safety margin below the train level's build-height ceiling for the holding spot. */
-    private static final int CEILING_MARGIN = 5;
+    /**
+     * How far off the track band the test structure is stamped, in blocks of {@code +Z}.
+     *
+     * <p>Basement space is shared with every live twin, and those sit in their carriage's own chunk
+     * columns — which are the track's. Stamping a test structure there could land it on top of one.
+     * Well clear on Z means it cannot, whatever the train is doing.</p>
+     */
+    private static final int TEST_Z_OFFSET = 512;
 
-    /** The group a test spawn forces: the one the fresh train seeds the player into. */
-    private static final long TEST_GROUP_ORDINAL = 0L;
+    /** Facing +X, down the corridor, the way an author arrives from the train in the real thing. */
+    private static final float FACE_EAST = -90.0f;
 
     private PortalTestCommand() {}
 
     public static LiteralArgumentBuilder<CommandSourceStack> build() {
-        return Commands.literal("test").executes(ctx -> run(ctx.getSource()));
+        return Commands.literal("test")
+            .executes(ctx -> runTest(ctx.getSource()))
+            .then(Commands.literal("back").executes(ctx -> runBack(ctx.getSource())));
     }
 
-    private static int run(CommandSourceStack source) {
+    private static int runTest(CommandSourceStack source) {
         ServerPlayer player;
         try {
             player = source.getPlayerOrException();
@@ -80,118 +87,118 @@ public final class PortalTestCommand {
             return 0;
         }
 
-        MinecraftServer server = source.getServer();
-        DungeonTrainWorldData data = DungeonTrainWorldData.get(server.overworld());
-        if (!data.startsWithTrain()) {
+        ServerLevel overworld = source.getServer().overworld();
+        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
+
+        // Already inside one: stamping a second would leave the first standing and lose the way home
+        // to the plot. Send them back first, then in again, so the button is idempotent.
+        if (PortalTestSession.has(player.getUUID())) {
+            runBack(source);
+        }
+
+        String roomName = PortalRoomEditor.plotContaining(player.blockPosition(), dims);
+        if (roomName == null) {
             source.sendFailure(Component.literal(
-                "This world doesn't use the auto-train system (startsWithTrain is off), so there is no "
-                    + "train to put a dimensional carriage in."));
+                "Stand in a dimensional carriage plot first — this tests the room you are in. "
+                    + "Try /dungeontrain editor portals.").withStyle(ChatFormatting.RED));
             return 0;
         }
 
-        // A portal is entry corridor, cart, exit corridor — three slots. A shorter group would get
-        // half a portal, and an entry whose exit landed in the next group strands whoever walked in.
-        int groupSize = DungeonTrainConfig.getGroupSize();
-        if (groupSize < PortalCarriageSelection.PORTAL_GROUP_SPAN) {
-            source.sendFailure(Component.literal(
-                "groupSize is " + groupSize + " — a dimensional carriage needs "
-                    + PortalCarriageSelection.PORTAL_GROUP_SPAN
-                    + " slots (entry corridor, room, exit corridor). Raise groupSize in the config first.")
-                .withStyle(ChatFormatting.RED));
-            return 0;
-        }
+        // The room as authored, so what is tested is what was built: its own size and its own
+        // settings (walls mode, contents, books), not the defaults.
+        Vec3i roomSize = PortalRoomSizes.sizeOf(roomName, dims);
+        PortalRoomSettings settings = PortalRoomSettings.of(roomName);
+        PortalStructure structure = new PortalStructure(
+            originFor(player, overworld, dims), roomName, roomSize, settings,
+            // The base tile only: copies and extra exits are a live-pair concern, and a room
+            // repeating into the basement is not what an author pressed this to look at.
+            PortalRoomTiling.base(), games.brennan.dungeontrain.portal.PortalExitCopies.NONE,
+            PortalRoomTiling.Tile.BASE);
 
-        // Operate in the player's CURRENT dimension: the appender runs independently per loaded
-        // level, so each dimension keeps its own train once one exists there. Same reasoning as /dtp.
-        ServerLevel trainLevel = player.serverLevel();
-        CarriageDims dims = data.dims();
-        int trainY = data.getTrainY();
-        TrackGeometry geometry = TrackGeometry.from(dims, trainY);
+        PortalCarriageBuilder.stampPairStructure(overworld, structure, dims, TEST_PAIR_KEY);
 
-        // Leave the editor first if they are in it — the menu's "Test the Carriage" row is reachable
-        // from inside a portal-room plot, and a player teleported to the train with a session still
-        // open behind them keeps the editor's game mode and leaves their plots standing in the sky.
-        boolean leftEditor = exitEditorSession(player, server);
+        PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims, structure.kind());
+        BlockPos roomOrigin = structure.roomOrigin(dims, layout);
+        BlockPos arrival = new BlockPos(
+            roomOrigin.getX() + roomSize.getX() / 2,
+            roomOrigin.getY() + 1,
+            roomOrigin.getZ() + roomSize.getZ() / 2);
 
-        // Last press wins rather than accumulating: pressing the button twice should replace the test
-        // carriage, not litter the track with forced groups.
-        PortalForcedGroups.clear();
-        PortalForcedGroups.force(TEST_GROUP_ORDINAL);
+        GameType previous = player.gameMode.getGameModeForPlayer();
+        PortalTestSession.put(player.getUUID(), new PortalTestSession.Session(
+            player.level().dimension(), player.position(), player.getYRot(), player.getXRot(),
+            previous, structure, roomName, arrival));
+        if (previous != GameType.CREATIVE) player.setGameMode(GameType.CREATIVE);
 
-        double spawnX = player.getX();
-        int holdY = Math.min(trainLevel.getMaxBuildHeight() - CEILING_MARGIN, trainY + HOLD_Y_MARGIN);
-        double holdZ = geometry.trackCenterZ() + 0.5;
-        player.setInvulnerable(true);
-        player.teleportTo(trainLevel, spawnX, holdY, holdZ, player.getYRot(), player.getXRot());
+        player.teleportTo(overworld, arrival.getX() + 0.5, arrival.getY(), arrival.getZ() + 0.5,
+            FACE_EAST, 0.0f);
+        DungeonTrainNet.sendTo(player, new PortalTestSessionPacket(true, roomName));
 
-        // The train ALWAYS goes on the track: only X comes from the player. origin.z = 0 is the
-        // corridor's trackZMin, not its centreline — cf. /dtp and /dungeontrain spawn.
-        BlockPos origin = new BlockPos((int) Math.floor(spawnX), trainY, 0);
-        Vector3d spawnerWorldPos = new Vector3d(spawnX, trainY, 0); // only .x is read, to pick the seed pIdx
-        Vector3d velocity = new Vector3d(DungeonTrainConfig.getSpeed(), 0.0, 0.0);
-
-        // Seed-only spawn; the per-tick appender extends from here. Config 0 is the "auto" sentinel,
-        // not a literal count — same guard as TrainBootstrapEvents.ensureTrainSpawned and /dtp.
-        int configCount = DungeonTrainConfig.getNumCarriages();
-        int count = configCount > 0 ? configCount : DungeonTrainConfig.DEFAULT_CARRIAGES_AUTO_SEED;
-
-        LOGGER.info("[DungeonTrain] /dungeontrain portal test by {} at X={} — forcing group {} and re-seeding "
-                + "the train at origin {} (groupSize={}, configCount={})",
-            player.getName().getString(), spawnX, TEST_GROUP_ORDINAL, origin, groupSize, configCount);
-
-        try {
-            TrainAssembler.spawnTrain(trainLevel, origin, velocity, count, spawnerWorldPos, dims);
-        } catch (Throwable t) {
-            LOGGER.error("[DungeonTrain] portal test spawnTrain failed", t);
-            player.setInvulnerable(false);
-            PortalForcedGroups.clear();
-            source.sendFailure(Component.literal(
-                "spawnTrain failed: " + t.getClass().getSimpleName() + ": " + t.getMessage())
-                .withStyle(ChatFormatting.RED));
-            return 0;
-        }
-
-        PortalTestPlacementService.enqueue(player, trainLevel, spawnX);
-
-        if (leftEditor) {
-            source.sendSuccess(() -> Component.literal(
-                "Left the editor first — plots cleared, and you're back off creative if that is where "
-                    + "you started.").withStyle(ChatFormatting.GRAY), false);
-        }
+        LOGGER.info("[DungeonTrain] portal test: stamped '{}' ({}x{}x{}) at {} for {} — arrival {}",
+            roomName, roomSize.getX(), roomSize.getY(), roomSize.getZ(), structure.origin(),
+            player.getName().getString(), arrival);
 
         source.sendSuccess(() -> Component.literal(
-            "Spawning a dimensional carriage here — you'll land in front of its entry corridor once "
-                + "the pair goes live. Walk straight in. The world's portal rate is unchanged."), true);
+            "You're inside '" + roomName + "' — a corridor each side, no train attached. "
+                + "Back in the menu returns you to the plot.").withStyle(ChatFormatting.AQUA), false);
+        return 1;
+    }
 
-        // The forced group is per-server, not per-player: on a shared world the last press wins and
-        // everyone else's train has just been replaced under them. Say so rather than letting it be
-        // a mystery.
-        if (server.getPlayerList().getPlayers().size() > 1) {
-            source.sendSuccess(() -> Component.literal(
-                "  → this re-seeded the shared train, so everyone riding it has been moved.")
-                .withStyle(ChatFormatting.YELLOW), false);
+    private static int runBack(CommandSourceStack source) {
+        ServerPlayer player;
+        try {
+            player = source.getPlayerOrException();
+        } catch (Exception e) {
+            source.sendFailure(Component.literal("This command must be run by a player."));
+            return 0;
         }
+
+        PortalTestSession.Session session = PortalTestSession.take(player.getUUID());
+        if (session == null) {
+            source.sendFailure(Component.literal("You aren't in a test dimensional carriage."));
+            return 0;
+        }
+
+        ServerLevel overworld = source.getServer().overworld();
+        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
+
+        ServerLevel home = source.getServer().getLevel(session.dimension());
+        if (home != null) {
+            player.teleportTo(home, session.pos().x, session.pos().y, session.pos().z,
+                session.yaw(), session.pitch());
+        }
+        if (player.gameMode.getGameModeForPlayer() != session.previousGameType()) {
+            player.setGameMode(session.previousGameType());
+        }
+        DungeonTrainNet.sendTo(player, PortalTestSessionPacket.none());
+
+        // Sweep exactly what was stamped — the same box the live path measures a structure by.
+        BoundingBox footprint = PortalCarriageBuilder.footprintOf(overworld, session.structure(), dims);
+        int cleared = PortalClear.clearBox(overworld, footprint, PortalCorridorMask.NONE);
+
+        LOGGER.info("[DungeonTrain] portal test back: returned {} to {} and cleared {} block(s) of '{}'",
+            player.getName().getString(), fmt(session.pos()), cleared, session.roomName());
+
+        source.sendSuccess(() -> Component.literal(
+            "Back at the plot — the test '" + session.roomName() + "' has been cleared away."
+        ).withStyle(ChatFormatting.GRAY), false);
         return 1;
     }
 
     /**
-     * Unwind whichever editor session this player has open, and clear the plots behind them.
+     * Where to stamp: the player's X, a lane in this world's basement, and well off the track band.
      *
-     * <p>The same sequence {@code EditorCommand.runExit} runs, with {@link PortalRoomEditor} tried
-     * first because a portal room is where this command is most likely to be pressed from.</p>
-     *
-     * @return true if a session was actually unwound
+     * <p>The X is theirs only so a structure is near the region they already have loaded; nothing
+     * about it has to line up with anything, because nothing it is stamped beside is a train.</p>
      */
-    private static boolean exitEditorSession(ServerPlayer player, MinecraftServer server) {
-        boolean exited = PortalRoomEditor.exit(player)
-            || TunnelEditor.exit(player)
-            || CarriageEditor.exit(player);
-        if (!exited) return false;
+    private static BlockPos originFor(ServerPlayer player, ServerLevel level, CarriageDims dims) {
+        return new BlockPos(
+            player.blockPosition().getX(),
+            PortalTwinLanes.floorY(level.getMinBuildHeight()),
+            TEST_Z_OFFSET);
+    }
 
-        ServerLevel overworld = server.overworld();
-        EditorCategory.clearAllPlots(overworld, DungeonTrainWorldData.get(overworld).dims());
-        LOGGER.info("[DungeonTrain] portal test: unwound {}'s editor session before re-seeding",
-            player.getName().getString());
-        return true;
+    private static String fmt(Vec3 v) {
+        return String.format("(%.1f, %.1f, %.1f)", v.x, v.y, v.z);
     }
 }

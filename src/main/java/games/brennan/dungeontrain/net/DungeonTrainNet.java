@@ -162,6 +162,7 @@ public final class DungeonTrainNet {
         // On-train spawn deck-hold: server → joining/respawning player to keep
         // the client from free-falling off the deck during the spawn-storm stall.
         registrar.playToClient(SpawnDeckHoldPacket.TYPE, SpawnDeckHoldPacket.STREAM_CODEC, SpawnDeckHoldPacket::handle);
+        registrar.playToClient(PortalTestSessionPacket.TYPE, PortalTestSessionPacket.STREAM_CODEC, PortalTestSessionPacket::handle);
 
         // Advancements keybind hint: server → the earning player on a gameplay
         // advancement. The client decides whether to show it (gated on its local
