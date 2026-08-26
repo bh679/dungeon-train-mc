@@ -27,7 +27,7 @@ import net.neoforged.neoforge.event.tick.ServerTickEvent;
 public final class LeaderboardRefreshEvents {
 
     /** One board per this many server ticks (20 ticks = 1 s → ~30 s). */
-    static final int REFRESH_PERIOD_TICKS = 600;
+    static final int REFRESH_PERIOD_TICKS = 40; // DEV: 2s, so every board lands in ~1 min
 
     private static int tickCounter = 0;
 
