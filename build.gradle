@@ -143,6 +143,14 @@ neoForge {
             if (project.hasProperty('perfSeed')) {
                 systemProperty 'dungeontrain.perfSeed', project.property('perfSeed').toString()
             }
+            // DPI-bypass notice seam: ./gradlew runClient -PdpiBypassTest=winws.exe makes
+            // DpiBypassDetector report that process without looking at the real process table, so
+            // the title-screen notice can be seen and screenshotted on a machine that isn't running
+            // zapret. Property rather than env var for the same daemon-environment reason as
+            // relayBaseUrl above.
+            if (project.hasProperty('dpiBypassTest')) {
+                systemProperty 'dungeontrain.dpi_bypass_test', project.property('dpiBypassTest').toString()
+            }
         }
 
         server {
