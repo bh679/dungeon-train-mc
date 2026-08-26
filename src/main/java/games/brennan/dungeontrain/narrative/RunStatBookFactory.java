@@ -21,7 +21,7 @@ import java.util.Optional;
  * translation key and no grammatical dependency on the others:</p>
  *
  * <pre>
- *   I see.
+ *   Brennan, I see you.
  *
  *   You've made it to carriage 14.
  *
@@ -29,9 +29,13 @@ import java.util.Optional;
  * </pre>
  *
  * <p>Written that way so all twenty locales can reorder and re-punctuate freely — a fragment glued
- * mid-sentence to another fragment is a sentence only English has agreed to. One of the seven
- * openers is <b>no opener at all</b>, and it is weighted to be the common case ({@link #OPENER_NONE_WEIGHT}
- * against one apiece for the rest), so most books open straight onto the number.</p>
+ * mid-sentence to another fragment is a sentence only English has agreed to.</p>
+ *
+ * <p><b>Every opener says the reader's name.</b> It is the difference between a leaflet and a note
+ * left for someone: Faulthurst is not narrating the train, he is addressing you, and he knows which
+ * one of you he is addressing. The seventh opener is the bare salutation — {@code "Brennan,"} and
+ * nothing else — weighted to be the common case ({@link #OPENER_PLAIN_WEIGHT} against one apiece
+ * for the rest), so most books greet the reader and go straight to the number.</p>
  *
  * <h2>What is fixed and what is live</h2>
  * <p>The opener and follow-up come from the stamped roll seed, so a given book's WORDING is decided
@@ -54,14 +58,20 @@ public final class RunStatBookFactory {
      */
     public static final String TITLE = "A Note From Faulthurst";
 
-    /** Openers that are actually words. The seventh start is the absence of one. */
-    public static final int OPENER_COUNT = 6;
+    /**
+     * Openers, all of which take the reader's name as their {@code %s}. The last
+     * ({@link #OPENER_PLAIN}) is the bare salutation.
+     */
+    public static final int OPENER_COUNT = 7;
+
+    /** Index of the bare salutation — the name and nothing else. */
+    public static final int OPENER_PLAIN = OPENER_COUNT - 1;
 
     /**
-     * Weight of "no opener" against 1 apiece for the {@link #OPENER_COUNT} written ones — so the
-     * bare number is the common case and Faulthurst's asides stay a surprise.
+     * Weight of the bare salutation against 1 apiece for the six written openers — so most books
+     * greet the reader and go straight to the number, and Faulthurst's asides stay a surprise.
      */
-    private static final int OPENER_NONE_WEIGHT = 6;
+    private static final int OPENER_PLAIN_WEIGHT = 6;
 
     /** Follow-ups: ten encouragements and ten very short questions. */
     public static final int TAIL_COUNT = 20;
@@ -77,11 +87,19 @@ public final class RunStatBookFactory {
     private RunStatBookFactory() {}
 
     /**
-     * Bake the stack a container drops: a real, readable, signed note carrying the roll seed but no
-     * subject yet. {@code NarrativeBookEvents} fills the number in the moment it reaches a player.
+     * Bake the stack a container drops: a signed note carrying the roll seed, and nothing that
+     * needs a reader. {@code RunStatBookEvents} writes the greeting and the number the moment it
+     * reaches a hand.
+     *
+     * <p>A container knows neither WHO will find this nor what they have done, and both the opener
+     * and the stat line now need the first of those. So the baked page is the closing remark alone.
+     * It is a placeholder with a very short life — a written book cannot be opened without being
+     * held, and being held is what resolves it — but it is a real, readable, signed book for as long
+     * as it sits in the chest.</p>
      */
     public static ItemStack create(long seed) {
-        ItemStack stack = BookFactory.buildPlainBookComponents(TITLE, AUTHOR, pages(seed, null, "", 0L));
+        ItemStack stack = BookFactory.buildPlainBookComponents(
+            TITLE, AUTHOR, pages(seed, null, "", 0L, null));
         RunStatBookTag.stamp(stack, seed);
         return stack;
     }
@@ -112,7 +130,7 @@ public final class RunStatBookFactory {
 
         String locale = WorldInfoReporter.clientLanguage(player);
         ItemStack rebuilt = BookFactory.buildPlainBookComponents(
-            TITLE, AUTHOR, pages(seed, subject, locale, value));
+            TITLE, AUTHOR, pages(seed, subject, locale, value, player.getName().getString()));
         stack.set(DataComponents.WRITTEN_BOOK_CONTENT, rebuilt.get(DataComponents.WRITTEN_BOOK_CONTENT));
         RunStatBookTag.recordBaked(stack, subject, rendered);
         return true;
@@ -132,16 +150,18 @@ public final class RunStatBookFactory {
      * The book's single page. Package-private and free of item/NBT concerns so the composition can
      * be tested without building a stack.
      *
-     * @param subject {@code null} while the book has not met a reader yet — the stat line is then
-     *                omitted rather than invented.
+     * @param subject    {@code null} while the book has not met a reader yet — the stat line is
+     *                   then omitted rather than invented.
+     * @param playerName {@code null} in the same case — every opener greets someone by name, so
+     *                   with nobody to greet there is no opener either.
      */
-    static List<Component> pages(long seed, RunStatSubject subject, String localeCode, long value) {
+    static List<Component> pages(long seed, RunStatSubject subject, String localeCode, long value,
+                                 String playerName) {
         MutableComponent page = Component.empty();
         boolean first = true;
 
-        Optional<Component> opener = opener(seed);
-        if (opener.isPresent()) {
-            page.append(opener.get());
+        if (playerName != null && !playerName.isBlank()) {
+            page.append(opener(seed, playerName));
             first = false;
         }
         if (subject != null) {
@@ -156,14 +176,16 @@ public final class RunStatBookFactory {
     }
 
     /**
-     * The lead-in, or empty for the unopened majority. The written openers share one slot's worth of
-     * probability between them against {@link #OPENER_NONE_WEIGHT} for silence.
+     * The lead-in, which always names {@code playerName}. The six written openers share one slot's
+     * worth of probability between them against {@link #OPENER_PLAIN_WEIGHT} for the bare
+     * salutation, so being addressed by name is constant and being remarked upon is not.
      */
-    static Optional<Component> opener(long seed) {
-        int total = OPENER_NONE_WEIGHT + OPENER_COUNT;
+    static Component opener(long seed, String playerName) {
+        int written = OPENER_COUNT - 1;
+        int total = OPENER_PLAIN_WEIGHT + written;
         int roll = (int) Math.floorMod(mix(seed, SALT_OPENER), total);
-        if (roll < OPENER_NONE_WEIGHT) return Optional.empty();
-        return Optional.of(Component.translatable(KEY_OPENER + (roll - OPENER_NONE_WEIGHT)));
+        int index = roll < OPENER_PLAIN_WEIGHT ? OPENER_PLAIN : roll - OPENER_PLAIN_WEIGHT;
+        return Component.translatable(KEY_OPENER + index, playerName);
     }
 
     /** The closing remark — an encouragement or a very short question. */

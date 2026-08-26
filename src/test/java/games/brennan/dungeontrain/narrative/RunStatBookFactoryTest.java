@@ -11,7 +11,6 @@ import org.junit.jupiter.api.Test;
 
 import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -39,8 +38,14 @@ class RunStatBookFactoryTest {
         Bootstrap.bootStrap();
     }
 
+    private static final String READER = "Brennan";
+
     private static String render(long seed, RunStatSubject subject, long value) {
-        List<Component> pages = RunStatBookFactory.pages(seed, subject, "en_us", value);
+        return render(seed, subject, value, READER);
+    }
+
+    private static String render(long seed, RunStatSubject subject, long value, String name) {
+        List<Component> pages = RunStatBookFactory.pages(seed, subject, "en_us", value, name);
         assertEquals(1, pages.size(), "a stat book is one page");
         return pages.get(0).getString();
     }
@@ -48,9 +53,7 @@ class RunStatBookFactoryTest {
     @Test
     @DisplayName("A book with a subject says opener, stat and follow-up")
     void composesThreeSentences() {
-        // Seed chosen below for one that actually produces a written opener.
-        long seed = seedWithOpener();
-        String page = render(seed, RunStatSubject.CHESTS, 14L);
+        String page = render(1L, RunStatSubject.CHESTS, 14L);
         String[] parts = page.split("\n\n");
         assertEquals(3, parts.length, "opener, stat, follow-up: " + page);
         assertTrue(parts[0].startsWith(RunStatSubject.KEY_ROOT + "open."), parts[0]);
@@ -59,12 +62,16 @@ class RunStatBookFactoryTest {
     }
 
     @Test
-    @DisplayName("A book baked before it meets a reader claims no number at all")
-    void unresolvedBookHasNoStatLine() {
+    @DisplayName("A book baked before it meets a reader greets nobody and claims no number")
+    void unresolvedBookIsTheFollowUpAlone() {
         for (long seed = 0; seed < 200; seed++) {
-            String page = render(seed, null, 0L);
+            String page = render(seed, null, 0L, null);
             assertFalse(page.contains(RunStatSubject.KEY_ROOT + "stat."),
                 "a container has no reader to have done anything: " + page);
+            // Every opener names someone. With nobody to name there is no opener either — greeting
+            // a chest by the wrong name would be worse than not greeting at all.
+            assertFalse(page.contains(RunStatSubject.KEY_ROOT + "open."),
+                "a container has no reader to greet: " + page);
             assertTrue(page.contains(RunStatSubject.KEY_ROOT + "tail."), page);
         }
     }
@@ -84,7 +91,7 @@ class RunStatBookFactoryTest {
     @Test
     @DisplayName("The number moves without disturbing the wording around it")
     void onlyTheNumberIsLive() {
-        long seed = seedWithOpener();
+        long seed = 1L;
         // A flat-format subject uses one key whatever its number, so the sentence around the number
         // cannot shift as the run goes on. (A COUNT subject legitimately changes key at 1 -> 2; that
         // is the plural rule doing its job, and is covered in RunStatSubjectTest.)
@@ -96,21 +103,27 @@ class RunStatBookFactoryTest {
     }
 
     @Test
-    @DisplayName("Most books open straight onto the number, but every opener is reachable")
-    void openerWeightingFavoursSilence() {
-        int blank = 0;
+    @DisplayName("Every opener names the reader, and the bare salutation is the common one")
+    void everyOpenerNamesTheReader() {
+        int plain = 0;
         Set<String> seen = new HashSet<>();
         int samples = 6000;
+        String plainKey = RunStatSubject.KEY_ROOT + "open." + RunStatBookFactory.OPENER_PLAIN;
         for (long seed = 0; seed < samples; seed++) {
-            Optional<Component> opener = RunStatBookFactory.opener(seed);
-            if (opener.isEmpty()) blank++;
-            else seen.add(opener.get().getString());
+            Component opener = RunStatBookFactory.opener(seed, READER);
+            String key = keyOf(opener);
+            seen.add(key);
+            if (key.equals(plainKey)) plain++;
+            // The name is the argument, on every one of them without exception.
+            assertEquals(List.of(READER),
+                List.of(((TranslatableContents) opener.getContents()).getArgs()),
+                key + " must be addressed to the reader");
         }
         assertEquals(RunStatBookFactory.OPENER_COUNT, seen.size(),
-            "every written opener must be reachable: " + seen);
-        double blankShare = blank / (double) samples;
-        assertTrue(blankShare > 0.4 && blankShare < 0.6,
-            "silence should be the common start, was " + blankShare);
+            "every opener must be reachable: " + seen);
+        double plainShare = plain / (double) samples;
+        assertTrue(plainShare > 0.4 && plainShare < 0.6,
+            "the bare salutation should be the common start, was " + plainShare);
     }
 
     @Test
@@ -146,11 +159,4 @@ class RunStatBookFactoryTest {
         return ((TranslatableContents) line.getContents()).getKey();
     }
 
-    /** A seed whose opener is written rather than absent — the composition tests need all three parts. */
-    private static long seedWithOpener() {
-        for (long seed = 0; seed < 1000; seed++) {
-            if (RunStatBookFactory.opener(seed).isPresent()) return seed;
-        }
-        throw new AssertionError("no seed produced a written opener");
-    }
 }

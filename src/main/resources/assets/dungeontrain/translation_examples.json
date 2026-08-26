@@ -3212,5 +3212,68 @@
         "44"
       ]
     }
+  },
+  "book.dungeontrain.statbook.open.0": {
+    "1": {
+      "label": "the name of the player reading this note",
+      "examples": [
+        "Brennan",
+        "Steve"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.open.1": {
+    "1": {
+      "label": "the name of the player reading this note",
+      "examples": [
+        "Brennan",
+        "Steve"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.open.2": {
+    "1": {
+      "label": "the name of the player reading this note",
+      "examples": [
+        "Brennan",
+        "Steve"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.open.3": {
+    "1": {
+      "label": "the name of the player reading this note",
+      "examples": [
+        "Brennan",
+        "Steve"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.open.4": {
+    "1": {
+      "label": "the name of the player reading this note",
+      "examples": [
+        "Brennan",
+        "Steve"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.open.5": {
+    "1": {
+      "label": "the name of the player reading this note",
+      "examples": [
+        "Brennan",
+        "Steve"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.open.6": {
+    "1": {
+      "label": "the name of the player reading this note",
+      "examples": [
+        "Brennan",
+        "Steve"
+      ]
+    }
   }
 }
