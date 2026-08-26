@@ -39,14 +39,14 @@ fi
 NOTES=$(gh release view "$RELEASE_TAG" --repo "$REPO" --json body --jq '.body[:500]' 2>/dev/null || echo "")
 
 LOGO_URL="https://raw.githubusercontent.com/$REPO/main/src/main/resources/logo.png"
-LANDING_URL="https://github.com/$REPO/wiki/Downloads"
+# Embed title links to this tag's release page — a permanent link to the exact build
+# being announced (the wiki Downloads page always shows the newest one instead).
 GH_RELEASE_URL="https://github.com/$REPO/releases/tag/$RELEASE_TAG"
 MODRINTH_URL="https://modrinth.com/mod/dungeon-train/version/$RELEASE_TAG"
 CURSEFORGE_URL="https://www.curseforge.com/minecraft/mc-mods/dungeon-train/files"
 
 PAYLOAD=$(jq -n \
   --arg title "Dungeon Train $RELEASE_TAG" \
-  --arg landing "$LANDING_URL" \
   --arg type "$TYPE_LABEL" \
   --arg notes "$NOTES" \
   --argjson color "$COLOR" \
@@ -61,7 +61,7 @@ PAYLOAD=$(jq -n \
     avatar_url: $logo,
     embeds: [{
       title: $title,
-      url: $landing,
+      url: $gh_url,
       description: ("**" + $type + "** — a new build is available.\n\n" + $notes),
       color: $color,
       thumbnail: { url: $logo },
