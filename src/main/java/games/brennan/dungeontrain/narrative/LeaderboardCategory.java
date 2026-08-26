@@ -26,8 +26,8 @@ import java.util.Set;
  *       wrapped by {@code dungeontrain.leaderboard.scope.run}.</li>
  *   <li>{@link Scope#TOTAL} — every life. Title gains {@value Scope#TOTAL_TITLE_SUFFIX}; the heading
  *       is wrapped by {@code dungeontrain.leaderboard.scope.total}.</li>
- *   <li>{@link Scope#NONE} — the boards with no span to speak of (notes, votes, translations,
- *       donations). Nothing is appended.</li>
+ *   <li>{@link Scope#NONE} — the boards measured over no span of play at all: translations and
+ *       donations, which are contributions rather than runs. Nothing is appended.</li>
  * </ul>
  *
  * <p>Both are subject to {@link #labelsSpan()}: a {@code RUN} board with no {@code TOTAL} twin keeps
@@ -72,11 +72,16 @@ public enum LeaderboardCategory {
     ECHOES_KILLED_RUN("echoes_killed_run", "echoes_killed", "Echoes Put Down", Scope.RUN, Format.COUNT),
     ECHOES_KILLED_TOTAL("echoes_killed_total", "echoes_killed", "Echoes Put Down", Scope.TOTAL, Format.COUNT),
     CARRIAGES_NO_CHEST("carriages_no_chest", "carriages_no_chest", "Walk Past The Loot", Scope.RUN, Format.COUNT),
-    DEATHNOTES_WRITTEN("deathnotes_written", "deathnotes_written", "Most Curses Written", Scope.NONE, Format.COUNT),
-    DEATHNOTES_FOUGHT("deathnotes_fought", "deathnotes_fought", "Most Curses Survived", Scope.NONE, Format.COUNT),
-    LOVENOTES_WRITTEN("lovenotes_written", "lovenotes_written", "Most Blessings Written", Scope.NONE, Format.COUNT),
-    LOVENOTES_RECEIVED("lovenotes_received", "lovenotes_received", "Most Blessings Received", Scope.NONE, Format.COUNT),
-    BOOK_VOTES("book_votes", "book_votes", "Best Loved Writers", Scope.NONE, Format.COUNT),
+    // The note and vote boards are lifetime tallies: they accumulate across lives the same way
+    // chests and books do, so they carry Scope.TOTAL. Alone they say nothing about it (see
+    // labelsSpan), but the scope is what makes a one-life half of any of them expressible at all.
+    DEATHNOTES_WRITTEN("deathnotes_written", "deathnotes_written", "Most Curses Written", Scope.TOTAL, Format.COUNT),
+    DEATHNOTES_FOUGHT("deathnotes_fought", "deathnotes_fought", "Most Curses Survived", Scope.TOTAL, Format.COUNT),
+    DEATHNOTES_PEOPLE("deathnotes_people", "deathnotes_people", "Most People Cursed", Scope.TOTAL, Format.COUNT),
+    LOVENOTES_WRITTEN("lovenotes_written", "lovenotes_written", "Most Blessings Written", Scope.TOTAL, Format.COUNT),
+    LOVENOTES_RECEIVED("lovenotes_received", "lovenotes_received", "Most Blessings Received", Scope.TOTAL, Format.COUNT),
+    LOVENOTES_PEOPLE("lovenotes_people", "lovenotes_people", "Most People Blessed", Scope.TOTAL, Format.COUNT),
+    BOOK_VOTES("book_votes", "book_votes", "Best Loved Writers", Scope.TOTAL, Format.COUNT),
     TRANSLATIONS("translations", "translations", "Most Words Translated", Scope.NONE, Format.COUNT),
     DONATIONS("donations", "donations", "Kindest Benefactors", Scope.NONE, Format.MONEY);
 

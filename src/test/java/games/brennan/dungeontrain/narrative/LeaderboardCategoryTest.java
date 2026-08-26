@@ -32,7 +32,8 @@ class LeaderboardCategoryTest {
         "friends_run", "friends_total", "lives", "chests_opened", "books_written", "books_read",
         "advancements", "echoes_killed_run", "echoes_killed_total", "carriages_no_chest",
         "chests_run",
-        "deathnotes_written", "deathnotes_fought", "lovenotes_written", "lovenotes_received",
+        "deathnotes_written", "deathnotes_fought", "deathnotes_people",
+        "lovenotes_written", "lovenotes_received", "lovenotes_people",
         "book_votes", "translations", "donations");
 
     @Test
@@ -118,9 +119,15 @@ class LeaderboardCategoryTest {
                      LeaderboardCategory.DISTANCE_TOTAL.headerKey());
         assertNotEquals(LeaderboardCategory.DISTANCE_RUN.scopeKey(),
                         LeaderboardCategory.DISTANCE_TOTAL.scopeKey());
-        // A board with no span says nothing about one.
+        // A board with no span says nothing about one. Translations and donations are the only two:
+        // they are contributions, not runs, so there is no life to measure them over.
         assertEquals("Kindest Benefactors", LeaderboardCategory.DONATIONS.title());
         assertNull(LeaderboardCategory.DONATIONS.scopeKey());
+        // The note boards DO have a span - they accumulate across lives - even though, being alone,
+        // they stay quiet about it. Without that, a one-life half of them could not be asked for.
+        assertEquals(LeaderboardCategory.Scope.TOTAL, LeaderboardCategory.DEATHNOTES_FOUGHT.scope());
+        assertFalse(LeaderboardCategory.DEATHNOTES_FOUGHT.labelsSpan());
+        assertEquals("Most Curses Survived", LeaderboardCategory.DEATHNOTES_FOUGHT.title());
     }
 
     @Test
