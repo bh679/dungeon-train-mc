@@ -9420,6 +9420,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "editor-plot-sky-lighting",
+      "version": "0.690.0",
+      "type": "feat",
+      "title": "Portal room editor plots are lit by the room's own sky",
+      "summary": "Building a dimensional carriage no longer means building it in the dark. A room's Sky setting \u2014 Daylight, Day/Night, Nether or End \u2014 now lights its editor plot the same way it will light the room once it is riding the train, so what you author is what you get without walking a test session first. A new Plot Lighting switch in the editor's X-menu Settings tab turns it off for anyone who wants the unlit box back while they place their own light sources. Skybox blocks stopped casting a shadow, too: a hole punched through to the sky now lets light through it, which is what it looked like it should have been doing all along.",
+      "highlights": [
+        "A portal room's Sky setting now lights its editor plot",
+        "Plot Lighting switch in the X-menu Settings tab (on by default)",
+        "Skybox blocks let light through instead of shadowing the floor below"
+      ],
+      "pr": 1147,
+      "date": "2026-08-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

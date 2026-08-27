@@ -69,6 +69,16 @@ public final class ClientDisplayConfig {
     public static final int MENU_RENDER_DISTANCE_STEP = 8;
 
     /**
+     * Whether a portal room's editor plot is lit by the room's own Sky setting, by default.
+     *
+     * <p>On, because a room authored under light it will not ship with is a room authored wrong —
+     * the whole point of the Sky setting is what the room looks like, and until now the only way to
+     * see that was to walk a test session. The switch exists for the times an author wants the
+     * unlit box back to see where their own light sources actually reach.</p>
+     */
+    public static final boolean DEFAULT_EDITOR_PLOT_LIGHTING = true;
+
+    /**
      * The tighter distance {@code AUTO} applies while the player stands in a template, in blocks.
      *
      * <p>Lives here beside its sibling so the config comment can name it and the two numbers are
@@ -141,6 +151,8 @@ public final class ClientDisplayConfig {
     public static final ModConfigSpec.IntValue BUILDER_TILES_PER_ROW;
     /** Cap on how far the editor's world-space menus draw. See {@link #getMenuRenderDistance()}. */
     public static final ModConfigSpec.IntValue MENU_RENDER_DISTANCE;
+    /** Whether a portal room's Sky lights its editor plot. See {@link #isEditorPlotLighting()}. */
+    public static final ModConfigSpec.BooleanValue EDITOR_PLOT_LIGHTING;
     public static final ModConfigSpec.BooleanValue SKYBOX_PUNCH_ENABLED;
     public static final ModConfigSpec.BooleanValue PORTAL_CROSSING_FADE;
     public static final ModConfigSpec.BooleanValue SCRIBBLE_COLOR_PICKER_VISIBLE;
@@ -254,6 +266,7 @@ public final class ClientDisplayConfig {
         DELETE_WORLD_ON_REBOARD = pair.getLeft().deleteWorldOnReboard;
         BUILDER_TILES_PER_ROW = pair.getLeft().builderTilesPerRow;
         MENU_RENDER_DISTANCE = pair.getLeft().menuRenderDistance;
+        EDITOR_PLOT_LIGHTING = pair.getLeft().editorPlotLighting;
         SKYBOX_PUNCH_ENABLED = pair.getLeft().skyboxPunchEnabled;
         PORTAL_CROSSING_FADE = pair.getLeft().portalCrossingFade;
         SCRIBBLE_COLOR_PICKER_VISIBLE = pair.getLeft().scribbleColorPickerVisible;
@@ -430,6 +443,9 @@ public final class ClientDisplayConfig {
                 .comment("How far away, in blocks, the editor's world-space menus keep drawing — plot panels, the row-start nav menus, the help board, the package and Stages panels. Applies whether or not you are standing in a template, and in both the On and Auto menu modes. Auto additionally tightens to " + AUTO_TEMPLATE_DISTANCE_BLOCKS + " blocks while you are inside a template, so the smaller of the two wins there. Set in-game from the Menu Distance row of the editor's X-menu.")
                 .defineInRange("menuRenderDistance", DEFAULT_MENU_RENDER_DISTANCE,
                         MIN_MENU_RENDER_DISTANCE, MAX_MENU_RENDER_DISTANCE);
+        ModConfigSpec.BooleanValue editorPlotLighting = b
+                .comment("Whether a portal room standing on its editor plot is lit by its own Sky setting, the way it will be once it is a dimensional carriage in the world. Off leaves the plot lit by whatever the blocks in it emit, which is how the editor behaved before this setting existed. Affects the editor plot only — a live room and a /dt portal test session are lit by their Sky either way. Set in-game from the Plot Lighting row of the editor's X-menu Settings tab.")
+                .define("editorPlotLighting", DEFAULT_EDITOR_PLOT_LIGHTING);
         ModConfigSpec.EnumValue<EditorMenuSpace> commandMenuSpace = b
                 .comment("Where the X command menu draws. SCREENSPACE is a GUI panel with a free mouse",
                          "cursor; WORLDSPACE anchors a flat panel in the world that you aim your head at,",
@@ -550,6 +566,7 @@ public final class ClientDisplayConfig {
                 framerateThrottleEnabled, framerateThrottleFps, trainEngineVolume, skyboxPunchEnabled, portalCrossingFade, scribbleColorPickerVisible, cinematicHotkeyEnabled, creativeShiftClickToHotbar, deleteWorldOnReboard,
                 builderTilesPerRow,
                 menuRenderDistance,
+                editorPlotLighting,
                 sharedBooksRead,
                 deathScreenLastNps, politicalFilter, contentMode, customContentPreference,
                 customContentLastAnswer,
@@ -1160,6 +1177,32 @@ public final class ClientDisplayConfig {
         return Math.max(MIN_MENU_RENDER_DISTANCE, down);
     }
 
+    // ----- Editor plot lighting -----
+
+    /**
+     * Whether a portal room on its editor plot is lit by its own Sky setting.
+     *
+     * <p>Defaults to {@link #DEFAULT_EDITOR_PLOT_LIGHTING} before the config loads and when it never
+     * does, so a client with no config file behaves like one that has just accepted the default.</p>
+     *
+     * <p><b>The editor plot only.</b> A live dimensional carriage and a {@code /dt portal test}
+     * session are lit by the room's Sky whatever this says — the room's lighting is a property of
+     * the room, and this is a preference about looking at it while you build. The server sends the
+     * plot's box either way and the flag on {@code PortalRoomSkyPacket} is what separates the
+     * two.</p>
+     */
+    public static boolean isEditorPlotLighting() {
+        return isLoaded() ? EDITOR_PLOT_LIGHTING.get() : DEFAULT_EDITOR_PLOT_LIGHTING;
+    }
+
+    /** Persist the editor plot lighting preference. Idempotent — skips the TOML write when unchanged. */
+    public static void setEditorPlotLighting(boolean on) {
+        if (!isLoaded()) return;
+        if (EDITOR_PLOT_LIGHTING.get() == on) return;
+        EDITOR_PLOT_LIGHTING.set(on);
+        EDITOR_PLOT_LIGHTING.save();
+    }
+
     // ----- Content mode (Adult / Kid) — see ContentMode -----
 
     /**
@@ -1357,6 +1400,7 @@ public final class ClientDisplayConfig {
             ModConfigSpec.BooleanValue deleteWorldOnReboard,
             ModConfigSpec.IntValue builderTilesPerRow,
             ModConfigSpec.IntValue menuRenderDistance,
+            ModConfigSpec.BooleanValue editorPlotLighting,
             ModConfigSpec.ConfigValue<List<? extends String>> sharedBooksRead,
             ModConfigSpec.IntValue deathScreenLastNps,
             ModConfigSpec.EnumValue<PoliticalFilter> politicalFilter,
