@@ -148,6 +148,14 @@ neoForge {
         server {
             server()
             programArgument '--nogui'
+            // Headless-test seam: run the dedicated server out of its own game directory, e.g.
+            //   ./gradlew runServer -PserverDir=run-server
+            // Needed when a client and a server run at once — they would otherwise both write
+            // run/logs/latest.log and clobber each other's log. Also gives the server pristine
+            // configs, so a locally-edited run/config can't taint an integrity test.
+            if (project.hasProperty('serverDir')) {
+                gameDirectory = file(project.property('serverDir').toString())
+            }
             systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
             // Same local-relay seam as the client above. The SERVER is what fetches the community
             // book + narrative pools (SharedBookRefreshEvents ticks server-side), so verifying that

@@ -54,3 +54,4 @@ localization/review/
 .claude/hook-versions.json
 .claude/scheduled_tasks.lock
 
+run-server/
