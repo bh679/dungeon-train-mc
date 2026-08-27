@@ -1529,8 +1529,6 @@
   "gui.dungeontrain.video_tools.reset.done_desc": "完成。创建一个新世界，《地牢列车》会把你当作初次游玩的玩家。",
   "gui.dungeontrain.builder.profile": "我的建筑",
   "gui.dungeontrain.builder.profile.title": "我的建筑",
-  "gui.dungeontrain.builder.profile.submit": "交给列车",
-  "gui.dungeontrain.builder.profile.withdraw": "从列车上取下",
   "gui.dungeontrain.builder.profile.not_a_carriage": "只有车厢能上列车",
   "gui.dungeontrain.builder.profile.on_train": "在列车上",
   "gui.dungeontrain.builder.profile.in_profile": "已保存",

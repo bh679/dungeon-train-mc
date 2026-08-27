@@ -1542,8 +1542,6 @@
   "gui.dungeontrain.video_tools.reset.done_desc": "C'est fait. Crée un nouveau monde et Dungeon Train te traitera comme un joueur qui débute.",
   "gui.dungeontrain.builder.profile": "Mes constructions",
   "gui.dungeontrain.builder.profile.title": "Mes constructions",
-  "gui.dungeontrain.builder.profile.submit": "Confier au train",
-  "gui.dungeontrain.builder.profile.withdraw": "Retirer du train",
   "gui.dungeontrain.builder.profile.not_a_carriage": "Seuls les wagons montent dans le train",
   "gui.dungeontrain.builder.profile.on_train": "dans le train",
   "gui.dungeontrain.builder.profile.in_profile": "enregistrée",

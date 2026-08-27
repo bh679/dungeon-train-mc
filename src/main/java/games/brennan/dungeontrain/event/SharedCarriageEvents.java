@@ -147,6 +147,10 @@ public final class SharedCarriageEvents {
      * serve the first player their work back. Excludes ids already resident or already placed here.
      */
     private static void prefetch(ServerLevel level) {
+        // Nothing may be placed while leasing is off, and a buffered lease is LOCKED against every
+        // other world — so prefetching here would hold community builds hostage for no one's benefit.
+        // The flush half of this tick is untouched: this world's own uploads carry on.
+        if (!SharedCarriageGate.canLease()) return;
         String hostUuid = "";
         String hostName = "";
         List<ServerPlayer> players = level.players();
