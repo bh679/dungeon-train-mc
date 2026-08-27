@@ -106,10 +106,13 @@ public enum ClientOptionsTab {
                 }
             }
             case TRAIN -> {
+                // The two short-captioned rows lead so they pair on one line; the two whose captions
+                // need a full-width row follow. Packing is sequential — it will not reach past a wide
+                // row to find a partner — so adjacency here is what puts them side by side.
                 rows.add(Row.TRAIN_VOLUME);
+                rows.add(Row.SNAPSHOT_CHAT_LOG);
                 rows.add(Row.CUSTOM_CONTENT);
                 rows.add(Row.SNAPSHOT_MAX_RES);
-                rows.add(Row.SNAPSHOT_CHAT_LOG);
             }
             case EDITOR -> {
                 rows.add(Row.SCALE_ALL);

@@ -119,10 +119,11 @@ final class ClientOptionsTabTest {
     @Test
     @DisplayName("Train and Editor hold the same rows whatever the flags")
     void fixedTabs_areUnconditional() {
+        // Volume and Chat Log lead, adjacent, so the width-aware packing pairs them on one line.
         List<ClientOptionsTab.Row> train = List.of(ClientOptionsTab.Row.TRAIN_VOLUME,
+                ClientOptionsTab.Row.SNAPSHOT_CHAT_LOG,
                 ClientOptionsTab.Row.CUSTOM_CONTENT,
-                ClientOptionsTab.Row.SNAPSHOT_MAX_RES,
-                ClientOptionsTab.Row.SNAPSHOT_CHAT_LOG);
+                ClientOptionsTab.Row.SNAPSHOT_MAX_RES);
         List<ClientOptionsTab.Row> editor = List.of(ClientOptionsTab.Row.SCALE_ALL,
                 ClientOptionsTab.Row.SCALE_WORLDSPACE,
                 ClientOptionsTab.Row.SCALE_HUD);
