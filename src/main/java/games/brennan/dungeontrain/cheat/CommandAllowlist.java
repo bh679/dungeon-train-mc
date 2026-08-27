@@ -25,6 +25,8 @@ import java.util.Set;
  *       {@code trigger}, {@code list}.</li>
  *   <li>{@code playanimation} and {@code stopsound}: purely cosmetic,
  *       no gameplay effect.</li>
+ *   <li>{@code advancement revoke}: destroys progress and can never create it.
+ *       {@code advancement grant} / {@code set} still taint.</li>
  * </ul>
  *
  * <p>The classifier works off the raw command string so command aliases
@@ -69,6 +71,11 @@ public final class CommandAllowlist {
      * cheat commands actually reaching a normal player (see the class
      * javadoc), so weather changes still need to gate behind the Free Play
      * confirmation like {@code /gamemode} and {@code /give} do.
+     * {@code advancement} is handled in {@link #isAllowed} rather than here:
+     * only its {@code revoke} branch is clean — giving up progress you earned
+     * is the opposite of cheating, and it is how
+     * {@link games.brennan.dungeontrain.advancement.StartAgainAdvancement} is
+     * earned — while {@code grant} / {@code set} hand out progress and taint.
      */
     private static final Set<String> ALLOWED_ROOTS = Set.of(
         "help", "me", "msg", "tell", "w", "teammsg", "tm", "trigger", "list",
@@ -102,6 +109,9 @@ public final class CommandAllowlist {
             return false; // editor/save/reset/package, cinematographer, spawn, speed, carriages, tracks, narrative give/reset/…
         }
         if (root.equals("kill")) return sub.isEmpty(); // bare /kill (self) only; /kill @e taints
+        // /advancement revoke destroys progress and can never create it — the opposite of
+        // cheating, and the command "It's Not That Simple" is earned by running. grant/set taint.
+        if (root.equals("advancement")) return sub.equals("revoke");
         return ALLOWED_ROOTS.contains(root);
     }
 

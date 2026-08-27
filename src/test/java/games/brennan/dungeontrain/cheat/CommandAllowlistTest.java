@@ -230,6 +230,20 @@ class CommandAllowlistTest {
     }
 
     @Test
+    @DisplayName("/advancement revoke never taints — but grant/set do")
+    void advancementRevokeNeverTaints() {
+        // Revoking destroys progress and can never create it, so it is the opposite of cheating —
+        // and it is how "It's Not That Simple" is earned, which cannot bank on a tainted run.
+        assertFalse(CommandAllowlist.taints("/advancement revoke @s everything"));
+        assertFalse(CommandAllowlist.taints("advancement revoke Brennan everything"));
+        assertFalse(CommandAllowlist.taints("/minecraft:advancement revoke @s only minecraft:story/root"));
+        // Handing progress out is still cheating.
+        assertTrue(CommandAllowlist.taints("/advancement grant @s everything"));
+        assertTrue(CommandAllowlist.taints("advancement set @s everything"));
+        assertTrue(CommandAllowlist.taints("/advancement"));
+    }
+
+    @Test
     @DisplayName("Empty / blank input never taints")
     void emptyNeverTaints() {
         assertFalse(CommandAllowlist.taints(""));
