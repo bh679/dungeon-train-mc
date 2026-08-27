@@ -8,6 +8,15 @@
       ]
     }
   },
+  "chat.dungeontrain.book_burns_author": {
+    "1": {
+      "label": "the name of the author credited on the burning book",
+      "examples": [
+        "Steve",
+        "Edda Marsh"
+      ]
+    }
+  },
   "chat.dungeontrain.free_play.cause.gamemode": {
     "1": {
       "label": "the game mode the player switched to",
@@ -1032,9 +1041,27 @@
       ]
     }
   },
+  "chat.dungeontrain.deathnote.already": {
+    "1": {
+      "label": "the player already named on a Death Note this life",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
   "chat.dungeontrain.deathnote.taken": {
     "1": {
       "label": "the player named on the Death Note",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "chat.dungeontrain.lovenote.already": {
+    "1": {
+      "label": "the player already named on a Love Note this life",
       "examples": [
         "Steve",
         "Alex"
