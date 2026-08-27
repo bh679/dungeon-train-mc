@@ -526,7 +526,7 @@ public final class CarriageContentsRegistry {
     /** Reload custom contents from the bundled classpath scan + the per-install config dir. */
     public static synchronized void reload() {
         CUSTOMS.clear();
-        int bundled = loadBundledScan();
+        BundledScanLoad bundled = loadBundledScan();
         int config = loadConfigDir();
 
         // Both corridors' contents are always offered, .nbt on disk or not — the same rule
@@ -542,8 +542,28 @@ public final class CarriageContentsRegistry {
         }
         validateGroups();
 
-        LOGGER.info("[DungeonTrain] Carriage contents registry loaded — {} built-in + {} custom ({} bundled, {} config)",
-            BUILTINS.size(), CUSTOMS.size(), bundled, config);
+        // Zero bundled interiors is never legitimate in a shipped build: 200+
+        // .nbt files sit under BUNDLED_RESOURCE_PREFIX, and the registry ships
+        // exactly one built-in (DEFAULT, a lone stone pressure plate). If the
+        // scan comes back empty, every pick in the world resolves to DEFAULT
+        // and every carriage generates empty — so say so at ERROR rather than
+        // reporting a successful load.
+        if (bundled.added() == 0) {
+            LOGGER.error("[DungeonTrain] Carriage contents registry loaded NO bundled interiors — {} built-in + {} custom ({} config). "
+                    + "Every carriage will generate empty (a single stone pressure plate). Cause: {}",
+                BUILTINS.size(), CUSTOMS.size(), config, bundledFailureCause(bundled));
+        } else {
+            LOGGER.info("[DungeonTrain] Carriage contents registry loaded — {} built-in + {} custom ({} bundled, {} config)",
+                BUILTINS.size(), CUSTOMS.size(), bundled.added(), config);
+        }
+    }
+
+    /** Human-readable reason a bundled scan yielded nothing, for the ERROR above. */
+    private static String bundledFailureCause(BundledScanLoad bundled) {
+        BundledNbtScanner.ScanResult scan = bundled.nbtScan();
+        if (!scan.resolved()) return scan.failureReason();
+        return "the bundled contents directory " + BUNDLED_RESOURCE_PREFIX
+            + " was read successfully but held no usable .nbt files";
     }
 
     /**
@@ -573,6 +593,13 @@ public final class CarriageContentsRegistry {
     }
 
     /**
+     * Result of one bundled scan: how many ids it registered, plus the raw
+     * scan outcome so {@link #reload()} can tell an empty directory apart
+     * from a loader that could not read one.
+     */
+    private record BundledScanLoad(int added, BundledNbtScanner.ScanResult nbtScan) {}
+
+    /**
      * Discover bundled custom contents by scanning the classpath at
      * {@link #BUNDLED_RESOURCE_PREFIX} for {@code .nbt} files. Built-in
      * contents (e.g. {@code default.nbt}) are filtered out via
@@ -580,9 +607,10 @@ public final class CarriageContentsRegistry {
      * {@link #CUSTOMS} or generate spurious drift warnings against the
      * legacy {@code customs.json}.
      */
-    private static int loadBundledScan() {
-        Set<String> nbtScanned = BundledNbtScanner.scanBasenames(
+    private static BundledScanLoad loadBundledScan() {
+        BundledNbtScanner.ScanResult nbtScan = BundledNbtScanner.scan(
             CarriageContentsRegistry.class, BUNDLED_RESOURCE_PREFIX, LOGGER);
+        Set<String> nbtScanned = nbtScan.names();
         Set<String> groupScanned = BundledNbtScanner.scanBasenames(
             CarriageContentsRegistry.class, BUNDLED_RESOURCE_PREFIX, LOGGER, ".group.json");
         TreeSet<String> customsScanned = new TreeSet<>();
@@ -606,7 +634,7 @@ public final class CarriageContentsRegistry {
             if (!acceptCustomId(id, "bundled scan")) continue;
             if (CUSTOMS.add(id)) added++;
         }
-        return added;
+        return new BundledScanLoad(added, nbtScan);
     }
 
     private static int loadConfigDir() {
