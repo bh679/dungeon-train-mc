@@ -49,7 +49,11 @@ public sealed interface CommandMenuEntry {
      * command would be unnecessary plumbing. Leaves the menu open so the
      * next-tick rebuild reflects the new value in row labels.
      */
-    record ClientAction(String label, Runnable action) implements CommandMenuEntry {}
+    record ClientAction(String label, Runnable action, boolean highlighted) implements CommandMenuEntry {
+
+        /** Convenience overload — no persistent accent tint. */
+        public ClientAction(String label, Runnable action) { this(label, action, false); }
+    }
 
     /**
      * Navigates into a nested {@link MenuScreen}. The optional

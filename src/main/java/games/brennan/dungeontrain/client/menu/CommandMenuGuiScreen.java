@@ -230,6 +230,7 @@ public final class CommandMenuGuiScreen extends Screen {
         if (entry instanceof CommandMenuEntry.Run r     && r.highlighted())  return HIGHLIGHT;
         if (entry instanceof CommandMenuEntry.Stay s    && s.highlighted())  return HIGHLIGHT;
         if (entry instanceof CommandMenuEntry.DrillIn d && d.highlighted())  return HIGHLIGHT;
+        if (entry instanceof CommandMenuEntry.ClientAction c && c.highlighted()) return HIGHLIGHT;
         return 0;
     }
 
