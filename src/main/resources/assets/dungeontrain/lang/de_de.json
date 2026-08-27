@@ -1646,5 +1646,7 @@
   "chat.dungeontrain.book_burns_author": "Das Buch von %s verbrennt",
   "item.dungeontrain.stats_book": "Statistikbuch",
   "gui.dungeontrain.options.book_author_chat": "Autorenhinweis im Chat",
-  "gui.dungeontrain.options.book_author_chat.tip": "Gibt jedes Mal, wenn ein Dungeon-Train-Buch verbrennt, eine Chatzeile mit dem Namen des Autors aus — „Das Buch von X verbrennt“. Die Bücher, die du liest, wegwirfst oder beim Tod fallen lässt, fangen alle Feuer, und dies ist die einzige Stelle, an der ihre Verfasser genannt werden. Standardmäßig aus."
+  "gui.dungeontrain.options.book_author_chat.tip": "Gibt jedes Mal, wenn ein Dungeon-Train-Buch verbrennt, eine Chatzeile mit dem Namen des Autors aus — „Das Buch von X verbrennt“. Die Bücher, die du liest, wegwirfst oder beim Tod fallen lässt, fangen alle Feuer, und dies ist die einzige Stelle, an der ihre Verfasser genannt werden. Standardmäßig aus.",
+  "chat.dungeontrain.free_play.cause.keep_inventory": "In dieser Welt ist „Inventar behalten“ aktiviert.",
+  "chat.dungeontrain.free_play.keep_inventory_on": "Dungeon Train ist darauf abgestimmt, dass Sterben dich etwas kostet, deshalb behält diese Welt ihre Statistiken von hier an für sich. Die Spielregel wieder auszuschalten ändert daran nichts — die Ausrüstung, die du durch einen Tod getragen hast, gehört bereits dir."
 }

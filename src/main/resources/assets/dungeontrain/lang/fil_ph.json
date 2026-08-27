@@ -1619,5 +1619,7 @@
   "chat.dungeontrain.book_burns_author": "Nasusunog ang aklat ni %s",
   "item.dungeontrain.stats_book": "Aklat ng Estadistika",
   "gui.dungeontrain.options.book_author_chat": "May-akda ng aklat sa chat",
-  "gui.dungeontrain.options.book_author_chat.tip": "Naglalagay ng isang linya sa chat na nagbabanggit sa may-akda tuwing may nasusunog na aklat ng Dungeon Train — \"Nasusunog ang aklat ni X\". Ang mga aklat na binabasa mo, itinatapon, o nalalaglag kapag namatay ka ay pawang nag-aapoy, at dito lang binibigyang-kredito ang sumulat sa kanila. Naka-off bilang default."
+  "gui.dungeontrain.options.book_author_chat.tip": "Naglalagay ng isang linya sa chat na nagbabanggit sa may-akda tuwing may nasusunog na aklat ng Dungeon Train — \"Nasusunog ang aklat ni X\". Ang mga aklat na binabasa mo, itinatapon, o nalalaglag kapag namatay ka ay pawang nag-aapoy, at dito lang binibigyang-kredito ang sumulat sa kanila. Naka-off bilang default.",
+  "chat.dungeontrain.free_play.cause.keep_inventory": "Naka-on ang \"Keep Inventory\" sa mundong ito.",
+  "chat.dungeontrain.free_play.keep_inventory_on": "Nakabalanse ang Dungeon Train sa palagay na may kapalit ang pagkamatay, kaya mula ngayon ay sa mundong ito na lang mananatili ang sarili nitong estadistika. Hindi mababago iyon ng pag-off muli sa game rule — ang gamit na dala mo sa kabila ng isang kamatayan ay sa iyo na."
 }

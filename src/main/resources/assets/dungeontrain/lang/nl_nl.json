@@ -1646,5 +1646,7 @@
   "chat.dungeontrain.book_burns_author": "Het boek van %s verbrandt",
   "item.dungeontrain.stats_book": "Statistiekenboek",
   "gui.dungeontrain.options.book_author_chat": "Boekauteur in de chat",
-  "gui.dungeontrain.options.book_author_chat.tip": "Zet elke keer dat een Dungeon Train-boek verbrandt een chatregel met de naam van de auteur neer — \"Het boek van X verbrandt\". De boeken die je leest, weggooit of bij je dood laat vallen vatten allemaal vlam, en dit is de enige plek waar hun schrijver wordt genoemd. Standaard uit."
+  "gui.dungeontrain.options.book_author_chat.tip": "Zet elke keer dat een Dungeon Train-boek verbrandt een chatregel met de naam van de auteur neer — \"Het boek van X verbrandt\". De boeken die je leest, weggooit of bij je dood laat vallen vatten allemaal vlam, en dit is de enige plek waar hun schrijver wordt genoemd. Standaard uit.",
+  "chat.dungeontrain.free_play.cause.keep_inventory": "In deze wereld staat \"Inventaris behouden\" aan.",
+  "chat.dungeontrain.free_play.keep_inventory_on": "Dungeon Train is erop afgestemd dat doodgaan je iets kost, dus vanaf hier houdt deze wereld haar statistieken voor zichzelf. De spelregel weer uitzetten verandert daar niets aan — de spullen die je door een dood heen meedroeg zijn al van jou."
 }

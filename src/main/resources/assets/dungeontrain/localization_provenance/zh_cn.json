@@ -603,7 +603,9 @@
       "chat.dungeontrain.book_burns_author",
       "item.dungeontrain.stats_book",
       "gui.dungeontrain.options.book_author_chat",
-      "gui.dungeontrain.options.book_author_chat.tip"
+      "gui.dungeontrain.options.book_author_chat.tip",
+      "chat.dungeontrain.free_play.cause.keep_inventory",
+      "chat.dungeontrain.free_play.keep_inventory_on"
     ],
     "adventureitemnames": [
       "screen.adventureitemnames.action.delete",

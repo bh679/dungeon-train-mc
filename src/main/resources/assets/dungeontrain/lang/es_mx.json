@@ -1646,5 +1646,7 @@
   "chat.dungeontrain.book_burns_author": "El libro de %s arde",
   "item.dungeontrain.stats_book": "Libro de estadísticas",
   "gui.dungeontrain.options.book_author_chat": "Autor del libro en el chat",
-  "gui.dungeontrain.options.book_author_chat.tip": "Escribe en el chat una línea con el nombre del autor cada vez que arde un libro de Dungeon Train: «El libro de X arde». Los libros que lees, tiras o sueltas al morir terminan todos en llamas, y este es el único lugar donde se le da crédito a quien los escribió. Desactivado de forma predeterminada."
+  "gui.dungeontrain.options.book_author_chat.tip": "Escribe en el chat una línea con el nombre del autor cada vez que arde un libro de Dungeon Train: «El libro de X arde». Los libros que lees, tiras o sueltas al morir terminan todos en llamas, y este es el único lugar donde se le da crédito a quien los escribió. Desactivado de forma predeterminada.",
+  "chat.dungeontrain.free_play.cause.keep_inventory": "En este mundo está activado «Conservar inventario».",
+  "chat.dungeontrain.free_play.keep_inventory_on": "Dungeon Train está balanceado para que morir te cueste algo, así que de aquí en adelante este mundo se queda con sus propias estadísticas. Volver a desactivar la regla de juego no va a cambiar eso: el equipo que llevaste contigo a través de una muerte ya es tuyo."
 }

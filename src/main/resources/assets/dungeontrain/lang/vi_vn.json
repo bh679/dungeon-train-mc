@@ -1619,5 +1619,7 @@
   "chat.dungeontrain.book_burns_author": "Cuốn sách của %s bốc cháy",
   "item.dungeontrain.stats_book": "Sách thống kê",
   "gui.dungeontrain.options.book_author_chat": "Hiện tác giả sách trong khung chat",
-  "gui.dungeontrain.options.book_author_chat.tip": "In một dòng chat nêu tên tác giả mỗi khi một cuốn sách của Dungeon Train bốc cháy — \"Cuốn sách của X bốc cháy\". Những cuốn bạn đọc, bạn vứt đi hay đánh rơi lúc chết đều bắt lửa, và đây là chỗ duy nhất người viết chúng được ghi công. Mặc định tắt."
+  "gui.dungeontrain.options.book_author_chat.tip": "In một dòng chat nêu tên tác giả mỗi khi một cuốn sách của Dungeon Train bốc cháy — \"Cuốn sách của X bốc cháy\". Những cuốn bạn đọc, bạn vứt đi hay đánh rơi lúc chết đều bắt lửa, và đây là chỗ duy nhất người viết chúng được ghi công. Mặc định tắt.",
+  "chat.dungeontrain.free_play.cause.keep_inventory": "Thế giới này đang bật \"Giữ hành trang\".",
+  "chat.dungeontrain.free_play.keep_inventory_on": "Dungeon Train được cân bằng quanh việc cái chết phải lấy đi của bạn thứ gì đó, nên từ đây thế giới này giữ thống kê của riêng nó. Tắt lại luật chơi cũng không đổi được điều đó — số đồ bạn mang qua một lần chết thì đã là của bạn rồi."
 }
