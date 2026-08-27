@@ -18,7 +18,7 @@ import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
  * NeoForge silently dedupes inner @EventBusSubscriber classes that share a simple
  * name (see {@link ContainerHotkeyClient} warning).</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
+@EventBusSubscriber(modid = DungeonTrain.MOD_ID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public final class CinematographerHotkeyClient {
 
     static final KeyMapping CINEMATIC_KEY = new KeyMapping(
@@ -40,15 +40,28 @@ public final class CinematographerHotkeyClient {
 
         private CinematographerTickWatcher() {}
 
+        /**
+         * Drain the key's queued clicks <em>first</em>, then decide whether to act on them.
+         * Returning early without draining would leave presses banked — every press made while a
+         * screen was open, or while not a spectator, fired the moment the guards next passed, and
+         * two commands in one tick started two cinematics. The second start used to re-capture the
+         * already-frozen input as the "saved" one, leaving the player unable to move for the rest
+         * of the session. At most one command per tick, and never while a cinematic is running.
+         */
         @SubscribeEvent
         public static void onClientTick(ClientTickEvent.Post event) {
+            boolean pressed = false;
+            while (CINEMATIC_KEY.consumeClick()) {
+                pressed = true;
+            }
+            if (!pressed) return;
+
             Minecraft mc = Minecraft.getInstance();
             if (mc.player == null || mc.getConnection() == null || mc.screen != null) return;
             if (!mc.player.isSpectator()) return;
+            if (CinematicCameraController.isActive()) return;
 
-            while (CINEMATIC_KEY.consumeClick()) {
-                mc.getConnection().sendCommand("dungeontrain cinematic");
-            }
+            mc.getConnection().sendCommand("dungeontrain cinematic");
         }
     }
 }
