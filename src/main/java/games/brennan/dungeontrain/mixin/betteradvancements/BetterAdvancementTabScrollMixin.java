@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.mixin.betteradvancements;
 
+import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import net.minecraft.client.gui.GuiGraphics;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -70,6 +71,17 @@ public abstract class BetterAdvancementTabScrollMixin {
     @Unique
     private static final int DUNGEONTRAIN_OVERSCROLL_Y = 27;
 
+    /**
+     * Overscroll allowance past the <em>near</em> (top) edge — half a row, so the first row lifts
+     * clear of the frame without the tree floating as far as it can drop at the bottom.
+     *
+     * <p>The viewport trick above cannot reach this edge: {@code scroll} bounds that side at
+     * {@code -minY}, which has no viewport term. Shifting the {@code minY} the clamp reads instead
+     * moves the bound to {@code -minY + pad}.</p>
+     */
+    @Unique
+    private static final int DUNGEONTRAIN_OVERSCROLL_TOP = 13;
+
     /** Width of the rectangle {@code drawContents} last scissored to; 0 until the tab has drawn. */
     @Unique
     private int dungeontrain$viewportWidth;
@@ -99,5 +111,22 @@ public abstract class BetterAdvancementTabScrollMixin {
     private int dungeontrain$useDrawnViewportHeight(int height) {
         int viewport = dungeontrain$viewportHeight > 0 ? dungeontrain$viewportHeight : height;
         return Math.max(1, viewport - DUNGEONTRAIN_OVERSCROLL_Y);
+    }
+
+    /**
+     * Lift the top bound by {@link #DUNGEONTRAIN_OVERSCROLL_TOP}. {@code scroll} reads {@code minY}
+     * twice — once for its {@code maxY - minY > height} guard, once as the clamp's upper bound —
+     * and both reads want the shifted value: the bound is what grants the slack, and the guard
+     * should agree that the content is that much taller than it measures.
+     *
+     * <p>{@code minX} is deliberately left alone; the left edge stops where it always has.</p>
+     */
+    @ModifyExpressionValue(
+        method = "scroll",
+        at = @At(value = "FIELD",
+                 target = "Lbetteradvancements/common/gui/BetterAdvancementTab;minY:I")
+    )
+    private int dungeontrain$padTopEdge(int minY) {
+        return minY - DUNGEONTRAIN_OVERSCROLL_TOP;
     }
 }
