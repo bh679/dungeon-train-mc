@@ -140,6 +140,16 @@ public final class DungeonTrainClientOptionsScreen extends Screen {
                 .setTooltip(tip("gui.dungeontrain.options.custom_content.tip"));
         y += ROW_GAP;
 
+        // Cinematographer hotkey ON/OFF. The binding itself lives in vanilla Controls (Dungeon
+        // Train category); this only decides whether it does anything, so a player who wants the
+        // key back for something else can free it without hunting through the keybind list.
+        addRenderableWidget(CycleButton.onOffBuilder(ClientDisplayConfig.isCinematicHotkeyEnabled())
+                .create(left, y, ROW_W, ROW_H,
+                        Component.translatable("gui.dungeontrain.options.cinematic_hotkey"),
+                        (btn, on) -> ClientDisplayConfig.setCinematicHotkeyEnabled(on)))
+                .setTooltip(tip("gui.dungeontrain.options.cinematic_hotkey.tip"));
+        y += ROW_GAP;
+
         // Snapshot chat log ON/OFF.
         addRenderableWidget(CycleButton.onOffBuilder(ClientDisplayConfig.isRideSnapshotChatLogEnabled())
                 .create(left, y, ROW_W, ROW_H, Component.translatable("gui.dungeontrain.options.snapshot_chat_log"),

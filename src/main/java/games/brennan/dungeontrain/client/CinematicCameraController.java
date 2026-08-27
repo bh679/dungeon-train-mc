@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.net.CinematicIntroPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.Input;
+import net.minecraft.client.player.KeyboardInput;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
@@ -174,14 +175,22 @@ public final class CinematicCameraController {
         releasing = false;
         releaseTicks = 0;
 
-        savedYaw = player.getYRot();
-        savedPitch = player.getXRot();
-        savedInput = player.input;
+        // Re-entrancy: a shot starting while one is already in flight must NOT re-capture the
+        // saved state. player.input is FROZEN_INPUT at that point, so saving it would make the
+        // eventual restore re-install the freeze — stranding the player with no movement and no
+        // in-game way back short of a fresh LocalPlayer (/kill). Keep the first shot's originals
+        // and only re-aim the camera.
+        if (active) {
+            LOGGER.warn("[DungeonTrain] Cinematic started while one was already running — keeping the first shot's saved input/HUD state");
+        } else {
+            savedYaw = player.getYRot();
+            savedPitch = player.getXRot();
+            savedInput = player.input;
+            // Hide the whole HUD for a clean spectator shot (restored on end).
+            savedHideGui = mc.options.hideGui;
+        }
         player.input = FROZEN_INPUT;
         clearImpulses(FROZEN_INPUT);
-
-        // Hide the whole HUD for a clean spectator shot (restored on end).
-        savedHideGui = mc.options.hideGui;
         mc.options.hideGui = true;
 
         CinematicSkipHudOverlay.reset();
@@ -190,7 +199,10 @@ public final class CinematicCameraController {
 
     /** Advance the clock once per client tick. Called from {@link CinematicInputHandler}. */
     public static void clientTick() {
-        if (!active) return;
+        if (!active) {
+            healStrandedInput();
+            return;
+        }
         LocalPlayer player = Minecraft.getInstance().player;
         if (player == null) {
             forceStop();
@@ -256,8 +268,8 @@ public final class CinematicCameraController {
         focusPoint = null;
         endPos = null;
         LocalPlayer player = Minecraft.getInstance().player;
-        if (player != null && savedInput != null && player.input == FROZEN_INPUT) {
-            player.input = savedInput;
+        if (player != null) {
+            restoreInput(player);
         }
         savedInput = null;
         Minecraft.getInstance().options.hideGui = savedHideGui;
@@ -270,9 +282,7 @@ public final class CinematicCameraController {
         focusPoint = null;
         endPos = null;
         if (player != null) {
-            if (savedInput != null && player.input == FROZEN_INPUT) {
-                player.input = savedInput;
-            }
+            restoreInput(player);
             player.setYRot(savedYaw);
             player.setXRot(savedPitch);
             player.yRotO = savedYaw;
@@ -281,6 +291,34 @@ public final class CinematicCameraController {
         savedInput = null;
         Minecraft.getInstance().options.hideGui = savedHideGui;
         CinematicSkipHudOverlay.reset();
+    }
+
+    /**
+     * Hand the player back a working movement input. Never re-installs
+     * {@link #FROZEN_INPUT}: if the saved reference is missing, or is the frozen input itself
+     * (a re-entrant start that pre-dates the guard in {@link #beginShot}), a fresh
+     * {@link KeyboardInput} is built instead — vanilla makes one per player, so a replacement
+     * is equivalent. A no-op when the player isn't holding the frozen input.
+     */
+    private static void restoreInput(LocalPlayer player) {
+        if (player.input != FROZEN_INPUT) return;
+        player.input = (savedInput != null && savedInput != FROZEN_INPUT)
+            ? savedInput
+            : new KeyboardInput(Minecraft.getInstance().options);
+        savedInput = null;
+    }
+
+    /**
+     * Safety net run on every inactive tick: no cinematic is running, yet the player is still
+     * holding {@link #FROZEN_INPUT} — movement is dead for the rest of the session with no
+     * in-game way out. Give them a working input back and log it loudly, so a recurrence names
+     * itself in the log rather than as "I had to /kill".
+     */
+    private static void healStrandedInput() {
+        LocalPlayer player = Minecraft.getInstance().player;
+        if (player == null || player.input != FROZEN_INPUT) return;
+        LOGGER.warn("[DungeonTrain] Player left holding the cinematic's frozen input with no cinematic running — restoring movement");
+        restoreInput(player);
     }
 
     /**
