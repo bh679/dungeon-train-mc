@@ -134,6 +134,8 @@
   "chat.dungeontrain.free_play.ais_changed": "Changed: %s",
   "chat.dungeontrain.free_play.ais_fix": "Click here to restore the default settings, then restart the game to play normally.",
   "chat.dungeontrain.free_play.cause.portal_rate": "How often dimensional carriages appear has been changed in this world.",
+  "chat.dungeontrain.free_play.cause.keep_inventory": "Keep Inventory is on in this world.",
+  "chat.dungeontrain.free_play.keep_inventory_on": "Dungeon Train is balanced around dying costing you something, so this world keeps its own stats from here on. Turning the game rule back off won’t change that — the gear you carried through a death is already yours.",
   "chat.dungeontrain.free_play.portal_rate_changed": "The track this world generates is no longer the one Dungeon Train is balanced against, so this world stays in Free Play.",
   "chat.dungeontrain.free_play.cause.dt_config": "The Dungeon Train difficulty settings have been changed.",
   "chat.dungeontrain.free_play.dt_config_changed": "Changed: %s",
