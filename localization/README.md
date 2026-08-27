@@ -103,6 +103,7 @@ locale.
 | Name | Kind | Meaning |
 |---|---|---|
 | `Opus 4.8 (Claude)` | ai | Machine translation by Claude Opus 4.8 (waves #768, #776, #809, #821; the early zh_cn commits #754/#755/#763 didn't record their model and are **assumed Opus 4.8** per operator decision, 2026-07-23) |
+| `Opus 5 (Claude)` | ai | Machine translation by Claude Opus 5 (the v0.528.0 wave, 2026-08 — see [Backfill notes](#backfill-notes-july-2026); and the v0.669.x gap-fill that brought all nineteen locales up to the full en_us key set, ~4,225 lines) |
 | `老本願` | human | Community translator — original zh_cn tree (#754 seed, #759 v0.458.0 drop), its review (#770), and the v0.516.0 revision pass (2026-07) that took zh_cn to zero AI-unreviewed lines (reopened by the v0.528.0 machine wave — see [Backfill notes](#backfill-notes-july-2026)) |
 | `阿世xAsh` | human | Community translator — the #823 zh_cn/zh_tw Support-page revision pass |
 
