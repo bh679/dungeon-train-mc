@@ -9383,9 +9383,9 @@
       ],
       "pr": 1140,
       "date": "2026-08-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.690.0",
+      "released_at": "2026-08-27T15:32:06Z"
     },
     {
       "id": "portal-room-clear-actually-clears",
@@ -9400,9 +9400,9 @@
       ],
       "pr": 1145,
       "date": "2026-08-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.690.0",
+      "released_at": "2026-08-27T15:32:06Z"
     },
     {
       "id": "stats-books-burn-after-reading",
@@ -9417,9 +9417,9 @@
       ],
       "pr": 1146,
       "date": "2026-08-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.690.0",
+      "released_at": "2026-08-27T15:32:06Z"
     },
     {
       "id": "editor-plot-sky-lighting",
@@ -9434,9 +9434,9 @@
       ],
       "pr": 1147,
       "date": "2026-08-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.690.0",
+      "released_at": "2026-08-27T15:32:06Z"
     },
     {
       "id": "its-not-that-simple-advancement",
