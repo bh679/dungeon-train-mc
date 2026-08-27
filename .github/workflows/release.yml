@@ -262,6 +262,7 @@ jobs:
             ambientsounds(optional)
             creativecore(optional)
             advancement-plaques(optional)
+            better-advancements(optional)
             iceberg(optional)
             distant-horizons(optional)
             nemos-inventory-sorting(optional)

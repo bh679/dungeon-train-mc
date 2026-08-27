@@ -144,6 +144,15 @@
       "modrinth_version": "OWylG33I"
     },
     {
+      "name": "Better Advancements",
+      "slug": "better-advancements",
+      "project_id": 272515,
+      "file_id": 5850587,
+      "required": true,
+      "modrinth_project": "better-advancements",
+      "modrinth_version": "FjTYILOi"
+    },
+    {
       "name": "Iceberg",
       "slug": "iceberg",
       "project_id": 520110,
