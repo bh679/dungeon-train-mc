@@ -9316,9 +9316,9 @@
       ],
       "pr": 1137,
       "date": "2026-08-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.686.0",
+      "released_at": "2026-08-27T12:59:06Z"
     },
     {
       "id": "editor-menu-worldspace-screenspace",
@@ -9334,9 +9334,9 @@
       ],
       "pr": 1141,
       "date": "2026-08-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.686.0",
+      "released_at": "2026-08-27T12:59:06Z"
     },
     {
       "id": "shulker-box-tooltip-modpack",
@@ -9350,9 +9350,9 @@
       ],
       "pr": 1143,
       "date": "2026-08-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.686.0",
+      "released_at": "2026-08-27T12:59:06Z"
     },
     {
       "id": "clumps-modpack-bundle",
@@ -9365,9 +9365,9 @@
         "Enabled by default in the CurseForge and Modrinth packs; safe to turn off"
       ],
       "date": "2026-08-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.686.0",
+      "released_at": "2026-08-27T12:59:06Z"
     }
   ]
 }
