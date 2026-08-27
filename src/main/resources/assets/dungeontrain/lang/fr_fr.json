@@ -1642,5 +1642,11 @@
   "commands.dungeontrain.customcontent.now_on": "Le contenu de train personnalisé est maintenant activé dans ce monde. Cette partie compte comme du Jeu Libre.",
   "commands.dungeontrain.customcontent.now_off": "Le contenu de train personnalisé est maintenant désactivé dans ce monde. Les nouveaux wagons utiliseront les modèles d'origine.",
   "commands.dungeontrain.customcontent.already_on": "Le contenu de train personnalisé était déjà activé dans ce monde.",
-  "commands.dungeontrain.customcontent.already_off": "Le contenu de train personnalisé était déjà désactivé dans ce monde."
+  "commands.dungeontrain.customcontent.already_off": "Le contenu de train personnalisé était déjà désactivé dans ce monde.",
+  "chat.dungeontrain.book_burns_author": "Le livre de %s brûle",
+  "item.dungeontrain.stats_book": "Livre de statistiques",
+  "gui.dungeontrain.options.book_author_chat": "Auteur du livre dans le chat",
+  "gui.dungeontrain.options.book_author_chat.tip": "Affiche dans le chat une ligne nommant l'auteur chaque fois qu'un livre de Dungeon Train brûle — « Le livre de X brûle ». Les livres que tu lis, que tu jettes ou que tu laisses tomber en mourant prennent tous feu, et c'est le seul endroit où leur auteur est crédité. Désactivé par défaut.",
+  "chat.dungeontrain.free_play.cause.keep_inventory": "« Conserver l'inventaire » est activé dans ce monde.",
+  "chat.dungeontrain.free_play.keep_inventory_on": "Dungeon Train est équilibré autour de l'idée que mourir te coûte quelque chose, alors à partir d'ici ce monde garde ses statistiques pour lui. Redésactiver la règle de jeu n'y changera rien — l'équipement que tu as emporté à travers une mort est déjà à toi."
 }
