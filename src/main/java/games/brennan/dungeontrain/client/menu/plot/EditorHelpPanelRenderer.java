@@ -205,6 +205,11 @@ public final class EditorHelpPanelRenderer {
         MultiBufferSource.BufferSource buffer = mc.renderBuffers().bufferSource();
 
         Vec3 anchor = helpAnchor(navMenu);
+        // Auto culls the board once you have walked away from the door it sits beside.
+        if (!games.brennan.dungeontrain.client.EditorMenusModeState.withinRange(anchor, cam)) {
+            HOVERED = Hovered.NONE;
+            return;
+        }
         drawPanel(ps, buffer, font, cam, anchor, hovered());
 
         buffer.endBatch(PANEL_QUAD);

@@ -197,6 +197,11 @@ public final class PlayerJoinEvents {
         // Seed debug flags so the in-world Debug menu's Toggle states render
         // the correct value the first time it's opened on this client.
         DebugFlags.sendSnapshotTo(player);
+        // Same reason for the editor-menus mode: the client holds it in a static that outlives a
+        // disconnect, so a reconnect has to be told what the server actually has for this player
+        // rather than keeping whatever the last session left behind.
+        DungeonTrainNet.sendTo(player, games.brennan.dungeontrain.net.EditorMenusModePacket.of(
+            games.brennan.dungeontrain.editor.PartPositionMenuController.mode(player)));
         // Somebody who quit standing in a test dimensional carriage comes back standing in it, and
         // the client assumes no session until told otherwise — without this the Back row is gone and
         // the only way out of a sealed basement is a manual /tp. The session itself is server-side

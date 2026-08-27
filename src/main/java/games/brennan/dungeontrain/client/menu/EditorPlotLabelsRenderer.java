@@ -606,9 +606,15 @@ public final class EditorPlotLabelsRenderer {
 
         Hovered hovered = HOVERED;
         for (int i = 0; i < snapshot.size(); i++) {
+            // Auto hides the other plots' panels while the player is standing in one. Indices stay
+            // the snapshot's own, because they are the hover contract with EditorPlotPanelRaycast —
+            // which skips the same entries, so nothing hidden is hoverable either.
+            if (!games.brennan.dungeontrain.client.EditorMenusModeState.isPanelVisible(snapshot, i)) continue;
             EditorPlotLabelsPacket.Entry entry = snapshot.get(i);
             BlockPos pos = entry.worldPos();
             Vec3 anchor = new Vec3(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5);
+            // ...and Auto also drops whatever is too far off to be what you're working on.
+            if (!games.brennan.dungeontrain.client.EditorMenusModeState.withinRange(anchor, cam)) continue;
             CellKind hitCell = (hovered.entryIndex == i) ? hovered.cell : CellKind.NONE;
             drawPanel(ps, buffer, font, cam, anchor, entry, hitCell);
         }

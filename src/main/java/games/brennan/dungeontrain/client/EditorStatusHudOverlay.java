@@ -258,12 +258,17 @@ public final class EditorStatusHudOverlay {
 
     /**
      * Master visibility flag for the editor's always-on world-space panels
-     * (help board, type/variant lists, plot labels). Shares the server-synced
-     * {@code partMenuEnabled} flag so the single "Editor Menus" X-menu toggle
-     * governs all editor world-space UI at once. Default true (visible).
+     * (help board, type/variant lists, plot labels) — true in every
+     * {@link games.brennan.dungeontrain.editor.EditorMenusMode} but {@code OFF}, so the single
+     * "Editor Menus" X-menu row governs all editor world-space UI at once.
+     *
+     * <p>Reads {@link EditorMenusModeState} rather than the status packet's
+     * {@code partMenuEnabled}: the status is cleared the moment the player steps out of a plot,
+     * which used to reset this setting behind their back. {@code AUTO}'s per-plot narrowing is a
+     * separate question — see {@link EditorMenusModeState#isPanelVisible}.</p>
      */
     public static boolean isEditorMenusVisible() {
-        return partMenuEnabled;
+        return EditorMenusModeState.menusVisible();
     }
 
     /** Editor mirror X-axis flag for the active model (X-menu toggle state). */

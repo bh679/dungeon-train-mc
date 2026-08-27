@@ -3,7 +3,9 @@ package games.brennan.dungeontrain.narrative;
 import games.brennan.dungeontrain.event.BookAuthorChatMirror;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.component.DataComponents;
+import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.HoverEvent;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.item.ItemEntity;
@@ -45,7 +47,7 @@ public final class BookBurnAuthorMessage {
         if (author == null || author.isBlank()) return;
 
         Component message = Component.translatable("chat.dungeontrain.book_burns_author",
-                Component.literal(author).withStyle(ChatFormatting.GOLD))
+                clickToCopy(author))
             .withStyle(ChatFormatting.GRAY);
 
         double rangeSqr = HEARING_RANGE * HEARING_RANGE;
@@ -54,5 +56,20 @@ public final class BookBurnAuthorMessage {
             if (!BookAuthorChatMirror.isEnabled(player)) continue;
             player.sendSystemMessage(message);
         }
+    }
+
+    /**
+     * The author's name as click-to-copy text: gold and underlined — this repo's signal that chat
+     * text does something when clicked (see {@code CheatDetectionEvents}'s fix links) — carrying a
+     * {@link ClickEvent.Action#COPY_TO_CLIPBOARD} of the raw name and a hover saying so. The
+     * clipboard write is vanilla client behaviour; the server only describes the action.
+     */
+    private static Component clickToCopy(String author) {
+        return Component.literal(author).withStyle(style -> style
+            .withColor(ChatFormatting.GOLD)
+            .withUnderlined(true)
+            .withClickEvent(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, author))
+            .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+                Component.translatable("chat.dungeontrain.book_burns_author.copy"))));
     }
 }

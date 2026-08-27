@@ -36,6 +36,11 @@ public final class EditorHelpPanelRaycast {
         double worldScale = ClientDisplayConfig.getWorldspaceScale();
 
         Vec3 anchor = EditorHelpPanelRenderer.helpAnchor(navMenu);
+        // Culled for distance by Auto — not drawn, so not hoverable.
+        if (!games.brennan.dungeontrain.client.EditorMenusModeState.withinRange(anchor, rayOrigin)) {
+            EditorHelpPanelRenderer.setHovered(Hovered.NONE);
+            return;
+        }
 
         Vec3[] basis = EditorPlotLabelsRenderer.basis(anchor, rayOrigin);
         Vec3 right = basis[0], up = basis[1], normal = basis[2];

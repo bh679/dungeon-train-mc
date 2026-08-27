@@ -49,6 +49,17 @@ public final class NetworkConsentMirror {
         return GRANTED.getOrDefault(player.getUUID(), false);
     }
 
+    /**
+     * Whether this player's consent state has been mirrored at all yet — i.e. whether {@link
+     * #isGranted}'s {@code false} means "declined" or merely "the login sync hasn't landed".
+     *
+     * <p>Purely for telling a player <i>why</i> something is unavailable. Every gate stays on
+     * {@link #isGranted} and stays fail-closed; this must never be used to permit an upload.</p>
+     */
+    public static boolean isKnown(UUID playerId) {
+        return playerId != null && GRANTED.containsKey(playerId);
+    }
+
     /** Drop a player's mirrored consent when they leave; called from {@link PlayerJoinEvents} logout. */
     public static void forget(UUID playerId) {
         if (playerId != null) {
