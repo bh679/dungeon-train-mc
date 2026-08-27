@@ -1615,5 +1615,11 @@
   "commands.dungeontrain.customcontent.now_on": "เนื้อหาขบวนรถแบบกำหนดเองในโลกนี้เปิดแล้ว การเดินทางครั้งนี้นับเป็นเล่นอิสระ",
   "commands.dungeontrain.customcontent.now_off": "เนื้อหาขบวนรถแบบกำหนดเองในโลกนี้ปิดแล้ว ตู้ใหม่จะใช้แบบที่มากับเกม",
   "commands.dungeontrain.customcontent.already_on": "เนื้อหาขบวนรถแบบกำหนดเองในโลกนี้เปิดอยู่ก่อนแล้ว",
-  "commands.dungeontrain.customcontent.already_off": "เนื้อหาขบวนรถแบบกำหนดเองในโลกนี้ปิดอยู่ก่อนแล้ว"
+  "commands.dungeontrain.customcontent.already_off": "เนื้อหาขบวนรถแบบกำหนดเองในโลกนี้ปิดอยู่ก่อนแล้ว",
+  "chat.dungeontrain.book_burns_author": "หนังสือของ %s กำลังลุกไหม้",
+  "item.dungeontrain.stats_book": "หนังสือสถิติ",
+  "gui.dungeontrain.options.book_author_chat": "แสดงชื่อผู้เขียนหนังสือในแชท",
+  "gui.dungeontrain.options.book_author_chat.tip": "พิมพ์ข้อความหนึ่งบรรทัดในแชทระบุชื่อผู้เขียนทุกครั้งที่หนังสือของ Dungeon Train ลุกไหม้ — \"หนังสือของ X กำลังลุกไหม้\" หนังสือที่คุณอ่าน ที่ทิ้ง หรือที่ร่วงตอนตาย ล้วนติดไฟทั้งนั้น และตรงนี้เป็นที่เดียวที่ให้เครดิตคนเขียน ปิดไว้ตั้งแต่แรก",
+  "chat.dungeontrain.free_play.cause.keep_inventory": "โลกนี้เปิด \"เก็บของในกระเป๋าไว้\" อยู่",
+  "chat.dungeontrain.free_play.keep_inventory_on": "Dungeon Train ปรับสมดุลไว้บนพื้นฐานที่ว่าการตายต้องแลกด้วยอะไรบางอย่าง โลกนี้จึงเก็บสถิติของตัวเองไว้นับจากนี้ไป การปิดกฎของเกมกลับไม่ได้เปลี่ยนเรื่องนั้น — ของที่คุณถือข้ามความตายมาแล้วนั้นเป็นของคุณไปแล้ว"
 }
