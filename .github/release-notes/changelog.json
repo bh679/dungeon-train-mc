@@ -9031,6 +9031,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "keep-inventory-free-play",
+      "version": "0.673.0",
+      "type": "feat",
+      "title": "Keeping your inventory on death is Free Play",
+      "summary": "Dungeon Train is balanced around dying costing you something, so a world running with Minecraft's Keep Inventory game rule on now plays as Free Play \u2014 advancements still earn live, but the run stops adding to your profile and global stats. Nothing about how the game plays changes: your gear and XP still travel to the next world exactly as before. This was already true if you typed the command; now it is also true for a world you created with Keep Inventory ticked on, and for every world the train carries that setting into.",
+      "highlights": [
+        "A world that has run with Keep Inventory on is Free Play from the moment it loads, and says so when you join.",
+        "It sticks to the world: turning the rule back off does not give that world its stats back, because the gear you carried through a death is already yours.",
+        "The Free Play badge's tooltip names Keep Inventory as the reason.",
+        "Carrying your inventory into the next world still works the same."
+      ],
+      "date": "2026-08-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
