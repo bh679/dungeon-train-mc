@@ -1671,5 +1671,11 @@
   "commands.dungeontrain.customcontent.now_on": "Własne treści pociągu są teraz w tym świecie włączone. Ta wyprawa liczy się jako Swobodna Gra.",
   "commands.dungeontrain.customcontent.now_off": "Własne treści pociągu są teraz w tym świecie wyłączone. Nowe wagony będą korzystać z wbudowanych projektów.",
   "commands.dungeontrain.customcontent.already_on": "Własne treści pociągu były w tym świecie już włączone.",
-  "commands.dungeontrain.customcontent.already_off": "Własne treści pociągu były w tym świecie już wyłączone."
+  "commands.dungeontrain.customcontent.already_off": "Własne treści pociągu były w tym świecie już wyłączone.",
+  "chat.dungeontrain.book_burns_author": "Książka autorstwa %s płonie",
+  "item.dungeontrain.stats_book": "Księga statystyk",
+  "gui.dungeontrain.options.book_author_chat": "Autor książki na czacie",
+  "gui.dungeontrain.options.book_author_chat.tip": "Wypisuje na czacie linijkę z nazwą autora za każdym razem, gdy płonie książka z Dungeon Train — „Książka autorstwa X płonie”. Książki, które czytasz, wyrzucasz albo upuszczasz po śmierci, wszystkie zajmują się ogniem, a to jedyne miejsce, w którym wymieniany jest ich autor. Domyślnie wyłączone.",
+  "chat.dungeontrain.free_play.cause.keep_inventory": "W tym świecie włączone jest „Zachowaj ekwipunek”.",
+  "chat.dungeontrain.free_play.keep_inventory_on": "Dungeon Train jest wyważony wokół tego, że śmierć coś cię kosztuje, więc od tej chwili ten świat zatrzymuje swoje statystyki dla siebie. Ponowne wyłączenie reguły gry tego nie zmieni — sprzęt, który przeniosłeś przez śmierć, już jest twój."
 }

@@ -255,14 +255,22 @@ public final class BuilderProfileScreen extends Screen {
     }
 
     /**
-     * The line under the grid. Four different empties, and they mean different things: waiting on the
-     * relay, a relay that never answered, a feature that is off, and a player who simply hasn't
-     * uploaded anything yet.
+     * The line under the grid. Six different empties, and they mean different things: waiting on the
+     * relay, a relay that never answered, a feature the server has off, a player who hasn't granted
+     * network consent, a consent answer still in flight, and a player who simply hasn't uploaded
+     * anything yet. Only two of those are anything the player can act on, and telling them apart is
+     * the whole point — a blanket "it's off" sends someone to a setting that isn't the problem.
      */
     private Component statusNote() {
         if (status == null) return Component.translatable("gui.dungeontrain.builder.profile.loading");
         if (status == BuilderProfilePacket.Status.DISABLED) {
             return Component.translatable("gui.dungeontrain.builder.profile.disabled");
+        }
+        if (status == BuilderProfilePacket.Status.NO_CONSENT) {
+            return Component.translatable("gui.dungeontrain.builder.profile.no_consent");
+        }
+        if (status == BuilderProfilePacket.Status.CONSENT_PENDING) {
+            return Component.translatable("gui.dungeontrain.builder.profile.consent_pending");
         }
         if (status == BuilderProfilePacket.Status.UNAVAILABLE) {
             return Component.translatable("gui.dungeontrain.builder.profile.unavailable");

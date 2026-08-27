@@ -9061,13 +9061,98 @@
         "Simplified Chinese also gains the two Adventure Item Names buttons it was short"
       ],
       "date": "2026-08-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.676.0",
+      "released_at": "2026-08-27T08:46:42Z"
+    },
+    {
+      "id": "keep-inventory-free-play",
+      "version": "0.674.0",
+      "type": "feat",
+      "title": "Keeping your inventory on death is Free Play",
+      "summary": "A world that has run with Keep Inventory on is now Free Play \u2014 permanently, even if you turn the rule back off.",
+      "highlights": [],
+      "date": "2026-08-27",
+      "released": true,
+      "released_in": "v0.676.0",
+      "released_at": "2026-08-27T08:46:42Z"
+    },
+    {
+      "id": "ai-fill-book-author-chat-keys",
+      "version": "0.674.0",
+      "type": "content",
+      "title": "The book-author chat line speaks every language too",
+      "summary": "The v0.673.0 book-author setting and the Stats Book shipped English-only. Both are now translated into all nineteen languages, along with the chat line that names whoever wrote a book as it burns.",
+      "highlights": [
+        "Book Author Chat, its description, the Stats Book name and the burn line are translated in all 19 languages"
+      ],
+      "date": "2026-08-27",
+      "released": true,
+      "released_in": "v0.676.0",
+      "released_at": "2026-08-27T08:46:42Z"
+    },
+    {
+      "id": "editor-welcome-panel-close-button",
+      "version": "0.674.0",
+      "type": "feat",
+      "title": "Close the editor's Welcome panel",
+      "summary": "The Train Editor's Welcome board now has a close (X) button, top-right. Your choice is remembered per player, per world.",
+      "highlights": [
+        "X button closes the Welcome board",
+        "Editor menu's Welcome Panel toggle brings it back"
+      ],
+      "pr": 1122,
+      "date": "2026-08-27",
+      "released": true,
+      "released_in": "v0.676.0",
+      "released_at": "2026-08-27T08:46:42Z"
+    },
+    {
+      "id": "builder-profiles-on",
+      "version": "0.675.0",
+      "type": "fix",
+      "title": "Your builds now upload and can go on the train",
+      "summary": "Saving a build in the Train Builder or Train Editor now uploads it to your builder profile, so it follows you between worlds and a finished carriage can be submitted to the train for everyone. Before, \"My Builds\" told every player that builder profiles were off on their world \u2014 the switch shipped off, no server ever turned it on, and so nobody's build was ever uploaded anywhere.",
+      "highlights": [
+        "Uploading still needs Internet Connection on (Options \u2192 Dungeon Train), and a build stays private to you until you choose to submit it",
+        "If you deliberately turned builder profiles off, they stay off",
+        "\"My Builds\" now says when it's your own Internet Connection setting rather than the world's, instead of blaming the world for both"
+      ],
+      "pr": 1124,
+      "date": "2026-08-27",
+      "released": true,
+      "released_in": "v0.676.0",
+      "released_at": "2026-08-27T08:46:42Z"
+    },
+    {
+      "id": "spectator-cinematic-freeze",
+      "version": "0.675.0",
+      "type": "fix",
+      "title": "Spectator cinematic no longer leaves you frozen",
+      "summary": "Replaying the intro cinematic from spectator mode could leave you unable to move, with /kill and reboarding the only way out. Fixed. The hotkey can also be switched off now in Options \u2192 Dungeon Train\u2026, and it finally shows a readable name in Controls.",
+      "highlights": [],
+      "pr": 1126,
+      "date": "2026-08-27",
+      "released": true,
+      "released_in": "v0.676.0",
+      "released_at": "2026-08-27T08:46:42Z"
+    },
+    {
+      "id": "book-author-name-copy",
+      "version": "0.676.0",
+      "type": "feat",
+      "title": "Copy an author's name from the burn line",
+      "summary": "In the Book Author Chat line, click the author's name to copy it.",
+      "highlights": [],
+      "pr": 1125,
+      "date": "2026-08-27",
+      "released": true,
+      "released_in": "v0.676.0",
+      "released_at": "2026-08-27T08:46:42Z"
     },
     {
       "id": "deathnote-one-per-target-per-life",
-      "version": "0.674.0",
+      "version": "0.677.0",
       "type": "fix",
       "title": "One Death Note per target per life",
       "summary": "A second Death Note naming a player you've already noted this life no longer arms a second echo. The repeat book still burns, now telling you they've already been death noted this life. Love Notes follow the same rule, tracked separately from Death Notes.",
@@ -9076,6 +9161,7 @@
         "A repeat note still burns, with a clear message instead of a silent extra echo",
         "Death Notes and Love Notes are tracked separately, so one of each on the same person still works"
       ],
+      "pr": 1128,
       "date": "2026-08-27",
       "released": false,
       "released_in": null,
