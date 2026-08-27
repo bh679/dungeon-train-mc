@@ -9064,6 +9064,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "builder-profiles-on",
+      "version": "0.674.0",
+      "type": "fix",
+      "title": "Your builds now upload and can go on the train",
+      "summary": "Saving a build in the Train Builder or Train Editor now uploads it to your builder profile, so it follows you between worlds and a finished carriage can be submitted to the train for everyone. Before, \"My Builds\" told every player that builder profiles were off on their world \u2014 the switch shipped off, no server ever turned it on, and so nobody's build was ever uploaded anywhere.",
+      "highlights": [
+        "Uploading still needs Internet Connection on (Options \u2192 Dungeon Train), and a build stays private to you until you choose to submit it",
+        "If you deliberately turned builder profiles off, they stay off",
+        "\"My Builds\" now says when it's your own Internet Connection setting rather than the world's, instead of blaming the world for both"
+      ],
+      "pr": 1124,
+      "date": "2026-08-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
