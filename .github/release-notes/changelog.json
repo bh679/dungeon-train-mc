@@ -9061,9 +9061,9 @@
         "Simplified Chinese also gains the two Adventure Item Names buttons it was short"
       ],
       "date": "2026-08-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.676.0",
+      "released_at": "2026-08-27T08:46:42Z"
     },
     {
       "id": "keep-inventory-free-play",
@@ -9073,9 +9073,9 @@
       "summary": "A world that has run with Keep Inventory on is now Free Play \u2014 permanently, even if you turn the rule back off.",
       "highlights": [],
       "date": "2026-08-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.676.0",
+      "released_at": "2026-08-27T08:46:42Z"
     },
     {
       "id": "ai-fill-book-author-chat-keys",
@@ -9087,9 +9087,9 @@
         "Book Author Chat, its description, the Stats Book name and the burn line are translated in all 19 languages"
       ],
       "date": "2026-08-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.676.0",
+      "released_at": "2026-08-27T08:46:42Z"
     },
     {
       "id": "editor-welcome-panel-close-button",
@@ -9103,9 +9103,9 @@
       ],
       "pr": 1122,
       "date": "2026-08-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.676.0",
+      "released_at": "2026-08-27T08:46:42Z"
     },
     {
       "id": "builder-profiles-on",
@@ -9120,9 +9120,9 @@
       ],
       "pr": 1124,
       "date": "2026-08-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.676.0",
+      "released_at": "2026-08-27T08:46:42Z"
     },
     {
       "id": "spectator-cinematic-freeze",
@@ -9133,9 +9133,9 @@
       "highlights": [],
       "pr": 1126,
       "date": "2026-08-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.676.0",
+      "released_at": "2026-08-27T08:46:42Z"
     },
     {
       "id": "book-author-name-copy",
@@ -9146,9 +9146,9 @@
       "highlights": [],
       "pr": 1125,
       "date": "2026-08-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.676.0",
+      "released_at": "2026-08-27T08:46:42Z"
     }
   ]
 }
