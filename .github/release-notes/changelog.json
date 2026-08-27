@@ -9304,11 +9304,28 @@
       "released_at": "2026-08-27T12:13:50Z"
     },
     {
+      "id": "client-options-tabs",
+      "version": "0.684.0",
+      "type": "feat",
+      "title": "Dungeon Train options screen redone with tabs",
+      "summary": "The Dungeon Train settings screen (Options \u2192 Dungeon Train\u2026) no longer runs off the bottom of the window. Settings are now split across three tabs \u2014 General, Train and Editor \u2014 each scrolling on its own with Done always reachable.",
+      "highlights": [
+        "Three tabs instead of one long column: General, Train, Editor",
+        "The list scrolls and Done stays reachable at any window size or GUI scale",
+        "Internet Connection row temporarily removed (could not be turned back on)"
+      ],
+      "pr": 1137,
+      "date": "2026-08-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "editor-menu-worldspace-screenspace",
       "version": "0.684.0",
       "type": "feat",
       "title": "Choose how each editor menu appears",
-      "summary": "The Train Editor's four menus can each be shown either as a panel floating in the world that you aim at, or as a window on your screen that you point at with the mouse. Pick per menu under Options > Dungeon Train > Editor Settings, or from the X menu's own Options. The X and V menus act on the whole build, so they open on screen where the cursor is more precise. The C and Z menus edit a single block, so they stay out in the world beside the block you're editing.",
+      "summary": "The Train Editor's four menus can each be shown either as a panel floating in the world that you aim at, or as a window on your screen that you point at with the mouse. Pick per menu under Options > Dungeon Train > Editor, or from the X menu's own Options. The X and V menus act on the whole build, so they open on screen where the cursor is more precise. The C and Z menus edit a single block, so they stay out in the world beside the block you're editing.",
       "highlights": [
         "The X menu can be a floating in-world panel again \u2014 it became a screen window last update, and now that's a choice rather than the only option.",
         "The V, C and Z menus can all be screen windows with a free mouse cursor.",
