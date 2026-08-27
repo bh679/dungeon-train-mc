@@ -9274,6 +9274,22 @@
       "released": true,
       "released_in": "v0.682.0",
       "released_at": "2026-08-27T10:28:28Z"
+    },
+    {
+      "id": "bundled-scan-failure-is-loud",
+      "version": "0.683.0",
+      "type": "fix",
+      "title": "A broken asset load now says so instead of emptying every carriage",
+      "summary": "If Dungeon Train ever failed to read its own bundled carriage interiors, every carriage in the world generated empty and the log still reported a successful load \u2014 leaving nothing to diagnose. That failure is now reported as an error that names what went wrong and what it will do to your train.",
+      "highlights": [
+        "Server logs now distinguish 'this ships nothing' from 'the loader could not read it'",
+        "Two previously silent failure paths in the bundled-asset scan now log",
+        "No change to how carriages generate on a healthy install"
+      ],
+      "date": "2026-08-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

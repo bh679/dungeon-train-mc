@@ -54,14 +54,52 @@ public final class BundledNbtScanner {
     private BundledNbtScanner() {}
 
     /**
+     * Outcome of one classpath scan.
+     *
+     * <p>Separates "the directory was read and held no matching files"
+     * ({@code resolved=true}, empty {@code names}) from "the directory could
+     * not be read at all" ({@code resolved=false}). That distinction is the
+     * entire point of this type: every failure path below used to return a
+     * bare empty set, which a caller could not tell apart from a legitimately
+     * empty directory. A broken loader in a packaged build therefore looked
+     * exactly like "this registry ships nothing" and degraded in silence —
+     * which is how a whole world can generate every carriage empty with
+     * nothing in the log to act on. See {@code CarriageContentsRegistry.reload()}.</p>
+     *
+     * @param names         basenames found — lowercased, alphabetical, immutable; empty on failure
+     * @param resolved      whether the resource directory was successfully read
+     * @param failureReason human-readable cause when {@code !resolved}, otherwise {@code null}
+     */
+    public record ScanResult(Set<String> names, boolean resolved, String failureReason) {
+
+        // Defensive copy into a TreeSet rather than Set.copyOf: callers such as
+        // CarriagePartRegistry derive a grid X-slot from iteration index and so
+        // depend on the alphabetical order the scan produces. Set.copyOf leaves
+        // iteration order unspecified.
+        public ScanResult {
+            names = Collections.unmodifiableSet(new TreeSet<>(names));
+        }
+
+        static ScanResult ok(Set<String> names) {
+            return new ScanResult(names, true, null);
+        }
+
+        static ScanResult failed(String reason) {
+            return new ScanResult(Collections.emptySet(), false, reason);
+        }
+    }
+
+    /**
      * Enumerate every {@code .nbt} basename at {@code resourcePrefix} on the
      * classpath, returning a sorted, lowercased set. The prefix should start
      * with a slash and end with a slash, e.g. {@code "/data/dungeontrain/tracks/"}.
      *
      * <p>Returns an empty set when the prefix doesn't exist, no FileSystem
-     * provider can resolve the URL, or any IO error occurs (logged). Empty
-     * is a valid result — it means "no bundled variants for this kind" and
-     * lets callers degrade gracefully to the synthetic default.</p>
+     * provider can resolve the URL, or any IO error occurs (logged) — the
+     * same empty set a genuinely empty directory yields. Callers that would
+     * silently degrade gameplay on an empty result must use {@link #scan}
+     * instead and check {@link ScanResult#resolved()}; this overload cannot
+     * tell the two apart.</p>
      *
      * <p>Resolution strategy:
      * <ol>
@@ -93,15 +131,38 @@ public final class BundledNbtScanner {
      * stores; the {@code .nbt} overload preserves the original call sites.
      */
     public static Set<String> scanBasenames(Class<?> anchor, String resourcePrefix, Logger logger, String extension) {
+        return scan(anchor, resourcePrefix, logger, extension).names();
+    }
+
+    /**
+     * Scan reporting whether the resource directory could be read at all.
+     *
+     * <p>Prefer this over {@link #scanBasenames} in any registry where an
+     * empty result would silently degrade gameplay — it is the only way to
+     * tell "this prefix ships nothing" apart from "the loader is broken".</p>
+     */
+    public static ScanResult scan(Class<?> anchor, String resourcePrefix, Logger logger) {
+        return scan(anchor, resourcePrefix, logger, NBT_EXT);
+    }
+
+    /** Extension-parameterised {@link #scan(Class, String, Logger)}. */
+    public static ScanResult scan(Class<?> anchor, String resourcePrefix, Logger logger, String extension) {
         URL url = anchor.getResource(resourcePrefix);
-        if (url == null) return Collections.emptySet();
+        if (url == null) {
+            // Previously a silent empty return, and the worst of the failure
+            // paths: a resource root missing from a packaged build is
+            // indistinguishable from an empty one without this line.
+            logger.warn("[DungeonTrain] Bundled scan: {} is not on the classpath — degrading to no bundled variants",
+                resourcePrefix);
+            return ScanResult.failed("prefix " + resourcePrefix + " not on classpath");
+        }
 
         URI uri;
         try {
             uri = url.toURI();
         } catch (URISyntaxException e) {
             logger.warn("[DungeonTrain] Bundled scan: bad URI for {}: {}", resourcePrefix, e.toString());
-            return Collections.emptySet();
+            return ScanResult.failed("bad URI for " + resourcePrefix + ": " + e);
         }
 
         // Prefer the direct Paths.get(URI) path — works for any FileSystem
@@ -117,14 +178,13 @@ public final class BundledNbtScanner {
             }
             logger.warn("[DungeonTrain] Bundled scan: no FileSystem provider for scheme '{}' at {} — degrading to no bundled variants",
                 uri.getScheme(), resourcePrefix);
-            return Collections.emptySet();
+            return ScanResult.failed("no FileSystem provider for scheme '" + uri.getScheme() + "' at " + resourcePrefix);
         } catch (IllegalArgumentException badUri) {
             // Paths.get(uri) throws IAE when the URI is missing components
-            // the registered provider needs. Treat as a soft miss with a
-            // diagnostic so the registry still loads.
+            // the registered provider needs.
             logger.warn("[DungeonTrain] Bundled scan: cannot resolve URI '{}' for {}: {}",
                 uri, resourcePrefix, badUri.toString());
-            return Collections.emptySet();
+            return ScanResult.failed("cannot resolve URI " + uri + " for " + resourcePrefix + ": " + badUri);
         }
     }
 
@@ -185,8 +245,12 @@ public final class BundledNbtScanner {
         }
     }
 
-    private static Set<String> scanFileSystemDir(Path dir, String resourcePrefix, Logger logger, String extension) {
-        if (!Files.isDirectory(dir)) return Collections.emptySet();
+    private static ScanResult scanFileSystemDir(Path dir, String resourcePrefix, Logger logger, String extension) {
+        if (!Files.isDirectory(dir)) {
+            logger.warn("[DungeonTrain] Bundled scan: {} resolved to {} which is not a directory — degrading to no bundled variants",
+                resourcePrefix, dir);
+            return ScanResult.failed("resolved path for " + resourcePrefix + " is not a directory");
+        }
         TreeSet<String> out = new TreeSet<>();
         // No-glob form: Forge's UnionFileSystem (used when the mod ships in
         // a jar inside ModLauncher) throws UnsupportedOperationException from
@@ -200,18 +264,26 @@ public final class BundledNbtScanner {
                 out.add(stripExt(fn, extension).toLowerCase(Locale.ROOT));
             }
         } catch (IOException e) {
+            // An IO error part-way through the walk means the listing is
+            // incomplete. Reporting it as a failure rather than returning the
+            // partial set keeps a half-loaded registry from looking healthy.
             logger.error("[DungeonTrain] Bundled scan IO error at {}: {}", resourcePrefix, e.toString());
+            return ScanResult.failed("IO error at " + resourcePrefix + ": " + e);
         }
-        return out;
+        return ScanResult.ok(out);
     }
 
-    private static Set<String> scanJarDir(URI jarUri, String resourcePrefix, Logger logger, String extension) {
+    private static ScanResult scanJarDir(URI jarUri, String resourcePrefix, Logger logger, String extension) {
         // Try-with-resources closes the FileSystem so subsequent scans on the
         // same jar URI succeed. Re-opening a closed jar FileSystem is fine;
         // re-opening one that's still open throws FileSystemAlreadyExistsException.
         try (FileSystem fs = FileSystems.newFileSystem(jarUri, Map.of())) {
             Path dir = fs.getPath(resourcePrefix);
-            if (!Files.isDirectory(dir)) return Collections.emptySet();
+            if (!Files.isDirectory(dir)) {
+                logger.warn("[DungeonTrain] Bundled scan: {} is not a directory inside the jar — degrading to no bundled variants",
+                    resourcePrefix);
+                return ScanResult.failed("path " + resourcePrefix + " is not a directory inside the jar");
+            }
             TreeSet<String> out = new TreeSet<>();
             try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir)) {
                 for (Path file : stream) {
@@ -220,10 +292,10 @@ public final class BundledNbtScanner {
                     out.add(stripExt(fn, extension).toLowerCase(Locale.ROOT));
                 }
             }
-            return out;
+            return ScanResult.ok(out);
         } catch (IOException e) {
             logger.error("[DungeonTrain] Bundled scan IO error at {} (jar): {}", resourcePrefix, e.toString());
-            return Collections.emptySet();
+            return ScanResult.failed("IO error at " + resourcePrefix + " (jar): " + e);
         }
     }
 

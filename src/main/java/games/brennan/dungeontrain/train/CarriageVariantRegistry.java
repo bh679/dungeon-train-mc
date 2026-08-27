@@ -148,7 +148,7 @@ public final class CarriageVariantRegistry {
         PillarTemplateStore.migrateFromLegacyDirectory();
 
         CUSTOMS.clear();
-        int bundled = loadBundledScan();
+        BundledScanLoad bundled = loadBundledScan();
         int config = loadConfigDir();
 
         // Both hallway portal corridors are always offered, with or without an .nbt on disk. Every
@@ -170,9 +170,34 @@ public final class CarriageVariantRegistry {
 
         games.brennan.dungeontrain.editor.StageBlockIndex.invalidateAll();
 
-        LOGGER.info("[DungeonTrain] Carriage variant registry loaded — {} built-in + {} custom ({} bundled, {} config)",
-            BUILTINS.size(), CUSTOMS.size(), bundled, config);
+        // Zero bundled shells means every carriage falls back to
+        // CarriagePlacer.legacyPlaceAt's bare stone-brick-and-glass box. Same
+        // silent-degradation shape as the contents registry, so it gets the
+        // same loud treatment — and logging both distinguishes the two.
+        if (bundled.added() == 0) {
+            LOGGER.error("[DungeonTrain] Carriage variant registry loaded NO bundled templates — {} built-in + {} custom ({} config). "
+                    + "Every carriage will fall back to the bare procedural shell. Cause: {}",
+                BUILTINS.size(), CUSTOMS.size(), config, bundledFailureCause(bundled));
+        } else {
+            LOGGER.info("[DungeonTrain] Carriage variant registry loaded — {} built-in + {} custom ({} bundled, {} config)",
+                BUILTINS.size(), CUSTOMS.size(), bundled.added(), config);
+        }
     }
+
+    /** Human-readable reason a bundled scan yielded nothing, for the ERROR above. */
+    private static String bundledFailureCause(BundledScanLoad bundled) {
+        BundledNbtScanner.ScanResult scan = bundled.scan();
+        if (!scan.resolved()) return scan.failureReason();
+        return "the bundled templates directory " + BUNDLED_RESOURCE_PREFIX
+            + " was read successfully but held no usable .nbt files";
+    }
+
+    /**
+     * Result of one bundled scan: how many ids it registered, plus the raw
+     * scan outcome so {@link #reload()} can tell an empty directory apart
+     * from a loader that could not read one.
+     */
+    private record BundledScanLoad(int added, BundledNbtScanner.ScanResult scan) {}
 
     /**
      * Discover bundled custom variants by scanning the classpath at
@@ -188,9 +213,10 @@ public final class CarriageVariantRegistry {
      * cross-check doesn't generate spurious "missing from manifest" warnings
      * about expected built-ins.</p>
      */
-    private static int loadBundledScan() {
-        Set<String> scanned = BundledNbtScanner.scanBasenames(
+    private static BundledScanLoad loadBundledScan() {
+        BundledNbtScanner.ScanResult scanResult = BundledNbtScanner.scan(
             CarriageVariantRegistry.class, BUNDLED_RESOURCE_PREFIX, LOGGER);
+        Set<String> scanned = scanResult.names();
         TreeSet<String> customsScanned = new TreeSet<>();
         for (String id : scanned) {
             if (CarriageVariant.isReservedBuiltinName(id)) continue;
@@ -204,7 +230,7 @@ public final class CarriageVariantRegistry {
             if (!acceptCustomId(id, "bundled scan")) continue;
             if (CUSTOMS.add(id)) added++;
         }
-        return added;
+        return new BundledScanLoad(added, scanResult);
     }
 
     /**
