@@ -9048,6 +9048,23 @@
       "released": true,
       "released_in": "v0.673.0",
       "released_at": "2026-08-27T05:37:39Z"
+    },
+    {
+      "id": "editor-welcome-panel-close-button",
+      "version": "0.674.0",
+      "type": "feat",
+      "title": "Close the editor's Welcome panel",
+      "summary": "The Welcome board in the Train Editor now has an X in its top-right corner. Click it and the board goes away, while the rest of the editor's floating menus stay exactly where they were \u2014 until now the only way to hide it was the Editor Menus toggle, which took everything else with it. Your choice is remembered in that world, per player, so it stays closed the next time you load it and other worlds are unaffected. Changed your mind? Press X and turn Welcome Panel back on.",
+      "highlights": [
+        "New X button closes the Train Editor's Welcome board",
+        "Stays closed in that world after a relog, per player",
+        "Editor menu gains a Welcome Panel toggle to bring it back"
+      ],
+      "pr": 1122,
+      "date": "2026-08-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
