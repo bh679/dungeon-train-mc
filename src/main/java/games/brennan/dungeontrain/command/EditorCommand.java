@@ -581,15 +581,17 @@ public final class EditorCommand {
                         .suggests(PORTAL_ROOM_BOOKS_SUGGESTIONS)
                         .executes(ctx -> runPortalRoomBooks(ctx.getSource(),
                             StringArgumentType.getString(ctx, "books")))))
-                // The three shares of the author roll, and the band of author a room will accept.
-                // All five mean nothing while Books is Off, which is why the edit screen is only
-                // reachable from a room that stocks an author at all.
+                // The four shares of the roll — three ways to name an author, plus the tally —
+                // and the band of author a room will accept. All six mean nothing while Books is
+                // Off, which is why the edit screen is only reachable from a room that stocks at all.
                 .then(portalRoomBookWeightNode("booksself",
                     games.brennan.dungeontrain.portal.PortalRoomBooks.Share.SELF))
                 .then(portalRoomBookWeightNode("booksplayer",
                     games.brennan.dungeontrain.portal.PortalRoomBooks.Share.PLAYER))
                 .then(portalRoomBookWeightNode("bookssignature",
                     games.brennan.dungeontrain.portal.PortalRoomBooks.Share.SIGNATURE))
+                .then(portalRoomBookWeightNode("booksstats",
+                    games.brennan.dungeontrain.portal.PortalRoomBooks.Share.STATS))
                 .then(portalRoomBookBoundNode("booksmin", true))
                 .then(portalRoomBookBoundNode("booksmax", false))
                 // Sub-variants: one named room standing for several designs, drawn by weight.
@@ -3402,10 +3404,17 @@ public final class EditorCommand {
     private static int runExit(CommandSourceStack source) {
         ServerPlayer player = requirePlayer(source);
         if (player == null) return 0;
-        // Try tunnel-session first (separate session map from CarriageEditor).
-        // A user who entered a carriage plot, then a tunnel plot, needs to run
-        // exit twice to unwind both sessions.
-        boolean exited = TunnelEditor.exit(player) || CarriageEditor.exit(player);
+        // Three editors keep their own session map — PortalRoomEditor, TunnelEditor and
+        // CarriageEditor — and every one of them has to be in this chain or a player who entered
+        // through it never gets their position, dimension and game mode back. Portal rooms were
+        // missing here, so a direct `/dt editor portals` left the player stuck in the plot, in
+        // creative, told there was "no saved editor session".
+        //
+        // Each session restores its OWN entry point, so stacked sessions unwind one press at a
+        // time: a user who entered a carriage plot, then a tunnel or room plot, runs exit twice.
+        boolean exited = games.brennan.dungeontrain.editor.PortalRoomEditor.exit(player)
+            || TunnelEditor.exit(player)
+            || CarriageEditor.exit(player);
         if (!exited) {
             source.sendFailure(Component.literal(
                 "No saved editor session — nothing to exit to."
@@ -6440,7 +6449,7 @@ public final class EditorCommand {
         String books = settings.books().locks()
             ? ", books: " + settings.books().displayName()
                 + " (" + settings.books().selfWeight() + "/" + settings.books().playerWeight()
-                + "/" + settings.books().signatureWeight() + ")"
+                + "/" + settings.books().signatureWeight() + "/" + settings.books().statsWeight() + ")"
                 + ", authors with " + settings.books().minBooks() + "+"
                 + (settings.books().maxBooks() == games.brennan.dungeontrain.portal.PortalRoomBooks.NO_MAXIMUM
                     ? "" : "\u2013" + settings.books().maxBooks())

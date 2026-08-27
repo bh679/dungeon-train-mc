@@ -10,15 +10,20 @@ import java.util.List;
  * The dials behind a library room's Books row: how its author is drawn, and which authors qualify.
  *
  * <h2>Why a drilldown rather than five more rows</h2>
- * <p>Five steppers inline would be five rows an author scrolls past on every room they edit, for a
+ * <p>Six steppers inline would be six rows an author scrolls past on every room they edit, for a
  * setting most rooms never touch — and the Books row itself already says the useful part at a glance.
  * Everything here only means something once a room stocks an author at all, which is exactly the
  * condition the Edit button appears under.</p>
  *
- * <h2>The three shares</h2>
- * <p>Self, Player and Signature are the three ways to name an author, and the room rolls between them
- * once. Zero takes one out entirely, so {@code 1/0/0} is a room that always shows the reader their own
- * writing — which is why there is no separate setting for that.</p>
+ * <h2>The four shares</h2>
+ * <p>Self, Player and Signature are the three ways to name an author; Stats is the fourth thing the
+ * shelves can hold, and names nobody — one book per leaderboard board and one per run stat, which is
+ * every number the mod reports. The room rolls between the four once. Zero takes one out entirely, so
+ * {@code 1/0/0/0} is a room that always shows the reader their own writing and {@code 0/0/0/1} is one
+ * that is always the tally — which is why neither needs a setting of its own.</p>
+ *
+ * <p>Min and Max are author questions and do nothing to the Stats share; a room weighted entirely to
+ * Stats simply ignores them.</p>
  *
  * <h2>The band</h2>
  * <p>Min keeps a room from locking to somebody with two books and standing nearly empty. Max is the
@@ -35,7 +40,7 @@ public final class PortalRoomBooksScreen implements MenuScreen {
     }
 
     @Override public String title() {
-        return "Books — author mix";
+        return "Books — mix";
     }
 
     @Override public List<CommandMenuEntry> entries() {

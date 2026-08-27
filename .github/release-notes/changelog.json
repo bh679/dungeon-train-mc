@@ -8825,9 +8825,9 @@
       ],
       "pr": 1101,
       "date": "2026-08-26",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.670.0",
+      "released_at": "2026-08-26T17:50:58Z"
     },
     {
       "id": "dpi-bypass-connection-notice",
@@ -8842,9 +8842,9 @@
       ],
       "pr": 1103,
       "date": "2026-08-26",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.670.0",
+      "released_at": "2026-08-26T17:50:58Z"
     },
     {
       "id": "template-decor-frames-paintings",
@@ -8855,9 +8855,9 @@
       "highlights": [],
       "pr": 1102,
       "date": "2026-08-26",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.670.0",
+      "released_at": "2026-08-26T17:50:58Z"
     },
     {
       "id": "famous-pig-names",
@@ -8868,9 +8868,9 @@
       "highlights": [],
       "pr": 1104,
       "date": "2026-08-26",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.670.0",
+      "released_at": "2026-08-26T17:50:58Z"
     },
     {
       "id": "dimensional-carriage-light-fade",
@@ -8886,25 +8886,25 @@
       ],
       "pr": 1106,
       "date": "2026-08-26",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.670.0",
+      "released_at": "2026-08-26T17:50:58Z"
     },
     {
       "id": "portal-room-walls-in-tiling",
       "version": "0.668.0",
       "type": "feat",
-      "title": "Portal rooms can keep their own walls as they repeat",
-      "summary": "An endless portal room used to dissolve its own walls as it repeated \u2014 the wall between two copies was carved away so the space read as one continuous hall, taking whatever the builder had put on it with it. Rooms can now be built the other way instead: every copy keeps the walls it was drawn with, and you walk between copies through the doorways the builder left. Existing rooms are untouched.",
+      "title": "Dimensional carriages can keep their own walls as they repeat",
+      "summary": "An endless dimensional carriage used to dissolve its own walls as it repeated \u2014 the wall between two copies was carved away so the space read as one continuous hall, taking whatever the builder had put on it with it. Rooms can now be built the other way instead: every copy keeps the walls it was drawn with, and you walk between copies through the doorways the builder left. Existing rooms are untouched.",
       "highlights": [
-        "New Room Walls setting on a portal room: Merged (as before) or Kept",
+        "New Room Walls setting on a dimensional carriage: Merged (as before) or Kept",
         "Kept rooms repeat their walls exactly, including the wall the way back to the train stands in",
         "The library dimension now keeps its walls"
       ],
       "date": "2026-08-26",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.670.0",
+      "released_at": "2026-08-26T17:50:58Z"
     },
     {
       "id": "leaderboard-books-across-the-train",
@@ -8918,9 +8918,9 @@
         "A leaderboard book can appear in the starting chest"
       ],
       "date": "2026-08-26",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.670.0",
+      "released_at": "2026-08-26T17:50:58Z"
     },
     {
       "id": "freeplay-tooltip-trigger",
@@ -8934,9 +8934,9 @@
       ],
       "pr": 1110,
       "date": "2026-08-26",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.670.0",
+      "released_at": "2026-08-26T17:50:58Z"
     },
     {
       "id": "c-menu-item-icons",
@@ -8950,9 +8950,9 @@
       ],
       "pr": 1111,
       "date": "2026-08-26",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.670.0",
+      "released_at": "2026-08-26T17:50:58Z"
     },
     {
       "id": "faulthurst-stat-book",
@@ -8968,13 +8968,90 @@
       ],
       "pr": 1113,
       "date": "2026-08-26",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.670.0",
+      "released_at": "2026-08-26T17:50:58Z"
+    },
+    {
+      "id": "stats-book-and-tally-rooms",
+      "version": "0.670.0",
+      "type": "feat",
+      "title": "A book that counts, and a room full of them",
+      "summary": "Chests, pots and bookshelves now turn up Stats Books. Open one and it is a coin-flip: either a tall leaderboard, ranking every player on the train and closing on where you stand \u2014 or a short note from Faulthurst about your own run, naming one real number from it. You never know which until you read it. Dimensional carriages can now be stocked with the whole tally instead of one author's writing: every leaderboard and every run stat the train keeps, 47 books, shelved in one room with a note on the lectern explaining what you have walked into. Room authors set how often that happens in the Books screen.",
+      "highlights": [
+        "New Stats Book, found in loot \u2014 half leaderboard, half a note about your own run",
+        "Leaderboard books moved out of the random-book pool onto their own loot entry",
+        "Dimensional carriages can shelve the complete tally: 29 leaderboards + 18 run stats",
+        "Stats joins Self, Player and Signature as a fourth share in a room's Books mix"
+      ],
+      "date": "2026-08-26",
+      "released": true,
+      "released_in": "v0.670.0",
+      "released_at": "2026-08-26T17:50:58Z"
+    },
+    {
+      "id": "dimensional-carriage-test-button",
+      "version": "0.671.0",
+      "type": "feat",
+      "title": "Test the dimensional carriage you're building",
+      "summary": "Room authors get a Test the Carriage button in the editor menu. It stamps the dimensional carriage you have open \u2014 room, a corridor either side, its own walls mode, block variants, lighting and fog \u2014 and puts you in the doorway looking down it. The room repeats around you as you walk, the way it does on the train. Back returns you to the plot and clears it away.",
+      "highlights": [
+        "Shows in the editor menu while a dimensional carriage is open",
+        "No train needed \u2014 nothing to ride to and nothing to wait for",
+        "Same tiling, block variants, lighting and fog as the real thing"
+      ],
+      "date": "2026-08-26",
+      "released": true,
+      "released_in": "v0.673.0",
+      "released_at": "2026-08-27T05:37:39Z"
+    },
+    {
+      "id": "portal-room-editor-exit",
+      "version": "0.671.0",
+      "type": "fix",
+      "title": "Leaving the dimensional carriage editor works again",
+      "summary": "Exiting the editor after opening a dimensional carriage directly now returns you to where you came from, in the game mode you were in. Before, it told you there was no session to exit and left you standing in the plot in creative.",
+      "highlights": [
+        "Only affected going straight to a room \u2014 /dungeontrain editor portals, or a room plot's Enter Inside"
+      ],
+      "date": "2026-08-26",
+      "released": true,
+      "released_in": "v0.673.0",
+      "released_at": "2026-08-27T05:37:39Z"
+    },
+    {
+      "id": "discord-embed-links-to-release",
+      "version": "0.672.0",
+      "type": "fix",
+      "title": "Discord announcements link to the release they announce",
+      "summary": "The release announcement in Discord now opens that exact build's release page. It used to open the Downloads page, which always showed the newest build \u2014 so an older announcement sent you somewhere else.",
+      "highlights": [],
+      "pr": 1116,
+      "date": "2026-08-26",
+      "released": true,
+      "released_in": "v0.673.0",
+      "released_at": "2026-08-27T05:37:39Z"
+    },
+    {
+      "id": "book-author-burn-chat",
+      "version": "0.673.0",
+      "type": "feat",
+      "title": "See who wrote a book as it burns",
+      "summary": "Dungeon Train books burn away after you read them, and until now their author burned with them. Turn on Book Author Chat and every book that catches fire \u2014 one you just read, one you threw away unread, one dropped on death \u2014 names its writer in chat: \"The book by X burns\". Off by default; the toggle is in Options > Dungeon Train and in the X menu > Options.",
+      "highlights": [
+        "New Book Author Chat option, off by default",
+        "Credits the author of every Dungeon Train book as it burns",
+        "Per-player: your setting, your chat, on servers too"
+      ],
+      "pr": 1121,
+      "date": "2026-08-27",
+      "released": true,
+      "released_in": "v0.673.0",
+      "released_at": "2026-08-27T05:37:39Z"
     },
     {
       "id": "ai-fill-missing-translations",
-      "version": "0.670.0",
+      "version": "0.674.0",
       "type": "content",
       "title": "Nineteen languages catch up with the game",
       "summary": "Whole features had been reaching non-English players in English: the book-vote replies, the carriage builder, the Free Play and settings-changed notices, the video tools, custom content, and the translation editor's own controls. Every one of the nineteen translated languages now has the full set of the game's text \u2014 around 4,460 lines that were simply missing.",

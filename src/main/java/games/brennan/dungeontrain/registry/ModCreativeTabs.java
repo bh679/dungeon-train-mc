@@ -112,6 +112,8 @@ public final class ModCreativeTabs {
      *   <li>{@link ModItems#RANDOM_STAT_BOOK} — sibling placeholder that
      *       substitutes a note signed by Faulthurst naming one number from
      *       the reader's current run.</li>
+     *   <li>{@link ModItems#STATS_BOOK} — the loot-facing coin-flip between
+     *       the two above, and the one ordinary loot tables place.</li>
      *   <li>{@link ModBlocks#NARRATIVE_LECTERN_ITEM} — progression-aware
      *       lectern variant (also remains in vanilla FUNCTIONAL_BLOCKS for
      *       discoverability).</li>
@@ -127,6 +129,7 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.RANDOM_PLAYERBOOK.get());
                 output.accept(ModItems.RANDOM_LEADERBOARD_BOOK.get());
                 output.accept(ModItems.RANDOM_STAT_BOOK.get());
+                output.accept(ModItems.STATS_BOOK.get());
                 output.accept(ModBlocks.NARRATIVE_LECTERN_ITEM.get());
             })
             .build()
