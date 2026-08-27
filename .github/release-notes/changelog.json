@@ -9163,9 +9163,9 @@
       ],
       "pr": 1128,
       "date": "2026-08-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.678.0",
+      "released_at": "2026-08-27T09:06:21Z"
     },
     {
       "id": "editor-menus-auto-mode",
@@ -9179,9 +9179,9 @@
       ],
       "pr": 1127,
       "date": "2026-08-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.678.0",
+      "released_at": "2026-08-27T09:06:21Z"
     }
   ]
 }
