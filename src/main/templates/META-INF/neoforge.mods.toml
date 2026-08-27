@@ -152,7 +152,10 @@ logoFile="logo.png"
 [[dependencies.${mod_id}]]
     modId="betteradvancements"
     type="optional"
-    versionRange="[1.0,)"
+    # BA versions are 0.4.x — do NOT copy the "[1.0,)" range the other optional entries use, it
+    # excludes every published build and hard-fails loading. Floor is the build the compat mixin's
+    # injection points were verified against.
+    versionRange="[0.4.3,)"
     ordering="AFTER"
     side="CLIENT"
 
