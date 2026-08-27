@@ -151,6 +151,20 @@ public final class ClientDisplayConfig {
     public static final ModConfigSpec.BooleanValue BOOK_AUTHOR_BURN_CHAT;
 
     /**
+     * Where each of the editor's three author-facing menus draws — see {@link EditorMenuSpace}.
+     *
+     * <p>Three values rather than one global switch because the menus are used differently: the
+     * X command menu is read and clicked through, while V's Swap and C's steppers are often
+     * driven with a block in hand. Client-scope, so an author's choice follows them across
+     * worlds and servers — the server has no interest in where a panel draws.</p>
+     */
+    public static final ModConfigSpec.EnumValue<EditorMenuSpace> COMMAND_MENU_SPACE;
+    /** Where the V (template blocks) menu draws. See {@link #COMMAND_MENU_SPACE}. */
+    public static final ModConfigSpec.EnumValue<EditorMenuSpace> TEMPLATE_BLOCKS_MENU_SPACE;
+    /** Where the C (container contents) menu draws. See {@link #COMMAND_MENU_SPACE}. */
+    public static final ModConfigSpec.EnumValue<EditorMenuSpace> CONTAINER_CONTENTS_MENU_SPACE;
+
+    /**
      * Remembered answer to the custom-Train-Editor-content prompt — see
      * {@link CustomContentPreference}. {@code ASK} means keep prompting.
      */
@@ -225,6 +239,9 @@ public final class ClientDisplayConfig {
         CONFIG_DEVIATION_ACKNOWLEDGED = pair.getLeft().configDeviationAcknowledged;
         DPI_BYPASS_WARNING_OPTED_OUT = pair.getLeft().dpiBypassWarningOptedOut;
         BOOK_AUTHOR_BURN_CHAT = pair.getLeft().bookAuthorBurnChat;
+        COMMAND_MENU_SPACE = pair.getLeft().commandMenuSpace;
+        TEMPLATE_BLOCKS_MENU_SPACE = pair.getLeft().templateBlocksMenuSpace;
+        CONTAINER_CONTENTS_MENU_SPACE = pair.getLeft().containerContentsMenuSpace;
     }
 
     private ClientDisplayConfig() {}
@@ -383,6 +400,18 @@ public final class ClientDisplayConfig {
                 .comment("How far away, in blocks, the editor's world-space menus keep drawing — plot panels, the row-start nav menus, the help board, the package and Stages panels. Applies whether or not you are standing in a template, and in both the On and Auto menu modes. Auto additionally tightens to " + AUTO_TEMPLATE_DISTANCE_BLOCKS + " blocks while you are inside a template, so the smaller of the two wins there. Set in-game from the Menu Distance row of the editor's X-menu.")
                 .defineInRange("menuRenderDistance", DEFAULT_MENU_RENDER_DISTANCE,
                         MIN_MENU_RENDER_DISTANCE, MAX_MENU_RENDER_DISTANCE);
+        ModConfigSpec.EnumValue<EditorMenuSpace> commandMenuSpace = b
+                .comment("Where the X command menu draws. SCREENSPACE is a GUI panel with a free mouse",
+                         "cursor; WORLDSPACE anchors a flat panel in the world that you aim your head at,",
+                         "leaving you free to keep walking. Set in-game from Options > Dungeon Train >",
+                         "Editor Settings, or the X menu -> Options.")
+                .defineEnum("commandMenuSpace", EditorMenuSpace.DEFAULT);
+        ModConfigSpec.EnumValue<EditorMenuSpace> templateBlocksMenuSpace = b
+                .comment("Where the V (template blocks) menu draws. See commandMenuSpace.")
+                .defineEnum("templateBlocksMenuSpace", EditorMenuSpace.DEFAULT);
+        ModConfigSpec.EnumValue<EditorMenuSpace> containerContentsMenuSpace = b
+                .comment("Where the C (container contents) menu draws. See commandMenuSpace.")
+                .defineEnum("containerContentsMenuSpace", EditorMenuSpace.DEFAULT);
         b.pop();
 
         b.push("sharedBooks");
@@ -488,7 +517,8 @@ public final class ClientDisplayConfig {
                 sharedBooksRead,
                 deathScreenLastNps, politicalFilter, contentMode, customContentPreference,
                 customContentLastAnswer,
-                configDeviationAcknowledged, dpiBypassWarningOptedOut, bookAuthorBurnChat);
+                configDeviationAcknowledged, dpiBypassWarningOptedOut, bookAuthorBurnChat,
+                commandMenuSpace, templateBlocksMenuSpace, containerContentsMenuSpace);
     }
 
     /**
@@ -1204,6 +1234,49 @@ public final class ClientDisplayConfig {
         return true;
     }
 
+    // ----- Where each editor menu draws (see EditorMenuSpace) -----
+
+    /**
+     * Where the X command menu draws. Falls back to {@link EditorMenuSpace#DEFAULT} pre-load —
+     * these are read from the render thread, which can run before the client config is ready.
+     */
+    public static EditorMenuSpace getCommandMenuSpace() {
+        return isLoaded() ? COMMAND_MENU_SPACE.get() : EditorMenuSpace.DEFAULT;
+    }
+
+    /** Where the V (template blocks) menu draws. See {@link #getCommandMenuSpace()}. */
+    public static EditorMenuSpace getTemplateBlocksMenuSpace() {
+        return isLoaded() ? TEMPLATE_BLOCKS_MENU_SPACE.get() : EditorMenuSpace.DEFAULT;
+    }
+
+    /** Where the C (container contents) menu draws. See {@link #getCommandMenuSpace()}. */
+    public static EditorMenuSpace getContainerContentsMenuSpace() {
+        return isLoaded() ? CONTAINER_CONTENTS_MENU_SPACE.get() : EditorMenuSpace.DEFAULT;
+    }
+
+    /** Persist the X menu's space. Idempotent: skips the TOML write when unchanged. */
+    public static void setCommandMenuSpace(EditorMenuSpace value) {
+        setMenuSpace(COMMAND_MENU_SPACE, value);
+    }
+
+    /** Persist the V menu's space. Idempotent: skips the TOML write when unchanged. */
+    public static void setTemplateBlocksMenuSpace(EditorMenuSpace value) {
+        setMenuSpace(TEMPLATE_BLOCKS_MENU_SPACE, value);
+    }
+
+    /** Persist the C menu's space. Idempotent: skips the TOML write when unchanged. */
+    public static void setContainerContentsMenuSpace(EditorMenuSpace value) {
+        setMenuSpace(CONTAINER_CONTENTS_MENU_SPACE, value);
+    }
+
+    /** Shared body of the three setters above — the three differ only in which value they write. */
+    private static void setMenuSpace(ModConfigSpec.EnumValue<EditorMenuSpace> slot, EditorMenuSpace value) {
+        if (!isLoaded() || value == null) return;
+        if (slot.get() == value) return;
+        slot.set(value);
+        slot.save();
+    }
+
     private record Holder(
             ModConfigSpec.DoubleValue allScale,
             ModConfigSpec.DoubleValue worldspaceChannel,
@@ -1245,6 +1318,9 @@ public final class ClientDisplayConfig {
             ModConfigSpec.EnumValue<CustomContentPreference> customContentLastAnswer,
             ModConfigSpec.ConfigValue<String> configDeviationAcknowledged,
             ModConfigSpec.BooleanValue dpiBypassWarningOptedOut,
-            ModConfigSpec.BooleanValue bookAuthorBurnChat
+            ModConfigSpec.BooleanValue bookAuthorBurnChat,
+            ModConfigSpec.EnumValue<EditorMenuSpace> commandMenuSpace,
+            ModConfigSpec.EnumValue<EditorMenuSpace> templateBlocksMenuSpace,
+            ModConfigSpec.EnumValue<EditorMenuSpace> containerContentsMenuSpace
     ) {}
 }
