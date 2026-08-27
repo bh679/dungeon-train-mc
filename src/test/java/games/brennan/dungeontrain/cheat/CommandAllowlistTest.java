@@ -268,6 +268,22 @@ class CommandAllowlistTest {
     }
 
     @Test
+    @DisplayName("A near-miss never matches — this predicate also opens a permission bypass")
+    void nearMissesNeverMatchTheSelfRevokeRule() {
+        // CommandsSelfRevokeMixin lets a capstone-holder run this ONE command without cheats, by
+        // cancelling before Brigadier ever sees it. A false positive here would therefore hand a
+        // non-operator a command path vanilla never authorised — so the near misses matter more
+        // than for the taint check alone. Every target but @s, and every selection but everything.
+        assertFalse(CommandAllowlist.isSelfRevokeEverything("advancement revoke @s[type=player] everything"));
+        assertFalse(CommandAllowlist.isSelfRevokeEverything("advancement revoke @e everything"));
+        assertFalse(CommandAllowlist.isSelfRevokeEverything("advancement revoke @s everythingelse"));
+        assertFalse(CommandAllowlist.isSelfRevokeEverything("advancement revoke @s only everything"));
+        assertFalse(CommandAllowlist.isSelfRevokeEverything("advancement revoke @s everything extra"));
+        assertFalse(CommandAllowlist.isSelfRevokeEverything("execute as @a run advancement revoke @s everything"));
+        assertFalse(CommandAllowlist.isSelfRevokeEverything("advancement @s revoke everything"));
+    }
+
+    @Test
     @DisplayName("Empty / blank input never taints")
     void emptyNeverTaints() {
         assertFalse(CommandAllowlist.taints(""));
