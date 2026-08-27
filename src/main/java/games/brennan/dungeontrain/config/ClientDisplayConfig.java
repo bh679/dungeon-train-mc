@@ -53,12 +53,13 @@ public final class ClientDisplayConfig {
     /**
      * Default cap on how far the editor's world-space menus draw, in blocks.
      *
-     * <p>Sixty-four is generous on purpose — it is roughly "the part of the editor you can read
-     * anyway", so the setting ships as a sane bound rather than as something you immediately have
-     * to loosen. Auto's own in-template rule is much tighter (see
-     * {@link #AUTO_TEMPLATE_DISTANCE_BLOCKS}); the smaller of the two applies.</p>
+     * <p>A hundred and twenty-eight is generous on purpose — half the range, and past the point
+     * where a panel is readable anyway — so the setting ships as a backstop against the far end of
+     * a big build area rather than as something you immediately have to loosen. Auto's own
+     * in-template rule is far tighter (see {@link #AUTO_TEMPLATE_DISTANCE_BLOCKS}); the smaller of
+     * the two applies.</p>
      */
-    public static final int DEFAULT_MENU_RENDER_DISTANCE = 64;
+    public static final int DEFAULT_MENU_RENDER_DISTANCE = 128;
     /** Floor for the setting — below this the panel for the plot you are standing in starts to vanish. */
     public static final int MIN_MENU_RENDER_DISTANCE = 5;
     /** Ceiling — past a couple of hundred blocks the panels are unreadable anyway, so this is "no limit". */
