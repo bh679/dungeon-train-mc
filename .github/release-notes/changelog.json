@@ -9136,6 +9136,19 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "book-author-name-copy",
+      "version": "0.676.0",
+      "type": "feat",
+      "title": "Copy an author's name from the burn line",
+      "summary": "In the Book Author Chat line, click the author's name to copy it.",
+      "highlights": [],
+      "pr": 1125,
+      "date": "2026-08-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

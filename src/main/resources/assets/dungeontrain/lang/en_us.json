@@ -112,6 +112,7 @@
   "gui.dungeontrain.book_vote.response.general.9": "So noted. The wheels keep turning.",
   "gui.dungeontrain.book_vote.response.general.10": "Every reader steers the shelves a little.",
   "chat.dungeontrain.book_burns_author": "The book by %s burns",
+  "chat.dungeontrain.book_burns_author.copy": "Click to copy the author's name",
   "chat.dungeontrain.free_play.title": "Free Play.",
   "chat.dungeontrain.free_play.cause.gamemode": "You switched to %s.",
   "chat.dungeontrain.free_play.cause.ais_data": "The Adventure Item Stats settings have been changed.",
