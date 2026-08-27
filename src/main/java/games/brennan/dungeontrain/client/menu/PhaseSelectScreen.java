@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.client.menu;
 
 import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
 import games.brennan.dungeontrain.worldgen.TrainPhase;
+import games.brennan.dungeontrain.editor.PlotCategory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,12 +20,12 @@ import java.util.List;
  */
 public final class PhaseSelectScreen implements MenuScreen {
 
-    private final String category;
+    private final PlotCategory category;
     private final String modelId;
     private final String modelName;
 
-    public PhaseSelectScreen(String category, String modelId, String modelName) {
-        this.category = category == null ? "" : category;
+    public PhaseSelectScreen(PlotCategory category, String modelId, String modelName) {
+        this.category = category;
         this.modelId = modelId == null ? "" : modelId;
         this.modelName = modelName == null ? "" : modelName;
     }
@@ -63,14 +64,16 @@ public final class PhaseSelectScreen implements MenuScreen {
      */
     private String phaseCommandPrefix() {
         if (modelId.isEmpty()) return null;
+        if (category == null) return null;
         return switch (category) {
-            case "carriages" -> "dungeontrain editor phase " + modelId;
-            case "contents" -> "dungeontrain editor contents phase " + modelId;
-            case "tracks" -> modelName.isEmpty() ? null
+            case CARRIAGES -> "dungeontrain editor phase " + modelId;
+            case CONTENTS -> "dungeontrain editor contents phase " + modelId;
+            case TRACKS -> modelName.isEmpty() ? null
                 : "dungeontrain editor tracks phase " + modelId + " " + modelName;
-            case "portals" -> modelName.isEmpty() ? null
+            case PORTALS -> modelName.isEmpty() ? null
                 : "dungeontrain editor portals phase " + modelId + " " + modelName;
-            default -> null;
+            // No per-template spawn gate to edit.
+            case PARTS, ARCHITECTURE -> null;
         };
     }
 

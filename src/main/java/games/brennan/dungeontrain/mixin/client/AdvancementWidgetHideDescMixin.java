@@ -1,12 +1,11 @@
 package games.brennan.dungeontrain.mixin.client;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
-import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.compat.AdvancementHintText;
 import net.minecraft.advancements.AdvancementNode;
 import net.minecraft.advancements.AdvancementProgress;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.advancements.AdvancementWidget;
-import net.minecraft.client.resources.language.I18n;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.FormattedCharSequence;
@@ -87,21 +86,13 @@ public abstract class AdvancementWidgetHideDescMixin {
     private boolean dungeontrain$revealRevealedIcon(boolean original) {
         if (!original) return false;
         if (advancementNode == null) return original;
-        return DungeonTrain.MOD_ID.equals(advancementNode.holder().id().getNamespace()) ? false : original;
+        return AdvancementHintText.isModAdvancement(advancementNode.holder().id()) ? false : original;
     }
 
     @Unique
     private boolean dungeontrain$shouldHideDescription() {
         if (advancementNode == null) return false;
-        ResourceLocation id = advancementNode.holder().id();
-        if (!DungeonTrain.MOD_ID.equals(id.getNamespace())) return false;
-        String path = id.getPath();
-        if (path.endsWith("/root")) return false;
-        // Editor tab: descriptions stay visible — they document the
-        // editor's capabilities and double as discoverability hints.
-        if (path.startsWith("editor/")) return false;
-        // Earned → reveal.
-        return progress == null || !progress.isDone();
+        return AdvancementHintText.shouldMask(advancementNode.holder().id(), progress);
     }
 
     @Unique
@@ -113,23 +104,13 @@ public abstract class AdvancementWidgetHideDescMixin {
     }
 
     /**
-     * The hint shown in place of the hidden description. Looks up
-     * {@code advancements.<namespace>.<path>.hint} (path slashes mapped to
-     * dots, e.g. {@code dungeon_train/track_record} →
-     * {@code advancements.dungeontrain.dungeon_train.track_record.hint}); if
-     * no such translation is present, falls back to the shared {@code ???}
-     * placeholder. Callers only reach this once
-     * {@link #dungeontrain$shouldHideDescription()} has confirmed a non-null
-     * node, so {@code advancementNode} is safe to dereference.
+     * The hint shown in place of the hidden description — see
+     * {@link AdvancementHintText#hintOrPlaceholder(ResourceLocation)}. Callers only reach this once
+     * {@link #dungeontrain$shouldHideDescription()} has confirmed a non-null node, so
+     * {@code advancementNode} is safe to dereference.
      */
     @Unique
     private Component dungeontrain$hintOrPlaceholder() {
-        ResourceLocation id = advancementNode.holder().id();
-        String key = "advancements." + id.getNamespace() + "."
-            + id.getPath().replace('/', '.') + ".hint";
-        if (I18n.exists(key)) {
-            return Component.translatable(key);
-        }
-        return Component.translatable("advancements.dungeontrain.hidden_description");
+        return AdvancementHintText.hintOrPlaceholder(advancementNode.holder().id());
     }
 }
