@@ -16,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * Pins the tab split {@link ClientOptionsTab} hands to {@link DungeonTrainClientOptionsScreen}.
  *
- * <p>Two of the thirteen rows are conditional — Political Filter on Chinese clients, Help Translate…
+ * <p>Two of the twelve rows are conditional — Political Filter on Chinese clients, Help Translate…
  * when a translation target resolves — and the screen packs rows two-across, so either one appearing
  * re-pairs the rows after it in its tab. These tests cover all four combinations, because the failure
  * mode is silent: a row quietly dropped from the model renders as a perfectly normal-looking tab that
@@ -71,11 +71,11 @@ final class ClientOptionsTabTest {
     // ---- The conditional rows ----
 
     @Test
-    @DisplayName("Plain client: eleven rows, neither conditional row present")
+    @DisplayName("Plain client: ten rows, neither conditional row present")
     void plainClient() {
         List<ClientOptionsTab.Row> rows = allRows(false, false);
 
-        assertEquals(11, rows.size());
+        assertEquals(10, rows.size());
         assertFalse(rows.contains(ClientOptionsTab.Row.POLITICAL_FILTER));
         assertFalse(rows.contains(ClientOptionsTab.Row.TRANSLATE));
     }
@@ -89,8 +89,7 @@ final class ClientOptionsTabTest {
         assertEquals(List.of(ClientOptionsTab.Row.CONTENT_MODE,
                         ClientOptionsTab.Row.POLITICAL_FILTER,
                         ClientOptionsTab.Row.BOOK_AUTHOR_CHAT,
-                        ClientOptionsTab.Row.CINEMATIC_HOTKEY,
-                        ClientOptionsTab.Row.INTERNET),
+                        ClientOptionsTab.Row.CINEMATIC_HOTKEY),
                 general);
         assertFalse(general.contains(ClientOptionsTab.Row.TRANSLATE));
     }
@@ -110,7 +109,7 @@ final class ClientOptionsTabTest {
     void bothConditions_surfaceEveryRow() {
         List<ClientOptionsTab.Row> rows = allRows(true, true);
 
-        assertEquals(13, rows.size());
+        assertEquals(12, rows.size());
         assertEquals(EnumSet.allOf(ClientOptionsTab.Row.class), EnumSet.copyOf(rows),
                 "every Row constant must appear in some tab when both conditions hold");
     }
@@ -167,6 +166,6 @@ final class ClientOptionsTabTest {
     void rows_areImmutable() {
         List<ClientOptionsTab.Row> rows = ClientOptionsTab.rowsFor(ClientOptionsTab.TRAIN, true, true);
         assertThrows(UnsupportedOperationException.class,
-                () -> rows.add(ClientOptionsTab.Row.INTERNET));
+                () -> rows.add(ClientOptionsTab.Row.SCALE_HUD));
     }
 }

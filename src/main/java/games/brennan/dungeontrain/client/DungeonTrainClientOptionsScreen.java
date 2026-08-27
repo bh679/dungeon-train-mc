@@ -1,7 +1,5 @@
 package games.brennan.dungeontrain.client;
 
-import games.brennan.discordpresence.client.NetworkConsentScreen;
-import games.brennan.discordpresence.config.DiscordPresenceClientConfig;
 import games.brennan.dungeontrain.client.display.DisplayScaleOption;
 import games.brennan.dungeontrain.client.localization.edit.TranslationScreen;
 import games.brennan.dungeontrain.client.localization.edit.TranslationTarget;
@@ -83,13 +81,6 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
 
     /** Empty on a release en_us client, which is why the Translate row is conditional. */
     private String translateTarget = "";
-
-    /**
-     * Held so {@link #toggleInternet()} can refresh just this button's ON/OFF label. It used to call
-     * {@code rebuildWidgets()} for that, which would now also throw the list's scroll position back to
-     * the top mid-interaction.
-     */
-    private Button internetButton;
 
     public DungeonTrainClientOptionsScreen(Screen parent) {
         // ".client." because gui.dungeontrain.options.title is already taken by the WORLD options screen.
@@ -255,9 +246,6 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             case BOOK_AUTHOR_CHAT -> onOffCandidates("gui.dungeontrain.options.book_author_chat");
             case CINEMATIC_HOTKEY -> onOffCandidates("gui.dungeontrain.options.cinematic_hotkey");
             case SNAPSHOT_CHAT_LOG -> onOffCandidates("gui.dungeontrain.options.snapshot_chat_log");
-            case INTERNET -> List.of(
-                    internetLabel(true),
-                    internetLabel(false));
             case TRANSLATE -> List.of(Component.translatable("gui.dungeontrain.options.translate"));
             case CUSTOM_CONTENT -> {
                 List<Component> out = new ArrayList<>();
@@ -357,17 +345,6 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                                     (btn, on) -> ClientDisplayConfig.setCinematicHotkeyEnabled(on)),
                     "gui.dungeontrain.options.cinematic_hotkey.tip");
 
-            // Master network / internet-connection switch (DP's one-time "use the internet?" consent).
-            // OFF revokes immediately; turning it ON routes through DP's informed consent screen rather
-            // than silently granting — granting network access gates leaderboard / dev chat / book
-            // share / telemetry.
-            case INTERNET -> {
-                this.internetButton = Button.builder(internetLabel(DiscordPresenceClientConfig.isGranted()),
-                                b -> toggleInternet())
-                        .bounds(0, 0, width, ROW_H).build();
-                yield withTip(this.internetButton, "gui.dungeontrain.options.internet.tip");
-            }
-
             // Shown only when there is a language to edit — on en_us in a release build there is none
             // and the row would be a dead end; a dev build points it at the dev target instead, so the
             // editor stays testable with the UI still in English.
@@ -453,23 +430,5 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
         return Component.translatable(mode.isKid()
                 ? "gui.dungeontrain.content_mode.kid"
                 : "gui.dungeontrain.content_mode.adult");
-    }
-
-    /** ON/OFF comes from vanilla's own already-translated {@code options.on} / {@code options.off}. */
-    private static Component internetLabel(boolean granted) {
-        return Component.translatable("gui.dungeontrain.options.internet",
-                Component.translatable(granted ? "options.on" : "options.off"));
-    }
-
-    /** ON→OFF revokes network consent immediately (+ server re-sync); OFF→ON opens DP's informed consent screen. */
-    private void toggleInternet() {
-        if (DiscordPresenceClientConfig.isGranted()) {
-            DiscordPresenceClientConfig.setConsent(DiscordPresenceClientConfig.Consent.DENIED);
-            NetworkConsentSyncClient.syncNow();
-            // Just this label — rebuilding the whole screen would reset the list's scroll position.
-            this.internetButton.setMessage(internetLabel(false));
-        } else {
-            this.minecraft.setScreen(new NetworkConsentScreen(this));
-        }
     }
 }

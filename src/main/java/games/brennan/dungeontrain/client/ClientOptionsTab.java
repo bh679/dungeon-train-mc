@@ -13,7 +13,7 @@ import java.util.List;
  *
  * <ul>
  *   <li>{@link #GENERAL} — the client and the player: content rating, chat lines, the hotkey,
- *       network consent, translation.</li>
+ *       translation.</li>
  *   <li>{@link #TRAIN} — the ride itself: engine volume, whether custom train content loads, and
  *       the ride-photo settings.</li>
  *   <li>{@link #EDITOR} — the three display-scale channels the in-world editor menus and HUD
@@ -70,7 +70,6 @@ public enum ClientOptionsTab {
         POLITICAL_FILTER,
         BOOK_AUTHOR_CHAT,
         CINEMATIC_HOTKEY,
-        INTERNET,
         /** Only when {@code TranslationTarget.resolveForClient()} names a language to edit. */
         TRANSLATE,
 
@@ -102,7 +101,6 @@ public enum ClientOptionsTab {
                 }
                 rows.add(Row.BOOK_AUTHOR_CHAT);
                 rows.add(Row.CINEMATIC_HOTKEY);
-                rows.add(Row.INTERNET);
                 if (hasTranslateTarget) {
                     rows.add(Row.TRANSLATE);
                 }
