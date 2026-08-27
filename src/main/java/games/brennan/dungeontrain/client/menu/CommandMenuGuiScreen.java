@@ -21,8 +21,7 @@ import java.util.List;
  * <p>The vanilla HUD keeps drawing while a screen is open — {@code GameRenderer.render} calls
  * {@code gui.render} gated on {@code isGameLoadFinished()}, not on {@code screen == null}, and
  * draws the screen afterwards. So the hotbar is already on screen behind this panel and we
- * neither draw nor hide it; we simply reserve
- * {@link CommandMenuLayout#HOTBAR_RESERVE} pixels so the panel never sits on top of it.</p>
+ * neither draw nor hide it.</p>
  *
  * <p>What a {@code Screen} <i>does</i> swallow is the input that drives the hotbar, so
  * {@link #mouseScrolled} and {@link #keyPressed} hand the wheel and the 1-9 keys back to
@@ -53,6 +52,18 @@ public final class CommandMenuGuiScreen extends Screen {
 
     /** Horizontal padding inside a cell before its label starts. */
     private static final int CELL_PAD_X = 2;
+
+    /**
+     * Distance from the top of the screen to the top of the panel.
+     *
+     * <p>The panel is anchored to its top edge rather than centred, so its height changing does
+     * not move it. Rows appear and disappear constantly here — switching tab, or toggling Walls,
+     * which reveals or hides the Copies / Door Wall / Exits rows beneath it — and under vertical
+     * centring every one of those shifts every row on screen, so the button under the cursor is
+     * no longer the button that was there a moment ago. Pinned at the top, added rows grow
+     * downwards and everything above them stays put.</p>
+     */
+    private static final int PANEL_TOP = 22;
 
     // Panel geometry, recomputed each frame in render() and read by the hit-test.
     private int mainX, mainY, mainW, mainH;
@@ -96,18 +107,30 @@ public final class CommandMenuGuiScreen extends Screen {
         int totalW = mainW + (hasSide ? CommandMenuLayout.SIDE_GAP_PX + sideW : 0);
         mainX = (this.width - totalW) / 2;
 
-        // Centre in the band above the hotbar rather than the whole screen, so the
-        // panel never covers the slots the player is scrolling through.
-        int avail = this.height - CommandMenuLayout.HOTBAR_RESERVE;
-        mainY = Math.max(4, (avail - mainH) / 2);
-
+        // Top-anchored, not centred — see PANEL_TOP. Both panels share the top edge so the
+        // side panel doesn't slide against the main one as either one's row count changes.
+        mainY = PANEL_TOP;
         sideX = mainX + mainW + CommandMenuLayout.SIDE_GAP_PX;
-        sideY = Math.max(4, (avail - sideH) / 2);
+        sideY = PANEL_TOP;
     }
 
     // ------------------------------------------------------------------
     // Render
     // ------------------------------------------------------------------
+
+    /**
+     * A flat dim, and deliberately nothing else.
+     *
+     * <p>The inherited implementation runs the blur post-effect over the frame behind the screen
+     * and then paints the menu background texture. Both are wrong here: this panel is opened
+     * <i>over the plot being edited</i>, and an author needs to see the blocks they are about to
+     * act on. Blurring the build defeats the point of the menu. The dim is light enough to leave
+     * the hotbar underneath readable, which the {@code Blocks: + held} rows depend on.</p>
+     */
+    @Override
+    public void renderBackground(GuiGraphics gg, int mouseX, int mouseY, float partialTick) {
+        gg.fill(0, 0, this.width, this.height, SCREEN_DIM);
+    }
 
     @Override
     public void render(GuiGraphics gg, int mouseX, int mouseY, float partialTick) {
@@ -118,10 +141,9 @@ public final class CommandMenuGuiScreen extends Screen {
 
         layout();
 
-        // Deliberately not super.renderBackground: that blurs the world, which hides
-        // the plot the author is editing. A flat dim keeps the build readable and
-        // leaves the hotbar legible underneath.
-        gg.fill(0, 0, this.width, this.height, SCREEN_DIM);
+        // super.render draws the background (our override above) and any widgets. It has to run
+        // FIRST: calling it last painted the background over the panel we had just drawn.
+        super.render(gg, mouseX, mouseY, partialTick);
 
         updateHover(mouseX, mouseY);
 
@@ -136,8 +158,6 @@ public final class CommandMenuGuiScreen extends Screen {
                 side != null ? side.title() : "",
                 CommandMenuState.sideHoveredIdx(), CommandMenuState.sideHoveredSubIdx());
         }
-
-        super.render(gg, mouseX, mouseY, partialTick);
     }
 
     private void drawPanel(
