@@ -9182,6 +9182,32 @@
       "released": true,
       "released_in": "v0.678.0",
       "released_at": "2026-08-27T09:06:21Z"
+    },
+    {
+      "id": "end-band-no-weather",
+      "version": "0.679.0",
+      "type": "feat",
+      "title": "No weather in the End band",
+      "summary": "Rain and lightning no longer follow you into the End band \u2014 the void stretch is silent and clear, whatever the weather is doing back in the overworld.",
+      "highlights": [],
+      "pr": 1130,
+      "date": "2026-08-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "cheats-available-free-play",
+      "version": "0.680.0",
+      "type": "feat",
+      "title": "Cheats being available is Free Play",
+      "summary": "A world where cheats are available to anyone playing is now Free Play for as long as that is true \u2014 advancements still earn live, but they don't add to your profile and global stats don't accrue. If you had cheats yourself, your run stays Free Play afterwards.",
+      "highlights": [],
+      "pr": 1131,
+      "date": "2026-08-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

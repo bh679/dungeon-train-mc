@@ -44,6 +44,12 @@
       ]
     }
   },
+  "chat.dungeontrain.free_play.operators": {
+    "1": {
+      "label": "the players who have cheats enabled, comma-separated",
+      "examples": ["Steve", "Steve, Alex"]
+    }
+  },
   "chat.dungeontrain.free_play.cheat_mods": {
     "1": {
       "label": "the cheat mods that were found, comma-separated",
