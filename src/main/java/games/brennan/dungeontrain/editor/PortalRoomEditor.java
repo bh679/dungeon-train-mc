@@ -254,20 +254,31 @@ public final class PortalRoomEditor {
     }
 
     /**
-     * Wipe what has been built in {@code name}'s plot and leave the plain built-in shell behind.
+     * Empty {@code name}'s plot — every block the author built, gone — inside its bedrock cage.
      *
-     * <p>What the editor's Clear does, and deliberately not what {@link #clearPlot} does: that one
-     * erases the box to nothing, which is right as a teardown primitive but leaves an author staring
-     * into a hole. This leaves a room to keep building in, at the plot's <b>current</b> size — the
-     * authored size is preserved, so this is not a reset to {@code builtInSize}.</p>
+     * <p>Clear means the same thing here as it does for a carriage or a contents plot: what is in
+     * the plot goes, and nothing is put back. It used to restamp the built-in room afterwards, which
+     * read as Clear not working at all — the author asked for an empty plot and got a complete
+     * floor, walls and ceiling. Restamping is what Reset is for: {@code /dt editor reset} goes back
+     * to the saved template, {@code /dt editor portals reset} back to the built-in room.</p>
      *
-     * <p>Nothing on disk changes. The saved {@code .nbt} survives until the next save, the same way
-     * Clear behaves for carriages and contents; removing the variant itself is
-     * {@code /dt editor portals reset}. The caller is responsible for the sidecars — the per-cell
-     * variants and the container-contents pools — which live in their own files and would otherwise
-     * put the old chests straight back on the next stamp.</p>
+     * <p>The plot's <b>current</b> size is kept, so this is not a reset to {@code builtInSize}, and
+     * the cage stays — it sits one block outside the box and is what separates this plot from its
+     * neighbours on the shared column.</p>
+     *
+     * <p><b>The snapshot is deliberately not re-taken.</b> It is the dirty check's baseline for what
+     * is on disk ({@code EditorDirtyCheck.scanPortalRooms}), and capturing the emptied plot as the
+     * baseline would report the room as clean — so the author would never be told to save, and the
+     * next {@link #stampPlot} would put the old room straight back from the {@code .nbt}. Leaving
+     * the pre-clear baseline standing is what makes the cleared plot read as unsaved, exactly like
+     * every other category's Clear, which captures nothing either.</p>
+     *
+     * <p>Nothing on disk changes. The saved {@code .nbt} survives until the next save; removing the
+     * variant itself is {@code /dt editor portals reset}. The caller is responsible for the sidecars
+     * — the per-cell variants and the container-contents pools — which live in their own files and
+     * would otherwise put the old chests straight back on the next stamp.</p>
      */
-    public static void clearToBuiltIn(ServerLevel overworld, String name, CarriageDims dims) {
+    public static void clearToEmpty(ServerLevel overworld, String name, CarriageDims dims) {
         // Same reason as stampPlot: resolve the box that is actually there, not the built-in one.
         PortalRoomTemplateStore.get(overworld, name, dims);
 
@@ -276,17 +287,17 @@ public final class PortalRoomEditor {
 
         // Also sweeps up loose items — including anything an earlier build spilled on the floor.
         EditorPlotEntityClearer.discardNonPlayersIn(overworld, origin, size);
-        // Clear before stamping, not just because the shell does not write every cell, but because
-        // stampRoomBuiltIn writes its interior as AIR through setBlock — straight over any chest
-        // still holding its block entity. PortalClear evicts first, so nothing drops.
+        // Through PortalClear rather than a setBlock loop: the plot may hold authored chests, and
+        // writing over a container that still has its block entity spills its contents as items.
+        // PortalClear evicts first, so nothing drops.
         PortalClear.clearBoxRelit(overworld, boxOf(origin, size), PortalCorridorMask.NONE);
-        PortalCarriageBuilder.stampRoomBuiltIn(overworld, origin, size, /*relight*/ true);
+        // The cage is outside the cleared box and so is untouched above — re-set anyway, cheaply, so
+        // a plot whose cage an author had knocked through comes back separated from its neighbours.
         setOutline(overworld, origin, size, OUTLINE_BLOCK);
-        captureSnapshot(overworld, origin, size, name);
     }
 
     /**
-     * The editor's Clear: {@link #clearToBuiltIn}, plus everything authored on top of the blocks.
+     * The editor's Clear: {@link #clearToEmpty}, plus everything authored on top of the blocks.
      *
      * <p>A portal room keeps its authored state in three files, and clearing only the blocks would
      * put the other two back on the next stamp — the per-cell variant sidecar, and the
@@ -296,19 +307,33 @@ public final class PortalRoomEditor {
      * their pools alone on Clear. A portal room's chests are re-rolled per copy from that file, so
      * leaving it would restock exactly the chests the author had just cleared out.</p>
      *
+     * <p>Both sidecars are <b>emptied and written</b>, never deleted. Each one resolves config-dir
+     * copy first, bundled resource second, so deleting the config copy uncovers the shipped one
+     * instead of removing anything — an empty file in the active package is what actually stands
+     * for "this room has none".</p>
+     *
      * @return how many authored entries were dropped across both sidecars
      */
     public static int clearEverything(ServerLevel overworld, String name, CarriageDims dims)
             throws IOException {
-        clearToBuiltIn(overworld, name, dims);
+        clearToEmpty(overworld, name, dims);
 
         Vec3i size = plotSize(name, dims);
         int cleared = 0;
 
-        // Delete the sidecar file rather than emptying it entry by entry: a cleared room has no
-        // variants left to describe, and delete() drops the session cache with it.
-        int variants = TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, name, size).size();
-        TrackVariantBlocks.delete(TrackKind.PORTAL_ROOM, name);
+        // Empty the sidecar and write it back, rather than deleting the file. Deleting only removes
+        // the active package's copy, and loadFor falls straight back to the resource bundled in the
+        // jar — which is where every shipped room's cells actually live, so the variants an author
+        // had just cleared came back on the very next stamp. An empty file in the active package is
+        // what shadows the bundled one; it is the same shape as the contents-pool wipe below, which
+        // saves an emptied store for exactly this reason.
+        TrackVariantBlocks sidecar = TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, name, size);
+        int variants = sidecar.size();
+        // entries() hands back a copy, so removing as we walk it is safe.
+        for (CarriageVariantBlocks.Entry entry : sidecar.entries()) {
+            sidecar.remove(entry.localPos());
+        }
+        sidecar.save(TrackKind.PORTAL_ROOM, name);
         cleared += variants;
 
         // Same reasoning as the pools: a cleared room has nothing left to restore, and a remembered

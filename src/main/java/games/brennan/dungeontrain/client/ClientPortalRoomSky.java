@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client;
 
+import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.net.PortalRoomSkyPacket;
 import games.brennan.dungeontrain.portal.PortalRoomSky;
 
@@ -69,7 +70,11 @@ public final class ClientPortalRoomSky {
     public static float advance(double x, double y, double z) {
         PortalRoomSkyPacket r = region;
         PortalRoomSky wanted = r.skyKind();
-        boolean inside = wanted.lights() && contains(r, x, y, z);
+        // An editor plot's lift is the author's to switch off; a room in the world is not. Read as
+        // "not inside" rather than dropped on arrival, so turning it off mid-plot fades out through
+        // the ease below exactly as walking out of the room does.
+        boolean allowed = !r.editor() || ClientDisplayConfig.isEditorPlotLighting();
+        boolean inside = allowed && wanted.lights() && contains(r, x, y, z);
 
         // Changing sky mid-lift: fade the old one out first and only then adopt the new one, so the
         // tint never jumps from red to white at full strength. A room entered from nothing adopts

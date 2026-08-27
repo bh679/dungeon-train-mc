@@ -9386,6 +9386,57 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "portal-room-clear-actually-clears",
+      "version": "0.688.0",
+      "type": "fix",
+      "title": "Clearing a dimensional carriage in the editor really clears it",
+      "summary": "The editor's Clear on a dimensional carriage left the room standing: it wiped the plot and then stamped the built-in room straight back over it, and the block variants it said it had removed reappeared the next time the plot was stamped. Clear now leaves the plot empty inside its cage, keeps the room's authored size, and the variants it drops stay dropped.",
+      "highlights": [
+        "Clear empties the plot instead of replacing your build with the built-in room.",
+        "Cleared block variants no longer come back on the next stamp.",
+        "A cleared room now shows as unsaved, so saving makes the clear permanent."
+      ],
+      "pr": 1145,
+      "date": "2026-08-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "stats-books-burn-after-reading",
+      "version": "0.689.0",
+      "type": "fix",
+      "title": "Stats books burn after reading, like every other book",
+      "summary": "Leaderboard boards and Faulthurst's notes were the only books on the train you could keep. They now catch fire once you've read them, the same as a random chest book \u2014 and a board found in a chest could never burn at all until now.",
+      "highlights": [
+        "Leaderboard books and Faulthurst stat notes burn after reading",
+        "Fixed: a leaderboard book rolled from a chest was the one book in the game that could never burn",
+        "A book nobody has picked up still won't ignite \u2014 a broken chest, or a Stat Room's shelves, stay safe"
+      ],
+      "pr": 1146,
+      "date": "2026-08-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "editor-plot-sky-lighting",
+      "version": "0.690.0",
+      "type": "feat",
+      "title": "Portal room editor plots are lit by the room's own sky",
+      "summary": "Building a dimensional carriage no longer means building it in the dark. A room's Sky setting \u2014 Daylight, Day/Night, Nether or End \u2014 now lights its editor plot the same way it will light the room once it is riding the train, so what you author is what you get without walking a test session first. A new Plot Lighting switch in the editor's X-menu Settings tab turns it off for anyone who wants the unlit box back while they place their own light sources. Skybox blocks stopped casting a shadow, too: a hole punched through to the sky now lets light through it, which is what it looked like it should have been doing all along.",
+      "highlights": [
+        "A portal room's Sky setting now lights its editor plot",
+        "Plot Lighting switch in the X-menu Settings tab (on by default)",
+        "Skybox blocks let light through instead of shadowing the floor below"
+      ],
+      "pr": 1147,
+      "date": "2026-08-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

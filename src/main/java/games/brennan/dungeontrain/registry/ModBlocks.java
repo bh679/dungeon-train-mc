@@ -60,7 +60,9 @@ public final class ModBlocks {
      * <p>{@code strength(-1, 3600000.8)} is vanilla's bedrock/barrier pair — negative destroy
      * time makes it unmineable in survival (creative can still break it) and the resistance
      * makes it blast-proof. Deliberately <b>no</b> {@code noOcclusion()}: we want vanilla to
-     * treat it as opaque so it culls neighbouring faces and whole sections behind the hole.</p>
+     * treat it as opaque so it culls neighbouring faces and whole sections behind the hole.
+     * Light is the one exception, and it is handled on the block rather than here — see
+     * {@link SkyboxBlock#getLightBlock}.</p>
      */
     private static BlockBehaviour.Properties skyboxProperties(MapColor color) {
         return BlockBehaviour.Properties.of()

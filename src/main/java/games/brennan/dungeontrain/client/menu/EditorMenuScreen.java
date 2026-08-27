@@ -373,6 +373,11 @@ public final class EditorMenuScreen implements MenuScreen {
         out.add(editorMenusRow());
         out.add(menuDistanceRow());
 
+        // Plot Lighting — a portal room's Sky, applied to the plot you build it on. Every category
+        // sees the row: it is an editor-wide preference like the two above, and an author who
+        // switched it off from a portal plot must be able to switch it back on from anywhere.
+        out.add(plotLightingRow());
+
         // Welcome Panel — the onboarding board floating beside the first nav menu. Its own close
         // (X) button writes the same per-player, per-world flag; this row is the only way back,
         // so it stays in the menu whether the panel is currently up or not.
@@ -479,6 +484,25 @@ public final class EditorMenuScreen implements MenuScreen {
                 ClientDisplayConfig.stepMenuRenderDistanceUp(
                     ClientDisplayConfig.getMenuRenderDistance())));
         return new CommandMenuEntry.Triple(minus, middle, plus, 0.10, 0.90);
+    }
+
+    /**
+     * The "Plot Lighting" row — whether a portal room's Sky setting lights its editor plot, the way
+     * it lights the room once it is a dimensional carriage in the world.
+     *
+     * <p>Off leaves the plot lit by whatever the blocks in it emit, which is what the editor did
+     * before and what an author wants when they are placing the room's own light sources.</p>
+     *
+     * <p>{@link CommandMenuEntry.ClientAction} rather than {@link CommandMenuEntry.Toggle} for the
+     * same reason {@link #menuDistanceRow()} is one: the value is a client display preference in
+     * {@code dungeontrain-client.toml} with no server state to sync, and the row leaves the menu
+     * open so the plot behind it brightens and dims as you click.</p>
+     */
+    private static CommandMenuEntry plotLightingRow() {
+        boolean on = ClientDisplayConfig.isEditorPlotLighting();
+        return new CommandMenuEntry.ClientAction(
+            "Plot Lighting  [" + (on ? "ON" : "OFF") + "]",
+            () -> ClientDisplayConfig.setEditorPlotLighting(!ClientDisplayConfig.isEditorPlotLighting()));
     }
 
     private static CommandMenuEntry modeCell(String label, EditorMenusMode cell, EditorMenusMode active) {
