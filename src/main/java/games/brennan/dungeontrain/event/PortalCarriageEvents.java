@@ -1182,7 +1182,7 @@ public final class PortalCarriageEvents {
         games.brennan.dungeontrain.portal.PortalRoomSky sky = structure.settings().sky();
         if (!sky.lights() || !DungeonTrainConfig.isPortalRoomDaylight()) return;
 
-        PortalRoomSkyPacket region = new PortalRoomSkyPacket(
+        PortalRoomSkyPacket region = PortalRoomSkyPacket.inWorld(
             structure.tiledMinX(dims, layout),
             structure.origin().getY(),
             structure.tiledMinZ(dims, layout),
