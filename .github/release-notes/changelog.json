@@ -9031,6 +9031,18 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "spectator-cinematic-freeze",
+      "version": "0.673.0",
+      "type": "fix",
+      "title": "Spectator cinematic no longer leaves you frozen",
+      "summary": "Replaying the intro cinematic from spectator mode could leave you unable to move, with /kill and reboarding the only way out. Fixed. The hotkey can also be switched off now in Options \u2192 Dungeon Train\u2026, and it finally shows a readable name in Controls.",
+      "highlights": [],
+      "date": "2026-08-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
