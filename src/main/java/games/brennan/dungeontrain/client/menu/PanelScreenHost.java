@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.client.menu;
 
 import com.mojang.blaze3d.vertex.PoseStack;
+import net.minecraft.client.KeyMapping;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -81,6 +82,15 @@ public abstract class PanelScreenHost extends Screen {
     /** Tell the menu to close — usually a toggle packet to the server. */
     protected abstract void closeMenu();
 
+    /**
+     * The hotkey that opened this panel, so a second press shuts it.
+     *
+     * <p>It has to be matched here rather than left to the tick watcher that opened it: vanilla
+     * stops polling keybindings while a Screen is up, so {@code KeyMapping.isDown} never sees the
+     * press. Without this the key that opens the panel would not close it.</p>
+     */
+    protected abstract KeyMapping toggleKey();
+
     // ------------------------------------------------------------------
     // Screen
     // ------------------------------------------------------------------
@@ -99,7 +109,9 @@ public abstract class PanelScreenHost extends Screen {
     @Override
     public void render(GuiGraphics gg, int mouseX, int mouseY, float partialTick) {
         if (!stillActive()) {
-            onClose();
+            // The server closed the menu out from under us. Just drop the screen — going through
+            // onClose() would send a close request for a menu that is already closed.
+            if (this.minecraft != null) this.minecraft.setScreen(null);
             return;
         }
         super.render(gg, mouseX, mouseY, partialTick);
@@ -163,6 +175,10 @@ public abstract class PanelScreenHost extends Screen {
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (toggleKey().matches(keyCode, scanCode)) {
+            onClose();
+            return true;
+        }
         if (hotbarKey(keyCode, scanCode)) return true;
         return super.keyPressed(keyCode, scanCode, modifiers);
     }

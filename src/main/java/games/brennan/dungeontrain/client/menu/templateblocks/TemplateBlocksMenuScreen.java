@@ -1,9 +1,11 @@
 package games.brennan.dungeontrain.client.menu.templateblocks;
 
 import com.mojang.blaze3d.vertex.PoseStack;
+import games.brennan.dungeontrain.client.TemplateBlocksHotkeyClient;
 import games.brennan.dungeontrain.client.menu.PanelScreenHost;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.TemplateBlocksMenuTogglePacket;
+import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.network.chat.Component;
@@ -53,6 +55,11 @@ public final class TemplateBlocksMenuScreen extends PanelScreenHost {
         TemplateBlocksMenu.Hit hit = TemplateBlocksMenuRaycast.hitTest(localX, localY);
         if (hit.kind() == TemplateBlocksMenu.CellKind.NONE) return;
         TemplateBlocksMenuInputHandler.dispatch(hit);
+    }
+
+    @Override
+    protected KeyMapping toggleKey() {
+        return TemplateBlocksHotkeyClient.key();
     }
 
     @Override

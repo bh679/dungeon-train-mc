@@ -1,9 +1,11 @@
 package games.brennan.dungeontrain.client.menu.containercontents;
 
 import com.mojang.blaze3d.vertex.PoseStack;
+import games.brennan.dungeontrain.client.ContainerHotkeyClient;
 import games.brennan.dungeontrain.client.menu.PanelScreenHost;
 import games.brennan.dungeontrain.net.ContainerContentsMenuTogglePacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
+import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.network.chat.Component;
@@ -106,6 +108,11 @@ public final class ContainerContentsMenuScreen extends PanelScreenHost {
             return true;
         }
         return super.charTyped(c, modifiers);
+    }
+
+    @Override
+    protected KeyMapping toggleKey() {
+        return ContainerHotkeyClient.key();
     }
 
     @Override
