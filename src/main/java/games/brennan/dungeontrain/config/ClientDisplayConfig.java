@@ -118,6 +118,7 @@ public final class ClientDisplayConfig {
     public static final ModConfigSpec.BooleanValue PORTAL_CROSSING_FADE;
     public static final ModConfigSpec.BooleanValue SCRIBBLE_COLOR_PICKER_VISIBLE;
     public static final ModConfigSpec.BooleanValue CINEMATIC_HOTKEY_ENABLED;
+    public static final ModConfigSpec.BooleanValue CREATIVE_SHIFT_CLICK_TO_HOTBAR;
     /**
      * Relay pool ids of community (player-written) books this player has read, stored as decimal strings.
      * GLOBAL client-side read history — persists across worlds and servers (unlike the retired per-world
@@ -214,6 +215,7 @@ public final class ClientDisplayConfig {
         PORTAL_CROSSING_FADE = pair.getLeft().portalCrossingFade;
         SCRIBBLE_COLOR_PICKER_VISIBLE = pair.getLeft().scribbleColorPickerVisible;
         CINEMATIC_HOTKEY_ENABLED = pair.getLeft().cinematicHotkeyEnabled;
+        CREATIVE_SHIFT_CLICK_TO_HOTBAR = pair.getLeft().creativeShiftClickToHotbar;
         SHARED_BOOKS_READ = pair.getLeft().sharedBooksRead;
         DEATH_SCREEN_LAST_NPS = pair.getLeft().deathScreenLastNps;
         POLITICAL_FILTER = pair.getLeft().politicalFilter;
@@ -350,6 +352,15 @@ public final class ClientDisplayConfig {
                 .define("hotkeyEnabled", true);
         b.pop();
 
+        b.push("creative");
+        ModConfigSpec.BooleanValue creativeShiftClickToHotbar = b
+                .comment("Shift-clicking an item in the creative menu a second time drops that full stack",
+                         "straight into your hotbar (and a third, fourth... click fills the next slot along).",
+                         "The first shift-click is untouched — it still just maxes the stack on your cursor.",
+                         "Turn this off for pure vanilla creative-menu behaviour.")
+                .define("shiftClickToHotbar", true);
+        b.pop();
+
         b.push("world");
         ModConfigSpec.BooleanValue deleteWorldOnReboard = b
                 .comment("Delete the old world's save folder when reboarding (creating a fresh world) from the death screen. Dungeon Train is designed around a new world per run, so this defaults on to keep the world list and disk clean. Only auto-generated \"<prefix> <timestamp>\" saves (Dungeon Train / Dev World / World) are ever deleted — renamed or hand-made worlds and editor worlds are always kept. Toggleable in-game via the trash icon next to the reboard button.")
@@ -471,7 +482,7 @@ public final class ClientDisplayConfig {
                 rideSnapshotMinFps, rideSnapshotMinTps,
                 rideSnapshotDiskOffload, rideSnapshotFlushMinFps, rideSnapshotFlushMinTps, rideSnapshotMaxOnDisk,
                 rideSnapshotMaxResolution,
-                framerateThrottleEnabled, framerateThrottleFps, trainEngineVolume, skyboxPunchEnabled, portalCrossingFade, scribbleColorPickerVisible, cinematicHotkeyEnabled, deleteWorldOnReboard,
+                framerateThrottleEnabled, framerateThrottleFps, trainEngineVolume, skyboxPunchEnabled, portalCrossingFade, scribbleColorPickerVisible, cinematicHotkeyEnabled, creativeShiftClickToHotbar, deleteWorldOnReboard,
                 builderTilesPerRow,
                 menuRenderDistance,
                 sharedBooksRead,
@@ -977,6 +988,15 @@ public final class ClientDisplayConfig {
     }
 
     /**
+     * Does a repeat shift-click in the creative menu send the stack to the hotbar? Defaults to
+     * {@code true}, and to {@code true} pre-load as well — the creative menu can be open before
+     * the config lands, and the feature silently missing reads worse than it being on.
+     */
+    public static boolean isCreativeShiftClickToHotbar() {
+        return !isLoaded() || CREATIVE_SHIFT_CLICK_TO_HOTBAR.get();
+    }
+
+    /**
      * Delete the old world's save when reboarding? Defaults to {@code true} (also pre-load) —
      * Dungeon Train is a new-world-per-run game, so abandoned run saves are cleaned up unless
      * the player opts out via the death screen's trash toggle. The delete path itself carries
@@ -1213,6 +1233,7 @@ public final class ClientDisplayConfig {
             ModConfigSpec.BooleanValue portalCrossingFade,
             ModConfigSpec.BooleanValue scribbleColorPickerVisible,
             ModConfigSpec.BooleanValue cinematicHotkeyEnabled,
+            ModConfigSpec.BooleanValue creativeShiftClickToHotbar,
             ModConfigSpec.BooleanValue deleteWorldOnReboard,
             ModConfigSpec.IntValue builderTilesPerRow,
             ModConfigSpec.IntValue menuRenderDistance,

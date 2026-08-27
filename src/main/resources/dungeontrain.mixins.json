@@ -65,6 +65,7 @@
     "client.CreateWorldScreenCustomContentMixin",
     "client.CreateWorldScreenInvoker",
     "client.CreativeModeInventoryScreenPrefabMixin",
+    "client.CreativeShiftToHotbarMixin",
     "client.CreativeModeInventoryScreenAccessor",
     "client.AbstractContainerScreenPrefabTintMixin",
     "client.MainMenuLogoMixin",
