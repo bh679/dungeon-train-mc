@@ -9064,6 +9064,18 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "keep-inventory-free-play",
+      "version": "0.674.0",
+      "type": "feat",
+      "title": "Keeping your inventory on death is Free Play",
+      "summary": "A world that has run with Keep Inventory on is now Free Play \u2014 permanently, even if you turn the rule back off.",
+      "highlights": [],
+      "date": "2026-08-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

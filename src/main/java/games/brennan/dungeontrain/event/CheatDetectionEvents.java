@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.cheat.AisDataIntegrity;
 import games.brennan.dungeontrain.cheat.CheatModIntegrity;
 import games.brennan.dungeontrain.cheat.CommandAllowlist;
 import games.brennan.dungeontrain.cheat.DtConfigIntegrity;
+import games.brennan.dungeontrain.cheat.KeepInventoryIntegrity;
 import games.brennan.dungeontrain.cheat.PortalTuningIntegrity;
 import games.brennan.dungeontrain.cheat.RunIntegrity;
 import games.brennan.dungeontrain.compat.EnderChestLockBridge;
@@ -241,6 +242,18 @@ public final class CheatDetectionEvents {
             RunIntegrity.sendFreePlayNotice(player,
                 Component.translatable("chat.dungeontrain.free_play.cause.portal_rate"));
             player.sendSystemMessage(Component.translatable("chat.dungeontrain.free_play.portal_rate_changed")
+                .withStyle(ChatFormatting.GRAY));
+        }
+        if (KeepInventoryIntegrity.isWorldFreePlay()) {
+            // World-level keepInventory taint. Permanent and world-owned like the portal-rate block
+            // above, and it likewise reaches players who ran nothing — a world created with Keep
+            // Inventory ticked on, or one DT carried the rule into — so it explains itself on every
+            // join. No one-click fix: turning the rule back off does not give this world its stats
+            // back, and no command may reverse Free Play.
+            RunIntegrity.applyFreePlayEffect(player);
+            RunIntegrity.sendFreePlayNotice(player,
+                Component.translatable("chat.dungeontrain.free_play.cause.keep_inventory"));
+            player.sendSystemMessage(Component.translatable("chat.dungeontrain.free_play.keep_inventory_on")
                 .withStyle(ChatFormatting.GRAY));
         }
         if (RunIntegrity.isPermanentlyCheated(player)) {
