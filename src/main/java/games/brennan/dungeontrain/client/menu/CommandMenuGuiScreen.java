@@ -49,6 +49,8 @@ public final class CommandMenuGuiScreen extends Screen {
     private static final int TEXT_NORMAL   = 0xFFFFFFFF;
     private static final int TEXT_ON_HOVER = 0xFF000000;
     private static final int TEXT_HEADER   = 0xFFFFEEBB;
+    private static final int SCROLLBAR_TRACK = 0x40FFFFFF;
+    private static final int SCROLLBAR_THUMB = 0xC0FFEEBB;
 
     /** Horizontal padding inside a cell before its label starts. */
     private static final int CELL_PAD_X = 2;
@@ -65,9 +67,22 @@ public final class CommandMenuGuiScreen extends Screen {
      */
     private static final int PANEL_TOP = 22;
 
+    /** Width of the scrollbar drawn inside the panel's right edge when a list overflows. */
+    private static final int SCROLLBAR_W = 3;
+
     // Panel geometry, recomputed each frame in render() and read by the hit-test.
     private int mainX, mainY, mainW, mainH;
     private int sideX, sideY, sideW, sideH;
+
+    // Scroll state. `sticky` rows stay pinned at the top; the rest scroll under them.
+    private int mainSticky, mainScroll, mainVisible, mainMaxScroll;
+    private int sideScroll, sideVisible, sideMaxScroll;
+
+    /**
+     * Breadcrumb at the last rebuild, used to reset scroll on navigation — drilling into a long
+     * list part-scrolled from the previous one would start it halfway down.
+     */
+    private String lastBreadcrumb = "";
 
     public CommandMenuGuiScreen() {
         super(Component.literal("Dungeon Train"));
@@ -91,18 +106,60 @@ public final class CommandMenuGuiScreen extends Screen {
     // Layout
     // ------------------------------------------------------------------
 
+    /**
+     * How many rows fit on screen below the header, leaving the hotbar clear.
+     *
+     * <p>Lists here can be far longer than the window — the contents allow-list names every
+     * registered content, and a portal room's Current tab runs to nineteen rows, which overflows
+     * a 360px logical screen at GUI scale 3. Anything past this is reached by scrolling rather
+     * than drawn off the bottom edge.</p>
+     */
+    private int maxVisibleRows() {
+        int avail = this.height - PANEL_TOP - CommandMenuLayout.HOTBAR_RESERVE
+            - CommandMenuLayout.HEADER_H - CommandMenuLayout.PANEL_PAD;
+        return Math.max(1, avail / (CommandMenuLayout.ROW_H + CommandMenuLayout.ROW_GAP_PX));
+    }
+
+    private static int clamp(int v, int lo, int hi) {
+        return Math.max(lo, Math.min(v, hi));
+    }
+
     private void layout() {
         List<CommandMenuEntry> entries = CommandMenuState.entries();
+
+        // Reset scroll when the player navigates, so a drilldown never opens part-scrolled.
+        String crumb = CommandMenuState.breadcrumb();
+        if (!crumb.equals(lastBreadcrumb)) {
+            mainScroll = 0;
+            sideScroll = 0;
+            lastBreadcrumb = crumb;
+        }
+
+        int room = maxVisibleRows();
+
+        MenuScreen top = CommandMenuState.mainScreen();
+        mainSticky = top == null ? 0 : clamp(top.stickyRows(), 0, entries.size());
+        int scrollable = entries.size() - mainSticky;
+        mainVisible = Math.max(0, Math.min(scrollable, room - mainSticky));
+        mainMaxScroll = Math.max(0, scrollable - mainVisible);
+        mainScroll = clamp(mainScroll, 0, mainMaxScroll);
         mainW = CommandMenuLayout.panelPixelWidth(CommandMenuState.mainPanelWidth());
-        mainH = CommandMenuLayout.pixelHeight(entries.size());
+        mainH = CommandMenuLayout.pixelHeight(mainSticky + mainVisible);
 
         boolean hasSide = CommandMenuState.hasSidePanel();
-        sideW = hasSide
-            ? CommandMenuLayout.panelPixelWidth(CommandMenuState.sidePanelWidth())
-            : 0;
-        sideH = hasSide
-            ? CommandMenuLayout.pixelHeight(CommandMenuState.sideEntries().size())
-            : 0;
+        if (hasSide) {
+            int sideTotal = CommandMenuState.sideEntries().size();
+            sideVisible = Math.min(sideTotal, room);
+            sideMaxScroll = Math.max(0, sideTotal - sideVisible);
+            sideScroll = clamp(sideScroll, 0, sideMaxScroll);
+            sideW = CommandMenuLayout.panelPixelWidth(CommandMenuState.sidePanelWidth());
+            sideH = CommandMenuLayout.pixelHeight(sideVisible);
+        } else {
+            sideVisible = 0;
+            sideMaxScroll = 0;
+            sideW = 0;
+            sideH = 0;
+        }
 
         int totalW = mainW + (hasSide ? CommandMenuLayout.SIDE_GAP_PX + sideW : 0);
         mainX = (this.width - totalW) / 2;
@@ -150,36 +207,66 @@ public final class CommandMenuGuiScreen extends Screen {
         List<CommandMenuEntry> entries = CommandMenuState.entries();
         drawPanel(gg, mainX, mainY, mainW, mainH, entries,
             CommandMenuState.breadcrumb(),
-            CommandMenuState.hoveredIdx(), CommandMenuState.hoveredSubIdx());
+            CommandMenuState.hoveredIdx(), CommandMenuState.hoveredSubIdx(),
+            mainSticky, mainScroll, mainVisible, mainMaxScroll);
 
         if (CommandMenuState.hasSidePanel()) {
             MenuScreen side = CommandMenuState.sideScreen();
             drawPanel(gg, sideX, sideY, sideW, sideH, CommandMenuState.sideEntries(),
                 side != null ? side.title() : "",
-                CommandMenuState.sideHoveredIdx(), CommandMenuState.sideHoveredSubIdx());
+                CommandMenuState.sideHoveredIdx(), CommandMenuState.sideHoveredSubIdx(),
+                0, sideScroll, sideVisible, sideMaxScroll);
         }
     }
 
     private void drawPanel(
         GuiGraphics gg, int px, int py, int pw, int ph,
-        List<CommandMenuEntry> entries, String title, int hovered, int hoveredSub
+        List<CommandMenuEntry> entries, String title, int hovered, int hoveredSub,
+        int sticky, int scroll, int visible, int maxScroll
     ) {
         gg.fill(px, py, px + pw, py + ph, PANEL_BG);
 
         String header = (title == null || title.isEmpty()) ? "Dungeon Train" : title;
-        gg.drawCenteredString(this.font, header,
-            px + pw / 2, py + (CommandMenuLayout.HEADER_H - this.font.lineHeight) / 2, TEXT_HEADER);
+        drawLabel(gg, header, px + pw / 2,
+            py + (CommandMenuLayout.HEADER_H - this.font.lineHeight) / 2, TEXT_HEADER, true);
 
-        for (int i = 0; i < entries.size(); i++) {
-            drawRow(gg, entries.get(i), px, py, pw, i, hovered == i, hoveredSub);
+        // Pinned rows first, then the scrolled window beneath them. `slot` is the visual
+        // position; `idx` is the index into entries, which is what hover and dispatch speak.
+        int slot = 0;
+        for (int i = 0; i < sticky; i++, slot++) {
+            drawRow(gg, entries.get(i), px, py, pw, i, slot, hovered == i, hoveredSub);
         }
+        for (int k = 0; k < visible; k++, slot++) {
+            int idx = sticky + scroll + k;
+            drawRow(gg, entries.get(idx), px, py, pw, idx, slot, hovered == idx, hoveredSub);
+        }
+
+        if (maxScroll > 0) {
+            drawScrollbar(gg, px, py, pw, sticky, scroll, visible, maxScroll);
+        }
+    }
+
+    /** A thin track inside the right edge, so a truncated list doesn't look like the whole list. */
+    private void drawScrollbar(
+        GuiGraphics gg, int px, int py, int pw, int sticky, int scroll, int visible, int maxScroll
+    ) {
+        int trackTop = py + CommandMenuLayout.rowTop(sticky);
+        int trackH = visible * (CommandMenuLayout.ROW_H + CommandMenuLayout.ROW_GAP_PX);
+        int x2 = px + pw - 1;
+        int x1 = x2 - SCROLLBAR_W;
+        gg.fill(x1, trackTop, x2, trackTop + trackH, SCROLLBAR_TRACK);
+
+        int total = visible + maxScroll;
+        int thumbH = Math.max(8, trackH * visible / total);
+        int thumbY = trackTop + (trackH - thumbH) * scroll / maxScroll;
+        gg.fill(x1, thumbY, x2, thumbY + thumbH, SCROLLBAR_THUMB);
     }
 
     private void drawRow(
         GuiGraphics gg, CommandMenuEntry entry,
-        int px, int py, int pw, int rowIndex, boolean hovered, int hoveredSub
+        int px, int py, int pw, int rowIndex, int slot, boolean hovered, int hoveredSub
     ) {
-        int top = py + CommandMenuLayout.rowTop(rowIndex);
+        int top = py + CommandMenuLayout.rowTop(slot);
         int left = px + CommandMenuLayout.PANEL_PAD;
         int right = px + pw - CommandMenuLayout.PANEL_PAD;
         int usable = right - left;
@@ -211,9 +298,9 @@ public final class CommandMenuGuiScreen extends Screen {
 
         if (isTypingHere(rowIndex, subIdx)) {
             gg.fill(x1, top, x2, bottom, TYPING_BG);
-            gg.drawCenteredString(this.font, CommandMenuState.typedBuffer() + "_",
-                (x1 + x2) / 2, top + (CommandMenuLayout.ROW_H - this.font.lineHeight) / 2,
-                TEXT_ON_HOVER);
+            drawLabel(gg, CommandMenuState.typedBuffer() + "_", (x1 + x2) / 2,
+                top + (CommandMenuLayout.ROW_H - this.font.lineHeight) / 2,
+                TEXT_ON_HOVER, false);
             return;
         }
 
@@ -226,14 +313,27 @@ public final class CommandMenuGuiScreen extends Screen {
         }
         if (tint != 0) gg.fill(x1, top, x2, bottom, tint);
 
+        boolean dark = hovered && !isLabel;
         String label = labelFor(entry);
-        int color = (hovered && !isLabel) ? TEXT_ON_HOVER : TEXT_NORMAL;
+        int color = dark ? TEXT_ON_HOVER : TEXT_NORMAL;
         int textY = top + (CommandMenuLayout.ROW_H - this.font.lineHeight) / 2;
         int avail = (x2 - x1) - CELL_PAD_X * 2;
         if (avail > 0 && this.font.width(label) > avail) {
             label = this.font.plainSubstrByWidth(label, avail);
         }
-        gg.drawCenteredString(this.font, label, (x1 + x2) / 2, textY, color);
+        // Shadow only under light text. A black label's shadow is also black, and offset by a
+        // pixel it reads as doubled, smeared text rather than as depth — which is exactly what
+        // the hover state looked like.
+        drawLabel(gg, label, (x1 + x2) / 2, textY, color, !dark);
+    }
+
+    /**
+     * Centred text with explicit shadow control.
+     *
+     * <p>{@code GuiGraphics.drawCenteredString} always draws a shadow, which is why this exists.</p>
+     */
+    private void drawLabel(GuiGraphics gg, String text, int centerX, int y, int color, boolean shadow) {
+        gg.drawString(this.font, text, centerX - this.font.width(text) / 2, y, color, shadow);
     }
 
     private static boolean isTypingHere(int rowIdx, int subIdx) {
@@ -298,7 +398,8 @@ public final class CommandMenuGuiScreen extends Screen {
     // ------------------------------------------------------------------
 
     private void updateHover(int mouseX, int mouseY) {
-        long main = hitPanel(mouseX, mouseY, mainX, mainY, mainW, CommandMenuState.entries());
+        long main = hitPanel(mouseX, mouseY, mainX, mainY, mainW, CommandMenuState.entries(),
+            mainSticky, mainScroll, mainVisible);
         if (main >= 0) {
             CommandMenuState.setHovered((int) (main >> 32), (int) (main & 0xFFFFFFFFL));
             CommandMenuState.setSideHovered(-1, 0);
@@ -307,7 +408,8 @@ public final class CommandMenuGuiScreen extends Screen {
         CommandMenuState.setHovered(-1, 0);
 
         if (CommandMenuState.hasSidePanel()) {
-            long side = hitPanel(mouseX, mouseY, sideX, sideY, sideW, CommandMenuState.sideEntries());
+            long side = hitPanel(mouseX, mouseY, sideX, sideY, sideW, CommandMenuState.sideEntries(),
+                0, sideScroll, sideVisible);
             if (side >= 0) {
                 CommandMenuState.setSideHovered((int) (side >> 32), (int) (side & 0xFFFFFFFFL));
                 return;
@@ -316,22 +418,33 @@ public final class CommandMenuGuiScreen extends Screen {
         CommandMenuState.setSideHovered(-1, 0);
     }
 
+    /** True when the cursor is inside this panel's rectangle. */
+    private static boolean over(int mouseX, int mouseY, int px, int py, int pw, int ph) {
+        return mouseX >= px && mouseX < px + pw && mouseY >= py && mouseY < py + ph;
+    }
+
     /**
      * Resolve a mouse position to {@code (rowIdx, subIdx)} packed into a long, or -1 on a miss.
      * Non-clickable cells (Labels, already-saved SaveActions) miss deliberately, matching the
      * old raycast so the dispatcher never sees a click on them.
      */
     private static long hitPanel(
-        int mouseX, int mouseY, int px, int py, int pw, List<CommandMenuEntry> entries
+        int mouseX, int mouseY, int px, int py, int pw, List<CommandMenuEntry> entries,
+        int sticky, int scroll, int visible
     ) {
         if (entries.isEmpty()) return -1;
         int left = px + CommandMenuLayout.PANEL_PAD;
         int right = px + pw - CommandMenuLayout.PANEL_PAD;
         if (mouseX < left || mouseX >= right) return -1;
 
-        for (int i = 0; i < entries.size(); i++) {
-            int top = py + CommandMenuLayout.rowTop(i);
+        for (int slot = 0; slot < sticky + visible; slot++) {
+            int top = py + CommandMenuLayout.rowTop(slot);
             if (mouseY < top || mouseY >= top + CommandMenuLayout.ROW_H) continue;
+
+            // Visual slot -> index into entries. Pinned rows map straight through; everything
+            // below them is offset by the scroll position.
+            int i = slot < sticky ? slot : sticky + scroll + (slot - sticky);
+            if (i >= entries.size()) return -1;
 
             CommandMenuEntry row = entries.get(i);
             if (row instanceof CommandMenuEntry.Label) return -1;
@@ -377,12 +490,34 @@ public final class CommandMenuGuiScreen extends Screen {
     }
 
     /**
-     * Hand the wheel back to the hotbar. {@code Inventory.swapPaint} is the same call vanilla's
-     * own mouse handler makes, so wrapping and direction match the game exactly.
+     * The wheel does one of two things, decided by where the cursor is.
+     *
+     * <p>Over a panel whose list overflows, it scrolls that list. Anywhere else it falls through
+     * to the hotbar, via the same {@code Inventory.swapPaint} vanilla's own mouse handler calls,
+     * so wrapping and direction match the game exactly.</p>
+     *
+     * <p>The panel wins where the two overlap because a list you cannot reach the bottom of is a
+     * dead end, whereas the hotbar is always reachable by moving the cursor off the panel — or by
+     * pressing 1-9, which never stops working.</p>
      */
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
-        if (scrollY != 0 && this.minecraft != null && this.minecraft.player != null) {
+        if (scrollY == 0) return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
+        int dir = scrollY > 0 ? -1 : 1;
+        int mx = (int) mouseX;
+        int my = (int) mouseY;
+
+        if (mainMaxScroll > 0 && over(mx, my, mainX, mainY, mainW, mainH)) {
+            mainScroll = clamp(mainScroll + dir, 0, mainMaxScroll);
+            return true;
+        }
+        if (sideMaxScroll > 0 && CommandMenuState.hasSidePanel()
+            && over(mx, my, sideX, sideY, sideW, sideH)) {
+            sideScroll = clamp(sideScroll + dir, 0, sideMaxScroll);
+            return true;
+        }
+
+        if (this.minecraft != null && this.minecraft.player != null) {
             this.minecraft.player.getInventory().swapPaint(scrollY);
             return true;
         }

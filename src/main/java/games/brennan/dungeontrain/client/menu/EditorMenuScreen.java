@@ -58,6 +58,12 @@ public final class EditorMenuScreen implements MenuScreen {
     @Override public String title() { return "Editor"; }
 
     /**
+     * The tab strip is row 0 and stays pinned while the rest of the list scrolls — a tall Current
+     * tab would otherwise scroll away the only control that gets you out of it.
+     */
+    @Override public int stickyRows() { return 1; }
+
+    /**
      * A snapshot of everything the row builders need, read once per rebuild.
      *
      * <p>{@code model} is the friendly path string (HUD-style, may contain "/").

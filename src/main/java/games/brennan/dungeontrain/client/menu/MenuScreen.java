@@ -65,4 +65,15 @@ public interface MenuScreen {
     default double panelWidth() {
         return CommandMenuLayout.PANEL_WIDTH;
     }
+
+    /**
+     * How many leading rows stay pinned to the top of the panel when the list scrolls.
+     *
+     * <p>Defaults to none, which is right for a plain list. {@link EditorMenuScreen} returns 1 so
+     * its tab strip stays reachable: the strip is row 0, and a tall Current tab would otherwise
+     * scroll away the very control you need in order to leave it.</p>
+     */
+    default int stickyRows() {
+        return 0;
+    }
 }
