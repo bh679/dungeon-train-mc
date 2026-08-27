@@ -1569,8 +1569,6 @@
   "gui.dungeontrain.video_tools.reset.done_desc": "Gotowe. Stwórz nowy świat, a Dungeon Train potraktuje cię jak gracza, który dopiero zaczyna.",
   "gui.dungeontrain.builder.profile": "Moje budowle",
   "gui.dungeontrain.builder.profile.title": "Moje budowle",
-  "gui.dungeontrain.builder.profile.submit": "Powierz pociągowi",
-  "gui.dungeontrain.builder.profile.withdraw": "Zdejmij z pociągu",
   "gui.dungeontrain.builder.profile.not_a_carriage": "Do pociągu wsiadają tylko wagony",
   "gui.dungeontrain.builder.profile.on_train": "w pociągu",
   "gui.dungeontrain.builder.profile.in_profile": "zapisana",

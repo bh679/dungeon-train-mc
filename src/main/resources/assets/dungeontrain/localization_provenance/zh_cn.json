@@ -499,8 +499,6 @@
       "gui.dungeontrain.video_tools.reset.done_desc",
       "gui.dungeontrain.builder.profile",
       "gui.dungeontrain.builder.profile.title",
-      "gui.dungeontrain.builder.profile.submit",
-      "gui.dungeontrain.builder.profile.withdraw",
       "gui.dungeontrain.builder.profile.not_a_carriage",
       "gui.dungeontrain.builder.profile.on_train",
       "gui.dungeontrain.builder.profile.in_profile",

@@ -1515,8 +1515,6 @@
   "gui.dungeontrain.video_tools.reset.done_desc": "完了しました。新しいワールドを作れば、Dungeon Train はあなたを初めてのプレイヤーとして迎えます。",
   "gui.dungeontrain.builder.profile": "自分の建築",
   "gui.dungeontrain.builder.profile.title": "自分の建築",
-  "gui.dungeontrain.builder.profile.submit": "列車に預ける",
-  "gui.dungeontrain.builder.profile.withdraw": "列車から降ろす",
   "gui.dungeontrain.builder.profile.not_a_carriage": "列車に乗るのは車両だけ",
   "gui.dungeontrain.builder.profile.on_train": "列車上",
   "gui.dungeontrain.builder.profile.in_profile": "保存済み",
