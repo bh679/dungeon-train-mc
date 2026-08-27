@@ -9442,11 +9442,8 @@
       "id": "its-not-that-simple-advancement",
       "version": "0.690.0",
       "type": "feat",
-      "title": "A new final advancement",
-      "summary": "There is one more advancement in the game than there was \u2014 a new last one, sitting past what used to be the end. It is hidden, and it stays that way: what it is, and what earning it takes, are for you to work out.",
-      "highlights": [
-        "One new advancement, beyond the one that used to be last"
-      ],
+      "title": "One more advancement",
+      "summary": "There is one more advancement in the game.",
       "pr": 1149,
       "date": "2026-08-27",
       "released": false,
