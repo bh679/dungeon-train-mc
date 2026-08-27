@@ -79,19 +79,38 @@ public final class EditorMenusModeState {
     /**
      * Whether a panel anchored at {@code anchor} is near enough to draw for a camera at {@code cam}.
      *
-     * <p>Only {@link EditorMenusMode#AUTO} culls by distance — {@code ON} deliberately keeps
-     * drawing everything at any range (it is the escape hatch when you want the whole board), and
-     * {@code OFF} has already drawn nothing by the time anything asks.</p>
+     * <p>Three conditions have to line up before anything is culled. The mode must be
+     * {@link EditorMenusMode#AUTO} — {@code ON} deliberately keeps drawing everything at any range
+     * (it is the escape hatch when you want the whole board) and {@code OFF} has already drawn
+     * nothing by the time anything asks. The player must be {@code insideTemplate}: between plots
+     * the whole board is how you find your way to the next one, so nothing culls there. Only then
+     * does distance decide.</p>
      */
-    public static boolean withinRange(Vec3 anchor, Vec3 cam, EditorMenusMode mode) {
+    public static boolean withinRange(Vec3 anchor, Vec3 cam, EditorMenusMode mode,
+                                      boolean insideTemplate) {
         if (mode != EditorMenusMode.AUTO) return true;
+        if (!insideTemplate) return true;
         if (anchor == null || cam == null) return true;
         return anchor.distanceToSqr(cam) <= MAX_PANEL_DISTANCE_SQ;
     }
 
-    /** {@link #withinRange(Vec3, Vec3, EditorMenusMode)} against the live client mode. */
+    /**
+     * {@link #withinRange(Vec3, Vec3, EditorMenusMode, boolean)} against the live client mode and
+     * the live in-a-template answer.
+     */
     public static boolean withinRange(Vec3 anchor, Vec3 cam) {
-        return withinRange(anchor, cam, mode);
+        return withinRange(anchor, cam, mode, insideTemplate());
+    }
+
+    /**
+     * Whether the player is standing in an editor plot right now.
+     *
+     * <p>{@link EditorStatusHudOverlay#isActive()} is already the client's answer to that — the
+     * server pushes a status for the plot you are in (part plots included) and clears it the
+     * moment you step out — so this reuses it rather than tracking the same thing twice.</p>
+     */
+    public static boolean insideTemplate() {
+        return EditorStatusHudOverlay.isActive();
     }
 
     private static boolean anyInPlot(List<EditorPlotLabelsPacket.Entry> snapshot) {

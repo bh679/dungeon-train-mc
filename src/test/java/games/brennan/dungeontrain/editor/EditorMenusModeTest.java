@@ -89,31 +89,45 @@ final class EditorMenusModeTest {
     }
 
     @Test
-    @DisplayName("AUTO culls panels past 15 blocks, inclusive of the boundary")
+    @DisplayName("AUTO inside a template culls past 15 blocks, inclusive of the boundary")
     void autoCullsByDistance() {
         Vec3 cam = new Vec3(0, 64, 0);
         double max = EditorMenusModeState.MAX_PANEL_DISTANCE;
         assertTrue(EditorMenusModeState.withinRange(
-            new Vec3(max - 0.5, 64, 0), cam, EditorMenusMode.AUTO));
+            new Vec3(max - 0.5, 64, 0), cam, EditorMenusMode.AUTO, true));
         // Exactly at the limit still draws — the cull is "further than", not "at least".
         assertTrue(EditorMenusModeState.withinRange(
-            new Vec3(max, 64, 0), cam, EditorMenusMode.AUTO));
+            new Vec3(max, 64, 0), cam, EditorMenusMode.AUTO, true));
         assertFalse(EditorMenusModeState.withinRange(
-            new Vec3(max + 0.5, 64, 0), cam, EditorMenusMode.AUTO));
+            new Vec3(max + 0.5, 64, 0), cam, EditorMenusMode.AUTO, true));
         // Distance is 3D, not horizontal — a panel straight up is just as far away.
         assertFalse(EditorMenusModeState.withinRange(
-            new Vec3(0, 64 + max + 1, 0), cam, EditorMenusMode.AUTO));
+            new Vec3(0, 64 + max + 1, 0), cam, EditorMenusMode.AUTO, true));
         assertFalse(EditorMenusModeState.withinRange(
-            new Vec3(12, 64 + 12, 0), cam, EditorMenusMode.AUTO));
+            new Vec3(12, 64 + 12, 0), cam, EditorMenusMode.AUTO, true));
     }
 
     @Test
-    @DisplayName("ON ignores distance entirely; OFF never gets asked")
+    @DisplayName("AUTO between plots: distance is not culled at all")
+    void autoOutsideTemplate_ignoresDistance() {
+        Vec3 cam = new Vec3(0, 64, 0);
+        // Between plots the whole board is how you find the next one, so nothing culls — however
+        // far off it is.
+        assertTrue(EditorMenusModeState.withinRange(
+            new Vec3(500, 64, 500), cam, EditorMenusMode.AUTO, false));
+        assertTrue(EditorMenusModeState.withinRange(
+            new Vec3(EditorMenusModeState.MAX_PANEL_DISTANCE + 0.5, 64, 0),
+            cam, EditorMenusMode.AUTO, false));
+    }
+
+    @Test
+    @DisplayName("ON ignores distance entirely, in a template or not; OFF never gets asked")
     void onIgnoresDistance() {
         Vec3 cam = new Vec3(0, 64, 0);
         Vec3 farAway = new Vec3(500, 64, 500);
-        assertTrue(EditorMenusModeState.withinRange(farAway, cam, EditorMenusMode.ON));
-        assertTrue(EditorMenusModeState.withinRange(farAway, cam, EditorMenusMode.OFF));
+        assertTrue(EditorMenusModeState.withinRange(farAway, cam, EditorMenusMode.ON, true));
+        assertTrue(EditorMenusModeState.withinRange(farAway, cam, EditorMenusMode.ON, false));
+        assertTrue(EditorMenusModeState.withinRange(farAway, cam, EditorMenusMode.OFF, true));
     }
 
     @Test
