@@ -8,8 +8,6 @@ import games.brennan.dungeontrain.net.OpenLetterEditorPacket;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.GlobalPos;
 import net.minecraft.core.component.DataComponents;
-import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.TickTask;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.network.Filterable;
@@ -30,6 +28,7 @@ import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import org.slf4j.Logger;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -164,29 +163,22 @@ public final class LetterLecternEvents {
      * the book &amp; quill on the lectern as an unsigned draft, unchanged. No-op if the player no longer
      * holds a book &amp; quill (they actually signed) or the lectern is occupied.
      */
-    public static void handleDraftToLectern(ServerPlayer player, BlockPos pos) {
+    public static void handleDraftToLectern(ServerPlayer player, BlockPos pos, List<String> pages) {
         PENDING_LECTERN.remove(player.getUUID());
-        MinecraftServer server = player.getServer();
-        if (server == null) return;
-        // Deferred by one tick ON PURPOSE. Vanilla's "Done" button closes the screen and only THEN
-        // sends its edit packet (BookEditScreen#init: setScreen(null) before saveChanges(false)), so
-        // the pages the player just typed arrive immediately after this call. Placing the book now
-        // would move it out of the hand slot that packet targets, vanilla would drop the edit, and
-        // Done — the button whose whole job is to save the draft — would save nothing.
-        server.tell(new TickTask(server.getTickCount() + 1, () -> placeDraftOnLectern(player, pos)));
-    }
-
-    /** The deferred body of {@link #handleDraftToLectern}; runs a tick later, so re-validate everything. */
-    private static void placeDraftOnLectern(ServerPlayer player, BlockPos pos) {
         try {
-            if (player.hasDisconnected()) return;
             ItemStack book = findWritableInHand(player);
             if (book.isEmpty()) return;
             ServerLevel level = player.serverLevel();
-            if (!level.hasChunkAt(pos)) return; // lectern unloaded in the intervening tick
             BlockState state = level.getBlockState(pos);
             if (!(state.getBlock() instanceof LecternBlock)) return;
             if (state.getValue(LecternBlock.HAS_BOOK)) return; // occupied (e.g. a narrative lectern) — keep it in hand
+
+            // Write the text the player just typed, carried by the packet. Vanilla's own edit
+            // packet cannot be relied on here: Done closes the screen before sending it, and
+            // handleEditBook applies it asynchronously (filterTextPacket().thenAcceptAsync), so it
+            // may well land after this — on a hand slot the book has already left, which is exactly
+            // how an edited-but-unsigned draft came back blank.
+            applyDraftPages(book, pages);
 
             // The draft rests on the lectern EXACTLY as the player wrote it — no rename, no added
             // components. It is an unfinished book & quill, not a titled artefact: the title is
@@ -228,6 +220,35 @@ public final class LetterLecternEvents {
         WritableBookContent content = stack.get(DataComponents.WRITABLE_BOOK_CONTENT);
         if (content == null) return List.of();
         return content.pages().stream().map(Filterable::raw).toList();
+    }
+
+    /**
+     * Write client-supplied draft {@code pages} onto {@code book}, clamped to vanilla's own limits.
+     *
+     * <p>This is untrusted client input reaching a persisted item, so it gets the same ceilings
+     * vanilla applies to a book edit — at most {@link WritableBookContent#MAX_PAGES} pages of at
+     * most {@link WritableBookContent#PAGE_EDIT_LENGTH} characters — and trailing empty pages are
+     * dropped the way {@code BookEditScreen#eraseEmptyTrailingPages} does before a save. An empty
+     * list leaves the book untouched rather than blanking it.</p>
+     *
+     * <p>Unlike vanilla's edit path the text is NOT run through the chat filter: a draft is local to
+     * this world and goes nowhere until it is signed, and signing routes through vanilla's own
+     * filtered {@code signBook} path.</p>
+     */
+    private static void applyDraftPages(ItemStack book, List<String> pages) {
+        if (pages == null || pages.isEmpty()) return;
+
+        List<String> trimmed = new ArrayList<>(pages.subList(0, Math.min(pages.size(), WritableBookContent.MAX_PAGES)));
+        while (!trimmed.isEmpty() && trimmed.get(trimmed.size() - 1).isEmpty()) {
+            trimmed.remove(trimmed.size() - 1);
+        }
+        List<Filterable<String>> content = trimmed.stream()
+                .map(page -> page.length() > WritableBookContent.PAGE_EDIT_LENGTH
+                        ? page.substring(0, WritableBookContent.PAGE_EDIT_LENGTH)
+                        : page)
+                .map(Filterable::passThrough)
+                .toList();
+        book.set(DataComponents.WRITABLE_BOOK_CONTENT, new WritableBookContent(content));
     }
 
     private static ItemStack findWritableInHand(ServerPlayer player) {
