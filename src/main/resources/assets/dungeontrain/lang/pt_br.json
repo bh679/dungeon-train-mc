@@ -1642,5 +1642,11 @@
   "commands.dungeontrain.customcontent.now_on": "O conteúdo de trem personalizado agora está ligado neste mundo. Esta partida conta como Jogo Livre.",
   "commands.dungeontrain.customcontent.now_off": "O conteúdo de trem personalizado agora está desligado neste mundo. Os vagões novos vão usar os modelos originais.",
   "commands.dungeontrain.customcontent.already_on": "O conteúdo de trem personalizado já estava ligado neste mundo.",
-  "commands.dungeontrain.customcontent.already_off": "O conteúdo de trem personalizado já estava desligado neste mundo."
+  "commands.dungeontrain.customcontent.already_off": "O conteúdo de trem personalizado já estava desligado neste mundo.",
+  "chat.dungeontrain.book_burns_author": "O livro de %s queima",
+  "item.dungeontrain.stats_book": "Livro de estatísticas",
+  "gui.dungeontrain.options.book_author_chat": "Autor do livro no chat",
+  "gui.dungeontrain.options.book_author_chat.tip": "Escreve no chat uma linha com o nome do autor toda vez que um livro do Dungeon Train queima — \"O livro de X queima\". Os livros que você lê, joga fora ou derruba ao morrer pegam fogo todos, e este é o único lugar em que quem os escreveu recebe crédito. Desligado por padrão.",
+  "chat.dungeontrain.free_play.cause.keep_inventory": "Neste mundo, \"Manter inventário\" está ligado.",
+  "chat.dungeontrain.free_play.keep_inventory_on": "O Dungeon Train é balanceado em torno de morrer custar algo a você, então daqui em diante este mundo guarda as próprias estatísticas. Desligar a regra de jogo de novo não muda isso — o equipamento que você carregou através de uma morte já é seu."
 }
