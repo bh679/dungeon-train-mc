@@ -1542,8 +1542,6 @@
   "gui.dungeontrain.video_tools.reset.done_desc": {"author": "Opus 5 (Claude)", "reviewer": ""},
   "gui.dungeontrain.builder.profile": {"author": "Opus 5 (Claude)", "reviewer": ""},
   "gui.dungeontrain.builder.profile.title": {"author": "Opus 5 (Claude)", "reviewer": ""},
-  "gui.dungeontrain.builder.profile.submit": {"author": "Opus 5 (Claude)", "reviewer": ""},
-  "gui.dungeontrain.builder.profile.withdraw": {"author": "Opus 5 (Claude)", "reviewer": ""},
   "gui.dungeontrain.builder.profile.not_a_carriage": {"author": "Opus 5 (Claude)", "reviewer": ""},
   "gui.dungeontrain.builder.profile.on_train": {"author": "Opus 5 (Claude)", "reviewer": ""},
   "gui.dungeontrain.builder.profile.in_profile": {"author": "Opus 5 (Claude)", "reviewer": ""},

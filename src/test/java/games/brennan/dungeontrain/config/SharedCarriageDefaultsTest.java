@@ -3,13 +3,15 @@ package games.brennan.dungeontrain.config;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Pins the shipped shared-carriage config defaults.
  *
- * <p>{@code sharedCarriagesEnabled} is the <b>sole</b> gate for both halves of the feature
- * ({@code SharedCarriageGate.canDiscover} for leasing, {@code canContribute} for uploading). It
+ * <p>{@code sharedCarriagesEnabled} is the master gate for both halves of the feature
+ * ({@code SharedCarriageGate.canLease} for leasing, {@code canContribute} for uploading), with
+ * {@code sharedCarriageLeasingEnabled} a second, narrower gate on the leasing half alone. The master
  * shipped {@code false} through a release that publicly announced the feature, so for a day of
  * live play across 40+ players not a single shared carriage was placed or uploaded anywhere — the
  * code path never executed once, and nothing in the build said so. This test is the tripwire: if
@@ -59,5 +61,23 @@ class SharedCarriageDefaultsTest {
                 "pool + own must leave a remainder: that remainder is the fresh blank canvas share, "
                         + "and it is the ONLY thing that feeds new builds into the pool (pool=" + pool
                         + ", own=" + own + ")");
+    }
+
+    /**
+     * Leasing ships OFF while uploading ships ON — the deliberate asymmetry this switch exists for.
+     *
+     * <p>Asserted as a pair rather than one constant each, because it is the COMBINATION that is the
+     * product decision: builds are collected (players save them to the server and submit them for
+     * review) and nothing from the pool is served into a run yet. Either half flipping alone breaks
+     * that — leasing on would place unreviewed builds, the master off would stop collecting them.</p>
+     */
+    @Test
+    @DisplayName("carriages are collected but not served: master ON, leasing OFF")
+    void leasingShipsOffWhileUploadingShipsOn() {
+        assertTrue(DungeonTrainConfig.DEFAULT_SHARED_CARRIAGES_ENABLED,
+                "the master must stay on or builds stop being uploaded at all");
+        assertFalse(DungeonTrainConfig.DEFAULT_SHARED_CARRIAGE_LEASING_ENABLED,
+                "leasing must ship off until the review pipeline opens — with this true, unreviewed "
+                        + "community builds are placed into players' runs");
     }
 }

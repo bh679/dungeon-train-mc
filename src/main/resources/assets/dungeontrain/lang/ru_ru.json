@@ -1569,8 +1569,6 @@
   "gui.dungeontrain.video_tools.reset.done_desc": "Готово. Создайте новый мир, и Dungeon Train встретит вас как игрока, который играет впервые.",
   "gui.dungeontrain.builder.profile": "Мои постройки",
   "gui.dungeontrain.builder.profile.title": "Мои постройки",
-  "gui.dungeontrain.builder.profile.submit": "Отдать поезду",
-  "gui.dungeontrain.builder.profile.withdraw": "Снять с поезда",
   "gui.dungeontrain.builder.profile.not_a_carriage": "На поезд идут только вагоны",
   "gui.dungeontrain.builder.profile.on_train": "на поезде",
   "gui.dungeontrain.builder.profile.in_profile": "сохранена",
