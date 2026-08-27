@@ -8,7 +8,8 @@
   "mixins": [],
   "client": [
     "betteradvancements.BetterAdvancementWidgetCompatMixin",
-    "betteradvancements.BetterAdvancementsCriteriaMixin"
+    "betteradvancements.BetterAdvancementsCriteriaMixin",
+    "betteradvancements.BetterAdvancementTabScrollMixin"
   ],
   "server": [],
   "injectors": {
