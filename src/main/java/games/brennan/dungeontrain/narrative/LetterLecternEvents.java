@@ -11,14 +11,18 @@ import net.minecraft.core.GlobalPos;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.TickTask;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.network.Filterable;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.WritableBookContent;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.LecternBlock;
+import net.minecraft.world.level.block.entity.LecternBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -71,25 +75,88 @@ public final class LetterLecternEvents {
         BlockPos pos = event.getPos();
         BlockState state = level.getBlockState(pos);
         if (!(state.getBlock() instanceof LecternBlock)) return;
-        // Book & quill only (WRITABLE_BOOK_CONTENT) — a signed written book keeps vanilla behaviour.
-        ItemStack stack = event.getItemStack();
-        if (!stack.has(DataComponents.WRITABLE_BOOK_CONTENT)) return;
+        if (!(level instanceof ServerLevel serverLevel)) return;
 
         // Only intercept when the letter can actually be uploaded (feature on + network consent).
-        // When the gate fails we do NOT cancel, so vanilla places the book & quill normally.
+        // When the gate fails we do NOT cancel, so vanilla places the book & quill normally (and a
+        // resting draft stays readable through the vanilla lectern screen).
         if (!SharedBookGate.canWriteLetter(player)) return;
 
-        // Suppress vanilla placement so the book stays in hand for signing. We deliberately do not
-        // cancel the client's own prediction here — the server drives the screen open via S2C, and the
-        // brief place-prediction rolls back before the (pages-carrying) screen opens.
+        // Two ways into the editor, and the book being edited always ends up in the player's HAND —
+        // vanilla signing is inventory-slot based, so a lectern can never itself be the sign target.
+        ItemStack stack = event.getItemStack();
+        ItemStack editing;
+        if (stack.has(DataComponents.WRITABLE_BOOK_CONTENT)) {
+            // Book & quill in hand. Suppress vanilla placement so it stays there for signing. We
+            // deliberately do not cancel the client's own prediction — the server drives the screen
+            // open via S2C, and the brief place-prediction rolls back before the (pages-carrying)
+            // screen opens. A signed written book keeps vanilla behaviour (no component, no match).
+            editing = stack;
+        } else if (stack.isEmpty()) {
+            // Empty hand on a plain lectern holding an unsigned draft: take it back into the hand so
+            // the player can finish and sign it — the "draft to finish later" half of the feature.
+            // Returns EMPTY (→ vanilla) for anything else, including a signed book on a lectern.
+            editing = takeDraftFromLectern(player, serverLevel, pos, state, event.getHand());
+            if (editing.isEmpty()) return;
+        } else {
+            return;
+        }
+
         event.setCanceled(true);
         event.setCancellationResult(InteractionResult.CONSUME);
 
         PENDING_LECTERN.put(player.getUUID(), GlobalPos.of(level.dimension(), pos.immutable()));
         DungeonTrainNet.sendTo(player,
-                new OpenLetterEditorPacket(event.getHand().ordinal(), pos.immutable(), readPages(stack)));
+                new OpenLetterEditorPacket(event.getHand().ordinal(), pos.immutable(), readPages(editing)));
         LOGGER.debug("[DungeonTrain] Letter: {} opened the sign screen from a lectern at {}",
                 player.getName().getString(), pos);
+    }
+
+    /**
+     * Lift an unsigned book &amp; quill draft off a <b>plain</b> lectern into {@code hand}, returning it
+     * (or {@link ItemStack#EMPTY} when this lectern holds nothing we should touch).
+     *
+     * <p>Deliberately narrow, because this hijacks an otherwise ordinary lectern right-click:</p>
+     * <ul>
+     *   <li>{@code minecraft:lectern} only — a {@link games.brennan.dungeontrain.narrative.block.NarrativeLecternBlock}
+     *       holds mod story content and must keep opening it,</li>
+     *   <li>the resting book must be a book &amp; quill ({@code WRITABLE_BOOK_CONTENT}); every signed
+     *       book — narrative, library-carriage, player-written — falls through to vanilla untouched.</li>
+     * </ul>
+     */
+    private static ItemStack takeDraftFromLectern(ServerPlayer player, ServerLevel level, BlockPos pos,
+                                                  BlockState state, InteractionHand hand) {
+        if (!state.is(Blocks.LECTERN)) return ItemStack.EMPTY;
+        if (!state.getValue(LecternBlock.HAS_BOOK)) return ItemStack.EMPTY;
+        if (!(level.getBlockEntity(pos) instanceof LecternBlockEntity lectern)) return ItemStack.EMPTY;
+        if (!lectern.getBook().has(DataComponents.WRITABLE_BOOK_CONTENT)) return ItemStack.EMPTY;
+
+        ItemStack draft = clearPlainLecternBook(player, level, pos, state);
+        if (draft.isEmpty()) return ItemStack.EMPTY;
+        player.setItemInHand(hand, draft);
+        return draft;
+    }
+
+    /**
+     * Take the book off a <b>plain</b> lectern and leave the block visibly empty, returning what it
+     * held ({@link ItemStack#EMPTY} if it held nothing or is not a plain lectern — a narrative lectern
+     * keeps its own story state and is never cleared here).
+     *
+     * <p>Goes through vanilla {@link LecternBlock#resetBookState} rather than a bare
+     * {@code setBlock} so {@code HAS_BOOK} / {@code POWERED}, the block game event and the
+     * comparator/redstone update below the lectern all land the way vanilla does them.</p>
+     */
+    public static ItemStack clearPlainLecternBook(ServerPlayer player, ServerLevel level, BlockPos pos,
+                                                  BlockState state) {
+        if (!state.is(Blocks.LECTERN)) return ItemStack.EMPTY;
+        if (!(level.getBlockEntity(pos) instanceof LecternBlockEntity lectern)) return ItemStack.EMPTY;
+        if (!lectern.hasBook()) return ItemStack.EMPTY;
+
+        ItemStack book = lectern.getBook().copy();
+        lectern.setBook(ItemStack.EMPTY);
+        lectern.setChanged();
+        LecternBlock.resetBookState(player, level, pos, state, /*hasBook*/ false);
+        return book;
     }
 
     /**
@@ -99,10 +166,24 @@ public final class LetterLecternEvents {
      */
     public static void handleDraftToLectern(ServerPlayer player, BlockPos pos) {
         PENDING_LECTERN.remove(player.getUUID());
+        MinecraftServer server = player.getServer();
+        if (server == null) return;
+        // Deferred by one tick ON PURPOSE. Vanilla's "Done" button closes the screen and only THEN
+        // sends its edit packet (BookEditScreen#init: setScreen(null) before saveChanges(false)), so
+        // the pages the player just typed arrive immediately after this call. Placing the book now
+        // would move it out of the hand slot that packet targets, vanilla would drop the edit, and
+        // Done — the button whose whole job is to save the draft — would save nothing.
+        server.tell(new TickTask(server.getTickCount() + 1, () -> placeDraftOnLectern(player, pos)));
+    }
+
+    /** The deferred body of {@link #handleDraftToLectern}; runs a tick later, so re-validate everything. */
+    private static void placeDraftOnLectern(ServerPlayer player, BlockPos pos) {
         try {
+            if (player.hasDisconnected()) return;
             ItemStack book = findWritableInHand(player);
             if (book.isEmpty()) return;
             ServerLevel level = player.serverLevel();
+            if (!level.hasChunkAt(pos)) return; // lectern unloaded in the intervening tick
             BlockState state = level.getBlockState(pos);
             if (!(state.getBlock() instanceof LecternBlock)) return;
             if (state.getValue(LecternBlock.HAS_BOOK)) return; // occupied (e.g. a narrative lectern) — keep it in hand
