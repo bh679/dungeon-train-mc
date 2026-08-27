@@ -126,7 +126,7 @@ public final class BuilderProfileScreen extends Screen {
 
     /**
      * Whether the button can do anything: a build has to be selected, and it has to be the kind a
-     * train can hold. Withdrawing is always allowed on a published build — the relay is what refuses,
+     * train can hold. Withdrawing is always allowed on a submitted build — the relay is what refuses,
      * when somebody else is out riding it.
      */
     private boolean canActOnSelection() {
@@ -136,13 +136,13 @@ public final class BuilderProfileScreen extends Screen {
 
     private Component actionLabel() {
         BuilderProfilePacket.Entry entry = selectedBuild();
-        if (entry == null) return Component.translatable("gui.dungeontrain.builder.profile.submit");
+        if (entry == null) return Component.translatable("gui.dungeontrain.builder.profile.submit_for_review");
         if (!BuilderRelayKinds.canJoinTheTrain(entry.kind())) {
             return Component.translatable("gui.dungeontrain.builder.profile.not_a_carriage");
         }
         return Component.translatable(entry.published()
-                ? "gui.dungeontrain.builder.profile.withdraw"
-                : "gui.dungeontrain.builder.profile.submit");
+                ? "gui.dungeontrain.builder.profile.withdraw_submission"
+                : "gui.dungeontrain.builder.profile.submit_for_review");
     }
 
     private void submitSelected() {

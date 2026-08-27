@@ -97,7 +97,23 @@ public final class CheatModList {
         "mr_vein_miner", "mr_ore_veinminer", "mr_tree_veinminer", "mr_the_veinminer",
         "mr_custom_vm", "mr_coconite_coolveinminer", "mr_ly_veinminerenchantment",
         "mr_ore_veinminerenchant", "mr_ks_veinminerenchantment", "mr_tree_veinminerenchant",
-        "mr_tree_miner_leaf_decay", "mr_veinmine_autosmeltenchantments"
+        "mr_tree_miner_leaf_decay", "mr_veinmine_autosmeltenchantments",
+        // unlimited villager trading — removing the trade lock turns one villager hall into an
+        // uncapped emerald faucet, which is precisely the income curve DT's loot and difficulty
+        // tables are balanced against. Same reasoning as the vein miners above: not malicious,
+        // but it plays a different game. Every ID was read out of that jar's own
+        // neoforge.mods.toml; the "mr_*" pair are Modrinth datapack-to-mod republishes, which
+        // load under generated IDs (same as the vein-miner wrappers above). Deliberately
+        // excluded: trade-cycling and villager-carrying QoL mods — they make the vanilla
+        // restock loop less tedious, they do not remove the cap.
+        "infinitetrading", "mr_unlimited_trading", "mr_unlimited_villagertrades",
+        // in-game item / NBT editors — build any item with any component, i.e. /give with a GUI
+        // and no command for CommandAllowlist to see. They already need operator permission to
+        // do anything (which OperatorIntegrity now catches on its own), but naming them lets the
+        // login notice say WHAT tripped Free Play rather than just "someone has cheats".
+        // "infinityeditor" is the original Ruukas build, "infinity_item_editor_re" the
+        // maintained NeoForge fork.
+        "infinityeditor", "infinity_item_editor_re"
     );
 
     /** Cache file under the loader config dir; written on each successful relay fetch. */

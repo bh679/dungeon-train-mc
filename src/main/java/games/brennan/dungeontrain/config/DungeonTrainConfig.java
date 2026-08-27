@@ -142,6 +142,20 @@ public final class DungeonTrainConfig {
      */
     public static final boolean DEFAULT_SHARED_CARRIAGES_ENABLED = true;
     /**
+     * Relay carriages are COLLECTED but not yet SERVED — leasing ships off.
+     *
+     * <p>The shared-carriage feature has two halves, and they are not ready at the same time. A world
+     * uploading its builds costs its players nothing and is what fills the pool; a world <em>placing</em>
+     * someone else's build puts unreviewed geometry into a stranger's run, and the review pipeline that
+     * gates that is not open yet. So the master switch above stays on — saves, submissions and in-play
+     * uploads all keep working — while this one holds the lease side shut until submissions open.</p>
+     *
+     * <p>No config migration accompanies this: the key is new, so every install picks the shipped
+     * {@code false} up on its next load. Flipping it to {@code true} later WILL need a migration step,
+     * for the reason {@link #runPendingMigrations()} documents.</p>
+     */
+    public static final boolean DEFAULT_SHARED_CARRIAGE_LEASING_ENABLED = false;
+    /**
      * Train Builder profiles ship ON.
      *
      * <p>They shipped OFF originally, on the reasoning that a builder save is deliberate authored work
@@ -292,6 +306,7 @@ public final class DungeonTrainConfig {
     public static final ModConfigSpec.IntValue PORTAL_ROOM_AUTHOR_MIN_BOOKS;
     public static final ModConfigSpec.BooleanValue PORTAL_ROOM_DAYLIGHT;
     public static final ModConfigSpec.BooleanValue SHARED_CARRIAGES_ENABLED;
+    public static final ModConfigSpec.BooleanValue SHARED_CARRIAGE_LEASING_ENABLED;
     public static final ModConfigSpec.BooleanValue BUILDER_PROFILE_ENABLED;
     public static final ModConfigSpec.DoubleValue SHARED_CARRIAGE_POOL_CHANCE;
     public static final ModConfigSpec.DoubleValue SHARED_CARRIAGE_OWN_CHANCE;
@@ -347,6 +362,7 @@ public final class DungeonTrainConfig {
         PORTAL_ROOM_AUTHOR_MIN_BOOKS = pair.getLeft().portalRoomAuthorMinBooks;
         PORTAL_ROOM_DAYLIGHT = pair.getLeft().portalRoomDaylight;
         SHARED_CARRIAGES_ENABLED = pair.getLeft().sharedCarriagesEnabled;
+        SHARED_CARRIAGE_LEASING_ENABLED = pair.getLeft().sharedCarriageLeasingEnabled;
         BUILDER_PROFILE_ENABLED = pair.getLeft().builderProfileEnabled;
         SHARED_CARRIAGE_POOL_CHANCE = pair.getLeft().sharedCarriagePoolChance;
         SHARED_CARRIAGE_OWN_CHANCE = pair.getLeft().sharedCarriageOwnChance;
@@ -477,8 +493,9 @@ public final class DungeonTrainConfig {
                 .comment("Player-written lectern letters. When true, right-clicking a lectern with a book & quill opens",
                         "the sign screen; signing it uploads the letter to the Dungeon Train relay as the next entry in your",
                         "current life's narrative series (a new life starts a new series) and burns the book away at the",
-                        "lectern. Closing without signing leaves the book & quill on the lectern as an unsigned \"Letter X\"",
-                        "draft to finish later. Uploading also requires the player's client to have granted network consent",
+                        "lectern. Closing without signing leaves the book & quill on the lectern, unchanged, as an unsigned",
+                        "draft — right-click it empty-handed to pick it back up and finish it. Uploading also requires the",
+                        "player's client to have granted network consent",
                         "(Discord Presence's 'use the internet?' prompt). False disables the feature — a book & quill placed",
                         "on a lectern behaves like vanilla.")
                 .define("lettersEnabled", DEFAULT_LETTERS_ENABLED);
@@ -547,8 +564,17 @@ public final class DungeonTrainConfig {
                         "first time a player actually changes it — looting a chest or breaking a loot container does NOT count as",
                         "a change. Uploading also requires the player's client to have granted network consent. Default",
                         "true. Set it false to opt a world out entirely: it then neither leases community builds nor",
-                        "uploads its own.")
+                        "uploads its own. NOTE: leasing additionally requires sharedCarriageLeasingEnabled below, which",
+                        "ships false — so by default a world uploads but is never served anyone else's build.")
                 .define("sharedCarriagesEnabled", DEFAULT_SHARED_CARRIAGES_ENABLED);
+        ModConfigSpec.BooleanValue sharedCarriageLeasingEnabled = b
+                .comment("Whether this world may LEASE community carriages from the relay and place them on its trains.",
+                        "Separate from sharedCarriagesEnabled, which governs the other half of the feature: uploading.",
+                        "Default false — builds are collected (players can save them to the server and submit them for",
+                        "review) but nothing from the pool is served into a run yet. Set it true to place community",
+                        "builds; with sharedCarriagesEnabled false it does nothing, since the master switch opts the",
+                        "world out of the feature entirely.")
+                .define("sharedCarriageLeasingEnabled", DEFAULT_SHARED_CARRIAGE_LEASING_ENABLED);
         ModConfigSpec.DoubleValue sharedCarriagePoolChance = b
                 .comment("When a shared-carriage slot spawns, the probability it LEASES an existing build by ANY author from",
                         "the relay pool. Together with sharedCarriageOwnChance this splits the slot three ways; whatever is",
@@ -576,12 +602,12 @@ public final class DungeonTrainConfig {
         ModConfigSpec.BooleanValue builderProfileEnabled = b
                 .comment("Build profiles \u2014 when true, saving in the Train Builder OR the Train Editor also uploads the",
                         "build to the Dungeon Train relay under the player's name, so their builds follow them between",
-                        "worlds and can be submitted to the train for everyone. Every kind either tool authors is uploaded",
+                        "worlds and can be submitted for review. Every kind either tool authors is uploaded",
                         "(carriages, rooms, parts, track, tunnels, portal rooms), but only a whole carriage can be submitted",
-                        "to the train \u2014 the rest simply live in the player's profile. The editor uploads only templates the",
+                        "\u2014 the rest simply live in the player's profile. The editor uploads only templates the",
                         "player authored, never the ones that ship with the mod. Uploading also requires the player's client",
                         "to have granted network consent, and a build stays private to its author until they submit it.",
-                        "Default false.")
+                        "Default true.")
                 .define("builderProfileEnabled", DEFAULT_BUILDER_PROFILE_ENABLED);
         b.pop();
         b.push("discord");
@@ -664,7 +690,8 @@ public final class DungeonTrainConfig {
                 sharedBookLootMaxChance, sharedBookRepeatGroups, portalRoomAuthorMinBooks, portalRoomDaylight,
                 discoverNarrativesEnabled, narrativeDiscoveryRampThreshold,
                 difficultyLevelNoticeToDiscord, introCinematicEnabled, introCinematicDurationTicks,
-                introCinematicChunkPreloadEnabled, sharedCarriagesEnabled, sharedCarriagePoolChance,
+                introCinematicChunkPreloadEnabled, sharedCarriagesEnabled, sharedCarriageLeasingEnabled,
+                sharedCarriagePoolChance,
                 sharedCarriageOwnChance, sharedCarriageMaxEntities, builderProfileEnabled);
     }
 
@@ -680,6 +707,14 @@ public final class DungeonTrainConfig {
     /** Master toggle for the shared-carriage feature (relay-sourced carriages). */
     public static boolean isSharedCarriagesEnabled() {
         return isLoaded() ? SHARED_CARRIAGES_ENABLED.get() : DEFAULT_SHARED_CARRIAGES_ENABLED;
+    }
+
+    /**
+     * Whether this world may lease relay carriages onto its trains. Read through
+     * {@code SharedCarriageGate.canLease()}, never on its own — leasing also needs the master switch.
+     */
+    public static boolean isSharedCarriageLeasingEnabled() {
+        return isLoaded() ? SHARED_CARRIAGE_LEASING_ENABLED.get() : DEFAULT_SHARED_CARRIAGE_LEASING_ENABLED;
     }
 
     /** Whether a Train Builder or Train Editor save also uploads the build to the player's relay profile. */
@@ -1110,6 +1145,7 @@ public final class DungeonTrainConfig {
             ModConfigSpec.IntValue introCinematicDurationTicks,
             ModConfigSpec.BooleanValue introCinematicChunkPreloadEnabled,
             ModConfigSpec.BooleanValue sharedCarriagesEnabled,
+            ModConfigSpec.BooleanValue sharedCarriageLeasingEnabled,
             ModConfigSpec.DoubleValue sharedCarriagePoolChance,
             ModConfigSpec.DoubleValue sharedCarriageOwnChance,
             ModConfigSpec.IntValue sharedCarriageMaxEntities,

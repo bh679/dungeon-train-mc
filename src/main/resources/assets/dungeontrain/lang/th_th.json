@@ -1515,8 +1515,6 @@
   "gui.dungeontrain.video_tools.reset.done_desc": "เสร็จแล้ว สร้างโลกใหม่ แล้ว Dungeon Train จะปฏิบัติกับคุณเหมือนผู้เล่นครั้งแรก",
   "gui.dungeontrain.builder.profile": "สิ่งก่อสร้างของฉัน",
   "gui.dungeontrain.builder.profile.title": "สิ่งก่อสร้างของฉัน",
-  "gui.dungeontrain.builder.profile.submit": "ฝากให้ขบวนรถ",
-  "gui.dungeontrain.builder.profile.withdraw": "เอาลงจากขบวนรถ",
   "gui.dungeontrain.builder.profile.not_a_carriage": "ขึ้นขบวนรถได้เฉพาะตู้เท่านั้น",
   "gui.dungeontrain.builder.profile.on_train": "อยู่บนขบวนรถ",
   "gui.dungeontrain.builder.profile.in_profile": "บันทึกไว้แล้ว",

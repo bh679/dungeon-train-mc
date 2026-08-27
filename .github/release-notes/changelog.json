@@ -9192,6 +9192,113 @@
       "highlights": [],
       "pr": 1130,
       "date": "2026-08-27",
+      "released": true,
+      "released_in": "v0.681.0",
+      "released_at": "2026-08-27T10:01:48Z"
+    },
+    {
+      "id": "cheats-available-free-play",
+      "version": "0.680.0",
+      "type": "feat",
+      "title": "Cheats being available is Free Play",
+      "summary": "A world where cheats are available to anyone playing is now Free Play for as long as that is true \u2014 advancements still earn live, but they don't add to your profile and global stats don't accrue. If you had cheats yourself, your run stays Free Play afterwards.",
+      "highlights": [],
+      "pr": 1131,
+      "date": "2026-08-27",
+      "released": true,
+      "released_in": "v0.681.0",
+      "released_at": "2026-08-27T10:01:48Z"
+    },
+    {
+      "id": "creative-shift-click-to-hotbar",
+      "version": "0.680.0",
+      "type": "feat",
+      "title": "Shift-click twice in the creative menu to fill your hotbar",
+      "summary": "Shift-clicking an item in the creative menu still hands you a full stack on the cursor. Shift-click the same item again and that stack drops straight into your hotbar - and keep clicking to fill the slots along from there.",
+      "highlights": [
+        "The second shift-click on an item puts the stack in your hotbar: your selected slot if it is free, otherwise the first empty one.",
+        "Every further click on that same item fills the next slot along, wrapping around to the start.",
+        "Clicking a different item starts over, and the first shift-click behaves exactly as it always has."
+      ],
+      "pr": 1132,
+      "date": "2026-08-27",
+      "released": true,
+      "released_in": "v0.681.0",
+      "released_at": "2026-08-27T10:01:48Z"
+    },
+    {
+      "id": "end-band-ice-pillars",
+      "version": "0.681.0",
+      "type": "fix",
+      "title": "No more ice pillars in the End band",
+      "summary": "Stray towers of packed ice no longer generate beside the track when the train crosses the End band. The band's void chunks skipped their terrain fill but still ran the surface pass, so a frozen ocean underneath could stamp iceberg pillars into the void \u2014 and the strip of world that protects the track from the erosion kept them standing right where you ride past.",
+      "highlights": [
+        "The End band is clean void, islands and chorus again \u2014 no ice"
+      ],
+      "pr": 1133,
+      "date": "2026-08-27",
+      "released": true,
+      "released_in": "v0.681.0",
+      "released_at": "2026-08-27T10:01:48Z"
+    },
+    {
+      "id": "sign-books-normal-lecterns",
+      "version": "0.681.0",
+      "type": "fix",
+      "title": "Finish and sign books left on ordinary lecterns",
+      "summary": "A book & quill you leave on a plain lectern is now a draft you can come back to: right-click the lectern empty-handed to pick it up and keep writing, then sign it to seal it as a letter. Pressing Done leaves the book on the lectern exactly as you wrote it \u2014 your text is kept, nothing is handed back to you, and the book is no longer renamed behind your back.",
+      "highlights": [
+        "Right-click a lectern empty-handed to pick a draft back up and finish it",
+        "Done keeps the text you just typed instead of discarding it",
+        "Drafts rest on the lectern unchanged \u2014 no surprise rename, and no duplicate book in creative"
+      ],
+      "pr": 1129,
+      "date": "2026-08-27",
+      "released": true,
+      "released_in": "v0.682.0",
+      "released_at": "2026-08-27T10:28:28Z"
+    },
+    {
+      "id": "editor-menu-screen-tabs",
+      "version": "0.682.0",
+      "type": "feat",
+      "title": "The editor menu is now a proper screen, with tabs",
+      "summary": "Pressing X in the editor opens a real menu with a mouse cursor instead of a panel floating in the world that you aimed your head at. Its rows are grouped into four tabs \u2014 File, Current, Settings and Nav \u2014 so you are not scanning thirty rows to find one. Your hotbar stays live underneath, so you can still pick the block a row is about to use.",
+      "highlights": [
+        "Point and click with a cursor \u2014 no more aiming your head at a floating panel",
+        "Rows grouped into File, Current, Settings and Nav; tabs with nothing in them are hidden",
+        "The hotbar keeps working while the menu is open \u2014 scroll it or press 1-9",
+        "Long lists scroll instead of running off the bottom of the screen"
+      ],
+      "date": "2026-08-27",
+      "released": true,
+      "released_in": "v0.682.0",
+      "released_at": "2026-08-27T10:28:28Z"
+    },
+    {
+      "id": "remove-empty-test-carriage",
+      "version": "0.683.0",
+      "type": "fix",
+      "title": "Empty carriages no longer turn up in the train",
+      "summary": "A leftover test template was shipping with the mod, and it could be picked for any carriage slot like a normal one. When it was, you got a completely empty carriage \u2014 no floor, no walls, no roof, nothing inside \u2014 a gap in the middle of the train you could fall straight through. It has been removed, so every carriage the train builds is a real one.",
+      "highlights": [
+        "Removed the empty test carriage from the pool of carriages the train can build",
+        "It no longer appears as a blank template in the carriage editor"
+      ],
+      "pr": 1138,
+      "date": "2026-08-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "builds-submitted-for-review",
+      "version": "0.683.0",
+      "type": "feat",
+      "title": "Builds are submitted for review",
+      "summary": "Your saved builds go to your builder profile on the server, and a finished carriage can be submitted for review. Community carriages are paused on the train in the meantime.",
+      "highlights": [],
+      "date": "2026-08-27",
       "released": false,
       "released_in": null,
       "released_at": null

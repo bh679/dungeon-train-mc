@@ -40,6 +40,23 @@ public final class SharedCarriageGate {
     }
 
     /**
+     * Whether this world may LEASE relay carriages onto its trains — the placing half of the feature.
+     *
+     * <p>Narrower than {@link #canDiscover()} on purpose. The two halves of shared carriages are not
+     * ready at the same time: uploading costs a world's players nothing, while placing someone else's
+     * build puts unreviewed geometry into a stranger's run, and the review pipeline that gates that is
+     * not open yet. So {@code sharedCarriageLeasingEnabled} ships off and holds the lease sites shut
+     * while every upload path keeps running.</p>
+     *
+     * <p>ANDed with the master switch rather than read alone, so a world that opted out of the feature
+     * entirely can never be brought back in by the leasing switch.</p>
+     */
+    public static boolean canLease() {
+        return DungeonTrainConfig.isSharedCarriagesEnabled()
+                && DungeonTrainConfig.isSharedCarriageLeasingEnabled();
+    }
+
+    /**
      * Whether carriage leases must be restricted to builds the relay flagged kid-safe.
      *
      * <p>HOST-scoped, unlike the per-player book filter: the train is world geometry with one shared
