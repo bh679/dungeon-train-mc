@@ -9308,16 +9308,18 @@
       "version": "0.684.0",
       "type": "feat",
       "title": "Better Advancements support, and it ships with the modpack",
-      "summary": "The modpack now bundles Better Advancements, which replaces the advancements screen with a zoomable, searchable one. Dungeon Train's advancement tree works properly inside it: advancements you have unlocked the path to show their real icon, unearned ones still keep their secrets \u2014 you get the hint, not the description, and not the criteria behind it either. If you play without Better Advancements nothing changes.",
+      "summary": "The modpack now bundles Better Advancements, which replaces the advancements screen with a zoomable, searchable one. Dungeon Train's advancement tree works properly inside it: advancements you have unlocked the path to show their real icon, unearned ones still keep their secrets \u2014 you get the hint, not the description, and not the criteria behind it either. Scrolling a tall tree now reaches the whole thing, with a little room past each end. If you play without Better Advancements nothing changes.",
       "highlights": [
         "Better Advancements bundled with the modpack, enabled by default",
         "The Dungeon Train advancement tree renders correctly in its screen",
-        "Unearned advancements keep showing hints instead of spoilers"
+        "Unearned advancements keep showing hints instead of spoilers",
+        "Scrolling reaches the bottom of a tall advancement tree"
       ],
       "date": "2026-08-27",
       "released": false,
       "released_in": null,
-      "released_at": null
+      "released_at": null,
+      "pr": 1140
     }
   ]
 }
