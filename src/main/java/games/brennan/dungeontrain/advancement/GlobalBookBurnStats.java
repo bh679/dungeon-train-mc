@@ -6,7 +6,7 @@ import com.mojang.logging.LogUtils;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.JsonOps;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import net.neoforged.fml.loading.FMLPaths;
+import games.brennan.dungeontrain.data.PlayerDataPaths;
 import org.slf4j.Logger;
 
 import java.io.IOException;
@@ -35,7 +35,8 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class GlobalBookBurnStats {
 
     private static final Logger LOGGER = LogUtils.getLogger();
-    private static final String DIR_NAME = "dungeontrain-stats";
+    /** Pre-relocation home, still read while a file is left there. */
+    private static final String LEGACY_DIR_NAME = "dungeontrain-stats";
     private static final String FILE_SUFFIX = "-bookburn.json";
 
     private record Data(long booksBurnedUnread) {
@@ -50,8 +51,17 @@ public final class GlobalBookBurnStats {
 
     private GlobalBookBurnStats() {}
 
+    /**
+     * {@code <gameDir>/dungeontrain/stats/<uuid>-bookburn.json}, falling back to the pre-relocation
+     * {@code config/dungeontrain-stats/} copy. See {@link PlayerDataPaths}.
+     */
     public static Path file(UUID playerUuid) {
-        return FMLPaths.CONFIGDIR.get().resolve(DIR_NAME).resolve(playerUuid + FILE_SUFFIX);
+        return located(playerUuid).read();
+    }
+
+    static PlayerDataPaths.Located located(UUID playerUuid) {
+        return PlayerDataPaths.locate(
+            PlayerDataPaths.STATS, LEGACY_DIR_NAME, playerUuid + FILE_SUFFIX);
     }
 
     private static Data current(UUID uuid) {

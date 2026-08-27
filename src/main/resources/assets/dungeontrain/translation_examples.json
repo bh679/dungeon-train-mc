@@ -47,7 +47,10 @@
   "chat.dungeontrain.free_play.operators": {
     "1": {
       "label": "the players who have cheats enabled, comma-separated",
-      "examples": ["Steve", "Steve, Alex"]
+      "examples": [
+        "Steve",
+        "Steve, Alex"
+      ]
     }
   },
   "chat.dungeontrain.free_play.cheat_mods": {
@@ -3366,6 +3369,126 @@
       "examples": [
         "1",
         "2"
+      ]
+    }
+  },
+  "gui.dungeontrain.data_recovery.candidate.backup": {
+    "1": {
+      "label": "what the backup holds",
+      "examples": [
+        "builds and progress",
+        "builds"
+      ]
+    },
+    "2": {
+      "label": "the backup file's name",
+      "examples": [
+        "dungeontrain-backup-20260828-014500.zip"
+      ]
+    }
+  },
+  "gui.dungeontrain.data_recovery.candidate.sibling": {
+    "1": {
+      "label": "what the other install holds",
+      "examples": [
+        "builds and progress",
+        "progress"
+      ]
+    },
+    "2": {
+      "label": "the full path to the other Minecraft install",
+      "examples": [
+        "/Users/sam/curseforge/minecraft/Instances/Dungeon Train"
+      ]
+    }
+  },
+  "gui.dungeontrain.data_recovery.more": {
+    "1": {
+      "label": "how many further places to restore from were found but not listed",
+      "examples": [
+        "3"
+      ]
+    }
+  },
+  "gui.dungeontrain.data_recovery.done.body": {
+    "1": {
+      "label": "how many files were put back",
+      "examples": [
+        "142"
+      ]
+    }
+  },
+  "command.dungeontrain.backup.success": {
+    "1": {
+      "label": "the backup file's name",
+      "examples": [
+        "dungeontrain-backup-20260828-014500.zip"
+      ]
+    },
+    "2": {
+      "label": "how many files it holds",
+      "examples": [
+        "142"
+      ]
+    }
+  },
+  "command.dungeontrain.backup.fail": {
+    "1": {
+      "label": "the error that stopped the backup",
+      "examples": [
+        "java.nio.file.AccessDeniedException: backups"
+      ]
+    }
+  },
+  "command.dungeontrain.restore.entry": {
+    "1": {
+      "label": "the entry's number, for passing to /dtrestore",
+      "examples": [
+        "1",
+        "2"
+      ]
+    },
+    "2": {
+      "label": "what that entry holds",
+      "examples": [
+        "builds and progress",
+        "builds"
+      ]
+    },
+    "3": {
+      "label": "the backup file, or the path to the other Minecraft install",
+      "examples": [
+        "dungeontrain-backup-20260828-014500.zip"
+      ]
+    }
+  },
+  "command.dungeontrain.restore.no_such": {
+    "1": {
+      "label": "the entry number the player asked for",
+      "examples": [
+        "7"
+      ]
+    }
+  },
+  "command.dungeontrain.restore.success": {
+    "1": {
+      "label": "how many files were put back",
+      "examples": [
+        "142"
+      ]
+    },
+    "2": {
+      "label": "where they came from",
+      "examples": [
+        "dungeontrain-backup-20260828-014500.zip"
+      ]
+    }
+  },
+  "command.dungeontrain.restore.fail": {
+    "1": {
+      "label": "the error that stopped the restore",
+      "examples": [
+        "java.util.zip.ZipException: invalid entry"
       ]
     }
   }

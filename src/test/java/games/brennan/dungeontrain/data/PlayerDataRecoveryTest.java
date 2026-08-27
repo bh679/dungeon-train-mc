@@ -1,0 +1,165 @@
+package games.brennan.dungeontrain.data;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+/**
+ * The loss signature and the candidate scan.
+ *
+ * <p>The signature has to be narrow: "this install has no data" is also what a brand-new install
+ * looks like, and a recovery prompt on someone's first launch would be nonsense. Most of these
+ * tests are about the cases where it must stay quiet.</p>
+ */
+class PlayerDataRecoveryTest {
+
+    @TempDir
+    Path tmp;
+
+    private static void write(Path file, String content) throws IOException {
+        Files.createDirectories(file.getParent());
+        Files.writeString(file, content);
+    }
+
+    private Path dataRoot() {
+        return tmp.resolve("instance/dungeontrain");
+    }
+
+    private Path configDir() {
+        return tmp.resolve("instance/config");
+    }
+
+    private Path dtpacksRoot() {
+        return tmp.resolve("instance/dtpacks");
+    }
+
+    @Test
+    void aFreshInstallLooksEmptiedButOffersNothing() {
+        assertTrue(PlayerDataRecovery.looksEmptied(dataRoot(), configDir(), dtpacksRoot()));
+        assertEquals(List.of(), PlayerDataRecovery.findCandidates(dataRoot(), tmp.resolve("instance")),
+            "nothing to restore from means no prompt, however empty the install is");
+    }
+
+    @Test
+    void anInstallWithBuildsIsNotEmptied() throws IOException {
+        write(dataRoot().resolve("user/templates/a.nbt"), "carriage");
+        assertFalse(PlayerDataRecovery.looksEmptied(dataRoot(), configDir(), dtpacksRoot()));
+    }
+
+    @Test
+    void anInstallWithAdvancementsIsNotEmptied() throws IOException {
+        write(dataRoot().resolve("achievements/uuid.json"), "granted");
+        assertFalse(PlayerDataRecovery.looksEmptied(dataRoot(), configDir(), dtpacksRoot()));
+    }
+
+    @Test
+    void dataStillWaitingInConfigIsNotALoss() throws IOException {
+        // The migration is about to move this across on the very same launch.
+        write(configDir().resolve("dungeontrain/user/templates/a.nbt"), "carriage");
+        assertFalse(PlayerDataRecovery.looksEmptied(dataRoot(), configDir(), dtpacksRoot()));
+    }
+
+    @Test
+    void savedPackagesAreNotALoss() throws IOException {
+        // dtpacks/ has always lived outside config/, so a pack update never touched it. A player
+        // whose builds are all in a saved package still has them.
+        write(dtpacksRoot().resolve("My Pack/templates/a.nbt"), "carriage");
+        assertFalse(PlayerDataRecovery.looksEmptied(dataRoot(), configDir(), dtpacksRoot()));
+    }
+
+    @Test
+    void findsThisInstallsOwnBackups() throws IOException {
+        write(dataRoot().resolve("backups/dungeontrain-backup-20260101-000000.zip"), "z");
+
+        List<PlayerDataRecovery.Candidate> found =
+            PlayerDataRecovery.findCandidates(dataRoot(), tmp.resolve("instance"));
+
+        assertEquals(1, found.size());
+        assertEquals(PlayerDataRecovery.Kind.BACKUP, found.get(0).kind());
+    }
+
+    @Test
+    void findsASiblingInstanceInEitherLayout() throws IOException {
+        // The un-updated instance next door, still on the old config/ layout.
+        write(tmp.resolve("instance-old/config/dungeontrain/user/templates/a.nbt"), "carriage");
+        write(tmp.resolve("instance-old/config/dungeontrain-achievements/uuid.json"), "granted");
+        // And one already on the new layout.
+        write(tmp.resolve("instance-new/dungeontrain/user/templates/b.nbt"), "carriage");
+
+        List<PlayerDataRecovery.Candidate> found =
+            PlayerDataRecovery.findSiblingInstances(tmp.resolve("instance"));
+
+        assertEquals(2, found.size());
+        assertTrue(found.stream().allMatch(c -> c.kind() == PlayerDataRecovery.Kind.SIBLING_INSTANCE));
+        // Sorted by path, so the listing is stable across launches rather than filesystem order.
+        assertEquals("builds", found.get(0).description(), "instance-new, on the current layout");
+        assertEquals("builds and progress", found.get(1).description(),
+            "instance-old, still on the pre-relocation config/ layout");
+    }
+
+    @Test
+    void ranksBackupsAheadOfSiblings() throws IOException {
+        write(dataRoot().resolve("backups/dungeontrain-backup-20260101-000000.zip"), "z");
+        write(tmp.resolve("instance-old/config/dungeontrain/user/a.nbt"), "carriage");
+
+        List<PlayerDataRecovery.Candidate> found =
+            PlayerDataRecovery.findCandidates(dataRoot(), tmp.resolve("instance"));
+
+        assertEquals(2, found.size());
+        assertEquals(PlayerDataRecovery.Kind.BACKUP, found.get(0).kind(),
+            "our own archive has certain provenance; the folder next door is a guess");
+    }
+
+    @Test
+    void ignoresAnInstanceWithNoDungeonTrainData() throws IOException {
+        write(tmp.resolve("some-other-game/config/whatever.toml"), "x");
+        assertNull(PlayerDataRecovery.dataHeldBy(tmp.resolve("some-other-game")));
+        assertEquals(List.of(), PlayerDataRecovery.findSiblingInstances(tmp.resolve("instance")));
+    }
+
+    @Test
+    void neverOffersTheInstanceItIsRunningIn() throws IOException {
+        write(dataRoot().resolve("user/templates/a.nbt"), "carriage");
+        assertFalse(PlayerDataRecovery.findSiblingInstances(tmp.resolve("instance")).stream()
+            .anyMatch(c -> c.path().equals(tmp.resolve("instance").toAbsolutePath().normalize())));
+    }
+
+    @Test
+    void restoringFromASiblingCopiesRatherThanMoves() throws IOException {
+        Path sibling = tmp.resolve("instance-old");
+        write(sibling.resolve("config/dungeontrain/user/templates/a.nbt"), "carriage");
+        write(sibling.resolve("config/dungeontrain-achievements/uuid.json"), "granted");
+        PlayerDataRecovery.Candidate candidate = new PlayerDataRecovery.Candidate(
+            PlayerDataRecovery.Kind.SIBLING_INSTANCE, sibling, "builds and progress");
+
+        int written = PlayerDataRecovery.restore(candidate, dataRoot(), tmp.resolve("instance/dtpacks"));
+
+        assertEquals(2, written);
+        assertEquals("carriage", Files.readString(dataRoot().resolve("user/templates/a.nbt")));
+        assertEquals("granted", Files.readString(dataRoot().resolve("achievements/uuid.json")));
+        assertTrue(Files.isRegularFile(sibling.resolve("config/dungeontrain/user/templates/a.nbt")),
+            "the instance we recovered from must be left exactly as it was");
+    }
+
+    @Test
+    void restoringNeverOverwritesWhatIsAlreadyThere() throws IOException {
+        Path sibling = tmp.resolve("instance-old");
+        write(sibling.resolve("config/dungeontrain/user/templates/a.nbt"), "old");
+        write(dataRoot().resolve("user/templates/a.nbt"), "MINE");
+        PlayerDataRecovery.Candidate candidate = new PlayerDataRecovery.Candidate(
+            PlayerDataRecovery.Kind.SIBLING_INSTANCE, sibling, "builds");
+
+        PlayerDataRecovery.restore(candidate, dataRoot(), tmp.resolve("instance/dtpacks"));
+
+        assertEquals("MINE", Files.readString(dataRoot().resolve("user/templates/a.nbt")));
+    }
+}
