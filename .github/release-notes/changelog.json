@@ -9152,7 +9152,7 @@
     },
     {
       "id": "editor-menus-auto-mode",
-      "version": "0.673.0",
+      "version": "0.677.0",
       "type": "feat",
       "title": "Editor menus get an Auto mode and a render-distance dial",
       "summary": "The editor's world-space menus now default to Auto: step into a template and the other plots' panels get out of your way, leaving the one you're actually building. Between plots the whole board is still there to navigate by. A new Menu Distance row on the X-menu sets how far any editor menu keeps drawing, so a big build area stops painting text across the thing in front of you.",
