@@ -77,6 +77,17 @@ public final class DebugAccessEvents {
         refreshFromRelay(player);
     }
 
+    /**
+     * Whether {@code player} may see debug-panel data right now — a developer build, or a live
+     * grant. Read by {@code TrainCarriageAppender} before it puts carriage internals on the wire.
+     */
+    public static boolean isPermitted(ServerPlayer player) {
+        if (DungeonTrain.isDevBuild()) return true;
+        MinecraftServer server = player.getServer();
+        if (server == null) return false;
+        return DungeonTrainWorldData.get(server.overworld()).debugGrants().isGranted(player.getUUID());
+    }
+
     /** Push this player's current access (and, only if granted, the world's train seed). */
     public static void syncTo(ServerPlayer player) {
         MinecraftServer server = player.getServer();

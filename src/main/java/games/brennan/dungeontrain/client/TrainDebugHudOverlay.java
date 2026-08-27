@@ -107,7 +107,7 @@ public final class TrainDebugHudOverlay {
     }
 
     private static List<Line> buildLines() {
-        List<Line> lines = new ArrayList<>(5);
+        List<Line> lines = new ArrayList<>(7);
         lines.add(new Line(VersionInfo.DISPLAY, COLOR_TITLE));
         lines.add(new Line("Train seed: " + TrainDebugState.seed(), COLOR_BODY));
 
@@ -115,9 +115,11 @@ public final class TrainDebugHudOverlay {
         lines.add(new Line("Carriage: "
             + (onTrain ? formatSigned(TrainDebugState.pIdx()) : NONE), COLOR_BODY));
 
-        String variant = TrainDebugState.variantId();
-        lines.add(new Line("Cart type: "
-            + (onTrain && !variant.isEmpty() ? variant : NONE), COLOR_BODY));
+        lines.add(new Line("Cart type: " + fieldOr(onTrain, TrainDebugState.variantId()), COLOR_BODY));
+        lines.add(new Line("Content type: " + fieldOr(onTrain, TrainDebugState.contentsId()), COLOR_BODY));
+        // Empty is meaningful here rather than unknown: the group draw landed on the parent's own
+        // contents, or the parent has no group at all. Either way there is no sub-variant.
+        lines.add(new Line("Sub variant: " + fieldOr(onTrain, TrainDebugState.subVariantId()), COLOR_BODY));
 
         // A "forever" grant (expiry 0) has no countdown to show.
         long expiresAtMs = TrainDebugState.expiresAtMs();
@@ -126,6 +128,11 @@ public final class TrainDebugHudOverlay {
                 + formatRemaining(expiresAtMs - System.currentTimeMillis()), COLOR_EXPIRY));
         }
         return lines;
+    }
+
+    /** A field's value, or the placeholder when off-train or the server had nothing to send. */
+    private static String fieldOr(boolean onTrain, String value) {
+        return onTrain && !value.isEmpty() ? value : NONE;
     }
 
     private static String formatSigned(int n) {

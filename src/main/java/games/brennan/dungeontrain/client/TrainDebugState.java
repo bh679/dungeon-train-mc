@@ -29,6 +29,8 @@ public final class TrainDebugState {
     private static volatile boolean carriagePresent = false;
     private static volatile int pIdx = 0;
     private static volatile String variantId = "";
+    private static volatile String contentsId = "";
+    private static volatile String subVariantId = "";
 
     private TrainDebugState() {}
 
@@ -56,9 +58,22 @@ public final class TrainDebugState {
         return pIdx;
     }
 
-    /** The variant the player's carriage index rolls to, or {@code ""} when unknown / off-train. */
+    /** The shell variant the player's carriage rolls to, or {@code ""} when unknown / off-train. */
     public static String variantId() {
         return variantId;
+    }
+
+    /** The interior contents parent id, or {@code ""} when unknown / off-train. */
+    public static String contentsId() {
+        return contentsId;
+    }
+
+    /**
+     * The group member the contents parent resolved to. Empty when the draw landed on the parent's
+     * own contents, or the parent has no group — either way there is no sub-variant to name.
+     */
+    public static String subVariantId() {
+        return subVariantId;
     }
 
     /**
@@ -83,11 +98,18 @@ public final class TrainDebugState {
         }
     }
 
-    /** Fed by {@code CarriageIndexPacket.handle} on every carriage-boundary crossing. */
-    public static void setCarriage(boolean present, int carriagePIdx, String carriageVariantId) {
+    /** Fed by {@code TrainDebugCarriagePacket.handle} on every carriage-boundary crossing. */
+    public static void setCarriage(boolean present, int carriagePIdx, String carriageVariantId,
+                                   String carriageContentsId, String carriageSubVariantId) {
         carriagePresent = present;
         pIdx = present ? carriagePIdx : 0;
-        variantId = present && carriageVariantId != null ? carriageVariantId : "";
+        variantId = present ? orEmpty(carriageVariantId) : "";
+        contentsId = present ? orEmpty(carriageContentsId) : "";
+        subVariantId = present ? orEmpty(carriageSubVariantId) : "";
+    }
+
+    private static String orEmpty(String s) {
+        return s == null ? "" : s;
     }
 
     /**
@@ -102,5 +124,7 @@ public final class TrainDebugState {
         carriagePresent = false;
         pIdx = 0;
         variantId = "";
+        contentsId = "";
+        subVariantId = "";
     }
 }

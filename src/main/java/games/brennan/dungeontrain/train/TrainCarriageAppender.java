@@ -4,7 +4,10 @@ import com.mojang.logging.LogUtils;
 import dev.ryanhcode.sable.SableConfig;
 import games.brennan.dungeontrain.bootstrap.BootstrapProgress;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
+import games.brennan.dungeontrain.debug.DebugAccessEvents;
+import games.brennan.dungeontrain.editor.CarriageContentsGroupStore;
 import games.brennan.dungeontrain.net.CarriageIndexPacket;
+import games.brennan.dungeontrain.net.TrainDebugCarriagePacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.template.GateContext;
 import games.brennan.dungeontrain.ship.ManagedShip;
@@ -1750,7 +1753,12 @@ public final class TrainCarriageAppender {
             seenThisTick.add(uuid);
             Integer lastSent = LAST_SENT_PIDX.get(uuid);
             if (lastSent == null || lastSent != pIdx) {
-                DungeonTrainNet.sendTo(player, new CarriageIndexPacket(true, pIdx, variantIdAt(level, pIdx, length)));
+                DungeonTrainNet.sendTo(player, new CarriageIndexPacket(true, pIdx));
+                // Carriage internals for the F3+4 panel, to those allowed to see them. A player
+                // granted access mid-session picks this up on their next boundary crossing.
+                if (DebugAccessEvents.isPermitted(player)) {
+                    DungeonTrainNet.sendTo(player, debugCarriageAt(level, pIdx, length));
+                }
                 LAST_SENT_PIDX.put(uuid, pIdx);
             }
 
@@ -4173,15 +4181,29 @@ public final class TrainCarriageAppender {
      * re-deriving it beats recording every placed variant. Never throws: a debug read-out is not
      * worth risking the train tick, so any failure degrades to an empty id and a blank line.</p>
      */
-    private static String variantIdAt(ServerLevel level, int pIdx, int length) {
+    private static TrainDebugCarriagePacket debugCarriageAt(ServerLevel level, int pIdx, int length) {
         try {
             CarriageGenerationConfig genCfg =
                 DungeonTrainWorldData.get(level.getServer().overworld()).getGenerationConfig();
-            return CarriagePlacer.enclosedVariantForIndex(
-                pIdx, genCfg, GateContext.forCarriage(level, pIdx, length)).id();
+            GateContext gateCtx = GateContext.forCarriage(level, pIdx, length);
+
+            CarriageVariant variant = CarriagePlacer.enclosedVariantForIndex(pIdx, genCfg, gateCtx);
+            // pick() is two-phase and hands back the RESOLVED contents: a parent is drawn from the
+            // pool, then its group sidecar (if any) draws a member. So this id is the sub-variant
+            // whenever one was drawn, and findParentOf recovers the parent it came through.
+            CarriageContents resolved =
+                CarriageContentsRegistry.pick(genCfg.seed(), pIdx, variant, gateCtx);
+            String resolvedId = resolved.id();
+            String parentId = CarriageContentsGroupStore.findParentOf(resolvedId).orElse(resolvedId);
+            // Equal ids mean the draw landed on the parent's own contents (or it has no group) —
+            // there is no sub-variant to report, which the panel renders as a dash.
+            String subVariantId = parentId.equals(resolvedId) ? "" : resolvedId;
+
+            return new TrainDebugCarriagePacket(true, pIdx, variant.id(), parentId, subVariantId);
         } catch (RuntimeException e) {
-            LOGGER.debug("[DungeonTrain] variantIdAt failed for pIdx={}", pIdx, e);
-            return "";
+            // A debug read-out is never worth risking the train tick.
+            LOGGER.debug("[DungeonTrain] debugCarriageAt failed for pIdx={}", pIdx, e);
+            return new TrainDebugCarriagePacket(true, pIdx, "", "", "");
         }
     }
 
@@ -4199,6 +4221,7 @@ public final class TrainCarriageAppender {
             ServerPlayer player = level.getServer().getPlayerList().getPlayer(uuid);
             if (player != null) {
                 DungeonTrainNet.sendTo(player, CarriageIndexPacket.absent());
+                DungeonTrainNet.sendTo(player, TrainDebugCarriagePacket.absent());
             }
             it.remove();
         }
