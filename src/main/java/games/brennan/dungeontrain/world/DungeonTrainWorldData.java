@@ -74,6 +74,7 @@ public final class DungeonTrainWorldData extends SavedData {
     private static final String TAG_DIFFICULTY_TRAVELLED_OFFSET = "difficultyTravelledOffset";
     private static final String TAG_CUSTOM_CONTENT_CHOICE = "customContentChoice";
     private static final String TAG_PORTAL_RATE_TUNED = "portalRateTuned";
+    private static final String TAG_HELP_PANEL_DISMISSED = "editorHelpPanelDismissed";
 
     private int trainY;
     private boolean startsWithTrain;
@@ -204,6 +205,19 @@ public final class DungeonTrainWorldData extends SavedData {
      * un-tuning a world.</p>
      */
     private boolean portalRateTuned = false;
+
+    /**
+     * Players who have closed the editor's world-space Welcome panel in this world, by UUID.
+     *
+     * <p>Per player rather than per world: the panel teaches the editor keybinds, and one builder
+     * having read them says nothing about the next person to join. Per <em>world</em> rather than in
+     * the client config because that is what the dismissal was asked to be — closing it in one world
+     * leaves it up in the next.</p>
+     *
+     * <p>Absent from every world saved before the close button existed, which reads as "nobody has
+     * dismissed it" — so the panel keeps showing in old worlds, which is the pre-existing behaviour.</p>
+     */
+    private final java.util.Set<java.util.UUID> helpPanelDismissed = new java.util.LinkedHashSet<>();
 
     /**
      * Transient scheduling set of chunk keys ({@link net.minecraft.world.level.ChunkPos#toLong}) whose
@@ -432,6 +446,20 @@ public final class DungeonTrainWorldData extends SavedData {
         if (tag.contains(TAG_BUILDER_STRUCTURE_REFRESH)) {
             data.builderStructureRefresh = tag.getString(TAG_BUILDER_STRUCTURE_REFRESH);
         }
+        // Absent until somebody closes the editor Welcome panel, which is most worlds. Unparseable
+        // entries are skipped rather than failing the whole load — a malformed uuid only costs that
+        // one player their dismissal.
+        if (tag.contains(TAG_HELP_PANEL_DISMISSED)) {
+            net.minecraft.nbt.ListTag dismissed =
+                    tag.getList(TAG_HELP_PANEL_DISMISSED, net.minecraft.nbt.Tag.TAG_STRING);
+            for (int i = 0; i < dismissed.size(); i++) {
+                try {
+                    data.helpPanelDismissed.add(java.util.UUID.fromString(dismissed.getString(i)));
+                } catch (IllegalArgumentException ignored) {
+                    // not a uuid — drop it
+                }
+            }
+        }
         return data;
     }
 
@@ -495,7 +523,27 @@ public final class DungeonTrainWorldData extends SavedData {
         if (builderStructureRefresh != null) {
             tag.putString(TAG_BUILDER_STRUCTURE_REFRESH, builderStructureRefresh);
         }
+        if (!helpPanelDismissed.isEmpty()) {
+            net.minecraft.nbt.ListTag dismissed = new net.minecraft.nbt.ListTag();
+            for (java.util.UUID id : helpPanelDismissed) {
+                dismissed.add(net.minecraft.nbt.StringTag.valueOf(id.toString()));
+            }
+            tag.put(TAG_HELP_PANEL_DISMISSED, dismissed);
+        }
         return tag;
+    }
+
+    /** True when {@code playerId} has closed the editor's world-space Welcome panel in this world. */
+    public boolean isHelpPanelDismissed(java.util.UUID playerId) {
+        return helpPanelDismissed.contains(playerId);
+    }
+
+    /** Record (or clear) {@code playerId}'s dismissal of the editor Welcome panel. */
+    public void setHelpPanelDismissed(java.util.UUID playerId, boolean dismissed) {
+        boolean changed = dismissed
+                ? helpPanelDismissed.add(playerId)
+                : helpPanelDismissed.remove(playerId);
+        if (changed) setDirty();
     }
 
     /** Train Builder mode id, or null in an ordinary world. See {@code BuilderMode#fromId}. */

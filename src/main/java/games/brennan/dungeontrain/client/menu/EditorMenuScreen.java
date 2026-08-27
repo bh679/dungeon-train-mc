@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.client.menu;
 import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
 import games.brennan.dungeontrain.client.builder.BuilderProfileScreen;
 import games.brennan.dungeontrain.client.VersionInfo;
+import games.brennan.dungeontrain.client.menu.plot.EditorTypeMenuRenderer;
 import games.brennan.dungeontrain.net.EditorStatusPacket;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
@@ -81,6 +82,16 @@ public final class EditorMenuScreen implements MenuScreen {
             "Editor Menus", pmEnabled,
             "dungeontrain editor editormenus on",
             "dungeontrain editor editormenus off"
+        ));
+
+        // Welcome Panel — the onboarding board floating beside the first nav menu. Its own close
+        // (X) button writes the same per-player, per-world flag; this row is the only way back,
+        // so it stays in the menu whether the panel is currently up or not.
+        boolean welcomeShown = !EditorTypeMenuRenderer.helpPanelDismissed();
+        out.add(new CommandMenuEntry.Toggle(
+            "Welcome Panel", welcomeShown,
+            "dungeontrain editor helppanel on",
+            "dungeontrain editor helppanel off"
         ));
 
         // Parts have their own Save / Reset commands — `dungeontrain save`
