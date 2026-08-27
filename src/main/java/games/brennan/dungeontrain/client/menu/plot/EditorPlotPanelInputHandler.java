@@ -10,6 +10,7 @@ import games.brennan.dungeontrain.client.menu.EditorPlotLabelsRenderer;
 import games.brennan.dungeontrain.client.menu.EditorPlotLabelsRenderer.CellKind;
 import games.brennan.dungeontrain.client.menu.EditorPlotLabelsRenderer.Hovered;
 import games.brennan.dungeontrain.client.menu.parts.PartPositionMenu;
+import games.brennan.dungeontrain.editor.PlotCategory;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.EditorPlotActionPacket;
 import games.brennan.dungeontrain.net.EditorPlotLabelsPacket;
@@ -347,7 +348,10 @@ public final class EditorPlotPanelInputHandler {
 
     private static void dispatchAction(EditorPlotLabelsPacket.Entry entry,
                                        EditorPlotActionPacket.Action action) {
-        if (entry.category().isEmpty()) return;
+        // Only send what the server will act on. This used to guard emptiness alone, which left
+        // the renderer's decision not to draw an action row as the sole thing keeping a
+        // category without one from reaching a handler that would drop it.
+        if (!PlotCategory.fromId(entry.category()).filter(PlotCategory::hasActionRow).isPresent()) return;
         DungeonTrainNet.sendToServer(new EditorPlotActionPacket(
             entry.category(), entry.modelId(), entry.modelName(), action));
     }

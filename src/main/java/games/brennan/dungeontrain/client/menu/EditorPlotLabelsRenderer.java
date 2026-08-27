@@ -8,6 +8,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.net.EditorPlotLabelsPacket;
+import games.brennan.dungeontrain.editor.PlotCategory;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.LightTexture;
@@ -701,9 +702,9 @@ public final class EditorPlotLabelsRenderer {
      */
     public static boolean hasActionRow(EditorPlotLabelsPacket.Entry entry) {
         if (!entry.inPlot()) return false;
-        String c = entry.category();
-        return "CARRIAGES".equals(c) || "CONTENTS".equals(c) || "TRACKS".equals(c)
-            || "PORTALS".equals(c);
+        return PlotCategory.fromId(entry.category())
+            .filter(PlotCategory::hasActionRow)
+            .isPresent();
     }
 
     /**
