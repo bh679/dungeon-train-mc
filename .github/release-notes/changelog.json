@@ -9192,9 +9192,9 @@
       "highlights": [],
       "pr": 1130,
       "date": "2026-08-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.681.0",
+      "released_at": "2026-08-27T10:01:48Z"
     },
     {
       "id": "cheats-available-free-play",
@@ -9205,9 +9205,9 @@
       "highlights": [],
       "pr": 1131,
       "date": "2026-08-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.681.0",
+      "released_at": "2026-08-27T10:01:48Z"
     },
     {
       "id": "creative-shift-click-to-hotbar",
@@ -9222,9 +9222,9 @@
       ],
       "pr": 1132,
       "date": "2026-08-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.681.0",
+      "released_at": "2026-08-27T10:01:48Z"
     },
     {
       "id": "end-band-ice-pillars",
@@ -9237,9 +9237,9 @@
       ],
       "pr": 1133,
       "date": "2026-08-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.681.0",
+      "released_at": "2026-08-27T10:01:48Z"
     }
   ]
 }
