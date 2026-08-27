@@ -59,6 +59,8 @@ public final class OptionsMenuScreen implements MenuScreen {
                 ClientDisplayConfig::setTemplateBlocksMenuSpace),
             menuSpaceRow("C Contents Menu", ClientDisplayConfig.getContainerContentsMenuSpace(),
                 ClientDisplayConfig::setContainerContentsMenuSpace),
+            menuSpaceRow("Z Variant Menu", ClientDisplayConfig.getBlockVariantMenuSpace(),
+                ClientDisplayConfig::setBlockVariantMenuSpace),
             new CommandMenuEntry.Back("< Back")
         );
     }

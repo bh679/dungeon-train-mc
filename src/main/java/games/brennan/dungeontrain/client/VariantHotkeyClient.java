@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.client;
 import com.mojang.blaze3d.platform.InputConstants;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.menu.blockvariant.BlockVariantMenu;
+import games.brennan.dungeontrain.client.menu.blockvariant.BlockVariantMenuScreen;
 import games.brennan.dungeontrain.net.BlockVariantMenuTogglePacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.VariantHotkeyPacket;
@@ -45,6 +46,11 @@ public final class VariantHotkeyClient {
     /** A press shorter than this in client ticks counts as a tap (8 ticks ≈ 400ms). */
     private static final long TAP_THRESHOLD_TICKS = 8;
 
+    /**
+     * Package-visible via {@link #key()} so the screen-space panel can close on a second press.
+     * Vanilla stops polling keybindings while a Screen is up, so the tick watcher below can never
+     * see that press — the screen has to match the binding itself.
+     */
     private static final KeyMapping KEY = new KeyMapping(
         NAME,
         InputConstants.Type.KEYSYM,
@@ -60,6 +66,11 @@ public final class VariantHotkeyClient {
     private static boolean useDuringPress = false;
 
     private VariantHotkeyClient() {}
+
+    /** The toggle binding, for screens that must match it directly. See {@link #KEY}. */
+    public static KeyMapping key() {
+        return KEY;
+    }
 
     @SubscribeEvent
     public static void onRegister(RegisterKeyMappingsEvent event) {
@@ -109,6 +120,12 @@ public final class VariantHotkeyClient {
                 useDuringPress = false;
                 return;
             }
+
+            // The screen-space panel matches this binding itself, in keyPressed — it has to,
+            // because vanilla stops polling keybindings while a Screen is up. Standing down here
+            // keeps that the only place a press is counted: if MC does keep the mapping updated
+            // behind a screen, both would fire and the second toggle would undo the first.
+            if (Minecraft.getInstance().screen instanceof BlockVariantMenuScreen) return;
 
             boolean held = KEY.isDown();
             if (held == lastSentHeld) return;

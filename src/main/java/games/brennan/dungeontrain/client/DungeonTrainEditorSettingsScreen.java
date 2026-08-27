@@ -57,6 +57,8 @@ public final class DungeonTrainEditorSettingsScreen extends Screen {
                 ClientDisplayConfig::getTemplateBlocksMenuSpace, ClientDisplayConfig::setTemplateBlocksMenuSpace);
         y = spaceRow(cx, y, "container_contents_menu",
                 ClientDisplayConfig::getContainerContentsMenuSpace, ClientDisplayConfig::setContainerContentsMenuSpace);
+        y = spaceRow(cx, y, "block_variant_menu",
+                ClientDisplayConfig::getBlockVariantMenuSpace, ClientDisplayConfig::setBlockVariantMenuSpace);
 
         addRenderableWidget(Button.builder(CommonComponents.GUI_DONE, b -> onClose())
                 .bounds(cx - 100, y + 6, 200, ROW_H).build());

@@ -163,6 +163,8 @@ public final class ClientDisplayConfig {
     public static final ModConfigSpec.EnumValue<EditorMenuSpace> TEMPLATE_BLOCKS_MENU_SPACE;
     /** Where the C (container contents) menu draws. See {@link #COMMAND_MENU_SPACE}. */
     public static final ModConfigSpec.EnumValue<EditorMenuSpace> CONTAINER_CONTENTS_MENU_SPACE;
+    /** Where the Z (block variant) menu draws. See {@link #COMMAND_MENU_SPACE}. */
+    public static final ModConfigSpec.EnumValue<EditorMenuSpace> BLOCK_VARIANT_MENU_SPACE;
 
     /**
      * Remembered answer to the custom-Train-Editor-content prompt — see
@@ -242,6 +244,7 @@ public final class ClientDisplayConfig {
         COMMAND_MENU_SPACE = pair.getLeft().commandMenuSpace;
         TEMPLATE_BLOCKS_MENU_SPACE = pair.getLeft().templateBlocksMenuSpace;
         CONTAINER_CONTENTS_MENU_SPACE = pair.getLeft().containerContentsMenuSpace;
+        BLOCK_VARIANT_MENU_SPACE = pair.getLeft().blockVariantMenuSpace;
     }
 
     private ClientDisplayConfig() {}
@@ -412,6 +415,9 @@ public final class ClientDisplayConfig {
         ModConfigSpec.EnumValue<EditorMenuSpace> containerContentsMenuSpace = b
                 .comment("Where the C (container contents) menu draws. See commandMenuSpace.")
                 .defineEnum("containerContentsMenuSpace", EditorMenuSpace.DEFAULT);
+        ModConfigSpec.EnumValue<EditorMenuSpace> blockVariantMenuSpace = b
+                .comment("Where the Z (block variant) menu draws. See commandMenuSpace.")
+                .defineEnum("blockVariantMenuSpace", EditorMenuSpace.DEFAULT);
         b.pop();
 
         b.push("sharedBooks");
@@ -518,7 +524,8 @@ public final class ClientDisplayConfig {
                 deathScreenLastNps, politicalFilter, contentMode, customContentPreference,
                 customContentLastAnswer,
                 configDeviationAcknowledged, dpiBypassWarningOptedOut, bookAuthorBurnChat,
-                commandMenuSpace, templateBlocksMenuSpace, containerContentsMenuSpace);
+                commandMenuSpace, templateBlocksMenuSpace, containerContentsMenuSpace,
+                blockVariantMenuSpace);
     }
 
     /**
@@ -1254,6 +1261,16 @@ public final class ClientDisplayConfig {
         return isLoaded() ? CONTAINER_CONTENTS_MENU_SPACE.get() : EditorMenuSpace.DEFAULT;
     }
 
+    /** Where the Z (block variant) menu draws. See {@link #getCommandMenuSpace()}. */
+    public static EditorMenuSpace getBlockVariantMenuSpace() {
+        return isLoaded() ? BLOCK_VARIANT_MENU_SPACE.get() : EditorMenuSpace.DEFAULT;
+    }
+
+    /** Persist the Z menu's space. Idempotent: skips the TOML write when unchanged. */
+    public static void setBlockVariantMenuSpace(EditorMenuSpace value) {
+        setMenuSpace(BLOCK_VARIANT_MENU_SPACE, value);
+    }
+
     /** Persist the X menu's space. Idempotent: skips the TOML write when unchanged. */
     public static void setCommandMenuSpace(EditorMenuSpace value) {
         setMenuSpace(COMMAND_MENU_SPACE, value);
@@ -1321,6 +1338,7 @@ public final class ClientDisplayConfig {
             ModConfigSpec.BooleanValue bookAuthorBurnChat,
             ModConfigSpec.EnumValue<EditorMenuSpace> commandMenuSpace,
             ModConfigSpec.EnumValue<EditorMenuSpace> templateBlocksMenuSpace,
-            ModConfigSpec.EnumValue<EditorMenuSpace> containerContentsMenuSpace
+            ModConfigSpec.EnumValue<EditorMenuSpace> containerContentsMenuSpace,
+            ModConfigSpec.EnumValue<EditorMenuSpace> blockVariantMenuSpace
     ) {}
 }

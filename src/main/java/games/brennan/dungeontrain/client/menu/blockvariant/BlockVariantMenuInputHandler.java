@@ -110,19 +110,23 @@ public final class BlockVariantMenuInputHandler {
                 || BlockVariantMenu.screen() != BlockVariantMenu.Screen.ADD_SEARCH)) {
             mc.setScreen(null);
         }
-        if (!BlockVariantMenu.isActive()) return;
+        if (!BlockVariantMenu.isActiveWorldspace()) return;
         if (mc.screen == null) {
             BlockVariantMenuRaycast.updateHovered();
         }
     }
 
     private static boolean shouldHandle() {
-        if (!BlockVariantMenu.isActive()) return false;
+        if (!BlockVariantMenu.isActiveWorldspace()) return false;
         if (CommandMenuState.isOpen()) return false;
         return true;
     }
 
-    private static void dispatch(BlockVariantMenu.Hit hit, boolean shift) {
+    /**
+     * Act on a hit cell. Package-visible because {@link BlockVariantMenuScreen} dispatches
+     * through this same body — the screen-space path differs only in where the Hit came from.
+     */
+    static void dispatch(BlockVariantMenu.Hit hit, boolean shift) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.getSoundManager() != null) {
             mc.getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(
@@ -144,10 +148,13 @@ public final class BlockVariantMenuInputHandler {
             case COPY -> DungeonTrainNet.sendToServer(
                 new BlockVariantEditPacket(BlockVariantEditPacket.Op.COPY, variantId, local, -1, "", 0));
             case SAVE -> {
+                // Screen-space: come back to the panel we are replacing, not the world.
                 Minecraft.getInstance().setScreen(
                     new games.brennan.dungeontrain.client.menu.PrefabNameScreen(
                         games.brennan.dungeontrain.client.menu.PrefabNameScreen.Kind.VARIANT,
-                        local));
+                        local,
+                        BlockVariantMenu.space().isScreenspace()
+                            ? new BlockVariantMenuScreen() : null));
             }
             case ADD -> DungeonTrainNet.sendToServer(
                 // Server captures the player's main-hand BlockItem — empty
@@ -298,7 +305,14 @@ public final class BlockVariantMenuInputHandler {
         String variantId = BlockVariantMenu.variantId();
         switch (hit.kind()) {
             case SEARCH_BACK -> BlockVariantMenu.backToRoot();
-            case SEARCH_FIELD -> Minecraft.getInstance().setScreen(new BlockVariantSearchScreen());
+            case SEARCH_FIELD -> {
+                // World-space has no screen of its own, so it needs an invisible one to stop
+                // typed letters from walking the player. Screen-space is already a screen and
+                // types inline — opening this over it would replace the panel being typed into.
+                if (BlockVariantMenu.space().isWorldspace()) {
+                    Minecraft.getInstance().setScreen(new BlockVariantSearchScreen());
+                }
+            }
             case SEARCH_RESULT -> {
                 List<String> filtered = BlockVariantMenu.filteredBlockIds();
                 if (hit.index() < 0 || hit.index() >= filtered.size()) return;
