@@ -9274,6 +9274,25 @@
       "released": true,
       "released_in": "v0.682.0",
       "released_at": "2026-08-27T10:28:28Z"
+    },
+    {
+      "id": "client-options-tabs",
+      "version": "0.683.0",
+      "type": "feat",
+      "title": "The Dungeon Train options screen fits on screen again",
+      "summary": "The Dungeon Train settings screen, off the vanilla Options menu, no longer runs off the bottom of the window. Its rows used to be a single fixed column that overflowed at smaller window sizes and higher GUI scales, taking the Done button with them and leaving no way to reach the settings underneath. Everything now sits under three tabs \u2014 General, Train and Editor \u2014 each one scrolling on its own with Done always pinned at the bottom. Settings sit two to a row where they fit, and take the full width where the label needs it. The editor's display-scale controls have moved out of their sub-screen onto the Editor tab, so they are one click away instead of two, and are sliders now rather than plus/minus buttons.",
+      "highlights": [
+        "Three tabs \u2014 General, Train and Editor \u2014 instead of one long column",
+        "The list scrolls and Done stays put, so nothing is unreachable at any window size or GUI scale",
+        "Settings pair two to a row where they fit, full width where they don't",
+        "Editor display scales moved onto the Editor tab as sliders, replacing the Editor Settings sub-screen",
+        "The Internet Connection row is temporarily removed while a bug that stopped it being switched back on is fixed"
+      ],
+      "pr": 1137,
+      "date": "2026-08-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
