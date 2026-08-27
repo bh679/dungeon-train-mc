@@ -9320,6 +9320,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "shulker-box-tooltip-modpack",
+      "version": "0.685.0",
+      "type": "feat",
+      "title": "Shulker Box Tooltip added to the modpack",
+      "summary": "The modpack now ships Shulker Box Tooltip. Hover any shulker box \u2014 or other container item \u2014 to see what's inside without placing it down, which saves a lot of digging through loot on the train.",
+      "highlights": [
+        "Hover a shulker box to preview its contents",
+        "Enabled by default; can be switched off in the launcher"
+      ],
+      "pr": 1143,
+      "date": "2026-08-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
