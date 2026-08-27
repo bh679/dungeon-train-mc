@@ -13,7 +13,7 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 /**
  * Client → server: the player closed the lectern-letter book edit/sign screen WITHOUT signing.
  * Carries the lectern {@link BlockPos} the screen was opened from so the server can leave the
- * unsigned book &amp; quill resting on that lectern as a "Letter X" draft (see
+ * unsigned book &amp; quill resting on that lectern as an unsigned draft (see
  * {@link LetterLecternEvents#handleDraftToLectern}).
  *
  * <p>The client only sends this when the close was NOT a sign (the sign path is authoritative

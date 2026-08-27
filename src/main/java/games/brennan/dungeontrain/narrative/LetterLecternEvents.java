@@ -2,19 +2,19 @@ package games.brennan.dungeontrain.narrative;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
-import games.brennan.dungeontrain.advancement.GlobalPlayerStats;
 import games.brennan.dungeontrain.event.SharedBookGate;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.OpenLetterEditorPacket;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.GlobalPos;
 import net.minecraft.core.component.DataComponents;
-import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.TickTask;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.network.Filterable;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.item.ItemStack;
@@ -51,7 +51,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * <p>If the player <b>signs</b>, {@code ServerGamePacketListenerImplSignBookMixin} consumes the
  * pending entry and routes to the letter upload + burn. If they <b>close without signing</b>, the
  * client sends {@code LetterDraftToLecternPacket}, which calls {@link #handleDraftToLectern} to leave
- * the unsigned book &amp; quill resting on the lectern as a "Letter X" draft.</p>
+ * the book &amp; quill resting on the lectern as an unsigned draft, exactly as written.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class LetterLecternEvents {
@@ -161,7 +161,7 @@ public final class LetterLecternEvents {
 
     /**
      * Client closed the sign screen WITHOUT signing (via {@code LetterDraftToLecternPacket}): leave
-     * the unsigned book &amp; quill on the lectern as a "Letter X" draft. No-op if the player no longer
+     * the book &amp; quill on the lectern as an unsigned draft, unchanged. No-op if the player no longer
      * holds a book &amp; quill (they actually signed) or the lectern is occupied.
      */
     public static void handleDraftToLectern(ServerPlayer player, BlockPos pos) {
@@ -188,15 +188,21 @@ public final class LetterLecternEvents {
             if (!(state.getBlock() instanceof LecternBlock)) return;
             if (state.getValue(LecternBlock.HAS_BOOK)) return; // occupied (e.g. a narrative lectern) — keep it in hand
 
-            // Label the unsigned draft with its would-be series index before it rests on the lectern.
-            MinecraftServer server = player.getServer();
-            if (server != null) {
-                long deaths = GlobalPlayerStats.totalDeaths(player.getUUID());
-                int idx = NarrativeProgressData.get(server.overworld()).peekNextIndex(player.getUUID(), deaths);
-                book.set(DataComponents.CUSTOM_NAME, Component.literal("Letter " + idx));
-            }
-            // tryPlaceBook splits one book off the hand stack onto the lectern block-entity.
-            LecternBlock.tryPlaceBook(player, level, pos, state, book);
+            // The draft rests on the lectern EXACTLY as the player wrote it — no rename, no added
+            // components. It is an unfinished book & quill, not a titled artefact: the title is
+            // chosen at sign time (LetterSigning falls back to "Letter X" only if left blank), and
+            // stamping one here made an untouched draft look like something already signed.
+            if (!(level.getBlockEntity(pos) instanceof LecternBlockEntity lectern)) return;
+            lectern.setBook(book.copyWithCount(1));
+            lectern.setChanged();
+            LecternBlock.resetBookState(player, level, pos, state, /*hasBook*/ true);
+            level.playSound(null, pos, SoundEvents.BOOK_PUT, SoundSource.BLOCKS, 1.0F, 1.0F);
+
+            // Take the hand copy explicitly. Vanilla's tryPlaceBook routes through
+            // ItemStack#consumeAndReturn, which SKIPS the shrink for a player with infinite
+            // materials — so in creative the book was duplicated onto the lectern and the player
+            // kept one. Pressing Done must hand back nothing, in either game mode.
+            book.shrink(1);
         } catch (Throwable t) {
             LOGGER.debug("[DungeonTrain] Letter: draft-to-lectern failed at {}: {}", pos, t.toString());
         }

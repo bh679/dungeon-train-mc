@@ -466,8 +466,9 @@ public final class DungeonTrainConfig {
                 .comment("Player-written lectern letters. When true, right-clicking a lectern with a book & quill opens",
                         "the sign screen; signing it uploads the letter to the Dungeon Train relay as the next entry in your",
                         "current life's narrative series (a new life starts a new series) and burns the book away at the",
-                        "lectern. Closing without signing leaves the book & quill on the lectern as an unsigned \"Letter X\"",
-                        "draft to finish later. Uploading also requires the player's client to have granted network consent",
+                        "lectern. Closing without signing leaves the book & quill on the lectern, unchanged, as an unsigned",
+                        "draft — right-click it empty-handed to pick it back up and finish it. Uploading also requires the",
+                        "player's client to have granted network consent",
                         "(Discord Presence's 'use the internet?' prompt). False disables the feature — a book & quill placed",
                         "on a lectern behaves like vanilla.")
                 .define("lettersEnabled", DEFAULT_LETTERS_ENABLED);

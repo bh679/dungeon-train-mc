@@ -14,7 +14,7 @@ import net.neoforged.neoforge.client.event.ScreenEvent;
  * Client-side close detection for the lectern-letter sign screen. When a {@link BookEditScreen} that
  * was opened from a lectern (via {@link LetterEditorClient}) closes WITHOUT signing — Esc or the
  * "Done" draft-save — this tells the server to leave the unsigned book &amp; quill on that lectern as
- * a "Letter X" draft ({@link LetterDraftToLecternPacket}). A signed close sends nothing: the server's
+ * an unsigned draft ({@link LetterDraftToLecternPacket}). A signed close sends nothing: the server's
  * sign interception has already consumed + burned the book.
  *
  * <p>The sign-vs-close distinction is set by
