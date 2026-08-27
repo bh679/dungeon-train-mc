@@ -15,9 +15,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.LecternBlock;
-import net.minecraft.world.level.block.entity.LecternBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 
 import java.util.List;
@@ -89,14 +87,8 @@ public final class LetterSigning {
         // state is a no-op, and the plain-lectern guard skips clearing its book.
         BlockState lstate = lecternLevel.getBlockState(p);
         if (lstate.getBlock() instanceof LecternBlock) {
-            if (lstate.is(Blocks.LECTERN)
-                    && lecternLevel.getBlockEntity(p) instanceof LecternBlockEntity le && le.hasBook()) {
-                le.setBook(ItemStack.EMPTY);
-                le.setChanged();
-                lecternLevel.setBlock(p, lstate
-                        .setValue(LecternBlock.HAS_BOOK, Boolean.FALSE)
-                        .setValue(LecternBlock.POWERED, Boolean.FALSE), 3);
-            }
+            // Plain-lectern-only clear, shared with the draft re-open path.
+            LetterLecternEvents.clearPlainLecternBook(player, lecternLevel, p, lstate);
             player.connection.send(new ClientboundBlockUpdatePacket(p, lecternLevel.getBlockState(p)));
         }
 

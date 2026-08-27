@@ -9240,6 +9240,23 @@
       "released": true,
       "released_in": "v0.681.0",
       "released_at": "2026-08-27T10:01:48Z"
+    },
+    {
+      "id": "sign-books-normal-lecterns",
+      "version": "0.681.0",
+      "type": "fix",
+      "title": "Finish and sign books left on ordinary lecterns",
+      "summary": "A book & quill you leave on a plain lectern is now a draft you can come back to: right-click the lectern empty-handed to pick it up and keep writing, then sign it to seal it as a letter. Pressing Done leaves the book on the lectern exactly as you wrote it \u2014 your text is kept, nothing is handed back to you, and the book is no longer renamed behind your back.",
+      "highlights": [
+        "Right-click a lectern empty-handed to pick a draft back up and finish it",
+        "Done keeps the text you just typed instead of discarding it",
+        "Drafts rest on the lectern unchanged \u2014 no surprise rename, and no duplicate book in creative"
+      ],
+      "pr": 1129,
+      "date": "2026-08-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
