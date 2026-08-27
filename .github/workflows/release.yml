@@ -436,7 +436,14 @@ jobs:
             git rebase origin/main
           done
 
+      # always(), and it is load-bearing: without it this step defaults to success() and is SKIPPED
+      # the moment any earlier step fails — which leaves `ready` unset, so the always() on Notify
+      # Discord below evaluates its gate to false and the announcement never fires. That is exactly
+      # what swallowed the v0.670.0 ping: the release published to every platform and then the
+      # changelog bookkeeping lost a push race, and the partial-failure notification this pair was
+      # built to send was itself suppressed by the failure it was meant to report.
       - name: Check Discord webhook prerequisites
+        if: ${{ always() }}
         id: discord_check
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}

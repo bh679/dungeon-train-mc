@@ -146,6 +146,17 @@ public final class VariantOverlayRenderer {
      */
     private static final Map<UUID, String> LAST_STRAYS_KEY = new HashMap<>();
 
+    /**
+     * Per-player dedup key for the amber portal-door ghosts — {@link EditorDoorGhosts#key}, which
+     * encodes each room plot's origin and size. Same {@code null}-means-empty convention and the
+     * same toggle behaviour as {@link #LAST_STRAYS_KEY}.
+     *
+     * <p>Keyed on the plot grid rather than on a generation counter because there is no sweep behind
+     * these — a door's position is a function of its plot's box, so the boxes <i>are</i> the version
+     * number. A resize moves the key; a tick in a steady editor does not.</p>
+     */
+    private static final Map<UUID, String> LAST_DOOR_GHOSTS_KEY = new HashMap<>();
+
     private VariantOverlayRenderer() {}
 
     /**
@@ -169,6 +180,7 @@ public final class VariantOverlayRenderer {
         LAST_STAGE_STRIPS_KEY.clear();
         LAST_PART_VIS_KEY.clear();
         LAST_STRAYS_KEY.clear();
+        LAST_DOOR_GHOSTS_KEY.clear();
     }
 
     /** Toggle the overlay for {@code player}. {@code on == true} resumes rendering. */
@@ -204,6 +216,7 @@ public final class VariantOverlayRenderer {
         clearStageStripsIfStale(player);
         clearPartVisibilityIfStale(player);
         clearStraysIfStale(player);
+        clearDoorGhostsIfStale(player);
     }
 
     /**
@@ -254,6 +267,7 @@ public final class VariantOverlayRenderer {
             pushStageStripsSnapshot(player, level);
             pushPartVisibilitySnapshot(player);
             pushStraysSnapshot(player);
+            pushDoorGhostsSnapshot(player, dims);
 
             if (!isEnabled(player)) {
                 clearHoverIfStale(player);
@@ -780,12 +794,21 @@ public final class VariantOverlayRenderer {
         menus = appendPackageMenu(menus, dims);
         menus = appendStagesMenu(menus, dims);
 
+        // Whether this player has closed the world-space Welcome panel in this world. World state
+        // rather than client config, so it survives a relog and stays scoped to this save.
+        net.minecraft.server.MinecraftServer server = player.getServer();
+        boolean helpPanelDismissed = server != null
+            && DungeonTrainWorldData.get(server.overworld()).isHelpPanelDismissed(uuid);
+
         StringBuilder keyBuf = new StringBuilder(64);
         keyBuf.append(category.name()).append('|');
         // Include the focused stage (effective: explicit selection, else the first stage) so selecting /
         // deselecting — or adding / deleting a stage that shifts the default — re-pushes the snapshot and
         // the highlight updates live (steady-state still dedups to zero packets).
         keyBuf.append("sel:").append(EditorStageSelection.effective()).append('|');
+        // In the key as well as the packet, or closing / reopening the Welcome panel would be
+        // deduped away and the panel would not react until something else changed the snapshot.
+        keyBuf.append("help:").append(helpPanelDismissed).append('|');
         for (EditorTypeMenusPacket.Menu m : menus) {
             BlockPos p = m.worldPos();
             keyBuf.append(p.getX()).append(',').append(p.getY()).append(',').append(p.getZ())
@@ -819,7 +842,8 @@ public final class VariantOverlayRenderer {
         LOGGER.info("[DungeonTrain] EditorTypeMenus: send {} menus (category {}, first '{}' with {} variants @ {}) to {}",
             menus.size(), category, first.typeName(), first.variants().size(), first.worldPos(),
             player.getName().getString());
-        DungeonTrainNet.sendTo(player, new EditorTypeMenusPacket(menus, EditorStageSelection.effective()));
+        DungeonTrainNet.sendTo(player, new EditorTypeMenusPacket(
+            menus, EditorStageSelection.effective(), helpPanelDismissed));
     }
 
     /** Send the empty type-menus packet if the player previously had a non-empty snapshot. */
@@ -951,6 +975,49 @@ public final class VariantOverlayRenderer {
     private static void clearStraysIfStale(ServerPlayer player) {
         if (LAST_STRAYS_KEY.remove(player.getUUID()) != null) {
             DungeonTrainNet.sendTo(player, EditorStrayBlocksPacket.empty());
+        }
+    }
+
+    /**
+     * Push the amber portal-door ghosts when the room plot grid has moved.
+     *
+     * <p>Gated on {@link EditorCategory#PORTALS} being the stamped category, so this costs a map
+     * lookup and nothing else in every other category — the door cells are only meaningful where a
+     * room plot is actually standing, and painting them over a carriage row would be painting them
+     * in mid-air.</p>
+     *
+     * <p>Same toggle shape as {@link #pushStraysSnapshot}: a player with the ghosts off goes down the
+     * clear path, which drops their dedup key, so the packet that turns them off is sent exactly once
+     * and turning them back on re-pushes immediately.</p>
+     */
+    private static void pushDoorGhostsSnapshot(ServerPlayer player, CarriageDims dims) {
+        UUID uuid = player.getUUID();
+        if (!EditorDoorGhosts.isEnabled(uuid)) {
+            clearDoorGhostsIfStale(player);
+            return;
+        }
+        if (EditorStampedCategoryState.current().orElse(null) != EditorCategory.PORTALS) {
+            clearDoorGhostsIfStale(player);
+            return;
+        }
+        String key = EditorDoorGhosts.key(dims);
+        if (key.equals(LAST_DOOR_GHOSTS_KEY.get(uuid))) return;
+
+        List<BlockPos> cells = EditorDoorGhosts.snapshot(dims);
+        if (cells.isEmpty()) {
+            clearDoorGhostsIfStale(player);
+            return;
+        }
+        LAST_DOOR_GHOSTS_KEY.put(uuid, key);
+        DungeonTrainNet.sendTo(player,
+            new games.brennan.dungeontrain.net.EditorDoorGhostsPacket(cells));
+    }
+
+    /** Send the empty door-ghost packet if the player previously had a non-empty snapshot. */
+    private static void clearDoorGhostsIfStale(ServerPlayer player) {
+        if (LAST_DOOR_GHOSTS_KEY.remove(player.getUUID()) != null) {
+            DungeonTrainNet.sendTo(player,
+                games.brennan.dungeontrain.net.EditorDoorGhostsPacket.empty());
         }
     }
 

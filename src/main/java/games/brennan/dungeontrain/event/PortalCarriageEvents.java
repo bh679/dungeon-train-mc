@@ -12,6 +12,7 @@ import games.brennan.dungeontrain.portal.PortalClear;
 import games.brennan.dungeontrain.portal.PortalCorridorKind;
 import games.brennan.dungeontrain.portal.PortalCorridorMask;
 import games.brennan.dungeontrain.portal.PortalCorridorSize;
+import games.brennan.dungeontrain.portal.PortalCrossingLight;
 import games.brennan.dungeontrain.portal.PortalRoomCell;
 import dev.ryanhcode.sable.sublevel.plot.LevelPlot;
 import games.brennan.dungeontrain.portal.PortalEditMirror;
@@ -42,6 +43,7 @@ import games.brennan.dungeontrain.portal.PortalTwinLanes;
 import games.brennan.dungeontrain.portal.PortalTwinRegion;
 import games.brennan.dungeontrain.portal.PortalTwinSpace;
 import games.brennan.dungeontrain.net.PortalRoomFogPacket;
+import games.brennan.dungeontrain.net.PortalCrossingPacket;
 import games.brennan.dungeontrain.net.PortalRoomSkyPacket;
 import games.brennan.dungeontrain.net.PortalSwapPacket;
 import games.brennan.dungeontrain.net.PortalTrainAudioPacket;
@@ -323,6 +325,24 @@ public final class PortalCarriageEvents {
     private static final Map<UUID, PortalRoomSkyPacket> LAST_SKY = new HashMap<>();
 
     /**
+     * Player → the corridor hold they were last told about, on the same "only when it changes" rule
+     * as {@link #LAST_FOG}. A player standing still in a corridor therefore sends nothing at all.
+     */
+    private static final Map<UUID, PortalCrossingPacket> LAST_CROSSING = new HashMap<>();
+
+    /**
+     * Player → the strongest corridor hold anything found for them <b>this tick</b>, rebuilt from
+     * empty each time.
+     *
+     * <p>Accumulated rather than sent where it is measured, for the reason the puppets are: a pair's
+     * base corridor and each of its exit copies are separate frames covering overlapping ground, and
+     * a player near two of them would otherwise receive two messages, the second undoing the first.
+     * The strongest wins, so a player who is deep in one corridor is never talked out of it by
+     * another frame that merely contains them.</p>
+     */
+    private static final Map<UUID, Double> CROSSING_THIS_TICK = new HashMap<>();
+
+    /**
      * Player → the engine-audio region they were last told about, on the same "only when it changes"
      * rule as {@link #LAST_FOG}.
      */
@@ -532,6 +552,8 @@ public final class PortalCarriageEvents {
         ACTIVE_PAIRS.clear();
         LAST_FOG.clear();
         LAST_SKY.clear();
+        LAST_CROSSING.clear();
+        CROSSING_THIS_TICK.clear();
         LAST_TRAIN_AUDIO.clear();
         COOLDOWNS.clear();
         LAST_SWAP.clear();
@@ -553,6 +575,9 @@ public final class PortalCarriageEvents {
         // The confirmation throttle keys on a group anchor, which names a different group in the
         // next world opened — a surviving entry would delay one legacy group's proof by a second.
         PortalStampRecord.reset();
+        // The trips into test carriages go too: their return positions name a place in the world
+        // that is closing, and the structures they describe are not in the next one.
+        games.brennan.dungeontrain.portal.PortalTestSession.clear();
     }
 
     @SubscribeEvent
@@ -589,6 +614,9 @@ public final class PortalCarriageEvents {
         PortalPuppets.Session puppets = PortalPuppets.begin();
         ACTIVE_PAIRS.clear();
         LIVE_PAIRS.clear();
+        // Rebuilt from empty every tick: it describes where players are now, and a leftover entry
+        // would hold a lift on somebody who has walked out of the corridor it came from.
+        CROSSING_THIS_TICK.clear();
 
         for (UUID trainId : Trains.byTrainId(level).keySet()) {
             for (Map.Entry<Integer, ManagedShip> group : Trains.knownGroups(trainId).entrySet()) {
@@ -668,6 +696,10 @@ public final class PortalCarriageEvents {
         tickStrandedPairs(level, players, dims, groupSize, padLen, puppets);
 
         puppets.dispatch(players);
+
+        // Same reason as the puppets' single dispatch, and after it for tidiness rather than
+        // necessity: every frame that could have something to say about a player has now spoken.
+        dispatchCrossing(players);
 
         // Once per pair rather than once per carriage, and outside the loop above so it also runs for
         // pairs nobody is near any more — those are exactly the ones that need draining.
@@ -1012,6 +1044,36 @@ public final class PortalCarriageEvents {
      * ask for. The sound rule is about the corridors and the walk out of them, which every portal
      * has.</p>
      */
+    /**
+     * Send one structure's fog, sky and train audio to whoever is inside it, and take all three back
+     * from whoever is not — the ambience half of {@link #tickRoomTiling}, for a caller that has
+     * exactly one structure rather than every live pair.
+     *
+     * <p><b>Why this exists rather than a second implementation.</b> The three senders below dedupe
+     * against {@link #LAST_FOG}, {@link #LAST_SKY} and {@link #LAST_TRAIN_AUDIO}, so a packet only
+     * goes out when the answer changes. A parallel copy in another class would not merely duplicate
+     * them, it would fight them over that state — and a test room lit differently from a live one is
+     * exactly the thing a test room must not be. {@code PortalTestTicker} calls this.</p>
+     *
+     * <p>The live tick keeps its own loop rather than calling this per pair: it accumulates the
+     * still-inside sets across every structure and clears once at the end, and clearing per pair
+     * would take the fog off a player standing in the next one.</p>
+     */
+    public static void sendRoomAmbience(CarriageDims dims, PortalCarriageLayout layout,
+                                        PortalStructure structure, List<ServerPlayer> players) {
+        Set<UUID> fogged = new HashSet<>();
+        Set<UUID> skied = new HashSet<>();
+        Set<UUID> inStructure = new HashSet<>();
+
+        sendFogFor(players, dims, layout, structure, fogged);
+        sendSkyFor(players, dims, layout, structure, skied);
+        sendTrainAudioFor(players, dims, structure, inStructure);
+
+        clearFogFor(players, fogged);
+        clearSkyFor(players, skied);
+        clearTrainAudioFor(players, inStructure);
+    }
+
     private static void sendTrainAudioFor(List<ServerPlayer> players, CarriageDims dims,
                                           PortalStructure structure, Set<UUID> inStructure) {
         AABB box = structureBox(dims, structure);
@@ -1137,6 +1199,39 @@ public final class PortalCarriageEvents {
             LAST_SKY.put(player.getUUID(), region);
             PacketDistributor.sendToPlayer(player, region);
         }
+    }
+
+    /**
+     * Tell everyone standing in a portal corridor how far along it they are, so their client can
+     * hold its lightmap at a constant across the crossing — see {@code PortalCrossingLight} for what
+     * the number means and {@code PortalCrossingPacket} for why it is a number rather than a box.
+     *
+     * <p>Both halves in one pass: whoever is in a corridor hears the ramp, and whoever was in one
+     * last tick and is not now hears a zero. The client also expires the value on its own, so a
+     * dropped message costs a second of lighting rather than a stuck lift — this pass is what makes
+     * walking out immediate.</p>
+     */
+    private static void dispatchCrossing(List<ServerPlayer> players) {
+        if (CROSSING_THIS_TICK.isEmpty() && LAST_CROSSING.isEmpty()) return;
+
+        for (ServerPlayer player : players) {
+            UUID id = player.getUUID();
+            Double held = CROSSING_THIS_TICK.get(id);
+            if (held == null) {
+                if (LAST_CROSSING.remove(id) == null) continue;
+                PacketDistributor.sendToPlayer(player, PortalCrossingPacket.none());
+                continue;
+            }
+
+            PortalCrossingPacket packet =
+                new PortalCrossingPacket(PortalCrossingLight.toWire(held));
+            if (packet.equals(LAST_CROSSING.get(id))) continue;
+            LAST_CROSSING.put(id, packet);
+            PacketDistributor.sendToPlayer(player, packet);
+        }
+        // A player who left the world entirely never gets the zero, which is what the client's own
+        // countdown is for. Dropping the record here keeps the map from growing across a session.
+        LAST_CROSSING.keySet().removeIf(id -> players.stream().noneMatch(p -> p.getUUID().equals(id)));
     }
 
     /** Take the daylight back off anyone who was near a daylit room this tick and is not any more. */
@@ -1395,6 +1490,12 @@ public final class PortalCarriageEvents {
             double px = player.getX(), py = player.getY(), pz = player.getZ();
             if (copyOnly && !PortalExitTransit.inCopy(frames, px, py, pz)) continue;
 
+            // Measured before any of the refusals below, and deliberately: the lighting hold is
+            // about where the player is standing, not about whether this tick's swap is allowed to
+            // fire. A corridor that is severed, on cooldown or waiting for chunks is still a
+            // corridor being walked down, and taking its lighting away would be a tell.
+            noteCrossing(player, frames.crossingIntensityAt(px, py, pz));
+
             // Walking IN goes to whichever copy this player last came out of, when that copy is
             // still standing. Resolved per player and re-checked every time, so a retired copy or a
             // relocated structure quietly falls back to the original twin rather than dropping
@@ -1542,6 +1643,18 @@ public final class PortalCarriageEvents {
                 move.toFrame() == PortalFrames.FRAME_TWIN ? "TWIN" : "CARRIAGE",
                 fmt(px), fmt(py), fmt(pz), fmt(move.x()), fmt(targetY), fmt(move.z()));
         }
+    }
+
+    /**
+     * Record a corridor hold for this player, keeping the strongest one offered this tick.
+     *
+     * <p>{@code 0} is not recorded at all: an entry means "this player is in a corridor", and a
+     * frame that merely contains someone without holding anything should not stop
+     * {@link #dispatchCrossing} from sending them the zero they are owed.</p>
+     */
+    private static void noteCrossing(ServerPlayer player, double intensity) {
+        if (intensity <= PortalCrossingLight.OFF) return;
+        CROSSING_THIS_TICK.merge(player.getUUID(), intensity, Math::max);
     }
 
     /**
@@ -2085,6 +2198,12 @@ public final class PortalCarriageEvents {
                 + ", the room claims everything within " + fmt(cone) + "° of its axis in this block");
             out.add("    entities here still swap on the midpoint: " + fmt(layout.midX()) + " ±"
                 + fmt(PortalFrames.SWAP_HYSTERESIS));
+            // The lighting hold, on the same "quote the real function, never a second copy" rule as
+            // the two lines above. It is the one part of the corridor a player can SEE working and
+            // cannot otherwise measure — the whole point of it is that nothing appears to happen.
+            out.add("    lighting: " + fmt(PortalCrossingLight.intensityAt(localX, layout, role) * 100)
+                + "% of the way from the train's world to the room's (0% at the train-side door "
+                + "plane, 100% at the room-side one, one transition, never falling)");
 
             if (structure != null) {
                 BlockPos twinOrigin = role == PortalCarriageRole.ENTRY

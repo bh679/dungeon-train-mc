@@ -3,11 +3,14 @@ package games.brennan.dungeontrain.editor;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.portal.PortalCorridorKind;
 import games.brennan.dungeontrain.portal.PortalCorridorSize;
+import games.brennan.dungeontrain.template.TemplateDecor;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriagePlacer;
 import games.brennan.dungeontrain.train.CarriageVariant;
 import games.brennan.dungeontrain.train.CarriageVariantRegistry;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
+import games.brennan.dungeontrain.editor.relay.EditorRelaySave;
+import games.brennan.dungeontrain.template.Template;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.resources.ResourceKey;
@@ -365,6 +368,9 @@ public final class CarriageEditor {
             overworld, origin, box.length(), box.height(), box.width()
         );
 
+        // …and, when they have opted in, to the player's relay profile. Hooked here rather than at
+        // the callers because both ways in land on this method — see EditorRelaySave.
+        EditorRelaySave.afterSave(player, new Template.Carriage(variant));
         LOGGER.info("[DungeonTrain] Editor save: {} -> {} template dims={}x{}x{} ({} variant entries)",
             player.getName().getString(), variant.id(), box.length(), box.width(), box.height(),
             sidecar.size());
@@ -536,11 +542,15 @@ public final class CarriageEditor {
         return true;
     }
 
-    private static StructureTemplate captureTemplate(ServerLevel level, BlockPos origin, CarriageDims dims) {
-        StructureTemplate template = new StructureTemplate();
+    /**
+     * Capture a carriage-sized region as a template.
+     *
+     * <p>Public so the Train Builder's save writes through the same capture the editor does —
+     * two copies of this would be two things to keep in step.</p>
+     */
+    public static StructureTemplate captureTemplate(ServerLevel level, BlockPos origin, CarriageDims dims) {
         Vec3i size = new Vec3i(dims.length(), dims.height(), dims.width());
-        template.fillFromWorld(level, origin, size, false, Blocks.AIR);
-        return template;
+        return TemplateDecor.capture(level, origin, size, Blocks.AIR);
     }
 
     /**

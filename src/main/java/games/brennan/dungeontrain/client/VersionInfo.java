@@ -31,16 +31,26 @@ public final class VersionInfo {
     public static final String VERSION;
     public static final String BRANCH;
     public static final String DISPLAY;
+    /**
+     * Clock hours in which any Dungeon Train repo saw a commit, de-duplicated across repos —
+     * the development-hours figure the Contribute page shows. Baked by the {@code devHours}
+     * closure in build.gradle; {@code 0} when the build could read no history at all, which
+     * callers must treat as "unknown" and show nothing. See
+     * {@link games.brennan.dungeontrain.client.support.DevHours}.
+     */
+    public static final int DEV_HOURS;
 
     static {
         String version = UNKNOWN;
         String branch = UNKNOWN;
+        int devHours = 0;
         try (InputStream in = VersionInfo.class.getResourceAsStream(PROPERTIES_PATH)) {
             if (in != null) {
                 Properties props = new Properties();
                 props.load(in);
                 version = props.getProperty("version", UNKNOWN);
                 branch = props.getProperty("branch", UNKNOWN);
+                devHours = parseHours(props.getProperty("dev_hours"));
             } else {
                 LOGGER.warn("VersionInfo: resource {} not found — using fallback", PROPERTIES_PATH);
             }
@@ -49,7 +59,19 @@ public final class VersionInfo {
         }
         VERSION = version;
         BRANCH = branch;
+        DEV_HOURS = devHours;
         DISPLAY = "Dungeon Train v" + VERSION + " (" + BRANCH + ")";
+    }
+
+    /** Absent, blank or non-numeric all mean "unknown" — never a crash in front of a player. */
+    private static int parseHours(String raw) {
+        if (raw == null || raw.isBlank()) return 0;
+        try {
+            return Math.max(0, Integer.parseInt(raw.trim()));
+        } catch (NumberFormatException e) {
+            LOGGER.warn("VersionInfo: unparseable dev_hours '{}' — treating as unknown", raw);
+            return 0;
+        }
     }
 
     private VersionInfo() {}

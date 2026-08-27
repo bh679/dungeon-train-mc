@@ -16,7 +16,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * <p>With the rule off, {@code handlePlayerCombatKill} opens a {@code DeathScreen}
  * and {@code DeathScreenLayoutHandler} swaps in the narrative recap — untouched
  * here. With it on, vanilla instead calls {@code LocalPlayer.respawn()}, which is
- * the case this mixin cancels.</p>
+ * the case this mixin cancels. The packet's death message is handed over too:
+ * an abandoned run opens the death screen itself and titles it the same way
+ * vanilla's rule-off branch would.</p>
  *
  * <p>Injected at {@code HEAD} rather than at the {@code respawn()} call so the
  * injection point cannot drift with the method's internals: the trade-off is that
@@ -32,7 +34,7 @@ public abstract class ClientPacketListenerInstantRespawnMixin {
     private void dungeontrain$instantRespawnStartsNewWorld(
             ClientboundPlayerCombatKillPacket packet, CallbackInfo ci
     ) {
-        if (InstantRespawnReboard.interceptDeath(packet.playerId())) {
+        if (InstantRespawnReboard.interceptDeath(packet.playerId(), packet.message())) {
             ci.cancel();
         }
     }

@@ -55,3 +55,6 @@ localization/review/
 .claude/scheduled_tasks.lock
 
 run-server/
+
+# javac argfile dumps (written when a compile is invoked by hand, never wanted)
+javac.*.args

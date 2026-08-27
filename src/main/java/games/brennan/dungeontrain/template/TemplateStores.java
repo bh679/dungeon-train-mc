@@ -130,6 +130,7 @@ public final class TemplateStores {
         games.brennan.dungeontrain.editor.CarriageContentsVariantBlocks.clearCache();
         games.brennan.dungeontrain.editor.PillarTemplateStore.clearCache();
         games.brennan.dungeontrain.editor.ContainerContentsStore.clearCache();
+        games.brennan.dungeontrain.editor.WholeCarriageTemplateStore.clearCache();
         games.brennan.dungeontrain.track.variant.TrackVariantStore.clearCache();
         games.brennan.dungeontrain.track.variant.TrackVariantBlocks.clearCache();
         // Group sidecars travel with their kind's templates, so a package switch can change which
@@ -144,9 +145,11 @@ public final class TemplateStores {
         games.brennan.dungeontrain.track.variant.TrackVariantRegistry.reload();
         games.brennan.dungeontrain.train.CarriageVariantRegistry.reload();
         games.brennan.dungeontrain.train.CarriageContentsRegistry.reload();
+        games.brennan.dungeontrain.train.WholeCarriageRegistry.reload();
         games.brennan.dungeontrain.editor.CarriagePartRegistry.reload();
         games.brennan.dungeontrain.editor.CarriageTemplateStore.reload();
         games.brennan.dungeontrain.editor.CarriageContentsStore.reload();
+        games.brennan.dungeontrain.editor.WholeCarriageTemplateStore.reload();
         games.brennan.dungeontrain.editor.LootPrefabStore.reload();
         games.brennan.dungeontrain.editor.BlockVariantPrefabStore.reload();
     }

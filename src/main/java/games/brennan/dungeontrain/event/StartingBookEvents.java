@@ -3,7 +3,9 @@ package games.brennan.dungeontrain.event;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.advancement.GlobalBookBurnStats;
+import games.brennan.dungeontrain.builder.BuilderWorldLayout;
 import games.brennan.dungeontrain.cheat.RunIntegrity;
+import games.brennan.dungeontrain.narrative.BookBurnAuthorMessage;
 import games.brennan.dungeontrain.narrative.BookReadMarkerTag;
 import games.brennan.dungeontrain.narrative.BookVoteTag;
 import games.brennan.dungeontrain.discord.DeathNoteReporter;
@@ -235,6 +237,7 @@ public final class StartingBookEvents {
     @SubscribeEvent
     public static void onPlayerLogin(PlayerEvent.PlayerLoggedInEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        if (isBuilderWorld(player)) return;
         ServerLevel overworld = overworldOf(player);
         if (overworld == null) return;
         NarrativeProgressData data = NarrativeProgressData.get(overworld);
@@ -251,6 +254,7 @@ public final class StartingBookEvents {
         // would be jarring.
         if (event.isEndConquered()) return;
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        if (isBuilderWorld(player)) return;
         // Respawn context is unambiguous; pre-resolve at enqueue.
         PENDING_STRIKE.put(player.getUUID(), new PendingStrike(STRIKE_DELAY_TICKS, StartingBookContext.RESPAWN));
     }
@@ -647,6 +651,9 @@ public final class StartingBookEvents {
 
         LOGGER.info("[DungeonTrain] BurnableBook: detected dropped burnable book — burning entity {} ({} ticks)",
             item.getUUID(), BURN_DURATION_TICKS);
+
+        // Opt-in author credit, off by default — the book's writer is named as it catches fire.
+        BookBurnAuthorMessage.announce(level, item, stack);
 
         notifyIfBurnedUnread(item, stack);
     }
@@ -1147,5 +1154,20 @@ public final class StartingBookEvents {
         MinecraftServer server = player.getServer();
         if (server == null) return null;
         return server.overworld();
+    }
+
+    /**
+     * The Train Builder world is a creative sandbox for laying out carriages, not a run — so
+     * it gets neither the welcome strike nor the starting book. Without this gate the bolt
+     * lands on the build platform and the book drops as a loose item on top of whatever
+     * template is stamped there.
+     *
+     * <p>Gated on the builder dimension type rather than a mode flag — the same seam
+     * {@code BedrockFloorEvents} uses to skip its world-load pass for builder worlds.</p>
+     */
+    private static boolean isBuilderWorld(Player player) {
+        ServerLevel overworld = overworldOf(player);
+        return overworld != null
+            && overworld.dimensionTypeRegistration().is(BuilderWorldLayout.BUILDER_DIMENSION_TYPE);
     }
 }

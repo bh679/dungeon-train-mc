@@ -43,6 +43,14 @@ import java.util.concurrent.ConcurrentHashMap;
  * they have not granted network access, since asking for their shelf means sending their uuid. Only
  * when nothing at all resolves does the room quietly serve ordinary books.</p>
  *
+ * <h2>A directory page is an answer, a failed fetch is not</h2>
+ * <p>One page serves every room asking the same question, so what is cached here decides whether a
+ * whole world has libraries. A page that named somebody stands for the session; an empty one is a
+ * real answer but only for {@link #EMPTY_PAGE_TTL_MS}, because the corpus grows; a failed fetch is
+ * not an answer at all and leaves the room waiting rather than telling it nobody exists. Caching all
+ * three the same way is what once let a single relay timeout leave every author room in a session
+ * with bare shelves until the server restarted.</p>
+ *
  * <h2>Self is per player, the others are per room</h2>
  * <p>Under {@link PortalRoomBooks#SELF} two people in one room are reading two different libraries, so
  * the memo is keyed by pair AND holder. Under the other two the room has one author for everybody in
@@ -84,8 +92,40 @@ public final class PortalRoomAuthorLocks {
         });
     }
 
-    /** Cached directory candidates per kind, newest fetch wins. Refreshed when a room runs out. */
-    private static final Map<String, List<BookAuthorsClient.Author>> DIRECTORY = new ConcurrentHashMap<>();
+    /**
+     * How long an EMPTY directory page stands before it is asked again.
+     *
+     * <p>An empty page is a real answer — "nobody in the corpus is inside this room's band" — but it
+     * is an answer about a corpus that grows. Cached forever, a world that met one bare room would
+     * keep every later room bare too, because the page is shared by every room asking the same
+     * question. Five minutes matches the relay's own author-index TTL, so re-asking sooner would only
+     * re-read the same memo.</p>
+     *
+     * <p>A page that DID name somebody is kept for the session: a room's library must not change
+     * under a player who walked out of it and back in.</p>
+     */
+    static final long EMPTY_PAGE_TTL_MS = 5L * 60L * 1000L;
+
+    /**
+     * How long to wait after a FAILED fetch before trying again.
+     *
+     * <p>A failure is not an answer, so the room stays PENDING and the librarian re-ticks it — which
+     * without a backoff would mean one relay request per pending room per portal tick against a relay
+     * that has just shown it is unwell.</p>
+     */
+    static final long FAILED_RETRY_MS = 30L * 1000L;
+
+    /** A directory reply and when it landed — {@link #usable} and {@link #shouldRefetch} read both. */
+    record CachedPage(BookAuthorsClient.Page page, long fetchedAtMs) {}
+
+    /**
+     * Cached directory pages per question, newest fetch wins.
+     *
+     * <p>Holds failures too, purely for their timestamp: {@link #usable} refuses them as answers
+     * while {@link #shouldRefetch} uses when they happened to back off. Storing nothing at all would
+     * lose the backoff; storing them as answers is the bug this replaces.</p>
+     */
+    private static final Map<String, CachedPage> DIRECTORY = new ConcurrentHashMap<>();
 
     /** Kinds with a directory fetch in flight, so a room being walked through does not stack them. */
     private static final Set<String> DIRECTORY_IN_FLIGHT = ConcurrentHashMap.newKeySet();
@@ -114,13 +154,22 @@ public final class PortalRoomAuthorLocks {
         /** A fetch is on its way. Ask again. */
         PENDING,
         /** The directory has answered and nobody in it qualifies. Asking again will not help. */
-        NONE
+        NONE,
+        /**
+         * The room's roll came up {@link PortalRoomBooks.Share#STATS}: no author was looked for and
+         * none will be. The caller stocks the tally instead.
+         *
+         * <p>Distinct from {@link #NONE}, which means an author WAS looked for and the directory had
+         * nobody — that room stays pending in case the corpus grows. This one is settled.</p>
+         */
+        STATS
     }
 
     /** {@link Outcome} plus the author, when there is one. */
     public record Resolution(Outcome outcome, BookAuthorsClient.Author author) {
         static final Resolution PENDING = new Resolution(Outcome.PENDING, null);
         static final Resolution NONE = new Resolution(Outcome.NONE, null);
+        static final Resolution STATS = new Resolution(Outcome.STATS, null);
 
         static Resolution of(BookAuthorsClient.Author author) {
             return new Resolution(Outcome.RESOLVED, author);
@@ -154,6 +203,9 @@ public final class PortalRoomAuthorLocks {
                                      PortalRoomBooks books, boolean kidSafe) {
         if (player == null || books == null || !books.locks()) return Resolution.NONE;
         PortalRoomBooks.Share share = effectiveShare(pairKey, books);
+        // The tally has no author, so everything below this line — the directory, the lock cache, the
+        // rejection rotation — has nothing to work on. Branch before any of it is touched.
+        if (share.isStats()) return Resolution.STATS;
         Key key = keyFor(pairKey, player, share);
 
         BookAuthorsClient.Author held = LOCKS.get(key);
@@ -191,8 +243,20 @@ public final class PortalRoomAuthorLocks {
             }
             LOCKS.put(key, author);
             remember(author.token());
-            LOGGER.info("[DungeonTrain] Portal room {} locked to author '{}' ({} book(s))",
-                pairKey, author.name(), author.count());
+            // Say when the author is BELOW what the room asked for. The relay relaxes the floor
+            // rather than leave the shelves bare, and from in-game a half-empty library and a broken
+            // one look identical — this line is the difference, and names the setting to change.
+            if (!books.accepts(author.count())) {
+                LOGGER.info("[DungeonTrain] Portal room {} locked to author '{}' ({} book(s)) — below "
+                        + "its Books range of {}-{}, taken because nobody in the reader's language "
+                        + "reaches it",
+                    pairKey, author.name(), author.count(), books.minBooks() + 1,
+                    books.maxBooks() == PortalRoomBooks.NO_MAXIMUM
+                        ? "any" : String.valueOf(books.maxBooks()));
+            } else {
+                LOGGER.info("[DungeonTrain] Portal room {} locked to author '{}' ({} book(s))",
+                    pairKey, author.name(), author.count());
+            }
             return Resolution.of(author);
         }
         // Every attempt found a candidate whose catalogue turned out to be empty. Not "wait" — the
@@ -211,11 +275,15 @@ public final class PortalRoomAuthorLocks {
                                                PortalRoomBooks books) {
         boolean useSelf = useSelfDirectory(share, consented(player));
         String lang = hostLocaleOf(player);
-        boolean selfPage = DIRECTORY.containsKey(
-            directoryKey(PortalRoomBooks.Share.SELF.directoryKind(), player.getUUID(), books, lang));
+        long now = System.currentTimeMillis();
+        // `usable`, not merely present: a failed fetch is cached for its backoff timestamp alone and
+        // must read as "still waiting", or a relay hiccup would answer this question with NONE and
+        // the room would give up on a corpus it never actually asked about.
+        boolean selfPage = usable(DIRECTORY.get(
+            directoryKey(PortalRoomBooks.Share.SELF.directoryKind(), player.getUUID(), books, lang)), now);
         String kind = share.isSelf()
             ? PortalRoomBooks.Share.PLAYER.directoryKind() : share.directoryKind();
-        boolean poolPage = DIRECTORY.containsKey(directoryKey(kind, player.getUUID(), books, lang));
+        boolean poolPage = usable(DIRECTORY.get(directoryKey(kind, player.getUUID(), books, lang)), now);
         return answered(useSelf, selfPage, poolPage);
     }
 
@@ -295,24 +363,68 @@ public final class PortalRoomAuthorLocks {
                                                            boolean applyRange) {
         String lang = hostLocaleOf(player);
         String cacheKey = directoryKey(kind, player.getUUID(), books, lang);
-        List<BookAuthorsClient.Author> candidates = DIRECTORY.get(cacheKey);
-        if (candidates == null) {
-            fetchDirectory(kind, cacheKey, player, books, kidSafe, lang);
-            return Optional.empty();
-        }
-        // Belt and braces over the relay's own filter: a cached page outliving an edit to the range
-        // must not hand back somebody the room has since stopped accepting.
-        if (applyRange) {
-            List<BookAuthorsClient.Author> inRange = new ArrayList<>();
-            for (BookAuthorsClient.Author a : candidates) {
-                if (books.accepts(a.count())) inRange.add(a);
-            }
-            candidates = inRange;
-        }
+        CachedPage cached = DIRECTORY.get(cacheKey);
+        long now = System.currentTimeMillis();
+        if (shouldRefetch(cached, now)) fetchDirectory(kind, cacheKey, player, books, kidSafe, lang);
+        if (!usable(cached, now)) return Optional.empty();
+        List<BookAuthorsClient.Author> candidates = eligible(cached.page(), books, applyRange);
         Set<String> rejected = REJECTED.getOrDefault(key, Set.of());
         synchronized (PortalRoomAuthorLocks.class) {
             return choose(candidates, rejected, RECENT, player.getRandom()::nextInt);
         }
+    }
+
+    /**
+     * The candidates from {@code page} this room will actually consider.
+     *
+     * <p>Belt and braces over the relay's own filter: a cached page outliving an edit to the range
+     * must not hand back somebody the room has since stopped accepting.</p>
+     *
+     * <p><b>Skipped on a RELAXED page.</b> There the relay has already looked inside the band, found
+     * it empty, and deliberately reached outside it so the room has something on its shelves —
+     * re-applying the band here would throw that away and leave exactly the bare room it was
+     * avoiding. That is not a hypothetical: it is the whole reason the relay says so at all. An older
+     * relay never reports relaxed, so nothing is discarded that would not have been anyway.</p>
+     *
+     * <p>Pure and package-private: this one branch decides whether the relay's answer survives to
+     * reach a shelf, so it is worth pinning without a server.</p>
+     */
+    static List<BookAuthorsClient.Author> eligible(BookAuthorsClient.Page page, PortalRoomBooks books,
+                                                   boolean applyRange) {
+        if (!applyRange || page.relaxed() || books == null) return page.authors();
+        List<BookAuthorsClient.Author> inRange = new ArrayList<>();
+        for (BookAuthorsClient.Author a : page.authors()) {
+            if (books.accepts(a.count())) inRange.add(a);
+        }
+        return inRange;
+    }
+
+    /**
+     * Whether {@code cached} is an answer this room may act on right now.
+     *
+     * <p>Three states, not two. A page that NAMED somebody stands for the session. A page that came
+     * back empty is a real answer but only for {@link #EMPTY_PAGE_TTL_MS} — the corpus grows, and the
+     * page is shared by every room asking the same question, so a permanent one would keep a whole
+     * world bare. A FAILED fetch is not an answer at all: treating a timeout as "nobody qualifies" is
+     * what turned a single relay hiccup into every author room in the session standing empty.</p>
+     *
+     * <p>Pure and package-private so the three states can be tested without a server or a clock.</p>
+     */
+    static boolean usable(CachedPage cached, long nowMs) {
+        if (cached == null || !cached.page().answered()) return false;
+        if (!cached.page().authors().isEmpty()) return true;
+        return nowMs - cached.fetchedAtMs() < EMPTY_PAGE_TTL_MS;
+    }
+
+    /**
+     * Whether to go back to the relay for this page — nothing cached, an empty answer that has aged
+     * out, or a failure that has served its backoff. A page naming somebody is never re-fetched.
+     */
+    static boolean shouldRefetch(CachedPage cached, long nowMs) {
+        if (cached == null) return true;
+        if (!cached.page().answered()) return nowMs - cached.fetchedAtMs() >= FAILED_RETRY_MS;
+        if (!cached.page().authors().isEmpty()) return false;
+        return nowMs - cached.fetchedAtMs() >= EMPTY_PAGE_TTL_MS;
     }
 
     /**
@@ -363,7 +475,12 @@ public final class PortalRoomAuthorLocks {
             + ':' + (lang == null ? "" : lang);
     }
 
-    /** Pull a directory page for {@code kind}, once at a time. Caches an empty page as "asked, nothing". */
+    /**
+     * Pull a directory page for {@code kind}, once at a time.
+     *
+     * <p>Whatever comes back is stored with the time it landed — an answer for {@link #usable} to
+     * serve, or a failure whose only job is to hold {@link #shouldRefetch} off for a moment.</p>
+     */
     private static void fetchDirectory(String kind, String cacheKey, ServerPlayer player,
                                        PortalRoomBooks books, boolean kidSafe, String lang) {
         // Unreachable while nextCandidate holds the gate; kept so a later caller cannot send a uuid
@@ -377,9 +494,9 @@ public final class PortalRoomAuthorLocks {
         // that ever stopped being true.
         BookAuthorsClient.fetch(kind, books.minBooks(), books.maxBooks(), uuid, kidSafe,
             self ? null : lang,
-            authors -> {
+            page -> {
                 try {
-                    DIRECTORY.put(cacheKey, List.copyOf(authors));
+                    DIRECTORY.put(cacheKey, new CachedPage(page, System.currentTimeMillis()));
                 } finally {
                     DIRECTORY_IN_FLIGHT.remove(cacheKey);
                 }
@@ -445,9 +562,9 @@ public final class PortalRoomAuthorLocks {
 
     public static boolean isSelfAuthor(ServerPlayer player, String token) {
         if (player == null || token == null) return false;
-        List<BookAuthorsClient.Author> mine = DIRECTORY.get("self:" + player.getUUID());
+        CachedPage mine = DIRECTORY.get("self:" + player.getUUID());
         if (mine == null) return false;
-        for (BookAuthorsClient.Author a : mine) {
+        for (BookAuthorsClient.Author a : mine.page().authors()) {
             if (token.equals(a.token())) return true;
         }
         return false;
@@ -467,7 +584,12 @@ public final class PortalRoomAuthorLocks {
 
     /** Test hook: publish a directory page without going near the network. */
     static void seedDirectory(String cacheKey, List<BookAuthorsClient.Author> authors) {
-        DIRECTORY.put(cacheKey, List.copyOf(authors));
+        seedDirectory(cacheKey, BookAuthorsClient.Page.of(authors, false));
+    }
+
+    /** Test hook: publish a page verbatim — a relaxed one, or a failure — as if it had just landed. */
+    static void seedDirectory(String cacheKey, BookAuthorsClient.Page page) {
+        DIRECTORY.put(cacheKey, new CachedPage(page, System.currentTimeMillis()));
     }
 
     /** Test hook: which author a key has settled on, without resolving one. */

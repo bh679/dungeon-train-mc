@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.ship.sable.SableManagedShip;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderGetter;
 import net.minecraft.core.HolderLookup;
+import net.minecraft.core.Vec3i;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -118,6 +119,57 @@ public final class CarriageBlockSnapshot {
         root.put("cells", cells);
         root.put("ents", entities.ents());
         if (!entities.text().isEmpty()) text.append(text.length() > 0 ? "\n" : "").append(entities.text());
+        return new Captured(root, text.toString());
+    }
+
+    /**
+     * Read the volume {@code [origin, origin+size)} straight out of {@code level} into a snapshot tag,
+     * scraping the same authored text {@link #capture} does.
+     *
+     * <p>The sibling of {@link #capture}, for a build that has no ship. A carriage in play lives in its
+     * Sable sub-level's plot, which is why the other overload reads plot chunks — but a Train Builder
+     * world holds the build at ordinary world coordinates with no ship anywhere near it, and a plot read
+     * there would find nothing. Everything downstream is identical: same cell format, same version, same
+     * {@link #encode}, so a build uploaded from the builder is indistinguishable on the wire from one
+     * captured off a moving train.</p>
+     *
+     * <p>{@code size} rather than {@link CarriageDims} because the builder authors things that are not
+     * carriage-shaped — a portal room's volume is the author's, and a part's is its kind's.</p>
+     */
+    public static Captured captureLevel(ServerLevel level, BlockPos origin, Vec3i size,
+                                        HolderLookup.Provider registries) {
+        ListTag cells = new ListTag();
+        StringBuilder text = new StringBuilder();
+        for (int dx = 0; dx < size.getX(); dx++) {
+            for (int dy = 0; dy < size.getY(); dy++) {
+                for (int dz = 0; dz < size.getZ(); dz++) {
+                    BlockPos abs = origin.offset(dx, dy, dz);
+                    BlockState state = level.getBlockState(abs);
+                    if (state.isAir()) continue;
+                    CompoundTag cell = new CompoundTag();
+                    cell.put("p", new net.minecraft.nbt.IntArrayTag(new int[]{dx, dy, dz}));
+                    cell.put("s", NbtUtils.writeBlockState(state));
+                    if (state.hasBlockEntity()) {
+                        BlockEntity be = level.getBlockEntity(abs);
+                        if (be != null) {
+                            CompoundTag beTag = be.saveWithFullMetadata(registries);
+                            beTag.remove("x");
+                            beTag.remove("y");
+                            beTag.remove("z");
+                            cell.put("b", beTag);
+                            CarriageTextScan.appendBlockEntity(be, text);
+                        }
+                    }
+                    cells.add(cell);
+                }
+            }
+        }
+        CompoundTag root = new CompoundTag();
+        root.putInt("v", FORMAT_VERSION);
+        root.putInt("l", size.getX());
+        root.putInt("h", size.getY());
+        root.putInt("w", size.getZ());
+        root.put("cells", cells);
         return new Captured(root, text.toString());
     }
 

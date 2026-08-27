@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.command;
 
 import com.mojang.brigadier.CommandDispatcher;
 import games.brennan.dungeontrain.cheat.EditorContentIntegrity;
+import games.brennan.dungeontrain.event.CustomContentPromptEvents;
 import games.brennan.dungeontrain.world.CustomContentChoice;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
@@ -67,6 +68,10 @@ public final class CustomContentCommand {
             return 0;
         }
         boolean flipped = EditorContentIntegrity.setWorldChoice(source.getServer(), choice);
+        // Settle Free Play before reporting: turning the content off is exactly how a player whose
+        // only taint was an editor session gets their run back, and how anyone still wearing the
+        // badge for a cause that has now gone away loses it. See CustomContentPromptEvents.
+        CustomContentPromptEvents.onChoiceApplied(source.getServer());
         boolean suppressed = choice.suppressesContent();
         if (!flipped) {
             // The choice is recorded either way (UNSET -> ALLOW records an answer without changing

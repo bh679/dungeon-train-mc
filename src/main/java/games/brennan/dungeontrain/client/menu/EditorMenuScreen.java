@@ -1,8 +1,15 @@
 package games.brennan.dungeontrain.client.menu;
 
+import games.brennan.dungeontrain.client.EditorMenusModeState;
 import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
+import games.brennan.dungeontrain.client.builder.BuilderProfileScreen;
+import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.client.VersionInfo;
+import games.brennan.dungeontrain.client.menu.plot.EditorTypeMenuRenderer;
+import games.brennan.dungeontrain.editor.EditorMenusMode;
 import games.brennan.dungeontrain.net.EditorStatusPacket;
+import net.minecraft.client.Minecraft;
+import net.minecraft.network.chat.Component;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -68,16 +75,26 @@ public final class EditorMenuScreen implements MenuScreen {
         }
         out.add(new CommandMenuEntry.DrillIn("Enter", new EnterCategoryMenuScreen()));
 
-        // Editor Menus — master toggle for the world-space editor menus:
-        // drives the auto-opening part-position menu's persistent flag and,
-        // when turned off, also closes any open tap-to-open block-variant /
-        // container-contents menus. Available in every template category —
-        // the flag it reads is a per-player state, not scoped to carriages.
-        boolean pmEnabled = EditorStatusHudOverlay.isEditorMenusVisible();
+        // Editor Menus — master mode for the world-space editor menus: drives the auto-opening
+        // part-position menu's persistent flag and, when switched off, also closes any open
+        // tap-to-open block-variant / container-contents menus. Available in every template
+        // category — the state it reads is per-player, not scoped to carriages.
+        //
+        // Three cells rather than the old on/off Toggle, because Auto is a third position and not
+        // a shade of on: it draws every plot panel while you are between plots and only the one
+        // you are standing in once you step inside. Same Label-plus-state-cells shape as the
+        // Mirror X / Y / Z / V row below.
+        out.add(editorMenusRow());
+        out.add(menuDistanceRow());
+
+        // Welcome Panel — the onboarding board floating beside the first nav menu. Its own close
+        // (X) button writes the same per-player, per-world flag; this row is the only way back,
+        // so it stays in the menu whether the panel is currently up or not.
+        boolean welcomeShown = !EditorTypeMenuRenderer.helpPanelDismissed();
         out.add(new CommandMenuEntry.Toggle(
-            "Editor Menus", pmEnabled,
-            "dungeontrain editor editormenus on",
-            "dungeontrain editor editormenus off"
+            "Welcome Panel", welcomeShown,
+            "dungeontrain editor helppanel on",
+            "dungeontrain editor helppanel off"
         ));
 
         // Parts have their own Save / Reset commands — `dungeontrain save`
@@ -89,6 +106,7 @@ public final class EditorMenuScreen implements MenuScreen {
                 new CommandMenuEntry.Run("All", "dungeontrain editor part save all"),
                 0.80
             ));
+            out.add(myBuildsEntry());
             CommandMenuEntry partsClear = clearEntryFor(category, model);
             if (partsClear != null) out.add(partsClear);
             int sep = model.indexOf(':');
@@ -132,6 +150,7 @@ public final class EditorMenuScreen implements MenuScreen {
             new CommandMenuEntry.Run("All", "dungeontrain save all"),
             0.80
         ));
+        out.add(myBuildsEntry());
 
         // Undo | Redo — steps the per-plot editor history. Mirrors the
         // Ctrl/Cmd+Z / Ctrl/Cmd+Y keybindings through the same commands, so
@@ -223,6 +242,8 @@ public final class EditorMenuScreen implements MenuScreen {
             CommandMenuEntry copiesRoofRow = copiesBlockRowFor(EditorStatusHudOverlay.roomMode(),
                 games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane.ROOF);
             if (copiesRoofRow != null) out.add(copiesRoofRow);
+            CommandMenuEntry doorWallRow = doorWallRowFor(EditorStatusHudOverlay.roomMode());
+            if (doorWallRow != null) out.add(doorWallRow);
             CommandMenuEntry contentsRow = roomContentsRowFor(EditorStatusHudOverlay.roomMode());
             if (contentsRow != null) out.add(contentsRow);
             CommandMenuEntry booksRow = roomBooksRowFor(EditorStatusHudOverlay.roomMode());
@@ -235,6 +256,11 @@ public final class EditorMenuScreen implements MenuScreen {
             if (exitEveryRow != null) out.add(exitEveryRow);
             CommandMenuEntry exitMoveRow = exitMoveTripleFor(EditorStatusHudOverlay.roomMode());
             if (exitMoveRow != null) out.add(exitMoveRow);
+            // Go and stand in one. Portals only, because that is the only category where "the
+            // carriage" names something you can walk into. It stamps the room the player is
+            // standing in — under the world, corridor each side, no train — so there is nothing
+            // to pick and no save prompt to answer.
+            out.add(new CommandMenuEntry.Run("Test the Carriage", "dungeontrain portal test"));
         }
 
         // Spawn gate — min/max Diff-Level steppers (same categories as Weight) plus a Phases
@@ -294,6 +320,54 @@ public final class EditorMenuScreen implements MenuScreen {
      * re-mirrors the plot from its master octant on demand — saving no longer does
      * that implicitly.</p>
      */
+    /**
+     * The "Editor Menus" row — {@code Editor Menus | Auto | On | Off}, the active mode carrying
+     * the accent tint. Stay-open cells so the player can watch the world-space panels appear and
+     * disappear behind the menu while they pick.
+     *
+     * <p>Reads {@link EditorMenusModeState} rather than the status packet, which is the only
+     * client state that survives stepping out of a plot — see that class.</p>
+     */
+    private static CommandMenuEntry editorMenusRow() {
+        EditorMenusMode mode = EditorMenusModeState.mode();
+        return new CommandMenuEntry.Quad(
+            new CommandMenuEntry.Label("Editor Menus"),
+            modeCell("Auto", EditorMenusMode.AUTO, mode),
+            modeCell("On", EditorMenusMode.ON, mode),
+            modeCell("Off", EditorMenusMode.OFF, mode),
+            0.46, 0.64, 0.82);
+    }
+
+    /**
+     * The "Menu Distance" stepper — how far the editor's world-space menus keep drawing, in blocks.
+     *
+     * <p>Applies in a template and between plots, and in both On and Auto; Auto layers its own
+     * tighter in-template rule on top, so the smaller of the two is what you see there.</p>
+     *
+     * <p>{@link CommandMenuEntry.ClientAction} cells rather than slash commands: the value is a
+     * client display preference in {@code dungeontrain-client.toml}, with no server state to sync,
+     * and the action leaves the menu open so the panels around you appear and vanish as you step
+     * it. Same {@code Triple} geometry as the weight and room-size steppers.</p>
+     */
+    private static CommandMenuEntry menuDistanceRow() {
+        int current = ClientDisplayConfig.getMenuRenderDistance();
+        CommandMenuEntry minus = new CommandMenuEntry.ClientAction("-",
+            () -> ClientDisplayConfig.setMenuRenderDistance(
+                ClientDisplayConfig.stepMenuRenderDistanceDown(
+                    ClientDisplayConfig.getMenuRenderDistance())));
+        CommandMenuEntry middle = new CommandMenuEntry.Label("Menu Distance: " + current);
+        CommandMenuEntry plus = new CommandMenuEntry.ClientAction("+",
+            () -> ClientDisplayConfig.setMenuRenderDistance(
+                ClientDisplayConfig.stepMenuRenderDistanceUp(
+                    ClientDisplayConfig.getMenuRenderDistance())));
+        return new CommandMenuEntry.Triple(minus, middle, plus, 0.10, 0.90);
+    }
+
+    private static CommandMenuEntry modeCell(String label, EditorMenusMode cell, EditorMenusMode active) {
+        return new CommandMenuEntry.Stay(
+            label, "dungeontrain editor editormenus " + cell.id(), cell == active);
+    }
+
     private static void addMirrorToggles(List<CommandMenuEntry> out) {
         out.add(new CommandMenuEntry.Label("Mirror"));
         // showStateText=false → state shown by the green (on) / grey (off) tint only.
@@ -450,6 +524,22 @@ public final class EditorMenuScreen implements MenuScreen {
             new CommandMenuEntry.Stay("Edit",
                 "dungeontrain editor portals copies " + plane.id() + " edit"),
             0.72);
+    }
+
+    /**
+     * The Door Wall row, or null unless the walls are set to Endless Repetition — the one mode whose
+     * appended tiles carry a wall of their own.
+     *
+     * <p>Sits directly under Copies, beside which it belongs: both describe what an appended tile is
+     * made of. Off by default, so a room that has never been given the setting shows "Sealed" and
+     * behaves exactly as it always did.</p>
+     */
+    static CommandMenuEntry doorWallRowFor(String currentMode) {
+        if (currentMode == null || EditorStatusPacket.NO_MODE.equals(currentMode)) return null;
+        if (!EditorPlotLabelsRenderer.hasDoorWallRow(currentMode)) return null;
+        return new CommandMenuEntry.Stay(
+            EditorPlotLabelsRenderer.doorWallLabel(currentMode),
+            "dungeontrain editor portals doorwall next");
     }
 
     /**
@@ -741,4 +831,32 @@ public final class EditorMenuScreen implements MenuScreen {
     private static boolean isReservedContentsBuiltin(String id) {
         return "default".equals(id);
     }
+
+    /**
+     * Everything this player has uploaded to their relay profile, and the one button that puts a
+     * build on the train.
+     *
+     * <p>Directly under Save, because that is what fills it — the same placement and the same
+     * reasoning as the Train Builder's pause menu, which is where this screen came from. The screen
+     * itself was always world-agnostic; only the builder's button was, so the editor gets its own
+     * rather than a copy of it.</p>
+     *
+     * <p>Package-private rather than private because {@link MainMenuScreen} offers the same row at
+     * the root of the worldspace menu, for a player who is not standing in a plot. One definition,
+     * so the two rows cannot drift into saying different things or opening different screens.</p>
+     *
+     * <p>A {@link CommandMenuEntry.ClientAction} opening a vanilla screen has precedent in
+     * {@code CommandMenuState.beginTyping}. The worldspace menu is closed first: it is drawn in the
+     * world and raycast for input, so leaving it up behind a screen would leave two things reading
+     * the mouse. A null parent means Back returns to the game.</p>
+     */
+    static CommandMenuEntry myBuildsEntry() {
+        return new CommandMenuEntry.ClientAction(
+            Component.translatable("gui.dungeontrain.builder.profile").getString(),
+            () -> {
+                CommandMenuState.close();
+                Minecraft.getInstance().setScreen(new BuilderProfileScreen(null));
+            });
+    }
+
 }

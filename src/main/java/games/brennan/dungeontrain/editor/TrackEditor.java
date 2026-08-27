@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.editor;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.template.TemplateDecor;
 import games.brennan.dungeontrain.track.TrackPalette;
 import games.brennan.dungeontrain.track.TrackPlacer;
 import games.brennan.dungeontrain.track.variant.TrackKind;
@@ -9,6 +10,8 @@ import games.brennan.dungeontrain.track.variant.TrackVariantRegistry;
 import games.brennan.dungeontrain.track.variant.TrackVariantStore;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
+import games.brennan.dungeontrain.editor.relay.EditorRelaySave;
+import games.brennan.dungeontrain.template.Template;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.server.MinecraftServer;
@@ -207,6 +210,9 @@ public final class TrackEditor {
 
         games.brennan.dungeontrain.advancement.ModAdvancementTriggers.EDITOR_ACTION.get()
             .trigger(player, "made_track");
+        // …and, when they have opted in, to the player's relay profile. Hooked here rather than at
+        // the callers because both ways in land on this method — see EditorRelaySave.
+        EditorRelaySave.afterSave(player, new Template.Track(name));
         LOGGER.info("[DungeonTrain] Track editor save: {} -> tile/{} ({}x{}x{})",
             player.getName().getString(), name,
             TrackPlacer.TILE_LENGTH, TrackPlacer.HEIGHT, dims.width());
@@ -254,6 +260,7 @@ public final class TrackEditor {
         if (stored.isPresent()) {
             StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
             stored.get().placeInWorld(level, origin, origin, settings, level.getRandom(), 3);
+            TemplateDecor.replace(level, origin, stored.get(), settings, null);
             return;
         }
         // Fallback for unauthored "default" — hardcoded bed + 2-rail stamp.
@@ -269,10 +276,8 @@ public final class TrackEditor {
     }
 
     private static StructureTemplate captureTemplate(ServerLevel level, BlockPos origin, CarriageDims dims) {
-        StructureTemplate template = new StructureTemplate();
         Vec3i size = new Vec3i(TrackPlacer.TILE_LENGTH, TrackPlacer.HEIGHT, dims.width());
-        template.fillFromWorld(level, origin, size, false, Blocks.AIR);
-        return template;
+        return TemplateDecor.capture(level, origin, size, Blocks.AIR);
     }
 
     private static void setOutline(ServerLevel level, BlockPos origin, CarriageDims dims) {

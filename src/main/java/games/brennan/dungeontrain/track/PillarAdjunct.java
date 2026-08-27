@@ -12,9 +12,12 @@ import java.util.Locale;
  *
  * <p>Adjuncts have an arbitrary {@code x×y×z} footprint and are placed
  * <em>alongside</em> the pillar, outside the track corridor. The sole member
- * today is {@link #STAIRS}, a 3×8×3 prism that spawns every second pillar
- * with alternating mirror so the staircase always leads "outward" from the
- * track.</p>
+ * today is {@link #STAIRS}, a 3×8×3 prism placed roughly once every
+ * {@code TrackGenerator.MIN_STAIRS_SPACING} blocks of X — a seed-phased anchor
+ * grid, snapped to the nearest pillar in the anchor's chunk — with the side
+ * alternating per anchor slot so the staircase always leads "outward" from the
+ * track. (It read "every second pillar" for a long time; that has not been true
+ * since the anchor grid landed.)</p>
  *
  * <p>Adjunct templates live in the same {@code pillars/} NBT directory as
  * sections but with an {@code adjunct_} filename prefix so the same

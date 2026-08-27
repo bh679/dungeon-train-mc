@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.editor;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.template.TemplateDecor;
 import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.track.variant.TrackVariantBlocks;
 import games.brennan.dungeontrain.track.variant.TrackVariantRegistry;
@@ -11,6 +12,8 @@ import games.brennan.dungeontrain.tunnel.TunnelGeometry;
 import games.brennan.dungeontrain.tunnel.TunnelPlacer;
 import games.brennan.dungeontrain.tunnel.TunnelPlacer.TunnelVariant;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
+import games.brennan.dungeontrain.editor.relay.EditorRelaySave;
+import games.brennan.dungeontrain.template.Template;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.network.chat.Component;
@@ -250,8 +253,7 @@ public final class TunnelEditor {
         TrackKind kind = TunnelTemplateStore.tunnelKind(variant);
         Vec3i size = new Vec3i(TunnelPlacer.LENGTH, TunnelPlacer.HEIGHT, TunnelPlacer.WIDTH);
 
-        StructureTemplate template = new StructureTemplate();
-        template.fillFromWorld(overworld, origin, size, false, Blocks.STRUCTURE_VOID);
+        StructureTemplate template = TemplateDecor.capture(overworld, origin, size, Blocks.STRUCTURE_VOID);
 
         TrackVariantStore.save(kind, name, template);
 
@@ -260,6 +262,9 @@ public final class TunnelEditor {
 
         games.brennan.dungeontrain.advancement.ModAdvancementTriggers.EDITOR_ACTION.get()
             .trigger(player, "made_tunnel");
+        // …and, when they have opted in, to the player's relay profile. Hooked here rather than at
+        // the callers because both ways in land on this method — see EditorRelaySave.
+        EditorRelaySave.afterSave(player, new Template.Tunnel(variant, name));
         LOGGER.info("[DungeonTrain] Editor save: {} -> tunnel_{}/{} template",
             player.getName().getString(),
             variant.name().toLowerCase(java.util.Locale.ROOT), name);

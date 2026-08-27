@@ -32,8 +32,12 @@ public final class RunSummaryReporter {
     /**
      * Build and fire the run-summary record for {@code player} from the death-screen {@code packet}.
      * No-op when disabled or on any error — this must never disrupt death handling.
+     *
+     * <p>{@code pos} is resolved once by the caller and shared with the sibling reporters and the
+     * lifetime displacement counter, so no two of them can describe the same death differently.
+     * Its {@code distanceTravelled} is what the public distance leaderboard is built from.</p>
      */
-    public static void report(ServerPlayer player, DeathStatsPacket packet) {
+    public static void report(ServerPlayer player, DeathStatsPacket packet, RunPosition pos) {
         try {
             if (!DungeonTrainConfig.isWorldInfoToRelay()) {
                 return;
@@ -43,7 +47,6 @@ public final class RunSummaryReporter {
             long runSec = Math.max(0L, packet.runTicks() / TICKS_PER_SECOND);
             int carriage = packet.cartsTravelled();
             int distanceBlocks = (int) Math.round(packet.distanceBlocks());
-            RunPosition pos = RunPosition.of(player);
             JsonObject payload = buildPayload(uuid, name, runSec, carriage, distanceBlocks, pos);
             post(uuid, payload.toString());
         } catch (Throwable t) {

@@ -2,10 +2,14 @@ package games.brennan.dungeontrain.event;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.builder.BuilderCinematicService;
+import games.brennan.dungeontrain.builder.BuilderSpawn;
+import games.brennan.dungeontrain.builder.BuilderWorldSetup;
 import games.brennan.dungeontrain.debug.DebugFlags;
 import games.brennan.dungeontrain.editor.EditorWelcome;
 import games.brennan.dungeontrain.narrative.BookUploadSuspensions;
 import games.brennan.dungeontrain.net.BookSuspensionSyncPacket;
+import games.brennan.dungeontrain.net.BuilderBoundsPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.VoidBandSyncPacket;
 import games.brennan.dungeontrain.net.PrefabRegistrySyncPacket;
@@ -193,6 +197,21 @@ public final class PlayerJoinEvents {
         // Seed debug flags so the in-world Debug menu's Toggle states render
         // the correct value the first time it's opened on this client.
         DebugFlags.sendSnapshotTo(player);
+        // Same reason for the editor-menus mode: the client holds it in a static that outlives a
+        // disconnect, so a reconnect has to be told what the server actually has for this player
+        // rather than keeping whatever the last session left behind.
+        DungeonTrainNet.sendTo(player, games.brennan.dungeontrain.net.EditorMenusModePacket.of(
+            games.brennan.dungeontrain.editor.PartPositionMenuController.mode(player)));
+        // Somebody who quit standing in a test dimensional carriage comes back standing in it, and
+        // the client assumes no session until told otherwise — without this the Back row is gone and
+        // the only way out of a sealed basement is a manual /tp. The session itself is server-side
+        // and outlived their absence.
+        games.brennan.dungeontrain.portal.PortalTestSession.Session testTrip =
+            games.brennan.dungeontrain.portal.PortalTestSession.get(player.getUUID());
+        if (testTrip != null) {
+            DungeonTrainNet.sendTo(player, new games.brennan.dungeontrain.net.PortalTestSessionPacket(
+                true, testTrip.roomName()));
+        }
         // Sync the disintegration-band geometry (per-world carriage length + train
         // flag) so the client can fade the sky/fog toward the End across the band.
         ServerLevel bandLevel = player.serverLevel().getServer().overworld();
@@ -202,9 +221,24 @@ public final class PlayerJoinEvents {
         // leave that space alone. See ClientUpsideDownBand#isInTwinSpace.
         DungeonTrainNet.sendTo(player, new VoidBandSyncPacket(bandData.dims().length(),
                 bandData.startsWithTrain(), bandData.getTrainY(), WorldFloor.bedrockY(bandLevel)));
+        // Reopening a saved Train Builder world: re-stamp it from what the world records it is
+        // holding, so a world always comes back up as a scene its mode can explain rather than as
+        // whatever the last session's blocks happened to be. No-op in every ordinary world, and in
+        // a builder world created this session (BuilderSetupPacket owns that one).
+        BuilderWorldSetup.reopen(bandLevel);
+        // Train Builder build volumes — empty (and therefore inert) in every ordinary world. After
+        // the reopen above, so the volumes describe the scene that is actually standing.
+        BuilderBoundsPacket.sendTo(player, bandLevel);
+        // Reopening a builder world: no setup packet fires for one that is already stamped, so this
+        // is the only chance to leave the player hovering rather than dropping into the void.
+        BuilderSpawn.startFlying(player);
         // If the intro cinematic will play, open the loading screen + freeze the
         // player from world-entry so they don't fall while the train settles.
         CinematicIntroService.armPreloadIfNeeded(player);
+        // Reopening an already-built Train Builder world: replay the arrival shot over the
+        // template. A freshly created one is still void at this point — BuilderSetupPacket
+        // triggers that one after it stamps.
+        BuilderCinematicService.queueOnJoin(player);
         // Re-assert any open book-upload pause (BookUploadSuspensions) so a reconnect mid-window
         // doesn't hand the player back a working Sign button. Cleared when there is none, since the
         // client keeps its own copy across worlds.
@@ -212,7 +246,13 @@ public final class PlayerJoinEvents {
         DungeonTrainNet.sendTo(player, suspendedFor > 0
                 ? BookSuspensionSyncPacket.of(suspendedFor, 0)
                 : BookSuspensionSyncPacket.cleared());
-        PENDING.put(player.getUUID(), 0);
+        // Only queue the train-placement retry loop in worlds that actually have a train.
+        // Otherwise every join to an editor or builder world burns MAX_RETRY_TICKS (5 s) of
+        // per-tick lookups that can never succeed, and ends in a timeout log that reads like
+        // a failure rather than "this world has no train by design".
+        if (bandData.startsWithTrain()) {
+            PENDING.put(player.getUUID(), 0);
+        }
     }
 
     @SubscribeEvent
@@ -220,11 +260,13 @@ public final class PlayerJoinEvents {
         if (event.getEntity() instanceof ServerPlayer player) {
             PENDING.remove(player.getUUID());
             CinematicIntroService.forget(player.getUUID());
+            BuilderCinematicService.forget(player.getUUID());
             EditorWelcome.forget(player.getUUID());
             DevMessageConsent.forget(player.getUUID());
             NetworkConsentMirror.forget(player.getUUID());
             PoliticalFilterMirror.forget(player.getUUID());
             ContentModeMirror.forget(player.getUUID());
+            BookAuthorChatMirror.forget(player.getUUID());
             SharedBookReadMirror.forget(player.getUUID());
             // Which library they were last told about. Dropped so somebody who logs out inside a
             // locked room is greeted again when they come back — the line is the only thing that
@@ -248,6 +290,8 @@ public final class PlayerJoinEvents {
         // Expire spawn-cinematic invulnerability windows — must run even when
         // no players are queued for placement.
         CinematicIntroService.tick(server);
+        // Fire any Train Builder arrival shot whose post-login delay has elapsed.
+        BuilderCinematicService.tick(server);
         // Deliver any editor welcome whose 2.2s post-entry delay has elapsed.
         EditorWelcome.tick(server);
 

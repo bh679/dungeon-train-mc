@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.cheat.AisDataIntegrity;
 import games.brennan.dungeontrain.cheat.CheatModIntegrity;
 import games.brennan.dungeontrain.cheat.CommandAllowlist;
 import games.brennan.dungeontrain.cheat.DtConfigIntegrity;
+import games.brennan.dungeontrain.cheat.KeepInventoryIntegrity;
 import games.brennan.dungeontrain.cheat.OperatorIntegrity;
 import games.brennan.dungeontrain.cheat.PortalTuningIntegrity;
 import games.brennan.dungeontrain.cheat.RunIntegrity;
@@ -258,6 +259,18 @@ public final class CheatDetectionEvents {
             player.sendSystemMessage(Component.translatable("chat.dungeontrain.free_play.portal_rate_changed")
                 .withStyle(ChatFormatting.GRAY));
         }
+        if (KeepInventoryIntegrity.isWorldFreePlay()) {
+            // World-level keepInventory taint. Permanent and world-owned like the portal-rate block
+            // above, and it likewise reaches players who ran nothing — a world created with Keep
+            // Inventory ticked on, or one DT carried the rule into — so it explains itself on every
+            // join. No one-click fix: turning the rule back off does not give this world its stats
+            // back, and no command may reverse Free Play.
+            RunIntegrity.applyFreePlayEffect(player);
+            RunIntegrity.sendFreePlayNotice(player,
+                Component.translatable("chat.dungeontrain.free_play.cause.keep_inventory"));
+            player.sendSystemMessage(Component.translatable("chat.dungeontrain.free_play.keep_inventory_on")
+                .withStyle(ChatFormatting.GRAY));
+        }
         if (RunIntegrity.isPermanentlyCheated(player)) {
             RunIntegrity.applyFreePlayEffect(player); // re-apply across relog
             return;
@@ -267,6 +280,12 @@ public final class CheatDetectionEvents {
         // AchievementEvents' default-priority sidecar absorb/replay reads it).
         // During a session taint this still records the permanent flag, quietly.
         markGameModeFreePlay(player, player.gameMode.getGameModeForPlayer());
+        // Everything above this line can only ever ADD Free Play. This is the one place that takes
+        // the badge back OFF: the effect is infinite and saved on the player, so a run whose cause
+        // has since gone away — custom content disabled, a config put back — used to carry the icon
+        // for the life of the save and read, correctly enough, as "still stuck in Free Play".
+        // Reconciling here means those saves heal themselves on the next login.
+        RunIntegrity.reconcileFreePlayEffect(player);
     }
 
     @SubscribeEvent
@@ -292,9 +311,14 @@ public final class CheatDetectionEvents {
     }
 
     private static void markGameModeFreePlay(ServerPlayer player, GameType mode) {
-        if (mode == GameType.CREATIVE || mode == GameType.SPECTATOR) {
+        if (isTaintingMode(mode)) {
             RunIntegrity.markCheated(player, Component.translatable(
                 "chat.dungeontrain.free_play.cause.gamemode", mode.getLongDisplayName()));
         }
+    }
+
+    /** The two modes that make a run Free Play on their own. */
+    private static boolean isTaintingMode(GameType mode) {
+        return mode == GameType.CREATIVE || mode == GameType.SPECTATOR;
     }
 }

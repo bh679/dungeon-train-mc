@@ -14,6 +14,8 @@ import java.util.Locale;
 public enum TemplateKind {
     CARRIAGE,
     CONTENTS,
+    /** Shell and interior saved together as one template — see {@code train.WholeCarriage}. */
+    WHOLE_CARRIAGE,
     PART,
     TRACK,
     PILLAR,

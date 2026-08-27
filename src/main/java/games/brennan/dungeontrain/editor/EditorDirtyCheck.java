@@ -107,7 +107,7 @@ public final class EditorDirtyCheck {
             CarriageDims box = CarriageEditor.plotDims(v, dims);
             Set<BlockPos> skip = variantCellPositions(CarriageVariantBlocks.loadFor(v, box).entries());
             boolean unsaved = snapshot != null
-                && !regionMatchesSnapshot(level, origin,
+                && !regionMatchesSnapshot(key, level, origin,
                     box.length(), box.height(), box.width(),
                     snapshot, skip);
 
@@ -139,7 +139,7 @@ public final class EditorDirtyCheck {
             Set<BlockPos> skip = variantCellPositions(
                 CarriageContentsVariantBlocks.loadFor(c, interior).entries());
             boolean unsaved = snapshot != null
-                && !regionMatchesSnapshot(level, interiorOrigin,
+                && !regionMatchesSnapshot(key, level, interiorOrigin,
                     interior.getX(), interior.getY(), interior.getZ(),
                     snapshot, skip);
 
@@ -162,7 +162,7 @@ public final class EditorDirtyCheck {
             Set<BlockPos> skip = variantCellPositions(
                 TrackVariantBlocks.loadFor(TrackKind.TILE, name, fp).entries());
             boolean unsaved = snapshot != null
-                && !regionMatchesSnapshot(level, origin, fp.getX(), fp.getY(), fp.getZ(), snapshot, skip);
+                && !regionMatchesSnapshot(key, level, origin, fp.getX(), fp.getY(), fp.getZ(), snapshot, skip);
 
             boolean unpromoted = devmode
                 && games.brennan.dungeontrain.track.variant.TrackVariantStore.sourceTreeAvailable()
@@ -190,7 +190,7 @@ public final class EditorDirtyCheck {
                 Set<BlockPos> skip = variantCellPositions(
                     TrackVariantBlocks.loadFor(kind, name, fp).entries());
                 boolean unsaved = snapshot != null
-                    && !regionMatchesSnapshot(level, origin, fp.getX(), fp.getY(), fp.getZ(), snapshot, skip);
+                    && !regionMatchesSnapshot(key, level, origin, fp.getX(), fp.getY(), fp.getZ(), snapshot, skip);
 
                 boolean unpromoted = devmode
                     && games.brennan.dungeontrain.track.variant.TrackVariantStore.sourceTreeAvailable()
@@ -222,7 +222,7 @@ public final class EditorDirtyCheck {
                 Set<BlockPos> skip = variantCellPositions(
                     TrackVariantBlocks.loadFor(kind, name, fp).entries());
                 boolean unsaved = snapshot != null
-                    && !regionMatchesSnapshot(level, origin, fp.getX(), fp.getY(), fp.getZ(), snapshot, skip);
+                    && !regionMatchesSnapshot(key, level, origin, fp.getX(), fp.getY(), fp.getZ(), snapshot, skip);
 
                 boolean unpromoted = devmode
                     && games.brennan.dungeontrain.track.variant.TrackVariantStore.sourceTreeAvailable()
@@ -254,7 +254,7 @@ public final class EditorDirtyCheck {
                 Set<BlockPos> skip = variantCellPositions(
                     TrackVariantBlocks.loadFor(kind, name, fp).entries());
                 boolean unsaved = snapshot != null
-                    && !regionMatchesSnapshot(level, origin, fp.getX(), fp.getY(), fp.getZ(), snapshot, skip);
+                    && !regionMatchesSnapshot(key, level, origin, fp.getX(), fp.getY(), fp.getZ(), snapshot, skip);
 
                 if (unsaved) {
                     String tunnelLabel = variant.name().toLowerCase(java.util.Locale.ROOT);
@@ -279,7 +279,7 @@ public final class EditorDirtyCheck {
             Set<BlockPos> skip = variantCellPositions(
                 TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, name, fp).entries());
             boolean unsaved = snapshot != null
-                && !regionMatchesSnapshot(level, origin, fp.getX(), fp.getY(), fp.getZ(), snapshot, skip);
+                && !regionMatchesSnapshot(key, level, origin, fp.getX(), fp.getY(), fp.getZ(), snapshot, skip);
 
             // A resize is an unsaved change the block compare cannot see: it re-stamps the plot and
             // re-takes the snapshot, so the live blocks match their baseline exactly while the plot
@@ -300,10 +300,14 @@ public final class EditorDirtyCheck {
      * preview ticker cycles them) and treats absent snapshot keys as
      * "expected = AIR".
      */
-    private static boolean regionMatchesSnapshot(ServerLevel level, BlockPos origin,
+    private static boolean regionMatchesSnapshot(String key, ServerLevel level, BlockPos origin,
                                                  int length, int height, int width,
                                                  Map<BlockPos, BlockState> snapshot,
                                                  Set<BlockPos> skip) {
+        // Decoration first, because it is cheap and because it is the half the position walk below
+        // structurally cannot see: an item frame is an entity, so hanging one leaves every
+        // BlockState in the plot exactly as the stamp left it.
+        if (!EditorPlotSnapshots.decorMatches(key, level, origin, length, height, width)) return false;
         for (int dx = 0; dx < length; dx++) {
             for (int dy = 0; dy < height; dy++) {
                 for (int dz = 0; dz < width; dz++) {
@@ -476,9 +480,11 @@ public final class EditorDirtyCheck {
      * Translate a {@link Template} into the {@link DirtyEntry#modelId()}
      * key the dirty scan produces — so save-all can membership-test
      * {@link #unsavedModelIds} directly. Returns {@code null} for
-     * {@link games.brennan.dungeontrain.template.TemplateKind#PART}: the
-     * scan passes don't cover parts, so callers must keep their existing
-     * filter (e.g. empty-plot) for that kind.
+     * {@link games.brennan.dungeontrain.template.TemplateKind#PART} and
+     * {@link games.brennan.dungeontrain.template.TemplateKind#WHOLE_CARRIAGE}: the scan passes
+     * don't cover parts, and whole carriages have no editor plot to scan at all — they live in
+     * builder worlds, whose dirty tracking is {@code BuilderDirtyCheck}. Callers must keep their
+     * existing filter (e.g. empty-plot) for those kinds.
      */
     public static String dirtyKeyFor(Template model) {
         return switch (model.kind()) {
@@ -486,7 +492,7 @@ public final class EditorDirtyCheck {
             case TRACK -> "track." + model.variantName();
             case PILLAR, STAIRS, STAIRS_ENTRANCE, TUNNEL, PORTAL_ROOM ->
                 model.id() + "." + model.variantName();
-            case PART -> null;
+            case PART, WHOLE_CARRIAGE -> null;
         };
     }
 

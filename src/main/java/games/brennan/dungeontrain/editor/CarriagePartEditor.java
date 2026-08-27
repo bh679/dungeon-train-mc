@@ -2,10 +2,13 @@ package games.brennan.dungeontrain.editor;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.template.CarriagePartTemplateId;
+import games.brennan.dungeontrain.template.TemplateDecor;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriagePartKind;
 import games.brennan.dungeontrain.train.CarriagePartPlacer;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
+import games.brennan.dungeontrain.editor.relay.EditorRelaySave;
+import games.brennan.dungeontrain.template.Template;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.server.MinecraftServer;
@@ -344,6 +347,7 @@ public final class CarriagePartEditor {
         if (seed != null) {
             StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
             seed.placeInWorld(overworld, targetOrigin, targetOrigin, settings, overworld.getRandom(), 3);
+            TemplateDecor.replace(overworld, targetOrigin, seed, settings, null);
         } else {
             stampStarter(overworld, targetOrigin, kind, dims);
         }
@@ -462,6 +466,9 @@ public final class CarriagePartEditor {
 
         games.brennan.dungeontrain.advancement.ModAdvancementTriggers.EDITOR_ACTION.get()
             .trigger(player, "made_carriage_part");
+        // …and, when they have opted in, to the player's relay profile. Hooked here rather than at
+        // the callers because both ways in land on this method — see EditorRelaySave.
+        EditorRelaySave.afterSave(player, new Template.Part(kind, name));
         LOGGER.info("[DungeonTrain] Part editor save: {} -> {}:{} template",
             player.getName().getString(), kind.id(), name);
 
@@ -664,6 +671,7 @@ public final class CarriagePartEditor {
         if (stored.isPresent()) {
             StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
             stored.get().placeInWorld(level, origin, origin, settings, level.getRandom(), 3);
+            TemplateDecor.replace(level, origin, stored.get(), settings, null);
         }
         if (plotIsEmpty(level, origin, kind, dims)) {
             stampStarter(level, origin, kind, dims);
@@ -697,10 +705,8 @@ public final class CarriagePartEditor {
     }
 
     private static StructureTemplate captureTemplate(ServerLevel level, BlockPos origin, CarriagePartKind kind, CarriageDims dims) {
-        StructureTemplate template = new StructureTemplate();
         Vec3i size = kind.dims(dims);
-        template.fillFromWorld(level, origin, size, false, Blocks.AIR);
-        return template;
+        return TemplateDecor.capture(level, origin, size, Blocks.AIR);
     }
 
     /** Barrier cage around the 1-outside-footprint bounding box. */

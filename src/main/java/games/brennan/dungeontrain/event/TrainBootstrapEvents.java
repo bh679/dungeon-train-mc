@@ -15,6 +15,8 @@ import games.brennan.dungeontrain.train.TrainCarriageAppender;
 import games.brennan.dungeontrain.train.TrainTransformProvider;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.world.StartingDimension;
+import games.brennan.dungeontrain.builder.BuilderCinematicService;
+import games.brennan.dungeontrain.builder.BuilderWorldLayout;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.levelgen.Heightmap;
@@ -73,6 +75,7 @@ public final class TrainBootstrapEvents {
 
         if (!data.startsWithTrain()) {
             LOGGER.info("[DungeonTrain] startsWithTrain=false — skipping bootstrap auto-spawn");
+            anchorBuilderPlatformSpawn(overworld);
             return;
         }
 
@@ -168,6 +171,36 @@ public final class TrainBootstrapEvents {
         target.setDefaultSpawnPos(spawnPos, 180.0F);
         LOGGER.info("[DungeonTrain] World spawn anchored at {} yaw=180 (coarse fallback, corridor +{} Z)",
             spawnPos, SHARED_SPAWN_PERP);
+    }
+
+    /**
+     * Put the world spawn on the Train Builder platform.
+     *
+     * <p>The builder world is void apart from one 300×300 slab at the origin, so vanilla's
+     * spawn search has nothing to find and would drop the player out of the world. Every other
+     * no-train world is left alone — the guard is the {@code dungeontrain:builder} dimension
+     * type, not the train flag, so an ordinary "starts with train: off" survival world keeps
+     * its vanilla spawn.</p>
+     */
+    private static void anchorBuilderPlatformSpawn(ServerLevel overworld) {
+        if (!overworld.dimensionTypeRegistration().is(BuilderWorldLayout.BUILDER_DIMENSION_TYPE)) {
+            return;
+        }
+        // On a reopened world the mode is persisted, so the standoff already frames the train
+        // it was stamped with; on a fresh one this is the near fallback and BuilderSetupPacket
+        // re-anchors once the client reports which tile was clicked.
+        BlockPos spawnPos = BuilderWorldLayout.spawnPos(
+                DungeonTrainWorldData.get(overworld).dims(),
+                BuilderCinematicService.carriagesIn(overworld));
+        // Face the template rather than vanilla's yaw 0: the spawn is on the +Z side of the
+        // track, so yaw 0 (straight down +Z) looks out over empty platform with the build
+        // behind you. On a world that hasn't been stamped yet this aims at the track itself,
+        // which is where the carriages will land.
+        float yaw = BuilderCinematicService.facingFrom(overworld,
+                spawnPos.getX() + 0.5, spawnPos.getY(), spawnPos.getZ() + 0.5)[0];
+        overworld.setDefaultSpawnPos(spawnPos, yaw);
+        LOGGER.info("[DungeonTrain] Builder world — spawn anchored on the platform at {} facing {}",
+                spawnPos, String.format("%.0f", yaw));
     }
 
     private static ManagedShip findTrain(ServerLevel level) {

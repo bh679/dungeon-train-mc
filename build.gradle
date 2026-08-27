@@ -143,6 +143,14 @@ neoForge {
             if (project.hasProperty('perfSeed')) {
                 systemProperty 'dungeontrain.perfSeed', project.property('perfSeed').toString()
             }
+            // DPI-bypass notice seam: ./gradlew runClient -PdpiBypassTest=winws.exe makes
+            // DpiBypassDetector report that process without looking at the real process table, so
+            // the title-screen notice can be seen and screenshotted on a machine that isn't running
+            // zapret. Property rather than env var for the same daemon-environment reason as
+            // relayBaseUrl above.
+            if (project.hasProperty('dpiBypassTest')) {
+                systemProperty 'dungeontrain.dpi_bypass_test', project.property('dpiBypassTest').toString()
+            }
         }
 
         server {
@@ -397,6 +405,69 @@ def gitBranch = { ->
     }
 }()
 
+// Total hours of development behind the mod, shown on the death screen's Contribute page.
+//
+// The unit is a CLOCK HOUR, not a commit and not a repo-hour: an hour in which commits landed
+// in dungeon-train-mc *and* playermob-mc *and* dp-relay is ONE hour. Both sources below are
+// therefore unioned as a SET of hour buckets — nothing adds two counts together.
+//
+// Two sources, because neither alone is right:
+//   - docs/dev-hours/hour-index.json — a committed snapshot spanning every repo the project
+//     spans, produced by scripts/dev-hours/collect.py. The sibling repos are not checked out
+//     when this builds (not in CI, not on another machine), so their hours can only arrive
+//     pre-computed. Refreshed by re-running that script; stale between runs.
+//   - the live git history of THIS checkout, so Dungeon Train's own hours are always current
+//     without re-running anything. This is also what makes a shallow CI clone harmless: the
+//     snapshot already carries DT's full history, and the live pass only ever adds.
+//
+// Every failure path degrades instead of breaking the build — a missing index, no git, a
+// corrupt file. Worst case the value is 0, and the screen simply omits the line.
+def devHours = { ->
+    var hours = new HashSet<Long>()
+
+    var indexFile = file('docs/dev-hours/hour-index.json')
+    try {
+        if (indexFile.exists()) {
+            // `hours` is delta-encoded (first absolute, then gaps) to keep the committed
+            // index small — see collect.py's delta_encode.
+            var encoded = new groovy.json.JsonSlurper().parse(indexFile).hours as List
+            long running = 0
+            encoded.eachWithIndex { step, i ->
+                running = (i == 0) ? (step as long) : running + (step as long)
+                hours.add(running)
+            }
+        } else {
+            logger.info('dev-hours: {} absent — using this checkout\'s history only', indexFile)
+        }
+    } catch (Exception e) {
+        logger.warn('dev-hours: could not read {}: {}', indexFile, e.message)
+    }
+
+    try {
+        // %ad is the AUTHOR date in the author's own timezone — the wall clock the work
+        // happened on. Read back as UTC purely to get a stable integer key, matching collect.py.
+        var proc = ['git', 'log', '--all', '--pretty=%ad', '--date=format:%Y-%m-%dT%H']
+                .execute(null, project.projectDir)
+        var out = new StringBuilder()
+        var err = new StringBuilder()
+        proc.consumeProcessOutput(out, err)   // drain first: this output is thousands of lines
+        proc.waitForOrKill(30000)
+        out.toString().eachLine { line ->
+            var stamp = line.trim()
+            if (stamp.isEmpty()) return
+            try {
+                hours.add(java.time.LocalDateTime.parse(stamp + ':00')
+                        .toEpochSecond(java.time.ZoneOffset.UTC).intdiv(3600))
+            } catch (Exception ignored) { /* not a timestamp — skip the line */ }
+        }
+    } catch (Exception e) {
+        logger.warn('dev-hours: could not read git history: {}', e.message)
+    }
+
+    if (hours.isEmpty()) logger.warn('dev-hours: no history found — the Contribute page will omit the line')
+    return hours.size()
+}()
+
 // Generate neoforge.mods.toml + dungeontrain_version.properties + pack.mcmeta from templates.
 tasks.register('generateModMetadata', ProcessResources) {
     var replaceProperties = [
@@ -412,6 +483,7 @@ tasks.register('generateModMetadata', ProcessResources) {
         mod_description            : mod_description,
         update_json_url            : update_json_url,
         git_branch                 : gitBranch,
+        dev_hours                  : devHours,
         sable_mod_version          : sable_mod_version,
         adventureitemnames_version : adventureitemnames_version,
         adventureitemstats_version : adventureitemstats_version,

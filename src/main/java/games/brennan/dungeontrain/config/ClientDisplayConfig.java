@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.config;
 
+import games.brennan.dungeontrain.client.BookAuthorChatSyncClient;
 import games.brennan.dungeontrain.client.FramerateThrottle;
 import net.neoforged.neoforge.common.ModConfigSpec;
 import org.apache.commons.lang3.tuple.Pair;
@@ -48,6 +49,34 @@ public final class ClientDisplayConfig {
     /** Step applied per click of the menu's {@code [-]} / {@code [+]} buttons. */
     public static final double STEP = 0.10;
 
+    // ----- Editor world-space menu render distance -----
+
+    /**
+     * Default cap on how far the editor's world-space menus draw, in blocks.
+     *
+     * <p>A hundred and twenty-eight is generous on purpose — half the range, and past the point
+     * where a panel is readable anyway — so the setting ships as a backstop against the far end of
+     * a big build area rather than as something you immediately have to loosen. Auto's own
+     * in-template rule is far tighter (see {@link #AUTO_TEMPLATE_DISTANCE_BLOCKS}); the smaller of
+     * the two applies.</p>
+     */
+    public static final int DEFAULT_MENU_RENDER_DISTANCE = 128;
+    /** Floor for the setting — below this the panel for the plot you are standing in starts to vanish. */
+    public static final int MIN_MENU_RENDER_DISTANCE = 5;
+    /** Ceiling — past a couple of hundred blocks the panels are unreadable anyway, so this is "no limit". */
+    public static final int MAX_MENU_RENDER_DISTANCE = 256;
+    /** Blocks per click of the Menu Distance row's {@code −} / {@code +} cells. */
+    public static final int MENU_RENDER_DISTANCE_STEP = 8;
+
+    /**
+     * The tighter distance {@code AUTO} applies while the player stands in a template, in blocks.
+     *
+     * <p>Lives here beside its sibling so the config comment can name it and the two numbers are
+     * read together; the rule that uses it is
+     * {@code EditorMenusModeState.withinRange}.</p>
+     */
+    public static final int AUTO_TEMPLATE_DISTANCE_BLOCKS = 15;
+
     /** Silent. A real setting, not a "not configured" sentinel — see {@link #getTrainEngineVolume()}. */
     public static final double MIN_TRAIN_ENGINE_VOLUME = 0.0;
     /** The engine at the volume the distance curve computes, unscaled. */
@@ -81,8 +110,14 @@ public final class ClientDisplayConfig {
     public static final ModConfigSpec.IntValue FRAMERATE_THROTTLE_FPS;
     public static final ModConfigSpec.DoubleValue TRAIN_ENGINE_VOLUME;
     public static final ModConfigSpec.BooleanValue DELETE_WORLD_ON_REBOARD;
+    /** Tiles per row in the Train Builder's Open screen grid. See {@link #getBuilderTilesPerRow()}. */
+    public static final ModConfigSpec.IntValue BUILDER_TILES_PER_ROW;
+    /** Cap on how far the editor's world-space menus draw. See {@link #getMenuRenderDistance()}. */
+    public static final ModConfigSpec.IntValue MENU_RENDER_DISTANCE;
     public static final ModConfigSpec.BooleanValue SKYBOX_PUNCH_ENABLED;
+    public static final ModConfigSpec.BooleanValue PORTAL_CROSSING_FADE;
     public static final ModConfigSpec.BooleanValue SCRIBBLE_COLOR_PICKER_VISIBLE;
+    public static final ModConfigSpec.BooleanValue CINEMATIC_HOTKEY_ENABLED;
     /**
      * Relay pool ids of community (player-written) books this player has read, stored as decimal strings.
      * GLOBAL client-side read history — persists across worlds and servers (unlike the retired per-world
@@ -105,12 +140,22 @@ public final class ClientDisplayConfig {
      * dismissing once doesn't silently sign the player up to every future edit.
      */
     public static final ModConfigSpec.ConfigValue<String> CONFIG_DEVIATION_ACKNOWLEDGED;
+    /**
+     * Whether the player has dismissed the DPI-bypass warning for good (see
+     * {@code DpiBypassPromptHandler}). A plain opt-out rather than a signature: unlike a config
+     * deviation there is nothing here that can change into a NEW thing worth re-asking about — the
+     * tool is either running or it isn't, and someone who knows why it's running has heard enough.
+     */
+    public static final ModConfigSpec.BooleanValue DPI_BYPASS_WARNING_OPTED_OUT;
+    public static final ModConfigSpec.BooleanValue BOOK_AUTHOR_BURN_CHAT;
 
     /**
      * Remembered answer to the custom-Train-Editor-content prompt — see
      * {@link CustomContentPreference}. {@code ASK} means keep prompting.
      */
     public static final ModConfigSpec.EnumValue<CustomContentPreference> CUSTOM_CONTENT_PREFERENCE;
+    /** The last answer actually given, whether or not it was remembered. */
+    public static final ModConfigSpec.EnumValue<CustomContentPreference> CUSTOM_CONTENT_LAST_ANSWER;
 
     /**
      * Whether the player wants community content the relay tagged as politically sensitive filtered
@@ -163,14 +208,21 @@ public final class ClientDisplayConfig {
         FRAMERATE_THROTTLE_FPS = pair.getLeft().framerateThrottleFps;
         TRAIN_ENGINE_VOLUME = pair.getLeft().trainEngineVolume;
         DELETE_WORLD_ON_REBOARD = pair.getLeft().deleteWorldOnReboard;
+        BUILDER_TILES_PER_ROW = pair.getLeft().builderTilesPerRow;
+        MENU_RENDER_DISTANCE = pair.getLeft().menuRenderDistance;
         SKYBOX_PUNCH_ENABLED = pair.getLeft().skyboxPunchEnabled;
+        PORTAL_CROSSING_FADE = pair.getLeft().portalCrossingFade;
         SCRIBBLE_COLOR_PICKER_VISIBLE = pair.getLeft().scribbleColorPickerVisible;
+        CINEMATIC_HOTKEY_ENABLED = pair.getLeft().cinematicHotkeyEnabled;
         SHARED_BOOKS_READ = pair.getLeft().sharedBooksRead;
         DEATH_SCREEN_LAST_NPS = pair.getLeft().deathScreenLastNps;
         POLITICAL_FILTER = pair.getLeft().politicalFilter;
         CONTENT_MODE = pair.getLeft().contentMode;
         CUSTOM_CONTENT_PREFERENCE = pair.getLeft().customContentPreference;
+        CUSTOM_CONTENT_LAST_ANSWER = pair.getLeft().customContentLastAnswer;
         CONFIG_DEVIATION_ACKNOWLEDGED = pair.getLeft().configDeviationAcknowledged;
+        DPI_BYPASS_WARNING_OPTED_OUT = pair.getLeft().dpiBypassWarningOptedOut;
+        BOOK_AUTHOR_BURN_CHAT = pair.getLeft().bookAuthorBurnChat;
     }
 
     private ClientDisplayConfig() {}
@@ -280,16 +332,46 @@ public final class ClientDisplayConfig {
                 .define("punchEnabled", true);
         b.pop();
 
+        b.push("portal");
+        ModConfigSpec.BooleanValue portalCrossingFade = b
+                .comment("Fade a portal carriage's lighting into a flat hold as you walk toward the middle of its corridor, instead of leaving each copy lit by its own doorway. A portal carriage and the twin you are swapped into are built from the same blocks, but only one of them has a real door onto the train, so light leaks into one and not the other and the brightness can jump as you cross - most visibly near the train door, where turning round is enough to swap you. The hold is the same constant in both copies, so there is nothing left for the crossing to change; it ramps in from each doorway and is at full strength between the baffles. Set false for the old hard cut.")
+                .define("crossingFade", true);
+        b.pop();
+
         b.push("scribble");
         ModConfigSpec.BooleanValue scribbleColorPickerVisible = b
                 .comment("Show the Scribble mod's 16-swatch colour picker on the book-writing screen. Off by default: Dungeon Train keeps the book screen close to vanilla, and the picker is the one part of Scribble that changes what a book LOOKS like rather than how it is edited. No in-game control by design — flip this by hand to get the swatches back. Has no effect unless the Scribble mod is installed.")
                 .define("colorPickerVisible", false);
         b.pop();
 
+        b.push("cinematic");
+        ModConfigSpec.BooleanValue cinematicHotkeyEnabled = b
+                .comment("Let the cinematographer hotkey (C by default, rebindable under Controls > Dungeon Train) replay the intro cinematic while you are in spectator mode. Turn this off to reclaim the key for something else without unbinding it. Only the hotkey is affected - /dungeontrain cinematic still works either way.")
+                .define("hotkeyEnabled", true);
+        b.pop();
+
         b.push("world");
         ModConfigSpec.BooleanValue deleteWorldOnReboard = b
                 .comment("Delete the old world's save folder when reboarding (creating a fresh world) from the death screen. Dungeon Train is designed around a new world per run, so this defaults on to keep the world list and disk clean. Only auto-generated \"<prefix> <timestamp>\" saves (Dungeon Train / Dev World / World) are ever deleted — renamed or hand-made worlds and editor worlds are always kept. Toggleable in-game via the trash icon next to the reboard button.")
                 .define("deleteOnReboard", true);
+        b.pop();
+
+        b.push("builderOpen");
+        // The bounds are duplicated from BuilderTemplateGridLayout's MIN_COLUMNS/MAX_COLUMNS rather
+        // than shared, because that class is client-only and package-private while this config is
+        // common-side. Safe to duplicate: this range only rejects a hand-edited value, and the grid
+        // clamps whatever it is handed anyway — so a drift here can widen what the file accepts, not
+        // what the screen draws.
+        ModConfigSpec.IntValue builderTilesPerRow = b
+                .comment("How many template tiles per row the Train Builder's Open screen lays out. The grid block stays the same width whichever you pick, so a higher number shows more of a library at once by making each tile smaller. Set in-game from the numbered button beside the Open screen's controls (left-click for more, right-click for fewer) — on a small window or a high GUI scale the count stops below 6, where a further column would no longer fit.")
+                .defineInRange("tilesPerRow", 3, 2, 6);
+        b.pop();
+
+        b.push("editorMenus");
+        ModConfigSpec.IntValue menuRenderDistance = b
+                .comment("How far away, in blocks, the editor's world-space menus keep drawing — plot panels, the row-start nav menus, the help board, the package and Stages panels. Applies whether or not you are standing in a template, and in both the On and Auto menu modes. Auto additionally tightens to " + AUTO_TEMPLATE_DISTANCE_BLOCKS + " blocks while you are inside a template, so the smaller of the two wins there. Set in-game from the Menu Distance row of the editor's X-menu.")
+                .defineInRange("menuRenderDistance", DEFAULT_MENU_RENDER_DISTANCE,
+                        MIN_MENU_RENDER_DISTANCE, MAX_MENU_RENDER_DISTANCE);
         b.pop();
 
         b.push("sharedBooks");
@@ -330,6 +412,13 @@ public final class ClientDisplayConfig {
                          "  your stats count. Set from the prompt's \"Remember decision\" checkbox, or the",
                          "Custom Train Content row in Options -> Dungeon Train...")
                 .defineEnum("preference", CustomContentPreference.ASK);
+        ModConfigSpec.EnumValue<CustomContentPreference> customContentLastAnswer = b
+                .comment("The last answer you gave the custom-content prompt, recorded whether or not",
+                         "you ticked \"Remember decision\". Reused when a run reboards automatically",
+                         "(immediate respawn), where there is no menu to ask from.",
+                         "ASK means you have never answered. Managed automatically — not meant to be",
+                         "edited by hand.")
+                .defineEnum("lastAnswer", CustomContentPreference.ASK);
         b.pop();
 
         b.push("deathScreen");
@@ -357,15 +446,38 @@ public final class ClientDisplayConfig {
                 .define("deviationAcknowledged", "");
         b.pop();
 
+        b.push("connectionWarnings");
+        ModConfigSpec.BooleanValue dpiBypassWarningOptedOut = b
+                .comment("Internal: set when you dismiss the \"connection blocker detected\" notice for good.",
+                         "That notice appears on the title screen when a DPI-bypass tool (zapret, GoodbyeDPI)",
+                         "is running, because those tools can stop Dungeon Train reaching brennan.games. The",
+                         "check is local — a look at running process names, nothing sent anywhere. Set this",
+                         "back to false to be told again.")
+                .define("dpiBypassWarningOptedOut", false);
+        b.pop();
+
+        b.push("books");
+        ModConfigSpec.BooleanValue bookAuthorBurnChat = b
+                .comment("Print a chat line crediting the author each time a Dungeon Train book burns",
+                         "(\"The book by X burns\") — the books you read, throw away or drop on death all",
+                         "catch fire, and this is the only place their writer is named after the fact.",
+                         "Toggle in-game via Options > Dungeon Train, or the X menu -> Options. Off by default.")
+                .define("authorBurnChat", false);
+        b.pop();
+
         return new Holder(allScale, worldspaceChannel, hudChannel, developerPopupShownBefore, developerPopupOptedOut, freePlayConfirmOptedOut,
                 devConsentGranted, devConsentGrantSession, devConsentLastMsgToDev, openedAdvancementsBefore,
                 rideSnapshotsEnabled, rideSnapshotIntervalSeconds, rideSnapshotMaxStored, rideSnapshotChatLog,
                 rideSnapshotMinFps, rideSnapshotMinTps,
                 rideSnapshotDiskOffload, rideSnapshotFlushMinFps, rideSnapshotFlushMinTps, rideSnapshotMaxOnDisk,
                 rideSnapshotMaxResolution,
-                framerateThrottleEnabled, framerateThrottleFps, trainEngineVolume, skyboxPunchEnabled, scribbleColorPickerVisible, deleteWorldOnReboard, sharedBooksRead,
+                framerateThrottleEnabled, framerateThrottleFps, trainEngineVolume, skyboxPunchEnabled, portalCrossingFade, scribbleColorPickerVisible, cinematicHotkeyEnabled, deleteWorldOnReboard,
+                builderTilesPerRow,
+                menuRenderDistance,
+                sharedBooksRead,
                 deathScreenLastNps, politicalFilter, contentMode, customContentPreference,
-                configDeviationAcknowledged);
+                customContentLastAnswer,
+                configDeviationAcknowledged, dpiBypassWarningOptedOut, bookAuthorBurnChat);
     }
 
     /**
@@ -497,6 +609,21 @@ public final class ClientDisplayConfig {
         if (CONFIG_DEVIATION_ACKNOWLEDGED.get().equals(signature)) return; // skip a needless TOML write
         CONFIG_DEVIATION_ACKNOWLEDGED.set(signature);
         CONFIG_DEVIATION_ACKNOWLEDGED.save();
+    }
+
+    // ----- DPI-bypass warning (see client/DpiBypassPromptHandler) -----
+
+    /** Whether the player has told the DPI-bypass warning to stop appearing. */
+    public static boolean isDpiBypassWarningOptedOut() {
+        return isLoaded() && DPI_BYPASS_WARNING_OPTED_OUT.get();
+    }
+
+    /** Record "don't show again" (or clear it, to be warned once more next launch). */
+    public static void setDpiBypassWarningOptedOut(boolean value) {
+        if (!isLoaded()) return;
+        if (DPI_BYPASS_WARNING_OPTED_OUT.get() == value) return; // skip a needless TOML write
+        DPI_BYPASS_WARNING_OPTED_OUT.set(value);
+        DPI_BYPASS_WARNING_OPTED_OUT.save();
     }
 
     // ----- Political content filter (see client/PoliticalFilterPrefs) -----
@@ -638,6 +765,25 @@ public final class ClientDisplayConfig {
         RIDE_SNAPSHOT_CHAT_LOG.save();
     }
 
+    /**
+     * Print "The book by X burns" in chat each time a Dungeon Train book catches fire? Off by
+     * default. Toggled from Options &gt; Dungeon Train and the X menu &rarr; Options.
+     *
+     * <p>The burn itself is decided server-side, so the setter also pushes the new value over
+     * {@link games.brennan.dungeontrain.net.BookAuthorChatSyncPacket} — see
+     * {@link games.brennan.dungeontrain.client.BookAuthorChatSyncClient}.</p>
+     */
+    public static boolean isBookAuthorBurnChatEnabled() {
+        return isLoaded() && BOOK_AUTHOR_BURN_CHAT.get();
+    }
+
+    public static void setBookAuthorBurnChat(boolean value) {
+        if (!isLoaded()) return;
+        BOOK_AUTHOR_BURN_CHAT.set(value);
+        BOOK_AUTHOR_BURN_CHAT.save();
+        BookAuthorChatSyncClient.syncNow();
+    }
+
     /** Minimum client FPS required to take a ride photo; {@code 0} disables the FPS gate. */
     public static int getRideSnapshotMinFps() {
         return isLoaded() ? RIDE_SNAPSHOT_MIN_FPS.get() : 30;
@@ -776,6 +922,19 @@ public final class ClientDisplayConfig {
     }
 
     /**
+     * Should a portal corridor's lighting fade into a flat hold across its crossing? Defaults to
+     * {@code true}, and to {@code true} pre-load as well, on the same rule as the flag above: the
+     * effect is what stops the swap from popping, so the safe fallback while the TOML is still
+     * loading is the effect being on.
+     *
+     * <p>Read once per lightmap rebuild by {@code LightTexturePortalCrossingMixin} — about 20 times
+     * a second, which is why it is a plain flag read and not a listener.</p>
+     */
+    public static boolean isPortalCrossingFadeEnabled() {
+        return !isLoaded() || PORTAL_CROSSING_FADE.get();
+    }
+
+    /**
      * Show Scribble's colour-swatch grid on the book-writing screen? Defaults to {@code false}.
      *
      * <p>Note this reads {@code isLoaded() &&}, not the {@code !isLoaded() ||} form used by the
@@ -801,6 +960,23 @@ public final class ClientDisplayConfig {
     }
 
     /**
+     * Does the cinematographer hotkey replay the cinematic? Defaults to {@code true}, and to
+     * {@code true} pre-load as well — the key doing nothing until the config lands would read as
+     * a dead binding rather than as a setting.
+     */
+    public static boolean isCinematicHotkeyEnabled() {
+        return !isLoaded() || CINEMATIC_HOTKEY_ENABLED.get();
+    }
+
+    /** Persist the cinematic-hotkey toggle. Idempotent: skips the TOML write when unchanged. */
+    public static void setCinematicHotkeyEnabled(boolean value) {
+        if (!isLoaded()) return;
+        if (CINEMATIC_HOTKEY_ENABLED.get() == value) return;
+        CINEMATIC_HOTKEY_ENABLED.set(value);
+        CINEMATIC_HOTKEY_ENABLED.save();
+    }
+
+    /**
      * Delete the old world's save when reboarding? Defaults to {@code true} (also pre-load) —
      * Dungeon Train is a new-world-per-run game, so abandoned run saves are cleaned up unless
      * the player opts out via the death screen's trash toggle. The delete path itself carries
@@ -819,6 +995,82 @@ public final class ClientDisplayConfig {
         if (DELETE_WORLD_ON_REBOARD.get() == value) return;
         DELETE_WORLD_ON_REBOARD.set(value);
         DELETE_WORLD_ON_REBOARD.save();
+    }
+
+    // ----- Train Builder Open screen: tiles per row -----
+
+    /**
+     * Tiles per row in the Open screen's template grid. Defaults to 3 — today's fixed count — both
+     * before the config loads and when it never does, so a client with no config file draws the
+     * grid it has always drawn.
+     *
+     * <p>The player's raw choice, which is not necessarily what is on screen: a narrow window or a
+     * high GUI scale can hold fewer columns than this, and {@code BuilderTemplateGridLayout} clamps
+     * to what fits. Storing the ask rather than the clamped result is deliberate — a count saturated
+     * away by a small window comes back when the window grows again.</p>
+     */
+    public static int getBuilderTilesPerRow() {
+        return isLoaded() ? BUILDER_TILES_PER_ROW.get() : 3;
+    }
+
+    /**
+     * Persist the tiles-per-row choice. Idempotent — skips the TOML write when unchanged, because
+     * this is driven by a button a player clicks repeatedly while watching the grid reflow.
+     */
+    public static void setBuilderTilesPerRow(int value) {
+        if (!isLoaded()) return;
+        int clamped = Math.max(2, Math.min(6, value));
+        if (BUILDER_TILES_PER_ROW.get() == clamped) return;
+        BUILDER_TILES_PER_ROW.set(clamped);
+        BUILDER_TILES_PER_ROW.save();
+    }
+
+    // ----- Editor world-space menu render distance -----
+
+    /**
+     * How far the editor's world-space menus keep drawing, in blocks. Falls back to
+     * {@link #DEFAULT_MENU_RENDER_DISTANCE} before the config loads and when it never does, so a
+     * client with no config file behaves like one that has just accepted the default.
+     *
+     * <p>This is the cap that applies everywhere — in a template or between plots, in Auto or On.
+     * Auto layers its own tighter in-template rule on top; whichever is smaller wins.</p>
+     */
+    public static int getMenuRenderDistance() {
+        return isLoaded() ? MENU_RENDER_DISTANCE.get() : DEFAULT_MENU_RENDER_DISTANCE;
+    }
+
+    /**
+     * Persist the menu render distance. Idempotent — skips the TOML write when unchanged, because
+     * this is driven by a button the player clicks repeatedly while watching panels appear and
+     * disappear around them.
+     */
+    public static void setMenuRenderDistance(int value) {
+        if (!isLoaded()) return;
+        int clamped = Math.max(MIN_MENU_RENDER_DISTANCE, Math.min(MAX_MENU_RENDER_DISTANCE, value));
+        if (MENU_RENDER_DISTANCE.get() == clamped) return;
+        MENU_RENDER_DISTANCE.set(clamped);
+        MENU_RENDER_DISTANCE.save();
+    }
+
+    /**
+     * The next value up from {@code current}, snapped to a multiple of
+     * {@link #MENU_RENDER_DISTANCE_STEP}.
+     *
+     * <p>Snapping rather than plain addition so the numbers the player lands on read cleanly:
+     * from the {@link #MIN_MENU_RENDER_DISTANCE} floor of 5 the first step goes to 8, then 16, 24,
+     * and so on, instead of the 13 / 21 / 29 an offset-by-five ladder would give.</p>
+     */
+    public static int stepMenuRenderDistanceUp(int current) {
+        int next = (current / MENU_RENDER_DISTANCE_STEP + 1) * MENU_RENDER_DISTANCE_STEP;
+        return Math.min(MAX_MENU_RENDER_DISTANCE, next);
+    }
+
+    /** The next value down from {@code current}, snapped the same way, floored at the minimum. */
+    public static int stepMenuRenderDistanceDown(int current) {
+        int down = current % MENU_RENDER_DISTANCE_STEP == 0
+            ? current - MENU_RENDER_DISTANCE_STEP
+            : (current / MENU_RENDER_DISTANCE_STEP) * MENU_RENDER_DISTANCE_STEP;
+        return Math.max(MIN_MENU_RENDER_DISTANCE, down);
     }
 
     // ----- Content mode (Adult / Kid) — see ContentMode -----
@@ -872,6 +1124,26 @@ public final class ClientDisplayConfig {
         if (CUSTOM_CONTENT_PREFERENCE.get() == preference) return;
         CUSTOM_CONTENT_PREFERENCE.set(preference);
         CUSTOM_CONTENT_PREFERENCE.save();
+    }
+
+    /**
+     * The last answer the player actually gave the prompt, recorded on every answer rather than
+     * only on "Remember decision". {@link CustomContentPreference#ASK} means never answered.
+     *
+     * <p>Exists because the remembered <em>preference</em> can't serve this: it is only written
+     * when the checkbox is ticked, so a player who answers each world individually has no recorded
+     * answer at all — and the automatic reboard has no menu to ask from.</p>
+     */
+    public static CustomContentPreference getLastCustomContentAnswer() {
+        return isLoaded() ? CUSTOM_CONTENT_LAST_ANSWER.get() : CustomContentPreference.ASK;
+    }
+
+    /** Record an answer. Idempotent; no-op pre-load. */
+    public static void setLastCustomContentAnswer(CustomContentPreference answer) {
+        if (!isLoaded() || answer == null) return;
+        if (CUSTOM_CONTENT_LAST_ANSWER.get() == answer) return;
+        CUSTOM_CONTENT_LAST_ANSWER.set(answer);
+        CUSTOM_CONTENT_LAST_ANSWER.save();
     }
 
     // ----- Global client-side community-book read history (see SharedBookReadSyncClient / SharedBookReadMirror) -----
@@ -938,13 +1210,20 @@ public final class ClientDisplayConfig {
             ModConfigSpec.IntValue framerateThrottleFps,
             ModConfigSpec.DoubleValue trainEngineVolume,
             ModConfigSpec.BooleanValue skyboxPunchEnabled,
+            ModConfigSpec.BooleanValue portalCrossingFade,
             ModConfigSpec.BooleanValue scribbleColorPickerVisible,
+            ModConfigSpec.BooleanValue cinematicHotkeyEnabled,
             ModConfigSpec.BooleanValue deleteWorldOnReboard,
+            ModConfigSpec.IntValue builderTilesPerRow,
+            ModConfigSpec.IntValue menuRenderDistance,
             ModConfigSpec.ConfigValue<List<? extends String>> sharedBooksRead,
             ModConfigSpec.IntValue deathScreenLastNps,
             ModConfigSpec.EnumValue<PoliticalFilter> politicalFilter,
             ModConfigSpec.EnumValue<ContentMode> contentMode,
             ModConfigSpec.EnumValue<CustomContentPreference> customContentPreference,
-            ModConfigSpec.ConfigValue<String> configDeviationAcknowledged
+            ModConfigSpec.EnumValue<CustomContentPreference> customContentLastAnswer,
+            ModConfigSpec.ConfigValue<String> configDeviationAcknowledged,
+            ModConfigSpec.BooleanValue dpiBypassWarningOptedOut,
+            ModConfigSpec.BooleanValue bookAuthorBurnChat
     ) {}
 }

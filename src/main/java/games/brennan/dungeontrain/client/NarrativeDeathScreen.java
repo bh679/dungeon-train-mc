@@ -8,6 +8,7 @@ import games.brennan.discordpresence.survey.SurveyRegistry;
 import games.brennan.discordpresence.network.SurveySubmitPayload;
 import games.brennan.dungeontrain.client.analytics.UiAnalytics;
 import games.brennan.dungeontrain.client.links.OfficialLinks;
+import games.brennan.dungeontrain.client.support.DevHours;
 import games.brennan.dungeontrain.client.support.FundingGoals;
 import games.brennan.dungeontrain.net.relay.DonationSummaryClient.Goal;
 import games.brennan.dungeontrain.client.modrec.ModRecPage;
@@ -1499,17 +1500,27 @@ public final class NarrativeDeathScreen extends Screen {
         Goal serverCosts = FundingGoals.byId(s.goals(), FundingGoals.RUNNING_COSTS);
         boolean serverCostsMet = serverCosts != null && serverCosts.complete()
                 && activeGoal != null && !FundingGoals.RUNNING_COSTS.equals(activeGoal.id());
+        // One rung further: that goal is funded too, so there is nothing left to ask against. The
+        // ladder shifts again — the goal drops into the settled slot the server bill held, and the
+        // lead tile goes to the work itself, the hours behind the train. Declined on a build that
+        // could not determine an hour count, which leaves the layout exactly as it is above.
+        boolean hoursLead = DevHours.takesGoalSlot(
+                DevHours.hours(), serverCostsMet, activeGoal != null && activeGoal.complete());
 
         // Any OTHER goal already funded — one the grid has no slot for — ticked off on one line
         // above it. Usually empty: with the standard two-rung ladder the blue server-costs tile is
         // the completion marker, and no line is drawn (nor vertical space taken).
-        List<Goal> done = FundingGoals.completed(s.goals(),
-                List.of(activeGoal == null ? "" : activeGoal.id(), FundingGoals.RUNNING_COSTS));
+        // Once the hours tile leads, the server bill has no tile of its own — it joins this line
+        // instead of vanishing from the page.
+        List<Goal> done = hoursLead
+                ? FundingGoals.completed(s.goals(), List.of(activeGoal.id()))
+                : FundingGoals.completed(s.goals(),
+                        List.of(activeGoal == null ? "" : activeGoal.id(), FundingGoals.RUNNING_COSTS));
         if (!done.isEmpty()) {
             MutableComponent line = Component.empty();
             for (int i = 0; i < done.size(); i++) {
                 if (i > 0) line.append(Component.literal(" · "));
-                line.append(Component.literal("✓ ")).append(FundingGoals.label(done.get(i)));
+                line.append(Component.literal("✓ ")).append(FundingGoals.doneLabel(done.get(i)));
             }
             y = drawCentered(g, line, cx, w, y, GOAL_DONE);
             y += 4;
@@ -1529,7 +1540,21 @@ public final class NarrativeDeathScreen extends Screen {
         int lc1 = left + cellW + cellGap + cellW / 2;
         int ly = y + 30;
         String costValue = s.monthlyCostUsd() >= 0 ? fmtUsd(s.monthlyCostUsd()) : "—";
-        if (serverCostsMet) {
+        if (hoursLead) {
+            // Slot 1: the hours behind the train. Not a goal — no progress bar, and the neutral
+            // cream rather than cost-orange or goal-blue, because it is neither an ask nor a bill.
+            costTile(g, lc0, y, cellW, DevHours.value(),
+                    "gui.dungeontrain.death.narr.lbl_hours",
+                    "gui.dungeontrain.death.narr.tip_hours", VALUE);
+            costTile(g, lc1, y, cellW, fmtUsd(s.monthlyRaisedUsd()),
+                    "gui.dungeontrain.death.narr.lbl_raised_month",
+                    "gui.dungeontrain.death.narr.tip_raised", VALUE);
+            // Slot 3: the goal that was leading, now settled — the same treatment the server bill
+            // got when IT was paid off, so the shift reads as the ladder moving, not a new layout.
+            checkedCostTile(g, lc0, ly, cellW, fmtUsd(activeGoal.targetAud()),
+                    FundingGoals.label(activeGoal), FundingGoals.tipKey(activeGoal), GOAL_MET);
+            drawTileProgress(g, lc0, ly, cellW, activeGoal.percent());
+        } else if (serverCostsMet) {
             // Slot 1: the new goal, as a COST — what the next thing needs per month, not a
             // percentage. The progress against it reads off the raised figure beside it.
             costTile(g, lc0, y, cellW, fmtUsd(activeGoal.targetAud()),
@@ -1623,7 +1648,15 @@ public final class NarrativeDeathScreen extends Screen {
      */
     private void checkedCostTile(GuiGraphics g, int centerX, int y, int cw, String value,
                                  String labelKey, String tipKey, int valueColor) {
-        Component label = Component.translatable(labelKey);
+        checkedCostTile(g, centerX, y, cw, value, Component.translatable(labelKey), tipKey, valueColor);
+    }
+
+    /**
+     * As above, for a label that is not a translation key — a relay-served goal this jar has no
+     * translation for still renders, the same way {@link #costTile} handles it.
+     */
+    private void checkedCostTile(GuiGraphics g, int centerX, int y, int cw, String value,
+                                 Component label, String tipKey, int valueColor) {
         int ch = 26;
         int x = centerX - cw / 2;
         g.fill(x, y, x + cw, y + ch, fade(TILE_BG));

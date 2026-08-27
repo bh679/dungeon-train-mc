@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.world;
 
+import games.brennan.dungeontrain.builder.BuilderMirrorFlags;
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.train.CarriageDims;
@@ -58,9 +59,23 @@ public final class DungeonTrainWorldData extends SavedData {
     private static final String TAG_JOIN_REPORT_POSTED = "joinReportPosted";
     private static final String TAG_BREAK_BLOCKS_ON_CONTACT_OVERRIDE = "breakBlocksOnContactOverride";
     private static final String TAG_USED_CARRIAGE_IDS = "usedSharedCarriageIds";
+    private static final String TAG_BUILDER_MODE = "builderMode";
+    private static final String TAG_BUILDER_VARIANT = "builderVariant";
+    private static final String TAG_BUILDER_STAGE = "builderStage";
+    private static final String TAG_BUILDER_NAME = "builderName";
+    private static final String TAG_BUILDER_MIRROR = "builderMirror";
+    private static final String TAG_BUILDER_SUB_TYPE = "builderSubType";
+    private static final String TAG_BUILDER_PART_KIND = "builderPartKind";
+    private static final String TAG_BUILDER_TRACK_KIND = "builderTrackKind";
+    private static final String TAG_BUILDER_CARRIAGES = "builderCarriages";
+    private static final String TAG_BUILDER_STRUCTURE_MODE = "builderStructureMode";
+    private static final String TAG_BUILDER_STRUCTURE_REFRESH = "builderStructureRefresh";
+    private static final String TAG_BUILDER_RELAY_BUILDS = "builderRelayBuilds";
     private static final String TAG_DIFFICULTY_TRAVELLED_OFFSET = "difficultyTravelledOffset";
     private static final String TAG_CUSTOM_CONTENT_CHOICE = "customContentChoice";
     private static final String TAG_PORTAL_RATE_TUNED = "portalRateTuned";
+    private static final String TAG_KEEP_INVENTORY_USED = "keepInventoryUsed";
+    private static final String TAG_HELP_PANEL_DISMISSED = "editorHelpPanelDismissed";
 
     private int trainY;
     private boolean startsWithTrain;
@@ -71,6 +86,92 @@ public final class DungeonTrainWorldData extends SavedData {
     private Integer playerMobSpawnOneInOverride;
     /** Per-world override of the behind-the-player PlayerMob spawn percent chance; null = global COMMON default. */
     private Integer playerMobBehindSpawnPercentOverride;
+    /**
+     * Which Train Builder mode this world was created for, or null in any ordinary world.
+     *
+     * <p>The mode is picked on the title screen and exists nowhere else, so without persisting it
+     * a reopened builder world has no way to know how much train it holds — which the client
+     * needs to draw the build bounds.</p>
+     */
+    private String builderMode;
+    /**
+     * The registered carriage variant the builder world was <em>stamped from</em> — the source of
+     * the blocks standing on the track. Recorded so a mode switch can re-stamp the same carriage
+     * even if the registry order changes (a package reload reorders it).
+     *
+     * <p>Deliberately <b>not</b> the name the build will be saved as: see {@link #builderName}.
+     * Conflating the two meant a named build resolved to no registered variant and saved over
+     * whichever template happened to be first.</p>
+     */
+    private String builderVariant;
+    /**
+     * What the current build will be <em>saved as</em>. Empty or null means an unnamed draft — it
+     * exists to build in, and nothing is written to disk until the builder names it.
+     */
+    private String builderName;
+    /** Packed {@code BuilderMirrorFlags} for this build; 0 = no mirroring, which is the default. */
+    private int builderMirror;
+    /**
+     * What kind of thing this build is — {@code whole_carriage}, {@code carriage_room} or
+     * {@code parts}. Save needs it: a room and a part are captured from different regions and
+     * written to different stores, so without it every Save could only ever write a carriage.
+     */
+    private String builderSubType;
+    /** Which part kind, when {@link #builderSubType} is {@code parts}. */
+    private String builderPartKind;
+    /**
+     * Which {@code TrackKind} this build is, when it is a track-side template rather than part of a
+     * carriage — {@code tile}, {@code pillar_middle}, {@code tunnel_portal} and so on. Null or empty
+     * for a carriage build.
+     *
+     * <p>The track modes have no {@link #builderSubType}, because the sub types name the parts of a
+     * carriage and a rail is not one. This is the track equivalent, and it is what Save reads to
+     * decide which of the eight directories the template belongs in — {@code default} exists in all
+     * of them, so the name alone can't say.</p>
+     */
+    private String builderTrackKind;
+
+    /**
+     * How many carriages are actually parked on the track, or {@code -1} when nothing has recorded
+     * it yet.
+     *
+     * <p>A recorded fact, not a re-derived decision, and that distinction is the point. The count
+     * was briefly computed from {@link #builderMode} and {@link #builderSubType} at each of the six
+     * places that needed it — but those two answer "what is this build for" and "what does it save
+     * as", and neither is the same question as "how many carriages did we stamp". They diverge
+     * exactly where the Open screen's carriage list does: browsing rooms from outside the train
+     * opens a <em>carriage</em> template, which has to save as a whole carriage while standing
+     * alone on the track.</p>
+     *
+     * <p>Written by every path that stamps or clears the train, so the build volumes, the dirty
+     * check, the save cut, the cinematic framing and the spawn standoff all read the same number
+     * the stamp used.</p>
+     */
+    private int builderCarriages = -1;
+    /**
+     * What the builder does with the structures around the build — {@code ghost}, {@code solid} or
+     * {@code none}. Null/empty on a world saved before the control existed, which reads as the
+     * default.
+     *
+     * <p>World state rather than a client preference, unlike the two-state ghost toggle it replaces:
+     * {@code solid} is the difference between a wall existing and not existing, which everyone in
+     * the world has to agree on. See {@code BuilderStructureMode}.</p>
+     */
+    private String builderStructureMode;
+    /**
+     * When the structures around the build re-read the template they are made of, or null when this
+     * world has never been told. See {@code BuilderStructureRefresh}.
+     *
+     * <p>World state for the same reason the mode is: while the structures are solid, refreshing
+     * them is the server rewriting blocks rather than a client redrawing a ghost.</p>
+     */
+    private String builderStructureRefresh;
+    /**
+     * The Stage the builder picked when starting this build, or null/empty when they didn't pick
+     * one. Held until the build is saved, at which point the written template is linked to it —
+     * without this the stage choice would only decide which blocks got copied and then evaporate.
+     */
+    private String builderStage;
     /** Per-world override of train-on-contact block breaking; null = use the global COMMON default. */
     private Boolean breakBlocksOnContactOverride;
     /** Per-world one-shot: true once the join-info report (DT version + train seed + mods) has been posted to Discord. */
@@ -107,6 +208,33 @@ public final class DungeonTrainWorldData extends SavedData {
     private boolean portalRateTuned = false;
 
     /**
+     * True once this world has been seen running with the vanilla {@code keepInventory} game rule
+     * turned on.
+     *
+     * <p>A property of the <b>world</b> for the same reason {@link #portalRateTuned} is: the rule
+     * applies to everyone on it, including players who never touched a setting. Read it through
+     * {@code KeepInventoryIntegrity} rather than here — that class caches it so the Free Play gate
+     * doesn't touch SavedData on hot paths.</p>
+     *
+     * <p><b>One-way.</b> Gear already carried through a death is in the save, so turning the rule
+     * back off does not give the world its stats back.</p>
+     */
+    private boolean keepInventoryUsed = false;
+
+    /**
+     * Players who have closed the editor's world-space Welcome panel in this world, by UUID.
+     *
+     * <p>Per player rather than per world: the panel teaches the editor keybinds, and one builder
+     * having read them says nothing about the next person to join. Per <em>world</em> rather than in
+     * the client config because that is what the dismissal was asked to be — closing it in one world
+     * leaves it up in the next.</p>
+     *
+     * <p>Absent from every world saved before the close button existed, which reads as "nobody has
+     * dismissed it" — so the panel keeps showing in old worlds, which is the pre-existing behaviour.</p>
+     */
+    private final java.util.Set<java.util.UUID> helpPanelDismissed = new java.util.LinkedHashSet<>();
+
+    /**
      * Transient scheduling set of chunk keys ({@link net.minecraft.world.level.ChunkPos#toLong}) whose
      * upside-down mirror is deferred and still pending. NOT serialized — the durable truth is the
      * {@code NEEDS_UPSIDE_DOWN_MIRROR} chunk attachment; this set is only a fast-path work list, rebuilt
@@ -137,6 +265,14 @@ public final class DungeonTrainWorldData extends SavedData {
      */
     private final games.brennan.dungeontrain.train.UsedCarriageIds usedCarriageIds =
             new games.brennan.dungeontrain.train.UsedCarriageIds();
+
+    /**
+     * What a Train Builder world has uploaded to the relay — one record per saved template. Empty in
+     * every ordinary world. Its credentials cannot be re-derived, which is why they are saved rather
+     * than held in memory; see {@link games.brennan.dungeontrain.builder.relay.BuilderRelayBuilds}.
+     */
+    private final games.brennan.dungeontrain.builder.relay.BuilderRelayBuilds builderRelayBuilds =
+            new games.brennan.dungeontrain.builder.relay.BuilderRelayBuilds();
 
     private DungeonTrainWorldData(int trainY, boolean startsWithTrain, CarriageDims dims, long generationSeed, StartingDimension startingDimension) {
         this.trainY = trainY;
@@ -277,9 +413,71 @@ public final class DungeonTrainWorldData extends SavedData {
         // Absent on every world saved before the rate was settable → false, which is correct: those
         // worlds ran at the rate DT balanced.
         data.portalRateTuned = tag.getBoolean(TAG_PORTAL_RATE_TUNED);
+        // Absent on every world saved before this was tracked → false. Those worlds latch on the
+        // next tick anyway if the rule is still on, so nothing is missed.
+        data.keepInventoryUsed = tag.getBoolean(TAG_KEEP_INVENTORY_USED);
         // getIntArray returns an empty array for an absent key, so worlds saved before shared carriages
         // simply start having placed nothing.
         data.usedCarriageIds.loadFrom(tag.getIntArray(TAG_USED_CARRIAGE_IDS));
+        // Absent in every world that has never uploaded a build, which is every non-builder world.
+        data.builderRelayBuilds.loadFrom(
+                tag.getList(TAG_BUILDER_RELAY_BUILDS, net.minecraft.nbt.Tag.TAG_COMPOUND));
+        // Absent in every non-builder world (and in builder worlds saved before the stamp ran).
+        if (tag.contains(TAG_BUILDER_MODE)) {
+            data.builderMode = tag.getString(TAG_BUILDER_MODE);
+        }
+        if (tag.contains(TAG_BUILDER_VARIANT)) {
+            data.builderVariant = tag.getString(TAG_BUILDER_VARIANT);
+        }
+        if (tag.contains(TAG_BUILDER_STAGE)) {
+            data.builderStage = tag.getString(TAG_BUILDER_STAGE);
+        }
+        if (tag.contains(TAG_BUILDER_NAME)) {
+            data.builderName = tag.getString(TAG_BUILDER_NAME);
+        }
+        // getInt returns 0 for an absent key, which is exactly "no mirroring".
+        data.builderMirror = tag.getInt(TAG_BUILDER_MIRROR);
+        if (tag.contains(TAG_BUILDER_SUB_TYPE)) {
+            data.builderSubType = tag.getString(TAG_BUILDER_SUB_TYPE);
+        }
+        if (tag.contains(TAG_BUILDER_TRACK_KIND)) {
+            data.builderTrackKind = tag.getString(TAG_BUILDER_TRACK_KIND);
+        }
+        if (tag.contains(TAG_BUILDER_PART_KIND)) {
+            data.builderPartKind = tag.getString(TAG_BUILDER_PART_KIND);
+        }
+        // Absent in every builder world saved before the count was recorded. Left at -1 rather than
+        // read as 0, so callers can tell "no train" from "nobody wrote it down" and fall back to
+        // the mode's own count — which is what those worlds were in fact stamped with.
+        if (tag.contains(TAG_BUILDER_CARRIAGES)) {
+            data.builderCarriages = tag.getInt(TAG_BUILDER_CARRIAGES);
+        }
+        // Absent in every builder world saved before the structure control existed. Left null, which
+        // BuilderStructureMode.orDefault reads as ghosts — those worlds must not come up with
+        // scenery stood inside a build somebody left half-finished.
+        if (tag.contains(TAG_BUILDER_STRUCTURE_MODE)) {
+            data.builderStructureMode = tag.getString(TAG_BUILDER_STRUCTURE_MODE);
+        }
+        // Absent in every world saved before the refresh control existed. Left null, which
+        // BuilderStructureRefresh.orDefault reads as instant — the room copies were live before
+        // there was a control, and loading an old world must not quietly stop them being.
+        if (tag.contains(TAG_BUILDER_STRUCTURE_REFRESH)) {
+            data.builderStructureRefresh = tag.getString(TAG_BUILDER_STRUCTURE_REFRESH);
+        }
+        // Absent until somebody closes the editor Welcome panel, which is most worlds. Unparseable
+        // entries are skipped rather than failing the whole load — a malformed uuid only costs that
+        // one player their dismissal.
+        if (tag.contains(TAG_HELP_PANEL_DISMISSED)) {
+            net.minecraft.nbt.ListTag dismissed =
+                    tag.getList(TAG_HELP_PANEL_DISMISSED, net.minecraft.nbt.Tag.TAG_STRING);
+            for (int i = 0; i < dismissed.size(); i++) {
+                try {
+                    data.helpPanelDismissed.add(java.util.UUID.fromString(dismissed.getString(i)));
+                } catch (IllegalArgumentException ignored) {
+                    // not a uuid — drop it
+                }
+            }
+        }
         return data;
     }
 
@@ -306,8 +504,193 @@ public final class DungeonTrainWorldData extends SavedData {
         tag.putInt(TAG_DIFFICULTY_TRAVELLED_OFFSET, difficultyTravelledOffset);
         tag.putString(TAG_CUSTOM_CONTENT_CHOICE, customContentChoice.nbtId());
         tag.putBoolean(TAG_PORTAL_RATE_TUNED, portalRateTuned);
+        tag.putBoolean(TAG_KEEP_INVENTORY_USED, keepInventoryUsed);
         tag.putIntArray(TAG_USED_CARRIAGE_IDS, usedCarriageIds.toIntArray());
+        if (!builderRelayBuilds.isEmpty()) {
+            tag.put(TAG_BUILDER_RELAY_BUILDS, builderRelayBuilds.toTag());
+        }
+        if (builderMode != null) {
+            tag.putString(TAG_BUILDER_MODE, builderMode);
+        }
+        if (builderVariant != null) {
+            tag.putString(TAG_BUILDER_VARIANT, builderVariant);
+        }
+        if (builderStage != null) {
+            tag.putString(TAG_BUILDER_STAGE, builderStage);
+        }
+        if (builderName != null) {
+            tag.putString(TAG_BUILDER_NAME, builderName);
+        }
+        if (builderMirror != 0) {
+            tag.putInt(TAG_BUILDER_MIRROR, builderMirror);
+        }
+        if (builderSubType != null) {
+            tag.putString(TAG_BUILDER_SUB_TYPE, builderSubType);
+        }
+        if (builderTrackKind != null) {
+            tag.putString(TAG_BUILDER_TRACK_KIND, builderTrackKind);
+        }
+        if (builderPartKind != null) {
+            tag.putString(TAG_BUILDER_PART_KIND, builderPartKind);
+        }
+        if (builderCarriages >= 0) {
+            tag.putInt(TAG_BUILDER_CARRIAGES, builderCarriages);
+        }
+        if (builderStructureMode != null) {
+            tag.putString(TAG_BUILDER_STRUCTURE_MODE, builderStructureMode);
+        }
+        if (builderStructureRefresh != null) {
+            tag.putString(TAG_BUILDER_STRUCTURE_REFRESH, builderStructureRefresh);
+        }
+        if (!helpPanelDismissed.isEmpty()) {
+            net.minecraft.nbt.ListTag dismissed = new net.minecraft.nbt.ListTag();
+            for (java.util.UUID id : helpPanelDismissed) {
+                dismissed.add(net.minecraft.nbt.StringTag.valueOf(id.toString()));
+            }
+            tag.put(TAG_HELP_PANEL_DISMISSED, dismissed);
+        }
         return tag;
+    }
+
+    /** True when {@code playerId} has closed the editor's world-space Welcome panel in this world. */
+    public boolean isHelpPanelDismissed(java.util.UUID playerId) {
+        return helpPanelDismissed.contains(playerId);
+    }
+
+    /** Record (or clear) {@code playerId}'s dismissal of the editor Welcome panel. */
+    public void setHelpPanelDismissed(java.util.UUID playerId, boolean dismissed) {
+        boolean changed = dismissed
+                ? helpPanelDismissed.add(playerId)
+                : helpPanelDismissed.remove(playerId);
+        if (changed) setDirty();
+    }
+
+    /** Train Builder mode id, or null in an ordinary world. See {@code BuilderMode#fromId}. */
+    public String builderMode() {
+        return builderMode;
+    }
+
+    public void setBuilderMode(String modeId) {
+        this.builderMode = modeId;
+        setDirty();
+    }
+
+    /** Registered variant id the builder world was stamped from, or null outside a builder world. */
+    public String builderVariant() {
+        return builderVariant;
+    }
+
+    public void setBuilderVariant(String variantId) {
+        this.builderVariant = variantId;
+        setDirty();
+    }
+
+    /** What the current build saves as; null/empty for an unnamed draft. */
+    public String builderName() {
+        return builderName;
+    }
+
+    public void setBuilderName(String name) {
+        this.builderName = name;
+        setDirty();
+    }
+
+    /** Mirror setting for the current build. See {@code BuilderMirrorFlags} for why it lives here. */
+    public BuilderMirrorFlags builderMirror() {
+        return BuilderMirrorFlags.unpack(builderMirror);
+    }
+
+    public void setBuilderMirror(BuilderMirrorFlags flags) {
+        this.builderMirror = flags == null ? 0 : flags.pack();
+        setDirty();
+    }
+
+    /** What kind of template this build becomes on Save; null outside a builder world. */
+    public String builderSubType() {
+        return builderSubType;
+    }
+
+    /** Part kind for a parts build, or null/empty when this build isn't a part. */
+    public String builderPartKind() {
+        return builderPartKind;
+    }
+
+    /** Record what kind of carriage template this build is. Clears any track kind — see the twin below. */
+    public void setBuilderSubType(String subTypeId, String partKindId) {
+        this.builderSubType = subTypeId;
+        this.builderPartKind = partKindId;
+        if (subTypeId != null && !subTypeId.isEmpty()) {
+            this.builderTrackKind = "";
+        }
+        setDirty();
+    }
+
+    /** Track kind for a track build, or null/empty when this build is part of a carriage. */
+    public String builderTrackKind() {
+        return builderTrackKind;
+    }
+
+    /**
+     * Record which track kind is on the plot.
+     *
+     * <p>Clears the carriage sub type at the same time, because the two are alternatives and a build
+     * that is both would be read as whichever the caller asked about first — the exact ambiguity
+     * that would have Save write a tunnel into the carriage store.</p>
+     */
+    public void setBuilderTrackKind(String trackKindId) {
+        this.builderTrackKind = trackKindId;
+        if (trackKindId != null && !trackKindId.isEmpty()) {
+            this.builderSubType = "";
+            this.builderPartKind = "";
+        }
+        setDirty();
+    }
+
+    /** Carriages parked on the track, or {@code -1} when no stamp has recorded a count yet. */
+    public int builderCarriages() {
+        return builderCarriages;
+    }
+
+    /** Record what was just stamped. Callers pass the count they actually laid down, including 0. */
+    public void setBuilderCarriages(int carriages) {
+        this.builderCarriages = Math.max(0, carriages);
+        setDirty();
+    }
+
+    /**
+     * What this world does with the structures around the build, or null/empty when it has never
+     * been told. See {@code BuilderStructureMode#orDefault}, which is what every reader goes through.
+     */
+    public String builderStructureMode() {
+        return builderStructureMode;
+    }
+
+    public void setBuilderStructureMode(String modeId) {
+        this.builderStructureMode = modeId;
+        setDirty();
+    }
+
+    /**
+     * When the structures re-read their template, or null/empty when never told. See
+     * {@code BuilderStructureRefresh#orDefault}, which is what every reader goes through.
+     */
+    public String builderStructureRefresh() {
+        return builderStructureRefresh;
+    }
+
+    public void setBuilderStructureRefresh(String refreshId) {
+        this.builderStructureRefresh = refreshId;
+        setDirty();
+    }
+
+    /** Stage the current build was started for, or null/empty when none was picked. */
+    public String builderStage() {
+        return builderStage;
+    }
+
+    public void setBuilderStage(String stageId) {
+        this.builderStage = stageId;
+        setDirty();
     }
 
     public int getTrainY() {
@@ -348,6 +731,18 @@ public final class DungeonTrainWorldData extends SavedData {
     public void markPortalRateTuned() {
         if (portalRateTuned) return;
         portalRateTuned = true;
+        setDirty();
+    }
+
+    /** True once this world has run with {@code keepInventory} on — see {@link #keepInventoryUsed}. */
+    public boolean isKeepInventoryUsed() {
+        return keepInventoryUsed;
+    }
+
+    /** Record that the rule was seen on. One-way: there is no path back to false. */
+    public void markKeepInventoryUsed() {
+        if (keepInventoryUsed) return;
+        keepInventoryUsed = true;
         setDirty();
     }
 
@@ -520,6 +915,20 @@ public final class DungeonTrainWorldData extends SavedData {
     /** Relay ids this world has already placed, newest first and capped at {@code limit}. */
     public java.util.List<Integer> recentUsedCarriageIds(int limit) {
         return usedCarriageIds.recent(limit);
+    }
+
+    /**
+     * This builder world's relay uploads. Handed out live rather than copied, because every caller
+     * that reads it is about to change it — callers must {@link #markBuilderRelayBuildsDirty()} after
+     * a write, which is the same contract {@code readyMirrorChunks} has.
+     */
+    public games.brennan.dungeontrain.builder.relay.BuilderRelayBuilds builderRelayBuilds() {
+        return builderRelayBuilds;
+    }
+
+    /** Persist a change made through {@link #builderRelayBuilds()}. */
+    public void markBuilderRelayBuildsDirty() {
+        setDirty();
     }
 
     /**

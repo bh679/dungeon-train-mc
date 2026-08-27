@@ -120,7 +120,8 @@ class PortalRoomAuthorLocksTest {
         for (int pair = 0; pair < 60; pair++) {
             seen.add(PortalRoomAuthorLocks.effectiveShare(pair, books));
         }
-        assertEquals(3, seen.size(), "an even three-way roll should reach all three across 60 rooms");
+        assertEquals(PortalRoomBooks.Share.values().length, seen.size(),
+            "an even roll should reach every share across 60 rooms — the tally included");
     }
 
     // ---- whose shelf a Self room is allowed to ask for ----
@@ -161,6 +162,96 @@ class PortalRoomAuthorLocksTest {
     void thePoolPageIsAlwaysWaitedOn() {
         assertFalse(PortalRoomAuthorLocks.answered(false, true, false));
         assertFalse(PortalRoomAuthorLocks.answered(true, true, false));
+    }
+
+    // ---- what a cached directory page is worth ----
+    //
+    // One page serves every room asking the same question, so these three states decide whether a
+    // world has libraries at all. Conflating them is what once let a single relay timeout leave every
+    // author room in a session with bare shelves until the server restarted.
+
+    private static PortalRoomAuthorLocks.CachedPage page(BookAuthorsClient.Page p, long atMs) {
+        return new PortalRoomAuthorLocks.CachedPage(p, atMs);
+    }
+
+    private static final BookAuthorsClient.Page NAMED =
+        BookAuthorsClient.Page.of(List.of(author("a")), false);
+    private static final BookAuthorsClient.Page NOBODY = BookAuthorsClient.Page.of(List.of(), false);
+
+    @Test
+    @DisplayName("A relaxed page is taken as-is — re-checking the band would re-empty the room")
+    void aRelaxedPageBypassesTheRangeCheck() {
+        // A room wanting 11+ books, and a relay that found nobody in the reader's language who
+        // reaches that, so it went below the floor rather than serve an empty room. Filtering that
+        // answer by the very band it was excused from is how the fix would be undone.
+        PortalRoomBooks books = new PortalRoomBooks(PortalRoomBooks.Kind.MIX, 1, 1, 1,
+            10, PortalRoomBooks.NO_MAXIMUM);
+        List<BookAuthorsClient.Author> shortShelf =
+            List.of(BookAuthorsClient.Author.other("p1", "Wren", 3));
+
+        assertEquals(1, PortalRoomAuthorLocks.eligible(
+            BookAuthorsClient.Page.of(shortShelf, true), books, true).size());
+        // ...and an ORDINARY page is still filtered, so a page outliving an edit to the range cannot
+        // hand back somebody the room has since stopped accepting.
+        assertTrue(PortalRoomAuthorLocks.eligible(
+            BookAuthorsClient.Page.of(shortShelf, false), books, true).isEmpty());
+    }
+
+    @Test
+    @DisplayName("The reader's own shelf is exempt from the range whether relaxed or not")
+    void theSelfPageIsNeverRangeFiltered() {
+        PortalRoomBooks books = new PortalRoomBooks(PortalRoomBooks.Kind.MIX, 1, 1, 1,
+            10, PortalRoomBooks.NO_MAXIMUM);
+        List<BookAuthorsClient.Author> mine =
+            List.of(BookAuthorsClient.Author.other("p1", "Me", 2));
+        // Finding YOUR two books in a room is the point of the Self share; a floor meant for
+        // strangers does not get to veto it.
+        assertEquals(1, PortalRoomAuthorLocks.eligible(
+            BookAuthorsClient.Page.of(mine, false), books, false).size());
+    }
+
+    @Test
+    @DisplayName("A failed fetch is never an answer, however recent — a timeout is not 'nobody'")
+    void aFailureIsNotAnAnswer() {
+        long now = 1_000_000L;
+        assertFalse(PortalRoomAuthorLocks.usable(page(BookAuthorsClient.Page.failed(), now), now));
+        assertFalse(PortalRoomAuthorLocks.usable(null, now), "nothing cached is not an answer either");
+    }
+
+    @Test
+    @DisplayName("A failed fetch backs off, then is retried rather than left to rot")
+    void aFailureIsRetriedAfterItsBackoff() {
+        long now = 1_000_000L;
+        PortalRoomAuthorLocks.CachedPage failed = page(BookAuthorsClient.Page.failed(), now);
+        assertFalse(PortalRoomAuthorLocks.shouldRefetch(failed, now),
+            "one request per pending room per tick against a relay that has just failed");
+        assertTrue(PortalRoomAuthorLocks.shouldRefetch(
+            failed, now + PortalRoomAuthorLocks.FAILED_RETRY_MS));
+        assertTrue(PortalRoomAuthorLocks.shouldRefetch(null, now), "nothing cached is always fetched");
+    }
+
+    @Test
+    @DisplayName("A page that named somebody stands for the session — a room's library does not churn")
+    void aNamedPageIsKept() {
+        long now = 1_000_000L;
+        long muchLater = now + PortalRoomAuthorLocks.EMPTY_PAGE_TTL_MS * 100;
+        assertTrue(PortalRoomAuthorLocks.usable(page(NAMED, now), muchLater));
+        assertFalse(PortalRoomAuthorLocks.shouldRefetch(page(NAMED, now), muchLater));
+    }
+
+    @Test
+    @DisplayName("An empty answer is believed for a while, then asked again — the corpus grows")
+    void anEmptyPageExpires() {
+        long now = 1_000_000L;
+        // Believed at first: the relay really did say nobody is inside this room's band.
+        assertTrue(PortalRoomAuthorLocks.usable(page(NOBODY, now), now));
+        assertFalse(PortalRoomAuthorLocks.shouldRefetch(page(NOBODY, now), now));
+
+        // ...but not forever. Cached for the session it would keep a whole world bare, because this
+        // page is shared by every room asking the same question.
+        long expired = now + PortalRoomAuthorLocks.EMPTY_PAGE_TTL_MS;
+        assertFalse(PortalRoomAuthorLocks.usable(page(NOBODY, now), expired));
+        assertTrue(PortalRoomAuthorLocks.shouldRefetch(page(NOBODY, now), expired));
     }
 
     @Test
