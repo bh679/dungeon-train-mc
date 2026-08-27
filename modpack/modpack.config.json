@@ -331,6 +331,15 @@
       "required": true,
       "modrinth_project": "scribble",
       "modrinth_version": "I0KbSlL9"
+    },
+    {
+      "name": "Shulker Box Tooltip",
+      "slug": "shulkerboxtooltip",
+      "project_id": 315811,
+      "file_id": 7768285,
+      "required": true,
+      "modrinth_project": "shulkerboxtooltip",
+      "modrinth_version": "IuqNIoAi"
     }
   ],
   "curseforge_relations": [

@@ -6,6 +6,7 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.menu.MenuRenderStates;
+import games.brennan.dungeontrain.client.menu.PanelIconBatch;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.net.TemplateBlocksSyncPacket;
 import net.minecraft.client.Minecraft;
@@ -26,6 +27,7 @@ import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 
+import javax.annotation.Nullable;
 import java.util.List;
 
 /**
@@ -76,7 +78,7 @@ public final class TemplateBlocksMenuRenderer {
     @SubscribeEvent
     public static void onRenderLevelStage(RenderLevelStageEvent event) {
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS) return;
-        if (!TemplateBlocksMenu.isActive()) return;
+        if (!TemplateBlocksMenu.isActiveWorldspace()) return;
 
         TemplateBlocksMenuRaycast.updateHovered();
 
@@ -104,22 +106,56 @@ public final class TemplateBlocksMenuRenderer {
         }
 
         MultiBufferSource.BufferSource buffer = mc.renderBuffers().bufferSource();
-        drawPanel(ps, buffer, font);
+        drawPanel(ps, buffer, font, null);
         buffer.endBatch(PANEL_QUAD);
         buffer.endBatch();
         ps.popPose();
     }
 
-    private static void drawPanel(PoseStack ps, MultiBufferSource buffer, Font font) {
-        List<TemplateBlocksSyncPacket.Entry> entries = TemplateBlocksMenu.entries();
-        int n = entries.size();
+    /**
+     * The panel's outer geometry in panel-local units, derived once from the entry count.
+     *
+     * <p>Extracted because three callers need the identical numbers and used to each carry
+     * their own copy: this renderer, {@link TemplateBlocksMenuRaycast#hitTest}, and the
+     * screen-space host, which has to know the panel's size before it can centre and scale it.
+     * A drifting copy here would put the hover tint somewhere the click isn't.</p>
+     *
+     * @param columns   how many columns the rows wrapped into
+     * @param panelW    full width
+     * @param gridH     height of the row grid alone, below the header
+     * @param panelH    full height, header included
+     */
+    record PanelSize(int columns, double panelW, double gridH, double panelH) {
+        double halfW() { return panelW / 2.0; }
+        double halfH() { return panelH / 2.0; }
+        /** Width of one column once the grid is stretched to the full panel width. */
+        double columnWidth() { return panelW / columns; }
+    }
+
+    static PanelSize panelSize() {
+        int n = TemplateBlocksMenu.entries().size();
         int colCount = Math.max(1, (n + TemplateBlocksMenu.ROWS_PER_COLUMN - 1) / TemplateBlocksMenu.ROWS_PER_COLUMN);
         double panelW = Math.max(MIN_PANEL_WIDTH, colCount * COLUMN_WIDTH);
         int displayedRows = Math.min(Math.max(n, 1), TemplateBlocksMenu.ROWS_PER_COLUMN);
         double gridH = displayedRows * ROW_HEIGHT;
-        double panelH = HEADER_HEIGHT + gridH;
-        double halfW = panelW / 2.0;
-        double halfH = panelH / 2.0;
+        return new PanelSize(colCount, panelW, gridH, HEADER_HEIGHT + gridH);
+    }
+
+    /**
+     * @param icons non-null in screen-space, where item icons are batched for the host to replay
+     *              through vanilla's GUI item path rather than drawn inline. See
+     *              {@link games.brennan.dungeontrain.client.menu.PanelIconBatch}.
+     */
+    static void drawPanel(PoseStack ps, MultiBufferSource buffer, Font font,
+                          @Nullable PanelIconBatch icons) {
+        List<TemplateBlocksSyncPacket.Entry> entries = TemplateBlocksMenu.entries();
+        int n = entries.size();
+        PanelSize size = panelSize();
+        int colCount = size.columns();
+        double panelW = size.panelW();
+        double panelH = size.panelH();
+        double halfW = size.halfW();
+        double halfH = size.halfH();
         TemplateBlocksMenu.Hit hovered = TemplateBlocksMenu.hovered();
 
         // Backdrop
@@ -166,7 +202,7 @@ public final class TemplateBlocksMenuRenderer {
             drawQuad(ps, buffer, swapL + 0.01, rowBot + 0.02, swapR, rowTop - 0.02,
                 swapHover ? 0xC033FF88 : 0x50339955);
 
-            drawBlockIcon(ps, buffer, entry.blockId(), colXL, rowCY);
+            drawBlockIcon(ps, buffer, entry.blockId(), colXL, rowCY, icons);
             String label = TemplateBlocksMenu.shortLabel(entry.blockId());
             drawLeftText(ps, buffer, font, label, colXL + NAME_TEXT_LEFT_OFFSET, rowCY, 0xFFFFFFFF);
             drawCenteredText(ps, buffer, font, "x" + entry.count(), (countL + countR) / 2.0, rowCY, 0xFFCCCCCC);
@@ -175,14 +211,19 @@ public final class TemplateBlocksMenuRenderer {
     }
 
     /** Inventory-style block icon at the left of a row. BARRIER fallback for item-less blocks. */
-    static void drawBlockIcon(PoseStack ps, MultiBufferSource buffer,
-                              String blockId, double cellLeftX, double rowCY) {
+    static void drawBlockIcon(PoseStack ps, MultiBufferSource buffer, String blockId,
+                              double cellLeftX, double rowCY, @Nullable PanelIconBatch icons) {
         if (blockId == null || blockId.isEmpty()) return;
         ItemStack stack = TemplateBlocksMenu.iconStack(blockId);
+        double centerX = cellLeftX + ICON_LEFT_PAD + ICON_SIZE / 2.0;
+        if (icons != null) {
+            icons.add(ps, stack, centerX, rowCY, ICON_SIZE);
+            return;
+        }
         Minecraft mc = Minecraft.getInstance();
         ItemRenderer itemRenderer = mc.getItemRenderer();
         ps.pushPose();
-        ps.translate(cellLeftX + ICON_LEFT_PAD + ICON_SIZE / 2.0, rowCY, 0.002);
+        ps.translate(centerX, rowCY, 0.002);
         ps.scale((float) ICON_SIZE, (float) ICON_SIZE, (float) ICON_SIZE);
         itemRenderer.renderStatic(
             stack,

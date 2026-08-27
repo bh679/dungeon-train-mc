@@ -283,6 +283,7 @@ jobs:
             worldedit(optional)
             jei(optional)
             scribble(optional)
+            shulkerboxtooltip(optional)
           java: 21
           retry-attempts: 2
           retry-delay: 10000

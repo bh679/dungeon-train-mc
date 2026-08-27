@@ -102,19 +102,23 @@ public final class ContainerContentsMenuInputHandler {
                 || ContainerContentsMenu.screen() != ContainerContentsMenu.Screen.ADD_SEARCH)) {
             mc.setScreen(null);
         }
-        if (!ContainerContentsMenu.isActive()) return;
+        if (!ContainerContentsMenu.isActiveWorldspace()) return;
         if (mc.screen == null) {
             ContainerContentsMenuRaycast.updateHovered();
         }
     }
 
     private static boolean shouldHandle() {
-        if (!ContainerContentsMenu.isActive()) return false;
+        if (!ContainerContentsMenu.isActiveWorldspace()) return false;
         if (CommandMenuState.isOpen()) return false;
         return true;
     }
 
-    private static void dispatch(ContainerContentsMenu.Hit hit, boolean shift) {
+    /**
+     * Act on a hit cell. Package-visible because {@link ContainerContentsMenuScreen} dispatches
+     * through this same body — the screen-space path differs only in where the Hit came from.
+     */
+    static void dispatch(ContainerContentsMenu.Hit hit, boolean shift) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.getSoundManager() != null) {
             mc.getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(
@@ -153,10 +157,13 @@ public final class ContainerContentsMenuInputHandler {
                             true);
                     }
                 } else {
+                    // Screen-space: come back to the panel we are replacing, not the world.
                     Minecraft.getInstance().setScreen(
                         new games.brennan.dungeontrain.client.menu.PrefabNameScreen(
                             games.brennan.dungeontrain.client.menu.PrefabNameScreen.Kind.LOOT,
-                            local));
+                            local,
+                            ContainerContentsMenu.space().isScreenspace()
+                                ? new ContainerContentsMenuScreen() : null));
                 }
             }
             case FILL_MIN -> {
@@ -235,7 +242,14 @@ public final class ContainerContentsMenuInputHandler {
         String plotKey = ContainerContentsMenu.plotKey();
         switch (hit.kind()) {
             case SEARCH_BACK -> ContainerContentsMenu.backToRoot();
-            case SEARCH_FIELD -> Minecraft.getInstance().setScreen(new ContainerContentsSearchScreen());
+            case SEARCH_FIELD -> {
+                // World-space has no screen of its own, so it needs an invisible one to stop
+                // typed letters from walking the player. Screen-space is already a screen and
+                // types inline — opening this over it would replace the panel being typed into.
+                if (ContainerContentsMenu.space().isWorldspace()) {
+                    Minecraft.getInstance().setScreen(new ContainerContentsSearchScreen());
+                }
+            }
             case SEARCH_RESULT -> {
                 List<String> filtered = ContainerContentsMenu.filteredItemIds();
                 if (hit.index() < 0 || hit.index() >= filtered.size()) return;
