@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.editor;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.net.EditorMenusModePacket;
 import games.brennan.dungeontrain.net.PartAssignmentEditPacket;
 import games.brennan.dungeontrain.net.PartAssignmentSyncPacket;
 import games.brennan.dungeontrain.train.CarriageDims;
@@ -19,10 +20,8 @@ import org.slf4j.Logger;
 
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -40,9 +39,10 @@ import java.util.UUID;
  *       the named variant's plot, apply the requested mutation (add /
  *       remove / clear / bump weight), persist via
  *       {@link CarriageVariantPartsStore}, and re-sync.</li>
- *   <li>{@link #setMenuEnabled}: track a per-player on/off flag. While
- *       off, {@link #update} suppresses sync packets and pushes a single
- *       empty packet to close the client menu.</li>
+ *   <li>{@link #setMode}: track this player's {@link EditorMenusMode}. In
+ *       {@code OFF}, {@link #update} suppresses sync packets and pushes a single
+ *       empty packet to close the client menu; {@code ON} and {@code AUTO} both
+ *       auto-open it.</li>
  * </ul>
  *
  * <p>Range/anchor maths uses {@link CarriagePartKind#placements} so wall
@@ -57,8 +57,16 @@ public final class PartPositionMenuController {
     /** Same eye-pick reach as the variant-block hover overlay. */
     private static final double HOVER_REACH = 8.0;
 
-    /** Players who have toggled the menu OFF. Default behaviour is "auto-open". */
-    private static final Set<UUID> DISABLED = new HashSet<>();
+    /**
+     * Per-player editor-menus mode. Absent means {@link EditorMenusMode#DEFAULT} — the map only
+     * holds players who have moved off the default, the same shape the old DISABLED set had.
+     *
+     * <p>Only {@link EditorMenusMode#OFF} changes what this controller does: {@code ON} and
+     * {@code AUTO} both auto-open the part-position menu, and {@code AUTO}'s per-plot filtering is
+     * a client-side render decision. The mode lives here rather than in a class of its own so the
+     * one place that already owned this player state keeps owning it.</p>
+     */
+    private static final Map<UUID, EditorMenusMode> MODES = new HashMap<>();
 
     /**
      * Last (variantId, kind) we sent a sync packet for, per player.
@@ -70,16 +78,35 @@ public final class PartPositionMenuController {
 
     private PartPositionMenuController() {}
 
-    public static boolean isMenuEnabled(ServerPlayer player) {
-        return !DISABLED.contains(player.getUUID());
+    /** This player's editor-menus mode. {@link EditorMenusMode#DEFAULT} until they change it. */
+    public static EditorMenusMode mode(ServerPlayer player) {
+        return MODES.getOrDefault(player.getUUID(), EditorMenusMode.DEFAULT);
     }
 
+    /**
+     * True while the part-position menu may auto-open — every mode but
+     * {@link EditorMenusMode#OFF}. {@code AUTO} only narrows which <i>plot</i> panels the client
+     * draws; the part menu belongs to the plot the player is standing in either way.
+     */
+    public static boolean isMenuEnabled(ServerPlayer player) {
+        return mode(player) != EditorMenusMode.OFF;
+    }
+
+    /** Back-compat two-state entry point — {@code true} maps to {@link EditorMenusMode#ON}. */
     public static void setMenuEnabled(ServerPlayer player, boolean enabled) {
+        setMode(player, enabled ? EditorMenusMode.ON : EditorMenusMode.OFF);
+    }
+
+    public static void setMode(ServerPlayer player, EditorMenusMode mode) {
         UUID uuid = player.getUUID();
-        if (enabled) {
-            DISABLED.remove(uuid);
+        EditorMenusMode next = mode == null ? EditorMenusMode.DEFAULT : mode;
+        if (next == EditorMenusMode.DEFAULT) {
+            MODES.remove(uuid);
         } else {
-            DISABLED.add(uuid);
+            MODES.put(uuid, next);
+        }
+        DungeonTrainNet.sendTo(player, EditorMenusModePacket.of(next));
+        if (next == EditorMenusMode.OFF) {
             // Push an immediate close so the client doesn't keep its panel up
             // until the next hover transition.
             String prev = LAST_HOVER.put(uuid, "");
@@ -91,7 +118,7 @@ public final class PartPositionMenuController {
 
     /** Per-server-stop reset. Hooked from {@link CarriagePartRegistry}'s lifecycle helpers. */
     public static synchronized void clearAll() {
-        DISABLED.clear();
+        MODES.clear();
         LAST_HOVER.clear();
     }
 
@@ -102,7 +129,7 @@ public final class PartPositionMenuController {
      *
      * <p>Drops only the hover dedup key, so the per-tick hover sync re-composes
      * and re-sends on the next tick. Deliberately not {@link #forget}, which
-     * also clears DISABLED and pushes an empty packet — that <i>closes</i> the
+     * also clears the mode and pushes an empty packet — that <i>closes</i> the
      * menu rather than refreshing it.</p>
      */
     public static void resyncOpen(ServerPlayer player) {
@@ -111,7 +138,11 @@ public final class PartPositionMenuController {
 
     public static void forget(ServerPlayer player) {
         UUID uuid = player.getUUID();
-        DISABLED.remove(uuid);
+        // Leaving the editor drops the mode back to the default, so say so — otherwise the client
+        // keeps filtering (or hiding) panels on a setting the server no longer holds.
+        if (MODES.remove(uuid) != null) {
+            DungeonTrainNet.sendTo(player, EditorMenusModePacket.of(EditorMenusMode.DEFAULT));
+        }
         if (LAST_HOVER.remove(uuid) != null) {
             DungeonTrainNet.sendTo(player, PartAssignmentSyncPacket.empty());
         }

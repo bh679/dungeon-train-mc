@@ -49,6 +49,34 @@ public final class ClientDisplayConfig {
     /** Step applied per click of the menu's {@code [-]} / {@code [+]} buttons. */
     public static final double STEP = 0.10;
 
+    // ----- Editor world-space menu render distance -----
+
+    /**
+     * Default cap on how far the editor's world-space menus draw, in blocks.
+     *
+     * <p>A hundred and twenty-eight is generous on purpose — half the range, and past the point
+     * where a panel is readable anyway — so the setting ships as a backstop against the far end of
+     * a big build area rather than as something you immediately have to loosen. Auto's own
+     * in-template rule is far tighter (see {@link #AUTO_TEMPLATE_DISTANCE_BLOCKS}); the smaller of
+     * the two applies.</p>
+     */
+    public static final int DEFAULT_MENU_RENDER_DISTANCE = 128;
+    /** Floor for the setting — below this the panel for the plot you are standing in starts to vanish. */
+    public static final int MIN_MENU_RENDER_DISTANCE = 5;
+    /** Ceiling — past a couple of hundred blocks the panels are unreadable anyway, so this is "no limit". */
+    public static final int MAX_MENU_RENDER_DISTANCE = 256;
+    /** Blocks per click of the Menu Distance row's {@code −} / {@code +} cells. */
+    public static final int MENU_RENDER_DISTANCE_STEP = 8;
+
+    /**
+     * The tighter distance {@code AUTO} applies while the player stands in a template, in blocks.
+     *
+     * <p>Lives here beside its sibling so the config comment can name it and the two numbers are
+     * read together; the rule that uses it is
+     * {@code EditorMenusModeState.withinRange}.</p>
+     */
+    public static final int AUTO_TEMPLATE_DISTANCE_BLOCKS = 15;
+
     /** Silent. A real setting, not a "not configured" sentinel — see {@link #getTrainEngineVolume()}. */
     public static final double MIN_TRAIN_ENGINE_VOLUME = 0.0;
     /** The engine at the volume the distance curve computes, unscaled. */
@@ -84,6 +112,8 @@ public final class ClientDisplayConfig {
     public static final ModConfigSpec.BooleanValue DELETE_WORLD_ON_REBOARD;
     /** Tiles per row in the Train Builder's Open screen grid. See {@link #getBuilderTilesPerRow()}. */
     public static final ModConfigSpec.IntValue BUILDER_TILES_PER_ROW;
+    /** Cap on how far the editor's world-space menus draw. See {@link #getMenuRenderDistance()}. */
+    public static final ModConfigSpec.IntValue MENU_RENDER_DISTANCE;
     public static final ModConfigSpec.BooleanValue SKYBOX_PUNCH_ENABLED;
     public static final ModConfigSpec.BooleanValue PORTAL_CROSSING_FADE;
     public static final ModConfigSpec.BooleanValue SCRIBBLE_COLOR_PICKER_VISIBLE;
@@ -179,6 +209,7 @@ public final class ClientDisplayConfig {
         TRAIN_ENGINE_VOLUME = pair.getLeft().trainEngineVolume;
         DELETE_WORLD_ON_REBOARD = pair.getLeft().deleteWorldOnReboard;
         BUILDER_TILES_PER_ROW = pair.getLeft().builderTilesPerRow;
+        MENU_RENDER_DISTANCE = pair.getLeft().menuRenderDistance;
         SKYBOX_PUNCH_ENABLED = pair.getLeft().skyboxPunchEnabled;
         PORTAL_CROSSING_FADE = pair.getLeft().portalCrossingFade;
         SCRIBBLE_COLOR_PICKER_VISIBLE = pair.getLeft().scribbleColorPickerVisible;
@@ -336,6 +367,13 @@ public final class ClientDisplayConfig {
                 .defineInRange("tilesPerRow", 3, 2, 6);
         b.pop();
 
+        b.push("editorMenus");
+        ModConfigSpec.IntValue menuRenderDistance = b
+                .comment("How far away, in blocks, the editor's world-space menus keep drawing — plot panels, the row-start nav menus, the help board, the package and Stages panels. Applies whether or not you are standing in a template, and in both the On and Auto menu modes. Auto additionally tightens to " + AUTO_TEMPLATE_DISTANCE_BLOCKS + " blocks while you are inside a template, so the smaller of the two wins there. Set in-game from the Menu Distance row of the editor's X-menu.")
+                .defineInRange("menuRenderDistance", DEFAULT_MENU_RENDER_DISTANCE,
+                        MIN_MENU_RENDER_DISTANCE, MAX_MENU_RENDER_DISTANCE);
+        b.pop();
+
         b.push("sharedBooks");
         ModConfigSpec.ConfigValue<List<? extends String>> sharedBooksRead = b
                 .comment("Relay pool ids (as strings) of community player-written books you've read. GLOBAL read",
@@ -435,6 +473,7 @@ public final class ClientDisplayConfig {
                 rideSnapshotMaxResolution,
                 framerateThrottleEnabled, framerateThrottleFps, trainEngineVolume, skyboxPunchEnabled, portalCrossingFade, scribbleColorPickerVisible, cinematicHotkeyEnabled, deleteWorldOnReboard,
                 builderTilesPerRow,
+                menuRenderDistance,
                 sharedBooksRead,
                 deathScreenLastNps, politicalFilter, contentMode, customContentPreference,
                 customContentLastAnswer,
@@ -986,6 +1025,54 @@ public final class ClientDisplayConfig {
         BUILDER_TILES_PER_ROW.save();
     }
 
+    // ----- Editor world-space menu render distance -----
+
+    /**
+     * How far the editor's world-space menus keep drawing, in blocks. Falls back to
+     * {@link #DEFAULT_MENU_RENDER_DISTANCE} before the config loads and when it never does, so a
+     * client with no config file behaves like one that has just accepted the default.
+     *
+     * <p>This is the cap that applies everywhere — in a template or between plots, in Auto or On.
+     * Auto layers its own tighter in-template rule on top; whichever is smaller wins.</p>
+     */
+    public static int getMenuRenderDistance() {
+        return isLoaded() ? MENU_RENDER_DISTANCE.get() : DEFAULT_MENU_RENDER_DISTANCE;
+    }
+
+    /**
+     * Persist the menu render distance. Idempotent — skips the TOML write when unchanged, because
+     * this is driven by a button the player clicks repeatedly while watching panels appear and
+     * disappear around them.
+     */
+    public static void setMenuRenderDistance(int value) {
+        if (!isLoaded()) return;
+        int clamped = Math.max(MIN_MENU_RENDER_DISTANCE, Math.min(MAX_MENU_RENDER_DISTANCE, value));
+        if (MENU_RENDER_DISTANCE.get() == clamped) return;
+        MENU_RENDER_DISTANCE.set(clamped);
+        MENU_RENDER_DISTANCE.save();
+    }
+
+    /**
+     * The next value up from {@code current}, snapped to a multiple of
+     * {@link #MENU_RENDER_DISTANCE_STEP}.
+     *
+     * <p>Snapping rather than plain addition so the numbers the player lands on read cleanly:
+     * from the {@link #MIN_MENU_RENDER_DISTANCE} floor of 5 the first step goes to 8, then 16, 24,
+     * and so on, instead of the 13 / 21 / 29 an offset-by-five ladder would give.</p>
+     */
+    public static int stepMenuRenderDistanceUp(int current) {
+        int next = (current / MENU_RENDER_DISTANCE_STEP + 1) * MENU_RENDER_DISTANCE_STEP;
+        return Math.min(MAX_MENU_RENDER_DISTANCE, next);
+    }
+
+    /** The next value down from {@code current}, snapped the same way, floored at the minimum. */
+    public static int stepMenuRenderDistanceDown(int current) {
+        int down = current % MENU_RENDER_DISTANCE_STEP == 0
+            ? current - MENU_RENDER_DISTANCE_STEP
+            : (current / MENU_RENDER_DISTANCE_STEP) * MENU_RENDER_DISTANCE_STEP;
+        return Math.max(MIN_MENU_RENDER_DISTANCE, down);
+    }
+
     // ----- Content mode (Adult / Kid) — see ContentMode -----
 
     /**
@@ -1128,6 +1215,7 @@ public final class ClientDisplayConfig {
             ModConfigSpec.BooleanValue cinematicHotkeyEnabled,
             ModConfigSpec.BooleanValue deleteWorldOnReboard,
             ModConfigSpec.IntValue builderTilesPerRow,
+            ModConfigSpec.IntValue menuRenderDistance,
             ModConfigSpec.ConfigValue<List<? extends String>> sharedBooksRead,
             ModConfigSpec.IntValue deathScreenLastNps,
             ModConfigSpec.EnumValue<PoliticalFilter> politicalFilter,
