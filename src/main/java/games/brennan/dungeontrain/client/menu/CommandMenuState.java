@@ -54,7 +54,7 @@ public final class CommandMenuState {
      * subscriber to stop drawing), so a menu that opened in one mode must close in that same mode.
      * Reading the setting live would let a flip mid-open strand a half-torn-down panel.</p>
      */
-    private static EditorMenuSpace space = EditorMenuSpace.DEFAULT;
+    private static EditorMenuSpace space = ClientDisplayConfig.DEFAULT_COMMAND_MENU_SPACE;
     private static Vec3 anchorPos = Vec3.ZERO;
     private static Vec3 anchorOffset = Vec3.ZERO;
     private static Vec3 anchorRight = new Vec3(1, 0, 0);

@@ -78,7 +78,7 @@ public final class ContainerContentsMenu {
      * read live. The two modes tear down differently — a Screen to pop versus an event
      * subscriber to stop drawing — so the menu must close in the mode it opened in.
      */
-    private static EditorMenuSpace space = EditorMenuSpace.DEFAULT;
+    private static EditorMenuSpace space = ClientDisplayConfig.DEFAULT_CONTAINER_CONTENTS_MENU_SPACE;
     private static String plotKey = "";
     @Nullable private static BlockPos localPos;
     private static List<ContainerContentsSyncPacket.Entry> entries = Collections.emptyList();

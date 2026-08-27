@@ -77,6 +77,33 @@ public final class ClientDisplayConfig {
      */
     public static final int AUTO_TEMPLATE_DISTANCE_BLOCKS = 15;
 
+    // ----- Where each editor menu draws (see EditorMenuSpace) -----
+
+    /**
+     * Shipped default for the X command menu: a GUI panel with a free cursor.
+     *
+     * <p>X and V act on the whole plot, so there is no particular block for a panel to sit beside
+     * and the precision of a cursor is the thing worth having.</p>
+     */
+    public static final EditorMenuSpace DEFAULT_COMMAND_MENU_SPACE = EditorMenuSpace.SCREENSPACE;
+
+    /** Shipped default for the V template-blocks menu. See {@link #DEFAULT_COMMAND_MENU_SPACE}. */
+    public static final EditorMenuSpace DEFAULT_TEMPLATE_BLOCKS_MENU_SPACE = EditorMenuSpace.SCREENSPACE;
+
+    /**
+     * Shipped default for the C container-contents menu: anchored in the world.
+     *
+     * <p>C and Z edit one block cell and carry its position, so the world-space panel appears
+     * beside the very container or variant being edited. Which cell you are looking at is real
+     * information, and a screen-space panel — centred, identical wherever you stand — throws it
+     * away. Authors opening C on one chest of several in a carriage rely on it, so these two keep
+     * the head-aim by default and opt in to the cursor.</p>
+     */
+    public static final EditorMenuSpace DEFAULT_CONTAINER_CONTENTS_MENU_SPACE = EditorMenuSpace.WORLDSPACE;
+
+    /** Shipped default for the Z block-variant menu. See {@link #DEFAULT_CONTAINER_CONTENTS_MENU_SPACE}. */
+    public static final EditorMenuSpace DEFAULT_BLOCK_VARIANT_MENU_SPACE = EditorMenuSpace.WORLDSPACE;
+
     /** Silent. A real setting, not a "not configured" sentinel — see {@link #getTrainEngineVolume()}. */
     public static final double MIN_TRAIN_ENGINE_VOLUME = 0.0;
     /** The engine at the volume the distance curve computes, unscaled. */
@@ -408,16 +435,19 @@ public final class ClientDisplayConfig {
                          "cursor; WORLDSPACE anchors a flat panel in the world that you aim your head at,",
                          "leaving you free to keep walking. Set in-game from Options > Dungeon Train >",
                          "Editor Settings, or the X menu -> Options.")
-                .defineEnum("commandMenuSpace", EditorMenuSpace.DEFAULT);
+                .defineEnum("commandMenuSpace", DEFAULT_COMMAND_MENU_SPACE);
         ModConfigSpec.EnumValue<EditorMenuSpace> templateBlocksMenuSpace = b
-                .comment("Where the V (template blocks) menu draws. See commandMenuSpace.")
-                .defineEnum("templateBlocksMenuSpace", EditorMenuSpace.DEFAULT);
+                .comment("Where the V (template blocks) menu draws. See commandMenuSpace. Defaults to SCREENSPACE.")
+                .defineEnum("templateBlocksMenuSpace", DEFAULT_TEMPLATE_BLOCKS_MENU_SPACE);
         ModConfigSpec.EnumValue<EditorMenuSpace> containerContentsMenuSpace = b
-                .comment("Where the C (container contents) menu draws. See commandMenuSpace.")
-                .defineEnum("containerContentsMenuSpace", EditorMenuSpace.DEFAULT);
+                .comment("Where the C (container contents) menu draws. See commandMenuSpace. Defaults to",
+                         "WORLDSPACE: C edits one block cell, so the in-world panel sits beside the very",
+                         "container being edited, which a centred GUI panel cannot show.")
+                .defineEnum("containerContentsMenuSpace", DEFAULT_CONTAINER_CONTENTS_MENU_SPACE);
         ModConfigSpec.EnumValue<EditorMenuSpace> blockVariantMenuSpace = b
-                .comment("Where the Z (block variant) menu draws. See commandMenuSpace.")
-                .defineEnum("blockVariantMenuSpace", EditorMenuSpace.DEFAULT);
+                .comment("Where the Z (block variant) menu draws. See commandMenuSpace. Defaults to",
+                         "WORLDSPACE for the same reason as containerContentsMenuSpace.")
+                .defineEnum("blockVariantMenuSpace", DEFAULT_BLOCK_VARIANT_MENU_SPACE);
         b.pop();
 
         b.push("sharedBooks");
@@ -1244,26 +1274,26 @@ public final class ClientDisplayConfig {
     // ----- Where each editor menu draws (see EditorMenuSpace) -----
 
     /**
-     * Where the X command menu draws. Falls back to {@link EditorMenuSpace#DEFAULT} pre-load —
+     * Where the X command menu draws. Falls back to this menu's own shipped default pre-load —
      * these are read from the render thread, which can run before the client config is ready.
      */
     public static EditorMenuSpace getCommandMenuSpace() {
-        return isLoaded() ? COMMAND_MENU_SPACE.get() : EditorMenuSpace.DEFAULT;
+        return isLoaded() ? COMMAND_MENU_SPACE.get() : DEFAULT_COMMAND_MENU_SPACE;
     }
 
     /** Where the V (template blocks) menu draws. See {@link #getCommandMenuSpace()}. */
     public static EditorMenuSpace getTemplateBlocksMenuSpace() {
-        return isLoaded() ? TEMPLATE_BLOCKS_MENU_SPACE.get() : EditorMenuSpace.DEFAULT;
+        return isLoaded() ? TEMPLATE_BLOCKS_MENU_SPACE.get() : DEFAULT_TEMPLATE_BLOCKS_MENU_SPACE;
     }
 
     /** Where the C (container contents) menu draws. See {@link #getCommandMenuSpace()}. */
     public static EditorMenuSpace getContainerContentsMenuSpace() {
-        return isLoaded() ? CONTAINER_CONTENTS_MENU_SPACE.get() : EditorMenuSpace.DEFAULT;
+        return isLoaded() ? CONTAINER_CONTENTS_MENU_SPACE.get() : DEFAULT_CONTAINER_CONTENTS_MENU_SPACE;
     }
 
     /** Where the Z (block variant) menu draws. See {@link #getCommandMenuSpace()}. */
     public static EditorMenuSpace getBlockVariantMenuSpace() {
-        return isLoaded() ? BLOCK_VARIANT_MENU_SPACE.get() : EditorMenuSpace.DEFAULT;
+        return isLoaded() ? BLOCK_VARIANT_MENU_SPACE.get() : DEFAULT_BLOCK_VARIANT_MENU_SPACE;
     }
 
     /** Persist the Z menu's space. Idempotent: skips the TOML write when unchanged. */

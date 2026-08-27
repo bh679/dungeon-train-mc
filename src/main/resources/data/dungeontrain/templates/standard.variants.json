@@ -1,0 +1,6 @@
+{
+  "schemaVersion": 9,
+  "variants": {
+    "3,1,6": ["minecraft:chiseled_copper", {"state": "minecraft:spruce_log[axis=y]", "rotation": {"mode": "lock", "dirs": ["up"]}}]
+  }
+}

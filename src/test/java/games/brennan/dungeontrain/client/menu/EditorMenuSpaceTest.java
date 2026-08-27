@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.menu;
 
+import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.config.EditorMenuSpace;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -13,17 +14,25 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * Unit tests for {@link EditorMenuSpace}.
  *
  * <p>The config values themselves need a loaded {@code ModConfigSpec}, which needs a client, so
- * what is checked here is the enum the three settings are made of: the shipped default, and that
- * the toggle the menu rows use actually alternates rather than sticking.</p>
+ * what is checked here is the enum the four settings are made of, plus the plain constants that
+ * decide what each menu ships as.</p>
  */
 final class EditorMenuSpaceTest {
 
+    /**
+     * The two groups ship pointing different ways, and which menu is in which group is a product
+     * decision rather than an implementation detail: X and V act on the whole plot, while C and Z
+     * edit one block cell and carry its position, so their in-world panel appears beside the very
+     * block being edited. Flipping one of these by accident would quietly move a menu between
+     * groups, so they are pinned here.
+     */
     @Test
-    @DisplayName("ships defaulting to screenspace")
-    void defaultIsScreenspace() {
-        assertEquals(EditorMenuSpace.SCREENSPACE, EditorMenuSpace.DEFAULT);
-        assertTrue(EditorMenuSpace.DEFAULT.isScreenspace());
-        assertFalse(EditorMenuSpace.DEFAULT.isWorldspace());
+    @DisplayName("plot-wide menus ship screen-space, per-cell menus ship world-space")
+    void shippedDefaultsMatchWhatEachMenuActsOn() {
+        assertEquals(EditorMenuSpace.SCREENSPACE, ClientDisplayConfig.DEFAULT_COMMAND_MENU_SPACE);
+        assertEquals(EditorMenuSpace.SCREENSPACE, ClientDisplayConfig.DEFAULT_TEMPLATE_BLOCKS_MENU_SPACE);
+        assertEquals(EditorMenuSpace.WORLDSPACE, ClientDisplayConfig.DEFAULT_CONTAINER_CONTENTS_MENU_SPACE);
+        assertEquals(EditorMenuSpace.WORLDSPACE, ClientDisplayConfig.DEFAULT_BLOCK_VARIANT_MENU_SPACE);
     }
 
     @Test

@@ -19,9 +19,13 @@ package games.brennan.dungeontrain.config;
  * draw those units and where the {@code (x, y)} probe that hit-tests them comes from. That is
  * why hover and click cannot drift apart between the two — they run the same hit-test.</p>
  *
- * <p>Stored per-menu in {@link ClientDisplayConfig} rather than as one global switch: the three
- * menus differ enough in what they are for — a command list, a block roster, a loot table — that
- * an author may reasonably want the cursor for one and their hands free for another.</p>
+ * <p>Stored per-menu in {@link ClientDisplayConfig} rather than as one global switch, and with
+ * per-menu <em>defaults</em> — see the {@code DEFAULT_*_MENU_SPACE} constants there. The menus
+ * split cleanly in two: X and V act on the whole plot, while C and Z act on one block cell and
+ * carry its position, so their world-space panel appears beside the very block being edited.
+ * That anchoring is information a screen-space panel cannot show, which is why the two groups
+ * ship pointing different ways. There is deliberately no single {@code DEFAULT} here — a shared
+ * one would make it easy to hand a menu the wrong group's answer.</p>
  */
 public enum EditorMenuSpace {
 
@@ -30,9 +34,6 @@ public enum EditorMenuSpace {
 
     /** A GUI {@code Screen} in pixels, picked with a free mouse cursor. */
     SCREENSPACE;
-
-    /** Ships as the default for all three menus. */
-    public static final EditorMenuSpace DEFAULT = SCREENSPACE;
 
     public boolean isScreenspace() {
         return this == SCREENSPACE;

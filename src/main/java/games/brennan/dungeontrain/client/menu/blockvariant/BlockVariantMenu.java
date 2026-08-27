@@ -109,7 +109,7 @@ public final class BlockVariantMenu {
      * read live. The two modes tear down differently — a Screen to pop versus an event
      * subscriber to stop drawing — so the menu must close in the mode it opened in.
      */
-    private static EditorMenuSpace space = EditorMenuSpace.DEFAULT;
+    private static EditorMenuSpace space = ClientDisplayConfig.DEFAULT_BLOCK_VARIANT_MENU_SPACE;
 
     /** -1 = closed; otherwise the row whose OPTIONS popup is open. */
     private static int rotPopupRowIndex = -1;

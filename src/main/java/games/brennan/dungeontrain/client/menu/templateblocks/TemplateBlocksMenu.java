@@ -63,7 +63,7 @@ public final class TemplateBlocksMenu {
      * read live. The two modes tear down differently — a Screen to pop versus an event
      * subscriber to stop drawing — so the menu must close in the mode it opened in.
      */
-    private static EditorMenuSpace space = EditorMenuSpace.DEFAULT;
+    private static EditorMenuSpace space = ClientDisplayConfig.DEFAULT_TEMPLATE_BLOCKS_MENU_SPACE;
 
     /** Cache of resolved icon stacks keyed by block id — rebuilt on every fresh sync. */
     private static final Map<String, ItemStack> ICON_CACHE = new HashMap<>();
