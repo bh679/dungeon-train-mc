@@ -1,0 +1,89 @@
+name: Notify Discord
+
+# The recovery path for an announcement that never went out.
+#
+# release.yml sends its own Discord notification and normally that is the end of it. But the
+# notification is the LAST thing a release does, so it is the thing most exposed to a late failure —
+# and a release that published to every platform and then tripped on bookkeeping is still a release
+# players should hear about. Re-running release.yml is not the answer: GitHub re-runs whole jobs, so
+# it would try to re-create the tag and re-upload to Modrinth and CurseForge.
+#
+# This sends the announcement for a tag that is already released, and nothing else. It creates no
+# tag, uploads nothing, and touches no ledger.
+#
+# Dispatch-only and deliberately manual: an operator has looked at a release and decided it was not
+# announced. Nothing schedules this, and the auto-release cascade must never reach it — the cascade's
+# ~22 micro-releases are meant to stay quiet.
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag of an EXISTING release to announce (e.g. v0.670.0). Must already have a GitHub Release; this workflow never creates one."
+        required: true
+        type: string
+      modrinth_version:
+        description: "Modrinth version id, if that upload succeeded. Left empty the message marks Modrinth with a warning instead of a tick."
+        required: false
+        type: string
+        default: ""
+      curseforge_version:
+        description: "CurseForge file id, if that upload succeeded. Left empty the message marks CurseForge with a warning instead of a tick."
+        required: false
+        type: string
+        default: ""
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      # Refuse a tag with no release behind it. The message links to the release page and quotes its
+      # notes, so announcing a tag that has none would post a broken link to the whole community.
+      # This also catches the obvious typo before it is public rather than after.
+      - name: Verify the release exists
+        id: verify
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.tag }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          if ! gh release view "$RELEASE_TAG" --repo "$REPO" --json isDraft --jq .isDraft > /tmp/draft; then
+            echo "::error::No GitHub Release found for $RELEASE_TAG. This workflow announces an existing release; it does not create one."
+            exit 1
+          fi
+          if [ "$(cat /tmp/draft)" = "true" ]; then
+            echo "::error::$RELEASE_TAG is still a draft. Publish it before announcing it."
+            exit 1
+          fi
+          PRERELEASE=$(gh release view "$RELEASE_TAG" --repo "$REPO" --json isPrerelease --jq .isPrerelease)
+          echo "prerelease=$PRERELEASE" >> "$GITHUB_OUTPUT"
+
+      - name: Check Discord webhook prerequisites
+        id: discord_check
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          if [ -n "$DISCORD_WEBHOOK_URL" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::error::DISCORD_WEBHOOK_URL secret not set — nothing to send to."
+            exit 1
+          fi
+
+      # The same script release.yml runs, with the same inputs, so a recovered announcement is
+      # indistinguishable from one sent on time.
+      - name: Notify Discord
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          RELEASE_TAG: ${{ inputs.tag }}
+          REPO: ${{ github.repository }}
+          PRERELEASE: ${{ steps.verify.outputs.prerelease }}
+          MODRINTH_VERSION: ${{ inputs.modrinth_version }}
+          CURSEFORGE_VERSION: ${{ inputs.curseforge_version }}
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/notify-discord.sh
