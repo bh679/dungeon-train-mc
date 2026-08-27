@@ -221,6 +221,7 @@ public final class DungeonTrainNet {
         // Political Filter (community content): client → server login sync (+ on change) of the
         // player's preference, so per-player book selection can withhold politically-tagged content.
         registrar.playToServer(PoliticalFilterSyncPacket.TYPE, PoliticalFilterSyncPacket.STREAM_CODEC, PoliticalFilterSyncPacket::handle);
+        registrar.playToServer(BookAuthorChatSyncPacket.TYPE, BookAuthorChatSyncPacket.STREAM_CODEC, BookAuthorChatSyncPacket::handle);
 
         // Community shared-book read history: client → server login sync (+ per-read top-ups) of the
         // player's GLOBAL client-side read set, the fallback source for the loot selector's unread-first
