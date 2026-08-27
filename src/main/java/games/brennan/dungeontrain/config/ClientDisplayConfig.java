@@ -87,6 +87,7 @@ public final class ClientDisplayConfig {
     public static final ModConfigSpec.BooleanValue SKYBOX_PUNCH_ENABLED;
     public static final ModConfigSpec.BooleanValue PORTAL_CROSSING_FADE;
     public static final ModConfigSpec.BooleanValue SCRIBBLE_COLOR_PICKER_VISIBLE;
+    public static final ModConfigSpec.BooleanValue CINEMATIC_HOTKEY_ENABLED;
     /**
      * Relay pool ids of community (player-written) books this player has read, stored as decimal strings.
      * GLOBAL client-side read history — persists across worlds and servers (unlike the retired per-world
@@ -181,6 +182,7 @@ public final class ClientDisplayConfig {
         SKYBOX_PUNCH_ENABLED = pair.getLeft().skyboxPunchEnabled;
         PORTAL_CROSSING_FADE = pair.getLeft().portalCrossingFade;
         SCRIBBLE_COLOR_PICKER_VISIBLE = pair.getLeft().scribbleColorPickerVisible;
+        CINEMATIC_HOTKEY_ENABLED = pair.getLeft().cinematicHotkeyEnabled;
         SHARED_BOOKS_READ = pair.getLeft().sharedBooksRead;
         DEATH_SCREEN_LAST_NPS = pair.getLeft().deathScreenLastNps;
         POLITICAL_FILTER = pair.getLeft().politicalFilter;
@@ -311,6 +313,12 @@ public final class ClientDisplayConfig {
                 .define("colorPickerVisible", false);
         b.pop();
 
+        b.push("cinematic");
+        ModConfigSpec.BooleanValue cinematicHotkeyEnabled = b
+                .comment("Let the cinematographer hotkey (C by default, rebindable under Controls > Dungeon Train) replay the intro cinematic while you are in spectator mode. Turn this off to reclaim the key for something else without unbinding it. Only the hotkey is affected - /dungeontrain cinematic still works either way.")
+                .define("hotkeyEnabled", true);
+        b.pop();
+
         b.push("world");
         ModConfigSpec.BooleanValue deleteWorldOnReboard = b
                 .comment("Delete the old world's save folder when reboarding (creating a fresh world) from the death screen. Dungeon Train is designed around a new world per run, so this defaults on to keep the world list and disk clean. Only auto-generated \"<prefix> <timestamp>\" saves (Dungeon Train / Dev World / World) are ever deleted — renamed or hand-made worlds and editor worlds are always kept. Toggleable in-game via the trash icon next to the reboard button.")
@@ -425,7 +433,7 @@ public final class ClientDisplayConfig {
                 rideSnapshotMinFps, rideSnapshotMinTps,
                 rideSnapshotDiskOffload, rideSnapshotFlushMinFps, rideSnapshotFlushMinTps, rideSnapshotMaxOnDisk,
                 rideSnapshotMaxResolution,
-                framerateThrottleEnabled, framerateThrottleFps, trainEngineVolume, skyboxPunchEnabled, portalCrossingFade, scribbleColorPickerVisible, deleteWorldOnReboard,
+                framerateThrottleEnabled, framerateThrottleFps, trainEngineVolume, skyboxPunchEnabled, portalCrossingFade, scribbleColorPickerVisible, cinematicHotkeyEnabled, deleteWorldOnReboard,
                 builderTilesPerRow,
                 sharedBooksRead,
                 deathScreenLastNps, politicalFilter, contentMode, customContentPreference,
@@ -913,6 +921,23 @@ public final class ClientDisplayConfig {
     }
 
     /**
+     * Does the cinematographer hotkey replay the cinematic? Defaults to {@code true}, and to
+     * {@code true} pre-load as well — the key doing nothing until the config lands would read as
+     * a dead binding rather than as a setting.
+     */
+    public static boolean isCinematicHotkeyEnabled() {
+        return !isLoaded() || CINEMATIC_HOTKEY_ENABLED.get();
+    }
+
+    /** Persist the cinematic-hotkey toggle. Idempotent: skips the TOML write when unchanged. */
+    public static void setCinematicHotkeyEnabled(boolean value) {
+        if (!isLoaded()) return;
+        if (CINEMATIC_HOTKEY_ENABLED.get() == value) return;
+        CINEMATIC_HOTKEY_ENABLED.set(value);
+        CINEMATIC_HOTKEY_ENABLED.save();
+    }
+
+    /**
      * Delete the old world's save when reboarding? Defaults to {@code true} (also pre-load) —
      * Dungeon Train is a new-world-per-run game, so abandoned run saves are cleaned up unless
      * the player opts out via the death screen's trash toggle. The delete path itself carries
@@ -1100,6 +1125,7 @@ public final class ClientDisplayConfig {
             ModConfigSpec.BooleanValue skyboxPunchEnabled,
             ModConfigSpec.BooleanValue portalCrossingFade,
             ModConfigSpec.BooleanValue scribbleColorPickerVisible,
+            ModConfigSpec.BooleanValue cinematicHotkeyEnabled,
             ModConfigSpec.BooleanValue deleteWorldOnReboard,
             ModConfigSpec.IntValue builderTilesPerRow,
             ModConfigSpec.ConfigValue<List<? extends String>> sharedBooksRead,
