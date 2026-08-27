@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.config;
 
+import games.brennan.dungeontrain.client.BookAuthorChatSyncClient;
 import games.brennan.dungeontrain.client.FramerateThrottle;
 import net.neoforged.neoforge.common.ModConfigSpec;
 import org.apache.commons.lang3.tuple.Pair;
@@ -116,6 +117,7 @@ public final class ClientDisplayConfig {
     public static final ModConfigSpec.BooleanValue SKYBOX_PUNCH_ENABLED;
     public static final ModConfigSpec.BooleanValue PORTAL_CROSSING_FADE;
     public static final ModConfigSpec.BooleanValue SCRIBBLE_COLOR_PICKER_VISIBLE;
+    public static final ModConfigSpec.BooleanValue CINEMATIC_HOTKEY_ENABLED;
     /**
      * Relay pool ids of community (player-written) books this player has read, stored as decimal strings.
      * GLOBAL client-side read history — persists across worlds and servers (unlike the retired per-world
@@ -145,6 +147,7 @@ public final class ClientDisplayConfig {
      * tool is either running or it isn't, and someone who knows why it's running has heard enough.
      */
     public static final ModConfigSpec.BooleanValue DPI_BYPASS_WARNING_OPTED_OUT;
+    public static final ModConfigSpec.BooleanValue BOOK_AUTHOR_BURN_CHAT;
 
     /**
      * Remembered answer to the custom-Train-Editor-content prompt — see
@@ -210,6 +213,7 @@ public final class ClientDisplayConfig {
         SKYBOX_PUNCH_ENABLED = pair.getLeft().skyboxPunchEnabled;
         PORTAL_CROSSING_FADE = pair.getLeft().portalCrossingFade;
         SCRIBBLE_COLOR_PICKER_VISIBLE = pair.getLeft().scribbleColorPickerVisible;
+        CINEMATIC_HOTKEY_ENABLED = pair.getLeft().cinematicHotkeyEnabled;
         SHARED_BOOKS_READ = pair.getLeft().sharedBooksRead;
         DEATH_SCREEN_LAST_NPS = pair.getLeft().deathScreenLastNps;
         POLITICAL_FILTER = pair.getLeft().politicalFilter;
@@ -218,6 +222,7 @@ public final class ClientDisplayConfig {
         CUSTOM_CONTENT_LAST_ANSWER = pair.getLeft().customContentLastAnswer;
         CONFIG_DEVIATION_ACKNOWLEDGED = pair.getLeft().configDeviationAcknowledged;
         DPI_BYPASS_WARNING_OPTED_OUT = pair.getLeft().dpiBypassWarningOptedOut;
+        BOOK_AUTHOR_BURN_CHAT = pair.getLeft().bookAuthorBurnChat;
     }
 
     private ClientDisplayConfig() {}
@@ -339,6 +344,12 @@ public final class ClientDisplayConfig {
                 .define("colorPickerVisible", false);
         b.pop();
 
+        b.push("cinematic");
+        ModConfigSpec.BooleanValue cinematicHotkeyEnabled = b
+                .comment("Let the cinematographer hotkey (C by default, rebindable under Controls > Dungeon Train) replay the intro cinematic while you are in spectator mode. Turn this off to reclaim the key for something else without unbinding it. Only the hotkey is affected - /dungeontrain cinematic still works either way.")
+                .define("hotkeyEnabled", true);
+        b.pop();
+
         b.push("world");
         ModConfigSpec.BooleanValue deleteWorldOnReboard = b
                 .comment("Delete the old world's save folder when reboarding (creating a fresh world) from the death screen. Dungeon Train is designed around a new world per run, so this defaults on to keep the world list and disk clean. Only auto-generated \"<prefix> <timestamp>\" saves (Dungeon Train / Dev World / World) are ever deleted — renamed or hand-made worlds and editor worlds are always kept. Toggleable in-game via the trash icon next to the reboard button.")
@@ -445,19 +456,28 @@ public final class ClientDisplayConfig {
                 .define("dpiBypassWarningOptedOut", false);
         b.pop();
 
+        b.push("books");
+        ModConfigSpec.BooleanValue bookAuthorBurnChat = b
+                .comment("Print a chat line crediting the author each time a Dungeon Train book burns",
+                         "(\"The book by X burns\") — the books you read, throw away or drop on death all",
+                         "catch fire, and this is the only place their writer is named after the fact.",
+                         "Toggle in-game via Options > Dungeon Train, or the X menu -> Options. Off by default.")
+                .define("authorBurnChat", false);
+        b.pop();
+
         return new Holder(allScale, worldspaceChannel, hudChannel, developerPopupShownBefore, developerPopupOptedOut, freePlayConfirmOptedOut,
                 devConsentGranted, devConsentGrantSession, devConsentLastMsgToDev, openedAdvancementsBefore,
                 rideSnapshotsEnabled, rideSnapshotIntervalSeconds, rideSnapshotMaxStored, rideSnapshotChatLog,
                 rideSnapshotMinFps, rideSnapshotMinTps,
                 rideSnapshotDiskOffload, rideSnapshotFlushMinFps, rideSnapshotFlushMinTps, rideSnapshotMaxOnDisk,
                 rideSnapshotMaxResolution,
-                framerateThrottleEnabled, framerateThrottleFps, trainEngineVolume, skyboxPunchEnabled, portalCrossingFade, scribbleColorPickerVisible, deleteWorldOnReboard,
+                framerateThrottleEnabled, framerateThrottleFps, trainEngineVolume, skyboxPunchEnabled, portalCrossingFade, scribbleColorPickerVisible, cinematicHotkeyEnabled, deleteWorldOnReboard,
                 builderTilesPerRow,
                 menuRenderDistance,
                 sharedBooksRead,
                 deathScreenLastNps, politicalFilter, contentMode, customContentPreference,
                 customContentLastAnswer,
-                configDeviationAcknowledged, dpiBypassWarningOptedOut);
+                configDeviationAcknowledged, dpiBypassWarningOptedOut, bookAuthorBurnChat);
     }
 
     /**
@@ -745,6 +765,25 @@ public final class ClientDisplayConfig {
         RIDE_SNAPSHOT_CHAT_LOG.save();
     }
 
+    /**
+     * Print "The book by X burns" in chat each time a Dungeon Train book catches fire? Off by
+     * default. Toggled from Options &gt; Dungeon Train and the X menu &rarr; Options.
+     *
+     * <p>The burn itself is decided server-side, so the setter also pushes the new value over
+     * {@link games.brennan.dungeontrain.net.BookAuthorChatSyncPacket} — see
+     * {@link games.brennan.dungeontrain.client.BookAuthorChatSyncClient}.</p>
+     */
+    public static boolean isBookAuthorBurnChatEnabled() {
+        return isLoaded() && BOOK_AUTHOR_BURN_CHAT.get();
+    }
+
+    public static void setBookAuthorBurnChat(boolean value) {
+        if (!isLoaded()) return;
+        BOOK_AUTHOR_BURN_CHAT.set(value);
+        BOOK_AUTHOR_BURN_CHAT.save();
+        BookAuthorChatSyncClient.syncNow();
+    }
+
     /** Minimum client FPS required to take a ride photo; {@code 0} disables the FPS gate. */
     public static int getRideSnapshotMinFps() {
         return isLoaded() ? RIDE_SNAPSHOT_MIN_FPS.get() : 30;
@@ -918,6 +957,23 @@ public final class ClientDisplayConfig {
         if (SCRIBBLE_COLOR_PICKER_VISIBLE.get() == value) return;
         SCRIBBLE_COLOR_PICKER_VISIBLE.set(value);
         SCRIBBLE_COLOR_PICKER_VISIBLE.save();
+    }
+
+    /**
+     * Does the cinematographer hotkey replay the cinematic? Defaults to {@code true}, and to
+     * {@code true} pre-load as well — the key doing nothing until the config lands would read as
+     * a dead binding rather than as a setting.
+     */
+    public static boolean isCinematicHotkeyEnabled() {
+        return !isLoaded() || CINEMATIC_HOTKEY_ENABLED.get();
+    }
+
+    /** Persist the cinematic-hotkey toggle. Idempotent: skips the TOML write when unchanged. */
+    public static void setCinematicHotkeyEnabled(boolean value) {
+        if (!isLoaded()) return;
+        if (CINEMATIC_HOTKEY_ENABLED.get() == value) return;
+        CINEMATIC_HOTKEY_ENABLED.set(value);
+        CINEMATIC_HOTKEY_ENABLED.save();
     }
 
     /**
@@ -1156,6 +1212,7 @@ public final class ClientDisplayConfig {
             ModConfigSpec.BooleanValue skyboxPunchEnabled,
             ModConfigSpec.BooleanValue portalCrossingFade,
             ModConfigSpec.BooleanValue scribbleColorPickerVisible,
+            ModConfigSpec.BooleanValue cinematicHotkeyEnabled,
             ModConfigSpec.BooleanValue deleteWorldOnReboard,
             ModConfigSpec.IntValue builderTilesPerRow,
             ModConfigSpec.IntValue menuRenderDistance,
@@ -1166,6 +1223,7 @@ public final class ClientDisplayConfig {
             ModConfigSpec.EnumValue<CustomContentPreference> customContentPreference,
             ModConfigSpec.EnumValue<CustomContentPreference> customContentLastAnswer,
             ModConfigSpec.ConfigValue<String> configDeviationAcknowledged,
-            ModConfigSpec.BooleanValue dpiBypassWarningOptedOut
+            ModConfigSpec.BooleanValue dpiBypassWarningOptedOut,
+            ModConfigSpec.BooleanValue bookAuthorBurnChat
     ) {}
 }

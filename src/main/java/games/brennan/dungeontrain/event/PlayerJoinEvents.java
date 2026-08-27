@@ -266,6 +266,7 @@ public final class PlayerJoinEvents {
             NetworkConsentMirror.forget(player.getUUID());
             PoliticalFilterMirror.forget(player.getUUID());
             ContentModeMirror.forget(player.getUUID());
+            BookAuthorChatMirror.forget(player.getUUID());
             SharedBookReadMirror.forget(player.getUUID());
             // Which library they were last told about. Dropped so somebody who logs out inside a
             // locked room is greeted again when they come back — the line is the only thing that
