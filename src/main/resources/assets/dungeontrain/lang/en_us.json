@@ -1649,6 +1649,8 @@
   "commands.dungeontrain.customcontent.already_on": "Custom train content was already on for this world.",
   "commands.dungeontrain.customcontent.already_off": "Custom train content was already off for this world.",
   "dungeontrain.leaderboard.advancements.header": "Who has earned the most advancements?",
+  "dungeontrain.leaderboard.builder_time.header": "Who has spent the longest building?",
+  "dungeontrain.leaderboard.builds_approved.header": "Whose builds have made it onto the most trains?",
   "dungeontrain.leaderboard.books_read.header": "Who has read the most books?",
   "dungeontrain.leaderboard.books_written.header": "Who has written the most books?",
   "dungeontrain.leaderboard.carriages.header": "Who has reached the furthest carriage?",
