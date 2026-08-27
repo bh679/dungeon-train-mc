@@ -188,7 +188,7 @@ public final class EditorPlotPanelInputHandler {
      * routing the type-menu's name click uses.
      */
     private static void dispatchTeleport(EditorPlotLabelsPacket.Entry entry) {
-        String cmd = EditorPlotTeleport.commandFor(entry.category(), entry.modelId(), entry.modelName());
+        String cmd = EditorPlotTeleport.commandFor(entry.plotCategory(), entry.modelId(), entry.modelName());
         if (cmd == null) return;
         LOGGER.debug("[DungeonTrain] EditorPlotPanel teleport: {}", cmd);
         CommandRunner.run(cmd);
@@ -208,21 +208,21 @@ public final class EditorPlotPanelInputHandler {
      */
     private static void openAxisEntry(EditorPlotLabelsPacket.Entry entry, String axis,
                                       String label, int current) {
-        if (!"PORTALS".equals(entry.category())) return;
+        if (entry.plotCategory() == null || !entry.plotCategory().hasRoomBox()) return;
         CommandMenuState.openAt(
             new games.brennan.dungeontrain.client.menu.PortalRoomAxisScreen(axis, label, current));
     }
 
     /** Step the portal room the player is standing in to its next mode. */
     private static void dispatchModeCycle(EditorPlotLabelsPacket.Entry entry) {
-        String cmd = EditorPlotTeleport.modeCycleCommandFor(entry.category());
+        String cmd = EditorPlotTeleport.modeCycleCommandFor(entry.plotCategory());
         if (cmd == null) return;
         CommandRunner.run(cmd);
     }
 
     /** Step the portal room the player is standing in to its next copies sub-mode. */
     private static void dispatchCopiesCycle(EditorPlotLabelsPacket.Entry entry) {
-        String cmd = EditorPlotTeleport.copiesCycleCommandFor(entry.category());
+        String cmd = EditorPlotTeleport.copiesCycleCommandFor(entry.plotCategory());
         if (cmd == null) return;
         CommandRunner.run(cmd);
     }
@@ -232,7 +232,7 @@ public final class EditorPlotPanelInputHandler {
         EditorPlotLabelsPacket.Entry entry,
         games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane plane
     ) {
-        String cmd = EditorPlotTeleport.copiesBlockHeldCommandFor(entry.category(), plane);
+        String cmd = EditorPlotTeleport.copiesBlockHeldCommandFor(entry.plotCategory(), plane);
         if (cmd == null) return;
         CommandRunner.run(cmd);
     }
@@ -242,21 +242,21 @@ public final class EditorPlotPanelInputHandler {
         EditorPlotLabelsPacket.Entry entry,
         games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane plane
     ) {
-        String cmd = EditorPlotTeleport.copiesBlockEditCommandFor(entry.category(), plane);
+        String cmd = EditorPlotTeleport.copiesBlockEditCommandFor(entry.plotCategory(), plane);
         if (cmd == null) return;
         CommandRunner.run(cmd);
     }
 
     /** Step the portal room the player is standing in to the next Contents value. */
     private static void dispatchRoomContentsCycle(EditorPlotLabelsPacket.Entry entry) {
-        String cmd = EditorPlotTeleport.roomContentsCycleCommandFor(entry.category());
+        String cmd = EditorPlotTeleport.roomContentsCycleCommandFor(entry.plotCategory());
         if (cmd == null) return;
         CommandRunner.run(cmd);
     }
 
     /** Step the portal room the player is standing in to the next Books value. */
     private static void dispatchRoomBooksCycle(EditorPlotLabelsPacket.Entry entry) {
-        String cmd = EditorPlotTeleport.roomBooksCycleCommandFor(entry.category());
+        String cmd = EditorPlotTeleport.roomBooksCycleCommandFor(entry.plotCategory());
         if (cmd == null) return;
         CommandRunner.run(cmd);
     }
@@ -264,13 +264,13 @@ public final class EditorPlotPanelInputHandler {
     /** Step the portal room the player is standing in to the next Sky value. */
     /** Step the room's Door Wall setting: Sealed → Repeated → Sealed. */
     private static void dispatchDoorWallCycle(EditorPlotLabelsPacket.Entry entry) {
-        String cmd = EditorPlotTeleport.doorWallCycleCommandFor(entry.category());
+        String cmd = EditorPlotTeleport.doorWallCycleCommandFor(entry.plotCategory());
         if (cmd == null) return;
         CommandRunner.run(cmd);
     }
 
     private static void dispatchRoomSkyCycle(EditorPlotLabelsPacket.Entry entry) {
-        String cmd = EditorPlotTeleport.roomSkyCycleCommandFor(entry.category());
+        String cmd = EditorPlotTeleport.roomSkyCycleCommandFor(entry.plotCategory());
         if (cmd == null) return;
         CommandRunner.run(cmd);
     }
@@ -282,21 +282,21 @@ public final class EditorPlotPanelInputHandler {
      * keyboard menu — the same route the number between a stepper's arrows already takes.</p>
      */
     private static void openBookMix(EditorPlotLabelsPacket.Entry entry) {
-        if (!"PORTALS".equals(entry.category())) return;
+        if (entry.plotCategory() == null || !entry.plotCategory().hasRoomBox()) return;
         CommandMenuState.openAt(
             new games.brennan.dungeontrain.client.menu.PortalRoomBooksScreen(entry.roomMode()));
     }
 
     /** Step the portal room the player is standing in to the next Exits value. */
     private static void dispatchExitsCycle(EditorPlotLabelsPacket.Entry entry) {
-        String cmd = EditorPlotTeleport.exitsCycleCommandFor(entry.category());
+        String cmd = EditorPlotTeleport.exitsCycleCommandFor(entry.plotCategory());
         if (cmd == null) return;
         CommandRunner.run(cmd);
     }
 
     /** Nudge how far apart the room's extra corridors go. */
     private static void dispatchExitEvery(EditorPlotLabelsPacket.Entry entry, String dir) {
-        String cmd = EditorPlotTeleport.exitEveryCommandFor(entry.category(), dir);
+        String cmd = EditorPlotTeleport.exitEveryCommandFor(entry.plotCategory(), dir);
         if (cmd == null) return;
         CommandRunner.run(cmd);
     }
@@ -309,7 +309,7 @@ public final class EditorPlotPanelInputHandler {
      * from the one next to it.</p>
      */
     private static void openExitEveryEntry(EditorPlotLabelsPacket.Entry entry) {
-        if (!"PORTALS".equals(entry.category())) return;
+        if (entry.plotCategory() == null || !entry.plotCategory().hasRoomBox()) return;
         int current = games.brennan.dungeontrain.portal.PortalRoomSettings.parse(entry.roomMode())
             .exits().every();
         CommandMenuState.openAt(new games.brennan.dungeontrain.client.menu.PortalRoomAxisScreen(
@@ -318,14 +318,14 @@ public final class EditorPlotPanelInputHandler {
 
     /** Nudge how often the room walls off the base pair's exit. */
     private static void dispatchExitMove(EditorPlotLabelsPacket.Entry entry, String dir) {
-        String cmd = EditorPlotTeleport.exitMoveCommandFor(entry.category(), dir);
+        String cmd = EditorPlotTeleport.exitMoveCommandFor(entry.plotCategory(), dir);
         if (cmd == null) return;
         CommandRunner.run(cmd);
     }
 
     /** Open the typing field for the moved-exit chance, prefilled from the room's own tag. */
     private static void openExitMoveEntry(EditorPlotLabelsPacket.Entry entry) {
-        if (!"PORTALS".equals(entry.category())) return;
+        if (entry.plotCategory() == null || !entry.plotCategory().hasRoomBox()) return;
         int current = games.brennan.dungeontrain.portal.PortalRoomSettings.parse(entry.roomMode())
             .exits().moveChance();
         CommandMenuState.openAt(new games.brennan.dungeontrain.client.menu.PortalRoomAxisScreen(
@@ -334,13 +334,13 @@ public final class EditorPlotPanelInputHandler {
 
     /** Step one axis of the portal room the player is standing in. */
     private static void dispatchDimension(EditorPlotLabelsPacket.Entry entry, String axis, String dir) {
-        String cmd = EditorPlotTeleport.dimensionCommandFor(entry.category(), axis, dir);
+        String cmd = EditorPlotTeleport.dimensionCommandFor(entry.plotCategory(), axis, dir);
         if (cmd == null) return;
         CommandRunner.run(cmd);
     }
 
     private static void dispatchWeight(EditorPlotLabelsPacket.Entry entry, String dir) {
-        String cmd = EditorPlotTeleport.weightCommandFor(entry.category(), entry.modelId(), entry.modelName(), dir);
+        String cmd = EditorPlotTeleport.weightCommandFor(entry.plotCategory(), entry.modelId(), entry.modelName(), dir);
         if (cmd == null) return;
         LOGGER.debug("[DungeonTrain] EditorPlotPanel weight: {}", cmd);
         CommandRunner.run(cmd);
@@ -377,10 +377,10 @@ public final class EditorPlotPanelInputHandler {
      * for every room, so using it would point every room's toggles at one shared sidecar.</p>
      */
     private static CarriageContentsAllowScreen contentsScreenFor(EditorPlotLabelsPacket.Entry entry) {
-        if ("CARRIAGES".equals(entry.category())) {
+        if (entry.plotCategory() == PlotCategory.CARRIAGES) {
             return CarriageContentsAllowScreen.forCarriage(entry.modelId());
         }
-        if ("PORTALS".equals(entry.category())) {
+        if (entry.plotCategory() == PlotCategory.PORTALS) {
             return CarriageContentsAllowScreen.forPortalRoom(entry.modelName());
         }
         return null;

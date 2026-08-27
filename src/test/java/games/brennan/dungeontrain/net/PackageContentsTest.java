@@ -48,9 +48,14 @@ final class PackageContentsTest {
         // ignored by the others, so any failure here is the category failing to route, not the model.
         for (PackageContents.Section s : PackageContents.SECTIONS) {
             if (s.category() == null) continue;
+            games.brennan.dungeontrain.editor.PlotCategory parsed =
+                games.brennan.dungeontrain.editor.PlotCategory.fromId(s.category()).orElse(null);
+            assertNotNull(parsed,
+                "section '" + s.label() + "' carries category '" + s.category()
+                    + "' which is not a PlotCategory");
             assertNotNull(
                 games.brennan.dungeontrain.client.menu.plot.EditorPlotTeleport
-                    .commandFor(s.category(), "track", "someName"),
+                    .commandFor(parsed, "track", "someName"),
                 "section '" + s.label() + "' carries category '" + s.category()
                     + "' which commandFor does not route");
         }

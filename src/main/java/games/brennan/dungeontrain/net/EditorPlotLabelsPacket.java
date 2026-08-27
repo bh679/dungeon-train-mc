@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.net;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.editor.PlotCategory;
 import games.brennan.dungeontrain.client.menu.EditorPlotLabelsRenderer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
@@ -87,6 +88,18 @@ public record EditorPlotLabelsPacket(List<Entry> entries) implements CustomPacke
             // "nothing authored yet" case the rows draw their hint for.
             if (copiesFloorBlock == null) copiesFloorBlock = "";
             if (copiesRoofBlock == null) copiesRoofBlock = "";
+        }
+
+        /**
+         * {@link #category()} resolved to the type the client routes on, or {@code null} when the
+         * row carries no category — {@code ""} for a row that has none, and anything the wire
+         * offers that is not a category.
+         *
+         * <p>Derived rather than stored: the field stays a {@code String} because it is the wire
+         * format, but nothing downstream of here should be comparing category strings.</p>
+         */
+        public PlotCategory plotCategory() {
+            return PlotCategory.fromId(category).orElse(null);
         }
 
         /** The shape before the Copies palette existed — no blocks to draw icons for. */

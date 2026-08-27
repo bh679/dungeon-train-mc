@@ -180,7 +180,7 @@ public final class EditorPlotLabelsRenderer {
      */
     public static boolean hasModeRow(EditorPlotLabelsPacket.Entry entry) {
         return entry.inPlot()
-            && "PORTALS".equals(entry.category())
+            && entry.plotCategory() == PlotCategory.PORTALS
             && !EditorPlotLabelsPacket.NO_MODE.equals(entry.roomMode());
     }
 
@@ -191,7 +191,7 @@ public final class EditorPlotLabelsRenderer {
      */
     public static boolean hasDimensionRows(EditorPlotLabelsPacket.Entry entry) {
         return entry.inPlot()
-            && "PORTALS".equals(entry.category())
+            && entry.plotCategory() == PlotCategory.PORTALS
             && entry.roomLength() != EditorPlotLabelsPacket.NO_SIZE;
     }
 
@@ -718,7 +718,7 @@ public final class EditorPlotLabelsRenderer {
      */
     public static boolean hasContentsButton(EditorPlotLabelsPacket.Entry entry) {
         if (!entry.inPlot()) return false;
-        if ("CARRIAGES".equals(entry.category())) return true;
+        if (entry.plotCategory() == PlotCategory.CARRIAGES) return true;
         return hasRoomContentsRow(entry)
             && games.brennan.dungeontrain.portal.PortalRoomSettings.parse(entry.roomMode())
                 .contents().furnishes();
