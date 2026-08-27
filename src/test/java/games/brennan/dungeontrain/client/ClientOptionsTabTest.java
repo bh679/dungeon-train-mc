@@ -16,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * Pins the tab split {@link ClientOptionsTab} hands to {@link DungeonTrainClientOptionsScreen}.
  *
- * <p>Two of the twelve rows are conditional — Political Filter on Chinese clients, Help Translate…
+ * <p>Two of the sixteen rows are conditional — Political Filter on Chinese clients, Help Translate…
  * when a translation target resolves — and the screen packs rows two-across, so either one appearing
  * re-pairs the rows after it in its tab. These tests cover all four combinations, because the failure
  * mode is silent: a row quietly dropped from the model renders as a perfectly normal-looking tab that
@@ -71,11 +71,11 @@ final class ClientOptionsTabTest {
     // ---- The conditional rows ----
 
     @Test
-    @DisplayName("Plain client: ten rows, neither conditional row present")
+    @DisplayName("Plain client: fourteen rows, neither conditional row present")
     void plainClient() {
         List<ClientOptionsTab.Row> rows = allRows(false, false);
 
-        assertEquals(10, rows.size());
+        assertEquals(14, rows.size());
         assertFalse(rows.contains(ClientOptionsTab.Row.POLITICAL_FILTER));
         assertFalse(rows.contains(ClientOptionsTab.Row.TRANSLATE));
     }
@@ -109,7 +109,7 @@ final class ClientOptionsTabTest {
     void bothConditions_surfaceEveryRow() {
         List<ClientOptionsTab.Row> rows = allRows(true, true);
 
-        assertEquals(12, rows.size());
+        assertEquals(16, rows.size());
         assertEquals(EnumSet.allOf(ClientOptionsTab.Row.class), EnumSet.copyOf(rows),
                 "every Row constant must appear in some tab when both conditions hold");
     }
@@ -126,7 +126,11 @@ final class ClientOptionsTabTest {
                 ClientOptionsTab.Row.SNAPSHOT_MAX_RES);
         List<ClientOptionsTab.Row> editor = List.of(ClientOptionsTab.Row.SCALE_ALL,
                 ClientOptionsTab.Row.SCALE_WORLDSPACE,
-                ClientOptionsTab.Row.SCALE_HUD);
+                ClientOptionsTab.Row.SCALE_HUD,
+                ClientOptionsTab.Row.MENU_SPACE_COMMAND,
+                ClientOptionsTab.Row.MENU_SPACE_TEMPLATE_BLOCKS,
+                ClientOptionsTab.Row.MENU_SPACE_CONTAINER_CONTENTS,
+                ClientOptionsTab.Row.MENU_SPACE_BLOCK_VARIANT);
 
         for (boolean chinese : BOOLS) {
             for (boolean translate : BOOLS) {

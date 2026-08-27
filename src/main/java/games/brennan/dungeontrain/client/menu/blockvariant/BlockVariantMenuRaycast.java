@@ -26,7 +26,7 @@ public final class BlockVariantMenuRaycast {
     private BlockVariantMenuRaycast() {}
 
     public static void updateHovered() {
-        if (!BlockVariantMenu.isActive() || BlockVariantMenu.localPos() == null) {
+        if (!BlockVariantMenu.isActiveWorldspace() || BlockVariantMenu.localPos() == null) {
             BlockVariantMenu.setHovered(BlockVariantMenu.Hit.NONE);
             return;
         }
@@ -79,7 +79,13 @@ public final class BlockVariantMenuRaycast {
         }
     }
 
-    private static BlockVariantMenu.Hit rootHit(double hitX, double hitY) {
+    /**
+     * Which cell sits at these panel-local coordinates on the root panel. Pure — the raycast
+     * above only produces the pair, and the screen-space host produces the same pair from the
+     * mouse cursor, so both modes resolve hover and clicks through this one function. The
+     * rotation-options popup is picked from inside here, so it needs no separate seam.
+     */
+    static BlockVariantMenu.Hit rootHit(double hitX, double hitY) {
         List<BlockVariantSyncPacket.Entry> entries = BlockVariantMenu.entries();
         int n = entries.size();
         int colCount = Math.max(1, (n + BlockVariantMenu.ROWS_PER_COLUMN - 1) / BlockVariantMenu.ROWS_PER_COLUMN);
@@ -254,7 +260,8 @@ public final class BlockVariantMenuRaycast {
         return new BlockVariantMenu.Hit(BlockVariantMenu.CellKind.ROT_DIR_OPTION, rowIndex, -1);
     }
 
-    private static BlockVariantMenu.Hit searchHit(double hitX, double hitY) {
+    /** {@link #rootHit} for the Add-search panel. */
+    static BlockVariantMenu.Hit searchHit(double hitX, double hitY) {
         List<String> filtered = BlockVariantMenu.filteredBlockIds();
         int maxRows = BlockVariantMenu.ROWS_PER_COLUMN * 4;
         int n = Math.min(filtered.size(), maxRows);

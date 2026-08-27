@@ -17,7 +17,7 @@ import java.util.List;
  *   <li>{@link #TRAIN} — the ride itself: engine volume, whether custom train content loads, and
  *       the ride-photo settings.</li>
  *   <li>{@link #EDITOR} — the three display-scale channels the in-world editor menus and HUD
- *       render at.</li>
+ *       render at, plus where each of the four editor menus (X/V/C/Z) draws itself.</li>
  * </ul>
  *
  * <p>Kept free of Minecraft types on purpose. Two rows are conditional — {@link Row#POLITICAL_FILTER}
@@ -82,7 +82,11 @@ public enum ClientOptionsTab {
         // --- Editor ---
         SCALE_ALL,
         SCALE_WORLDSPACE,
-        SCALE_HUD
+        SCALE_HUD,
+        MENU_SPACE_COMMAND,
+        MENU_SPACE_TEMPLATE_BLOCKS,
+        MENU_SPACE_CONTAINER_CONTENTS,
+        MENU_SPACE_BLOCK_VARIANT
     }
 
     /**
@@ -118,6 +122,10 @@ public enum ClientOptionsTab {
                 rows.add(Row.SCALE_ALL);
                 rows.add(Row.SCALE_WORLDSPACE);
                 rows.add(Row.SCALE_HUD);
+                rows.add(Row.MENU_SPACE_COMMAND);
+                rows.add(Row.MENU_SPACE_TEMPLATE_BLOCKS);
+                rows.add(Row.MENU_SPACE_CONTAINER_CONTENTS);
+                rows.add(Row.MENU_SPACE_BLOCK_VARIANT);
             }
         }
         return List.copyOf(rows);

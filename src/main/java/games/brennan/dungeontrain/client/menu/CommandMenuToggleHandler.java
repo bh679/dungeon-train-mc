@@ -2,6 +2,8 @@ package games.brennan.dungeontrain.client.menu;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import net.minecraft.client.Minecraft;
+import net.minecraft.core.Direction;
+import net.minecraft.world.phys.BlockHitResult;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -34,12 +36,16 @@ public final class CommandMenuToggleHandler {
 
         Minecraft mc = Minecraft.getInstance();
 
-        // The menu IS a screen now, so its own screen being up is the normal
-        // state. What still matters is another screen replacing ours — the
-        // inventory, a sign, another mod's GUI — which would leave our state
-        // open with nothing rendering it. Close in that case only.
+        // Screen-space: the menu IS a screen, so its own screen being up is the normal state.
+        // What still matters is another screen replacing ours — the inventory, a sign, another
+        // mod's GUI — which would leave our state open with nothing rendering it.
+        //
+        // World-space: no screen of ours is up at all, except the invisible MenuTypingScreen
+        // while the player is typing a row's argument. Any OTHER screen means something took
+        // over the display, and a world-space panel drawn behind an inventory is just clutter.
         if (CommandMenuState.isOpen() && mc.screen != null
-                && !(mc.screen instanceof CommandMenuGuiScreen)) {
+                && !(mc.screen instanceof CommandMenuGuiScreen)
+                && !(mc.screen instanceof MenuTypingScreen)) {
             CommandMenuState.close();
         }
 
@@ -66,9 +72,21 @@ public final class CommandMenuToggleHandler {
 
         if (CommandMenuState.isOpen()) {
             CommandMenuState.onClientTick();
-            // Hover is resolved from the cursor in CommandMenuGuiScreen#render,
-            // so there is no per-tick raycast to run any more. stopDestroyBlock
-            // still halts destroy progress accumulated before the menu opened.
+            // In screen-space, hover is resolved from the cursor in CommandMenuGuiScreen#render.
+            // In world-space there is no cursor, so the camera ray has to be re-run every tick,
+            // and the crosshair target kept clobbered so the block behind the panel can't be
+            // mined or placed against through it.
+            if (CommandMenuState.isOpenWorldspace()) {
+                CommandMenuRaycast.updateHovered();
+                if (mc.player != null) {
+                    mc.hitResult = BlockHitResult.miss(
+                        mc.player.getEyePosition(),
+                        Direction.UP,
+                        mc.player.blockPosition()
+                    );
+                }
+            }
+            // stopDestroyBlock halts destroy progress accumulated before the menu opened.
             if (CommandMenuState.isOpen() && mc.gameMode != null) {
                 mc.gameMode.stopDestroyBlock();
             }

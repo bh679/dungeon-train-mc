@@ -1542,8 +1542,6 @@
   "gui.dungeontrain.video_tools.reset.done_desc": "Klaar. Maak een nieuwe wereld en Dungeon Train behandelt je als een speler die net begint.",
   "gui.dungeontrain.builder.profile": "Mijn bouwsels",
   "gui.dungeontrain.builder.profile.title": "Mijn bouwsels",
-  "gui.dungeontrain.builder.profile.submit": "Aan de trein geven",
-  "gui.dungeontrain.builder.profile.withdraw": "Van de trein halen",
   "gui.dungeontrain.builder.profile.not_a_carriage": "Alleen wagons gaan mee op de trein",
   "gui.dungeontrain.builder.profile.on_train": "op de trein",
   "gui.dungeontrain.builder.profile.in_profile": "opgeslagen",

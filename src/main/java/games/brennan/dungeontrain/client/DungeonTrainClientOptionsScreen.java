@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.client.sound.TrainVolumeOption;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.config.ContentMode;
 import games.brennan.dungeontrain.config.CustomContentPreference;
+import games.brennan.dungeontrain.config.EditorMenuSpace;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.OptionInstance;
 import net.minecraft.client.Options;
@@ -29,6 +30,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 /**
  * Home for Dungeon Train's client settings, opened from a "Dungeon Train…" button injected into
@@ -270,6 +272,10 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             case SCALE_ALL -> scaleCandidates("all_displays");
             case SCALE_WORLDSPACE -> scaleCandidates("worldspace");
             case SCALE_HUD -> scaleCandidates("hud");
+            case MENU_SPACE_COMMAND -> menuSpaceCandidates("command_menu");
+            case MENU_SPACE_TEMPLATE_BLOCKS -> menuSpaceCandidates("template_blocks_menu");
+            case MENU_SPACE_CONTAINER_CONTENTS -> menuSpaceCandidates("container_contents_menu");
+            case MENU_SPACE_BLOCK_VARIANT -> menuSpaceCandidates("block_variant_menu");
         };
     }
 
@@ -277,6 +283,13 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
     private static List<Component> onOffCandidates(String captionKey) {
         return List.of(value(captionKey, CommonComponents.OPTION_ON),
                 value(captionKey, CommonComponents.OPTION_OFF));
+    }
+
+    /** A menu-space cycler's two states — {@code "<menu>: Worldspace"} / {@code "…: Screenspace"}. */
+    private static List<Component> menuSpaceCandidates(String menu) {
+        String key = "gui.dungeontrain.editor_settings." + menu;
+        return List.of(value(key, menuSpaceLabel(EditorMenuSpace.WORLDSPACE)),
+                value(key, menuSpaceLabel(EditorMenuSpace.SCREENSPACE)));
     }
 
     /** A scale slider's widest reading — the two-digit end of the 0.2–2.0 range. */
@@ -400,11 +413,43 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             case SCALE_ALL -> slider(DisplayScaleOption.allDisplays(), width);
             case SCALE_WORLDSPACE -> slider(DisplayScaleOption.worldspace(), width);
             case SCALE_HUD -> slider(DisplayScaleOption.hud(), width);
+
+            // Where each of the four editor menus (X/V/C/Z) draws itself — worldspace panel aimed by
+            // the camera, or a screenspace window pointed at with a free mouse cursor. Same accessors
+            // and lang keys the deleted DungeonTrainEditorSettingsScreen used; only the row's home moved.
+            case MENU_SPACE_COMMAND -> menuSpaceRow("command_menu",
+                    ClientDisplayConfig::getCommandMenuSpace, ClientDisplayConfig::setCommandMenuSpace, width);
+            case MENU_SPACE_TEMPLATE_BLOCKS -> menuSpaceRow("template_blocks_menu",
+                    ClientDisplayConfig::getTemplateBlocksMenuSpace,
+                    ClientDisplayConfig::setTemplateBlocksMenuSpace, width);
+            case MENU_SPACE_CONTAINER_CONTENTS -> menuSpaceRow("container_contents_menu",
+                    ClientDisplayConfig::getContainerContentsMenuSpace,
+                    ClientDisplayConfig::setContainerContentsMenuSpace, width);
+            case MENU_SPACE_BLOCK_VARIANT -> menuSpaceRow("block_variant_menu",
+                    ClientDisplayConfig::getBlockVariantMenuSpace,
+                    ClientDisplayConfig::setBlockVariantMenuSpace, width);
         };
     }
 
     private AbstractWidget slider(OptionInstance<Integer> option, int width) {
         return option.createButton(this.minecraft.options, 0, 0, width);
+    }
+
+    /** A {@code [label: Worldspace|Screenspace]} cycle row for one editor menu. */
+    private AbstractWidget menuSpaceRow(String menu, Supplier<EditorMenuSpace> get,
+            Consumer<EditorMenuSpace> set, int width) {
+        String key = "gui.dungeontrain.editor_settings." + menu;
+        return withTip(
+                CycleButton.<EditorMenuSpace>builder(DungeonTrainClientOptionsScreen::menuSpaceLabel)
+                        .withValues(EditorMenuSpace.values())
+                        .withInitialValue(get.get())
+                        .create(0, 0, width, ROW_H, Component.translatable(key), (btn, val) -> set.accept(val)),
+                key + ".tip");
+    }
+
+    /** Localized name for a menu space — the enum constant is a config token, not player-facing prose. */
+    private static Component menuSpaceLabel(EditorMenuSpace space) {
+        return Component.translatable("gui.dungeontrain.menu_space." + space.name().toLowerCase(Locale.ROOT));
     }
 
     /** Attaches a word-wrapping hover tooltip from a lang key and hands the widget straight back. */

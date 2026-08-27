@@ -72,8 +72,16 @@ public final class TrainAssembler {
     private static SharedPick tryLeaseShared(ServerLevel level, CarriageVariant variant, int carriagePIdx,
                                              CarriageDims dims, CarriageGenerationConfig genCfg,
                                              String stageId, List<String> onlineUuids) {
-        if (!games.brennan.dungeontrain.event.SharedCarriageGate.canDiscover()) return null;
         if (!SharedCarriageFlags.isSharedVariant(variant.id())) return null;
+        // canLease, not canDiscover: uploads stay on while the pool is not being served into runs.
+        // Logged rather than returned silently — "the train has no community carriages" was
+        // indistinguishable from a broken relay until logLeaseOutcome existed. Placed after the
+        // shared-variant test for the same reason the portal check below is: the line then fires at
+        // the frequency of shared slots (~1 in 73) rather than on every carriage in the world.
+        if (!games.brennan.dungeontrain.event.SharedCarriageGate.canLease()) {
+            logLeaseOutcome(carriagePIdx, "LEASING_OFF", null);
+            return null;
+        }
         // No part of a portal can be served from the pool. The variant rolled for this slot is an
         // ordinary one even here — the portal substitution happens later, inside CarriagePlacer.placeAt
         // — so without this check a buffered lease is stamped verbatim over the slot and the corridor
