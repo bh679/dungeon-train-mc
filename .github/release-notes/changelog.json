@@ -9386,6 +9386,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "portal-room-clear-actually-clears",
+      "version": "0.688.0",
+      "type": "fix",
+      "title": "Clearing a dimensional carriage in the editor really clears it",
+      "summary": "The editor's Clear on a dimensional carriage left the room standing: it wiped the plot and then stamped the built-in room straight back over it, and the block variants it said it had removed reappeared the next time the plot was stamped. Clear now leaves the plot empty inside its cage, keeps the room's authored size, and the variants it drops stay dropped.",
+      "highlights": [
+        "Clear empties the plot instead of replacing your build with the built-in room.",
+        "Cleared block variants no longer come back on the next stamp.",
+        "A cleared room now shows as unsaved, so saving makes the clear permanent."
+      ],
+      "pr": 1145,
+      "date": "2026-08-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
