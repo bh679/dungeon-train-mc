@@ -1515,8 +1515,6 @@
   "gui.dungeontrain.video_tools.reset.done_desc": "Xong. Tạo một thế giới mới và Dungeon Train sẽ đối xử với bạn như người chơi lần đầu.",
   "gui.dungeontrain.builder.profile": "Công trình của tôi",
   "gui.dungeontrain.builder.profile.title": "Công trình của tôi",
-  "gui.dungeontrain.builder.profile.submit": "Giao cho đoàn tàu",
-  "gui.dungeontrain.builder.profile.withdraw": "Gỡ khỏi đoàn tàu",
   "gui.dungeontrain.builder.profile.not_a_carriage": "Chỉ toa mới lên được đoàn tàu",
   "gui.dungeontrain.builder.profile.on_train": "trên đoàn tàu",
   "gui.dungeontrain.builder.profile.in_profile": "đã lưu",

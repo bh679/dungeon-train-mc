@@ -16,6 +16,8 @@ import org.lwjgl.glfw.GLFW;
 
 import java.util.regex.Pattern;
 
+import javax.annotation.Nullable;
+
 /**
  * Modal screen opened by the V-key / C-key menu's Save button. Captures a
  * prefab name in a vanilla {@link EditBox}, validates it against the same
@@ -38,15 +40,29 @@ public final class PrefabNameScreen extends Screen {
 
     private final Kind kind;
     private final BlockPos localPos;
+    /**
+     * Where to return on close, or {@code null} for the world.
+     *
+     * <p>Null is right for a world-space caller: its panel is drawn by a render subscriber and is
+     * still there behind us. A screen-space caller's panel <em>is</em> a screen, and we replaced
+     * it, so returning to the world would silently drop the author out of the menu they were in.</p>
+     */
+    @Nullable
+    private final Screen parent;
 
     private EditBox nameField;
     private Button saveButton;
     private Component errorMessage = Component.empty();
 
     public PrefabNameScreen(Kind kind, BlockPos localPos) {
+        this(kind, localPos, null);
+    }
+
+    public PrefabNameScreen(Kind kind, BlockPos localPos, @Nullable Screen parent) {
         super(titleFor(kind));
         this.kind = kind;
         this.localPos = localPos;
+        this.parent = parent;
     }
 
     private static Component titleFor(Kind kind) {
@@ -144,6 +160,6 @@ public final class PrefabNameScreen extends Screen {
     @Override
     public void onClose() {
         Minecraft mc = Minecraft.getInstance();
-        if (mc != null) mc.setScreen(null);
+        if (mc != null) mc.setScreen(parent);
     }
 }

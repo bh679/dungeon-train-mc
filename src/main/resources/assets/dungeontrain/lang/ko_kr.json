@@ -1515,8 +1515,6 @@
   "gui.dungeontrain.video_tools.reset.done_desc": "완료했습니다. 새 세계를 만들면 Dungeon Train이 당신을 처음 온 플레이어로 맞이합니다.",
   "gui.dungeontrain.builder.profile": "내 건축물",
   "gui.dungeontrain.builder.profile.title": "내 건축물",
-  "gui.dungeontrain.builder.profile.submit": "열차에 맡기기",
-  "gui.dungeontrain.builder.profile.withdraw": "열차에서 내리기",
   "gui.dungeontrain.builder.profile.not_a_carriage": "열차에는 객차만 오릅니다",
   "gui.dungeontrain.builder.profile.on_train": "열차 위",
   "gui.dungeontrain.builder.profile.in_profile": "저장됨",

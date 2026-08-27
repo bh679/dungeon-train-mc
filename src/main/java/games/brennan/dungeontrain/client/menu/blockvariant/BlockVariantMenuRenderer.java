@@ -6,6 +6,7 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.menu.MenuRenderStates;
+import games.brennan.dungeontrain.client.menu.PanelIconBatch;
 import games.brennan.dungeontrain.client.menu.PrefabTabState;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.editor.RotationApplier;
@@ -34,6 +35,7 @@ import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 
+import javax.annotation.Nullable;
 import java.util.List;
 
 /**
@@ -98,7 +100,7 @@ public final class BlockVariantMenuRenderer {
     @SubscribeEvent
     public static void onRenderLevelStage(RenderLevelStageEvent event) {
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS) return;
-        if (!BlockVariantMenu.isActive()) return;
+        if (!BlockVariantMenu.isActiveWorldspace()) return;
         if (BlockVariantMenu.localPos() == null) return;
 
         BlockVariantMenuRaycast.updateHovered();
@@ -131,11 +133,7 @@ public final class BlockVariantMenuRenderer {
 
         MultiBufferSource.BufferSource buffer = mc.renderBuffers().bufferSource();
 
-        if (BlockVariantMenu.screen() == BlockVariantMenu.Screen.ROOT) {
-            drawRoot(ps, buffer, font);
-        } else {
-            drawSearch(ps, buffer, font);
-        }
+        drawPanel(ps, buffer, font, null);
 
         buffer.endBatch(PANEL_QUAD);
         // Flush remaining queued render types (item-icon textures, glint,
@@ -146,7 +144,47 @@ public final class BlockVariantMenuRenderer {
         ps.popPose();
     }
 
-    private static void drawRoot(PoseStack ps, MultiBufferSource buffer, Font font) {
+    /**
+     * The active panel's outer size in panel-local units.
+     *
+     * <p>Only the screen-space host needs this — it has to know how big the panel is before it
+     * can centre and scale it, where the world-space path just draws outward from an anchor.
+     * Uses the same row/column math the draw bodies below do.</p>
+     */
+    record PanelSize(double panelW, double panelH) {}
+
+    static PanelSize panelSize() {
+        int n;
+        if (BlockVariantMenu.screen() == BlockVariantMenu.Screen.ROOT) {
+            n = BlockVariantMenu.entries().size();
+        } else {
+            n = Math.min(BlockVariantMenu.filteredBlockIds().size(),
+                BlockVariantMenu.ROWS_PER_COLUMN * 4);
+        }
+        int colCount = Math.max(1, (n + BlockVariantMenu.ROWS_PER_COLUMN - 1) / BlockVariantMenu.ROWS_PER_COLUMN);
+        double panelW = Math.max(MIN_PANEL_WIDTH, colCount * COLUMN_WIDTH);
+        int displayedRows = Math.max(1, Math.min(n, BlockVariantMenu.ROWS_PER_COLUMN));
+        return new PanelSize(panelW, HEADER_HEIGHT + TOOLBAR_HEIGHT + displayedRows * ROW_HEIGHT);
+    }
+
+    /**
+     * Draw the active panel — the entry point the screen-space host calls.
+     *
+     * @param icons non-null in screen-space, where item icons are batched for the host to replay
+     *              through vanilla's GUI item path rather than drawn inline. See
+     *              {@link games.brennan.dungeontrain.client.menu.PanelIconBatch}.
+     */
+    static void drawPanel(PoseStack ps, MultiBufferSource buffer, Font font,
+                          @Nullable PanelIconBatch icons) {
+        if (BlockVariantMenu.screen() == BlockVariantMenu.Screen.ROOT) {
+            drawRoot(ps, buffer, font, icons);
+        } else {
+            drawSearch(ps, buffer, font, icons);
+        }
+    }
+
+    private static void drawRoot(PoseStack ps, MultiBufferSource buffer, Font font,
+                                 @Nullable PanelIconBatch icons) {
         List<BlockVariantSyncPacket.Entry> entries = BlockVariantMenu.entries();
         int n = entries.size();
         int colCount = Math.max(1, (n + BlockVariantMenu.ROWS_PER_COLUMN - 1) / BlockVariantMenu.ROWS_PER_COLUMN);
@@ -299,9 +337,9 @@ public final class BlockVariantMenuRenderer {
             // they're visually distinct from the empty-placeholder
             // sentinel and from regular block entries.
             if (entry.isMob()) {
-                drawMobIcon(ps, buffer, entry.entityId(), nameCellL, rowCY);
+                drawMobIcon(ps, buffer, entry.entityId(), nameCellL, rowCY, icons);
             } else {
-                drawBlockIcon(ps, buffer, entry.stateString(), nameCellL, rowCY);
+                drawBlockIcon(ps, buffer, entry.stateString(), nameCellL, rowCY, icons);
             }
             // Linked rows show the loot-prefab id instead of the block path
             // so two rows backed by the same block (e.g. two barrels linked
@@ -636,7 +674,8 @@ public final class BlockVariantMenuRenderer {
         return Direction.values()[ord];
     }
 
-    private static void drawSearch(PoseStack ps, MultiBufferSource buffer, Font font) {
+    private static void drawSearch(PoseStack ps, MultiBufferSource buffer, Font font,
+                                   @Nullable PanelIconBatch icons) {
         List<String> filtered = BlockVariantMenu.filteredBlockIds();
         // Cap the rendered list to one column's worth so the panel doesn't
         // explode horizontally when the player hasn't typed yet (vanilla
@@ -700,7 +739,7 @@ public final class BlockVariantMenuRenderer {
             drawQuad(ps, buffer, colXL + 0.01, rowBottom + 0.005,
                 colXR - 0.01, rowTop - 0.005, tint);
             int textColour = isHover ? 0xFF000000 : 0xFFFFFFFF;
-            drawBlockIcon(ps, buffer, filtered.get(i), colXL, rowCY);
+            drawBlockIcon(ps, buffer, filtered.get(i), colXL, rowCY, icons);
             drawLeftText(ps, buffer, font, filtered.get(i),
                 colXL + NAME_TEXT_LEFT_OFFSET, rowCY, textColour);
         }
@@ -742,8 +781,8 @@ public final class BlockVariantMenuRenderer {
      * representation, mirroring the pattern in
      * {@link games.brennan.dungeontrain.client.VariantHoverHudOverlay}.</p>
      */
-    static void drawBlockIcon(PoseStack ps, MultiBufferSource buffer,
-                              String stateString, double cellLeftX, double rowCY) {
+    static void drawBlockIcon(PoseStack ps, MultiBufferSource buffer, String stateString,
+                              double cellLeftX, double rowCY, @Nullable PanelIconBatch icons) {
         if (stateString == null || stateString.isEmpty()) return;
         if ("nothing".equals(shortenStateLabel(stateString))) return;
         BlockState state = BlockVariantMenu.parseState(stateString);
@@ -760,10 +799,21 @@ public final class BlockVariantMenuRenderer {
             ? new ItemStack(Items.BARRIER)
             : new ItemStack(item);
 
+        drawIconStack(ps, buffer, stack, cellLeftX, rowCY, icons);
+    }
+
+    /** Shared tail of the two icon helpers: batch it in screen-space, draw it in the world. */
+    private static void drawIconStack(PoseStack ps, MultiBufferSource buffer, ItemStack stack,
+                                      double cellLeftX, double rowCY, @Nullable PanelIconBatch icons) {
+        double centerX = cellLeftX + ICON_LEFT_PAD + ICON_SIZE / 2.0;
+        if (icons != null) {
+            icons.add(ps, stack, centerX, rowCY, ICON_SIZE);
+            return;
+        }
         Minecraft mc = Minecraft.getInstance();
         ItemRenderer itemRenderer = mc.getItemRenderer();
         ps.pushPose();
-        ps.translate(cellLeftX + ICON_LEFT_PAD + ICON_SIZE / 2.0, rowCY, 0.002);
+        ps.translate(centerX, rowCY, 0.002);
         ps.scale((float) ICON_SIZE, (float) ICON_SIZE, (float) ICON_SIZE);
         itemRenderer.renderStatic(
             stack,
@@ -783,27 +833,13 @@ public final class BlockVariantMenuRenderer {
      * {@code <namespace>:<entity>_spawn_egg} item; falls back to BARRIER
      * when the entity has no spawn egg (e.g. {@code minecraft:player}).
      */
-    static void drawMobIcon(PoseStack ps, MultiBufferSource buffer,
-                            String entityId, double cellLeftX, double rowCY) {
+    static void drawMobIcon(PoseStack ps, MultiBufferSource buffer, String entityId,
+                            double cellLeftX, double rowCY, @Nullable PanelIconBatch icons) {
         if (entityId == null || entityId.isEmpty()) return;
         ItemStack stack = mobIconStack(entityId);
-        Minecraft mc = Minecraft.getInstance();
-        ItemRenderer itemRenderer = mc.getItemRenderer();
-        ps.pushPose();
-        ps.translate(cellLeftX + ICON_LEFT_PAD + ICON_SIZE / 2.0, rowCY, 0.002);
-        ps.scale((float) ICON_SIZE, (float) ICON_SIZE, (float) ICON_SIZE);
-        itemRenderer.renderStatic(
-            stack,
-            ItemDisplayContext.GUI,
-            LightTexture.FULL_BRIGHT,
-            OverlayTexture.NO_OVERLAY,
-            ps,
-            buffer,
-            mc.level,
-            0
-        );
-        ps.popPose();
+        drawIconStack(ps, buffer, stack, cellLeftX, rowCY, icons);
     }
+
 
     /** Resolve the spawn-egg ItemStack for a given entity id; BARRIER fallback. */
     private static ItemStack mobIconStack(String entityId) {
