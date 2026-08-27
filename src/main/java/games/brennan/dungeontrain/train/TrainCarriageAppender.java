@@ -5,11 +5,9 @@ import dev.ryanhcode.sable.SableConfig;
 import games.brennan.dungeontrain.bootstrap.BootstrapProgress;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.debug.DebugAccessEvents;
-import games.brennan.dungeontrain.editor.CarriageContentsGroupStore;
 import games.brennan.dungeontrain.net.CarriageIndexPacket;
 import games.brennan.dungeontrain.net.TrainDebugCarriagePacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
-import games.brennan.dungeontrain.template.GateContext;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.Shipyard;
 import games.brennan.dungeontrain.ship.Shipyards;
@@ -1757,7 +1755,7 @@ public final class TrainCarriageAppender {
                 // Carriage internals for the F3+4 panel, to those allowed to see them. A player
                 // granted access mid-session picks this up on their next boundary crossing.
                 if (DebugAccessEvents.isPermitted(player)) {
-                    DungeonTrainNet.sendTo(player, debugCarriageAt(level, pIdx, length));
+                    DungeonTrainNet.sendTo(player, debugCarriageAt(pIdx));
                 }
                 LAST_SENT_PIDX.put(uuid, pIdx);
             }
@@ -4181,30 +4179,22 @@ public final class TrainCarriageAppender {
      * re-deriving it beats recording every placed variant. Never throws: a debug read-out is not
      * worth risking the train tick, so any failure degrades to an empty id and a blank line.</p>
      */
-    private static TrainDebugCarriagePacket debugCarriageAt(ServerLevel level, int pIdx, int length) {
-        try {
-            CarriageGenerationConfig genCfg =
-                DungeonTrainWorldData.get(level.getServer().overworld()).getGenerationConfig();
-            GateContext gateCtx = GateContext.forCarriage(level, pIdx, length);
-
-            CarriageVariant variant = CarriagePlacer.enclosedVariantForIndex(pIdx, genCfg, gateCtx);
-            // pick() is two-phase and hands back the RESOLVED contents: a parent is drawn from the
-            // pool, then its group sidecar (if any) draws a member. So this id is the sub-variant
-            // whenever one was drawn, and findParentOf recovers the parent it came through.
-            CarriageContents resolved =
-                CarriageContentsRegistry.pick(genCfg.seed(), pIdx, variant, gateCtx);
-            String resolvedId = resolved.id();
-            String parentId = CarriageContentsGroupStore.findParentOf(resolvedId).orElse(resolvedId);
-            // Equal ids mean the draw landed on the parent's own contents (or it has no group) —
-            // there is no sub-variant to report, which the panel renders as a dash.
-            String subVariantId = parentId.equals(resolvedId) ? "" : resolvedId;
-
-            return new TrainDebugCarriagePacket(true, pIdx, variant.id(), parentId, subVariantId);
-        } catch (RuntimeException e) {
-            // A debug read-out is never worth risking the train tick.
-            LOGGER.debug("[DungeonTrain] debugCarriageAt failed for pIdx={}", pIdx, e);
+    /**
+     * What carriage {@code pIdx} was actually built as, for the F3+4 panel.
+     *
+     * <p>Read back from {@link PlacedCarriageFacts} rather than re-rolled. The pick is gated on the
+     * group's world-X at the moment it was placed, and the train has moved since, so a recomputed
+     * answer drifts further from the standing carriage the longer the run goes. An index this
+     * session never placed reports empty ids — the panel shows a dash, which is the honest answer
+     * rather than a confident wrong one.</p>
+     */
+    private static TrainDebugCarriagePacket debugCarriageAt(int pIdx) {
+        PlacedCarriageFacts.Facts facts = PlacedCarriageFacts.get(pIdx);
+        if (facts == null) {
             return new TrainDebugCarriagePacket(true, pIdx, "", "", "");
         }
+        return new TrainDebugCarriagePacket(
+            true, pIdx, facts.variantId(), facts.contentsId(), facts.subVariantId());
     }
 
     /**
