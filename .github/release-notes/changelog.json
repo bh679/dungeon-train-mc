@@ -9210,6 +9210,23 @@
       "released_at": null
     },
     {
+      "id": "creative-shift-click-to-hotbar",
+      "version": "0.680.0",
+      "type": "feat",
+      "title": "Shift-click twice in the creative menu to fill your hotbar",
+      "summary": "Shift-clicking an item in the creative menu still hands you a full stack on the cursor. Shift-click the same item again and that stack drops straight into your hotbar - and keep clicking to fill the slots along from there.",
+      "highlights": [
+        "The second shift-click on an item puts the stack in your hotbar: your selected slot if it is free, otherwise the first empty one.",
+        "Every further click on that same item fills the next slot along, wrapping around to the start.",
+        "Clicking a different item starts over, and the first shift-click behaves exactly as it always has."
+      ],
+      "pr": 1132,
+      "date": "2026-08-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "end-band-ice-pillars",
       "version": "0.681.0",
       "type": "fix",
