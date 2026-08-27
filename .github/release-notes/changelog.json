@@ -9208,6 +9208,21 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "end-band-ice-pillars",
+      "version": "0.681.0",
+      "type": "fix",
+      "title": "No more ice pillars in the End band",
+      "summary": "Stray towers of packed ice no longer generate beside the track when the train crosses the End band. The band's void chunks skipped their terrain fill but still ran the surface pass, so a frozen ocean underneath could stamp iceberg pillars into the void \u2014 and the strip of world that protects the track from the erosion kept them standing right where you ride past.",
+      "highlights": [
+        "The End band is clean void, islands and chorus again \u2014 no ice"
+      ],
+      "pr": 1133,
+      "date": "2026-08-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
