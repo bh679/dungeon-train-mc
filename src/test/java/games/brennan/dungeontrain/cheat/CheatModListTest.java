@@ -77,6 +77,35 @@ class CheatModListTest {
     }
 
     @Test
+    @DisplayName("trade-limit removers and item editors are baked")
+    void tradeAndItemEditorCurationPresent() {
+        Set<String> eff = CheatModList.effective();
+        // Unlimited villager trading — an uncapped emerald faucet.
+        assertTrue(eff.contains("infinitetrading"), "infinitetrading is blacklisted");
+        assertTrue(eff.contains("mr_unlimited_trading"), "mr_unlimited_trading is blacklisted");
+        assertTrue(eff.contains("mr_unlimited_villagertrades"),
+            "mr_unlimited_villagertrades is blacklisted");
+        // In-game item / NBT editors — /give with a GUI, and no command to classify.
+        assertTrue(eff.contains("infinityeditor"), "infinityeditor is blacklisted");
+        assertTrue(eff.contains("infinity_item_editor_re"),
+            "infinity_item_editor_re is blacklisted");
+    }
+
+    @Test
+    @DisplayName("honest tools are NOT baked — they gate on operator permission instead")
+    void honestToolsNotBaked() {
+        // These three are the reason OperatorIntegrity exists. REI and JEI are recipe viewers most
+        // players run honestly, and WorldEdit must only cost you the run when it is USED. All three
+        // need permission level 2 to do anything, which OperatorIntegrity catches on its own —
+        // listing them here would flag a clean install and punish the wrong people.
+        for (String honest : List.of("roughlyenoughitems", "jei", "worldedit",
+                "fastasyncworldedit", "emi")) {
+            assertFalse(CheatModList.BAKED.contains(honest),
+                honest + " must gate on operator permission, not on being installed");
+        }
+    }
+
+    @Test
     @DisplayName("no library / loader ID leaked into the baked list")
     void noLibraryIdsBaked() {
         // The vein-miner IDs were harvested from mods.toml files, where a mod's own modId sits

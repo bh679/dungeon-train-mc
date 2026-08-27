@@ -65,5 +65,7 @@
   "command.adventureitemnames.config.client_only": "命名配置界面仅限客户端使用 — 请在单人或远程客户端会话中运行该指令。",
   "item.adventureitemnames.random_chest": "随机箱子",
   "item.adventureitemnames.random_named_chest": "随机命名箱",
-  "item.adventureitemnames.random_enchanted_chest": "随机附魔箱"
+  "item.adventureitemnames.random_enchanted_chest": "随机附魔箱",
+  "screen.adventureitemnames.action.delete": "✕",
+  "screen.adventureitemnames.action.reset": "↺"
 }

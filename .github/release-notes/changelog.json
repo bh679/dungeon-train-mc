@@ -9001,9 +9001,9 @@
         "Same tiling, block variants, lighting and fog as the real thing"
       ],
       "date": "2026-08-26",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.673.0",
+      "released_at": "2026-08-27T05:37:39Z"
     },
     {
       "id": "portal-room-editor-exit",
@@ -9015,9 +9015,9 @@
         "Only affected going straight to a room \u2014 /dungeontrain editor portals, or a room plot's Enter Inside"
       ],
       "date": "2026-08-26",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.673.0",
+      "released_at": "2026-08-27T05:37:39Z"
     },
     {
       "id": "discord-embed-links-to-release",
@@ -9028,6 +9028,232 @@
       "highlights": [],
       "pr": 1116,
       "date": "2026-08-26",
+      "released": true,
+      "released_in": "v0.673.0",
+      "released_at": "2026-08-27T05:37:39Z"
+    },
+    {
+      "id": "book-author-burn-chat",
+      "version": "0.673.0",
+      "type": "feat",
+      "title": "See who wrote a book as it burns",
+      "summary": "Dungeon Train books burn away after you read them, and until now their author burned with them. Turn on Book Author Chat and every book that catches fire \u2014 one you just read, one you threw away unread, one dropped on death \u2014 names its writer in chat: \"The book by X burns\". Off by default; the toggle is in Options > Dungeon Train and in the X menu > Options.",
+      "highlights": [
+        "New Book Author Chat option, off by default",
+        "Credits the author of every Dungeon Train book as it burns",
+        "Per-player: your setting, your chat, on servers too"
+      ],
+      "pr": 1121,
+      "date": "2026-08-27",
+      "released": true,
+      "released_in": "v0.673.0",
+      "released_at": "2026-08-27T05:37:39Z"
+    },
+    {
+      "id": "ai-fill-missing-translations",
+      "version": "0.674.0",
+      "type": "content",
+      "title": "Nineteen languages catch up with the game",
+      "summary": "Whole features had been reaching non-English players in English: the book-vote replies, the carriage builder, the Free Play and settings-changed notices, the video tools, custom content, and the translation editor's own controls. Every one of the nineteen translated languages now has the full set of the game's text \u2014 around 4,460 lines that were simply missing.",
+      "highlights": [
+        "All 19 languages are now complete against English \u2014 no missing lines left in any of them",
+        "Newly filled lines are marked as machine translation in the in-game translation editor, so speakers can find and fix them",
+        "Simplified Chinese also gains the two Adventure Item Names buttons it was short"
+      ],
+      "date": "2026-08-27",
+      "released": true,
+      "released_in": "v0.676.0",
+      "released_at": "2026-08-27T08:46:42Z"
+    },
+    {
+      "id": "keep-inventory-free-play",
+      "version": "0.674.0",
+      "type": "feat",
+      "title": "Keeping your inventory on death is Free Play",
+      "summary": "A world that has run with Keep Inventory on is now Free Play \u2014 permanently, even if you turn the rule back off.",
+      "highlights": [],
+      "date": "2026-08-27",
+      "released": true,
+      "released_in": "v0.676.0",
+      "released_at": "2026-08-27T08:46:42Z"
+    },
+    {
+      "id": "ai-fill-book-author-chat-keys",
+      "version": "0.674.0",
+      "type": "content",
+      "title": "The book-author chat line speaks every language too",
+      "summary": "The v0.673.0 book-author setting and the Stats Book shipped English-only. Both are now translated into all nineteen languages, along with the chat line that names whoever wrote a book as it burns.",
+      "highlights": [
+        "Book Author Chat, its description, the Stats Book name and the burn line are translated in all 19 languages"
+      ],
+      "date": "2026-08-27",
+      "released": true,
+      "released_in": "v0.676.0",
+      "released_at": "2026-08-27T08:46:42Z"
+    },
+    {
+      "id": "editor-welcome-panel-close-button",
+      "version": "0.674.0",
+      "type": "feat",
+      "title": "Close the editor's Welcome panel",
+      "summary": "The Train Editor's Welcome board now has a close (X) button, top-right. Your choice is remembered per player, per world.",
+      "highlights": [
+        "X button closes the Welcome board",
+        "Editor menu's Welcome Panel toggle brings it back"
+      ],
+      "pr": 1122,
+      "date": "2026-08-27",
+      "released": true,
+      "released_in": "v0.676.0",
+      "released_at": "2026-08-27T08:46:42Z"
+    },
+    {
+      "id": "builder-profiles-on",
+      "version": "0.675.0",
+      "type": "fix",
+      "title": "Your builds now upload and can go on the train",
+      "summary": "Saving a build in the Train Builder or Train Editor now uploads it to your builder profile, so it follows you between worlds and a finished carriage can be submitted to the train for everyone. Before, \"My Builds\" told every player that builder profiles were off on their world \u2014 the switch shipped off, no server ever turned it on, and so nobody's build was ever uploaded anywhere.",
+      "highlights": [
+        "Uploading still needs Internet Connection on (Options \u2192 Dungeon Train), and a build stays private to you until you choose to submit it",
+        "If you deliberately turned builder profiles off, they stay off",
+        "\"My Builds\" now says when it's your own Internet Connection setting rather than the world's, instead of blaming the world for both"
+      ],
+      "pr": 1124,
+      "date": "2026-08-27",
+      "released": true,
+      "released_in": "v0.676.0",
+      "released_at": "2026-08-27T08:46:42Z"
+    },
+    {
+      "id": "spectator-cinematic-freeze",
+      "version": "0.675.0",
+      "type": "fix",
+      "title": "Spectator cinematic no longer leaves you frozen",
+      "summary": "Replaying the intro cinematic from spectator mode could leave you unable to move, with /kill and reboarding the only way out. Fixed. The hotkey can also be switched off now in Options \u2192 Dungeon Train\u2026, and it finally shows a readable name in Controls.",
+      "highlights": [],
+      "pr": 1126,
+      "date": "2026-08-27",
+      "released": true,
+      "released_in": "v0.676.0",
+      "released_at": "2026-08-27T08:46:42Z"
+    },
+    {
+      "id": "book-author-name-copy",
+      "version": "0.676.0",
+      "type": "feat",
+      "title": "Copy an author's name from the burn line",
+      "summary": "In the Book Author Chat line, click the author's name to copy it.",
+      "highlights": [],
+      "pr": 1125,
+      "date": "2026-08-27",
+      "released": true,
+      "released_in": "v0.676.0",
+      "released_at": "2026-08-27T08:46:42Z"
+    },
+    {
+      "id": "deathnote-one-per-target-per-life",
+      "version": "0.677.0",
+      "type": "fix",
+      "title": "One Death Note per target per life",
+      "summary": "A second Death Note naming a player you've already noted this life no longer arms a second echo. The repeat book still burns, now telling you they've already been death noted this life. Love Notes follow the same rule, tracked separately from Death Notes.",
+      "highlights": [
+        "One echo per named target per life, not one per note signed",
+        "A repeat note still burns, with a clear message instead of a silent extra echo",
+        "Death Notes and Love Notes are tracked separately, so one of each on the same person still works"
+      ],
+      "pr": 1128,
+      "date": "2026-08-27",
+      "released": true,
+      "released_in": "v0.678.0",
+      "released_at": "2026-08-27T09:06:21Z"
+    },
+    {
+      "id": "editor-menus-auto-mode",
+      "version": "0.678.0",
+      "type": "feat",
+      "title": "Editor menus get an Auto mode and a render-distance dial",
+      "summary": "The editor's world-space menus now default to Auto, hiding other plots' panels while you work in one. A new Menu Distance setting on the X-menu caps how far any editor menu draws.",
+      "highlights": [
+        "Auto is the new default for Editor Menus",
+        "New Menu Distance setting on the X-menu (default 128)"
+      ],
+      "pr": 1127,
+      "date": "2026-08-27",
+      "released": true,
+      "released_in": "v0.678.0",
+      "released_at": "2026-08-27T09:06:21Z"
+    },
+    {
+      "id": "end-band-no-weather",
+      "version": "0.679.0",
+      "type": "feat",
+      "title": "No weather in the End band",
+      "summary": "Rain and lightning no longer follow you into the End band \u2014 the void stretch is silent and clear, whatever the weather is doing back in the overworld.",
+      "highlights": [],
+      "pr": 1130,
+      "date": "2026-08-27",
+      "released": true,
+      "released_in": "v0.681.0",
+      "released_at": "2026-08-27T10:01:48Z"
+    },
+    {
+      "id": "cheats-available-free-play",
+      "version": "0.680.0",
+      "type": "feat",
+      "title": "Cheats being available is Free Play",
+      "summary": "A world where cheats are available to anyone playing is now Free Play for as long as that is true \u2014 advancements still earn live, but they don't add to your profile and global stats don't accrue. If you had cheats yourself, your run stays Free Play afterwards.",
+      "highlights": [],
+      "pr": 1131,
+      "date": "2026-08-27",
+      "released": true,
+      "released_in": "v0.681.0",
+      "released_at": "2026-08-27T10:01:48Z"
+    },
+    {
+      "id": "creative-shift-click-to-hotbar",
+      "version": "0.680.0",
+      "type": "feat",
+      "title": "Shift-click twice in the creative menu to fill your hotbar",
+      "summary": "Shift-clicking an item in the creative menu still hands you a full stack on the cursor. Shift-click the same item again and that stack drops straight into your hotbar - and keep clicking to fill the slots along from there.",
+      "highlights": [
+        "The second shift-click on an item puts the stack in your hotbar: your selected slot if it is free, otherwise the first empty one.",
+        "Every further click on that same item fills the next slot along, wrapping around to the start.",
+        "Clicking a different item starts over, and the first shift-click behaves exactly as it always has."
+      ],
+      "pr": 1132,
+      "date": "2026-08-27",
+      "released": true,
+      "released_in": "v0.681.0",
+      "released_at": "2026-08-27T10:01:48Z"
+    },
+    {
+      "id": "end-band-ice-pillars",
+      "version": "0.681.0",
+      "type": "fix",
+      "title": "No more ice pillars in the End band",
+      "summary": "Stray towers of packed ice no longer generate beside the track when the train crosses the End band. The band's void chunks skipped their terrain fill but still ran the surface pass, so a frozen ocean underneath could stamp iceberg pillars into the void \u2014 and the strip of world that protects the track from the erosion kept them standing right where you ride past.",
+      "highlights": [
+        "The End band is clean void, islands and chorus again \u2014 no ice"
+      ],
+      "pr": 1133,
+      "date": "2026-08-27",
+      "released": true,
+      "released_in": "v0.681.0",
+      "released_at": "2026-08-27T10:01:48Z"
+    },
+    {
+      "id": "sign-books-normal-lecterns",
+      "version": "0.681.0",
+      "type": "fix",
+      "title": "Finish and sign books left on ordinary lecterns",
+      "summary": "A book & quill you leave on a plain lectern is now a draft you can come back to: right-click the lectern empty-handed to pick it up and keep writing, then sign it to seal it as a letter. Pressing Done leaves the book on the lectern exactly as you wrote it \u2014 your text is kept, nothing is handed back to you, and the book is no longer renamed behind your back.",
+      "highlights": [
+        "Right-click a lectern empty-handed to pick a draft back up and finish it",
+        "Done keeps the text you just typed instead of discarding it",
+        "Drafts rest on the lectern unchanged \u2014 no surprise rename, and no duplicate book in creative"
+      ],
+      "pr": 1129,
+      "date": "2026-08-27",
       "released": false,
       "released_in": null,
       "released_at": null

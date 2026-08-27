@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.client;
 
 import com.mojang.blaze3d.platform.InputConstants;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.neoforged.api.distmarker.Dist;
@@ -40,15 +41,32 @@ public final class CinematographerHotkeyClient {
 
         private CinematographerTickWatcher() {}
 
+        /**
+         * Drain the key's queued clicks <em>first</em>, then decide whether to act on them.
+         * Returning early without draining would leave presses banked — every press made while a
+         * screen was open, or while not a spectator, fired the moment the guards next passed, and
+         * two commands in one tick started two cinematics. The second start used to re-capture the
+         * already-frozen input as the "saved" one, leaving the player unable to move for the rest
+         * of the session. At most one command per tick, and never while a cinematic is running.
+         */
         @SubscribeEvent
         public static void onClientTick(ClientTickEvent.Post event) {
+            boolean pressed = false;
+            while (CINEMATIC_KEY.consumeClick()) {
+                pressed = true;
+            }
+            if (!pressed) return;
+
+            // Checked after the drain: a hotkey switched off in Options should swallow presses,
+            // not bank them for whenever it is switched back on.
+            if (!ClientDisplayConfig.isCinematicHotkeyEnabled()) return;
+
             Minecraft mc = Minecraft.getInstance();
             if (mc.player == null || mc.getConnection() == null || mc.screen != null) return;
             if (!mc.player.isSpectator()) return;
+            if (CinematicCameraController.isActive()) return;
 
-            while (CINEMATIC_KEY.consumeClick()) {
-                mc.getConnection().sendCommand("dungeontrain cinematic");
-            }
+            mc.getConnection().sendCommand("dungeontrain cinematic");
         }
     }
 }

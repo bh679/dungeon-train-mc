@@ -135,17 +135,28 @@ public final class DungeonTrainConfig {
     /**
      * Default master for the shared-carriage feature (relay-sourced carriages that travel between worlds).
      *
-     * <p>On since the feature's moderation pipeline was proven in play. This is a SERVER config, written
-     * into {@code <save>/serverconfig} when a world is created, so the default only reaches worlds made
-     * after the update — an existing save keeps whatever its toml already says.</p>
+     * <p>On since the feature's moderation pipeline was proven in play. Like every SERVER value here it
+     * lives in the ONE GLOBAL {@code config/dungeontrain-server.toml} (see the class doc) — NOT per-world
+     * — so a changed default reaches only installs without that file, and existing ones are reached by
+     * {@link #runPendingMigrations()} instead.</p>
      */
     public static final boolean DEFAULT_SHARED_CARRIAGES_ENABLED = true;
     /**
-     * Train Builder profiles ship OFF. Uploading is already gated on the player's own network consent,
-     * but a builder save is deliberate authored work rather than incidental play capture, so the server
-     * opts in to sending it anywhere before the first one leaves the machine.
+     * Train Builder profiles ship ON.
+     *
+     * <p>They shipped OFF originally, on the reasoning that a builder save is deliberate authored work
+     * rather than incidental play capture, so the server should opt in before the first one leaves the
+     * machine. In practice no server ever did: the switch was never surfaced anywhere a player or
+     * operator would meet it, so "My Builds" told every player their world had the feature off and no
+     * build was ever uploaded by anyone.</p>
+     *
+     * <p>The protection was redundant anyway. Uploading is independently gated on the player's own
+     * network consent ({@code NetworkConsentMirror}), which they own, can see, and can revoke at any
+     * time — and a build stays private to its author until they deliberately submit it. That is the
+     * consent that was doing the real work; this switch only ever added a second lock with nobody
+     * holding the key. It stays as an operator override for servers that want profiles off.</p>
      */
-    public static final boolean DEFAULT_BUILDER_PROFILE_ENABLED = false;
+    public static final boolean DEFAULT_BUILDER_PROFILE_ENABLED = true;
     /**
      * A shared-carriage slot splits three ways: a relay build by anyone (pool), a relay build by a
      * player in this world (own), and a fresh unbuilt template (the remainder). Defaults are
@@ -235,7 +246,7 @@ public final class DungeonTrainConfig {
      *
      * <p>0 = pre-versioning (any file written before this mechanism existed).</p>
      */
-    public static final int CURRENT_CONFIG_VERSION = 1;
+    public static final int CURRENT_CONFIG_VERSION = 2;
     public static final int DEFAULT_CONFIG_VERSION = 0;
     public static final int MIN_CONFIG_VERSION = 0;
     public static final int MAX_CONFIG_VERSION = 1_000_000;
@@ -466,8 +477,9 @@ public final class DungeonTrainConfig {
                 .comment("Player-written lectern letters. When true, right-clicking a lectern with a book & quill opens",
                         "the sign screen; signing it uploads the letter to the Dungeon Train relay as the next entry in your",
                         "current life's narrative series (a new life starts a new series) and burns the book away at the",
-                        "lectern. Closing without signing leaves the book & quill on the lectern as an unsigned \"Letter X\"",
-                        "draft to finish later. Uploading also requires the player's client to have granted network consent",
+                        "lectern. Closing without signing leaves the book & quill on the lectern, unchanged, as an unsigned",
+                        "draft — right-click it empty-handed to pick it back up and finish it. Uploading also requires the",
+                        "player's client to have granted network consent",
                         "(Discord Presence's 'use the internet?' prompt). False disables the feature — a book & quill placed",
                         "on a lectern behaves like vanilla.")
                 .define("lettersEnabled", DEFAULT_LETTERS_ENABLED);
@@ -944,6 +956,8 @@ public final class DungeonTrainConfig {
      * and simply flipping the constant would have reached new installs only — the feature would have
      * stayed dead for the entire existing player base, silently, exactly as it already had been.</p>
      *
+     * <p>Builder profiles were the identical story a version later, and are migrated the same way.</p>
+     *
      * <p>Migrations run once. Once the file records a version, a player who later switches a migrated
      * setting back keeps their choice permanently: the step that set it never runs again.</p>
      */
@@ -958,6 +972,17 @@ public final class DungeonTrainConfig {
         if (from < 1 && !SHARED_CARRIAGES_ENABLED.get()) {
             SHARED_CARRIAGES_ENABLED.set(true);
             LOGGER.info("[DungeonTrain] Config migration v{}→v{}: enabled shared carriages.",
+                    from, CURRENT_CONFIG_VERSION);
+        }
+
+        // v1 → v2: adopt the builder-profile master switch's new default, for exactly the same reason
+        // as the step above. Profiles had never executed on any install either — every "My Builds"
+        // screen ever opened said the feature was off — so a stored `false` is the old shipped default
+        // rather than an operator's decision, and there is no opt-out here to preserve. An operator who
+        // turns it back off after this keeps that choice: this step never runs a second time.
+        if (from < 2 && !BUILDER_PROFILE_ENABLED.get()) {
+            BUILDER_PROFILE_ENABLED.set(true);
+            LOGGER.info("[DungeonTrain] Config migration v{}→v{}: enabled builder profiles.",
                     from, CURRENT_CONFIG_VERSION);
         }
 

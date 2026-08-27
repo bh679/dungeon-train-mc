@@ -34,8 +34,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  *   <li>{@code renderClouds} getCloudHeight → in the <b>upside-down</b> band the sky sits below the
  *       train, so rather than hide the clouds, lerp the cloud plane down toward the configured
  *       {@code upsideDownCloudY} by the band intensity — the clouds sink beneath you as the flip fades in.</li>
- *   <li>{@code renderSnowAndRain} HEAD → cancel falling rain/snow over the Nether
- *       core, so storms don't rain on the hellscape (the Nether has no weather).</li>
+ *   <li>{@code renderSnowAndRain} HEAD → cancel falling rain/snow over the Nether core and the
+ *       End band, so storms don't rain on the hellscape or into the void (neither the Nether nor
+ *       the End has weather).</li>
+ *   <li>{@code tickRain} HEAD → in the End band, also cancel the rain splash particles and rain
+ *       ambience that keep playing even with the sheets hidden.</li>
  * </ul>
  *
  * <p>Two of these hooks also guard the <b>re-entrant</b> {@code renderSky} call that
@@ -134,17 +137,42 @@ public abstract class LevelRendererVoidSkyMixin {
         return Mth.lerp((float) t, original, DungeonTrainCommonConfig.getUpsideDownCloudY());
     }
 
+    /**
+     * Cancel the falling rain/snow sheets over a Nether core or an End band — neither the Nether
+     * nor the End has weather, so a storm must not visibly rain on the hellscape or into the void.
+     * Shares the cloud-hide threshold on the same ramps, so the weather stops exactly where the
+     * clouds do rather than at a second, separate edge.
+     */
     @Inject(
             method = "renderSnowAndRain(Lnet/minecraft/client/renderer/LightTexture;FDDD)V",
             at = @At("HEAD"),
             cancellable = true
     )
-    private void dungeontrain$hideWeatherInNether(net.minecraft.client.renderer.LightTexture lightTexture,
-                                                  float partialTick, double camX, double camY, double camZ,
-                                                  CallbackInfo ci) {
+    private void dungeontrain$hideWeatherInBands(net.minecraft.client.renderer.LightTexture lightTexture,
+                                                 float partialTick, double camX, double camY, double camZ,
+                                                 CallbackInfo ci) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null || !mc.level.dimension().equals(Level.OVERWORLD)) return;
-        if (ClientNetherBand.netherIntensityAt(camX) > DUNGEONTRAIN_CLOUD_HIDE_THRESHOLD) {
+        if (ClientNetherBand.netherIntensityAt(camX) > DUNGEONTRAIN_CLOUD_HIDE_THRESHOLD
+                || ClientVoidBand.endSkyIntensityAt(camX) > DUNGEONTRAIN_CLOUD_HIDE_THRESHOLD) {
+            ci.cancel();
+        }
+    }
+
+    /**
+     * Silence the rest of the weather in the End band. {@code renderSnowAndRain} only draws the
+     * falling sheets; {@code tickRain} is what spawns the ground splash particles and plays the
+     * rain ambience, so both are needed before the band actually reads as weatherless. Gated on
+     * the same End-sky ramp and threshold as the sheets, evaluated at the camera's own X.
+     *
+     * <p>End band only — the Nether band keeps its existing behaviour (its sheets are hidden, its
+     * ambience is not), which is left alone here rather than changed as a side effect.</p>
+     */
+    @Inject(method = "tickRain(Lnet/minecraft/client/Camera;)V", at = @At("HEAD"), cancellable = true)
+    private void dungeontrain$hideRainAmbienceInEndBand(Camera camera, CallbackInfo ci) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.level == null || !mc.level.dimension().equals(Level.OVERWORLD)) return;
+        if (ClientVoidBand.endSkyIntensityAt(camera.getPosition().x) > DUNGEONTRAIN_CLOUD_HIDE_THRESHOLD) {
             ci.cancel();
         }
     }

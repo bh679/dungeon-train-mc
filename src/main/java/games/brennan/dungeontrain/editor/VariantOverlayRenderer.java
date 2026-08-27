@@ -794,12 +794,21 @@ public final class VariantOverlayRenderer {
         menus = appendPackageMenu(menus, dims);
         menus = appendStagesMenu(menus, dims);
 
+        // Whether this player has closed the world-space Welcome panel in this world. World state
+        // rather than client config, so it survives a relog and stays scoped to this save.
+        net.minecraft.server.MinecraftServer server = player.getServer();
+        boolean helpPanelDismissed = server != null
+            && DungeonTrainWorldData.get(server.overworld()).isHelpPanelDismissed(uuid);
+
         StringBuilder keyBuf = new StringBuilder(64);
         keyBuf.append(category.name()).append('|');
         // Include the focused stage (effective: explicit selection, else the first stage) so selecting /
         // deselecting — or adding / deleting a stage that shifts the default — re-pushes the snapshot and
         // the highlight updates live (steady-state still dedups to zero packets).
         keyBuf.append("sel:").append(EditorStageSelection.effective()).append('|');
+        // In the key as well as the packet, or closing / reopening the Welcome panel would be
+        // deduped away and the panel would not react until something else changed the snapshot.
+        keyBuf.append("help:").append(helpPanelDismissed).append('|');
         for (EditorTypeMenusPacket.Menu m : menus) {
             BlockPos p = m.worldPos();
             keyBuf.append(p.getX()).append(',').append(p.getY()).append(',').append(p.getZ())
@@ -833,7 +842,8 @@ public final class VariantOverlayRenderer {
         LOGGER.info("[DungeonTrain] EditorTypeMenus: send {} menus (category {}, first '{}' with {} variants @ {}) to {}",
             menus.size(), category, first.typeName(), first.variants().size(), first.worldPos(),
             player.getName().getString());
-        DungeonTrainNet.sendTo(player, new EditorTypeMenusPacket(menus, EditorStageSelection.effective()));
+        DungeonTrainNet.sendTo(player, new EditorTypeMenusPacket(
+            menus, EditorStageSelection.effective(), helpPanelDismissed));
     }
 
     /** Send the empty type-menus packet if the player previously had a non-empty snapshot. */
