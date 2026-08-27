@@ -9064,6 +9064,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "deathnote-one-per-target-per-life",
+      "version": "0.674.0",
+      "type": "fix",
+      "title": "One Death Note per person per life",
+      "summary": "Writing someone's name into a second Death Note in the same life used to send a second echo after them \u2014 two of you, hunting one player, from one death. Now the first note is the one that counts. Name them again and the note still burns, but the game tells you they have already been death noted this life. Love Notes work the same way, and the two are counted apart: you can still write one of each about the same person, and everything resets when you die.",
+      "highlights": [
+        "Naming the same player twice in one life now sends one echo, not two",
+        "The repeat note tells you they have already been noted this life, and still burns away",
+        "A Death Note and a Love Note about the same person both still count",
+        "The slate clears when you die \u2014 a new life can name them again"
+      ],
+      "date": "2026-08-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
