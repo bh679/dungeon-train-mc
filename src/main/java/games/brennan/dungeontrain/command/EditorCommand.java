@@ -677,8 +677,12 @@ public final class EditorCommand {
                 .then(Commands.literal("on").executes(ctx -> runPartMenu(ctx.getSource(), true)))
                 .then(Commands.literal("off").executes(ctx -> runPartMenu(ctx.getSource(), false))))
             .then(Commands.literal("editormenus")
-                .then(Commands.literal("on").executes(ctx -> runEditorMenus(ctx.getSource(), true)))
-                .then(Commands.literal("off").executes(ctx -> runEditorMenus(ctx.getSource(), false))))
+                .then(Commands.literal("on").executes(ctx -> runEditorMenus(ctx.getSource(),
+                    games.brennan.dungeontrain.editor.EditorMenusMode.ON)))
+                .then(Commands.literal("auto").executes(ctx -> runEditorMenus(ctx.getSource(),
+                    games.brennan.dungeontrain.editor.EditorMenusMode.AUTO)))
+                .then(Commands.literal("off").executes(ctx -> runEditorMenus(ctx.getSource(),
+                    games.brennan.dungeontrain.editor.EditorMenusMode.OFF))))
             .then(Commands.literal("carriage-contents")
                 .then(Commands.argument("variant", StringArgumentType.word())
                     .suggests(CARRIAGE_VARIANT_SUGGESTIONS)
@@ -3791,19 +3795,25 @@ public final class EditorCommand {
     }
 
     /**
-     * Master toggle for all editor world-space menus. Drives the persistent
-     * parts-position auto-open flag (the only menu with persistent state) and,
-     * when turning OFF, also force-closes the two on-demand menus (block-variant
+     * Master mode for all editor world-space menus — {@code on} / {@code auto} / {@code off}.
+     * Drives the persistent parts-position auto-open flag (the only menu with persistent state) and,
+     * when switching to OFF, also force-closes the two on-demand menus (block-variant
      * tap-Z, container-contents tap-C) if they happen to be open. Those two stay
      * reopenable on demand while OFF — this only closes what's currently up.
+     *
+     * <p>{@code auto} is the default and differs from {@code on} only in what the client draws:
+     * once the player is standing in a plot, the other plots' panels stop rendering. Nothing
+     * server-side changes between the two.</p>
      */
-    private static int runEditorMenus(CommandSourceStack source, boolean on) {
+    private static int runEditorMenus(CommandSourceStack source,
+                                      games.brennan.dungeontrain.editor.EditorMenusMode mode) {
         net.minecraft.server.level.ServerPlayer player = source.getPlayer();
         if (player == null) {
             source.sendFailure(Component.literal("Editor menus: only players can toggle the menu."));
             return 0;
         }
-        games.brennan.dungeontrain.editor.PartPositionMenuController.setMenuEnabled(player, on);
+        boolean on = mode != games.brennan.dungeontrain.editor.EditorMenusMode.OFF;
+        games.brennan.dungeontrain.editor.PartPositionMenuController.setMode(player, mode);
         if (!on) {
             // Close any open on-demand world-space menus. Both are no-ops when
             // nothing is open (drop the OPEN entry + send an empty sync packet).
@@ -3811,7 +3821,7 @@ public final class EditorCommand {
             games.brennan.dungeontrain.editor.ContainerContentsMenuController.toggle(player, false);
         }
         source.sendSuccess(() -> Component.literal(
-            "Editor menus: " + (on ? "ON" : "OFF")
+            "Editor menus: " + mode.name()
         ).withStyle(on ? ChatFormatting.GREEN : ChatFormatting.YELLOW), true);
         return 1;
     }

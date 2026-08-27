@@ -1,8 +1,10 @@
 package games.brennan.dungeontrain.client.menu;
 
+import games.brennan.dungeontrain.client.EditorMenusModeState;
 import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
 import games.brennan.dungeontrain.client.builder.BuilderProfileScreen;
 import games.brennan.dungeontrain.client.VersionInfo;
+import games.brennan.dungeontrain.editor.EditorMenusMode;
 import games.brennan.dungeontrain.net.EditorStatusPacket;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
@@ -71,17 +73,16 @@ public final class EditorMenuScreen implements MenuScreen {
         }
         out.add(new CommandMenuEntry.DrillIn("Enter", new EnterCategoryMenuScreen()));
 
-        // Editor Menus — master toggle for the world-space editor menus:
-        // drives the auto-opening part-position menu's persistent flag and,
-        // when turned off, also closes any open tap-to-open block-variant /
-        // container-contents menus. Available in every template category —
-        // the flag it reads is a per-player state, not scoped to carriages.
-        boolean pmEnabled = EditorStatusHudOverlay.isEditorMenusVisible();
-        out.add(new CommandMenuEntry.Toggle(
-            "Editor Menus", pmEnabled,
-            "dungeontrain editor editormenus on",
-            "dungeontrain editor editormenus off"
-        ));
+        // Editor Menus — master mode for the world-space editor menus: drives the auto-opening
+        // part-position menu's persistent flag and, when switched off, also closes any open
+        // tap-to-open block-variant / container-contents menus. Available in every template
+        // category — the state it reads is per-player, not scoped to carriages.
+        //
+        // Three cells rather than the old on/off Toggle, because Auto is a third position and not
+        // a shade of on: it draws every plot panel while you are between plots and only the one
+        // you are standing in once you step inside. Same Label-plus-state-cells shape as the
+        // Mirror X / Y / Z / V row below.
+        out.add(editorMenusRow());
 
         // Parts have their own Save / Reset commands — `dungeontrain save`
         // dispatches via EditorCategory.locate which doesn't see part plots,
@@ -306,6 +307,29 @@ public final class EditorMenuScreen implements MenuScreen {
      * re-mirrors the plot from its master octant on demand — saving no longer does
      * that implicitly.</p>
      */
+    /**
+     * The "Editor Menus" row — {@code Editor Menus | Auto | On | Off}, the active mode carrying
+     * the accent tint. Stay-open cells so the player can watch the world-space panels appear and
+     * disappear behind the menu while they pick.
+     *
+     * <p>Reads {@link EditorMenusModeState} rather than the status packet, which is the only
+     * client state that survives stepping out of a plot — see that class.</p>
+     */
+    private static CommandMenuEntry editorMenusRow() {
+        EditorMenusMode mode = EditorMenusModeState.mode();
+        return new CommandMenuEntry.Quad(
+            new CommandMenuEntry.Label("Editor Menus"),
+            modeCell("Auto", EditorMenusMode.AUTO, mode),
+            modeCell("On", EditorMenusMode.ON, mode),
+            modeCell("Off", EditorMenusMode.OFF, mode),
+            0.46, 0.64, 0.82);
+    }
+
+    private static CommandMenuEntry modeCell(String label, EditorMenusMode cell, EditorMenusMode active) {
+        return new CommandMenuEntry.Stay(
+            label, "dungeontrain editor editormenus " + cell.id(), cell == active);
+    }
+
     private static void addMirrorToggles(List<CommandMenuEntry> out) {
         out.add(new CommandMenuEntry.Label("Mirror"));
         // showStateText=false → state shown by the green (on) / grey (off) tint only.
