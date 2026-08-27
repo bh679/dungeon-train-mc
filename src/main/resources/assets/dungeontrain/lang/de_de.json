@@ -1642,5 +1642,9 @@
   "commands.dungeontrain.customcontent.now_on": "Eigene Zuginhalte sind jetzt für diese Welt eingeschaltet. Dieser Lauf zählt als Freies Spiel.",
   "commands.dungeontrain.customcontent.now_off": "Eigene Zuginhalte sind jetzt für diese Welt abgeschaltet. Neue Waggons verwenden die eingebauten Entwürfe.",
   "commands.dungeontrain.customcontent.already_on": "Eigene Zuginhalte waren für diese Welt bereits eingeschaltet.",
-  "commands.dungeontrain.customcontent.already_off": "Eigene Zuginhalte waren für diese Welt bereits abgeschaltet."
+  "commands.dungeontrain.customcontent.already_off": "Eigene Zuginhalte waren für diese Welt bereits abgeschaltet.",
+  "chat.dungeontrain.book_burns_author": "Das Buch von %s verbrennt",
+  "item.dungeontrain.stats_book": "Statistikbuch",
+  "gui.dungeontrain.options.book_author_chat": "Autorenhinweis im Chat",
+  "gui.dungeontrain.options.book_author_chat.tip": "Gibt jedes Mal, wenn ein Dungeon-Train-Buch verbrennt, eine Chatzeile mit dem Namen des Autors aus — „Das Buch von X verbrennt“. Die Bücher, die du liest, wegwirfst oder beim Tod fallen lässt, fangen alle Feuer, und dies ist die einzige Stelle, an der ihre Verfasser genannt werden. Standardmäßig aus."
 }

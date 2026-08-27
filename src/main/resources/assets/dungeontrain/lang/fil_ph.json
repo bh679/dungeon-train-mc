@@ -1615,5 +1615,9 @@
   "commands.dungeontrain.customcontent.now_on": "Naka-on na ngayon ang sariling nilalaman ng tren para sa mundong ito. Binibilang ang takbong ito bilang Malayang Paglalaro.",
   "commands.dungeontrain.customcontent.now_off": "Naka-off na ngayon ang sariling nilalaman ng tren para sa mundong ito. Gagamit ng orihinal na disenyo ang mga bagong bagon.",
   "commands.dungeontrain.customcontent.already_on": "Naka-on na noon pa ang sariling nilalaman ng tren para sa mundong ito.",
-  "commands.dungeontrain.customcontent.already_off": "Naka-off na noon pa ang sariling nilalaman ng tren para sa mundong ito."
+  "commands.dungeontrain.customcontent.already_off": "Naka-off na noon pa ang sariling nilalaman ng tren para sa mundong ito.",
+  "chat.dungeontrain.book_burns_author": "Nasusunog ang aklat ni %s",
+  "item.dungeontrain.stats_book": "Aklat ng Estadistika",
+  "gui.dungeontrain.options.book_author_chat": "May-akda ng aklat sa chat",
+  "gui.dungeontrain.options.book_author_chat.tip": "Naglalagay ng isang linya sa chat na nagbabanggit sa may-akda tuwing may nasusunog na aklat ng Dungeon Train — \"Nasusunog ang aklat ni X\". Ang mga aklat na binabasa mo, itinatapon, o nalalaglag kapag namatay ka ay pawang nag-aapoy, at dito lang binibigyang-kredito ang sumulat sa kanila. Naka-off bilang default."
 }

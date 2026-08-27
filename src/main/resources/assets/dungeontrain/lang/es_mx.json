@@ -1642,5 +1642,9 @@
   "commands.dungeontrain.customcontent.now_on": "El contenido de tren personalizado ya está activado en este mundo. Esta partida cuenta como Juego Libre.",
   "commands.dungeontrain.customcontent.now_off": "El contenido de tren personalizado ya está desactivado en este mundo. Los vagones nuevos van a usar los diseños incluidos.",
   "commands.dungeontrain.customcontent.already_on": "El contenido de tren personalizado ya estaba activado en este mundo.",
-  "commands.dungeontrain.customcontent.already_off": "El contenido de tren personalizado ya estaba desactivado en este mundo."
+  "commands.dungeontrain.customcontent.already_off": "El contenido de tren personalizado ya estaba desactivado en este mundo.",
+  "chat.dungeontrain.book_burns_author": "El libro de %s arde",
+  "item.dungeontrain.stats_book": "Libro de estadísticas",
+  "gui.dungeontrain.options.book_author_chat": "Autor del libro en el chat",
+  "gui.dungeontrain.options.book_author_chat.tip": "Escribe en el chat una línea con el nombre del autor cada vez que arde un libro de Dungeon Train: «El libro de X arde». Los libros que lees, tiras o sueltas al morir terminan todos en llamas, y este es el único lugar donde se le da crédito a quien los escribió. Desactivado de forma predeterminada."
 }

@@ -1615,5 +1615,9 @@
   "commands.dungeontrain.customcontent.now_on": "이 세계의 사용자 지정 열차 콘텐츠를 켰습니다. 이 여정은 자유 플레이로 간주됩니다.",
   "commands.dungeontrain.customcontent.now_off": "이 세계의 사용자 지정 열차 콘텐츠를 껐습니다. 새 객차는 기본 설계를 사용합니다.",
   "commands.dungeontrain.customcontent.already_on": "이 세계에서 사용자 지정 열차 콘텐츠는 이미 켜져 있었습니다.",
-  "commands.dungeontrain.customcontent.already_off": "이 세계에서 사용자 지정 열차 콘텐츠는 이미 꺼져 있었습니다."
+  "commands.dungeontrain.customcontent.already_off": "이 세계에서 사용자 지정 열차 콘텐츠는 이미 꺼져 있었습니다.",
+  "chat.dungeontrain.book_burns_author": "%s 님의 책이 타오릅니다",
+  "item.dungeontrain.stats_book": "통계의 책",
+  "gui.dungeontrain.options.book_author_chat": "책 지은이 채팅 표시",
+  "gui.dungeontrain.options.book_author_chat.tip": "Dungeon Train의 책이 탈 때마다 지은이의 이름을 담은 채팅 한 줄을 남깁니다 — \"X 님의 책이 타오릅니다\". 읽은 책도, 버린 책도, 죽으며 떨어뜨린 책도 모두 불타지만, 쓴 사람의 이름이 남는 곳은 여기뿐입니다. 기본값은 꺼짐."
 }

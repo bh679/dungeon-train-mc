@@ -1669,5 +1669,9 @@
   "commands.dungeontrain.customcontent.now_on": "Своё содержимое поезда для этого мира теперь включено. Этот забег считается Свободной игрой.",
   "commands.dungeontrain.customcontent.now_off": "Своё содержимое поезда для этого мира теперь отключено. Новые вагоны будут использовать встроенные проекты.",
   "commands.dungeontrain.customcontent.already_on": "Своё содержимое поезда для этого мира уже было включено.",
-  "commands.dungeontrain.customcontent.already_off": "Своё содержимое поезда для этого мира уже было отключено."
+  "commands.dungeontrain.customcontent.already_off": "Своё содержимое поезда для этого мира уже было отключено.",
+  "chat.dungeontrain.book_burns_author": "Книга %s горит",
+  "item.dungeontrain.stats_book": "Книга статистики",
+  "gui.dungeontrain.options.book_author_chat": "Автор книги в чате",
+  "gui.dungeontrain.options.book_author_chat.tip": "Выводит в чат строку с именем автора каждый раз, когда сгорает книга Dungeon Train — «Книга X горит». Книги, которые вы прочли, выбросили или обронили при смерти, все загораются, и это единственное место, где упоминается написавший их. По умолчанию выключено."
 }

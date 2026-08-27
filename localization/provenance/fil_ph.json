@@ -1615,5 +1615,9 @@
   "commands.dungeontrain.customcontent.now_on": {"author": "Opus 5 (Claude)", "reviewer": ""},
   "commands.dungeontrain.customcontent.now_off": {"author": "Opus 5 (Claude)", "reviewer": ""},
   "commands.dungeontrain.customcontent.already_on": {"author": "Opus 5 (Claude)", "reviewer": ""},
-  "commands.dungeontrain.customcontent.already_off": {"author": "Opus 5 (Claude)", "reviewer": ""}
+  "commands.dungeontrain.customcontent.already_off": {"author": "Opus 5 (Claude)", "reviewer": ""},
+  "chat.dungeontrain.book_burns_author": {"author": "Opus 5 (Claude)", "reviewer": ""},
+  "item.dungeontrain.stats_book": {"author": "Opus 5 (Claude)", "reviewer": ""},
+  "gui.dungeontrain.options.book_author_chat": {"author": "Opus 5 (Claude)", "reviewer": ""},
+  "gui.dungeontrain.options.book_author_chat.tip": {"author": "Opus 5 (Claude)", "reviewer": ""}
 }

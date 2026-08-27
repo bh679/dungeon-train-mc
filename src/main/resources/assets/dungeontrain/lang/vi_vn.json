@@ -1615,5 +1615,9 @@
   "commands.dungeontrain.customcontent.now_on": "Nội dung đoàn tàu tùy chỉnh giờ đã bật ở thế giới này. Chuyến đi này tính là Chơi Tự Do.",
   "commands.dungeontrain.customcontent.now_off": "Nội dung đoàn tàu tùy chỉnh giờ đã tắt ở thế giới này. Các toa mới sẽ dùng thiết kế có sẵn.",
   "commands.dungeontrain.customcontent.already_on": "Nội dung đoàn tàu tùy chỉnh vốn đã bật ở thế giới này.",
-  "commands.dungeontrain.customcontent.already_off": "Nội dung đoàn tàu tùy chỉnh vốn đã tắt ở thế giới này."
+  "commands.dungeontrain.customcontent.already_off": "Nội dung đoàn tàu tùy chỉnh vốn đã tắt ở thế giới này.",
+  "chat.dungeontrain.book_burns_author": "Cuốn sách của %s bốc cháy",
+  "item.dungeontrain.stats_book": "Sách thống kê",
+  "gui.dungeontrain.options.book_author_chat": "Hiện tác giả sách trong khung chat",
+  "gui.dungeontrain.options.book_author_chat.tip": "In một dòng chat nêu tên tác giả mỗi khi một cuốn sách của Dungeon Train bốc cháy — \"Cuốn sách của X bốc cháy\". Những cuốn bạn đọc, bạn vứt đi hay đánh rơi lúc chết đều bắt lửa, và đây là chỗ duy nhất người viết chúng được ghi công. Mặc định tắt."
 }

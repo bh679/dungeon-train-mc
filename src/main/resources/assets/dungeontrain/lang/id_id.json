@@ -1615,5 +1615,9 @@
   "commands.dungeontrain.customcontent.now_on": "Konten kereta buatan sendiri kini menyala untuk dunia ini. Perjalanan ini dihitung sebagai Permainan Bebas.",
   "commands.dungeontrain.customcontent.now_off": "Konten kereta buatan sendiri kini mati untuk dunia ini. Gerbong baru akan memakai rancangan bawaan.",
   "commands.dungeontrain.customcontent.already_on": "Konten kereta buatan sendiri sudah menyala untuk dunia ini.",
-  "commands.dungeontrain.customcontent.already_off": "Konten kereta buatan sendiri sudah mati untuk dunia ini."
+  "commands.dungeontrain.customcontent.already_off": "Konten kereta buatan sendiri sudah mati untuk dunia ini.",
+  "chat.dungeontrain.book_burns_author": "Buku karya %s terbakar",
+  "item.dungeontrain.stats_book": "Buku Statistik",
+  "gui.dungeontrain.options.book_author_chat": "Penulis buku di obrolan",
+  "gui.dungeontrain.options.book_author_chat.tip": "Menuliskan satu baris obrolan yang menyebut penulisnya setiap kali sebuah buku Dungeon Train terbakar — \"Buku karya X terbakar\". Buku yang kamu baca, kamu buang, atau kamu jatuhkan saat mati semuanya menyala, dan hanya di sinilah penulisnya disebut. Mati secara bawaan."
 }

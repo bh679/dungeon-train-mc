@@ -1629,5 +1629,9 @@
   "commands.dungeontrain.customcontent.now_on": "本世界的自定义列车内容现已开启。这趟旅程计为自由游玩。",
   "commands.dungeontrain.customcontent.now_off": "本世界的自定义列车内容现已关闭。新车厢将使用内置设计。",
   "commands.dungeontrain.customcontent.already_on": "本世界的自定义列车内容此前就已开启。",
-  "commands.dungeontrain.customcontent.already_off": "本世界的自定义列车内容此前就已关闭。"
+  "commands.dungeontrain.customcontent.already_off": "本世界的自定义列车内容此前就已关闭。",
+  "chat.dungeontrain.book_burns_author": "%s 写的书燃烧起来",
+  "item.dungeontrain.stats_book": "统计之书",
+  "gui.dungeontrain.options.book_author_chat": "聊天栏显示书的作者",
+  "gui.dungeontrain.options.book_author_chat.tip": "每当一本《地牢列车》的书燃烧时，在聊天栏打出一行写明作者的字——「X 写的书燃烧起来」。你读过的、丢掉的、死时掉落的书都会起火，而这里是唯一署上执笔者名字的地方。默认关闭。"
 }
