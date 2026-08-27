@@ -113,6 +113,8 @@ public final class StagePanelMenuRenderer {
 
         BlockPos pos = StagePanelMenu.anchor();
         Vec3 anchor = new Vec3(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5);
+        // Auto culls it once you have walked away from the door it sits beside.
+        if (!games.brennan.dungeontrain.client.EditorMenusModeState.withinRange(anchor, cam)) return;
         Vec3[] b = EditorPlotLabelsRenderer.basis(anchor, cam);
         Vec3 right = b[0], up = b[1], normal = b[2];
 

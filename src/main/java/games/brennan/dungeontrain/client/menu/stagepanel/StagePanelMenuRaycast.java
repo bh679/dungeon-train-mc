@@ -31,6 +31,11 @@ public final class StagePanelMenuRaycast {
 
         BlockPos pos = StagePanelMenu.anchor();
         Vec3 anchor = new Vec3(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5);
+        // Culled for distance by Auto — not drawn, so not hoverable.
+        if (!games.brennan.dungeontrain.client.EditorMenusModeState.withinRange(anchor, rayOrigin)) {
+            StagePanelMenu.setHovered(StagePanelMenu.Hit.NONE);
+            return;
+        }
         Vec3[] basis = EditorPlotLabelsRenderer.basis(anchor, rayOrigin);
         Vec3 right = basis[0], up = basis[1], normal = basis[2];
 

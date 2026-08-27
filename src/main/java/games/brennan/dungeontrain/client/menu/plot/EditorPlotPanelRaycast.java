@@ -64,6 +64,8 @@ public final class EditorPlotPanelRaycast {
             EditorPlotLabelsPacket.Entry entry = entries.get(i);
             BlockPos pos = entry.worldPos();
             Vec3 anchor = new Vec3(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5);
+            // Same range test the renderer applies, against the same camera position.
+            if (!games.brennan.dungeontrain.client.EditorMenusModeState.withinRange(anchor, rayOrigin)) continue;
 
             Vec3[] basis = EditorPlotLabelsRenderer.basis(anchor, rayOrigin);
             Vec3 right = basis[0], up = basis[1], normal = basis[2];

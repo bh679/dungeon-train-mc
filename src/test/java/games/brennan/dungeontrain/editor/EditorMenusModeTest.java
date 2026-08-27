@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.editor;
 import games.brennan.dungeontrain.client.EditorMenusModeState;
 import games.brennan.dungeontrain.net.EditorPlotLabelsPacket;
 import net.minecraft.core.BlockPos;
+import net.minecraft.world.phys.Vec3;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -85,6 +86,34 @@ final class EditorMenusModeTest {
         assertFalse(EditorMenusModeState.isPanelVisible(snapshot, 1, EditorMenusMode.ON));
         assertFalse(EditorMenusModeState.isPanelVisible(List.of(), 0, EditorMenusMode.AUTO));
         assertFalse(EditorMenusModeState.isPanelVisible(null, 0, EditorMenusMode.AUTO));
+    }
+
+    @Test
+    @DisplayName("AUTO culls panels past 15 blocks, inclusive of the boundary")
+    void autoCullsByDistance() {
+        Vec3 cam = new Vec3(0, 64, 0);
+        double max = EditorMenusModeState.MAX_PANEL_DISTANCE;
+        assertTrue(EditorMenusModeState.withinRange(
+            new Vec3(max - 0.5, 64, 0), cam, EditorMenusMode.AUTO));
+        // Exactly at the limit still draws — the cull is "further than", not "at least".
+        assertTrue(EditorMenusModeState.withinRange(
+            new Vec3(max, 64, 0), cam, EditorMenusMode.AUTO));
+        assertFalse(EditorMenusModeState.withinRange(
+            new Vec3(max + 0.5, 64, 0), cam, EditorMenusMode.AUTO));
+        // Distance is 3D, not horizontal — a panel straight up is just as far away.
+        assertFalse(EditorMenusModeState.withinRange(
+            new Vec3(0, 64 + max + 1, 0), cam, EditorMenusMode.AUTO));
+        assertFalse(EditorMenusModeState.withinRange(
+            new Vec3(12, 64 + 12, 0), cam, EditorMenusMode.AUTO));
+    }
+
+    @Test
+    @DisplayName("ON ignores distance entirely; OFF never gets asked")
+    void onIgnoresDistance() {
+        Vec3 cam = new Vec3(0, 64, 0);
+        Vec3 farAway = new Vec3(500, 64, 500);
+        assertTrue(EditorMenusModeState.withinRange(farAway, cam, EditorMenusMode.ON));
+        assertTrue(EditorMenusModeState.withinRange(farAway, cam, EditorMenusMode.OFF));
     }
 
     @Test

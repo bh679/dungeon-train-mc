@@ -376,6 +376,10 @@ public final class EditorTypeMenuRenderer {
             EditorTypeMenusPacket.Menu menu = snapshot.get(i);
             BlockPos pos = menu.worldPos();
             Vec3 anchor = new Vec3(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5);
+            // Auto draws only what is near enough to be about the plot you're at. A plot's
+            // companions all share its anchor, so they cull together with it rather than half a
+            // strip surviving.
+            if (!games.brennan.dungeontrain.client.EditorMenusModeState.withinRange(anchor, cam)) continue;
             Hovered local = (hovered.menuIdx == i) ? hovered : Hovered.NONE;
             double shiftIn;
             if (menu.isCompanion()) {

@@ -52,6 +52,8 @@ public final class EditorTypeMenuRaycast {
             EditorTypeMenusPacket.Menu menu = menus.get(i);
             BlockPos pos = menu.worldPos();
             Vec3 anchor = new Vec3(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5);
+            // A menu Auto has culled for distance must not be hoverable either.
+            if (!games.brennan.dungeontrain.client.EditorMenusModeState.withinRange(anchor, rayOrigin)) continue;
             double menuPriorCompanionWidth;
             if (menu.isCompanion()) {
                 if (lastCompanionAnchor == null || !lastCompanionAnchor.equals(pos)) {
