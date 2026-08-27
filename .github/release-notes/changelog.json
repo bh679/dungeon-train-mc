@@ -9151,8 +9151,25 @@
       "released_at": "2026-08-27T08:46:42Z"
     },
     {
-      "id": "editor-menus-auto-mode",
+      "id": "deathnote-one-per-target-per-life",
       "version": "0.677.0",
+      "type": "fix",
+      "title": "One Death Note per target per life",
+      "summary": "A second Death Note naming a player you've already noted this life no longer arms a second echo. The repeat book still burns, now telling you they've already been death noted this life. Love Notes follow the same rule, tracked separately from Death Notes.",
+      "highlights": [
+        "One echo per named target per life, not one per note signed",
+        "A repeat note still burns, with a clear message instead of a silent extra echo",
+        "Death Notes and Love Notes are tracked separately, so one of each on the same person still works"
+      ],
+      "pr": 1128,
+      "date": "2026-08-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "editor-menus-auto-mode",
+      "version": "0.678.0",
       "type": "feat",
       "title": "Editor menus get an Auto mode and a render-distance dial",
       "summary": "The editor's world-space menus now default to Auto, hiding other plots' panels while you work in one. A new Menu Distance setting on the X-menu caps how far any editor menu draws.",
