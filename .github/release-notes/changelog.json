@@ -9276,6 +9276,22 @@
       "released_at": "2026-08-27T10:28:28Z"
     },
     {
+      "id": "remove-empty-test-carriage",
+      "version": "0.683.0",
+      "type": "fix",
+      "title": "Empty carriages no longer turn up in the train",
+      "summary": "A leftover test template was shipping with the mod, and it could be picked for any carriage slot like a normal one. When it was, you got a completely empty carriage \u2014 no floor, no walls, no roof, nothing inside \u2014 a gap in the middle of the train you could fall straight through. It has been removed, so every carriage the train builds is a real one.",
+      "highlights": [
+        "Removed the empty test carriage from the pool of carriages the train can build",
+        "It no longer appears as a blank template in the carriage editor"
+      ],
+      "pr": 1138,
+      "date": "2026-08-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "builds-submitted-for-review",
       "version": "0.683.0",
       "type": "feat",
