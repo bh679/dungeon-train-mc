@@ -9403,6 +9403,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "builder-time-and-builds-boards",
+      "version": "0.689.0",
+      "type": "feat",
+      "title": "The game now counts the time you spend building",
+      "summary": "Hours in the Train Builder used to count for nothing \u2014 every stat Dungeon Train kept was about riding. Time spent building is now tracked and ranked, alongside a board for the builds you have had approved onto other people's trains.",
+      "highlights": [
+        "Time in a Train Builder world, and time up at the editor plots, both count towards your building time.",
+        "Two new leaderboard books: Longest Building, and Most Builds Approved.",
+        "A Stat Room now stocks 49 books rather than 47."
+      ],
+      "date": "2026-08-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
