@@ -307,6 +307,11 @@ public final class PortalRoomEditor {
      * their pools alone on Clear. A portal room's chests are re-rolled per copy from that file, so
      * leaving it would restock exactly the chests the author had just cleared out.</p>
      *
+     * <p>Both sidecars are <b>emptied and written</b>, never deleted. Each one resolves config-dir
+     * copy first, bundled resource second, so deleting the config copy uncovers the shipped one
+     * instead of removing anything — an empty file in the active package is what actually stands
+     * for "this room has none".</p>
+     *
      * @return how many authored entries were dropped across both sidecars
      */
     public static int clearEverything(ServerLevel overworld, String name, CarriageDims dims)
@@ -316,10 +321,19 @@ public final class PortalRoomEditor {
         Vec3i size = plotSize(name, dims);
         int cleared = 0;
 
-        // Delete the sidecar file rather than emptying it entry by entry: a cleared room has no
-        // variants left to describe, and delete() drops the session cache with it.
-        int variants = TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, name, size).size();
-        TrackVariantBlocks.delete(TrackKind.PORTAL_ROOM, name);
+        // Empty the sidecar and write it back, rather than deleting the file. Deleting only removes
+        // the active package's copy, and loadFor falls straight back to the resource bundled in the
+        // jar — which is where every shipped room's cells actually live, so the variants an author
+        // had just cleared came back on the very next stamp. An empty file in the active package is
+        // what shadows the bundled one; it is the same shape as the contents-pool wipe below, which
+        // saves an emptied store for exactly this reason.
+        TrackVariantBlocks sidecar = TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, name, size);
+        int variants = sidecar.size();
+        // entries() hands back a copy, so removing as we walk it is safe.
+        for (CarriageVariantBlocks.Entry entry : sidecar.entries()) {
+            sidecar.remove(entry.localPos());
+        }
+        sidecar.save(TrackKind.PORTAL_ROOM, name);
         cleared += variants;
 
         // Same reasoning as the pools: a cleared room has nothing left to restore, and a remembered
