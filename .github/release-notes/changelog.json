@@ -9001,9 +9001,9 @@
         "Same tiling, block variants, lighting and fog as the real thing"
       ],
       "date": "2026-08-26",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.673.0",
+      "released_at": "2026-08-27T05:37:39Z"
     },
     {
       "id": "portal-room-editor-exit",
@@ -9015,9 +9015,9 @@
         "Only affected going straight to a room \u2014 /dungeontrain editor portals, or a room plot's Enter Inside"
       ],
       "date": "2026-08-26",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.673.0",
+      "released_at": "2026-08-27T05:37:39Z"
     },
     {
       "id": "discord-embed-links-to-release",
@@ -9028,9 +9028,9 @@
       "highlights": [],
       "pr": 1116,
       "date": "2026-08-26",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.673.0",
+      "released_at": "2026-08-27T05:37:39Z"
     },
     {
       "id": "book-author-burn-chat",
@@ -9045,9 +9045,9 @@
       ],
       "pr": 1121,
       "date": "2026-08-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.673.0",
+      "released_at": "2026-08-27T05:37:39Z"
     }
   ]
 }
