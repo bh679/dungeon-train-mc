@@ -6,6 +6,7 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.menu.MenuRenderStates;
+import games.brennan.dungeontrain.client.menu.PanelIconBatch;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.net.TemplateBlocksSyncPacket;
 import net.minecraft.client.Minecraft;
@@ -26,6 +27,7 @@ import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 
+import javax.annotation.Nullable;
 import java.util.List;
 
 /**
@@ -104,7 +106,7 @@ public final class TemplateBlocksMenuRenderer {
         }
 
         MultiBufferSource.BufferSource buffer = mc.renderBuffers().bufferSource();
-        drawPanel(ps, buffer, font, false);
+        drawPanel(ps, buffer, font, null);
         buffer.endBatch(PANEL_QUAD);
         buffer.endBatch();
         ps.popPose();
@@ -140,10 +142,12 @@ public final class TemplateBlocksMenuRenderer {
     }
 
     /**
-     * @param screenspace true when drawing under the screen-space host's Y-mirrored transform,
-     *                    which item icons have to compensate for. Quads and text do not.
+     * @param icons non-null in screen-space, where item icons are batched for the host to replay
+     *              through vanilla's GUI item path rather than drawn inline. See
+     *              {@link games.brennan.dungeontrain.client.menu.PanelIconBatch}.
      */
-    static void drawPanel(PoseStack ps, MultiBufferSource buffer, Font font, boolean screenspace) {
+    static void drawPanel(PoseStack ps, MultiBufferSource buffer, Font font,
+                          @Nullable PanelIconBatch icons) {
         List<TemplateBlocksSyncPacket.Entry> entries = TemplateBlocksMenu.entries();
         int n = entries.size();
         PanelSize size = panelSize();
@@ -198,7 +202,7 @@ public final class TemplateBlocksMenuRenderer {
             drawQuad(ps, buffer, swapL + 0.01, rowBot + 0.02, swapR, rowTop - 0.02,
                 swapHover ? 0xC033FF88 : 0x50339955);
 
-            drawBlockIcon(ps, buffer, entry.blockId(), colXL, rowCY, screenspace);
+            drawBlockIcon(ps, buffer, entry.blockId(), colXL, rowCY, icons);
             String label = TemplateBlocksMenu.shortLabel(entry.blockId());
             drawLeftText(ps, buffer, font, label, colXL + NAME_TEXT_LEFT_OFFSET, rowCY, 0xFFFFFFFF);
             drawCenteredText(ps, buffer, font, "x" + entry.count(), (countL + countR) / 2.0, rowCY, 0xFFCCCCCC);
@@ -207,18 +211,19 @@ public final class TemplateBlocksMenuRenderer {
     }
 
     /** Inventory-style block icon at the left of a row. BARRIER fallback for item-less blocks. */
-    static void drawBlockIcon(PoseStack ps, MultiBufferSource buffer,
-                              String blockId, double cellLeftX, double rowCY, boolean screenspace) {
+    static void drawBlockIcon(PoseStack ps, MultiBufferSource buffer, String blockId,
+                              double cellLeftX, double rowCY, @Nullable PanelIconBatch icons) {
         if (blockId == null || blockId.isEmpty()) return;
         ItemStack stack = TemplateBlocksMenu.iconStack(blockId);
+        double centerX = cellLeftX + ICON_LEFT_PAD + ICON_SIZE / 2.0;
+        if (icons != null) {
+            icons.add(ps, stack, centerX, rowCY, ICON_SIZE);
+            return;
+        }
         Minecraft mc = Minecraft.getInstance();
         ItemRenderer itemRenderer = mc.getItemRenderer();
         ps.pushPose();
-        ps.translate(cellLeftX + ICON_LEFT_PAD + ICON_SIZE / 2.0, rowCY, 0.002);
-        // Undo the host's Y mirror for the item model only. Quads don't care and the text
-        // helpers cancel it themselves, but a mirrored item renders upside down with its
-        // faces wound backwards, so it would be culled away entirely.
-        if (screenspace) ps.scale(1.0f, -1.0f, 1.0f);
+        ps.translate(centerX, rowCY, 0.002);
         ps.scale((float) ICON_SIZE, (float) ICON_SIZE, (float) ICON_SIZE);
         itemRenderer.renderStatic(
             stack,

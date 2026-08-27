@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.client.menu.templateblocks;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import games.brennan.dungeontrain.client.TemplateBlocksHotkeyClient;
+import games.brennan.dungeontrain.client.menu.PanelIconBatch;
 import games.brennan.dungeontrain.client.menu.PanelScreenHost;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.TemplateBlocksMenuTogglePacket;
@@ -41,8 +42,8 @@ public final class TemplateBlocksMenuScreen extends PanelScreenHost {
     }
 
     @Override
-    protected void drawPanel(PoseStack ps, MultiBufferSource buffer) {
-        TemplateBlocksMenuRenderer.drawPanel(ps, buffer, Minecraft.getInstance().font, true);
+    protected void drawPanel(PoseStack ps, MultiBufferSource buffer, PanelIconBatch icons) {
+        TemplateBlocksMenuRenderer.drawPanel(ps, buffer, Minecraft.getInstance().font, icons);
     }
 
     @Override

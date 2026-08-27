@@ -46,6 +46,9 @@ public abstract class PanelScreenHost extends Screen {
     /** Last frame's placement, needed to map the mouse back into panel units. */
     private PanelSpaceMapping mapping = new PanelSpaceMapping(1.0, 0.0, 0.0);
 
+    /** Reused each frame; {@link PanelIconBatch#render} empties it. */
+    private final PanelIconBatch icons = new PanelIconBatch();
+
     protected PanelScreenHost(Component title) {
         super(title);
     }
@@ -67,8 +70,13 @@ public abstract class PanelScreenHost extends Screen {
     /** The panel's full height in panel-local units, from the same math its draw body uses. */
     protected abstract double panelHeightUnits();
 
-    /** The panel's existing world-space draw body, called under the GUI transform. */
-    protected abstract void drawPanel(PoseStack ps, MultiBufferSource buffer);
+    /**
+     * The panel's existing world-space draw body, called under the GUI transform.
+     *
+     * <p>Item icons go into {@code icons} rather than being drawn inline — see
+     * {@link PanelIconBatch} for why they cannot be drawn here.</p>
+     */
+    protected abstract void drawPanel(PoseStack ps, MultiBufferSource buffer, PanelIconBatch icons);
 
     /** Resolve and store the hovered cell for a cursor at these panel-local coordinates. */
     protected abstract void hover(double localX, double localY);
@@ -127,11 +135,14 @@ public abstract class PanelScreenHost extends Screen {
         // click over the same cell.
         float px = (float) mapping.pxPerUnit();
         ps.scale(px, -px, px);
-        drawPanel(ps, gg.bufferSource());
+        drawPanel(ps, gg.bufferSource(), icons);
         ps.popPose();
         // The panels draw through their own RenderTypes rather than GuiGraphics' primitives,
         // so nothing has been flushed for us.
         gg.flush();
+        // Icons last, in plain GUI space with our transform off the stack — they need vanilla's
+        // own item setup, which is the whole reason they were batched instead of drawn inline.
+        icons.render(gg);
     }
 
     /** Centre the panel and pick a scale that fits. See {@link PanelSpaceMapping#fit}. */

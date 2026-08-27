@@ -15,6 +15,8 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 
+import javax.annotation.Nullable;
+
 /**
  * Shared inventory-style block icon for world-space menu panels, keyed on a bare Block registry id
  * ({@code "minecraft:stone_bricks"}). Extracted from
@@ -34,7 +36,7 @@ public final class MenuBlockIcons {
      */
     public static void drawBlockIcon(PoseStack ps, MultiBufferSource buffer,
                                      String blockId, double centerX, double rowCY, double iconSize) {
-        draw(ps, buffer, iconStackFor(blockId), centerX, rowCY, iconSize, false);
+        draw(ps, buffer, iconStackFor(blockId), centerX, rowCY, iconSize, null);
     }
 
     /**
@@ -45,26 +47,38 @@ public final class MenuBlockIcons {
      */
     public static void drawItemIcon(PoseStack ps, MultiBufferSource buffer,
                                     String itemId, double centerX, double rowCY, double iconSize) {
-        draw(ps, buffer, itemIconStackFor(itemId), centerX, rowCY, iconSize, false);
+        draw(ps, buffer, itemIconStackFor(itemId), centerX, rowCY, iconSize, null);
     }
 
     /**
-     * As {@link #drawItemIcon}, but told whether it is drawing under the screen-space host's
-     * Y-mirrored transform. A mirrored item model renders upside down with its faces wound
-     * backwards, so it would be culled away entirely; quads and text need no such help.
+     * As {@link #drawItemIcon}, but routed into {@code icons} when non-null — the screen-space
+     * host replays that batch through vanilla's GUI item path, which is the only way these
+     * render at all outside the level pass. See {@link PanelIconBatch}.
      */
     public static void drawItemIcon(PoseStack ps, MultiBufferSource buffer, String itemId,
-                                    double centerX, double rowCY, double iconSize, boolean screenspace) {
-        draw(ps, buffer, itemIconStackFor(itemId), centerX, rowCY, iconSize, screenspace);
+                                    double centerX, double rowCY, double iconSize,
+                                    @Nullable PanelIconBatch icons) {
+        draw(ps, buffer, itemIconStackFor(itemId), centerX, rowCY, iconSize, icons);
+    }
+
+    /** {@link #drawItemIcon(PoseStack, MultiBufferSource, String, double, double, double, PanelIconBatch)} for a block id. */
+    public static void drawBlockIcon(PoseStack ps, MultiBufferSource buffer, String blockId,
+                                     double centerX, double rowCY, double iconSize,
+                                     @Nullable PanelIconBatch icons) {
+        draw(ps, buffer, iconStackFor(blockId), centerX, rowCY, iconSize, icons);
     }
 
     private static void draw(PoseStack ps, MultiBufferSource buffer, ItemStack stack,
-                             double centerX, double rowCY, double iconSize, boolean screenspace) {
+                             double centerX, double rowCY, double iconSize,
+                             @Nullable PanelIconBatch icons) {
+        if (icons != null) {
+            icons.add(ps, stack, centerX, rowCY, iconSize);
+            return;
+        }
         Minecraft mc = Minecraft.getInstance();
         ItemRenderer itemRenderer = mc.getItemRenderer();
         ps.pushPose();
         ps.translate(centerX, rowCY, 0.002);
-        if (screenspace) ps.scale(1.0f, -1.0f, 1.0f);
         ps.scale((float) iconSize, (float) iconSize, (float) iconSize);
         itemRenderer.renderStatic(
             stack,

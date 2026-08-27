@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.client.menu.containercontents;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import games.brennan.dungeontrain.client.ContainerHotkeyClient;
+import games.brennan.dungeontrain.client.menu.PanelIconBatch;
 import games.brennan.dungeontrain.client.menu.PanelScreenHost;
 import games.brennan.dungeontrain.net.ContainerContentsMenuTogglePacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
@@ -47,8 +48,8 @@ public final class ContainerContentsMenuScreen extends PanelScreenHost {
     }
 
     @Override
-    protected void drawPanel(PoseStack ps, MultiBufferSource buffer) {
-        ContainerContentsMenuRenderer.drawPanel(ps, buffer, Minecraft.getInstance().font, true);
+    protected void drawPanel(PoseStack ps, MultiBufferSource buffer, PanelIconBatch icons) {
+        ContainerContentsMenuRenderer.drawPanel(ps, buffer, Minecraft.getInstance().font, icons);
     }
 
     @Override
