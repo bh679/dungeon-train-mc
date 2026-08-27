@@ -36,6 +36,8 @@ public final class TrainDebugHudOverlay {
     private static final int MARGIN = 4;
     /** Space between lines, on top of the font's own line height. */
     private static final int LINE_GAP = 1;
+    /** Breathing room between the dev version HUD's last line and the top of this panel. */
+    private static final int STACK_GAP = 2;
     private static final int BACKDROP = 0xA0000000;
     private static final int COLOR_TITLE = 0xFFFFFFFF;
     private static final int COLOR_BODY = 0xFFFFD080;
@@ -77,15 +79,24 @@ public final class TrainDebugHudOverlay {
             widest = Math.max(widest, HudText.scaledWidth(mc.font, line.text()));
         }
 
+        int panelHeight = lines.size() * lineHeight + PAD * 2 - LINE_GAP;
+
         // Vanilla's F3 screen owns the top-left column, so step down to the bottom-left while it
         // is up rather than drawing two stacks of text on top of each other.
-        int top = mc.getDebugOverlay().showDebugScreen()
-            ? graphics.guiHeight() - MARGIN - (lines.size() * lineHeight + PAD * 2 - LINE_GAP)
-            : MARGIN;
+        int top;
+        if (mc.getDebugOverlay().showDebugScreen()) {
+            top = graphics.guiHeight() - MARGIN - panelHeight;
+        } else if (VersionHudOverlay.isDrawing(mc)) {
+            // Developer builds already have the version/Diff HUD in the top-left corner. Sit under
+            // whatever it drew this frame rather than on top of it.
+            top = MARGIN + VersionHudOverlay.lineCount() * lineHeight + STACK_GAP;
+        } else {
+            top = MARGIN;
+        }
 
         graphics.fill(MARGIN, top,
             MARGIN + widest + PAD * 2,
-            top + lines.size() * lineHeight + PAD * 2 - LINE_GAP,
+            top + panelHeight,
             BACKDROP);
 
         int y = top + PAD;

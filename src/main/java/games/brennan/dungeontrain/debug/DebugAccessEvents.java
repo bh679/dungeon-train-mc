@@ -34,6 +34,12 @@ import java.util.UUID;
  *
  * <p>Grants live in the world's saved data ({@link DungeonTrainWorldData#debugGrants()}), keyed on
  * the overworld like every other DT world state.</p>
+ *
+ * <p><b>Developer builds are exempt.</b> On any non-{@code main} branch
+ * ({@link DungeonTrain#isDevBuild()}) the panel is open without a grant and the relay is never
+ * asked — the gate exists to keep the panel away from players on a release build, and a dev build
+ * is already a build nobody is playing. The server decides, so a dev-build client connecting to a
+ * release server still needs a grant.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DebugAccessEvents {
@@ -49,6 +55,7 @@ public final class DebugAccessEvents {
 
     @SubscribeEvent
     public static void onServerTick(ServerTickEvent.Post event) {
+        if (DungeonTrain.isDevBuild()) return;
         MinecraftServer server = event.getServer();
         tick++;
         if (tick % SWEEP_INTERVAL_TICKS == 0) {
@@ -75,6 +82,14 @@ public final class DebugAccessEvents {
         MinecraftServer server = player.getServer();
         if (server == null) return;
         DungeonTrainWorldData data = DungeonTrainWorldData.get(server.overworld());
+
+        // Developer build: open, unconditionally and without expiry.
+        if (DungeonTrain.isDevBuild()) {
+            DungeonTrainNet.sendTo(player, new TrainDebugSyncPacket(
+                true, DebugAccessGrants.NEVER_EXPIRES, data.getGenerationConfig().seed()));
+            return;
+        }
+
         DebugAccessGrants.Grant grant = data.debugGrants().grantFor(player.getUUID());
         if (grant == null) {
             DungeonTrainNet.sendTo(player, TrainDebugSyncPacket.denied());
@@ -89,6 +104,8 @@ public final class DebugAccessEvents {
      * never calls back, so the cached grant stands.
      */
     private static void refreshFromRelay(ServerPlayer player) {
+        // Nothing to ask about — a dev build is already open. Also keeps dev sessions off the relay.
+        if (DungeonTrain.isDevBuild()) return;
         MinecraftServer server = player.getServer();
         if (server == null) return;
         UUID uuid = player.getUUID();
