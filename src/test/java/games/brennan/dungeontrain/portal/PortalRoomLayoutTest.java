@@ -220,6 +220,72 @@ class PortalRoomLayoutTest {
     }
 
     @Test
+    @DisplayName("A room at exactly minWidth has no slack — every offset clamps back to zero")
+    void maxDoorOffset_isZeroAtMinWidth() {
+        for (int carriageWidth = PortalCarriageLayout.MIN_WIDTH; carriageWidth <= CarriageDims.MAX_WIDTH; carriageWidth++) {
+            CarriageDims dims = CarriageDims.clamp(9, carriageWidth, 7);
+            int width = PortalRoomLayout.minWidth(dims);
+            assertEquals(0, PortalRoomLayout.maxDoorOffset(dims, width),
+                "carriage width " + carriageWidth + ": minWidth has no spare width to give the door");
+            assertEquals(0, PortalRoomLayout.clampDoorOffset(dims, width, 7),
+                "an offset asked for at minWidth must clamp back to centre");
+            assertEquals(0, PortalRoomLayout.clampDoorOffset(dims, width, -7),
+                "a negative offset asked for at minWidth must clamp back to centre too");
+        }
+    }
+
+    @Test
+    @DisplayName("A wider room has half its slack to spend on either side of centre")
+    void maxDoorOffset_isHalfTheSlackOverMinWidth() {
+        CarriageDims dims = DEFAULT_DIMS;
+        int min = PortalRoomLayout.minWidth(dims);
+        assertEquals(0, PortalRoomLayout.maxDoorOffset(dims, min));
+        assertEquals(1, PortalRoomLayout.maxDoorOffset(dims, min + 2));
+        assertEquals(1, PortalRoomLayout.maxDoorOffset(dims, min + 3), "odd slack floors down");
+        assertEquals(5, PortalRoomLayout.maxDoorOffset(dims, min + 10));
+
+        int max = PortalRoomLayout.maxDoorOffset(dims, min + 10);
+        assertEquals(max, PortalRoomLayout.clampDoorOffset(dims, min + 10, max + 4),
+            "an offset past the slack clamps to it exactly");
+        assertEquals(-max, PortalRoomLayout.clampDoorOffset(dims, min + 10, -max - 4));
+        assertEquals(2, PortalRoomLayout.clampDoorOffset(dims, min + 10, 2), "in range passes through");
+    }
+
+    @Test
+    @DisplayName("An off-centre door still leaves the corridor's whole cross-section inside the room")
+    void roomInterior_swallowsTheCorridorCrossSectionEvenOffCentre() {
+        BlockPos entry = new BlockPos(0, 0, 0);
+
+        for (int carriageWidth = PortalCarriageLayout.MIN_WIDTH; carriageWidth <= CarriageDims.MAX_WIDTH; carriageWidth++) {
+            CarriageDims dims = CarriageDims.clamp(9, carriageWidth, 7);
+            PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims, PortalCorridorKind.LONG);
+            // Comfortably wider than the floor, so there is slack to spend at every offset tried.
+            int width = PortalRoomLayout.minWidth(dims) + 10;
+            int max = PortalRoomLayout.maxDoorOffset(dims, width);
+
+            for (int offset : new int[]{-max, -1, 0, 1, max}) {
+                BlockPos room = PortalRoomLayout.roomOrigin(entry, dims, layout, width, offset);
+                int interiorMinZ = room.getZ() + 1;
+                int interiorMaxZ = room.getZ() + width - 2;
+                assertTrue(interiorMinZ <= entry.getZ() && interiorMaxZ >= entry.getZ() + dims.width() - 1,
+                    "carriage width " + carriageWidth + ", offset " + offset
+                        + ": the corridor's cross-section must stay inside the room");
+
+                // The corridor itself never moved — only the split around it did.
+                assertEquals(entry.getZ() + layout.doorZ(),
+                    PortalRoomDoorCells.doorZ(room, new Vec3i(layout.length(),
+                        PortalRoomLayout.minHeight(dims), width), offset),
+                    "the ghosted door line must still be the corridor's own fixed doorway line");
+            }
+
+            // An offset beyond the room's slack clamps rather than pushing the corridor outside it.
+            BlockPos clamped = PortalRoomLayout.roomOrigin(entry, dims, layout, width, max + 50);
+            BlockPos atMax = PortalRoomLayout.roomOrigin(entry, dims, layout, width, max);
+            assertEquals(atMax, clamped, "an offset past the slack must land exactly where the max does");
+        }
+    }
+
+    @Test
     @DisplayName("One block under minWidth and the corridor no longer fits — the floor has no slack left")
     void roomInterior_failsOneBlockUnderMinWidth() {
         BlockPos entry = new BlockPos(0, 0, 0);

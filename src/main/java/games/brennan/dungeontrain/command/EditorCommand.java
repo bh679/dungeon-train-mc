@@ -531,6 +531,25 @@ public final class EditorCommand {
                         .suggests(PORTAL_ROOM_DOOR_WALL_SUGGESTIONS)
                         .executes(ctx -> runPortalRoomDoorWall(ctx.getSource(),
                             StringArgumentType.getString(ctx, "doorwall")))))
+                // How far the room's shared walkway sits off dead centre of its own width. Centred
+                // by default, and clamped to whatever slack the room's own width over its minimum
+                // actually has — a room built at the geometric floor has none and stays centred
+                // regardless of how many times this is stepped.
+                .then(Commands.literal("dooroffset")
+                    .then(Commands.literal("inc")
+                        .executes(ctx -> runPortalRoomDoorOffsetStep(ctx.getSource(), +1)))
+                    .then(Commands.literal("dec")
+                        .executes(ctx -> runPortalRoomDoorOffsetStep(ctx.getSource(), -1)))
+                    .then(Commands.literal("reset")
+                        .executes(ctx -> runPortalRoomDoorOffset(ctx.getSource(), 0)))
+                    // Loose bound, like portalSizeNode's — PortalRoomLayout.clampDoorOffset is the
+                    // single authority on what is legal for this world and this room's own width,
+                    // and a parser bound tighter than that would be a silent rejection where the
+                    // clamp is a visible one.
+                    .then(Commands.argument("blocks", IntegerArgumentType.integer(
+                            -PortalRoomLayout.MAX_WIDTH, PortalRoomLayout.MAX_WIDTH))
+                        .executes(ctx -> runPortalRoomDoorOffset(ctx.getSource(),
+                            IntegerArgumentType.getInteger(ctx, "blocks")))))
                 // Whether the room is lit as though it stood outdoors, and under which sky. Off by
                 // default, which is every room lit only by whatever its own build gives it.
                 .then(Commands.literal("sky")
@@ -6024,6 +6043,58 @@ public final class EditorCommand {
             games.brennan.dungeontrain.portal.PortalRoomSettings.of(name).withDoorWall(wanted));
     }
 
+    /** Nudge the door offset of the room plot the player is standing in by {@code delta}. */
+    private static int runPortalRoomDoorOffsetStep(CommandSourceStack source, int delta) {
+        ServerPlayer player = requirePlayer(source);
+        if (player == null) return 0;
+        CarriageDims dims = DungeonTrainWorldData.get(source.getServer().overworld()).dims();
+        String name = PortalRoomEditor.plotContaining(player.blockPosition(), dims);
+        if (name == null) {
+            source.sendFailure(Component.literal(
+                "Stand in a dimensional carriage plot first — /dt editor portals."));
+            return 0;
+        }
+        games.brennan.dungeontrain.portal.PortalRoomSettings current =
+            games.brennan.dungeontrain.portal.PortalRoomSettings.of(name);
+        return runPortalRoomDoorOffset(source, current.doorOffset().value() + delta);
+    }
+
+    /**
+     * {@code /dt editor portals dooroffset <blocks>} — set how far the room's shared walkway sits
+     * off dead centre of its own width.
+     *
+     * <p>Clamped rather than rejected, like the other numeric portal settings: a room with no slack
+     * to spend (built at exactly {@link PortalRoomLayout#minWidth}) clamps every offset back to
+     * centre, and a room saved wide and later trimmed narrower just eases back toward centre instead
+     * of becoming invalid.</p>
+     */
+    private static int runPortalRoomDoorOffset(CommandSourceStack source, int blocks) {
+        ServerPlayer player = requirePlayer(source);
+        if (player == null) return 0;
+        CarriageDims dims = DungeonTrainWorldData.get(source.getServer().overworld()).dims();
+        String name = PortalRoomEditor.plotContaining(player.blockPosition(), dims);
+        if (name == null) {
+            source.sendFailure(Component.literal(
+                "Stand in a dimensional carriage plot first — /dt editor portals."));
+            return 0;
+        }
+
+        int width = PortalRoomEditor.plotSize(name, dims).getZ();
+        int clamped = PortalRoomLayout.clampDoorOffset(dims, width, blocks);
+        if (clamped != blocks) {
+            int slack = PortalRoomLayout.maxDoorOffset(dims, width);
+            source.sendSuccess(() -> Component.literal(
+                "Door position clamped from " + blocks + " to " + clamped
+                + " — this room's width leaves " + slack + " block" + (slack == 1 ? "" : "s")
+                + " of slack either way."
+            ).withStyle(ChatFormatting.YELLOW), true);
+        }
+        games.brennan.dungeontrain.portal.PortalRoomSettings current =
+            games.brennan.dungeontrain.portal.PortalRoomSettings.of(name);
+        return applyPortalRoomSettings(source, name, current.withDoorOffset(
+            new games.brennan.dungeontrain.portal.PortalRoomDoorOffset(clamped)));
+    }
+
     /** {@code /dt editor portals sky next} — step Off → Daylight → Day/Night → Nether → End. */
     private static int runPortalRoomSkyCycle(CommandSourceStack source) {
         String name = portalRoomPlotUnderPlayer(source);
@@ -6506,9 +6577,15 @@ public final class EditorCommand {
         String sky = settings.sky().lights()
             ? ", sky: " + settings.sky().displayName()
             : "";
+        // Same rule again: "door position: centred" on every room would be noise, since centred is
+        // what every room did before this setting existed.
+        int doorOffsetValue = settings.doorOffset().value();
+        String doorOffset = doorOffsetValue != 0
+            ? ", door position: " + (doorOffsetValue > 0 ? "+" + doorOffsetValue : doorOffsetValue)
+            : "";
         source.sendSuccess(() -> Component.literal(
             "Dimensional carriage '" + name + "' walls: " + settings.mode().displayName() + copies + contents
-            + exits + books + sky
+            + exits + books + sky + doorOffset
             + ". Portals already standing keep the settings they were built with — this takes effect "
             + "on the next one the train reaches." + subVariantNote(name)
         ).withStyle(ChatFormatting.GREEN), true);

@@ -242,14 +242,54 @@ public final class PortalRoomLayout {
      */
     public static BlockPos roomOrigin(BlockPos entryOrigin, CarriageDims dims,
                                       PortalCarriageLayout layout, int width) {
+        return roomOrigin(entryOrigin, dims, layout, width, 0);
+    }
+
+    /**
+     * As {@link #roomOrigin(BlockPos, CarriageDims, PortalCarriageLayout, int)}, with the doorway
+     * line shifted {@code doorOffset} blocks off dead centre within the room's own width.
+     *
+     * <p>The corridor itself never moves — its cross-section is fixed by {@code dims} and shared by
+     * every carriage in the world, so {@code zCentre} below is exactly what the undisplaced overload
+     * uses. What moves is how the room's width is <b>split</b> either side of that fixed line: an
+     * author who has built wider than {@link #minWidth} has slack to spend
+     * ({@code width - minWidth(dims)}), and {@code doorOffset} spends it unevenly instead of the
+     * default 50/50 split — which is what makes the door read as off-centre from inside the room
+     * the author actually built, even though the corridor beyond it never bends.</p>
+     *
+     * <p>Clamped rather than rejected, via {@link #clampDoorOffset}, for the same reason every other
+     * numeric portal-room setting is: a room saved wide and later trimmed narrower just eases back
+     * toward centre instead of becoming invalid.</p>
+     */
+    public static BlockPos roomOrigin(BlockPos entryOrigin, CarriageDims dims,
+                                      PortalCarriageLayout layout, int width, int doorOffset) {
         int interiorWidth = width - 2;
         int zCentre = entryOrigin.getZ() + layout.doorZ();
-        int interiorMinZ = zCentre - interiorWidth / 2;
+        int interiorMinZ = zCentre - interiorWidth / 2 - clampDoorOffset(dims, width, doorOffset);
         // One CORRIDOR along, not one carriage — a corridor is the longer of the two
         // (PortalCorridorSize), and the room has to start where the corridor actually ends.
         return new BlockPos(
             entryOrigin.getX() + layout.length(),
             entryOrigin.getY(),
             interiorMinZ - 1);
+    }
+
+    /**
+     * How far {@link #roomOrigin}'s door-offset may run to one side of centre, for a room of
+     * {@code width} in a world of {@code dims} — half the room's slack over {@link #minWidth}.
+     *
+     * <p>Zero at {@link #minWidth} itself: a room built at the geometric floor has no spare width to
+     * give the door either way, so it stays dead centre regardless of what was authored. The wider a
+     * room is built, the more room there is to slide the door toward either end.</p>
+     */
+    public static int maxDoorOffset(CarriageDims dims, int width) {
+        int slack = width - minWidth(dims);
+        return Math.max(0, slack) / 2;
+    }
+
+    /** {@code doorOffset} held inside {@code -}{@link #maxDoorOffset}..{@code +}{@link #maxDoorOffset}. */
+    public static int clampDoorOffset(CarriageDims dims, int width, int doorOffset) {
+        int max = maxDoorOffset(dims, width);
+        return Math.max(-max, Math.min(max, doorOffset));
     }
 }

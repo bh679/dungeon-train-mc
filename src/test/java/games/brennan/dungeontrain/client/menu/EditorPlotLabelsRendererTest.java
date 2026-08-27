@@ -65,9 +65,10 @@ class EditorPlotLabelsRendererTest {
     void portalInPlot_rowOrder() {
         assertArrayEquals(
             new RowKind[]{RowKind.NAME, RowKind.WEIGHT, RowKind.LENGTH, RowKind.WIDTH,
-                RowKind.HEIGHT, RowKind.MODE, RowKind.ROOM_CONTENTS, RowKind.ROOM_BOOKS, RowKind.ROOM_SKY, RowKind.ENTER, RowKind.ACTION},
+                RowKind.HEIGHT, RowKind.MODE, RowKind.DOOR_OFFSET, RowKind.ROOM_CONTENTS,
+                RowKind.ROOM_BOOKS, RowKind.ROOM_SKY, RowKind.ENTER, RowKind.ACTION},
             EditorPlotLabelsRenderer.rows(portalInPlot()));
-        assertEquals(11, EditorPlotLabelsRenderer.rowCount(portalInPlot()));
+        assertEquals(12, EditorPlotLabelsRenderer.rowCount(portalInPlot()));
     }
 
     @Test
@@ -115,7 +116,7 @@ class EditorPlotLabelsRendererTest {
         // spacing stepper as well as Copies.
         assertArrayEquals(
             new RowKind[]{RowKind.NAME, RowKind.WEIGHT, RowKind.LENGTH, RowKind.WIDTH,
-                RowKind.HEIGHT, RowKind.MODE, RowKind.COPIES, RowKind.DOOR_WALL,
+                RowKind.HEIGHT, RowKind.MODE, RowKind.COPIES, RowKind.DOOR_WALL, RowKind.DOOR_OFFSET,
                 RowKind.ROOM_CONTENTS, RowKind.ROOM_BOOKS, RowKind.ROOM_SKY,
                 RowKind.EXITS, RowKind.EXIT_EVERY, RowKind.ENTER, RowKind.ACTION},
             EditorPlotLabelsRenderer.rows(
@@ -126,7 +127,7 @@ class EditorPlotLabelsRendererTest {
         // Copies: those cells roll from the variant sidecar like any others.
         assertArrayEquals(
             new RowKind[]{RowKind.NAME, RowKind.WEIGHT, RowKind.LENGTH, RowKind.WIDTH,
-                RowKind.HEIGHT, RowKind.MODE, RowKind.COPIES, RowKind.ROOM_CONTENTS,
+                RowKind.HEIGHT, RowKind.MODE, RowKind.COPIES, RowKind.DOOR_OFFSET, RowKind.ROOM_CONTENTS,
                 RowKind.ROOM_BOOKS, RowKind.ROOM_SKY, RowKind.EXITS, RowKind.ENTER, RowKind.ACTION},
             EditorPlotLabelsRenderer.rows(entry("PORTALS", true, 1, 11, 13, 7, "endless_open")));
 
@@ -137,7 +138,7 @@ class EditorPlotLabelsRendererTest {
         assertArrayEquals(
             new RowKind[]{RowKind.NAME, RowKind.WEIGHT, RowKind.LENGTH, RowKind.WIDTH,
                 RowKind.HEIGHT, RowKind.MODE, RowKind.COPIES, RowKind.COPIES_FLOOR,
-                RowKind.COPIES_ROOF,
+                RowKind.COPIES_ROOF, RowKind.DOOR_OFFSET,
                 RowKind.ROOM_CONTENTS, RowKind.ROOM_BOOKS, RowKind.ROOM_SKY, RowKind.EXITS, RowKind.ENTER,
                 RowKind.ACTION},
             EditorPlotLabelsRenderer.rows(
@@ -146,7 +147,7 @@ class EditorPlotLabelsRendererTest {
         // Under Endless Repetition the same stored tag means Exact, so there is no block to show.
         assertArrayEquals(
             new RowKind[]{RowKind.NAME, RowKind.WEIGHT, RowKind.LENGTH, RowKind.WIDTH,
-                RowKind.HEIGHT, RowKind.MODE, RowKind.COPIES, RowKind.DOOR_WALL,
+                RowKind.HEIGHT, RowKind.MODE, RowKind.COPIES, RowKind.DOOR_WALL, RowKind.DOOR_OFFSET,
                 RowKind.ROOM_CONTENTS,
                 RowKind.ROOM_BOOKS, RowKind.ROOM_SKY, RowKind.EXITS, RowKind.EXIT_EVERY, RowKind.ENTER,
                 RowKind.ACTION},
@@ -156,7 +157,7 @@ class EditorPlotLabelsRendererTest {
         // Bedrock Lock repeats nothing, so it has neither.
         assertArrayEquals(
             new RowKind[]{RowKind.NAME, RowKind.WEIGHT, RowKind.LENGTH, RowKind.WIDTH,
-                RowKind.HEIGHT, RowKind.MODE, RowKind.ROOM_CONTENTS, RowKind.ROOM_BOOKS, RowKind.ROOM_SKY, RowKind.ENTER,
+                RowKind.HEIGHT, RowKind.MODE, RowKind.DOOR_OFFSET, RowKind.ROOM_CONTENTS, RowKind.ROOM_BOOKS, RowKind.ROOM_SKY, RowKind.ENTER,
                 RowKind.ACTION},
             EditorPlotLabelsRenderer.rows(entry("PORTALS", true, 1, 11, 13, 7, "bedrock_lock")));
     }
@@ -215,6 +216,51 @@ class EditorPlotLabelsRendererTest {
             EditorPlotLabelsRenderer.doorWallLabel("endless_repetition/dynamic"));
         assertEquals("Room Walls: Kept", EditorPlotLabelsRenderer.doorWallLabel(
             "endless_repetition/dynamic/off/lattice:8/off/none/repeated"));
+    }
+
+    @Test
+    @DisplayName("Door Position shows on every portal room, whatever the walls do — same reach as L/W/H")
+    void doorOffsetRowShowsOnEveryMode() {
+        for (String mode : new String[]{"endless_repetition", "endless_open", "bedrock_lock", "bedrockless"}) {
+            assertTrue(EditorPlotLabelsRenderer.hasDoorOffsetRow(
+                entry("PORTALS", true, 1, 11, 13, 7, mode)), mode);
+        }
+        // …and only from inside the plot, the same rule as the dimension and Walls rows.
+        assertFalse(EditorPlotLabelsRenderer.hasDoorOffsetRow(
+            entry("PORTALS", false, 1, 11, 13, 7, "bedrock_lock")));
+        // No mode at all (every non-portal category) means no row either.
+        assertFalse(EditorPlotLabelsRenderer.hasDoorOffsetRow(
+            entry("PORTALS", true, 1, 11, 13, 7, EditorPlotLabelsPacket.NO_MODE)));
+    }
+
+    @Test
+    @DisplayName("The Door Position label reads Centred at the default, and a signed number off it")
+    void doorOffsetLabelReadsSignedOrCentred() {
+        assertEquals("Door Position: Centred", EditorPlotLabelsRenderer.doorOffsetLabel("bedrock_lock"));
+        assertEquals("Door Position: Centred",
+            EditorPlotLabelsRenderer.doorOffsetLabel("endless_repetition/dynamic/off/lattice:8/off/none/repeated"));
+        assertEquals("Door Position: +3", EditorPlotLabelsRenderer.doorOffsetLabel(
+            "endless_repetition/dynamic/off/lattice:8/off/none/repeated/3"));
+        assertEquals("Door Position: -2", EditorPlotLabelsRenderer.doorOffsetLabel(
+            "endless_repetition/dynamic/off/lattice:8/off/none/repeated/-2"));
+    }
+
+    @Test
+    @DisplayName("The Door Position stepper's thirds hit their own cells")
+    void doorOffsetRowIsHitTestedCorrectly() {
+        EditorPlotLabelsPacket.Entry e = entry("PORTALS", true, 1, 11, 13, 7, "bedrock_lock");
+        RowKind[] rows = EditorPlotLabelsRenderer.rows(e);
+        double halfW = EditorPlotLabelsRenderer.MIN_HALF_W;
+        double y = rowCentreY(e, indexOf(rows, RowKind.DOOR_OFFSET));
+
+        assertEquals(CellKind.DOOR_OFFSET_DEC,
+            EditorPlotLabelsRenderer.cellAt(e, halfW, -halfW + 0.05, y));
+        assertEquals(CellKind.DOOR_OFFSET_TYPE, EditorPlotLabelsRenderer.cellAt(e, halfW, 0.0, y));
+        assertEquals(CellKind.DOOR_OFFSET_INC,
+            EditorPlotLabelsRenderer.cellAt(e, halfW, halfW - 0.05, y));
+        // The row directly above still resolves to itself.
+        assertEquals(CellKind.MODE_CYCLE, EditorPlotLabelsRenderer.cellAt(e, halfW, 0.0,
+            rowCentreY(e, indexOf(rows, RowKind.MODE))));
     }
 
     @Test
@@ -281,7 +327,7 @@ class EditorPlotLabelsRendererTest {
             entry("PORTALS", true, 1, 11, 13, 7, "endless_repetition/dynamic/off/random:4:6");
         assertArrayEquals(
             new RowKind[]{RowKind.NAME, RowKind.WEIGHT, RowKind.LENGTH, RowKind.WIDTH,
-                RowKind.HEIGHT, RowKind.MODE, RowKind.COPIES, RowKind.DOOR_WALL,
+                RowKind.HEIGHT, RowKind.MODE, RowKind.COPIES, RowKind.DOOR_WALL, RowKind.DOOR_OFFSET,
                 RowKind.ROOM_CONTENTS, RowKind.ROOM_BOOKS, RowKind.ROOM_SKY,
                 RowKind.EXITS, RowKind.EXIT_EVERY, RowKind.EXIT_MOVE, RowKind.ENTER, RowKind.ACTION},
             EditorPlotLabelsRenderer.rows(random));
@@ -390,7 +436,8 @@ class EditorPlotLabelsRendererTest {
         EditorPlotLabelsPacket.Entry on = entry("PORTALS", true, 1, 11, 13, 7, "bedrock_lock/exact/fit");
         assertArrayEquals(
             new RowKind[]{RowKind.NAME, RowKind.WEIGHT, RowKind.LENGTH, RowKind.WIDTH,
-                RowKind.HEIGHT, RowKind.MODE, RowKind.ROOM_CONTENTS, RowKind.ROOM_BOOKS, RowKind.ROOM_SKY, RowKind.ENTER,
+                RowKind.HEIGHT, RowKind.MODE, RowKind.DOOR_OFFSET, RowKind.ROOM_CONTENTS,
+                RowKind.ROOM_BOOKS, RowKind.ROOM_SKY, RowKind.ENTER,
                 RowKind.ACTION, RowKind.CONTENTS},
             EditorPlotLabelsRenderer.rows(on));
 

@@ -165,6 +165,9 @@ public final class EditorPlotPanelInputHandler {
             case ROOM_BOOKS_CYCLE -> dispatchRoomBooksCycle(entry);
             case ROOM_BOOKS_EDIT -> openBookMix(entry);
             case DOOR_WALL_CYCLE -> dispatchDoorWallCycle(entry);
+            case DOOR_OFFSET_DEC -> dispatchDoorOffset(entry, "dec");
+            case DOOR_OFFSET_INC -> dispatchDoorOffset(entry, "inc");
+            case DOOR_OFFSET_TYPE -> openDoorOffsetEntry(entry);
             case ROOM_SKY_CYCLE -> dispatchRoomSkyCycle(entry);
             case EXITS_CYCLE -> dispatchExitsCycle(entry);
             case EXIT_EVERY_DEC -> dispatchExitEvery(entry, "dec");
@@ -273,6 +276,25 @@ public final class EditorPlotPanelInputHandler {
         String cmd = EditorPlotTeleport.roomSkyCycleCommandFor(entry.plotCategory());
         if (cmd == null) return;
         CommandRunner.run(cmd);
+    }
+
+    /** Nudge how far the room's shared walkway sits off dead centre of its own width. */
+    private static void dispatchDoorOffset(EditorPlotLabelsPacket.Entry entry, String dir) {
+        String cmd = EditorPlotTeleport.doorOffsetCommandFor(entry.plotCategory(), dir);
+        if (cmd == null) return;
+        CommandRunner.run(cmd);
+    }
+
+    /**
+     * Open the typing field for the door offset. As {@link #openExitEveryEntry}, the current value
+     * comes off the room's own settings tag the panel already carries.
+     */
+    private static void openDoorOffsetEntry(EditorPlotLabelsPacket.Entry entry) {
+        if (entry.plotCategory() == null || !entry.plotCategory().hasRoomBox()) return;
+        int current = games.brennan.dungeontrain.portal.PortalRoomSettings.parse(entry.roomMode())
+            .doorOffset().value();
+        CommandMenuState.openAt(new games.brennan.dungeontrain.client.menu.PortalRoomAxisScreen(
+            "dooroffset", "Door Position", "blocks", current));
     }
 
     /**

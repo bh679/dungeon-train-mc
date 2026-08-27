@@ -85,6 +85,24 @@ class PortalRoomDoorCellsTest {
     }
 
     @Test
+    @DisplayName("The door line agrees with an off-centre roomOrigin too, at every legal offset")
+    void doorZ_agreesWithRoomOriginCentring_offCentre() {
+        BlockPos entry = new BlockPos(0, 0, 0);
+        PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(DEFAULT_DIMS, PortalCorridorKind.LONG);
+
+        // Comfortably wider than the floor, so every offset tried actually has slack to spend.
+        int width = PortalRoomLayout.minWidth(DEFAULT_DIMS) + 10;
+        int max = PortalRoomLayout.maxDoorOffset(DEFAULT_DIMS, width);
+        Vec3i size = new Vec3i(PortalRoomLayout.BUILT_IN_LENGTH, PortalRoomLayout.minHeight(DEFAULT_DIMS), width);
+
+        for (int offset = -max; offset <= max; offset++) {
+            BlockPos room = PortalRoomLayout.roomOrigin(entry, DEFAULT_DIMS, layout, width, offset);
+            assertEquals(entry.getZ() + layout.doorZ(), PortalRoomDoorCells.doorZ(room, size, offset),
+                "offset " + offset + ": the ghosted line must still be the corridor's own fixed line");
+        }
+    }
+
+    @Test
     @DisplayName("A door cell is the corridor's own doorway cell, in the room's frame")
     void forRoom_landsOnTheCorridorsDoorwayColumn() {
         BlockPos entry = new BlockPos(-300, 12, 88);

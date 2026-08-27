@@ -103,6 +103,10 @@ public final class EditorPlotLabelsRenderer {
         ROOM_CONTENTS_CYCLE,
         /** The door-wall row — whether a copy carries its own wall through a corridor mouth. */
         DOOR_WALL_CYCLE,
+        /** The stepper for how far the shared walkway sits off dead centre of the room's width. */
+        DOOR_OFFSET_DEC,
+        DOOR_OFFSET_INC,
+        DOOR_OFFSET_TYPE,
         /** The sky row — whether the room is lit as though it stood outdoors, and under which sky. */
         ROOM_SKY_CYCLE,
         /** The author-lock row — whether the room stocks its shelves from one person. */
@@ -131,7 +135,8 @@ public final class EditorPlotLabelsRenderer {
      */
     public enum RowKind {
         NAME, WEIGHT, LENGTH, WIDTH, HEIGHT, MODE, COPIES, COPIES_FLOOR, COPIES_ROOF, DOOR_WALL,
-        ROOM_CONTENTS, ROOM_BOOKS, ROOM_SKY, EXITS, EXIT_EVERY, EXIT_MOVE, ENTER, ACTION, CONTENTS
+        DOOR_OFFSET, ROOM_CONTENTS, ROOM_BOOKS, ROOM_SKY, EXITS, EXIT_EVERY, EXIT_MOVE, ENTER,
+        ACTION, CONTENTS
     }
 
     /**
@@ -159,6 +164,7 @@ public final class EditorPlotLabelsRenderer {
             buf[n++] = RowKind.COPIES_ROOF;
         }
         if (hasDoorWallRow(entry)) buf[n++] = RowKind.DOOR_WALL;
+        if (hasDoorOffsetRow(entry)) buf[n++] = RowKind.DOOR_OFFSET;
         if (hasRoomContentsRow(entry)) buf[n++] = RowKind.ROOM_CONTENTS;
         if (hasRoomBooksRow(entry)) buf[n++] = RowKind.ROOM_BOOKS;
         if (hasRoomSkyRow(entry)) buf[n++] = RowKind.ROOM_SKY;
@@ -379,6 +385,36 @@ public final class EditorPlotLabelsRenderer {
     public static String doorWallLabel(String modeTag) {
         return "Room Walls: " + games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag)
             .effectiveDoorWall().displayName();
+    }
+
+    /**
+     * Whether the Door Position row shows: any portal room, in its plot — the same reach as the
+     * dimension rows, since this is a property of the room's own box rather than of its walls.
+     *
+     * <p>Not gated on the room actually having slack to spend (the way {@link #hasExitEveryRow} gates
+     * on Exits laying anything): whether a given width has room to move the door depends on this
+     * world's {@code CarriageDims}, which the plot label packet does not carry. Showing the row
+     * unconditionally and letting the stepper clamp to "Centred" at zero slack costs nothing — a
+     * control that briefly does nothing is no worse than the exits stepper doing nothing at 0/10 —
+     * and keeps this row off the wire entirely rather than adding a field only it would use.</p>
+     */
+    public static boolean hasDoorOffsetRow(EditorPlotLabelsPacket.Entry entry) {
+        return hasModeRow(entry);
+    }
+
+    /**
+     * What the Door Position row reads, e.g. {@code "Door Position: Centred"} or
+     * {@code "Door Position: +2"}.
+     *
+     * <p>Signed rather than a bare number: {@link games.brennan.dungeontrain.portal.PortalRoomLayout}
+     * treats offset as a direction along {@code Z}, and "off to one side" reads better as a sign than
+     * as an unlabelled magnitude an author has to remember the meaning of.</p>
+     */
+    public static String doorOffsetLabel(String modeTag) {
+        int value = games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag)
+            .doorOffset().value();
+        if (value == 0) return "Door Position: Centred";
+        return "Door Position: " + (value > 0 ? "+" + value : value);
     }
 
     /**
@@ -792,6 +828,8 @@ public final class EditorPlotLabelsRenderer {
             case COPIES_ROOF -> copiesBlockHitIsEdit(halfW, hitX)
                 ? CellKind.COPIES_ROOF_EDIT : CellKind.COPIES_ROOF_HELD;
             case DOOR_WALL -> CellKind.DOOR_WALL_CYCLE;
+            case DOOR_OFFSET -> stepperCell(hitX, halfW,
+                CellKind.DOOR_OFFSET_DEC, CellKind.DOOR_OFFSET_INC, CellKind.DOOR_OFFSET_TYPE);
             case ROOM_CONTENTS -> CellKind.ROOM_CONTENTS_CYCLE;
             case ROOM_BOOKS -> roomBooksRowCell(entry, hitX, halfW);
             case ROOM_SKY -> CellKind.ROOM_SKY_CYCLE;
@@ -1035,6 +1073,20 @@ public final class EditorPlotLabelsRenderer {
                     int bg = hovered == CellKind.DOOR_WALL_CYCLE ? HOVER_COLOR : BUTTON_BG;
                     drawQuad(ps, buffer, -halfW + 0.01, rBot + 0.005, halfW - 0.01, rTop - 0.005, bg);
                     drawCenteredText(ps, buffer, font, doorWallLabel(entry.roomMode()), 0, rCY, WEIGHT_COLOR);
+                }
+                // Door Position — how far the shared walkway sits off dead centre of the room's own
+                // width. Same [-] N [+] geometry as the dimension rows; a room with no slack to spend
+                // just clamps back to "Centred" no matter how many taps it takes.
+                case DOOR_OFFSET -> {
+                    drawStepperArrows(ps, buffer, font, halfW, rTop, rBot, rCY, hovered,
+                        CellKind.DOOR_OFFSET_DEC, CellKind.DOOR_OFFSET_INC);
+                    if (hovered == CellKind.DOOR_OFFSET_TYPE) {
+                        double third = (halfW * 2.0) / 3.0;
+                        drawQuad(ps, buffer, -halfW + third + 0.005, rBot + 0.005,
+                            halfW - third - 0.005, rTop - 0.005, HOVER_COLOR);
+                    }
+                    drawCenteredText(ps, buffer, font, doorOffsetLabel(entry.roomMode()),
+                        0, rCY, WEIGHT_COLOR);
                 }
                 // Sky — whether this room is lit as though it stood outdoors, and under which sky.
                 // Off by default, which is every room lit only by whatever its own build gives it.

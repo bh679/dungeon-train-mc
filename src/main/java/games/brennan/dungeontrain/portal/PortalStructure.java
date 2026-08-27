@@ -223,8 +223,10 @@ public record PortalStructure(BlockPos origin, String roomName, Vec3i roomSize,
     /** Minimum corner of the room box, centred on the corridor's doorway line. */
     public BlockPos roomOrigin(CarriageDims dims, PortalCarriageLayout layout) {
         // Centred on this pair's OWN room width, not the world minimum — a wider authored room
-        // still has to line its interior centre up with the corridor's doorway.
-        return PortalRoomLayout.roomOrigin(origin, dims, layout, roomSize.getZ());
+        // still has to line its interior centre up with the corridor's doorway, offset by whatever
+        // slack the author has spent moving the door off that centre.
+        return PortalRoomLayout.roomOrigin(
+            origin, dims, layout, roomSize.getZ(), settings.doorOffset().value());
     }
 
     /**

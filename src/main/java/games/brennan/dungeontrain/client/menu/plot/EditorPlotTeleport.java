@@ -130,6 +130,15 @@ public final class EditorPlotTeleport {
         return "dungeontrain editor portals doorwall next";
     }
 
+    /**
+     * As {@link #dimensionCommandFor}, for how far the shared walkway sits off dead centre of the
+     * room's own width — {@code "inc"} moves it toward {@code +Z}, {@code "dec"} toward {@code -Z}.
+     */
+    public static String doorOffsetCommandFor(PlotCategory category, String dir) {
+        if (category == null || !category.hasRoomBox()) return null;
+        return "dungeontrain editor portals dooroffset " + dir;
+    }
+
     /** As {@link #modeCycleCommandFor}, for whether the room is lit as though it stood outdoors. */
     public static String roomSkyCycleCommandFor(PlotCategory category) {
         if (category == null || !category.hasRoomBox()) return null;

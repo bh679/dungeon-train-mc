@@ -74,9 +74,42 @@ class PortalRoomSettingsTest {
             new PortalRoomCopies(PortalRoomCopies.Kind.SINGLE,
                 "a".repeat(PortalRoomCopies.BLOCK_ID_MAX)),
             PortalRoomContents.DEFAULT, null, PortalRoomBooks.DEFAULT, PortalRoomSky.END,
-            PortalRoomDoorWall.REPEATED).toTag();
+            PortalRoomDoorWall.REPEATED, new PortalRoomDoorOffset(-PortalRoomLayout.MAX_WIDTH)).toTag();
         assertTrue(tag.length() <= games.brennan.dungeontrain.net.EditorStatusPacket.MODE_TAG_MAX,
             "tag is " + tag.length() + " chars: " + tag);
+    }
+
+    @Test
+    @DisplayName("Door Offset is absent from every tag ever written, and reads back centred")
+    void doorOffsetDefaultsCentredForEveryLegacyTag() {
+        for (String tag : new String[] {
+            "bedrock_lock", "bedrockless", "endless_open", "endless_repetition",
+            "endless_repetition/dynamic", "endless_repetition/dynamic/fit",
+            "endless_repetition/dynamic/fit/random:12",
+            "endless_repetition/dynamic/fit/random:12/mix:0:0:1",
+            "endless_repetition/dynamic/fit/random:12/mix:0:0:1/day",
+            "endless_repetition/dynamic/fit/random:12/mix:0:0:1/day/repeated",
+        }) {
+            assertEquals(PortalRoomDoorOffset.DEFAULT, PortalRoomSettings.parse(tag).doorOffset(), tag);
+            assertEquals(tag, PortalRoomSettings.parse(tag).toTag(), tag + " round-trips unchanged");
+        }
+    }
+
+    @Test
+    @DisplayName("A non-centred offset is written as the eighth segment, with the seven in front of it")
+    void offCentreDoorOffsetRoundTrips() {
+        String tag = new PortalRoomSettings(PortalRoomMode.ENDLESS_REPETITION,
+            PortalRoomCopies.DYNAMIC, PortalRoomContents.DEFAULT, null, PortalRoomBooks.DEFAULT,
+            PortalRoomSky.NONE, PortalRoomDoorWall.SEALED, new PortalRoomDoorOffset(3)).toTag();
+        assertEquals(8, tag.split("/", -1).length, tag);
+        assertTrue(tag.endsWith("/3"), tag);
+        assertEquals(new PortalRoomDoorOffset(3), PortalRoomSettings.parse(tag).doorOffset());
+        assertEquals(tag, PortalRoomSettings.parse(tag).toTag());
+
+        // Negative values round-trip too — the sign is meaningful (which side of centre).
+        String negativeTag = PortalRoomSettings.DEFAULT.withDoorOffset(new PortalRoomDoorOffset(-4)).toTag();
+        assertEquals(new PortalRoomDoorOffset(-4), PortalRoomSettings.parse(negativeTag).doorOffset());
+        assertEquals(negativeTag, PortalRoomSettings.parse(negativeTag).toTag());
     }
 
     @Test
