@@ -51,6 +51,7 @@ public final class OptionsMenuScreen implements MenuScreen {
             trainVolumeStepper(),
             snapshotChatLogRow(),
             snapshotMaxResolutionRow(),
+            bookAuthorChatRow(),
             new CommandMenuEntry.Back("< Back")
         );
     }
@@ -91,6 +92,18 @@ public final class OptionsMenuScreen implements MenuScreen {
         String label = "Snapshot Chat Log: " + (on ? "ON" : "OFF");
         return new CommandMenuEntry.ClientAction(label,
             () -> ClientDisplayConfig.setRideSnapshotChatLog(!ClientDisplayConfig.isRideSnapshotChatLogEnabled()));
+    }
+
+    /**
+     * ON/OFF toggle for the "The book by X burns" author line. Same {@link CommandMenuEntry.ClientAction}
+     * shape as {@link #snapshotChatLogRow()}; the setter also pushes the new value to the server,
+     * which is what actually prints the line when a book ignites.
+     */
+    private static CommandMenuEntry bookAuthorChatRow() {
+        boolean on = ClientDisplayConfig.isBookAuthorBurnChatEnabled();
+        String label = "Book Author Chat: " + (on ? "ON" : "OFF");
+        return new CommandMenuEntry.ClientAction(label,
+            () -> ClientDisplayConfig.setBookAuthorBurnChat(!ClientDisplayConfig.isBookAuthorBurnChatEnabled()));
     }
 
     /**

@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.config;
 
+import games.brennan.dungeontrain.client.BookAuthorChatSyncClient;
 import games.brennan.dungeontrain.client.FramerateThrottle;
 import net.neoforged.neoforge.common.ModConfigSpec;
 import org.apache.commons.lang3.tuple.Pair;
@@ -116,6 +117,7 @@ public final class ClientDisplayConfig {
      * tool is either running or it isn't, and someone who knows why it's running has heard enough.
      */
     public static final ModConfigSpec.BooleanValue DPI_BYPASS_WARNING_OPTED_OUT;
+    public static final ModConfigSpec.BooleanValue BOOK_AUTHOR_BURN_CHAT;
 
     /**
      * Remembered answer to the custom-Train-Editor-content prompt — see
@@ -189,6 +191,7 @@ public final class ClientDisplayConfig {
         CUSTOM_CONTENT_LAST_ANSWER = pair.getLeft().customContentLastAnswer;
         CONFIG_DEVIATION_ACKNOWLEDGED = pair.getLeft().configDeviationAcknowledged;
         DPI_BYPASS_WARNING_OPTED_OUT = pair.getLeft().dpiBypassWarningOptedOut;
+        BOOK_AUTHOR_BURN_CHAT = pair.getLeft().bookAuthorBurnChat;
     }
 
     private ClientDisplayConfig() {}
@@ -415,6 +418,15 @@ public final class ClientDisplayConfig {
                 .define("dpiBypassWarningOptedOut", false);
         b.pop();
 
+        b.push("books");
+        ModConfigSpec.BooleanValue bookAuthorBurnChat = b
+                .comment("Print a chat line crediting the author each time a Dungeon Train book burns",
+                         "(\"The book by X burns\") — the books you read, throw away or drop on death all",
+                         "catch fire, and this is the only place their writer is named after the fact.",
+                         "Toggle in-game via Options > Dungeon Train, or the X menu -> Options. Off by default.")
+                .define("authorBurnChat", false);
+        b.pop();
+
         return new Holder(allScale, worldspaceChannel, hudChannel, developerPopupShownBefore, developerPopupOptedOut, freePlayConfirmOptedOut,
                 devConsentGranted, devConsentGrantSession, devConsentLastMsgToDev, openedAdvancementsBefore,
                 rideSnapshotsEnabled, rideSnapshotIntervalSeconds, rideSnapshotMaxStored, rideSnapshotChatLog,
@@ -426,7 +438,7 @@ public final class ClientDisplayConfig {
                 sharedBooksRead,
                 deathScreenLastNps, politicalFilter, contentMode, customContentPreference,
                 customContentLastAnswer,
-                configDeviationAcknowledged, dpiBypassWarningOptedOut);
+                configDeviationAcknowledged, dpiBypassWarningOptedOut, bookAuthorBurnChat);
     }
 
     /**
@@ -712,6 +724,25 @@ public final class ClientDisplayConfig {
         if (!isLoaded()) return;
         RIDE_SNAPSHOT_CHAT_LOG.set(value);
         RIDE_SNAPSHOT_CHAT_LOG.save();
+    }
+
+    /**
+     * Print "The book by X burns" in chat each time a Dungeon Train book catches fire? Off by
+     * default. Toggled from Options &gt; Dungeon Train and the X menu &rarr; Options.
+     *
+     * <p>The burn itself is decided server-side, so the setter also pushes the new value over
+     * {@link games.brennan.dungeontrain.net.BookAuthorChatSyncPacket} — see
+     * {@link games.brennan.dungeontrain.client.BookAuthorChatSyncClient}.</p>
+     */
+    public static boolean isBookAuthorBurnChatEnabled() {
+        return isLoaded() && BOOK_AUTHOR_BURN_CHAT.get();
+    }
+
+    public static void setBookAuthorBurnChat(boolean value) {
+        if (!isLoaded()) return;
+        BOOK_AUTHOR_BURN_CHAT.set(value);
+        BOOK_AUTHOR_BURN_CHAT.save();
+        BookAuthorChatSyncClient.syncNow();
     }
 
     /** Minimum client FPS required to take a ride photo; {@code 0} disables the FPS gate. */
@@ -1104,6 +1135,7 @@ public final class ClientDisplayConfig {
             ModConfigSpec.EnumValue<CustomContentPreference> customContentPreference,
             ModConfigSpec.EnumValue<CustomContentPreference> customContentLastAnswer,
             ModConfigSpec.ConfigValue<String> configDeviationAcknowledged,
-            ModConfigSpec.BooleanValue dpiBypassWarningOptedOut
+            ModConfigSpec.BooleanValue dpiBypassWarningOptedOut,
+            ModConfigSpec.BooleanValue bookAuthorBurnChat
     ) {}
 }

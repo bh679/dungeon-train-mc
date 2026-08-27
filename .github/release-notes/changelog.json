@@ -9001,9 +9001,9 @@
         "Same tiling, block variants, lighting and fog as the real thing"
       ],
       "date": "2026-08-26",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.673.0",
+      "released_at": "2026-08-27T05:37:39Z"
     },
     {
       "id": "portal-room-editor-exit",
@@ -9015,9 +9015,9 @@
         "Only affected going straight to a room \u2014 /dungeontrain editor portals, or a room plot's Enter Inside"
       ],
       "date": "2026-08-26",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.673.0",
+      "released_at": "2026-08-27T05:37:39Z"
     },
     {
       "id": "discord-embed-links-to-release",
@@ -9028,13 +9028,88 @@
       "highlights": [],
       "pr": 1116,
       "date": "2026-08-26",
+      "released": true,
+      "released_in": "v0.673.0",
+      "released_at": "2026-08-27T05:37:39Z"
+    },
+    {
+      "id": "book-author-burn-chat",
+      "version": "0.673.0",
+      "type": "feat",
+      "title": "See who wrote a book as it burns",
+      "summary": "Dungeon Train books burn away after you read them, and until now their author burned with them. Turn on Book Author Chat and every book that catches fire \u2014 one you just read, one you threw away unread, one dropped on death \u2014 names its writer in chat: \"The book by X burns\". Off by default; the toggle is in Options > Dungeon Train and in the X menu > Options.",
+      "highlights": [
+        "New Book Author Chat option, off by default",
+        "Credits the author of every Dungeon Train book as it burns",
+        "Per-player: your setting, your chat, on servers too"
+      ],
+      "pr": 1121,
+      "date": "2026-08-27",
+      "released": true,
+      "released_in": "v0.673.0",
+      "released_at": "2026-08-27T05:37:39Z"
+    },
+    {
+      "id": "ai-fill-missing-translations",
+      "version": "0.674.0",
+      "type": "content",
+      "title": "Nineteen languages catch up with the game",
+      "summary": "Whole features had been reaching non-English players in English: the book-vote replies, the carriage builder, the Free Play and settings-changed notices, the video tools, custom content, and the translation editor's own controls. Every one of the nineteen translated languages now has the full set of the game's text \u2014 around 4,460 lines that were simply missing.",
+      "highlights": [
+        "All 19 languages are now complete against English \u2014 no missing lines left in any of them",
+        "Newly filled lines are marked as machine translation in the in-game translation editor, so speakers can find and fix them",
+        "Simplified Chinese also gains the two Adventure Item Names buttons it was short"
+      ],
+      "date": "2026-08-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "keep-inventory-free-play",
+      "version": "0.674.0",
+      "type": "feat",
+      "title": "Keeping your inventory on death is Free Play",
+      "summary": "A world that has run with Keep Inventory on is now Free Play \u2014 permanently, even if you turn the rule back off.",
+      "highlights": [],
+      "date": "2026-08-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "ai-fill-book-author-chat-keys",
+      "version": "0.674.0",
+      "type": "content",
+      "title": "The book-author chat line speaks every language too",
+      "summary": "The v0.673.0 book-author setting and the Stats Book shipped English-only. Both are now translated into all nineteen languages, along with the chat line that names whoever wrote a book as it burns.",
+      "highlights": [
+        "Book Author Chat, its description, the Stats Book name and the burn line are translated in all 19 languages"
+      ],
+      "date": "2026-08-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "editor-welcome-panel-close-button",
+      "version": "0.674.0",
+      "type": "feat",
+      "title": "Close the editor's Welcome panel",
+      "summary": "The Train Editor's Welcome board now has a close (X) button, top-right. Your choice is remembered per player, per world.",
+      "highlights": [
+        "X button closes the Welcome board",
+        "Editor menu's Welcome Panel toggle brings it back"
+      ],
+      "pr": 1122,
+      "date": "2026-08-27",
       "released": false,
       "released_in": null,
       "released_at": null
     },
     {
       "id": "spectator-cinematic-freeze",
-      "version": "0.673.0",
+      "version": "0.674.0",
       "type": "fix",
       "title": "Spectator cinematic no longer leaves you frozen",
       "summary": "Replaying the intro cinematic from spectator mode could leave you unable to move, with /kill and reboarding the only way out. Fixed. The hotkey can also be switched off now in Options \u2192 Dungeon Train\u2026, and it finally shows a readable name in Controls.",
