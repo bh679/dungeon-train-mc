@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.client;
 
 import com.mojang.blaze3d.platform.InputConstants;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.neoforged.api.distmarker.Dist;
@@ -18,7 +19,7 @@ import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
  * NeoForge silently dedupes inner @EventBusSubscriber classes that share a simple
  * name (see {@link ContainerHotkeyClient} warning).</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
+@EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class CinematographerHotkeyClient {
 
     static final KeyMapping CINEMATIC_KEY = new KeyMapping(
@@ -55,6 +56,10 @@ public final class CinematographerHotkeyClient {
                 pressed = true;
             }
             if (!pressed) return;
+
+            // Checked after the drain: a hotkey switched off in Options should swallow presses,
+            // not bank them for whenever it is switched back on.
+            if (!ClientDisplayConfig.isCinematicHotkeyEnabled()) return;
 
             Minecraft mc = Minecraft.getInstance();
             if (mc.player == null || mc.getConnection() == null || mc.screen != null) return;
