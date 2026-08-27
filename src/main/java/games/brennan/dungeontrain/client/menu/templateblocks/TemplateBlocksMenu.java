@@ -1,6 +1,9 @@
 package games.brennan.dungeontrain.client.menu.templateblocks;
 
+import games.brennan.dungeontrain.config.ClientDisplayConfig;
+import games.brennan.dungeontrain.config.EditorMenuSpace;
 import games.brennan.dungeontrain.net.TemplateBlocksSyncPacket;
+import net.minecraft.client.Minecraft;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
@@ -55,6 +58,13 @@ public final class TemplateBlocksMenu {
 
     private static Hit hovered = Hit.NONE;
 
+    /**
+     * Where this opening of the menu draws, latched when the server activates it rather than
+     * read live. The two modes tear down differently — a Screen to pop versus an event
+     * subscriber to stop drawing — so the menu must close in the mode it opened in.
+     */
+    private static EditorMenuSpace space = ClientDisplayConfig.DEFAULT_TEMPLATE_BLOCKS_MENU_SPACE;
+
     /** Cache of resolved icon stacks keyed by block id — rebuilt on every fresh sync. */
     private static final Map<String, ItemStack> ICON_CACHE = new HashMap<>();
 
@@ -67,12 +77,23 @@ public final class TemplateBlocksMenu {
     public static Vec3 anchorNormal() { return anchorNormal; }
     public static Hit hovered() { return hovered; }
 
+    /** Where this opening of the menu draws. See {@link #space}. */
+    public static EditorMenuSpace space() { return space; }
+
+    /**
+     * Active <em>and</em> drawing in the world — the guard the world-space renderer and input
+     * handler use. In screen-space {@link TemplateBlocksMenuScreen} owns rendering and input,
+     * and both paths running would double-draw and double-hit-test.
+     */
+    public static boolean isActiveWorldspace() { return active && space.isWorldspace(); }
+
     public static void setHovered(Hit h) {
         hovered = h == null ? Hit.NONE : h;
     }
 
     /** Reset to closed — invoked on client logout so the menu doesn't carry across worlds. */
     public static void clearForLogout() {
+        dismissScreen();
         active = false;
         entries = Collections.emptyList();
         hovered = Hit.NONE;
@@ -81,13 +102,18 @@ public final class TemplateBlocksMenu {
 
     public static void applySync(TemplateBlocksSyncPacket packet) {
         if (!packet.active()) {
+            dismissScreen();
             active = false;
             entries = Collections.emptyList();
             hovered = Hit.NONE;
             ICON_CACHE.clear();
             return;
         }
+        boolean wasActive = active;
         active = true;
+        if (!wasActive) {
+            space = ClientDisplayConfig.getTemplateBlocksMenuSpace();
+        }
         key = packet.key();
         entries = List.copyOf(packet.entries());
         anchorPos = packet.anchorPos();
@@ -96,6 +122,23 @@ public final class TemplateBlocksMenu {
         anchorNormal = anchorRight.cross(anchorUp).normalize();
         hovered = Hit.NONE;
         ICON_CACHE.clear();
+        // Re-pushed after every swap so the counts stay live, so only the first sync of an
+        // opening puts the screen up; the ones after it just refresh what it is drawing.
+        if (!wasActive && space.isScreenspace()) {
+            Minecraft.getInstance().setScreen(new TemplateBlocksMenuScreen());
+        }
+    }
+
+    /** Pop our screen if it is the active one — guarded so another mod's GUI isn't clobbered. */
+    private static void dismissScreen() {
+        Minecraft mc = Minecraft.getInstance();
+        if (!(mc.screen instanceof TemplateBlocksMenuScreen)) return;
+        try {
+            mc.setScreen(null);
+        } catch (IllegalStateException disconnectRace) {
+            // setScreen throws during world disconnect ("Trying to return to in-game GUI during
+            // disconnection"). MC is tearing the screen down anyway, so our state is already clean.
+        }
     }
 
     /**

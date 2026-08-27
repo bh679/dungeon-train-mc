@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.client;
 import com.mojang.blaze3d.platform.InputConstants;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.menu.containercontents.ContainerContentsMenu;
+import games.brennan.dungeontrain.client.menu.containercontents.ContainerContentsMenuScreen;
 import games.brennan.dungeontrain.net.ContainerContentsMenuTogglePacket;
 import games.brennan.dungeontrain.net.ContainerHotkeyPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
@@ -35,6 +36,11 @@ public final class ContainerHotkeyClient {
 
     private static final long TAP_THRESHOLD_TICKS = 8;
 
+    /**
+     * Package-visible via {@link #key()} so the screen-space panel can close on a second press.
+     * Vanilla stops polling keybindings while a Screen is up, so {@code KeyMapping.isDown} in the
+     * tick watcher below can never see that press — the screen has to match the binding itself.
+     */
     private static final KeyMapping KEY = new KeyMapping(
         NAME,
         InputConstants.Type.KEYSYM,
@@ -47,6 +53,11 @@ public final class ContainerHotkeyClient {
     private static boolean useDuringPress = false;
 
     private ContainerHotkeyClient() {}
+
+    /** The toggle binding, for screens that must match it directly. See {@link #KEY}. */
+    public static KeyMapping key() {
+        return KEY;
+    }
 
     @SubscribeEvent
     public static void onRegister(RegisterKeyMappingsEvent event) {
@@ -80,6 +91,12 @@ public final class ContainerHotkeyClient {
                 useDuringPress = false;
                 return;
             }
+            // The screen-space panel matches this binding itself, in keyPressed — it has to,
+            // because vanilla stops polling keybindings while a Screen is up. Staying out of the
+            // way here keeps that the only place a press is counted: if MC does keep the mapping
+            // updated behind a screen, both would fire and the second toggle would undo the first.
+            if (Minecraft.getInstance().screen instanceof ContainerContentsMenuScreen) return;
+
             boolean held = KEY.isDown();
             if (held == lastSentHeld) return;
 

@@ -9302,6 +9302,24 @@
       "released": true,
       "released_in": "v0.683.0",
       "released_at": "2026-08-27T12:13:50Z"
+    },
+    {
+      "id": "editor-menu-worldspace-screenspace",
+      "version": "0.684.0",
+      "type": "feat",
+      "title": "Choose how each editor menu appears",
+      "summary": "The Train Editor's four menus can each be shown either as a panel floating in the world that you aim at, or as a window on your screen that you point at with the mouse. Pick per menu under Options > Dungeon Train > Editor Settings, or from the X menu's own Options. The X and V menus act on the whole build, so they open on screen where the cursor is more precise. The C and Z menus edit a single block, so they stay out in the world beside the block you're editing.",
+      "highlights": [
+        "The X menu can be a floating in-world panel again \u2014 it became a screen window last update, and now that's a choice rather than the only option.",
+        "The V, C and Z menus can all be screen windows with a free mouse cursor.",
+        "Your hotbar keeps working while a screen menu is open, so the V menu's Swap still takes whatever block you're holding.",
+        "Each menu remembers its own setting, and a change takes effect the next time you open that menu."
+      ],
+      "pr": 1141,
+      "date": "2026-08-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
