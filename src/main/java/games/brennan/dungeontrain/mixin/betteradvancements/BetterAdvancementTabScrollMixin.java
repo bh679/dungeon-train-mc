@@ -41,11 +41,34 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * every frame — and clamp against that instead of the screen. Reading BA's own number rather than
  * re-deriving its window insets keeps this correct if BA changes its chrome.</p>
  *
+ * <p>On top of that, one advancement box of deliberate overscroll past the far edge, so the last
+ * row can be pulled clear of the frame rather than sitting flush against it. Note this also relaxes
+ * BA's {@code maxY - minY > height} guard by the same amount: a tree that ends within one box of
+ * filling the viewport becomes scrollable where it previously was not, which is the intended
+ * behaviour rather than a side effect to avoid.</p>
+ *
  * <p>Vanilla's screen is unaffected by all of this: it uses a consistent {@code 234 x 113} for both
  * the scissor and the clamp.</p>
  */
 @Mixin(targets = "betteradvancements.common.gui.BetterAdvancementTab", remap = false)
 public abstract class BetterAdvancementTabScrollMixin {
+
+    /**
+     * Overscroll allowance past the far edge, in pixels: one column step
+     * ({@code display.getX() * 32}) horizontally, one row step ({@code * 27}) vertically — i.e. one
+     * advancement box and its gutter, so the last row can be pulled clear of the frame instead of
+     * sitting jammed against it.
+     *
+     * <p>Applied by *shrinking* the viewport the clamp sees. {@code scroll} bounds the offset at
+     * {@code -(maxY - height)}, so a smaller {@code height} moves that bound further negative by
+     * exactly the same amount. Only the far edge gains slack — the near-edge bound is
+     * {@code -minY}, which does not depend on the viewport at all.</p>
+     */
+    @Unique
+    private static final int DUNGEONTRAIN_OVERSCROLL_X = 32;
+
+    @Unique
+    private static final int DUNGEONTRAIN_OVERSCROLL_Y = 27;
 
     /** Width of the rectangle {@code drawContents} last scissored to; 0 until the tab has drawn. */
     @Unique
@@ -62,18 +85,19 @@ public abstract class BetterAdvancementTabScrollMixin {
     }
 
     /**
-     * Substitute the real viewport width for the screen width the caller passed. Falls through to
-     * the original before the first frame has drawn, where stock behaviour applies exactly as it
-     * does today.
+     * Substitute the real viewport width for the screen width the caller passed, less the
+     * overscroll allowance. Falls back to the caller's value before the first frame has drawn.
      */
     @ModifyVariable(method = "scroll", at = @At("HEAD"), argsOnly = true, ordinal = 0)
     private int dungeontrain$useDrawnViewportWidth(int width) {
-        return dungeontrain$viewportWidth > 0 ? dungeontrain$viewportWidth : width;
+        int viewport = dungeontrain$viewportWidth > 0 ? dungeontrain$viewportWidth : width;
+        return Math.max(1, viewport - DUNGEONTRAIN_OVERSCROLL_X);
     }
 
     /** As {@link #dungeontrain$useDrawnViewportWidth}, for the height — the visible half of the bug. */
     @ModifyVariable(method = "scroll", at = @At("HEAD"), argsOnly = true, ordinal = 1)
     private int dungeontrain$useDrawnViewportHeight(int height) {
-        return dungeontrain$viewportHeight > 0 ? dungeontrain$viewportHeight : height;
+        int viewport = dungeontrain$viewportHeight > 0 ? dungeontrain$viewportHeight : height;
+        return Math.max(1, viewport - DUNGEONTRAIN_OVERSCROLL_Y);
     }
 }
