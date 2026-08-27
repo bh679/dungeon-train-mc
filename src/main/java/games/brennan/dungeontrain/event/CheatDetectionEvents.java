@@ -6,6 +6,7 @@ import games.brennan.dungeontrain.cheat.CheatModIntegrity;
 import games.brennan.dungeontrain.cheat.CommandAllowlist;
 import games.brennan.dungeontrain.cheat.DtConfigIntegrity;
 import games.brennan.dungeontrain.cheat.KeepInventoryIntegrity;
+import games.brennan.dungeontrain.cheat.OperatorIntegrity;
 import games.brennan.dungeontrain.cheat.PortalTuningIntegrity;
 import games.brennan.dungeontrain.cheat.RunIntegrity;
 import games.brennan.dungeontrain.compat.EnderChestLockBridge;
@@ -52,7 +53,10 @@ import java.util.concurrent.ConcurrentHashMap;
  *       it runs, so this no-ops.</li>
  *   <li>{@link PlayerEvent.PlayerLoggedInEvent} — a world joined directly in
  *       creative/spectator marks Free Play (nothing to back out of); and the
- *       run-scoped effect is re-applied if already Free Play.</li>
+ *       run-scoped effect is re-applied if already Free Play. It also drives
+ *       {@link OperatorIntegrity#refreshOnJoin}, which covers every cheat route that never
+ *       reaches a command at all — REI/JEI cheat mode, item editors, or simply being
+ *       handed the loot by an operator.</li>
  *   <li>{@link PlayerEvent.PlayerRespawnEvent} — re-applies the effect after a
  *       death clears it, while the run is still Free Play.</li>
  *   <li>{@link #requestFreePlayConfirm} — the same prompt for a tainting action that
@@ -181,6 +185,10 @@ public final class CheatDetectionEvents {
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onLogin(PlayerEvent.PlayerLoggedInEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        // Re-scan for operators FIRST — the notice blocks below read isSessionFreePlay(), and a
+        // separate subscriber at the same priority would have no guaranteed order against this
+        // one. The joining player is already in the player list here, so they scan themselves.
+        OperatorIntegrity.refreshOnJoin(player);
         if (AisDataIntegrity.isSessionFreePlay()) {
             // Session-only AIS taint: markCheated never runs in this path, so
             // apply the effect and explain WHY here, once per login — with the
@@ -232,6 +240,13 @@ public final class CheatDetectionEvents {
                 .withStyle(ChatFormatting.GRAY));
             player.sendSystemMessage(Component.translatable("chat.dungeontrain.free_play.cheat_mods_fix")
                 .withStyle(ChatFormatting.GRAY));
+        }
+        if (OperatorIntegrity.isSessionFreePlay()) {
+            // Session-wide operator taint. markCheated never runs for a non-operator in this path,
+            // so apply the effect and explain WHY here. The notice itself lives in OperatorIntegrity
+            // because the same explanation has to go out mid-session when someone opens to LAN.
+            RunIntegrity.applyFreePlayEffect(player);
+            OperatorIntegrity.sendNotice(player);
         }
         if (PortalTuningIntegrity.isWorldFreePlay()) {
             // World-level portal-rate taint. Unlike the three above this one is permanent and

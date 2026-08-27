@@ -38,6 +38,11 @@ import java.util.List;
  * world-wide and do <em>not</em> clear: {@link PortalTuningIntegrity} (a retuned
  * portal rate) and {@link KeepInventoryIntegrity} ({@code keepInventory} on).</p>
  *
+ * <p>{@link OperatorIntegrity} (someone online has cheats) is session-wide too,
+ * but it is the one source that also stamps the player: each operator's own run
+ * is marked permanently, so {@code /op} → cheat → {@code /deop} can't launder
+ * it. Everyone else goes clean again once no operator is online.</p>
+ *
  * <p>While cheated, advancements still earn live (the advancement screen works
  * in any mode), but they are <b>not</b> written to the cross-world
  * {@code GlobalAchievementStore} profile, and the global lifetime stats in
@@ -75,8 +80,9 @@ public final class RunIntegrity {
      * is Free Play because AIS data was changed
      * ({@link AisDataIntegrity#isSessionFreePlay}), DT's own balance config was
      * changed ({@link DtConfigIntegrity#isSessionFreePlay}), a known cheat mod is
-     * installed ({@link CheatModIntegrity#isSessionFreePlay}), or custom Train
+     * installed ({@link CheatModIntegrity#isSessionFreePlay}), custom Train
      * Editor content is active ({@link EditorContentIntegrity#isSessionFreePlay}),
+     * or someone online has cheats ({@link OperatorIntegrity#isSessionFreePlay}),
      * OR the world's portal rate has been retuned
      * ({@link PortalTuningIntegrity#isWorldFreePlay}) or the world has run with
      * {@code keepInventory} on ({@link KeepInventoryIntegrity#isWorldFreePlay}) —
@@ -90,6 +96,7 @@ public final class RunIntegrity {
             || DtConfigIntegrity.isSessionFreePlay()
             || CheatModIntegrity.isSessionFreePlay()
             || EditorContentIntegrity.isSessionFreePlay()
+            || OperatorIntegrity.isSessionFreePlay()
             || PortalTuningIntegrity.isWorldFreePlay()
             || KeepInventoryIntegrity.isWorldFreePlay()
             || isPermanentlyCheated(player);
@@ -133,6 +140,7 @@ public final class RunIntegrity {
         return AisDataIntegrity.isSessionFreePlay()
             || DtConfigIntegrity.isSessionFreePlay()
             || CheatModIntegrity.isSessionFreePlay()
+            || OperatorIntegrity.isSessionFreePlay()
             || PortalTuningIntegrity.isWorldFreePlay()
             || KeepInventoryIntegrity.isWorldFreePlay()
             || isPermanentlyCheated(player);
@@ -144,8 +152,8 @@ public final class RunIntegrity {
      * confirmation prompt that would have nothing to confirm, and to record the permanent taint
      * quietly instead of notifying twice.
      *
-     * <p>Covers the AIS-config, DT-config, custom-editor-content, retuned-portal-rate and
-     * {@code keepInventory} taints. Deliberately
+     * <p>Covers the AIS-config, DT-config, custom-editor-content, operator-present,
+     * retuned-portal-rate and {@code keepInventory} taints. Deliberately
      * <b>not</b> {@link CheatModIntegrity} — that source predates this helper and still takes the
      * prompt / notify path; folding it in would change its Discord reporting, which is a separate
      * call.</p>
@@ -154,6 +162,7 @@ public final class RunIntegrity {
         return AisDataIntegrity.isSessionFreePlay()
             || DtConfigIntegrity.isSessionFreePlay()
             || EditorContentIntegrity.isSessionFreePlay()
+            || OperatorIntegrity.isSessionFreePlay()
             || PortalTuningIntegrity.isWorldFreePlay()
             || KeepInventoryIntegrity.isWorldFreePlay();
     }
@@ -246,7 +255,7 @@ public final class RunIntegrity {
      * config, a cheat mod, custom editor content, a retuned portal rate, {@code keepInventory},
      * then the player's own recorded action.
      *
-     * <p>Built from the same seven terms as {@link #isCheated}, so an empty list means exactly "not
+     * <p>Built from the same eight terms as {@link #isCheated}, so an empty list means exactly "not
      * Free Play" and the tooltip can never disagree with the badge it explains. Usually one entry;
      * a creative switch made <em>inside</em> an already-tainted session genuinely has two reasons
      * and lists both.</p>
@@ -264,6 +273,11 @@ public final class RunIntegrity {
         }
         if (EditorContentIntegrity.isSessionFreePlay()) {
             causes.add(sessionCause("custom_content", EditorContentIntegrity.contentPackageNames()));
+        }
+        if (OperatorIntegrity.isSessionFreePlay()) {
+            // Names the operators, which matters most here: this is the one taint a player can be
+            // under because of somebody ELSE, so a badge with no reason reads as arbitrary.
+            causes.add(sessionCause("operator", OperatorIntegrity.detected()));
         }
         if (PortalTuningIntegrity.isWorldFreePlay()) {
             causes.add(sessionCause("portal_rate", List.of()));
