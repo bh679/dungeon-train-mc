@@ -9257,6 +9257,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "editor-menu-screen-tabs",
+      "version": "0.682.0",
+      "type": "feat",
+      "title": "The editor menu is now a proper screen, with tabs",
+      "summary": "Pressing X in the editor opens a real menu with a mouse cursor instead of a panel floating in the world that you aimed your head at. Its rows are grouped into four tabs \u2014 File, Current, Settings and Nav \u2014 so you are not scanning thirty rows to find one. Your hotbar stays live underneath, so you can still pick the block a row is about to use.",
+      "highlights": [
+        "Point and click with a cursor \u2014 no more aiming your head at a floating panel",
+        "Rows grouped into File, Current, Settings and Nav; tabs with nothing in them are hidden",
+        "The hotbar keeps working while the menu is open \u2014 scroll it or press 1-9",
+        "Long lists scroll instead of running off the bottom of the screen"
+      ],
+      "date": "2026-08-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
