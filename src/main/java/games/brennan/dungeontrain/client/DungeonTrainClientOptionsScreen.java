@@ -157,6 +157,13 @@ public final class DungeonTrainClientOptionsScreen extends Screen {
                 .setTooltip(tip("gui.dungeontrain.options.snapshot_max_res.tip"));
         y += ROW_GAP;
 
+        // Book author chat ON/OFF — "The book by X burns" as each DT book catches fire.
+        addRenderableWidget(CycleButton.onOffBuilder(ClientDisplayConfig.isBookAuthorBurnChatEnabled())
+                .create(left, y, ROW_W, ROW_H, Component.translatable("gui.dungeontrain.options.book_author_chat"),
+                        (btn, on) -> ClientDisplayConfig.setBookAuthorBurnChat(on)))
+                .setTooltip(tip("gui.dungeontrain.options.book_author_chat.tip"));
+        y += ROW_GAP;
+
         addRenderableWidget(Button.builder(CommonComponents.GUI_DONE, b -> onClose())
                 .bounds(cx - 100, y + 6, 200, ROW_H).build());
     }

@@ -9001,9 +9001,9 @@
         "Same tiling, block variants, lighting and fog as the real thing"
       ],
       "date": "2026-08-26",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.673.0",
+      "released_at": "2026-08-27T05:37:39Z"
     },
     {
       "id": "portal-room-editor-exit",
@@ -9015,9 +9015,9 @@
         "Only affected going straight to a room \u2014 /dungeontrain editor portals, or a room plot's Enter Inside"
       ],
       "date": "2026-08-26",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.673.0",
+      "released_at": "2026-08-27T05:37:39Z"
     },
     {
       "id": "discord-embed-links-to-release",
@@ -9028,13 +9028,30 @@
       "highlights": [],
       "pr": 1116,
       "date": "2026-08-26",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.673.0",
+      "released_at": "2026-08-27T05:37:39Z"
+    },
+    {
+      "id": "book-author-burn-chat",
+      "version": "0.673.0",
+      "type": "feat",
+      "title": "See who wrote a book as it burns",
+      "summary": "Dungeon Train books burn away after you read them, and until now their author burned with them. Turn on Book Author Chat and every book that catches fire \u2014 one you just read, one you threw away unread, one dropped on death \u2014 names its writer in chat: \"The book by X burns\". Off by default; the toggle is in Options > Dungeon Train and in the X menu > Options.",
+      "highlights": [
+        "New Book Author Chat option, off by default",
+        "Credits the author of every Dungeon Train book as it burns",
+        "Per-player: your setting, your chat, on servers too"
+      ],
+      "pr": 1121,
+      "date": "2026-08-27",
+      "released": true,
+      "released_in": "v0.673.0",
+      "released_at": "2026-08-27T05:37:39Z"
     },
     {
       "id": "keep-inventory-free-play",
-      "version": "0.673.0",
+      "version": "0.674.0",
       "type": "feat",
       "title": "Keeping your inventory on death is Free Play",
       "summary": "A world that has run with Keep Inventory on is now Free Play \u2014 permanently, even if you turn the rule back off.",
