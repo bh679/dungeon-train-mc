@@ -54,6 +54,7 @@
     "RuinedPortalStructureAccessor"
   ],
   "client": [
+    "client.KeyboardHandlerDebugChordMixin",
     "client.BookViewScreenAccessor",
     "client.BookEditScreenAccessor",
     "client.BookEditScreenSignMixin",

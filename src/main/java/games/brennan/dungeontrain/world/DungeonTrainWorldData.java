@@ -76,6 +76,7 @@ public final class DungeonTrainWorldData extends SavedData {
     private static final String TAG_PORTAL_RATE_TUNED = "portalRateTuned";
     private static final String TAG_KEEP_INVENTORY_USED = "keepInventoryUsed";
     private static final String TAG_HELP_PANEL_DISMISSED = "editorHelpPanelDismissed";
+    private static final String TAG_DEBUG_GRANTS = "DebugGrants";
 
     private int trainY;
     private boolean startsWithTrain;
@@ -274,6 +275,15 @@ public final class DungeonTrainWorldData extends SavedData {
     private final games.brennan.dungeontrain.builder.relay.BuilderRelayBuilds builderRelayBuilds =
             new games.brennan.dungeontrain.builder.relay.BuilderRelayBuilds();
 
+    /**
+     * Who may open the F3+4 debug panel, and until when — the server's cache of what the relay last
+     * said. Saved so a grant survives a restart and a relay outage; see
+     * {@link games.brennan.dungeontrain.debug.DebugAccessGrants}. Empty in every world nobody has
+     * been granted access in, which is nearly all of them.
+     */
+    private final games.brennan.dungeontrain.debug.DebugAccessGrants debugGrants =
+            new games.brennan.dungeontrain.debug.DebugAccessGrants();
+
     private DungeonTrainWorldData(int trainY, boolean startsWithTrain, CarriageDims dims, long generationSeed, StartingDimension startingDimension) {
         this.trainY = trainY;
         this.startsWithTrain = startsWithTrain;
@@ -422,6 +432,10 @@ public final class DungeonTrainWorldData extends SavedData {
         // Absent in every world that has never uploaded a build, which is every non-builder world.
         data.builderRelayBuilds.loadFrom(
                 tag.getList(TAG_BUILDER_RELAY_BUILDS, net.minecraft.nbt.Tag.TAG_COMPOUND));
+        // Absent in every world nobody has been granted debug-panel access in. Lapsed entries are
+        // dropped by loadFrom, so a save that outlived its grants comes back granting nothing.
+        data.debugGrants.loadFrom(
+                tag.getList(TAG_DEBUG_GRANTS, net.minecraft.nbt.Tag.TAG_COMPOUND));
         // Absent in every non-builder world (and in builder worlds saved before the stamp ran).
         if (tag.contains(TAG_BUILDER_MODE)) {
             data.builderMode = tag.getString(TAG_BUILDER_MODE);
@@ -508,6 +522,9 @@ public final class DungeonTrainWorldData extends SavedData {
         tag.putIntArray(TAG_USED_CARRIAGE_IDS, usedCarriageIds.toIntArray());
         if (!builderRelayBuilds.isEmpty()) {
             tag.put(TAG_BUILDER_RELAY_BUILDS, builderRelayBuilds.toTag());
+        }
+        if (!debugGrants.isEmpty()) {
+            tag.put(TAG_DEBUG_GRANTS, debugGrants.toTag());
         }
         if (builderMode != null) {
             tag.putString(TAG_BUILDER_MODE, builderMode);
@@ -928,6 +945,20 @@ public final class DungeonTrainWorldData extends SavedData {
 
     /** Persist a change made through {@link #builderRelayBuilds()}. */
     public void markBuilderRelayBuildsDirty() {
+        setDirty();
+    }
+
+    /**
+     * The debug-panel access grants cached for this world. Handed out live, like
+     * {@link #builderRelayBuilds()} — callers that change it must
+     * {@link #markDebugGrantsDirty()} afterwards.
+     */
+    public games.brennan.dungeontrain.debug.DebugAccessGrants debugGrants() {
+        return debugGrants;
+    }
+
+    /** Persist a change made through {@link #debugGrants()}. */
+    public void markDebugGrantsDirty() {
         setDirty();
     }
 

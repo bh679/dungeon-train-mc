@@ -6,6 +6,7 @@ import games.brennan.dungeontrain.bootstrap.BootstrapProgress;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.net.CarriageIndexPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.template.GateContext;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.Shipyard;
 import games.brennan.dungeontrain.ship.Shipyards;
@@ -1749,7 +1750,7 @@ public final class TrainCarriageAppender {
             seenThisTick.add(uuid);
             Integer lastSent = LAST_SENT_PIDX.get(uuid);
             if (lastSent == null || lastSent != pIdx) {
-                DungeonTrainNet.sendTo(player, new CarriageIndexPacket(true, pIdx));
+                DungeonTrainNet.sendTo(player, new CarriageIndexPacket(true, pIdx, variantIdAt(level, pIdx, length)));
                 LAST_SENT_PIDX.put(uuid, pIdx);
             }
 
@@ -4162,6 +4163,26 @@ public final class TrainCarriageAppender {
             (int) Math.round(worldTopCenter.x),
             (int) Math.round(worldTopCenter.y),
             (int) Math.round(worldTopCenter.z));
+    }
+
+    /**
+     * The variant carriage {@code pIdx} rolls to — the "cart type" the F3+4 debug panel shows.
+     * Uses the same pair {@link TrainAssembler} picks with at placement time, so the two agree.
+     *
+     * <p>Only called when a player actually crosses a carriage boundary, which is rare enough that
+     * re-deriving it beats recording every placed variant. Never throws: a debug read-out is not
+     * worth risking the train tick, so any failure degrades to an empty id and a blank line.</p>
+     */
+    private static String variantIdAt(ServerLevel level, int pIdx, int length) {
+        try {
+            CarriageGenerationConfig genCfg =
+                DungeonTrainWorldData.get(level.getServer().overworld()).getGenerationConfig();
+            return CarriagePlacer.enclosedVariantForIndex(
+                pIdx, genCfg, GateContext.forCarriage(level, pIdx, length)).id();
+        } catch (RuntimeException e) {
+            LOGGER.debug("[DungeonTrain] variantIdAt failed for pIdx={}", pIdx, e);
+            return "";
+        }
     }
 
     /**
