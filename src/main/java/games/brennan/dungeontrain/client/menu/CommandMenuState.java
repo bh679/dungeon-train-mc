@@ -172,23 +172,6 @@ public final class CommandMenuState {
         LocalPlayer player = mc.player;
         if (player == null) return;
 
-        Vec3 eye = player.getEyePosition();
-        Vec3 look = player.getLookAngle();
-        anchorPos = eye.add(look.scale(ANCHOR_DISTANCE));
-        // World-space offset captured at open time; the per-tick refresh keeps
-        // the panel translating with the player while orientation stays fixed.
-        anchorOffset = anchorPos.subtract(eye);
-
-        anchorNormal = look.scale(-1.0).normalize();
-        Vec3 worldUp = new Vec3(0, 1, 0);
-        Vec3 up = worldUp.subtract(anchorNormal.scale(worldUp.dot(anchorNormal)));
-        if (up.lengthSqr() < 1.0e-4) {
-            up = new Vec3(0, 0, 1);
-        }
-        anchorUp = up.normalize();
-        // Right-handed basis: X × Y = Z ⇒ right = up × normal.
-        anchorRight = anchorUp.cross(anchorNormal).normalize();
-
         stack.clear();
         stack.addAll(initialStack);
 
@@ -200,20 +183,16 @@ public final class CommandMenuState {
         hoveredSubIdx = 0;
         open = true;
 
-        // Suppress any mining that was in progress when the menu opened,
-        // and clobber the crosshair target so the tick after open can't
-        // damage the block we popped up in front of. The per-frame renderer
-        // keeps clobbering hitResult after this; stopDestroyBlock cancels
-        // any lingering destroy state on the server.
+        // Suppress any mining that was in progress when the menu opened. A Screen
+        // stops further world interaction on its own, so unlike the world-space
+        // panel there is no per-frame hitResult clobbering to do — only the
+        // destroy progress already accumulated needs cancelling.
         if (mc.gameMode != null) mc.gameMode.stopDestroyBlock();
-        mc.hitResult = net.minecraft.world.phys.BlockHitResult.miss(
-            eye,
-            net.minecraft.core.Direction.UP,
-            player.blockPosition()
-        );
 
+        // Entries first: the screen renders from them on its very first frame.
         rebuildEntries();
-        LOGGER.info("Command menu opened at {} (screens: {})", anchorPos, stack.size());
+        mc.setScreen(new CommandMenuGuiScreen());
+        LOGGER.info("Command menu opened (screens: {})", stack.size());
     }
 
     public static void close() {
@@ -229,10 +208,9 @@ public final class CommandMenuState {
         sideEntries = List.of();
         typingOriginRowIdx = -1;
         typingOriginSubIdx = 0;
-        anchorOffset = Vec3.ZERO;
         stack.clear();
         entries = List.of();
-        dismissTypingScreen();
+        dismissMenuScreen();
         LOGGER.debug("Command menu closed");
     }
 
@@ -344,10 +322,9 @@ public final class CommandMenuState {
     /** Typing-mode activator that also captures a command suffix (e.g. the
      *  {@code [source]} after the typed name in {@code editor new <name> <source>}).
      *
-     *  <p>Opens {@link MenuTypingScreen} so vanilla keybindings (movement,
-     *  hotbar, inventory) pause while the player types. The screen is
-     *  invisible — the worldspace menu's renderer keeps drawing the typing
-     *  field underneath.</p>
+     *  <p>Typing is handled inline by {@link CommandMenuGuiScreen}: it is already the
+     *  active screen, so vanilla keybindings are suppressed for free and the buffer is
+     *  drawn in the cell the player clicked. No second screen is opened.</p>
      */
     public static void beginTyping(String argName, String prefix, String suffix) {
         beginTyping(argName, prefix, suffix, "");
@@ -365,7 +342,6 @@ public final class CommandMenuState {
         typingCommandSuffix = suffix == null ? "" : suffix;
         hoveredIdx = -1;
         hoveredSubIdx = 0;
-        Minecraft.getInstance().setScreen(new MenuTypingScreen());
     }
 
     public static void cancelTyping() {
@@ -376,7 +352,6 @@ public final class CommandMenuState {
         typingCommandSuffix = "";
         typingOriginRowIdx = -1;
         typingOriginSubIdx = 0;
-        dismissTypingScreen();
     }
 
     public static void submitTyped() {
@@ -387,26 +362,24 @@ public final class CommandMenuState {
             cmd = cmd + " " + typingCommandSuffix;
         }
         CommandRunner.run(cmd);
-        dismissTypingScreen();
         close();
     }
 
     /**
-     * Pop our {@link MenuTypingScreen} if it's the active screen. Guarded so
-     * we don't clobber a screen another mod (or the chat HUD) opened. The
-     * screen's own {@link MenuTypingScreen#removed()} also calls
-     * {@link #cancelTyping}; the {@code typingMode} guard there prevents
-     * recursion when the cancel originates from this side.
+     * Pop {@link CommandMenuGuiScreen} if it is the active screen. Guarded so we don't
+     * clobber a screen another mod (or the chat HUD) opened. {@link #close()} has already
+     * set {@code open = false} by the time this runs, so the resulting
+     * {@code Screen#onClose} -> {@code close()} hop returns immediately rather than
+     * recursing.
      *
-     * <p>{@link Minecraft#setScreen} throws {@link IllegalStateException}
-     * when called during world disconnect ("Trying to return to in-game GUI
-     * during disconnection"). The screen is being torn down by MC anyway in
-     * that case, so swallow the exception — our cleanup completed via the
-     * typingMode reset before this call.</p>
+     * <p>{@link Minecraft#setScreen} throws {@link IllegalStateException} when called
+     * during world disconnect ("Trying to return to in-game GUI during disconnection").
+     * The screen is being torn down by MC anyway in that case, so swallow it — our state
+     * cleanup already completed.</p>
      */
-    private static void dismissTypingScreen() {
+    private static void dismissMenuScreen() {
         Minecraft mc = Minecraft.getInstance();
-        if (!(mc.screen instanceof MenuTypingScreen)) return;
+        if (!(mc.screen instanceof CommandMenuGuiScreen)) return;
         try {
             mc.setScreen(null);
         } catch (IllegalStateException disconnectRace) {

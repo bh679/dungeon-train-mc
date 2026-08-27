@@ -8,24 +8,35 @@ import games.brennan.dungeontrain.client.VersionInfo;
 import games.brennan.dungeontrain.client.menu.plot.EditorTypeMenuRenderer;
 import games.brennan.dungeontrain.editor.EditorMenusMode;
 import games.brennan.dungeontrain.net.EditorStatusPacket;
+import games.brennan.dungeontrain.portal.PortalRoomCopiesVariant;
+import games.brennan.dungeontrain.portal.PortalRoomSettings;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 /**
- * Menu shown when the player is inside an editor plot. DevMode is a live
- * toggle driven by {@link EditorStatusHudOverlay} and is only surfaced on
- * non-{@code main} builds (see {@link #shouldShowDevModeToggle(String)} —
- * release jars built from {@code main} hide the row entirely). Enter drills
- * into category selection. Save has an "All" companion for category-wide
- * saves. New / Remove act on the model the player is currently standing in —
- * New duplicates it under a typed name, Remove deletes the model after a
- * confirmation prompt. Exit runs {@code /dungeontrain editor exit} —
- * unwinds the active editor session, clears the editor plots, and
- * teleports the player back to where they entered the editor from.
+ * Menu shown when the player is inside an editor plot.
+ *
+ * <p>Rows are filed under four tabs — see {@link EditorMenuTab} for what belongs where and
+ * why. The strip is row 0; the chosen tab's rows follow. A tab with no rows for the current
+ * category is hidden rather than shown empty, so an {@code architecture} plot gets
+ * File | Settings | Nav and the strip re-splits across the three.</p>
+ *
+ * <p>DevMode is a live toggle driven by {@link EditorStatusHudOverlay} and is only surfaced on
+ * non-{@code main} builds (see {@link #shouldShowDevModeToggle(String)} — release jars built
+ * from {@code main} hide the row entirely).</p>
+ *
+ * <p>Unlike the previous flat list, {@code parts} is no longer a separate early-return branch.
+ * It was a near-duplicate that had already drifted (Undo/Redo sat in a different position in
+ * each), so it now flows through the same builders and differs only where it genuinely must:
+ * its save and reset route through the part-aware {@code /editor part} subcommands, because
+ * {@code dungeontrain save} dispatches via {@code EditorCategory.locate}, which cannot see part
+ * plots.</p>
  */
 public final class EditorMenuScreen implements MenuScreen {
 
@@ -34,7 +45,7 @@ public final class EditorMenuScreen implements MenuScreen {
      *
      * <p>Sized for the longest mode label, "Walls: Endless Repetition", at
      * {@link CommandMenuLayout#TEXT_SCALE} — the shared default fits about fifteen characters and
-     * that is twenty-five. A constant rather than a measurement because {@code entries()} has no
+     * that is twenty-five. A constant rather than a measurement because the row builders have no
      * {@code Font} to hand, and the set of modes is fixed and small.</p>
      */
     private static final double WALLS_ROW_PANEL_WIDTH = 2.6;
@@ -50,275 +61,382 @@ public final class EditorMenuScreen implements MenuScreen {
 
     @Override public String title() { return "Editor"; }
 
+    /**
+     * The tab strip is row 0 and stays pinned while the rest of the list scrolls — a tall Current
+     * tab would otherwise scroll away the only control that gets you out of it.
+     */
+    @Override public int stickyRows() { return 1; }
+
+    /**
+     * A snapshot of everything the row builders need, read once per rebuild.
+     *
+     * <p>{@code model} is the friendly path string (HUD-style, may contain "/").
+     * {@code modelId} is the bare command-token id used to dispatch {@code /dt editor ...}.
+     * {@code modelName} is the trailing variant-name segment — for track-side models the path
+     * string is e.g. "track / track2" and the bare name is "track2". For carriages and contents
+     * modelId/modelName are identical to model. <b>Only modelId/modelName are safe to splice into
+     * a command string.</b></p>
+     */
+    private record Ctx(String category, String model, String modelId, String modelName, int weight) {
+
+        static Ctx read() {
+            return new Ctx(
+                EditorStatusHudOverlay.category().toLowerCase(Locale.ROOT),
+                EditorStatusHudOverlay.model(),
+                EditorStatusHudOverlay.modelId(),
+                EditorStatusHudOverlay.modelName(),
+                EditorStatusHudOverlay.weight());
+        }
+
+        boolean isParts()   { return "parts".equals(category); }
+        boolean isPortals() { return "portals".equals(category); }
+    }
+
     @Override public List<CommandMenuEntry> entries() {
-        boolean devmode = EditorStatusHudOverlay.isDevModeOn();
-        String category = EditorStatusHudOverlay.category().toLowerCase(Locale.ROOT);
-        // `model` is the friendly path string (HUD-style, may contain "/").
-        // `modelId` is the bare command-token id used to dispatch /dt editor ...
-        // `modelName` is the trailing variant-name segment of the model — for
-        // track-side models the path string is e.g. "track / track2" and the
-        // bare name is "track2". For carriages and contents modelId/modelName
-        // are identical to model. Only modelId/modelName are safe to splice
-        // into a command string.
-        String model = EditorStatusHudOverlay.model();
-        String modelId = EditorStatusHudOverlay.modelId();
-        String modelName = EditorStatusHudOverlay.modelName();
-        int currentWeight = EditorStatusHudOverlay.weight();
+        Ctx ctx = Ctx.read();
+        Map<EditorMenuTab, List<CommandMenuEntry>> byTab = rowsByTab(ctx);
+
+        List<EditorMenuTab> visible = visibleTabs(byTab);
+        if (visible.isEmpty()) return List.of();
+
+        EditorMenuTab active = EditorMenuTab.resolve(visible);
 
         List<CommandMenuEntry> out = new ArrayList<>();
+        out.add(tabStrip(visible, active));
+        out.addAll(byTab.get(active));
+        return out;
+    }
+
+    /** Tabs that have at least one row, in strip order. Empty tabs are hidden, not shown blank. */
+    static List<EditorMenuTab> visibleTabs(Map<EditorMenuTab, List<CommandMenuEntry>> byTab) {
+        List<EditorMenuTab> visible = new ArrayList<>();
+        for (EditorMenuTab tab : EditorMenuTab.values()) {
+            List<CommandMenuEntry> rows = byTab.get(tab);
+            if (rows != null && !rows.isEmpty()) visible.add(tab);
+        }
+        return visible;
+    }
+
+    /**
+     * Build every tab's rows for an explicit context. Package-private so the unit test can assert
+     * row placement per category without standing up the client HUD state.
+     */
+    static Map<EditorMenuTab, List<CommandMenuEntry>> rowsByTab(
+        String category, String model, String modelId, String modelName, int weight
+    ) {
+        return rowsByTab(new Ctx(category, model, modelId, modelName, weight));
+    }
+
+    private static Map<EditorMenuTab, List<CommandMenuEntry>> rowsByTab(Ctx ctx) {
+        Map<EditorMenuTab, List<CommandMenuEntry>> byTab = new EnumMap<>(EditorMenuTab.class);
+        byTab.put(EditorMenuTab.FILE, fileRows(ctx));
+        byTab.put(EditorMenuTab.CURRENT, currentRows(ctx));
+        byTab.put(EditorMenuTab.SETTINGS, settingsRows(ctx));
+        byTab.put(EditorMenuTab.NAV, navRows(ctx));
+        return byTab;
+    }
+
+    /**
+     * The strip itself, as a Split / Triple / Quad depending on how many tabs survive.
+     *
+     * <p>Each cell is a {@link CommandMenuEntry.ClientAction}: switching tab is pure client state,
+     * so there is no command to run and no server round-trip to wait for. ClientAction leaves the
+     * menu open, and the next rebuild renders the newly chosen tab.</p>
+     */
+    private static CommandMenuEntry tabStrip(List<EditorMenuTab> visible, EditorMenuTab active) {
+        List<CommandMenuEntry> cells = new ArrayList<>();
+        for (EditorMenuTab tab : visible) {
+            cells.add(new CommandMenuEntry.ClientAction(
+                tab.label(),
+                () -> EditorMenuTab.select(tab),
+                tab == active));
+        }
+        return switch (cells.size()) {
+            case 1 -> cells.get(0);
+            case 2 -> new CommandMenuEntry.Split(cells.get(0), cells.get(1), 0.50);
+            case 3 -> new CommandMenuEntry.Triple(
+                cells.get(0), cells.get(1), cells.get(2), 1.0 / 3.0, 2.0 / 3.0);
+            default -> new CommandMenuEntry.Quad(
+                cells.get(0), cells.get(1), cells.get(2), cells.get(3), 0.25, 0.50, 0.75);
+        };
+    }
+
+    // ------------------------------------------------------------------
+    // File — the template as a file
+    // ------------------------------------------------------------------
+
+    /**
+     * Reads top-to-bottom as a lifecycle: make one, see what you have made, save it, name it,
+     * step back, destroy it, ship it. Undo/Redo divides the safe half from the destructive half.
+     */
+    private static List<CommandMenuEntry> fileRows(Ctx ctx) {
+        List<CommandMenuEntry> out = new ArrayList<>();
+
+        if (ctx.isParts()) {
+            // Parts address a model as "kind:name" rather than a bare id, so New/Remove are built
+            // from that split rather than the category tables the other categories use.
+            String[] kindName = partsKindName(ctx.model());
+            if (kindName != null) {
+                out.add(new CommandMenuEntry.Split(
+                    new CommandMenuEntry.DrillIn("New",
+                        new NewSourcePickerScreen(NewSourcePickerScreen.Category.PARTS,
+                            kindName[0], kindName[1])),
+                    new CommandMenuEntry.DrillIn("Remove",
+                        new ConfirmScreen("Remove '" + ctx.model() + "'?",
+                            "dungeontrain editor part reset " + kindName[0] + " " + kindName[1])),
+                    0.50));
+            }
+        } else {
+            // New / Remove — only meaningful for categories whose models are user-authorable
+            // (carriages, contents) or whose registry supports deletion (tracks, portals). For
+            // architecture the concept doesn't apply, so the row is omitted rather than showing
+            // buttons that error on click.
+            CommandMenuEntry newEntry = newEntryFor(ctx.category(), ctx.modelId(), ctx.model());
+            CommandMenuEntry removeEntry = removeEntryFor(ctx.category(), ctx.modelId(), ctx.model());
+            if (newEntry != null && removeEntry != null) {
+                out.add(new CommandMenuEntry.Split(newEntry, removeEntry, 0.50));
+            }
+        }
+
+        out.add(myBuildsEntry());
+
+        // Parts have their own Save — `dungeontrain save` dispatches via EditorCategory.locate,
+        // which doesn't see part plots.
+        out.add(new CommandMenuEntry.Split(
+            new CommandMenuEntry.Run("Save",
+                ctx.isParts() ? "dungeontrain editor part save" : "dungeontrain save"),
+            new CommandMenuEntry.Run("All",
+                ctx.isParts() ? "dungeontrain editor part save all" : "dungeontrain save all"),
+            0.80));
+
+        CommandMenuEntry rename = renameEntryFor(ctx);
+        if (rename != null) out.add(rename);
+
+        // Undo | Redo — steps the per-plot editor history. Mirrors the Ctrl/Cmd+Z / Ctrl/Cmd+Y
+        // keybindings through the same commands, so the two surfaces cannot drift apart.
+        out.add(new CommandMenuEntry.Split(
+            new CommandMenuEntry.Run("Undo", "dungeontrain editor undo"),
+            new CommandMenuEntry.Run("Redo", "dungeontrain editor redo"),
+            0.50));
+
+        // Reset | Clear — paired destructive actions. Reset deletes the on-disk template; Clear
+        // wipes interior blocks to air. Parts have no Reset, and the categories without a Clear
+        // (tracks / architecture) fall back to a solo Reset.
+        CommandMenuEntry clear = clearEntryFor(ctx.category(), ctx.model());
+        if (ctx.isParts()) {
+            if (clear != null) out.add(clear);
+        } else {
+            CommandMenuEntry reset = new CommandMenuEntry.Run("Reset", "dungeontrain reset");
+            out.add(clear != null ? new CommandMenuEntry.Split(reset, clear, 0.50) : reset);
+        }
+
+        out.add(new CommandMenuEntry.DrillIn("Package", new PackageListScreen()));
+        return out;
+    }
+
+    /** Split a parts model ("wheelset:heavy") into kind and name, or null when it isn't one. */
+    private static String[] partsKindName(String model) {
+        if (model == null) return null;
+        int sep = model.indexOf(':');
+        if (sep <= 0 || sep >= model.length() - 1) return null;
+        return new String[] { model.substring(0, sep), model.substring(sep + 1) };
+    }
+
+    // ------------------------------------------------------------------
+    // Current — properties of the model being stood in
+    // ------------------------------------------------------------------
+
+    private static List<CommandMenuEntry> currentRows(Ctx ctx) {
+        List<CommandMenuEntry> out = new ArrayList<>();
+
+        // Contents — drilldown listing every registered content with a per-row red/green toggle so
+        // the author can exclude specific contents from this carriage's spawn pool. Only shown when
+        // a concrete variant id is in scope.
+        if ("carriages".equals(ctx.category()) && notEmpty(ctx.modelId())) {
+            out.add(new CommandMenuEntry.DrillIn("Contents",
+                CarriageContentsAllowScreen.forCarriage(ctx.modelId())));
+        }
+
+        // The same drilldown for a portal room, but only while its Contents setting is on — with it
+        // Off the room draws nothing and the toggles would steer an empty pool. Addressed by room
+        // NAME, not modelId: modelId is the kind tag "portal_room", shared by every room.
+        if (ctx.isPortals() && notEmpty(ctx.modelName())
+            && PortalRoomSettings.parse(EditorStatusHudOverlay.roomMode()).contents().furnishes()) {
+            out.add(new CommandMenuEntry.DrillIn("Contents",
+                CarriageContentsAllowScreen.forPortalRoom(ctx.modelName())));
+        }
+
+        // Weight — Triple row: [-] / Weight (N) / [+] for every category that has a weight pool.
+        // Side cells nudge by 1 server-side and stay open so the player can tap-tap-tap; middle
+        // cell drops into typing mode for an exact value.
+        CommandMenuEntry weightRow =
+            weightTripleFor(ctx.category(), ctx.modelId(), ctx.modelName(), ctx.weight());
+        if (weightRow != null) out.add(weightRow);
+
+        if (ctx.isPortals()) out.addAll(portalRows());
+
+        // Spawn gate — gated on exactly the same condition as Weight (weighted, addressable
+        // models). When the model is linked to a Stage the editable cells are hidden and only the
+        // Stage chip shows; to change the gate the player edits the Stage or picks Custom.
+        if (weightRow != null) out.addAll(spawnGateRows(ctx));
+
+        return out;
+    }
+
+    /** The portal-room block, in the order the settings read: box, then walls, then contents. */
+    private static List<CommandMenuEntry> portalRows() {
+        String mode = EditorStatusHudOverlay.roomMode();
+        List<CommandMenuEntry> out = new ArrayList<>();
+
+        // Size — a portal room is the one plot whose box the author chooses: length outright (it is
+        // the distance walked underneath a portal, not a footprint) and width and height above the
+        // floor the corridor mouth sets.
+        addIfPresent(out, EditorMenuPortalRows.sizeTripleFor(
+            "length", "Length", EditorStatusHudOverlay.roomLength()));
+        addIfPresent(out, EditorMenuPortalRows.sizeTripleFor(
+            "width", "Width", EditorStatusHudOverlay.roomWidth()));
+        addIfPresent(out, EditorMenuPortalRows.sizeTripleFor(
+            "height", "Height", EditorStatusHudOverlay.roomHeight()));
+
+        addIfPresent(out, EditorMenuPortalRows.wallsModeRowFor(mode));
+        addIfPresent(out, EditorMenuPortalRows.copiesRowFor(mode));
+        addIfPresent(out, EditorMenuPortalRows.copiesBlockRowFor(
+            mode, PortalRoomCopiesVariant.Plane.FLOOR));
+        addIfPresent(out, EditorMenuPortalRows.copiesBlockRowFor(
+            mode, PortalRoomCopiesVariant.Plane.ROOF));
+        addIfPresent(out, EditorMenuPortalRows.doorWallRowFor(mode));
+        addIfPresent(out, EditorMenuPortalRows.roomContentsRowFor(mode));
+        addIfPresent(out, EditorMenuPortalRows.roomBooksRowFor(mode));
+        addIfPresent(out, EditorMenuPortalRows.roomSkyRowFor(mode));
+        addIfPresent(out, EditorMenuPortalRows.exitsRowFor(mode));
+        addIfPresent(out, EditorMenuPortalRows.exitEveryTripleFor(mode));
+        addIfPresent(out, EditorMenuPortalRows.exitMoveTripleFor(mode));
+
+        return out;
+    }
+
+    /**
+     * The four spawn-gate rows, or the single Stage chip that replaces them.
+     *
+     * <p>They live together in Current — and the chip with them — because a linked Stage collapses
+     * Min Lv, Max Lv and Phases into itself. Splitting the group across tabs would mean Current
+     * silently losing rows whenever an author linked a Stage.</p>
+     */
+    private static List<CommandMenuEntry> spawnGateRows(Ctx ctx) {
+        String stageId = EditorStatusHudOverlay.stageId();
+        if (notEmpty(stageId)) {
+            return List.of(new CommandMenuEntry.DrillIn(
+                "Stage: " + stageId + "  ▾",
+                new StagePickerScreen(ctx.category(), ctx.modelId(), ctx.modelName(), stageId)));
+        }
+
+        List<CommandMenuEntry> out = new ArrayList<>();
+        int minLv = EditorStatusHudOverlay.minLevel();
+        int maxLv = EditorStatusHudOverlay.maxLevel();
+        addIfPresent(out, levelTripleFor(ctx.category(), ctx.modelId(), ctx.modelName(),
+            "minlevel", "Min Lv (" + minLv + ")", "0-1000"));
+        addIfPresent(out, levelTripleFor(ctx.category(), ctx.modelId(), ctx.modelName(),
+            "maxlevel", "Max Lv (" + (maxLv < 0 ? "all" : Integer.toString(maxLv)) + ")",
+            "-1..1000"));
+        out.add(new CommandMenuEntry.DrillIn("Phases",
+            new PhaseSelectScreen(ctx.category(), ctx.modelId(), ctx.modelName())));
+        // Stage / Custom picker — link this template to a Stage preset (or stay Custom).
+        out.add(new CommandMenuEntry.DrillIn("Stage: Custom  ▾",
+            new StagePickerScreen(ctx.category(), ctx.modelId(), ctx.modelName(), "")));
+        return out;
+    }
+
+    // ------------------------------------------------------------------
+    // Settings — editor-wide preferences, outliving any one model
+    // ------------------------------------------------------------------
+
+    private static List<CommandMenuEntry> settingsRows(Ctx ctx) {
+        List<CommandMenuEntry> out = new ArrayList<>();
+
         if (shouldShowDevModeToggle(VersionInfo.BRANCH)) {
             out.add(new CommandMenuEntry.Toggle(
-                "DevMode", devmode,
+                "DevMode", EditorStatusHudOverlay.isDevModeOn(),
                 "dungeontrain editor devmode on",
-                "dungeontrain editor devmode off"
-            ));
+                "dungeontrain editor devmode off"));
         }
-        out.add(new CommandMenuEntry.DrillIn("Enter", new EnterCategoryMenuScreen()));
 
         // Editor Menus — master mode for the world-space editor menus: drives the auto-opening
         // part-position menu's persistent flag and, when switched off, also closes any open
         // tap-to-open block-variant / container-contents menus. Available in every template
         // category — the state it reads is per-player, not scoped to carriages.
         //
-        // Three cells rather than the old on/off Toggle, because Auto is a third position and not
-        // a shade of on: it draws every plot panel while you are between plots and only the one
-        // you are standing in once you step inside. Same Label-plus-state-cells shape as the
-        // Mirror X / Y / Z / V row below.
+        // Three cells rather than an on/off Toggle, because Auto is a third position and not a
+        // shade of on: it draws every plot panel while you are between plots and only the one you
+        // are standing in once you step inside. Same Label-plus-state-cells shape as the Mirror
+        // X / Y / Z / V row below.
         out.add(editorMenusRow());
         out.add(menuDistanceRow());
 
         // Welcome Panel — the onboarding board floating beside the first nav menu. Its own close
         // (X) button writes the same per-player, per-world flag; this row is the only way back,
         // so it stays in the menu whether the panel is currently up or not.
-        boolean welcomeShown = !EditorTypeMenuRenderer.helpPanelDismissed();
         out.add(new CommandMenuEntry.Toggle(
-            "Welcome Panel", welcomeShown,
+            "Welcome Panel", !EditorTypeMenuRenderer.helpPanelDismissed(),
             "dungeontrain editor helppanel on",
-            "dungeontrain editor helppanel off"
-        ));
+            "dungeontrain editor helppanel off"));
 
-        // Parts have their own Save / Reset commands — `dungeontrain save`
-        // dispatches via EditorCategory.locate which doesn't see part plots,
-        // so route through the part-aware /editor part subcommands instead.
-        if ("parts".equals(category)) {
-            out.add(new CommandMenuEntry.Split(
-                new CommandMenuEntry.Run("Save", "dungeontrain editor part save"),
-                new CommandMenuEntry.Run("All", "dungeontrain editor part save all"),
-                0.80
-            ));
-            out.add(myBuildsEntry());
-            CommandMenuEntry partsClear = clearEntryFor(category, model);
-            if (partsClear != null) out.add(partsClear);
-            int sep = model.indexOf(':');
-            if (sep > 0 && sep < model.length() - 1) {
-                String kind = model.substring(0, sep);
-                String name = model.substring(sep + 1);
-                out.add(new CommandMenuEntry.Split(
-                    new CommandMenuEntry.DrillIn(
-                        "New",
-                        new NewSourcePickerScreen(
-                            NewSourcePickerScreen.Category.PARTS, kind, name)),
-                    new CommandMenuEntry.DrillIn(
-                        "Remove",
-                        new ConfirmScreen("Remove '" + model + "'?",
-                            "dungeontrain editor part reset " + kind + " " + name)),
-                    0.50
-                ));
-                out.add(new CommandMenuEntry.TypeArg(
-                    "Rename", "new_name",
-                    "dungeontrain editor part rename",
-                    "", name));
-            }
-            // Undo | Redo — steps the per-plot editor history. Mirrors the
-            // Ctrl/Cmd+Z / Ctrl/Cmd+Y keybindings through the same commands, so
-            // the two surfaces cannot drift apart.
-            out.add(new CommandMenuEntry.Split(
-                new CommandMenuEntry.Run("Undo", "dungeontrain editor undo"),
-                new CommandMenuEntry.Run("Redo", "dungeontrain editor redo"),
-                0.50
-            ));
-
+        // Mirror — author one octant, the editor mirrors live (and rebuilds on save) across the
+        // enabled axes. Available in every template plot with a model in scope; architecture has
+        // no model to mirror.
+        if (ctx.isParts()
+            || (("carriages".equals(ctx.category()) || "contents".equals(ctx.category())
+                 || "tracks".equals(ctx.category()) || ctx.isPortals())
+                && notEmpty(ctx.modelName()))) {
             addMirrorToggles(out);
-            out.add(new CommandMenuEntry.DrillIn("Package", new PackageListScreen()));
-            out.add(new CommandMenuEntry.Run("Exit", "dungeontrain editor exit"));
-            return out;
         }
 
-        // Save / Save All — works for every category.
-        out.add(new CommandMenuEntry.Split(
-            new CommandMenuEntry.Run("Save", "dungeontrain save"),
-            new CommandMenuEntry.Run("All", "dungeontrain save all"),
-            0.80
-        ));
-        out.add(myBuildsEntry());
-
-        // Undo | Redo — steps the per-plot editor history. Mirrors the
-        // Ctrl/Cmd+Z / Ctrl/Cmd+Y keybindings through the same commands, so
-        // the two surfaces cannot drift apart.
-        out.add(new CommandMenuEntry.Split(
-            new CommandMenuEntry.Run("Undo", "dungeontrain editor undo"),
-            new CommandMenuEntry.Run("Redo", "dungeontrain editor redo"),
-            0.50
-        ));
-
-        // Reset | Clear — paired destructive actions. Reset deletes the
-        // on-disk template; Clear wipes interior blocks to air. Clear is
-        // only available for user-authorable categories, so for the others
-        // (tracks / pillars / tunnels / architecture) fall back to a solo
-        // Reset row.
-        CommandMenuEntry resetEntry = new CommandMenuEntry.Run("Reset", "dungeontrain reset");
-        CommandMenuEntry clearEntry = clearEntryFor(category, model);
-        if (clearEntry != null) {
-            out.add(new CommandMenuEntry.Split(resetEntry, clearEntry, 0.50));
-        } else {
-            out.add(resetEntry);
+        if (!ctx.isParts()) {
+            out.add(new CommandMenuEntry.DrillIn("Stages", new StagesListScreen()));
         }
+        return out;
+    }
 
-        // New / Remove — only meaningful for categories whose models are
-        // user-authorable (carriages, contents) or whose registry supports
-        // deletion (tracks). For architecture the concept doesn't apply, so
-        // the row is omitted rather than showing buttons that error on click.
-        CommandMenuEntry newEntry = newEntryFor(category, modelId, model);
-        CommandMenuEntry removeEntry = removeEntryFor(category, modelId, model);
-        if (newEntry != null && removeEntry != null) {
-            out.add(new CommandMenuEntry.Split(newEntry, removeEntry, 0.50));
-        }
+    // ------------------------------------------------------------------
+    // Nav — in, around, out
+    // ------------------------------------------------------------------
 
-        // Rename — only for user-authorable categories with a non-builtin id.
-        // Pre-fills the typing field with the current model name.
-        CommandMenuEntry renameEntry = renameEntryFor(category, model);
-        if (renameEntry != null) out.add(renameEntry);
+    private static List<CommandMenuEntry> navRows(Ctx ctx) {
+        List<CommandMenuEntry> out = new ArrayList<>();
+        out.add(new CommandMenuEntry.DrillIn("Enter", new EnterCategoryMenuScreen()));
 
-        // Contents — drilldown listing every registered content with a
-        // per-row red/green toggle so the author can exclude specific
-        // contents from this carriage's spawn pool. Only shown when a
-        // concrete variant id is in scope (modelId non-empty).
-        if ("carriages".equals(category) && modelId != null && !modelId.isEmpty()) {
-            out.add(new CommandMenuEntry.DrillIn(
-                "Contents",
-                CarriageContentsAllowScreen.forCarriage(modelId)));
-        }
-
-        // The same drilldown for a portal room, but only while its Contents setting is on — with it
-        // Off the room draws nothing and the toggles would steer an empty pool. Addressed by room
-        // NAME, not modelId: modelId is the kind tag "portal_room" and is shared by every room.
-        if ("portals".equals(category) && modelName != null && !modelName.isEmpty()
-            && games.brennan.dungeontrain.portal.PortalRoomSettings
-                .parse(EditorStatusHudOverlay.roomMode()).contents().furnishes()) {
-            out.add(new CommandMenuEntry.DrillIn(
-                "Contents",
-                CarriageContentsAllowScreen.forPortalRoom(modelName)));
-        }
-
-        // Weight — Triple row: [-] / Weight (N) / [+] for every category that
-        // has a weight pool (carriages, tracks, contents). Side cells nudge by
-        // 1 server-side and stay open so the player can tap-tap-tap; middle
-        // cell drops into typing mode for an exact value. Label refreshes via
-        // tick rebuild as the HUD picks up the new value.
-        CommandMenuEntry weightRow = weightTripleFor(category, modelId, modelName, currentWeight);
-        if (weightRow != null) out.add(weightRow);
-
-        // Size — portals only. A portal room is the one plot whose box the author chooses: length
-        // outright (it is the distance walked underneath a portal, not a footprint) and width and
-        // height above the floor the corridor mouth sets. Position-resolved (no model id in the
-        // command), so these need the player inside the plot.
-        if ("portals".equals(category)) {
-            CommandMenuEntry lengthRow = sizeTripleFor("length", "Length",
-                EditorStatusHudOverlay.roomLength());
-            if (lengthRow != null) out.add(lengthRow);
-            CommandMenuEntry widthRow = sizeTripleFor("width", "Width",
-                EditorStatusHudOverlay.roomWidth());
-            if (widthRow != null) out.add(widthRow);
-            CommandMenuEntry heightRow = sizeTripleFor("height", "Height",
-                EditorStatusHudOverlay.roomHeight());
-            if (heightRow != null) out.add(heightRow);
-            CommandMenuEntry modeRow = wallsModeRowFor(EditorStatusHudOverlay.roomMode());
-            if (modeRow != null) out.add(modeRow);
-            CommandMenuEntry copiesRow = copiesRowFor(EditorStatusHudOverlay.roomMode());
-            if (copiesRow != null) out.add(copiesRow);
-            CommandMenuEntry copiesFloorRow = copiesBlockRowFor(EditorStatusHudOverlay.roomMode(),
-                games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane.FLOOR);
-            if (copiesFloorRow != null) out.add(copiesFloorRow);
-            CommandMenuEntry copiesRoofRow = copiesBlockRowFor(EditorStatusHudOverlay.roomMode(),
-                games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane.ROOF);
-            if (copiesRoofRow != null) out.add(copiesRoofRow);
-            CommandMenuEntry doorWallRow = doorWallRowFor(EditorStatusHudOverlay.roomMode());
-            if (doorWallRow != null) out.add(doorWallRow);
-            CommandMenuEntry contentsRow = roomContentsRowFor(EditorStatusHudOverlay.roomMode());
-            if (contentsRow != null) out.add(contentsRow);
-            CommandMenuEntry booksRow = roomBooksRowFor(EditorStatusHudOverlay.roomMode());
-            if (booksRow != null) out.add(booksRow);
-            CommandMenuEntry skyRow = roomSkyRowFor(EditorStatusHudOverlay.roomMode());
-            if (skyRow != null) out.add(skyRow);
-            CommandMenuEntry exitsRow = exitsRowFor(EditorStatusHudOverlay.roomMode());
-            if (exitsRow != null) out.add(exitsRow);
-            CommandMenuEntry exitEveryRow = exitEveryTripleFor(EditorStatusHudOverlay.roomMode());
-            if (exitEveryRow != null) out.add(exitEveryRow);
-            CommandMenuEntry exitMoveRow = exitMoveTripleFor(EditorStatusHudOverlay.roomMode());
-            if (exitMoveRow != null) out.add(exitMoveRow);
-            // Go and stand in one. Portals only, because that is the only category where "the
-            // carriage" names something you can walk into. It stamps the room the player is
-            // standing in — under the world, corridor each side, no train — so there is nothing
-            // to pick and no save prompt to answer.
+        // Go and stand in one. Portals only, because that is the only category where "the carriage"
+        // names something you can walk into. It stamps the room the player is standing in — under
+        // the world, corridor each side, no train — so there is nothing to pick and no save prompt
+        // to answer.
+        if (ctx.isPortals()) {
             out.add(new CommandMenuEntry.Run("Test the Carriage", "dungeontrain portal test"));
         }
 
-        // Spawn gate — min/max Diff-Level steppers (same categories as Weight) plus a Phases
-        // drilldown to the OW/Nether/Void/End checkbox popup. Only shown for weighted, addressable
-        // models (weightRow != null is the exact same gate). When the model is linked to a Stage we
-        // hide the editable cells (per the locked UX) and show only the Stage chip — to change the
-        // gate the player edits the Stage or picks Custom to detach.
-        if (weightRow != null) {
-            String stageId = EditorStatusHudOverlay.stageId();
-            boolean linked = stageId != null && !stageId.isEmpty();
-            if (linked) {
-                out.add(new CommandMenuEntry.DrillIn(
-                    "Stage: " + stageId + "  ▾",
-                    new StagePickerScreen(category, modelId, modelName, stageId)));
-            } else {
-                int minLv = EditorStatusHudOverlay.minLevel();
-                int maxLv = EditorStatusHudOverlay.maxLevel();
-                CommandMenuEntry minRow = levelTripleFor(category, modelId, modelName, "minlevel",
-                    "Min Lv (" + minLv + ")", "0-1000");
-                if (minRow != null) out.add(minRow);
-                CommandMenuEntry maxRow = levelTripleFor(category, modelId, modelName, "maxlevel",
-                    "Max Lv (" + (maxLv < 0 ? "all" : Integer.toString(maxLv)) + ")", "-1..1000");
-                if (maxRow != null) out.add(maxRow);
-                out.add(new CommandMenuEntry.DrillIn(
-                    "Phases", new PhaseSelectScreen(category, modelId, modelName)));
-                // Stage / Custom picker — link this template to a Stage preset (or stay Custom).
-                out.add(new CommandMenuEntry.DrillIn(
-                    "Stage: Custom  ▾",
-                    new StagePickerScreen(category, modelId, modelName, "")));
-            }
-        }
-
-        // Editor mirror toggles — author one octant, the editor mirrors live
-        // (and rebuilds on save) across the enabled axes. Available in every
-        // template plot (off by default outside tunnels).
-        if (("carriages".equals(category) || "contents".equals(category) || "tracks".equals(category)
-             || "portals".equals(category))
-            && modelName != null && !modelName.isEmpty()) {
-            addMirrorToggles(out);
-        }
-
-        out.add(new CommandMenuEntry.DrillIn("Stages", new StagesListScreen()));
-        out.add(new CommandMenuEntry.DrillIn("Package", new PackageListScreen()));
+        // Exit unwinds the active editor session, clears the editor plots, and teleports the player
+        // back to where they entered the editor from.
         out.add(new CommandMenuEntry.Run("Exit", "dungeontrain editor exit"));
         return out;
     }
 
+    // ------------------------------------------------------------------
+    // Helpers
+    // ------------------------------------------------------------------
+
+    private static boolean notEmpty(String s) { return s != null && !s.isEmpty(); }
+
+    private static void addIfPresent(List<CommandMenuEntry> out, CommandMenuEntry entry) {
+        if (entry != null) out.add(entry);
+    }
+
     /**
-     * Append a {@code Mirror} header label followed by a {@code [X | Y | Z | V]}
-     * toggle row, wired to the position-resolved {@code editor mirror <axis> on|off}
-     * command (resolves whichever plot the player stands in). X/Y/Z mirror
-     * structural blocks across an axis; the {@code V} toggle additionally mirrors
-     * the per-cell variant pools (opt-in — off by default). Toggle state (and the
-     * green on-tint) is the server-pushed {@link EditorStatusHudOverlay} mirror flags.
+     * Append a {@code Mirror} header label followed by a {@code [X | Y | Z | V]} toggle row, wired
+     * to the position-resolved {@code editor mirror <axis> on|off} command (resolves whichever plot
+     * the player stands in). X/Y/Z mirror structural blocks across an axis; the {@code V} toggle
+     * additionally mirrors the per-cell variant pools (opt-in — off by default). Toggle state (and
+     * the green on-tint) is the server-pushed {@link EditorStatusHudOverlay} mirror flags.
      *
-     * <p>The trailing {@code Rebuild} row runs {@code editor mirror rebuild}, which
-     * re-mirrors the plot from its master octant on demand — saving no longer does
-     * that implicitly.</p>
+     * <p>The trailing {@code Rebuild} row runs {@code editor mirror rebuild}, which re-mirrors the
+     * plot from its master octant on demand — saving no longer does that implicitly.</p>
      */
     /**
      * The "Editor Menus" row — {@code Editor Menus | Auto | On | Off}, the active mode carrying
@@ -380,29 +498,27 @@ public final class EditorMenuScreen implements MenuScreen {
         CommandMenuEntry v = new CommandMenuEntry.Toggle("V", EditorStatusHudOverlay.mirrorVariants(),
             "dungeontrain editor mirror v on", "dungeontrain editor mirror v off", false);
         out.add(new CommandMenuEntry.Quad(x, y, z, v, 0.25, 0.50, 0.75));
-        // Explicit re-mirror. Saving no longer rebuilds the far half from the
-        // master octant, so this is the (deliberate) way to force it.
+        // Explicit re-mirror. Saving no longer rebuilds the far half from the master octant, so
+        // this is the (deliberate) way to force it.
         out.add(new CommandMenuEntry.Run("Rebuild", "dungeontrain editor mirror rebuild"));
     }
 
     /**
-     * Returns {@code true} when the DevMode toggle row should be added to the
-     * editor menu. Hidden on release builds (jar built from {@code main}); any
-     * other branch — feature branches, detached-HEAD short SHAs, the {@code "?"}
-     * fallback when git detection failed at build time, or {@code null} — shows
-     * the toggle so devs aren't locked out when build metadata is missing.
-     * Extracted as a pure predicate so the unit test can pin behavior without
-     * having to mutate {@link VersionInfo}'s static initializer.
+     * Returns {@code true} when the DevMode toggle row should be added to the editor menu. Hidden on
+     * release builds (jar built from {@code main}); any other branch — feature branches,
+     * detached-HEAD short SHAs, the {@code "?"} fallback when git detection failed at build time, or
+     * {@code null} — shows the toggle so devs aren't locked out when build metadata is missing.
+     * Extracted as a pure predicate so the unit test can pin behavior without having to mutate
+     * {@link VersionInfo}'s static initializer.
      */
     static boolean shouldShowDevModeToggle(String branch) {
         return !"main".equals(branch);
     }
 
     /**
-     * Build a {@link CommandMenuEntry.Triple} for the active model's weight,
-     * or null when the category has no weight pool / no addressable model.
-     * Extracted so the unit test can pin command strings without standing up
-     * the full menu.
+     * Build a {@link CommandMenuEntry.Triple} for the active model's weight, or null when the
+     * category has no weight pool / no addressable model. Extracted so the unit test can pin command
+     * strings without standing up the full menu.
      *
      * <p>Command shapes:
      * <ul>
@@ -411,10 +527,8 @@ public final class EditorMenuScreen implements MenuScreen {
      *   <li>{@code contents}: {@code dungeontrain editor contents weight <modelId> {dec|inc|""}}</li>
      * </ul>
      *
-     * <p>{@code modelId} (not {@code model}) is spliced into commands so
-     * track-side models with friendly path strings ({@code "track / track2"})
-     * don't break the parser. For carriages and contents the two are equal;
-     * for tracks {@code modelName} carries the trailing variant name segment.</p>
+     * <p>{@code modelId} (not {@code model}) is spliced into commands so track-side models with
+     * friendly path strings ({@code "track / track2"}) don't break the parser.</p>
      */
     static CommandMenuEntry weightTripleFor(String category, String modelId, String modelName, int currentWeight) {
         if (modelId == null || modelId.isEmpty()) return null;
@@ -440,44 +554,18 @@ public final class EditorMenuScreen implements MenuScreen {
     }
 
     /**
-     * Build a {@link CommandMenuEntry.Triple} stepper for one axis of a portal room's box, or null
-     * when the server hasn't reported a size (i.e. this isn't a portal room plot).
-     *
-     * <p>Same shape as {@link #weightTripleFor}: side cells nudge by one and keep the menu open so
-     * the player can tap; the middle cell drops into typing mode for an exact value. The command is
-     * position-resolved — the server reads which plot the player is standing in — so no model id is
-     * spliced in and there is nothing to go stale.</p>
-     *
-     * <p>Values are clamped server-side: width and height cannot go below what the corridor mouth
-     * needs to stay sealed, and height cannot reach into the next portal pair's Y lane. Tapping
-     * {@code −} past the floor simply stops.</p>
-     */
-    /**
-     * The row that says what a portal room does at its walls, or null outside a portal room plot.
-     *
-     * <p>One cycling button rather than a stepper or a drilldown: there are three modes, so any of
-     * them is at most two taps away, and staying open lets the player tap past the one they do not
-     * want. Position-resolved like the size rows — the server reads which plot they are standing
-     * in.</p>
-     */
-    static CommandMenuEntry wallsModeRowFor(String currentMode) {
-        if (currentMode == null || EditorStatusPacket.NO_MODE.equals(currentMode)) return null;
-        return new CommandMenuEntry.Stay(
-            EditorPlotLabelsRenderer.modeLabel(currentMode),
-            "dungeontrain editor portals mode next");
-    }
-
-    /**
      * Wider than the shared default while a Walls row is showing.
      *
      * <p>{@link CommandMenuLayout#PANEL_WIDTH} fits about fifteen characters, which covered every
-     * row this menu had until "Walls: Endless Repetition" — twenty-five — ran off both edges.
-     * Widening only this screen, and only while the row is present, keeps every other menu in the
-     * game at the width it was tuned at; the renderer and the raycast both read
-     * {@code CommandMenuState.panelWidth()}, so they cannot disagree about it.</p>
+     * row this menu had until "Walls: Endless Repetition" — twenty-five — ran off both edges. The
+     * wide rows only exist in Current, so the panel widens only while that tab is the one showing;
+     * every other tab, and every other menu in the game, keeps the width it was tuned at.</p>
      */
     @Override
     public double panelWidth() {
+        if (EditorMenuTab.active() != EditorMenuTab.CURRENT) {
+            return CommandMenuLayout.PANEL_WIDTH;
+        }
         String mode = EditorStatusHudOverlay.roomMode();
         if (mode == null || EditorStatusPacket.NO_MODE.equals(mode)) {
             return CommandMenuLayout.PANEL_WIDTH;
@@ -489,195 +577,11 @@ public final class EditorMenuScreen implements MenuScreen {
     }
 
     /**
-     * The Copies row, or null unless the walls are set to one of the two endless modes — the only
-     * ones that append tiles for the setting to describe.
-     */
-    static CommandMenuEntry copiesRowFor(String currentMode) {
-        if (currentMode == null || EditorStatusPacket.NO_MODE.equals(currentMode)) return null;
-        if (!games.brennan.dungeontrain.portal.PortalRoomSettings.parse(currentMode).copiesApply()) {
-            return null;
-        }
-        return new CommandMenuEntry.Stay(
-            EditorPlotLabelsRenderer.copiesLabel(currentMode),
-            "dungeontrain editor portals copies next");
-    }
-
-    /**
-     * One plane's Block row, or null unless Copies is set to Single — the one value that reads a
-     * block. The Floor and Roof rows are this same shape, aimed at their own plane.
-     *
-     * <p>A picker, not a cycle: the value is any block in the registry, so tapping the row takes
-     * whatever the author is holding rather than stepping to a "next" nobody could enumerate. The
-     * menu is opened by a key toggle rather than by holding a tool, so their main hand is free for
-     * the block itself. <b>Edit</b> opens the Block Variant menu on that plane, which is how one
-     * block becomes a variant of several.</p>
-     */
-    static CommandMenuEntry copiesBlockRowFor(
-        String currentMode, games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane plane
-    ) {
-        if (currentMode == null || EditorStatusPacket.NO_MODE.equals(currentMode)) return null;
-        if (!EditorPlotLabelsRenderer.hasCopiesBlockRowFor(currentMode)) return null;
-        // Value on the left, a way into its editor on the right — the same Split the Books row uses.
-        return new CommandMenuEntry.Split(
-            new CommandMenuEntry.Stay(EditorPlotLabelsRenderer.copiesBlockLabel(plane),
-                "dungeontrain editor portals copies " + plane.id() + " held"),
-            new CommandMenuEntry.Stay("Edit",
-                "dungeontrain editor portals copies " + plane.id() + " edit"),
-            0.72);
-    }
-
-    /**
-     * The Door Wall row, or null unless the walls are set to Endless Repetition — the one mode whose
-     * appended tiles carry a wall of their own.
-     *
-     * <p>Sits directly under Copies, beside which it belongs: both describe what an appended tile is
-     * made of. Off by default, so a room that has never been given the setting shows "Sealed" and
-     * behaves exactly as it always did.</p>
-     */
-    static CommandMenuEntry doorWallRowFor(String currentMode) {
-        if (currentMode == null || EditorStatusPacket.NO_MODE.equals(currentMode)) return null;
-        if (!EditorPlotLabelsRenderer.hasDoorWallRow(currentMode)) return null;
-        return new CommandMenuEntry.Stay(
-            EditorPlotLabelsRenderer.doorWallLabel(currentMode),
-            "dungeontrain editor portals doorwall next");
-    }
-
-    /**
-     * The Contents row — whether the room is furnished from the ordinary contents pool, and how a
-     * furnishing smaller than the room is fitted into it.
-     *
-     * <p>Shown for every portal room, unlike Copies: furnishing is not a property of the walls, so a
-     * sealed room can take one as readily as a repeating one.</p>
-     */
-    static CommandMenuEntry roomContentsRowFor(String currentMode) {
-        if (currentMode == null || EditorStatusPacket.NO_MODE.equals(currentMode)) return null;
-        return new CommandMenuEntry.Stay(
-            EditorPlotLabelsRenderer.roomContentsLabel(currentMode),
-            "dungeontrain editor portals contents next");
-    }
-
-    /**
-     * The Books row — whether every book found in the room is by one author, and how that author is
-     * chosen.
-     *
-     * <p>Shown for every portal room, on the same reasoning as Contents, and deliberately NOT gated
-     * on the room being furnished: a room can hold books without drawing a contents template, since
-     * its own template may have shelves stamped into it.</p>
-     */
-    static CommandMenuEntry roomBooksRowFor(String currentMode) {
-        if (currentMode == null || EditorStatusPacket.NO_MODE.equals(currentMode)) return null;
-        CommandMenuEntry cycle = new CommandMenuEntry.Stay(
-            EditorPlotLabelsRenderer.roomBooksLabel(currentMode),
-            "dungeontrain editor portals books next");
-        // Off has no dials, so the row is the value alone. Once the room stocks an author the Edit
-        // button rides beside it rather than taking a row of its own — the weights and the author band
-        // belong to the value next to them.
-        if (!games.brennan.dungeontrain.portal.PortalRoomSettings.parse(currentMode)
-                .books().weightsApply()) {
-            return cycle;
-        }
-        return new CommandMenuEntry.Split(cycle,
-            new CommandMenuEntry.DrillIn("Edit", new PortalRoomBooksScreen(currentMode)),
-            0.72);
-    }
-
-    /**
-     * The Sky row — whether the room is lit as though it stood outdoors, and under which sky.
-     *
-     * <p>Shown for every portal room, on the same reasoning as Contents and Books: the sky a room
-     * stands under is a statement about the place it is pretending to be, not about how it seals or
-     * what is furnished into it.</p>
-     */
-    static CommandMenuEntry roomSkyRowFor(String currentMode) {
-        if (currentMode == null || EditorStatusPacket.NO_MODE.equals(currentMode)) return null;
-        return new CommandMenuEntry.Stay(
-            EditorPlotLabelsRenderer.roomSkyLabel(currentMode),
-            "dungeontrain editor portals sky next");
-    }
-
-    /**
-     * The Exits row, or null unless the walls repeat — only an endless room has anywhere to put an
-     * extra way back to the train.
-     *
-     * <p>Shown for <b>both</b> endless modes, unlike Copies. What Copies describes is what an
-     * appended tile contains, which Endless Open decides for itself; getting lost is not a property
-     * of the walls, so an Endless Open room is asked the question too — it just answers Off by
-     * default.</p>
-     */
-    static CommandMenuEntry exitsRowFor(String currentMode) {
-        if (currentMode == null || EditorStatusPacket.NO_MODE.equals(currentMode)) return null;
-        if (!games.brennan.dungeontrain.portal.PortalRoomSettings.parse(currentMode).exitsApply()) {
-            return null;
-        }
-        return new CommandMenuEntry.Stay(
-            EditorPlotLabelsRenderer.exitsLabel(currentMode),
-            "dungeontrain editor portals exits next");
-    }
-
-    /**
-     * The stepper for the {@code X} in "every X tiles" / "one tile in X", or null when Exits is not
-     * showing or is set to Off.
-     *
-     * <p>Hidden rather than greyed out at Off, because a spacing for corridors that are not being
-     * laid is a control with nothing on the other end of it — the same reason the Copies row is
-     * absent rather than dimmed under a mode that makes no copies.</p>
-     */
-    static CommandMenuEntry exitEveryTripleFor(String currentMode) {
-        if (currentMode == null || EditorStatusPacket.NO_MODE.equals(currentMode)) return null;
-        games.brennan.dungeontrain.portal.PortalRoomSettings settings =
-            games.brennan.dungeontrain.portal.PortalRoomSettings.parse(currentMode);
-        if (!settings.exitsApply() || !settings.exits().lays()) return null;
-
-        String prefix = "dungeontrain editor portals exitevery";
-        CommandMenuEntry minus = new CommandMenuEntry.Stay("-", prefix + " dec");
-        CommandMenuEntry middle = new CommandMenuEntry.TypeArg(
-            EditorPlotLabelsRenderer.exitEveryLabel(currentMode), "tiles", prefix);
-        CommandMenuEntry plus = new CommandMenuEntry.Stay("+", prefix + " inc");
-        return new CommandMenuEntry.Triple(minus, middle, plus, 0.10, 0.90);
-    }
-
-    /**
-     * The moved-exit stepper, or null unless Exits is set to Random.
-     *
-     * <p>Random alone: walling off the way straight back out is only fair when there is something
-     * unpredictable to go and find. Under the lattice a player could work out the walk in advance,
-     * and under Off it would wall the only way onward there is.</p>
-     */
-    static CommandMenuEntry exitMoveTripleFor(String currentMode) {
-        if (currentMode == null || EditorStatusPacket.NO_MODE.equals(currentMode)) return null;
-        games.brennan.dungeontrain.portal.PortalRoomSettings settings =
-            games.brennan.dungeontrain.portal.PortalRoomSettings.parse(currentMode);
-        if (!settings.exitsApply() || !settings.exits().movesApply()) return null;
-
-        String prefix = "dungeontrain editor portals exitmove";
-        CommandMenuEntry minus = new CommandMenuEntry.Stay("-", prefix + " dec");
-        CommandMenuEntry middle = new CommandMenuEntry.TypeArg(
-            EditorPlotLabelsRenderer.exitMoveLabel(currentMode), "0-10", prefix);
-        CommandMenuEntry plus = new CommandMenuEntry.Stay("+", prefix + " inc");
-        return new CommandMenuEntry.Triple(minus, middle, plus, 0.10, 0.90);
-    }
-
-    static CommandMenuEntry sizeTripleFor(String axis, String label, int current) {
-        if (current == EditorStatusPacket.NO_SIZE) return null;
-        String prefix = "dungeontrain editor portals " + axis;
-        CommandMenuEntry minus = new CommandMenuEntry.Stay("-", prefix + " dec");
-        CommandMenuEntry middle = new CommandMenuEntry.TypeArg(
-            label + " (" + current + ")", "blocks", prefix);
-        CommandMenuEntry plus = new CommandMenuEntry.Stay("+", prefix + " inc");
-        return new CommandMenuEntry.Triple(minus, middle, plus, 0.10, 0.90);
-    }
-
-    /**
      * Build a {@link CommandMenuEntry.Triple} stepper for a per-template spawn-gate level bound,
      * or null when the category has no gate / no addressable model. {@code sub} is the gate
      * subcommand ({@code minlevel} / {@code maxlevel}); {@code label} is the pre-rendered cell
      * label (caller formats the current value); {@code hint} is the typing-mode placeholder.
-     * Command shapes mirror {@link #weightTripleFor}:
-     * <ul>
-     *   <li>{@code carriages}: {@code dungeontrain editor <sub> <modelId> {dec|inc|""}}</li>
-     *   <li>{@code tracks}: {@code dungeontrain editor tracks <sub> <modelId> <modelName> {dec|inc|""}}</li>
-     *   <li>{@code contents}: {@code dungeontrain editor contents <sub> <modelId> {dec|inc|""}}</li>
-     * </ul>
+     * Command shapes mirror {@link #weightTripleFor}.
      */
     static CommandMenuEntry levelTripleFor(String category, String modelId, String modelName,
                                            String sub, String label, String hint) {
@@ -703,20 +607,13 @@ public final class EditorMenuScreen implements MenuScreen {
     }
 
     /**
-     * "New" drills into a {@link NewSourcePickerScreen} for carriages and
-     * contents (Blank / Current / Standard seed picker before naming).
-     * For {@code tracks} the {@code modelId} is the kind tag the player is
-     * standing on ({@code track}, {@code pillar_top},
-     * {@code tunnel_section}, {@code adjunct_stairs}, ...) — passed to
-     * {@code /dt editor tracks new <kind> <typed-name>}, which clones the
-     * variant the player is currently standing on under the new name and
-     * teleports them to the new plot. Returns null for categories that
-     * don't support author-authored new models.
-     *
-     * <p>{@code modelId} is the command-token id ({@code track}); {@code model}
-     * is the friendly path string ({@code track / track2}). Carriages and
-     * contents pass {@code modelId} to the picker so any preview state keys
-     * off the same id the server uses.</p>
+     * "New" drills into a {@link NewSourcePickerScreen} for carriages and contents (Blank / Current
+     * / Standard seed picker before naming). For {@code tracks} the {@code modelId} is the kind tag
+     * the player is standing on ({@code track}, {@code pillar_top}, {@code tunnel_section},
+     * {@code adjunct_stairs}, ...) — passed to {@code /dt editor tracks new <kind> <typed-name>},
+     * which clones the variant the player is currently standing on under the new name and teleports
+     * them to the new plot. Returns null for categories that don't support author-authored new
+     * models.
      */
     static CommandMenuEntry newEntryFor(String category, String modelId, String model) {
         return switch (category) {
@@ -745,19 +642,16 @@ public final class EditorMenuScreen implements MenuScreen {
     }
 
     /**
-     * "Remove" deletes the current model's config-dir file via
-     * {@code /dt editor reset <id>} / {@code /dt editor contents reset <id>}.
-     * Drills into a ConfirmScreen first so mis-clicks don't silently wipe
-     * the user's work.
+     * "Remove" deletes the current model's config-dir file via {@code /dt editor reset <id>} /
+     * {@code /dt editor contents reset <id>}. Drills into a ConfirmScreen first so mis-clicks don't
+     * silently wipe the user's work.
      *
      * <p>For {@code tracks} the menu drills into a confirm that fires
-     * {@code /dt editor tracks reset <kind>} — that command no-ops with a
-     * friendly error when the active variant is the synthetic
-     * {@code default} (you can't remove the built-in fallback).</p>
+     * {@code /dt editor tracks reset <kind>} — that command no-ops with a friendly error when the
+     * active variant is the synthetic {@code default} (you can't remove the built-in fallback).</p>
      *
-     * <p>{@code modelId} is what gets spliced into the command (must be a
-     * single command token); {@code model} is the friendly path used in the
-     * confirm prompt label.</p>
+     * <p>{@code modelId} is what gets spliced into the command (must be a single command token);
+     * {@code model} is the friendly path used in the confirm prompt label.</p>
      */
     static CommandMenuEntry removeEntryFor(String category, String modelId, String model) {
         if (modelId == null || modelId.isEmpty()) return null;
@@ -783,11 +677,10 @@ public final class EditorMenuScreen implements MenuScreen {
     }
 
     /**
-     * "Clear" wipes every interior block of the current plot to air via
-     * {@code /dt editor clear}. Drills into a ConfirmScreen first since the
-     * action is destructive — same gating as Remove. Returns null for
-     * categories without a single addressable model id (tracks, pillars,
-     * tunnels, architecture).
+     * "Clear" wipes every interior block of the current plot to air via {@code /dt editor clear}.
+     * Drills into a ConfirmScreen first since the action is destructive — same gating as Remove.
+     * Returns null for categories without a single addressable model id (tracks, pillars, tunnels,
+     * architecture).
      */
     private static CommandMenuEntry clearEntryFor(String category, String model) {
         if (model == null || model.isEmpty()) return null;
@@ -801,15 +694,22 @@ public final class EditorMenuScreen implements MenuScreen {
     }
 
     /**
-     * "Rename" pre-fills the typing field with the current model id and on
-     * submit runs the category's {@code save <new_name>} subcommand — both
-     * carriages and contents implement that as a true rename (saveAs:
-     * delete-old + write-new + registry update). Returns null for builtin
-     * variants and for categories that don't support author-authored renames.
+     * "Rename" pre-fills the typing field with the current model name and on submit runs the
+     * category's rename subcommand — carriages and contents implement {@code save <new_name>} as a
+     * true rename (saveAs: delete-old + write-new + registry update), and parts have their own
+     * {@code part rename}. Returns null for builtin variants and for categories that don't support
+     * author-authored renames.
      */
-    private static CommandMenuEntry renameEntryFor(String category, String model) {
+    private static CommandMenuEntry renameEntryFor(Ctx ctx) {
+        String model = ctx.model();
         if (model == null || model.isEmpty()) return null;
-        return switch (category) {
+        if (ctx.isParts()) {
+            String[] kindName = partsKindName(model);
+            if (kindName == null) return null;
+            return new CommandMenuEntry.TypeArg(
+                "Rename", "new_name", "dungeontrain editor part rename", "", kindName[1]);
+        }
+        return switch (ctx.category()) {
             case "carriages" -> isReservedCarriageBuiltin(model) ? null : new CommandMenuEntry.TypeArg(
                 "Rename", "new_name",
                 "dungeontrain editor save",
@@ -836,19 +736,18 @@ public final class EditorMenuScreen implements MenuScreen {
      * Everything this player has uploaded to their relay profile, and the one button that puts a
      * build on the train.
      *
-     * <p>Directly under Save, because that is what fills it — the same placement and the same
-     * reasoning as the Train Builder's pause menu, which is where this screen came from. The screen
-     * itself was always world-agnostic; only the builder's button was, so the editor gets its own
-     * rather than a copy of it.</p>
+     * <p>Sits in File beside New and Save, because a build you have just made and a build you have
+     * already published are the same question asked twice — the same reasoning as the Train
+     * Builder's pause menu, which is where this screen came from. The screen itself was always
+     * world-agnostic; only the builder's button was, so the editor gets its own rather than a copy
+     * of it.</p>
      *
      * <p>Package-private rather than private because {@link MainMenuScreen} offers the same row at
-     * the root of the worldspace menu, for a player who is not standing in a plot. One definition,
-     * so the two rows cannot drift into saying different things or opening different screens.</p>
+     * the root of the menu, for a player who is not standing in a plot. One definition, so the two
+     * rows cannot drift into saying different things or opening different screens.</p>
      *
-     * <p>A {@link CommandMenuEntry.ClientAction} opening a vanilla screen has precedent in
-     * {@code CommandMenuState.beginTyping}. The worldspace menu is closed first: it is drawn in the
-     * world and raycast for input, so leaving it up behind a screen would leave two things reading
-     * the mouse. A null parent means Back returns to the game.</p>
+     * <p>The menu is closed first so the profile screen replaces it cleanly rather than stacking on
+     * top of it. A null parent means Back returns to the game.</p>
      */
     static CommandMenuEntry myBuildsEntry() {
         return new CommandMenuEntry.ClientAction(
@@ -858,5 +757,4 @@ public final class EditorMenuScreen implements MenuScreen {
                 Minecraft.getInstance().setScreen(new BuilderProfileScreen(null));
             });
     }
-
 }

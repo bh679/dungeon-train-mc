@@ -11,15 +11,15 @@ import net.neoforged.fml.common.Mod;
 /**
  * Client tick handler that:
  * <ol>
- *   <li>Drains pending {@code [} key presses and toggles the menu open/closed.</li>
+ *   <li>Drains pending toggle-key presses and opens the menu.</li>
  *   <li>While open, runs the per-tick state maintenance (auto-close on
- *       distance, live entry rebuild) and the hover-raycast update.</li>
+ *       distance, live entry rebuild).</li>
  * </ol>
  *
- * <p>Because the menu does not open a Minecraft
- * {@link net.minecraft.client.gui.screens.Screen},
- * {@link net.minecraft.client.KeyMapping#consumeClick()} fires for both
- * open and close presses — no need for a Screen-level keyPressed handler.</p>
+ * <p>This handler only ever <i>opens</i> the menu. Once
+ * {@link CommandMenuGuiScreen} is up, vanilla stops polling keybindings, so
+ * {@link net.minecraft.client.KeyMapping#consumeClick()} cannot fire again —
+ * the screen matches the toggle key itself in {@code keyPressed} to close.</p>
  */
 @EventBusSubscriber(
     modid = DungeonTrain.MOD_ID,
@@ -34,14 +34,12 @@ public final class CommandMenuToggleHandler {
 
         Minecraft mc = Minecraft.getInstance();
 
-        // If any other screen opens while our worldspace menu is up, close
-        // it — otherwise the player can't look around (mouse captured by the
-        // screen) and the floating menu becomes useless. Exempt our own
-        // MenuTypingScreen though: beginTyping opens it intentionally to
-        // suppress vanilla keybindings, and closing the menu here would
-        // immediately cancel the typing field the user just activated.
+        // The menu IS a screen now, so its own screen being up is the normal
+        // state. What still matters is another screen replacing ours — the
+        // inventory, a sign, another mod's GUI — which would leave our state
+        // open with nothing rendering it. Close in that case only.
         if (CommandMenuState.isOpen() && mc.screen != null
-                && !(mc.screen instanceof MenuTypingScreen)) {
+                && !(mc.screen instanceof CommandMenuGuiScreen)) {
             CommandMenuState.close();
         }
 
@@ -68,16 +66,11 @@ public final class CommandMenuToggleHandler {
 
         if (CommandMenuState.isOpen()) {
             CommandMenuState.onClientTick();
-            if (CommandMenuState.isOpen()) {
-                CommandMenuRaycast.updateHovered();
-                // stopDestroyBlock on every tick halts any accumulated
-                // destroy progress. The hitResult clobber lives in the
-                // renderer — it has to run after gameRenderer.pick() or
-                // the next pick() overwrites it before continueAttack
-                // reads it.
-                if (mc.gameMode != null) {
-                    mc.gameMode.stopDestroyBlock();
-                }
+            // Hover is resolved from the cursor in CommandMenuGuiScreen#render,
+            // so there is no per-tick raycast to run any more. stopDestroyBlock
+            // still halts destroy progress accumulated before the menu opened.
+            if (CommandMenuState.isOpen() && mc.gameMode != null) {
+                mc.gameMode.stopDestroyBlock();
             }
         }
     }
