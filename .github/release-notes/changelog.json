@@ -9449,6 +9449,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "player-data-survives-modpack-updates",
+      "version": "0.692.0",
+      "type": "fix",
+      "title": "Your builds and progress now survive a modpack update",
+      "summary": "Updating the modpack could delete every carriage you'd built in the Train Editor and every advancement you'd earned. Dungeon Train kept them in the config folder, and modpack launchers replace that folder when a pack updates. They now live alongside your worlds, where an update can't touch them, and your existing files are moved across automatically the first time you launch.",
+      "highlights": [
+        "Train Editor builds, advancements, stats and loadouts moved out of the config folder to a place modpack updates leave alone.",
+        "Dungeon Train now keeps rolling backups of your builds and progress, one per launch.",
+        "Already lost your builds to an update? At the title screen Dungeon Train will offer to restore them from a backup or from an older install on your PC. /dtbackup and /dtrestore do the same in-game."
+      ],
+      "date": "2026-08-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
