@@ -25,8 +25,10 @@ import java.util.Set;
  *       {@code trigger}, {@code list}.</li>
  *   <li>{@code playanimation} and {@code stopsound}: purely cosmetic,
  *       no gameplay effect.</li>
- *   <li>{@code advancement revoke}: destroys progress and can never create it.
- *       {@code advancement grant} / {@code set} still taint.</li>
+ *   <li>{@code advancement revoke @s everything} <b>exactly</b>: wiping your own slate
+ *       destroys progress and can never create it. Every other {@code /advancement} form
+ *       taints — {@code grant}, {@code set}, a partial revoke, and any target but
+ *       {@code @s} (you may only ever clear yourself, never someone else).</li>
  * </ul>
  *
  * <p>The classifier works off the raw command string so command aliases
@@ -72,10 +74,9 @@ public final class CommandAllowlist {
      * javadoc), so weather changes still need to gate behind the Free Play
      * confirmation like {@code /gamemode} and {@code /give} do.
      * {@code advancement} is handled in {@link #isAllowed} rather than here:
-     * only its {@code revoke} branch is clean — giving up progress you earned
-     * is the opposite of cheating, and it is how
-     * {@link games.brennan.dungeontrain.advancement.StartAgainAdvancement} is
-     * earned — while {@code grant} / {@code set} hand out progress and taint.
+     * only the exact form {@code /advancement revoke @s everything} is clean
+     * (see {@link #isSelfRevokeEverything}) — every other spelling, target
+     * included, still taints.
      */
     private static final Set<String> ALLOWED_ROOTS = Set.of(
         "help", "me", "msg", "tell", "w", "teammsg", "tm", "trigger", "list",
@@ -109,10 +110,42 @@ public final class CommandAllowlist {
             return false; // editor/save/reset/package, cinematographer, spawn, speed, carriages, tracks, narrative give/reset/…
         }
         if (root.equals("kill")) return sub.isEmpty(); // bare /kill (self) only; /kill @e taints
-        // /advancement revoke destroys progress and can never create it — the opposite of
-        // cheating, and the command "It's Not That Simple" is earned by running. grant/set taint.
-        if (root.equals("advancement")) return sub.equals("revoke");
+        // Exactly "/advancement revoke @s everything" — see isSelfRevokeEverything.
+        if (root.equals("advancement")) return isSelfRevokeEverything(root, parts);
         return ALLOWED_ROOTS.contains(root);
+    }
+
+    /**
+     * Is this the one {@code /advancement} form that doesn't taint —
+     * {@code /advancement revoke @s everything}, exactly?
+     *
+     * <p>Clearing your <em>own</em> slate destroys progress and can never create it, which is the
+     * opposite of cheating; it is also how
+     * {@link games.brennan.dungeontrain.advancement.StartAgainAdvancement "It's Not That Simple"}
+     * is earned, and that reward cannot bank on a tainted run. Everything else under
+     * {@code /advancement} stays cheating: {@code grant} and {@code set} hand progress out, a
+     * partial revoke ({@code … only <id>}) isn't the wipe the advancement is about, and
+     * <b>any target but {@code @s}</b> is reaching into someone else's profile.
+     *
+     * <p>Public because {@link games.brennan.dungeontrain.advancement.StartAgainAdvancement}
+     * arms off the same rule: one classifier, two call sites, so the command that is forgiven and
+     * the command that is rewarded can never drift apart. Lives here rather than there because
+     * this class is deliberately free of Minecraft types, which keeps the rule unit-testable
+     * without bootstrapping the game.
+     */
+    public static boolean isSelfRevokeEverything(String rawCommand) {
+        String[] parts = tokens(rawCommand);
+        if (parts.length == 0) return false;
+        return isSelfRevokeEverything(stripNamespace(parts[0]), parts);
+    }
+
+    /** Shared body, off an already-tokenised command whose root is already namespace-stripped. */
+    private static boolean isSelfRevokeEverything(String root, String[] parts) {
+        return root.equals("advancement")
+            && parts.length == 4
+            && parts[1].equalsIgnoreCase("revoke")
+            && parts[2].equals("@s")
+            && parts[3].equalsIgnoreCase("everything");
     }
 
     /** A short label for the warning message, e.g. {@code "/give"} or {@code "/dungeontrain cinematographer"}. */

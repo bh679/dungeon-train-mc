@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.advancement;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.cheat.CommandAllowlist;
 import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
@@ -9,7 +10,6 @@ import net.minecraft.server.ServerAdvancementManager;
 import net.minecraft.server.level.ServerPlayer;
 import org.slf4j.Logger;
 
-import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -36,13 +36,23 @@ import java.util.concurrent.ConcurrentHashMap;
  * did not actually clear the player's tree (wrong target, failed command)
  * disarms without granting.</p>
  *
- * <p>The direct award mirrors {@link CompletionistAdvancement} and passes through
- * the same cross-world persistence gate in {@code AchievementEvents}
- * ({@link games.brennan.dungeontrain.cheat.RunIntegrity#persistsAdvancement}).
- * {@code /advancement revoke} is deliberately exempt from the cheat allowlist —
- * see {@link games.brennan.dungeontrain.cheat.CommandAllowlist} — because
- * revoking only ever destroys the player's own progress; without that exemption
- * the run would go Free Play and this reward could never bank.</p>
+ * <p><b>Surviving the cheat system, without punching a hole in it.</b> The command that earns
+ * this is op-only, so two separate parts of the cheat system would otherwise erase the reward.
+ * {@link CommandAllowlist} exempts the exact form {@code /advancement revoke @s everything}
+ * (and only that form — any other target is still cheating), which stops the Free Play
+ * confirmation from cancelling the command. That alone isn't enough: {@code OperatorIntegrity}
+ * treats cheats being <em>available</em> as Free Play, so anyone who <em>can</em> run the command
+ * is a cheated run before they run it, and
+ * {@link games.brennan.dungeontrain.cheat.RunIntegrity#persistsAdvancement} would drop the award
+ * on its way to the cross-world profile.
+ *
+ * <p>So {@link #checkArmed} writes to {@link GlobalAchievementStore} itself, at the one call site
+ * that has verified the player held the capstone and actually wiped it. Deliberately <em>not</em>
+ * an id-level exemption in {@code persistsAdvancement}: vanilla
+ * {@code /advancement grant @s everything} awards {@code impossible} criteria directly, so an
+ * exemption by id would let a plain grant launder this advancement into the profile. As it
+ * stands a grant still lights the toast in that session — unavoidable for any code-granted
+ * advancement, and true of the capstone already — but it can never bank.</p>
  */
 public final class StartAgainAdvancement {
 
@@ -58,27 +68,15 @@ public final class StartAgainAdvancement {
     private StartAgainAdvancement() {}
 
     /**
-     * Core, string-based classifier for {@code /advancement revoke <targets> everything}:
-     * Brigadier-free so it is unit-testable, and namespace-tolerant
-     * ({@code /minecraft:advancement …}) for the same reason
-     * {@link games.brennan.dungeontrain.cheat.CommandAllowlist} works off the raw string.
+     * Is this the command that earns it — {@code /advancement revoke @s everything}, exactly?
      *
-     * @return true for a revoke-everything spelling, false for {@code grant}/{@code set},
-     *         for {@code revoke … only <id>} / {@code … from <id>} / {@code … through <id>},
-     *         and for anything that isn't the advancement command
+     * <p>Delegates to {@link CommandAllowlist#isSelfRevokeEverything}, which is also what decides
+     * the command doesn't taint the run. One classifier, two call sites: the command that is
+     * forgiven and the command that is rewarded can never drift apart. Self-target only — you may
+     * wipe your own slate, never someone else's.</p>
      */
-    public static boolean isRevokeEverything(String rawCommand) {
-        String cmd = rawCommand == null ? "" : rawCommand.strip();
-        if (cmd.startsWith("/")) cmd = cmd.substring(1).strip();
-        if (cmd.isEmpty()) return false;
-        String[] parts = cmd.split("\\s+");
-        if (parts.length < 3) return false; // "advancement revoke <targets> everything" is 4 tokens
-        String root = parts[0].toLowerCase(Locale.ROOT);
-        int colon = root.indexOf(':');
-        if (colon >= 0) root = root.substring(colon + 1);
-        if (!root.equals("advancement")) return false;
-        if (!parts[1].toLowerCase(Locale.ROOT).equals("revoke")) return false;
-        return parts[parts.length - 1].toLowerCase(Locale.ROOT).equals("everything");
+    public static boolean isSelfRevokeEverything(String rawCommand) {
+        return CommandAllowlist.isSelfRevokeEverything(rawCommand);
     }
 
     /**
@@ -122,6 +120,16 @@ public final class StartAgainAdvancement {
             if (player.getAdvancements().award(self, key)) granted = true;
         }
         if (granted) {
+            // Bank it here rather than leaving it to the earn-event's persistence gate. The gate
+            // would drop it: the command that earns this needs permission level 2, and
+            // OperatorIntegrity treats cheats being AVAILABLE as Free Play, so the run is always
+            // cheated by the time we get here — the reward would toast and then be forgotten.
+            // Writing at this one call site (rather than exempting the id in
+            // RunIntegrity.persistsAdvancement) is what keeps it honest: this is the only path
+            // that checks the player actually held the capstone and actually wiped it, so
+            // /advancement grant @s everything still awards the advancement live but can never
+            // launder it into the cross-world profile.
+            GlobalAchievementStore.append(player.getUUID(), ID);
             LOGGER.info("[DungeonTrain] Granted start-again advancement (It's Not That Simple) to {}",
                 player.getName().getString());
         }

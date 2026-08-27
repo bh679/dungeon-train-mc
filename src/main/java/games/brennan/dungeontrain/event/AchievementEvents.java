@@ -1029,7 +1029,8 @@ public final class AchievementEvents {
 
     /**
      * Arm "It's Not That Simple" when a player who already holds the
-     * "Everything Burrito" capstone runs {@code /advancement revoke @s everything}.
+     * "Everything Burrito" capstone runs {@code /advancement revoke @s everything} —
+     * that exact form only, self-target included.
      *
      * <p>{@link CommandEvent} fires <b>before</b> execution, so this can only arm —
      * granting here would award the advancement into the very tree the command is
@@ -1049,7 +1050,7 @@ public final class AchievementEvents {
     public static void onCommand(CommandEvent event) {
         ServerPlayer player = event.getParseResults().getContext().getSource().getPlayer();
         if (player == null) return;
-        if (!StartAgainAdvancement.isRevokeEverything(event.getParseResults().getReader().getString())) return;
+        if (!StartAgainAdvancement.isSelfRevokeEverything(event.getParseResults().getReader().getString())) return;
         StartAgainAdvancement.armIfEligible(player);
     }
 
