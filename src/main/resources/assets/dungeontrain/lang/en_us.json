@@ -939,6 +939,8 @@
   "gui.dungeontrain.builder.profile.empty": "Nothing uploaded yet — save a build and it will appear here.",
   "gui.dungeontrain.builder.profile.pick": "Pick a build to submit it to the train.",
   "gui.dungeontrain.builder.profile.disabled": "Builder profiles are off on this world.",
+  "gui.dungeontrain.builder.profile.no_consent": "Your builds stay on this machine while Internet Connection is off. Turn it on in Options \u2192 Dungeon Train to upload them.",
+  "gui.dungeontrain.builder.profile.consent_pending": "Checking your network settings\u2026",
   "gui.dungeontrain.builder.profile.unavailable": "Couldn't reach the relay — your builds are still saved here.",
   "gui.dungeontrain.builder.profile.withheld": "Held back from the train while it's under review.",
   "gui.dungeontrain.builder.profile.no_stage": "No stage — it won't be picked for any stretch of the line yet.",
