@@ -271,6 +271,7 @@ jobs:
             controlling(optional)
             searchables(optional)
             equipment-compare(optional)
+            clumps(optional)
             item-highlighter(optional)
             pick-up-notifier(optional)
             puzzles-lib(optional)

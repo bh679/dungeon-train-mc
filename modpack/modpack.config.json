@@ -315,6 +315,15 @@
       "modrinth_version": "zHNxmOqp"
     },
     {
+      "name": "Clumps",
+      "slug": "clumps",
+      "project_id": 256717,
+      "file_id": 5623731,
+      "required": true,
+      "modrinth_project": "clumps",
+      "modrinth_version": "jo7lDoK4"
+    },
+    {
       "name": "Scribble",
       "slug": "scribble",
       "project_id": 1051344,
