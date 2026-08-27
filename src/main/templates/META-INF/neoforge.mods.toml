@@ -143,6 +143,22 @@ logoFile="logo.png"
     ordering="AFTER"
     side="BOTH"
 
+# betteradvancements. Bundled modpack companion (shipped ON by default) — NOT a compile dep.
+# It replaces the whole advancements screen with its own widget classes, which would otherwise
+# bypass DT's fog-of-war rendering (revealed-but-unearned advancements draw no icon, and their
+# criteria leak). Dungeon Train ships a CLIENT-side compat mixin
+# (dungeontrain.betteradvancements.mixins.json, gated by BetterAdvancementsMixinPlugin) that ports
+# that rendering onto BA's widget. Metadata only; the mixin no-ops when the mod is absent.
+[[dependencies.${mod_id}]]
+    modId="betteradvancements"
+    type="optional"
+    # BA versions are 0.4.x — do NOT copy the "[1.0,)" range the other optional entries use, it
+    # excludes every published build and hard-fails loading. Floor is the build the compat mixin's
+    # injection points were verified against.
+    versionRange="[0.4.3,)"
+    ordering="AFTER"
+    side="CLIENT"
+
 [[mixins]]
     config="${mod_id}.mixins.json"
 
@@ -151,3 +167,6 @@ logoFile="logo.png"
 
 [[mixins]]
     config="${mod_id}.effortlessbuilding.mixins.json"
+
+[[mixins]]
+    config="${mod_id}.betteradvancements.mixins.json"
