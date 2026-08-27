@@ -679,6 +679,9 @@ public final class EditorCommand {
             .then(Commands.literal("editormenus")
                 .then(Commands.literal("on").executes(ctx -> runEditorMenus(ctx.getSource(), true)))
                 .then(Commands.literal("off").executes(ctx -> runEditorMenus(ctx.getSource(), false))))
+            .then(Commands.literal("helppanel")
+                .then(Commands.literal("on").executes(ctx -> runHelpPanel(ctx.getSource(), true)))
+                .then(Commands.literal("off").executes(ctx -> runHelpPanel(ctx.getSource(), false))))
             .then(Commands.literal("carriage-contents")
                 .then(Commands.argument("variant", StringArgumentType.word())
                     .suggests(CARRIAGE_VARIANT_SUGGESTIONS)
@@ -3813,6 +3816,36 @@ public final class EditorCommand {
         source.sendSuccess(() -> Component.literal(
             "Editor menus: " + (on ? "ON" : "OFF")
         ).withStyle(on ? ChatFormatting.GREEN : ChatFormatting.YELLOW), true);
+        return 1;
+    }
+
+    /**
+     * Show / hide the editor's world-space Welcome panel for the calling player. Run by the panel's
+     * own close (X) button and by the "Welcome Panel" row in the editor (X) menu.
+     *
+     * <p>The flag is stored per player in the world save
+     * ({@link games.brennan.dungeontrain.world.DungeonTrainWorldData}), so a dismissal survives a
+     * relog and does not follow the player into other worlds. The client picks the new value up on
+     * the next {@code EditorTypeMenusPacket} — its dedup key includes the flag, so the toggle
+     * always re-pushes.</p>
+     */
+    private static int runHelpPanel(CommandSourceStack source, boolean on) {
+        net.minecraft.server.level.ServerPlayer player = source.getPlayer();
+        if (player == null) {
+            source.sendFailure(Component.literal("Welcome panel: only players can toggle the panel."));
+            return 0;
+        }
+        net.minecraft.server.MinecraftServer server = player.getServer();
+        if (server == null) {
+            source.sendFailure(Component.literal("Welcome panel: no server to store the setting on."));
+            return 0;
+        }
+        games.brennan.dungeontrain.world.DungeonTrainWorldData.get(server.overworld())
+            .setHelpPanelDismissed(player.getUUID(), !on);
+        source.sendSuccess(() -> Component.literal(on
+            ? "Welcome panel: ON"
+            : "Welcome panel: OFF — press X and pick 'Welcome Panel' to bring it back."
+        ).withStyle(on ? ChatFormatting.GREEN : ChatFormatting.YELLOW), false);
         return 1;
     }
 

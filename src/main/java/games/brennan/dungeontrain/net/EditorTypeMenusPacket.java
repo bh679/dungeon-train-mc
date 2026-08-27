@@ -35,8 +35,20 @@ import java.util.List;
  * <p>Empty list ({@link #empty()}) clears the client cache when the editor
  * exits or switches categories — same lifecycle as
  * {@link EditorPlotLabelsPacket}.</p>
+ *
+ * <p>{@code helpPanelDismissed} rides along: the recipient has closed the world-space Welcome panel
+ * in this world (persisted per player in {@code DungeonTrainWorldData}). It travels here rather than
+ * on {@code EditorStatusPacket} because the Welcome panel is anchored off a nav menu — the status
+ * packet stops while the player stands outside a plot, and its defaulted clear packet would pop a
+ * dismissed panel back up.</p>
  */
-public record EditorTypeMenusPacket(List<Menu> menus, String selectedStageId) implements CustomPacketPayload {
+public record EditorTypeMenusPacket(List<Menu> menus, String selectedStageId,
+                                    boolean helpPanelDismissed) implements CustomPacketPayload {
+
+    /** Convenience: no dismissal — keeps pre-close-button call sites compiling unchanged. */
+    public EditorTypeMenusPacket(List<Menu> menus, String selectedStageId) {
+        this(menus, selectedStageId, false);
+    }
 
     public EditorTypeMenusPacket {
         // Global "focused stage" for the per-stage carriage preview (empty = none). Normalise null → ""
@@ -249,7 +261,7 @@ public record EditorTypeMenusPacket(List<Menu> menus, String selectedStageId) im
         );
 
     public static EditorTypeMenusPacket empty() {
-        return new EditorTypeMenusPacket(Collections.emptyList(), "");
+        return new EditorTypeMenusPacket(Collections.emptyList(), "", false);
     }
 
     public boolean isEmpty() {
@@ -260,6 +272,9 @@ public record EditorTypeMenusPacket(List<Menu> menus, String selectedStageId) im
         // Written first so decode reads it before the "no menus" early-return — keeps the buffer
         // symmetric for the empty() snapshot.
         buf.writeUtf(selectedStageId, 64);
+        // Same reason as selectedStageId: written before the "no menus" early-return so the empty()
+        // snapshot stays buffer-symmetric.
+        buf.writeBoolean(helpPanelDismissed);
         buf.writeVarInt(menus.size());
         for (Menu m : menus) {
             buf.writeBlockPos(m.worldPos());
@@ -335,8 +350,11 @@ public record EditorTypeMenusPacket(List<Menu> menus, String selectedStageId) im
 
     public static EditorTypeMenusPacket decode(FriendlyByteBuf buf) {
         String selectedStageId = buf.readUtf(64);
+        boolean helpPanelDismissed = buf.readBoolean();
         int n = buf.readVarInt();
-        if (n <= 0) return new EditorTypeMenusPacket(Collections.emptyList(), selectedStageId);
+        if (n <= 0) {
+            return new EditorTypeMenusPacket(Collections.emptyList(), selectedStageId, helpPanelDismissed);
+        }
         List<Menu> out = new ArrayList<>(n);
         for (int i = 0; i < n; i++) {
             BlockPos pos = buf.readBlockPos();
@@ -369,7 +387,7 @@ public record EditorTypeMenusPacket(List<Menu> menus, String selectedStageId) im
             out.add(new Menu(pos, typeName, variants, isCompanion,
                 activeCategoryId, categoryBar, typeStrip, isPackageMenu, isStagesMenu));
         }
-        return new EditorTypeMenusPacket(out, selectedStageId);
+        return new EditorTypeMenusPacket(out, selectedStageId, helpPanelDismissed);
     }
 
     @Override
