@@ -31,8 +31,21 @@ public record BuilderProfilePacket(Status status, List<Entry> builds) implements
         OK,
         /** The relay could not be reached, or the answer was unusable. */
         UNAVAILABLE,
-        /** Profiles are switched off on this server, or this player hasn't granted network consent. */
-        DISABLED
+        /** Profiles are switched off on this server. Nothing the player can change from here. */
+        DISABLED,
+        /**
+         * Profiles are on, but this player's client has not granted network consent, so none of their
+         * builds are on the relay. Unlike {@link #DISABLED} this is the player's own setting to flip.
+         *
+         * <p>Appended last on purpose: the payload codes this enum by ordinal
+         * ({@code buf.readEnum}), so a new constant may only ever be added at the end.</p>
+         */
+        NO_CONSENT,
+        /**
+         * Consent has not been mirrored yet — the login sync is still in flight. Distinct from
+         * {@link #NO_CONSENT} so a race never tells a consenting player that they declined.
+         */
+        CONSENT_PENDING
     }
 
     /**
