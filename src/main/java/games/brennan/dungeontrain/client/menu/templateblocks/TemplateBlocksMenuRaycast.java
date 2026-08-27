@@ -19,7 +19,7 @@ public final class TemplateBlocksMenuRaycast {
     private TemplateBlocksMenuRaycast() {}
 
     public static void updateHovered() {
-        if (!TemplateBlocksMenu.isActive()) {
+        if (!TemplateBlocksMenu.isActiveWorldspace()) {
             TemplateBlocksMenu.setHovered(TemplateBlocksMenu.Hit.NONE);
             return;
         }
@@ -64,15 +64,19 @@ public final class TemplateBlocksMenuRaycast {
         TemplateBlocksMenu.setHovered(hitTest(hitX, hitY));
     }
 
-    private static TemplateBlocksMenu.Hit hitTest(double hitX, double hitY) {
+    /**
+     * Which cell sits at these panel-local coordinates. Pure — the raycast above only produces
+     * the pair, and the screen-space host produces the same pair from the mouse cursor, so both
+     * modes resolve hover and clicks through this one function.
+     */
+    static TemplateBlocksMenu.Hit hitTest(double hitX, double hitY) {
         int n = TemplateBlocksMenu.entries().size();
-        int colCount = Math.max(1, (n + TemplateBlocksMenu.ROWS_PER_COLUMN - 1) / TemplateBlocksMenu.ROWS_PER_COLUMN);
-        double panelW = Math.max(TemplateBlocksMenuRenderer.MIN_PANEL_WIDTH, colCount * TemplateBlocksMenuRenderer.COLUMN_WIDTH);
-        int displayedRows = Math.min(Math.max(n, 1), TemplateBlocksMenu.ROWS_PER_COLUMN);
-        double gridH = displayedRows * TemplateBlocksMenuRenderer.ROW_HEIGHT;
-        double panelH = TemplateBlocksMenuRenderer.HEADER_HEIGHT + gridH;
-        double halfW = panelW / 2.0;
-        double halfH = panelH / 2.0;
+        TemplateBlocksMenuRenderer.PanelSize size = TemplateBlocksMenuRenderer.panelSize();
+        int colCount = size.columns();
+        double panelW = size.panelW();
+        double gridH = size.gridH();
+        double halfW = size.halfW();
+        double halfH = size.halfH();
 
         if (hitX < -halfW || hitX > halfW || hitY < -halfH || hitY > halfH) {
             return TemplateBlocksMenu.Hit.NONE;

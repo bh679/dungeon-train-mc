@@ -110,7 +110,7 @@ public final class ContainerContentsMenuRenderer {
     @SubscribeEvent
     public static void onRenderLevelStage(RenderLevelStageEvent event) {
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS) return;
-        if (!ContainerContentsMenu.isActive()) return;
+        if (!ContainerContentsMenu.isActiveWorldspace()) return;
         if (ContainerContentsMenu.localPos() == null) return;
 
         ContainerContentsMenuRaycast.updateHovered();
@@ -142,11 +142,7 @@ public final class ContainerContentsMenuRenderer {
 
         MultiBufferSource.BufferSource buffer = mc.renderBuffers().bufferSource();
 
-        if (ContainerContentsMenu.screen() == ContainerContentsMenu.Screen.ROOT) {
-            drawRoot(ps, buffer, font);
-        } else {
-            drawSearch(ps, buffer, font);
-        }
+        drawPanel(ps, buffer, font, false);
 
         buffer.endBatch(PANEL_QUAD);
         // Item icons render through the item render types, not PANEL_QUAD —
@@ -155,7 +151,50 @@ public final class ContainerContentsMenuRenderer {
         ps.popPose();
     }
 
-    private static void drawRoot(PoseStack ps, MultiBufferSource buffer, Font font) {
+    /**
+     * The active panel's outer size in panel-local units.
+     *
+     * <p>Only the screen-space host needs this — it has to know how big the panel is before it
+     * can centre and scale it, where the world-space path just draws outward from an anchor.
+     * Derived from the same {@link #computeLayout} the draw bodies and the raycast use, so it
+     * cannot drift from what is actually drawn.</p>
+     */
+    record PanelSize(double panelW, double panelH) {}
+
+    static PanelSize panelSize() {
+        if (ContainerContentsMenu.screen() != ContainerContentsMenu.Screen.ROOT) {
+            List<String> filtered = ContainerContentsMenu.filteredItemIds();
+            int maxRows = ContainerContentsMenu.ROWS_PER_COLUMN * 4;
+            int n = Math.min(filtered.size(), maxRows);
+            int colCount = Math.max(1, (n + ContainerContentsMenu.ROWS_PER_COLUMN - 1) / ContainerContentsMenu.ROWS_PER_COLUMN);
+            double panelW = Math.max(MIN_PANEL_WIDTH, colCount * SEARCH_COLUMN_WIDTH);
+            int displayedRows = Math.max(1, Math.min(n, ContainerContentsMenu.ROWS_PER_COLUMN));
+            return new PanelSize(panelW, HEADER_HEIGHT + TOOLBAR_HEIGHT + displayedRows * ROW_HEIGHT);
+        }
+        List<ContainerContentsSyncPacket.Entry> entries = ContainerContentsMenu.entries();
+        int n = entries.size();
+        int colCount = Math.max(1, (n + ContainerContentsMenu.ROWS_PER_COLUMN - 1) / ContainerContentsMenu.ROWS_PER_COLUMN);
+        EntryLayout layout = computeLayout(entries, colCount);
+        double linkH = hasLinkRow() ? LINK_ROW_HEIGHT : 0.0;
+        return new PanelSize(layout.panelWidth(),
+            HEADER_HEIGHT + linkH + TOOLBAR_HEIGHT + layout.gridHeight());
+    }
+
+    /**
+     * Draw the active panel — the entry point the screen-space host calls.
+     *
+     * @param screenspace true when drawing under the host's Y-mirrored transform, which item
+     *                    icons have to compensate for. Quads and text do not.
+     */
+    static void drawPanel(PoseStack ps, MultiBufferSource buffer, Font font, boolean screenspace) {
+        if (ContainerContentsMenu.screen() == ContainerContentsMenu.Screen.ROOT) {
+            drawRoot(ps, buffer, font, screenspace);
+        } else {
+            drawSearch(ps, buffer, font);
+        }
+    }
+
+    private static void drawRoot(PoseStack ps, MultiBufferSource buffer, Font font, boolean screenspace) {
         List<ContainerContentsSyncPacket.Entry> entries = ContainerContentsMenu.entries();
         int n = entries.size();
         int colCount = Math.max(1, (n + ContainerContentsMenu.ROWS_PER_COLUMN - 1) / ContainerContentsMenu.ROWS_PER_COLUMN);
@@ -296,7 +335,7 @@ public final class ContainerContentsMenuRenderer {
                     iconR - 0.005, rowTop - 0.005, 0x60FFCC33);
             }
             MenuBlockIcons.drawItemIcon(ps, buffer, entry.itemId(),
-                iconL + ICON_CELL_WIDTH / 2.0, rowCY, ICON_SIZE);
+                iconL + ICON_CELL_WIDTH / 2.0, rowCY, ICON_SIZE, screenspace);
             if (ContainerContentsMenu.isExpanded(i)) {
                 drawLeftText(ps, buffer, font, shortenItemLabel(entry.itemId()),
                     iconL + ICON_CELL_WIDTH + NAME_PAD / 2.0, rowCY,

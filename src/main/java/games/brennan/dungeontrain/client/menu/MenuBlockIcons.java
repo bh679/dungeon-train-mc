@@ -34,7 +34,7 @@ public final class MenuBlockIcons {
      */
     public static void drawBlockIcon(PoseStack ps, MultiBufferSource buffer,
                                      String blockId, double centerX, double rowCY, double iconSize) {
-        draw(ps, buffer, iconStackFor(blockId), centerX, rowCY, iconSize);
+        draw(ps, buffer, iconStackFor(blockId), centerX, rowCY, iconSize, false);
     }
 
     /**
@@ -45,15 +45,26 @@ public final class MenuBlockIcons {
      */
     public static void drawItemIcon(PoseStack ps, MultiBufferSource buffer,
                                     String itemId, double centerX, double rowCY, double iconSize) {
-        draw(ps, buffer, itemIconStackFor(itemId), centerX, rowCY, iconSize);
+        draw(ps, buffer, itemIconStackFor(itemId), centerX, rowCY, iconSize, false);
     }
 
-    private static void draw(PoseStack ps, MultiBufferSource buffer,
-                             ItemStack stack, double centerX, double rowCY, double iconSize) {
+    /**
+     * As {@link #drawItemIcon}, but told whether it is drawing under the screen-space host's
+     * Y-mirrored transform. A mirrored item model renders upside down with its faces wound
+     * backwards, so it would be culled away entirely; quads and text need no such help.
+     */
+    public static void drawItemIcon(PoseStack ps, MultiBufferSource buffer, String itemId,
+                                    double centerX, double rowCY, double iconSize, boolean screenspace) {
+        draw(ps, buffer, itemIconStackFor(itemId), centerX, rowCY, iconSize, screenspace);
+    }
+
+    private static void draw(PoseStack ps, MultiBufferSource buffer, ItemStack stack,
+                             double centerX, double rowCY, double iconSize, boolean screenspace) {
         Minecraft mc = Minecraft.getInstance();
         ItemRenderer itemRenderer = mc.getItemRenderer();
         ps.pushPose();
         ps.translate(centerX, rowCY, 0.002);
+        if (screenspace) ps.scale(1.0f, -1.0f, 1.0f);
         ps.scale((float) iconSize, (float) iconSize, (float) iconSize);
         itemRenderer.renderStatic(
             stack,

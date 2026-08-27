@@ -1,7 +1,9 @@
 package games.brennan.dungeontrain.client;
 
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
+import games.brennan.dungeontrain.config.EditorMenuSpace;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.CycleButton;
 import net.minecraft.client.gui.components.StringWidget;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
@@ -9,8 +11,10 @@ import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 
 import java.util.Locale;
+import java.util.function.Consumer;
 import java.util.function.DoubleConsumer;
 import java.util.function.DoubleSupplier;
+import java.util.function.Supplier;
 
 /**
  * Editor / display-scale settings for Dungeon Train — the <b>All Displays</b>, <b>Worldspace</b>, and
@@ -46,6 +50,14 @@ public final class DungeonTrainEditorSettingsScreen extends Screen {
         y = scaleRow(cx, y, "worldspace", ClientDisplayConfig::getWorldspaceChannel, ClientDisplayConfig::setWorldspaceChannel);
         y = scaleRow(cx, y, "hud", ClientDisplayConfig::getHudChannel, ClientDisplayConfig::setHudChannel);
 
+        y += GAP;
+        y = spaceRow(cx, y, "command_menu",
+                ClientDisplayConfig::getCommandMenuSpace, ClientDisplayConfig::setCommandMenuSpace);
+        y = spaceRow(cx, y, "template_blocks_menu",
+                ClientDisplayConfig::getTemplateBlocksMenuSpace, ClientDisplayConfig::setTemplateBlocksMenuSpace);
+        y = spaceRow(cx, y, "container_contents_menu",
+                ClientDisplayConfig::getContainerContentsMenuSpace, ClientDisplayConfig::setContainerContentsMenuSpace);
+
         addRenderableWidget(Button.builder(CommonComponents.GUI_DONE, b -> onClose())
                 .bounds(cx - 100, y + 6, 200, ROW_H).build());
     }
@@ -74,6 +86,32 @@ public final class DungeonTrainEditorSettingsScreen extends Screen {
         plus.setTooltip(tip);
         addRenderableWidget(plus);
         return y + ROW_GAP;
+    }
+
+    /**
+     * A {@code [label: Worldspace|Screenspace]} cycle row for one editor menu; returns the next row's y.
+     *
+     * <p>Three rows rather than one, because the menus are used differently — the X menu is read and
+     * clicked through, while V's Swap and C's steppers are often driven with a block in hand.</p>
+     */
+    private int spaceRow(int cx, int y, String menu,
+                         Supplier<EditorMenuSpace> get, Consumer<EditorMenuSpace> set) {
+        String key = "gui.dungeontrain.editor_settings." + menu;
+        CycleButton<EditorMenuSpace> button = CycleButton
+                .<EditorMenuSpace>builder(DungeonTrainEditorSettingsScreen::spaceLabel)
+                .withValues(EditorMenuSpace.values())
+                .withInitialValue(get.get())
+                .create(cx - ROW_W / 2, y, ROW_W, ROW_H,
+                        Component.translatable(key), (b, value) -> set.accept(value));
+        button.setTooltip(Tooltip.create(Component.translatable(key + ".tip")));
+        addRenderableWidget(button);
+        return y + ROW_GAP;
+    }
+
+    /** Localized name for a mode — the enum constant is a config token, not player-facing prose. */
+    private static Component spaceLabel(EditorMenuSpace space) {
+        return Component.translatable(
+                "gui.dungeontrain.menu_space." + space.name().toLowerCase(Locale.ROOT));
     }
 
     /**
