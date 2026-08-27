@@ -230,6 +230,60 @@ class CommandAllowlistTest {
     }
 
     @Test
+    @DisplayName("Only /advancement revoke @s everything is clean — every other form taints")
+    void onlySelfRevokeEverythingIsClean() {
+        // Wiping your OWN slate destroys progress and can never create it, so it is the opposite
+        // of cheating — and it is how "It's Not That Simple" is earned, which cannot bank on a
+        // tainted run. Namespace tolerated, since /minecraft:advancement is the same command.
+        assertFalse(CommandAllowlist.taints("/advancement revoke @s everything"));
+        assertFalse(CommandAllowlist.taints("advancement revoke @s everything"));
+        assertFalse(CommandAllowlist.taints("/minecraft:advancement revoke @s everything"));
+        assertFalse(CommandAllowlist.taints("  /advancement   revoke   @s   everything  "));
+
+        // Any other target is reaching into someone else's profile — still cheating.
+        assertTrue(CommandAllowlist.taints("/advancement revoke Brennan everything"));
+        assertTrue(CommandAllowlist.taints("/advancement revoke @a everything"));
+        assertTrue(CommandAllowlist.taints("/advancement revoke @p everything"));
+        // A partial revoke isn't the wipe the advancement is about.
+        assertTrue(CommandAllowlist.taints("/advancement revoke @s only minecraft:story/root"));
+        assertTrue(CommandAllowlist.taints("/advancement revoke @s from minecraft:story/root"));
+        // Handing progress out is straightforwardly cheating.
+        assertTrue(CommandAllowlist.taints("/advancement grant @s everything"));
+        assertTrue(CommandAllowlist.taints("advancement set @s everything"));
+        assertTrue(CommandAllowlist.taints("/advancement"));
+        assertTrue(CommandAllowlist.taints("/advancement revoke"));
+    }
+
+    @Test
+    @DisplayName("The self-revoke rule is shared with the advancement that rewards it")
+    void selfRevokeClassifierIsTheSameRule() {
+        // StartAgainAdvancement arms off this exact predicate, so the command that is forgiven
+        // and the command that is rewarded can never drift apart.
+        assertTrue(CommandAllowlist.isSelfRevokeEverything("/advancement revoke @s everything"));
+        assertFalse(CommandAllowlist.isSelfRevokeEverything("/advancement revoke @a everything"));
+        assertFalse(CommandAllowlist.isSelfRevokeEverything("/advancement grant @s everything"));
+        assertFalse(CommandAllowlist.isSelfRevokeEverything("/give @s everything"));
+        assertFalse(CommandAllowlist.isSelfRevokeEverything(""));
+        assertFalse(CommandAllowlist.isSelfRevokeEverything(null));
+    }
+
+    @Test
+    @DisplayName("A near-miss never matches — this predicate also opens a permission bypass")
+    void nearMissesNeverMatchTheSelfRevokeRule() {
+        // CommandsSelfRevokeMixin lets a capstone-holder run this ONE command without cheats, by
+        // cancelling before Brigadier ever sees it. A false positive here would therefore hand a
+        // non-operator a command path vanilla never authorised — so the near misses matter more
+        // than for the taint check alone. Every target but @s, and every selection but everything.
+        assertFalse(CommandAllowlist.isSelfRevokeEverything("advancement revoke @s[type=player] everything"));
+        assertFalse(CommandAllowlist.isSelfRevokeEverything("advancement revoke @e everything"));
+        assertFalse(CommandAllowlist.isSelfRevokeEverything("advancement revoke @s everythingelse"));
+        assertFalse(CommandAllowlist.isSelfRevokeEverything("advancement revoke @s only everything"));
+        assertFalse(CommandAllowlist.isSelfRevokeEverything("advancement revoke @s everything extra"));
+        assertFalse(CommandAllowlist.isSelfRevokeEverything("execute as @a run advancement revoke @s everything"));
+        assertFalse(CommandAllowlist.isSelfRevokeEverything("advancement @s revoke everything"));
+    }
+
+    @Test
     @DisplayName("Empty / blank input never taints")
     void emptyNeverTaints() {
         assertFalse(CommandAllowlist.taints(""));

@@ -1,0 +1,20 @@
+{
+  "parent": "dungeontrain:dungeon_train/completionist",
+  "display": {
+    "icon": { "id": "minecraft:bedrock" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.start_again.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.start_again.description" },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "wiped": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    ["wiped"]
+  ]
+}

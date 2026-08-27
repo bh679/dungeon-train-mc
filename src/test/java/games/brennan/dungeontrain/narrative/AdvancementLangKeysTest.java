@@ -88,6 +88,30 @@ class AdvancementLangKeysTest {
         assertTrue(missing.isEmpty(), "Love Note lang key(s) missing from en_us.json: " + missing);
     }
 
+    /**
+     * The two code-granted capstones, spelled out — including their {@code .hint} keys, which no
+     * advancement JSON references (the hint system derives them by convention in
+     * {@code AdvancementHintText}), so the sweep above cannot see them. "It's Not That Simple"
+     * leans on its hint harder than any other advancement: the hint IS the command you have to
+     * run, so a missing key doesn't just look wrong, it makes the advancement unearnable in
+     * practice.
+     */
+    @Test
+    void capstoneAdvancementKeysAreAllPresentInEnglish() throws IOException {
+        assertTrue(Files.isRegularFile(EN_US), "missing " + EN_US);
+        JsonObject en = JsonParser.parseString(Files.readString(EN_US, StandardCharsets.UTF_8))
+                .getAsJsonObject();
+        String p = "advancements.dungeontrain.dungeon_train.";
+        List<String> required = List.of(
+                p + "completionist.title", p + "completionist.description", p + "completionist.hint",
+                p + "start_again.title", p + "start_again.description", p + "start_again.hint");
+        List<String> missing = required.stream().filter(k -> !en.has(k)).toList();
+        assertTrue(missing.isEmpty(), "capstone lang key(s) missing from en_us.json: " + missing);
+        for (String key : required) {
+            assertFalse(en.get(key).getAsString().isBlank(), key + " is blank in en_us.json");
+        }
+    }
+
     /** A key whose value is blank renders as nothing at all — as bad as a missing one. */
     @Test
     void noLoveNoteEnglishStringIsBlank() throws IOException {
