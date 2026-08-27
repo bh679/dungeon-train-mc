@@ -9316,9 +9316,9 @@
       ],
       "pr": 1137,
       "date": "2026-08-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.686.0",
+      "released_at": "2026-08-27T12:59:06Z"
     },
     {
       "id": "editor-menu-worldspace-screenspace",
@@ -9334,9 +9334,40 @@
       ],
       "pr": 1141,
       "date": "2026-08-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.686.0",
+      "released_at": "2026-08-27T12:59:06Z"
+    },
+    {
+      "id": "shulker-box-tooltip-modpack",
+      "version": "0.685.0",
+      "type": "feat",
+      "title": "Shulker Box Tooltip added to the modpack",
+      "summary": "The modpack now ships Shulker Box Tooltip. Hover any shulker box \u2014 or other container item \u2014 to see what's inside without placing it down, which saves a lot of digging through loot on the train.",
+      "highlights": [
+        "Hover a shulker box to preview its contents",
+        "Enabled by default; can be switched off in the launcher"
+      ],
+      "pr": 1143,
+      "date": "2026-08-27",
+      "released": true,
+      "released_in": "v0.686.0",
+      "released_at": "2026-08-27T12:59:06Z"
+    },
+    {
+      "id": "clumps-modpack-bundle",
+      "version": "0.684.0",
+      "type": "feat",
+      "title": "Clumps bundled in the modpack",
+      "summary": "Both modpacks now ship Clumps, which merges nearby XP orbs into one so big fights drop a single combined orb instead of a laggy spray. It is on by default but optional \u2014 you can disable it in your launcher if you prefer vanilla orbs.",
+      "highlights": [
+        "XP orbs merge together, reducing lag from big mob fights",
+        "Enabled by default in the CurseForge and Modrinth packs; safe to turn off"
+      ],
+      "date": "2026-08-27",
+      "released": true,
+      "released_in": "v0.686.0",
+      "released_at": "2026-08-27T12:59:06Z"
     }
   ]
 }
