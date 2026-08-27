@@ -9274,6 +9274,18 @@
       "released": true,
       "released_in": "v0.682.0",
       "released_at": "2026-08-27T10:28:28Z"
+    },
+    {
+      "id": "builds-submitted-for-review",
+      "version": "0.683.0",
+      "type": "feat",
+      "title": "Builds are submitted for review",
+      "summary": "Your saved builds go to your builder profile on the server, and a finished carriage can be submitted for review. Community carriages are paused on the train in the meantime.",
+      "highlights": [],
+      "date": "2026-08-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
