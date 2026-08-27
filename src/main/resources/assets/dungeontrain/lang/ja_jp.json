@@ -1615,5 +1615,11 @@
   "commands.dungeontrain.customcontent.now_on": "このワールドのカスタム列車コンテンツを有効にしました。この旅はフリープレイ扱いになります。",
   "commands.dungeontrain.customcontent.now_off": "このワールドのカスタム列車コンテンツを無効にしました。新しい車両には内蔵の設計が使われます。",
   "commands.dungeontrain.customcontent.already_on": "このワールドではカスタムの列車コンテンツはすでに有効でした。",
-  "commands.dungeontrain.customcontent.already_off": "このワールドではカスタムの列車コンテンツはすでに無効でした。"
+  "commands.dungeontrain.customcontent.already_off": "このワールドではカスタムの列車コンテンツはすでに無効でした。",
+  "chat.dungeontrain.book_burns_author": "%s の本が燃える",
+  "item.dungeontrain.stats_book": "統計の本",
+  "gui.dungeontrain.options.book_author_chat": "本の著者をチャットに表示",
+  "gui.dungeontrain.options.book_author_chat.tip": "Dungeon Train の本が燃えるたびに、著者の名前を記したチャット行を表示します — 「X の本が燃える」。読んだ本も、捨てた本も、死んで落とした本もみな燃えますが、書き手の名が残るのはここだけです。既定ではオフ。",
+  "chat.dungeontrain.free_play.cause.keep_inventory": "このワールドでは「インベントリを保持」が有効です。",
+  "chat.dungeontrain.free_play.keep_inventory_on": "Dungeon Train は、死ぬことに代償があることを前提に調整されています。そのため、このワールドはここから先の統計を自分の中だけに留めます。ゲームルールを戻しても変わりません — 死をくぐり抜けて持ち越した装備は、もうあなたのものです。"
 }

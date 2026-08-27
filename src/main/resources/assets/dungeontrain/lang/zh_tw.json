@@ -1629,5 +1629,11 @@
   "commands.dungeontrain.customcontent.now_on": "本世界的自訂列車內容現已開啟。這趟旅程計為自由遊玩。",
   "commands.dungeontrain.customcontent.now_off": "本世界的自訂列車內容現已關閉。新車廂將使用內建設計。",
   "commands.dungeontrain.customcontent.already_on": "本世界的自訂列車內容先前就已開啟。",
-  "commands.dungeontrain.customcontent.already_off": "本世界的自訂列車內容先前就已關閉。"
+  "commands.dungeontrain.customcontent.already_off": "本世界的自訂列車內容先前就已關閉。",
+  "chat.dungeontrain.book_burns_author": "%s 寫的書燃燒起來",
+  "item.dungeontrain.stats_book": "統計之書",
+  "gui.dungeontrain.options.book_author_chat": "聊天欄顯示書的作者",
+  "gui.dungeontrain.options.book_author_chat.tip": "每當一本《地牢列車》的書燃燒時，在聊天欄打出一行寫明作者的字——「X 寫的書燃燒起來」。你讀過的、丟掉的、死時掉落的書都會起火，而這裡是唯一署上執筆者名字的地方。預設關閉。",
+  "chat.dungeontrain.free_play.cause.keep_inventory": "本世界開啟了「保留物品欄」。",
+  "chat.dungeontrain.free_play.keep_inventory_on": "《地牢列車》是以死亡要付出代價為前提來平衡的，因此從現在起本世界的統計只留在自己這裡。把遊戲規則再關掉也無濟於事——你帶著穿過一次死亡的裝備，已經是你的了。"
 }

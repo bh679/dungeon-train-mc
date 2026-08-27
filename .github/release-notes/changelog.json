@@ -9076,6 +9076,20 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "ai-fill-book-author-chat-keys",
+      "version": "0.674.0",
+      "type": "content",
+      "title": "The book-author chat line speaks every language too",
+      "summary": "The v0.673.0 book-author setting and the Stats Book shipped English-only. Both are now translated into all nineteen languages, along with the chat line that names whoever wrote a book as it burns.",
+      "highlights": [
+        "Book Author Chat, its description, the Stats Book name and the burn line are translated in all 19 languages"
+      ],
+      "date": "2026-08-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
