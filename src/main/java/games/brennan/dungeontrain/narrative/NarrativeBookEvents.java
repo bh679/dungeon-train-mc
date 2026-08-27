@@ -329,6 +329,18 @@ public final class NarrativeBookEvents {
             resolveLeaderboardPending(player, stack);
         }
 
+        // A resolved board — from the branch above, from an earlier sweep, or off a Stat Room shelf —
+        // arms its burn here. It cannot ride the random-book branch below the way an unresolved
+        // placeholder does: resolution clears that identity, held marker and all.
+        if (LeaderboardBookTag.is(stack)) {
+            if (!LeaderboardBookTag.isHeld(stack)) {
+                LeaderboardBookTag.markHeld(stack);
+                LOGGER.info("[DungeonTrain] Leaderboard: marked board book held (by {}) — will burn after reading",
+                    player.getName().getString());
+            }
+            return;
+        }
+
         // Editor-authored lore books: arm the burn only once the book is held OUTSIDE an editor plot,
         // i.e. by a player who found it in a chest on the live train. Inside a plot this is a no-op,
         // so the author keeps working with an inert book (see EditorAuthoredBookTag).
@@ -465,6 +477,16 @@ public final class NarrativeBookEvents {
                 built.get().get(DataComponents.WRITTEN_BOOK_CONTENT));
         RandomBookTag.clearIdentity(stack);
         LeaderboardBookPendingTag.clear(stack);
+        // Only the page content is copied off the built stack, so its identity has to be stamped here
+        // too — and without it this book would be the one book in the game that cannot burn, since
+        // clearIdentity above has just taken the random book's held marker with it.
+        LeaderboardBookTag.stamp(stack);
+        // Resolved while already in a hand (the equipment-change path, or the sweep catching a held
+        // book): no further equipment change will fire to arm the burn, so arm it now. Mirrors
+        // applyResolvedBook.
+        if (stack == player.getMainHandItem() || stack == player.getOffhandItem()) {
+            LeaderboardBookTag.markHeld(stack);
+        }
         LOGGER.debug("[DungeonTrain] Leaderboard: resolved a board book for {}", player.getName().getString());
         return true;
     }

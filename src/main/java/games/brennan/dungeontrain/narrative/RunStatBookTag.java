@@ -50,6 +50,18 @@ public final class RunStatBookTag {
     /** Set on first open. The page never changes again. */
     public static final String NBT_LOCKED = "dt_stat_book_locked";
 
+    /**
+     * "Has been held" marker, mirroring {@link SharedBookFoundTag#NBT_HELD}. Set the first time the
+     * note lands in a player's mainhand or offhand slot ({@code RunStatBookEvents.onEquipmentChange}),
+     * and what {@link BurnableBookTag#isBurnable} gates the burn on — so a note spilled from a broken
+     * chest, or shelved in a Stat Room, doesn't ignite before anyone has picked it up.
+     *
+     * <p>Separate from {@link #NBT_LOCKED}, which answers a different question: held is "a player has
+     * this", locked is "a player has READ this and the number must stop moving". A note can be held
+     * and unlocked for as long as its finder carries it around unopened.</p>
+     */
+    public static final String NBT_HELD = "dt_stat_book_held";
+
     private RunStatBookTag() {}
 
     /** Idempotently mark {@code stack} a stat book rolled with {@code seed}, subject not yet chosen. */
@@ -105,6 +117,18 @@ public final class RunStatBookTag {
     public static void lock(ItemStack stack) {
         if (stack == null || stack.isEmpty()) return;
         CustomData.update(DataComponents.CUSTOM_DATA, stack, tag -> tag.putBoolean(NBT_LOCKED, true));
+    }
+
+    /** Idempotently flag {@code stack} as "has been held by a player" — later drops/reads burn. */
+    public static void markHeld(ItemStack stack) {
+        if (stack == null || stack.isEmpty()) return;
+        CustomData.update(DataComponents.CUSTOM_DATA, stack, tag -> tag.putBoolean(NBT_HELD, true));
+    }
+
+    /** True once the note has reached a player's hand at least once (see {@link #markHeld}). */
+    public static boolean isHeld(ItemStack stack) {
+        CompoundTag tag = tagOf(stack);
+        return tag != null && tag.contains(NBT_HELD, Tag.TAG_BYTE) && tag.getBoolean(NBT_HELD);
     }
 
     private static CompoundTag tagOf(ItemStack stack) {
