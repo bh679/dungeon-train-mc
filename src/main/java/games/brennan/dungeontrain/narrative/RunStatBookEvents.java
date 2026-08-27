@@ -54,6 +54,9 @@ public final class RunStatBookEvents {
         ItemStack stack = event.getTo();
         if (stack.isEmpty() || !stack.is(Items.WRITTEN_BOOK)) return;
         RunStatBookFactory.refresh(stack, player);
+        // Arm the burn. Not inside refresh: that returns early on a locked or unchanged note, and a
+        // note the player is carrying around unread must burn just as surely as one they have read.
+        if (RunStatBookTag.is(stack)) RunStatBookTag.markHeld(stack);
     }
 
     /**

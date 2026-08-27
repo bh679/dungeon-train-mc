@@ -54,6 +54,16 @@ import net.minecraft.world.item.ItemStack;
  *       {@link EditorAuthoredBookTag#NBT_HELD} marker, set the same way as
  *       {@link SharedBookFoundTag#NBT_HELD} but with an editor-plot suppression), so the author can
  *       write, read and re-shelve it while building without it ever igniting.</li>
+ *   <li>{@link LeaderboardBookTag} — a finished board book: the top ranks of one
+ *       leaderboard and where the reader stands. Rolled into train chests and
+ *       shelved in portal Stat Rooms. Burns ONLY after a player has held it
+ *       ({@link LeaderboardBookTag#NBT_HELD}), like the two above — a Stat Room's
+ *       shelf must not set itself alight. Note that being RESOLVED is not being
+ *       held: the inventory sweep resolves placeholders in any slot.</li>
+ *   <li>{@link RunStatBookTag} — a Faulthurst note naming one number from the
+ *       reader's own run. Same held gate ({@link RunStatBookTag#NBT_HELD}), and
+ *       independent of {@link RunStatBookTag#NBT_LOCKED}: a note carried around
+ *       unopened still burns when it is dropped.</li>
  *   <li>{@link NarrativeBookTag} — multi-letter "story" books resolved by a
  *       lectern. Unconditional, like {@link StartingBookTag} — but only a
  *       copy that has left the lectern is at risk: the lectern's own locked
@@ -68,8 +78,9 @@ import net.minecraft.world.item.ItemStack;
  *
  * <p>Explicitly NOT burnable:</p>
  * <ul>
- *   <li>Random-book / discovered-shared-book / editor-authored stacks that have
- *       never been held by a player (no {@code NBT_HELD} marker).</li>
+ *   <li>Random-book / discovered-shared-book / editor-authored / leaderboard /
+ *       stat-note stacks that have never been held by a player (no
+ *       {@code NBT_HELD} marker).</li>
  *   <li>Vanilla written books from foreign mods, and any
  *       {@link ItemStack#EMPTY} / null stack.</li>
  * </ul>
@@ -102,6 +113,8 @@ public final class BurnableBookTag {
         if (PlayerWrittenBookTag.isPlayerWritten(stack)) return true;
         if (SharedBookFoundTag.isFound(stack) && SharedBookFoundTag.isHeld(stack)) return true;
         if (EditorAuthoredBookTag.isAuthored(stack) && EditorAuthoredBookTag.isHeld(stack)) return true;
+        if (LeaderboardBookTag.is(stack) && LeaderboardBookTag.isHeld(stack)) return true;
+        if (RunStatBookTag.is(stack) && RunStatBookTag.isHeld(stack)) return true;
         if (NarrativeBookTag.read(stack).isPresent()) return true;
         return false;
     }

@@ -91,4 +91,24 @@ class RunStatBookTagTest {
         assertEquals(RunStatSubject.PLAYTIME, RunStatBookTag.subject(moved).orElse(null));
         assertEquals(9L, RunStatBookTag.seed(moved, 0L));
     }
+
+    @Test
+    @DisplayName("The held marker survives a copy and disturbs nothing else")
+    void heldMarkerSurvivesCopyAndLeavesTheRestAlone() {
+        ItemStack stack = book();
+        RunStatBookTag.stamp(stack, 11L);
+        RunStatBookTag.recordBaked(stack, RunStatSubject.CHESTS, "7");
+        assertFalse(RunStatBookTag.isHeld(stack), "baked at the container, nobody has touched it");
+
+        RunStatBookTag.markHeld(stack);
+        assertTrue(RunStatBookTag.isHeld(stack));
+        assertFalse(RunStatBookTag.isLocked(stack), "held is not read");
+        assertEquals(RunStatSubject.CHESTS, RunStatBookTag.subject(stack).orElse(null));
+        assertEquals("7", RunStatBookTag.renderedValue(stack));
+        assertEquals(11L, RunStatBookTag.seed(stack, 0L));
+
+        // A book put down in a chest and taken out again is a different stack object. It has still
+        // been held, and must still burn.
+        assertTrue(RunStatBookTag.isHeld(stack.copy()));
+    }
 }
