@@ -9149,6 +9149,23 @@
       "released": true,
       "released_in": "v0.676.0",
       "released_at": "2026-08-27T08:46:42Z"
+    },
+    {
+      "id": "deathnote-one-per-target-per-life",
+      "version": "0.677.0",
+      "type": "fix",
+      "title": "One Death Note per target per life",
+      "summary": "A second Death Note naming a player you've already noted this life no longer arms a second echo. The repeat book still burns, now telling you they've already been death noted this life. Love Notes follow the same rule, tracked separately from Death Notes.",
+      "highlights": [
+        "One echo per named target per life, not one per note signed",
+        "A repeat note still burns, with a clear message instead of a silent extra echo",
+        "Death Notes and Love Notes are tracked separately, so one of each on the same person still works"
+      ],
+      "pr": 1128,
+      "date": "2026-08-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
