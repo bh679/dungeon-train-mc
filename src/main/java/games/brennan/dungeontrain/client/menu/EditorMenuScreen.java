@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.client.menu;
 import games.brennan.dungeontrain.client.EditorMenusModeState;
 import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
 import games.brennan.dungeontrain.client.builder.BuilderProfileScreen;
+import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.client.VersionInfo;
 import games.brennan.dungeontrain.editor.EditorMenusMode;
 import games.brennan.dungeontrain.net.EditorStatusPacket;
@@ -83,6 +84,7 @@ public final class EditorMenuScreen implements MenuScreen {
         // you are standing in once you step inside. Same Label-plus-state-cells shape as the
         // Mirror X / Y / Z / V row below.
         out.add(editorMenusRow());
+        out.add(menuDistanceRow());
 
         // Parts have their own Save / Reset commands — `dungeontrain save`
         // dispatches via EditorCategory.locate which doesn't see part plots,
@@ -323,6 +325,31 @@ public final class EditorMenuScreen implements MenuScreen {
             modeCell("On", EditorMenusMode.ON, mode),
             modeCell("Off", EditorMenusMode.OFF, mode),
             0.46, 0.64, 0.82);
+    }
+
+    /**
+     * The "Menu Distance" stepper — how far the editor's world-space menus keep drawing, in blocks.
+     *
+     * <p>Applies in a template and between plots, and in both On and Auto; Auto layers its own
+     * tighter in-template rule on top, so the smaller of the two is what you see there.</p>
+     *
+     * <p>{@link CommandMenuEntry.ClientAction} cells rather than slash commands: the value is a
+     * client display preference in {@code dungeontrain-client.toml}, with no server state to sync,
+     * and the action leaves the menu open so the panels around you appear and vanish as you step
+     * it. Same {@code Triple} geometry as the weight and room-size steppers.</p>
+     */
+    private static CommandMenuEntry menuDistanceRow() {
+        int current = ClientDisplayConfig.getMenuRenderDistance();
+        CommandMenuEntry minus = new CommandMenuEntry.ClientAction("-",
+            () -> ClientDisplayConfig.setMenuRenderDistance(
+                ClientDisplayConfig.stepMenuRenderDistanceDown(
+                    ClientDisplayConfig.getMenuRenderDistance())));
+        CommandMenuEntry middle = new CommandMenuEntry.Label("Menu Distance: " + current);
+        CommandMenuEntry plus = new CommandMenuEntry.ClientAction("+",
+            () -> ClientDisplayConfig.setMenuRenderDistance(
+                ClientDisplayConfig.stepMenuRenderDistanceUp(
+                    ClientDisplayConfig.getMenuRenderDistance())));
+        return new CommandMenuEntry.Triple(minus, middle, plus, 0.10, 0.90);
     }
 
     private static CommandMenuEntry modeCell(String label, EditorMenusMode cell, EditorMenusMode active) {

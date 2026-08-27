@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client;
 
+import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.editor.EditorMenusMode;
 import games.brennan.dungeontrain.net.EditorPlotLabelsPacket;
 import net.minecraft.world.phys.Vec3;
@@ -65,41 +66,44 @@ public final class EditorMenusModeState {
     }
 
     /**
-     * How far a world-space editor panel may sit from the camera before {@link EditorMenusMode#AUTO}
-     * stops drawing it, in blocks.
+     * The tighter distance {@link EditorMenusMode#AUTO} applies while the player stands in a
+     * template, in blocks.
      *
-     * <p>The editor's panels are spread over the whole build area, so without this the far end of a
-     * row keeps painting text across the view of whatever you are actually working on. Fifteen is
-     * about a plot and its neighbour — near enough to reach, far enough to read.</p>
+     * <p>Inside a plot the surrounding board is noise — fifteen is about a plot and its neighbour,
+     * near enough to reach, far enough to read. Between plots this does not apply at all: there the
+     * board is how you find your way to the next one.</p>
      */
-    public static final double MAX_PANEL_DISTANCE = 15.0;
-
-    private static final double MAX_PANEL_DISTANCE_SQ = MAX_PANEL_DISTANCE * MAX_PANEL_DISTANCE;
+    public static final double AUTO_TEMPLATE_DISTANCE =
+        ClientDisplayConfig.AUTO_TEMPLATE_DISTANCE_BLOCKS;
 
     /**
      * Whether a panel anchored at {@code anchor} is near enough to draw for a camera at {@code cam}.
      *
-     * <p>Three conditions have to line up before anything is culled. The mode must be
-     * {@link EditorMenusMode#AUTO} — {@code ON} deliberately keeps drawing everything at any range
-     * (it is the escape hatch when you want the whole board) and {@code OFF} has already drawn
-     * nothing by the time anything asks. The player must be {@code insideTemplate}: between plots
-     * the whole board is how you find your way to the next one, so nothing culls there. Only then
-     * does distance decide.</p>
+     * <p>Two distances are in play and the smaller wins. {@code maxRenderDistance} is the player's
+     * own Menu Distance setting and applies in every mode, in a template or not. On top of that,
+     * {@link EditorMenusMode#AUTO} tightens to {@link #AUTO_TEMPLATE_DISTANCE} while
+     * {@code insideTemplate} — and only then, because between plots you want the whole board.</p>
+     *
+     * <p>{@code OFF} short-circuits true: nothing has drawn by the time anything asks this.</p>
      */
     public static boolean withinRange(Vec3 anchor, Vec3 cam, EditorMenusMode mode,
-                                      boolean insideTemplate) {
-        if (mode != EditorMenusMode.AUTO) return true;
-        if (!insideTemplate) return true;
+                                      boolean insideTemplate, int maxRenderDistance) {
+        if (mode == EditorMenusMode.OFF) return true;
         if (anchor == null || cam == null) return true;
-        return anchor.distanceToSqr(cam) <= MAX_PANEL_DISTANCE_SQ;
+        double limit = maxRenderDistance;
+        if (mode == EditorMenusMode.AUTO && insideTemplate) {
+            limit = Math.min(limit, AUTO_TEMPLATE_DISTANCE);
+        }
+        return anchor.distanceToSqr(cam) <= limit * limit;
     }
 
     /**
-     * {@link #withinRange(Vec3, Vec3, EditorMenusMode, boolean)} against the live client mode and
-     * the live in-a-template answer.
+     * {@link #withinRange(Vec3, Vec3, EditorMenusMode, boolean, int)} against the live client mode,
+     * the live in-a-template answer, and the player's configured Menu Distance.
      */
     public static boolean withinRange(Vec3 anchor, Vec3 cam) {
-        return withinRange(anchor, cam, mode, insideTemplate());
+        return withinRange(anchor, cam, mode, insideTemplate(),
+            ClientDisplayConfig.getMenuRenderDistance());
     }
 
     /**

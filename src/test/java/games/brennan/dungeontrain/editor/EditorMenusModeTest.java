@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.editor;
 
 import games.brennan.dungeontrain.client.EditorMenusModeState;
+import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.net.EditorPlotLabelsPacket;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.phys.Vec3;
@@ -88,46 +89,86 @@ final class EditorMenusModeTest {
         assertFalse(EditorMenusModeState.isPanelVisible(null, 0, EditorMenusMode.AUTO));
     }
 
+    /** A generous cap, so these cases isolate AUTO's own in-template rule. */
+    private static final int WIDE_CAP = 256;
+
     @Test
     @DisplayName("AUTO inside a template culls past 15 blocks, inclusive of the boundary")
     void autoCullsByDistance() {
         Vec3 cam = new Vec3(0, 64, 0);
-        double max = EditorMenusModeState.MAX_PANEL_DISTANCE;
+        double max = EditorMenusModeState.AUTO_TEMPLATE_DISTANCE;
         assertTrue(EditorMenusModeState.withinRange(
-            new Vec3(max - 0.5, 64, 0), cam, EditorMenusMode.AUTO, true));
+            new Vec3(max - 0.5, 64, 0), cam, EditorMenusMode.AUTO, true, WIDE_CAP));
         // Exactly at the limit still draws — the cull is "further than", not "at least".
         assertTrue(EditorMenusModeState.withinRange(
-            new Vec3(max, 64, 0), cam, EditorMenusMode.AUTO, true));
+            new Vec3(max, 64, 0), cam, EditorMenusMode.AUTO, true, WIDE_CAP));
         assertFalse(EditorMenusModeState.withinRange(
-            new Vec3(max + 0.5, 64, 0), cam, EditorMenusMode.AUTO, true));
+            new Vec3(max + 0.5, 64, 0), cam, EditorMenusMode.AUTO, true, WIDE_CAP));
         // Distance is 3D, not horizontal — a panel straight up is just as far away.
         assertFalse(EditorMenusModeState.withinRange(
-            new Vec3(0, 64 + max + 1, 0), cam, EditorMenusMode.AUTO, true));
+            new Vec3(0, 64 + max + 1, 0), cam, EditorMenusMode.AUTO, true, WIDE_CAP));
         assertFalse(EditorMenusModeState.withinRange(
-            new Vec3(12, 64 + 12, 0), cam, EditorMenusMode.AUTO, true));
+            new Vec3(12, 64 + 12, 0), cam, EditorMenusMode.AUTO, true, WIDE_CAP));
     }
 
     @Test
-    @DisplayName("AUTO between plots: distance is not culled at all")
-    void autoOutsideTemplate_ignoresDistance() {
+    @DisplayName("AUTO between plots: only the player's cap applies, not the in-template 15")
+    void autoOutsideTemplate_usesOnlyTheCap() {
         Vec3 cam = new Vec3(0, 64, 0);
-        // Between plots the whole board is how you find the next one, so nothing culls — however
-        // far off it is.
+        // Between plots the whole board is how you find the next one — 15 does not apply...
         assertTrue(EditorMenusModeState.withinRange(
-            new Vec3(500, 64, 500), cam, EditorMenusMode.AUTO, false));
+            new Vec3(EditorMenusModeState.AUTO_TEMPLATE_DISTANCE + 0.5, 64, 0),
+            cam, EditorMenusMode.AUTO, false, WIDE_CAP));
+        // ...but the player's own cap still does.
         assertTrue(EditorMenusModeState.withinRange(
-            new Vec3(EditorMenusModeState.MAX_PANEL_DISTANCE + 0.5, 64, 0),
-            cam, EditorMenusMode.AUTO, false));
+            new Vec3(60, 64, 0), cam, EditorMenusMode.AUTO, false, 64));
+        assertFalse(EditorMenusModeState.withinRange(
+            new Vec3(70, 64, 0), cam, EditorMenusMode.AUTO, false, 64));
     }
 
     @Test
-    @DisplayName("ON ignores distance entirely, in a template or not; OFF never gets asked")
-    void onIgnoresDistance() {
+    @DisplayName("the smaller of the two distances wins inside a template")
+    void smallerLimitWins() {
         Vec3 cam = new Vec3(0, 64, 0);
-        Vec3 farAway = new Vec3(500, 64, 500);
-        assertTrue(EditorMenusModeState.withinRange(farAway, cam, EditorMenusMode.ON, true));
-        assertTrue(EditorMenusModeState.withinRange(farAway, cam, EditorMenusMode.ON, false));
-        assertTrue(EditorMenusModeState.withinRange(farAway, cam, EditorMenusMode.OFF, true));
+        Vec3 at12 = new Vec3(12, 64, 0);
+        // Cap wider than 15 → 15 governs, so 12 blocks draws.
+        assertTrue(EditorMenusModeState.withinRange(at12, cam, EditorMenusMode.AUTO, true, 64));
+        // Cap tighter than 15 → the cap governs, so the same panel goes.
+        assertFalse(EditorMenusModeState.withinRange(at12, cam, EditorMenusMode.AUTO, true, 8));
+    }
+
+    @Test
+    @DisplayName("ON is capped by the setting too, in a template or not; OFF never gets asked")
+    void onIsCappedButKnowsNothingOfTheTemplateRule() {
+        Vec3 cam = new Vec3(0, 64, 0);
+        Vec3 at20 = new Vec3(20, 64, 0);
+        // Past AUTO's 15 but inside the cap — ON draws it whether or not you are in a template.
+        assertTrue(EditorMenusModeState.withinRange(at20, cam, EditorMenusMode.ON, true, 64));
+        assertTrue(EditorMenusModeState.withinRange(at20, cam, EditorMenusMode.ON, false, 64));
+        // ...and the cap still bites in ON.
+        assertFalse(EditorMenusModeState.withinRange(
+            new Vec3(500, 64, 500), cam, EditorMenusMode.ON, false, 64));
+        // OFF has drawn nothing by the time anything asks.
+        assertTrue(EditorMenusModeState.withinRange(
+            new Vec3(500, 64, 500), cam, EditorMenusMode.OFF, true, 8));
+    }
+
+    @Test
+    @DisplayName("the Menu Distance stepper snaps to multiples of 8 and clamps at both ends")
+    void stepperSnapsAndClamps() {
+        int min = ClientDisplayConfig.MIN_MENU_RENDER_DISTANCE;
+        int max = ClientDisplayConfig.MAX_MENU_RENDER_DISTANCE;
+        // Up from the floor lands on the first multiple of the step, not floor+step.
+        assertEquals(8, ClientDisplayConfig.stepMenuRenderDistanceUp(min));
+        assertEquals(16, ClientDisplayConfig.stepMenuRenderDistanceUp(8));
+        assertEquals(72, ClientDisplayConfig.stepMenuRenderDistanceUp(64));
+        assertEquals(max, ClientDisplayConfig.stepMenuRenderDistanceUp(max));
+        assertEquals(max, ClientDisplayConfig.stepMenuRenderDistanceUp(max - 1));
+        // Down snaps a hand-edited off-step value onto the ladder rather than stepping past it.
+        assertEquals(56, ClientDisplayConfig.stepMenuRenderDistanceDown(64));
+        assertEquals(64, ClientDisplayConfig.stepMenuRenderDistanceDown(70));
+        assertEquals(min, ClientDisplayConfig.stepMenuRenderDistanceDown(8));
+        assertEquals(min, ClientDisplayConfig.stepMenuRenderDistanceDown(min));
     }
 
     @Test
