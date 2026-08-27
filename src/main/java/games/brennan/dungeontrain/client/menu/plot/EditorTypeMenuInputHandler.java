@@ -14,6 +14,7 @@ import games.brennan.dungeontrain.client.menu.plot.EditorTypeMenuRenderer.CellKi
 import games.brennan.dungeontrain.client.menu.plot.EditorTypeMenuRenderer.Hovered;
 import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
 import games.brennan.dungeontrain.net.EditorTypeMenusPacket;
+import games.brennan.dungeontrain.editor.PlotCategory;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.core.Direction;
@@ -215,7 +216,7 @@ public final class EditorTypeMenuInputHandler {
             if (slot < 0 || slot >= menu.typeStrip().size()) return;
             EditorTypeMenusPacket.TypeTab tab = menu.typeStrip().get(slot);
             String cmd = EditorPlotTeleport.commandFor(
-                tab.category(), tab.modelId(), tab.modelName());
+                tab.plotCategory(), tab.modelId(), tab.modelName());
             if (cmd == null) return;
             LOGGER.debug("[DungeonTrain] EditorTypeMenu type-tab teleport ({}): {}",
                 tab.typeName(), cmd);
@@ -233,7 +234,7 @@ public final class EditorTypeMenuInputHandler {
             if (slot < 0 || slot >= parent.subVariants().size()) return;
             EditorTypeMenusPacket.Variant child = parent.subVariants().get(slot);
             String cmd = EditorPlotTeleport.commandFor(
-                child.category(), child.modelId(), child.modelName());
+                child.plotCategory(), child.modelId(), child.modelName());
             if (cmd == null) return;
             LOGGER.debug("[DungeonTrain] EditorTypeMenu sub-variant teleport ({}): {}",
                 child.name(), cmd);
@@ -249,7 +250,7 @@ public final class EditorTypeMenuInputHandler {
             if (menu.variants().isEmpty()) return;
             EditorTypeMenusPacket.Variant first = menu.variants().get(0);
             String cmd = EditorPlotTeleport.commandFor(
-                first.category(), first.modelId(), first.modelName());
+                first.plotCategory(), first.modelId(), first.modelName());
             if (cmd == null) return;
             LOGGER.debug("[DungeonTrain] EditorTypeMenu header teleport (first variant '{}'): {}",
                 first.name(), cmd);
@@ -278,12 +279,12 @@ public final class EditorTypeMenuInputHandler {
                 // Skipped on Sub-Variants rows — they have a dedicated STAGE cell, and the shortcut
                 // would misfire on the weight-only "(default)" self-row (not a gateable member).
                 if (shift && !isSubVariants(menu) && EditorPlotTeleport.stageApplyCommandFor(
-                        variant.category(), variant.modelId(), variant.modelName(), "custom") != null) {
+                        variant.plotCategory(), variant.modelId(), variant.modelName(), "custom") != null) {
                     openStagePicker(menu, variant);
                     return;
                 }
                 String cmd = EditorPlotTeleport.commandFor(
-                    variant.category(), variant.modelId(), variant.modelName());
+                    variant.plotCategory(), variant.modelId(), variant.modelName());
                 if (cmd == null) return;
                 LOGGER.debug("[DungeonTrain] EditorTypeMenu teleport: {}", cmd);
                 CommandRunner.run(cmd);
@@ -313,7 +314,7 @@ public final class EditorTypeMenuInputHandler {
                     String memberId = variant.modelId();
                     // Portal rooms carry the same panel one template layer up — same parent/member
                     // shape, different command prefix.
-                    String cmd = "PORTALS".equals(variant.category())
+                    String cmd = isPortalRoom(variant)
                         ? EditorPlotTeleport.portalRoomGroupWeightCommandFor(parentId, memberId, dir)
                         : EditorPlotTeleport.groupMemberWeightCommandFor(parentId, memberId, dir);
                     LOGGER.debug("[DungeonTrain] EditorTypeMenu weight (group {}): {}",
@@ -322,7 +323,7 @@ public final class EditorTypeMenuInputHandler {
                     return;
                 }
                 String cmd = EditorPlotTeleport.weightCommandFor(
-                    variant.category(), variant.modelId(), variant.modelName(), dir);
+                    variant.plotCategory(), variant.modelId(), variant.modelName(), dir);
                 if (cmd == null) return;
                 LOGGER.debug("[DungeonTrain] EditorTypeMenu weight: {}", cmd);
                 CommandRunner.run(cmd);
@@ -363,7 +364,7 @@ public final class EditorTypeMenuInputHandler {
             return;
         }
         CommandMenuState.openAt(new games.brennan.dungeontrain.client.menu.StagePickerScreen(
-            variant.category(), variant.modelId(), variant.modelName(), variant.primaryStageId()));
+            variant.plotCategory(), variant.modelId(), variant.modelName(), variant.primaryStageId()));
     }
 
     /** Lowercase phase tokens for the Stages panel's inline dimension cells (TrainPhase ordinal order). */
@@ -455,7 +456,7 @@ public final class EditorTypeMenuInputHandler {
             return;
         }
         String cmd = EditorPlotTeleport.levelCommandFor(
-            variant.category(), variant.modelId(), variant.modelName(), sub, dir);
+            variant.plotCategory(), variant.modelId(), variant.modelName(), sub, dir);
         if (cmd == null) return;
         LOGGER.debug("[DungeonTrain] EditorTypeMenu {} : {}", sub, cmd);
         CommandRunner.run(cmd);
@@ -483,7 +484,7 @@ public final class EditorTypeMenuInputHandler {
             return;
         }
         String cmd = EditorPlotTeleport.phaseCommandFor(
-            variant.category(), variant.modelId(), variant.modelName(),
+            variant.plotCategory(), variant.modelId(), variant.modelName(),
             PHASE_TOKENS[slot], action);
         if (cmd == null) return;
         LOGGER.debug("[DungeonTrain] EditorTypeMenu phase {} {}: {}", PHASE_TOKENS[slot], action, cmd);
@@ -506,7 +507,7 @@ public final class EditorTypeMenuInputHandler {
      * to pick one. Category is the discriminator the server already sets on the row.
      */
     private static boolean isPortalRoom(EditorTypeMenusPacket.Variant variant) {
-        return "PORTALS".equals(variant.category());
+        return variant.plotCategory() == PlotCategory.PORTALS;
     }
 
     /**
@@ -524,6 +525,7 @@ public final class EditorTypeMenuInputHandler {
         if (menu.variants().isEmpty()) return;
         EditorTypeMenusPacket.Variant first = menu.variants().get(0);
         String category = first.category();
+        PlotCategory plotCategory = first.plotCategory();
         // Prefer the player's currently active model id (the one tinted green
         // in the floating menu) so "Current (<id>)" in the picker clones from
         // the variant the player is standing in. Fall back to the first row.
@@ -542,7 +544,7 @@ public final class EditorTypeMenuInputHandler {
         // opened this from inside one.
         if (games.brennan.dungeontrain.editor.VariantOverlayRenderer.SUB_VARIANTS_TYPE_NAME
                 .equals(menu.typeName())) {
-            boolean portals = "PORTALS".equals(category);
+            boolean portals = plotCategory == PlotCategory.PORTALS;
             // A portal room's own name rides in modelName: for every track-side kind modelId is the
             // KIND tag and stays constant across that kind's variants, so it can't name the plot the
             // author is standing in. Contents put their id in modelId, so currentId is already right.
@@ -559,28 +561,29 @@ public final class EditorTypeMenuInputHandler {
             return;
         }
 
-        NewSourcePickerScreen picker = switch (category) {
-            case "CARRIAGES" -> new NewSourcePickerScreen(
+        NewSourcePickerScreen picker = plotCategory == null ? null : switch (plotCategory) {
+            case CARRIAGES -> new NewSourcePickerScreen(
                 NewSourcePickerScreen.Category.CARRIAGES, null, currentId);
-            case "CONTENTS" -> new NewSourcePickerScreen(
+            case CONTENTS -> new NewSourcePickerScreen(
                 NewSourcePickerScreen.Category.CONTENTS, null, currentId);
             // For PARTS the modelId is the kind tag (floor / walls / roof /
             // doors); the picker's "Current" option needs a part variant id,
             // which the variant rows don't represent for the floating-menu
             // entry, so leave currentId blank.
-            case "PARTS" -> new NewSourcePickerScreen(
+            case PARTS -> new NewSourcePickerScreen(
                 NewSourcePickerScreen.Category.PARTS, first.modelId(), "");
             // Tracks have no source choice today — picker collapses to a
             // single name TypeArg row. Kind tag is the variant's modelId
             // (the server's track-new parser expects the prefixed forms,
             // see EditorPlotTeleport).
-            case "TRACKS" -> new NewSourcePickerScreen(
+            case TRACKS -> new NewSourcePickerScreen(
                 NewSourcePickerScreen.Category.TRACKS, first.modelId(), "");
             // Portals: same single-name shape as tracks, dispatched through the portals prefix.
             // Kind tag is the variant's modelId (portal_room).
-            case "PORTALS" -> new NewSourcePickerScreen(
+            case PORTALS -> new NewSourcePickerScreen(
                 NewSourcePickerScreen.Category.PORTALS, first.modelId(), "");
-            default -> null;
+            // No models to seed a new one from.
+            case ARCHITECTURE -> null;
         };
         if (picker == null) {
             LOGGER.warn("[DungeonTrain] EditorTypeMenu New: unsupported category '{}'", category);

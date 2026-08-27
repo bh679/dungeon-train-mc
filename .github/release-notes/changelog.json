@@ -9287,9 +9287,9 @@
       ],
       "pr": 1138,
       "date": "2026-08-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.683.0",
+      "released_at": "2026-08-27T12:13:50Z"
     },
     {
       "id": "builds-submitted-for-review",
@@ -9299,13 +9299,79 @@
       "summary": "Your saved builds go to your builder profile on the server, and a finished carriage can be submitted for review. Community carriages are paused on the train in the meantime.",
       "highlights": [],
       "date": "2026-08-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.683.0",
+      "released_at": "2026-08-27T12:13:50Z"
+    },
+    {
+      "id": "client-options-tabs",
+      "version": "0.684.0",
+      "type": "feat",
+      "title": "Dungeon Train options screen redone with tabs",
+      "summary": "The Dungeon Train settings screen (Options \u2192 Dungeon Train\u2026) no longer runs off the bottom of the window. Settings are now split across three tabs \u2014 General, Train and Editor \u2014 each scrolling on its own with Done always reachable.",
+      "highlights": [
+        "Three tabs instead of one long column: General, Train, Editor",
+        "The list scrolls and Done stays reachable at any window size or GUI scale",
+        "Internet Connection row temporarily removed (could not be turned back on)"
+      ],
+      "pr": 1137,
+      "date": "2026-08-27",
+      "released": true,
+      "released_in": "v0.686.0",
+      "released_at": "2026-08-27T12:59:06Z"
+    },
+    {
+      "id": "editor-menu-worldspace-screenspace",
+      "version": "0.684.0",
+      "type": "feat",
+      "title": "Choose how each editor menu appears",
+      "summary": "The Train Editor's four menus can each be shown either as a panel floating in the world that you aim at, or as a window on your screen that you point at with the mouse. Pick per menu under Options > Dungeon Train > Editor, or from the X menu's own Options. The X and V menus act on the whole build, so they open on screen where the cursor is more precise. The C and Z menus edit a single block, so they stay out in the world beside the block you're editing.",
+      "highlights": [
+        "The X menu can be a floating in-world panel again \u2014 it became a screen window last update, and now that's a choice rather than the only option.",
+        "The V, C and Z menus can all be screen windows with a free mouse cursor.",
+        "Your hotbar keeps working while a screen menu is open, so the V menu's Swap still takes whatever block you're holding.",
+        "Each menu remembers its own setting, and a change takes effect the next time you open that menu."
+      ],
+      "pr": 1141,
+      "date": "2026-08-27",
+      "released": true,
+      "released_in": "v0.686.0",
+      "released_at": "2026-08-27T12:59:06Z"
+    },
+    {
+      "id": "shulker-box-tooltip-modpack",
+      "version": "0.685.0",
+      "type": "feat",
+      "title": "Shulker Box Tooltip added to the modpack",
+      "summary": "The modpack now ships Shulker Box Tooltip. Hover any shulker box \u2014 or other container item \u2014 to see what's inside without placing it down, which saves a lot of digging through loot on the train.",
+      "highlights": [
+        "Hover a shulker box to preview its contents",
+        "Enabled by default; can be switched off in the launcher"
+      ],
+      "pr": 1143,
+      "date": "2026-08-27",
+      "released": true,
+      "released_in": "v0.686.0",
+      "released_at": "2026-08-27T12:59:06Z"
+    },
+    {
+      "id": "clumps-modpack-bundle",
+      "version": "0.684.0",
+      "type": "feat",
+      "title": "Clumps bundled in the modpack",
+      "summary": "Both modpacks now ship Clumps, which merges nearby XP orbs into one so big fights drop a single combined orb instead of a laggy spray. It is on by default but optional \u2014 you can disable it in your launcher if you prefer vanilla orbs.",
+      "highlights": [
+        "XP orbs merge together, reducing lag from big mob fights",
+        "Enabled by default in the CurseForge and Modrinth packs; safe to turn off"
+      ],
+      "date": "2026-08-27",
+      "released": true,
+      "released_in": "v0.686.0",
+      "released_at": "2026-08-27T12:59:06Z"
     },
     {
       "id": "better-advancements-support",
-      "version": "0.684.0",
+      "version": "0.688.0",
       "type": "feat",
       "title": "Better Advancements support, and it ships with the modpack",
       "summary": "The modpack now bundles Better Advancements, which replaces the advancements screen with a zoomable, searchable one. Dungeon Train's advancement tree works properly inside it: advancements you have unlocked the path to show their real icon, unearned ones still keep their secrets \u2014 you get the hint, not the description, and not the criteria behind it either. Scrolling a tall tree now reaches the whole thing, with a little room past each end. If you play without Better Advancements nothing changes.",
@@ -9315,11 +9381,11 @@
         "Unearned advancements keep showing hints instead of spoilers",
         "Scrolling reaches the bottom of a tall advancement tree"
       ],
+      "pr": 1140,
       "date": "2026-08-27",
       "released": false,
       "released_in": null,
-      "released_at": null,
-      "pr": 1140
+      "released_at": null
     }
   ]
 }

@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.client;
 import com.mojang.blaze3d.platform.InputConstants;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.menu.templateblocks.TemplateBlocksMenu;
+import games.brennan.dungeontrain.client.menu.templateblocks.TemplateBlocksMenuScreen;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.TemplateBlocksMenuTogglePacket;
 import net.minecraft.client.KeyMapping;
@@ -28,6 +29,11 @@ public final class TemplateBlocksHotkeyClient {
     public static final String CATEGORY = "key.categories." + DungeonTrain.MOD_ID;
     public static final String NAME = "key." + DungeonTrain.MOD_ID + ".template_blocks";
 
+    /**
+     * Package-visible via {@link #key()} so the screen-space panel can close on a second press.
+     * Vanilla stops polling keybindings while a Screen is up, so {@code KeyMapping.isDown} in the
+     * tick watcher below can never see that press — the screen has to match the binding itself.
+     */
     private static final KeyMapping KEY = new KeyMapping(
         NAME,
         InputConstants.Type.KEYSYM,
@@ -41,6 +47,11 @@ public final class TemplateBlocksHotkeyClient {
     static boolean inSurvival() {
         Minecraft mc = Minecraft.getInstance();
         return mc.gameMode != null && mc.gameMode.getPlayerMode() == GameType.SURVIVAL;
+    }
+
+    /** The toggle binding, for screens that must match it directly. See {@link #KEY}. */
+    public static KeyMapping key() {
+        return KEY;
     }
 
     @SubscribeEvent
@@ -59,6 +70,10 @@ public final class TemplateBlocksHotkeyClient {
                 lastDown = false;
                 return;
             }
+            // See the note in ContainerHotkeyClient: the screen-space panel matches this
+            // binding itself, so counting the press here too would toggle twice.
+            if (Minecraft.getInstance().screen instanceof TemplateBlocksMenuScreen) return;
+
             boolean down = KEY.isDown();
             if (down && !lastDown) {
                 boolean opening = !TemplateBlocksMenu.isActive();

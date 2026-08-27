@@ -11,6 +11,7 @@ import games.brennan.dungeontrain.client.menu.MenuRenderStates;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.net.EditorPlotLabelsPacket;
 import games.brennan.dungeontrain.net.EditorTypeMenusPacket;
+import games.brennan.dungeontrain.editor.PlotCategory;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.LightTexture;
@@ -456,7 +457,7 @@ public final class EditorTypeMenuRenderer {
             if (v.weight() != EditorPlotLabelsPacket.NO_WEIGHT) anyWeight = true;
             if (v.weight() != EditorPlotLabelsPacket.NO_WEIGHT
                 && v.phaseMask() != EditorTypeMenusPacket.Variant.NO_GATE) anyGate = true;
-            if ("PARTS".equals(v.category())) anyPart = true;
+            if (isPartRow(v)) anyPart = true;
         }
         // Reserve the gate area (weight|stage|min|max|phase) when any row carries a gate — e.g. the
         // Sub-Variants companion's member rows — else just the weight cell, so the longest name still
@@ -492,7 +493,7 @@ public final class EditorTypeMenuRenderer {
             if (v.weight() != EditorPlotLabelsPacket.NO_WEIGHT) anyWeight = true;
             if (v.weight() != EditorPlotLabelsPacket.NO_WEIGHT
                 && v.phaseMask() != EditorTypeMenusPacket.Variant.NO_GATE) anyGate = true;
-            if ("PARTS".equals(v.category())) anyPart = true;
+            if (isPartRow(v)) anyPart = true;
         }
         // Reserve the gate area (weight|min|max|phase) when any row carries a gate, else just the
         // weight cell — so the longest name still fits in the remaining fraction.
@@ -836,7 +837,7 @@ public final class EditorTypeMenuRenderer {
         if (!hasWeight) {
             // PARTS rows carry a leading [x]/[ ] visibility checkbox column (see drawVariantRow /
             // CellKind.PART_VISIBLE). Left edge is -halfW here, matching the draw's rowLeft.
-            if ("PARTS".equals(variant.category()) && hitX < -halfW + partVisCellW(font)) {
+            if (isPartRow(variant) && hitX < -halfW + partVisCellW(font)) {
                 return new Hovered(menuIdx, variantIdx, CellKind.PART_VISIBLE);
             }
             return new Hovered(menuIdx, variantIdx, CellKind.NAME);
@@ -972,7 +973,7 @@ public final class EditorTypeMenuRenderer {
         if (!hasWeight) {
             // PARTS rows carry a leading [x]/[ ] visibility checkbox column (see drawVariantRow /
             // CellKind.PART_VISIBLE). Left edge is colLeft here, matching the draw's rowLeft.
-            if ("PARTS".equals(variant.category()) && hitX < colLeft + partVisCellW(font)) {
+            if (isPartRow(variant) && hitX < colLeft + partVisCellW(font)) {
                 return new Hovered(menuIdx, variantIdx, CellKind.PART_VISIBLE);
             }
             return new Hovered(menuIdx, variantIdx, CellKind.NAME);
@@ -1396,7 +1397,7 @@ public final class EditorTypeMenuRenderer {
 
         // PARTS rows carry a dedicated leading [x]/[ ] visibility checkbox column (CellKind.PART_VISIBLE);
         // visR is its right edge. Non-part rows have no checkbox, so visR == rowLeft (a no-op below).
-        boolean isPart = "PARTS".equals(variant.category());
+        boolean isPart = isPartRow(variant);
         double visR = isPart ? rowLeft + partVisCellW(font) : rowLeft;
 
         // Provenance tint — orange for imported variants (highest priority),
@@ -1922,4 +1923,13 @@ public final class EditorTypeMenuRenderer {
         vc.addVertex(mat, (float) x2, (float) y2, (float) 0).setColor(r, g, b, a);
         vc.addVertex(mat, (float) x1, (float) y2, (float) 0).setColor(r, g, b, a);
     }
+
+    /**
+     * Whether this row carries the leading visibility checkbox — the one column only parts have.
+     * One place asks the question so the five call sites cannot drift apart.
+     */
+    private static boolean isPartRow(EditorTypeMenusPacket.Variant variant) {
+        return variant.plotCategory() == PlotCategory.PARTS;
+    }
+
 }
