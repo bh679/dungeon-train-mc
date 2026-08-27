@@ -4,6 +4,7 @@ import games.brennan.dungeontrain.client.menu.plot.EditorPlotTeleport;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.PartAssignmentEditPacket;
 import games.brennan.dungeontrain.train.CarriagePartKind;
+import games.brennan.dungeontrain.editor.PlotCategory;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -38,7 +39,7 @@ public final class StagePickerScreen implements MenuScreen {
     private final String currentStageId;
 
     // Command mode (templates).
-    private final String category;
+    private final PlotCategory category;
     private final String modelId;
     private final String modelName;
 
@@ -58,8 +59,11 @@ public final class StagePickerScreen implements MenuScreen {
     private final String groupKindId;
     private final LinkedHashSet<String> groupSelected = new LinkedHashSet<>();
 
-    public StagePickerScreen(String category, String modelId, String modelName, String currentStageId) {
-        this.category = category == null ? "" : category;
+    public StagePickerScreen(PlotCategory category, String modelId, String modelName, String currentStageId) {
+        // Typed rather than a String because this screen is reached from two places that used to
+        // disagree about case — the keyboard menu passed lowercase, the world-space variant row
+        // uppercase — and only stageApplyCommandFor forgave it. Both callers now pass the same thing.
+        this.category = category;
         this.modelId = modelId == null ? "" : modelId;
         this.modelName = modelName == null ? "" : modelName;
         this.currentStageId = currentStageId == null ? "" : currentStageId;
@@ -79,7 +83,7 @@ public final class StagePickerScreen implements MenuScreen {
         this.partsKind = kind;
         this.partsName = name == null ? "" : name;
         this.currentStageId = currentStageId == null ? "" : currentStageId;
-        this.category = "";
+        this.category = null;
         this.modelId = "";
         this.modelName = "";
         this.groupMemberMode = false;
@@ -105,7 +109,7 @@ public final class StagePickerScreen implements MenuScreen {
         this.partsVariantId = "";
         this.partsKind = null;
         this.partsName = "";
-        this.category = "";
+        this.category = null;
         this.modelId = "";
         this.modelName = "";
     }

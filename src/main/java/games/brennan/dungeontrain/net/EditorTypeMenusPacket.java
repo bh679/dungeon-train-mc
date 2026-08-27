@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.net;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.editor.PlotCategory;
 import games.brennan.dungeontrain.client.menu.plot.EditorTypeMenuRenderer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
@@ -141,7 +142,18 @@ public record EditorTypeMenusPacket(List<Menu> menus, String selectedStageId,
      * existing {@code Variant} fields so the dispatch can call
      * {@code EditorPlotTeleport.commandFor} directly).
      */
-    public record TypeTab(String typeName, String category, String modelId, String modelName) {}
+    public record TypeTab(String typeName, String category, String modelId, String modelName) {
+        /**
+         * {@link #category()} resolved to the type the client routes on, or {@code null} when it is
+         * not a category — including the {@code "stages"} sentinel the Stages panel's rows carry.
+         *
+         * <p>Derived, not stored: the component stays a {@code String} because that is the wire
+         * format, but nothing past this point should be comparing category strings.</p>
+         */
+        public PlotCategory plotCategory() {
+            return PlotCategory.fromId(category).orElse(null);
+        }
+}
 
     /**
      * One variant row inside a type menu.
@@ -185,6 +197,17 @@ public record EditorTypeMenusPacket(List<Menu> menus, String selectedStageId,
 
         public Variant {
             stageIds = stageIds == null ? List.of() : List.copyOf(stageIds);
+        }
+
+        /**
+         * {@link #category()} resolved to the type the client routes on, or {@code null} when it is
+         * not a category — including the {@code "stages"} sentinel the Stages panel's rows carry.
+         *
+         * <p>Derived, not stored: the component stays a {@code String} because that is the wire
+         * format, but nothing past this point should be comparing category strings.</p>
+         */
+        public PlotCategory plotCategory() {
+            return PlotCategory.fromId(category).orElse(null);
         }
 
         /** True when this row is linked to at least one named Stage — the renderer draws a Stage chip

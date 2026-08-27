@@ -9,6 +9,7 @@ import games.brennan.dungeontrain.client.menu.EditorPlotLabelsRenderer;
 import games.brennan.dungeontrain.client.menu.MenuRenderStates;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.net.EditorTypeMenusPacket;
+import games.brennan.dungeontrain.editor.PlotCategory;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.LightTexture;
@@ -170,7 +171,8 @@ public final class EditorHelpPanelRenderer {
         // Portal room plots share the track-side +Z row layout, so they need the same
         // perpendicular anchor.
         String activeCategory = navMenu.activeCategoryId();
-        boolean isZRow = "tracks".equals(activeCategory) || "portals".equals(activeCategory);
+        PlotCategory cat = PlotCategory.fromId(activeCategory).orElse(null);
+        boolean isZRow = cat == PlotCategory.TRACKS || cat == PlotCategory.PORTALS;
         if (isZRow) {
             return new Vec3(cx - WORLD_OFFSET_BLOCKS, cy, cz);
         }

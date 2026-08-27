@@ -10,6 +10,7 @@ import games.brennan.dungeontrain.editor.EditorMenusMode;
 import games.brennan.dungeontrain.net.EditorStatusPacket;
 import games.brennan.dungeontrain.portal.PortalRoomCopiesVariant;
 import games.brennan.dungeontrain.portal.PortalRoomSettings;
+import games.brennan.dungeontrain.editor.PlotCategory;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 
@@ -77,19 +78,19 @@ public final class EditorMenuScreen implements MenuScreen {
      * modelId/modelName are identical to model. <b>Only modelId/modelName are safe to splice into
      * a command string.</b></p>
      */
-    private record Ctx(String category, String model, String modelId, String modelName, int weight) {
+    private record Ctx(PlotCategory category, String model, String modelId, String modelName, int weight) {
 
         static Ctx read() {
             return new Ctx(
-                EditorStatusHudOverlay.category().toLowerCase(Locale.ROOT),
+                PlotCategory.fromId(EditorStatusHudOverlay.category()).orElse(null),
                 EditorStatusHudOverlay.model(),
                 EditorStatusHudOverlay.modelId(),
                 EditorStatusHudOverlay.modelName(),
                 EditorStatusHudOverlay.weight());
         }
 
-        boolean isParts()   { return "parts".equals(category); }
-        boolean isPortals() { return "portals".equals(category); }
+        boolean isParts()   { return category == PlotCategory.PARTS; }
+        boolean isPortals() { return category == PlotCategory.PORTALS; }
     }
 
     @Override public List<CommandMenuEntry> entries() {
@@ -122,7 +123,7 @@ public final class EditorMenuScreen implements MenuScreen {
      * row placement per category without standing up the client HUD state.
      */
     static Map<EditorMenuTab, List<CommandMenuEntry>> rowsByTab(
-        String category, String model, String modelId, String modelName, int weight
+        PlotCategory category, String model, String modelId, String modelName, int weight
     ) {
         return rowsByTab(new Ctx(category, model, modelId, modelName, weight));
     }
@@ -252,7 +253,7 @@ public final class EditorMenuScreen implements MenuScreen {
         // Contents — drilldown listing every registered content with a per-row red/green toggle so
         // the author can exclude specific contents from this carriage's spawn pool. Only shown when
         // a concrete variant id is in scope.
-        if ("carriages".equals(ctx.category()) && notEmpty(ctx.modelId())) {
+        if (ctx.category() == PlotCategory.CARRIAGES && notEmpty(ctx.modelId())) {
             out.add(new CommandMenuEntry.DrillIn("Contents",
                 CarriageContentsAllowScreen.forCarriage(ctx.modelId())));
         }
@@ -384,8 +385,7 @@ public final class EditorMenuScreen implements MenuScreen {
         // enabled axes. Available in every template plot with a model in scope; architecture has
         // no model to mirror.
         if (ctx.isParts()
-            || (("carriages".equals(ctx.category()) || "contents".equals(ctx.category())
-                 || "tracks".equals(ctx.category()) || ctx.isPortals())
+            || (ctx.category() != null && ctx.category() != PlotCategory.ARCHITECTURE
                 && notEmpty(ctx.modelName()))) {
             addMirrorToggles(out);
         }
@@ -530,22 +530,17 @@ public final class EditorMenuScreen implements MenuScreen {
      * <p>{@code modelId} (not {@code model}) is spliced into commands so track-side models with
      * friendly path strings ({@code "track / track2"}) don't break the parser.</p>
      */
-    static CommandMenuEntry weightTripleFor(String category, String modelId, String modelName, int currentWeight) {
-        if (modelId == null || modelId.isEmpty()) return null;
-        String prefix;
-        switch (category) {
-            case "carriages" -> prefix = "dungeontrain editor weight " + modelId;
-            case "tracks" -> {
-                if (modelName == null || modelName.isEmpty()) return null;
-                prefix = "dungeontrain editor tracks weight " + modelId + " " + modelName;
-            }
-            case "portals" -> {
-                if (modelName == null || modelName.isEmpty()) return null;
-                prefix = "dungeontrain editor portals weight " + modelId + " " + modelName;
-            }
-            case "contents" -> prefix = "dungeontrain editor contents weight " + modelId;
-            default -> { return null; }
-        }
+    static CommandMenuEntry weightTripleFor(PlotCategory category, String modelId, String modelName, int currentWeight) {
+        if (modelId == null || modelId.isEmpty() || category == null) return null;
+        boolean named = modelName != null && !modelName.isEmpty();
+        String prefix = switch (category) {
+            case CARRIAGES -> "dungeontrain editor weight " + modelId;
+            case TRACKS -> named ? "dungeontrain editor tracks weight " + modelId + " " + modelName : null;
+            case PORTALS -> named ? "dungeontrain editor portals weight " + modelId + " " + modelName : null;
+            case CONTENTS -> "dungeontrain editor contents weight " + modelId;
+            case PARTS, ARCHITECTURE -> null; // no weight pool
+        };
+        if (prefix == null) return null;
         String label = currentWeight >= 0 ? "Weight (" + currentWeight + ")" : "Weight";
         CommandMenuEntry minus  = new CommandMenuEntry.Stay("-", prefix + " dec");
         CommandMenuEntry weight = new CommandMenuEntry.TypeArg(label, "0-100", prefix);
@@ -583,23 +578,18 @@ public final class EditorMenuScreen implements MenuScreen {
      * label (caller formats the current value); {@code hint} is the typing-mode placeholder.
      * Command shapes mirror {@link #weightTripleFor}.
      */
-    static CommandMenuEntry levelTripleFor(String category, String modelId, String modelName,
+    static CommandMenuEntry levelTripleFor(PlotCategory category, String modelId, String modelName,
                                            String sub, String label, String hint) {
-        if (modelId == null || modelId.isEmpty()) return null;
-        String prefix;
-        switch (category) {
-            case "carriages" -> prefix = "dungeontrain editor " + sub + " " + modelId;
-            case "tracks" -> {
-                if (modelName == null || modelName.isEmpty()) return null;
-                prefix = "dungeontrain editor tracks " + sub + " " + modelId + " " + modelName;
-            }
-            case "portals" -> {
-                if (modelName == null || modelName.isEmpty()) return null;
-                prefix = "dungeontrain editor portals " + sub + " " + modelId + " " + modelName;
-            }
-            case "contents" -> prefix = "dungeontrain editor contents " + sub + " " + modelId;
-            default -> { return null; }
-        }
+        if (modelId == null || modelId.isEmpty() || category == null) return null;
+        boolean named = modelName != null && !modelName.isEmpty();
+        String prefix = switch (category) {
+            case CARRIAGES -> "dungeontrain editor " + sub + " " + modelId;
+            case TRACKS -> named ? "dungeontrain editor tracks " + sub + " " + modelId + " " + modelName : null;
+            case PORTALS -> named ? "dungeontrain editor portals " + sub + " " + modelId + " " + modelName : null;
+            case CONTENTS -> "dungeontrain editor contents " + sub + " " + modelId;
+            case PARTS, ARCHITECTURE -> null; // no spawn gate
+        };
+        if (prefix == null) return null;
         CommandMenuEntry minus  = new CommandMenuEntry.Stay("-", prefix + " dec");
         CommandMenuEntry middle = new CommandMenuEntry.TypeArg(label, hint, prefix);
         CommandMenuEntry plus   = new CommandMenuEntry.Stay("+", prefix + " inc");
@@ -615,29 +605,31 @@ public final class EditorMenuScreen implements MenuScreen {
      * them to the new plot. Returns null for categories that don't support author-authored new
      * models.
      */
-    static CommandMenuEntry newEntryFor(String category, String modelId, String model) {
+    static CommandMenuEntry newEntryFor(PlotCategory category, String modelId, String model) {
+        if (category == null) return null;
         return switch (category) {
-            case "carriages" -> new CommandMenuEntry.DrillIn(
+            case CARRIAGES -> new CommandMenuEntry.DrillIn(
                 "New",
                 new NewSourcePickerScreen(
                     NewSourcePickerScreen.Category.CARRIAGES, null, modelId));
-            case "contents" -> new CommandMenuEntry.DrillIn(
+            case CONTENTS -> new CommandMenuEntry.DrillIn(
                 "New",
                 new NewSourcePickerScreen(
                     NewSourcePickerScreen.Category.CONTENTS, null, modelId));
-            case "tracks" -> {
+            case TRACKS -> {
                 if (modelId == null || modelId.isEmpty()) yield null;
                 yield new CommandMenuEntry.TypeArg(
                     "New", "name",
                     "dungeontrain editor tracks new " + modelId);
             }
-            case "portals" -> {
+            case PORTALS -> {
                 if (modelId == null || modelId.isEmpty()) yield null;
                 yield new CommandMenuEntry.TypeArg(
                     "New", "name",
                     "dungeontrain editor portals new " + modelId);
             }
-            default -> null;
+            // Parts are created through their own picker; architecture has no models yet.
+            case PARTS, ARCHITECTURE -> null;
         };
     }
 
@@ -653,26 +645,27 @@ public final class EditorMenuScreen implements MenuScreen {
      * <p>{@code modelId} is what gets spliced into the command (must be a single command token);
      * {@code model} is the friendly path used in the confirm prompt label.</p>
      */
-    static CommandMenuEntry removeEntryFor(String category, String modelId, String model) {
-        if (modelId == null || modelId.isEmpty()) return null;
+    static CommandMenuEntry removeEntryFor(PlotCategory category, String modelId, String model) {
+        if (modelId == null || modelId.isEmpty() || category == null) return null;
         return switch (category) {
-            case "carriages" -> new CommandMenuEntry.DrillIn(
+            case CARRIAGES -> new CommandMenuEntry.DrillIn(
                 "Remove",
                 new ConfirmScreen("Remove '" + model + "'?",
                     "dungeontrain editor reset " + modelId));
-            case "contents" -> new CommandMenuEntry.DrillIn(
+            case CONTENTS -> new CommandMenuEntry.DrillIn(
                 "Remove",
                 new ConfirmScreen("Remove '" + model + "'?",
                     "dungeontrain editor contents reset " + modelId));
-            case "tracks" -> new CommandMenuEntry.DrillIn(
+            case TRACKS -> new CommandMenuEntry.DrillIn(
                 "Remove",
                 new ConfirmScreen("Remove the current variant for '" + model + "'?",
                     "dungeontrain editor tracks reset " + modelId));
-            case "portals" -> new CommandMenuEntry.DrillIn(
+            case PORTALS -> new CommandMenuEntry.DrillIn(
                 "Remove",
                 new ConfirmScreen("Remove the current variant for '" + model + "'?",
                     "dungeontrain editor portals reset " + modelId));
-            default -> null;
+            // Parts have their own remove flow; architecture has no models yet.
+            case PARTS, ARCHITECTURE -> null;
         };
     }
 
@@ -682,14 +675,15 @@ public final class EditorMenuScreen implements MenuScreen {
      * Returns null for categories without a single addressable model id (tracks, pillars, tunnels,
      * architecture).
      */
-    private static CommandMenuEntry clearEntryFor(String category, String model) {
-        if (model == null || model.isEmpty()) return null;
+    private static CommandMenuEntry clearEntryFor(PlotCategory category, String model) {
+        if (model == null || model.isEmpty() || category == null) return null;
         return switch (category) {
-            case "carriages", "contents", "parts", "portals" -> new CommandMenuEntry.DrillIn(
+            case CARRIAGES, CONTENTS, PARTS, PORTALS -> new CommandMenuEntry.DrillIn(
                 "Clear",
                 new ConfirmScreen("Clear all blocks in '" + model + "'?",
                     "dungeontrain editor clear"));
-            default -> null;
+            // No single addressable plot to clear.
+            case TRACKS, ARCHITECTURE -> null;
         };
     }
 
@@ -709,16 +703,18 @@ public final class EditorMenuScreen implements MenuScreen {
             return new CommandMenuEntry.TypeArg(
                 "Rename", "new_name", "dungeontrain editor part rename", "", kindName[1]);
         }
+        if (ctx.category() == null) return null;
         return switch (ctx.category()) {
-            case "carriages" -> isReservedCarriageBuiltin(model) ? null : new CommandMenuEntry.TypeArg(
+            case CARRIAGES -> isReservedCarriageBuiltin(model) ? null : new CommandMenuEntry.TypeArg(
                 "Rename", "new_name",
                 "dungeontrain editor save",
                 "", model);
-            case "contents" -> isReservedContentsBuiltin(model) ? null : new CommandMenuEntry.TypeArg(
+            case CONTENTS -> isReservedContentsBuiltin(model) ? null : new CommandMenuEntry.TypeArg(
                 "Rename", "new_name",
                 "dungeontrain editor contents save",
                 "", model);
-            default -> null;
+            // Parts are handled above; the rest have no rename subcommand.
+            case TRACKS, PORTALS, PARTS, ARCHITECTURE -> null;
         };
     }
 
