@@ -1041,9 +1041,27 @@
       ]
     }
   },
+  "chat.dungeontrain.deathnote.already": {
+    "1": {
+      "label": "the player already named on a Death Note this life",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
   "chat.dungeontrain.deathnote.taken": {
     "1": {
       "label": "the player named on the Death Note",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "chat.dungeontrain.lovenote.already": {
+    "1": {
+      "label": "the player already named on a Love Note this life",
       "examples": [
         "Steve",
         "Alex"
