@@ -65,5 +65,7 @@
   "command.adventureitemnames.config.client_only": {"author": "老本願", "reviewer": "老本願"},
   "item.adventureitemnames.random_chest": {"author": "老本願", "reviewer": "老本願"},
   "item.adventureitemnames.random_named_chest": {"author": "老本願", "reviewer": "老本願"},
-  "item.adventureitemnames.random_enchanted_chest": {"author": "老本願", "reviewer": "老本願"}
+  "item.adventureitemnames.random_enchanted_chest": {"author": "老本願", "reviewer": "老本願"},
+  "screen.adventureitemnames.action.delete": {"author": "Opus 5 (Claude)", "reviewer": ""},
+  "screen.adventureitemnames.action.reset": {"author": "Opus 5 (Claude)", "reviewer": ""}
 }

@@ -74,6 +74,7 @@ public final class DungeonTrainWorldData extends SavedData {
     private static final String TAG_DIFFICULTY_TRAVELLED_OFFSET = "difficultyTravelledOffset";
     private static final String TAG_CUSTOM_CONTENT_CHOICE = "customContentChoice";
     private static final String TAG_PORTAL_RATE_TUNED = "portalRateTuned";
+    private static final String TAG_KEEP_INVENTORY_USED = "keepInventoryUsed";
     private static final String TAG_HELP_PANEL_DISMISSED = "editorHelpPanelDismissed";
 
     private int trainY;
@@ -205,6 +206,20 @@ public final class DungeonTrainWorldData extends SavedData {
      * un-tuning a world.</p>
      */
     private boolean portalRateTuned = false;
+
+    /**
+     * True once this world has been seen running with the vanilla {@code keepInventory} game rule
+     * turned on.
+     *
+     * <p>A property of the <b>world</b> for the same reason {@link #portalRateTuned} is: the rule
+     * applies to everyone on it, including players who never touched a setting. Read it through
+     * {@code KeepInventoryIntegrity} rather than here — that class caches it so the Free Play gate
+     * doesn't touch SavedData on hot paths.</p>
+     *
+     * <p><b>One-way.</b> Gear already carried through a death is in the save, so turning the rule
+     * back off does not give the world its stats back.</p>
+     */
+    private boolean keepInventoryUsed = false;
 
     /**
      * Players who have closed the editor's world-space Welcome panel in this world, by UUID.
@@ -398,6 +413,9 @@ public final class DungeonTrainWorldData extends SavedData {
         // Absent on every world saved before the rate was settable → false, which is correct: those
         // worlds ran at the rate DT balanced.
         data.portalRateTuned = tag.getBoolean(TAG_PORTAL_RATE_TUNED);
+        // Absent on every world saved before this was tracked → false. Those worlds latch on the
+        // next tick anyway if the rule is still on, so nothing is missed.
+        data.keepInventoryUsed = tag.getBoolean(TAG_KEEP_INVENTORY_USED);
         // getIntArray returns an empty array for an absent key, so worlds saved before shared carriages
         // simply start having placed nothing.
         data.usedCarriageIds.loadFrom(tag.getIntArray(TAG_USED_CARRIAGE_IDS));
@@ -486,6 +504,7 @@ public final class DungeonTrainWorldData extends SavedData {
         tag.putInt(TAG_DIFFICULTY_TRAVELLED_OFFSET, difficultyTravelledOffset);
         tag.putString(TAG_CUSTOM_CONTENT_CHOICE, customContentChoice.nbtId());
         tag.putBoolean(TAG_PORTAL_RATE_TUNED, portalRateTuned);
+        tag.putBoolean(TAG_KEEP_INVENTORY_USED, keepInventoryUsed);
         tag.putIntArray(TAG_USED_CARRIAGE_IDS, usedCarriageIds.toIntArray());
         if (!builderRelayBuilds.isEmpty()) {
             tag.put(TAG_BUILDER_RELAY_BUILDS, builderRelayBuilds.toTag());
@@ -712,6 +731,18 @@ public final class DungeonTrainWorldData extends SavedData {
     public void markPortalRateTuned() {
         if (portalRateTuned) return;
         portalRateTuned = true;
+        setDirty();
+    }
+
+    /** True once this world has run with {@code keepInventory} on — see {@link #keepInventoryUsed}. */
+    public boolean isKeepInventoryUsed() {
+        return keepInventoryUsed;
+    }
+
+    /** Record that the rule was seen on. One-way: there is no path back to false. */
+    public void markKeepInventoryUsed() {
+        if (keepInventoryUsed) return;
+        keepInventoryUsed = true;
         setDirty();
     }
 
