@@ -9031,6 +9031,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "book-author-burn-chat",
+      "version": "0.673.0",
+      "type": "feat",
+      "title": "See who wrote a book as it burns",
+      "summary": "Dungeon Train books burn away after you read them, and until now their author burned with them. Turn on Book Author Chat and every book that catches fire \u2014 one you just read, one you threw away unread, one dropped on death \u2014 names its writer in chat: \"The book by X burns\". Off by default; the toggle is in Options > Dungeon Train and in the X menu > Options.",
+      "highlights": [
+        "New Book Author Chat option, off by default",
+        "Credits the author of every Dungeon Train book as it burns",
+        "Per-player: your setting, your chat, on servers too"
+      ],
+      "pr": 1121,
+      "date": "2026-08-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.advancement.GlobalBookBurnStats;
 import games.brennan.dungeontrain.builder.BuilderWorldLayout;
 import games.brennan.dungeontrain.cheat.RunIntegrity;
+import games.brennan.dungeontrain.narrative.BookBurnAuthorMessage;
 import games.brennan.dungeontrain.narrative.BookReadMarkerTag;
 import games.brennan.dungeontrain.narrative.BookVoteTag;
 import games.brennan.dungeontrain.discord.DeathNoteReporter;
@@ -650,6 +651,9 @@ public final class StartingBookEvents {
 
         LOGGER.info("[DungeonTrain] BurnableBook: detected dropped burnable book — burning entity {} ({} ticks)",
             item.getUUID(), BURN_DURATION_TICKS);
+
+        // Opt-in author credit, off by default — the book's writer is named as it catches fire.
+        BookBurnAuthorMessage.announce(level, item, stack);
 
         notifyIfBurnedUnread(item, stack);
     }
