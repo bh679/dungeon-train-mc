@@ -70,6 +70,12 @@ public final class CommandMenuGuiScreen extends Screen {
     /** Width of the scrollbar drawn inside the panel's right edge when a list overflows. */
     private static final int SCROLLBAR_W = 3;
 
+    /** Clear space kept between the panels and the window edge. */
+    private static final int EDGE_MARGIN = 6;
+
+    /** Floor for a panel's width when everything is scaled down to fit a narrow window. */
+    private static final int MIN_PANEL_W = 60;
+
     // Panel geometry, recomputed each frame in render() and read by the hit-test.
     private int mainX, mainY, mainW, mainH;
     private int sideX, sideY, sideW, sideH;
@@ -161,8 +167,23 @@ public final class CommandMenuGuiScreen extends Screen {
             sideH = 0;
         }
 
-        int totalW = mainW + (hasSide ? CommandMenuLayout.SIDE_GAP_PX + sideW : 0);
-        mainX = (this.width - totalW) / 2;
+        // Shrink to fit rather than overflow. Screens declare a width in the abstract units
+        // MenuScreen#panelWidth speaks, and a wide one beside its side panel can ask for more
+        // than the window has: the package list wants 3.6 units (450px) plus a 200px side panel,
+        // which does not fit the 640px logical width of a 1920 window at GUI scale 3. Centring
+        // that unchecked put the left edge at a negative x and clipped BOTH panels off the
+        // screen edges. Scaling both by the same factor keeps their relative proportions, and
+        // cell labels already truncate to their cell.
+        int gap = hasSide ? CommandMenuLayout.SIDE_GAP_PX : 0;
+        int avail = Math.max(MIN_PANEL_W + gap, this.width - EDGE_MARGIN * 2);
+        int totalW = mainW + gap + sideW;
+        if (totalW > avail) {
+            double f = (double) (avail - gap) / (double) (totalW - gap);
+            mainW = Math.max(MIN_PANEL_W, (int) Math.floor(mainW * f));
+            if (hasSide) sideW = Math.max(MIN_PANEL_W, (int) Math.floor(sideW * f));
+            totalW = mainW + gap + sideW;
+        }
+        mainX = Math.max(EDGE_MARGIN, (this.width - totalW) / 2);
 
         // Top-anchored, not centred — see PANEL_TOP. Both panels share the top edge so the
         // side panel doesn't slide against the main one as either one's row count changes.
