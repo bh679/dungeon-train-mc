@@ -46,6 +46,13 @@ ALLOWED = (
     "config/khi.toml",                              # Kinetic Hosting affiliate URL + banner text
     "config/smoothswapping.json",                   # tuned Smooth Swapping animation
     "resourcepacks/DungeonTrain-*-compat.zip",      # companion-mod lang overlays, one per locale
+    "TrashSlotSaveState.default.json",              # seeds TrashSlot's trash slot hidden on every screen
+    # Deliberately ONE line: `key_key.trashslot.toggle:key.keyboard.unknown`. Minecraft applies the
+    # entries it finds and leaves every absent setting at its own default, so the pack unbinds the
+    # TrashSlot toggle without asserting a view on anyone's controls/video/audio. Keep it one line:
+    # overrides/ is re-copied on every pack update, so any setting named here is reset for every
+    # player each time they update.
+    "options.txt",
 )
 
 # Config files the mod compares against defaults and treats a deviation as Free Play, keyed to
