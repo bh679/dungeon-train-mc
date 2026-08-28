@@ -5,6 +5,8 @@ import com.mojang.logging.LogUtils;
 import com.mojang.blaze3d.systems.RenderSystem;
 import games.brennan.dungeontrain.block.SkyboxSky;
 import games.brennan.dungeontrain.client.NetherSkyRenderer;
+import games.brennan.dungeontrain.client.NightSkyRenderer;
+import games.brennan.dungeontrain.client.SunriseSkyRenderer;
 import games.brennan.dungeontrain.client.UpsideDownSkyRenderer;
 import games.brennan.dungeontrain.client.VoidSkyRenderer;
 import net.minecraft.client.Camera;
@@ -172,6 +174,8 @@ public final class SkyboxStencil {
             case END -> VoidSkyRenderer.renderAsSkySource(frustumMatrix);
             case NETHER -> NetherSkyRenderer.renderAsSkySource(frustumMatrix, camera);
             case UPSIDE_DOWN -> UpsideDownSkyRenderer.renderAsSkySource(frustumMatrix, partialTick);
+            case NIGHT -> NightSkyRenderer.renderAsSkySource(frustumMatrix, partialTick);
+            case SUNRISE -> SunriseSkyRenderer.renderAsSkySource(frustumMatrix, partialTick);
         }
 
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
