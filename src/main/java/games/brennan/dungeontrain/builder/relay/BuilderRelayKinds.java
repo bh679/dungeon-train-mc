@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.builder.relay;
 
+import games.brennan.dungeontrain.builder.BuilderMode;
 import games.brennan.dungeontrain.builder.BuilderPhotoPaths;
 
 /**
@@ -39,6 +40,50 @@ public final class BuilderRelayKinds {
             case PART -> PART;
             case TRACK -> TRACK;
             case PORTAL_ROOM -> PORTAL_ROOM;
+        };
+    }
+
+    /**
+     * The store a relay kind string names — the exact inverse of {@link #idOf}.
+     *
+     * <p>Needed by the download path, which is handed a kind by the relay and has to decide which
+     * store to write the template into. Stated here beside its inverse rather than as a second switch
+     * at the point of use, for the same reason {@link #idOf} is: the two must stay each other's
+     * mirror, and a pair in one file can be tested as a round trip.</p>
+     *
+     * @return null for a kind this build of the mod does not know, which the caller must refuse
+     *         rather than guess at — filing a build in the wrong store puts it where nothing looks
+     */
+    public static BuilderPhotoPaths.Kind kindOf(String kindId) {
+        if (kindId == null) return null;
+        return switch (kindId) {
+            case CARRIAGE -> BuilderPhotoPaths.Kind.CARRIAGE;
+            case CARRIAGE_GROUP -> BuilderPhotoPaths.Kind.CARRIAGE_GROUP;
+            case CONTENTS -> BuilderPhotoPaths.Kind.CONTENTS;
+            case PART -> BuilderPhotoPaths.Kind.PART;
+            case TRACK -> BuilderPhotoPaths.Kind.TRACK;
+            case PORTAL_ROOM -> BuilderPhotoPaths.Kind.PORTAL_ROOM;
+            default -> null;
+        };
+    }
+
+    /**
+     * The builder mode a template of this kind is edited in — which arm of the Train Builder has to
+     * be standing before the thing can be opened.
+     *
+     * <p>Asked by the download path, and only there. Everywhere else the mode comes first and decides
+     * what may be authored; a download arrives the other way round, holding a kind and needing the
+     * mode that goes with it. The four arms are exhaustive: a carriage and a run of them are built
+     * from outside, a room and a shell part from inside one, a rail in Tracks &amp; Tunnels, and a
+     * portal room in Train Dimensions.</p>
+     */
+    public static BuilderMode modeFor(BuilderPhotoPaths.Kind kind) {
+        if (kind == null) return null;
+        return switch (kind) {
+            case CARRIAGE, CARRIAGE_GROUP -> BuilderMode.TRAIN_OUTSIDE;
+            case CONTENTS, PART -> BuilderMode.INSIDE_CARRIAGE;
+            case TRACK -> BuilderMode.TRACKS_TUNNELS;
+            case PORTAL_ROOM -> BuilderMode.TRAIN_DIMENSIONS;
         };
     }
 

@@ -120,61 +120,145 @@ class PlayerDataBackupTest {
         assertEquals(2, second.fileCount());
     }
 
-    @Test
-    void pruningKeepsOnePerDayBeyondTheRecentWindow() throws IOException {
-        Files.createDirectories(backups());
-        // Backing up on every template save and death means the recent window can be a single
-        // afternoon; without a per-day ladder, "restore what I had last week" stops being possible.
-        for (int i = 1; i <= PlayerDataBackup.KEEP_NEWEST; i++) {
-            write(backups().resolve(String.format("dungeontrain-backup-20260220-%06d.zip", i)), "z");
-        }
-        for (int day = 1; day <= 5; day++) {
-            for (int n = 1; n <= 3; n++) {
-                write(backups().resolve(
-                    String.format("dungeontrain-backup-2026021%d-%06d.zip", day, n)), "z");
-            }
-        }
-
-        PlayerDataBackup.prune(backups());
-
-        List<Path> left = PlayerDataBackup.listArchives(backups());
-        // The 20 recent ones (all on 20260220), one survivor for each of the 5 earlier days, and
-        // the very oldest archive, which is always kept on top of the ladder.
-        assertEquals(PlayerDataBackup.KEEP_NEWEST + 5 + 1, left.size());
-        for (int day = 1; day <= 5; day++) {
-            String prefix = String.format("dungeontrain-backup-2026021%d-", day);
-            List<Path> forDay = left.stream()
-                .filter(p -> p.getFileName().toString().startsWith(prefix)).toList();
-            // Day 1 also holds the very oldest archive, which survives unconditionally.
-            assertEquals(day == 1 ? 2 : 1, forDay.size(), "wrong survivor count for day " + day);
-            assertTrue(forDay.get(0).getFileName().toString().endsWith("000003.zip"),
-                "that day's newest must be the survivor");
-        }
-        assertTrue(left.contains(backups().resolve("dungeontrain-backup-20260211-000001.zip")),
-            "the pre-migration snapshot is never pruned");
+    /** Name an archive the way create() does, so the tests exercise the real grammar. */
+    private static String archiveName(String stamp, String version) {
+        return "dungeontrain-backup-" + stamp + (version.isEmpty() ? "" : "-v" + version) + ".zip";
     }
 
     @Test
-    void pruningKeepsTheNewestAndAlwaysTheOldest() throws IOException {
+    void pruningKeepsTheNewestNOfEachVersion() throws IOException {
         Files.createDirectories(backups());
-        // Named by timestamp, and the name IS the ordering — so these stand in for real archives.
-        // All on ONE day, so the per-day ladder can't rescue any of them and only the recent
-        // window plus the oldest survive.
-        int total = PlayerDataBackup.KEEP_NEWEST + 5;
-        for (int i = 1; i <= total; i++) {
-            write(backups().resolve(String.format("dungeontrain-backup-20260101-%06d.zip", i)), "z");
+        for (String version : List.of("0.700.0", "0.701.0")) {
+            for (int i = 1; i <= 8; i++) {
+                write(backups().resolve(archiveName(String.format("2026030%d-00000%d", 1, i), version)), "z");
+            }
         }
-        Path oldest = backups().resolve("dungeontrain-backup-20260101-000001.zip");
-        Path newest = backups().resolve(
-            String.format("dungeontrain-backup-20260101-%06d.zip", total));
 
-        PlayerDataBackup.prune(backups());
+        PlayerDataBackup.prune(backups(), 3);
 
         List<Path> left = PlayerDataBackup.listArchives(backups());
-        assertEquals(PlayerDataBackup.KEEP_NEWEST + 1, left.size());
-        assertTrue(left.contains(newest));
-        assertTrue(left.contains(oldest),
-            "the oldest archive is the pre-migration snapshot — the only record of what was there first");
+        for (String version : List.of("0.700.0", "0.701.0")) {
+            List<Path> forVersion = left.stream()
+                .filter(p -> PlayerDataBackup.versionOf(p).equals(version)).toList();
+            // Three kept per version, plus the single oldest archive overall, which is exempt.
+            assertTrue(forVersion.size() == 3 || forVersion.size() == 4,
+                version + " kept " + forVersion.size());
+            assertTrue(forVersion.stream().anyMatch(p -> p.getFileName().toString().contains("000008")),
+                "the newest of each version must survive");
+        }
+    }
+
+    @Test
+    void versionsAreCountedSeparately() throws IOException {
+        Files.createDirectories(backups());
+        // One version far over the cap, another well under it. The under one must be untouched.
+        for (int i = 1; i <= 6; i++) {
+            write(backups().resolve(archiveName("20260301-00000" + i, "0.700.0")), "z");
+        }
+        write(backups().resolve(archiveName("20260302-000001", "0.701.0")), "z");
+
+        PlayerDataBackup.prune(backups(), 2);
+
+        List<Path> left = PlayerDataBackup.listArchives(backups());
+        assertEquals(1, left.stream().filter(p -> PlayerDataBackup.versionOf(p).equals("0.701.0")).count(),
+            "a version under the cap must not lose anything to a noisy neighbour");
+    }
+
+    @Test
+    void archivesFromBeforeVersionedNamesFormTheirOwnGroup() throws IOException {
+        Files.createDirectories(backups());
+        for (int i = 1; i <= 4; i++) {
+            write(backups().resolve(archiveName("20260301-00000" + i, "")), "z");
+        }
+        write(backups().resolve(archiveName("20260302-000001", "0.701.0")), "z");
+
+        PlayerDataBackup.prune(backups(), 2);
+
+        List<Path> left = PlayerDataBackup.listArchives(backups());
+        assertEquals("", PlayerDataBackup.versionOf(
+            backups().resolve(archiveName("20260301-000001", ""))));
+        // 2 legacy + the exempt oldest + 1 versioned.
+        assertEquals(4, left.size());
+    }
+
+    @Test
+    void theOldestArchiveSurvivesTheCap() throws IOException {
+        Files.createDirectories(backups());
+        for (int i = 1; i <= 5; i++) {
+            write(backups().resolve(archiveName("20260301-00000" + i, "0.700.0")), "z");
+        }
+
+        PlayerDataBackup.prune(backups(), 1);
+
+        List<Path> left = PlayerDataBackup.listArchives(backups());
+        assertEquals(2, left.size(), "the newest under the cap, plus the exempt oldest");
+        assertTrue(left.stream().anyMatch(p -> p.getFileName().toString().contains("000001")),
+            "the pre-migration snapshot is never dropped");
+    }
+
+    @Test
+    void orderingSurvivesAVersionRollingOverTen() throws IOException {
+        Files.createDirectories(backups());
+        // 0.10.0 sorts BEFORE 0.9.0 lexicographically. If the version were a filename PREFIX, or if
+        // sorting used the whole name, the newer archive would be treated as the older one.
+        Path older = backups().resolve(archiveName("20260301-000001", "0.9.0"));
+        Path newer = backups().resolve(archiveName("20260302-000001", "0.10.0"));
+        write(older, "z");
+        write(newer, "z");
+
+        List<Path> listed = PlayerDataBackup.listArchives(backups());
+
+        assertEquals(newer, listed.get(0), "newest first, by timestamp not by version string");
+        assertEquals(older, listed.get(1));
+    }
+
+    @Test
+    void clearRemovesEveryArchiveAndReportsTheSpace() throws IOException {
+        Files.createDirectories(backups());
+        write(backups().resolve(archiveName("20260301-000001", "0.700.0")), "0123456789");
+        write(backups().resolve(archiveName("20260301-000002", "0.700.0")), "0123456789");
+        // A file that is not a backup must survive: clear() works off the archive naming, so it
+        // cannot take something of the player's with it.
+        write(backups().resolve("notes.txt"), "keep me");
+
+        PlayerDataBackup.ClearResult result = PlayerDataBackup.clear(backups());
+
+        assertEquals(2, result.deleted());
+        assertEquals(20L, result.bytesFreed());
+        assertTrue(result.clean());
+        assertEquals(List.of(), PlayerDataBackup.listArchives(backups()));
+        assertTrue(Files.exists(backups().resolve("notes.txt")));
+    }
+
+    @Test
+    void clearOnAnAbsentFolderIsANoOp() {
+        PlayerDataBackup.ClearResult result = PlayerDataBackup.clear(tmp.resolve("nope"));
+
+        assertEquals(0, result.deleted());
+        assertEquals(0L, result.bytesFreed());
+        assertTrue(result.clean());
+    }
+
+    @Test
+    void totalSizeAddsUpEveryArchiveAndIgnoresOtherFiles() throws IOException {
+        Files.createDirectories(backups());
+        write(backups().resolve(archiveName("20260301-000001", "0.700.0")), "12345");
+        write(backups().resolve(archiveName("20260301-000002", "0.700.0")), "12345");
+        write(backups().resolve("notes.txt"), "not an archive");
+
+        assertEquals(10L, PlayerDataBackup.totalSize(backups()));
+        assertEquals(0L, PlayerDataBackup.totalSize(tmp.resolve("nope")));
+    }
+
+    @Test
+    void bytesAreFormattedTheWayAFileManagerWouldShowThem() {
+        assertEquals("0 B", PlayerDataBackup.formatBytes(0));
+        assertEquals("512 B", PlayerDataBackup.formatBytes(512));
+        assertEquals("1 KB", PlayerDataBackup.formatBytes(1024));
+        assertEquals("1.0 MB", PlayerDataBackup.formatBytes(1024L * 1024));
+        assertEquals("1.5 MB", PlayerDataBackup.formatBytes(1024L * 1024 * 3 / 2));
+        assertEquals("1.0 GB", PlayerDataBackup.formatBytes(1024L * 1024 * 1024));
+        assertEquals("2.5 GB", PlayerDataBackup.formatBytes(1024L * 1024 * 1024 * 5 / 2));
     }
 
     @Test

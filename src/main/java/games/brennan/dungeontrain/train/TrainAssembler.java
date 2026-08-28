@@ -222,13 +222,11 @@ public final class TrainAssembler {
     /** Fold a lease's opaque delta log (seq &gt; baseSeq, ascending seq) onto its decoded base snapshot. */
     private static net.minecraft.nbt.CompoundTag foldLeaseDeltas(net.minecraft.nbt.CompoundTag base,
                                                                  SharedCarriageClient.PoolLease lease) {
-        List<SharedCarriageClient.DeltaRec> deltas = lease.deltas();
-        if (deltas == null || deltas.isEmpty()) return base;
-        List<SharedCarriageClient.DeltaRec> sorted = new java.util.ArrayList<>(deltas);
-        sorted.sort(java.util.Comparator.comparingInt(SharedCarriageClient.DeltaRec::seq));
+        List<SharedCarriageClient.DeltaRec> pending =
+                SharedCarriageClient.pendingDeltas(lease.deltas(), lease.baseSeq());
+        if (pending.isEmpty()) return base;
         net.minecraft.nbt.CompoundTag folded = base;
-        for (SharedCarriageClient.DeltaRec d : sorted) {
-            if (d.seq() <= lease.baseSeq()) continue; // already folded into the base blob
+        for (SharedCarriageClient.DeltaRec d : pending) {
             try {
                 folded = CarriageBlockSnapshot.applyDeltaCells(folded, CarriageBlockSnapshot.decode(d.cells()));
             } catch (Exception e) {
@@ -421,7 +419,14 @@ public final class TrainAssembler {
         // shell / contents / parts dimension gate makes the whole group's stage flip in lockstep
         // with the band beneath it, instead of trailing it by the appender's accumulated MIN_GAP /
         // collision drift (worst at the End and on leaving the Nether). See GateContext.forCarriageAtWorldX.
-        int groupAnchorWorldX = origin.getX() + enclosedStartOffset;
+        // Pin the gate X to whatever this anchor FIRST resolved at. An anchor can be spawned fresh
+        // more than once — cleanupGhostAnchors deletes + unregisters anchors past the visible edge and
+        // the appender re-spawns them — and by then the train has travelled, so a live re-sample lands
+        // in a different band and rebuilds the group as a different stage and a different carriage
+        // (the "one carriage at render distance loads from a different stage" report). Placement below
+        // still uses the live `origin`; only the gate input is stable. See Trains.gateWorldXOrRecord.
+        int placedAnchorWorldX = origin.getX() + enclosedStartOffset;
+        int groupAnchorWorldX = Trains.gateWorldXOrRecord(trainId, anchorPIdx, placedAnchorWorldX);
 
         int cleared = clearSubLevelVolume(level, origin, subLevelLength, dims);
         long tAfterClear = System.nanoTime();
@@ -648,8 +653,13 @@ public final class TrainAssembler {
         Trains.registerSpawned(trainId, anchorPIdx, ship);
 
         long tEnd = System.nanoTime();
-        LOGGER.info("[DungeonTrain] Spawned group anchorPIdx={} groupSize={} enclosed=[{}] pads={} trainId={} ship id={} shipyardOrigin={} blocks={} timing(ms): clear={} place={} assemble={} contents={} total={}",
+        // stages=[...] and gateX are the only in-log view of the worldgen stage this group resolved.
+        // A second spawn of the same anchorPIdx must show the SAME stages and the SAME enclosed
+        // variants as the first — that equality is what Trains.gateWorldXOrRecord buys, and how the
+        // "different stage at render distance" regression would announce itself again.
+        LOGGER.info("[DungeonTrain] Spawned group anchorPIdx={} groupSize={} enclosed=[{}] stages=[{}] gateX={} placedX={} pads={} trainId={} ship id={} shipyardOrigin={} blocks={} timing(ms): clear={} place={} assemble={} contents={} total={}",
             anchorPIdx, groupSize, summariseVariants(enclosedBySlot),
+            summariseStages(stageBySlot), groupAnchorWorldX, placedAnchorWorldX,
             wrapWithPads ? "back+front" : "none",
             trainId, ship.id(), shipyardOrigin, blocks.size(),
             (tAfterClear - tStart) / 1_000_000,
@@ -659,6 +669,20 @@ public final class TrainAssembler {
             (tEnd - tStart) / 1_000_000);
 
         return ship;
+    }
+
+    /**
+     * Comma-joined stage ids for the log line. {@code StageResolver.stageIdFor} returns null when no
+     * stage covers a slot's level/phase (it warns separately), so nulls render as {@code -} rather
+     * than blowing up the spawn on a logging call.
+     */
+    private static String summariseStages(String[] stages) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < stages.length; i++) {
+            if (i > 0) sb.append(',');
+            sb.append(stages[i] == null ? "-" : stages[i]);
+        }
+        return sb.toString();
     }
 
     private static String summariseVariants(CarriageVariant[] variants) {

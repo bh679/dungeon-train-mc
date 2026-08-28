@@ -85,4 +85,29 @@ class GlobalPlayerStatsTest {
     void emptyObjectIsAFreshPlayer() {
         assertEquals(GlobalPlayerStats.Data.EMPTY, parse("{}"));
     }
+
+    @Test
+    @DisplayName("a file with no building object reads zero and keeps everything else")
+    void buildingDefaultsToZero() {
+        GlobalPlayerStats.Data data = parse(LEGACY);
+        assertEquals(0L, data.builderTicks());
+        assertEquals(0L, data.editorTicks());
+        assertEquals(0L, data.buildingTicks());
+        assertEquals(864000L, data.trainTicks());
+        assertEquals(17L, data.totalEchos());
+    }
+
+    @Test
+    @DisplayName("builder and editor ticks round-trip, and the board reads their sum")
+    void buildingRoundTrips() {
+        GlobalPlayerStats.Data before = GlobalPlayerStats.Data.EMPTY
+                .plusBuilderTicks(72_000L)
+                .plusEditorTicks(24_000L);
+        JsonElement json = GlobalPlayerStats.Data.CODEC.encodeStart(JsonOps.INSTANCE, before)
+                .result().orElseThrow();
+        GlobalPlayerStats.Data after = parse(json.toString());
+        assertEquals(72_000L, after.builderTicks());
+        assertEquals(24_000L, after.editorTicks());
+        assertEquals(96_000L, after.buildingTicks());
+    }
 }

@@ -285,6 +285,8 @@ jobs:
             jei(optional)
             scribble(optional)
             shulkerboxtooltip(optional)
+            trashslot(optional)
+            balm(optional)
           java: 21
           retry-attempts: 2
           retry-delay: 10000
