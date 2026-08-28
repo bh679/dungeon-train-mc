@@ -9532,6 +9532,18 @@
       "released": true,
       "released_in": "v0.698.0",
       "released_at": "2026-08-28T11:49:38Z"
+    },
+    {
+      "id": "backward-generation-stall",
+      "version": "0.700.0",
+      "type": "fix",
+      "title": "OH MY LORD I DID IT! I FIXED THE BACKWARD BUG",
+      "summary": "This dam bug has been plaguing me for months. Since the start of this project, I wanted the train to go infinitely backwards. Well today, I am proud to say - it goes a god dam long way backwards! How far? Im sure one of you will tell me if its not infinite. Please go forth and explore! Sincerely, Brennan.",
+      "pr": 1160,
+      "date": "2026-08-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
