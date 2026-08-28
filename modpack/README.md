@@ -129,7 +129,7 @@ produce that:
 | File | Effect |
 |---|---|
 | `TrashSlotSaveState.default.json` | TrashSlot copies this to `TrashSlotSaveState.json` on first run. It seeds `InventoryScreen` + `CraftingScreen` — the only two screens the mod registers as `DEFAULT_ENABLED` — to `isEnabled: false`, and marks the `toggleOn` / `toggledOff` hints as already seen so the game never prompts players to press a key that isn't bound. `slotX: 60` / `slotY: 83` mirror the mod's own computed defaults for a 176×166 screen, so the slot sits in its normal place if it is ever enabled. |
-| `options.txt` | One line: `key_key.trashslot.toggle:key.keyboard.unknown`. Balm's Kuma layer wraps a **real vanilla `KeyMapping`** on NeoForge, so the binding lives in vanilla `options.txt` and there is no lighter file to target. |
+| `TrashSlotKeybindDefault` (in the mod, **not** an override) | Clears the "Show/Hide TrashSlot" keybinding once, at the first title screen, then writes a marker so a player who binds their own key is never overridden. Balm's Kuma layer wraps a **real vanilla `KeyMapping`**, so the binding lives in vanilla `options.txt` — and shipping *that* is rejected here (see the companion resourcepack note below), because a launcher copies it wholesale and resets the player's other options. The one-shot touches exactly one mapping instead. Finds TrashSlot by keybind name, so DT has no dependency on it. |
 
 **Two consequences to keep in mind before touching either file:**
 
@@ -138,10 +138,11 @@ produce that:
    `allowDeletionWhileTrashSlotIsInvisible` and `deletionDenyList` — visibility is per-screen
    save-state that *only* the keybind flips. With the key unbound, a player who wants the trash
    slot must first bind one in Options → Controls → TrashSlot.
-2. **`options.txt` is re-copied on every pack update**, like everything in `overrides/`. It is kept
-   to a single line precisely so an update resets nothing else: Minecraft applies the entries it
-   finds and leaves absent settings at their own defaults. **Never add a second line** without
-   accepting that every player's value for that setting is reset on their next pack update.
+2. **Don't be tempted to do the unbind with a shipped `options.txt`.** It looks like the obvious
+   one-line fix and it is guarded against: `check-overrides.py` rejects the file and
+   `test_options_txt_at_root_fails` pins that behaviour, because launchers copy `options.txt`
+   wholesale and would reset every player's controls, video and audio on each pack update. The
+   one-shot above exists precisely to avoid that.
 
 ## Declared dependencies (CurseForge "Relations")
 
