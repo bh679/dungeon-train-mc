@@ -72,6 +72,10 @@ public enum ClientOptionsTab {
         CINEMATIC_HOTKEY,
         /** Where restore points of builds and progress are written. */
         BACKUPS,
+        /** How many archives to keep per Dungeon Train version. */
+        BACKUPS_PER_VERSION,
+        /** Deletes every archive, in the instance and outside it. Shows the size on disk. */
+        CLEAR_BACKUPS,
         /** Only when {@code TranslationTarget.resolveForClient()} names a language to edit. */
         TRANSLATE,
 
@@ -108,6 +112,9 @@ public enum ClientOptionsTab {
                 rows.add(Row.BOOK_AUTHOR_CHAT);
                 rows.add(Row.CINEMATIC_HOTKEY);
                 rows.add(Row.BACKUPS);
+                // Adjacent so the width packer pairs the two short backup rows on one line.
+                rows.add(Row.BACKUPS_PER_VERSION);
+                rows.add(Row.CLEAR_BACKUPS);
                 if (hasTranslateTarget) {
                     rows.add(Row.TRANSLATE);
                 }

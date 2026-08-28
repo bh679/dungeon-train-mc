@@ -5,6 +5,8 @@ import games.brennan.dungeontrain.client.localization.edit.TranslationScreen;
 import games.brennan.dungeontrain.client.localization.edit.TranslationTarget;
 import games.brennan.dungeontrain.client.sound.TrainVolumeOption;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
+import games.brennan.dungeontrain.data.PlayerDataBackup;
+import games.brennan.dungeontrain.data.PlayerDataPaths;
 import games.brennan.dungeontrain.data.BackupMode;
 import games.brennan.dungeontrain.config.ContentMode;
 import games.brennan.dungeontrain.config.CustomContentPreference;
@@ -17,6 +19,7 @@ import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.CycleButton;
 import net.minecraft.client.gui.components.OptionsList;
+import net.minecraft.client.gui.screens.ConfirmScreen;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.components.tabs.Tab;
 import net.minecraft.client.gui.components.tabs.TabManager;
@@ -27,6 +30,8 @@ import net.minecraft.client.gui.screens.options.OptionsSubScreen;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 
+import java.nio.file.Path;
+import java.util.Optional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -77,6 +82,9 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
 
     /** Ceiling ladder shared with the X-menu row: 0 = AUTO, then fixed long-edge caps. */
     private static final List<Integer> RESOLUTION_VALUES = List.of(0, 1080, 1440, 2160);
+
+    /** Offered values for "Backups per version". A ladder, not a slider — see the row's build case. */
+    private static final List<Integer> BACKUPS_PER_VERSION_VALUES = List.of(1, 3, 5, 10, 20);
 
     private final TabManager tabManager = new TabManager(this::addRenderableWidget, this::removeWidget);
     private final List<OptionsTab> tabs = new ArrayList<>();
@@ -258,6 +266,18 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                 }
                 yield out;
             }
+            case BACKUPS_PER_VERSION -> {
+                List<Component> out = new ArrayList<>();
+                for (int n : BACKUPS_PER_VERSION_VALUES) {
+                    out.add(value("gui.dungeontrain.options.backups_per_version",
+                        Component.literal(Integer.toString(n))));
+                }
+                yield out;
+            }
+            // The size is read at build time, so the candidate has to stand in for the widest it
+            // could ever be rather than whatever it happens to be right now.
+            case CLEAR_BACKUPS -> List.of(Component.translatable(
+                "gui.dungeontrain.options.clear_backups", "000.0 GB"));
             case BACKUPS -> {
                 List<Component> out = new ArrayList<>();
                 for (BackupMode mode : BackupMode.values()) {
@@ -415,6 +435,27 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                 yield button;
             }
 
+            case BACKUPS_PER_VERSION -> withTip(
+                    // A cycle button, not a slider: slider values are only committed by
+                    // applyUnsavedChanges() when the screen closes, and a retention setting should
+                    // bite when it is set, not later.
+                    CycleButton.<Integer>builder(n -> Component.literal(Integer.toString(n)))
+                            .withValues(BACKUPS_PER_VERSION_VALUES)
+                            .withInitialValue(nearestBackupsPerVersion(
+                                    ClientDisplayConfig.getBackupsPerVersion()))
+                            .create(0, 0, width, ROW_H,
+                                    Component.translatable("gui.dungeontrain.options.backups_per_version"),
+                                    (btn, n) -> ClientDisplayConfig.setBackupsPerVersion(n)),
+                    "gui.dungeontrain.options.backups_per_version.tip");
+
+            case CLEAR_BACKUPS -> withTip(
+                    Button.builder(
+                            Component.translatable("gui.dungeontrain.options.clear_backups",
+                                PlayerDataBackup.formatBytes(totalBackupBytes())),
+                            b -> confirmClearBackups())
+                            .bounds(0, 0, width, ROW_H).build(),
+                    "gui.dungeontrain.options.clear_backups.tip");
+
             // Snapshot max resolution ceiling (0 = AUTO).
             case SNAPSHOT_MAX_RES -> {
                 int currentRes = ClientDisplayConfig.getRideSnapshotMaxResolution();
@@ -489,6 +530,58 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
         return value <= 0
                 ? Component.translatable("gui.dungeontrain.options.snapshot_max_res.auto")
                 : Component.literal(value + "p"); // "1080p" — a unit, not prose
+    }
+
+    /**
+     * The offered value at or above the stored one, so a config written by hand (the range allows
+     * 1-50) still shows something truthful rather than snapping silently to the ladder's first entry.
+     */
+    private static int nearestBackupsPerVersion(int stored) {
+        for (int n : BACKUPS_PER_VERSION_VALUES) {
+            if (n >= stored) return n;
+        }
+        return BACKUPS_PER_VERSION_VALUES.get(BACKUPS_PER_VERSION_VALUES.size() - 1);
+    }
+
+    /** Bytes held by archives in BOTH roots — the figure the Clear button reports. */
+    private static long totalBackupBytes() {
+        long total = PlayerDataBackup.totalSize(PlayerDataPaths.backupsRoot());
+        return total + PlayerDataPaths.externalBackupsRoot()
+            .map(PlayerDataBackup::totalSize).orElse(0L);
+    }
+
+    /**
+     * Ask before deleting, then delete from both roots.
+     *
+     * <p>The message names the out-of-instance folder explicitly. "Clear all backups" that quietly
+     * spared a folder the player cannot see would be the worse surprise of the two, and this is the
+     * only place that folder is ever surfaced.</p>
+     *
+     * <p>Returning re-runs {@code init()}, which rebuilds the button label — so the size refreshes
+     * to "0 B" without any extra plumbing.</p>
+     */
+    private void confirmClearBackups() {
+        Path inside = PlayerDataPaths.backupsRoot();
+        Optional<Path> outside = PlayerDataPaths.externalBackupsRoot();
+        int count = PlayerDataBackup.listArchives(inside).size()
+            + outside.map(p -> PlayerDataBackup.listArchives(p).size()).orElse(0);
+        Component where = outside
+            .map(p -> (Component) Component.translatable(
+                "gui.dungeontrain.options.clear_backups.confirm.both", inside.toString(), p.toString()))
+            .orElseGet(() -> Component.translatable(
+                "gui.dungeontrain.options.clear_backups.confirm.one", inside.toString()));
+        this.minecraft.setScreen(new ConfirmScreen(
+                proceed -> {
+                    if (proceed) {
+                        PlayerDataBackup.clear(inside);
+                        outside.ifPresent(PlayerDataBackup::clear);
+                    }
+                    this.minecraft.setScreen(this);
+                },
+                Component.translatable("gui.dungeontrain.options.clear_backups.confirm.title", count),
+                where,
+                Component.translatable("gui.dungeontrain.options.clear_backups.confirm.yes"),
+                CommonComponents.GUI_CANCEL));
     }
 
     /** On / Instanced / Off, each with its own translated label. */

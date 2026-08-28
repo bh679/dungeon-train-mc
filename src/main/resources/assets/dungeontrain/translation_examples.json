@@ -2753,7 +2753,10 @@
   "gui.dungeontrain.builder.profile.collision.title": {
     "1": {
       "label": "the build whose name this install already uses",
-      "examples": ["Brick Carriage", "Long Hall"]
+      "examples": [
+        "Brick Carriage",
+        "Long Hall"
+      ]
     }
   },
   "gui.dungeontrain.builder.profile.saved": {
@@ -3502,6 +3505,46 @@
       "label": "the folder outside the Minecraft install where it is kept",
       "examples": [
         "/Users/sam/Library/Application Support/DungeonTrain/backups"
+      ]
+    }
+  },
+  "gui.dungeontrain.options.clear_backups": {
+    "1": {
+      "label": "the total size of the backups on disk",
+      "examples": [
+        "1.2 GB",
+        "512 KB",
+        "0 B"
+      ]
+    }
+  },
+  "gui.dungeontrain.options.clear_backups.confirm.title": {
+    "1": {
+      "label": "how many backup files will be deleted",
+      "examples": [
+        "14"
+      ]
+    }
+  },
+  "gui.dungeontrain.options.clear_backups.confirm.both": {
+    "1": {
+      "label": "the backups folder inside the Minecraft install",
+      "examples": [
+        "/Users/sam/minecraft/dungeontrain/backups"
+      ]
+    },
+    "2": {
+      "label": "the backups folder outside the Minecraft install",
+      "examples": [
+        "/Users/sam/Library/Application Support/DungeonTrain/backups"
+      ]
+    }
+  },
+  "gui.dungeontrain.options.clear_backups.confirm.one": {
+    "1": {
+      "label": "the backups folder",
+      "examples": [
+        "/Users/sam/minecraft/dungeontrain/backups"
       ]
     }
   }

@@ -90,6 +90,20 @@ public final class PlayerDataBackupHook {
         }
     }
 
+    /**
+     * How many archives to keep per mod version.
+     *
+     * <p>Read the same guarded way as {@link #mode()}: the setting lives in the client config, and
+     * a dedicated server that never loaded it keeps the default rather than an accidental zero.</p>
+     */
+    static int perVersion() {
+        try {
+            return games.brennan.dungeontrain.config.ClientDisplayConfig.getBackupsPerVersion();
+        } catch (Throwable notOnThisSide) {
+            return PlayerDataBackup.DEFAULT_PER_VERSION;
+        }
+    }
+
     /** System property / environment names a server operator can set. */
     static final String OVERRIDE_PROPERTY = "dungeontrain.backups";
     static final String OVERRIDE_ENV = "DUNGEONTRAIN_BACKUPS";
@@ -218,11 +232,12 @@ public final class PlayerDataBackupHook {
         try {
             BackupMode mode = mode();
             if (!mode.writesAnything()) return;
+            int perVersion = perVersion();
             PlayerDataBackup.Result result = PlayerDataBackup.create(
-                PlayerDataPaths.backupsRoot(), sources(), reason, VersionInfo.VERSION);
+                PlayerDataPaths.backupsRoot(), sources(), reason, VersionInfo.VERSION, perVersion);
             if (mode.writesOutsideTheInstance() && result.wrote()) {
-                PlayerDataPaths.externalBackupsRoot().ifPresent(
-                    external -> PlayerDataBackup.mirror(result.archive().orElseThrow(), external));
+                PlayerDataPaths.externalBackupsRoot().ifPresent(external ->
+                    PlayerDataBackup.mirror(result.archive().orElseThrow(), external, perVersion));
             }
         } catch (Exception e) {
             LOGGER.warn("[DungeonTrain] Backup: couldn't write a restore point ({}): {}",

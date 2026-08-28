@@ -236,6 +236,12 @@ public final class ClientDisplayConfig {
      */
     public static final ModConfigSpec.EnumValue<BackupMode> BACKUP_MODE;
 
+    /**
+     * How many backup archives to keep per mod version. See
+     * {@link games.brennan.dungeontrain.data.PlayerDataBackup#prune}.
+     */
+    public static final ModConfigSpec.IntValue BACKUPS_PER_VERSION;
+
     /** The player's answer to the Political Filter prompt. See {@link #POLITICAL_FILTER}. */
     public enum PoliticalFilter {
         /** Never asked (or asked and dismissed before the prompt existed) — resolved from the locale. */
@@ -287,6 +293,7 @@ public final class ClientDisplayConfig {
         DEATH_SCREEN_LAST_NPS = pair.getLeft().deathScreenLastNps;
         POLITICAL_FILTER = pair.getLeft().politicalFilter;
         BACKUP_MODE = pair.getLeft().backupMode;
+        BACKUPS_PER_VERSION = pair.getLeft().backupsPerVersion;
         CONTENT_MODE = pair.getLeft().contentMode;
         CUSTOM_CONTENT_PREFERENCE = pair.getLeft().customContentPreference;
         CUSTOM_CONTENT_LAST_ANSWER = pair.getLeft().customContentLastAnswer;
@@ -551,6 +558,14 @@ public final class ClientDisplayConfig {
                          "root too — and certainly lost with the instance itself. OFF disables backups entirely.",
                          "Set from the Backups row in Options > Dungeon Train.")
                 .defineEnum("backupMode", BackupMode.DEFAULT);
+        ModConfigSpec.IntValue backupsPerVersion = b
+                .comment("How many backup archives to keep for each Dungeon Train version.",
+                         "Older archives of the same version are removed once there are more than this.",
+                         "Lowering it takes effect the next time a backup is written, which will remove",
+                         "archives already on disk. A total size ceiling also applies as a backstop.",
+                         "Set from the Backups per version row in Options > Dungeon Train.")
+                .defineInRange("backupsPerVersion",
+                    games.brennan.dungeontrain.data.PlayerDataBackup.DEFAULT_PER_VERSION, 1, 50);
         b.pop();
 
         b.push("configIntegrity");
@@ -597,7 +612,8 @@ public final class ClientDisplayConfig {
                 configDeviationAcknowledged, dpiBypassWarningOptedOut, bookAuthorBurnChat,
                 commandMenuSpace, templateBlocksMenuSpace, containerContentsMenuSpace,
                 blockVariantMenuSpace,
-                backupMode);
+                backupMode,
+                backupsPerVersion);
     }
 
     /**
@@ -776,6 +792,26 @@ public final class ClientDisplayConfig {
      */
     public static BackupMode getBackupMode() {
         return isLoaded() ? BACKUP_MODE.get() : BackupMode.DEFAULT;
+    }
+
+    /**
+     * Archives kept per mod version.
+     *
+     * <p>Falls back to the default (not to zero, and not to "unlimited") wherever the client spec
+     * is absent — a dedicated server reading this must get a sane retention, not one that either
+     * deletes everything or never prunes.</p>
+     */
+    public static int getBackupsPerVersion() {
+        return isLoaded()
+            ? BACKUPS_PER_VERSION.get()
+            : games.brennan.dungeontrain.data.PlayerDataBackup.DEFAULT_PER_VERSION;
+    }
+
+    public static void setBackupsPerVersion(int value) {
+        if (!isLoaded()) return;
+        if (BACKUPS_PER_VERSION.get() == value) return; // skip a needless TOML write
+        BACKUPS_PER_VERSION.set(value);
+        BACKUPS_PER_VERSION.save();
     }
 
     public static void setBackupMode(BackupMode value) {
@@ -1460,6 +1496,7 @@ public final class ClientDisplayConfig {
             ModConfigSpec.EnumValue<EditorMenuSpace> templateBlocksMenuSpace,
             ModConfigSpec.EnumValue<EditorMenuSpace> containerContentsMenuSpace,
             ModConfigSpec.EnumValue<EditorMenuSpace> blockVariantMenuSpace,
-            ModConfigSpec.EnumValue<BackupMode> backupMode
+            ModConfigSpec.EnumValue<BackupMode> backupMode,
+            ModConfigSpec.IntValue backupsPerVersion
     ) {}
 }

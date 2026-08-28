@@ -71,11 +71,11 @@ final class ClientOptionsTabTest {
     // ---- The conditional rows ----
 
     @Test
-    @DisplayName("Plain client: fifteen rows, neither conditional row present")
+    @DisplayName("Plain client: seventeen rows, neither conditional row present")
     void plainClient() {
         List<ClientOptionsTab.Row> rows = allRows(false, false);
 
-        assertEquals(15, rows.size());
+        assertEquals(17, rows.size());
         assertFalse(rows.contains(ClientOptionsTab.Row.POLITICAL_FILTER));
         assertFalse(rows.contains(ClientOptionsTab.Row.TRANSLATE));
     }
@@ -90,7 +90,9 @@ final class ClientOptionsTabTest {
                         ClientOptionsTab.Row.POLITICAL_FILTER,
                         ClientOptionsTab.Row.BOOK_AUTHOR_CHAT,
                         ClientOptionsTab.Row.CINEMATIC_HOTKEY,
-                        ClientOptionsTab.Row.BACKUPS),
+                        ClientOptionsTab.Row.BACKUPS,
+                        ClientOptionsTab.Row.BACKUPS_PER_VERSION,
+                        ClientOptionsTab.Row.CLEAR_BACKUPS),
                 general);
         assertFalse(general.contains(ClientOptionsTab.Row.TRANSLATE));
     }
@@ -110,7 +112,7 @@ final class ClientOptionsTabTest {
     void bothConditions_surfaceEveryRow() {
         List<ClientOptionsTab.Row> rows = allRows(true, true);
 
-        assertEquals(17, rows.size());
+        assertEquals(19, rows.size());
         assertEquals(EnumSet.allOf(ClientOptionsTab.Row.class), EnumSet.copyOf(rows),
                 "every Row constant must appear in some tab when both conditions hold");
     }
