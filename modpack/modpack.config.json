@@ -349,6 +349,24 @@
       "required": true,
       "modrinth_project": "shulkerboxtooltip",
       "modrinth_version": "IuqNIoAi"
+    },
+    {
+      "name": "TrashSlot",
+      "slug": "trashslot",
+      "project_id": 235577,
+      "file_id": 8163135,
+      "required": false,
+      "modrinth_project": "trashslot",
+      "modrinth_version": "HY8Ybozd"
+    },
+    {
+      "name": "Balm",
+      "slug": "balm",
+      "project_id": 531761,
+      "file_id": 8645517,
+      "required": true,
+      "modrinth_project": "balm",
+      "modrinth_version": "KgypwTqX"
     }
   ],
   "curseforge_relations": [
