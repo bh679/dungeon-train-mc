@@ -13,8 +13,10 @@ import org.joml.primitives.AABBdc;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -45,6 +47,11 @@ import java.util.UUID;
  * untracked by construction, so this was the backward-generation stall. At most one unsettled group
  * per lane is ever in flight (the appender's placement gate enforces it), so the exemption costs
  * nothing measurable.</p>
+ *
+ * <p><b>...and neither are their neighbours.</b> A seam is a relationship between two carriages, so
+ * exempting only the unsettled one just breaks the assumption from the other side: it keeps
+ * advancing with the train while an already-settled neighbour is parked, the pair drift at train
+ * speed, and every nudge is undone before the next reading. See {@link #settlingAnchors}.</p>
  */
 public final class PhysicsFreezeController {
 
@@ -77,17 +84,19 @@ public final class PhysicsFreezeController {
      * Pure decision core (no Minecraft/Sable types, unit-testable — mirrors
      * {@link PhysicsSubstepTuner#decideSubsteps}). Eager unfreeze, lazy freeze:
      * <ul>
-     *   <li>active OR unplaced + frozen → {@code UNFREEZE} (immediately);</li>
+     *   <li>active OR settling + frozen → {@code UNFREEZE} (immediately);</li>
      *   <li>inactive + not frozen + inactive ≥ {@link #FREEZE_GRACE_TICKS} → {@code FREEZE};</li>
      *   <li>otherwise hold.</li>
      * </ul>
      *
-     * <p>{@code unplaced} is a hard exemption, not a tie-breaker: an unsettled carriage must keep
-     * its per-tick teleport so the placement tracker can see its nudges land (see the class
-     * javadoc). It behaves exactly like {@code activeNow} — including immediate unfreeze.</p>
+     * <p>{@code settling} is a hard exemption, not a tie-breaker: an unsettled carriage — and its
+     * immediate neighbours, which are the other end of the seam it is settling against — must keep
+     * their per-tick teleport so the placement tracker can see its nudges land, and so the pair
+     * never drift apart at train speed (see the class javadoc and {@link #settlingAnchors}). It
+     * behaves exactly like {@code activeNow}, including immediate unfreeze.</p>
      */
-    static Action decide(boolean activeNow, boolean unplaced, int ticksInactive, boolean currentlyFrozen) {
-        if (activeNow || unplaced) return currentlyFrozen ? Action.UNFREEZE : Action.NONE;
+    static Action decide(boolean activeNow, boolean settling, int ticksInactive, boolean currentlyFrozen) {
+        if (activeNow || settling) return currentlyFrozen ? Action.UNFREEZE : Action.NONE;
         if (currentlyFrozen) return Action.NONE;
         return ticksInactive >= FREEZE_GRACE_TICKS ? Action.FREEZE : Action.NONE;
     }
@@ -104,6 +113,7 @@ public final class PhysicsFreezeController {
 
         int resident = 0, active = 0, frozen = 0;
         for (List<Trains.Carriage> train : trainsById.values()) {
+            Set<Integer> settlingAnchors = settlingAnchors(train);
             for (Trains.Carriage c : train) {
                 if (!(c.ship() instanceof SableManagedShip ship)) continue;
                 ServerSubLevel sl = ship.subLevel();
@@ -118,10 +128,10 @@ public final class PhysicsFreezeController {
                     continue;
                 }
 
-                // Short-circuits: the flag read is free, and the (bounded) entity scan runs only for
-                // untracked candidates.
-                boolean unplaced = !c.provider().isPlacedSuccessfully();
-                boolean activeNow = unplaced
+                // Short-circuits: the set lookup is cheap, and the (bounded) entity scan runs only
+                // for untracked candidates.
+                boolean settling = settlingAnchors.contains(c.provider().getPIdx());
+                boolean activeNow = settling
                     || !sl.getTrackingPlayers().isEmpty()
                     || hasLiveEntityAboard(level, ship);
                 if (activeNow) active++;
@@ -131,7 +141,7 @@ public final class PhysicsFreezeController {
                 int inactive = activeNow ? 0 : PhysicsFreeze.inactiveTicks(sl) + 1;
                 PhysicsFreeze.setInactiveTicks(sl, inactive);
 
-                switch (decide(activeNow, unplaced, inactive, frozenNow)) {
+                switch (decide(activeNow, settling, inactive, frozenNow)) {
                     case FREEZE -> PhysicsFreeze.freeze(sl);
                     case UNFREEZE -> PhysicsFreeze.unfreeze(sl);
                     case NONE -> { }
@@ -148,6 +158,39 @@ public final class PhysicsFreezeController {
             LOGGER.debug("[freeze] dim={} resident={} active={} frozen={}",
                 level.dimension().location(), resident, active, frozen);
         }
+    }
+
+    /**
+     * Anchors that must keep ticking: every unsettled group in {@code train}, plus each one's
+     * immediate neighbours on both sides.
+     *
+     * <p><b>Why the neighbours.</b> The placement tracker settles a group by measuring the seam
+     * against its train-facing neighbour and nudging. That model assumes the two share a motion
+     * frame. Exempting only the unsettled group breaks the assumption in the other direction: the
+     * unsettled group keeps advancing with the train while a neighbour that has already reached
+     * {@code placedSuccessfully} can be parked, so the pair drift together or apart at train speed
+     * and every nudge is undone before the next reading. Observed live as a group oscillating
+     * {@code colliding ↔ too-close} against its settled neighbour for the full settle budget. A seam
+     * is a relationship between two carriages, so both ends of it have to be live.</p>
+     *
+     * <p>Bounded by construction: at most one group per lane is unsettled at a time, so this exempts
+     * a handful of anchors, not the train.</p>
+     */
+    private static Set<Integer> settlingAnchors(List<Trains.Carriage> train) {
+        Set<Integer> unsettled = new HashSet<>();
+        for (Trains.Carriage c : train) {
+            if (!c.provider().isPlacedSuccessfully()) unsettled.add(c.provider().getPIdx());
+        }
+        if (unsettled.isEmpty()) return Set.of();
+        Set<Integer> out = new HashSet<>(unsettled);
+        for (Trains.Carriage c : train) {
+            int anchor = c.provider().getPIdx();
+            int groupSize = Math.max(1, c.provider().getGroupSize());
+            if (unsettled.contains(anchor + groupSize) || unsettled.contains(anchor - groupSize)) {
+                out.add(anchor);
+            }
+        }
+        return out;
     }
 
     /**

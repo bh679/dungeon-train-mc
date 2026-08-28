@@ -16,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * Pins the tab split {@link ClientOptionsTab} hands to {@link DungeonTrainClientOptionsScreen}.
  *
- * <p>Two of the seventeen rows are conditional — Political Filter on Chinese clients, Help Translate…
+ * <p>Two of the twenty-one rows are conditional — Political Filter on Chinese clients, Help Translate…
  * when a translation target resolves — and the screen packs rows two-across, so either one appearing
  * re-pairs the rows after it in its tab. These tests cover all four combinations, because the failure
  * mode is silent: a row quietly dropped from the model renders as a perfectly normal-looking tab that
@@ -71,11 +71,11 @@ final class ClientOptionsTabTest {
     // ---- The conditional rows ----
 
     @Test
-    @DisplayName("Plain client: sixteen rows, neither conditional row present")
+    @DisplayName("Plain client: nineteen rows, neither conditional row present")
     void plainClient() {
         List<ClientOptionsTab.Row> rows = allRows(false, false);
 
-        assertEquals(16, rows.size());
+        assertEquals(19, rows.size());
         assertFalse(rows.contains(ClientOptionsTab.Row.POLITICAL_FILTER));
         assertFalse(rows.contains(ClientOptionsTab.Row.TRANSLATE));
     }
@@ -90,19 +90,35 @@ final class ClientOptionsTabTest {
                         ClientOptionsTab.Row.POLITICAL_FILTER,
                         ClientOptionsTab.Row.BOOK_AUTHOR_CHAT,
                         ClientOptionsTab.Row.CINEMATIC_HOTKEY,
+                        ClientOptionsTab.Row.BACKPACK_BUTTON,
+                        ClientOptionsTab.Row.BACKUPS_HEADING,
                         ClientOptionsTab.Row.BACKUPS,
-                        ClientOptionsTab.Row.BACKPACK_BUTTON),
+                        ClientOptionsTab.Row.BACKUPS_PER_VERSION,
+                        ClientOptionsTab.Row.CLEAR_BACKUPS),
                 general);
         assertFalse(general.contains(ClientOptionsTab.Row.TRANSLATE));
     }
 
     @Test
-    @DisplayName("A translation target adds Help Translate… to the end of General")
+    @DisplayName("Help Translate sits above the backup block, not after it")
+    void translateSitsAboveTheBackupBlock() {
+        List<ClientOptionsTab.Row> general =
+                ClientOptionsTab.rowsFor(ClientOptionsTab.GENERAL, false, true);
+
+        assertTrue(general.indexOf(ClientOptionsTab.Row.TRANSLATE)
+                < general.indexOf(ClientOptionsTab.Row.BACKUPS_HEADING));
+    }
+
+    @Test
+    @DisplayName("A translation target adds Help Translate… after the ungrouped settings")
     void translateTarget_addsTranslateRow() {
         List<ClientOptionsTab.Row> general =
                 ClientOptionsTab.rowsFor(ClientOptionsTab.GENERAL, false, true);
 
-        assertEquals(ClientOptionsTab.Row.TRANSLATE, general.get(general.size() - 1));
+        // It used to close the tab; the backup block now does, so Translate is the last of the
+        // ungrouped rows rather than the last row outright.
+        assertEquals(ClientOptionsTab.Row.TRANSLATE,
+                general.get(general.indexOf(ClientOptionsTab.Row.BACKUPS_HEADING) - 1));
         assertFalse(general.contains(ClientOptionsTab.Row.POLITICAL_FILTER));
     }
 
@@ -111,9 +127,37 @@ final class ClientOptionsTabTest {
     void bothConditions_surfaceEveryRow() {
         List<ClientOptionsTab.Row> rows = allRows(true, true);
 
-        assertEquals(18, rows.size());
+        assertEquals(21, rows.size());
         assertEquals(EnumSet.allOf(ClientOptionsTab.Row.class), EnumSet.copyOf(rows),
                 "every Row constant must appear in some tab when both conditions hold");
+    }
+
+    @Test
+    @DisplayName("The backup rows lead a group so they are not split across a pair boundary")
+    void backupRowsStartTheirOwnGroup() {
+        // Rows pack two-across in list order. Without a group leader, BACKUPS pairs with whatever
+        // row precedes it and the three backup rows stop reading as one block.
+        assertTrue(ClientOptionsTab.startsGroup(ClientOptionsTab.Row.BACKUPS_HEADING));
+        assertTrue(ClientOptionsTab.isHeading(ClientOptionsTab.Row.BACKUPS_HEADING));
+        // The rest of the group pairs among themselves, so they must NOT be leaders.
+        assertFalse(ClientOptionsTab.startsGroup(ClientOptionsTab.Row.BACKUPS));
+        assertFalse(ClientOptionsTab.startsGroup(ClientOptionsTab.Row.BACKUPS_PER_VERSION));
+        assertFalse(ClientOptionsTab.startsGroup(ClientOptionsTab.Row.CLEAR_BACKUPS));
+        // Translate follows the group and must not be dragged into it.
+        assertTrue(ClientOptionsTab.startsGroup(ClientOptionsTab.Row.TRANSLATE));
+    }
+
+    @Test
+    @DisplayName("The three backup rows stay adjacent, in order")
+    void backupRowsAreAdjacent() {
+        List<ClientOptionsTab.Row> general =
+                ClientOptionsTab.rowsFor(ClientOptionsTab.GENERAL, false, false);
+        int first = general.indexOf(ClientOptionsTab.Row.BACKUPS_HEADING);
+
+        assertEquals(ClientOptionsTab.Row.BACKUPS, general.get(first + 1));
+        assertEquals(ClientOptionsTab.Row.BACKUPS_PER_VERSION, general.get(first + 2));
+        assertEquals(ClientOptionsTab.Row.CLEAR_BACKUPS, general.get(first + 3));
+        assertEquals(general.size() - 1, first + 3, "the backup block ends the tab");
     }
 
     // ---- Fixed tabs are unaffected by the conditional flags ----

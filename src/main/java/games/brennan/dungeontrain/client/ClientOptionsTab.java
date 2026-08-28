@@ -70,10 +70,16 @@ public enum ClientOptionsTab {
         POLITICAL_FILTER,
         BOOK_AUTHOR_CHAT,
         CINEMATIC_HOTKEY,
-        /** Where restore points of builds and progress are written. */
-        BACKUPS,
         /** Whether Edible Backpacks draws its open/close button on the inventory screen. */
         BACKPACK_BUTTON,
+        /** Non-interactive caption introducing the backup rows below it. */
+        BACKUPS_HEADING,
+        /** Where restore points of builds and progress are written. */
+        BACKUPS,
+        /** How many archives to keep per Dungeon Train version. */
+        BACKUPS_PER_VERSION,
+        /** Deletes every archive, in the instance and outside it. Shows the size on disk. */
+        CLEAR_BACKUPS,
         /** Only when {@code TranslationTarget.resolveForClient()} names a language to edit. */
         TRANSLATE,
 
@@ -99,6 +105,32 @@ public enum ClientOptionsTab {
      * <p>Every tab is non-empty in all four combinations — no combination of flags can produce a tab
      * that opens onto nothing.</p>
      */
+    /**
+     * Rows that must begin a fresh line rather than pairing with whatever precedes them.
+     *
+     * <p>Rows are packed two-across in list order, so without this the first row of a group lands
+     * beside the last row of the previous one and the group stops reading as a group. Only the
+     * LEADER is named — the rest of the group pairs among themselves as usual.</p>
+     */
+    private static final java.util.Set<Row> GROUP_LEADERS =
+            java.util.EnumSet.of(Row.BACKUPS_HEADING, Row.TRANSLATE);
+
+    /**
+     * Rows that are captions rather than settings: no widget to operate, and always a line to
+     * themselves.
+     */
+    private static final java.util.Set<Row> HEADINGS = java.util.EnumSet.of(Row.BACKUPS_HEADING);
+
+    /** Whether {@code row} is a caption rather than a setting. */
+    public static boolean isHeading(Row row) {
+        return HEADINGS.contains(row);
+    }
+
+    /** Whether {@code row} begins a visual group. See {@link #GROUP_LEADERS}. */
+    public static boolean startsGroup(Row row) {
+        return GROUP_LEADERS.contains(row);
+    }
+
     public static List<Row> rowsFor(ClientOptionsTab tab, boolean chineseLocale, boolean hasTranslateTarget) {
         List<Row> rows = new ArrayList<>();
         switch (tab) {
@@ -109,11 +141,18 @@ public enum ClientOptionsTab {
                 }
                 rows.add(Row.BOOK_AUTHOR_CHAT);
                 rows.add(Row.CINEMATIC_HOTKEY);
-                rows.add(Row.BACKUPS);
                 rows.add(Row.BACKPACK_BUTTON);
                 if (hasTranslateTarget) {
                     rows.add(Row.TRANSLATE);
                 }
+                // The backup block goes last, behind its own heading — it is the only group here
+                // with enough rows to need one, and the heading is what separates it from the
+                // ungrouped settings above.
+                rows.add(Row.BACKUPS_HEADING);
+                rows.add(Row.BACKUPS);
+                // Adjacent so the width packer pairs the two short backup rows on one line.
+                rows.add(Row.BACKUPS_PER_VERSION);
+                rows.add(Row.CLEAR_BACKUPS);
             }
             case TRAIN -> {
                 // The two short-captioned rows lead so they pair on one line; the two whose captions
