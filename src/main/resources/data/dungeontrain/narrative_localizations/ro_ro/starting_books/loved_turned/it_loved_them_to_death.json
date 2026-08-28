@@ -1,0 +1,11 @@
+{
+  "id": "it_loved_them_to_death",
+  "title": "I-a iubit până la moarte",
+  "author": "Brennan Hatton",
+  "generation": 0,
+  "weight": 1,
+  "variants": [
+    "Asta e greu de scris.\n\n\n%TARGET% n-a plecat de acolo.\n\nEcoul tău e motivul.\n\n\nÎnainte să hotărăști ce înseamnă asta:\n\nnu el a început.\n\nEl nu începe lucruri. Nu asta ai trimis.\n\n\n%STORY%\n\n\nS-a întâmplat la vagonul %CARRIAGE%.\n%DAYS% zile stând pe loc.\n%GEAR%\n\nS-a apărat.\nSe pricepea foarte bine la asta.\nTu ai avut grijă de asta.\n\n\nAsta e partea pe care o tot întorc pe toate fețele.\n\nAi trimis ceva care îl iubea, și l-ai trimis înarmat.\n\n\nI-ar fi dat tot ce avea.\n\nEl a lovit primul.\n\nTot al tău era.",
+    "S-a terminat prost.\n\nNu așa cum se termină prost celălalt fel.\n\nMai rău, poate.\n\n\n%TARGET% l-a atacat.\nEcoul l-a ucis.\n\nAmândouă sunt adevărate și niciuna nu e tot.\n\n\n%STORY%\n\n\n%DAYS% zile a așteptat la vagonul %CARRIAGE% ca să fie blând cu cineva.\n%GEAR%\n\n\nUn lucru te poate iubi și tot să aibă mâini.\n\n\nNimeni n-a câștigat.\n\nTrenul nu ține o pagină pentru asta, așa că o ține pe aceasta.\n\n\nDacă te ajută:\n\nnu era furios.\n\nNici măcar la sfârșit."
+  ]
+}

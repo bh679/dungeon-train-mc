@@ -126,4 +126,41 @@ public class SkyboxBlock extends Block {
     protected float getShadeBrightness(BlockState state, BlockGetter level, BlockPos pos) {
         return 1.0F;
     }
+
+    /**
+     * Costs light exactly what air costs it — <b>light is the one exception</b> to the occlusion
+     * this block otherwise keeps.
+     *
+     * <p>A hole punched through to the sky that then casts a hard shadow underneath itself is the
+     * illusion contradicting itself. {@link #getShadeBrightness} already stopped the block darkening
+     * its neighbours; this is what lets light actually pass. Default for a solid-render block is
+     * full opacity, and the light engine reads this through {@code LightEngine.getOpacity}.</p>
+     *
+     * <p>Occlusion itself ({@code canOcclude}) stays on and costs the light engine nothing:
+     * {@code LightEngine.isEmptyShape} skips shape-based light occlusion for any block that does not
+     * set {@code useShapeForLightOcclusion}, which this does not. So the face and section culling the
+     * class javadoc calls load-bearing is untouched.</p>
+     *
+     * <p>Block light passes too, not only skylight — a torch behind a skybox wall lights what is in
+     * front of it. Accepted: it is the same "there is nothing there" the depth punch already claims
+     * to the eye, and splitting the two would mean a directional occlusion shape for a block whose
+     * whole premise is that it is a hole.</p>
+     */
+    @Override
+    protected int getLightBlock(BlockState state, BlockGetter level, BlockPos pos) {
+        return 0;
+    }
+
+    /**
+     * Lets a skylight column fall straight through at full strength, which is what stops a skybox
+     * ceiling shadowing the floor below it. Defaults to false for a full collision cube, which every
+     * skybox block is — see {@link #getCollisionShape}.
+     *
+     * <p>Both this and {@link #getLightBlock} are read once per block state into
+     * {@code BlockBehaviour$BlockStateBase.Cache}, so neither is on any per-tick path.</p>
+     */
+    @Override
+    protected boolean propagatesSkylightDown(BlockState state, BlockGetter level, BlockPos pos) {
+        return true;
+    }
 }

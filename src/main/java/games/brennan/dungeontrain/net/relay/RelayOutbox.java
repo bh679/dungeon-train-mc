@@ -6,7 +6,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
-import net.neoforged.fml.loading.FMLPaths;
+import games.brennan.dungeontrain.data.PlayerDataPaths;
 import org.slf4j.Logger;
 
 import java.net.URI;
@@ -64,7 +64,11 @@ public final class RelayOutbox {
     static final int MAX_ITEMS = 500;
     /** Stale telemetry past this age is evicted rather than replayed on a much-later reconnect. */
     static final long MAX_AGE_MS = Duration.ofDays(14).toMillis();
+    /** Pre-relocation name, sitting loose in {@code config/}. Kept for the read fallback. */
     private static final String FILE_NAME = "dungeontrain-relay-outbox.json";
+
+    /** Name inside {@code <gameDir>/dungeontrain/outbox/}. */
+    private static final String NEW_FILE_NAME = "relay-outbox.json";
     private static final Duration CONNECT_TIMEOUT = Duration.ofSeconds(8);
     private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(10);
 
@@ -555,7 +559,9 @@ public final class RelayOutbox {
 
     private static Path defaultFile() {
         try {
-            return FMLPaths.CONFIGDIR.get().resolve(FILE_NAME);
+            return new PlayerDataPaths.Located(
+                PlayerDataPaths.dir(PlayerDataPaths.OUTBOX).resolve(NEW_FILE_NAME),
+                PlayerDataPaths.configRoot().resolve(FILE_NAME)).read();
         } catch (Throwable t) {
             LOGGER.debug("[DungeonTrain] relay outbox: could not resolve config dir: {}", t.toString());
             return null;

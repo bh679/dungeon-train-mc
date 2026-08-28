@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.editor;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.data.PlayerDataPaths;
 import net.neoforged.fml.loading.FMLPaths;
 import org.slf4j.Logger;
 
@@ -72,13 +73,30 @@ public final class PackageRegistry {
     }
 
     /** {@code <config>/dungeontrain/dtpacks-state.json} — persisted state. */
+    /**
+     * {@code <gameDir>/dungeontrain/dtpacks-state.json}, falling back to the pre-relocation
+     * {@code config/dungeontrain/} copy while one still exists.
+     *
+     * <p>It moved out of {@code config/} with the rest of the player's data — see
+     * {@link games.brennan.dungeontrain.data.PlayerDataPaths}. Losing this file doesn't lose
+     * content (the packages themselves are under {@code dtpacks/}), but it does lose which package
+     * was active and which were disabled, which reads to the player as their builds vanishing.</p>
+     */
     public static Path stateFile() {
-        return FMLPaths.CONFIGDIR.get().resolve("dungeontrain").resolve(STATE_FILENAME);
+        return PlayerDataPaths.locateAtRoot(STATE_FILENAME, "dungeontrain").read();
     }
 
-    /** Whether the state file exists (the migration sentinel). */
+    /**
+     * Whether the state file exists (the migration sentinel).
+     *
+     * <p>Checks <b>both</b> addresses. {@link DtpacksMigration} treats an absent state file as
+     * "this install has never been migrated"; if this looked only at the new location, the
+     * relocation would make every existing install look brand new and re-run a one-shot that had
+     * already happened.</p>
+     */
     public static boolean stateFileExists() {
-        return Files.isRegularFile(stateFile());
+        return PlayerDataPaths.locateAtRoot(STATE_FILENAME, "dungeontrain")
+            .all().stream().anyMatch(Files::isRegularFile);
     }
 
     // ---- Read accessors ----

@@ -33,7 +33,7 @@ public final class LocaleNumberWords {
             // Out of spelled range — let the caller use digits (all these languages use Arabic numerals).
             return switch (base) {
                 case "es", "pt", "id", "ms", "fi", "vi", "th",
-                     "de", "fr", "it", "nl", "pl", "ru", "ja", "ko" -> Long.toString(n);
+                     "de", "fr", "it", "nl", "pl", "ro", "ru", "ja", "ko" -> Long.toString(n);
                 default -> null;
             };
         }
@@ -50,6 +50,7 @@ public final class LocaleNumberWords {
             case "it" -> it(n);
             case "nl" -> nl(n);
             case "pl" -> pl(n);
+            case "ro" -> ro(n);
             case "ru" -> ru(n);
             case "ja" -> ja(n);
             case "ko" -> ko(n);
@@ -411,6 +412,63 @@ public final class LocaleNumberWords {
         long k = n / 1000, r = n % 1000;
         String head = (k == 1) ? "mille" : itBelow1000(k) + "mila";
         return r == 0 ? head : head + itBelow1000(r);
+    }
+
+    // ---------------------------------------------------------------- Romanian
+    // Romanian writes cardinals as separate words, joining a tens word to its unit with "și"
+    // (douăzeci și unu). Two things make it more than a lookup: 1 and 2 have feminine forms
+    // (una, două) that a feminine counted noun pulls in — "sută" and "mie" are both feminine,
+    // so 2000 is "două mii" — and a multiplier of 20 or more takes "de" before its noun
+    // (douăzeci DE mii), decided by the last two digits, not the magnitude: 101 mii has none.
+
+    private static final String[] RO_0_19 = {
+        "zero", "unu", "doi", "trei", "patru", "cinci", "șase", "șapte", "opt", "nouă",
+        "zece", "unsprezece", "doisprezece", "treisprezece", "paisprezece", "cincisprezece",
+        "șaisprezece", "șaptesprezece", "optsprezece", "nouăsprezece"
+    };
+    private static final String[] RO_TENS = {
+        "", "", "douăzeci", "treizeci", "patruzeci", "cincizeci", "șaizeci", "șaptezeci",
+        "optzeci", "nouăzeci"
+    };
+
+    /** 0-19, in the gender the counted noun asks for — only 1, 2 and 12 differ. */
+    private static String roBelow20(long n, boolean feminine) {
+        if (feminine) {
+            if (n == 1) return "una";
+            if (n == 2) return "două";
+            if (n == 12) return "douăsprezece";
+        }
+        return RO_0_19[(int) n];
+    }
+
+    private static String roBelow100(long n, boolean feminine) {
+        if (n < 20) return roBelow20(n, feminine);
+        long t = n / 10, r = n % 10;
+        String tens = RO_TENS[(int) t];
+        return r == 0 ? tens : tens + " și " + roBelow20(r, feminine);
+    }
+
+    private static String roBelow1000(long n, boolean feminine) {
+        if (n < 100) return roBelow100(n, feminine);
+        long h = n / 100, r = n % 100;
+        // "sută" is feminine, so its own multiplier is always feminine: o sută, două sute.
+        String head = (h == 1) ? "o sută" : roBelow20(h, true) + " sute";
+        return r == 0 ? head : head + " " + roBelow100(r, feminine);
+    }
+
+    /** Whether {@code n} of something takes "de" before the noun — true unless it ends in 1-19. */
+    private static boolean roTakesDe(long n) {
+        long lastTwo = n % 100L;
+        return lastTwo == 0L || lastTwo >= 20L;
+    }
+
+    private static String ro(long n) {
+        if (n < 1000) return roBelow1000(n, false);
+        long k = n / 1000, r = n % 1000;
+        // "mie/mii" is feminine, and a multiplier of 20+ reaches it through "de".
+        String head = (k == 1) ? "o mie"
+                : roBelow1000(k, true) + (roTakesDe(k) ? " de mii" : " mii");
+        return r == 0 ? head : head + " " + roBelow1000(r, false);
     }
 
     // ---------------------------------------------------------------- Dutch

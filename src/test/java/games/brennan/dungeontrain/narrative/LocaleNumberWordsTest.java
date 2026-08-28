@@ -108,6 +108,28 @@ final class LocaleNumberWordsTest {
         check("vi_vn", 1005, "một nghìn không trăm lẻ năm");
     }
 
+    @Test @DisplayName("Romanian")
+    void romanian() {
+        check("ro_ro", 0, "zero");
+        check("ro_ro", 1, "unu");
+        check("ro_ro", 14, "paisprezece");
+        check("ro_ro", 16, "șaisprezece");
+        check("ro_ro", 20, "douăzeci");
+        check("ro_ro", 21, "douăzeci și unu");
+        check("ro_ro", 60, "șaizeci");
+        check("ro_ro", 100, "o sută");
+        check("ro_ro", 101, "o sută unu");
+        check("ro_ro", 200, "două sute");
+        check("ro_ro", 123, "o sută douăzeci și trei");
+        check("ro_ro", 1000, "o mie");
+        check("ro_ro", 2000, "două mii");            // "mie" is feminine: două, not doi
+        check("ro_ro", 20000, "douăzeci de mii");    // 20+ multiplier reaches its noun through "de"
+        check("ro_ro", 21000, "douăzeci și una de mii");
+        check("ro_ro", 100000, "o sută de mii");
+        check("ro_ro", 101000, "o sută una mii");    // ends in 01 — no "de"
+        check("ro_ro", 1234, "o mie două sute treizeci și patru");
+    }
+
     @Test @DisplayName("Thai")
     void thai() {
         check("th_th", 0, "ศูนย์");

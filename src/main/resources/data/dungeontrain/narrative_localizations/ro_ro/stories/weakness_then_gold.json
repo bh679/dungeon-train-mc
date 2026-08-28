@@ -1,0 +1,57 @@
+{
+  "id": "weakness_then_gold",
+  "story": "Slăbiciune, apoi aur",
+  "letters": [
+    {
+      "index": 1,
+      "label": "Scrisoarea unu",
+      "variants": [
+        "creieeeri.\n\ncrrreieri. creieri.\n\nbrieieeeri.\n\nCALD.\ncald a trecut aproape.\nCALD.\n\nmmmai mult.\nvreau mai mult.",
+        "creieeeri.\n\ncarne. miros carne.\n\nbrieieeeri.\nmmmcarne.\n\ncei calzi au carne.\neu urmez.\neu mereu urmez."
+      ]
+    },
+    {
+      "index": 2,
+      "label": "Scrisoarea doi",
+      "variants": [
+        "urmez cald.\nVreau creieeeri.\nmă opresc.\nmă uit la hârtie.\n\nsemne pe hârtie.\n\nslăbiciune.aur.\nîntoarce-te.\ncreieri?",
+        "urmez cald.\ncreieeeri. Vreau.\nmă opresc.\nmă uit la hârtie.\n\nsemne sub semne.\n\nzom..bi?\nom?\ncum să fii om?"
+      ]
+    },
+    {
+      "index": 3,
+      "label": "Scrisoarea trei",
+      "variants": [
+        "mă uit la cei calzi.\nnu mai alerg acum.\ndoar mă uit.\n\nunii se uită înapoi.\nunii trec prin mine.\nca și cum eu nu sunt aici.\n\ncei care se uită înapoi sunt reali.\n\n\nunul vine aproape.\ngât cald.\ngură deschisă.\n\nhârtia se mișcă pe piept.\nslăbiciune. aur. întoarce-te.\n\ngura se închide.\nfac un pas înapoi.\n\nniciodată pas înapoi. niciodată.\n\n\nnu uita.\nnu uita.\n\ntai cuvinte în perete.\nslăbiciune. apoi aur.\n\nsemnele ies mai bine acum.\neu fac un semn.\n\nb."
+      ]
+    },
+    {
+      "index": 4,
+      "label": "Scrisoarea patru",
+      "variants": [
+        "slăbiciune?\nslăbiciune .. vrăjitoare.\n\nvrăjitoarea face.\n\ncaut vrăjitoarea.\nmă apropii."
+      ]
+    },
+    {
+      "index": 5,
+      "label": "Scrisoarea cinci",
+      "variants": [
+        "vrăjitoarea mă vede.\nvrăjitoarea aruncă.\n\nverdele arde.\neu nu mă opresc.\nfoamea nu simte durere.\n\no sticlă se sparge gri.\nceață gri. nu arde.\n\n\nmoale.\nbrațe încete. slabe.\n\napoi—\nceața se ridică.\n\npot să gândesc.\ncuvintele sunt ale mele.\n\nslabă. înceată.\ndar aici.\n\n- br"
+      ]
+    },
+    {
+      "index": 6,
+      "label": "Scrisoarea șase",
+      "variants": [
+        "cuvintele spun aur.\nacum știu aurul.\n\ndeschid cufere.\nmâinile tot încete.\nslăbiciunea n-a plecat.\n\n\naur care nu e mărul.\nblocuri. smaralde.\n\napoi o oglindă într-un cufăr.\nchip gri. ochi scufundați.\n\ndar în spatele lui—\no ușă joasă. o cameră caldă.\ncineva strigă un nume.\n\nam avut și eu un nume cândva.\nbri...?\n\n\napoi aur care e rotund.\n\nstrălucește de parcă ar fi cald.\nun măr, dar de aur.\n\nîl țin în mână. nu mușc.\n\nslăbiciune în mine.\naur în mâna mea.\n\namândouă. le am pe amândouă.\n\n- bri"
+      ]
+    },
+    {
+      "index": 7,
+      "label": "Scrisoarea șapte",
+      "variants": [
+        "am împins slăbiciunea în sângele meu.\napoi am mușcat aurul.\n\nera dulce.\nuitasem ce e dulce.\n\n\napoi tremuratul.\ntrenul s-a făcut roșu pe margini.\n\nmâinile mele — calde.\ninima mea un pumn, bătând să fie lăsată înăuntru.\n\ngriul s-a scurs din mine ca apa rece care iese dintr-o cană.\n\n\nÎmi amintesc.\no ușă joasă. o cameră caldă.\no femeie care mă chema la cină.\n\ncare mă striga Brianne.\n\nsunt Brianne.\n\n\nSunt tot în tren.\nfără față. fără coborâre.\ndar acum îl călărește o persoană.\n\nașa că scriu asta pentru tine —\ncel gri care încă nu poate citi.\nvei putea.\n\nslăbiciune. apoi aur.\nși te întorci.\n\nfuncționează. eu am reușit.\nmergi mai departe.\n\n- Brianne"
+      ]
+    }
+  ]
+}

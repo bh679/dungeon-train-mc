@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.discordpresence.discord.DiscordService;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.advancement.CompletionistAdvancement;
+import games.brennan.dungeontrain.advancement.StartAgainAdvancement;
 import games.brennan.dungeontrain.advancement.FarStartAdvancement;
 import games.brennan.dungeontrain.advancement.GlobalAchievementStore;
 import games.brennan.dungeontrain.advancement.GlobalBookBurnStats;
@@ -44,7 +45,9 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.ChestBlock;
 import net.minecraft.world.level.block.EnderChestBlock;
 import net.minecraft.world.level.block.state.BlockState;
+import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.neoforge.event.CommandEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.player.AdvancementEvent;
@@ -968,6 +971,7 @@ public final class AchievementEvents {
     public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         UUID uuid = player.getUUID();
+        StartAgainAdvancement.disarm(uuid); // drop a pending arm from a disconnect mid-command
         GlobalPlayerStats.flush(uuid);
         GlobalPlayerStats.evict(uuid);
         GlobalBookBurnStats.flush(uuid);
@@ -1014,9 +1018,40 @@ public final class AchievementEvents {
     @SubscribeEvent
     public static void onPlayerTick(PlayerTickEvent.Post event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        // Unthrottled, and deliberately ahead of the once-a-second block: the
+        // "It's Not That Simple" grant has to land on the tick right after the
+        // revoke that earns it. Costs one lookup on an almost-always-empty set.
+        StartAgainAdvancement.checkArmed(player);
         if (player.tickCount % 20 != 0) return;
         NothingButBooksAdvancement.checkAndGrant(player);
         LeatherOverDiamondAdvancement.checkAndGrant(player);
+    }
+
+    /**
+     * Arm "It's Not That Simple" when a player who already holds the
+     * "Everything Burrito" capstone runs {@code /advancement revoke @s everything} —
+     * that exact form only, self-target included.
+     *
+     * <p>{@link CommandEvent} fires <b>before</b> execution, so this can only arm —
+     * granting here would award the advancement into the very tree the command is
+     * about to wipe. {@link StartAgainAdvancement#checkArmed} does the grant on the
+     * next player tick, once the capstone is confirmed gone.</p>
+     *
+     * <p>Ignores console / command-block / function sources — there is no player to
+     * award. Runs at {@link EventPriority#LOWEST} so a cancelling handler gets there
+     * first and this never arms off a command that won't run: notably
+     * {@link games.brennan.dungeontrain.event.CheatDetectionEvents}, whose Free Play
+     * gate holds a tainting command instead of executing it. {@code /advancement revoke}
+     * is exempt from that gate (see
+     * {@link games.brennan.dungeontrain.cheat.CommandAllowlist}), so in practice the
+     * revoke reaches execution untainted.</p>
+     */
+    @SubscribeEvent(priority = EventPriority.LOWEST)
+    public static void onCommand(CommandEvent event) {
+        ServerPlayer player = event.getParseResults().getContext().getSource().getPlayer();
+        if (player == null) return;
+        if (!StartAgainAdvancement.isSelfRevokeEverything(event.getParseResults().getReader().getString())) return;
+        StartAgainAdvancement.armIfEligible(player);
     }
 
     @SubscribeEvent

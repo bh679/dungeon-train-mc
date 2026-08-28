@@ -54,6 +54,7 @@ FAMILY_CATEGORIES = {
     "zero_one_other": ("one", "other"),
     "east_slavic": ("one", "few", "many"),
     "polish": ("one", "few", "many"),
+    "romanian": ("one", "few", "other"),
     "single": ("other",),
 }
 PLURAL_SUFFIXES = {"one", "two", "few", "many", "other"}

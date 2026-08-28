@@ -181,6 +181,7 @@ public final class VariantOverlayRenderer {
         LAST_PART_VIS_KEY.clear();
         LAST_STRAYS_KEY.clear();
         LAST_DOOR_GHOSTS_KEY.clear();
+        EditorPlotSky.clearAll();
     }
 
     /** Toggle the overlay for {@code player}. {@code on == true} resumes rendering. */
@@ -206,6 +207,9 @@ public final class VariantOverlayRenderer {
             DungeonTrainNet.sendTo(player, EditorStatusPacket.empty());
         }
         PartPositionMenuController.forget(player);
+        // Take the plot's daylight back off — they have left the build area, and the client would
+        // otherwise hold a box it can no longer be inside.
+        EditorPlotSky.forget(player);
         // Clear the client lock-id overlay too — player has left every plot.
         if (LAST_LOCK_SNAPSHOT_KEY.remove(player.getUUID()) != null) {
             DungeonTrainNet.sendTo(player, BlockVariantLockIdsPacket.empty());
@@ -258,6 +262,9 @@ public final class VariantOverlayRenderer {
             pushPartVisibilitySnapshot(player);
             pushStraysSnapshot(player);
             pushDoorGhostsSnapshot(player, dims);
+            // Light a portal room's plot with the room's own Sky — the lighting it will ship with,
+            // rather than the dark box it was authored in until now.
+            EditorPlotSky.update(player, dims);
 
             if (!isEnabled(player)) {
                 clearHoverIfStale(player);

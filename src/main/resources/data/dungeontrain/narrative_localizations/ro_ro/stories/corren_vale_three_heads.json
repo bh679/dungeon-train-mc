@@ -1,0 +1,78 @@
+{
+  "id": "corren_vale_three_heads",
+  "character": "Corren Vale",
+  "story": "Trei capete",
+  "letters": [
+    {
+      "index": 1,
+      "label": "Scrisoarea întâi",
+      "variants": [
+        "Mira,\n\nMâinile tale erau mereu pline de cretă.\n\nTrăgeai linii pe orice.\n\nZiceai că liniile drepte țin lumea cinstită.\n\nCredeai asta.\n\nCred că și eu credeam.\n\n- Corren",
+        "Mira.\n\nRâdeai încet.\n\nCa și cum ai fi încercat să nu trezești ceva.\n\nBram nu știa niciodată când glumeai.\n\neu știam.\n\n- corren"
+      ]
+    },
+    {
+      "index": 2,
+      "label": "Scrisoarea a doua",
+      "variants": [
+        "Mira.\n\nNisipul sufletelor era rece.\n\nNu-mi amintesc căldura de după.\n\nAi spus ceva.\n\nCred că mi-ai spus numele.\n\nCred că ai spus Fugi.\nNu m-am întors.\n\n- Corren"
+      ]
+    },
+    {
+      "index": 3,
+      "label": "Scrisoarea a treia",
+      "variants": [
+        "Bram.\n\nRâdeai ca o cădere.\n\nDintr-odată. Tare. Mereu prea tare.\n\nZiceai că râzi ca să știe întunericul că ești acolo.\n\nMereu a știut.\n\n- Corren",
+        "Bram.\n\nScutul tău era prea mare pentru tine.\n\nTreceai prin uși într-o rână.\n\nEsa îi zicea masa.\n\nZiceai că masa n-a lăsat pe nimeni la greu.\n\n- Corren"
+      ]
+    },
+    {
+      "index": 4,
+      "label": "Scrisoarea a patra",
+      "variants": [
+        "Bram.\n\nÎntâiul craniu a fost al tău.\n\nL-ai ridicat.\n\nAi strigat ceva.\n\nN-am auzit peste foc.\n\nRoțile trenului ăstuia scot trei note.\n\nÎntâia e a ta, Bram.\n\n- Corren",
+        "Bram.\n\nam scris asta de cinci ori.\n\nde fiecare dată ajung la craniu și pana se oprește.\n\nl-ai ridicat în sus. ai rânjit.\n\nai zis că nu cântărește nimic.\n\ncred că cântărea mult.\n\nRoțile trenului ăstuia scot trei note.\n\nÎntâia e a ta, Bram.\n\n- Corren"
+      ]
+    },
+    {
+      "index": 5,
+      "label": "Scrisoarea a cincea",
+      "variants": [
+        "Esa.\n\nAveai mâinile reci de la fiertul poțiunilor.\n\nRestul tău era cald.\n\nMira zicea că erai singura caldă dintre noi.\n\nAvea dreptate.\n\n- Corren",
+        "Esa.\n\nCântai în timp ce bandajai.\n\nCântece vechi. Niciunul dintre noi nu le știa.\n\nZiceai că le inventezi din mers.\n\nNe prefăceam că te credem.\n\n- Corren"
+      ]
+    },
+    {
+      "index": 6,
+      "label": "Scrisoarea a șasea",
+      "variants": [
+        "Esa.\n\nMâna ta era pe spatele meu.\n\nRece de la fiertul poțiunilor.\n\nAi împins o dată.\n\nM-am împleticit până la adăpost.\n\nN-ai mai împins a doua oară.\n\nCred că erai deja dusă.\n\nDinainte de împins.\n\n- Corren",
+        "Esa.\n\nSunt oameni în trenul ăsta care au trăit mai mult decât mine.\n\nniciunul nu arată bine.\n\nnu vreau să știu cum arăt eu.\n\ntu mi-ai fi spus.\n\nai fi zis stai jos, Corren, și lasă-mă să văd.\n\n- corren"
+      ]
+    },
+    {
+      "index": 7,
+      "label": "Scrisoarea a șaptea",
+      "variants": [
+        "Nu știu cum am scăpat.\n\nPortalul era stricat. Asta îmi amintesc.\n\nNu-mi amintesc să fi trecut prin el.\n\nM-am trezit pe un câmp. Iarbă înaltă. Trenul era deja acolo.\n\nEra în mers.\n\nFusese dintotdeauna în mers. Acum știu asta.\n\nAm alergat pe lângă el. Am sărit spre ușa cea mai apropiată.\n\nNu știu cum l-am prins.\n\nAm crezut că am reușit.\n\nDe săptămâni tot reușesc.\n\nTrenul nu oprește.\n\nNu există coborâre.\n\n- Corren",
+        "căldura în urma mea. frigul în față.\n\nnu știam încotro e sus.\n\nîmi amintesc că am căzut în iarbă.\n\niarba nu ardea.\n\nasta mi s-a părut important.\n\napoi o clădire.\n\nnu cunoșteam clădirea.\n\ncunosc toate clădirile din ținutul ăsta.\n\neu am cartografiat ținutul ăsta.\n\nlângă clădire era un tren.\n\nușile erau deschise.\n\neram viu și ușile erau deschise.\n\nmi s-au părut fapte înrudite.\n\n- corren"
+      ]
+    },
+    {
+      "index": 8,
+      "label": "Scrisoarea a opta",
+      "variants": [
+        "Îl aud de săptămâni.\n\nUn țipăt. Trei voci, aproape suprapuse.\n\nUneori vine una singură. Uneori toate trei.\n\nȘi bubuiturile.\n\nLe simt în podea înainte să le aud.\n\nNu strică niciodată nimic din ce pot vedea.\n\nNu știu unde cad.\n\nMerg înainte.\n\nȚipătul vine iar. Două vagoane în urmă.\n\nMereu de acolo.\n\nNiciodată mai departe.\n\nSunt sigur.\n\n- Corren",
+        "e un sunet.\n\nîl aud de săptămâni.\n\nnu sunt roțile.\n\nroțile duc muzică. trei note.\n\nsunetul ăsta duce altceva.\n\nțipă.\n\ntrei voci. aproape la unison. niciodată tocmai.\n\nși sunt bubuituri.\n\nle simt în podea. nu strică nimic.\n\ni-am întrebat pe ceilalți din tren.\n\nniciunul nu-l aude.\n\ndoar eu îl aud.\n\ne pentru mine.\n\nare timp.\n\n- corren"
+      ]
+    },
+    {
+      "index": 9,
+      "label": "Scrisoarea a noua",
+      "variants": [
+        "Of.. of nu.\n\nMira.\n\nTu ai fi băgat de seamă înaintea mea.\n\nȚipătul e acum în fața mea.\n\nNu se presupune că există o față.\n\nBram s-ar fi proptit în față.\n\nAr fi râs de el.\n\nMereu râdea de lucrurile prea mari ca să te lupți cu ele.\n\nEsa ar fi fiert ceva.\n\nRezistență la foc. Iuțeală. Exact ce trebuia.\n\nMereu fierbea exact ce trebuia.\n\nAm mers înainte săptămâni întregi.\n\nMergeam spre el.\n\nTrenul nu are o față.\n\nFiecare pas înainte era un pas mai aproape.\n\nAcum îl văd.\n\nTrei capete. Trei voci.\n\nA patra voce va fi a mea.\n\nCred că e a mea de săptămâni.\n\n- Corren",
+        "e aici.\n\nmira.\n\nnu era în urma mea.\n\nera în față.\n\na fost dintotdeauna în față.\n\ntu ai fi văzut asta. tu vedeai totul prima.\n\nbram s-ar fi proptit în fața mea.\n\nar fi râs.\n\nrâdea de lucrurile prea mari ca să te lupți cu ele.\n\nar fi mers. pentru o clipă.\n\nesa mi-ar fi pus mâna pe spate.\n\nrece.\n\nar fi împins.\n\naș fi plecat.\n\nam mers spre el.\n\ncredeam că mă îndepărtez.\n\ntrenul nu are o față. ai fi râs de mine că am uitat asta.\n\nîl văd.\n\ntrei capete. trei dintre voi.\n\nbram. esa. tu.\n\neu sunt al patrulea.\n\nam fost al patrulea de la bun început.\n\n- corren"
+      ]
+    }
+  ]
+}

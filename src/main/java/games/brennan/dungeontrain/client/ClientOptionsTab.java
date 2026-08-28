@@ -70,6 +70,8 @@ public enum ClientOptionsTab {
         POLITICAL_FILTER,
         BOOK_AUTHOR_CHAT,
         CINEMATIC_HOTKEY,
+        /** Where restore points of builds and progress are written. */
+        BACKUPS,
         /** Only when {@code TranslationTarget.resolveForClient()} names a language to edit. */
         TRANSLATE,
 
@@ -105,6 +107,7 @@ public enum ClientOptionsTab {
                 }
                 rows.add(Row.BOOK_AUTHOR_CHAT);
                 rows.add(Row.CINEMATIC_HOTKEY);
+                rows.add(Row.BACKUPS);
                 if (hasTranslateTarget) {
                     rows.add(Row.TRANSLATE);
                 }
