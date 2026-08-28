@@ -1113,21 +1113,29 @@ public final class TrainCarriageAppender {
     }
 
     /**
-     * X-axis gap from this carriage's train-facing face to the nearest sibling
-     * AABB on that side, in world blocks. Forward spawns measure the LOW-X face
-     * (carriage faces train at -X); backward spawns measure the HIGH-X face.
-     * Y/Z must overlap (siblings on the same lane).
+     * X-axis gap from this carriage's train-facing face to its IMMEDIATE train-facing neighbour's
+     * AABB, in world blocks. Forward spawns measure the LOW-X face against anchor
+     * {@code pIdx − groupSize}; backward spawns measure the HIGH-X face against
+     * {@code pIdx + groupSize}. Y/Z must overlap (same lane).
      *
-     * <p>Returns {@link Double#POSITIVE_INFINITY} when no sibling sits on the
-     * train-facing side — e.g. the seed carriage of a fresh train, where any
-     * pull-toward action would be meaningless. The caller's
-     * {@code gap > MAX_GAP_BLOCKS} check short-circuits on infinity via
-     * {@link Double#isFinite}.</p>
+     * <p>Returns {@link Double#POSITIVE_INFINITY} — "nothing to settle against", read as clean by
+     * the caller's finite check — whenever that one neighbour can't be trusted: it doesn't exist
+     * (seed carriage), it has been culled ({@code !isResident}), its AABB is still degenerate
+     * (spawned but not yet physics-ticked), or it doesn't qualify as train-facing.</p>
      *
-     * <p>Sibling set: visible train ∪ {@link Trains#knownGroups} registry,
-     * deduped by ship id, skipping zero-AABB ships and self. Mirrors
-     * {@link #checkOneCarriage} so the gap loop and collision loop draw from
-     * the same neighbour set.</p>
+     * <p><b>Adjacency is the whole point.</b> This used to take the minimum facing gap over EVERY
+     * sibling in the visible train and the registry, skipping culled and zero-AABB ones. But a
+     * skipped neighbour doesn't remove the measurement — it silently promotes a carriage two or
+     * three groups away into the neighbour's place, and the "seam gap" reads as one or two whole
+     * strides. Observed live: a correctly placed backward group (spawn log {@code gapBlocks=0.4000})
+     * whose neighbour had just been culled measured a 90-block gap, and the tracker dragged it
+     * 0.5 blocks/tick toward the train for the full MAX_PLACEMENT_SETTLE_TICKS budget before the
+     * safety valve fired — which is exactly the wide hole a backward-riding player walks into. A
+     * missing neighbour means there is no seam to settle, not a seam that is enormous.</p>
+     *
+     * <p>Collision detection deliberately does NOT scope this way ({@link #checkOneCarriage} still
+     * tests every sibling): overlapping anything is real regardless of adjacency, whereas a seam
+     * only exists between neighbours.</p>
      */
     private static double gapToTrainFacingSibling(
         UUID trainId,
@@ -1136,41 +1144,38 @@ public final class TrainCarriageAppender {
     ) {
         AABBdc selfAabb = self.ship().worldAABB();
         if (isZeroAabb(selfAabb)) return Double.POSITIVE_INFINITY;
-        boolean spawnedBackward = self.provider().isSpawnedBackward();
-        double selfMinX = selfAabb.minX(), selfMaxX = selfAabb.maxX();
-        double selfMinY = selfAabb.minY(), selfMaxY = selfAabb.maxY();
-        double selfMinZ = selfAabb.minZ(), selfMaxZ = selfAabb.maxZ();
+        TrainTransformProvider provider = self.provider();
+        boolean spawnedBackward = provider.isSpawnedBackward();
+        int groupSize = Math.max(1, provider.getGroupSize());
+        int neighbourAnchor = provider.getPIdx() + (spawnedBackward ? groupSize : -groupSize);
 
-        long selfId = self.ship().id();
-        Set<Long> seen = new HashSet<>();
-        seen.add(selfId);
-
-        double best = Double.POSITIVE_INFINITY;
+        AABBdc neighbourAabb = null;
         for (Trains.Carriage other : train) {
-            if (!seen.add(other.ship().id())) continue;
+            if (other.ship().id() == self.ship().id()) continue;
+            if (other.provider().getPIdx() != neighbourAnchor) continue;
             AABBdc o = other.ship().worldAABB();
-            if (isZeroAabb(o)) continue;
-            double g = facingGapBetween(
-                selfMinX, selfMaxX, selfMinY, selfMaxY, selfMinZ, selfMaxZ,
-                o.minX(), o.maxX(), o.minY(), o.maxY(), o.minZ(), o.maxZ(),
-                spawnedBackward);
-            if (g < best) best = g;
+            if (!isZeroAabb(o)) neighbourAabb = o;
+            break;
         }
-        Map<Integer, ManagedShip> registry = Trains.knownGroups(trainId);
-        for (ManagedShip ship : registry.values()) {
-            if (!seen.add(ship.id())) continue;
-            // Skip culled registry-only siblings — a stale cull-time AABB would
-            // give a bogus "too-far" gap and pull a settling carriage off true.
-            if (!ship.isResident()) continue;
-            AABBdc o = ship.worldAABB();
-            if (isZeroAabb(o)) continue;
-            double g = facingGapBetween(
-                selfMinX, selfMaxX, selfMinY, selfMaxY, selfMinZ, selfMaxZ,
-                o.minX(), o.maxX(), o.minY(), o.maxY(), o.minZ(), o.maxZ(),
-                spawnedBackward);
-            if (g < best) best = g;
+        if (neighbourAabb == null) {
+            ManagedShip registered = Trains.knownGroups(trainId).get(neighbourAnchor);
+            // A culled neighbour's AABB is frozen at its cull-time pose — worse than no reading,
+            // because the train has moved on since. Treat it as absent.
+            if (registered != null && registered.id() != self.ship().id() && registered.isResident()) {
+                AABBdc o = registered.worldAABB();
+                if (!isZeroAabb(o)) neighbourAabb = o;
+            }
         }
-        return best;
+        if (neighbourAabb == null) return Double.POSITIVE_INFINITY;
+
+        return facingGapBetween(
+            selfAabb.minX(), selfAabb.maxX(),
+            selfAabb.minY(), selfAabb.maxY(),
+            selfAabb.minZ(), selfAabb.maxZ(),
+            neighbourAabb.minX(), neighbourAabb.maxX(),
+            neighbourAabb.minY(), neighbourAabb.maxY(),
+            neighbourAabb.minZ(), neighbourAabb.maxZ(),
+            spawnedBackward);
     }
 
     /**
