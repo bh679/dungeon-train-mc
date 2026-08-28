@@ -9626,6 +9626,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "frontier-stage-and-placement",
+      "version": "0.705.0",
+      "type": "fix",
+      "title": "The carriage at the edge of view stops changing on you",
+      "summary": "A single carriage near the edge of your render distance could quietly rebuild itself as a different type, from a different stage, when it reloaded. It now comes back as the carriage that was there. Carriages that slip out of line are also pulled back into place instead of being abandoned mid-train.",
+      "highlights": [
+        "A reloading carriage keeps the stage and the build it was made with, instead of re-rolling against wherever the train has since travelled.",
+        "A carriage that ends up badly out of line is put back in one move, rather than inching toward the train and giving up.",
+        "Carriages either side of one that is still settling keep moving with the train, so the two cannot drift apart while it beds in."
+      ],
+      "pr": 1165,
+      "date": "2026-08-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
