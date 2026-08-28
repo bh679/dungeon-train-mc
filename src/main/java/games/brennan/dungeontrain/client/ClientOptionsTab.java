@@ -13,7 +13,7 @@ import java.util.List;
  *
  * <ul>
  *   <li>{@link #GENERAL} — the client and the player: content rating, chat lines, the hotkey,
- *       translation.</li>
+ *       backups, the backpack button, translation.</li>
  *   <li>{@link #TRAIN} — the ride itself: engine volume, whether custom train content loads, and
  *       the ride-photo settings.</li>
  *   <li>{@link #EDITOR} — the three display-scale channels the in-world editor menus and HUD
@@ -70,6 +70,8 @@ public enum ClientOptionsTab {
         POLITICAL_FILTER,
         BOOK_AUTHOR_CHAT,
         CINEMATIC_HOTKEY,
+        /** Whether Edible Backpacks draws its open/close button on the inventory screen. */
+        BACKPACK_BUTTON,
         /** Non-interactive caption introducing the backup rows below it. */
         BACKUPS_HEADING,
         /** Where restore points of builds and progress are written. */
@@ -139,6 +141,7 @@ public enum ClientOptionsTab {
                 }
                 rows.add(Row.BOOK_AUTHOR_CHAT);
                 rows.add(Row.CINEMATIC_HOTKEY);
+                rows.add(Row.BACKPACK_BUTTON);
                 if (hasTranslateTarget) {
                     rows.add(Row.TRANSLATE);
                 }
