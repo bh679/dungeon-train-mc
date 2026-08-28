@@ -9,6 +9,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.zip.ZipFile;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -174,6 +175,39 @@ class PlayerDataBackupTest {
         assertTrue(left.contains(newest));
         assertTrue(left.contains(oldest),
             "the oldest archive is the pre-migration snapshot — the only record of what was there first");
+    }
+
+    @Test
+    void mirrorCopiesTheArchiveOutOfTheInstanceAndPrunesThere() throws IOException {
+        write(tmp.resolve("data/user/templates/a.nbt"), "carriage");
+        Path archive = PlayerDataBackup.create(backups(), sources(), "world-load", "1.2.3")
+            .archive().orElseThrow();
+        Path external = tmp.resolve("external");
+
+        assertTrue(PlayerDataBackup.mirror(archive, external));
+
+        Path copy = external.resolve(archive.getFileName().toString());
+        assertTrue(Files.isRegularFile(copy));
+        assertArrayEquals(Files.readAllBytes(archive), Files.readAllBytes(copy));
+        assertTrue(Files.isRegularFile(archive), "the in-instance archive is copied, never moved");
+        // Idempotent: a second mirror of the same archive is a no-op, not a duplicate or a failure.
+        assertTrue(PlayerDataBackup.mirror(archive, external));
+        assertEquals(1, PlayerDataBackup.listArchives(external).size());
+    }
+
+    @Test
+    void mirrorFailingLeavesTheInstanceArchiveIntact() throws IOException {
+        write(tmp.resolve("data/user/templates/a.nbt"), "carriage");
+        Path archive = PlayerDataBackup.create(backups(), sources(), "world-load", "1.2.3")
+            .archive().orElseThrow();
+        // A FILE where the external root should be: creating the directory cannot succeed. Stands
+        // in for a read-only or forbidden home directory, which must never turn a backup that
+        // already succeeded into a failure.
+        Path blocked = tmp.resolve("blocked");
+        Files.writeString(blocked, "not a directory");
+
+        assertFalse(PlayerDataBackup.mirror(archive, blocked));
+        assertTrue(Files.isRegularFile(archive));
     }
 
     @Test

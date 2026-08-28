@@ -152,6 +152,39 @@ public final class PlayerDataBackup {
         return new Result(Optional.of(archive), entries.size(), bytes, digest);
     }
 
+    /**
+     * Copy {@code archive} into {@code externalRoot} and thin that folder with the same ladder.
+     *
+     * <p>Best-effort by design: the in-instance archive has already been written and verified by
+     * the time this runs, so a read-only home directory, a full disk or a sandbox that forbids the
+     * path must degrade to a warning rather than turn a successful backup into a failed one.</p>
+     *
+     * @return true when the copy landed
+     */
+    public static synchronized boolean mirror(Path archive, Path externalRoot) {
+        if (archive == null || externalRoot == null || !Files.isRegularFile(archive)) return false;
+        try {
+            Files.createDirectories(externalRoot);
+            Path target = externalRoot.resolve(archive.getFileName().toString());
+            if (Files.exists(target)) return true; // already mirrored; nothing to redo
+            Path tmp = target.resolveSibling(target.getFileName() + TMP_SUFFIX);
+            try {
+                Files.copy(archive, tmp, StandardCopyOption.REPLACE_EXISTING);
+                replace(tmp, target);
+            } finally {
+                try { Files.deleteIfExists(tmp); } catch (IOException ignored) { }
+            }
+            LOGGER.info("[DungeonTrain] Backup: mirrored {} outside the instance to {}",
+                archive.getFileName(), externalRoot);
+            prune(externalRoot);
+            return true;
+        } catch (IOException | SecurityException e) {
+            LOGGER.warn("[DungeonTrain] Backup: couldn't mirror to {} ({}). The in-instance backup "
+                + "is unaffected.", externalRoot, e.toString());
+            return false;
+        }
+    }
+
     /** Every archive in {@code backupsRoot}, newest first. Never throws — an unreadable
      *  folder yields an empty list, because "no backups" must not take the game down. */
     public static List<Path> listArchives(Path backupsRoot) {

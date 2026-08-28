@@ -46,6 +46,7 @@ public final class DataRecoveryScreen extends Screen {
     private static final String KEY_NEVER = "gui.dungeontrain.data_recovery.never";
     private static final String KEY_BACKUP = "gui.dungeontrain.data_recovery.candidate.backup";
     private static final String KEY_BACKUP_FOLDER = "gui.dungeontrain.data_recovery.candidate.folder";
+    private static final String KEY_BACKUP_EXTERNAL = "gui.dungeontrain.data_recovery.candidate.external";
     private static final String KEY_SIBLING = "gui.dungeontrain.data_recovery.candidate.sibling";
     private static final String KEY_DONE_TITLE = "gui.dungeontrain.data_recovery.done.title";
     private static final String KEY_DONE_BODY = "gui.dungeontrain.data_recovery.done.body";
@@ -197,7 +198,10 @@ public final class DataRecoveryScreen extends Screen {
         lines.add(Component.translatable(KEY_WHY));
         boolean anyBackup = false;
         for (PlayerDataRecovery.Candidate candidate : candidates) {
-            if (candidate.kind() == PlayerDataRecovery.Kind.BACKUP) {
+            if (candidate.kind() == PlayerDataRecovery.Kind.EXTERNAL_BACKUP) {
+                lines.add(Component.translatable(KEY_BACKUP_EXTERNAL,
+                    candidate.path().getFileName().toString(), candidate.path().getParent()));
+            } else if (candidate.kind() == PlayerDataRecovery.Kind.BACKUP) {
                 anyBackup = true;
                 lines.add(Component.translatable(KEY_BACKUP, candidate.path().getFileName().toString()));
             } else {

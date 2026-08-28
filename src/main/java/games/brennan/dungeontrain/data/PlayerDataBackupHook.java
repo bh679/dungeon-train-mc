@@ -72,6 +72,22 @@ public final class PlayerDataBackupHook {
 
     private PlayerDataBackupHook() {}
 
+    /**
+     * The player's chosen backup mode.
+     *
+     * <p>Read reflectively-safely: the setting lives in the CLIENT config, and this class also runs
+     * on dedicated servers where that config was never loaded. A dedicated server therefore keeps
+     * the default rather than silently stopping backups — losing a server's data because a
+     * client-side toggle wasn't there would be the worst possible reading of the setting.</p>
+     */
+    static BackupMode mode() {
+        try {
+            return games.brennan.dungeontrain.config.ClientDisplayConfig.getBackupMode();
+        } catch (Throwable notOnThisSide) {
+            return BackupMode.DEFAULT;
+        }
+    }
+
     // ---- Triggers ----
 
     @SubscribeEvent(priority = EventPriority.LOWEST)
@@ -150,8 +166,14 @@ public final class PlayerDataBackupHook {
     /** Write a restore point immediately. Never throws — a failed backup must not stop the game. */
     static void writeNow(String reason) {
         try {
-            PlayerDataBackup.create(PlayerDataPaths.backupsRoot(), sources(), reason,
-                VersionInfo.VERSION);
+            BackupMode mode = mode();
+            if (!mode.writesAnything()) return;
+            PlayerDataBackup.Result result = PlayerDataBackup.create(
+                PlayerDataPaths.backupsRoot(), sources(), reason, VersionInfo.VERSION);
+            if (mode.writesOutsideTheInstance() && result.wrote()) {
+                PlayerDataPaths.externalBackupsRoot().ifPresent(
+                    external -> PlayerDataBackup.mirror(result.archive().orElseThrow(), external));
+            }
         } catch (Exception e) {
             LOGGER.warn("[DungeonTrain] Backup: couldn't write a restore point ({}): {}",
                 reason, e.toString());

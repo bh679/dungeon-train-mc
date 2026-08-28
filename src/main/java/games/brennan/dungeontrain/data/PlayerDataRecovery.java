@@ -49,7 +49,7 @@ public final class PlayerDataRecovery {
     static final int MAX_SIBLINGS_PER_LEVEL = 64;
 
     /** Where a candidate came from. Ordinal order is the ranking the player is offered. */
-    public enum Kind { BACKUP, SIBLING_INSTANCE }
+    public enum Kind { EXTERNAL_BACKUP, BACKUP, SIBLING_INSTANCE }
 
     /**
      * Something worth restoring.
@@ -118,6 +118,13 @@ public final class PlayerDataRecovery {
      */
     public static List<Candidate> findCandidates(Path dataRoot, Path gameDir) {
         List<Candidate> found = new ArrayList<>();
+        // Ranked first: an archive this install wrote, kept OUTSIDE the instance. It has the same
+        // certain provenance as an in-instance backup and survives strictly more — it is the only
+        // candidate that exists at all when the instance was deleted and reinstalled.
+        for (Path external : PlayerDataPaths.externalBackupsRoot()
+                .map(PlayerDataBackup::listArchives).orElse(List.of())) {
+            found.add(new Candidate(Kind.EXTERNAL_BACKUP, external, external.getFileName().toString()));
+        }
         for (Path archive : PlayerDataBackup.listArchives(dataRoot.resolve(PlayerDataPaths.BACKUPS))) {
             found.add(new Candidate(Kind.BACKUP, archive, archive.getFileName().toString()));
         }
@@ -201,7 +208,9 @@ public final class PlayerDataRecovery {
      */
     public static int restore(Candidate candidate, Path dataRoot, Path dtpacksRoot) throws IOException {
         return switch (candidate.kind()) {
-            case BACKUP -> PlayerDataBackup.restore(candidate.path(), backupTargets(dataRoot, dtpacksRoot));
+            // Both are archives this install wrote, in the same format — only the folder differs.
+            case EXTERNAL_BACKUP, BACKUP ->
+                PlayerDataBackup.restore(candidate.path(), backupTargets(dataRoot, dtpacksRoot));
             case SIBLING_INSTANCE -> restoreFromInstance(candidate.path(), dataRoot);
         };
     }

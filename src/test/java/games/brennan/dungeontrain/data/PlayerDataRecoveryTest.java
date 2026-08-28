@@ -144,6 +144,23 @@ class PlayerDataRecoveryTest {
     }
 
     @Test
+    void backupModeSurvivesAnUnknownStoredValue() {
+        // The mode is read on the server thread including where no client config exists, so an
+        // unreadable or unknown value must resolve to the default, never to "no backups".
+        assertEquals(games.brennan.dungeontrain.data.BackupMode.EXTERNAL,
+            games.brennan.dungeontrain.data.BackupMode.DEFAULT);
+        assertEquals(games.brennan.dungeontrain.data.BackupMode.DEFAULT,
+            games.brennan.dungeontrain.data.BackupMode.parse("nonsense"));
+        assertEquals(games.brennan.dungeontrain.data.BackupMode.DEFAULT,
+            games.brennan.dungeontrain.data.BackupMode.parse(null));
+        assertEquals(games.brennan.dungeontrain.data.BackupMode.OFF,
+            games.brennan.dungeontrain.data.BackupMode.parse("off"));
+        assertFalse(games.brennan.dungeontrain.data.BackupMode.OFF.writesAnything());
+        assertFalse(games.brennan.dungeontrain.data.BackupMode.INSTANCE.writesOutsideTheInstance());
+        assertTrue(games.brennan.dungeontrain.data.BackupMode.EXTERNAL.writesOutsideTheInstance());
+    }
+
+    @Test
     void ranksBackupsAheadOfSiblings() throws IOException {
         write(dataRoot().resolve("backups/dungeontrain-backup-20260101-000000.zip"), "z");
         write(tmp.resolve("instance-old/config/dungeontrain/user/a.nbt"), "carriage");
