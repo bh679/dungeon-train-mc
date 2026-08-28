@@ -104,6 +104,16 @@ public final class DataRecoveryPromptHandler {
 
     private static List<PlayerDataRecovery.Candidate> scan() {
         try {
+            // Dev builds keep tripping this. A working copy is routinely left with an empty data
+            // root — a branch switch, a wiped run/ folder, a test that moved things aside — which is
+            // the exact signature of a player who lost everything, so the card greets you on nearly
+            // every launch. Suppressing it here rather than in PlayerDataRecovery keeps the scan and
+            // /dtrestore working: the command is asked for, and only the unprompted card is noise.
+            if (DungeonTrain.isDevBuild()) {
+                LOGGER.debug("[DungeonTrain] Data recovery: dev build ({}), not offering the prompt. "
+                    + "Use /dtrestore to reach it deliberately.", VersionInfo.BRANCH);
+                return List.of();
+            }
             if (Files.exists(dismissedMarker())) return List.of();
             Path dataRoot = PlayerDataPaths.root();
             if (!PlayerDataRecovery.looksEmptied(dataRoot, PlayerDataPaths.configRoot(),
