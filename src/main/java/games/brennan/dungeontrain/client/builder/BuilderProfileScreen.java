@@ -258,7 +258,7 @@ public final class BuilderProfileScreen extends Screen {
                         packet.id(), false)
                 : new BuilderOpenPacket(mode.id(), kind.id(), packet.id(),
                         kind == BuilderPhotoPaths.Kind.PART ? packet.subKind() : "", false));
-        onClose();
+        closeToGame();
     }
 
     /**
@@ -284,10 +284,10 @@ public final class BuilderProfileScreen extends Screen {
         String current = EditorStatusHudOverlay.category().toLowerCase(java.util.Locale.ROOT);
         if (target.equals(current)) {
             if (enter != null) CommandRunner.run(enter);
-            onClose();
+            closeToGame();
             return;
         }
-        onClose();
+        closeToGame();
         CommandMenuState.openAt(new UnsavedCheckScreen(target, enter == null ? "" : enter));
     }
 
@@ -302,6 +302,17 @@ public final class BuilderProfileScreen extends Screen {
         DungeonTrainNet.sendToServer(new BuilderProfileDownloadPacket(relayId, resolution, name));
         this.downloadNote = Component.translatable("gui.dungeontrain.builder.profile.downloading");
         if (this.downloadButton != null) this.downloadButton.active = false;
+    }
+
+    /**
+     * Close all the way to the game, not back to whatever opened this screen.
+     *
+     * <p>{@link #onClose} returns to {@code lastScreen}, which is the pause menu when My Builds was
+     * opened from it — so the player would be teleported to their build and left looking at the Esc
+     * menu. A load ends with the build in front of you or it hasn't finished.</p>
+     */
+    private void closeToGame() {
+        this.minecraft.setScreen(null);
     }
 
     /** The line to show for an outcome — each sends the player somewhere different. */
