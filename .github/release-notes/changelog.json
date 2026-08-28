@@ -9623,9 +9623,9 @@
         "That prompt now offers Default Train (Live) first"
       ],
       "date": "2026-08-28",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.706.0",
+      "released_at": "2026-08-28T17:04:12Z"
     },
     {
       "id": "frontier-stage-and-placement",
@@ -9640,9 +9640,9 @@
       ],
       "pr": 1165,
       "date": "2026-08-28",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.706.0",
+      "released_at": "2026-08-28T17:04:12Z"
     },
     {
       "id": "editor-bypass-save-before-switch",
@@ -9653,9 +9653,9 @@
       "highlights": [],
       "pr": 1166,
       "date": "2026-08-28",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.706.0",
+      "released_at": "2026-08-28T17:04:12Z"
     }
   ]
 }
