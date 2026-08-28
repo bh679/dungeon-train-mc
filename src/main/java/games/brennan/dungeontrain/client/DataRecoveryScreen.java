@@ -200,13 +200,13 @@ public final class DataRecoveryScreen extends Screen {
         for (PlayerDataRecovery.Candidate candidate : candidates) {
             if (candidate.kind() == PlayerDataRecovery.Kind.EXTERNAL_BACKUP) {
                 lines.add(Component.translatable(KEY_BACKUP_EXTERNAL,
-                    candidate.path().getFileName().toString(), candidate.path().getParent()));
+                    candidate.fileName(), candidate.folder()));
             } else if (candidate.kind() == PlayerDataRecovery.Kind.BACKUP) {
                 anyBackup = true;
-                lines.add(Component.translatable(KEY_BACKUP, candidate.path().getFileName().toString()));
+                lines.add(Component.translatable(KEY_BACKUP, candidate.fileName()));
             } else {
                 lines.add(Component.translatable(KEY_SIBLING,
-                    candidate.description(), candidate.path().toString()));
+                    candidate.description(), candidate.location()));
             }
         }
         if (anyBackup) {

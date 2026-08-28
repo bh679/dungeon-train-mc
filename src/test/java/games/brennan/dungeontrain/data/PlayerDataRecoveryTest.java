@@ -135,6 +135,24 @@ class PlayerDataRecoveryTest {
     }
 
     @Test
+    void candidateExposesItsDisplayFormsAsStrings() {
+        // Component.translatable throws at RENDER time on a non-String argument, so a Path passed
+        // straight in compiles and then crashes the screen — which is how clicking "What happened?"
+        // took the game down. These accessors are what the screen uses instead.
+        PlayerDataRecovery.Candidate c = new PlayerDataRecovery.Candidate(
+            PlayerDataRecovery.Kind.EXTERNAL_BACKUP,
+            Path.of("/tmp/DungeonTrain/backups/dungeontrain-backup-20260101-000000.zip"), "x");
+        assertEquals("dungeontrain-backup-20260101-000000.zip", c.fileName());
+        assertEquals("/tmp/DungeonTrain/backups", c.folder());
+        assertEquals("/tmp/DungeonTrain/backups/dungeontrain-backup-20260101-000000.zip", c.location());
+
+        // A root path has no parent — empty, never the string "null".
+        PlayerDataRecovery.Candidate root = new PlayerDataRecovery.Candidate(
+            PlayerDataRecovery.Kind.SIBLING_INSTANCE, Path.of("/"), "y");
+        assertEquals("", root.folder());
+    }
+
+    @Test
     void findsThisInstallsOwnBackups() throws IOException {
         write(dataRoot().resolve("backups/dungeontrain-backup-20260101-000000.zip"), "z");
 

@@ -58,7 +58,31 @@ public final class PlayerDataRecovery {
      * @param path        the archive, or the sibling instance root — shown to the player verbatim
      * @param description short human-readable label
      */
-    public record Candidate(Kind kind, Path path, String description) {}
+    public record Candidate(Kind kind, Path path, String description) {
+
+        /**
+         * The archive's filename, or the instance folder's name, as a String.
+         *
+         * <p>String, not {@link Path}, on purpose: these values are handed to
+         * {@code Component.translatable}, which accepts only Component / Number / Boolean / String
+         * and throws at render time on anything else. Passing a {@code Path} compiles cleanly and
+         * then crashes the screen — it did exactly that. Exposing the display forms as Strings
+         * means the mistake can no longer be made.</p>
+         */
+        public String fileName() {
+            return path == null || path.getFileName() == null ? "" : path.getFileName().toString();
+        }
+
+        /** The full path, as a String, for the same reason as {@link #fileName()}. */
+        public String location() {
+            return path == null ? "" : path.toString();
+        }
+
+        /** The containing folder, as a String; empty when there is no parent. */
+        public String folder() {
+            return path == null || path.getParent() == null ? "" : path.getParent().toString();
+        }
+    }
 
     private PlayerDataRecovery() {}
 
