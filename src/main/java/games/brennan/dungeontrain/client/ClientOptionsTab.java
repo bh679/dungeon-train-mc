@@ -70,6 +70,8 @@ public enum ClientOptionsTab {
         POLITICAL_FILTER,
         BOOK_AUTHOR_CHAT,
         CINEMATIC_HOTKEY,
+        /** Non-interactive caption introducing the backup rows below it. */
+        BACKUPS_HEADING,
         /** Where restore points of builds and progress are written. */
         BACKUPS,
         /** How many archives to keep per Dungeon Train version. */
@@ -109,7 +111,18 @@ public enum ClientOptionsTab {
      * LEADER is named — the rest of the group pairs among themselves as usual.</p>
      */
     private static final java.util.Set<Row> GROUP_LEADERS =
-            java.util.EnumSet.of(Row.BACKUPS, Row.TRANSLATE);
+            java.util.EnumSet.of(Row.BACKUPS_HEADING, Row.TRANSLATE);
+
+    /**
+     * Rows that are captions rather than settings: no widget to operate, and always a line to
+     * themselves.
+     */
+    private static final java.util.Set<Row> HEADINGS = java.util.EnumSet.of(Row.BACKUPS_HEADING);
+
+    /** Whether {@code row} is a caption rather than a setting. */
+    public static boolean isHeading(Row row) {
+        return HEADINGS.contains(row);
+    }
 
     /** Whether {@code row} begins a visual group. See {@link #GROUP_LEADERS}. */
     public static boolean startsGroup(Row row) {
@@ -126,13 +139,17 @@ public enum ClientOptionsTab {
                 }
                 rows.add(Row.BOOK_AUTHOR_CHAT);
                 rows.add(Row.CINEMATIC_HOTKEY);
+                if (hasTranslateTarget) {
+                    rows.add(Row.TRANSLATE);
+                }
+                // The backup block goes last, behind its own heading — it is the only group here
+                // with enough rows to need one, and the heading is what separates it from the
+                // ungrouped settings above.
+                rows.add(Row.BACKUPS_HEADING);
                 rows.add(Row.BACKUPS);
                 // Adjacent so the width packer pairs the two short backup rows on one line.
                 rows.add(Row.BACKUPS_PER_VERSION);
                 rows.add(Row.CLEAR_BACKUPS);
-                if (hasTranslateTarget) {
-                    rows.add(Row.TRANSLATE);
-                }
             }
             case TRAIN -> {
                 // The two short-captioned rows lead so they pair on one line; the two whose captions

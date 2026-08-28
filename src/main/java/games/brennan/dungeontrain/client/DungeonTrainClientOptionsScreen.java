@@ -20,6 +20,7 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.CycleButton;
 import net.minecraft.client.gui.components.OptionsList;
 import net.minecraft.client.gui.screens.ConfirmScreen;
+import net.minecraft.client.gui.components.StringWidget;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.components.tabs.Tab;
 import net.minecraft.client.gui.components.tabs.TabManager;
@@ -248,6 +249,11 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
      * pair happily on AUTO and overflow the moment the player cycled it to a longer value.</p>
      */
     private boolean fitsNarrow(ClientOptionsTab.Row row) {
+        // A caption spans the block it introduces; pairing it with a setting would read as a label
+        // for that setting alone.
+        if (ClientOptionsTab.isHeading(row)) {
+            return false;
+        }
         for (Component candidate : labelCandidates(row)) {
             if (this.font.width(candidate) > ROW_W - TEXT_PADDING) {
                 return false;
@@ -275,6 +281,8 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                 }
                 yield out;
             }
+            case BACKUPS_HEADING -> List.of(
+                    Component.translatable("gui.dungeontrain.options.backups_heading"));
             case BACKUPS_PER_VERSION -> List.of(backupsPerVersionLabel(
                     Component.translatable("gui.dungeontrain.options.backups_per_version"),
                     BACKUPS_PER_VERSION_MAX));
@@ -437,6 +445,15 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                                 });
                 button.setTooltip(backupModeTip(ClientDisplayConfig.getBackupMode()));
                 yield button;
+            }
+
+            // A caption, not a control: left-aligned and unfocusable, so keyboard navigation
+            // steps straight past it to the settings it introduces.
+            case BACKUPS_HEADING -> {
+                StringWidget heading = new StringWidget(width, ROW_H,
+                        Component.translatable("gui.dungeontrain.options.backups_heading"), this.font);
+                heading.alignLeft();
+                yield heading;
             }
 
             case BACKUPS_PER_VERSION -> slider(backupsPerVersionOption(), width);
