@@ -34,6 +34,9 @@ public final class DataRecoveryScreen extends Screen {
 
     private static final String KEY_TITLE = "gui.dungeontrain.data_recovery.title";
     private static final String KEY_BODY = "gui.dungeontrain.data_recovery.body";
+    private static final String KEY_WHY = "gui.dungeontrain.data_recovery.why";
+    private static final String KEY_DETAILS = "gui.dungeontrain.data_recovery.details";
+    private static final String KEY_DETAILS_HIDE = "gui.dungeontrain.data_recovery.details.hide";
     private static final String KEY_RESTORE = "gui.dungeontrain.data_recovery.restore";
     private static final String KEY_RESTORE_TOOLTIP = "gui.dungeontrain.data_recovery.restore.tooltip";
     private static final String KEY_LATER = "gui.dungeontrain.data_recovery.later";
@@ -49,6 +52,13 @@ public final class DataRecoveryScreen extends Screen {
 
     /** Candidates listed in full; beyond this the rest are summarised as "+N more". */
     private static final int MAX_LISTED = 5;
+
+    /**
+     * Whether the player has opened the details. Collapsed, the card says what happened and offers
+     * the fix in two lines; the why and the file paths are a click away. Static so it survives the
+     * screen being rebuilt, and so reopening the prompt in the same session remembers the choice.
+     */
+    private static boolean expanded = false;
 
     private static final int CARD_W = 300;
     private static final int PAD = 14;
@@ -104,7 +114,10 @@ public final class DataRecoveryScreen extends Screen {
         int contentH = font.lineHeight + GAP_TITLE
                 + bodyLines.size() * LINE_STEP + GAP_BODY
                 + listLines.size() * LINE_STEP + GAP_LIST
-                + BUTTON_H;
+                + BUTTON_H
+                // The details toggle sits on its own row above the actions, except in the
+                // "done" state, which has nothing left to explain.
+                + (restoredFiles == null ? BUTTON_H + BUTTON_GAP : 0);
 
         panelW = CARD_W;
         panelH = PAD + contentH + PAD;
@@ -127,6 +140,12 @@ public final class DataRecoveryScreen extends Screen {
                     .build());
             return;
         }
+        addRenderableWidget(Button.builder(
+                Component.translatable(expanded ? KEY_DETAILS_HIDE : KEY_DETAILS), b -> toggleDetails())
+                .bounds(innerLeft, cursor, innerWidth, BUTTON_H)
+                .build());
+        cursor += BUTTON_H + BUTTON_GAP;
+
         int third = (innerWidth - 2 * BUTTON_GAP) / 3;
         addRenderableWidget(Button.builder(Component.translatable(KEY_RESTORE), b -> restore())
                 .bounds(innerLeft, cursor, third, BUTTON_H)
@@ -144,7 +163,14 @@ public final class DataRecoveryScreen extends Screen {
     }
 
     private Component bodyText() {
-        if (restoredFiles == null) return Component.translatable(KEY_BODY);
+        if (restoredFiles == null) {
+            Component body = Component.translatable(KEY_BODY);
+            // The explanation is the part most players don't need — it only matters if they want to
+            // know why it happened before deciding.
+            return expanded
+                ? Component.empty().append(body).append(" ").append(Component.translatable(KEY_WHY))
+                : body;
+        }
         if (restoreFailed) return Component.translatable(KEY_DONE_FAIL);
         return restoredFiles == 0
             ? Component.translatable(KEY_DONE_NOTHING)
@@ -153,7 +179,7 @@ public final class DataRecoveryScreen extends Screen {
 
     /** The middle block: what was found and where, so the player can judge it for themselves. */
     private List<Component> listText() {
-        if (restoredFiles != null) return List.of();
+        if (restoredFiles != null || !expanded) return List.of();
         List<Component> lines = new ArrayList<>();
         int listed = Math.min(candidates.size(), MAX_LISTED);
         for (int i = 0; i < listed; i++) {
@@ -166,6 +192,12 @@ public final class DataRecoveryScreen extends Screen {
             lines.add(Component.translatable(KEY_MORE, candidates.size() - listed));
         }
         return lines;
+    }
+
+    /** Show or hide the why-it-happened line and the list of places to restore from. */
+    private void toggleDetails() {
+        expanded = !expanded;
+        rebuildWidgets();
     }
 
     /** Restore the top-ranked candidate. Additive — nothing already on disk is touched. */

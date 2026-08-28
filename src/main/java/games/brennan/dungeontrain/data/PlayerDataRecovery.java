@@ -10,6 +10,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Finds player data that an install already lost, and works out what could be put back.
@@ -71,9 +72,34 @@ public final class PlayerDataRecovery {
      */
     public static boolean looksEmptied(Path dataRoot, Path configDir, Path dtpacksRoot) {
         if (hasLiveData(dataRoot)) return false;
-        if (PlayerDataMigration.containsAnyFile(dtpacksRoot)) return false;
+        if (hasSavedPackages(dtpacksRoot)) return false;
         // Data still sitting in config/ isn't lost — it's about to be migrated.
         return !PlayerDataMigration.hasLegacyData(configDir);
+    }
+
+    /**
+     * Does {@code dtpacks/} hold an actual saved package — an extracted folder with content, or a
+     * {@code .zip} snapshot?
+     *
+     * <p>Deliberately <b>not</b> "does it contain any file". {@code UserContentImporter} writes a
+     * {@code README.txt} into that folder on first run, so a plain file check is true on every
+     * install and would suppress the recovery offer for everyone — including the player who just
+     * lost everything. Only the two shapes {@code PackageRegistry} recognises as a package count.</p>
+     */
+    static boolean hasSavedPackages(Path dtpacksRoot) {
+        if (dtpacksRoot == null || !Files.isDirectory(dtpacksRoot)) return false;
+        try (var children = Files.list(dtpacksRoot)) {
+            for (Path child : children.toList()) {
+                if (Files.isDirectory(child)) {
+                    if (PlayerDataMigration.containsAnyFile(child)) return true;
+                } else if (child.getFileName().toString().toLowerCase(Locale.ROOT).endsWith(".zip")) {
+                    return true;
+                }
+            }
+        } catch (IOException | SecurityException e) {
+            LOGGER.debug("[DungeonTrain] Recovery: couldn't list {}: {}", dtpacksRoot, e.toString());
+        }
+        return false;
     }
 
     /** Is there any build, advancement or stat at the live root? */
@@ -180,16 +206,15 @@ public final class PlayerDataRecovery {
         };
     }
 
-    /** The label → directory mapping backups are written with, and therefore restored into. */
+    /**
+     * The label → directory mapping backups are written with, and therefore restored into. Must
+     * stay in step with {@code PlayerDataBackupHook.sources()} — the labels are what tell a restore
+     * which tree each archive entry belongs to.
+     */
     public static List<PlayerDataBackup.Source> backupTargets(Path dataRoot, Path dtpacksRoot) {
-        List<PlayerDataBackup.Source> targets = new ArrayList<>();
-        for (PlayerDataPaths.Relocation relocation : PlayerDataPaths.RELOCATIONS) {
-            if (relocation.kind() != PlayerDataPaths.Kind.DIRECTORY) continue;
-            targets.add(new PlayerDataBackup.Source(
-                relocation.newRelative(), relocation.newPath(dataRoot)));
-        }
-        targets.add(new PlayerDataBackup.Source("dtpacks", dtpacksRoot));
-        return List.copyOf(targets);
+        return List.of(
+            new PlayerDataBackup.Source(PlayerDataPaths.ROOT_DIR, dataRoot),
+            new PlayerDataBackup.Source("dtpacks", dtpacksRoot));
     }
 
     /**

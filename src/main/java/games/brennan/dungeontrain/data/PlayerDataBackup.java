@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
@@ -70,8 +71,24 @@ public final class PlayerDataBackup {
      */
     static final long MAX_TOTAL_BYTES = 512L * 1024 * 1024;
 
-    /** One tree to back up. {@code label} becomes the top-level folder inside the archive. */
-    public record Source(String label, Path dir) {}
+    /**
+     * One tree to back up. {@code label} becomes the top-level folder inside the archive.
+     *
+     * @param excludeTopLevel names of direct children of {@code dir} to skip — this is how the
+     *                        backups folder stays out of its own archives
+     */
+    public record Source(String label, Path dir, Set<String> excludeTopLevel) {
+
+        public Source(String label, Path dir) {
+            this(label, dir, Set.of());
+        }
+
+        boolean excludes(Path dir, Path file) {
+            Path relative = dir.relativize(file);
+            return relative.getNameCount() > 0
+                && excludeTopLevel.contains(relative.getName(0).toString());
+        }
+    }
 
     /** What {@link #create} did. {@code archive} is empty when nothing needed backing up. */
     public record Result(Optional<Path> archive, int fileCount, long totalBytes, String digest) {
@@ -212,6 +229,7 @@ public final class PlayerDataBackup {
                 @Override
                 public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
                     if (!attrs.isRegularFile()) return FileVisitResult.CONTINUE;
+                    if (source.excludes(dir, file)) return FileVisitResult.CONTINUE;
                     String relative = dir.relativize(file).toString().replace('\\', '/');
                     entries.add(new Entry(file, source.label() + "/" + relative,
                         attrs.size(), attrs.lastModifiedTime().toMillis()));

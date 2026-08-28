@@ -42,8 +42,17 @@ public final class DataRecoveryPromptHandler {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    /** Ticks to wait after the title screen initialises before opening. */
-    private static final int OPEN_DELAY_TICKS = 30;
+    /**
+     * Ticks to wait after the title screen initialises before opening.
+     *
+     * <p>Deliberately <b>shorter</b> than the other title-screen prompts (the developer welcome and
+     * the config-deviation notice both use 24). They all disarm themselves the moment another
+     * screen takes over, so whichever opens first wins the visit and the rest wait for the player
+     * to close it — and "your builds and progress are missing" outranks anything else we might say
+     * here. Found the hard way: at 30 ticks the developer popup opened first and this one silently
+     * queued behind it.</p>
+     */
+    private static final int OPEN_DELAY_TICKS = 18;
 
     static final String DISMISSED_MARKER = "recovery-dismissed.marker";
 

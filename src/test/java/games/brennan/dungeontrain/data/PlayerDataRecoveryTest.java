@@ -10,6 +10,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -74,6 +75,42 @@ class PlayerDataRecoveryTest {
         // whose builds are all in a saved package still has them.
         write(dtpacksRoot().resolve("My Pack/templates/a.nbt"), "carriage");
         assertFalse(PlayerDataRecovery.looksEmptied(dataRoot(), configDir(), dtpacksRoot()));
+    }
+
+    @Test
+    void aZippedPackageSnapshotIsAlsoNotALoss() throws IOException {
+        write(dtpacksRoot().resolve("My Pack.zip"), "PK");
+        assertTrue(PlayerDataRecovery.hasSavedPackages(dtpacksRoot()));
+        assertFalse(PlayerDataRecovery.looksEmptied(dataRoot(), configDir(), dtpacksRoot()));
+    }
+
+    @Test
+    void theDtpacksReadmeIsNotASavedPackage() throws IOException {
+        // UserContentImporter writes this on first run, so it is present on EVERY install. Counting
+        // it as a saved package suppressed the recovery offer for everyone — caught on a live boot,
+        // where the prompt never appeared for an install that had genuinely lost everything.
+        write(dtpacksRoot().resolve("README.txt"), "Dungeon Train packages folder.");
+        assertFalse(PlayerDataRecovery.hasSavedPackages(dtpacksRoot()));
+        assertTrue(PlayerDataRecovery.looksEmptied(dataRoot(), configDir(), dtpacksRoot()));
+    }
+
+    @Test
+    void anEmptyPackageFolderIsNotASavedPackage() throws IOException {
+        Files.createDirectories(dtpacksRoot().resolve("Abandoned Pack"));
+        assertFalse(PlayerDataRecovery.hasSavedPackages(dtpacksRoot()));
+    }
+
+    @Test
+    void backupTargetsMatchTheLabelsBackupsAreWrittenWith() {
+        // If these two lists drift, a restore silently writes nothing: every archive entry's label
+        // fails to match a target and is skipped.
+        List<PlayerDataBackup.Source> targets =
+            PlayerDataRecovery.backupTargets(dataRoot(), dtpacksRoot());
+        List<String> labels = targets.stream().map(PlayerDataBackup.Source::label).toList();
+        assertEquals(List.of(PlayerDataPaths.ROOT_DIR, "dtpacks"), labels);
+        assertNotNull(PlayerDataBackup.targetFor(
+            PlayerDataPaths.ROOT_DIR + "/user/templates/a.nbt", targets));
+        assertNotNull(PlayerDataBackup.targetFor("dtpacks/My Pack/templates/a.nbt", targets));
     }
 
     @Test

@@ -36,6 +36,12 @@ class PlayerDataBackupTest {
             new PlayerDataBackup.Source("achievements", tmp.resolve("data/achievements")));
     }
 
+    /** The shape the game actually uses: the whole data root, with backups/ excluded. */
+    private List<PlayerDataBackup.Source> rootSource() {
+        return List.of(new PlayerDataBackup.Source(
+            "dungeontrain", tmp.resolve("data"), java.util.Set.of("backups")));
+    }
+
     @Test
     void archivesEverySourceUnderItsOwnLabel() throws IOException {
         write(tmp.resolve("data/user/templates/a.nbt"), "carriage");
@@ -54,6 +60,28 @@ class PlayerDataBackupTest {
             assertTrue(manifest.contains("\"modVersion\": \"1.2.3\""));
             assertTrue(manifest.contains("\"reason\": \"launch\""));
             assertTrue(manifest.contains(result.digest()));
+        }
+    }
+
+    @Test
+    void archivingTheWholeRootCatchesLooseFilesAndExcludesBackups() throws IOException {
+        // The loose files under the root were missed by an earlier per-folder enumeration, so
+        // dtpacks-state.json (which package is active) and the queued uploads were in no archive.
+        write(tmp.resolve("data/dtpacks-state.json"), "{}");
+        write(tmp.resolve("data/outbox/relay-outbox.json"), "[]");
+        write(tmp.resolve("data/user/templates/a.nbt"), "carriage");
+        write(tmp.resolve("data/backups/dungeontrain-backup-20260101-000000.zip"), "old archive");
+
+        PlayerDataBackup.Result result = PlayerDataBackup.create(
+            tmp.resolve("data/backups"), rootSource(), "world-load", "1.2.3");
+
+        assertEquals(3, result.fileCount(), "the previous archive must not be inside this one");
+        try (ZipFile zip = new ZipFile(result.archive().orElseThrow().toFile())) {
+            assertNotNull(zip.getEntry("dungeontrain/dtpacks-state.json"));
+            assertNotNull(zip.getEntry("dungeontrain/outbox/relay-outbox.json"));
+            assertNotNull(zip.getEntry("dungeontrain/user/templates/a.nbt"));
+            assertNull(zip.getEntry(
+                "dungeontrain/backups/dungeontrain-backup-20260101-000000.zip"));
         }
     }
 

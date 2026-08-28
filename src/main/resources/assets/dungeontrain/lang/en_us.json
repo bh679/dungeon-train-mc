@@ -189,7 +189,10 @@
   "gui.dungeontrain.config_deviation.close": "Close",
 
   "gui.dungeontrain.data_recovery.title": "Missing Builds and Progress",
-  "gui.dungeontrain.data_recovery.body": "Dungeon Train can't find your saved builds or your advancements. Modpack updates can delete them. Here's what was found that might still have them:",
+  "gui.dungeontrain.data_recovery.body": "Your builds and advancements are missing. Dungeon Train can put them back.",
+  "gui.dungeontrain.data_recovery.why": "They were most likely deleted by a modpack update, which replaces the config folder they used to live in. These are the places they might still exist:",
+  "gui.dungeontrain.data_recovery.details": "What happened?",
+  "gui.dungeontrain.data_recovery.details.hide": "Hide details",
   "gui.dungeontrain.data_recovery.candidate.backup": "Backup (%s): %s",
   "gui.dungeontrain.data_recovery.candidate.sibling": "Another install with %s: %s",
   "gui.dungeontrain.data_recovery.more": "...and %s more",
