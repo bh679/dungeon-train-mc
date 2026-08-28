@@ -9559,9 +9559,9 @@
         "A name you already use asks what to do instead of refusing"
       ],
       "date": "2026-08-28",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.703.0",
+      "released_at": "2026-08-28T15:36:14Z"
     },
     {
       "id": "night-and-sunrise-skyboxes",
@@ -9575,9 +9575,9 @@
         "Both work anywhere the other skybox blocks do, carriage walls included"
       ],
       "date": "2026-08-28",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.703.0",
+      "released_at": "2026-08-28T15:36:14Z"
     },
     {
       "id": "backup-retention-and-clear",
@@ -9590,9 +9590,9 @@
         "Clear Backups shows how much disk your backups are using and deletes them, inside and outside your Minecraft folder, after confirming."
       ],
       "date": "2026-08-28",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.703.0",
+      "released_at": "2026-08-28T15:36:14Z"
     },
     {
       "id": "trashslot-enabled-silent",
@@ -9607,9 +9607,9 @@
       ],
       "pr": 1161,
       "date": "2026-08-28",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.703.0",
+      "released_at": "2026-08-28T15:36:14Z"
     }
   ]
 }
