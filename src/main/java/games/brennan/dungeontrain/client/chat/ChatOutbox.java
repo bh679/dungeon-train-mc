@@ -6,7 +6,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.client.DevMessageConsentClient;
-import net.neoforged.fml.loading.FMLPaths;
+import games.brennan.dungeontrain.data.PlayerDataPaths;
 import org.slf4j.Logger;
 
 import java.nio.charset.StandardCharsets;
@@ -56,7 +56,11 @@ public final class ChatOutbox {
     static final int MAX_ITEMS = 200;
     /** Delivered-message ids kept for the history filter ("this line was mine") — oldest evicted. */
     static final int MAX_SENT_IDS = 500;
+    /** Pre-relocation name, sitting loose in {@code config/}. Kept for the read fallback. */
     private static final String FILE_NAME = "dungeontrain-chat-outbox.json";
+
+    /** Name inside {@code <gameDir>/dungeontrain/outbox/}. */
+    private static final String NEW_FILE_NAME = "chat-outbox.json";
 
     private final LinkedHashMap<String, Item> pending = new LinkedHashMap<>(); // key -> item (oldest first)
     private final Set<String> sent = new LinkedHashSet<>();                    // delivered Discord msg ids (oldest first)
@@ -185,7 +189,9 @@ public final class ChatOutbox {
         }
         loaded = true;
         try {
-            this.file = FMLPaths.CONFIGDIR.get().resolve(FILE_NAME);
+            this.file = new PlayerDataPaths.Located(
+                PlayerDataPaths.dir(PlayerDataPaths.OUTBOX).resolve(NEW_FILE_NAME),
+                PlayerDataPaths.configRoot().resolve(FILE_NAME)).read();
         } catch (Exception e) {
             LOGGER.debug("Menu chat: could not resolve config dir for outbox: {}", e.toString());
             return;

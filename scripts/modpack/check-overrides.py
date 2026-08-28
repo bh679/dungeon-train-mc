@@ -11,6 +11,13 @@ persisting — when a config file it holds to its defaults has been changed; see
 Ship one of those files in the overrides tree and **every pack user boots into Free Play**,
 silently. That is the drift this guard exists to make impossible.
 
+There is a second, related reason to keep this tree small: launchers **replace** ``config/`` on a
+pack update rather than merging it. That is how a player lost every Train Editor build and every
+advancement in one click — all of it used to live under ``config/``. It now lives at the instance
+root (``<instance>/dungeontrain/``; see ``games.brennan.dungeontrain.data.PlayerDataPaths``), and
+the invariant is that nothing under ``overrides/`` may share a directory with player data. See
+``modpack/README.md`` for the full note.
+
 The rule is a strict allowlist: every file under ``overrides/`` must be named in ``ALLOWED``.
 A new override therefore fails CI until someone adds it here — and that edit is the moment a
 human confirms the file is not one the mod holds to its defaults. An allowlist (rather than a

@@ -93,6 +93,29 @@ flag straight into the manifest:
   Distant Horizons, Effortless Building, Punchy!, WorldEdit, Just Enough Items (JEI). Shipped in the pack so a player can flip them on with one click, but inert until they
   do. (DT itself + Sable are hardcoded `required:true` in the builder.)
 
+## ⚠️ A pack update replaces `config/` — keep player data out of it
+
+Every publish of this pack ships `overrides/config/khi.toml` and
+`overrides/config/smoothswapping.json`, so **every** Dungeon Train pack update writes into the
+player's `config/` folder. Launchers do not merge that folder — they replace it. ATLauncher wipes
+`config/` between pack versions ([ATLauncher#704](https://github.com/ATLauncher/ATLauncher/issues/704))
+and the Modrinth app has repeatedly deleted instance files on update
+([modrinth/code#833](https://github.com/modrinth/code/issues/833),
+[#2294](https://github.com/modrinth/code/issues/2294)).
+
+Dungeon Train used to keep the player's Train Editor builds and their cross-world advancements and
+stats under `config/`. A player who pressed "Update Pack" lost all of it in one click. As of the
+player-data relocation, that data lives at the **instance root** instead —
+`<instance>/dungeontrain/`, alongside `saves/` and `dtpacks/` — and `PlayerDataMigration` moves
+existing installs across at server start. See
+`src/main/java/games/brennan/dungeontrain/data/PlayerDataPaths.java`.
+
+**The invariant this leaves behind:** nothing under `overrides/` may share a directory with player
+data, and no player data may move back under `config/`. Only the integrity-governed engine configs
+belong there — the mod holds those to their shipped defaults, so losing them on update is correct
+(they regenerate) and moving them would break `AisDataIntegrity` / `DtConfigIntegrity`.
+`scripts/modpack/check-overrides.py` enforces the allowlist half of this in CI.
+
 ## Declared dependencies (CurseForge "Relations")
 
 Mods jarJar'd inside DT must **not** be separate `files` entries (that would double-load them
