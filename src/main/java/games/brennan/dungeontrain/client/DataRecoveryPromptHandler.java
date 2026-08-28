@@ -111,7 +111,8 @@ public final class DataRecoveryPromptHandler {
                 return List.of();
             }
             List<PlayerDataRecovery.Candidate> found =
-                PlayerDataRecovery.findCandidates(dataRoot, FMLPaths.GAMEDIR.get());
+                PlayerDataRecovery.findCandidates(dataRoot, FMLPaths.GAMEDIR.get(),
+                    PlayerDataPaths.externalBackupsRoot().orElse(null));
             if (!found.isEmpty()) {
                 LOGGER.info("[DungeonTrain] Data recovery: this install has no Dungeon Train data "
                     + "and {} candidate(s) were found to restore from.", found.size());

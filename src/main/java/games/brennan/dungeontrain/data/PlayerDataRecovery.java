@@ -115,14 +115,18 @@ public final class PlayerDataRecovery {
      * Everything that could be restored, best first.
      *
      * @param gameDir the instance root, whose parents are searched for sibling installs
+     * @param externalBackupsRoot the out-of-instance backup folder, or {@code null} if there is
+     *                            none. Passed in rather than resolved here so this stays a pure
+     *                            function of its arguments — reading the real OS app-data folder
+     *                            made the result depend on whatever else is on the machine.
      */
-    public static List<Candidate> findCandidates(Path dataRoot, Path gameDir) {
+    public static List<Candidate> findCandidates(Path dataRoot, Path gameDir, Path externalBackupsRoot) {
         List<Candidate> found = new ArrayList<>();
         // Ranked first: an archive this install wrote, kept OUTSIDE the instance. It has the same
         // certain provenance as an in-instance backup and survives strictly more — it is the only
         // candidate that exists at all when the instance was deleted and reinstalled.
-        for (Path external : PlayerDataPaths.externalBackupsRoot()
-                .map(PlayerDataBackup::listArchives).orElse(List.of())) {
+        for (Path external : externalBackupsRoot == null
+                ? List.<Path>of() : PlayerDataBackup.listArchives(externalBackupsRoot)) {
             found.add(new Candidate(Kind.EXTERNAL_BACKUP, external, external.getFileName().toString()));
         }
         for (Path archive : PlayerDataBackup.listArchives(dataRoot.resolve(PlayerDataPaths.BACKUPS))) {

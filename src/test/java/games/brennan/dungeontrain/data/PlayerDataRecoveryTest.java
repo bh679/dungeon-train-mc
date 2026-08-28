@@ -39,6 +39,11 @@ class PlayerDataRecoveryTest {
         return tmp.resolve("instance/config");
     }
 
+    /** A temp stand-in for the OS app-data folder, so tests never see this machine's real backups. */
+    private Path externalRoot() {
+        return tmp.resolve("external-backups");
+    }
+
     private Path dtpacksRoot() {
         return tmp.resolve("instance/dtpacks");
     }
@@ -46,7 +51,7 @@ class PlayerDataRecoveryTest {
     @Test
     void aFreshInstallLooksEmptiedButOffersNothing() {
         assertTrue(PlayerDataRecovery.looksEmptied(dataRoot(), configDir(), dtpacksRoot()));
-        assertEquals(List.of(), PlayerDataRecovery.findCandidates(dataRoot(), tmp.resolve("instance")),
+        assertEquals(List.of(), PlayerDataRecovery.findCandidates(dataRoot(), tmp.resolve("instance"), externalRoot()),
             "nothing to restore from means no prompt, however empty the install is");
     }
 
@@ -114,11 +119,27 @@ class PlayerDataRecoveryTest {
     }
 
     @Test
+    void ranksAnOutOfInstanceBackupAboveEverythingElse() throws IOException {
+        // The only candidate that still exists when the instance itself was deleted, so it leads.
+        write(externalRoot().resolve("dungeontrain-backup-20260101-000000.zip"), "z");
+        write(dataRoot().resolve("backups/dungeontrain-backup-20260102-000000.zip"), "z");
+        write(tmp.resolve("instance-old/config/dungeontrain/user/a.nbt"), "carriage");
+
+        List<PlayerDataRecovery.Candidate> found = PlayerDataRecovery.findCandidates(
+            dataRoot(), tmp.resolve("instance"), externalRoot());
+
+        assertEquals(3, found.size());
+        assertEquals(PlayerDataRecovery.Kind.EXTERNAL_BACKUP, found.get(0).kind());
+        assertEquals(PlayerDataRecovery.Kind.BACKUP, found.get(1).kind());
+        assertEquals(PlayerDataRecovery.Kind.SIBLING_INSTANCE, found.get(2).kind());
+    }
+
+    @Test
     void findsThisInstallsOwnBackups() throws IOException {
         write(dataRoot().resolve("backups/dungeontrain-backup-20260101-000000.zip"), "z");
 
         List<PlayerDataRecovery.Candidate> found =
-            PlayerDataRecovery.findCandidates(dataRoot(), tmp.resolve("instance"));
+            PlayerDataRecovery.findCandidates(dataRoot(), tmp.resolve("instance"), externalRoot());
 
         assertEquals(1, found.size());
         assertEquals(PlayerDataRecovery.Kind.BACKUP, found.get(0).kind());
@@ -166,7 +187,7 @@ class PlayerDataRecoveryTest {
         write(tmp.resolve("instance-old/config/dungeontrain/user/a.nbt"), "carriage");
 
         List<PlayerDataRecovery.Candidate> found =
-            PlayerDataRecovery.findCandidates(dataRoot(), tmp.resolve("instance"));
+            PlayerDataRecovery.findCandidates(dataRoot(), tmp.resolve("instance"), externalRoot());
 
         assertEquals(2, found.size());
         assertEquals(PlayerDataRecovery.Kind.BACKUP, found.get(0).kind(),
