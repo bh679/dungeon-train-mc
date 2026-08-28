@@ -6,6 +6,11 @@ import games.brennan.dungeontrain.builder.relay.BuilderRelayKinds;
 import games.brennan.dungeontrain.builder.BuilderMode;
 import games.brennan.dungeontrain.builder.relay.BuilderRelayDownload;
 import games.brennan.dungeontrain.builder.relay.BuilderRelayInstall;
+import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
+import games.brennan.dungeontrain.client.menu.CommandMenuState;
+import games.brennan.dungeontrain.client.menu.CommandRunner;
+import games.brennan.dungeontrain.client.menu.EditorTemplateJump;
+import games.brennan.dungeontrain.client.menu.UnsavedCheckScreen;
 import games.brennan.dungeontrain.net.BuilderOpenPacket;
 import games.brennan.dungeontrain.net.BuilderProfileActionPacket;
 import games.brennan.dungeontrain.net.BuilderProfileDownloadPacket;
@@ -228,16 +233,62 @@ public final class BuilderProfileScreen extends Screen {
         if (packet.outcome() != BuilderRelayDownload.Outcome.INSTALLED) return;
 
         BuilderPhotoPaths.Kind kind = BuilderPhotoPaths.Kind.fromId(packet.kindId()).orElse(null);
+        if (kind == null) return;
+        if (BuilderWorldCheck.isBuilderWorld()) {
+            openInBuilder(kind, packet);
+            return;
+        }
+        openInEditor(kind, packet);
+    }
+
+    /**
+     * Open what was just installed on a builder plot, switching the builder into the mode that
+     * authors it.
+     *
+     * <p>The ordinary {@link BuilderOpenPacket}, so this is the same open the Open grid performs —
+     * mode switch, unsaved-work prompt, spawn standoff and photo backfill all included. Unforced: if
+     * there is unsaved work the open path puts its own Save / Discard prompt up, and the downloaded
+     * build is on disk either way, so nothing is lost by the refusal.</p>
+     */
+    private void openInBuilder(BuilderPhotoPaths.Kind kind, BuilderProfileDownloadResultPacket packet) {
         BuilderMode mode = BuilderRelayKinds.modeFor(kind);
-        if (kind == null || mode == null || !BuilderWorldCheck.isBuilderWorld()) return;
-        // Unforced: if there is unsaved work on the plot the open path puts its own Save / Discard
-        // prompt up, and the build is on disk either way — nothing is lost by the refusal.
+        if (mode == null) return;
         DungeonTrainNet.sendToServer(kind == BuilderPhotoPaths.Kind.TRACK
                 ? BuilderOpenPacket.forTrack(mode.id(), TrackKind.fromId(packet.subKind()),
                         packet.id(), false)
                 : new BuilderOpenPacket(mode.id(), kind.id(), packet.id(),
                         kind == BuilderPhotoPaths.Kind.PART ? packet.subKind() : "", false));
         onClose();
+    }
+
+    /**
+     * Take the player to what was just installed in the in-world Train Editor.
+     *
+     * <p>Two cases, and the difference is whether the editor has to be moved between categories.
+     * Inside the right one already, the per-template enter command teleports and nothing is
+     * disturbed. From a different category the switch has to happen first — and that switch clears
+     * and restamps every plot, which silently destroys unsaved edits, so it goes through the same
+     * {@link UnsavedCheckScreen} the Enter menu uses rather than around it. A clean editor never
+     * sees that screen: it dispatches and closes on its own.</p>
+     *
+     * <p>Does nothing when no editor session is running — the player downloaded a build from the
+     * pause menu of an ordinary world, where there is no plot to stand them on. The build is
+     * installed and the screen has already said so.</p>
+     */
+    private void openInEditor(BuilderPhotoPaths.Kind kind, BuilderProfileDownloadResultPacket packet) {
+        if (!EditorStatusHudOverlay.isActive()) return;
+        String target = EditorTemplateJump.categoryIdFor(kind, packet.subKind());
+        if (target == null) return;   // nothing in the editor holds this kind — a carriage group
+        String enter = EditorTemplateJump.enterCommandFor(kind, packet.id(), packet.subKind());
+
+        String current = EditorStatusHudOverlay.category().toLowerCase(java.util.Locale.ROOT);
+        if (target.equals(current)) {
+            if (enter != null) CommandRunner.run(enter);
+            onClose();
+            return;
+        }
+        onClose();
+        CommandMenuState.openAt(new UnsavedCheckScreen(target, enter == null ? "" : enter));
     }
 
     /**

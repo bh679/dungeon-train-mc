@@ -52,13 +52,28 @@ import java.util.Set;
 public final class UnsavedCheckScreen implements MenuScreen {
 
     private final String targetCategory;
+    /**
+     * A command to run once the switch has happened, or {@code ""}.
+     *
+     * <p>What makes this a jump to a <em>template</em> rather than to a category. The switch clears
+     * and restamps every plot and lands the player wherever that category's default is, so a caller
+     * that meant "put me in front of this build" has to say so in a second command — and it has to
+     * be queued after the switch, not before, or it teleports to a plot that is about to be wiped.</p>
+     */
+    private final String followUpCommand;
     private boolean requestSent = false;
     private boolean bypassDispatched = false;
     /** Model ids the user has already clicked Save on this session. Greys out the row's Save button. */
     private final Set<String> savedThisSession = new HashSet<>();
 
     public UnsavedCheckScreen(String targetCategory) {
+        this(targetCategory, "");
+    }
+
+    /** As above, running {@code followUpCommand} after the switch — see {@link #followUpCommand}. */
+    public UnsavedCheckScreen(String targetCategory, String followUpCommand) {
         this.targetCategory = targetCategory;
+        this.followUpCommand = followUpCommand == null ? "" : followUpCommand;
     }
 
     @Override public String title() { return "Save before switch?"; }
@@ -86,7 +101,7 @@ public final class UnsavedCheckScreen implements MenuScreen {
             // prevents the dispatch firing twice on the same screen.
             if (!bypassDispatched) {
                 bypassDispatched = true;
-                CommandRunner.run("dungeontrain editor " + targetCategory);
+                switchAndFollowUp();
                 CommandMenuState.close();
             }
             return List.of(new CommandMenuEntry.Loading("Entering..."));
@@ -156,10 +171,27 @@ public final class UnsavedCheckScreen implements MenuScreen {
         out.add(new CommandMenuEntry.Label(""));
 
         String continueLabel = anyOutstanding ? "Don't save - continue" : "Continue";
-        out.add(new CommandMenuEntry.Run(continueLabel,
-            "dungeontrain editor " + targetCategory));
+        // With a follow-up there are two commands to send, which no Run row can express — so the
+        // row runs them itself and closes the menu, exactly as the clean-state bypass above does.
+        out.add(followUpCommand.isEmpty()
+            ? new CommandMenuEntry.Run(continueLabel, "dungeontrain editor " + targetCategory)
+            : new CommandMenuEntry.ClientAction(continueLabel, () -> {
+                switchAndFollowUp();
+                CommandMenuState.close();
+            }));
         out.add(new CommandMenuEntry.Back("< Back"));
         return out;
+    }
+
+    /**
+     * Switch category, then go to the template — in that order, and both through the same chat
+     * queue, so the second command reaches the server after the restamp the first one triggers.
+     */
+    private void switchAndFollowUp() {
+        CommandRunner.run("dungeontrain editor " + targetCategory);
+        if (!followUpCommand.isEmpty()) {
+            CommandRunner.run(followUpCommand);
+        }
     }
 
     /**
