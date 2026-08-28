@@ -9532,6 +9532,21 @@
       "released": true,
       "released_in": "v0.698.0",
       "released_at": "2026-08-28T11:49:38Z"
+    },
+    {
+      "id": "editor-bypass-save-before-switch",
+      "version": "0.700.0",
+      "type": "chore",
+      "title": "Editor: category switching no longer stops at the save prompt",
+      "summary": "Switching between editor categories used to open a \"Save before switch?\" list, but it flagged templates nobody had edited \u2014 most of the roster, every switch \u2014 so the prompt is bypassed for now and the switch happens straight away. Save your work with /dt save before switching: the switch re-stamps every plot and unsaved edits are lost without a warning.",
+      "highlights": [
+        "Category switching is one click again",
+        "No more false \"unsaved changes\" lists"
+      ],
+      "date": "2026-08-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
