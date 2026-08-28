@@ -46,6 +46,7 @@ ALLOWED = (
     "config/khi.toml",                              # Kinetic Hosting affiliate URL + banner text
     "config/smoothswapping.json",                   # tuned Smooth Swapping animation
     "resourcepacks/DungeonTrain-*-compat.zip",      # companion-mod lang overlays, one per locale
+    "TrashSlotSaveState.default.json",              # seeds TrashSlot's trash slot hidden on every screen
 )
 
 # Config files the mod compares against defaults and treats a deviation as Free Play, keyed to

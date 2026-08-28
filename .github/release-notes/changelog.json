@@ -9559,9 +9559,9 @@
         "A name you already use asks what to do instead of refusing"
       ],
       "date": "2026-08-28",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.703.0",
+      "released_at": "2026-08-28T15:36:14Z"
     },
     {
       "id": "night-and-sunrise-skyboxes",
@@ -9575,9 +9575,9 @@
         "Both work anywhere the other skybox blocks do, carriage walls included"
       ],
       "date": "2026-08-28",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.703.0",
+      "released_at": "2026-08-28T15:36:14Z"
     },
     {
       "id": "backup-retention-and-clear",
@@ -9588,6 +9588,39 @@
       "highlights": [
         "A Backups section in Options > Dungeon Train, with a slider for how many backups to keep per version.",
         "Clear Backups shows how much disk your backups are using and deletes them, inside and outside your Minecraft folder, after confirming."
+      ],
+      "date": "2026-08-28",
+      "released": true,
+      "released_in": "v0.703.0",
+      "released_at": "2026-08-28T15:36:14Z"
+    },
+    {
+      "id": "trashslot-enabled-silent",
+      "version": "0.703.0",
+      "type": "feat",
+      "title": "TrashSlot now comes installed, and stays out of the way",
+      "summary": "TrashSlot is now part of the pack proper rather than an optional extra you had to tick on. It ships quiet: there is no trash slot in your inventory and none of its keys are bound, so nothing about your screens or your controls changes unless you want it to. To use it, bind a key to Show/Hide TrashSlot under Options then Controls, and press it with a screen open.",
+      "highlights": [
+        "Installed with the pack \u2014 no optional-mods tick needed",
+        "Ships with the slot hidden and every TrashSlot key unbound, so your inventory and controls look exactly as they did",
+        "Bind Show/Hide TrashSlot in Options then Controls to turn it on"
+      ],
+      "pr": 1161,
+      "date": "2026-08-28",
+      "released": true,
+      "released_in": "v0.703.0",
+      "released_at": "2026-08-28T15:36:14Z"
+    },
+    {
+      "id": "custom-content-title-toggle",
+      "version": "0.704.0",
+      "type": "feat",
+      "title": "Turn your own train builds on or off from the main menu",
+      "summary": "If you have builds of your own from the Train Editor, the main menu now carries a switch for them, sitting just left of New Game. Lit means your designs ride the train \u2014 and those runs stay Free Play, so stats and advancements keep to that world. Grey means the built-in designs ride instead, and everything you do counts. Flipping it also settles the question for good: worlds stop stopping to ask which train you want. Options \u2192 Custom Train Content puts the question back if you'd rather be asked each time. The prompt itself now leads with the choice that keeps your stats.",
+      "highlights": [
+        "Main-menu switch for your own train builds, shown only when you have some",
+        "Pressing it retires the per-world 'which train?' prompt",
+        "That prompt now offers Default Train (Live) first"
       ],
       "date": "2026-08-28",
       "released": false,

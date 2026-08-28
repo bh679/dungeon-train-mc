@@ -36,6 +36,37 @@ public final class CustomContentGate {
     private CustomContentGate() {}
 
     /**
+     * Will a world started from here play the player's own train designs?
+     *
+     * <p>{@link CustomContentPreference#ASK} counts as <b>yes</b>. It means no standing answer has
+     * been given, and the popup that would ask defaults to nothing being turned off — the content
+     * is there and a world would load it. Reporting "off" for an install that is about to play its
+     * custom designs would be the wrong half of the truth for the title-screen toggle to show.</p>
+     */
+    public static boolean contentEnabled() {
+        return ClientDisplayConfig.getCustomContentPreference() != CustomContentPreference.DISABLE;
+    }
+
+    /**
+     * Flip the standing answer, for the title-screen toggle. Always lands on CONTINUE or DISABLE,
+     * never back on ASK, so pressing the button also retires the per-world question — which is the
+     * behaviour asked for: someone who has an opinion shouldn't be asked every world. Options →
+     * Custom Train Content can still restore "Ask each world".
+     *
+     * <p>The last-answer mirror is written too. {@link #answerFromMemory()} reads it for the
+     * automatic reboard, and leaving it stale would have the death-screen path disagree with the
+     * button the player just pressed.</p>
+     */
+    public static void toggleContentEnabled() {
+        CustomContentPreference next = contentEnabled()
+            ? CustomContentPreference.DISABLE
+            : CustomContentPreference.CONTINUE;
+        LOGGER.info("[DungeonTrain] Custom content toggled from the title screen: {}", next);
+        ClientDisplayConfig.setCustomContentPreference(next);
+        ClientDisplayConfig.setLastCustomContentAnswer(next);
+    }
+
+    /**
      * Answer without asking, for a run that starts with no one at the menu — the automatic reboard
      * after a death with immediate respawn on ({@code InstantRespawnReboard}). Takes the remembered
      * preference, else the last answer actually given, else declines.

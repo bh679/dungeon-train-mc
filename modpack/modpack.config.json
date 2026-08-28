@@ -355,7 +355,7 @@
       "slug": "trashslot",
       "project_id": 235577,
       "file_id": 8163135,
-      "required": false,
+      "required": true,
       "modrinth_project": "trashslot",
       "modrinth_version": "HY8Ybozd"
     },
