@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.editor;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.data.PlayerDataPaths;
 import net.neoforged.fml.loading.FMLPaths;
 import org.slf4j.Logger;
 
@@ -48,11 +49,18 @@ public final class UserContentPaths {
     private UserContentPaths() {}
 
     /**
-     * {@code <config>/dungeontrain/user/} — the root the exporter walks and
+     * {@code <gameDir>/dungeontrain/user/} — the root the exporter walks and
      * the migration writes into.
+     *
+     * <p>This used to live under {@code config/}. It moved to the instance
+     * root because modpack launchers replace {@code config/} on a pack
+     * update, which is how a player lost an entire build library in one
+     * click — see {@link games.brennan.dungeontrain.data.PlayerDataPaths}.
+     * {@link games.brennan.dungeontrain.data.PlayerDataMigration} moves
+     * existing installs across at server start.</p>
      */
     public static Path root() {
-        return FMLPaths.CONFIGDIR.get().resolve(DUNGEONTRAIN).resolve(USER);
+        return PlayerDataPaths.dir(PlayerDataPaths.USER);
     }
 
     /**
@@ -75,8 +83,12 @@ public final class UserContentPaths {
     }
 
     /**
-     * {@code <config>/dungeontrain/} — the legacy root used pre-0.125 and
-     * still home to engine config / per-world data. Exposed only so the
+     * {@code <config>/dungeontrain/} — the legacy root used pre-0.125.
+     *
+     * <p>Deliberately still under {@code config/}: it names where files
+     * <em>were</em>, and {@link UserContentMigration} has to look there to
+     * find them. Only {@link #root()} and {@link #importedRoot()} moved to
+     * the instance root. Exposed only so the
      * {@link UserContentMigration} helper can locate the legacy layout when
      * moving files; stores should not write here.
      */
@@ -103,6 +115,8 @@ public final class UserContentPaths {
      * version to the imported version side by side.
      */
     public static Path importedRoot() {
+        // Stays under config/, unlike root(): this is a legacy tier that DtpacksMigration drains
+        // into <gameDir>/dtpacks/ on first run, so its contents end up outside config/ anyway.
         return FMLPaths.CONFIGDIR.get().resolve(DUNGEONTRAIN).resolve(IMPORTED);
     }
 

@@ -7,7 +7,7 @@ import com.mojang.logging.LogUtils;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.JsonOps;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import net.neoforged.fml.loading.FMLPaths;
+import games.brennan.dungeontrain.data.PlayerDataPaths;
 import org.slf4j.Logger;
 
 import java.io.IOException;
@@ -65,7 +65,8 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class GlobalPlayerStats {
 
     private static final Logger LOGGER = LogUtils.getLogger();
-    private static final String DIR_NAME = "dungeontrain-stats";
+    /** Pre-relocation home, still read while a file is left there. */
+    private static final String LEGACY_DIR_NAME = "dungeontrain-stats";
 
     /**
      * Lifetime damage dealt / taken (health points). Bundled into one nested field so the top-level
@@ -198,8 +199,17 @@ public final class GlobalPlayerStats {
 
     private GlobalPlayerStats() {}
 
+    /**
+     * {@code <gameDir>/dungeontrain/stats/<uuid>.json}, falling back to the pre-relocation
+     * {@code config/dungeontrain-stats/} copy while one still exists. See {@link PlayerDataPaths}
+     * for why player data left {@code config/}.
+     */
     public static Path file(UUID playerUuid) {
-        return FMLPaths.CONFIGDIR.get().resolve(DIR_NAME).resolve(playerUuid + ".json");
+        return located(playerUuid).read();
+    }
+
+    static PlayerDataPaths.Located located(UUID playerUuid) {
+        return PlayerDataPaths.locate(PlayerDataPaths.STATS, LEGACY_DIR_NAME, playerUuid + ".json");
     }
 
     /** The player's full cached record, loading from disk on first access. */
@@ -370,7 +380,13 @@ public final class GlobalPlayerStats {
      */
     public static boolean deleteFor(UUID uuid) throws IOException {
         CACHE.remove(uuid);
-        return Files.deleteIfExists(file(uuid));
+        // Both addresses — a legacy copy left behind by a partial migration must not outlive the
+        // reset and reappear.
+        boolean removed = false;
+        for (Path path : located(uuid).all()) {
+            removed |= Files.deleteIfExists(path);
+        }
+        return removed;
     }
 
     /**

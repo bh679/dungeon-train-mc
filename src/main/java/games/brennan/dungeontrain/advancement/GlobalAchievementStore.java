@@ -7,7 +7,7 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.JsonOps;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.resources.ResourceLocation;
-import net.neoforged.fml.loading.FMLPaths;
+import games.brennan.dungeontrain.data.PlayerDataPaths;
 import org.slf4j.Logger;
 
 import java.io.IOException;
@@ -56,7 +56,8 @@ import java.util.UUID;
 public final class GlobalAchievementStore {
 
     private static final Logger LOGGER = LogUtils.getLogger();
-    private static final String DIR_NAME = "dungeontrain-achievements";
+    /** Pre-relocation home, still read when a migration hasn't managed to move a file yet. */
+    private static final String LEGACY_DIR_NAME = "dungeontrain-achievements";
 
     /** Schema record. {@code granted} stored as a list to preserve insertion order in the JSON. */
     public record Data(List<ResourceLocation> granted) {
@@ -69,9 +70,21 @@ public final class GlobalAchievementStore {
 
     private GlobalAchievementStore() {}
 
-    /** Resolve the sidecar file path for {@code playerUuid}. */
+    /**
+     * Resolve the sidecar file path for {@code playerUuid}:
+     * {@code <gameDir>/dungeontrain/achievements/<uuid>.json}.
+     *
+     * <p>Falls back to the pre-relocation {@code config/dungeontrain-achievements/} copy while one
+     * still exists — see {@link PlayerDataPaths} for why these files left {@code config/} (a
+     * modpack update replaces that folder, which is how a player lost every advancement).</p>
+     */
     public static Path file(UUID playerUuid) {
-        return FMLPaths.CONFIGDIR.get().resolve(DIR_NAME).resolve(playerUuid + ".json");
+        return located(playerUuid).read();
+    }
+
+    private static PlayerDataPaths.Located located(UUID playerUuid) {
+        return PlayerDataPaths.locate(
+            PlayerDataPaths.ACHIEVEMENTS, LEGACY_DIR_NAME, playerUuid + ".json");
     }
 
     /**
@@ -154,7 +167,13 @@ public final class GlobalAchievementStore {
      * @return {@code true} when a file was actually removed.
      */
     public static synchronized boolean deleteFor(UUID playerUuid) throws IOException {
-        return Files.deleteIfExists(file(playerUuid));
+        // Both addresses: a legacy copy the migration had to leave behind would otherwise survive
+        // the reset and reappear as soon as the new file was gone.
+        boolean removed = false;
+        for (Path path : located(playerUuid).all()) {
+            removed |= Files.deleteIfExists(path);
+        }
+        return removed;
     }
 
     private static void writeAtomic(UUID playerUuid, Set<ResourceLocation> granted) {
