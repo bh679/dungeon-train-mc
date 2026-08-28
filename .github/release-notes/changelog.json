@@ -9455,11 +9455,13 @@
       "version": "0.692.0",
       "type": "feat",
       "title": "Load your builds from your profile into the editor",
-      "summary": "My Builds could always show you what you had made \u2014 including builds from another world, another save, or another machine \u2014 but it could never open one. Now it can. Load into Editor pulls the build down and drops it straight onto the plot, ready to keep working on, and a build you already have by that name is left alone rather than overwritten.",
+      "summary": "My Builds could always show you what you had made \u2014 including builds from another world, another save, or another machine \u2014 but it could never open one. Now it can. Load into Editor pulls the build down, puts it in your template library and takes you straight to it, switching the editor to the right category on the way. If you already have a build by that name, it asks what you want: replace the one you have, rename the one you have, or load this one under a new name.",
       "highlights": [
         "Load into Editor on the My Builds screen",
         "Works for builds this world has never seen \u2014 a new save, a reinstall, a new machine",
-        "Every kind: carriages, groups, rooms, parts, track and portal rooms"
+        "Every kind: carriages, groups, rooms, parts, track and portal rooms",
+        "Takes you to the build when it lands, changing editor category if it has to",
+        "A name you already use asks what to do instead of refusing"
       ],
       "date": "2026-08-28",
       "released": false,
