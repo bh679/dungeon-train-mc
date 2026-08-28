@@ -66,7 +66,8 @@ class LanguageCountriesResourceTest {
         List<String> missing = new ArrayList<>();
         for (String locale : new String[] {
             "de_de", "es_es", "es_mx", "fil_ph", "fr_fr", "id_id", "it_it", "ja_jp", "ko_kr",
-            "ms_my", "nl_nl", "pl_pl", "pt_br", "pt_pt", "ru_ru", "th_th", "vi_vn", "zh_cn", "zh_tw"
+            "ms_my", "nl_nl", "pl_pl", "pt_br", "pt_pt", "ro_ro", "ru_ru", "th_th", "vi_vn",
+            "zh_cn", "zh_tw"
         }) {
             if (!table.has(locale) || table.getAsJsonArray(locale).isEmpty()) {
                 missing.add(locale);

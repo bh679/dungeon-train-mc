@@ -73,6 +73,10 @@ public final class CommandAllowlist {
      * cheat commands actually reaching a normal player (see the class
      * javadoc), so weather changes still need to gate behind the Free Play
      * confirmation like {@code /gamemode} and {@code /give} do.
+     * {@code /dtbackup} and {@code /dtrestore} are exempt on the same principle: backing up your
+     * own builds, or putting back builds a modpack update deleted, is recovering what you already
+     * had. Neither can add anything that wasn't already yours — a restore only ever writes files
+     * that are missing, from an archive this install wrote or an instance folder on this machine.
      * {@code advancement} is handled in {@link #isAllowed} rather than here:
      * only the exact form {@code /advancement revoke @s everything} is clean
      * (see {@link #isSelfRevokeEverything}) — every other spelling, target
@@ -81,7 +85,7 @@ public final class CommandAllowlist {
     private static final Set<String> ALLOWED_ROOTS = Set.of(
         "help", "me", "msg", "tell", "w", "teammsg", "tm", "trigger", "list",
         "feedback", "bug", "fixaisconfig", "fixconfig", "customcontent", "new-world",
-        "playanimation", "stopsound");
+        "playanimation", "stopsound", "dtbackup", "dtrestore");
 
     private CommandAllowlist() {}
 

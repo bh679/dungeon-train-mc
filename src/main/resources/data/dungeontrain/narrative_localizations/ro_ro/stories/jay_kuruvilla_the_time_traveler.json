@@ -1,0 +1,91 @@
+{
+  "id": "jay_kuruvilla_the_time_traveler",
+  "character": "Jay Kuruvilla, călătorul în timp",
+  "story": "Fără titlu",
+  "letters": [
+    {
+      "index": 1,
+      "label": "Scrisoarea unu",
+      "variants": [
+        "Test.\nJay Kuruvilla\n1 2 3 4 5 6 7 8 9 10 11 12\nAlo?\nHârtie magică?\nAsta e hârtie magică?\nUn șoarece mă privește. Pare trist."
+      ]
+    },
+    {
+      "index": 2,
+      "label": "Scrisoarea doi",
+      "variants": [
+        "Vrajă de foc.\nAruncă!\nJay Kuruvilla"
+      ]
+    },
+    {
+      "index": 3,
+      "label": "Scrisoarea trei",
+      "variants": [
+        "Bună,\nSunt Jay Kuruvilla. Sunt la bordul trenului-închisoare fără sfârșit.\nFaulhurst, șoricelul, mi-a spus că asta nu e hârtie magică și că probabil nu se va gândi să-mi spună asta când ne vom revedea. Susține că pentru el va fi ultima dată, dar nu și pentru mine. Sunt tare derutat.\nCred că mi-ar plăcea să merg acasă, dar nu îndeajuns. Aș vrea totuși să văd ce altceva mai e în trenul ăsta. Monștrii sunt îngrozitori, iar armele mele se rup în ei. N-am nicio idee. Când l-am întrebat pe șoarece, a râs și mi-a spus că o să înțeleg destul de curând. Mi-a mai explicat asta înainte?\nZău că sunt derutat.\n-Jay Kuruvilla"
+      ]
+    },
+    {
+      "index": 4,
+      "label": "Scrisoarea patru",
+      "variants": [
+        "Bună,\nAm muncit foarte, foarte mult și m-am rănit rău, dar am reușit să ucid un monstru. L-am găsit iar pe Faulhurst și a fost surprins. Se pare că mă place mult, e foarte prietenos. M-a întrebat cum de tot ucid monștri. Nu știu ce a vrut să spună. Și-a clătinat căpșorul și mi-a zis că vorbea singur.\nFaulhurst e ciudat, dar râde mult și pare bucuros să mă vadă ori de câte ori ne intersectăm. Abia aștept să-l revăd!\n-Jay Kuruvilla"
+      ]
+    },
+    {
+      "index": 5,
+      "label": "Scrisoarea cinci",
+      "variants": [
+        "Bună,\nNu l-am mai văzut pe Faulhurst, dar am ucis alt monstru! Era un slime! Mult mai ușor de ucis! Mult, mult mai ușor! A trebuit să-l lovesc de foarte, foarte multe ori ca să văd că nu-mi juca o farsă!\nPrima mea întâlnire cu Faulhurst a fost ciudată. N-am avut timp s-o notez. A plâns când i-am spus că nu-l mai văzusem înainte, că era un prieten nou. A plecat o clipă și s-a întors cu hârtia și pana astea. A trebuit să se străduiască să nu plângă, m-a întristat tare. Nimic de la bordul trenului ăstuia nu are sens, mai ales asta.\n-Jay Kuruvilla"
+      ]
+    },
+    {
+      "index": 6,
+      "label": "Scrisoarea șase",
+      "variants": [
+        "Bună,\nNu pot continua. S-ar putea să fie nevoie să părăsesc trenul ăsta. În camera următoare e un om înfricoșător făcut din foc întunecat și carne carbonizată. Puterea lui e atât de mare și simt că e cam timpul să mă întorc acasă.\nVreau să continui, da. Chiar vreau. Dar s-ar putea să nu fiu în stare.\nMi-ar plăcea foarte mult să vorbesc din nou cu Faulhurst.\n-Jay Kuruvilla"
+      ]
+    },
+    {
+      "index": 7,
+      "label": "Scrisoarea șapte",
+      "variants": [
+        "Bună,\nScriu asta cu Faulhurst în cameră. Îmi spune că voi trece de creatura din camera următoare. Nu sunt sigur, dar îmi zice să am încredere în el și că nu e ceva de pus la îndoială. Mai degrabă spune că e un fapt, că voi trece de creatura asta.\nVrea să scrie ceva pe hârtia asta. Iată.\nSe referă la Monarhul de Odinioară. Reușește. Nici eu n-am crezut. Totul e adevărat. Aveai dreptate. -F\nFaulhurst vrea să-i arăt scrisoarea asta data viitoare când ne vedem, sau oricând ne vom reîntâlni.\n-Jay Kuruvilla și Faulhurst"
+      ]
+    },
+    {
+      "index": 8,
+      "label": "Scrisoarea opt",
+      "variants": [
+        "Sunt tot în camera asta. Faulhurst a adus mâncare. I-am arătat scrisoarea pe care el însuși mi-a spus să i-o arăt mai târziu. S-a uitat peste ea și mi-a zis că era prea devreme și să i-o arăt iar data viitoare când ne vom vedea. Am mâncat împreună. Faulhurst mi-a spus că el crede că acum suntem la mijloc. L-am rugat să-mi explice, dar mi-a zis că îi va explica totul cu timpul.\nA spus că sunt cel mai fascinant pasager pe care l-a văzut vreodată în trenul ăsta. Mi-a spus că speră să aibă mai mult timp cu mine decât am eu cu el. E foarte ciudat, dar mă face să râd.\n-Jay Kuruvilla"
+      ]
+    },
+    {
+      "index": 9,
+      "label": "Scrisoarea nouă",
+      "variants": [
+        "Am reușit! A fost o luptă îngrozitoare! Am aruncat o grămadă de lucruri în el și am încercat să mă apropii de el! Acum îmi e atât de greu să-mi amintesc tot! Am făcut ce mi-a zis Faulhurst și am încercat să mă concentrez pe supraviețuire mai degrabă decât pe a-l răni. Lupta a durat ore în șir, dar a mers! Faulhurst mi-a spus că nimic din ce voi mai înfrunta nu va fi la fel de înfricoșător! Am nevoie de odihnă! Chiar am nevoie de mâncare.\n-Jay Kuruvilla"
+      ]
+    },
+    {
+      "index": 10,
+      "label": "Scrisoarea nouă",
+      "variants": [
+        "Faulhurst se poartă tot mai ciudat de fiecare dată când îl văd acum. Știu de ceva vreme că e o creaturică ciudată, dar acum se poartă mai ciudat decât s-a purtat vreodată. Mai puțin prietenos, deși politicos. I-am arătat scrisoarea pe care am scris-o împreună. A citit-o de parcă n-o mai citise.\nFaulhurst s-a entuziasmat tare și mi-a spus că trebuie să fiu foarte puternic acum! Am câștigat și am aruncat o mulțime de arme, dar m-am oprit de curând, fiindcă puține au fost la fel de puternice ca ce am acum. Monștrii mor foarte ușor.\nL-am rugat să-mi explice ce mi s-a întâmplat. Mi-a spus că mi-a promis că îmi va explica data viitoare când ne vom vedea.\nApoi mi-a spus că speră că abia așteaptă să mă revadă înainte să lupt cu… i-a spus cumva monstrului aceluia, am uitat numele.\n-Jay Kuruvilla"
+      ]
+    },
+    {
+      "index": 11,
+      "label": "Scrisoarea zece",
+      "variants": [
+        "Am parcurs trenul de-a-ndoaselea? Nu-mi vine să scriu despre asta, mă doare pieptul și mă simt ciudat. Aș prefera să nu fiu nevoit să mă gândesc la asta. Mă simt ca într-un vis urât din care încerc să mă trezesc. Dar nu vreau să uit asta.\nMă tem că voi uita asta."
+      ]
+    },
+    {
+      "index": 12,
+      "label": "Scrisoarea unsprezece",
+      "variants": [
+        "Chiar e un tren ciudat, pare să nu se mai termine. Mă întreb dacă trenul ăsta se termină și cum am ajuns eu în trenul ăsta?\n-Jay Kuruvilla"
+      ]
+    }
+  ]
+}

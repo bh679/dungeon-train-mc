@@ -4,7 +4,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
-import net.neoforged.fml.loading.FMLPaths;
+import games.brennan.dungeontrain.data.PlayerDataPaths;
 import org.slf4j.Logger;
 
 import java.nio.charset.StandardCharsets;
@@ -80,7 +80,8 @@ public final class TranslationOverrideStore {
 
     /** {@code <config>/dungeontrain/translations/} — also the parent of the export/import dirs. */
     public static Path root() {
-        return FMLPaths.CONFIGDIR.get().resolve("dungeontrain").resolve(DIR);
+        // Moved out of config/ with the rest of the player's data. See PlayerDataPaths.
+        return PlayerDataPaths.locateDir(PlayerDataPaths.TRANSLATIONS, "dungeontrain/" + DIR).read();
     }
 
     public static Path layerDir(Layer layer) {

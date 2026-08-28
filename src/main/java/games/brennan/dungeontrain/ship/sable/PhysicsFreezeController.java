@@ -33,6 +33,18 @@ import java.util.UUID;
  * <p><b>Hysteresis: eager unfreeze, lazy freeze.</b> A carriage becomes active → unfrozen the same
  * tick (ready before it can be seen); it must be continuously inactive for {@link #FREEZE_GRACE_TICKS}
  * before we freeze, so a brief tracking flicker never flaps the body.</p>
+ *
+ * <p><b>Unsettled carriages are never frozen.</b> A carriage that hasn't reached
+ * {@code placedSuccessfully} is still being nudged into its seam by
+ * {@link games.brennan.dungeontrain.train.TrainCarriageAppender#runPlacementCollisionTracker}, which
+ * reads back the body's {@code worldAABB()} every tick to decide the next nudge. Freezing skips the
+ * per-tick teleport, so the AABB stops moving, the tracker never sees a clean tick, and it keeps
+ * shifting {@code spawnWorldPos} blind until the 200-tick safety valve fires — leaving up to 25
+ * blocks of accumulated offset that materialises as a wide seam the moment the body unfreezes, and
+ * collapsing the appender's per-lane spawn rate. A group appended behind a backward-riding player is
+ * untracked by construction, so this was the backward-generation stall. At most one unsettled group
+ * per lane is ever in flight (the appender's placement gate enforces it), so the exemption costs
+ * nothing measurable.</p>
  */
 public final class PhysicsFreezeController {
 
@@ -65,13 +77,17 @@ public final class PhysicsFreezeController {
      * Pure decision core (no Minecraft/Sable types, unit-testable — mirrors
      * {@link PhysicsSubstepTuner#decideSubsteps}). Eager unfreeze, lazy freeze:
      * <ul>
-     *   <li>active + frozen → {@code UNFREEZE} (immediately);</li>
+     *   <li>active OR unplaced + frozen → {@code UNFREEZE} (immediately);</li>
      *   <li>inactive + not frozen + inactive ≥ {@link #FREEZE_GRACE_TICKS} → {@code FREEZE};</li>
      *   <li>otherwise hold.</li>
      * </ul>
+     *
+     * <p>{@code unplaced} is a hard exemption, not a tie-breaker: an unsettled carriage must keep
+     * its per-tick teleport so the placement tracker can see its nudges land (see the class
+     * javadoc). It behaves exactly like {@code activeNow} — including immediate unfreeze.</p>
      */
-    static Action decide(boolean activeNow, int ticksInactive, boolean currentlyFrozen) {
-        if (activeNow) return currentlyFrozen ? Action.UNFREEZE : Action.NONE;
+    static Action decide(boolean activeNow, boolean unplaced, int ticksInactive, boolean currentlyFrozen) {
+        if (activeNow || unplaced) return currentlyFrozen ? Action.UNFREEZE : Action.NONE;
         if (currentlyFrozen) return Action.NONE;
         return ticksInactive >= FREEZE_GRACE_TICKS ? Action.FREEZE : Action.NONE;
     }
@@ -102,14 +118,20 @@ public final class PhysicsFreezeController {
                     continue;
                 }
 
-                // Short-circuits: the (bounded) entity scan runs only for untracked candidates.
-                boolean activeNow = !sl.getTrackingPlayers().isEmpty() || hasLiveEntityAboard(level, ship);
+                // Short-circuits: the flag read is free, and the (bounded) entity scan runs only for
+                // untracked candidates.
+                boolean unplaced = !c.provider().isPlacedSuccessfully();
+                boolean activeNow = unplaced
+                    || !sl.getTrackingPlayers().isEmpty()
+                    || hasLiveEntityAboard(level, ship);
                 if (activeNow) active++;
 
+                // An unsettled carriage also holds its inactive counter at zero, so it doesn't
+                // freeze the instant the tracker marks it placed — it gets a fresh grace window.
                 int inactive = activeNow ? 0 : PhysicsFreeze.inactiveTicks(sl) + 1;
                 PhysicsFreeze.setInactiveTicks(sl, inactive);
 
-                switch (decide(activeNow, inactive, frozenNow)) {
+                switch (decide(activeNow, unplaced, inactive, frozenNow)) {
                     case FREEZE -> PhysicsFreeze.freeze(sl);
                     case UNFREEZE -> PhysicsFreeze.unfreeze(sl);
                     case NONE -> { }

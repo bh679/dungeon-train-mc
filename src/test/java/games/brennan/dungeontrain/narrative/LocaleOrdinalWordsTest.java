@@ -58,6 +58,10 @@ final class LocaleOrdinalWordsTest {
         check("fr_fr", 5, Gender.MASCULINE, "5e");
         check("nl_nl", 5, Gender.MASCULINE, "5e");
         check("it_it", 5, Gender.MASCULINE, "5°");
+        check("ro_ro", 5, Gender.MASCULINE, "al 5-lea");
+        check("ro_ro", 5, Gender.FEMININE, "a 5-a");
+        check("ro_ro", 5, Gender.NEUTER, "al 5-lea");   // neuter takes the masculine singular
+        check("ro_ro", 37, Gender.MASCULINE, "al 37-lea");
         check("es_es", 5, Gender.MASCULINE, "5.º");
         check("es_es", 5, Gender.FEMININE, "5.ª");
         check("pt_br", 5, Gender.MASCULINE, "5.º");
