@@ -149,7 +149,8 @@ final class PluralRulesTest {
         assertTrue(Files.isRegularFile(file), "plural_rules.json missing at " + file);
         JsonObject root = JsonParser.parseString(
                 Files.readString(file, StandardCharsets.UTF_8)).getAsJsonObject();
-        Set<String> known = Set.of("one_other", "zero_one_other", "east_slavic", "polish", "single");
+        Set<String> known = Set.of("one_other", "zero_one_other", "east_slavic", "polish", "romanian",
+                "single");
         JsonObject locales = root.getAsJsonObject("locales");
         assertTrue(locales.size() >= 17, "expected every shipped locale prefix, got " + locales.size());
         for (var e : locales.entrySet()) {
@@ -161,6 +162,7 @@ final class PluralRulesTest {
         assertEquals(List.of("one", "few", "many"), PluralRules.categoriesOf("pl_pl"));
         assertEquals(List.of("other"), PluralRules.categoriesOf("ja_jp"));
         assertEquals(List.of("one", "other"), PluralRules.categoriesOf("en_us"));
+        assertEquals(List.of("one", "few", "other"), PluralRules.categoriesOf("ro_ro"));
     }
 
     /**
