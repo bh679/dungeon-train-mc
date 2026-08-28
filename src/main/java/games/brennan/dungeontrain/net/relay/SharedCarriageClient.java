@@ -296,6 +296,75 @@ public final class SharedCarriageClient {
     /** Outcome of a claim: the lease token when it succeeded, or why it didn't. */
     public record ClaimResult(CallStatus status, String token, boolean inUse) {}
 
+    /**
+     * One of this player's builds, in full — what {@link #fetchBuild} pulls down so a world that has
+     * never seen the build can write it into its own template library.
+     *
+     * <p>Everything the profile listing carries, plus the three things it deliberately omits: the
+     * {@code blocks} blob, the delta log to fold on top of it ({@code baseSeq} is the drop-watermark,
+     * exactly as on a {@link PoolLease}), and the owner {@code secret}.</p>
+     *
+     * <p>The secret is the load-bearing one. It is the durable capability the relay issued to whoever
+     * first uploaded the build, and without it the downloading world could open the build but never
+     * save back to its row — the next save would upload a second profile entry instead of updating
+     * this one.</p>
+     */
+    public record BuildFetch(int id, String kind, String subKind, String buildName, String stage,
+                             String visibility, String blocks, int l, int h, int w, int baseSeq,
+                             List<DeltaRec> deltas, String secret) {
+
+        /** Whether the relay has this build out on the train rather than sitting in the profile. */
+        public boolean published() {
+            return "published".equals(visibility);
+        }
+    }
+
+    /** Outcome of a fetch: the build when it succeeded, else why not ({@code build} is null). */
+    public record FetchResult(CallStatus status, BuildFetch build) {
+        static FetchResult failed(CallStatus status) {
+            return new FetchResult(status, null);
+        }
+    }
+
+    /**
+     * Pull one build this player owns down in full, blocks and all.
+     *
+     * <p>Authed by {@code ownerUuid} rather than by the build's secret, and that is the point: the
+     * world asking is typically one that has never uploaded this build — a fresh save, a reinstall,
+     * another machine — so it holds no secret to present. {@link #claim} is the opposite shape and
+     * cannot serve this: it needs the secret this call exists to recover, and it takes a lease, which
+     * would displace whoever is out riding a published build.</p>
+     *
+     * <p>{@link CallStatus#FORBIDDEN} means the build belongs to somebody else and
+     * {@link CallStatus#UNKNOWN} that the relay no longer has it (evicted, or admin-removed); the
+     * caller says different things about those, so they must not collapse into one another.</p>
+     */
+    public static CompletableFuture<FetchResult> fetchBuild(int id, String ownerUuid) {
+        JsonObject body = new JsonObject();
+        body.addProperty("id", id);
+        body.addProperty("uuid", ownerUuid == null ? "" : ownerUuid);
+        return post("/carriages/fetch", body).thenApply(resp -> {
+            if (resp == null) {
+                logFailure("/carriages/fetch", null);
+                return FetchResult.failed(CallStatus.ERROR);
+            }
+            int sc = resp.statusCode();
+            if (sc == 403) return FetchResult.failed(CallStatus.FORBIDDEN);
+            if (sc == 404) return FetchResult.failed(CallStatus.UNKNOWN);
+            JsonObject o = okJson(resp);
+            if (o == null || !o.has("id") || !o.has("blocks") || o.get("blocks").isJsonNull()) {
+                logFailure("/carriages/fetch", resp);
+                return FetchResult.failed(CallStatus.ERROR);
+            }
+            JsonObject d = o.has("dims") && o.get("dims").isJsonObject() ? o.getAsJsonObject("dims") : null;
+            return new FetchResult(CallStatus.OK, new BuildFetch(
+                    o.get("id").getAsInt(), str(o, "kind"), str(o, "subKind"), str(o, "buildName"),
+                    str(o, "stage"), str(o, "visibility"), o.get("blocks").getAsString(),
+                    intOf(d, "l"), intOf(d, "h"), intOf(d, "w"), intOf(o, "baseSeq"),
+                    parseDeltas(o), str(o, "secret")));
+        });
+    }
+
     /** An int field, or 0 when absent/garbled — the same tolerance {@link #str} has for strings. */
     private static int intOf(JsonObject o, String k) {
         try {
@@ -442,6 +511,23 @@ public final class SharedCarriageClient {
             sb.append(ch);
         }
         return sb.toString().trim();
+    }
+
+    /**
+     * The deltas that still have to be folded onto a base blob, in the order to fold them: those
+     * above the drop-watermark, ascending by {@code seq}.
+     *
+     * <p>Stated once because two different paths fold: a leased carriage on its way onto a train, and
+     * a build on its way back into an editor. Both are handed {@code blocks + baseSeq + deltas} by
+     * the relay, which never parses any of it — the rule for putting them back together lives on this
+     * side, and had better be the same rule in both places.</p>
+     */
+    public static List<DeltaRec> pendingDeltas(List<DeltaRec> deltas, int baseSeq) {
+        if (deltas == null || deltas.isEmpty()) return List.of();
+        List<DeltaRec> out = new java.util.ArrayList<>(deltas.size());
+        for (DeltaRec d : deltas) if (d != null && d.seq() > baseSeq) out.add(d);
+        out.sort(java.util.Comparator.comparingInt(DeltaRec::seq));
+        return List.copyOf(out);
     }
 
     /** Parse the {@code deltas:[{seq,cells}]} array off a lease response (empty on absence/garbage). */

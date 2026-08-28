@@ -511,4 +511,74 @@ final class TrainCarriageAppenderTest {
         assertFalse(TrainCarriageAppender.shouldHoldGroupNearPlayer(
             true, 6, 8, Integer.MAX_VALUE, Integer.MIN_VALUE));
     }
+
+    // preSeedDesiredX is the appender's spawn-placement target: the origin whose seam against the
+    // reference measures exactly TARGET_GAP_BLOCKS. Combined with nearest-integer rounding plus the
+    // fractional remainder carried through preSeedGapShift, an appended group must land INSIDE the
+    // placement tracker's clean dead-band — otherwise it has to run a move-together pass first,
+    // which is the opening leg of the collide→move-together→collide cycle that stalled backward
+    // generation.
+
+    /** Replays planSpawnPlacement's rounding + remainder split and returns the realised seam gap. */
+    private static double realisedGap(double idealX, boolean forward) {
+        double desired = TrainCarriageAppender.preSeedDesiredX(idealX, forward);
+        long placeX = Math.round(desired);
+        double effective = placeX + (desired - placeX);   // origin + preSeedGapShift remainder
+        return forward ? (effective - idealX) : (idealX - effective);
+    }
+
+    @Test
+    @DisplayName("preSeedDesiredX: realised seam is exactly TARGET_GAP_BLOCKS for any fractional idealX")
+    void preSeed_landsOnTargetGap() {
+        for (double frac = 0.0; frac < 1.0; frac += 0.05) {
+            double idealX = 1234.0 + frac;
+            assertEquals(TrainCarriageAppender.TARGET_GAP_BLOCKS, realisedGap(idealX, true), 1e-9,
+                "forward spawn at idealX=" + idealX);
+            assertEquals(TrainCarriageAppender.TARGET_GAP_BLOCKS, realisedGap(-idealX, false), 1e-9,
+                "backward spawn at idealX=" + (-idealX));
+        }
+    }
+
+    @Test
+    @DisplayName("preSeedDesiredX: realised seam sits inside the tracker's clean dead-band")
+    void preSeed_insideCleanBand() {
+        for (double frac = 0.0; frac < 1.0; frac += 0.05) {
+            for (boolean forward : new boolean[] {true, false}) {
+                double gap = realisedGap(500.0 + frac, forward);
+                assertTrue(gap >= TrainCarriageAppender.MIN_GAP_BLOCKS
+                        && gap <= TrainCarriageAppender.MAX_GAP_BLOCKS,
+                    "gap " + gap + " outside dead-band (forward=" + forward + ", frac=" + frac + ")");
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("preSeedDesiredX: backward spawns sit BELOW idealX, forward spawns above")
+    void preSeed_direction() {
+        assertTrue(TrainCarriageAppender.preSeedDesiredX(100.0, true) > 100.0);
+        assertTrue(TrainCarriageAppender.preSeedDesiredX(100.0, false) < 100.0);
+    }
+
+    // cullLatchExpired bounds the cull-clear latch. Before the expiry the latch holds its lane shut
+    // (that's what stops the cull→clear→spawn→cull ghost cascade); at/after it, one attempt is let
+    // through — without which a single ill-timed Sable cull halted backward generation for the whole
+    // session and the train simply ended.
+
+    @Test
+    @DisplayName("cullLatchExpired: false inside the window, true at and past the boundary")
+    void cullLatch_boundary() {
+        long stamped = 10_000L;
+        long expiry = TrainCarriageAppender.CULL_LATCH_EXPIRY_TICKS;
+        assertFalse(TrainCarriageAppender.cullLatchExpired(stamped, stamped));
+        assertFalse(TrainCarriageAppender.cullLatchExpired(stamped, stamped + expiry - 1));
+        assertTrue(TrainCarriageAppender.cullLatchExpired(stamped, stamped + expiry));
+        assertTrue(TrainCarriageAppender.cullLatchExpired(stamped, stamped + expiry * 10));
+    }
+
+    @Test
+    @DisplayName("cullLatchExpired: the window is long enough to outlast a normal settle")
+    void cullLatch_windowOutlastsSettle() {
+        assertTrue(TrainCarriageAppender.CULL_LATCH_EXPIRY_TICKS > 200L,
+            "expiry must exceed the placement safety valve, or it would race a normal settle");
+    }
 }
