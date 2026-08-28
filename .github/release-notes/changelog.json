@@ -9672,6 +9672,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "backpack-button-toggle",
+      "version": "0.708.0",
+      "type": "feat",
+      "title": "Turn the backpack button on or off",
+      "summary": "The backpack panels' open/close button on your inventory screen can now be switched off from Dungeon Train's own options, and it is a little smaller than before. Hiding it costs you nothing: the panels still open with the Edible Backpacks key, which you can bind under Controls.",
+      "highlights": [
+        "A new Backpack Button setting under Options -> Dungeon Train... -> General shows or hides the button.",
+        "The button itself is smaller, so it sits over the inventory without reading as another piece of GUI furniture.",
+        "Shift-clicking an item now fills your hotbar and inventory first, and only overflows into the backpack panels.",
+        "The Upgraded Backpack advancement now describes the real recipe: eight backpacks around a gold block."
+      ],
+      "date": "2026-08-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
