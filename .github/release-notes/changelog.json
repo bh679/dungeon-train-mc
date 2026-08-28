@@ -9513,9 +9513,9 @@
       ],
       "pr": 1148,
       "date": "2026-08-28",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.698.0",
+      "released_at": "2026-08-28T11:49:38Z"
     },
     {
       "id": "trashslot-modpack",
@@ -9529,9 +9529,9 @@
       ],
       "pr": 1158,
       "date": "2026-08-28",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.698.0",
+      "released_at": "2026-08-28T11:49:38Z"
     }
   ]
 }
