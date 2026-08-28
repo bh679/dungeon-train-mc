@@ -111,20 +111,28 @@ public final class SkyDomeDraw {
      * A body on vanilla's <b>overhead</b> celestial orbit — the same two rotations
      * {@code LevelRenderer.renderSky} uses, so it rises and sets exactly where the real one
      * would at that {@code timeOfDay}.
+     *
+     * <p>{@code altitude} picks the slot: {@code +}{@value #DOME_HALF_EXTENT} is the sun's side of
+     * the sky, {@code -}{@value #DOME_HALF_EXTENT} the moon's, half a day behind it. The far slot
+     * is seen from the quad's other face, which mirrors it — so the {@code u} pair is swapped
+     * back there, exactly as vanilla's own moon quad does. Cull is off, so the winding is moot.</p>
      */
     public static void drawCelestialBody(Matrix4f frustumMatrix, ResourceLocation tex, float timeOfDay,
-                                         float size, float alpha, float u0, float v0, float u1, float v1) {
+                                         float altitude, float size, float alpha,
+                                         float u0, float v0, float u1, float v1) {
         PoseStack pose = celestialPose(frustumMatrix, timeOfDay);
         Matrix4f m = pose.last().pose();
+        float uLeft = altitude >= 0.0F ? u0 : u1;
+        float uRight = altitude >= 0.0F ? u1 : u0;
 
         beginBody(tex);
         int color = argb(alpha, 0xFFFFFF);
         Tesselator tesselator = Tesselator.getInstance();
         BufferBuilder bb = tesselator.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX_COLOR);
-        bb.addVertex(m, -size, DOME_HALF_EXTENT, -size).setUv(u0, v0).setColor(color);
-        bb.addVertex(m, size, DOME_HALF_EXTENT, -size).setUv(u1, v0).setColor(color);
-        bb.addVertex(m, size, DOME_HALF_EXTENT, size).setUv(u1, v1).setColor(color);
-        bb.addVertex(m, -size, DOME_HALF_EXTENT, size).setUv(u0, v1).setColor(color);
+        bb.addVertex(m, -size, altitude, -size).setUv(uLeft, v0).setColor(color);
+        bb.addVertex(m, size, altitude, -size).setUv(uRight, v0).setColor(color);
+        bb.addVertex(m, size, altitude, size).setUv(uRight, v1).setColor(color);
+        bb.addVertex(m, -size, altitude, size).setUv(uLeft, v1).setColor(color);
         BufferUploader.drawWithShader(bb.buildOrThrow());
         endBody();
     }

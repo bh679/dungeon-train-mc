@@ -11,8 +11,8 @@ import org.joml.Matrix4f;
  * <p>It still cycles: the stars wheel on vanilla's overhead celestial axis and the moon rises,
  * crosses and sets exactly where the real one would. What never happens is daylight — the sun is
  * simply not drawn, so there is no sunrise, no sunset and no blue hour. The consequence, and the
- * intended effect, is that the moon completes two crossings per Minecraft day: once on the real
- * night, and once more where the sun would otherwise have been.</p>
+ * intended effect, is that at real midnight this window shows the real night sky, moon phase and
+ * all, while through the half of the day the sun would own it is a clear moonless starfield.</p>
  *
  * <p>Unlike {@link UpsideDownSkyRenderer} and {@link VoidSkyRenderer} this has no band-overlay
  * entry point — no region of the world renders a night sky over the real one, so the skybox block
@@ -50,6 +50,6 @@ public final class NightSkyRenderer {
 
         float[] uv = SkyDomeDraw.moonUv(level.getMoonPhase());
         SkyDomeDraw.drawCelestialBody(frustumMatrix, SkyDomeDraw.MOON, timeOfDay,
-                MOON_SIZE, 1.0F, uv[0], uv[1], uv[2], uv[3]);
+                -SkyDomeDraw.DOME_HALF_EXTENT, MOON_SIZE, 1.0F, uv[0], uv[1], uv[2], uv[3]);
     }
 }
