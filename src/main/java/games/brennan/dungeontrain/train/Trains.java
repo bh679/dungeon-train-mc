@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -65,7 +66,70 @@ public final class Trains {
      */
     private static final Map<UUID, Map<Integer, ManagedShip>> SPAWNED_GROUPS = new ConcurrentHashMap<>();
 
+    /**
+     * The world-X each anchor's worldgen gate was first resolved at, keyed by trainId then anchor
+     * pIdx. Written once per anchor by {@link #gateWorldXOrRecord}; read back on every later spawn of
+     * that same anchor.
+     *
+     * <p><b>Why this exists.</b> A group's stage (and therefore its gated variant pool) is resolved
+     * only on a fresh spawn, from the group's ACTUAL placed world-X at that instant — deliberately,
+     * so a carriage's dimension flips in lockstep with the static world-X band beneath it. But an
+     * anchor can be spawned FRESH more than once: {@code TrainCarriageAppender.cleanupGhostAnchors}
+     * deletes and {@link #unregisterGroup}s anchors past the visible edge, after which the appender
+     * re-spawns that same pIdx. The train has travelled in the meantime, so the second spawn samples
+     * a different band, resolves a different stage, and — because the variant pick indexes into the
+     * stage-gated pool — builds a different carriage. That is the "exactly one carriage at render
+     * distance loads from a different stage" report. Remembering the first gate X makes a re-spawn
+     * reproduce what was there before.</p>
+     *
+     * <p>Deliberately NOT touched by {@link #unregisterGroup} — surviving that removal is the entire
+     * point. Cleared with the rest of the registry by {@link #clearRegistry}.</p>
+     */
+    private static final Map<UUID, Map<Integer, Integer>> GATE_WORLD_X = new ConcurrentHashMap<>();
+
+    /**
+     * Cap on remembered anchors per train. A few thousand boxed ints is negligible, and the memory
+     * only has to outlive the frontier churn that re-spawns an anchor. Past the cap the anchors
+     * farthest from the one being spawned are dropped; such an anchor re-rolls if it is ever spawned
+     * again, which is exactly today's behaviour at that distance.
+     */
+    static final int MAX_REMEMBERED_GATE_ANCHORS = 4096;
+
     private Trains() {}
+
+    /**
+     * The world-X to gate {@code anchorPIdx}'s worldgen stage from. The first call for a given
+     * {@code (trainId, anchorPIdx)} records {@code placedWorldX} and returns it; every later call
+     * returns that first value and ignores the one passed in.
+     *
+     * <p>Callers still PLACE the group at its live world position — only the value fed to
+     * {@code GateContext.forCarriageAtWorldX} is pinned, so a re-spawned anchor rebuilds the same
+     * stage and variant instead of re-rolling against wherever the train has since travelled. See
+     * {@link #GATE_WORLD_X}.</p>
+     */
+    public static int gateWorldXOrRecord(UUID trainId, int anchorPIdx, int placedWorldX) {
+        Map<Integer, Integer> map = GATE_WORLD_X.computeIfAbsent(trainId, k -> new ConcurrentHashMap<>());
+        Integer remembered = map.putIfAbsent(anchorPIdx, placedWorldX);
+        if (remembered != null) return remembered;
+        evictFarthestFrom(map, anchorPIdx, MAX_REMEMBERED_GATE_ANCHORS);
+        return placedWorldX;
+    }
+
+    /**
+     * Trim {@code map} down to {@code cap} entries by dropping the anchors farthest from
+     * {@code keepNear} — the anchor just spawned, and therefore the centre of the region still in
+     * play. A no-op while the map is within the cap. Package-private and free of Minecraft types so
+     * the eviction rule is unit-testable.
+     */
+    static void evictFarthestFrom(Map<Integer, Integer> map, int keepNear, int cap) {
+        if (map.size() <= cap) return;
+        List<Integer> byDistance = new ArrayList<>(map.keySet());
+        byDistance.sort(Comparator.comparingLong(a -> -Math.abs((long) a - keepNear)));
+        for (Integer anchor : byDistance) {
+            if (map.size() <= cap) break;
+            map.remove(anchor);
+        }
+    }
 
     /**
      * Record a freshly-spawned carriage group in the registry. Called
@@ -122,6 +186,7 @@ public final class Trains {
     /** Clear every train registration. Wired to server stop and to {@code TrainAssembler.deleteAllTrains}. */
     public static void clearRegistry() {
         SPAWNED_GROUPS.clear();
+        GATE_WORLD_X.clear();
     }
 
     /**
