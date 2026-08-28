@@ -3,7 +3,6 @@ package games.brennan.dungeontrain.config;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -64,27 +63,22 @@ class SharedCarriageDefaultsTest {
     }
 
     /**
-     * Leasing ships ON, and builder submissions ship OFF — the asymmetry that replaced the old one.
+     * Leasing ships ON — the asymmetry with uploading that this switch used to hold is over.
      *
-     * <p>Asserted as a group rather than one constant each, because it is the COMBINATION that is the
-     * product decision. Community carriages — rooms a player changed while riding, which the relay
-     * screens and pools as {@code source='play'} — circulate through runs. Train Builder builds are a
-     * separate system: they upload to their author's profile and stop there. Leasing off again would
-     * empty every shared slot back to blank templates; submissions on would put authored builds into
-     * strangers' runs before that half is ready.</p>
+     * <p>Asserted as a pair rather than one constant each, because it is the COMBINATION that is the
+     * product decision: a world both contributes carriages and is served them. Which builds it may be
+     * served is deliberately NOT decided here — the relay withholds Train Builder builds from every
+     * lease ({@code LEASE_BUILDER_BUILDS}, off), so that half opens with one ops switch and reaches
+     * every mod version already in players' hands, rather than waiting on a release.</p>
      */
     @Test
-    @DisplayName("community carriages are served; builder builds are not")
-    void communityCarriagesAreServedAndBuilderBuildsAreNot() {
+    @DisplayName("carriages are both collected and served: master ON, leasing ON")
+    void carriagesAreCollectedAndServed() {
         assertTrue(DungeonTrainConfig.DEFAULT_SHARED_CARRIAGES_ENABLED,
                 "the master must stay on or builds stop being uploaded at all");
         assertTrue(DungeonTrainConfig.DEFAULT_SHARED_CARRIAGE_LEASING_ENABLED,
                 "leasing must ship on, or a shared slot places a blank template and no community "
                         + "carriage is ever seen by anyone");
-        assertFalse(DungeonTrainConfig.DEFAULT_BUILDER_SUBMIT_TO_TRAIN_ENABLED,
-                "submitting a builder build to the train must ship off — the relay withholds "
-                        + "source='builder' rows from every lease, so an open switch here would only "
-                        + "offer players an action that can never take effect");
     }
 
     /**

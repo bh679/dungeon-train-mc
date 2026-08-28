@@ -148,9 +148,11 @@ public final class DungeonTrainConfig {
      * costs a world's players nothing, while placing someone else's build puts unreviewed geometry into
      * a stranger's run. What has changed is <em>which</em> builds the pool can serve. The relay leases
      * only rows it recorded as {@code source='play'} — carriages captured off a running train, screened
-     * and {@code approved} — and never a Train Builder build, which is a separate system held back by
-     * {@link #DEFAULT_BUILDER_SUBMIT_TO_TRAIN_ENABLED}. Community builds circulating between runs is
-     * the feature; builder builds joining them is the part still waiting.</p>
+     * and {@code approved} — and never a Train Builder build. Builder builds are a separate system the
+     * relay withholds from every lease ({@code LEASE_BUILDER_BUILDS}, off), so opening them later is an
+     * ops switch on the relay rather than another mod release: every version already in players' hands
+     * follows it too. Community builds circulating between runs is the feature; builder builds joining
+     * them is the part still waiting.</p>
      *
      * <p>Paired with a config migration ({@link #runPendingMigrations()} v2→v3): every install that has
      * launched since this key shipped holds a stored {@code false}, which is the old shipped default
@@ -173,24 +175,6 @@ public final class DungeonTrainConfig {
      * holding the key. It stays as an operator override for servers that want profiles off.</p>
      */
     public static final boolean DEFAULT_BUILDER_PROFILE_ENABLED = true;
-    /**
-     * Submitting a Train Builder / Train Editor build to the train ships OFF — builder builds are a
-     * separate system from community carriages, and only the community half is placed into runs yet.
-     *
-     * <p>A carriage captured off a running train is a room a player met, changed, and left behind:
-     * play made it, and play is what it goes back into. A builder build is authored in a creative
-     * world with no run around it, and the two want different review, different pacing and different
-     * ways of choosing what a slot places. They shared one pool only because both ended up in the same
-     * relay table.</p>
-     *
-     * <p>So the profile keeps working — saves upload, My Builds lists them, an author can claim and
-     * re-save — and the one act that would put a build into someone's run is held. The relay enforces
-     * the same rule on its side (it leases {@code source='play'} rows only), which is what covers
-     * builds published before this and any older client; this switch is what stops the game offering
-     * an action that could only ever fail. Deliberately NOT migrated: an operator opts in, and this is
-     * the single line to flip when builder submissions open.</p>
-     */
-    public static final boolean DEFAULT_BUILDER_SUBMIT_TO_TRAIN_ENABLED = false;
     /**
      * A shared-carriage slot splits three ways: a relay build by anyone (pool), a relay build by a
      * player in this world (own), and a fresh unbuilt template (the remainder). Defaults are
@@ -328,7 +312,6 @@ public final class DungeonTrainConfig {
     public static final ModConfigSpec.BooleanValue SHARED_CARRIAGES_ENABLED;
     public static final ModConfigSpec.BooleanValue SHARED_CARRIAGE_LEASING_ENABLED;
     public static final ModConfigSpec.BooleanValue BUILDER_PROFILE_ENABLED;
-    public static final ModConfigSpec.BooleanValue BUILDER_SUBMIT_TO_TRAIN_ENABLED;
     public static final ModConfigSpec.DoubleValue SHARED_CARRIAGE_POOL_CHANCE;
     public static final ModConfigSpec.DoubleValue SHARED_CARRIAGE_OWN_CHANCE;
     public static final ModConfigSpec.IntValue SHARED_CARRIAGE_MAX_ENTITIES;
@@ -385,7 +368,6 @@ public final class DungeonTrainConfig {
         SHARED_CARRIAGES_ENABLED = pair.getLeft().sharedCarriagesEnabled;
         SHARED_CARRIAGE_LEASING_ENABLED = pair.getLeft().sharedCarriageLeasingEnabled;
         BUILDER_PROFILE_ENABLED = pair.getLeft().builderProfileEnabled;
-        BUILDER_SUBMIT_TO_TRAIN_ENABLED = pair.getLeft().builderSubmitToTrainEnabled;
         SHARED_CARRIAGE_POOL_CHANCE = pair.getLeft().sharedCarriagePoolChance;
         SHARED_CARRIAGE_OWN_CHANCE = pair.getLeft().sharedCarriageOwnChance;
         SHARED_CARRIAGE_MAX_ENTITIES = pair.getLeft().sharedCarriageMaxEntities;
@@ -588,7 +570,7 @@ public final class DungeonTrainConfig {
                         "true. Set it false to opt a world out entirely: it then neither leases community builds nor",
                         "uploads its own. NOTE: leasing additionally requires sharedCarriageLeasingEnabled below. Only",
                         "carriages captured off a running train are served; Train Builder builds are a separate system",
-                        "(see builderSubmitToTrainEnabled) and are never placed into a run.")
+                        "the relay withholds from every lease, so submitting one puts it in the queue rather than in a run.")
                 .define("sharedCarriagesEnabled", DEFAULT_SHARED_CARRIAGES_ENABLED);
         ModConfigSpec.BooleanValue sharedCarriageLeasingEnabled = b
                 .comment("Whether this world may LEASE community carriages from the relay and place them on its trains.",
@@ -632,15 +614,6 @@ public final class DungeonTrainConfig {
                         "to have granted network consent, and a build stays private to its author until they submit it.",
                         "Default true.")
                 .define("builderProfileEnabled", DEFAULT_BUILDER_PROFILE_ENABLED);
-        ModConfigSpec.BooleanValue builderSubmitToTrainEnabled = b
-                .comment("Whether a player may submit one of their Train Builder / Train Editor builds to the train from",
-                        "the \"My Builds\" screen. Default false: builder builds and community carriages are two separate",
-                        "systems, and only community carriages — the ones captured off a running train, where a player",
-                        "changed a room and left it behind — are placed into runs so far. Profiles are unaffected: saves",
-                        "still upload, builds still list, and an author can still edit and re-save them. The relay applies",
-                        "the same rule when it serves a slot, so turning this on alone does not put builder builds into",
-                        "runs — it is the game-side half of a switch that opens when submissions do.")
-                .define("builderSubmitToTrainEnabled", DEFAULT_BUILDER_SUBMIT_TO_TRAIN_ENABLED);
         b.pop();
         b.push("discord");
         ModConfigSpec.BooleanValue deathReportToDiscord = b
@@ -724,8 +697,7 @@ public final class DungeonTrainConfig {
                 difficultyLevelNoticeToDiscord, introCinematicEnabled, introCinematicDurationTicks,
                 introCinematicChunkPreloadEnabled, sharedCarriagesEnabled, sharedCarriageLeasingEnabled,
                 sharedCarriagePoolChance,
-                sharedCarriageOwnChance, sharedCarriageMaxEntities, builderProfileEnabled,
-                builderSubmitToTrainEnabled);
+                sharedCarriageOwnChance, sharedCarriageMaxEntities, builderProfileEnabled);
     }
 
     /**
@@ -755,14 +727,6 @@ public final class DungeonTrainConfig {
         return isLoaded() ? BUILDER_PROFILE_ENABLED.get() : DEFAULT_BUILDER_PROFILE_ENABLED;
     }
 
-    /**
-     * Whether a player may submit one of their builder/editor builds to the train. Off while builder
-     * builds and community carriages are separate systems — see
-     * {@link #DEFAULT_BUILDER_SUBMIT_TO_TRAIN_ENABLED}.
-     */
-    public static boolean isBuilderSubmitToTrainEnabled() {
-        return isLoaded() ? BUILDER_SUBMIT_TO_TRAIN_ENABLED.get() : DEFAULT_BUILDER_SUBMIT_TO_TRAIN_ENABLED;
-    }
 
     /** Probability a shared-carriage slot leases a build by any author from the relay pool. */
     public static double getSharedCarriagePoolChance() {
@@ -1202,7 +1166,6 @@ public final class DungeonTrainConfig {
             ModConfigSpec.DoubleValue sharedCarriagePoolChance,
             ModConfigSpec.DoubleValue sharedCarriageOwnChance,
             ModConfigSpec.IntValue sharedCarriageMaxEntities,
-            ModConfigSpec.BooleanValue builderProfileEnabled,
-            ModConfigSpec.BooleanValue builderSubmitToTrainEnabled
+            ModConfigSpec.BooleanValue builderProfileEnabled
     ) {}
 }

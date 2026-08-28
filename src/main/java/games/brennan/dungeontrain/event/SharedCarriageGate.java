@@ -46,8 +46,9 @@ public final class SharedCarriageGate {
      * uploading costs a world's players nothing, while placing someone else's build puts geometry
      * nobody here has seen into a run. It ships ON now that the pool being served is the community one
      * — the relay leases only rows it recorded as {@code source='play'}, carriages captured off a
-     * running train and screened to {@code approved}. Train Builder builds are a separate system and
-     * are not placed into runs; see {@code builderSubmitToTrainEnabled}.</p>
+     * running train and screened to {@code approved}. Train Builder builds are a separate system the relay
+     * withholds from every lease until an operator flips {@code LEASE_BUILDER_BUILDS} there — a switch
+     * kept on the relay precisely so it reaches every mod version already in players' hands.</p>
      *
      * <p>A server that wants its trains built only from its own carriages still turns this off, and
      * keeps contributing.</p>

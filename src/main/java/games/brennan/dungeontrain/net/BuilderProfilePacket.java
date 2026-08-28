@@ -22,14 +22,8 @@ import java.util.List;
  *
  * <p>{@code status} distinguishes an empty profile from a relay that couldn't be reached, which the
  * screen must not conflate: one says "you haven't uploaded anything", the other says "we don't know".</p>
- *
- * <p>{@code submissionsOpen} is the server's answer to "may a build of mine join the train at all?"
- * ({@code builderSubmitToTrainEnabled}). It rides with the profile rather than being re-derived on the
- * client, because a SERVER config value is not loaded on a client connected to a dedicated server —
- * asking there would read the shipped default and tell half the player base the wrong thing.</p>
  */
-public record BuilderProfilePacket(Status status, boolean submissionsOpen,
-                                   List<Entry> builds) implements CustomPacketPayload {
+public record BuilderProfilePacket(Status status, List<Entry> builds) implements CustomPacketPayload {
 
     /** Why the list is what it is. */
     public enum Status {
@@ -80,7 +74,6 @@ public record BuilderProfilePacket(Status status, boolean submissionsOpen,
         StreamCodec.of(
             (buf, packet) -> {
                 buf.writeEnum(packet.status);
-                buf.writeBoolean(packet.submissionsOpen);
                 int n = Math.min(packet.builds.size(), MAX_ENTRIES);
                 buf.writeVarInt(n);
                 for (int i = 0; i < n; i++) {
@@ -97,7 +90,6 @@ public record BuilderProfilePacket(Status status, boolean submissionsOpen,
             },
             buf -> {
                 Status status = buf.readEnum(Status.class);
-                boolean submissionsOpen = buf.readBoolean();
                 int n = Math.min(buf.readVarInt(), MAX_ENTRIES);
                 List<Entry> out = new ArrayList<>(n);
                 for (int i = 0; i < n; i++) {
@@ -105,12 +97,12 @@ public record BuilderProfilePacket(Status status, boolean submissionsOpen,
                             buf.readUtf(MAX_STRING), buf.readBoolean(), buf.readUtf(MAX_STRING),
                             buf.readUtf(MAX_STRING), buf.readVarInt()));
                 }
-                return new BuilderProfilePacket(status, submissionsOpen, List.copyOf(out));
+                return new BuilderProfilePacket(status, List.copyOf(out));
             }
         );
 
     public static BuilderProfilePacket of(Status status) {
-        return new BuilderProfilePacket(status, serverAcceptsSubmissions(), List.of());
+        return new BuilderProfilePacket(status, List.of());
     }
 
     /** Reduce the relay's rows to what the screen draws. */
@@ -121,16 +113,7 @@ public record BuilderProfilePacket(Status status, boolean submissionsOpen,
             out.add(new Entry(r.id(), r.kind(), r.subKind(), r.buildName(),
                     "published".equals(r.visibility()), r.flag(), r.stage(), r.changeCount()));
         }
-        return new BuilderProfilePacket(Status.OK, serverAcceptsSubmissions(), List.copyOf(out));
-    }
-
-    /**
-     * Whether this server is accepting builds onto the train. Read here rather than on the client for
-     * the reason the record doc gives — both {@code of} factories run server-side, where the SERVER
-     * spec is loaded.
-     */
-    private static boolean serverAcceptsSubmissions() {
-        return games.brennan.dungeontrain.config.DungeonTrainConfig.isBuilderSubmitToTrainEnabled();
+        return new BuilderProfilePacket(Status.OK, List.copyOf(out));
     }
 
     @Override
