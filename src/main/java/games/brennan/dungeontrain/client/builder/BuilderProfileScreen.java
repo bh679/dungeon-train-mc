@@ -33,6 +33,11 @@ import java.util.List;
  * blocks. A build uploaded from another world has no local file and falls back to a flat tile —
  * downloading one back into the builder is the next piece of work, not this one.</p>
  *
+ * <p>Submitting is <b>closed</b> while builder builds and community carriages remain separate systems:
+ * a run is filled from carriages players changed while riding, and nothing authored here is placed into
+ * one yet. The screen says so rather than offering a button the server would refuse — but withdrawing a
+ * build submitted before that is always allowed, so nobody is left unable to take theirs back.</p>
+ *
  * <p>Only a whole carriage can be submitted ({@link BuilderRelayKinds#canJoinTheTrain}); every other
  * kind the builder authors is a piece of something rather than a thing a train slot can hold, so its
  * tile says where it lives and offers nothing to press.</p>
@@ -56,6 +61,13 @@ public final class BuilderProfileScreen extends Screen {
 
     private List<BuilderProfilePacket.Entry> builds = List.of();
     private BuilderProfilePacket.Status status = null;
+    /**
+     * Whether this server accepts builds onto the train at all. Builder builds and community carriages
+     * are separate systems today, and only the community half is placed into runs — so submitting is
+     * held, while withdrawing a build published before that stays available. Assumed closed until a
+     * profile says otherwise, so the button never invites an action the server would refuse.
+     */
+    private boolean submissionsOpen = false;
     private BuilderTemplateGridLayout grid;
     private int scrollY;
     private int selected = -1;
@@ -75,6 +87,7 @@ public final class BuilderProfileScreen extends Screen {
         if (latest != null) {
             this.builds = latest.builds();
             this.status = latest.status();
+            this.submissionsOpen = latest.submissionsOpen();
         }
         // Always re-ask on the way in. The cached list is what makes a reopened screen instant, but it
         // may predate a save, a publish, or a build somebody else's world just returned.
@@ -91,6 +104,7 @@ public final class BuilderProfileScreen extends Screen {
         int selectedId = selectedBuild() == null ? -1 : selectedBuild().relayId();
         this.builds = packet.builds();
         this.status = packet.status();
+        this.submissionsOpen = packet.submissionsOpen();
         this.selected = -1;
         for (int i = 0; i < builds.size(); i++) {
             if (builds.get(i).relayId() == selectedId) {
@@ -131,7 +145,10 @@ public final class BuilderProfileScreen extends Screen {
      */
     private boolean canActOnSelection() {
         BuilderProfilePacket.Entry entry = selectedBuild();
-        return entry != null && BuilderRelayKinds.canJoinTheTrain(entry.kind());
+        if (entry == null || !BuilderRelayKinds.canJoinTheTrain(entry.kind())) return false;
+        // Withdrawing is always allowed — a build already on the train must stay pullable back off,
+        // and while submissions are closed that is the only half of the action still live.
+        return entry.published() || submissionsOpen;
     }
 
     private Component actionLabel() {
@@ -140,14 +157,18 @@ public final class BuilderProfileScreen extends Screen {
         if (!BuilderRelayKinds.canJoinTheTrain(entry.kind())) {
             return Component.translatable("gui.dungeontrain.builder.profile.not_a_carriage");
         }
-        return Component.translatable(entry.published()
-                ? "gui.dungeontrain.builder.profile.withdraw_submission"
-                : "gui.dungeontrain.builder.profile.submit_for_review");
+        if (entry.published()) {
+            return Component.translatable("gui.dungeontrain.builder.profile.withdraw_submission");
+        }
+        return Component.translatable(submissionsOpen
+                ? "gui.dungeontrain.builder.profile.submit_for_review"
+                : "gui.dungeontrain.builder.profile.submissions_closed_button");
     }
 
     private void submitSelected() {
         BuilderProfilePacket.Entry entry = selectedBuild();
         if (entry == null || !BuilderRelayKinds.canJoinTheTrain(entry.kind())) return;
+        if (!entry.published() && !submissionsOpen) return; // the server would refuse it anyway
         DungeonTrainNet.sendToServer(new BuilderProfileActionPacket(entry.relayId(), !entry.published()));
         // The server re-reads the profile once the relay answers, which lands back on this screen
         // through onProfile — so nothing is assumed to have worked here.
@@ -282,6 +303,15 @@ public final class BuilderProfileScreen extends Screen {
         // its author could ever be told why theirs isn't turning up in anyone's train.
         if ("flagged".equals(entry.flag()) || "rejected".equals(entry.flag())) {
             return Component.translatable("gui.dungeontrain.builder.profile.withheld");
+        }
+        // Builder builds are not placed into runs yet, so say so where the button stops working. A
+        // build published before that closed still shows as submitted and still isn't appearing
+        // anywhere — which reads as a broken feature unless it is named here, the same reason the
+        // stage line below exists.
+        if (!submissionsOpen && BuilderRelayKinds.canJoinTheTrain(entry.kind())) {
+            return Component.translatable(entry.published()
+                    ? "gui.dungeontrain.builder.profile.submissions_closed_published"
+                    : "gui.dungeontrain.builder.profile.submissions_closed");
         }
         // A carriage is only placed into a stage it belongs to, and a build authored without one
         // belongs to none — so it can be submitted and still never appear anywhere. Said here because

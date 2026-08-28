@@ -42,11 +42,15 @@ public final class SharedCarriageGate {
     /**
      * Whether this world may LEASE relay carriages onto its trains — the placing half of the feature.
      *
-     * <p>Narrower than {@link #canDiscover()} on purpose. The two halves of shared carriages are not
-     * ready at the same time: uploading costs a world's players nothing, while placing someone else's
-     * build puts unreviewed geometry into a stranger's run, and the review pipeline that gates that is
-     * not open yet. So {@code sharedCarriageLeasingEnabled} ships off and holds the lease sites shut
-     * while every upload path keeps running.</p>
+     * <p>Narrower than {@link #canDiscover()} on purpose, and it held the lease sites shut for a while:
+     * uploading costs a world's players nothing, while placing someone else's build puts geometry
+     * nobody here has seen into a run. It ships ON now that the pool being served is the community one
+     * — the relay leases only rows it recorded as {@code source='play'}, carriages captured off a
+     * running train and screened to {@code approved}. Train Builder builds are a separate system and
+     * are not placed into runs; see {@code builderSubmitToTrainEnabled}.</p>
+     *
+     * <p>A server that wants its trains built only from its own carriages still turns this off, and
+     * keeps contributing.</p>
      *
      * <p>ANDed with the master switch rather than read alone, so a world that opted out of the feature
      * entirely can never be brought back in by the leasing switch.</p>

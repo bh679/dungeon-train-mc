@@ -218,6 +218,17 @@ public final class BuilderRelayUpload {
             return CompletableFuture.completedFuture(
                     msg("gui.dungeontrain.builder.profile.not_yours", ChatFormatting.YELLOW));
         }
+        if (publish && !DungeonTrainConfig.isBuilderSubmitToTrainEnabled()) {
+            // Builder builds and community carriages are separate systems, and only the community half
+            // is placed into runs yet — the relay serves `source='play'` rows only, so a publish here
+            // would move the build somewhere nothing can reach it. Checked before the pool switch
+            // below because it is the narrower, currently-load-bearing reason.
+            //
+            // WITHDRAW is never gated: a build a player already published must always be pullable back
+            // out, and that is the one action this closure leaves them needing.
+            return CompletableFuture.completedFuture(
+                    msg("gui.dungeontrain.builder.profile.submissions_closed", ChatFormatting.YELLOW));
+        }
         if (publish && !DungeonTrainConfig.isSharedCarriagesEnabled()) {
             // Nothing leases from the pool while the feature is off, so publishing would put the build
             // somewhere nothing can reach. Say so rather than appearing to succeed.
