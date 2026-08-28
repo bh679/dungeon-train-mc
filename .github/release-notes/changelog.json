@@ -9449,6 +9449,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "load-builds-from-relay",
+      "version": "0.692.0",
+      "type": "feat",
+      "title": "Load your builds from your profile into the editor",
+      "summary": "My Builds could always show you what you had made \u2014 including builds from another world, another save, or another machine \u2014 but it could never open one. Now it can. Load into Editor pulls the build down and drops it straight onto the plot, ready to keep working on, and a build you already have by that name is left alone rather than overwritten.",
+      "highlights": [
+        "Load into Editor on the My Builds screen",
+        "Works for builds this world has never seen \u2014 a new save, a reinstall, a new machine",
+        "Every kind: carriages, groups, rooms, parts, track and portal rooms"
+      ],
+      "date": "2026-08-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
