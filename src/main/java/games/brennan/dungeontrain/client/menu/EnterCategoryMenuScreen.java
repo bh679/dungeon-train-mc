@@ -18,12 +18,18 @@ import java.util.Locale;
  *       listing every template in that category so the player can
  *       teleport directly to a specific variant without the destructive
  *       {@code /dt editor &lt;cat&gt;} clear-and-restamp cycle.</li>
- *   <li><b>Different category</b> — drills into {@link UnsavedCheckScreen}
- *       which queries the server for dirty plots before dispatching the
- *       destructive switch. Empty dirty list auto-dispatches and closes
- *       (preserving the original one-click flow); a non-empty list
- *       surfaces a per-row Save / View list so the player doesn't lose
- *       work.</li>
+ *   <li><b>Different category</b> — dispatches
+ *       {@code /dt editor &lt;category&gt;} straight away.
+ *
+ *       <p><b>The unsaved-check confirmation is currently bypassed.</b> This row used to drill
+ *       into {@link UnsavedCheckScreen}, which asked the server for dirty plots and offered a
+ *       per-row Save before the destructive switch. That check reported plots the author had
+ *       never touched — its baseline diverges from the live world at part-template variant cells
+ *       right after the stamp — so the screen listed most of the roster on every switch and the
+ *       real warnings were lost in the noise. Bypassing it means an unsaved edit is destroyed
+ *       silently by {@code EditorCategory.clearAllPlots}; that is the accepted trade until the
+ *       dirty check is fixed. {@link UnsavedCheckScreen} is kept intact so re-enabling is
+ *       restoring the drill-in below.</p></li>
  * </ul>
  */
 public final class EnterCategoryMenuScreen implements MenuScreen {
@@ -46,15 +52,15 @@ public final class EnterCategoryMenuScreen implements MenuScreen {
      * <ul>
      *   <li>If the player is already inside this category, drill into the
      *       template-picker for in-category teleports.</li>
-     *   <li>Otherwise drill into the unsaved-check confirmation so the
-     *       player can save or knowingly discard before the destructive
-     *       category switch.</li>
+     *   <li>Otherwise run the category switch directly — the same command
+     *       {@link UnsavedCheckScreen}'s own Continue row dispatched. See the
+     *       class javadoc for why the confirmation is bypassed.</li>
      * </ul>
      */
     static CommandMenuEntry entryFor(String label, String catId, String currentCategory) {
         if (catId.equals(currentCategory)) {
             return new CommandMenuEntry.DrillIn(label, new CategoryTemplatesScreen(catId), true);
         }
-        return new CommandMenuEntry.DrillIn(label, new UnsavedCheckScreen(catId));
+        return new CommandMenuEntry.Run(label, "dungeontrain editor " + catId);
     }
 }
