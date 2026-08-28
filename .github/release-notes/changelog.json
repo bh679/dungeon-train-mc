@@ -9578,6 +9578,21 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "backup-retention-and-clear",
+      "version": "0.703.0",
+      "type": "feat",
+      "title": "Control how many backups you keep, and clear them",
+      "summary": "Dungeon Train keeps backups of your builds and progress, and until now it decided on its own how many to hold on to. It now keeps a set number per version \u2014 five by default \u2014 so you can tell at a glance what you have, and there is a button to delete them all and reclaim the space.",
+      "highlights": [
+        "A Backups section in Options > Dungeon Train, with a slider for how many backups to keep per version.",
+        "Clear Backups shows how much disk your backups are using and deletes them, inside and outside your Minecraft folder, after confirming."
+      ],
+      "date": "2026-08-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
