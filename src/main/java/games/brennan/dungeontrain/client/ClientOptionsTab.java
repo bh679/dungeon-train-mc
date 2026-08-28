@@ -101,6 +101,21 @@ public enum ClientOptionsTab {
      * <p>Every tab is non-empty in all four combinations — no combination of flags can produce a tab
      * that opens onto nothing.</p>
      */
+    /**
+     * Rows that must begin a fresh line rather than pairing with whatever precedes them.
+     *
+     * <p>Rows are packed two-across in list order, so without this the first row of a group lands
+     * beside the last row of the previous one and the group stops reading as a group. Only the
+     * LEADER is named — the rest of the group pairs among themselves as usual.</p>
+     */
+    private static final java.util.Set<Row> GROUP_LEADERS =
+            java.util.EnumSet.of(Row.BACKUPS, Row.TRANSLATE);
+
+    /** Whether {@code row} begins a visual group. See {@link #GROUP_LEADERS}. */
+    public static boolean startsGroup(Row row) {
+        return GROUP_LEADERS.contains(row);
+    }
+
     public static List<Row> rowsFor(ClientOptionsTab tab, boolean chineseLocale, boolean hasTranslateTarget) {
         List<Row> rows = new ArrayList<>();
         switch (tab) {

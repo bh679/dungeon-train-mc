@@ -565,7 +565,7 @@ public final class ClientDisplayConfig {
                          "archives already on disk. A total size ceiling also applies as a backstop.",
                          "Set from the Backups per version row in Options > Dungeon Train.")
                 .defineInRange("backupsPerVersion",
-                    games.brennan.dungeontrain.data.PlayerDataBackup.DEFAULT_PER_VERSION, 1, 50);
+                    games.brennan.dungeontrain.data.PlayerDataBackup.DEFAULT_PER_VERSION, 1, 20);
         b.pop();
 
         b.push("configIntegrity");

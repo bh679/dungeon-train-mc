@@ -117,6 +117,30 @@ final class ClientOptionsTabTest {
                 "every Row constant must appear in some tab when both conditions hold");
     }
 
+    @Test
+    @DisplayName("The backup rows lead a group so they are not split across a pair boundary")
+    void backupRowsStartTheirOwnGroup() {
+        // Rows pack two-across in list order. Without a group leader, BACKUPS pairs with whatever
+        // row precedes it and the three backup rows stop reading as one block.
+        assertTrue(ClientOptionsTab.startsGroup(ClientOptionsTab.Row.BACKUPS));
+        // The rest of the group pairs among themselves, so they must NOT be leaders.
+        assertFalse(ClientOptionsTab.startsGroup(ClientOptionsTab.Row.BACKUPS_PER_VERSION));
+        assertFalse(ClientOptionsTab.startsGroup(ClientOptionsTab.Row.CLEAR_BACKUPS));
+        // Translate follows the group and must not be dragged into it.
+        assertTrue(ClientOptionsTab.startsGroup(ClientOptionsTab.Row.TRANSLATE));
+    }
+
+    @Test
+    @DisplayName("The three backup rows stay adjacent, in order")
+    void backupRowsAreAdjacent() {
+        List<ClientOptionsTab.Row> general =
+                ClientOptionsTab.rowsFor(ClientOptionsTab.GENERAL, false, false);
+        int first = general.indexOf(ClientOptionsTab.Row.BACKUPS);
+
+        assertEquals(ClientOptionsTab.Row.BACKUPS_PER_VERSION, general.get(first + 1));
+        assertEquals(ClientOptionsTab.Row.CLEAR_BACKUPS, general.get(first + 2));
+    }
+
     // ---- Fixed tabs are unaffected by the conditional flags ----
 
     @Test
