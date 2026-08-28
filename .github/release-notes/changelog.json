@@ -9537,13 +9537,8 @@
       "id": "backward-generation-stall",
       "version": "0.700.0",
       "type": "fix",
-      "title": "The train no longer ends when you travel backwards",
-      "summary": "Riding toward the back of the train could leave you staring at a wide gap, or nothing at all \u2014 the tail simply stopped being built. Backward carriages now keep up with you, and the seams between them land where they should.",
-      "highlights": [
-        "Carriages still being placed no longer get their physics parked mid-placement, which used to knock them tens of blocks out of line.",
-        "A new carriage now measures its seam against the carriage next to it, instead of one several groups away when its neighbour has just unloaded.",
-        "New carriages spawn already at their final spacing, so they settle in one pass instead of shuffling into place."
-      ],
+      "title": "OH MY LORD I DID IT! I FIXED THE BACKWARD BUG",
+      "summary": "This dam bug has been plaguing me for months. Since the start of this project, I wanted the train to go infinitely backwards. Well today, I am proud to say - it goes a god dam long way backwards! How far? Im sure one of you will tell me if its not infinite. Please go forth and explore! Sincerely, Brennan.",
       "pr": 1160,
       "date": "2026-08-28",
       "released": false,
