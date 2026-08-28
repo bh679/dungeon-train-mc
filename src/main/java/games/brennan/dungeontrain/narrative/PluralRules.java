@@ -31,7 +31,7 @@ import org.slf4j.Logger;
  * <p><b>Nothing changes for a language without the distinction.</b> The category a locale can produce is
  * fixed by its rule family, so English still only ever asks for {@code .one}/{@code .other} and a German
  * translator writes exactly the two lines they write today; Japanese asks only for {@code .other} and
- * writes one. Only ru and pl carry {@code .few}/{@code .many} keys at all —
+ * writes one. Only ru, pl and ro carry a {@code .few} key at all —
  * {@code scripts/localization/validate-locale.py} derives each locale's legal key set from the same rule
  * table, so a locale is required to have exactly the forms its own grammar can reach and no others.</p>
  *
@@ -68,6 +68,12 @@ public final class PluralRules {
         EAST_SLAVIC,
         /** Polish: like {@link #EAST_SLAVIC} but only a bare 1 is {@code one} (21 is {@code many}). */
         POLISH,
+        /**
+         * Romanian: {@code one} at exactly 1; {@code few} at 0 and at any count whose last two digits
+         * are 2-19 (the "de-less" range — 3 vagoane, 19 vagoane); {@code other} from 20 up, where the
+         * noun takes {@code de} (20 de vagoane, 101 vagoane is {@code other} too).
+         */
+        ROMANIAN,
         /** No inflection for number at all — Japanese, Korean, Chinese, Thai, Vietnamese, Malayic, Filipino. */
         SINGLE
     }
@@ -92,6 +98,7 @@ public final class PluralRules {
             case ZERO_ONE_OTHER -> abs == 0L || abs == 1L ? ONE : OTHER;
             case EAST_SLAVIC -> slavic(abs, abs % 10L == 1L && abs % 100L != 11L);
             case POLISH -> slavic(abs, abs == 1L);
+            case ROMANIAN -> abs == 1L ? ONE : (abs == 0L || (abs % 100L >= 2L && abs % 100L <= 19L) ? FEW : OTHER);
         };
     }
 
@@ -125,6 +132,7 @@ public final class PluralRules {
             case SINGLE -> java.util.List.of(OTHER);
             case ONE_OTHER, ZERO_ONE_OTHER -> java.util.List.of(ONE, OTHER);
             case EAST_SLAVIC, POLISH -> java.util.List.of(ONE, FEW, MANY);
+            case ROMANIAN -> java.util.List.of(ONE, FEW, OTHER);
         };
     }
 

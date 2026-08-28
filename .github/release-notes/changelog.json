@@ -9465,6 +9465,24 @@
       "released": true,
       "released_in": "v0.692.0",
       "released_at": "2026-08-28T04:37:12Z"
+    },
+    {
+      "id": "romanian-localization",
+      "version": "0.693.0",
+      "type": "feat",
+      "title": "Dungeon Train speaks Romanian",
+      "summary": "Romanian joins the language list \u2014 the whole game, not just the menus: every screen, the item names, and all 57 in-game books. It is machine translation nobody has proofread yet, and the language list says so with the faded AI mark; if you read Romanian, the in-game translation editor is open and your fixes come back to everyone.",
+      "highlights": [
+        "Romanian (Rom\u00e2n\u0103) is selectable in the vanilla language list",
+        "Menus, HUD, advancements, item names and all 57 books translated",
+        "Counts follow real Romanian grammar \u2014 1 vagon, 3 vagoane, 20 de vagoane",
+        "Marked AI-unreviewed, so every line is open for community correction"
+      ],
+      "pr": 1154,
+      "date": "2026-08-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

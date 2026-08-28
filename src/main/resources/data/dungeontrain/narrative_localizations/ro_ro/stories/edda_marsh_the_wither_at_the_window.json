@@ -1,0 +1,55 @@
+{
+  "id": "edda_marsh_the_wither_at_the_window",
+  "character": "Edda Marsh",
+  "story": "Witherul de la fereastră",
+  "letters": [
+    {
+      "index": 1,
+      "label": "Scrisoarea întâi",
+      "variants": [
+        "Mă numesc Edda Marsh.\n\nScriu asta de pe un loc care nu e al meu.\n\nLocul meu era cu trei vagoane în urmă. L-am părăsit repede. Nu de frică. Mai degrabă așa cum ieși dintr-o cameră când ceainicul stă de prea mult timp pe foc.\n\nO să explic după ce merg mai departe. Deocamdată: m-am mutat. Am început să mă mișc.\n\nEdda Marsh",
+        "Edda Marsh.\n\nLocul ăsta e cald. Nu de la mine.\n\nLocul meu e înapoi, pe unde am venit. Trei vagoane, poate patru. Nu le-am numărat.\n\nȘalul meu e tot pe el. Împăturit. Împăturitul a fost ultimul lucru pe care nu l-am făcut.\n\nMai multe după ce merg mai departe.\n\nEdda Marsh"
+      ]
+    },
+    {
+      "index": 2,
+      "label": "Scrisoarea a doua",
+      "variants": [
+        "Sunt într-un vagon de dormit. Patul e făcut. Nu de mine.\n\nAseară era ceva la vechea mea fereastră.\n\nTrei capete. Os de culoarea cenușii ude. Cel din mijloc mai mare decât celelalte.\n\nSe mișcau pe rând. Cel din mijloc se oprea și cele două de lângă el se întorceau. Toate trei au privit înăuntru.\n\nNu mi-am ferit privirea. Nu părea să fie vreun motiv. După o vreme nu mai erau.\n\nAm așteptat o oră. Apoi m-am ridicat. Apoi am mers.\n\nEdda Marsh",
+        "Un vagon de dormit. Patul e făcut. Nu de mine.\n\nTrei capete la vechea fereastră, aseară.\n\nCenușiu-os. Cel din mijloc mai mare. Cele două de lângă el se întorceau când el nu.\n\nToate au privit înăuntru.\n\nAm văzut lucruri mai rele în viața mea. Le-am privit înapoi.\n\nDupă o vreme nu mai erau. Am așteptat. Am mers.\n\nEdda Marsh"
+      ]
+    },
+    {
+      "index": 3,
+      "label": "Scrisoarea a treia",
+      "variants": [
+        "Am mers patru vagoane înainte. Scriu dintr-un colț de citit din ceea ce ar putea fi un vagon-bibliotecă. Unele cărți sunt reale. Altele sunt doar cotoare lipite de perete.\n\nE și aici. La fereastra mea. Nu cea pe care am lăsat-o. La asta nouă.\n\nAceleași trei capete. Cel din mijloc ușor înclinat într-o parte, ca și cum ar asculta.\n\nAm trecut în partea cealaltă a vagonului. Fereastra aceea era întunecată. M-am întors. Era iar la a mea.\n\nEdda Marsh",
+        "Patru vagoane înainte. Un vagon-bibliotecă. Unele cărți sunt reale. Altele sunt cotoare lipite de perete.\n\nE și aici. La fereastra asta. Nu cea pe care am lăsat-o.\n\nAceleași trei capete. Cel din mijloc înclinat, ca și cum ar asculta.\n\nAm traversat vagonul. Cealaltă fereastră era întunecată. M-am întors. A mea strălucea iar de os.\n\nEdda Marsh"
+      ]
+    },
+    {
+      "index": 4,
+      "label": "Scrisoarea a patra",
+      "variants": [
+        "Sunt într-un vagon de marfă. Lăzile sunt bătute în cuie. Lumina e singurul lucru care nu e închis în cutii.\n\nAr trebui să-ți spun despre Hollin.\n\nEra soțul meu. Săpa nisip de suflete. Pe cea mai mare parte o vindea. Păstra un pic pentru el.\n\nA săpat prea adânc, până la urmă. Ceva a urcat din locul în care săpa.\n\nTrei capete. Cel din mijloc mai mare decât celelalte. O înclinare la cel din mijloc. Ca și cum ar asculta.\n\nHollin nu a urcat.\n\nAm așteptat multă vreme să văd iar chipul acela. Acum l-am văzut.\n\nE la fiecare fereastră lângă care mă așez.\n\nEdda Marsh",
+        "Un vagon de marfă. Lăzi bătute în cuie. Lumina e singurul lucru care nu e închis în cutii.\n\nHollin.\n\nEra soțul meu. Săpa nisip de suflete. Vindea cea mai mare parte. Păstra un pic.\n\nA săpat prea adânc. Ceva a urcat.\n\nTrei capete. Cel din mijloc mai mare. Înclinat. Ca și cum ar asculta.\n\nHollin a rămas.\n\nAm așteptat multă vreme să văd iar chipul acela.\n\nAcum l-am văzut.\n\nEdda"
+      ]
+    },
+    {
+      "index": 5,
+      "label": "Scrisoarea a cincea",
+      "variants": [
+        "Sunt într-un vagon de observație. Ferestre lungi. Multe. Câțiva alți pasageri.\n\nAm stat aici ore în șir. M-am uitat la ferestre. Nu pe ele. La ele.\n\nTrenul merge într-un ritm constant. Priveliștea nu. Un copac rămâne lângă noi prea mult timp. Un râu curge invers și apoi curge în sensul nostru.\n\nVagonul următor avea priveliștea lui. O altă vale. Cel de după avea un câmp pe care l-am știut la doisprezece ani.\n\nLa două locuri mai încolo e un bărbat care privește o bucătărie. Cred că e bucătăria mamei lui. Plânge foarte încet de o oră.\n\nFerestrele nu arată afară. Arată ce duce cu el cel care privește.\n\nEu l-am dus pe Hollin. Am dus ce a urcat din săpătura lui.\n\nNu mă urmărește. A fost dintotdeauna al meu.\n\nSunt liniștită. Vreau să știi că sunt liniștită.\n\nEdda Marsh",
+        "Vagon de observație. Ferestre lungi. Câteva. Câțiva alți pasageri.\n\nM-am uitat la ferestre. Nu pe ele. La ele. Ore în șir.\n\nTrenul merge într-un ritm constant. Priveliștea nu. Un copac rămâne prea mult. Un râu curge invers și apoi curge în sensul nostru.\n\nVagonul următor: o altă vale. Cel de după: un câmp pe care l-am știut la doisprezece ani.\n\nLa două locuri mai încolo un bărbat privește o bucătărie. Cred că e a mamei lui. Plânge foarte încet.\n\nFerestrele arată ce ducem cu noi.\n\nEu l-am dus pe Hollin. Și ce a urcat din săpătura lui.\n\nA fost dintotdeauna al meu. Nu mă urmărește. Al meu.\n\nSunt liniștită.\n\nEdda Marsh"
+      ]
+    },
+    {
+      "index": 6,
+      "label": "Scrisoarea a șasea",
+      "variants": [
+        "Am încetat să mai merg.\n\nSunt într-un vagon mic aproape de coadă. Sau aproape de cap. Lumina e la fel în ambele sensuri.\n\nE o fereastră. E un zăvor la fereastră. Mă uit la zăvor de o bună bucată de vreme.\n\nCele trei capete sunt aici. Nu mai sunt la geam acum. Sunt puțin mai încolo de el, în întuneric. Așteaptă.\n\nAm hotărât că nu am să mai merg. Am hotărât că am să ridic zăvorul.\n\nAm ridicat zăvorul.\n\nFereastra e deschisă. Noaptea e foarte rece. Cedrul miroase mai tare când aerul trece prin el.\n\nAm să las asta aici. Am să las și fereastra deschisă. Pentru cine găsește locul după mine.",
+        "M-am oprit.\n\nUn vagon mic. Aproape de coadă. Sau de cap. Lumina e la fel în ambele sensuri.\n\nO fereastră. Un zăvor. Mă uit la el de o bună bucată de vreme.\n\nCele trei capete sunt aici. Nu mai la geam acum. Puțin mai încolo. Așteaptă.\n\nNu am să mai merg. Am să ridic zăvorul.\n\nL-am ridicat.\n\nFereastra e deschisă. Noaptea e rece. Cedrul miroase mai tare când se mișcă aerul.\n\nLas asta aici.\n\nLas și fereastra deschisă."
+      ]
+    }
+  ]
+}
