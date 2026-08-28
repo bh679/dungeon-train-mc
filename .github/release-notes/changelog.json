@@ -9610,6 +9610,22 @@
       "released": true,
       "released_in": "v0.703.0",
       "released_at": "2026-08-28T15:36:14Z"
+    },
+    {
+      "id": "custom-content-title-toggle",
+      "version": "0.704.0",
+      "type": "feat",
+      "title": "Turn your own train builds on or off from the main menu",
+      "summary": "If you have builds of your own from the Train Editor, the main menu now carries a switch for them, sitting just left of New Game. Lit means your designs ride the train \u2014 and those runs stay Free Play, so stats and advancements keep to that world. Grey means the built-in designs ride instead, and everything you do counts. Flipping it also settles the question for good: worlds stop stopping to ask which train you want. Options \u2192 Custom Train Content puts the question back if you'd rather be asked each time. The prompt itself now leads with the choice that keeps your stats.",
+      "highlights": [
+        "Main-menu switch for your own train builds, shown only when you have some",
+        "Pressing it retires the per-world 'which train?' prompt",
+        "That prompt now offers Default Train (Live) first"
+      ],
+      "date": "2026-08-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
