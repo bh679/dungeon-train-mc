@@ -120,15 +120,52 @@ class PlayerDataBackupTest {
     }
 
     @Test
+    void pruningKeepsOnePerDayBeyondTheRecentWindow() throws IOException {
+        Files.createDirectories(backups());
+        // Backing up on every template save and death means the recent window can be a single
+        // afternoon; without a per-day ladder, "restore what I had last week" stops being possible.
+        for (int i = 1; i <= PlayerDataBackup.KEEP_NEWEST; i++) {
+            write(backups().resolve(String.format("dungeontrain-backup-20260220-%06d.zip", i)), "z");
+        }
+        for (int day = 1; day <= 5; day++) {
+            for (int n = 1; n <= 3; n++) {
+                write(backups().resolve(
+                    String.format("dungeontrain-backup-2026021%d-%06d.zip", day, n)), "z");
+            }
+        }
+
+        PlayerDataBackup.prune(backups());
+
+        List<Path> left = PlayerDataBackup.listArchives(backups());
+        // The 20 recent ones (all on 20260220), one survivor for each of the 5 earlier days, and
+        // the very oldest archive, which is always kept on top of the ladder.
+        assertEquals(PlayerDataBackup.KEEP_NEWEST + 5 + 1, left.size());
+        for (int day = 1; day <= 5; day++) {
+            String prefix = String.format("dungeontrain-backup-2026021%d-", day);
+            List<Path> forDay = left.stream()
+                .filter(p -> p.getFileName().toString().startsWith(prefix)).toList();
+            // Day 1 also holds the very oldest archive, which survives unconditionally.
+            assertEquals(day == 1 ? 2 : 1, forDay.size(), "wrong survivor count for day " + day);
+            assertTrue(forDay.get(0).getFileName().toString().endsWith("000003.zip"),
+                "that day's newest must be the survivor");
+        }
+        assertTrue(left.contains(backups().resolve("dungeontrain-backup-20260211-000001.zip")),
+            "the pre-migration snapshot is never pruned");
+    }
+
+    @Test
     void pruningKeepsTheNewestAndAlwaysTheOldest() throws IOException {
         Files.createDirectories(backups());
         // Named by timestamp, and the name IS the ordering — so these stand in for real archives.
-        for (int i = 1; i <= PlayerDataBackup.KEEP_NEWEST + 5; i++) {
-            write(backups().resolve(String.format("dungeontrain-backup-202601%02d-000000.zip", i)), "z");
+        // All on ONE day, so the per-day ladder can't rescue any of them and only the recent
+        // window plus the oldest survive.
+        int total = PlayerDataBackup.KEEP_NEWEST + 5;
+        for (int i = 1; i <= total; i++) {
+            write(backups().resolve(String.format("dungeontrain-backup-20260101-%06d.zip", i)), "z");
         }
-        Path oldest = backups().resolve("dungeontrain-backup-20260101-000000.zip");
+        Path oldest = backups().resolve("dungeontrain-backup-20260101-000001.zip");
         Path newest = backups().resolve(
-            String.format("dungeontrain-backup-202601%02d-000000.zip", PlayerDataBackup.KEEP_NEWEST + 5));
+            String.format("dungeontrain-backup-20260101-%06d.zip", total));
 
         PlayerDataBackup.prune(backups());
 

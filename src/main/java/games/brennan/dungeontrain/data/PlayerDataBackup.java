@@ -18,6 +18,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -61,8 +62,17 @@ public final class PlayerDataBackup {
     /** Schema of the manifest written into each archive. Bump on an incompatible layout change. */
     static final int SCHEMA_VERSION = 1;
 
-    /** How many recent archives to keep. The oldest is always kept on top of these. */
-    static final int KEEP_NEWEST = 10;
+    /** How many recent archives to keep outright. The ladder below keeps more on top of these. */
+    static final int KEEP_NEWEST = 20;
+
+    /**
+     * Beyond {@link #KEEP_NEWEST}, keep the newest archive from each of this many distinct days.
+     *
+     * <p>Without this, backing up on every template save and every death means twenty archives can
+     * all be from one editing session, and "restore what I had last week" stops being possible
+     * after an afternoon. The ladder keeps recent density AND reach.</p>
+     */
+    static final int KEEP_DAYS = 14;
 
     /**
      * Ceiling on the backups folder. A player with a large build library would otherwise fill a
@@ -359,9 +369,10 @@ public final class PlayerDataBackup {
     }
 
     /**
-     * Drop archives beyond {@link #KEEP_NEWEST}, then beyond {@link #MAX_TOTAL_BYTES}, always
-     * keeping the oldest — that one is the snapshot taken before the very first migration, the only
-     * copy of what the install looked like before Dungeon Train touched it.
+     * Thin the archive set down: the newest {@link #KEEP_NEWEST}, then one per day for the last
+     * {@link #KEEP_DAYS} days, then the byte cap — always keeping the oldest, which is the snapshot
+     * taken before the very first migration and the only copy of what the install looked like
+     * before Dungeon Train touched it.
      */
     static void prune(Path backupsRoot) {
         List<Path> archives = listArchives(backupsRoot); // newest first
@@ -369,11 +380,20 @@ public final class PlayerDataBackup {
         Path oldest = archives.get(archives.size() - 1);
 
         List<Path> keep = new ArrayList<>(archives.subList(0, Math.min(KEEP_NEWEST, archives.size())));
+        // One per day beyond the recent window, newest-first so each day's survivor is its latest.
+        Set<String> daysKept = new LinkedHashSet<>();
+        for (Path archive : keep) daysKept.add(dayOf(archive));
+        for (Path archive : archives) {
+            if (keep.contains(archive)) continue;
+            if (daysKept.size() >= KEEP_DAYS) break;
+            if (daysKept.add(dayOf(archive))) keep.add(archive);
+        }
         if (!keep.contains(oldest)) keep.add(oldest);
 
         // Then trim by size, dropping the oldest kept archive first but never the very oldest.
         long total = 0;
         List<Path> byNewest = new ArrayList<>(keep);
+        byNewest.sort(Comparator.comparing((Path p) -> p.getFileName().toString()).reversed());
         List<Path> finalKeep = new ArrayList<>();
         for (Path archive : byNewest) {
             long size = sizeOf(archive);
@@ -393,6 +413,16 @@ public final class PlayerDataBackup {
                     archive.getFileName(), e.toString());
             }
         }
+    }
+
+    /**
+     * The {@code yyyyMMdd} day an archive was written, taken from its name. Empty for a name that
+     * doesn't carry one, which groups all such files together rather than throwing.
+     */
+    static String dayOf(Path archive) {
+        String name = archive.getFileName().toString();
+        int start = PREFIX.length();
+        return name.length() >= start + 8 ? name.substring(start, start + 8) : "";
     }
 
     private static long sizeOf(Path file) {

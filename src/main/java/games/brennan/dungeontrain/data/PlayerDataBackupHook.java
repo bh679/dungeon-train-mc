@@ -3,24 +3,46 @@ package games.brennan.dungeontrain.data;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.VersionInfo;
+import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.server.ServerStartedEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import org.slf4j.Logger;
 
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 /**
- * Wires {@link PlayerDataBackup} to the game: one restore point per launch, taken once the server
- * is up and {@link PlayerDataMigration} has finished moving everything into place.
+ * Decides <em>when</em> a restore point is taken, and takes it off the server thread.
+ *
+ * <p>Backups happen at the four moments a player would be upset to lose the work either side of:
+ * loading a world, <b>saving a build in the Train Editor</b>, <b>dying</b>, and leaving the world.
+ * The load/exit pair alone left a whole editing session unprotected — a carriage built and then
+ * lost before the next world load was in no archive at all, which is the exact failure this area
+ * exists to prevent.</p>
+ *
+ * <p><b>Why it is debounced and asynchronous.</b> An editing session saves constantly, and a backup
+ * is a full walk-and-zip of the data root. Doing that inline would hitch the game on every save,
+ * and doing it on every save would be almost entirely redundant work. So a request marks the
+ * install dirty and a single daemon thread writes at most one archive per
+ * {@link #MIN_INTERVAL_MS}; the content digest in {@link PlayerDataBackup} then skips even that
+ * when nothing actually changed. Session end is the exception — it runs <b>synchronously</b>,
+ * because the JVM may exit before a queued task would run.</p>
+ *
+ * <p>The walk can overlap a save in progress, so an archive may catch a file mid-write. That is
+ * accepted deliberately: archives are written atomically and never replace each other, so the
+ * previous restore point is always intact, and one suspect entry in the newest archive is a far
+ * smaller problem than not having the archive.</p>
  *
  * <p>Separate from {@link PlayerDataBackup} so that class stays free of Forge types and testable
- * against {@code @TempDir}. {@code ServerStarted} rather than {@code ServerStarting} because the
- * migration runs on the latter at {@code HIGHEST} — backing up first would archive a half-moved
- * tree, and the pre-migration snapshot the migration takes for itself already covers that moment.</p>
+ * against {@code @TempDir}.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class PlayerDataBackupHook {
@@ -28,46 +50,115 @@ public final class PlayerDataBackupHook {
     private static final Logger LOGGER = LogUtils.getLogger();
 
     /**
-     * Whether this world load has already been backed up. Reset on server stop, so each world
-     * visit gets one backup on the way in and one on the way out rather than one per game session.
+     * Floor on the gap between two automatic backups. Two minutes is short enough that little work
+     * is ever at risk and long enough that a save-tweak-save editing loop doesn't thrash the disk.
      */
+    static final long MIN_INTERVAL_MS = 120_000L;
+
+    /** Single daemon thread: backups are strictly serialised and never hold up shutdown. */
+    private static final ScheduledExecutorService WORKER =
+        Executors.newSingleThreadScheduledExecutor(r -> {
+            Thread t = new Thread(r, "DungeonTrain-Backup");
+            t.setDaemon(true);
+            return t;
+        });
+
+    private static long lastBackupAt = 0L;
+    private static ScheduledFuture<?> scheduled = null;
+    private static String pendingReason = null;
+
+    /** Whether this world load has already been backed up on the way in. */
     private static volatile boolean backedUpThisLoad = false;
 
     private PlayerDataBackupHook() {}
 
+    // ---- Triggers ----
+
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void onServerStarted(ServerStartedEvent event) {
-        runOnce("world-load");
+        if (backedUpThisLoad) return;
+        backedUpThisLoad = true;
+        request("world-load");
     }
 
     /**
-     * Back up again on the way out, and re-arm for the next world.
-     *
-     * <p>The load-time backup snapshots what was on disk <em>before</em> the session. Without this
-     * one, a carriage built during a session would sit in no archive at all until the next world
-     * load — so losing it in between would lose it for good, which is the exact failure this whole
-     * area exists to prevent. The digest check means a session that authored nothing costs a
-     * directory walk and writes no second archive.</p>
+     * A death ends a run, and the profile it wrote to is worth a restore point. Players only —
+     * every mob death would fire this hundreds of times a session for nothing.
+     */
+    @SubscribeEvent(priority = EventPriority.LOWEST)
+    public static void onDeath(LivingDeathEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player && !player.level().isClientSide) {
+            request("death");
+        }
+    }
+
+    /**
+     * A build was just written to disk. Called from {@code BuilderSave} on a successful save — the
+     * one moment where there is brand-new work that exists nowhere else.
+     */
+    public static void onTemplateSaved() {
+        request("template-save");
+    }
+
+    /**
+     * Leaving the world. Runs <b>now</b>, on the calling thread, and cancels anything queued: a
+     * scheduled task would lose the race with JVM shutdown, and this is the backup that captures
+     * everything the session just did.
      */
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void onServerStopped(ServerStoppedEvent event) {
-        runOnce("session-end");
+        synchronized (PlayerDataBackupHook.class) {
+            if (scheduled != null) {
+                scheduled.cancel(false);
+                scheduled = null;
+            }
+            pendingReason = null;
+        }
+        writeNow("session-end");
         backedUpThisLoad = false;
     }
 
+    // ---- Scheduling ----
+
     /**
-     * Take a restore point, unless nothing has changed since the last one. Never throws — failing
-     * to back up is not a reason to stop the game.
+     * Ask for a restore point. Returns immediately; the write happens on the worker thread, no
+     * sooner than {@link #MIN_INTERVAL_MS} after the last one. Repeat requests inside that window
+     * collapse into the one already queued.
      */
-    public static synchronized void runOnce(String reason) {
-        if (backedUpThisLoad && "world-load".equals(reason)) return;
-        if ("world-load".equals(reason)) backedUpThisLoad = true;
+    public static synchronized void request(String reason) {
+        if (scheduled != null && !scheduled.isDone()) {
+            // Already queued — keep the earlier deadline, but report the most recent cause.
+            pendingReason = reason;
+            return;
+        }
+        pendingReason = reason;
+        long sinceLast = System.currentTimeMillis() - lastBackupAt;
+        long delay = Math.max(0L, MIN_INTERVAL_MS - sinceLast);
+        scheduled = WORKER.schedule(PlayerDataBackupHook::runQueued, delay, TimeUnit.MILLISECONDS);
+    }
+
+    private static void runQueued() {
+        String reason;
+        synchronized (PlayerDataBackupHook.class) {
+            reason = pendingReason == null ? "periodic" : pendingReason;
+            pendingReason = null;
+            scheduled = null;
+        }
+        writeNow(reason);
+    }
+
+    /** Write a restore point immediately. Never throws — a failed backup must not stop the game. */
+    static void writeNow(String reason) {
         try {
             PlayerDataBackup.create(PlayerDataPaths.backupsRoot(), sources(), reason,
                 VersionInfo.VERSION);
         } catch (Exception e) {
             LOGGER.warn("[DungeonTrain] Backup: couldn't write a restore point ({}): {}",
                 reason, e.toString());
+        } finally {
+            synchronized (PlayerDataBackupHook.class) {
+                lastBackupAt = System.currentTimeMillis();
+            }
         }
     }
 
