@@ -1,0 +1,118 @@
+# Pulls the relay's approved player translations back into the repo, as a PR.
+#
+# Players fix machine-translated lines from the in-game editor; approving a submission on the
+# explorer's #/translations page makes the relay serve that text as an override, but changes
+# nothing here — so the jar keeps shipping the AI line, the provenance sidecars keep saying
+# "AI, unreviewed", and the Credits page never learns the translator exists. Without this job
+# that gap only closes when somebody remembers to run the importer by hand before a release.
+#
+# It deliberately opens a PR rather than pushing: this is player-written text landing in the
+# jar, it deserves a human read, and a bot commit on main would also re-anchor the auto-release
+# cascade. A run that finds nothing new ends green and silent.
+name: Import approved translations
+
+on:
+  schedule:
+    # Mondays 03:00 UTC — a week's approvals per PR is enough to review in one sitting.
+    - cron: '0 3 * * 1'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Report what would be imported, change nothing'
+        type: boolean
+        default: false
+      locale:
+        description: 'Restrict to one locale (e.g. zh_cn); blank = every locale'
+        type: string
+        default: ''
+
+concurrency:
+  group: import-approved-translations
+  cancel-in-progress: false
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+
+      # The base URL carries the admin capability, so it is a secret and never echoed. The
+      # importer redacts it from its own error messages (urllib puts the failing URL in those).
+      - name: Check the relay secret is configured
+        env:
+          RELAY_ADMIN_BASE: ${{ secrets.RELAY_ADMIN_BASE }}
+        run: |
+          if [ -z "$RELAY_ADMIN_BASE" ]; then
+            echo "::error::RELAY_ADMIN_BASE is not set. Add it with:" \
+                 "gh secret set RELAY_ADMIN_BASE --body 'https://<host>/api/dp-relay/<admin cap>'"
+            exit 1
+          fi
+
+      # No --register-new: an unknown translator FAILS the run on purpose. localization/authors.json
+      # is what keeps the AI-vs-human counts honest, and a name added by a bot loses the profile
+      # URL that makes the credit worth having. A failure here means "add them by hand, then re-run".
+      - name: Import approved units
+        env:
+          DUNGEONTRAIN_RELAY_ADMIN_BASE: ${{ secrets.RELAY_ADMIN_BASE }}
+        run: |
+          python3 scripts/localization/import-approved-translations.py \
+            ${{ inputs.dry_run && '--dry-run' || '' }} \
+            ${{ inputs.locale && format('--locale {0}', inputs.locale) || '' }}
+
+      - name: Anything to ship?
+        id: changed
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "yes=true" >> "$GITHUB_OUTPUT"
+            git --no-pager diff --stat
+          else
+            echo "yes=false" >> "$GITHUB_OUTPUT"
+            echo "No new approvals since the last import — nothing to do."
+          fi
+
+      # build.yml's localization-checks does not run on a PR opened with the default GITHUB_TOKEN
+      # (a token-authored PR raises no workflow events), so the same guards run HERE, before the
+      # PR exists. A broken import must never reach review looking green.
+      - name: Provenance + locale checks
+        if: steps.changed.outputs.yes == 'true'
+        run: |
+          python3 scripts/localization/check-provenance.py
+          python3 scripts/localization/check-narrative-provenance.py
+          locales=$(git status --porcelain -- src/main/resources/assets/dungeontrain/lang \
+            | sed -E 's#.*/([a-z_]+)\.json#\1#' | sort -u | tr '\n' ' ')
+          if [ -n "$locales" ]; then
+            python3 scripts/localization/validate-locale.py $locales
+          fi
+
+      # Every path staged explicitly. `git add -A` is unsafe in this repo: the in-game editor's
+      # dev mode writes into src/main/resources, so a blanket add can sweep up unrelated content.
+      - name: Open the PR
+        if: steps.changed.outputs.yes == 'true' && !inputs.dry_run
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          branch="chore/import-approved-translations-$(date -u +%Y%m%d)"
+          git config user.name  'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git checkout -b "$branch"
+          git add -- \
+            localization/authors.json \
+            localization/provenance \
+            localization/narrative_provenance \
+            src/main/resources/assets/dungeontrain/lang \
+            src/main/resources/assets/dungeontrain/localization_credits \
+            src/main/resources/assets/dungeontrain/localization_provenance \
+            src/main/resources/assets/dungeontrain/translation_contributors.json \
+            src/main/resources/assets/adventureitemnames/lang \
+            src/main/resources/assets/discordpresence/lang \
+            src/main/resources/assets/playermob/lang \
+            src/main/resources/data/dungeontrain/narrative_localizations
+          git commit -m 'feat(localization): import approved player translations from the relay'
+          git push origin "$branch"
+          gh pr create --base main --head "$branch" \
+            --title 'feat(localization): import approved player translations from the relay' \
+            --body-file .github/import-approved-translations-pr-body.md
