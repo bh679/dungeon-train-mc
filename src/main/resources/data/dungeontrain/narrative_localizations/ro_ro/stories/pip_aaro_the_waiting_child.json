@@ -1,0 +1,47 @@
+{
+  "id": "pip_aaro_the_waiting_child",
+  "character": "Pip Aaro",
+  "story": "Copila care așteaptă",
+  "letters": [
+    {
+      "index": 1,
+      "label": "Scrisoarea întâi",
+      "variants": [
+        "Mă cheamă Pip. Am opt ani.\n\nSunt într-un tren pe care nu îl cunosc. Scaunele miros a haina bunicii.\n\nUn șobolan mi-a dat hârtia asta. Un șobolan adevărat. Cu haine.\n\nO caut pe mama.\n\nSunt un pic speriată. Doar un pic.\n\nPip",
+        "Am adormit într-un tren cu mama. M-am trezit și mama nu mai era.\n\nTrenul e altfel acum. Ghiozdanul meu e altfel. Cartea portocalie nu e în el.\n\nUn șobolan mi-a dat hârtia asta. Avea o vestă.\n\nO să o găsesc pe mama. Sunt foarte multe vagoane.\n\nNu plâng.\n\nPip"
+      ]
+    },
+    {
+      "index": 2,
+      "label": "Scrisoarea a doua",
+      "variants": [
+        "Am întrebat un domn unde e conductorul.\n\nAvea o haină galbenă. A râs. A zis draga mea, nu există niciun conductor. A zis că trenul nu oprește.\n\nNu îl cred. Trenurile opresc.\n\nDomnul cu haina galbenă doarme mult acum. Cred că e trist.\n\nEu nu o să fiu așa.\n\nPip",
+        "Am găsit un carnet sub un scaun.\n\nCineva a numărat vagoanele. A ajuns la 384 și s-a oprit. A zis că nu are rost să cauți partea din față.\n\nNu știu ce a vrut să spună. Trenurile au o parte din față.\n\nPăstrez carnetul. E ca și cum ai avea cu cine să vorbești.\n\nSuna obosit. Eu încă nu sunt obosită.\n\nPip"
+      ]
+    },
+    {
+      "index": 3,
+      "label": "Scrisoarea a treia",
+      "variants": [
+        "Unii oameni din tren sunt de minciună.\n\nPar adevărați. Dar nu te văd. I-am făcut cu mâna unei doamne și a trecut pe lângă mine.\n\nUnii oameni CHIAR sunt acolo. Domnul cu haina galbenă. Șobolanul. O doamnă care mi-a dat un măr.\n\nȚin o listă cu oamenii adevărați. Sunt patru. Probabil că sunt și eu unul.\n\nPip",
+        "Am făcut un plan.\n\nSă merg într-o singură direcție. Să nu mă întorc. Atunci aș ajunge la coada trenului.\n\nAm mers mult timp. Patruzeci și șapte de vagoane. Nu m-am uitat înapoi.\n\nNu era nicio coadă. Capătul arăta ca locul de unde am plecat. Același miros de bunica.\n\nNu înțeleg. O vreau pe mama.\n\nPip"
+      ]
+    },
+    {
+      "index": 4,
+      "label": "Scrisoarea a patra",
+      "variants": [
+        "Doamna cu mărul e prietena mea acum. O cheamă Soren.\n\nE în tren de foarte foarte mult timp. Nu vrea să zică de cât.\n\nSoren m-a întrebat de mama. I-am povestit. A tăcut. Apoi a zis că mama ta pare minunată.\n\nA zis-o la fel cum a zis domnul cu haina galbenă că trenul nu oprește.\n\nEu tot o să o găsesc pe mama.\n\nPip",
+        "E un slime în vagonul meu. Am botezat-o Pietricica.\n\nE mică și verde. Soren a zis că e încă prea mică să fie periculoasă. Eu nu cred asta despre Pietricica.\n\nMă urmează până la ușă dar nu trece prin ea. Cred că ea crede că ușa e un perete.\n\nMama ar zice că un slime e un monstru. Mama se înșală în privința Pietricicăi.\n\nMi-e dor de mama.\n\nDar o am pe Pietricica.\n\nPip"
+      ]
+    },
+    {
+      "index": 5,
+      "label": "Scrisoarea a cincea",
+      "variants": [
+        "Soren mi-a povestit despre ușă.\n\nA zis că e o ușă în tren care dă afară. A zis că dacă o găsesc ar trebui să trec prin ea.\n\nM-am gândit mult timp. La mama. La Pietricica.\n\nDacă mama e în trenul ăsta trebuie să caut mai departe. Dacă nu e, oricum nu pot ajunge la ea.\n\nCând o să găsesc ușa o să mă așez lângă ea. Și o să aștept.\n\nSoren a zis bine, draga mea. De data asta parcă chiar așa a vrut să zică.\n\nPip",
+        "Am scris o scrisoare pentru mama.\n\nSoren a zis că uneori oamenii trec de multe ori prin același vagon. Așa că o las unde trece toată lumea.\n\nScrie numele meu. Scrie că am o prietenă pe care o cheamă Soren și un slime pe care îl cheamă Pietricica.\n\nScrie că sunt bine. Scrie că aștept.\n\nMama o să o găsească. Mamele găsesc lucrurile.\n\nPip"
+      ]
+    }
+  ]
+}
