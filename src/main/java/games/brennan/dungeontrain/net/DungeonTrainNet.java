@@ -117,6 +117,10 @@ public final class DungeonTrainNet {
         // changing). Allowlisted server-side — see ClientActionPacket.
         registrar.playToServer(ClientActionPacket.TYPE, ClientActionPacket.STREAM_CODEC, ClientActionPacket::handle);
 
+        // Pause-screen open/close. The server can't see a client's screen, and on a dedicated
+        // server the world keeps ticking behind the menu — see PlayerActivityTracker.
+        registrar.playToServer(PlayerPausedPacket.TYPE, PlayerPausedPacket.STREAM_CODEC, PlayerPausedPacket::handle);
+
         // Book vote: client casts 👍/👎 from the virtual vote page (buttons or Y/N hotkeys); server
         // re-validates the held stack's identity, stamps dt_book_vote (offline burn color), and
         // consent-gates the relay POST.

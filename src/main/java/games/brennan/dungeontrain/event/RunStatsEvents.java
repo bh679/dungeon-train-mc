@@ -548,6 +548,8 @@ public final class RunStatsEvents {
     @SubscribeEvent
     public static void onPlayerTick(PlayerTickEvent.Post event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        // Paused / idle time isn't play time — see PlayerActivityTracker.
+        if (!PlayerActivityTracker.isCounting(player)) return;
         player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).addRunTicks(1L);
     }
 

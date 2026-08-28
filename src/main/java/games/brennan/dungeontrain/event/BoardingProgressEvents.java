@@ -160,7 +160,7 @@ public final class BoardingProgressEvents {
                 // while the player is dead (death-screen time shouldn't count as
                 // "alive on the train"). The "boarded" advancement trigger, distance
                 // and biome sampling below still run regardless of alive state.
-                if (p.isAlive() && !RunIntegrity.isCheated(p)) {
+                if (p.isAlive() && !RunIntegrity.isCheated(p) && PlayerActivityTracker.isCounting(p)) {
                     long newTotal = GlobalPlayerStats.addTrainTicks(uuid, SCAN_PERIOD_TICKS);
                     AchievementEvents.notifyTrainTime(p, newTotal);
                 }
@@ -175,7 +175,7 @@ public final class BoardingProgressEvents {
                 // Single-life time aboard: per-run boarded-tick counter that
                 // resets on death. Twin of the cross-world train-time above —
                 // also frozen while dead so the death screen doesn't rack up run time.
-                if (p.isAlive()) {
+                if (p.isAlive() && PlayerActivityTracker.isCounting(p)) {
                     long runTrainTicks = p.getData(ModDataAttachments.PLAYER_RUN_STATE.get())
                         .addTrainTimeTicks(SCAN_PERIOD_TICKS);
                     AchievementEvents.notifyRunTrainTime(p, runTrainTicks);
@@ -409,12 +409,12 @@ public final class BoardingProgressEvents {
 
             // Lifetime train-time — same gating as the boarded path: frozen for a cheated run and
             // while dead, so a death screen in a portal room racks up no more than one on the train.
-            if (player.isAlive() && !RunIntegrity.isCheated(player)) {
+            if (player.isAlive() && !RunIntegrity.isCheated(player) && PlayerActivityTracker.isCounting(player)) {
                 long newTotal = GlobalPlayerStats.addTrainTicks(player.getUUID(), SCAN_PERIOD_TICKS);
                 AchievementEvents.notifyTrainTime(player, newTotal);
             }
             // Single-life time aboard, the per-run twin of the above.
-            if (player.isAlive()) {
+            if (player.isAlive() && PlayerActivityTracker.isCounting(player)) {
                 long runTrainTicks = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get())
                     .addTrainTimeTicks(SCAN_PERIOD_TICKS);
                 AchievementEvents.notifyRunTrainTime(player, runTrainTicks);
