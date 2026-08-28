@@ -628,6 +628,13 @@ public final class TrainCarriageAppender {
     private static final Map<UUID, Long> PLACEMENT_TRACKER_LAST_SHIFT = new ConcurrentHashMap<>();
 
     /**
+     * Consecutive ticks each unplaced sub-level has read a gap past
+     * {@link #LARGE_GAP_REPLACE_BLOCKS}. Reset the moment a reading comes back inside the nudgeable
+     * range, so only a sustained separation triggers the one-step re-place.
+     */
+    private static final Map<UUID, Integer> PLACEMENT_TRACKER_LARGE_GAP_TICKS = new ConcurrentHashMap<>();
+
+    /**
      * Ticks the tracker must wait after shifting a carriage before it may shift
      * it again. The gap it reads comes from {@link ManagedShip#worldAABB()},
      * which lags a shift by a tick or two (Sable applies the new kinematic pose
@@ -679,6 +686,32 @@ public final class TrainCarriageAppender {
      */
     static final double TARGET_GAP_BLOCKS =
         (MIN_GAP_BLOCKS + MAX_GAP_BLOCKS) / 2.0;
+
+    /**
+     * A seam gap this wide is no longer a settling error — it is a group that has fallen out of the
+     * train, and nudging cannot bring it back.
+     *
+     * <p>The tracker's shift is capped at {@link #COLLISION_SHIFT_BLOCKS} once per
+     * {@link #SHIFT_SETTLE_TICKS}, i.e. 0.125 blocks/tick, so within the
+     * {@link #MAX_PLACEMENT_SETTLE_TICKS} budget it can close at most ~25 blocks — and only by
+     * spending the entire budget doing it. Observed live on a cold-generation world: a freshly
+     * appended group's physics was starved for ~5 s while the train kept moving, it ended up 67.5
+     * blocks behind its real neighbour, and the tracker chased at 0.5 a shift until the safety valve
+     * fired 200 ticks later, leaving the hole. 4 blocks sits well clear of the worst legitimate
+     * spawn offset (~1.6, when the collision pass moves the origin and the sub-block pre-seed is
+     * dropped) and far below what nudging could ever recover, so anything past it is pathological
+     * by construction.</p>
+     */
+    static final double LARGE_GAP_REPLACE_BLOCKS = 4.0;
+
+    /**
+     * Consecutive ticks a gap must read past {@link #LARGE_GAP_REPLACE_BLOCKS} before the group is
+     * re-placed in one step. A single frame of stale geometry must never teleport a carriage; five
+     * ticks of agreement means the separation is real. Frozen bodies never reach this code (the
+     * tracker skips them) and absent/degenerate neighbours read as infinite, so the remaining
+     * stale-read surface is small — this is belt and braces over it.
+     */
+    static final int LARGE_GAP_CONFIRM_TICKS = 5;
 
     /** Snapshot of the most recent post-spawn collision check per train. */
     public static Map<UUID, SpawnCollisionCheck> snapshotSpawnCollisionChecks() {
@@ -809,6 +842,27 @@ public final class TrainCarriageAppender {
                 double gap = check.colliding()
                     ? 0.0
                     : gapToTrainFacingSibling(trainId, carriage, train);
+                // Unreachable gap ⇒ re-place, don't nudge. See LARGE_GAP_REPLACE_BLOCKS: past a few
+                // blocks the 0.5-per-4-ticks nudge cannot close the distance inside the settle
+                // budget, so chasing it only burns the budget and hands the safety valve a group
+                // still far out of line. One corrective step puts the seam straight on
+                // TARGET_GAP_BLOCKS; the next tick reads clean and the normal 60-tick settle runs.
+                if (isUnreachableGap(check.colliding(), gap)) {
+                    int confirmed = PLACEMENT_TRACKER_LARGE_GAP_TICKS.merge(subLevelId, 1, Integer::sum);
+                    if (confirmed >= LARGE_GAP_CONFIRM_TICKS) {
+                        double jump = placementTrackerReplaceDx(gap, provider.isSpawnedBackward());
+                        provider.shiftSpawnPosition(jump, 0.0, 0.0);
+                        provider.resetConsecutiveCleanTicks();
+                        PLACEMENT_TRACKER_LAST_SHIFT.put(subLevelId, now);
+                        PLACEMENT_TRACKER_LARGE_GAP_TICKS.remove(subLevelId);
+                        LOGGER.info("[DungeonTrain] Placement tracker: pIdx={} unreachable gap={} blocks after {} confirming ticks — re-placed {} X onto the {}-block target seam",
+                            provider.getPIdx(), String.format("%.2f", gap), LARGE_GAP_CONFIRM_TICKS,
+                            String.format("%+.2f", jump), TARGET_GAP_BLOCKS);
+                    }
+                    continue;
+                }
+                PLACEMENT_TRACKER_LARGE_GAP_TICKS.remove(subLevelId);
+
                 double dx = placementTrackerShiftDx(
                     check.colliding(),
                     check.selfPIdx(),
@@ -882,6 +936,7 @@ public final class TrainCarriageAppender {
         // entries for despawned groups.
         PLACEMENT_TRACKER_FIRST_SEEN.keySet().retainAll(liveSubLevelIds);
         PLACEMENT_TRACKER_LAST_SHIFT.keySet().retainAll(liveSubLevelIds);
+        PLACEMENT_TRACKER_LARGE_GAP_TICKS.keySet().retainAll(liveSubLevelIds);
     }
 
     /**
@@ -1069,6 +1124,27 @@ public final class TrainCarriageAppender {
      * so the two systems can't fight; the separating (too-close) branch stays
      * active so a locked carriage is never stranded touching.</p>
      */
+    /**
+     * Whether {@code gap} is too wide for the tracker's nudge to ever close — see
+     * {@link #LARGE_GAP_REPLACE_BLOCKS}. Never true while colliding: an overlap is resolved by the
+     * pushback branch, and its gap is reported as zero anyway. Infinite gaps (no trustworthy
+     * train-facing neighbour) are not separations and never qualify.
+     */
+    static boolean isUnreachableGap(boolean colliding, double gap) {
+        return !colliding && Double.isFinite(gap) && gap > LARGE_GAP_REPLACE_BLOCKS;
+    }
+
+    /**
+     * The single corrective shift that puts a group that has fallen out of the train back onto a
+     * {@link #TARGET_GAP_BLOCKS} seam — the whole remaining distance, not a capped nudge. Sign
+     * matches the move-together branch of {@link #placementTrackerShiftDx}: a backward-spawned group
+     * closes toward +X, a forward-spawned one toward −X.
+     */
+    static double placementTrackerReplaceDx(double gap, boolean spawnedBackward) {
+        double mag = gap - TARGET_GAP_BLOCKS;
+        return spawnedBackward ? +mag : -mag;
+    }
+
     static double placementTrackerShiftDx(
         boolean colliding,
         int selfPIdx,

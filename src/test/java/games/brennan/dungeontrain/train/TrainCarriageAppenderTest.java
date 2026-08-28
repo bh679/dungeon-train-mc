@@ -581,4 +581,50 @@ final class TrainCarriageAppenderTest {
         assertTrue(TrainCarriageAppender.CULL_LATCH_EXPIRY_TICKS > 200L,
             "expiry must exceed the placement safety valve, or it would race a normal settle");
     }
+
+    // A gap wider than the tracker can nudge closed is not a settling error — it is a group that has
+    // fallen out of the train (observed live: physics starved for ~5s during cold worldgen, group
+    // ended up 67.5 blocks behind its real neighbour). Nudging at 0.5 per 4 ticks can close ~25
+    // blocks in the whole settle budget, so chasing only burns the budget; one corrective step puts
+    // the seam straight on target.
+
+    @Test
+    @DisplayName("isUnreachableGap: true only past the threshold, never while colliding, never on infinity")
+    void unreachableGap_predicate() {
+        assertTrue(TrainCarriageAppender.isUnreachableGap(false, 67.5));
+        assertTrue(TrainCarriageAppender.isUnreachableGap(false,
+            TrainCarriageAppender.LARGE_GAP_REPLACE_BLOCKS + 0.01));
+        assertFalse(TrainCarriageAppender.isUnreachableGap(false,
+            TrainCarriageAppender.LARGE_GAP_REPLACE_BLOCKS),
+            "the threshold itself is still nudgeable");
+        assertFalse(TrainCarriageAppender.isUnreachableGap(false, 1.6),
+            "the worst legitimate spawn offset must never trigger a re-place");
+        assertFalse(TrainCarriageAppender.isUnreachableGap(true, 67.5),
+            "an overlap is the pushback branch's job");
+        assertFalse(TrainCarriageAppender.isUnreachableGap(false, Double.POSITIVE_INFINITY),
+            "no trustworthy neighbour is not a separation");
+    }
+
+    @Test
+    @DisplayName("placementTrackerReplaceDx: one step lands the seam exactly on target, both directions")
+    void replaceDx_landsOnTarget() {
+        double target = TrainCarriageAppender.TARGET_GAP_BLOCKS;
+
+        double backward = TrainCarriageAppender.placementTrackerReplaceDx(67.5, true);
+        assertTrue(backward > 0, "a backward-spawned group closes toward +X");
+        assertEquals(target, 67.5 - backward, 1e-9);
+
+        double forward = TrainCarriageAppender.placementTrackerReplaceDx(67.5, false);
+        assertTrue(forward < 0, "a forward-spawned group closes toward -X");
+        assertEquals(target, 67.5 + forward, 1e-9);
+    }
+
+    @Test
+    @DisplayName("the re-place threshold sits above what a nudge could close, and the confirm window is real")
+    void replaceThresholdIsSane() {
+        assertTrue(TrainCarriageAppender.LARGE_GAP_REPLACE_BLOCKS > 1.6,
+            "must clear the worst legitimate spawn offset");
+        assertTrue(TrainCarriageAppender.LARGE_GAP_CONFIRM_TICKS >= 2,
+            "one frame of stale geometry must never teleport a carriage");
+    }
 }
