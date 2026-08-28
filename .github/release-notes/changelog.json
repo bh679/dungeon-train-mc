@@ -9532,6 +9532,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "night-and-sunrise-skyboxes",
+      "version": "0.699.0",
+      "type": "feat",
+      "title": "Night and sunrise skybox blocks",
+      "summary": "Two more skies to punch a window through to. The Night Skybox Block is night on both halves of the day: the stars wheel overhead and the moon crosses with the right phase, but the sun never comes up, so a room built around one stays under a night sky no matter what time it is outside. The Sunrise Skybox Block holds a permanent dawn and turns sideways the way the upside-down skybox does, with the sun and its glow sweeping right around the horizon instead of climbing, the moon trailing opposite and the stars turning with them.",
+      "highlights": [
+        "New Night Skybox Block: stars, moon and phase, and no sunrise ever",
+        "New Sunrise Skybox Block: a dawn that orbits the horizon sideways",
+        "Both work anywhere the other skybox blocks do, carriage walls included"
+      ],
+      "date": "2026-08-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
