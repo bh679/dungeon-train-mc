@@ -9516,6 +9516,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "trashslot-modpack",
+      "version": "0.698.0",
+      "type": "feat",
+      "title": "TrashSlot joins the modpack",
+      "summary": "The modpack now ships TrashSlot, an optional inventory trash slot for binning junk without hunting for lava. It arrives switched off \u2014 tick it on in the launcher's optional-mods list whenever you want it.",
+      "highlights": [
+        "Drag-and-drop trash slot on most inventory screens",
+        "Off by default \u2014 opt in from the launcher, no reinstall needed"
+      ],
+      "pr": 1158,
+      "date": "2026-08-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
