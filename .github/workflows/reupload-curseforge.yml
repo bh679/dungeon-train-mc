@@ -63,14 +63,21 @@ jobs:
 
       - name: Render the release notes for this tag
         env:
+          GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ inputs.tag }}
         run: |
           set -euo pipefail
-          # The ledger entries for this tag were marked released by the original run, so the
-          # "unreleased" renderer would come back empty — the last-released renderer is the one
-          # that reproduces what the other platforms are already showing.
-          python3 scripts/release-notes/render-last-released.py > reupload-notes.md || true
+          # Take the notes from the GitHub Release itself. That is BY DEFINITION the text the
+          # original run published to GitHub and Modrinth, so re-uploading reproduces it exactly —
+          # which is the whole point of this workflow.
+          #
+          # The obvious-looking alternative is wrong: this job checks out the TAG, and at that
+          # commit the ledger has not yet been marked released, so render-last-released.py reports
+          # the version BEFORE this one. A dry run caught it attaching 0.690.0's notes to the
+          # 0.692.0 file.
+          gh release view "$RELEASE_TAG" --json body --jq .body > reupload-notes.md || true
           if [ ! -s reupload-notes.md ]; then
+            echo "::warning::No release body for $RELEASE_TAG; falling back to a bare title."
             printf 'Dungeon Train %s\n' "$RELEASE_TAG" > reupload-notes.md
           fi
           echo "::group::Notes"; cat reupload-notes.md; echo "::endgroup::"
