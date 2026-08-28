@@ -222,13 +222,11 @@ public final class TrainAssembler {
     /** Fold a lease's opaque delta log (seq &gt; baseSeq, ascending seq) onto its decoded base snapshot. */
     private static net.minecraft.nbt.CompoundTag foldLeaseDeltas(net.minecraft.nbt.CompoundTag base,
                                                                  SharedCarriageClient.PoolLease lease) {
-        List<SharedCarriageClient.DeltaRec> deltas = lease.deltas();
-        if (deltas == null || deltas.isEmpty()) return base;
-        List<SharedCarriageClient.DeltaRec> sorted = new java.util.ArrayList<>(deltas);
-        sorted.sort(java.util.Comparator.comparingInt(SharedCarriageClient.DeltaRec::seq));
+        List<SharedCarriageClient.DeltaRec> pending =
+                SharedCarriageClient.pendingDeltas(lease.deltas(), lease.baseSeq());
+        if (pending.isEmpty()) return base;
         net.minecraft.nbt.CompoundTag folded = base;
-        for (SharedCarriageClient.DeltaRec d : sorted) {
-            if (d.seq() <= lease.baseSeq()) continue; // already folded into the base blob
+        for (SharedCarriageClient.DeltaRec d : pending) {
             try {
                 folded = CarriageBlockSnapshot.applyDeltaCells(folded, CarriageBlockSnapshot.decode(d.cells()));
             } catch (Exception e) {
