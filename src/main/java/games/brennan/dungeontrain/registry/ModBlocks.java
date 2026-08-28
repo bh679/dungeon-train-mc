@@ -60,7 +60,9 @@ public final class ModBlocks {
      * <p>{@code strength(-1, 3600000.8)} is vanilla's bedrock/barrier pair — negative destroy
      * time makes it unmineable in survival (creative can still break it) and the resistance
      * makes it blast-proof. Deliberately <b>no</b> {@code noOcclusion()}: we want vanilla to
-     * treat it as opaque so it culls neighbouring faces and whole sections behind the hole.</p>
+     * treat it as opaque so it culls neighbouring faces and whole sections behind the hole.
+     * Light is the one exception, and it is handled on the block rather than here — see
+     * {@link SkyboxBlock#getLightBlock}.</p>
      */
     private static BlockBehaviour.Properties skyboxProperties(MapColor color) {
         return BlockBehaviour.Properties.of()
@@ -103,6 +105,18 @@ public final class ModBlocks {
         () -> new SkyboxBlock(SkyboxSky.UPSIDE_DOWN, skyboxProperties(MapColor.COLOR_LIGHT_BLUE))
     );
 
+    /** Night on both halves of the day, no sunrise. See {@link SkyboxSky#NIGHT}. */
+    public static final DeferredBlock<SkyboxBlock> SKYBOX_NIGHT = BLOCKS.register(
+        SkyboxSky.NIGHT.blockName(),
+        () -> new SkyboxBlock(SkyboxSky.NIGHT, skyboxProperties(MapColor.COLOR_BLACK))
+    );
+
+    /** A permanent dawn sweeping sideways round the horizon. See {@link SkyboxSky#SUNRISE}. */
+    public static final DeferredBlock<SkyboxBlock> SKYBOX_SUNRISE = BLOCKS.register(
+        SkyboxSky.SUNRISE.blockName(),
+        () -> new SkyboxBlock(SkyboxSky.SUNRISE, skyboxProperties(MapColor.COLOR_ORANGE))
+    );
+
     /** Matching {@link BlockItem}s so the blocks can be placed from the creative tab. */
     public static final DeferredItem<BlockItem> SKYBOX_BLOCK_ITEM = BLOCK_ITEMS.register(
         SkyboxSky.LIVE.blockName(), () -> new BlockItem(SKYBOX_BLOCK.get(), new Item.Properties()));
@@ -114,6 +128,10 @@ public final class ModBlocks {
         SkyboxSky.NETHER.blockName(), () -> new BlockItem(SKYBOX_NETHER.get(), new Item.Properties()));
     public static final DeferredItem<BlockItem> SKYBOX_UPSIDE_DOWN_ITEM = BLOCK_ITEMS.register(
         SkyboxSky.UPSIDE_DOWN.blockName(), () -> new BlockItem(SKYBOX_UPSIDE_DOWN.get(), new Item.Properties()));
+    public static final DeferredItem<BlockItem> SKYBOX_NIGHT_ITEM = BLOCK_ITEMS.register(
+        SkyboxSky.NIGHT.blockName(), () -> new BlockItem(SKYBOX_NIGHT.get(), new Item.Properties()));
+    public static final DeferredItem<BlockItem> SKYBOX_SUNRISE_ITEM = BLOCK_ITEMS.register(
+        SkyboxSky.SUNRISE.blockName(), () -> new BlockItem(SKYBOX_SUNRISE.get(), new Item.Properties()));
 
     private ModBlocks() {}
 
@@ -136,6 +154,8 @@ public final class ModBlocks {
             event.accept(SKYBOX_END_ITEM.get());
             event.accept(SKYBOX_NETHER_ITEM.get());
             event.accept(SKYBOX_UPSIDE_DOWN_ITEM.get());
+            event.accept(SKYBOX_NIGHT_ITEM.get());
+            event.accept(SKYBOX_SUNRISE_ITEM.get());
         }
     }
 }

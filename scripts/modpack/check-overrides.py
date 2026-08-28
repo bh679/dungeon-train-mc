@@ -11,6 +11,13 @@ persisting — when a config file it holds to its defaults has been changed; see
 Ship one of those files in the overrides tree and **every pack user boots into Free Play**,
 silently. That is the drift this guard exists to make impossible.
 
+There is a second, related reason to keep this tree small: launchers **replace** ``config/`` on a
+pack update rather than merging it. That is how a player lost every Train Editor build and every
+advancement in one click — all of it used to live under ``config/``. It now lives at the instance
+root (``<instance>/dungeontrain/``; see ``games.brennan.dungeontrain.data.PlayerDataPaths``), and
+the invariant is that nothing under ``overrides/`` may share a directory with player data. See
+``modpack/README.md`` for the full note.
+
 The rule is a strict allowlist: every file under ``overrides/`` must be named in ``ALLOWED``.
 A new override therefore fails CI until someone adds it here — and that edit is the moment a
 human confirms the file is not one the mod holds to its defaults. An allowlist (rather than a
@@ -39,6 +46,7 @@ ALLOWED = (
     "config/khi.toml",                              # Kinetic Hosting affiliate URL + banner text
     "config/smoothswapping.json",                   # tuned Smooth Swapping animation
     "resourcepacks/DungeonTrain-*-compat.zip",      # companion-mod lang overlays, one per locale
+    "TrashSlotSaveState.default.json",              # seeds TrashSlot's trash slot hidden on every screen
 )
 
 # Config files the mod compares against defaults and treats a deviation as Free Play, keyed to
@@ -50,6 +58,19 @@ INTEGRITY_GOVERNED = {
     "dungeontrain-server.toml": "DtConfigIntegrity (planned)",
     "dungeontrain-common.toml": "DtConfigIntegrity (planned)",
 }
+
+
+# Directories the pack may never write into, whatever the filename. ``overrides/`` is copied
+# verbatim into every player's instance, so a file here lands in the folder Dungeon Train keeps the
+# player's builds, advancements and backups in — the folder the data was MOVED to precisely because
+# ``config/`` is replaced on every pack update. An allowlist entry could not make this safe.
+FORBIDDEN_DIRS = ("dungeontrain",)
+
+
+def in_forbidden_dir(rel_path: str) -> bool:
+    """Is this overrides-relative path inside a directory the pack must never write to?"""
+    head = rel_path.split("/", 1)[0]
+    return head in FORBIDDEN_DIRS
 
 
 def is_allowed(rel_path: str) -> bool:
@@ -74,6 +95,15 @@ def find_drift(rel_paths: list[str]) -> list[str]:
     """Return human-readable errors for override files that are not allowlisted."""
     errors: list[str] = []
     for rel_path in rel_paths:
+        if in_forbidden_dir(rel_path):
+            errors.append(
+                f"overrides/{rel_path}: the pack must never write into the player-data root. "
+                f"<instance>/dungeontrain/ holds builds, advancements, stats and backups, and the "
+                f"pack ships overrides/ verbatim — a file here would overwrite a player's own data "
+                f"on update. That folder exists BECAUSE config/ gets replaced; do not repeat the "
+                f"mistake one level over."
+            )
+            continue
         if is_allowed(rel_path):
             continue
         guard = INTEGRITY_GOVERNED.get(Path(rel_path).name)

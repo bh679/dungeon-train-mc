@@ -69,13 +69,22 @@ public final class LeaderboardBookFactory {
         return build(category, reader);
     }
 
-    /** The book for one specific board, or empty when that board has no rows yet. */
+    /**
+     * The book for one specific board, or empty when that board has no rows yet.
+     *
+     * <p>The stack leaves here stamped {@link LeaderboardBookTag} — the identity every consumer of a
+     * finished board relies on, and half of the burn gate. It is stamped HERE rather than at each
+     * call site so the two producers (a chest placeholder resolving, a Stat Room shelf being stocked)
+     * cannot drift apart into one kind of board that burns and one that does not.</p>
+     */
     public static Optional<ItemStack> build(LeaderboardCategory category, UUID reader) {
         List<LeaderboardPool.Entry> entries = LeaderboardPool.board(category).entries();
         if (entries.isEmpty()) return Optional.empty();
         List<Component> pages = pages(category, entries,
             reader == null ? Optional.empty() : LeaderboardPool.standing(reader, category));
-        return Optional.of(BookFactory.buildPlainBookComponents(category.title(), AUTHOR, pages));
+        ItemStack stack = BookFactory.buildPlainBookComponents(category.title(), AUTHOR, pages);
+        LeaderboardBookTag.stamp(stack);
+        return Optional.of(stack);
     }
 
     /**

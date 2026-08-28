@@ -181,6 +181,7 @@ public final class VariantOverlayRenderer {
         LAST_PART_VIS_KEY.clear();
         LAST_STRAYS_KEY.clear();
         LAST_DOOR_GHOSTS_KEY.clear();
+        EditorPlotSky.clearAll();
     }
 
     /** Toggle the overlay for {@code player}. {@code on == true} resumes rendering. */
@@ -206,6 +207,9 @@ public final class VariantOverlayRenderer {
             DungeonTrainNet.sendTo(player, EditorStatusPacket.empty());
         }
         PartPositionMenuController.forget(player);
+        // Take the plot's daylight back off — they have left the build area, and the client would
+        // otherwise hold a box it can no longer be inside.
+        EditorPlotSky.forget(player);
         // Clear the client lock-id overlay too — player has left every plot.
         if (LAST_LOCK_SNAPSHOT_KEY.remove(player.getUUID()) != null) {
             DungeonTrainNet.sendTo(player, BlockVariantLockIdsPacket.empty());
@@ -220,22 +224,12 @@ public final class VariantOverlayRenderer {
     }
 
     /**
-     * Minimum player Y for the editor overlay to do any work. Every editor plot
-     * sits in the sky at {@link EditorLayout#PLOT_Y}; gameplay and trains run far
-     * below. A player under this line can't be at a plot, so the per-player
-     * {@code plotContaining} locate cascade is skipped entirely for them.
-     * That cascade used to run every tick for every player even during normal play
-     * with the editor closed (~9ms/tick on a long train — the profiler's "overlay"
-     * cost). A few blocks below the floor for standing-on-the-plot-floor margin —
-     * derived rather than written out, because a gate left ABOVE the plot floor
-     * would silently disable labels and menus for a player standing on their plot.
-     */
-    private static final int EDITOR_Y_MIN = EditorLayout.PLOT_Y - 5;
-
-    /**
      * Call once per server level tick. Cheap when no players are up at the editor
-     * build area ({@code y >= EDITOR_Y_MIN}): every player below that is
-     * short-circuited before any {@code plotContaining} scan runs.
+     * build area ({@link EditorLayout#isAtPlotHeight}): every player below that line
+     * can't be at a plot, so the per-player {@code plotContaining} locate cascade is
+     * skipped entirely for them. That cascade used to run every tick for every player
+     * even during normal play with the editor closed (~9ms/tick on a long train — the
+     * profiler's "overlay" cost).
      */
     public static void onLevelTick(ServerLevel level) {
         List<ServerPlayer> players = level.players();
@@ -256,7 +250,7 @@ public final class VariantOverlayRenderer {
             // ~9ms/tick the profiler flagged, which ran unconditionally during normal play.
             // forget() clears any lingering editor HUD once on the way out, then no-ops (cheap
             // map checks), so a player descending from the build area doesn't keep stale overlay.
-            if (player.getBlockY() < EDITOR_Y_MIN) {
+            if (!EditorLayout.isAtPlotHeight(player.getBlockY())) {
                 forget(player);
                 continue;
             }
@@ -268,6 +262,9 @@ public final class VariantOverlayRenderer {
             pushPartVisibilitySnapshot(player);
             pushStraysSnapshot(player);
             pushDoorGhostsSnapshot(player, dims);
+            // Light a portal room's plot with the room's own Sky — the lighting it will ship with,
+            // rather than the dark box it was authored in until now.
+            EditorPlotSky.update(player, dims);
 
             if (!isEnabled(player)) {
                 clearHoverIfStale(player);
@@ -940,7 +937,7 @@ public final class VariantOverlayRenderer {
         if (!level.dimension().equals(net.minecraft.world.level.Level.OVERWORLD)) return;
         if (EditorStampedCategoryState.current().isEmpty()) return;
         for (ServerPlayer player : players) {
-            if (player.getBlockY() >= EDITOR_Y_MIN) {
+            if (EditorLayout.isAtPlotHeight(player.getBlockY())) {
                 EditorStrayBlocks.sweepStep(level, dims);
                 return;
             }

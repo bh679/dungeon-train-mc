@@ -51,7 +51,8 @@
     "RuinedPortalStructureMixin",
     "StructureBandBiomeFilterMixin",
     "JigsawStructureAccessor",
-    "RuinedPortalStructureAccessor"
+    "RuinedPortalStructureAccessor",
+    "CommandsSelfRevokeMixin"
   ],
   "client": [
     "client.KeyboardHandlerDebugChordMixin",

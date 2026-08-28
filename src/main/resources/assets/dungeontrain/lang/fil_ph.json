@@ -1515,8 +1515,6 @@
   "gui.dungeontrain.video_tools.reset.done_desc": "Tapos na. Gumawa ng bagong mundo at ituturing ka ng Dungeon Train na manlalarong bagong-bago.",
   "gui.dungeontrain.builder.profile": "Mga Gawa Ko",
   "gui.dungeontrain.builder.profile.title": "Mga Gawa Ko",
-  "gui.dungeontrain.builder.profile.submit": "Ipagkatiwala sa tren",
-  "gui.dungeontrain.builder.profile.withdraw": "Alisin sa tren",
   "gui.dungeontrain.builder.profile.not_a_carriage": "Bagon lang ang sumasakay sa tren",
   "gui.dungeontrain.builder.profile.on_train": "nasa tren",
   "gui.dungeontrain.builder.profile.in_profile": "naka-save",

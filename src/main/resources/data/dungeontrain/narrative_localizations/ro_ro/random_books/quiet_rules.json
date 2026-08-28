@@ -1,0 +1,33 @@
+{
+  "id": "quiet_rules",
+  "title": "Regulile tăcute ale trenului",
+  "author": "Necunoscut",
+  "generation": 0,
+  "weight": 1,
+  "variants": [
+    "Trenul ăsta are reguli, deși nu ți le va spune nimeni.\n\nNu deschide un cufăr pe care l-ai deschis deja.\nNu urmări același pasager prea mult timp.\nCând felinarele scad de două ori la rând, mergi mai departe.\n\nAstea sunt regulile pe care mi le-am făcut eu.\nS-ar putea să nu fie ale tale.\nDar o să ți le faci pe ale tale, destul de curând.",
+    "Regula 71\nAi grijă ce mănânci, nu orice bucată de carne e la fel de bună ca Șobolanul.",
+    "Regula 108\nDacă un străin te întreabă cum te cheamă, ignoră-l.",
+    "Regula 96\nFii atent la cranii, unele încă adăpostesc sentimente.",
+    "Regula 327\nNu te întoarce din drum de două ori. Dacă te întorci, ține-o tot înapoi.",
+    "Regula 5\nAi mai multă încredere în felinare decât în hărți. Hărțile sunt vechi.",
+    "Regula 44\nPași în urma ta într-un vagon gol? Mergi mai repede. Niciodată să nu fugi.",
+    "Regula 211\nDacă îți vezi propria față pe alt pasager, nu-l băga în seamă. Încă nu și-a dat seama.",
+    "Regula 401\nNu fluiera după ce scad felinarele. Altceva fluieră înapoi.",
+    "Regula 323\nDoar cei care vor să ajungă la cel care a construit trenul spun „@Dev”. Pentru cei puțini aleși, va chema marele creator.",
+    "Regula 17\nTrenul ține lista lucrurilor pentru care ai venit aici, chiar și după ce ai pierdut-o tu.\n\n„Apasă {key.advancements}”, zic ei. Dar ce înseamnă asta? Ce e „{key.advancements}”? Cum se apasă? Se apasă pe ce? Cum adică apasă???",
+    "Regula 205\nArată respect tuturor aventurierilor la prima întâlnire. Fie te înclini, fie te lași pe vine, fie dai daruri.\n\nCâștigă un aventurier pe deplin și se schimbă. Te salută dintr-un capăt în altul al vagonului. Cei buni îți pun daruri în mâini fără să le ceri. Unii te urmează. Unii luptă alături de tine și nu se opresc până nu cade lucrul care te-a amenințat.",
+    "Regula 29\nNu orice aventurier e prieten. Unii merg alături de tine; alții scot sabia când îți văd fața. Nu poți spune care e care doar privind. Înveți trăind.",
+    "Regula 63\nUn dar îmbunează întotdeauna un aventurier. Dă-i ceva mai bun decât are deja și îl îmbunează și mai tare. O sabie în plus mi-a cumpărat mai mulți prieteni decât au făcut-o vreodată vorbele bune.",
+    "Regula 140\nStai între un aventurier și ceea ce îl atacă. Țin minte cine a scos lama în apărarea lor și răsplătesc asta.",
+    "Regula 88\nTraversează vagoanele alături de un aventurier. Călătoriți împreună destul de mult și ceva se așază între voi. E cel mai încet drum spre un prieten și cel mai sigur.",
+    "Regula 174\nLovește un aventurier și se va întoarce împotriva ta — dar nu pentru totdeauna. Înclină-te din nou și continuă să te înclini. O rană pe care ai făcut-o poate fi vindecată de cel care a făcut-o.",
+    "Regula 256\nUn aventurier vede pe cine lovești. Doboară pe cineva drag lui și nu-ți va ierta asta niciodată. Doboară pe cineva pe care îl urăște și privește cum se apropie de tine.",
+    "Regula 312\nScoate lama lângă un aventurier speriat și fuge; lângă unul curajos și se năpustește. Același oțel, două capete. O retragere nu înseamnă pace.",
+    "Regula 156\nOțelul uzat nu e oțel irosit. Pune o piesă care cedează lângă geamăna ei și cele două se împreună într-una singură — lamă sau platoșă, același truc ține.\n\nÎmpreunarea păstrează ce ai pus în stânga. Pune-o acolo pe cea mai bună. Dreapta e doar combustibil.",
+    "Poartă-te frumos cu ceilalți pasageri.\nÎți va prinde bine\nîn viața următoare.\n\nEcourile țin minte.",
+    "Ecourile trecutului nostru\nne reflectă înapoi viețile de dinainte.\n\nFii bun.\n\nPoate reușești\nsă te împrietenești cu el.",
+    "Regula 119\nDacă iei ceva dintr-un vagon în derivă, lasă ceva în loc. Cel care l-a făcut nu va afla niciodată.\n\nTu vei ști.",
+    "Regula 268\nIa ce ai nevoie dintr-un vagon în derivă. Nu lua vagonul.\n\nSmulge-i podeaua și pereții și ce merge mai departe e o cutie de aer cu numele cuiva încă pe ea."
+  ]
+}

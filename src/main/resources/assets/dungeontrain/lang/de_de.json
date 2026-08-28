@@ -1542,8 +1542,6 @@
   "gui.dungeontrain.video_tools.reset.done_desc": "Fertig. Erstelle eine neue Welt, und Dungeon Train behandelt dich wie einen Erstspieler.",
   "gui.dungeontrain.builder.profile": "Meine Bauten",
   "gui.dungeontrain.builder.profile.title": "Meine Bauten",
-  "gui.dungeontrain.builder.profile.submit": "Dem Zug übergeben",
-  "gui.dungeontrain.builder.profile.withdraw": "Vom Zug nehmen",
   "gui.dungeontrain.builder.profile.not_a_carriage": "Nur Waggons fahren auf dem Zug mit",
   "gui.dungeontrain.builder.profile.on_train": "auf dem Zug",
   "gui.dungeontrain.builder.profile.in_profile": "gespeichert",

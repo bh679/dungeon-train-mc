@@ -10,7 +10,7 @@ import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.fml.loading.FMLPaths;
+import games.brennan.dungeontrain.data.PlayerDataPaths;
 import org.slf4j.Logger;
 
 import java.io.IOException;
@@ -60,7 +60,10 @@ public final class LoadoutStore {
 
     /** The file holding every partition's loadout for {@code uuid}. */
     public static Path file(UUID uuid) {
-        return FMLPaths.CONFIGDIR.get().resolve(DIR).resolve(SUBDIR).resolve(uuid + ".dat");
+        // Moved out of config/ with the rest of the player's data — a modpack update replaces
+        // that folder. See PlayerDataPaths.
+        return PlayerDataPaths.locate(
+            PlayerDataPaths.LOADOUTS, DIR + "/" + SUBDIR, uuid + ".dat").read();
     }
 
     /**

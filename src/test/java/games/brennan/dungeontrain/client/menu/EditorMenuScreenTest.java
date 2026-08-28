@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.menu;
 
+import games.brennan.dungeontrain.editor.PlotCategory;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -59,42 +60,42 @@ final class EditorMenuScreenTest {
     @Test
     @DisplayName("Remove for tracks uses kind id, not the friendly path string")
     void remove_tracks_usesModelIdNotPath() {
-        String command = removeCommandFor("tracks", "track", "track / track2");
+        String command = removeCommandFor(PlotCategory.TRACKS, "track", "track / track2");
         assertEquals("dungeontrain editor tracks reset track", command);
     }
 
     @Test
     @DisplayName("Remove for pillars uses pillar_<section> id")
     void remove_pillars_usesKindId() {
-        String command = removeCommandFor("tracks", "pillar_bottom", "pillar / bottom / stone");
+        String command = removeCommandFor(PlotCategory.TRACKS, "pillar_bottom", "pillar / bottom / stone");
         assertEquals("dungeontrain editor tracks reset pillar_bottom", command);
     }
 
     @Test
     @DisplayName("Remove for tunnels uses tunnel_<variant> id")
     void remove_tunnels_usesKindId() {
-        String command = removeCommandFor("tracks", "tunnel_section", "tunnel / section / default");
+        String command = removeCommandFor(PlotCategory.TRACKS, "tunnel_section", "tunnel / section / default");
         assertEquals("dungeontrain editor tracks reset tunnel_section", command);
     }
 
     @Test
     @DisplayName("Remove for stairs adjunct uses adjunct_stairs id")
     void remove_adjunctStairs_usesKindId() {
-        String command = removeCommandFor("tracks", "adjunct_stairs", "stairs / default");
+        String command = removeCommandFor(PlotCategory.TRACKS, "adjunct_stairs", "stairs / default");
         assertEquals("dungeontrain editor tracks reset adjunct_stairs", command);
     }
 
     @Test
     @DisplayName("Remove for carriages still works (sanity)")
     void remove_carriages_unchanged() {
-        String command = removeCommandFor("carriages", "standard", "standard");
+        String command = removeCommandFor(PlotCategory.CARRIAGES, "standard", "standard");
         assertEquals("dungeontrain editor reset standard", command);
     }
 
     @Test
     @DisplayName("Remove for contents still works (sanity)")
     void remove_contents_unchanged() {
-        String command = removeCommandFor("contents", "default", "default");
+        String command = removeCommandFor(PlotCategory.CONTENTS, "default", "default");
         assertEquals("dungeontrain editor contents reset default", command);
     }
 
@@ -102,7 +103,7 @@ final class EditorMenuScreenTest {
     @DisplayName("Remove confirm prompt shows the friendly path string for the user")
     void remove_tracks_confirmPromptUsesFriendlyName() {
         CommandMenuEntry.DrillIn entry = (CommandMenuEntry.DrillIn) EditorMenuScreen.removeEntryFor(
-            "tracks", "track", "track / track2");
+            PlotCategory.TRACKS, "track", "track / track2");
         assertNotNull(entry);
         // Title is what the player reads — should include the friendly path,
         // not the bare kind token.
@@ -112,14 +113,14 @@ final class EditorMenuScreenTest {
     @Test
     @DisplayName("Remove returns null for empty modelId (player not standing in a plot)")
     void remove_emptyModelId_returnsNull() {
-        assertNull(EditorMenuScreen.removeEntryFor("tracks", "", ""));
-        assertNull(EditorMenuScreen.removeEntryFor("carriages", "", ""));
+        assertNull(EditorMenuScreen.removeEntryFor(PlotCategory.TRACKS, "", ""));
+        assertNull(EditorMenuScreen.removeEntryFor(PlotCategory.CARRIAGES, "", ""));
     }
 
     @Test
     @DisplayName("Remove returns null for unknown categories")
     void remove_architecture_returnsNull() {
-        assertNull(EditorMenuScreen.removeEntryFor("architecture", "x", "x"));
+        assertNull(EditorMenuScreen.removeEntryFor(PlotCategory.ARCHITECTURE, "x", "x"));
     }
 
     // ---- New (latent same-bug, would have broken on first track-side click) ----
@@ -128,7 +129,7 @@ final class EditorMenuScreenTest {
     @DisplayName("New for tracks builds a TypeArg with kind id, not the friendly path")
     void new_tracks_usesModelIdNotPath() {
         CommandMenuEntry.TypeArg entry = (CommandMenuEntry.TypeArg) EditorMenuScreen.newEntryFor(
-            "tracks", "track", "track / track2");
+            PlotCategory.TRACKS, "track", "track / track2");
         assertNotNull(entry);
         assertEquals("dungeontrain editor tracks new track", entry.commandPrefix());
     }
@@ -137,7 +138,7 @@ final class EditorMenuScreenTest {
     @DisplayName("New for tracks pillar uses pillar_<section> id")
     void new_pillars_usesKindId() {
         CommandMenuEntry.TypeArg entry = (CommandMenuEntry.TypeArg) EditorMenuScreen.newEntryFor(
-            "tracks", "pillar_top", "pillar / top / default");
+            PlotCategory.TRACKS, "pillar_top", "pillar / top / default");
         assertNotNull(entry);
         assertEquals("dungeontrain editor tracks new pillar_top", entry.commandPrefix());
     }
@@ -146,7 +147,7 @@ final class EditorMenuScreenTest {
     @DisplayName("New for tracks tunnel uses tunnel_<variant> id")
     void new_tunnels_usesKindId() {
         CommandMenuEntry.TypeArg entry = (CommandMenuEntry.TypeArg) EditorMenuScreen.newEntryFor(
-            "tracks", "tunnel_section", "tunnel / section / default");
+            PlotCategory.TRACKS, "tunnel_section", "tunnel / section / default");
         assertNotNull(entry);
         assertEquals("dungeontrain editor tracks new tunnel_section", entry.commandPrefix());
     }
@@ -155,7 +156,7 @@ final class EditorMenuScreenTest {
     @DisplayName("New for stairs adjunct uses adjunct_stairs id")
     void new_adjunctStairs_usesKindId() {
         CommandMenuEntry.TypeArg entry = (CommandMenuEntry.TypeArg) EditorMenuScreen.newEntryFor(
-            "tracks", "adjunct_stairs", "stairs / default");
+            PlotCategory.TRACKS, "adjunct_stairs", "stairs / default");
         assertNotNull(entry);
         assertEquals("dungeontrain editor tracks new adjunct_stairs", entry.commandPrefix());
     }
@@ -163,7 +164,7 @@ final class EditorMenuScreenTest {
     @Test
     @DisplayName("New for tracks returns null when no model is active")
     void new_tracks_emptyModelId_returnsNull() {
-        assertNull(EditorMenuScreen.newEntryFor("tracks", "", ""));
+        assertNull(EditorMenuScreen.newEntryFor(PlotCategory.TRACKS, "", ""));
     }
 
     // ---- Weight (Triple row) — regression for the modelId fix + new tracks/contents categories ----
@@ -171,7 +172,7 @@ final class EditorMenuScreenTest {
     @Test
     @DisplayName("Weight for carriages uses modelId, not the friendly path string")
     void weight_carriages_usesModelId() {
-        CommandMenuEntry.Triple triple = weightTripleAssertingPresent("carriages", "standard", "standard", 10);
+        CommandMenuEntry.Triple triple = weightTripleAssertingPresent(PlotCategory.CARRIAGES, "standard", "standard", 10);
         assertEquals("dungeontrain editor weight standard dec", commandFor(triple.leftEntry()));
         assertEquals("dungeontrain editor weight standard", typePrefixFor(triple.middleEntry()));
         assertEquals("dungeontrain editor weight standard inc", commandFor(triple.rightEntry()));
@@ -180,7 +181,7 @@ final class EditorMenuScreenTest {
     @Test
     @DisplayName("Weight for tracks splices kind + name into the tracks weight subcommand")
     void weight_tracks_track() {
-        CommandMenuEntry.Triple triple = weightTripleAssertingPresent("tracks", "track", "default", 1);
+        CommandMenuEntry.Triple triple = weightTripleAssertingPresent(PlotCategory.TRACKS, "track", "default", 1);
         assertEquals("dungeontrain editor tracks weight track default dec", commandFor(triple.leftEntry()));
         assertEquals("dungeontrain editor tracks weight track default", typePrefixFor(triple.middleEntry()));
         assertEquals("dungeontrain editor tracks weight track default inc", commandFor(triple.rightEntry()));
@@ -189,7 +190,7 @@ final class EditorMenuScreenTest {
     @Test
     @DisplayName("Weight for pillar uses pillar_<section> + variant name")
     void weight_tracks_pillar() {
-        CommandMenuEntry.Triple triple = weightTripleAssertingPresent("tracks", "pillar_bottom", "stone", 2);
+        CommandMenuEntry.Triple triple = weightTripleAssertingPresent(PlotCategory.TRACKS, "pillar_bottom", "stone", 2);
         assertEquals("dungeontrain editor tracks weight pillar_bottom stone dec", commandFor(triple.leftEntry()));
         assertEquals("dungeontrain editor tracks weight pillar_bottom stone", typePrefixFor(triple.middleEntry()));
         assertEquals("dungeontrain editor tracks weight pillar_bottom stone inc", commandFor(triple.rightEntry()));
@@ -198,7 +199,7 @@ final class EditorMenuScreenTest {
     @Test
     @DisplayName("Weight for tunnel uses tunnel_<variant> + variant name")
     void weight_tracks_tunnel() {
-        CommandMenuEntry.Triple triple = weightTripleAssertingPresent("tracks", "tunnel_section", "default", 1);
+        CommandMenuEntry.Triple triple = weightTripleAssertingPresent(PlotCategory.TRACKS, "tunnel_section", "default", 1);
         assertEquals("dungeontrain editor tracks weight tunnel_section default dec", commandFor(triple.leftEntry()));
         assertEquals("dungeontrain editor tracks weight tunnel_section default", typePrefixFor(triple.middleEntry()));
         assertEquals("dungeontrain editor tracks weight tunnel_section default inc", commandFor(triple.rightEntry()));
@@ -207,7 +208,7 @@ final class EditorMenuScreenTest {
     @Test
     @DisplayName("Weight for contents uses contents id")
     void weight_contents() {
-        CommandMenuEntry.Triple triple = weightTripleAssertingPresent("contents", "default", "default", 1);
+        CommandMenuEntry.Triple triple = weightTripleAssertingPresent(PlotCategory.CONTENTS, "default", "default", 1);
         assertEquals("dungeontrain editor contents weight default dec", commandFor(triple.leftEntry()));
         assertEquals("dungeontrain editor contents weight default", typePrefixFor(triple.middleEntry()));
         assertEquals("dungeontrain editor contents weight default inc", commandFor(triple.rightEntry()));
@@ -216,7 +217,7 @@ final class EditorMenuScreenTest {
     @Test
     @DisplayName("Weight label reflects current weight when >= 0")
     void weight_label_includesCurrentWeight() {
-        CommandMenuEntry.Triple triple = weightTripleAssertingPresent("carriages", "standard", "standard", 42);
+        CommandMenuEntry.Triple triple = weightTripleAssertingPresent(PlotCategory.CARRIAGES, "standard", "standard", 42);
         CommandMenuEntry.TypeArg middle = (CommandMenuEntry.TypeArg) triple.middleEntry();
         assertEquals("Weight (42)", middle.label());
     }
@@ -224,7 +225,7 @@ final class EditorMenuScreenTest {
     @Test
     @DisplayName("Weight label is bare 'Weight' when current weight is the NO_WEIGHT sentinel")
     void weight_label_handlesNoWeightSentinel() {
-        CommandMenuEntry.Triple triple = weightTripleAssertingPresent("carriages", "standard", "standard", -1);
+        CommandMenuEntry.Triple triple = weightTripleAssertingPresent(PlotCategory.CARRIAGES, "standard", "standard", -1);
         CommandMenuEntry.TypeArg middle = (CommandMenuEntry.TypeArg) triple.middleEntry();
         assertEquals("Weight", middle.label());
     }
@@ -232,28 +233,28 @@ final class EditorMenuScreenTest {
     @Test
     @DisplayName("Weight returns null for empty modelId (player not in a plot)")
     void weight_emptyModelId_returnsNull() {
-        assertNull(EditorMenuScreen.weightTripleFor("carriages", "", "", 1));
-        assertNull(EditorMenuScreen.weightTripleFor("tracks", "", "", 1));
-        assertNull(EditorMenuScreen.weightTripleFor("contents", "", "", 1));
+        assertNull(EditorMenuScreen.weightTripleFor(PlotCategory.CARRIAGES, "", "", 1));
+        assertNull(EditorMenuScreen.weightTripleFor(PlotCategory.TRACKS, "", "", 1));
+        assertNull(EditorMenuScreen.weightTripleFor(PlotCategory.CONTENTS, "", "", 1));
     }
 
     @Test
     @DisplayName("Weight returns null for tracks when modelName is empty")
     void weight_tracks_emptyModelName_returnsNull() {
-        assertNull(EditorMenuScreen.weightTripleFor("tracks", "track", "", 1));
+        assertNull(EditorMenuScreen.weightTripleFor(PlotCategory.TRACKS, "track", "", 1));
     }
 
     @Test
     @DisplayName("Weight returns null for unknown / weight-less categories")
     void weight_unknownCategory_returnsNull() {
-        assertNull(EditorMenuScreen.weightTripleFor("architecture", "x", "x", 1));
-        assertNull(EditorMenuScreen.weightTripleFor("parts", "floor:x", "x", 1));
+        assertNull(EditorMenuScreen.weightTripleFor(PlotCategory.ARCHITECTURE, "x", "x", 1));
+        assertNull(EditorMenuScreen.weightTripleFor(PlotCategory.PARTS, "floor:x", "x", 1));
     }
 
     // ---- helpers ----
 
     /** Drill into the Remove entry's confirm screen and pull the command the Yes button runs. */
-    private static String removeCommandFor(String category, String modelId, String model) {
+    private static String removeCommandFor(PlotCategory category, String modelId, String model) {
         CommandMenuEntry entry = EditorMenuScreen.removeEntryFor(category, modelId, model);
         assertNotNull(entry, "removeEntryFor returned null for " + category + "/" + modelId);
         CommandMenuEntry.DrillIn drill = assertInstanceOf(CommandMenuEntry.DrillIn.class, entry);
@@ -266,7 +267,7 @@ final class EditorMenuScreenTest {
     @DisplayName("portals: weight and the three size steppers all route through the portals prefix")
     void portals_weightAndSizeCommands() {
         CommandMenuEntry.Triple weight =
-            weightTripleAssertingPresent("portals", "portal_room", "default", 3);
+            weightTripleAssertingPresent(PlotCategory.PORTALS, "portal_room", "default", 3);
         assertEquals("Weight (3)", weight.middleEntry().label());
         assertEquals("dungeontrain editor portals weight portal_room default dec", commandFor(weight.leftEntry()));
         assertEquals("dungeontrain editor portals weight portal_room default inc", commandFor(weight.rightEntry()));
@@ -361,13 +362,13 @@ final class EditorMenuScreenTest {
     @Test
     @DisplayName("portals: New and Remove use the portals prefix, not the tracks one")
     void portals_newAndRemove() {
-        CommandMenuEntry newEntry = EditorMenuScreen.newEntryFor("portals", "portal_room", "portal room / default");
+        CommandMenuEntry newEntry = EditorMenuScreen.newEntryFor(PlotCategory.PORTALS, "portal_room", "portal room / default");
         assertEquals("dungeontrain editor portals new portal_room", typePrefixFor(newEntry));
-        assertNotNull(EditorMenuScreen.removeEntryFor("portals", "portal_room", "portal room / default"));
+        assertNotNull(EditorMenuScreen.removeEntryFor(PlotCategory.PORTALS, "portal_room", "portal room / default"));
     }
 
     private static CommandMenuEntry.Triple weightTripleAssertingPresent(
-        String category, String modelId, String modelName, int currentWeight
+        PlotCategory category, String modelId, String modelName, int currentWeight
     ) {
         CommandMenuEntry entry = EditorMenuScreen.weightTripleFor(category, modelId, modelName, currentWeight);
         assertNotNull(entry, "weightTripleFor returned null for " + category + "/" + modelId + "/" + modelName);
@@ -389,7 +390,7 @@ final class EditorMenuScreenTest {
     // HUD for the room mode, so a portals context yields only its non-portal rows
     // here — enough to pin placement, which is what these guard.
 
-    private static Map<EditorMenuTab, List<CommandMenuEntry>> tabsFor(String category, String model) {
+    private static Map<EditorMenuTab, List<CommandMenuEntry>> tabsFor(PlotCategory category, String model) {
         return EditorMenuScreen.rowsByTab(category, model, model, model, 10);
     }
 
@@ -430,7 +431,7 @@ final class EditorMenuScreenTest {
     @Test
     @DisplayName("File carries the template lifecycle rows, and New comes first")
     void file_tab_holdsLifecycleRows() {
-        List<CommandMenuEntry> file = tabsFor("carriages", "brass_dining").get(EditorMenuTab.FILE);
+        List<CommandMenuEntry> file = tabsFor(PlotCategory.CARRIAGES, "brass_dining").get(EditorMenuTab.FILE);
         List<String> labels = labelsIn(file);
         assertTrue(labels.containsAll(List.of("New", "Remove", "Save", "All", "Undo", "Redo",
             "Reset", "Clear", "Rename", "Package")), "File tab labels were " + labels);
@@ -444,17 +445,17 @@ final class EditorMenuScreenTest {
     @Test
     @DisplayName("Nav carries Enter and Exit; Test the Carriage only for portals")
     void nav_tab_holdsNavigationRows() {
-        List<String> carriages = labelsIn(tabsFor("carriages", "brass_dining").get(EditorMenuTab.NAV));
+        List<String> carriages = labelsIn(tabsFor(PlotCategory.CARRIAGES, "brass_dining").get(EditorMenuTab.NAV));
         assertEquals(List.of("Enter", "Exit"), carriages);
 
-        List<String> portals = labelsIn(tabsFor("portals", "crypt_hall").get(EditorMenuTab.NAV));
+        List<String> portals = labelsIn(tabsFor(PlotCategory.PORTALS, "crypt_hall").get(EditorMenuTab.NAV));
         assertEquals(List.of("Enter", "Test the Carriage", "Exit"), portals);
     }
 
     @Test
     @DisplayName("Settings carries Editor Menus, the mirror group and Stages — never Save")
     void settings_tab_holdsEditorPreferences() {
-        List<String> labels = labelsIn(tabsFor("carriages", "brass_dining").get(EditorMenuTab.SETTINGS));
+        List<String> labels = labelsIn(tabsFor(PlotCategory.CARRIAGES, "brass_dining").get(EditorMenuTab.SETTINGS));
         assertTrue(labels.contains("Editor Menus"), "Settings labels were " + labels);
         assertTrue(labels.containsAll(List.of("Mirror", "X", "Y", "Z", "V", "Rebuild")));
         assertTrue(labels.contains("Stages"));
@@ -464,7 +465,7 @@ final class EditorMenuScreenTest {
     @Test
     @DisplayName("architecture hides the Current tab — it has no per-model properties")
     void architecture_hidesCurrentTab() {
-        Map<EditorMenuTab, List<CommandMenuEntry>> tabs = tabsFor("architecture", "arch_span");
+        Map<EditorMenuTab, List<CommandMenuEntry>> tabs = tabsFor(PlotCategory.ARCHITECTURE, "arch_span");
         assertTrue(tabs.get(EditorMenuTab.CURRENT).isEmpty());
         assertEquals(
             List.of(EditorMenuTab.FILE, EditorMenuTab.SETTINGS, EditorMenuTab.NAV),
@@ -474,7 +475,7 @@ final class EditorMenuScreenTest {
     @Test
     @DisplayName("architecture keeps Reset as a solo row — it has no Clear and no New")
     void architecture_resetIsSolo() {
-        List<String> labels = labelsIn(tabsFor("architecture", "arch_span").get(EditorMenuTab.FILE));
+        List<String> labels = labelsIn(tabsFor(PlotCategory.ARCHITECTURE, "arch_span").get(EditorMenuTab.FILE));
         assertTrue(labels.contains("Reset"));
         assertFalse(labels.contains("Clear"));
         assertFalse(labels.contains("New"), "architecture has no author-authored models");
@@ -483,7 +484,7 @@ final class EditorMenuScreenTest {
     @Test
     @DisplayName("parts Save routes through the part-aware subcommand, not the generic one")
     void parts_saveIsPartAware() {
-        List<CommandMenuEntry> file = tabsFor("parts", "wheelset:heavy").get(EditorMenuTab.FILE);
+        List<CommandMenuEntry> file = tabsFor(PlotCategory.PARTS, "wheelset:heavy").get(EditorMenuTab.FILE);
         List<String> commands = new ArrayList<>();
         for (CommandMenuEntry row : file) collectRunCommands(row, commands);
         assertTrue(commands.contains("dungeontrain editor part save"),
@@ -496,7 +497,7 @@ final class EditorMenuScreenTest {
     @Test
     @DisplayName("parts has no Reset row, no Current tab and no Stages")
     void parts_hasNoResetAndNoCurrentTab() {
-        Map<EditorMenuTab, List<CommandMenuEntry>> tabs = tabsFor("parts", "wheelset:heavy");
+        Map<EditorMenuTab, List<CommandMenuEntry>> tabs = tabsFor(PlotCategory.PARTS, "wheelset:heavy");
         List<String> file = labelsIn(tabs.get(EditorMenuTab.FILE));
         assertTrue(file.contains("Clear"));
         assertFalse(file.contains("Reset"), "parts plots have no on-disk template to reset");

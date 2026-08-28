@@ -86,19 +86,23 @@ public final class TemplateBlocksMenuInputHandler {
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
         Minecraft mc = Minecraft.getInstance();
-        if (!TemplateBlocksMenu.isActive()) return;
+        if (!TemplateBlocksMenu.isActiveWorldspace()) return;
         if (mc.screen == null) {
             TemplateBlocksMenuRaycast.updateHovered();
         }
     }
 
     private static boolean shouldHandle() {
-        if (!TemplateBlocksMenu.isActive()) return false;
+        if (!TemplateBlocksMenu.isActiveWorldspace()) return false;
         if (CommandMenuState.isOpen()) return false;
         return true;
     }
 
-    private static void dispatch(TemplateBlocksMenu.Hit hit) {
+    /**
+     * Act on a hit cell. Package-visible because {@link TemplateBlocksMenuScreen} dispatches
+     * through this same body — the screen-space path differs only in where the Hit came from.
+     */
+    static void dispatch(TemplateBlocksMenu.Hit hit) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.getSoundManager() != null) {
             mc.getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(

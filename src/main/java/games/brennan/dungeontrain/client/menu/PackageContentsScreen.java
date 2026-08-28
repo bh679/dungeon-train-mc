@@ -4,6 +4,7 @@ import games.brennan.dungeontrain.client.PackageListClient;
 import games.brennan.dungeontrain.client.menu.plot.EditorPlotTeleport;
 import games.brennan.dungeontrain.net.PackageContents;
 import games.brennan.dungeontrain.net.PackageListSyncPacket;
+import games.brennan.dungeontrain.editor.PlotCategory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -89,7 +90,7 @@ public final class PackageContentsScreen implements MenuScreen {
         return new CommandMenuEntry.Run("  " + name, cmd);
     }
 
-    private record TeleportTarget(String category, String modelId, String modelName) {}
+    private record TeleportTarget(PlotCategory category, String modelId, String modelName) {}
 
     /**
      * Map a {@code (section, basename)} pair to the
@@ -103,7 +104,9 @@ public final class PackageContentsScreen implements MenuScreen {
      * apart so the teleport dispatcher gets the kind + name it expects.</p>
      */
     private static TeleportTarget teleportTargetFor(PackageContents.Section section, String name) {
-        String category = section.category();
+        // Section.category is the wire/UI string; resolve it once here so nothing below
+        // compares category text. Sections with no editor plot carry null.
+        PlotCategory category = PlotCategory.fromId(section.category()).orElse(null);
         if (category == null) return null;
 
         // Pillars and tunnels: the on-disk layout is pillars/<section>/<name>.nbt
@@ -115,31 +118,31 @@ public final class PackageContentsScreen implements MenuScreen {
             int sep = name.indexOf(':');
             if (sep <= 0) return null;
             String pillarSection = name.substring(0, sep);
-            return new TeleportTarget("TRACKS", "pillar_" + pillarSection, name);
+            return new TeleportTarget(PlotCategory.TRACKS, "pillar_" + pillarSection, name);
         }
         if ("tunnels".equals(section.subdir())) {
             int sep = name.indexOf(':');
             if (sep <= 0) return null;
             String tunnelVariant = name.substring(0, sep);
-            return new TeleportTarget("TRACKS", "tunnel_" + tunnelVariant, name);
+            return new TeleportTarget(PlotCategory.TRACKS, "tunnel_" + tunnelVariant, name);
         }
         if ("parts".equals(section.subdir())) {
             int sep = name.indexOf(':');
             if (sep <= 0) return null;
             String partKind = name.substring(0, sep);
             String partName = name.substring(sep + 1);
-            return new TeleportTarget("PARTS", partKind, partName);
+            return new TeleportTarget(PlotCategory.PARTS, partKind, partName);
         }
         if ("portals/room".equals(section.subdir())) {
             // One kind in the category, so the modelId is fixed; the basename is the room name.
-            return new TeleportTarget("PORTALS", "portal_room", name);
+            return new TeleportTarget(PlotCategory.PORTALS, "portal_room", name);
         }
         if ("tracks".equals(section.subdir())) {
             // Track variants: basename is the variant name; modelId can be the
             // bare track kind ("track") which EditorPlotTeleport.trackTeleportCommand
             // accepts as "/dt editor track enter". Without per-track-kind
             // differentiation we fall through to the generic teleport.
-            return new TeleportTarget("TRACKS", "track", name);
+            return new TeleportTarget(PlotCategory.TRACKS, "track", name);
         }
         // Carriages, Contents — modelId == basename.
         return new TeleportTarget(category, name, name);

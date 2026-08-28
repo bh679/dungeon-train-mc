@@ -4011,9 +4011,13 @@ public final class EditorCommand {
             return 0;
         }
         boolean enabled = games.brennan.dungeontrain.config.DungeonTrainConfig.isSharedCarriagesEnabled();
+        // Leasing is the half that PLACES community builds, and it ships off — say so here, or a
+        // builder flags a variant shared, never sees a pooled carriage, and reads that as a bug.
+        boolean leasing = games.brennan.dungeontrain.event.SharedCarriageGate.canLease();
         source.sendSuccess(() -> Component.literal(
             "Carriage '" + current.id() + "' shared: " + (target ? "ON" : "off")
             + (enabled ? "" : " — note: sharedCarriagesEnabled is OFF in dungeontrain-server.toml, so the feature is inactive")
+            + (!enabled || leasing ? "" : " — note: sharedCarriageLeasingEnabled is OFF, so builds upload but none are placed")
         ).withStyle(target ? ChatFormatting.GREEN : ChatFormatting.GRAY), true);
         return 1;
     }

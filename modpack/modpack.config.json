@@ -144,6 +144,15 @@
       "modrinth_version": "OWylG33I"
     },
     {
+      "name": "Better Advancements",
+      "slug": "better-advancements",
+      "project_id": 272515,
+      "file_id": 5850587,
+      "required": true,
+      "modrinth_project": "better-advancements",
+      "modrinth_version": "FjTYILOi"
+    },
+    {
       "name": "Iceberg",
       "slug": "iceberg",
       "project_id": 520110,
@@ -315,6 +324,15 @@
       "modrinth_version": "zHNxmOqp"
     },
     {
+      "name": "Clumps",
+      "slug": "clumps",
+      "project_id": 256717,
+      "file_id": 5623731,
+      "required": true,
+      "modrinth_project": "clumps",
+      "modrinth_version": "jo7lDoK4"
+    },
+    {
       "name": "Scribble",
       "slug": "scribble",
       "project_id": 1051344,
@@ -322,6 +340,33 @@
       "required": true,
       "modrinth_project": "scribble",
       "modrinth_version": "I0KbSlL9"
+    },
+    {
+      "name": "Shulker Box Tooltip",
+      "slug": "shulkerboxtooltip",
+      "project_id": 315811,
+      "file_id": 7768285,
+      "required": true,
+      "modrinth_project": "shulkerboxtooltip",
+      "modrinth_version": "IuqNIoAi"
+    },
+    {
+      "name": "TrashSlot",
+      "slug": "trashslot",
+      "project_id": 235577,
+      "file_id": 8163135,
+      "required": true,
+      "modrinth_project": "trashslot",
+      "modrinth_version": "HY8Ybozd"
+    },
+    {
+      "name": "Balm",
+      "slug": "balm",
+      "project_id": 531761,
+      "file_id": 8645517,
+      "required": true,
+      "modrinth_project": "balm",
+      "modrinth_version": "KgypwTqX"
     }
   ],
   "curseforge_relations": [
