@@ -1530,6 +1530,8 @@
   "gui.dungeontrain.options.internet.tip": "Master switch for online features (leaderboard, developer chat, community books, telemetry). OFF disables all network use; ON opens the consent screen.",
   "gui.dungeontrain.options.cinematic_hotkey": "Cinematic Hotkey",
   "gui.dungeontrain.options.cinematic_hotkey.tip": "Let the cinematographer hotkey replay the intro cinematic while you are in spectator mode. Rebind the key itself under Controls, in the Dungeon Train category. Turning this off frees the key without unbinding it \u2014 the /dungeontrain cinematic command still works either way.",
+  "gui.dungeontrain.options.backpack_button": "Backpack Button",
+  "gui.dungeontrain.options.backpack_button.tip": "Show the Edible Backpacks open/close button on your inventory screen, above the offhand slot. Turning it off only hides the button \u2014 your backpack panels still open with the Edible Backpacks key, which you can bind under Controls. Where the button sits is set in config/ediblebackpacks-client.toml.",
   "gui.dungeontrain.options.book_author_chat": "Book Author Chat",
   "gui.dungeontrain.options.book_author_chat.tip": "Print a chat line naming the author each time a Dungeon Train book burns — \"The book by X burns\". The books you read, throw away or drop on death all catch fire, and this is the only place their writer is credited. Off by default.",
   "gui.dungeontrain.options.snapshot_chat_log": "Snapshot Chat Log",

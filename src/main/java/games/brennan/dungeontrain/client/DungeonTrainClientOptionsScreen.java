@@ -9,6 +9,7 @@ import games.brennan.dungeontrain.data.BackupMode;
 import games.brennan.dungeontrain.config.ContentMode;
 import games.brennan.dungeontrain.config.CustomContentPreference;
 import games.brennan.dungeontrain.config.EditorMenuSpace;
+import games.brennan.ediblebackpacks.config.EBClientConfig;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.OptionInstance;
 import net.minecraft.client.Options;
@@ -249,6 +250,7 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             case BOOK_AUTHOR_CHAT -> onOffCandidates("gui.dungeontrain.options.book_author_chat");
             case CINEMATIC_HOTKEY -> onOffCandidates("gui.dungeontrain.options.cinematic_hotkey");
             case SNAPSHOT_CHAT_LOG -> onOffCandidates("gui.dungeontrain.options.snapshot_chat_log");
+            case BACKPACK_BUTTON -> onOffCandidates("gui.dungeontrain.options.backpack_button");
             case TRANSLATE -> List.of(Component.translatable("gui.dungeontrain.options.translate"));
             case CUSTOM_CONTENT -> {
                 List<Component> out = new ArrayList<>();
@@ -415,6 +417,19 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                 yield button;
             }
 
+            // The bundled Edible Backpacks' open/close button on the survival inventory screen.
+            // Reads and writes EB's OWN client config rather than mirroring it into
+            // ClientDisplayConfig: config/ediblebackpacks-client.toml already owns the button
+            // (it also carries the anchor and custom x/y this row deliberately does not expose),
+            // and EB re-reads the value every frame, so the change lands without reopening the
+            // inventory. Turning it off is safe — EB's keybind still opens the panels.
+            case BACKPACK_BUTTON -> withTip(
+                    CycleButton.onOffBuilder(EBClientConfig.buttonEnabled())
+                            .create(0, 0, width, ROW_H,
+                                    Component.translatable("gui.dungeontrain.options.backpack_button"),
+                                    (btn, on) -> setBackpackButtonEnabled(on)),
+                    "gui.dungeontrain.options.backpack_button.tip");
+
             // Snapshot max resolution ceiling (0 = AUTO).
             case SNAPSHOT_MAX_RES -> {
                 int currentRes = ClientDisplayConfig.getRideSnapshotMaxResolution();
@@ -456,6 +471,22 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                     ClientDisplayConfig::getBlockVariantMenuSpace,
                     ClientDisplayConfig::setBlockVariantMenuSpace, width);
         };
+    }
+
+    /**
+     * Writes Edible Backpacks' {@code buttonEnabled} through to
+     * {@code config/ediblebackpacks-client.toml}.
+     *
+     * <p>The {@code isLoaded} guard mirrors EB's own readers: this screen is reachable from the
+     * title screen, where the spec may not have loaded yet, and {@code set} on an unloaded spec
+     * throws. Nothing is lost by skipping — the row is showing the default in that case.</p>
+     */
+    private static void setBackpackButtonEnabled(boolean enabled) {
+        if (!EBClientConfig.SPEC.isLoaded()) {
+            return;
+        }
+        EBClientConfig.BUTTON_ENABLED.set(enabled);
+        EBClientConfig.SPEC.save();
     }
 
     private AbstractWidget slider(OptionInstance<Integer> option, int width) {
