@@ -9669,9 +9669,9 @@
         "Train Builder submissions are held back \u2014 a separate system, opening later"
       ],
       "date": "2026-08-28",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.707.0",
+      "released_at": "2026-08-28T18:32:02Z"
     },
     {
       "id": "backpack-button-toggle",
