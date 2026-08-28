@@ -9593,6 +9593,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "trashslot-enabled-silent",
+      "version": "0.703.0",
+      "type": "feat",
+      "title": "TrashSlot now comes installed, and stays out of the way",
+      "summary": "TrashSlot is now part of the pack proper rather than an optional extra you had to tick on. It ships quiet: there is no trash slot in your inventory and none of its keys are bound, so nothing about your screens or your controls changes unless you want it to. To use it, bind a key to Show/Hide TrashSlot under Options then Controls, and press it with a screen open.",
+      "highlights": [
+        "Installed with the pack \u2014 no optional-mods tick needed",
+        "Ships with the slot hidden and every TrashSlot key unbound, so your inventory and controls look exactly as they did",
+        "Bind Show/Hide TrashSlot in Options then Controls to turn it on"
+      ],
+      "pr": 1161,
+      "date": "2026-08-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
