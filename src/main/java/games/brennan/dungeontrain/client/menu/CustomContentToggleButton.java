@@ -22,11 +22,11 @@ import net.neoforged.api.distmarker.OnlyIn;
  * CustomContentGate.askCounting} skips the popup for any preference that isn't ASK. That is the
  * point of the button: a player who knows which way they want it shouldn't be asked every world.</p>
  *
- * <p>One icon in two finishes rather than two icons: the Free Play badge, full colour when the
- * designs are in play and dimmed to grey when they aren't. A swap between two different marks
- * makes the reader identify the artwork before they can read the state; lit-versus-dim is the same
- * on/off read a light switch gives, and it keeps the button's identity fixed while its state
- * changes. State is re-read every frame, because Options → Custom Train Content can change it
+ * <p>One icon in two finishes rather than two icons: the Free Play badge on a light blue face when
+ * the designs are in play, and dimmed to grey on the plain button face when they aren't. A swap
+ * between two different marks makes the reader identify the artwork before they can read the state;
+ * lit-versus-dim is the same on/off read a light switch gives, and it keeps the button's identity
+ * fixed while its state changes. State is re-read every frame, because Options → Custom Train Content can change it
  * behind this widget's back.</p>
  */
 @OnlyIn(Dist.CLIENT)
@@ -47,6 +47,18 @@ public final class CustomContentToggleButton extends Button {
     /** Tint multiplier for the off state: dark enough to read as grey, dim enough to read as off. */
     private static final float OFF_TINT = 0.32F;
     private static final float OFF_ALPHA = 0.65F;
+
+    /**
+     * Light blue laid over the button face while the designs are in play. The on state needs to be
+     * legible without the mouse near it — a dimmed icon alone reads as "small" rather than "off"
+     * across the room — and colour carries that at a glance where a second sprite doesn't. The off
+     * state gets nothing over the plain frame, so "lit" and "not lit" is the whole vocabulary.
+     *
+     * <p>Kept light: GuiGraphics flushes flat fills <em>after</em> textured quads, so this lands
+     * over the icon however early it is drawn (the same ordering {@code CustomContentPromptScreen}
+     * documents). The alpha is set so the badge still reads through it rather than fighting it.</p>
+     */
+    private static final int ON_HIGHLIGHT = 0x594FC3F7;
 
     public CustomContentToggleButton(int x, int y, int size, OnPress onPress) {
         super(x, y, size, size,
@@ -71,10 +83,18 @@ public final class CustomContentToggleButton extends Button {
 
     @Override
     protected void renderWidget(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
-        // Vanilla's button frame (and its own hover/focus highlight) first, then the icon over it.
+        // Vanilla's button frame (and its own hover/focus highlight) first, then the state wash
+        // and the icon. Draw order between those last two is not ours to choose — see ON_HIGHLIGHT.
         super.renderWidget(g, mouseX, mouseY, partialTick);
 
         boolean on = CustomContentGate.contentEnabled();
+        if (on) {
+            // Inset by the frame's own 1px border so the wash fills the face without painting over
+            // the bevel that makes it read as a button. Nothing is drawn in the off state — the
+            // plain frame IS the off state.
+            g.fill(getX() + 1, getY() + 1, getX() + getWidth() - 1, getY() + getHeight() - 1,
+                    ON_HIGHLIGHT);
+        }
         RenderSystem.enableBlend();
         if (!on) {
             g.setColor(OFF_TINT, OFF_TINT, OFF_TINT, OFF_ALPHA);
