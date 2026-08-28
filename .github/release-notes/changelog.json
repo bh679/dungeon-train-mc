@@ -9467,8 +9467,26 @@
       "released_at": "2026-08-28T04:37:12Z"
     },
     {
-      "id": "backups-outside-the-instance",
+      "id": "romanian-localization",
       "version": "0.693.0",
+      "type": "feat",
+      "title": "Dungeon Train speaks Romanian",
+      "summary": "Romanian joins the language list \u2014 the whole game, not just the menus: every screen, the item names, and all 57 in-game books. It is machine translation nobody has proofread yet, and the language list says so with the faded AI mark; if you read Romanian, the in-game translation editor is open and your fixes come back to everyone.",
+      "highlights": [
+        "Romanian (Rom\u00e2n\u0103) is selectable in the vanilla language list",
+        "Menus, HUD, advancements, item names and all 57 books translated",
+        "Counts follow real Romanian grammar \u2014 1 vagon, 3 vagoane, 20 de vagoane",
+        "Marked AI-unreviewed, so every line is open for community correction"
+      ],
+      "pr": 1154,
+      "date": "2026-08-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "backups-outside-the-instance",
+      "version": "0.694.0",
       "type": "feat",
       "title": "Choose where your backups are kept",
       "summary": "Dungeon Train's backups of your builds and progress used to live inside your Minecraft instance, which protects them from a modpack update but not from the instance itself being deleted or reset. There's now a Backups setting in Options > Dungeon Train: On keeps a copy outside the instance so nothing an update or a reinstall does can reach it, Instanced keeps them inside it, and Off turns them off.",

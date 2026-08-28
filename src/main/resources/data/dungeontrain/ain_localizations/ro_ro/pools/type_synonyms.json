@@ -1,0 +1,509 @@
+{
+  "id": "adventureitemnames:type_synonyms",
+  "entries": [
+    {
+      "text": "Lamă",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "Sabie",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "Spadon",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "Satâr",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "Paloș",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "Tăiș",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "Secerător",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "Frigare",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "Topor",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "Topor de Război",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "Despicător",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "Bardă",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "Crăpător",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "Halebardă",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "Tomahawk",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "Sfărâmă-Lemne",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "Târnăcop",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "Pioleț",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "Ciocan",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "Baros",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "Cazma",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "Cioplitor",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "Baros Mare",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "Tunelar",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "Mușcă-Piatră",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "Lopată",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "Hârleț",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "Mistrie",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "Cupă",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "Băț de Săpat",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "Mută-Pământ",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "Excavator",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "Adună-Nisip",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "Sapă",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "Coasă",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "Cultivator",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "Săpăligă",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "Greblă",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "Secerătoare",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "Plug",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "Seceră",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "Coif",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "Pălărie",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "Șapcă",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "Coroană",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "Glugă",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "Podoabă de Cap",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "Cagulă de Zale",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "Tichie",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "Diademă",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "Găleată de Creier",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "Tunică",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "Cămașă",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "Armură",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "Cuirasă",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "Vestă",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "Zale",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "Pieptar",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "Bavetă",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "Jambiere",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "Pantaloni",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "Crăcănați",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "Nădragi",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "Apărători de Picior",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "Ițari",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "Pantaloni Largi",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "Chestii de Ciorapi",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "Pantofi",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "Cizme",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "Sandale",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "Copite",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "Papuci",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "Galoși",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "Bocanci",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "Mănuși de Picior",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "Tropăitori",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "Scut",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    },
+    {
+      "text": "Rondache",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    },
+    {
+      "text": "Egidă",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    },
+    {
+      "text": "Meterez",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    },
+    {
+      "text": "Pavăză",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    },
+    {
+      "text": "Pavăză Mare",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    },
+    {
+      "text": "Apărător",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    },
+    {
+      "text": "Opreliște",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    }
+  ]
+}

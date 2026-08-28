@@ -1,0 +1,274 @@
+[
+  {
+    "page": "fall",
+    "weight": 3,
+    "question": "Ce este Dungeon Train?",
+    "narration": "Vagonul {carriage}. Acolo te-a ajuns întunericul. Înțelegi acum? Dungeon Train nu se oprește — merge doar mai departe, mai adânc, la nesfârșit."
+  },
+  {
+    "page": "fall",
+    "weight": 1,
+    "conditions": { "min_carriage": 100 },
+    "question": "Ce este Dungeon Train?",
+    "narration": "{carriage} vagoane în adâncul întunericului. Puțini merg atât de departe înainte ca linia să-i ia. Și mai puțini se urcă din nou."
+  },
+  {
+    "page": "fall",
+    "weight": 1,
+    "conditions": { "max_carriage": 3 },
+    "question": "Ce este Dungeon Train?",
+    "narration": "Vagonul {carriage}. Abia urcat, și întunericul te avea deja. Linia are răbdare — își permite."
+  },
+  {
+    "page": "deeds",
+    "weight": 3,
+    "question": "De ce ești aici?",
+    "narration": "Ai doborât {mobs} făpturi în întuneric și ai plătit cu {hearts} inimi.\nDin cele {met} suflete pe care le-ai întâlnit, pe {slain} le-ai sfârșit — iar pe {friends} le-ai numit prieteni."
+  },
+  {
+    "page": "gear",
+    "weight": 3,
+    "question": "Ce ar trebui să faci?",
+    "narration": "Fier și tăiș, adunate din întuneric și purtate până aici. Nimic n-a fost de ajuns — poate că nici nu asta conta."
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": { "min_books": 5 },
+    "question": "Ce ar trebui să faci?",
+    "narration": "Ai citit {books} dintre cărțile liniei și tot purtai oțel. Cunoaștere și o lamă, iar întunericul le-a luat pe amândouă."
+  },
+  {
+    "page": "deeds",
+    "weight": 1,
+    "conditions": { "min_friends": 5 },
+    "question": "Au meritat?",
+    "narration": "Ți-ai făcut {friends} prieteni pe linie, și tot te-a luat. Poate că ăsta e singurul număr care a fost vreodată al tău."
+  },
+  {
+    "page": "deeds",
+    "weight": 1,
+    "conditions": { "min_mobs": 200 },
+    "question": "Cu cât din întuneric i-ai răspuns cu aceeași măsură?",
+    "narration": "{mobs} făpturi au căzut sub mâna ta înainte să cazi tu sub a lor. Linia nu judecă. Doar numără."
+  },
+  {
+    "page": "lives",
+    "weight": 3,
+    "conditions": { "min_deaths": 2 },
+    "question": "Toate sunt întrebări bune",
+    "narration": "Astea nu sunt urmele unei singure vieți. De-a lungul tuturor celor {deaths} — fiecare întuneric în care te-ai urcat, fiecare dată când linia te-a luat și totuși te-ai întors — asta e toată călătoria ta."
+  },
+  {
+    "page": "lives",
+    "weight": 1,
+    "conditions": { "min_deaths": 1, "max_deaths": 1 },
+    "question": "Chiar așa de ușor se cheltuie o viață?",
+    "subline": "prima ta cădere pe linie.",
+    "narration": "Nu există alte vieți cu care s-o cântărești pe aceasta — încă nu. Asta ești tu întreg: tot ce ai făcut de când te-ai urcat prima oară. Linia își va aminti. Ar trebui și tu."
+  },
+  {
+    "page": "lives",
+    "weight": 1,
+    "conditions": { "min_deaths": 10 },
+    "question": "Toate sunt întrebări bune",
+    "narration": "Astea nu sunt urmele unei singure vieți. De {deaths} ori te-a luat întunericul și de {deaths} ori te-ai urcat din nou."
+  },
+  {
+    "page": "platform",
+    "weight": 3,
+    "conditions": { "min_deaths": 2 },
+    "question": "Te urci din nou sau cobori în liniște?",
+    "narration": "Peronul e gol. Fluierul sună departe pe linie. Ea merge fără sfârșit — și, se pare, la fel și tu.",
+    "epitaph": "{deaths_nth} care a căzut. poate nu ultimul."
+  },
+  {
+    "page": "platform",
+    "weight": 1,
+    "conditions": { "min_deaths": 1, "max_deaths": 1 },
+    "question": "Te urci din nou — acum că știi cum se termină?",
+    "narration": "Peronul e gol, la fel cum era când ai urcat prima oară. Fluierul sună departe pe linie. Ai căzut o dată. Dacă va fi și a doua oară rămâne, ca întotdeauna, alegerea ta.",
+    "epitaph": "primul care a căzut. linia are răbdare — îi va aștepta pe ceilalți."
+  },
+  {
+    "page": "platform",
+    "weight": 1,
+    "conditions": { "min_deaths": 20 },
+    "question": "Mai e nevoie să întrebi?",
+    "narration": "Peronul îți știe deja fața. Fluierul sună cum sună întotdeauna. Știi deja ce urmează.",
+    "epitaph": "{deaths_nth} care a căzut — și nu, se pare, ultimul."
+  },
+
+  {
+    "page": "fall",
+    "weight": 2,
+    "question": "Ce este Dungeon Train?",
+    "narration": "Vagonul {carriage}. Întunericul aștepta acolo dintotdeauna — tu doar ai ajuns la întâlnire."
+  },
+  {
+    "page": "fall",
+    "weight": 2,
+    "question": "Ce este Dungeon Train?",
+    "narration": "Vagonul {carriage}, și nu mai departe. Linia nu ține nici ranchiună, nici milă; pur și simplu merge mai departe."
+  },
+  {
+    "page": "fall",
+    "weight": 2,
+    "question": "Ce este Dungeon Train?",
+    "narration": "Felinarele vagonului {carriage} încă se leagănă acolo unde ai căzut. Trenul nu încetinește ca să privească."
+  },
+  {
+    "page": "fall",
+    "weight": 2,
+    "question": "Ce este Dungeon Train?",
+    "narration": "Ai ajuns la vagonul {carriage} înainte ca podeaua lumii să cedeze. Linia merge mai departe fără greutatea ta."
+  },
+  {
+    "page": "fall",
+    "weight": 2,
+    "question": "Ce este Dungeon Train?",
+    "narration": "Vagonul {carriage}. Undeva înainte, șina se desfășoară mai departe în beznă, nepăsătoare că tu nu mai ești pe ea."
+  },
+  {
+    "page": "fall",
+    "weight": 2,
+    "question": "Ce este Dungeon Train?",
+    "narration": "Aici, la vagonul {carriage}, întunericul ți-a prins în sfârșit ritmul. Avea să-l prindă oricum."
+  },
+
+  {
+    "page": "deeds",
+    "weight": 2,
+    "question": "De ce ești aici?",
+    "narration": "Ai doborât {mobs} făpturi în întuneric și ai dat {hearts} inimi ca s-o faci. Din cele {met} suflete pe lângă care ai trecut, pe {slain} le-ai răpus, iar pe {friends} le-ai lăsat aproape."
+  },
+  {
+    "page": "deeds",
+    "weight": 2,
+    "question": "De ce ești aici?",
+    "narration": "{mobs} făpturi au căzut sub tine și {hearts} inimi au căzut din tine. Ai întâlnit {met} alte suflete în întuneric — pe {slain} le-ai sfârșit, pe {friends} le-ai păstrat — și apoi a venit rândul tău."
+  },
+  {
+    "page": "deeds",
+    "weight": 2,
+    "question": "De ce ești aici?",
+    "narration": "Din întuneric ai luat {mobs}; din tine ai cheltuit {hearts} inimi. {met} suflete au împărțit linia cu tine: pe {slain} le-ai sfârșit, de {friends} te-ai ținut."
+  },
+  {
+    "page": "deeds",
+    "weight": 1,
+    "conditions": { "max_friends": 0 },
+    "question": "De ce ești aici?",
+    "narration": "Ai doborât {mobs} făpturi și ai sângerat {hearts} inimi. Ai întâlnit {met} suflete, pe {slain} le-ai sfârșit și pe niciunul nu l-ai numit prieten. Întunericul e mai simplu de unul singur."
+  },
+  {
+    "page": "deeds",
+    "weight": 1,
+    "conditions": { "min_slain": 5 },
+    "question": "Cu ce i-ai răspuns întunericului?",
+    "narration": "Din cele {met} pe care le-ai întâlnit, pe {slain} le-ai retezat — plus încă {mobs} făpturi în întuneric — pentru {hearts} inimi, iar pe {friends} le-ai cruțat ca să le numești prieteni. Linia nu-i spune crimă."
+  },
+
+  {
+    "page": "gear",
+    "weight": 2,
+    "question": "Ce ar trebui să faci?",
+    "narration": "Ai adunat din vagoane tot ce ai putut duce. Linia te lasă să păstrezi — n-are ce face cu marfa, doar cu pasagerii."
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": { "max_loot": 0 },
+    "question": "Ce ar trebui să faci?",
+    "narration": "N-ai spart nicio ladă pe linie — ai purtat doar ce aveai la urcare și ai lovit cu el până la capăt. Întunericul păstrează ce n-ai vrut să iei."
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": { "max_loot": 9 },
+    "question": "Ce ar trebui să faci?",
+    "narration": "Câteva lăzi deschise — {loot} cu totul — și o lamă ținută aproape. Linia e darnică cu cei care se opresc; tu abia dacă ai zăbovit."
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": { "min_loot": 250 },
+    "question": "Ce ar trebui să faci?",
+    "narration": "{loot} recipiente golite în rucsacul tău. Ai despuiat întunericul de tot ce nu era bătut în cuie, și tot ți-a luat singurul lucru care conta."
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": { "max_books": 0 },
+    "question": "Ce ar trebui să faci?",
+    "narration": "Nicio pagină întoarsă — doar oțel adunat și rotit. Linia își păstrează poveștile pentru cei care se opresc să citească."
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": { "min_books": 10 },
+    "question": "Ce ar trebui să faci?",
+    "narration": "Ai citit {books} dintre cărțile liniei și, pe deasupra, purtai oțel. Înțelepciune și o lamă, iar întunericul a avut răbdare cu amândouă."
+  },
+
+  {
+    "page": "lives",
+    "weight": 2,
+    "conditions": { "min_deaths": 2 },
+    "question": "Toate sunt întrebări bune",
+    "narration": "Numără-le: de {deaths} ori te-a luat linia, de {deaths} ori ai răspuns fluierului. Asta e forma ta, trasată din plecări."
+  },
+  {
+    "page": "lives",
+    "weight": 1,
+    "conditions": { "min_deaths": 3 },
+    "question": "Toate sunt întrebări bune",
+    "narration": "De-a lungul a {deaths} vieți, cifrele se adună ca praful pe șine. Nimic nu se pierde; linia nu uită nimic."
+  },
+  {
+    "page": "lives",
+    "weight": 1,
+    "conditions": { "min_deaths": 5 },
+    "question": "De ce te tot urci?",
+    "narration": "{deaths} căderi, și tot te urci. Linia a încetat să se mai întrebe dacă te vei întoarce. Poate că ai încetat și tu."
+  },
+  {
+    "page": "lives",
+    "weight": 1,
+    "conditions": { "min_deaths": 5 },
+    "question": "De ce te tot urci?",
+    "narration": "{deaths} morți în urmă și același fluier înainte. Nu mai ești pasager — ești parte din mersul trenurilor."
+  },
+  {
+    "page": "lives",
+    "weight": 1,
+    "conditions": { "min_deaths": 5 },
+    "question": "De ce te tot urci?",
+    "narration": "Întunericul a încetat să-ți fie străin; de {deaths} ori i-ai învățat chipul. Și asta e un fel de pierdere."
+  },
+
+  {
+    "page": "platform",
+    "weight": 2,
+    "conditions": { "min_deaths": 2 },
+    "question": "Te urci din nou sau lași peronul să te păstreze?",
+    "narration": "Fluierul sună deja, departe înainte. Nu te așteaptă — n-a făcut-o niciodată — și totuși stai aici, hotărându-te să-l urmezi.",
+    "epitaph": "{deaths_nth} care a căzut. linia merge mai departe."
+  },
+  {
+    "page": "platform",
+    "weight": 1,
+    "conditions": { "min_deaths": 3 },
+    "question": "Te urci din nou?",
+    "narration": "Peronul e tăcut. Undeva, trenul e deja plin de povestea altcuiva. E mereu loc pentru încă una de-a ta.",
+    "epitaph": "{deaths_nth} care a căzut. poate nu ultimul."
+  },
+  {
+    "page": "platform",
+    "weight": 1,
+    "conditions": { "min_deaths": 5 },
+    "question": "Mai e nevoie ca linia să întrebe?",
+    "narration": "Știi greutatea ușii, răceala treptei. Întunericul e doar un loc pe care-l vizitezi acum.",
+    "epitaph": "{deaths_nth} care a căzut — un obișnuit al liniei."
+  }
+]

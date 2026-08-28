@@ -1,0 +1,55 @@
+{
+  "id": "tomas_aaro_the_walking_father",
+  "character": "Tomas Aaro",
+  "story": "Tatăl care merge",
+  "letters": [
+    {
+      "index": 1,
+      "label": "Scrisoarea unu",
+      "variants": [
+        "Draga mea.\n\nAm găsit trenul.\nE real.\n\nȘi totuși port îndoieli în mine.\n\n\nSe spune că trenul duce ceea ce ai nevoie.\n\nNimeni nu spune ce anume.\nSper doar ca nevoia noastră să nu fie prea mare.\n\nSunt la bord de puțină vreme, și el nu are sfârșit.\n\n— Tomas",
+        "I-am spus micuței mele că mă întorc până la seceriș.\n\nN-ar fi trebuit să promit un anotimp. Nu știu dacă locul ăsta are așa ceva.\n\nDar trenul ăsta ține în el singura noastră speranță.\n\n— Tomas"
+      ]
+    },
+    {
+      "index": 2,
+      "label": "Scrisoarea doi",
+      "variants": [
+        "Micuța mea.\n\nSunt oameni morți în trenul ăsta. Umblă.\n\nȘtiu cum sună asta.\n\nTata a trebuit să se lupte cu unul.\n\n\nMâinile mele știu sămânța și pământul.\nAzi au învățat că o sapă taie în două feluri.\n\nMi-a fost frică. Am făcut-o oricum. Asta înseamnă să fii curajos.\n\nA căzut. Nu sunt rănit.\n\nTata tot vine acasă.\n\n— Tata",
+        "Micuța mea.\n\nAm făcut un lucru pe care nu-l pot desface. Un om a venit spre mine, doar că nu mai era un om.\n\nAm folosit ce aveam în mâini.\n\n\nTu ai fi închis ochii. Eu i-am ținut pe ai mei deschiși. Trebuia unul din noi.\n\nDupă aceea mâinile mi-au tremurat cum îți tremură ție de frig.\n\nLe-am ținut până s-au oprit. Apoi am mers mai departe.\n\n— Tata"
+      ]
+    },
+    {
+      "index": 3,
+      "label": "Scrisoarea trei",
+      "variants": [
+        "Draga mea.\n\nAzi mi-a vorbit un șobolan. Cu o vestuță pe el.\n\nNu-mi pierd mințile. Îl văd și alții.\n\nMi-a dat hârtie și o ghicitoare.\n\n\n„O sămânță nu aleargă după primăvară”, a zis. „Așteaptă. Cei tineri învață asta primii.”\n\nApoi mi-a urat noroc și a părut trist. I-am mulțumit și am mers mai departe.\n\n— Tomas",
+        "Draga mea.\n\nL-am întâlnit iar pe șobolan. Vorbește ca un domn, ceea ce e ciudat la un șobolan.\n\nL-am întrebat pe unde se ajunge în față.\n\n\n„Nu există față pentru cei care merg”, a zis. „Sunt găsiți doar cei care se opresc. Cei mici știu asta.”\n\nN-am timp să mă opresc. Mi-a urat noroc oricum.\n\n— Tomas"
+      ]
+    },
+    {
+      "index": 4,
+      "label": "Scrisoarea patru",
+      "variants": [
+        "Draga mea.\n\nTrenul e plin de cutii încuiate. Fiecare vagon are.\n\nOricare ar putea ține ce ne trebuie. Așa că le deschid pe toate.\n\n\nAur. Fier. Destul cât să răscumpăr satul de două ori.\n\nIau tot. E pentru tine, îmi spun.\n\nO să mă opresc la cutia potrivită. Și asta tot îmi repet.\n\n— Tomas",
+        "Draga mea.\n\nTot îmi propun să merg mai departe. Și apoi apare altă cutie, și încă una.\n\nUn om ar putea umple un hambar cu ce am lăsat în urmă.\n\n\nAcum iau doar ce încape în raniță. Ranița e mereu plină.\n\nIeri nu mi-am putut aminti după ce am urcat la bord.\n\nDoar că l-aș recunoaște. Așa că deschid mai departe cutii.\n\n— Tomas"
+      ]
+    },
+    {
+      "index": 5,
+      "label": "Scrisoarea cinci",
+      "variants": [
+        "nu știu de cât timp sunt aici.\n\nroțile fac trei note. le număr pe alea în loc de zile.\n\nam încercat să spun cu voce tare numele satului. n-a vrut să iasă.\n\n\nîncă știu cartea portocalie. mică. portocalie. nu o lăsa niciodată din mână.\n\ndacă mă pot ține de asta, mă pot ține și de restul.\n\nnu-i așa.\n\n— tomas",
+        "mă surprind vorbind. cu voce tare. fără nimeni acolo.\n\nmă uit la mâinile mele și nu sunt ale unui țăran. nu știu ale cui sunt.\n\n\nmerg mai departe pentru că a te opri seamănă cu a muri.\n\nșobolanul a zis pe dos. șobolanul. l-am visat pe șobolan.\n\nuit spre ce merg. merg spre asta oricum.\n\n— tomas"
+      ]
+    },
+    {
+      "index": 6,
+      "label": "Scrisoarea șase",
+      "variants": [
+        "Draga mea.\n\nE un copil în față. Departe, în capătul vagonului.\n\nȚine ceva portocaliu. Nu-l lasă din mână.\n\nPieptul meu. Pieptul meu.\n\n\nEa e? Ar putea fi, după toate astea?\n\nCine e femeia de lângă ea? Unde e mama ei? De ce ar fi un copil aici, în primul rând?\n\nSau mi-am pierdut mințile, iar trenul e doar bun cu mine?\n\n— Tata",
+        "Draga mea.\n\nUn copil, în față în vagon. O femeie pe care n-o cunosc stă lângă ea.\n\nCopilul are ceva portocaliu în poală.\n\nCunosc portocaliul ăla.\n\n\nȘi dacă mă apropii și nu e ea? Ce mai rămâne din mine atunci?\n\nȘi dacă e? De ce e aici? Unde ești tu? Și cine e femeia aia?\n\nM-am oprit din mers. După tot timpul ăsta, m-am oprit.\n\n— Tomas"
+      ]
+    }
+  ]
+}

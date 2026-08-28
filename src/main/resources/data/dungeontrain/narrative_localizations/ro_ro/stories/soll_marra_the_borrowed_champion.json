@@ -1,0 +1,55 @@
+{
+  "id": "soll_marra_the_borrowed_champion",
+  "character": "Soll Marra",
+  "story": "Campioana împrumutată",
+  "letters": [
+    {
+      "index": 1,
+      "label": "Scrisoarea unu",
+      "variants": [
+        "Ziua Unu. Echipament.\n\nSabie de fier, x2 (una de rezervă, conform caietului).\nArc, 64 de săgeți.\nPiele vrăjită, set complet, Protecție I.\nPerle ender, x16.\nPat, x1.\nCartofi cruzi, x32.\n\nCaietul cere mere de aur. Orașul n-avea niciunul. Le fac rost pe drum.\n\nȘobolanul e real. L-am consemnat.\n\nZiua Unu.\n\n- S. Marra",
+        "Ziua Unu. Echipament.\n\nSabie de fier, x2.\nArc, 64 de săgeți.\nPiele vrăjită, Prot I.\nPerle ender, x16.\nPat.\nCartofi, x32.\n\nCaietul spune că merele de aur sunt obligatorii. Orașul n-avea niciunul. Am plecat înainte să observe cineva că lipsesc.\n\nUn șobolan în vestă mi-a dat hârtia asta. Părea trist. Nu știu cum să-l consemnez.\n\nSunt pregătită.\n\n- Soll Marra"
+      ]
+    },
+    {
+      "index": 2,
+      "label": "Scrisoarea a doua",
+      "variants": [
+        "Caietul e al lui Halric. L-a început acum douăzeci și șase de ani, cu un an înainte să mă cunoască.\n\nSpecificații pentru End. Înălțimile stâlpilor. Colivii de cristal. Ordinea spargerii coliviilor. Randamentul exploziilor cu pat. Traiectorii de perle.\n\nN-a ajuns niciodată acolo.\n\nA murit primăvara. Ceva la plămâni. Caietul îi zice \"încetare, în afara luptei\".\n\nDragonul nu l-a cunoscut niciodată pe Halric.\n\nEu i-l duc.\n\n- S. Marra",
+        "Caietul e al lui Halric. A început să-l scrie cu un an înainte să mă nasc eu. Douăzeci și șase de ani de specificații și niciun dragon la capăt.\n\nÎnălțimile stâlpilor. Colivii de cristal. Ordinea spargerii coliviilor. Randamentul exploziilor cu pat. Traiectorii de perle. Toată lupta, pe hârtie.\n\nA murit primăvara. Caietul îi zice \"încetare, în afara luptei\". Cred că au fost plămânii. Tușea mult. N-a rostit niciodată cuvântul.\n\nDragonul nu l-a cunoscut niciodată pe Halric.\n\nEu i-l duc.\n\n- Soll"
+      ]
+    },
+    {
+      "index": 3,
+      "label": "Scrisoarea a treia",
+      "variants": [
+        "Exercițiul Unu. Vagonul 14.\n\nȚintă: zombi, fără armură.\nDistanță: 9 blocuri.\nAdăpost: o bancă.\nArc: întins complet, două secunde.\n\nCiclul de poziții al lui Halric se adaptează. Lampa vagonului ține locul cristalului. Doboară întâi cristalul. Pivotează. Slobozi.\n\nRezultat: o singură săgeată. Timpul-țintă din caiet, unsprezece secunde. Al meu, patru.\n\nCaietul nu spune cum se simte să fii pregătită.\n\n- S. Marra",
+        "Exercițiul Unu. Vagonul paisprezece.\n\nAm ales un zombi pentru că în caiet se începe cu cristale, iar eu n-am niciun cristal. Lampa de pe perete avea forma potrivită.\n\nAdăpost de bancă. Nouă blocuri. Întindere completă. Pivot. Slobozit.\n\nZombiul a căzut dintr-o singură lovitură. Timpul-țintă al lui Halric era unsprezece secunde. Eu am făcut patru.\n\nAtunci eram pregătită. Apoi m-am așezat pe bancă și vagonul era tăcut și lampa se legăna un pic.\n\nNu știu la ce mă așteptam.\n\n- Soll"
+      ]
+    },
+    {
+      "index": 4,
+      "label": "Scrisoarea a patra",
+      "variants": [
+        "Vagonul 28. Întâlnire.\n\nPasager: femeie, spre șaizeci de ani, palton gri de lână. Aparent reală.\n\nM-a întrebat cum mă cheamă. I-am dat titlul lui Halric. Ucenica lui Halric.\n\nA zis: \"Halric. Deci ești a patra a lui.\"\n\nNu știam că fuseseră trei.\n\nAm notat numărul locului ei. Am mers mai departe.\n\nObservație închisă.\n\n- S. Marra",
+        "Vagonul douăzeci și opt. O femeie într-un palton gri m-a întrebat cum mă cheamă.\n\nI-am dat titlul lui Halric. Ucenica lui Halric.\n\nA zis: \"Halric? Săgetarul cu tusea?\"\n\nNu știam că făcea săgeți. Am unul dintre arcurile lui în rucsac.\n\nAr fi trebuit să mă așez. Ar fi trebuit s-o întreb ce mai știa. N-am făcut-o. Am mers până în vagonul următor și acum stau aici și scriu.\n\nE tot pe locul 14. Cred.\n\n- Soll"
+      ]
+    },
+    {
+      "index": 5,
+      "label": "Scrisoarea a cincea",
+      "variants": [
+        "Încercarea 47. Ochi de ender.\n\nVector de aruncare: înainte, douăzeci și cinci de grade peste orizontală. Conform paginii nouă din caiet.\n\nOchiul a rămas pe loc. Șase secunde. S-a rotit în sens antiorar, apoi s-a stabilizat.\n\nDirecție: nord-nord-est.\n\nAm schimbat vagonul. L-am aruncat din nou.\n\nDirecție: nord-nord-est.\n\nVagonul e întors spre sud.\n\nOchiul citește o direcție. Trenul nu se află într-o direcție.\n\nAm încetat să mai arunc.\n\n- S. Marra",
+        "Ochiul de ender nu vrea să zboare.\n\nL-am aruncat de patruzeci și șapte de ori. Înainte. În sus. În lateral. Pe ușă afară.\n\nOchiul plutește. Se învârte. Nu alege nicio direcție. Halric a scris că un ochi alege întotdeauna. Ochiul, pagina nouă: \"singurul lucru cinstit în apropierea unei fortărețe\".\n\nE cinstit. Nu există nicio fortăreață.\n\nAm stat cu ochiul în palmă. Era cald. Acum nu mai e.\n\nNu știu încotro mă îndrept.\n\n- Soll"
+      ]
+    },
+    {
+      "index": 6,
+      "label": "Scrisoarea a șasea",
+      "variants": [
+        "Am închis caietul.\n\nCoperta e din piele maro. Sunt niște nume pe interiorul copertei. Nu m-am uitat la ele.\n\nScriu pe ultima pagină. Halric n-a scris aici.\n\nAm nouăsprezece ani. N-am văzut niciodată un dragon. Nu vreau s-o omor.\n\nO să merg mai departe până găsesc o fereastră cu lumina potrivită. Atunci o să mă așez.\n\nSoll Marra",
+        "Am închis caietul.\n\nUltima pagină e goală. Am stat mult cu ea deschisă în față.\n\nHalric nu e pe ultima pagină. Halric e pe primele. Le-am citit de prea multe ori.\n\nAm nouăsprezece ani. N-am văzut niciodată un dragon. Nu vreau s-o omor.\n\nNu știu încotro merge trenul ăsta. Cred că e în regulă.\n\nO să caut o fereastră.\n\nSoll"
+      ]
+    }
+  ]
+}
