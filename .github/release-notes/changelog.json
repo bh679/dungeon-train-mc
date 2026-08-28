@@ -9480,9 +9480,9 @@
       ],
       "pr": 1154,
       "date": "2026-08-28",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.696.0",
+      "released_at": "2026-08-28T07:42:31Z"
     },
     {
       "id": "backups-outside-the-instance",
@@ -9496,9 +9496,9 @@
         "Server owners can set backups without the in-game menu: launch with -Ddungeontrain.backups=off (or DUNGEONTRAIN_BACKUPS=off), which accepts on / instanced / off."
       ],
       "date": "2026-08-28",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.696.0",
+      "released_at": "2026-08-28T07:42:31Z"
     }
   ]
 }
