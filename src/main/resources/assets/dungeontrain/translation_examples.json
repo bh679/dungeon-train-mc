@@ -3374,16 +3374,9 @@
   },
   "gui.dungeontrain.data_recovery.candidate.backup": {
     "1": {
-      "label": "what the backup holds",
-      "examples": [
-        "builds and progress",
-        "builds"
-      ]
-    },
-    "2": {
       "label": "the backup file's name",
       "examples": [
-        "dungeontrain-backup-20260828-014500.zip"
+        "dungeontrain-backup-20260828-114927.zip"
       ]
     }
   },
@@ -3399,14 +3392,6 @@
       "label": "the full path to the other Minecraft install",
       "examples": [
         "/Users/sam/curseforge/minecraft/Instances/Dungeon Train"
-      ]
-    }
-  },
-  "gui.dungeontrain.data_recovery.more": {
-    "1": {
-      "label": "how many further places to restore from were found but not listed",
-      "examples": [
-        "3"
       ]
     }
   },
@@ -3489,6 +3474,14 @@
       "label": "the error that stopped the restore",
       "examples": [
         "java.util.zip.ZipException: invalid entry"
+      ]
+    }
+  },
+  "gui.dungeontrain.data_recovery.candidate.folder": {
+    "1": {
+      "label": "the folder the backups are kept in",
+      "examples": [
+        "/Users/sam/minecraft/dungeontrain/backups"
       ]
     }
   }

@@ -22,10 +22,13 @@ import java.util.List;
  * usual cause is a modpack update: the launcher replaced {@code config/}, where all of it used to
  * live.</p>
  *
- * <p>The top-ranked candidate is the one the button restores; the rest are listed with their full
- * paths so the player can see what was found and pick a different one with {@code /dtrestore}.
- * Paths are shown rather than summarised on purpose — a sibling instance folder might belong to a
- * different pack, and only the player can tell.</p>
+ * <p>Collapsed, the card is two lines and three buttons. "What happened?" reveals why it happened
+ * and every place the data was found — detail most players don't need in order to press Restore.</p>
+ *
+ * <p><b>Layout is three fixed bands</b>: the title and body at the top, the buttons pinned to the
+ * bottom, and the expanded detail scrolling in whatever space is left. The panel is clamped to the
+ * window rather than growing with its content, because it grew straight off the bottom of the
+ * screen the first time someone expanded it with four candidates — taking the buttons with it.</p>
  *
  * <p>Same flat card as {@link ConfigDeviationScreen}, so every one-time question on the title
  * screen looks like it came from the same place. Client-only.</p>
@@ -42,33 +45,31 @@ public final class DataRecoveryScreen extends Screen {
     private static final String KEY_LATER = "gui.dungeontrain.data_recovery.later";
     private static final String KEY_NEVER = "gui.dungeontrain.data_recovery.never";
     private static final String KEY_BACKUP = "gui.dungeontrain.data_recovery.candidate.backup";
+    private static final String KEY_BACKUP_FOLDER = "gui.dungeontrain.data_recovery.candidate.folder";
     private static final String KEY_SIBLING = "gui.dungeontrain.data_recovery.candidate.sibling";
-    private static final String KEY_MORE = "gui.dungeontrain.data_recovery.more";
     private static final String KEY_DONE_TITLE = "gui.dungeontrain.data_recovery.done.title";
     private static final String KEY_DONE_BODY = "gui.dungeontrain.data_recovery.done.body";
     private static final String KEY_DONE_NOTHING = "gui.dungeontrain.data_recovery.done.nothing";
     private static final String KEY_DONE_FAIL = "gui.dungeontrain.data_recovery.done.fail";
     private static final String KEY_CLOSE = "gui.dungeontrain.data_recovery.close";
 
-    /** Candidates listed in full; beyond this the rest are summarised as "+N more". */
-    private static final int MAX_LISTED = 5;
-
     /**
-     * Whether the player has opened the details. Collapsed, the card says what happened and offers
-     * the fix in two lines; the why and the file paths are a click away. Static so it survives the
-     * screen being rebuilt, and so reopening the prompt in the same session remembers the choice.
+     * Whether the player has opened the details. Static so it survives the screen being rebuilt by
+     * the toggle, and so reopening the prompt in the same session remembers the choice.
      */
     private static boolean expanded = false;
 
     private static final int CARD_W = 300;
     private static final int PAD = 14;
+    /** Minimum gap between the card and the window edge — the clamp that keeps buttons on screen. */
+    private static final int MARGIN = 16;
     private static final int LINE_STEP = 12;
     private static final int BUTTON_H = 20;
     private static final int BUTTON_GAP = 8;
 
     private static final int GAP_TITLE = 9;
     private static final int GAP_BODY = 10;
-    private static final int GAP_LIST = 12;
+    private static final int GAP_LIST = 8;
 
     private static final int BACKDROP_DIM = 0x99000000;
     private static final int CARD_BG = 0xF01A1A1E;
@@ -76,6 +77,7 @@ public final class DataRecoveryScreen extends Screen {
     private static final int COLOR_TITLE = 0xFFFFFFFF;
     private static final int COLOR_BODY = 0xFFE0E0E0;
     private static final int COLOR_LIST = 0xFF9A9AA2;
+    private static final int COLOR_SCROLLBAR = 0xFF55555E;
 
     private final Screen previousScreen;
     private final List<PlayerDataRecovery.Candidate> candidates;
@@ -90,10 +92,16 @@ public final class DataRecoveryScreen extends Screen {
     private int panelH;
     private int centerX;
     private List<FormattedCharSequence> bodyLines = List.of();
-    private List<FormattedCharSequence> listLines = List.of();
+    private List<FormattedCharSequence> detailLines = List.of();
     private int titleY;
     private int bodyY;
-    private int listY;
+
+    /** Top of the scrolling detail band, and its height. Zero-height when collapsed. */
+    private int detailY;
+    private int detailH;
+    /** Pixels scrolled within the detail band, clamped to {@link #maxScroll}. */
+    private int scrollOffset = 0;
+    private int maxScroll = 0;
 
     public DataRecoveryScreen(Screen previousScreen, List<PlayerDataRecovery.Candidate> candidates) {
         super(Component.translatable(KEY_TITLE)); // narration title
@@ -105,91 +113,101 @@ public final class DataRecoveryScreen extends Screen {
     protected void init() {
         int innerWidth = CARD_W - 2 * PAD;
         bodyLines = font.split(bodyText(), innerWidth);
+
         List<FormattedCharSequence> lines = new ArrayList<>();
-        for (Component line : listText()) {
+        for (Component line : detailText()) {
             lines.addAll(font.split(line, innerWidth));
         }
-        listLines = List.copyOf(lines);
+        detailLines = List.copyOf(lines);
 
-        int contentH = font.lineHeight + GAP_TITLE
-                + bodyLines.size() * LINE_STEP + GAP_BODY
-                + listLines.size() * LINE_STEP + GAP_LIST
-                + BUTTON_H
-                // The details toggle sits on its own row above the actions, except in the
-                // "done" state, which has nothing left to explain.
-                + (restoredFiles == null ? BUTTON_H + BUTTON_GAP : 0);
+        // Three bands: header, scrolling detail, buttons. Only the middle one flexes.
+        int headerH = font.lineHeight + GAP_TITLE + bodyLines.size() * LINE_STEP;
+        int buttonsH = restoredFiles == null ? BUTTON_H + BUTTON_GAP + BUTTON_H : BUTTON_H;
+        int wantedDetailH = detailLines.isEmpty() ? 0 : GAP_BODY + detailLines.size() * LINE_STEP;
 
         panelW = CARD_W;
-        panelH = PAD + contentH + PAD;
+        int wantedH = PAD + headerH + wantedDetailH + GAP_LIST + buttonsH + PAD;
+        // The clamp. Without it the card grows off the bottom of the window and takes the buttons
+        // with it — which is exactly what four candidates' worth of detail did.
+        panelH = Math.min(wantedH, height - 2 * MARGIN);
         panelX = (width - panelW) / 2;
-        panelY = Math.max(16, (height - panelH) / 2);
+        panelY = Math.max(MARGIN, (height - panelH) / 2);
         centerX = panelX + panelW / 2;
 
         int cursor = panelY + PAD;
         titleY = cursor;
         cursor += font.lineHeight + GAP_TITLE;
         bodyY = cursor;
-        cursor += bodyLines.size() * LINE_STEP + GAP_BODY;
-        listY = cursor;
-        cursor += listLines.size() * LINE_STEP + GAP_LIST;
+        cursor += bodyLines.size() * LINE_STEP;
+
+        int buttonsTop = panelY + panelH - PAD - buttonsH;
+        detailY = detailLines.isEmpty() ? cursor : cursor + GAP_BODY;
+        detailH = Math.max(0, buttonsTop - GAP_LIST - detailY);
+        maxScroll = Math.max(0, detailLines.size() * LINE_STEP - detailH);
+        scrollOffset = Math.min(scrollOffset, maxScroll);
 
         int innerLeft = panelX + PAD;
         if (restoredFiles != null) {
             addRenderableWidget(Button.builder(Component.translatable(KEY_CLOSE), b -> close())
-                    .bounds(innerLeft, cursor, innerWidth, BUTTON_H)
+                    .bounds(innerLeft, buttonsTop, innerWidth, BUTTON_H)
                     .build());
             return;
         }
         addRenderableWidget(Button.builder(
                 Component.translatable(expanded ? KEY_DETAILS_HIDE : KEY_DETAILS), b -> toggleDetails())
-                .bounds(innerLeft, cursor, innerWidth, BUTTON_H)
+                .bounds(innerLeft, buttonsTop, innerWidth, BUTTON_H)
                 .build());
-        cursor += BUTTON_H + BUTTON_GAP;
 
+        int actionsTop = buttonsTop + BUTTON_H + BUTTON_GAP;
         int third = (innerWidth - 2 * BUTTON_GAP) / 3;
         addRenderableWidget(Button.builder(Component.translatable(KEY_RESTORE), b -> restore())
-                .bounds(innerLeft, cursor, third, BUTTON_H)
+                .bounds(innerLeft, actionsTop, third, BUTTON_H)
                 // Say up front that restoring can only add — the word "restore" reads as
                 // "overwrite what I have now", and it never does.
                 .tooltip(Tooltip.create(Component.translatable(KEY_RESTORE_TOOLTIP)))
                 .build());
         addRenderableWidget(Button.builder(Component.translatable(KEY_LATER), b -> close())
-                .bounds(innerLeft + third + BUTTON_GAP, cursor, third, BUTTON_H)
+                .bounds(innerLeft + third + BUTTON_GAP, actionsTop, third, BUTTON_H)
                 .build());
         addRenderableWidget(Button.builder(Component.translatable(KEY_NEVER), b -> never())
-                .bounds(innerLeft + 2 * (third + BUTTON_GAP), cursor,
+                .bounds(innerLeft + 2 * (third + BUTTON_GAP), actionsTop,
                         innerWidth - 2 * (third + BUTTON_GAP), BUTTON_H)
                 .build());
     }
 
     private Component bodyText() {
-        if (restoredFiles == null) {
-            Component body = Component.translatable(KEY_BODY);
-            // The explanation is the part most players don't need — it only matters if they want to
-            // know why it happened before deciding.
-            return expanded
-                ? Component.empty().append(body).append(" ").append(Component.translatable(KEY_WHY))
-                : body;
-        }
+        if (restoredFiles == null) return Component.translatable(KEY_BODY);
         if (restoreFailed) return Component.translatable(KEY_DONE_FAIL);
         return restoredFiles == 0
             ? Component.translatable(KEY_DONE_NOTHING)
             : Component.translatable(KEY_DONE_BODY, restoredFiles);
     }
 
-    /** The middle block: what was found and where, so the player can judge it for themselves. */
-    private List<Component> listText() {
+    /**
+     * The expanded band: why it happened, then every place the data was found.
+     *
+     * <p>Backups are listed by filename with their folder named once at the end — they all live in
+     * the same place, and repeating an absolute path per entry was most of what overflowed the
+     * card. A sibling install keeps its full path: that is the identifying information, and it is
+     * the case where the player has to judge whether the folder is really theirs.</p>
+     */
+    private List<Component> detailText() {
         if (restoredFiles != null || !expanded) return List.of();
         List<Component> lines = new ArrayList<>();
-        int listed = Math.min(candidates.size(), MAX_LISTED);
-        for (int i = 0; i < listed; i++) {
-            PlayerDataRecovery.Candidate candidate = candidates.get(i);
-            String key = candidate.kind() == PlayerDataRecovery.Kind.BACKUP ? KEY_BACKUP : KEY_SIBLING;
-            lines.add(Component.translatable(key,
-                candidate.description(), candidate.path().toString()));
+        lines.add(Component.translatable(KEY_WHY));
+        boolean anyBackup = false;
+        for (PlayerDataRecovery.Candidate candidate : candidates) {
+            if (candidate.kind() == PlayerDataRecovery.Kind.BACKUP) {
+                anyBackup = true;
+                lines.add(Component.translatable(KEY_BACKUP, candidate.path().getFileName().toString()));
+            } else {
+                lines.add(Component.translatable(KEY_SIBLING,
+                    candidate.description(), candidate.path().toString()));
+            }
         }
-        if (candidates.size() > listed) {
-            lines.add(Component.translatable(KEY_MORE, candidates.size() - listed));
+        if (anyBackup) {
+            lines.add(Component.translatable(KEY_BACKUP_FOLDER,
+                PlayerDataPaths.backupsRoot().toString()));
         }
         return lines;
     }
@@ -197,6 +215,7 @@ public final class DataRecoveryScreen extends Screen {
     /** Show or hide the why-it-happened line and the list of places to restore from. */
     private void toggleDetails() {
         expanded = !expanded;
+        scrollOffset = 0;
         rebuildWidgets();
     }
 
@@ -212,6 +231,7 @@ public final class DataRecoveryScreen extends Screen {
         }
         // Whatever happened, don't ask again this session.
         DataRecoveryPromptHandler.onAnswered(false);
+        scrollOffset = 0;
         rebuildWidgets();
     }
 
@@ -223,6 +243,15 @@ public final class DataRecoveryScreen extends Screen {
 
     private void close() {
         this.minecraft.setScreen(previousScreen);
+    }
+
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        if (maxScroll > 0) {
+            scrollOffset = Math.max(0, Math.min(maxScroll, scrollOffset - (int) (scrollY * LINE_STEP)));
+            return true;
+        }
+        return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
     }
 
     @Override
@@ -246,11 +275,23 @@ public final class DataRecoveryScreen extends Screen {
             y += LINE_STEP;
         }
 
-        // Left-aligned: these are file paths the player may want to go and look at.
-        int ly = listY;
-        for (FormattedCharSequence line : listLines) {
+        if (detailLines.isEmpty() || detailH <= 0) return;
+
+        // Clip to the band so a scrolled line can never paint over the body or the buttons.
+        graphics.enableScissor(panelX + 1, detailY, panelX + panelW - 1, detailY + detailH);
+        int ly = detailY - scrollOffset;
+        for (FormattedCharSequence line : detailLines) {
+            // Left-aligned: these are file names and paths the player may want to go and look at.
             graphics.drawString(font, line, panelX + PAD, ly, COLOR_LIST, false);
             ly += LINE_STEP;
+        }
+        graphics.disableScissor();
+
+        if (maxScroll > 0) {
+            int trackX = panelX + panelW - PAD / 2 - 2;
+            int thumbH = Math.max(8, detailH * detailH / (detailLines.size() * LINE_STEP));
+            int thumbY = detailY + (detailH - thumbH) * scrollOffset / maxScroll;
+            graphics.fill(trackX, thumbY, trackX + 2, thumbY + thumbH, COLOR_SCROLLBAR);
         }
     }
 
