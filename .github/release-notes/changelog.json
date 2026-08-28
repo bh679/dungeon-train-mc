@@ -9564,13 +9564,29 @@
       "released_at": null
     },
     {
+      "id": "night-and-sunrise-skyboxes",
+      "version": "0.699.0",
+      "type": "feat",
+      "title": "Night and sunrise skybox blocks",
+      "summary": "Two more skies to punch a window through to. The Night Skybox Block is night on both halves of the day: the stars wheel overhead and the moon crosses with the right phase, but the sun never comes up, so a room built around one stays under a night sky no matter what time it is outside. The Sunrise Skybox Block holds a permanent dawn and turns sideways the way the upside-down skybox does, with the sun and its glow sweeping right around the horizon instead of climbing, the moon trailing opposite and the stars turning with them.",
+      "highlights": [
+        "New Night Skybox Block: stars, moon and phase, and no sunrise ever",
+        "New Sunrise Skybox Block: a dawn that orbits the horizon sideways",
+        "Both work anywhere the other skybox blocks do, carriage walls included"
+      ],
+      "date": "2026-08-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "backup-retention-and-clear",
-      "version": "0.702.0",
+      "version": "0.703.0",
       "type": "feat",
       "title": "Control how many backups you keep, and clear them",
       "summary": "Dungeon Train keeps backups of your builds and progress, and until now it decided on its own how many to hold on to. It now keeps a set number per version \u2014 five by default \u2014 so you can tell at a glance what you have, and there is a button to delete them all and reclaim the space.",
       "highlights": [
-        "Backups per version in Options > Dungeon Train: keep 1, 3, 5, 10 or 20 archives for each version.",
+        "A Backups section in Options > Dungeon Train, with a slider for how many backups to keep per version.",
         "Clear Backups shows how much disk your backups are using and deletes them, inside and outside your Minecraft folder, after confirming."
       ],
       "date": "2026-08-28",
