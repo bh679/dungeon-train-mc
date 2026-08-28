@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.net;
 
 import games.brennan.dungeontrain.builder.BuilderPhotoPaths;
 import games.brennan.dungeontrain.builder.relay.BuilderRelayDownload;
+import games.brennan.dungeontrain.builder.relay.BuilderRelayInstall;
 import io.netty.buffer.Unpooled;
 import net.minecraft.network.FriendlyByteBuf;
 import org.junit.jupiter.api.DisplayName;
@@ -20,12 +21,28 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 final class BuilderProfileDownloadPacketTest {
 
     @Test
-    @DisplayName("the request carries the relay id")
+    @DisplayName("the request carries the relay id, and a first press asks for no resolution")
     void requestRoundTrip() {
         BuilderProfileDownloadPacket original = new BuilderProfileDownloadPacket(4271);
+        assertEquals(BuilderRelayInstall.Resolution.AS_IS, original.resolution());
+        assertEquals(original, roundTrip(original));
+    }
+
+    @Test
+    @DisplayName("a resolved request carries the choice and the chosen name")
+    void resolvedRequestRoundTrip() {
+        for (BuilderRelayInstall.Resolution resolution : BuilderRelayInstall.Resolution.values()) {
+            BuilderProfileDownloadPacket original =
+                    new BuilderProfileDownloadPacket(4271, resolution, "brick_cabin_2");
+            assertEquals(original, roundTrip(original),
+                    "the second press must survive the wire for " + resolution);
+        }
+    }
+
+    private static BuilderProfileDownloadPacket roundTrip(BuilderProfileDownloadPacket packet) {
         FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
-        BuilderProfileDownloadPacket.STREAM_CODEC.encode(buf, original);
-        assertEquals(original, BuilderProfileDownloadPacket.STREAM_CODEC.decode(buf));
+        BuilderProfileDownloadPacket.STREAM_CODEC.encode(buf, packet);
+        return BuilderProfileDownloadPacket.STREAM_CODEC.decode(buf);
     }
 
     @Test

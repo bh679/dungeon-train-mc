@@ -2747,6 +2747,12 @@
       ]
     }
   },
+  "gui.dungeontrain.builder.profile.collision.title": {
+    "1": {
+      "label": "the build whose name this install already uses",
+      "examples": ["Brick Carriage", "Long Hall"]
+    }
+  },
   "gui.dungeontrain.builder.profile.saved": {
     "1": {
       "label": "the build that was saved and uploaded",

@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.builder.BuilderPhotoPaths;
 import games.brennan.dungeontrain.builder.relay.BuilderRelayKinds;
 import games.brennan.dungeontrain.builder.BuilderMode;
 import games.brennan.dungeontrain.builder.relay.BuilderRelayDownload;
+import games.brennan.dungeontrain.builder.relay.BuilderRelayInstall;
 import games.brennan.dungeontrain.net.BuilderOpenPacket;
 import games.brennan.dungeontrain.net.BuilderProfileActionPacket;
 import games.brennan.dungeontrain.net.BuilderProfileDownloadPacket;
@@ -214,6 +215,16 @@ public final class BuilderProfileScreen extends Screen {
     private void onDownload(BuilderProfileDownloadResultPacket packet) {
         this.downloadNote = Component.translatable(noteKeyFor(packet.outcome()));
         if (this.downloadButton != null) this.downloadButton.active = selectedBuild() != null;
+
+        // A name already in use is a question, not a refusal: the player chooses which copy keeps it.
+        if (packet.outcome() == BuilderRelayDownload.Outcome.ALREADY_HERE) {
+            BuilderProfilePacket.Entry entry = selectedBuild();
+            if (entry != null) {
+                this.minecraft.setScreen(new BuilderProfileCollisionScreen(this, entry.buildName(),
+                        (resolution, name) -> resolveDownload(entry.relayId(), resolution, name)));
+            }
+            return;
+        }
         if (packet.outcome() != BuilderRelayDownload.Outcome.INSTALLED) return;
 
         BuilderPhotoPaths.Kind kind = BuilderPhotoPaths.Kind.fromId(packet.kindId()).orElse(null);
@@ -229,11 +240,25 @@ public final class BuilderProfileScreen extends Screen {
         onClose();
     }
 
-    /** The line to show for an outcome. Six of them, because they ask the player for six different things. */
+    /**
+     * Send the second press: the same download, with the player's answer to the name collision.
+     *
+     * <p>Re-selects nothing and assumes nothing — the result comes back through {@link #onDownload}
+     * like the first one did, so a resolution that also fails (the new name taken too) puts the
+     * question up again rather than silently doing nothing.</p>
+     */
+    private void resolveDownload(int relayId, BuilderRelayInstall.Resolution resolution, String name) {
+        DungeonTrainNet.sendToServer(new BuilderProfileDownloadPacket(relayId, resolution, name));
+        this.downloadNote = Component.translatable("gui.dungeontrain.builder.profile.downloading");
+        if (this.downloadButton != null) this.downloadButton.active = false;
+    }
+
+    /** The line to show for an outcome — each sends the player somewhere different. */
     private static String noteKeyFor(BuilderRelayDownload.Outcome outcome) {
         return switch (outcome) {
             case INSTALLED -> "gui.dungeontrain.builder.profile.downloaded";
             case ALREADY_HERE -> "gui.dungeontrain.builder.profile.download_already_here";
+            case NAME_TAKEN -> "gui.dungeontrain.builder.profile.download_name_taken";
             case NOT_YOURS -> "gui.dungeontrain.builder.profile.download_not_yours";
             case GONE -> "gui.dungeontrain.builder.profile.gone_short";
             case UNAVAILABLE -> "gui.dungeontrain.builder.profile.unavailable";

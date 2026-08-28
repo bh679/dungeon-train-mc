@@ -46,7 +46,7 @@ public final class BuilderRelayDownload {
      * good, one that is not theirs is a bug or a stale screen, and a relay that could not be reached
      * is worth trying again in a minute.</p>
      */
-    public enum Outcome { INSTALLED, ALREADY_HERE, NOT_YOURS, GONE, UNAVAILABLE, UNSUPPORTED, FAILED }
+    public enum Outcome { INSTALLED, ALREADY_HERE, NAME_TAKEN, NOT_YOURS, GONE, UNAVAILABLE, UNSUPPORTED, FAILED }
 
     /**
      * What an install produced: the outcome, and — when something landed — enough to name it, so the
@@ -67,6 +67,21 @@ public final class BuilderRelayDownload {
      * is not asked to accept them coming down either.</p>
      */
     public static CompletableFuture<Result> download(ServerPlayer player, ServerLevel level, int relayId) {
+        return download(player, level, relayId, BuilderRelayInstall.Resolution.AS_IS, "");
+    }
+
+    /**
+     * As {@link #download(ServerPlayer, ServerLevel, int)}, carrying the player's answer to a name
+     * this install already uses.
+     *
+     * <p>Two presses, always: the first comes back {@link Outcome#ALREADY_HERE}, the player chooses,
+     * and the second names the choice. The build is fetched again for that second press rather than
+     * held between the two — a cached blob would have to be keyed to a player and expired somehow,
+     * and this is one HTTP call on a deliberate button press.</p>
+     */
+    public static CompletableFuture<Result> download(ServerPlayer player, ServerLevel level, int relayId,
+                                                     BuilderRelayInstall.Resolution resolution,
+                                                     String newName) {
         if (player == null || level == null || !BuilderRelayUpload.canUpload(player)) {
             return CompletableFuture.completedFuture(Result.of(Outcome.UNAVAILABLE));
         }
@@ -75,7 +90,7 @@ public final class BuilderRelayDownload {
                     case FORBIDDEN -> CompletableFuture.completedFuture(Result.of(Outcome.NOT_YOURS));
                     case UNKNOWN -> CompletableFuture.completedFuture(Result.of(Outcome.GONE));
                     case ERROR -> CompletableFuture.completedFuture(Result.of(Outcome.UNAVAILABLE));
-                    case OK -> onServer(level, () -> install(level, result.build()));
+                    case OK -> onServer(level, () -> install(level, result.build(), resolution, newName));
                 });
     }
 
@@ -87,7 +102,8 @@ public final class BuilderRelayDownload {
      * edited on somebody's train since its last compaction comes back as it was submitted rather than
      * as it is now.</p>
      */
-    private static Result install(ServerLevel level, SharedCarriageClient.BuildFetch build) {
+    private static Result install(ServerLevel level, SharedCarriageClient.BuildFetch build,
+                                  BuilderRelayInstall.Resolution resolution, String newName) {
         BuilderPhotoPaths.Kind kind = BuilderRelayKinds.kindOf(build.kind());
         if (kind == null || build.buildName().isEmpty()) {
             // A kind this build of the mod does not know, or a build the relay never named. Neither
@@ -115,17 +131,28 @@ public final class BuilderRelayDownload {
         }
 
         BuilderRelayInstall.Outcome installed = BuilderRelayInstall.install(
-                kind, build.buildName(), build.subKind(), build.stage(), template);
+                kind, build.buildName(), build.subKind(), build.stage(), template, resolution, newName);
+        // Which name the build ended up under: its own, unless the player asked for it to arrive as
+        // something else. This is what the screen opens, so it has to be the name that was written.
+        String installedAs = resolution == BuilderRelayInstall.Resolution.LOAD_AS_NEW
+                ? newName.trim()
+                : build.buildName();
         if (installed != BuilderRelayInstall.Outcome.INSTALLED) {
             return new Result(switch (installed) {
                 case ALREADY_HERE -> Outcome.ALREADY_HERE;
+                case NAME_TAKEN -> Outcome.NAME_TAKEN;
                 case UNSUPPORTED -> Outcome.UNSUPPORTED;
                 default -> Outcome.FAILED;
             }, kind, build.buildName(), build.subKind());
         }
 
-        remember(level, build, kind);
-        return new Result(Outcome.INSTALLED, kind, build.buildName(), build.subKind());
+        // Only a build that kept its relay name is still that relay row. A copy loaded under a new
+        // name is a new build as far as the relay is concerned — recording the link would point this
+        // world's saves of it at a row whose name no longer matches, quietly renaming the original.
+        if (resolution != BuilderRelayInstall.Resolution.LOAD_AS_NEW) {
+            remember(level, build, kind);
+        }
+        return new Result(Outcome.INSTALLED, kind, installedAs, build.subKind());
     }
 
     /**
