@@ -18,8 +18,10 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.LinkedHashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.zip.ZipEntry;
@@ -62,22 +64,19 @@ public final class PlayerDataBackup {
     /** Schema of the manifest written into each archive. Bump on an incompatible layout change. */
     static final int SCHEMA_VERSION = 1;
 
-    /** How many recent archives to keep outright. The ladder below keeps more on top of these. */
-    static final int KEEP_NEWEST = 20;
+    /** Separates the timestamp from the mod version in an archive's name. */
+    static final String VERSION_MARKER = "-v";
+
+    /** Archives kept per mod version when no other figure is supplied. */
+    public static final int DEFAULT_PER_VERSION = 5;
 
     /**
-     * Beyond {@link #KEEP_NEWEST}, keep the newest archive from each of this many distinct days.
+     * Ceiling on the backups folder, applied after the per-version cap.
      *
-     * <p>Without this, backing up on every template save and every death means twenty archives can
-     * all be from one editing session, and "restore what I had last week" stops being possible
-     * after an afternoon. The ladder keeps recent density AND reach.</p>
-     */
-    static final int KEEP_DAYS = 14;
-
-    /**
-     * Ceiling on the backups folder. A player with a large build library would otherwise fill a
-     * disk one launch at a time. Enforced after pruning by count, oldest-but-one first — the very
-     * oldest archive is the pre-migration snapshot and is never dropped.
+     * <p>A backstop, not the rule: "N per version" is unbounded across many versions — twenty
+     * versions at five each is a hundred archives — so a long-lived install would otherwise fill a
+     * disk one release at a time. Enforced oldest-first, and the very oldest archive (the
+     * pre-migration snapshot) is never dropped.</p>
      */
     static final long MAX_TOTAL_BYTES = 512L * 1024 * 1024;
 
@@ -121,6 +120,13 @@ public final class PlayerDataBackup {
     public static synchronized Result create(
             Path backupsRoot, List<Source> sources, String reason, String modVersion)
             throws IOException {
+        return create(backupsRoot, sources, reason, modVersion, DEFAULT_PER_VERSION);
+    }
+
+    /** As above, keeping at most {@code perVersion} archives per mod version. */
+    public static synchronized Result create(
+            Path backupsRoot, List<Source> sources, String reason, String modVersion, int perVersion)
+            throws IOException {
 
         List<Entry> entries = collect(sources);
         if (entries.isEmpty()) {
@@ -136,7 +142,7 @@ public final class PlayerDataBackup {
         }
 
         Files.createDirectories(backupsRoot);
-        Path archive = uniquePath(backupsRoot, LocalDateTime.now().format(STAMP));
+        Path archive = uniquePath(backupsRoot, LocalDateTime.now().format(STAMP), modVersion);
         Path tmp = archive.resolveSibling(archive.getFileName() + TMP_SUFFIX);
         try {
             writeZip(tmp, entries, digest, reason, modVersion);
@@ -148,7 +154,7 @@ public final class PlayerDataBackup {
         long bytes = totalBytes(entries);
         LOGGER.info("[DungeonTrain] Backup: wrote {} ({} file(s), {} KiB, reason={})",
             archive.getFileName(), entries.size(), bytes / 1024, reason);
-        prune(backupsRoot);
+        prune(backupsRoot, perVersion);
         return new Result(Optional.of(archive), entries.size(), bytes, digest);
     }
 
@@ -162,6 +168,11 @@ public final class PlayerDataBackup {
      * @return true when the copy landed
      */
     public static synchronized boolean mirror(Path archive, Path externalRoot) {
+        return mirror(archive, externalRoot, DEFAULT_PER_VERSION);
+    }
+
+    /** As above, thinning the external folder with the same per-version cap. */
+    public static synchronized boolean mirror(Path archive, Path externalRoot, int perVersion) {
         if (archive == null || externalRoot == null || !Files.isRegularFile(archive)) return false;
         try {
             Files.createDirectories(externalRoot);
@@ -176,7 +187,7 @@ public final class PlayerDataBackup {
             }
             LOGGER.info("[DungeonTrain] Backup: mirrored {} outside the instance to {}",
                 archive.getFileName(), externalRoot);
-            prune(externalRoot);
+            prune(externalRoot, perVersion);
             return true;
         } catch (IOException | SecurityException e) {
             LOGGER.warn("[DungeonTrain] Backup: couldn't mirror to {} ({}). The in-instance backup "
@@ -196,9 +207,11 @@ public final class PlayerDataBackup {
                     String n = p.getFileName().toString();
                     return n.startsWith(PREFIX) && n.endsWith(SUFFIX);
                 })
-                // The timestamp is fixed-width and in the name, so lexicographic order IS
-                // chronological order — and unlike mtime it survives a file copy.
-                .sorted(Comparator.comparing((Path p) -> p.getFileName().toString()).reversed())
+                // Sort on the parsed timestamp, not the whole filename: the name also carries the
+                // mod version, and version numbers do not sort chronologically. Unlike mtime, the
+                // stamp survives a file copy — which the out-of-instance mirror depends on.
+                .sorted(Comparator.comparing(PlayerDataBackup::stampOf)
+                    .thenComparing((Path p) -> p.getFileName().toString()).reversed())
                 .toList();
         } catch (IOException | SecurityException e) {
             LOGGER.warn("[DungeonTrain] Backup: couldn't list {}: {}", backupsRoot, e.toString());
@@ -345,12 +358,30 @@ public final class PlayerDataBackup {
         return end < 0 ? "" : json.substring(start, end);
     }
 
-    private static Path uniquePath(Path backupsRoot, String stamp) {
-        Path candidate = backupsRoot.resolve(PREFIX + stamp + SUFFIX);
+    /**
+     * {@code dungeontrain-backup-<stamp>-v<version>.zip}.
+     *
+     * <p>The version is a SUFFIX, deliberately. {@link #listArchives} and {@link #stampOf} read the
+     * timestamp at a fixed offset after the prefix, and version numbers do not sort
+     * lexicographically — {@code 0.10.0} sorts before {@code 0.9.0}. Putting the version first
+     * would have silently scrambled chronological order the first time a minor rolled over ten.
+     * As a suffix it is inert to both, and archives written before versioned names still parse.</p>
+     */
+    private static Path uniquePath(Path backupsRoot, String stamp, String modVersion) {
+        String version = sanitiseVersion(modVersion);
+        String tail = version.isEmpty() ? "" : VERSION_MARKER + version;
+        Path candidate = backupsRoot.resolve(PREFIX + stamp + tail + SUFFIX);
         for (int n = 2; Files.exists(candidate); n++) {
-            candidate = backupsRoot.resolve(PREFIX + stamp + "-" + n + SUFFIX);
+            candidate = backupsRoot.resolve(PREFIX + stamp + "-" + n + tail + SUFFIX);
         }
         return candidate;
+    }
+
+    /** Strip anything that would break a filename or the name grammar above. */
+    private static String sanitiseVersion(String modVersion) {
+        if (modVersion == null) return "";
+        String cleaned = modVersion.trim().replaceAll("[^A-Za-z0-9._]", "");
+        return cleaned.equals("?") ? "" : cleaned;
     }
 
     private static void replace(Path tmp, Path target) throws IOException {
@@ -402,31 +433,40 @@ public final class PlayerDataBackup {
     }
 
     /**
-     * Thin the archive set down: the newest {@link #KEEP_NEWEST}, then one per day for the last
-     * {@link #KEEP_DAYS} days, then the byte cap — always keeping the oldest, which is the snapshot
-     * taken before the very first migration and the only copy of what the install looked like
-     * before Dungeon Train touched it.
+     * Thin the archive set: at most {@code perVersion} archives per mod version, then the byte cap.
+     *
+     * <p>Version-scoped rather than time-scoped so the rule is one a player can predict — "five per
+     * version" is inspectable from the filenames, where the previous count-plus-day ladder left no
+     * way to tell why any particular archive had survived.</p>
+     *
+     * <p>The single oldest archive is kept whatever the rules say. It is the snapshot taken before
+     * the very first migration, and the only record of what the install looked like before Dungeon
+     * Train touched it.</p>
      */
-    static void prune(Path backupsRoot) {
+    static void prune(Path backupsRoot, int perVersion) {
+        int cap = Math.max(1, perVersion);
         List<Path> archives = listArchives(backupsRoot); // newest first
         if (archives.size() <= 1) return;
         Path oldest = archives.get(archives.size() - 1);
 
-        List<Path> keep = new ArrayList<>(archives.subList(0, Math.min(KEEP_NEWEST, archives.size())));
-        // One per day beyond the recent window, newest-first so each day's survivor is its latest.
-        Set<String> daysKept = new LinkedHashSet<>();
-        for (Path archive : keep) daysKept.add(dayOf(archive));
+        // Newest-first within each version, so the survivors of a group are its most recent.
+        Map<String, Integer> keptPerVersion = new LinkedHashMap<>();
+        List<Path> keep = new ArrayList<>();
         for (Path archive : archives) {
-            if (keep.contains(archive)) continue;
-            if (daysKept.size() >= KEEP_DAYS) break;
-            if (daysKept.add(dayOf(archive))) keep.add(archive);
+            String version = versionOf(archive);
+            int kept = keptPerVersion.getOrDefault(version, 0);
+            if (kept < cap) {
+                keep.add(archive);
+                keptPerVersion.put(version, kept + 1);
+            }
         }
         if (!keep.contains(oldest)) keep.add(oldest);
 
-        // Then trim by size, dropping the oldest kept archive first but never the very oldest.
+        // Then the size backstop, dropping the oldest kept archive first but never the very oldest.
         long total = 0;
         List<Path> byNewest = new ArrayList<>(keep);
-        byNewest.sort(Comparator.comparing((Path p) -> p.getFileName().toString()).reversed());
+        byNewest.sort(Comparator.comparing(PlayerDataBackup::stampOf)
+            .thenComparing((Path p) -> p.getFileName().toString()).reversed());
         List<Path> finalKeep = new ArrayList<>();
         for (Path archive : byNewest) {
             long size = sizeOf(archive);
@@ -438,24 +478,97 @@ public final class PlayerDataBackup {
 
         for (Path archive : archives) {
             if (finalKeep.contains(archive)) continue;
-            try {
-                Files.deleteIfExists(archive);
-                LOGGER.info("[DungeonTrain] Backup: pruned {}", archive.getFileName());
-            } catch (IOException e) {
-                LOGGER.warn("[DungeonTrain] Backup: couldn't prune {}: {}",
-                    archive.getFileName(), e.toString());
+            delete(archive, "pruned");
+        }
+    }
+
+    /** Total bytes of every archive in {@code backupsRoot}. Zero for a folder that isn't there. */
+    public static long totalSize(Path root) {
+        long total = 0;
+        for (Path archive : listArchives(root)) total += sizeOf(archive);
+        return total;
+    }
+
+    /** What {@link #clear} did. {@code failures} names archives that could not be removed. */
+    public record ClearResult(int deleted, long bytesFreed, List<String> failures) {
+        public boolean clean() { return failures.isEmpty(); }
+    }
+
+    /**
+     * Delete every archive in {@code root}.
+     *
+     * <p>Only files matching the backup naming are touched — {@link #listArchives} is the same
+     * filter used everywhere else — so pointing this at a folder holding anything of the player's
+     * cannot take it with them. A file that will not delete is collected and the loop continues,
+     * because stopping halfway would leave the player with neither the space nor a clear report.</p>
+     */
+    public static synchronized ClearResult clear(Path root) {
+        int deleted = 0;
+        long freed = 0;
+        List<String> failures = new ArrayList<>();
+        for (Path archive : listArchives(root)) {
+            long size = sizeOf(archive);
+            if (delete(archive, "cleared")) {
+                deleted++;
+                freed += size;
+            } else {
+                failures.add(archive.getFileName().toString());
             }
+        }
+        return new ClearResult(deleted, freed, List.copyOf(failures));
+    }
+
+    /** Remove one archive, logging either way. {@code why} appears in the log line. */
+    private static boolean delete(Path archive, String why) {
+        try {
+            Files.deleteIfExists(archive);
+            LOGGER.info("[DungeonTrain] Backup: {} {}", why, archive.getFileName());
+            return true;
+        } catch (IOException | SecurityException e) {
+            LOGGER.warn("[DungeonTrain] Backup: couldn't remove {}: {}",
+                archive.getFileName(), e.toString());
+            return false;
         }
     }
 
     /**
-     * The {@code yyyyMMdd} day an archive was written, taken from its name. Empty for a name that
-     * doesn't carry one, which groups all such files together rather than throwing.
+     * A byte count as the player should read it — {@code "1.2 GB"}, {@code "512 KB"}, {@code "0 B"}.
+     *
+     * <p>Decimal MB/GB rather than the KiB/MiB used in the logs: this goes on a button, and the
+     * figure a player compares against is the one their file manager shows.</p>
      */
-    static String dayOf(Path archive) {
+    public static String formatBytes(long bytes) {
+        if (bytes < 1024L) return bytes + " B";
+        if (bytes < 1024L * 1024) return String.format(Locale.ROOT, "%.0f KB", bytes / 1024.0);
+        if (bytes < 1024L * 1024 * 1024) {
+            return String.format(Locale.ROOT, "%.1f MB", bytes / (1024.0 * 1024));
+        }
+        return String.format(Locale.ROOT, "%.1f GB", bytes / (1024.0 * 1024 * 1024));
+    }
+
+    /**
+     * The {@code yyyyMMdd-HHmmss} stamp in an archive's name, or {@code ""} when it has none.
+     *
+     * <p>Sorting keys off this rather than the whole filename so that anything appended after the
+     * stamp — the mod version, a de-duplication counter — cannot reorder history.</p>
+     */
+    static String stampOf(Path archive) {
         String name = archive.getFileName().toString();
-        int start = PREFIX.length();
-        return name.length() >= start + 8 ? name.substring(start, start + 8) : "";
+        if (!name.startsWith(PREFIX)) return "";
+        String rest = name.substring(PREFIX.length());
+        return rest.length() >= 15 ? rest.substring(0, 15) : "";
+    }
+
+    /**
+     * The mod version an archive was written by, read from its name. {@code ""} for archives from
+     * before versioned names, which is a real group of its own rather than an error.
+     */
+    static String versionOf(Path archive) {
+        String name = archive.getFileName().toString();
+        if (!name.endsWith(SUFFIX)) return "";
+        int marker = name.lastIndexOf(VERSION_MARKER);
+        if (marker < PREFIX.length()) return "";
+        return name.substring(marker + VERSION_MARKER.length(), name.length() - SUFFIX.length());
     }
 
     private static long sizeOf(Path file) {
