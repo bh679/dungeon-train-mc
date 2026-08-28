@@ -81,10 +81,60 @@ public final class PlayerDataBackupHook {
      * client-side toggle wasn't there would be the worst possible reading of the setting.</p>
      */
     static BackupMode mode() {
+        BackupMode override = operatorOverride();
+        if (override != null) return override;
         try {
             return games.brennan.dungeontrain.config.ClientDisplayConfig.getBackupMode();
         } catch (Throwable notOnThisSide) {
             return BackupMode.DEFAULT;
+        }
+    }
+
+    /** System property / environment names a server operator can set. */
+    static final String OVERRIDE_PROPERTY = "dungeontrain.backups";
+    static final String OVERRIDE_ENV = "DUNGEONTRAIN_BACKUPS";
+
+    /** Resolved once: neither the property nor the environment changes while the JVM runs. */
+    private static volatile BackupMode override = null;
+    private static volatile boolean overrideResolved = false;
+
+    /**
+     * The launch-flag override, or {@code null} when unset.
+     *
+     * <p>This exists because the setting above is a CLIENT config, so a dedicated server had no way
+     * to turn backups off at all — the options screen isn't there, and the two config files a
+     * server operator would reach for are held to their defaults by {@code DtConfigIntegrity},
+     * so putting it in one of those would taint every player on the server into Free Play.
+     * {@code -Ddungeontrain.backups=off} (or {@code DUNGEONTRAIN_BACKUPS=off}) touches no config
+     * file and cannot interact with the integrity checks.</p>
+     *
+     * <p>It wins over the options screen on clients too. Nobody sets a JVM flag by accident, and an
+     * override that silently lost to a UI toggle would be worse than not having one — so it is
+     * logged once at startup to stay discoverable.</p>
+     */
+    static BackupMode operatorOverride() {
+        if (overrideResolved) return override;
+        synchronized (PlayerDataBackupHook.class) {
+            if (overrideResolved) return override;
+            BackupMode resolved;
+            String source = OVERRIDE_PROPERTY;
+            try {
+                String property = System.getProperty(OVERRIDE_PROPERTY);
+                // Name the source that actually supplied the value: telling an operator who set the
+                // environment variable that a system property did it sends them to the wrong place
+                // when they want to change it back.
+                if (property == null || property.isBlank()) source = OVERRIDE_ENV;
+                resolved = BackupMode.overrideFrom(property, System.getenv(OVERRIDE_ENV));
+            } catch (SecurityException restricted) {
+                resolved = null;
+            }
+            if (resolved != null) {
+                LOGGER.info("[DungeonTrain] Backup mode forced to {} by {} — the Options setting is "
+                    + "ignored while it is set.", resolved, source);
+            }
+            override = resolved;
+            overrideResolved = true;
+            return override;
         }
     }
 

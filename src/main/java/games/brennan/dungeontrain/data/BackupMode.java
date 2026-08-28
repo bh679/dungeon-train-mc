@@ -45,12 +45,39 @@ public enum BackupMode {
         return this == EXTERNAL;
     }
 
-    /** Parse a stored name, falling back to {@link #DEFAULT} rather than throwing. */
+    /**
+     * Parse a stored or operator-supplied name, falling back to {@link #DEFAULT} rather than
+     * throwing.
+     *
+     * <p>Accepts the enum names and the words the options screen shows, because a server operator
+     * setting {@code -Ddungeontrain.backups=on} is copying what they saw in the UI, not the
+     * constant name: {@code on} = {@link #EXTERNAL}, {@code instanced} = {@link #INSTANCE}.</p>
+     *
+     * <p>An unrecognised value resolves to the default rather than to {@link #OFF} — a typo in a
+     * launch flag must not silently disable backups.</p>
+     */
     public static BackupMode parse(String name) {
         if (name == null) return DEFAULT;
+        String value = name.trim();
+        if (value.isEmpty()) return DEFAULT;
+        if (value.equalsIgnoreCase("on")) return EXTERNAL;
+        if (value.equalsIgnoreCase("instanced")) return INSTANCE;
         for (BackupMode mode : values()) {
-            if (mode.name().equalsIgnoreCase(name.trim())) return mode;
+            if (mode.name().equalsIgnoreCase(value)) return mode;
         }
         return DEFAULT;
+    }
+
+    /**
+     * Resolve an operator override from a system property and an environment variable, or
+     * {@code null} when neither is set.
+     *
+     * <p>Split out as a pure function of its two inputs so it is unit-testable — reading the real
+     * JVM environment in a test makes the result depend on the machine.</p>
+     */
+    public static BackupMode overrideFrom(String property, String env) {
+        String raw = (property != null && !property.isBlank()) ? property : env;
+        if (raw == null || raw.isBlank()) return null;
+        return parse(raw);
     }
 }

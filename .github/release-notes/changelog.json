@@ -9492,7 +9492,8 @@
       "summary": "Dungeon Train's backups of your builds and progress used to live inside your Minecraft instance. That is likely safe from a modpack update, but not always \u2014 and it is no protection at all if the instance itself is deleted or reset. There's now a Backups setting in Options > Dungeon Train: On keeps a copy outside the instance so nothing an update or a reinstall does can reach it, Instanced keeps them inside it, and Off turns them off.",
       "highlights": [
         "New Backups option in Options > Dungeon Train \u2014 On / Instanced / Off, with each choice explained when you hover it.",
-        "On (the default) keeps a copy outside your Minecraft folder, so reinstalling or resetting the instance no longer loses your builds."
+        "On (the default) keeps a copy outside your Minecraft folder, so reinstalling or resetting the instance no longer loses your builds.",
+        "Server owners can set backups without the in-game menu: launch with -Ddungeontrain.backups=off (or DUNGEONTRAIN_BACKUPS=off), which accepts on / instanced / off."
       ],
       "date": "2026-08-28",
       "released": false,
