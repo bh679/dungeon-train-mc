@@ -15,14 +15,19 @@ package games.brennan.dungeontrain.data;
 public enum BackupMode {
 
     /**
-     * Back up outside the instance folder as well as inside it. Survives a modpack update, an
-     * instance reset, and a delete-and-reinstall.
+     * Back up outside the instance folder as well as inside it. The only mode that survives the
+     * instance being deleted, reset or reinstalled, and the only one nothing a launcher does to the
+     * instance can reach.
      */
     EXTERNAL,
 
     /**
-     * Back up inside the instance only. Survives a modpack update — which is the loss that
-     * prompted all of this — but not the instance being deleted or reset.
+     * Back up inside the instance only.
+     *
+     * <p><b>Likely</b> safe from a modpack update, but not guaranteed: the data root is outside the
+     * folder a pack definitely replaces ({@code config/}), yet a pack can ship
+     * {@code overrides/dungeontrain/} straight into it, and launchers have deleted whole instance
+     * trees. Certainly lost if the instance is deleted or reset.</p>
      */
     INSTANCE,
 

@@ -546,8 +546,9 @@ public final class ClientDisplayConfig {
                 .comment("Where Dungeon Train keeps restore points of your builds, advancements and stats.",
                          "EXTERNAL writes them outside this Minecraft instance as well as inside it, so they",
                          "survive the instance being deleted, reset or reinstalled — not just a modpack update.",
-                         "INSTANCE keeps them inside the instance only: safe from a pack update (which replaces",
-                         "the config folder) but lost with the instance itself. OFF disables backups entirely.",
+                         "INSTANCE keeps them inside the instance only: LIKELY safe from a pack update (which",
+                         "replaces the config folder) but not guaranteed — a pack can ship files into the data",
+                         "root too — and certainly lost with the instance itself. OFF disables backups entirely.",
                          "Set from the Backups row in Options > Dungeon Train.")
                 .defineEnum("backupMode", BackupMode.DEFAULT);
         b.pop();

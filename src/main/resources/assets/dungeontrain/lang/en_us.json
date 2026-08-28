@@ -1672,7 +1672,7 @@
   "gui.dungeontrain.options.backups.external": "On",
   "gui.dungeontrain.options.backups.external.tip": "Backup outside the instance, so updates won't touch them. Also survives the instance being deleted or reset.",
   "gui.dungeontrain.options.backups.instance": "Instanced",
-  "gui.dungeontrain.options.backups.instance.tip": "Back up inside the instance (deleting/resetting the instance will delete backups). Still safe from a modpack update.",
+  "gui.dungeontrain.options.backups.instance.tip": "Back up inside the instance. Likely safe from a modpack update, but not always — and deleting or resetting the instance will delete the backups.",
   "gui.dungeontrain.options.backups.off": "Off",
   "gui.dungeontrain.options.backups.off.tip": "No backups. If your builds or progress are lost, there is nothing to restore from.",
   "gui.dungeontrain.options.custom_content": "Custom Train Content",
