@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.client.localization.edit.TranslationScreen;
 import games.brennan.dungeontrain.client.localization.edit.TranslationTarget;
 import games.brennan.dungeontrain.client.sound.TrainVolumeOption;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
+import games.brennan.dungeontrain.data.BackupMode;
 import games.brennan.dungeontrain.config.ContentMode;
 import games.brennan.dungeontrain.config.CustomContentPreference;
 import games.brennan.dungeontrain.config.EditorMenuSpace;
@@ -257,6 +258,13 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                 }
                 yield out;
             }
+            case BACKUPS -> {
+                List<Component> out = new ArrayList<>();
+                for (BackupMode mode : BackupMode.values()) {
+                    out.add(value("gui.dungeontrain.options.backups", backupModeLabel(mode)));
+                }
+                yield out;
+            }
             case SNAPSHOT_MAX_RES -> {
                 List<Component> out = new ArrayList<>();
                 for (int res : RESOLUTION_VALUES) {
@@ -388,6 +396,25 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                                     (btn, pref) -> ClientDisplayConfig.setCustomContentPreference(pref)),
                     "gui.dungeontrain.options.custom_content.tip");
 
+            // Where restore points of builds and progress are written. Unlike every other row here
+            // the tooltip is PER VALUE, not per row: "Instanced" means nothing on its own, and the
+            // whole point of the setting is the difference in what each option survives. The
+            // tooltip is therefore re-set on every change as well as seeded with the initial value.
+            case BACKUPS -> {
+                CycleButton<BackupMode> button = CycleButton.<BackupMode>builder(
+                                DungeonTrainClientOptionsScreen::backupModeLabel)
+                        .withValues(List.of(BackupMode.EXTERNAL, BackupMode.INSTANCE, BackupMode.OFF))
+                        .withInitialValue(ClientDisplayConfig.getBackupMode())
+                        .create(0, 0, width, ROW_H,
+                                Component.translatable("gui.dungeontrain.options.backups"),
+                                (btn, mode) -> {
+                                    ClientDisplayConfig.setBackupMode(mode);
+                                    btn.setTooltip(backupModeTip(mode));
+                                });
+                button.setTooltip(backupModeTip(ClientDisplayConfig.getBackupMode()));
+                yield button;
+            }
+
             // Snapshot max resolution ceiling (0 = AUTO).
             case SNAPSHOT_MAX_RES -> {
                 int currentRes = ClientDisplayConfig.getRideSnapshotMaxResolution();
@@ -462,6 +489,18 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
         return value <= 0
                 ? Component.translatable("gui.dungeontrain.options.snapshot_max_res.auto")
                 : Component.literal(value + "p"); // "1080p" — a unit, not prose
+    }
+
+    /** On / Instanced / Off, each with its own translated label. */
+    private static Component backupModeLabel(BackupMode mode) {
+        return Component.translatable("gui.dungeontrain.options.backups."
+                + mode.name().toLowerCase(Locale.ROOT));
+    }
+
+    /** What the currently-selected backup mode actually protects against. */
+    private static Tooltip backupModeTip(BackupMode mode) {
+        return Tooltip.create(Component.translatable("gui.dungeontrain.options.backups."
+                + mode.name().toLowerCase(Locale.ROOT) + ".tip"));
     }
 
     /** ASK / CONTINUE / DISABLE, each with its own translated label. */

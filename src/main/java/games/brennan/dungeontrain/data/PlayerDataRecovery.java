@@ -49,7 +49,7 @@ public final class PlayerDataRecovery {
     static final int MAX_SIBLINGS_PER_LEVEL = 64;
 
     /** Where a candidate came from. Ordinal order is the ranking the player is offered. */
-    public enum Kind { BACKUP, SIBLING_INSTANCE }
+    public enum Kind { EXTERNAL_BACKUP, BACKUP, SIBLING_INSTANCE }
 
     /**
      * Something worth restoring.
@@ -58,7 +58,31 @@ public final class PlayerDataRecovery {
      * @param path        the archive, or the sibling instance root — shown to the player verbatim
      * @param description short human-readable label
      */
-    public record Candidate(Kind kind, Path path, String description) {}
+    public record Candidate(Kind kind, Path path, String description) {
+
+        /**
+         * The archive's filename, or the instance folder's name, as a String.
+         *
+         * <p>String, not {@link Path}, on purpose: these values are handed to
+         * {@code Component.translatable}, which accepts only Component / Number / Boolean / String
+         * and throws at render time on anything else. Passing a {@code Path} compiles cleanly and
+         * then crashes the screen — it did exactly that. Exposing the display forms as Strings
+         * means the mistake can no longer be made.</p>
+         */
+        public String fileName() {
+            return path == null || path.getFileName() == null ? "" : path.getFileName().toString();
+        }
+
+        /** The full path, as a String, for the same reason as {@link #fileName()}. */
+        public String location() {
+            return path == null ? "" : path.toString();
+        }
+
+        /** The containing folder, as a String; empty when there is no parent. */
+        public String folder() {
+            return path == null || path.getParent() == null ? "" : path.getParent().toString();
+        }
+    }
 
     private PlayerDataRecovery() {}
 
@@ -115,9 +139,20 @@ public final class PlayerDataRecovery {
      * Everything that could be restored, best first.
      *
      * @param gameDir the instance root, whose parents are searched for sibling installs
+     * @param externalBackupsRoot the out-of-instance backup folder, or {@code null} if there is
+     *                            none. Passed in rather than resolved here so this stays a pure
+     *                            function of its arguments — reading the real OS app-data folder
+     *                            made the result depend on whatever else is on the machine.
      */
-    public static List<Candidate> findCandidates(Path dataRoot, Path gameDir) {
+    public static List<Candidate> findCandidates(Path dataRoot, Path gameDir, Path externalBackupsRoot) {
         List<Candidate> found = new ArrayList<>();
+        // Ranked first: an archive this install wrote, kept OUTSIDE the instance. It has the same
+        // certain provenance as an in-instance backup and survives strictly more — it is the only
+        // candidate that exists at all when the instance was deleted and reinstalled.
+        for (Path external : externalBackupsRoot == null
+                ? List.<Path>of() : PlayerDataBackup.listArchives(externalBackupsRoot)) {
+            found.add(new Candidate(Kind.EXTERNAL_BACKUP, external, external.getFileName().toString()));
+        }
         for (Path archive : PlayerDataBackup.listArchives(dataRoot.resolve(PlayerDataPaths.BACKUPS))) {
             found.add(new Candidate(Kind.BACKUP, archive, archive.getFileName().toString()));
         }
@@ -201,7 +236,9 @@ public final class PlayerDataRecovery {
      */
     public static int restore(Candidate candidate, Path dataRoot, Path dtpacksRoot) throws IOException {
         return switch (candidate.kind()) {
-            case BACKUP -> PlayerDataBackup.restore(candidate.path(), backupTargets(dataRoot, dtpacksRoot));
+            // Both are archives this install wrote, in the same format — only the folder differs.
+            case EXTERNAL_BACKUP, BACKUP ->
+                PlayerDataBackup.restore(candidate.path(), backupTargets(dataRoot, dtpacksRoot));
             case SIBLING_INSTANCE -> restoreFromInstance(candidate.path(), dataRoot);
         };
     }

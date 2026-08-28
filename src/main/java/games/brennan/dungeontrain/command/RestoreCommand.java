@@ -42,7 +42,8 @@ public final class RestoreCommand {
     }
 
     private static List<PlayerDataRecovery.Candidate> candidates() {
-        return PlayerDataRecovery.findCandidates(PlayerDataPaths.root(), FMLPaths.GAMEDIR.get());
+        return PlayerDataRecovery.findCandidates(PlayerDataPaths.root(), FMLPaths.GAMEDIR.get(),
+            PlayerDataPaths.externalBackupsRoot().orElse(null));
     }
 
     private static int list(CommandContext<CommandSourceStack> ctx) {

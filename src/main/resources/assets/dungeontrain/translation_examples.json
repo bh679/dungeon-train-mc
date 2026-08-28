@@ -3484,5 +3484,19 @@
         "/Users/sam/minecraft/dungeontrain/backups"
       ]
     }
+  },
+  "gui.dungeontrain.data_recovery.candidate.external": {
+    "1": {
+      "label": "the backup file's name",
+      "examples": [
+        "dungeontrain-backup-20260828-114927.zip"
+      ]
+    },
+    "2": {
+      "label": "the folder outside the Minecraft install where it is kept",
+      "examples": [
+        "/Users/sam/Library/Application Support/DungeonTrain/backups"
+      ]
+    }
   }
 }

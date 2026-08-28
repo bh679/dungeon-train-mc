@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.config;
 
 import games.brennan.dungeontrain.client.BookAuthorChatSyncClient;
 import games.brennan.dungeontrain.client.FramerateThrottle;
+import games.brennan.dungeontrain.data.BackupMode;
 import net.neoforged.neoforge.common.ModConfigSpec;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -225,6 +226,16 @@ public final class ClientDisplayConfig {
      */
     public static final ModConfigSpec.EnumValue<PoliticalFilter> POLITICAL_FILTER;
 
+    /**
+     * Where restore points are written. See {@link games.brennan.dungeontrain.data.BackupMode}.
+     *
+     * <p>A CLIENT setting on purpose: backups are this machine's local files, so the choice belongs
+     * to whoever is sitting at it. On a dedicated server the client spec is never loaded and every
+     * read falls back to the default — which is deliberate, because a server must not stop backing
+     * up just because a client-side toggle is absent.</p>
+     */
+    public static final ModConfigSpec.EnumValue<BackupMode> BACKUP_MODE;
+
     /** The player's answer to the Political Filter prompt. See {@link #POLITICAL_FILTER}. */
     public enum PoliticalFilter {
         /** Never asked (or asked and dismissed before the prompt existed) — resolved from the locale. */
@@ -275,6 +286,7 @@ public final class ClientDisplayConfig {
         SHARED_BOOKS_READ = pair.getLeft().sharedBooksRead;
         DEATH_SCREEN_LAST_NPS = pair.getLeft().deathScreenLastNps;
         POLITICAL_FILTER = pair.getLeft().politicalFilter;
+        BACKUP_MODE = pair.getLeft().backupMode;
         CONTENT_MODE = pair.getLeft().contentMode;
         CUSTOM_CONTENT_PREFERENCE = pair.getLeft().customContentPreference;
         CUSTOM_CONTENT_LAST_ANSWER = pair.getLeft().customContentLastAnswer;
@@ -529,6 +541,18 @@ public final class ClientDisplayConfig {
                 .defineEnum("politicalFilter", PoliticalFilter.UNSET);
         b.pop();
 
+        b.push("backups");
+        ModConfigSpec.EnumValue<BackupMode> backupMode = b
+                .comment("Where Dungeon Train keeps restore points of your builds, advancements and stats.",
+                         "EXTERNAL writes them outside this Minecraft instance as well as inside it, so they",
+                         "survive the instance being deleted, reset or reinstalled — not just a modpack update.",
+                         "INSTANCE keeps them inside the instance only: LIKELY safe from a pack update (which",
+                         "replaces the config folder) but not guaranteed — a pack can ship files into the data",
+                         "root too — and certainly lost with the instance itself. OFF disables backups entirely.",
+                         "Set from the Backups row in Options > Dungeon Train.")
+                .defineEnum("backupMode", BackupMode.DEFAULT);
+        b.pop();
+
         b.push("configIntegrity");
         ModConfigSpec.ConfigValue<String> configDeviationAcknowledged = b
                 .comment("Internal: the Dungeon Train config change you last chose to keep at the launch prompt,",
@@ -572,7 +596,8 @@ public final class ClientDisplayConfig {
                 customContentLastAnswer,
                 configDeviationAcknowledged, dpiBypassWarningOptedOut, bookAuthorBurnChat,
                 commandMenuSpace, templateBlocksMenuSpace, containerContentsMenuSpace,
-                blockVariantMenuSpace);
+                blockVariantMenuSpace,
+                backupMode);
     }
 
     /**
@@ -737,6 +762,27 @@ public final class ClientDisplayConfig {
         if (!isLoaded() || value == null) return;
         POLITICAL_FILTER.set(value);
         POLITICAL_FILTER.save();
+    }
+
+    // ----- Backups (see games.brennan.dungeontrain.data.PlayerDataBackupHook) -----
+
+    /**
+     * Where restore points are written.
+     *
+     * <p>The pre-load answer is the DEFAULT rather than OFF, and that is load-bearing: this is read
+     * on the server thread, including on dedicated servers where the client spec never loads, and
+     * resolving an unreadable setting to "no backups" would silently disable the safety net for
+     * exactly the installs least able to notice.</p>
+     */
+    public static BackupMode getBackupMode() {
+        return isLoaded() ? BACKUP_MODE.get() : BackupMode.DEFAULT;
+    }
+
+    public static void setBackupMode(BackupMode value) {
+        if (!isLoaded() || value == null) return;
+        if (BACKUP_MODE.get() == value) return; // skip a needless TOML write
+        BACKUP_MODE.set(value);
+        BACKUP_MODE.save();
     }
 
     // ----- Developer-message consent state (see DevMessageConsentClient) -----
@@ -1413,6 +1459,7 @@ public final class ClientDisplayConfig {
             ModConfigSpec.EnumValue<EditorMenuSpace> commandMenuSpace,
             ModConfigSpec.EnumValue<EditorMenuSpace> templateBlocksMenuSpace,
             ModConfigSpec.EnumValue<EditorMenuSpace> containerContentsMenuSpace,
-            ModConfigSpec.EnumValue<EditorMenuSpace> blockVariantMenuSpace
+            ModConfigSpec.EnumValue<EditorMenuSpace> blockVariantMenuSpace,
+            ModConfigSpec.EnumValue<BackupMode> backupMode
     ) {}
 }

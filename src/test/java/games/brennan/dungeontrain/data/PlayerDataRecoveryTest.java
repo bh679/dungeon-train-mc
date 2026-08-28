@@ -39,6 +39,11 @@ class PlayerDataRecoveryTest {
         return tmp.resolve("instance/config");
     }
 
+    /** A temp stand-in for the OS app-data folder, so tests never see this machine's real backups. */
+    private Path externalRoot() {
+        return tmp.resolve("external-backups");
+    }
+
     private Path dtpacksRoot() {
         return tmp.resolve("instance/dtpacks");
     }
@@ -46,7 +51,7 @@ class PlayerDataRecoveryTest {
     @Test
     void aFreshInstallLooksEmptiedButOffersNothing() {
         assertTrue(PlayerDataRecovery.looksEmptied(dataRoot(), configDir(), dtpacksRoot()));
-        assertEquals(List.of(), PlayerDataRecovery.findCandidates(dataRoot(), tmp.resolve("instance")),
+        assertEquals(List.of(), PlayerDataRecovery.findCandidates(dataRoot(), tmp.resolve("instance"), externalRoot()),
             "nothing to restore from means no prompt, however empty the install is");
     }
 
@@ -114,11 +119,45 @@ class PlayerDataRecoveryTest {
     }
 
     @Test
+    void ranksAnOutOfInstanceBackupAboveEverythingElse() throws IOException {
+        // The only candidate that still exists when the instance itself was deleted, so it leads.
+        write(externalRoot().resolve("dungeontrain-backup-20260101-000000.zip"), "z");
+        write(dataRoot().resolve("backups/dungeontrain-backup-20260102-000000.zip"), "z");
+        write(tmp.resolve("instance-old/config/dungeontrain/user/a.nbt"), "carriage");
+
+        List<PlayerDataRecovery.Candidate> found = PlayerDataRecovery.findCandidates(
+            dataRoot(), tmp.resolve("instance"), externalRoot());
+
+        assertEquals(3, found.size());
+        assertEquals(PlayerDataRecovery.Kind.EXTERNAL_BACKUP, found.get(0).kind());
+        assertEquals(PlayerDataRecovery.Kind.BACKUP, found.get(1).kind());
+        assertEquals(PlayerDataRecovery.Kind.SIBLING_INSTANCE, found.get(2).kind());
+    }
+
+    @Test
+    void candidateExposesItsDisplayFormsAsStrings() {
+        // Component.translatable throws at RENDER time on a non-String argument, so a Path passed
+        // straight in compiles and then crashes the screen — which is how clicking "What happened?"
+        // took the game down. These accessors are what the screen uses instead.
+        PlayerDataRecovery.Candidate c = new PlayerDataRecovery.Candidate(
+            PlayerDataRecovery.Kind.EXTERNAL_BACKUP,
+            Path.of("/tmp/DungeonTrain/backups/dungeontrain-backup-20260101-000000.zip"), "x");
+        assertEquals("dungeontrain-backup-20260101-000000.zip", c.fileName());
+        assertEquals("/tmp/DungeonTrain/backups", c.folder());
+        assertEquals("/tmp/DungeonTrain/backups/dungeontrain-backup-20260101-000000.zip", c.location());
+
+        // A root path has no parent — empty, never the string "null".
+        PlayerDataRecovery.Candidate root = new PlayerDataRecovery.Candidate(
+            PlayerDataRecovery.Kind.SIBLING_INSTANCE, Path.of("/"), "y");
+        assertEquals("", root.folder());
+    }
+
+    @Test
     void findsThisInstallsOwnBackups() throws IOException {
         write(dataRoot().resolve("backups/dungeontrain-backup-20260101-000000.zip"), "z");
 
         List<PlayerDataRecovery.Candidate> found =
-            PlayerDataRecovery.findCandidates(dataRoot(), tmp.resolve("instance"));
+            PlayerDataRecovery.findCandidates(dataRoot(), tmp.resolve("instance"), externalRoot());
 
         assertEquals(1, found.size());
         assertEquals(PlayerDataRecovery.Kind.BACKUP, found.get(0).kind());
@@ -144,12 +183,29 @@ class PlayerDataRecoveryTest {
     }
 
     @Test
+    void backupModeSurvivesAnUnknownStoredValue() {
+        // The mode is read on the server thread including where no client config exists, so an
+        // unreadable or unknown value must resolve to the default, never to "no backups".
+        assertEquals(games.brennan.dungeontrain.data.BackupMode.EXTERNAL,
+            games.brennan.dungeontrain.data.BackupMode.DEFAULT);
+        assertEquals(games.brennan.dungeontrain.data.BackupMode.DEFAULT,
+            games.brennan.dungeontrain.data.BackupMode.parse("nonsense"));
+        assertEquals(games.brennan.dungeontrain.data.BackupMode.DEFAULT,
+            games.brennan.dungeontrain.data.BackupMode.parse(null));
+        assertEquals(games.brennan.dungeontrain.data.BackupMode.OFF,
+            games.brennan.dungeontrain.data.BackupMode.parse("off"));
+        assertFalse(games.brennan.dungeontrain.data.BackupMode.OFF.writesAnything());
+        assertFalse(games.brennan.dungeontrain.data.BackupMode.INSTANCE.writesOutsideTheInstance());
+        assertTrue(games.brennan.dungeontrain.data.BackupMode.EXTERNAL.writesOutsideTheInstance());
+    }
+
+    @Test
     void ranksBackupsAheadOfSiblings() throws IOException {
         write(dataRoot().resolve("backups/dungeontrain-backup-20260101-000000.zip"), "z");
         write(tmp.resolve("instance-old/config/dungeontrain/user/a.nbt"), "carriage");
 
         List<PlayerDataRecovery.Candidate> found =
-            PlayerDataRecovery.findCandidates(dataRoot(), tmp.resolve("instance"));
+            PlayerDataRecovery.findCandidates(dataRoot(), tmp.resolve("instance"), externalRoot());
 
         assertEquals(2, found.size());
         assertEquals(PlayerDataRecovery.Kind.BACKUP, found.get(0).kind(),

@@ -59,6 +59,19 @@ INTEGRITY_GOVERNED = {
 }
 
 
+# Directories the pack may never write into, whatever the filename. ``overrides/`` is copied
+# verbatim into every player's instance, so a file here lands in the folder Dungeon Train keeps the
+# player's builds, advancements and backups in — the folder the data was MOVED to precisely because
+# ``config/`` is replaced on every pack update. An allowlist entry could not make this safe.
+FORBIDDEN_DIRS = ("dungeontrain",)
+
+
+def in_forbidden_dir(rel_path: str) -> bool:
+    """Is this overrides-relative path inside a directory the pack must never write to?"""
+    head = rel_path.split("/", 1)[0]
+    return head in FORBIDDEN_DIRS
+
+
 def is_allowed(rel_path: str) -> bool:
     """Is this overrides-relative path covered by an ``ALLOWED`` pattern?"""
     return any(fnmatch(rel_path, pattern) for pattern in ALLOWED)
@@ -81,6 +94,15 @@ def find_drift(rel_paths: list[str]) -> list[str]:
     """Return human-readable errors for override files that are not allowlisted."""
     errors: list[str] = []
     for rel_path in rel_paths:
+        if in_forbidden_dir(rel_path):
+            errors.append(
+                f"overrides/{rel_path}: the pack must never write into the player-data root. "
+                f"<instance>/dungeontrain/ holds builds, advancements, stats and backups, and the "
+                f"pack ships overrides/ verbatim — a file here would overwrite a player's own data "
+                f"on update. That folder exists BECAUSE config/ gets replaced; do not repeat the "
+                f"mistake one level over."
+            )
+            continue
         if is_allowed(rel_path):
             continue
         guard = INTEGRITY_GOVERNED.get(Path(rel_path).name)

@@ -5,6 +5,8 @@ import net.neoforged.fml.loading.FMLPaths;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Locale;
+import java.util.Optional;
 
 /**
  * Single source of truth for where Dungeon Train keeps the player's own data.
@@ -53,6 +55,9 @@ public final class PlayerDataPaths {
     public static final String TRANSLATIONS = "translations";
     public static final String OUTBOX = "outbox";
     public static final String BACKUPS = "backups";
+
+    /** Folder name used outside the instance, under the OS's per-user application data dir. */
+    public static final String EXTERNAL_DIR = "DungeonTrain";
 
     /** The dtpacks active-package/disabled-set state file, at the root. */
     public static final String DTPACKS_STATE = "dtpacks-state.json";
@@ -134,6 +139,46 @@ public final class PlayerDataPaths {
     /** {@code <gameDir>/dtpacks/} — already outside {@code config/}, included in backups. */
     public static Path dtpacksRoot() {
         return FMLPaths.GAMEDIR.get().resolve("dtpacks");
+    }
+
+    /**
+     * {@code <os app data>/DungeonTrain/backups} — restore points kept <b>outside</b> the Minecraft
+     * instance, so they survive the instance itself being deleted, reset or reinstalled.
+     *
+     * <p>Everything else here is instance-local, which is enough for a modpack update: packs
+     * replace {@code config/}, not the whole instance. It is <em>not</em> enough for a
+     * delete-and-reinstall, or for the launcher bugs that have removed entire instance trees — and
+     * a pack can also ship {@code overrides/dungeontrain/} straight into the data root. This is the
+     * only location no launcher operation on the instance can reach.</p>
+     *
+     * <p>Empty when no home directory can be resolved, which is a normal outcome on a locked-down
+     * or headless host and must never be treated as an error — the in-instance backup still ran.</p>
+     */
+    public static Optional<Path> externalBackupsRoot() {
+        String os = System.getProperty("os.name", "").toLowerCase(Locale.ROOT);
+        try {
+            if (os.contains("win")) {
+                String appData = System.getenv("APPDATA");
+                if (appData != null && !appData.isBlank()) {
+                    return Optional.of(Path.of(appData).resolve(EXTERNAL_DIR).resolve(BACKUPS));
+                }
+            }
+            String home = System.getProperty("user.home");
+            if (home == null || home.isBlank()) return Optional.empty();
+            Path base = Path.of(home);
+            if (os.contains("mac") || os.contains("darwin")) {
+                return Optional.of(base.resolve("Library").resolve("Application Support")
+                    .resolve(EXTERNAL_DIR).resolve(BACKUPS));
+            }
+            String xdg = System.getenv("XDG_DATA_HOME");
+            Path dataHome = (xdg != null && !xdg.isBlank())
+                ? Path.of(xdg)
+                : base.resolve(".local").resolve("share");
+            return Optional.of(dataHome.resolve(EXTERNAL_DIR).resolve(BACKUPS));
+        } catch (Exception e) {
+            // A malformed home path must not take the game down.
+            return Optional.empty();
+        }
     }
 
     /** The config directory, still home to the integrity-governed engine configs. */
