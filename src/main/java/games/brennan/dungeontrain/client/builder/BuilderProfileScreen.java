@@ -3,7 +3,18 @@ package games.brennan.dungeontrain.client.builder;
 import games.brennan.dungeontrain.builder.BuilderLabels;
 import games.brennan.dungeontrain.builder.BuilderPhotoPaths;
 import games.brennan.dungeontrain.builder.relay.BuilderRelayKinds;
+import games.brennan.dungeontrain.builder.BuilderMode;
+import games.brennan.dungeontrain.builder.relay.BuilderRelayDownload;
+import games.brennan.dungeontrain.builder.relay.BuilderRelayInstall;
+import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
+import games.brennan.dungeontrain.client.menu.CommandMenuState;
+import games.brennan.dungeontrain.client.menu.CommandRunner;
+import games.brennan.dungeontrain.client.menu.EditorTemplateJump;
+import games.brennan.dungeontrain.client.menu.UnsavedCheckScreen;
+import games.brennan.dungeontrain.net.BuilderOpenPacket;
 import games.brennan.dungeontrain.net.BuilderProfileActionPacket;
+import games.brennan.dungeontrain.net.BuilderProfileDownloadPacket;
+import games.brennan.dungeontrain.net.BuilderProfileDownloadResultPacket;
 import games.brennan.dungeontrain.net.BuilderProfilePacket;
 import games.brennan.dungeontrain.net.BuilderProfileRequestPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
@@ -31,7 +42,9 @@ import java.util.List;
  * <p>The tiles are drawn from the LOCAL template of the same name, through the same
  * {@link BuilderTileMeshCache} the Open grid uses, so a build made on this machine shows its own
  * blocks. A build uploaded from another world has no local file and falls back to a flat tile —
- * downloading one back into the builder is the next piece of work, not this one.</p>
+ * <b>Load into editor</b> is what fetches one back, writing it into this install's library so it can
+ * be opened like anything else. In a builder world it is opened straight away, through the ordinary
+ * Open path.</p>
  *
  * <p>Only a whole carriage can be submitted ({@link BuilderRelayKinds#canJoinTheTrain}); every other
  * kind the builder authors is a piece of something rather than a thing a train slot can hold, so its
@@ -48,6 +61,7 @@ public final class BuilderProfileScreen extends Screen {
     private static final int SCROLL_STEP = 24;
     private static final int NOTE_COLOUR = 0xA0A0A0;
     private static final int TILES_PER_ROW = 3;
+    private static final int ACTION_GAP = 4;
 
     /** Longest timestep the tile spin will accept, so a stalled frame doesn't fling it round. */
     private static final float MAX_FRAME_SECONDS = 0.1F;
@@ -60,6 +74,17 @@ public final class BuilderProfileScreen extends Screen {
     private int scrollY;
     private int selected = -1;
     private Button actionButton;
+    private Button downloadButton;
+
+    /**
+     * What the last download did, shown under the grid until the selection changes.
+     *
+     * <p>Not folded into {@link #statusNote}'s reasoning: that method answers "why is this list the
+     * way it is", which is about the relay and the player's settings. This answers "what happened
+     * when I pressed the button", which is about one build and one press, and the two would give
+     * different answers to the same pixel.</p>
+     */
+    private Component downloadNote;
 
     private final BuilderTileSpin spin = new BuilderTileSpin();
     private long lastFrameNanos;
@@ -79,6 +104,7 @@ public final class BuilderProfileScreen extends Screen {
         // Always re-ask on the way in. The cached list is what makes a reopened screen instant, but it
         // may predate a save, a publish, or a build somebody else's world just returned.
         BuilderProfileState.listen(this::onProfile);
+        BuilderProfileState.listenForDownloads(this::onDownload);
         DungeonTrainNet.sendToServer(new BuilderProfileRequestPacket());
 
         this.spin.clear();
@@ -89,6 +115,7 @@ public final class BuilderProfileScreen extends Screen {
     /** A profile arrived. Keep the selection on the same build where it survives the refresh. */
     private void onProfile(BuilderProfilePacket packet) {
         int selectedId = selectedBuild() == null ? -1 : selectedBuild().relayId();
+        this.downloadNote = null;
         this.builds = packet.builds();
         this.status = packet.status();
         this.selected = -1;
@@ -108,11 +135,23 @@ public final class BuilderProfileScreen extends Screen {
         this.grid = BuilderTemplateGridLayout.of(this.width, gridTop, gridBottom, builds.size(), TILES_PER_ROW);
         this.scrollY = grid.clampScroll(scrollY);
 
+        // Two actions, side by side across the same width the Back button occupies: what the build
+        // does on the relay, and what it does on this machine.
+        int half = (BACK_BUTTON_WIDTH - ACTION_GAP) / 2;
+        int left = this.width / 2 - BACK_BUTTON_WIDTH / 2;
         this.actionButton = Button.builder(actionLabel(), b -> submitSelected())
-                .bounds(this.width / 2 - BACK_BUTTON_WIDTH / 2, gridBottom + 4, BACK_BUTTON_WIDTH, 20)
+                .bounds(left, gridBottom + 4, half, 20)
                 .build();
         this.actionButton.active = canActOnSelection();
         addRenderableWidget(this.actionButton);
+
+        this.downloadButton = Button.builder(
+                        Component.translatable("gui.dungeontrain.builder.profile.load_into_editor"),
+                        b -> downloadSelected())
+                .bounds(left + half + ACTION_GAP, gridBottom + 4, half, 20)
+                .build();
+        this.downloadButton.active = selectedBuild() != null;
+        addRenderableWidget(this.downloadButton);
 
         addRenderableWidget(Button.builder(CommonComponents.GUI_BACK, b -> onClose())
                 .bounds(this.width / 2 - BACK_BUTTON_WIDTH / 2,
@@ -154,6 +193,142 @@ public final class BuilderProfileScreen extends Screen {
         this.actionButton.active = false;
     }
 
+    /**
+     * Ask the server for this build's blocks and write them into the local library.
+     *
+     * <p>Offered for every kind, unlike Submit to the train: a room, a part and a length of track are
+     * all things their author may want back on a new machine, and only the train has an opinion about
+     * which of them is a carriage.</p>
+     */
+    private void downloadSelected() {
+        BuilderProfilePacket.Entry entry = selectedBuild();
+        if (entry == null) return;
+        DungeonTrainNet.sendToServer(new BuilderProfileDownloadPacket(entry.relayId()));
+        this.downloadButton.active = false;
+        this.downloadNote = Component.translatable("gui.dungeontrain.builder.profile.downloading");
+    }
+
+    /**
+     * A download finished.
+     *
+     * <p>On success in a builder world the build is opened immediately, through the ordinary
+     * {@link BuilderOpenPacket} — which is what makes this a load rather than a file copy, and means
+     * the unsaved-work prompt, the spawn standoff and the photo backfill all behave exactly as they
+     * do for any other Open. Outside a builder world (the in-world Train Editor's menu) there is no
+     * plot to stamp it on, so the build simply joins that editor's lists.</p>
+     */
+    private void onDownload(BuilderProfileDownloadResultPacket packet) {
+        this.downloadNote = Component.translatable(noteKeyFor(packet.outcome()));
+        if (this.downloadButton != null) this.downloadButton.active = selectedBuild() != null;
+
+        // A name already in use is a question, not a refusal: the player chooses which copy keeps it.
+        if (packet.outcome() == BuilderRelayDownload.Outcome.ALREADY_HERE) {
+            BuilderProfilePacket.Entry entry = selectedBuild();
+            if (entry != null) {
+                this.minecraft.setScreen(new BuilderProfileCollisionScreen(this, entry.buildName(),
+                        (resolution, name) -> resolveDownload(entry.relayId(), resolution, name)));
+            }
+            return;
+        }
+        if (packet.outcome() != BuilderRelayDownload.Outcome.INSTALLED) return;
+
+        BuilderPhotoPaths.Kind kind = BuilderPhotoPaths.Kind.fromId(packet.kindId()).orElse(null);
+        if (kind == null) return;
+        if (BuilderWorldCheck.isBuilderWorld()) {
+            openInBuilder(kind, packet);
+            return;
+        }
+        openInEditor(kind, packet);
+    }
+
+    /**
+     * Open what was just installed on a builder plot, switching the builder into the mode that
+     * authors it.
+     *
+     * <p>The ordinary {@link BuilderOpenPacket}, so this is the same open the Open grid performs —
+     * mode switch, unsaved-work prompt, spawn standoff and photo backfill all included. Unforced: if
+     * there is unsaved work the open path puts its own Save / Discard prompt up, and the downloaded
+     * build is on disk either way, so nothing is lost by the refusal.</p>
+     */
+    private void openInBuilder(BuilderPhotoPaths.Kind kind, BuilderProfileDownloadResultPacket packet) {
+        BuilderMode mode = BuilderRelayKinds.modeFor(kind);
+        if (mode == null) return;
+        DungeonTrainNet.sendToServer(kind == BuilderPhotoPaths.Kind.TRACK
+                ? BuilderOpenPacket.forTrack(mode.id(), TrackKind.fromId(packet.subKind()),
+                        packet.id(), false)
+                : new BuilderOpenPacket(mode.id(), kind.id(), packet.id(),
+                        kind == BuilderPhotoPaths.Kind.PART ? packet.subKind() : "", false));
+        closeToGame();
+    }
+
+    /**
+     * Take the player to what was just installed in the in-world Train Editor.
+     *
+     * <p>Two cases, and the difference is whether the editor has to be moved between categories.
+     * Inside the right one already, the per-template enter command teleports and nothing is
+     * disturbed. From a different category the switch has to happen first — and that switch clears
+     * and restamps every plot, which silently destroys unsaved edits, so it goes through the same
+     * {@link UnsavedCheckScreen} the Enter menu uses rather than around it. A clean editor never
+     * sees that screen: it dispatches and closes on its own.</p>
+     *
+     * <p>Does nothing when no editor session is running — the player downloaded a build from the
+     * pause menu of an ordinary world, where there is no plot to stand them on. The build is
+     * installed and the screen has already said so.</p>
+     */
+    private void openInEditor(BuilderPhotoPaths.Kind kind, BuilderProfileDownloadResultPacket packet) {
+        if (!EditorStatusHudOverlay.isActive()) return;
+        String target = EditorTemplateJump.categoryIdFor(kind, packet.subKind());
+        if (target == null) return;   // nothing in the editor holds this kind — a carriage group
+        String enter = EditorTemplateJump.enterCommandFor(kind, packet.id(), packet.subKind());
+
+        String current = EditorStatusHudOverlay.category().toLowerCase(java.util.Locale.ROOT);
+        if (target.equals(current)) {
+            if (enter != null) CommandRunner.run(enter);
+            closeToGame();
+            return;
+        }
+        closeToGame();
+        CommandMenuState.openAt(new UnsavedCheckScreen(target, enter == null ? "" : enter));
+    }
+
+    /**
+     * Send the second press: the same download, with the player's answer to the name collision.
+     *
+     * <p>Re-selects nothing and assumes nothing — the result comes back through {@link #onDownload}
+     * like the first one did, so a resolution that also fails (the new name taken too) puts the
+     * question up again rather than silently doing nothing.</p>
+     */
+    private void resolveDownload(int relayId, BuilderRelayInstall.Resolution resolution, String name) {
+        DungeonTrainNet.sendToServer(new BuilderProfileDownloadPacket(relayId, resolution, name));
+        this.downloadNote = Component.translatable("gui.dungeontrain.builder.profile.downloading");
+        if (this.downloadButton != null) this.downloadButton.active = false;
+    }
+
+    /**
+     * Close all the way to the game, not back to whatever opened this screen.
+     *
+     * <p>{@link #onClose} returns to {@code lastScreen}, which is the pause menu when My Builds was
+     * opened from it — so the player would be teleported to their build and left looking at the Esc
+     * menu. A load ends with the build in front of you or it hasn't finished.</p>
+     */
+    private void closeToGame() {
+        this.minecraft.setScreen(null);
+    }
+
+    /** The line to show for an outcome — each sends the player somewhere different. */
+    private static String noteKeyFor(BuilderRelayDownload.Outcome outcome) {
+        return switch (outcome) {
+            case INSTALLED -> "gui.dungeontrain.builder.profile.downloaded";
+            case ALREADY_HERE -> "gui.dungeontrain.builder.profile.download_already_here";
+            case NAME_TAKEN -> "gui.dungeontrain.builder.profile.download_name_taken";
+            case NOT_YOURS -> "gui.dungeontrain.builder.profile.download_not_yours";
+            case GONE -> "gui.dungeontrain.builder.profile.gone_short";
+            case UNAVAILABLE -> "gui.dungeontrain.builder.profile.unavailable";
+            case UNSUPPORTED -> "gui.dungeontrain.builder.profile.download_unsupported";
+            case FAILED -> "gui.dungeontrain.builder.profile.download_failed";
+        };
+    }
+
     // ---- input ----
 
     @Override
@@ -162,6 +337,7 @@ public final class BuilderProfileScreen extends Screen {
             int index = grid.indexAt(mouseX, mouseY, scrollY, builds.size());
             if (index >= 0) {
                 this.selected = index;
+                this.downloadNote = null;
                 rebuild();
                 return true;
             }
@@ -262,6 +438,7 @@ public final class BuilderProfileScreen extends Screen {
      * the whole point — a blanket "it's off" sends someone to a setting that isn't the problem.
      */
     private Component statusNote() {
+        if (downloadNote != null) return downloadNote;
         if (status == null) return Component.translatable("gui.dungeontrain.builder.profile.loading");
         if (status == BuilderProfilePacket.Status.DISABLED) {
             return Component.translatable("gui.dungeontrain.builder.profile.disabled");
@@ -303,6 +480,7 @@ public final class BuilderProfileScreen extends Screen {
     public void removed() {
         super.removed();
         BuilderProfileState.listen(null);
+        BuilderProfileState.listenForDownloads(null);
         BuilderTileMeshCache.clear();
     }
 

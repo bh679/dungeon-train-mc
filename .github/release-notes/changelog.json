@@ -9513,9 +9513,9 @@
       ],
       "pr": 1148,
       "date": "2026-08-28",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.698.0",
+      "released_at": "2026-08-28T11:49:38Z"
     },
     {
       "id": "trashslot-modpack",
@@ -9528,6 +9528,36 @@
         "Off by default \u2014 opt in from the launcher, no reinstall needed"
       ],
       "pr": 1158,
+      "date": "2026-08-28",
+      "released": true,
+      "released_in": "v0.698.0",
+      "released_at": "2026-08-28T11:49:38Z"
+    },
+    {
+      "id": "backward-generation-stall",
+      "version": "0.700.0",
+      "type": "fix",
+      "title": "OH MY LORD I DID IT! I FIXED THE BACKWARD BUG",
+      "summary": "This dam bug has been plaguing me for months. Since the start of this project, I wanted the train to go infinitely backwards. Well today, I am proud to say - it goes a god dam long way backwards! How far? Im sure one of you will tell me if its not infinite. Please go forth and explore! Sincerely, Brennan.",
+      "pr": 1160,
+      "date": "2026-08-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "load-builds-from-relay",
+      "version": "0.701.0",
+      "type": "feat",
+      "title": "Load your builds from your profile into the editor",
+      "summary": "My Builds could always show you what you had made \u2014 including builds from another world, another save, or another machine \u2014 but it could never open one. Now it can. Load into Editor pulls the build down, puts it in your template library and takes you straight to it, switching the editor to the right category on the way. If you already have a build by that name, it asks what you want: replace the one you have, rename the one you have, or load this one under a new name.",
+      "highlights": [
+        "Load into Editor on the My Builds screen",
+        "Works for builds this world has never seen \u2014 a new save, a reinstall, a new machine",
+        "Every kind: carriages, groups, rooms, parts, track and portal rooms",
+        "Takes you to the build when it lands, changing editor category if it has to",
+        "A name you already use asks what to do instead of refusing"
+      ],
       "date": "2026-08-28",
       "released": false,
       "released_in": null,

@@ -161,6 +161,27 @@ public final class CarriagePartTemplateStore {
         return existed;
     }
 
+    /**
+     * Move a saved part template to a new name within its kind, keeping its cache entry with it.
+     *
+     * <p>Within its kind, because a part id is only unique there — {@code standard} is both a floor
+     * and a door, so a rename that crossed kinds would collide with a different part entirely. The
+     * file half of a rename only; the caller re-registers the name.</p>
+     */
+    public static synchronized boolean rename(CarriagePartKind kind, String sourceName, String targetName)
+            throws IOException {
+        Path src = fileFor(kind, sourceName);
+        Path dst = fileFor(kind, targetName);
+        if (!Files.isRegularFile(src)) return false;
+        Files.createDirectories(dst.getParent());
+        Files.move(src, dst, StandardCopyOption.REPLACE_EXISTING);
+        Optional<StructureTemplate> cached = CACHE.remove(key(kind, sourceName));
+        if (cached != null) CACHE.put(key(kind, targetName), cached);
+        LOGGER.info("[DungeonTrain] Renamed part template {}:{} -> {}:{}", kind.id(), sourceName,
+                kind.id(), targetName);
+        return true;
+    }
+
     public static boolean exists(CarriagePartKind kind, String name) {
         return Files.isRegularFile(fileFor(kind, name));
     }
