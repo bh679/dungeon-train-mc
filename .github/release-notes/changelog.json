@@ -9656,6 +9656,22 @@
       "released": true,
       "released_in": "v0.706.0",
       "released_at": "2026-08-28T17:04:12Z"
+    },
+    {
+      "id": "community-carriages-in-runs",
+      "version": "0.707.0",
+      "type": "feat",
+      "title": "Community carriages now ride your train",
+      "summary": "Carriages other players built and changed while riding now turn up in your run. A shared slot leases an approved build from the pool, places it, and hands it back with whatever you changed in it \u2014 so a room you rearrange travels on to somebody else's train, credited to everyone who has worked on it. Train Builder builds stay separate for now: they still upload to My Builds and can be submitted, but they aren't placed into runs yet.",
+      "highlights": [
+        "Community-built carriages appear in runs (shared slots lease from the pool)",
+        "Your edits to a leased carriage travel back to the pool, credited by name",
+        "Train Builder submissions are held back \u2014 a separate system, opening later"
+      ],
+      "date": "2026-08-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
