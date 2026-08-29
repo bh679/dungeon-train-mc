@@ -6,6 +6,7 @@ import games.brennan.dungeontrain.portal.PortalPairIndex;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
@@ -21,7 +22,15 @@ import net.neoforged.neoforge.common.util.BlockSnapshot;
 import net.neoforged.neoforge.common.util.TriState;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.level.BlockEvent;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import org.slf4j.Logger;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 /**
  * Keeps shulker boxes out of a dimensional carriage and out of the twin corridor it pairs with.
@@ -60,7 +69,29 @@ public final class PortalShulkerBoxEvents {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    private static final String REFUSED_KEY = "chat.dungeontrain.portal.no_shulker_box";
+    private static final String REFUSED_KEY_1 = "chat.dungeontrain.portal.no_shulker_box.1";
+    private static final String REFUSED_KEY_2 = "chat.dungeontrain.portal.no_shulker_box.2";
+
+    /** The beat between the two lines. The second is an afterthought, not a second warning. */
+    private static final int SECOND_LINE_DELAY_TICKS = 40;
+
+    /**
+     * How long a player is left alone after being told.
+     *
+     * <p>A refused click costs nothing, so a player who keeps trying — or who simply holds the
+     * button — would otherwise paper their chat with the same two lines twenty times a second. Long
+     * enough to cover a stubborn attempt, short enough that coming back later still explains
+     * itself.</p>
+     */
+    private static final int REPEAT_COOLDOWN_TICKS = 600;
+
+    /** Player → game time they were last told. Server thread only. */
+    private static final Map<UUID, Long> LAST_TOLD = new HashMap<>();
+
+    /** Second lines not yet due. Server thread only, and never more than one per player. */
+    private static final List<Pending> PENDING = new ArrayList<>();
+
+    private record Pending(UUID player, long dueAt) {}
 
     private PortalShulkerBoxEvents() {}
 
@@ -137,16 +168,59 @@ public final class PortalShulkerBoxEvents {
     }
 
     /**
-     * Say why, on the action bar, in the same voice as the other corridor notices — and leave a line
-     * in the log, the way {@link games.brennan.dungeontrain.portal.PortalEditMirror} does for each
-     * mirror. A refusal is otherwise invisible after the fact: "nothing was placed" and "nobody
-     * tried" read identically, which makes both testing and a player's bug report guesswork.
+     * Say why — in chat, and in the log.
+     *
+     * <p>Two lines, a beat apart, rather than one action-bar flash: the action bar is where a
+     * corridor puts its transient notices, and this is the box refusing, which is a small piece of
+     * the world talking back. It reads better arriving the way an advancement does, and it stays in
+     * the scrollback for a player who looks away.</p>
+     *
+     * <p>The log line has no such audience — it exists because a refusal is otherwise invisible
+     * after the fact ("nothing was placed" and "nobody tried" read identically), which makes both
+     * testing and a bug report guesswork. It is written on every refusal, including the ones the
+     * cooldown silences.</p>
      */
     private static void refuse(Entity entity, BlockPos pos, String via) {
         LOGGER.info("[DungeonTrain] Portal: refused a shulker box at {} ({})", pos, via);
-        if (entity instanceof ServerPlayer player) {
-            player.displayClientMessage(
-                Component.translatable(REFUSED_KEY).withStyle(ChatFormatting.GRAY), true);
+        if (!(entity instanceof ServerPlayer player)) return;
+
+        long now = player.serverLevel().getGameTime();
+        Long told = LAST_TOLD.get(player.getUUID());
+        if (told != null && now - told < REPEAT_COOLDOWN_TICKS) return;
+        LAST_TOLD.put(player.getUUID(), now);
+
+        player.sendSystemMessage(Component.translatable(REFUSED_KEY_1).withStyle(ChatFormatting.GRAY));
+        PENDING.add(new Pending(player.getUUID(), now + SECOND_LINE_DELAY_TICKS));
+    }
+
+    /** Deliver the second lines that have come due, and forget players who have left. */
+    @SubscribeEvent
+    public static void onServerTick(ServerTickEvent.Post event) {
+        if (PENDING.isEmpty()) return;
+
+        MinecraftServer server = event.getServer();
+        long now = server.overworld().getGameTime();
+        for (Iterator<Pending> it = PENDING.iterator(); it.hasNext(); ) {
+            Pending pending = it.next();
+            if (now < pending.dueAt()) continue;
+            it.remove();
+
+            // A player who logged out between the two lines simply does not hear the second one.
+            ServerPlayer player = server.getPlayerList().getPlayer(pending.player());
+            if (player != null) {
+                player.sendSystemMessage(
+                    Component.translatable(REFUSED_KEY_2).withStyle(ChatFormatting.GRAY));
+            }
         }
+    }
+
+    /**
+     * Drop a world's worth of state when the server stops, so a second world in the same session
+     * does not inherit the first's cooldowns or owe anybody a second line.
+     */
+    @SubscribeEvent
+    public static void onServerStopped(net.neoforged.neoforge.event.server.ServerStoppedEvent event) {
+        LAST_TOLD.clear();
+        PENDING.clear();
     }
 }
