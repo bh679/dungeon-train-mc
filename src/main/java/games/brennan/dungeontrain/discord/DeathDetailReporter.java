@@ -80,13 +80,15 @@ public final class DeathDetailReporter {
      * Build and fire the death-detail record for {@code player} from the death-screen {@code
      * packet}. No-op when disabled or on any error — this must never disrupt death handling.
      */
-    public static void report(ServerPlayer player, DeathStatsPacket packet, Feats feats) {
+    public static void report(ServerPlayer player, DeathStatsPacket packet, Feats feats,
+                              boolean freePlay) {
         try {
             if (!DungeonTrainConfig.isWorldInfoToRelay()) {
                 return;
             }
             String uuid = player.getUUID().toString().replace("-", "");
-            JsonObject payload = buildPayload(uuid, packet.narrative(), DeathStats.from(packet), feats);
+            JsonObject payload = buildPayload(uuid, packet.narrative(), DeathStats.from(packet), feats,
+                    freePlay);
             post(uuid, payload.toString());
         } catch (Throwable t) {
             LOGGER.warn("[DungeonTrain] death-detail relay report failed: {}", t.toString());
@@ -97,7 +99,8 @@ public final class DeathDetailReporter {
      * Pure payload assembly over plain data — package-private so the shape can be unit-tested
      * without bootstrapping the game.
      */
-    static JsonObject buildPayload(String uuid, DeathNarrative narrative, DeathStats s, Feats feats) {
+    static JsonObject buildPayload(String uuid, DeathNarrative narrative, DeathStats s, Feats feats,
+                                   boolean freePlay) {
         JsonObject body = new JsonObject();
         body.addProperty("uuid", uuid);
 
@@ -147,6 +150,18 @@ public final class DeathDetailReporter {
         body.addProperty("maxCarriagesNoChest", feats.maxCarriagesNoChest());
         body.addProperty("pacifistCarriages", feats.pacifistCarriages());
         body.addProperty("lifeDistanceTravelled", feats.lifeDisplacement());
+
+        // Was this life Free Play (creative/spectator, a cheat mod, a non-allowlisted command)? The
+        // relay refuses to score a flagged payload onto the public leaderboards — a creative flight
+        // to the world border is not a distance record. The record itself is still stored in full:
+        // the data explorer wants every death, the boards only want the legitimate ones.
+        //
+        // Written ONLY when true. An absent key reads as false on the relay, so a legitimate run's
+        // payload is byte-identical to what it was before the flag existed — the same treatment
+        // SharedCarriageClient gives its optional `mode`.
+        if (freePlay) {
+            body.addProperty("freePlay", true);
+        }
         return body;
     }
 
