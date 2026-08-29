@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.event;
 
+import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.portal.PortalPairIndex;
 import net.minecraft.ChatFormatting;
@@ -20,6 +21,7 @@ import net.neoforged.neoforge.common.util.BlockSnapshot;
 import net.neoforged.neoforge.common.util.TriState;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.level.BlockEvent;
+import org.slf4j.Logger;
 
 /**
  * Keeps shulker boxes out of a dimensional carriage and out of the twin corridor it pairs with.
@@ -56,6 +58,8 @@ import net.neoforged.neoforge.event.level.BlockEvent;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class PortalShulkerBoxEvents {
 
+    private static final Logger LOGGER = LogUtils.getLogger();
+
     private static final String REFUSED_KEY = "chat.dungeontrain.portal.no_shulker_box";
 
     private PortalShulkerBoxEvents() {}
@@ -81,7 +85,7 @@ public final class PortalShulkerBoxEvents {
         if (!PortalPairIndex.isCorridorCell(level, target)) return;
 
         event.setUseItem(TriState.FALSE);
-        tellPlayer(player);
+        refuse(player, target, "click");
     }
 
     /**
@@ -97,7 +101,7 @@ public final class PortalShulkerBoxEvents {
         if (!PortalPairIndex.isCorridorCell(level, event.getPos())) return;
 
         event.setCanceled(true);
-        tellPlayer(event.getEntity());
+        refuse(event.getEntity(), event.getPos(), "place");
     }
 
     /**
@@ -119,7 +123,7 @@ public final class PortalShulkerBoxEvents {
             if (!PortalPairIndex.isCorridorCell(level, pos)) continue;
 
             event.setCanceled(true);
-            tellPlayer(event.getEntity());
+            refuse(event.getEntity(), pos, "multi-place");
             return;
         }
     }
@@ -132,8 +136,14 @@ public final class PortalShulkerBoxEvents {
         return state.getBlock() instanceof ShulkerBoxBlock;
     }
 
-    /** Say why, on the action bar, in the same voice as the other corridor notices. */
-    private static void tellPlayer(Entity entity) {
+    /**
+     * Say why, on the action bar, in the same voice as the other corridor notices — and leave a line
+     * in the log, the way {@link games.brennan.dungeontrain.portal.PortalEditMirror} does for each
+     * mirror. A refusal is otherwise invisible after the fact: "nothing was placed" and "nobody
+     * tried" read identically, which makes both testing and a player's bug report guesswork.
+     */
+    private static void refuse(Entity entity, BlockPos pos, String via) {
+        LOGGER.info("[DungeonTrain] Portal: refused a shulker box at {} ({})", pos, via);
         if (entity instanceof ServerPlayer player) {
             player.displayClientMessage(
                 Component.translatable(REFUSED_KEY).withStyle(ChatFormatting.GRAY), true);
