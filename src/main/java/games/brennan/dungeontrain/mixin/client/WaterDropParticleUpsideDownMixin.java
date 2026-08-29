@@ -26,9 +26,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * inherited protected fields.</p>
  *
  * <p>Gated per-drop on the drop's own X, so drops spawned outside the band (including in the exit
- * crossfade, where the overworld is upright again) keep falling normally. Placement of the splashes is
- * the other half of this: {@code UpsideDownRainRenderer.tickRain} puts them on the <em>underside</em> of
- * the terrain overhead.</p>
+ * crossfade, where the overworld is upright again) keep falling normally. Placement is left on vanilla for now
+ * (see {@code LevelRendererUpsideDownRainMixin}), so in the band this fires only for the few drops
+ * vanilla still manages to spawn — but it costs nothing and keeps every drop that does appear pointing
+ * the right way.</p>
  */
 @Mixin(WaterDropParticle.class)
 public abstract class WaterDropParticleUpsideDownMixin extends Particle {
