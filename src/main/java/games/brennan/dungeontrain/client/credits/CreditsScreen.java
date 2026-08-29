@@ -2,12 +2,15 @@ package games.brennan.dungeontrain.client.credits;
 
 import games.brennan.dungeontrain.client.localization.TranslationContributor;
 import games.brennan.dungeontrain.client.localization.TranslationCreditsMerge;
+import games.brennan.dungeontrain.client.menu.AiPolicyIconButton;
 import games.brennan.dungeontrain.client.menu.DarkTintedButton;
+import games.brennan.dungeontrain.client.policy.AiPolicyScreen;
 import games.brennan.dungeontrain.client.support.SupportScreen;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.resources.language.LanguageInfo;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.CommonComponents;
@@ -156,8 +159,8 @@ public final class CreditsScreen extends Screen {
 
         contentHeight = y;
 
-        // One bottom row: "Support the Developer" beside Done. The viewport ends just
-        // above the row so scrolling content never overlaps the buttons.
+        // One bottom row: "Support the Developer" and the AI Policy icon beside Done. The
+        // viewport ends just above the row so scrolling content never overlaps the buttons.
         int rowY = this.height - 28;
         viewportTop = TOP;
         viewportBottom = rowY - 8;
@@ -169,16 +172,28 @@ public final class CreditsScreen extends Screen {
 
         int gap = 4;
         int supportW = 150;
+        // Square, so it costs the row only its own height — the two text buttons keep their widths.
+        int policyW = 20;
         int doneW = 100;
-        int rowX = (this.width - (supportW + gap + doneW)) / 2;
+        int rowX = (this.width - (supportW + gap + policyW + gap + doneW)) / 2;
 
         // Shortcut to the "Ways to Help" hub; parent is this page so its Done returns here.
         addRenderableWidget(new DarkTintedButton(rowX, rowY, supportW, 20,
                 Component.translatable("gui.dungeontrain.credits.support_button"),
                 b -> Minecraft.getInstance().setScreen(new SupportScreen(this))));
 
+        // "Who made this" and "was any of it made by AI" are the same question, so the AI Policy
+        // sits on the page that answers the first half. Also reachable from Dungeon Train Options.
+        // An icon rather than a labelled button: the row already carries two of those, and the
+        // glyph is unlabelled, so the tooltip below is what names it — it is not optional.
+        Component policyLabel = Component.translatable("gui.dungeontrain.credits.ai_policy_button");
+        AiPolicyIconButton policy = new AiPolicyIconButton(rowX + supportW + gap, rowY, policyW,
+                policyLabel, b -> Minecraft.getInstance().setScreen(new AiPolicyScreen(this)));
+        policy.setTooltip(Tooltip.create(policyLabel));
+        addRenderableWidget(policy);
+
         addRenderableWidget(Button.builder(CommonComponents.GUI_DONE, b -> onClose())
-                .bounds(rowX + supportW + gap, rowY, doneW, 20)
+                .bounds(rowX + supportW + gap + policyW + gap, rowY, doneW, 20)
                 .build());
     }
 

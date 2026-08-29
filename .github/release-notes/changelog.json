@@ -9989,15 +9989,15 @@
       "released_at": null
     },
     {
-      "id": "no-shulker-boxes-in-dimensional-carriages",
+      "id": "ai-policy-screen",
       "version": "0.727.0",
-      "type": "fix",
-      "title": "Shulker boxes can't be placed in dimensional carriages",
-      "summary": "A dimensional carriage exists twice \u2014 the corridor you walk through and a hidden copy of it \u2014 and the two are kept identical block for block so the crossing between them stays invisible. A shulker box placed in one was copied into the other as an empty box, which could duplicate the item and lose what you had stored in it. Shulker boxes are now refused in both copies, with a word from the box itself in chat. Portal rooms are unaffected.",
+      "type": "feat",
+      "title": "AI Policy screen",
+      "summary": "A new in-game page states plainly what in Dungeon Train is made by hand and where AI is actually used. The books, the artwork, the player mobs and the name generator are not AI; nothing is trained on your data, and no AI runs on your machine. Open it from Dungeon Train Options, or from the paper icon on the Credits page.",
       "highlights": [
-        "Shulker boxes are refused inside a dimensional carriage and its copy",
-        "Closes a duplication bug caused by the carriage's hidden copy",
-        "Portal rooms are unaffected \u2014 shulker boxes work there as normal"
+        "New AI Policy page \u2014 what is and is not made by AI, in plain terms",
+        "Reachable from Dungeon Train Options and from the Credits page",
+        "Links out to the Discord updates channel"
       ],
       "date": "2026-08-29",
       "released": false,
