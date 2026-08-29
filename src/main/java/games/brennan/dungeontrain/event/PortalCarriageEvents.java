@@ -9,6 +9,7 @@ import games.brennan.dungeontrain.portal.PortalCarriageRevival;
 import games.brennan.dungeontrain.portal.PortalCarriageRole;
 import games.brennan.dungeontrain.portal.PortalCarriageSelection;
 import games.brennan.dungeontrain.portal.PortalClear;
+import games.brennan.dungeontrain.portal.PortalContainerLink;
 import games.brennan.dungeontrain.portal.PortalCorridorKind;
 import games.brennan.dungeontrain.portal.PortalCorridorMask;
 import games.brennan.dungeontrain.portal.PortalCorridorSize;
@@ -1841,6 +1842,17 @@ public final class PortalCarriageEvents {
         // Both the carry and the erase read the OLD record, so they cover exactly the box that was
         // written even if the room has since been authored at a different length.
         if (existing != null) {
+            // Before anything else: a container standing in the outgoing corridor is about to be
+            // swept, and until somebody has opened it the twin's copy is the only one holding its
+            // contents — placement writes them after the mirror has run. The block going with the
+            // twin is expected; its contents going with it is the loss.
+            //
+            // Reads the pairing on its way OUT, deliberately: this runs before publishPairing, so
+            // PortalPairIndex still describes the old twin, which is what lets linkOf resolve these
+            // positions at all. Move this below that call and the sweep quietly stops working.
+            PortalContainerLink.gatherCorridorIntoCanonical(level,
+                PortalCarriageBuilder.allCorridorMask(existing, dims));
+
             // The room's OWN mobs go with the room, before anything is carried: the stamp below rolls
             // and spawns a fresh set for the new site, and clearIntruders spares anything carrying
             // DT's contents tag — so a carried authored mob would simply stand next to its

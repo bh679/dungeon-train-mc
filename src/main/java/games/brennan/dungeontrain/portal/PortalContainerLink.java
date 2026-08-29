@@ -11,6 +11,7 @@ import net.minecraft.world.Containers;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
@@ -54,6 +55,10 @@ import java.util.List;
  *
  * <p>Moving items changes no block state, so nothing here re-enters the mirror and no re-entrancy
  * guard is needed — unlike every write {@link PortalEditMirror} makes.</p>
+
+ * <p>{@link #gatherCorridorIntoCanonical} is the third moment, and the only one with no player
+ * behind it: a twin drifts far enough to be re-stamped somewhere else, and everything standing in
+ * the old one is swept. See there.</p>
  *
  * <p><b>What is deliberately not handled.</b> A container blown up or pushed by a piston still loses
  * the partner's contents: there is no player intent to gather on, and it is no worse than today. A
@@ -242,6 +247,68 @@ public final class PortalContainerLink {
         }
 
         return stack;
+    }
+
+    /**
+     * Pour every corridor container's contents into the copy that is about to <b>survive</b>.
+     *
+     * <p>Called when a pair's twin has drifted and is about to be erased and re-stamped somewhere
+     * else ({@code PortalCarriageEvents.ensureStructure}). Blocks in a twin are expected to go with
+     * it — that is true of every block in a corridor. What must not go with it is a shulker's
+     * contents, and until somebody opens the thing, the twin's copy is the only one that has them:
+     * placement writes the {@code CONTAINER} component after the mirror has already run. Nobody has
+     * to touch anything for that to be lost, which is what makes it worth a sweep of its own.</p>
+     *
+     * <p><b>Corridor cells only</b>, tested with the same {@link PortalCorridorMask#covers} the stamp
+     * and the erase use, so the three cannot disagree about where a corridor is. The room between the
+     * corridors and its tiled copies are not paired with anything and are not walked.</p>
+     *
+     * <p><b>It reads the pairing that is on its way out</b>, and that is the point. The caller runs
+     * before {@code publishPairing}, so {@link PortalPairIndex} still describes the old twin — which
+     * is what lets {@link #linkOf} resolve these positions at all. Getting that order wrong does not
+     * crash: {@code linkOf} simply returns null and the contents are lost as they were before, which
+     * is why the silent case is logged.</p>
+     *
+     * @return how many containers were poured across
+     */
+    public static int gatherCorridorIntoCanonical(ServerLevel level, PortalCorridorMask corridors) {
+        BoundingBox bounds = corridors.bounds();
+        if (bounds == null) return 0;
+
+        int gathered = 0;
+        int unresolved = 0;
+
+        for (BlockPos pos : BlockPos.betweenClosed(
+                bounds.minX(), bounds.minY(), bounds.minZ(),
+                bounds.maxX(), bounds.maxY(), bounds.maxZ())) {
+            if (!corridors.covers(pos)) continue;
+
+            Container here = containerAt(level, pos);
+            if (here == null || isEmpty(here)) continue;
+
+            Cell cell = linkOf(level, pos);
+            if (cell == null) {
+                unresolved++;
+                continue;
+            }
+            // The canonical copy is the one that survives an erase, so a container already standing
+            // in it has nothing to be saved from.
+            if (cell.canonicalHere()) continue;
+
+            gatherInto(level, cell.canonical(), pos.immutable());
+            gathered++;
+        }
+
+        if (gathered > 0) {
+            LOGGER.info("[DungeonTrain] Portal corridor erase: carried {} container(s) worth of "
+                + "contents to the carriage side first", gathered);
+        }
+        if (unresolved > 0) {
+            LOGGER.warn("[DungeonTrain] Portal corridor erase: {} container(s) in the outgoing "
+                + "corridor had no pairing to carry their contents to — they are about to be swept "
+                + "with their contents in them. The pair index had already moved on.", unresolved);
+        }
+        return gathered;
     }
 
     /** How much of {@code stack} one slot of {@code to} may hold — the container's cap or the item's. */
