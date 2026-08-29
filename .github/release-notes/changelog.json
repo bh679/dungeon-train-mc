@@ -9971,9 +9971,9 @@
       ],
       "pr": 1187,
       "date": "2026-08-29",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.729.0",
+      "released_at": "2026-08-29T17:51:35Z"
     },
     {
       "id": "drifting-carriage-traps",
@@ -9984,9 +9984,9 @@
       "highlights": [],
       "pr": 1177,
       "date": "2026-08-29",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.729.0",
+      "released_at": "2026-08-29T17:51:35Z"
     },
     {
       "id": "ai-policy-screen",
@@ -10000,9 +10000,9 @@
         "Links out to the Discord updates channel"
       ],
       "date": "2026-08-29",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.729.0",
+      "released_at": "2026-08-29T17:51:35Z"
     },
     {
       "id": "ai-policy-page-layout",
@@ -10016,9 +10016,9 @@
         "Added a scrollbar to the page"
       ],
       "date": "2026-08-29",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.729.0",
+      "released_at": "2026-08-29T17:51:35Z"
     },
     {
       "id": "no-shulker-boxes-in-dimensional-carriages",
@@ -10029,9 +10029,9 @@
       "highlights": [],
       "pr": 1191,
       "date": "2026-08-29",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.729.0",
+      "released_at": "2026-08-29T17:51:35Z"
     }
   ]
 }
