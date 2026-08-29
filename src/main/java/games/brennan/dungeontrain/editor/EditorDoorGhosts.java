@@ -89,17 +89,31 @@ public final class EditorDoorGhosts {
             BlockPos origin = PortalRoomEditor.plotOrigin(name, dims);
             if (origin == null) continue;
             Vec3i size = PortalRoomEditor.plotSize(name, dims);
-            out.addAll(PortalRoomDoorCells.doorBases(origin, size));
+            // Clamped to what this room's own width and height can actually spend — the same clamps
+            // PortalRoomLayout.roomOrigin applies when the real corridors are stamped, so a ghost
+            // never shows a door further off centre, or higher, than the room really can build.
+            games.brennan.dungeontrain.portal.PortalRoomSettings settings =
+                games.brennan.dungeontrain.portal.PortalRoomSettings.of(name);
+            int offset = games.brennan.dungeontrain.portal.PortalRoomLayout.clampDoorOffset(
+                dims, size.getZ(), settings.doorOffset().value());
+            int heightOffset = games.brennan.dungeontrain.portal.PortalRoomLayout.clampDoorHeightOffset(
+                dims, size.getY(), settings.doorHeightOffset().value());
+            out.addAll(PortalRoomDoorCells.doorBases(origin, size, offset, heightOffset));
         }
         return out;
     }
 
     /**
-     * Dedup key for the per-player push — the plot grid itself, one {@code origin/size} per room.
+     * Dedup key for the per-player push — the plot grid itself, one {@code origin/size/doorOffset}
+     * per room.
      *
      * <p>Keyed on the boxes rather than on the cells because the boxes are what the cells are a
      * function of, and the string stays short as rooms are added. A resize, a new variant or a
      * deletion all move it; nothing else does, so a steady editor sends no traffic.</p>
+     *
+     * <p>Door offset is included alongside the box, not folded into it: a change to it moves the
+     * ghost cells without moving the plot itself, and a dedup key that missed it would leave the
+     * ghosts standing at the old line until something else nudged the box.</p>
      */
     public static String key(CarriageDims dims) {
         StringBuilder sb = new StringBuilder();
@@ -107,10 +121,17 @@ public final class EditorDoorGhosts {
             BlockPos origin = PortalRoomEditor.plotOrigin(name, dims);
             if (origin == null) continue;
             Vec3i size = PortalRoomEditor.plotSize(name, dims);
+            games.brennan.dungeontrain.portal.PortalRoomSettings settings =
+                games.brennan.dungeontrain.portal.PortalRoomSettings.of(name);
+            int offset = games.brennan.dungeontrain.portal.PortalRoomLayout.clampDoorOffset(
+                dims, size.getZ(), settings.doorOffset().value());
+            int heightOffset = games.brennan.dungeontrain.portal.PortalRoomLayout.clampDoorHeightOffset(
+                dims, size.getY(), settings.doorHeightOffset().value());
             sb.append(origin.getX()).append(',').append(origin.getY()).append(',')
               .append(origin.getZ()).append('/')
               .append(size.getX()).append(',').append(size.getY()).append(',')
-              .append(size.getZ()).append(';');
+              .append(size.getZ()).append('/').append(offset).append(',').append(heightOffset)
+              .append(';');
         }
         return sb.toString();
     }

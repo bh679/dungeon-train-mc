@@ -40,18 +40,22 @@ import games.brennan.dungeontrain.track.variant.TrackVariantWeights;
  * @param sky      whether it is lit as though it stood outdoors, and under which sky
  * @param doorWall whether the copies standing against the portal carriages carry their own end wall
  *                 through the corridor mouth's plane, or leave it to the mouth's seal ring
+ * @param doorOffset how far the shared walkway line sits from dead centre of the room's own width
+ * @param doorHeightOffset how far the corridor's floor line sits above the room's own bottom edge
  */
 public record PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
                                  PortalRoomContents contents, PortalRoomExits exits,
                                  PortalRoomBooks books, PortalRoomSky sky,
-                                 PortalRoomDoorWall doorWall) {
+                                 PortalRoomDoorWall doorWall, PortalRoomDoorOffset doorOffset,
+                                 PortalRoomDoorHeightOffset doorHeightOffset) {
 
     /** Separates the mode from the settings that follow it in the stored tag. */
     private static final String SEPARATOR = "/";
 
     public static final PortalRoomSettings DEFAULT = new PortalRoomSettings(
         PortalRoomMode.DEFAULT, PortalRoomCopies.DEFAULT, PortalRoomContents.DEFAULT, null,
-        PortalRoomBooks.DEFAULT, PortalRoomSky.NONE, PortalRoomDoorWall.DEFAULT);
+        PortalRoomBooks.DEFAULT, PortalRoomSky.NONE, PortalRoomDoorWall.DEFAULT,
+        PortalRoomDoorOffset.DEFAULT, PortalRoomDoorHeightOffset.DEFAULT);
 
     public PortalRoomSettings {
         if (mode == null) mode = PortalRoomMode.DEFAULT;
@@ -63,33 +67,53 @@ public record PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
         if (books == null) books = PortalRoomBooks.DEFAULT;
         if (sky == null) sky = PortalRoomSky.NONE;
         if (doorWall == null) doorWall = PortalRoomDoorWall.DEFAULT;
+        if (doorOffset == null) doorOffset = PortalRoomDoorOffset.DEFAULT;
+        if (doorHeightOffset == null) doorHeightOffset = PortalRoomDoorHeightOffset.DEFAULT;
+    }
+
+    /** The eight settings this record carried before Door Height Offset existed, corridor at the floor. */
+    public PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
+                              PortalRoomContents contents, PortalRoomExits exits,
+                              PortalRoomBooks books, PortalRoomSky sky, PortalRoomDoorWall doorWall,
+                              PortalRoomDoorOffset doorOffset) {
+        this(mode, copies, contents, exits, books, sky, doorWall, doorOffset,
+            PortalRoomDoorHeightOffset.DEFAULT);
+    }
+
+    /** The seven settings this record carried before Door Offset existed, with the door kept centred. */
+    public PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
+                              PortalRoomContents contents, PortalRoomExits exits,
+                              PortalRoomBooks books, PortalRoomSky sky, PortalRoomDoorWall doorWall) {
+        this(mode, copies, contents, exits, books, sky, doorWall, PortalRoomDoorOffset.DEFAULT,
+            PortalRoomDoorHeightOffset.DEFAULT);
     }
 
     /** The six settings this record carried before Door Wall existed, with the mouth's seal kept. */
     public PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
                               PortalRoomContents contents, PortalRoomExits exits,
                               PortalRoomBooks books, PortalRoomSky sky) {
-        this(mode, copies, contents, exits, books, sky, PortalRoomDoorWall.DEFAULT);
+        this(mode, copies, contents, exits, books, sky, PortalRoomDoorWall.DEFAULT,
+            PortalRoomDoorOffset.DEFAULT);
     }
 
     /** The boundary settings alone, unfurnished — the pair this record was before Contents existed. */
     public PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies) {
         this(mode, copies, PortalRoomContents.DEFAULT, null, PortalRoomBooks.DEFAULT,
-            PortalRoomSky.NONE, PortalRoomDoorWall.DEFAULT);
+            PortalRoomSky.NONE, PortalRoomDoorWall.DEFAULT, PortalRoomDoorOffset.DEFAULT);
     }
 
     /** The three settings this record carried before Exits existed, at the mode's own default. */
     public PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
                               PortalRoomContents contents) {
         this(mode, copies, contents, null, PortalRoomBooks.DEFAULT, PortalRoomSky.NONE,
-            PortalRoomDoorWall.DEFAULT);
+            PortalRoomDoorWall.DEFAULT, PortalRoomDoorOffset.DEFAULT);
     }
 
     /** The four settings this record carried before Books existed, with no author lock. */
     public PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
                               PortalRoomContents contents, PortalRoomExits exits) {
         this(mode, copies, contents, exits, PortalRoomBooks.DEFAULT, PortalRoomSky.NONE,
-            PortalRoomDoorWall.DEFAULT);
+            PortalRoomDoorWall.DEFAULT, PortalRoomDoorOffset.DEFAULT);
     }
 
     /** The five settings this record carried before Sky existed, lit only by its own lamps. */
@@ -97,7 +121,7 @@ public record PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
                               PortalRoomContents contents, PortalRoomExits exits,
                               PortalRoomBooks books) {
         this(mode, copies, contents, exits, books, PortalRoomSky.NONE,
-            PortalRoomDoorWall.DEFAULT);
+            PortalRoomDoorWall.DEFAULT, PortalRoomDoorOffset.DEFAULT);
     }
 
     /**
@@ -119,7 +143,9 @@ public record PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
             exitsSegment == null ? null : PortalRoomExits.parse(exitsSegment),
             PortalRoomBooks.parse(segment(parts, 4)),
             PortalRoomSky.parse(segment(parts, 5)),
-            PortalRoomDoorWall.parse(segment(parts, 6)));
+            PortalRoomDoorWall.parse(segment(parts, 6)),
+            PortalRoomDoorOffset.parse(segment(parts, 7)),
+            PortalRoomDoorHeightOffset.parse(segment(parts, 8)));
     }
 
     /** Segment {@code index} of a split tag, or null when the tag is shorter than that. */
@@ -151,10 +177,21 @@ public record PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
         PortalRoomCopies effectiveCopies = effectiveCopies();
         PortalRoomExits effectiveExits = effectiveExits();
         PortalRoomDoorWall effectiveDoorWall = effectiveDoorWall();
-        if (effectiveDoorWall != PortalRoomDoorWall.DEFAULT) {
+        if (!PortalRoomDoorHeightOffset.DEFAULT.equals(doorHeightOffset)) {
             // The longest tag this class writes. Every earlier segment goes out at whatever it
             // effectively is — a later segment cannot be written without the ones in front of it,
             // and each parse reads its own placeholder back as the same value.
+            return mode.id() + SEPARATOR + effectiveCopies.id() + SEPARATOR + contents.id()
+                + SEPARATOR + effectiveExits.id() + SEPARATOR + books.id() + SEPARATOR + sky.id()
+                + SEPARATOR + effectiveDoorWall.id() + SEPARATOR + doorOffset.id()
+                + SEPARATOR + doorHeightOffset.id();
+        }
+        if (!PortalRoomDoorOffset.DEFAULT.equals(doorOffset)) {
+            return mode.id() + SEPARATOR + effectiveCopies.id() + SEPARATOR + contents.id()
+                + SEPARATOR + effectiveExits.id() + SEPARATOR + books.id() + SEPARATOR + sky.id()
+                + SEPARATOR + effectiveDoorWall.id() + SEPARATOR + doorOffset.id();
+        }
+        if (effectiveDoorWall != PortalRoomDoorWall.DEFAULT) {
             return mode.id() + SEPARATOR + effectiveCopies.id() + SEPARATOR + contents.id()
                 + SEPARATOR + effectiveExits.id() + SEPARATOR + books.id() + SEPARATOR + sky.id()
                 + SEPARATOR + effectiveDoorWall.id();
@@ -283,35 +320,62 @@ public record PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
     public PortalRoomSettings withMode(PortalRoomMode newMode) {
         boolean inherited = exits.equals(mode.defaultExits());
         return new PortalRoomSettings(newMode, copies, contents, inherited ? null : exits, books, sky,
-            doorWall);
+            doorWall, doorOffset, doorHeightOffset);
     }
 
     public PortalRoomSettings withCopies(PortalRoomCopies newCopies) {
-        return new PortalRoomSettings(mode, newCopies, contents, exits, books, sky, doorWall);
+        return new PortalRoomSettings(mode, newCopies, contents, exits, books, sky, doorWall, doorOffset,
+            doorHeightOffset);
     }
 
     public PortalRoomSettings withContents(PortalRoomContents newContents) {
-        return new PortalRoomSettings(mode, copies, newContents, exits, books, sky, doorWall);
+        return new PortalRoomSettings(mode, copies, newContents, exits, books, sky, doorWall, doorOffset,
+            doorHeightOffset);
     }
 
     public PortalRoomSettings withExits(PortalRoomExits newExits) {
-        return new PortalRoomSettings(mode, copies, contents, newExits, books, sky, doorWall);
+        return new PortalRoomSettings(mode, copies, contents, newExits, books, sky, doorWall, doorOffset,
+            doorHeightOffset);
     }
 
     public PortalRoomSettings withBooks(PortalRoomBooks newBooks) {
-        return new PortalRoomSettings(mode, copies, contents, exits, newBooks, sky, doorWall);
+        return new PortalRoomSettings(mode, copies, contents, exits, newBooks, sky, doorWall, doorOffset,
+            doorHeightOffset);
     }
 
     public PortalRoomSettings withSky(PortalRoomSky newSky) {
-        return new PortalRoomSettings(mode, copies, contents, exits, books, newSky, doorWall);
+        return new PortalRoomSettings(mode, copies, contents, exits, books, newSky, doorWall, doorOffset,
+            doorHeightOffset);
     }
 
     public PortalRoomSettings withDoorWall(PortalRoomDoorWall newDoorWall) {
-        return new PortalRoomSettings(mode, copies, contents, exits, books, sky, newDoorWall);
+        return new PortalRoomSettings(mode, copies, contents, exits, books, sky, newDoorWall, doorOffset,
+            doorHeightOffset);
     }
 
     /** The same settings at the next Door Wall value — what the editor's one cycling button steps to. */
     public PortalRoomSettings nextDoorWall() {
         return withDoorWall(doorWall.next());
+    }
+
+    /**
+     * The same settings with the door offset set to {@code newDoorOffset}, unclamped.
+     *
+     * <p>Unclamped because the legal range depends on the room's own width and the world's
+     * {@code CarriageDims}, neither of which this record carries — the door pointer clamps via
+     * {@link PortalRoomLayout#clampDoorOffset} before calling this.</p>
+     */
+    public PortalRoomSettings withDoorOffset(PortalRoomDoorOffset newDoorOffset) {
+        return new PortalRoomSettings(mode, copies, contents, exits, books, sky, doorWall, newDoorOffset,
+            doorHeightOffset);
+    }
+
+    /**
+     * The same settings with the door height offset set to {@code newDoorHeightOffset}, unclamped —
+     * see {@link #withDoorOffset} for why unclamped is correct here too.
+     */
+    public PortalRoomSettings withDoorHeightOffset(PortalRoomDoorHeightOffset newDoorHeightOffset) {
+        return new PortalRoomSettings(mode, copies, contents, exits, books, sky, doorWall, doorOffset,
+            newDoorHeightOffset);
     }
 }

@@ -432,8 +432,9 @@ public final class BuilderSave {
      * {@code PortalRoomSizes.settle}, which makes the written template the authority and spends any
      * pending override the size control had set.</p>
      */
-    private static void savePortalRoom(ServerLevel level, BlockPos origin, Vec3i size, String name)
-            throws IOException {
+    private static void savePortalRoom(
+        ServerLevel level, BlockPos origin, Vec3i size, String name
+    ) throws IOException {
         PortalRoomEditor.saveRoomFrom(level, origin, size, name);
     }
 
