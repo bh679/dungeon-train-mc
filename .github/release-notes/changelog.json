@@ -9860,11 +9860,9 @@
       "id": "end-city-rarity",
       "version": "0.720.0",
       "type": "fix",
-      "title": "End cities are a rarer find",
-      "summary": "End cities in the End band now appear about a fifth as often. They were reading as scenery rather than a discovery; long stretches of empty island between them are the point. Cities that do appear are unchanged \u2014 same towers, ships, shulkers and loot.",
-      "highlights": [
-        "End cities generate 5x less often in the End band"
-      ],
+      "title": "End cities are rarer",
+      "summary": "End cities in the End band now generate about 5\u00d7 less often.",
+      "highlights": [],
       "pr": 1183,
       "date": "2026-08-29",
       "released": false,
