@@ -9924,6 +9924,21 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "durability-tooltip-modpack",
+      "version": "0.724.0",
+      "type": "feat",
+      "title": "Durability numbers on item tooltips",
+      "summary": "The modpack now ships Durability Tooltip, switched on by default: hover any tool, weapon or piece of armour and its remaining durability is written out as a number \u2014 'Durability: 137 / 250' \u2014 coloured green through orange to red as it wears down, instead of squinting at the damage bar. Its required library, SuperMartijn642's Config Lib, ships alongside it. You can change the style to a bar or plain words, or turn it off, in the mod's config.",
+      "highlights": [
+        "Durability Tooltip bundled and enabled by default",
+        "Remaining durability shown as coloured numbers on tool, weapon and armour tooltips"
+      ],
+      "date": "2026-08-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
