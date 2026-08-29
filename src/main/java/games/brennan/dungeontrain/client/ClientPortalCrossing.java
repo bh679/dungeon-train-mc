@@ -27,14 +27,20 @@ public final class ClientPortalCrossing {
 
     /**
      * How fast the lift comes up or goes down, as a fraction of the remaining gap per lightmap
-     * rebuild — the same rate {@link ClientPortalRoomSky} eases at, and per rebuild rather than per
-     * frame for the same reason: {@code LightTexture} refreshes on a tick flag, so this steps at
-     * roughly 20 Hz and crosses most of the way in about a second.
+     * rebuild — per rebuild rather than per frame because {@code LightTexture} refreshes on a tick
+     * flag, so this steps at roughly 20 Hz.
      *
      * <p>The server's own ramp already moves a block at a time as the player walks. This is what
      * turns those steps into a slope, and what covers the tick a packet arrives late.</p>
+     *
+     * <p><b>Faster than {@link ClientPortalRoomSky}'s {@code 0.10}</b>, which is easing across a
+     * threshold a player crosses in one step and can afford half a second of lag. This one is
+     * chasing a value that moves the whole way along a nine-block walk — at {@code 0.10} the lift
+     * trailed about two blocks behind and finished after the player had arrived, which is precisely
+     * the "it all happens at the end" this is meant not to do. {@code 0.20} lands the lag near a
+     * block while still turning the server's per-block steps into a slope.</p>
      */
-    private static final float EASE_PER_REBUILD = 0.10f;
+    private static final float EASE_PER_REBUILD = 0.20f;
 
     /** Below this the lift is not worth applying, and the mixin hands the lightmap back to vanilla. */
     private static final float OFF_EPSILON = 0.004f;
@@ -70,6 +76,19 @@ public final class ClientPortalCrossing {
         target = 0.0f;
         ttl = 0;
         applied = 0.0f;
+    }
+
+    /**
+     * How strongly the crossing is currently applied, without touching the ease.
+     *
+     * <p>For the other two corridor effects — {@link ClientPortalRoomFog} and
+     * {@link ClientPortalRoomSky} — which ramp along the same walk but are driven from the render
+     * pass rather than from the lightmap rebuild, and so must not be the ones stepping this. Reading
+     * a value {@link #advance} stepped earlier in the same rebuild is the point: all three effects
+     * then move together, which is what makes the corridor read as one transition.</p>
+     */
+    public static float current() {
+        return applied;
     }
 
     /**
