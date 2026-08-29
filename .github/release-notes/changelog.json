@@ -9797,9 +9797,9 @@
       ],
       "pr": 1176,
       "date": "2026-08-29",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.715.0",
+      "released_at": "2026-08-29T12:01:41Z"
     },
     {
       "id": "burnt-book-advancements",
