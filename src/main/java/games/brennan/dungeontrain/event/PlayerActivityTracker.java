@@ -339,6 +339,8 @@ public final class PlayerActivityTracker {
         Reason reason = reason(player);
         Reason previous = REPORTED_REASON.put(uuid, reason);
         if (previous == reason) return;
+        // First observation of a player is a baseline, not a transition — nothing "resumed".
+        if (previous == null) return;
         if (reason == Reason.TRACKING) {
             LOGGER.info("[DungeonTrain] Activity: {} RESUMED counting at tick {} (was {}, trigger: {})",
                 player.getName().getString(), now, previous,
