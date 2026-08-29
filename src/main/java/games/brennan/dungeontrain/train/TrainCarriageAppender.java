@@ -6,8 +6,13 @@ import games.brennan.dungeontrain.bootstrap.BootstrapProgress;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.debug.DebugAccessEvents;
 import games.brennan.dungeontrain.net.CarriageIndexPacket;
+import games.brennan.dungeontrain.portal.PortalCarriageSelection;
+import games.brennan.dungeontrain.portal.PortalRegistry;
+import games.brennan.dungeontrain.portal.PortalStampRecord;
+import games.brennan.dungeontrain.portal.PortalTwinSpace;
 import games.brennan.dungeontrain.net.TrainDebugCarriagePacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
+import net.minecraft.util.Mth;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.Shipyard;
 import games.brennan.dungeontrain.ship.Shipyards;
@@ -1891,11 +1896,20 @@ public final class TrainCarriageAppender {
             // player is actually standing in rather than the lead group's — see occupiedPIdx. It
             // therefore changes on its own schedule and needs its own "did it change" record.
             if (DebugAccessEvents.isPermitted(player)) {
-                Integer occupied = occupiedPIdx(train, player, dims, groupSize);
-                Integer lastDebug = LAST_SENT_DEBUG_PIDX.get(uuid);
-                if (occupied != null && !occupied.equals(lastDebug)) {
-                    DungeonTrainNet.sendTo(player, debugCarriageAt(occupied));
-                    LAST_SENT_DEBUG_PIDX.put(uuid, occupied);
+                if (inDimensionalCarriage(level, player)) {
+                    // In the pocket room there is no carriage to report, and the index they last
+                    // stood at is not where they are. Forget it so walking back out re-sends.
+                    if (LAST_SENT_DEBUG_PIDX.remove(uuid) != null) {
+                        DungeonTrainNet.sendTo(player, dimensionalCarriagePacket());
+                    }
+                } else {
+                    Occupied occupied = occupiedPIdx(train, player, dims, groupSize);
+                    Integer lastDebug = LAST_SENT_DEBUG_PIDX.get(uuid);
+                    if (occupied != null && !Integer.valueOf(occupied.pIdx()).equals(lastDebug)) {
+                        DungeonTrainNet.sendTo(player, debugCarriageAt(
+                            level, occupied.pIdx(), occupied.slot(), groupSize));
+                        LAST_SENT_DEBUG_PIDX.put(uuid, occupied.pIdx());
+                    }
                 }
             }
 
@@ -4398,10 +4412,14 @@ public final class TrainCarriageAppender {
      *
      * <p>So this finds the group whose own bounds contain the player (nearest, if they are in a
      * gap between groups) and indexes within that group's frame, off that group's own anchor pIdx.
-     * Returns null when the train has no group to attribute them to.</p>
+     * The raw slot rides along: outside {@code [0, groupSize)} it means the player is on one of the
+     * half-pads wrapping the enclosed run, which {@code cartTypeAt} reports as such. Returns null
+     * when the train has no group to attribute them to.</p>
      */
-    private static Integer occupiedPIdx(List<Trains.Carriage> train, ServerPlayer player,
-                                        CarriageDims dims, int groupSize) {
+    private record Occupied(int pIdx, int slot) {}
+
+    private static Occupied occupiedPIdx(List<Trains.Carriage> train, ServerPlayer player,
+                                         CarriageDims dims, int groupSize) {
         double px = player.getX();
         double py = player.getY();
         double pz = player.getZ();
@@ -4429,7 +4447,56 @@ public final class TrainCarriageAppender {
         int slot = (int) Math.floor(
             (local.x - best.provider().getShipyardOrigin().getX() - enclosedStartOffset)
                 / (double) length);
-        return best.provider().getPIdx() + slot;
+        return new Occupied(best.provider().getPIdx() + slot, slot);
+    }
+
+    /** The panel's read-out for a player inside a portal pair's pocket room. */
+    private static TrainDebugCarriagePacket dimensionalCarriagePacket() {
+        return new TrainDebugCarriagePacket(true, 0, CART_TYPE_ROOM, "", "");
+    }
+
+    /** Cart-type labels for the places that never roll a variant. Player-facing wording. */
+    private static final String CART_TYPE_ROOM = "dimensional carriage";
+    private static final String CART_TYPE_PAD = "flatbed pad";
+    private static final String CART_TYPE_CORRIDOR_ENTRY = "corridor (entry)";
+    private static final String CART_TYPE_CORRIDOR_EXIT = "corridor (exit)";
+    private static final String CART_TYPE_CORRIDOR_MIDDLE = "corridor group (middle cart)";
+
+    /**
+     * Whether the player is standing in a portal pair's pocket room rather than on the train.
+     * Checked before anything carriage-shaped, because in there no carriage answer applies.
+     */
+    private static boolean inDimensionalCarriage(ServerLevel level, ServerPlayer player) {
+        return PortalTwinSpace.isInside(level, Mth.floor(player.getX()), player.getY());
+    }
+
+    /**
+     * The label the F3+4 panel shows for where the player is.
+     *
+     * <p>Ordinary carriages report the variant they rolled. The three kinds of place that never
+     * reach a roll — the half-pads wrapping each group, portal corridors, and the pocket room —
+     * report what they are instead, which is the whole point: those are exactly where the panel
+     * used to fall silent.</p>
+     *
+     * <p>{@code slot} is the player's position within their group's enclosed run, so a value
+     * outside {@code [0, groupSize)} means they are on one of the pads that wrap it.</p>
+     */
+    private static String cartTypeAt(ServerLevel level, int pIdx, int slot, int groupSize) {
+        if (groupSize > 1 && (slot < 0 || slot >= groupSize)) {
+            return CART_TYPE_PAD;
+        }
+        // The registry is the authoritative post-placement answer — re-deriving whether an index is
+        // a portal would drift the same way the contents roll does. See PortalRegistry#noteStamped.
+        if (PortalRegistry.get(level).isStampedPortalPart(pIdx)) {
+            if (!PortalStampRecord.isCorridorSlot(pIdx, groupSize)) {
+                return CART_TYPE_CORRIDOR_MIDDLE;
+            }
+            return PortalCarriageSelection.slotOf(pIdx, groupSize) == PortalCarriageSelection.SLOT_ENTRY
+                ? CART_TYPE_CORRIDOR_ENTRY
+                : CART_TYPE_CORRIDOR_EXIT;
+        }
+        PlacedCarriageFacts.Facts facts = PlacedCarriageFacts.get(pIdx);
+        return facts == null ? "" : facts.variantId();
     }
 
     /**
@@ -4441,13 +4508,17 @@ public final class TrainCarriageAppender {
      * session never placed reports empty ids — the panel shows a dash, which is the honest answer
      * rather than a confident wrong one.</p>
      */
-    private static TrainDebugCarriagePacket debugCarriageAt(int pIdx) {
+    private static TrainDebugCarriagePacket debugCarriageAt(ServerLevel level, int pIdx, int slot,
+                                                            int groupSize) {
+        String cartType = cartTypeAt(level, pIdx, slot, groupSize);
         PlacedCarriageFacts.Facts facts = PlacedCarriageFacts.get(pIdx);
         if (facts == null) {
-            return new TrainDebugCarriagePacket(true, pIdx, "", "", "");
+            // A pad, corridor or unplaced index still has a cart type worth showing, even though
+            // nothing rolled contents for it.
+            return new TrainDebugCarriagePacket(true, pIdx, cartType, "", "");
         }
         return new TrainDebugCarriagePacket(
-            true, pIdx, facts.variantId(), facts.contentsId(), facts.subVariantId());
+            true, pIdx, cartType, facts.contentsId(), facts.subVariantId());
     }
 
     /**
@@ -4464,7 +4535,12 @@ public final class TrainCarriageAppender {
             ServerPlayer player = level.getServer().getPlayerList().getPlayer(uuid);
             if (player != null) {
                 DungeonTrainNet.sendTo(player, CarriageIndexPacket.absent());
-                DungeonTrainNet.sendTo(player, TrainDebugCarriagePacket.absent());
+                // A pocket room sits below bedrock or above the roof, so its occupant can fall
+                // outside the train's near-radius and land here. They have not left the train —
+                // they are inside it in the only sense that matters to the panel.
+                DungeonTrainNet.sendTo(player, inDimensionalCarriage(level, player)
+                    ? dimensionalCarriagePacket()
+                    : TrainDebugCarriagePacket.absent());
             }
             it.remove();
             LAST_SENT_DEBUG_PIDX.remove(uuid);

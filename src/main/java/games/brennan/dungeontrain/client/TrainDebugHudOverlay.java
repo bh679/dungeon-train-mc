@@ -115,7 +115,7 @@ public final class TrainDebugHudOverlay {
         lines.add(new Line("Carriage: "
             + (onTrain ? formatSigned(TrainDebugState.pIdx()) : NONE), COLOR_BODY));
 
-        lines.add(new Line("Cart type: " + fieldOr(onTrain, TrainDebugState.variantId()), COLOR_BODY));
+        lines.add(new Line("Cart type: " + fieldOr(onTrain, TrainDebugState.cartType()), COLOR_BODY));
         lines.add(new Line("Content type: " + fieldOr(onTrain, TrainDebugState.contentsId()), COLOR_BODY));
         // Empty is meaningful here rather than unknown: the group draw landed on the parent's own
         // contents, or the parent has no group at all. Either way there is no sub-variant.

@@ -82,6 +82,15 @@ public final class PlacedCarriageFacts {
     }
 
     /**
+     * Record a carriage whose shell is placed but which never rolls contents — a FLATBED. Without
+     * this the panel has nothing to say about a carriage that plainly exists, because the contents
+     * pick it would otherwise be recorded at is skipped for exactly this variant.
+     */
+    public static synchronized void recordShellOnly(int carriagePIdx, CarriageVariant variant) {
+        BY_PIDX.put(carriagePIdx, new Facts(variant == null ? "" : variant.id(), "", ""));
+    }
+
+    /**
      * Record a slot stamped verbatim from the shared-carriage relay pool. It never reaches a
      * contents pick, so only the variant it was leased against is known.
      */

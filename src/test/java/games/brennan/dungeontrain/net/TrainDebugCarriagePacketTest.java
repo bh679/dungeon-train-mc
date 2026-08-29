@@ -27,7 +27,7 @@ final class TrainDebugCarriagePacketTest {
         TrainDebugCarriagePacket decoded = roundTrip(original);
 
         assertEquals(12, decoded.pIdx());
-        assertEquals("cargo", decoded.variantId());
+        assertEquals("cargo", decoded.cartType());
         assertEquals("container_wooden", decoded.contentsId());
         assertEquals("cagedzombie", decoded.subVariantId());
     }
@@ -60,7 +60,7 @@ final class TrainDebugCarriagePacketTest {
     void nullIds_normalised() {
         TrainDebugCarriagePacket packet = new TrainDebugCarriagePacket(true, 1, null, null, null);
 
-        assertEquals("", packet.variantId());
+        assertEquals("", packet.cartType());
         assertEquals("", packet.contentsId());
         assertEquals("", packet.subVariantId());
     }

@@ -28,7 +28,7 @@ public final class TrainDebugState {
     private static volatile long seed = 0L;
     private static volatile boolean carriagePresent = false;
     private static volatile int pIdx = 0;
-    private static volatile String variantId = "";
+    private static volatile String cartType = "";
     private static volatile String contentsId = "";
     private static volatile String subVariantId = "";
 
@@ -58,9 +58,13 @@ public final class TrainDebugState {
         return pIdx;
     }
 
-    /** The shell variant the player's carriage rolls to, or {@code ""} when unknown / off-train. */
-    public static String variantId() {
-        return variantId;
+    /**
+     * What kind of place the player is in — the rolled variant for an ordinary carriage, or a label
+     * like {@code flatbed pad} / {@code corridor (entry)} / {@code dimensional carriage} for the
+     * places that never roll one. Empty when unknown.
+     */
+    public static String cartType() {
+        return cartType;
     }
 
     /** The interior contents parent id, or {@code ""} when unknown / off-train. */
@@ -99,11 +103,11 @@ public final class TrainDebugState {
     }
 
     /** Fed by {@code TrainDebugCarriagePacket.handle} on every carriage-boundary crossing. */
-    public static void setCarriage(boolean present, int carriagePIdx, String carriageVariantId,
+    public static void setCarriage(boolean present, int carriagePIdx, String carriageCartType,
                                    String carriageContentsId, String carriageSubVariantId) {
         carriagePresent = present;
         pIdx = present ? carriagePIdx : 0;
-        variantId = present ? orEmpty(carriageVariantId) : "";
+        cartType = present ? orEmpty(carriageCartType) : "";
         contentsId = present ? orEmpty(carriageContentsId) : "";
         subVariantId = present ? orEmpty(carriageSubVariantId) : "";
     }
@@ -123,7 +127,7 @@ public final class TrainDebugState {
         seed = 0L;
         carriagePresent = false;
         pIdx = 0;
-        variantId = "";
+        cartType = "";
         contentsId = "";
         subVariantId = "";
     }

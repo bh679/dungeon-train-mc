@@ -422,6 +422,11 @@ public final class CarriagePlacer {
         CarriageDims dims, CarriageGenerationConfig config, int carriageIndex, int groupAnchorWorldX
     ) {
         if (variant instanceof CarriageVariant.Builtin b && b.type() == CarriageType.FLATBED) {
+            // Skips the contents roll, so record the shell here or the debug panel has nothing to
+            // report for a carriage that plainly exists.
+            if (carriageIndex != CarriageContentsPlacer.EDITOR_SENTINEL_PIDX) {
+                PlacedCarriageFacts.recordShellOnly(carriageIndex, variant);
+            }
             return null;
         }
         // No part of a portal gets contents, for the same reason FLATBED gets none: there is no

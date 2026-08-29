@@ -10,8 +10,8 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 /**
  * Server → client: what the player's current carriage actually is, for the F3+4 debug panel —
- * its shell variant ("cart type"), the interior contents parent ("content type"), and the group
- * member that parent resolved to ("sub variant").
+ * what kind of place it is ("cart type"), the interior contents parent ("content type"), and the
+ * group member that parent resolved to ("sub variant").
  *
  * <p>Sent alongside {@link CarriageIndexPacket} on a carriage-boundary crossing, but <b>only to
  * players who may open the panel</b>. It is deliberately separate rather than three more fields on
@@ -23,11 +23,15 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  * contents (the synthetic "self" member) or when it has no group sidecar at all — there is no
  * sub-variant to name in either case.</p>
  *
- * <p>All three ids are what the carriage index <em>rolls to</em>. A slot filled from the
+ * <p>{@code cartType} is a resolved label, not always a variant id: an ordinary carriage reports
+ * the variant it rolled, but a flatbed pad, a portal corridor and a dimensional carriage report
+ * what they are, since none of them roll a variant at all.</p>
+ *
+ * <p>The contents ids are what the carriage index <em>rolls to</em>. A slot filled from the
  * shared-carriage relay pool holds another player's build placed verbatim, so for those carriages
  * these name what would have generated rather than what is standing.</p>
  */
-public record TrainDebugCarriagePacket(boolean present, int pIdx, String variantId,
+public record TrainDebugCarriagePacket(boolean present, int pIdx, String cartType,
                                        String contentsId, String subVariantId)
         implements CustomPacketPayload {
 
@@ -41,7 +45,7 @@ public record TrainDebugCarriagePacket(boolean present, int pIdx, String variant
         );
 
     public TrainDebugCarriagePacket {
-        variantId = variantId == null ? "" : variantId;
+        cartType = cartType == null ? "" : cartType;
         contentsId = contentsId == null ? "" : contentsId;
         subVariantId = subVariantId == null ? "" : subVariantId;
     }
@@ -55,7 +59,7 @@ public record TrainDebugCarriagePacket(boolean present, int pIdx, String variant
         buf.writeBoolean(present);
         if (present) {
             buf.writeVarInt(pIdx);
-            buf.writeUtf(variantId);
+            buf.writeUtf(cartType);
             buf.writeUtf(contentsId);
             buf.writeUtf(subVariantId);
         }
@@ -77,6 +81,6 @@ public record TrainDebugCarriagePacket(boolean present, int pIdx, String variant
 
     public static void handle(TrainDebugCarriagePacket packet, IPayloadContext ctx) {
         ctx.enqueueWork(() -> TrainDebugState.setCarriage(
-            packet.present, packet.pIdx, packet.variantId, packet.contentsId, packet.subVariantId));
+            packet.present, packet.pIdx, packet.cartType, packet.contentsId, packet.subVariantId));
     }
 }
