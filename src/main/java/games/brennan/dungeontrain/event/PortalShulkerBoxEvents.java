@@ -8,11 +8,17 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.context.BlockPlaceContext;
+import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.block.ShulkerBoxBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.common.util.BlockSnapshot;
+import net.neoforged.neoforge.common.util.TriState;
+import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.level.BlockEvent;
 
 /**
@@ -30,6 +36,15 @@ import net.neoforged.neoforge.event.level.BlockEvent;
  * else in the corridor stays fully editable, and breaking a box placed before this existed still
  * works, so nothing is stranded.</p>
  *
+ * <p><b>Refused at the click, not undone afterwards.</b> The obvious hook,
+ * {@link BlockEvent.EntityPlaceEvent}, fires once the block is already in the world: cancelling it
+ * puts the box down and takes it away again, which the player sees flicker, and which momentarily
+ * feeds a real block change to the mirror — the very thing being prevented. So the primary refusal is
+ * {@link PlayerInteractEvent.RightClickBlock}, which runs <i>before</i> the item is used, and denies
+ * only the item half ({@code setUseItem}) so right-clicking a chest with a box in hand still opens
+ * the chest. The place events below stay as a backstop for placements that never pass through a
+ * right-click at all.</p>
+ *
  * <p><b>Portal rooms are untouched.</b> A room has no twin and no mirror, so a shulker box in one
  * behaves like a shulker box anywhere else.</p>
  *
@@ -45,6 +60,35 @@ public final class PortalShulkerBoxEvents {
 
     private PortalShulkerBoxEvents() {}
 
+    /**
+     * The refusal that actually matters: deny the click before the box is ever placed.
+     *
+     * <p>The target cell is derived through {@link BlockPlaceContext}, which is what vanilla itself
+     * asks — the face offset, unless the clicked block is replaceable, in which case the click lands
+     * on it. Testing the clicked position instead would refuse a box placed against the <i>outside</i>
+     * of a corridor wall, which is somewhere it is perfectly welcome.</p>
+     */
+    @SubscribeEvent
+    public static void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
+        if (event.getUseItem() == TriState.FALSE) return;
+        if (!(event.getLevel() instanceof ServerLevel level)) return;
+        if (!(event.getItemStack().getItem() instanceof BlockItem item)) return;
+        if (!(item.getBlock() instanceof ShulkerBoxBlock)) return;
+
+        Player player = event.getEntity();
+        BlockPos target = new BlockPlaceContext(
+            new UseOnContext(player, event.getHand(), event.getHitVec())).getClickedPos();
+        if (!PortalPairIndex.isCorridorCell(level, target)) return;
+
+        event.setUseItem(TriState.FALSE);
+        tellPlayer(player);
+    }
+
+    /**
+     * Backstop for placements that never pass through a right-click — another mod placing on a
+     * player's behalf, or a block placed by machinery. Reached only when the click-side refusal did
+     * not apply, so in ordinary play this never fires.
+     */
     @SubscribeEvent
     public static void onBlockPlace(BlockEvent.EntityPlaceEvent event) {
         if (event.isCanceled()) return;
@@ -58,8 +102,8 @@ public final class PortalShulkerBoxEvents {
 
     /**
      * The bulk-placement counterpart. Effortless Building — bundled in the modpack — places whole
-     * rows at once through this event, which would otherwise walk straight past the single-place
-     * check above. The event is all-or-nothing, so one refused cell refuses the placement: a
+     * rows at once through this event, on one right-click that the handler above cannot resolve to
+     * the individual cells. The event is all-or-nothing, so one refused cell refuses the placement: a
      * half-laid row leaving boxes on both sides of the corridor wall would be worse than none.
      */
     @SubscribeEvent
