@@ -10005,13 +10005,16 @@
       "released_at": null
     },
     {
-      "id": "no-shulker-boxes-in-dimensional-carriages",
+      "id": "ai-policy-page-layout",
       "version": "0.728.0",
-      "type": "fix",
-      "title": "Shulker boxes near dimensional carriages",
-      "summary": "Shulker boxes can no longer be placed inside rooms adjacent to a dimensional carriage. Dimensional carriages themselves are unaffected.",
-      "highlights": [],
-      "pr": 1191,
+      "type": "feat",
+      "title": "AI Policy page redesign",
+      "summary": "The AI Policy page is easier to read at a glance. Each section is now its own card with a coloured heading, and every point carries an item icon \u2014 green for the things made by hand, amber for where AI is actually used. Long pages also get a scrollbar.",
+      "highlights": [
+        "AI Policy sections are now cards with colour-coded headings",
+        "Every point carries an item icon",
+        "Added a scrollbar to the page"
+      ],
       "date": "2026-08-29",
       "released": false,
       "released_in": null,
