@@ -51,6 +51,29 @@ final class PortalCrossingLightTest {
     }
 
     /**
+     * <b>The doorways are flat.</b> The ramp runs across the corridor's interior —
+     * {@link PortalFacing#FIRST_RAMP_BLOCK} to {@link PortalFacing#lastRampBlock}, the same span the
+     * facing sweep uses — so it is already finished a block before the room and the last step
+     * through the door changes nothing. A ramp that only reached full <i>at</i> the room door put its
+     * final slice of change in exactly the step where it is most visible.
+     */
+    @Test
+    @DisplayName("the transition is over a block before the room, and has not begun a block after the train")
+    void rampIsFlatThroughBothDoorways() {
+        for (int length : new int[] {7, 9, 13, 16}) {
+            PortalCarriageLayout l = layout(length);
+            PortalCarriageRole role = PortalCarriageRole.ENTRY;
+
+            assertEquals(PortalCrossingLight.OFF,
+                PortalCrossingLight.intensityAt(PortalFacing.FIRST_RAMP_BLOCK + 0.5, l, role),
+                1e-9, "first ramp block should still be off at length " + length);
+            assertEquals(1.0,
+                PortalCrossingLight.intensityAt(PortalFacing.lastRampBlock(length) + 0.5, l, role),
+                1e-9, "last ramp block should be full at length " + length);
+        }
+    }
+
+    /**
      * <b>One transition, not two.</b> The bug this pins is the shape the ramp used to have: it held
      * at full across the middle and fell away at both ends, so a player walking a corridor crossed
      * it twice — up on the way in and down on the way out — and felt two lighting changes per

@@ -27,8 +27,8 @@ package games.brennan.dungeontrain.portal;
  * differ most, simply by turning round.</p>
  *
  * <h2>One transition, not two</h2>
- * <p>This ramp runs <b>straight through</b>: nothing at the train-side door plane, rising to full at
- * the room-side one. A corridor is the walk between two different places, and it should read as one
+ * <p>This ramp runs <b>straight through</b>: nothing in the train-side door block, rising to full by
+ * the block inside the room-side one. A corridor is the walk between two different places, and it should read as one
  * change of lighting between them — the outside world at one end, the room at the other.</p>
  *
  * <p><b>It used to be symmetric</b>, holding at full across the middle and falling away at both
@@ -64,8 +64,16 @@ public final class PortalCrossingLight {
     public static final double OFF = 0.0;
 
     /**
-     * The ramp at {@code localX} in a corridor of this layout and role: {@link #OFF} at the
-     * train-side door plane, {@code 1} at the room-side one, and a straight line between.
+     * The ramp at {@code localX} in a corridor of this layout and role: {@link #OFF} through the
+     * train-side door block, {@code 1} from the room-side one, and a straight line between.
+     *
+     * <p><b>The two door planes are flat, and the ramp runs between the blocks inside them</b> —
+     * {@link PortalFacing#FIRST_RAMP_BLOCK} to {@link PortalFacing#lastRampBlock}, which is exactly
+     * the span the facing sweep runs over. A player standing in a doorway is in a doorway rather
+     * than in the corridor: it is the one place with a fixed reference right in front of them, and
+     * both the swap rule and this one leave it alone. It also means the transition is <i>finished</i>
+     * a block before the room rather than at its threshold, so the last step through the door
+     * changes nothing at all — which is the whole point of the exercise.</p>
      *
      * <p>Linear rather than eased. The client is already easing between the values it is sent
      * ({@code ClientPortalCrossing}), and the corridor is nine blocks — a curve on top of that would
@@ -80,14 +88,16 @@ public final class PortalCrossingLight {
     public static double intensityAt(double localX, PortalCarriageLayout layout,
                                      PortalCarriageRole role) {
         int length = layout.length();
-        // The span between the two door planes. A corridor one block long has no span and no
-        // transition to make; PortalCarriageLayout.MIN_LENGTH rules it out, and this is here so that
-        // loosening that constant cannot turn into a division by zero.
-        int span = length - 1;
-        if (span <= 0) return 1.0;
-
         double depth = PortalFacing.depthFromTrainDoor(localX, length, role);
-        return Math.max(0.0, Math.min(1.0, depth / span));
+
+        int first = PortalFacing.FIRST_RAMP_BLOCK;
+        // The span the sweep runs over: the corridor's interior, both door blocks excluded.
+        int span = PortalFacing.lastRampBlock(length) - first;
+        // A corridor with no interior to cross has no transition to make; MIN_LENGTH rules it out,
+        // and this is here so that loosening that constant cannot turn into a division by zero.
+        if (span <= 0) return depth >= first ? 1.0 : OFF;
+
+        return Math.max(0.0, Math.min(1.0, (depth - first) / span));
     }
 
     /** The wire form: {@code 0}..{@code 255}, which is all the resolution an eased lift can show. */
