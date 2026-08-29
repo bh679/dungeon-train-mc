@@ -29,6 +29,7 @@
     "ServerGamePacketListenerImplSignBookMixin",
     "ServerGamePacketListenerImplDifficultyMixin",
     "ServerPlayerPortalContainerReachMixin",
+    "PlayerPortalContainerReachMixin",
     "ChiseledBookShelfBlockUnsignedBookMixin",
     "SpreadingSnowyDirtBlockUpsideDownMixin",
     "SnowLayerBlockUpsideDownMixin",

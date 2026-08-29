@@ -52,17 +52,33 @@ public abstract class ServerPlayerPortalContainerReachMixin {
         try {
             BlockPos viewed = PortalRemoteViewers.viewedFrom(player);
             if (viewed != null && player.level() instanceof ServerLevel level) {
-                if (PortalContainerLink.containerAt(level, viewed) != null
-                        && player.canInteractWithBlock(viewed, CONTAINER_REACH_PADDING)) {
+                Object container = PortalContainerLink.containerAt(level, viewed);
+                boolean inReach = player.canInteractWithBlock(viewed, CONTAINER_REACH_PADDING);
+                if (container != null && inReach) {
                     return true;
                 }
+                // TEMP DIAGNOSTIC — remove before merge.
+                LOGGER.info("[DT-DIAG] dropping remote view: menu={} viewed={} container={} inReach={} eye={}",
+                    menu.getClass().getSimpleName(), viewed,
+                    container == null ? "null" : container.getClass().getSimpleName(),
+                    inReach, player.getEyePosition());
                 // Out of reach, or the copy in front of them has been mined: let vanilla close it,
                 // and stop asking on every tick from here on.
                 PortalRemoteViewers.closed(player);
+            } else if (menu != player.inventoryMenu) {
+                // TEMP DIAGNOSTIC — remove before merge. No remote-view entry recorded at all.
+                LOGGER.info("[DT-DIAG] no remote entry for open menu={} viewed={}",
+                    menu.getClass().getSimpleName(), viewed);
             }
         } catch (Throwable t) {
             LOGGER.warn("[DungeonTrain] Portal container reach check failed; using vanilla's", t);
         }
-        return original.call(menu, player);
+        boolean vanilla = original.call(menu, player);
+        // TEMP DIAGNOSTIC — remove before merge.
+        if (!vanilla && menu != player.inventoryMenu) {
+            LOGGER.info("[DT-DIAG] vanilla stillValid=false, menu closing: menu={}",
+                menu.getClass().getSimpleName());
+        }
+        return vanilla;
     }
 }
