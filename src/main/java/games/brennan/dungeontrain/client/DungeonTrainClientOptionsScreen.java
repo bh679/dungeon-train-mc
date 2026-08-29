@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.client;
 
 import games.brennan.dungeontrain.client.display.DisplayScaleOption;
 import games.brennan.dungeontrain.client.localization.edit.TranslationScreen;
+import games.brennan.dungeontrain.client.policy.AiPolicyScreen;
 import games.brennan.dungeontrain.client.localization.edit.TranslationTarget;
 import games.brennan.dungeontrain.client.sound.TrainVolumeOption;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
@@ -274,6 +275,7 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             case CINEMATIC_HOTKEY -> onOffCandidates("gui.dungeontrain.options.cinematic_hotkey");
             case SNAPSHOT_CHAT_LOG -> onOffCandidates("gui.dungeontrain.options.snapshot_chat_log");
             case BACKPACK_BUTTON -> onOffCandidates("gui.dungeontrain.options.backpack_button");
+            case AI_POLICY -> List.of(Component.translatable("gui.dungeontrain.options.ai_policy"));
             case TRANSLATE -> List.of(Component.translatable("gui.dungeontrain.options.translate"));
             case CUSTOM_CONTENT -> {
                 List<Component> out = new ArrayList<>();
@@ -399,6 +401,15 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                                     Component.translatable("gui.dungeontrain.options.cinematic_hotkey"),
                                     (btn, on) -> ClientDisplayConfig.setCinematicHotkeyEnabled(on)),
                     "gui.dungeontrain.options.cinematic_hotkey.tip");
+
+            // "Was any of this made by AI?" answered in full. Unconditional, and deliberately a
+            // page rather than a tooltip: the honest answer is longer than a row can carry. Also
+            // reachable from the Credits page — see AiPolicyScreen.
+            case AI_POLICY -> withTip(
+                    Button.builder(Component.translatable("gui.dungeontrain.options.ai_policy"),
+                                    b -> this.minecraft.setScreen(new AiPolicyScreen(this)))
+                            .bounds(0, 0, width, ROW_H).build(),
+                    "gui.dungeontrain.options.ai_policy.tip");
 
             // Shown only when there is a language to edit — on en_us in a release build there is none
             // and the row would be a dead end; a dev build points it at the dev target instead, so the

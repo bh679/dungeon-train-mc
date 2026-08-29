@@ -9987,6 +9987,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "ai-policy-screen",
+      "version": "0.727.0",
+      "type": "feat",
+      "title": "AI Policy screen",
+      "summary": "A new in-game page states plainly what in Dungeon Train is made by hand and where AI is actually used. The books, the artwork, the player mobs and the name generator are not AI; nothing is trained on your data, and no AI runs on your machine. Open it from Dungeon Train Options, or from the paper icon on the Credits page.",
+      "highlights": [
+        "New AI Policy page \u2014 what is and is not made by AI, in plain terms",
+        "Reachable from Dungeon Train Options and from the Credits page",
+        "Links out to the Discord updates channel"
+      ],
+      "date": "2026-08-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
