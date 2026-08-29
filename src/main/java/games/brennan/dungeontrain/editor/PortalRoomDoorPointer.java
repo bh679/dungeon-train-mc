@@ -19,6 +19,7 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.DoorBlock;
+import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -39,11 +40,18 @@ import java.io.IOException;
  * True freedom to set the door anywhere along the wall is therefore only reachable by never actually
  * placing one there.</p>
  *
- * <h2>Where a click is read from</h2>
- * <p>{@code event.getPos().relative(event.getFace())} — the cell a real door would have landed in,
- * exactly the way {@code PrefabUseHandler} reads a paste target. That cell only means something when
- * it falls on one of a room's own two doorway columns
- * ({@code origin.x - 1} / {@code origin.x + size.x}, the same columns
+ * <h2>Where a click is read from — two events, because a ghost is not a block</h2>
+ * <p>A click that lands on a real block (the room's end wall) arrives as
+ * {@link PlayerInteractEvent.RightClickBlock}, and the cell in front of the clicked face is the
+ * target — exactly the way {@code PrefabUseHandler} reads a paste target. But the doorway column is
+ * <b>air</b>, and a ghost is drawn rather than placed, so aiming straight at the marker hits nothing
+ * and vanilla fires {@link PlayerInteractEvent.RightClickItem} instead. Both are handled: the empty
+ * click walks the player's own look ray and takes the first doorway-column cell along it. Handling
+ * only the block form is a bug that reads as the feature being dead, since aiming at the ghost — the
+ * obvious gesture — is precisely the case it misses.</p>
+ *
+ * <p>Either way the target only means something when it falls on one of a room's own two doorway
+ * columns ({@code origin.x - 1} / {@code origin.x + size.x}, the same columns
  * {@link games.brennan.dungeontrain.portal.PortalRoomDoorCells} ghosts) — anywhere else the click is
  * left alone and plays out as whatever it would have without this handler.</p>
  *
@@ -57,19 +65,23 @@ import java.io.IOException;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class PortalRoomDoorPointer {
 
+    /** How far along the look ray an air-click is honoured, in blocks — creative's own build reach. */
+    private static final double REACH = 6.0;
+
+    /** Ray-march step, in blocks. Half a cell, so no cell along the ray is stepped over. */
+    private static final double STEP = 0.5;
+
     private PortalRoomDoorPointer() {}
 
+    /**
+     * A click that landed on a real block — the room's own end wall, most often. The cell in front of
+     * the face clicked is the one a real door would have gone in, so that is what is aimed at.
+     */
     @SubscribeEvent(priority = EventPriority.HIGH)
     public static void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
-        if (event.getLevel().isClientSide()) return;
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
-
-        ItemStack held = event.getItemStack();
-        if (!(held.getItem() instanceof BlockItem blockItem)
-                || !(blockItem.getBlock() instanceof DoorBlock)) {
-            return;
-        }
-        if (EditorStampedCategoryState.current().orElse(null) != EditorCategory.PORTALS) return;
+        if (!holdingDoor(event.getItemStack())) return;
+        if (event.getLevel().isClientSide()) return;
 
         ServerLevel level = (ServerLevel) event.getLevel();
         CarriageDims dims = DungeonTrainWorldData.get(level).dims();
@@ -77,13 +89,70 @@ public final class PortalRoomDoorPointer {
 
         Match match = resolve(target, dims);
         if (match == null) return;
-
         // Cancel first: whatever this click would otherwise have done (placing the door, opening a
         // gate, whatever the targeted block does on right-click) is superseded the moment it lands on
         // a doorway column — a door in hand here always means "set the position", never "place".
         event.setCanceled(true);
         event.setCancellationResult(InteractionResult.CONSUME);
+        apply(player, dims, match);
+    }
 
+    /**
+     * A click that hit nothing — which is the <b>normal</b> way to aim at a ghost, since the doorway
+     * column is air and a ghost is drawn, not placed. Vanilla fires this instead of
+     * {@link PlayerInteractEvent.RightClickBlock} when the crosshair is over no block, so without it
+     * aiming straight at the marker does nothing at all and only clipping the wall beside it works.
+     *
+     * <p>Resolved by walking the player's own look ray rather than off a block face, since there is no
+     * face to read: the first cell along it that belongs to a doorway column is the one meant.</p>
+     */
+    @SubscribeEvent(priority = EventPriority.HIGH)
+    public static void onRightClickEmpty(PlayerInteractEvent.RightClickItem event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        if (!holdingDoor(event.getItemStack())) return;
+        if (event.getLevel().isClientSide()) return;
+
+        ServerLevel level = (ServerLevel) event.getLevel();
+        CarriageDims dims = DungeonTrainWorldData.get(level).dims();
+
+        Match match = resolveAlongLook(player, dims);
+        if (match == null) return;
+        event.setCanceled(true);
+        event.setCancellationResult(InteractionResult.CONSUME);
+        apply(player, dims, match);
+    }
+
+    /** True while the stamped category is PORTALS and the stack is a door of any kind. */
+    private static boolean holdingDoor(ItemStack held) {
+        if (!(held.getItem() instanceof BlockItem blockItem)) return false;
+        if (!(blockItem.getBlock() instanceof DoorBlock)) return false;
+        return EditorStampedCategoryState.current().orElse(null) == EditorCategory.PORTALS;
+    }
+
+    /**
+     * The first doorway-column cell along {@code player}'s look ray, within reach — or null if the
+     * ray leaves reach without crossing one.
+     *
+     * <p>Stepped at half a block so no cell on the way is skipped, and de-duplicated so each cell is
+     * tested once however many steps land inside it. {@link #REACH} is creative's build reach, which
+     * is what an author is standing at when they aim at a ghost.</p>
+     */
+    private static Match resolveAlongLook(ServerPlayer player, CarriageDims dims) {
+        Vec3 eye = player.getEyePosition(1.0f);
+        Vec3 look = player.getViewVector(1.0f);
+        BlockPos previous = null;
+        for (double distance = 0.0; distance <= REACH; distance += STEP) {
+            BlockPos cell = BlockPos.containing(eye.add(look.scale(distance)));
+            if (cell.equals(previous)) continue;
+            previous = cell;
+            Match match = resolve(cell, dims);
+            if (match != null) return match;
+        }
+        return null;
+    }
+
+    /** Clamp both offsets to what this room can spend, persist them, and say what happened. */
+    private static void apply(ServerPlayer player, CarriageDims dims, Match match) {
         int offset = PortalRoomLayout.clampDoorOffset(dims, match.size().getZ(), match.rawOffset());
         int heightOffset = PortalRoomLayout.clampDoorHeightOffset(
             dims, match.size().getY(), match.rawHeightOffset());
