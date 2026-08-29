@@ -85,11 +85,17 @@ public final class TrainCarriageAppender {
     private static final Map<UUID, Integer> LAST_SENT_PIDX = new HashMap<>();
 
     /**
-     * Last carriage index sent to each player for the F3+4 debug panel. Separate from
-     * {@link #LAST_SENT_PIDX} because the two are computed in different frames and cross their
-     * boundaries at different moments — sharing one record would swallow debug updates.
+     * What the F3+4 debug panel was last told about each player, as an opaque key.
+     *
+     * <p>A key rather than a carriage index because the panel's subject is not always a carriage:
+     * inside a pocket room it is the room and the tile, which changes as the player walks between
+     * copies while no carriage index changes at all. Keying on the whole answer is what makes every
+     * one of those transitions re-send.</p>
+     *
+     * <p>Separate from {@link #LAST_SENT_PIDX} because the two are computed in different frames and
+     * cross their boundaries at different moments — sharing one record would swallow updates.</p>
      */
-    private static final Map<UUID, Integer> LAST_SENT_DEBUG_PIDX = new ConcurrentHashMap<>();
+    private static final Map<UUID, String> LAST_SENT_DEBUG_KEY = new ConcurrentHashMap<>();
 
     /**
      * The carriage index last pushed to {@code playerId}'s HUD — the same value the
@@ -1742,6 +1748,9 @@ public final class TrainCarriageAppender {
         // post-spawn displacement (vanilla ejection vs Sable lazy-bind race).
         tickEntityDriftTracking(level);
 
+        // Debug panel: pocket-room occupants, who the train loop below never reaches.
+        tickDebugPanelRooms(level, players);
+
         // Backward-seam-gap diagnostic (opt-in, off by default). Periodic
         // per-seam world-X gap-vs-pIdx snapshot used to diagnose the growing
         // backward-gap regression. Self-gated on the sample cadence; no-op
@@ -1899,21 +1908,13 @@ public final class TrainCarriageAppender {
             // The debug panel resolves the carriage independently, in the frame of the group the
             // player is actually standing in rather than the lead group's — see occupiedPIdx. It
             // therefore changes on its own schedule and needs its own "did it change" record.
-            if (DebugAccessEvents.isPermitted(player)) {
-                if (inDimensionalCarriage(level, player)) {
-                    // In the pocket room there is no carriage to report, and the index they last
-                    // stood at is not where they are. Forget it so walking back out re-sends.
-                    if (LAST_SENT_DEBUG_PIDX.remove(uuid) != null) {
-                        DungeonTrainNet.sendTo(player, dimensionalCarriagePacket(level, player, dims));
-                    }
-                } else {
-                    Occupied occupied = occupiedPIdx(train, player, dims, groupSize);
-                    Integer lastDebug = LAST_SENT_DEBUG_PIDX.get(uuid);
-                    if (occupied != null && !Integer.valueOf(occupied.pIdx()).equals(lastDebug)) {
-                        DungeonTrainNet.sendTo(player, debugCarriageAt(
-                            level, player, occupied.pIdx(), occupied.slot(), groupSize));
-                        LAST_SENT_DEBUG_PIDX.put(uuid, occupied.pIdx());
-                    }
+            // Players in a pocket room are handled by tickDebugPanelRooms, which runs for every
+            // player rather than only those a train reached.
+            if (DebugAccessEvents.isPermitted(player) && !inDimensionalCarriage(level, player)) {
+                Occupied occupied = occupiedPIdx(train, player, dims, groupSize);
+                if (occupied != null) {
+                    sendDebugIfChanged(player, "c:" + occupied.pIdx(), () -> debugCarriageAt(
+                        level, player, occupied.pIdx(), occupied.slot(), groupSize));
                 }
             }
 
@@ -4455,11 +4456,47 @@ public final class TrainCarriageAppender {
     }
 
     /**
+     * Send a debug-panel update only when it would say something new.
+     *
+     * <p>{@code key} must capture everything the packet would show, or a real change goes unsent —
+     * which is how the room read-out came to freeze on the tile the player entered by.</p>
+     */
+    private static void sendDebugIfChanged(ServerPlayer player, String key,
+                                           java.util.function.Supplier<TrainDebugCarriagePacket> packet) {
+        UUID uuid = player.getUUID();
+        if (key.equals(LAST_SENT_DEBUG_KEY.get(uuid))) return;
+        DungeonTrainNet.sendTo(player, packet.get());
+        LAST_SENT_DEBUG_KEY.put(uuid, key);
+    }
+
+    /**
+     * Keep the debug panel current for players inside a pocket room.
+     *
+     * <p>Runs over every player rather than the ones a train reached: a room sits in twin space,
+     * well outside the train's near-radius, so its occupants are exactly the players the train loop
+     * does not see. Walking between tiles changes what the panel should say while no carriage index
+     * moves, so the change test is the room answer itself.</p>
+     */
+    private static void tickDebugPanelRooms(ServerLevel level, List<ServerPlayer> players) {
+        CarriageDims dims = null;
+        for (ServerPlayer player : players) {
+            if (!inDimensionalCarriage(level, player)) continue;
+            if (!DebugAccessEvents.isPermitted(player)) continue;
+            if (dims == null) {
+                dims = DungeonTrainWorldData.get(level.getServer().overworld()).dims();
+            }
+            TrainDebugCarriagePacket packet = dimensionalCarriagePacket(level, player, dims);
+            sendDebugIfChanged(player, "r:" + packet.contentsId() + ":" + packet.copy(), () -> packet);
+        }
+    }
+
+    /**
      * The panel's read-out for a player inside a portal pair's pocket room.
      *
-     * <p>The room carries no record of its own: one furnishing draw serves a whole pair, so the
-     * room's contents are the ones its corridor recorded. {@code findByTwinPos} is what turns the
-     * player's position back into that pair's carriage index.</p>
+     * <p>A room has no {@code CarriageContents}: {@link games.brennan.dungeontrain.portal.PortalStructure}
+     * rolls its block variants and container contents from a per-tile seed index instead. So the
+     * panel reports the room's own identity — its name and how its copies are made — rather than an
+     * invented contents analogue.</p>
      */
     private static TrainDebugCarriagePacket dimensionalCarriagePacket(ServerLevel level,
                                                                       ServerPlayer player,
@@ -4605,18 +4642,14 @@ public final class TrainCarriageAppender {
             ServerPlayer player = level.getServer().getPlayerList().getPlayer(uuid);
             if (player != null) {
                 DungeonTrainNet.sendTo(player, CarriageIndexPacket.absent());
-                // A pocket room sits below bedrock or above the roof, so its occupant can fall
-                // outside the train's near-radius and land here. They have not left the train —
-                // they are inside it in the only sense that matters to the panel.
-                // No group frame here to borrow dims from — this path exists precisely for players
-                // no train reached — so take them from the world.
-                CarriageDims worldDims = DungeonTrainWorldData.get(level.getServer().overworld()).dims();
-                DungeonTrainNet.sendTo(player, inDimensionalCarriage(level, player)
-                    ? dimensionalCarriagePacket(level, player, worldDims)
-                    : TrainDebugCarriagePacket.absent());
+                // A room occupant has not left the train in any sense the panel cares about, and
+                // tickDebugPanelRooms is already keeping them current — don't blank them here.
+                if (!inDimensionalCarriage(level, player)) {
+                    DungeonTrainNet.sendTo(player, TrainDebugCarriagePacket.absent());
+                    LAST_SENT_DEBUG_KEY.remove(uuid);
+                }
             }
             it.remove();
-            LAST_SENT_DEBUG_PIDX.remove(uuid);
         }
     }
 }
