@@ -9686,9 +9686,9 @@
         "The Upgraded Backpack advancement now describes the real recipe: eight backpacks around a gold block."
       ],
       "date": "2026-08-28",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.714.0",
+      "released_at": "2026-08-29T10:48:25Z"
     },
     {
       "id": "relay-translation-import-job",
@@ -9702,9 +9702,9 @@
       ],
       "pr": 1169,
       "date": "2026-08-28",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.714.0",
+      "released_at": "2026-08-29T10:48:25Z"
     },
     {
       "id": "internal-diagnostics",
@@ -9714,9 +9714,9 @@
       "summary": "Behind-the-scenes maintenance work. Nothing to see or do differently in game.",
       "highlights": [],
       "date": "2026-08-29",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.714.0",
+      "released_at": "2026-08-29T10:48:25Z"
     },
     {
       "id": "relay-tick-perf-leaderboard-and-leases",
@@ -9731,9 +9731,9 @@
         "Your own edits to a community carriage still sync exactly as before"
       ],
       "date": "2026-08-29",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.714.0",
+      "released_at": "2026-08-29T10:48:25Z"
     },
     {
       "id": "freeplay-off-the-leaderboards",
@@ -9747,9 +9747,9 @@
         "Nothing changes about how Free Play itself plays"
       ],
       "date": "2026-08-29",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.714.0",
+      "released_at": "2026-08-29T10:48:25Z"
     },
     {
       "id": "armor-trim-template-value",
@@ -9764,9 +9764,9 @@
         "Only applies when Trade Everything is installed; it ships with the modpack"
       ],
       "date": "2026-08-29",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.714.0",
+      "released_at": "2026-08-29T10:48:25Z"
     },
     {
       "id": "leaderboard-verified-scores",
@@ -9780,6 +9780,146 @@
         "Most Books Written and Most Advancements are unchanged",
         "Playing on an older version means your runs won't be ranked until you update"
       ],
+      "date": "2026-08-29",
+      "released": true,
+      "released_in": "v0.714.0",
+      "released_at": "2026-08-29T10:48:25Z"
+    },
+    {
+      "id": "abandon-run-confirmation",
+      "version": "0.715.0",
+      "type": "feat",
+      "title": "Abandoning a run now asks first",
+      "summary": "The pause menu's red \"Abandon This Run\" button used to kill you on the first click. It now asks, and says outright what abandoning means: your character dies, it counts as a death, and there is no undo.",
+      "highlights": [
+        "A confirmation step between the button and the kill \u2014 no more losing a long run to a stray click.",
+        "Escape or \"Go back\" leaves the run exactly as it was; only the red confirm ends it."
+      ],
+      "pr": 1176,
+      "date": "2026-08-29",
+      "released": true,
+      "released_in": "v0.715.0",
+      "released_at": "2026-08-29T12:01:41Z"
+    },
+    {
+      "id": "burnt-book-advancements",
+      "version": "0.716.0",
+      "type": "feat",
+      "title": "A couple of new advancements",
+      "summary": "A couple of new hidden advancements have been added.",
+      "highlights": [],
+      "pr": 1178,
+      "date": "2026-08-29",
+      "released": true,
+      "released_in": "v0.718.0",
+      "released_at": "2026-08-29T14:03:55Z"
+    },
+    {
+      "id": "vanilla-spawn-upside-down-transitions",
+      "version": "0.716.0",
+      "type": "fix",
+      "title": "No more falling mobs at the edges of the upside-down zone",
+      "summary": "Ambient mobs could still spawn in the fade zones right before and after the upside-down stretch of track, where the mirrored terrain is only partially formed \u2014 they'd spawn with nothing solid underfoot and fall to their death. Those edges are now covered by the same no-spawn rule as the upside-down band itself.",
+      "highlights": [],
+      "pr": 1179,
+      "date": "2026-08-29",
+      "released": true,
+      "released_in": "v0.718.0",
+      "released_at": "2026-08-29T14:03:55Z"
+    },
+    {
+      "id": "ain-052-supporter-names",
+      "version": "0.718.0",
+      "type": "content",
+      "title": "New supporter names in the item name pool",
+      "summary": "Adventure Item Names 0.52.0 brings a new Discord supporter into the name pool in five forms \u2014 sstasske, Staske, Stas, Stanislav, Stanislav The Russian \u2014 plus Testificate, the name Notch left on villagers in the Beta 1.9 pre-releases, and a spelling fix for supporter TJYongHeng.",
+      "highlights": [],
+      "date": "2026-08-29",
+      "released": true,
+      "released_in": "v0.718.0",
+      "released_at": "2026-08-29T14:03:55Z"
+    },
+    {
+      "id": "upsidedown-shader-flip",
+      "version": "0.719.0",
+      "type": "fix",
+      "title": "The upside-down world is upside-down again \u2014 with shaders on",
+      "summary": "If you play with Sodium or Iris shaders \u2014 which the modpack ships \u2014 the upside-down stretch was quietly rendering the right way up. The world now hangs from the ceiling as it should, whether or not a shaderpack is loaded, while the train stays upright underneath you.",
+      "highlights": [
+        "Fixed: upside-down band terrain rendered upright for anyone running Sodium or Iris shaders",
+        "The flip now looks identical with shaders on and off",
+        "Terrain right beside the track flips too, not just the far hills"
+      ],
+      "pr": 1181,
+      "date": "2026-08-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "portal-tile-entity-sweep",
+      "version": "0.720.0",
+      "type": "fix",
+      "title": "Fixed mobs getting stuck behind in endless dimensional carriage rooms",
+      "summary": "Mobs that wandered into a room copy that later retired could get left behind instead of being cleaned up. Fixed.",
+      "highlights": [],
+      "pr": 1182,
+      "date": "2026-08-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "chunks-band-advancement",
+      "version": "0.721.0",
+      "type": "feat",
+      "title": "Advancement tweaks",
+      "summary": "A few advancement adjustments.",
+      "highlights": [],
+      "date": "2026-08-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "end-city-rarity",
+      "version": "0.722.0",
+      "type": "fix",
+      "title": "End cities are rarer",
+      "summary": "End cities in the End band now generate about 5\u00d7 less often.",
+      "highlights": [],
+      "pr": 1183,
+      "date": "2026-08-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "infinite-difficulty-potion-effects",
+      "version": "0.722.0",
+      "type": "fix",
+      "title": "Difficulty potion effects now show as infinite",
+      "summary": "Buffed mobs on the train carry their difficulty potion effects permanently, but the effect readout showed a nonsensical multi-thousand-hour countdown instead of the infinity symbol. The effects were always meant to be permanent \u2014 now they are marked as such, so Jade and the vanilla effect display both read the infinity symbol.",
+      "highlights": [
+        "Difficulty potion effects on train mobs read as infinite instead of an absurd hour count"
+      ],
+      "pr": 1185,
+      "date": "2026-08-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "enchantment-descriptions-modpack",
+      "version": "0.723.0",
+      "type": "feat",
+      "title": "Enchantment tooltips now explain what each enchantment does",
+      "summary": "The modpack now ships Enchantment Descriptions, switched on by default. Hover any enchanted item and each enchantment carries a short plain-English line explaining what it actually does \u2014 handy when a train chest hands you something you've never rolled before. Its two library dependencies, Bookshelf and Prickle, ship enabled alongside it.",
+      "highlights": [
+        "Enchantment Descriptions bundled and enabled by default",
+        "Enchanted item tooltips now explain each enchantment's effect"
+      ],
+      "pr": 1186,
       "date": "2026-08-29",
       "released": false,
       "released_in": null,

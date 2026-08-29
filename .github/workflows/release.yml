@@ -287,6 +287,9 @@ jobs:
             shulkerboxtooltip(optional)
             trashslot(optional)
             balm(optional)
+            enchantment-descriptions(optional)
+            bookshelf(optional)
+            prickle(optional)
             durability-tooltip(optional)
             supermartijn642s-config-lib(optional)
           java: 21
