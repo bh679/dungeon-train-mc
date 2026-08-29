@@ -159,7 +159,7 @@ public final class BuilderSave {
                 // pause menu's mirror row was actually used.
                 mirrorBeforeCapture(level, origin, roomSize,
                         new BlockVariantPlot.TrackPlot(TrackKind.PORTAL_ROOM, name, origin, roomSize));
-                savePortalRoom(level, origin, roomSize, name);
+                savePortalRoom(level, origin, roomSize, name, dims);
                 written = new Written(BuilderPhotoPaths.Kind.PORTAL_ROOM, name, "", origin, roomSize);
             } else if (group) {
                 // Mirror every carriage first, then capture the run in one pass — the same order a
@@ -415,8 +415,10 @@ public final class BuilderSave {
      * {@code PortalRoomSizes.settle}, which makes the written template the authority and spends any
      * pending override the size control had set.</p>
      */
-    private static void savePortalRoom(ServerLevel level, BlockPos origin, Vec3i size, String name)
-            throws IOException {
+    private static void savePortalRoom(
+        ServerLevel level, BlockPos origin, Vec3i size, String name, CarriageDims dims
+    ) throws IOException {
+        PortalRoomEditor.saveDetectedDoorOffset(level, origin, size, name, dims);
         PortalRoomEditor.saveRoomFrom(level, origin, size, name);
     }
 

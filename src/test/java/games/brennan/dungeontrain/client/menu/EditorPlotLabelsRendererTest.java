@@ -246,18 +246,16 @@ class EditorPlotLabelsRendererTest {
     }
 
     @Test
-    @DisplayName("The Door Position stepper's thirds hit their own cells")
-    void doorOffsetRowIsHitTestedCorrectly() {
+    @DisplayName("The Door Position row is read-only — nowhere on it resolves to a clickable cell")
+    void doorOffsetRowIsNotInteractive() {
         EditorPlotLabelsPacket.Entry e = entry("PORTALS", true, 1, 11, 13, 7, "bedrock_lock");
         RowKind[] rows = EditorPlotLabelsRenderer.rows(e);
         double halfW = EditorPlotLabelsRenderer.MIN_HALF_W;
         double y = rowCentreY(e, indexOf(rows, RowKind.DOOR_OFFSET));
 
-        assertEquals(CellKind.DOOR_OFFSET_DEC,
-            EditorPlotLabelsRenderer.cellAt(e, halfW, -halfW + 0.05, y));
-        assertEquals(CellKind.DOOR_OFFSET_TYPE, EditorPlotLabelsRenderer.cellAt(e, halfW, 0.0, y));
-        assertEquals(CellKind.DOOR_OFFSET_INC,
-            EditorPlotLabelsRenderer.cellAt(e, halfW, halfW - 0.05, y));
+        for (double x : new double[]{-halfW + 0.05, 0.0, halfW - 0.05}) {
+            assertEquals(CellKind.NONE, EditorPlotLabelsRenderer.cellAt(e, halfW, x, y));
+        }
         // The row directly above still resolves to itself.
         assertEquals(CellKind.MODE_CYCLE, EditorPlotLabelsRenderer.cellAt(e, halfW, 0.0,
             rowCentreY(e, indexOf(rows, RowKind.MODE))));

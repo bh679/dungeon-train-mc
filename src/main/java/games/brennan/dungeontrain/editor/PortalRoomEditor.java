@@ -4,8 +4,11 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.portal.PortalCarriageBuilder;
 import games.brennan.dungeontrain.portal.PortalClear;
 import games.brennan.dungeontrain.portal.PortalCorridorMask;
+import games.brennan.dungeontrain.portal.PortalRoomDoorDetection;
+import games.brennan.dungeontrain.portal.PortalRoomDoorOffset;
 import games.brennan.dungeontrain.portal.PortalRoomLayout;
 import games.brennan.dungeontrain.portal.PortalRoomResize;
+import games.brennan.dungeontrain.portal.PortalRoomSettings;
 import games.brennan.dungeontrain.portal.PortalRoomSizes;
 import games.brennan.dungeontrain.editor.relay.EditorRelaySave;
 import games.brennan.dungeontrain.template.Template;
@@ -13,6 +16,7 @@ import games.brennan.dungeontrain.template.TemplateDecor;
 import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.track.variant.TrackVariantBlocks;
 import games.brennan.dungeontrain.track.variant.TrackVariantRegistry;
+import games.brennan.dungeontrain.track.variant.TrackVariantWeights;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.world.PortalRoomResizeMemory;
@@ -659,6 +663,8 @@ public final class PortalRoomEditor {
         BlockPos origin = plotOrigin(name, dims);
         Vec3i size = plotSize(name, dims);
 
+        saveDetectedDoorOffset(overworld, origin, size, name, dims);
+
         SaveResult result = saveRoomFrom(overworld, origin, size, name);
 
         // The saved size is the authored one now. A row filed by an earlier shrink would put blocks
@@ -673,6 +679,33 @@ public final class PortalRoomEditor {
         LOGGER.info("[DungeonTrain] Editor save: {} -> portal room '{}' template ({}x{}x{})",
             player.getName().getString(), name, size.getX(), size.getY(), size.getZ());
         return result;
+    }
+
+    /**
+     * Detect the door an author has built at {@code name}'s two doorway columns
+     * ({@link PortalRoomDoorDetection}) and persist the offset it implies, before the box itself is
+     * captured — so the settings tag and the blocks about to be saved always agree.
+     *
+     * <p>Failure here does not fail the save: a room with no settings file yet, or one whose weights
+     * write fails, still keeps whatever blocks the author built. The door offset just falls back to
+     * whatever it already was.</p>
+     *
+     * <p>Public: the Train Builder's portal room save ({@code BuilderSave.savePortalRoom}) calls this
+     * too, so a room saved from either place picks up the same detection.</p>
+     */
+    public static void saveDetectedDoorOffset(
+        ServerLevel level, BlockPos origin, Vec3i size, String name, CarriageDims dims
+    ) {
+        PortalRoomDoorOffset detected = PortalRoomDoorDetection.detect(level, origin, size, dims);
+        PortalRoomSettings current = PortalRoomSettings.of(name);
+        if (detected.equals(current.doorOffset())) return;
+        try {
+            TrackVariantWeights.setMode(TrackKind.PORTAL_ROOM, name,
+                current.withDoorOffset(detected).toTag());
+        } catch (IOException e) {
+            LOGGER.warn("[DungeonTrain] Portal room save: door offset write failed for {}: {}",
+                name, e.toString());
+        }
     }
 
     /**

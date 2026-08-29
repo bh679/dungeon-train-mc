@@ -103,10 +103,6 @@ public final class EditorPlotLabelsRenderer {
         ROOM_CONTENTS_CYCLE,
         /** The door-wall row — whether a copy carries its own wall through a corridor mouth. */
         DOOR_WALL_CYCLE,
-        /** The stepper for how far the shared walkway sits off dead centre of the room's width. */
-        DOOR_OFFSET_DEC,
-        DOOR_OFFSET_INC,
-        DOOR_OFFSET_TYPE,
         /** The sky row — whether the room is lit as though it stood outdoors, and under which sky. */
         ROOM_SKY_CYCLE,
         /** The author-lock row — whether the room stocks its shelves from one person. */
@@ -391,12 +387,11 @@ public final class EditorPlotLabelsRenderer {
      * Whether the Door Position row shows: any portal room, in its plot — the same reach as the
      * dimension rows, since this is a property of the room's own box rather than of its walls.
      *
-     * <p>Not gated on the room actually having slack to spend (the way {@link #hasExitEveryRow} gates
-     * on Exits laying anything): whether a given width has room to move the door depends on this
-     * world's {@code CarriageDims}, which the plot label packet does not carry. Showing the row
-     * unconditionally and letting the stepper clamp to "Centred" at zero slack costs nothing — a
-     * control that briefly does nothing is no worse than the exits stepper doing nothing at 0/10 —
-     * and keeps this row off the wire entirely rather than adding a field only it would use.</p>
+     * <p>Read-only: unlike every other row here, there is no control behind it. The value is
+     * whatever {@link games.brennan.dungeontrain.portal.PortalRoomDoorDetection} last read off a
+     * door the author actually placed one column outside the room, on the doorway's own surface —
+     * the same surface {@link EditorDoorGhosts} ghosts. This row exists purely so that value is
+     * visible without counting blocks by eye.</p>
      */
     public static boolean hasDoorOffsetRow(EditorPlotLabelsPacket.Entry entry) {
         return hasModeRow(entry);
@@ -828,8 +823,9 @@ public final class EditorPlotLabelsRenderer {
             case COPIES_ROOF -> copiesBlockHitIsEdit(halfW, hitX)
                 ? CellKind.COPIES_ROOF_EDIT : CellKind.COPIES_ROOF_HELD;
             case DOOR_WALL -> CellKind.DOOR_WALL_CYCLE;
-            case DOOR_OFFSET -> stepperCell(hitX, halfW,
-                CellKind.DOOR_OFFSET_DEC, CellKind.DOOR_OFFSET_INC, CellKind.DOOR_OFFSET_TYPE);
+            // Read-only — there is nothing to click. The door offset is detected from a placed door,
+            // not dialled in here; see PortalRoomDoorDetection.
+            case DOOR_OFFSET -> CellKind.NONE;
             case ROOM_CONTENTS -> CellKind.ROOM_CONTENTS_CYCLE;
             case ROOM_BOOKS -> roomBooksRowCell(entry, hitX, halfW);
             case ROOM_SKY -> CellKind.ROOM_SKY_CYCLE;
@@ -1074,20 +1070,11 @@ public final class EditorPlotLabelsRenderer {
                     drawQuad(ps, buffer, -halfW + 0.01, rBot + 0.005, halfW - 0.01, rTop - 0.005, bg);
                     drawCenteredText(ps, buffer, font, doorWallLabel(entry.roomMode()), 0, rCY, WEIGHT_COLOR);
                 }
-                // Door Position — how far the shared walkway sits off dead centre of the room's own
-                // width. Same [-] N [+] geometry as the dimension rows; a room with no slack to spend
-                // just clamps back to "Centred" no matter how many taps it takes.
-                case DOOR_OFFSET -> {
-                    drawStepperArrows(ps, buffer, font, halfW, rTop, rBot, rCY, hovered,
-                        CellKind.DOOR_OFFSET_DEC, CellKind.DOOR_OFFSET_INC);
-                    if (hovered == CellKind.DOOR_OFFSET_TYPE) {
-                        double third = (halfW * 2.0) / 3.0;
-                        drawQuad(ps, buffer, -halfW + third + 0.005, rBot + 0.005,
-                            halfW - third - 0.005, rTop - 0.005, HOVER_COLOR);
-                    }
-                    drawCenteredText(ps, buffer, font, doorOffsetLabel(entry.roomMode()),
-                        0, rCY, WEIGHT_COLOR);
-                }
+                // Door Position — read-only. Detected from a door the author placed one column
+                // outside the room box, on the doorway's own surface (PortalRoomDoorDetection), not
+                // set here — so there is nothing to draw but the text.
+                case DOOR_OFFSET ->
+                    drawCenteredText(ps, buffer, font, doorOffsetLabel(entry.roomMode()), 0, rCY, WEIGHT_COLOR);
                 // Sky — whether this room is lit as though it stood outdoors, and under which sky.
                 // Off by default, which is every room lit only by whatever its own build gives it.
                 case ROOM_SKY -> {
