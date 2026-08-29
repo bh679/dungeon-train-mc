@@ -9750,6 +9750,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "armor-trim-template-value",
+      "version": "0.713.0",
+      "type": "feat",
+      "title": "Armor trim templates are finally worth trading",
+      "summary": "Pulling a Silence or Wayfinder template out of a carriage felt like a find, and then the villager offered you a single item for it \u2014 the same as a stick. Minecraft marks every armor trim template as ordinary, so Trade Everything had been pricing them at the bare minimum. They are now worth 2.2 emeralds apiece in the Trade Anything slot, which works out to 26 items in trade. All eighteen templates, including Flow and Bolt.",
+      "highlights": [
+        "Every armor trim smithing template now values at 2.2 emeralds, up from 1/16th",
+        "Covers all eighteen, and any a datapack adds",
+        "The Netherite upgrade template is untouched \u2014 it is not an armor trim",
+        "Only applies when Trade Everything is installed; it ships with the modpack"
+      ],
+      "date": "2026-08-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
