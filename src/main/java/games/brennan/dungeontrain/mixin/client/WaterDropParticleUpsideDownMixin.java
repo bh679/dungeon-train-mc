@@ -2,10 +2,10 @@ package games.brennan.dungeontrain.mixin.client;
 
 import games.brennan.dungeontrain.client.ClientUpsideDownBand;
 import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.particle.Particle;
 import net.minecraft.client.particle.WaterDropParticle;
 import net.minecraft.util.Mth;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -20,17 +20,22 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * the drop pops down and accelerates up, and vanilla's own {@code move()} still stops it against the
  * ceiling it splashes on while {@code lifetime} still expires it.</p>
  *
+ * <p>The mixin extends {@link Particle} rather than {@code @Shadow}-ing {@code x}/{@code yd}/{@code
+ * gravity}: those fields are declared on {@code Particle}, not on the target, and Mixin only resolves a
+ * shadow against the target class itself. Standing in the target's own hierarchy makes them ordinary
+ * inherited protected fields.</p>
+ *
  * <p>Gated per-drop on the drop's own X, so drops spawned outside the band (including in the exit
  * crossfade, where the overworld is upright again) keep falling normally. Placement of the splashes is
  * the other half of this: {@code UpsideDownRainRenderer.tickRain} puts them on the <em>underside</em> of
  * the terrain overhead.</p>
  */
 @Mixin(WaterDropParticle.class)
-public abstract class WaterDropParticleUpsideDownMixin {
+public abstract class WaterDropParticleUpsideDownMixin extends Particle {
 
-    @Shadow protected double x;
-    @Shadow protected double yd;
-    @Shadow protected float gravity;
+    private WaterDropParticleUpsideDownMixin(ClientLevel level, double x, double y, double z) {
+        super(level, x, y, z); // never called: the mixin is merged into the target, not instantiated
+    }
 
     @Inject(method = "<init>(Lnet/minecraft/client/multiplayer/ClientLevel;DDD)V", at = @At("TAIL"))
     private void dungeontrain$riseInUpsideDownBand(ClientLevel level, double x, double y, double z,
