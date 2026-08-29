@@ -9800,6 +9800,19 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "drifting-carriage-traps",
+      "version": "0.716.0",
+      "type": "feat",
+      "title": "Traps are remembered",
+      "summary": "Setting a trap in a drifting carriage, for whoever comes through next, leaves a mark on the temperament your echo is born with.",
+      "highlights": [],
+      "pr": 1177,
+      "date": "2026-08-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
