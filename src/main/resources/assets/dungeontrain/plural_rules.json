@@ -5,6 +5,7 @@
     "zero_one_other": "one: n == 0 or n == 1; other: everything else (French, Portuguese)",
     "east_slavic": "one: n%10 == 1 and n%100 != 11; few: n%10 in 2..4 and n%100 not in 12..14; many: everything else",
     "polish": "one: n == 1; few: n%10 in 2..4 and n%100 not in 12..14; many: everything else",
+    "romanian": "one: n == 1; few: n == 0 or n%100 in 2..19; other: everything else (20 up, where the noun takes 'de')",
     "single": "other: always - the language does not inflect for number"
   },
   "locales": {
@@ -17,6 +18,7 @@
     "pt": "zero_one_other",
     "ru": "east_slavic",
     "pl": "polish",
+    "ro": "romanian",
     "ja": "single",
     "ko": "single",
     "zh": "single",

@@ -1,0 +1,193 @@
+name: Re-upload to CurseForge
+
+# Recovery path for a CurseForge upload that failed during a release.
+#
+# CurseForge's upload API returns sporadic 500s. `release.yml` publishes to Modrinth and
+# CurseForge in one mc-publish step with `fail-mode: warn`, so a CurseForge failure leaves the
+# release GREEN with the jar live on Modrinth and GitHub and missing on CurseForge — which is
+# exactly what happened to v0.692.0 (two 500s, no third attempt, job success).
+#
+# Without this workflow the only recovery was to burn a whole new version number. This re-publishes
+# the EXISTING tag's artifact: the jar is downloaded from that tag's GitHub Release rather than
+# rebuilt, so what lands on CurseForge is byte-identical to what was already tested and to what
+# Modrinth and GitHub are serving.
+#
+# CurseForge-only by construction — no `modrinth-id` is passed, so re-running this can never
+# double-publish to Modrinth.
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing release tag to re-upload (e.g. v0.692.0). Must already have a GitHub Release with the jar attached."
+        required: true
+        type: string
+      dry_run:
+        description: "Resolve the jar and the notes and stop before uploading. Use this first."
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  reupload:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: write
+    steps:
+      # Check out the DEFAULT BRANCH, not the tag. Nothing in this job wants tag-era files: the jar
+      # comes from the GitHub Release and the notes come from the release body. What it does need is
+      # the CURRENT tooling — checking out the tag pinned scripts/ to whatever shipped back then, and
+      # the verify step below died with "unrecognized arguments: --curseforge-project" because that
+      # flag was added after v0.692.0. The upload had already succeeded, so a green upload was
+      # reported as a failed run.
+      - name: Check out the repo
+        uses: actions/checkout@v4
+
+      - name: Resolve the release jar
+        id: jar
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          mkdir -p reupload
+          # Deliberately NOT a rebuild: publishing the artifact the release already shipped is the
+          # whole point, so CurseForge cannot end up with a different jar from Modrinth/GitHub.
+          gh release download "$RELEASE_TAG" --pattern '*.jar' --dir reupload
+          # A sources jar would be ambiguous; the mod jar is the one without a classifier.
+          JAR=$(find reupload -name '*.jar' ! -name '*-sources.jar' ! -name '*-slim.jar' | head -1)
+          if [ -z "$JAR" ]; then
+            echo "::error::No mod jar attached to release $RELEASE_TAG."
+            exit 1
+          fi
+          echo "Found $JAR ($(stat -c%s "$JAR") bytes)"
+          echo "path=$JAR" >> "$GITHUB_OUTPUT"
+
+      - name: Render the release notes for this tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          # Take the notes from the GitHub Release itself. That is BY DEFINITION the text the
+          # original run published to GitHub and Modrinth, so re-uploading reproduces it exactly —
+          # which is the whole point of this workflow.
+          #
+          # The obvious-looking alternative is wrong: this job checks out the TAG, and at that
+          # commit the ledger has not yet been marked released, so render-last-released.py reports
+          # the version BEFORE this one. A dry run caught it attaching 0.690.0's notes to the
+          # 0.692.0 file.
+          gh release view "$RELEASE_TAG" --json body --jq .body > reupload-notes.md || true
+          if [ ! -s reupload-notes.md ]; then
+            echo "::warning::No release body for $RELEASE_TAG; falling back to a bare title."
+            printf 'Dungeon Train %s\n' "$RELEASE_TAG" > reupload-notes.md
+          fi
+          echo "::group::Notes"; cat reupload-notes.md; echo "::endgroup::"
+
+      - name: Check CurseForge publish prerequisites
+        id: publish_check
+        env:
+          CURSEFORGE_TOKEN: ${{ secrets.CURSEFORGE_TOKEN }}
+          CURSEFORGE_PROJECT_ID: ${{ vars.CURSEFORGE_PROJECT_ID }}
+        run: |
+          if [ -n "$CURSEFORGE_TOKEN" ] && [ -n "$CURSEFORGE_PROJECT_ID" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::error::CURSEFORGE_TOKEN secret or CURSEFORGE_PROJECT_ID variable is missing."
+            exit 1
+          fi
+
+      - name: Dry run summary
+        if: ${{ inputs.dry_run }}
+        run: |
+          echo "DRY RUN — would upload ${{ steps.jar.outputs.path }} to CurseForge project ${{ vars.CURSEFORGE_PROJECT_ID }} as ${{ inputs.tag }}."
+          echo "Re-run with dry_run=false to publish."
+
+      - name: Publish to CurseForge
+        id: mcpublish
+        if: ${{ !inputs.dry_run }}
+        uses: Kir-Antipov/mc-publish@v3.3
+        with:
+          curseforge-id: ${{ vars.CURSEFORGE_PROJECT_ID }}
+          curseforge-token: ${{ secrets.CURSEFORGE_TOKEN }}
+          files: ${{ steps.jar.outputs.path }}
+          name: Dungeon Train ${{ inputs.tag }}
+          version: ${{ inputs.tag }}
+          version-type: release
+          changelog-file: reupload-notes.md
+          loaders: neoforge
+          game-versions: 1.21.1
+          curseforge-dependencies: |
+            sable(required)
+            adventure-item-names(required)
+            adventure-item-stats(required)
+            interactive-player-mobs(required)
+            ender-chest-persistence(required)
+            trade-everything(required)
+            appleskin(optional)
+            ferritecore(optional)
+            modernfix(optional)
+            sodium(optional)
+            irisshaders(optional)
+            ambientsounds(optional)
+            creativecore(optional)
+            advancement-plaques(optional)
+            better-advancements(optional)
+            iceberg(optional)
+            distant-horizons(optional)
+            nemos-inventory-sorting(optional)
+            mouse-tweaks(optional)
+            jade(optional)
+            jade-sable-compat(optional)
+            controlling(optional)
+            searchables(optional)
+            equipment-compare(optional)
+            clumps(optional)
+            item-highlighter(optional)
+            pick-up-notifier(optional)
+            puzzles-lib(optional)
+            smooth-swapping(optional)
+            overloaded-armor-bar(optional)
+            kinetic-hosting-integration(optional)
+            effortless-building(optional)
+            punchy(optional)
+            worldedit(optional)
+            jei(optional)
+            scribble(optional)
+            shulkerboxtooltip(optional)          java: 21
+          retry-attempts: 5
+          retry-delay: 30000
+          # Unlike release.yml this FAILS the job: the entire point of this workflow is to know
+          # whether the upload worked, so a warn-and-continue would defeat it.
+          fail-mode: fail
+
+      - name: Verify CurseForge actually published it
+        if: ${{ !inputs.dry_run }}
+        env:
+          CURSEFORGE_API_KEY: ${{ secrets.CURSEFORGE_API_KEY }}
+          CF_PROJECT: ${{ vars.CURSEFORGE_PROJECT_ID }}
+        run: |
+          set -euo pipefail
+          # An upload returning 200 is not a publish — CurseForge validates asynchronously and can
+          # reject a file afterwards. Same rule the modpack already enforces.
+          python3 scripts/modpack/reconcile.py \
+            --verify "${{ inputs.tag }}" \
+            --platform curseforge \
+            --curseforge-project "$CF_PROJECT" \
+            --timeout-minutes 30 \
+            --poll-seconds 60
+
+      - name: Dispatch the CurseForge modpack
+        if: ${{ !inputs.dry_run && success() && steps.mcpublish.outputs.curseforge-version != '' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # The pack was skipped during the failed release because there was no file id to
+          # reference. Now there is one, so it can catch up.
+          echo "Dispatching modpack release for ${{ inputs.tag }} (DT CurseForge file ${{ steps.mcpublish.outputs.curseforge-version }})…"
+          gh workflow run release-modpack.yml \
+            -f tag="${{ inputs.tag }}" \
+            -f dt_file_id="${{ steps.mcpublish.outputs.curseforge-version }}" \
+            -f auto=false \
+            -f changelog="$(cat reupload-notes.md)"

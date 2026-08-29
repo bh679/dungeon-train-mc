@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.builder;
 
+import games.brennan.dungeontrain.net.BuilderProfileDownloadResultPacket;
 import games.brennan.dungeontrain.net.BuilderProfilePacket;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
@@ -20,6 +21,7 @@ public final class BuilderProfileState {
 
     private static volatile BuilderProfilePacket latest = null;
     private static volatile Consumer<BuilderProfilePacket> listener = null;
+    private static volatile Consumer<BuilderProfileDownloadResultPacket> downloadListener = null;
 
     private BuilderProfileState() {}
 
@@ -45,11 +47,27 @@ public final class BuilderProfileState {
     }
 
     /**
+     * A download finished. Not cached, unlike the profile: it is an answer to one press of one
+     * button, and a screen reopened later should show what is on the relay now rather than replay
+     * what happened last time.
+     */
+    public static void downloadResult(BuilderProfileDownloadResultPacket packet) {
+        Consumer<BuilderProfileDownloadResultPacket> current = downloadListener;
+        if (current != null) current.accept(packet);
+    }
+
+    /** Listen for download outcomes while a screen is open; null clears it, as {@link #listen} does. */
+    public static void listenForDownloads(Consumer<BuilderProfileDownloadResultPacket> consumer) {
+        downloadListener = consumer;
+    }
+
+    /**
      * Forget the cached profile, so a reopened screen shows "loading" rather than a stale list.
      * Called when leaving a world: the next world may be a different player's.
      */
     public static void clear() {
         latest = null;
         listener = null;
+        downloadListener = null;
     }
 }

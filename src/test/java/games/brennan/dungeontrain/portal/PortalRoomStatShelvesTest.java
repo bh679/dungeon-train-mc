@@ -31,14 +31,14 @@ class PortalRoomStatShelvesTest {
     private static final int PAIR = 7;
 
     @Test
-    @DisplayName("A full set is every board plus every run stat — 47 as the mod stands")
+    @DisplayName("A full set is every board plus every run stat — 49 as the mod stands")
     void fullSetIsBoardsPlusStats() {
         assertEquals(LeaderboardCategory.values().length, PortalRoomStatShelves.LEADERBOARD_BOOK_COUNT);
         assertEquals(RunStatSubject.values().length, PortalRoomStatShelves.STAT_BOOK_COUNT);
         assertEquals(PortalRoomStatShelves.LEADERBOARD_BOOK_COUNT + PortalRoomStatShelves.STAT_BOOK_COUNT,
             PortalRoomStatShelves.FULL_SET);
         // Locked in deliberately: if either enum grows, this number is what a Stat Room now promises.
-        assertEquals(47, PortalRoomStatShelves.FULL_SET);
+        assertEquals(49, PortalRoomStatShelves.FULL_SET);
     }
 
     @Test

@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.builder.BuilderProfileScreen;
 import games.brennan.dungeontrain.client.builder.BuilderWorldCheck;
+import games.brennan.dungeontrain.client.menu.AbandonConfirmScreen;
 import games.brennan.dungeontrain.client.menu.DarkTintedButton;
 import games.brennan.dungeontrain.client.menu.PauseMenuActionButton;
 import games.brennan.dungeontrain.client.version.VersionCheckState;
@@ -30,7 +31,8 @@ import org.slf4j.Logger;
  * run, with the normal exits tucked behind Shift.
  *
  * <ul>
- *   <li><b>Default:</b> red "Abandon This Run" → closes the menu (unpausing the
+ *   <li><b>Default:</b> red "Abandon This Run" → an {@link AbandonConfirmScreen} that says
+ *       outright that abandoning kills you; confirming closes the menu (unpausing the
  *       integrated server) and sends {@link AbandonRunPacket}, which kills the
  *       player server-side → the narrative death screen (same flow as a normal
  *       death).</li>
@@ -133,7 +135,7 @@ public final class PauseMenuLayoutHandler {
         PauseMenuActionButton abandon = new PauseMenuActionButton(
                 slotX, slotY, slotW, slotH, ABANDON_LABEL,
                 1.0F, 0.30F, 0.30F, false,
-                b -> abandonRun());
+                b -> confirmAbandonRun(event.getScreen()));
         event.addListener(abandon);
 
         // Shift-revealed pair, splitting the same slot: Exit to Title (grey) | Quit Game (dark grey).
@@ -199,6 +201,18 @@ public final class PauseMenuLayoutHandler {
         for (PauseMenuActionButton button : buttons) {
             button.visible = shift == button.visibleWhenShift();
         }
+    }
+
+    /**
+     * Ask first. The button says "abandon"; what it does is kill you, and a misclick on the pause
+     * menu should not be able to end a run silently. {@link AbandonConfirmScreen} says the quiet
+     * part — you will die — and only then runs {@link #abandonRun()}.
+     *
+     * @param pauseScreen where cancelling goes back to
+     */
+    private static void confirmAbandonRun(Screen pauseScreen) {
+        Minecraft.getInstance().setScreen(
+                new AbandonConfirmScreen(pauseScreen, PauseMenuLayoutHandler::abandonRun));
     }
 
     /**

@@ -335,9 +335,14 @@ public final class CarriageEntitySnapshot {
                                             CarriageDims dims) {
         long h = SEED;
         for (Entity entity : candidates(level, ship)) {
-            if (!isCapturable(entity)) continue;
+            if (entity == null) continue;
+            // Type first, capturability second — the two are AND-ed either way, so the fingerprint is
+            // unchanged. The box is full of contents mobs and dropped items on a lived-in carriage, and
+            // isCapturable walks each one's passenger list; only the handful of decor entities ever
+            // needed that work done.
             String id = typeId(entity);
             if (!DECOR_TYPES.contains(id)) continue;
+            if (!isCapturable(entity)) continue;
             double[] offset = footprintOffset(ship, origin, dims, entity);
             if (offset == null) continue;
             String name = entity.getCustomName() == null ? "" : entity.getCustomName().getString();

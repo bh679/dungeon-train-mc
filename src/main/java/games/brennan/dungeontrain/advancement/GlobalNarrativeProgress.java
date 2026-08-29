@@ -10,7 +10,7 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.narrative.NarrativeProgress;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.fml.loading.FMLPaths;
+import games.brennan.dungeontrain.data.PlayerDataPaths;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import org.slf4j.Logger;
 
@@ -57,7 +57,8 @@ import java.util.TreeSet;
 public final class GlobalNarrativeProgress {
 
     private static final Logger LOGGER = LogUtils.getLogger();
-    private static final String DIR_NAME = "dungeontrain-narrative";
+    /** Pre-relocation home, still read while a file is left there. */
+    private static final String LEGACY_DIR_NAME = "dungeontrain-narrative";
     private static final String FILE_NAME = "global.json";
 
     /** On-disk schema: two string -> int-list maps. */
@@ -80,8 +81,16 @@ public final class GlobalNarrativeProgress {
 
     private GlobalNarrativeProgress() {}
 
+    /**
+     * {@code <gameDir>/dungeontrain/narrative/global.json}, falling back to the pre-relocation
+     * {@code config/dungeontrain-narrative/} copy. See {@link PlayerDataPaths}.
+     */
     public static Path file() {
-        return FMLPaths.CONFIGDIR.get().resolve(DIR_NAME).resolve(FILE_NAME);
+        return located().read();
+    }
+
+    static PlayerDataPaths.Located located() {
+        return PlayerDataPaths.locate(PlayerDataPaths.NARRATIVE, LEGACY_DIR_NAME, FILE_NAME);
     }
 
     /**
@@ -255,6 +264,10 @@ public final class GlobalNarrativeProgress {
     public static synchronized boolean deleteAll() throws IOException {
         readLetters = null;
         variantsSeen = null;
-        return Files.deleteIfExists(file());
+        boolean removed = false;
+        for (Path path : located().all()) {
+            removed |= Files.deleteIfExists(path);
+        }
+        return removed;
     }
 }

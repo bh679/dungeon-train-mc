@@ -48,7 +48,21 @@ public enum SkyboxSky implements StringRepresentable {
      * The upside-down band's sky — day-blue dome with the sun and moon orbiting the horizon,
      * from {@link games.brennan.dungeontrain.client.UpsideDownSkyRenderer}.
      */
-    UPSIDE_DOWN("skybox_upside_down", 5, true);
+    UPSIDE_DOWN("skybox_upside_down", 5, true),
+
+    /**
+     * Night on both halves of the day — stars wheeling overhead and the moon crossing, but the
+     * sun never drawn and so no sunrise at all, from
+     * {@link games.brennan.dungeontrain.client.NightSkyRenderer}.
+     */
+    NIGHT("skybox_night", 6, true),
+
+    /**
+     * A permanent dawn that sweeps sideways the way {@link #UPSIDE_DOWN} does — sun and glow
+     * orbiting the horizon, moon opposite, stars turning with them, from
+     * {@link games.brennan.dungeontrain.client.SunriseSkyRenderer}.
+     */
+    SUNRISE("skybox_sunrise", 7, true);
 
     public static final Codec<SkyboxSky> CODEC = StringRepresentable.fromEnum(SkyboxSky::values);
 
