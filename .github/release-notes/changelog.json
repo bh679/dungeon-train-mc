@@ -10003,6 +10003,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "no-shulker-boxes-in-dimensional-carriages",
+      "version": "0.728.0",
+      "type": "fix",
+      "title": "Shulker boxes can't be placed in dimensional carriages",
+      "summary": "A dimensional carriage exists twice \u2014 the corridor you walk through and a hidden copy of it \u2014 and the two are kept identical block for block so the crossing between them stays invisible. A shulker box placed in one was copied into the other as an empty box, which could duplicate the item and lose what you had stored in it. Shulker boxes are now refused in both copies, with a word from the box itself in chat. Portal rooms are unaffected.",
+      "highlights": [
+        "Shulker boxes are refused inside a dimensional carriage and its copy",
+        "Closes a duplication bug caused by the carriage's hidden copy",
+        "Portal rooms are unaffected \u2014 shulker boxes work there as normal"
+      ],
+      "pr": 1191,
+      "date": "2026-08-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
