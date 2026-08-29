@@ -9669,9 +9669,9 @@
         "Train Builder submissions are held back \u2014 a separate system, opening later"
       ],
       "date": "2026-08-28",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.707.0",
+      "released_at": "2026-08-28T18:32:02Z"
     },
     {
       "id": "backpack-button-toggle",
@@ -9691,13 +9691,29 @@
       "released_at": null
     },
     {
-      "id": "internal-diagnostics",
+      "id": "relay-translation-import-job",
       "version": "0.709.0",
+      "type": "ci",
+      "title": "Approved player translations flow back into the game automatically",
+      "summary": "Translations players submit in-game and that get approved are served by the relay straight away, but until now they never made it into the mod itself \u2014 so they vanished on an offline launch and their authors went uncredited in the jar. A weekly job now pulls approved work back into the build for review.",
+      "highlights": [
+        "Approved player translations are collected weekly instead of by hand",
+        "Translators must be registered with their credit before their work can be merged"
+      ],
+      "pr": 1169,
+      "date": "2026-08-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "internal-diagnostics",
+      "version": "0.710.0",
       "type": "chore",
       "title": "Internal improvements",
       "summary": "Behind-the-scenes maintenance work. Nothing to see or do differently in game.",
       "highlights": [],
-      "date": "2026-08-28",
+      "date": "2026-08-29",
       "released": false,
       "released_in": null,
       "released_at": null
