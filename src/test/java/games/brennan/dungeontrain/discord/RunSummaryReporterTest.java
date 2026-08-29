@@ -75,10 +75,12 @@ class RunSummaryReporterTest {
     }
 
     @Test
-    @DisplayName("a legitimate life carries no freePlay key at all — absent, not false")
-    void legitimateRunOmitsTheFlag() {
-        // The relay reads an absent key as false, so omitting it keeps the common payload
-        // byte-identical to what it was before the flag existed.
-        assertFalse(RunSummaryReporter.buildPayload(UUID, "x", 60L, 2, 30, NO_POS, false).has("freePlay"));
+    @DisplayName("a legitimate life says so explicitly — false is an assertion, not a default")
+    void legitimateRunStatesTheFlag() {
+        // The relay no longer reads an absent key as legitimate: silence is what a client too old to
+        // know the question sends. Omitting this would unrank every player on this build.
+        JsonObject out = RunSummaryReporter.buildPayload(UUID, "x", 60L, 2, 30, NO_POS, false);
+        assertTrue(out.has("freePlay"));
+        assertFalse(out.get("freePlay").getAsBoolean());
     }
 }

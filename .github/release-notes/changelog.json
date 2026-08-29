@@ -9767,6 +9767,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "leaderboard-verified-scores",
+      "version": "0.714.0",
+      "type": "fix",
+      "title": "Leaderboards now start from scores the game can vouch for",
+      "summary": "The last update stopped Free Play runs from being ranked, but it could only do that for runs recorded after it shipped \u2014 every score already on a board predated the check, including a 29,999,728m walk that was really a flight to the edge of the world. Rather than delete anyone's history, those scores are now kept but unranked, and the boards rebuild from runs the game can actually vouch for. Expect the one-life boards to look sparse at first and fill in over the following days as players update and finish a run. Most Books Written and Most Advancements are unaffected, because those are counted by the server rather than reported by the game. Nothing has been erased \u2014 your stats, death records and Stat Room shelves are all exactly as they were.",
+      "highlights": [
+        "Old scores are retained but no longer ranked, including the bogus ones",
+        "Boards refill from verified runs over the days after this update",
+        "Most Books Written and Most Advancements are unchanged",
+        "Playing on an older version means your runs won't be ranked until you update"
+      ],
+      "date": "2026-08-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

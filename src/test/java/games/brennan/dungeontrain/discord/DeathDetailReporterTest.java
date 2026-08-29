@@ -127,8 +127,10 @@ class DeathDetailReporterTest {
     }
 
     @Test
-    @DisplayName("a legitimate death carries no freePlay key at all — absent, not false")
-    void legitimateDeathOmitsTheFlag() {
-        assertFalse(DeathDetailReporter.buildPayload(UUID, NARRATIVE, STATS, FEATS, false).has("freePlay"));
+    @DisplayName("a legitimate death says so explicitly — false is an assertion, not a default")
+    void legitimateDeathStatesTheFlag() {
+        JsonObject out = DeathDetailReporter.buildPayload(UUID, NARRATIVE, STATS, FEATS, false);
+        assertTrue(out.has("freePlay"));
+        assertFalse(out.get("freePlay").getAsBoolean());
     }
 }

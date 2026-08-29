@@ -75,13 +75,11 @@ public final class RunSummaryReporter {
         body.addProperty("carriage", carriage);
         body.addProperty("distanceBlocks", distanceBlocks);
         DeathReporter.addPosition(body, pos);
-        // Was this life Free Play? Same flag, same reason, same only-when-true rule as
+        // Was this life Free Play? Same flag, same reason, same ALWAYS-sent rule as
         // DeathDetailReporter — see the note there. This is the payload the one-life distance,
         // playtime and carriage boards are built from, so it is the one that was showing
         // world-border "distances" before the flag existed.
-        if (freePlay) {
-            body.addProperty("freePlay", true);
-        }
+        body.addProperty("freePlay", freePlay);
         return body;
     }
 
