@@ -42,10 +42,15 @@ public final class ClientActivityReporter {
     private static double lastCursorX = Double.NaN;
     private static double lastCursorY = Double.NaN;
 
-    /** Client-tick counter, and the tick each kind of report was last sent on. */
+    /**
+     * Client-tick counter, and the tick each kind of report was last sent on. Seeded one cooldown
+     * in the past so the first report is due immediately — NOT to {@link Integer#MIN_VALUE}, whose
+     * distance from a small tick count overflows int and comes out negative, wedging the limiter
+     * shut for good.
+     */
     private static int clientTick = 0;
-    private static int lastLookReportTick = Integer.MIN_VALUE;
-    private static int lastInputReportTick = Integer.MIN_VALUE;
+    private static int lastLookReportTick = -REPORT_COOLDOWN_TICKS;
+    private static int lastInputReportTick = -REPORT_COOLDOWN_TICKS;
 
     private ClientActivityReporter() {}
 
@@ -57,6 +62,9 @@ public final class ClientActivityReporter {
             reportedPaused = false;
             lastCursorX = Double.NaN;
             lastCursorY = Double.NaN;
+            clientTick = 0;
+            lastLookReportTick = -REPORT_COOLDOWN_TICKS;
+            lastInputReportTick = -REPORT_COOLDOWN_TICKS;
             return;
         }
         clientTick++;
@@ -107,6 +115,14 @@ public final class ClientActivityReporter {
     }
 
     private static boolean due(int lastSentTick) {
-        return clientTick - lastSentTick >= REPORT_COOLDOWN_TICKS;
+        return due(clientTick, lastSentTick, REPORT_COOLDOWN_TICKS);
+    }
+
+    /**
+     * Is a report due? Pure so the seeding can be tested — a sentinel far enough below zero makes
+     * this subtraction overflow and silently disable every report.
+     */
+    static boolean due(int nowTick, int lastSentTick, int cooldownTicks) {
+        return nowTick - lastSentTick >= cooldownTicks;
     }
 }
