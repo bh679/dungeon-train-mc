@@ -9939,6 +9939,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "portal-corridor-progressive-fade",
+      "version": "0.725.0",
+      "type": "fix",
+      "title": "Portal corridors fade instead of switching at the door",
+      "summary": "Walking a portal carriage now changes over the whole walk rather than in the single step through the far door. The fog, the corridor's own light and a daylit room's brightness all shift together as you go, easing in as you leave the train and settling a block before you reach the room \u2014 so arriving is a non-event instead of a visible switch.",
+      "highlights": [
+        "Fog and lighting now shift across the whole corridor, not at the doorway",
+        "Eased at both ends, so leaving the train and reaching the room are both gentle",
+        "The step through the portal room's door no longer changes what you see"
+      ],
+      "pr": 1189,
+      "date": "2026-08-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
