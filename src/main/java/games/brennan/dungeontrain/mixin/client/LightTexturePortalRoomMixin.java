@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.mixin.client;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.sugar.Local;
+import games.brennan.dungeontrain.client.ClientPortalCrossing;
 import games.brennan.dungeontrain.client.ClientPortalRoomSky;
 import games.brennan.dungeontrain.portal.PortalRoomSky;
 import net.minecraft.client.Minecraft;
@@ -157,6 +158,10 @@ public abstract class LightTexturePortalRoomMixin {
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null || !mc.level.dimension().equals(Level.OVERWORLD)) return 0.0F;
         Vec3 camera = mc.gameRenderer.getMainCamera().getPosition();
-        return ClientPortalRoomSky.advance(camera.x, camera.y, camera.z);
+        // The corridor ramp goes in with the camera, so a daylit room's light comes up over the walk
+        // toward it rather than in the step through its doorway. Read rather than advanced —
+        // LightTexturePortalCrossingMixin owns that ease, and has already stepped it this rebuild.
+        return ClientPortalRoomSky.advance(camera.x, camera.y, camera.z,
+            ClientPortalCrossing.current());
     }
 }

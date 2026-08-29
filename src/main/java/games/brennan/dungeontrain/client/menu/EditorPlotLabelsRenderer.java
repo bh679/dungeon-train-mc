@@ -131,7 +131,8 @@ public final class EditorPlotLabelsRenderer {
      */
     public enum RowKind {
         NAME, WEIGHT, LENGTH, WIDTH, HEIGHT, MODE, COPIES, COPIES_FLOOR, COPIES_ROOF, DOOR_WALL,
-        ROOM_CONTENTS, ROOM_BOOKS, ROOM_SKY, EXITS, EXIT_EVERY, EXIT_MOVE, ENTER, ACTION, CONTENTS
+        DOOR_OFFSET, ROOM_CONTENTS, ROOM_BOOKS, ROOM_SKY, EXITS, EXIT_EVERY, EXIT_MOVE, ENTER,
+        ACTION, CONTENTS
     }
 
     /**
@@ -159,6 +160,7 @@ public final class EditorPlotLabelsRenderer {
             buf[n++] = RowKind.COPIES_ROOF;
         }
         if (hasDoorWallRow(entry)) buf[n++] = RowKind.DOOR_WALL;
+        if (hasDoorOffsetRow(entry)) buf[n++] = RowKind.DOOR_OFFSET;
         if (hasRoomContentsRow(entry)) buf[n++] = RowKind.ROOM_CONTENTS;
         if (hasRoomBooksRow(entry)) buf[n++] = RowKind.ROOM_BOOKS;
         if (hasRoomSkyRow(entry)) buf[n++] = RowKind.ROOM_SKY;
@@ -379,6 +381,38 @@ public final class EditorPlotLabelsRenderer {
     public static String doorWallLabel(String modeTag) {
         return "Room Walls: " + games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag)
             .effectiveDoorWall().displayName();
+    }
+
+    /**
+     * Whether the Door Position row shows: any portal room, in its plot — the same reach as the
+     * dimension rows, since this is a property of the room's own box rather than of its walls.
+     *
+     * <p>Read-only: unlike every other row here, there is no control behind it. The value is
+     * whatever {@code PortalRoomDoorPointer} last set from a right-click with a door in hand, on the
+     * doorway's own surface — the same surface {@link EditorDoorGhosts} ghosts. This row exists
+     * purely so that value is visible without counting blocks by eye.</p>
+     */
+    public static boolean hasDoorOffsetRow(EditorPlotLabelsPacket.Entry entry) {
+        return hasModeRow(entry);
+    }
+
+    /**
+     * What the Door Position row reads, e.g. {@code "Door Position: Centred, at the floor"} or
+     * {@code "Door Position: +2, 3 blocks up"}.
+     *
+     * <p>Signed for the across component: {@link games.brennan.dungeontrain.portal.PortalRoomLayout}
+     * treats that offset as a direction along {@code Z}, and "off to one side" reads better as a sign
+     * than as an unlabelled magnitude an author has to remember the meaning of. The height component
+     * is unsigned — it only ever moves up from the room's own floor.</p>
+     */
+    public static String doorOffsetLabel(String modeTag) {
+        games.brennan.dungeontrain.portal.PortalRoomSettings settings =
+            games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag);
+        int value = settings.doorOffset().value();
+        int height = settings.doorHeightOffset().value();
+        String across = value == 0 ? "Centred" : (value > 0 ? "+" + value : Integer.toString(value));
+        String up = height == 0 ? "at the floor" : height + " block" + (height == 1 ? "" : "s") + " up";
+        return "Door Position: " + across + ", " + up;
     }
 
     /**
@@ -792,6 +826,9 @@ public final class EditorPlotLabelsRenderer {
             case COPIES_ROOF -> copiesBlockHitIsEdit(halfW, hitX)
                 ? CellKind.COPIES_ROOF_EDIT : CellKind.COPIES_ROOF_HELD;
             case DOOR_WALL -> CellKind.DOOR_WALL_CYCLE;
+            // Read-only — there is nothing to click. The door offset is detected from a placed door,
+            // not dialled in here; see PortalRoomDoorDetection.
+            case DOOR_OFFSET -> CellKind.NONE;
             case ROOM_CONTENTS -> CellKind.ROOM_CONTENTS_CYCLE;
             case ROOM_BOOKS -> roomBooksRowCell(entry, hitX, halfW);
             case ROOM_SKY -> CellKind.ROOM_SKY_CYCLE;
@@ -1036,6 +1073,11 @@ public final class EditorPlotLabelsRenderer {
                     drawQuad(ps, buffer, -halfW + 0.01, rBot + 0.005, halfW - 0.01, rTop - 0.005, bg);
                     drawCenteredText(ps, buffer, font, doorWallLabel(entry.roomMode()), 0, rCY, WEIGHT_COLOR);
                 }
+                // Door Position — read-only. Detected from a door the author placed one column
+                // outside the room box, on the doorway's own surface (PortalRoomDoorDetection), not
+                // set here — so there is nothing to draw but the text.
+                case DOOR_OFFSET ->
+                    drawCenteredText(ps, buffer, font, doorOffsetLabel(entry.roomMode()), 0, rCY, WEIGHT_COLOR);
                 // Sky — whether this room is lit as though it stood outdoors, and under which sky.
                 // Off by default, which is every room lit only by whatever its own build gives it.
                 case ROOM_SKY -> {

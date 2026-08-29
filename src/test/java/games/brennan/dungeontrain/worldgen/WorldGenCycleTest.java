@@ -366,6 +366,34 @@ final class WorldGenCycleTest {
     }
 
     @Test
+    @DisplayName("chuncks approach: the run-up gaps and the band core all count, so \"Re-Over-World\" waits for the overworld after the chunks")
+    void chuncksApproachOrBand() {
+        // Disabled (C has chuncksHold=0) → inert, so the pre-chuncks advancement gating is unchanged.
+        org.junit.jupiter.api.Assertions.assertFalse(C.isInChuncksApproachOrBand(3390));
+
+        // Same layout as chuncksBand()'s `c`, plus a 100-block chuncks lead gap: udExitFade 0, so the
+        // approach begins at the upside-down band's trailing edge (offset 2240 → world-X 3240) and runs
+        // through udExit 150 + leadGap 100 + fade 200 + core 500 to world-X 4190.
+        WorldGenCycle c = new WorldGenCycle(1000L, 300, 40, new int[] {1, 5, 20}, 0, 60, 50, 200,
+                100, 40, 200, 50, 200, 150, 0, 500, 200, 100, 0.12, 0.5, 0);
+        assertEquals(100L, c.chuncksLeadGapLen());
+        assertEquals(3190L, c.period());                                          // 2390 + leadGap 100 + fade 200 + core 500
+
+        org.junit.jupiter.api.Assertions.assertFalse(c.isInChuncksApproachOrBand(3239)); // upside-down core
+        org.junit.jupiter.api.Assertions.assertTrue(c.isInChuncksApproachOrBand(3240));  // upside-down exit gap (plain OW)
+        org.junit.jupiter.api.Assertions.assertTrue(c.isInChuncksApproachOrBand(3400));  // chuncks lead gap (plain OW)
+        org.junit.jupiter.api.Assertions.assertTrue(c.isInChuncksApproachOrBand(3500));  // entry fade
+        org.junit.jupiter.api.Assertions.assertTrue(c.isInChuncksApproachOrBand(3690));  // core entry
+        org.junit.jupiter.api.Assertions.assertTrue(c.isInChuncksApproachOrBand(4189));  // core end
+        org.junit.jupiter.api.Assertions.assertFalse(c.isInChuncksApproachOrBand(4190)); // the overworld that follows — this is where it fires
+
+        // Repeats with the period, and never covers the earlier phases.
+        org.junit.jupiter.api.Assertions.assertTrue(c.isInChuncksApproachOrBand(3690 + 3190));
+        org.junit.jupiter.api.Assertions.assertFalse(c.isInChuncksApproachOrBand(1530));  // nether core
+        org.junit.jupiter.api.Assertions.assertFalse(c.isInChuncksApproachOrBand(2500));  // End core
+    }
+
+    @Test
     @DisplayName("chuncks band sits after the End even when the upside-down band is disabled; zero fade is a hard edge")
     void chuncksWithoutUpsideDown() {
         // No upside-down (udFade/udHold/udExit/udExitFade all 0); chuncks core 500, fade 0 (hard edge).

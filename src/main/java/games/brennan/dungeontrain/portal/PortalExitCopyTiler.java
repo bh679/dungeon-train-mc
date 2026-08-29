@@ -92,7 +92,7 @@ public final class PortalExitCopyTiler {
         // would always lead to the original, and the binding could never do its job.
         Site stale = standing.nextToRemove(standingIn, radius, reachOf(structure, dims),
             site -> !PortalExitBindings.anyBoundTo(pairKey, site.tile()));
-        if (stale != null) return erase(level, dims, structure, stale);
+        if (stale != null) return erase(level, dims, structure, stale, pairKey);
 
         return structure;
     }
@@ -109,7 +109,7 @@ public final class PortalExitCopyTiler {
             // reaches into, never to its anchor — so "is anybody in this copy?" is asked of the whole
             // span. Erasing one out from under somebody would drop them to the world floor.
             if (farthest == null || occupied(farthest, standingIn, reach)) break;
-            current = erase(level, dims, current, farthest);
+            current = erase(level, dims, current, farthest, pairKey);
         }
         return current;
     }
@@ -206,10 +206,19 @@ public final class PortalExitCopyTiler {
      * the window too, so there is no room left for it to leave a hole in.</p>
      */
     private static PortalStructure erase(ServerLevel level, CarriageDims dims,
-                                         PortalStructure structure, Site site) {
+                                         PortalStructure structure, Site site, int pairKey) {
         PortalStructure shrunk = structure.withExitCopies(structure.exitCopies().without(site));
         BoundingBox box = copyBox(structure, dims, site);
         if (box != null) {
+            // Before the blocks go, and box by box rather than over the union: the mask's bounds
+            // reach into the room aisles either side of the corridor, and those are staying. Same
+            // reason PortalCarriageBuilder#stampExitCopy sweeps the boxes one at a time. Without
+            // this a corridor retired with anything standing in it drops it into the basement, and
+            // an authored mob that walked in is persistence-required, so it stays there for good.
+            for (BoundingBox part : copyMask(structure, dims, site).boxes()) {
+                PortalRoomMobs.sweepVolume(level, part, pairKey,
+                    "exit copy " + site.tile().x() + "," + site.tile().z() + " (" + site.role() + ")");
+            }
             PortalClear.clearBox(level, box, PortalCarriageBuilder.allCorridorMask(shrunk, dims));
         }
         LOGGER.debug("[DungeonTrain] Portal exit copy retired at {} ({})", site.tile(), site.role());
@@ -218,9 +227,21 @@ public final class PortalExitCopyTiler {
 
     /** Every block this copy occupies — read off the same mask that protects it while it stands. */
     private static BoundingBox copyBox(PortalStructure structure, CarriageDims dims, Site site) {
+        return copyMask(structure, dims, site).bounds();
+    }
+
+    /**
+     * The corridor, its plug and its seal ring as separate boxes.
+     *
+     * <p>{@link #copyBox} unions them, which is right for a clear that is masked against everything
+     * else standing — but wrong for anything that acts on a volume without a mask, because the union
+     * spans the room aisles either side of the corridor.</p>
+     */
+    private static PortalCorridorMask copyMask(PortalStructure structure, CarriageDims dims,
+                                               Site site) {
         return PortalCorridorMask.forCorridor(
             structure.shadowAt(site.tile()), dims, PortalCarriageBuilder.layoutFor(dims, structure.kind()),
-            PortalCarriageBuilder.plugDepth(), site.role()).bounds();
+            PortalCarriageBuilder.plugDepth(), site.role());
     }
 
     /** How far, in tiles, a copy's blocks reach past the room it opens into. */

@@ -170,3 +170,10 @@ logoFile="logo.png"
 
 [[mixins]]
     config="${mod_id}.betteradvancements.mixins.json"
+
+# Sodium replaces chunk meshing wholesale, so the upside-down band's per-block flip needs a second
+# copy of itself on Sodium's pipeline (dungeontrain.sodium.mixins.json, gated by SodiumMixinPlugin).
+# Every Iris install has Sodium under it, and the modpack ships both. No dependency is declared here:
+# Sable already pins the compatible Sodium range, and the mixin no-ops when Sodium is absent.
+[[mixins]]
+    config="${mod_id}.sodium.mixins.json"

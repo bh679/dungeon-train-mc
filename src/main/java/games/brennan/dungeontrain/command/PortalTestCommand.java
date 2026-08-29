@@ -125,7 +125,10 @@ public final class PortalTestCommand {
         BlockPos arrival = new BlockPos(
             roomOrigin.getX() - 1,
             roomOrigin.getY() + 1,
-            PortalRoomDoorCells.doorZ(roomOrigin, roomSize));
+            // roomOrigin already has the door offset baked into where it sits — the SAME offset has
+            // to be handed to doorZ, or this re-derives a symmetric centre off a box that is no
+            // longer symmetric about the corridor and lands off the real doorway.
+            PortalRoomDoorCells.doorZ(roomOrigin, roomSize, settings.doorOffset().value()));
 
         GameType previous = player.gameMode.getGameModeForPlayer();
         PortalTestSession.put(player.getUUID(), new PortalTestSession.Session(
