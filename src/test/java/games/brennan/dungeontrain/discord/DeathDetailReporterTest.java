@@ -6,6 +6,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Assembly tests for {@link DeathDetailReporter#buildPayload}. Every narrative field and stat
@@ -35,7 +37,7 @@ class DeathDetailReporterTest {
     @Test
     @DisplayName("all 12 narrative fields round-trip verbatim")
     void narrativeFieldsRoundTrip() {
-        JsonObject out = DeathDetailReporter.buildPayload(UUID, NARRATIVE, STATS, FEATS);
+        JsonObject out = DeathDetailReporter.buildPayload(UUID, NARRATIVE, STATS, FEATS, false);
 
         assertEquals(UUID, out.get("uuid").getAsString());
         assertEquals("fallQ", out.get("fallQuestion").getAsString());
@@ -55,7 +57,7 @@ class DeathDetailReporterTest {
     @Test
     @DisplayName("this-run stats round-trip verbatim")
     void thisRunStatsRoundTrip() {
-        JsonObject out = DeathDetailReporter.buildPayload(UUID, NARRATIVE, STATS, FEATS);
+        JsonObject out = DeathDetailReporter.buildPayload(UUID, NARRATIVE, STATS, FEATS, false);
 
         assertEquals(3, out.get("mobKills").getAsInt());
         assertEquals(42.5, out.get("damageDealt").getAsDouble());
@@ -71,7 +73,7 @@ class DeathDetailReporterTest {
     @Test
     @DisplayName("lifetime totals round-trip verbatim")
     void lifetimeTotalsRoundTrip() {
-        JsonObject out = DeathDetailReporter.buildPayload(UUID, NARRATIVE, STATS, FEATS);
+        JsonObject out = DeathDetailReporter.buildPayload(UUID, NARRATIVE, STATS, FEATS, false);
 
         assertEquals(7L, out.get("lifeDeaths").getAsLong());
         assertEquals(12L, out.get("lifeCarriages").getAsLong());
@@ -93,7 +95,7 @@ class DeathDetailReporterTest {
     @Test
     @DisplayName("leaderboard feats round-trip verbatim")
     void leaderboardFeatsRoundTrip() {
-        JsonObject out = DeathDetailReporter.buildPayload(UUID, NARRATIVE, STATS, FEATS);
+        JsonObject out = DeathDetailReporter.buildPayload(UUID, NARRATIVE, STATS, FEATS, false);
 
         assertEquals(2, out.get("echoesKilled").getAsInt());
         assertEquals(17L, out.get("lifeEchoesKilled").getAsLong());
@@ -106,12 +108,27 @@ class DeathDetailReporterTest {
     @Test
     @DisplayName("a run with no feats still sends every field, as zero")
     void absentFeatsStillReport() {
-        JsonObject out = DeathDetailReporter.buildPayload(UUID, NARRATIVE, STATS, DeathDetailReporter.Feats.NONE);
+        JsonObject out = DeathDetailReporter.buildPayload(UUID, NARRATIVE, STATS, DeathDetailReporter.Feats.NONE, false);
 
         assertEquals(0, out.get("echoesKilled").getAsInt());
         assertEquals(0L, out.get("lifeEchoesKilled").getAsLong());
         assertEquals(0, out.get("maxCarriagesNoChest").getAsInt());
         assertEquals(0, out.get("pacifistCarriages").getAsInt());
         assertEquals(0L, out.get("lifeDistanceTravelled").getAsLong());
+    }
+
+    @Test
+    @DisplayName("a Free Play death is flagged, so the relay can keep it off the public boards")
+    void freePlayFlagged() {
+        JsonObject out = DeathDetailReporter.buildPayload(UUID, NARRATIVE, STATS, FEATS, true);
+        assertTrue(out.get("freePlay").getAsBoolean());
+        // The record itself is unchanged — the flag withholds the SCORE, not the death.
+        assertEquals(FEATS.pacifistCarriages(), out.get("pacifistCarriages").getAsInt());
+    }
+
+    @Test
+    @DisplayName("a legitimate death carries no freePlay key at all — absent, not false")
+    void legitimateDeathOmitsTheFlag() {
+        assertFalse(DeathDetailReporter.buildPayload(UUID, NARRATIVE, STATS, FEATS, false).has("freePlay"));
     }
 }

@@ -240,7 +240,9 @@ public final class RunStatsEvents {
                     packet.armorHead(), packet.armorChest(), packet.armorLegs(), packet.armorFeet());
 
             // This life's run summary (duration + carriage + distance) -> the per-life playtime view.
-            RunSummaryReporter.report(player, packet, pos);
+            // `cheated` rides along so the relay can keep a Free Play run off the public leaderboards
+            // while still storing the record — see RunSummaryReporter.buildPayload.
+            RunSummaryReporter.report(player, packet, pos, cheated);
 
             // A first-class per-death record so the explorer counts EVERY death, not only the ones that
             // post a Discord death report below. Fires independent of isDeathReportToDiscord() (Free
@@ -251,7 +253,7 @@ public final class RunStatsEvents {
             // offhand, so the per-death detail view can show everything the death screen did.
             DeathDetailReporter.report(player, packet, new DeathDetailReporter.Feats(
                     run.echoesKilled(), GlobalPlayerStats.totalEchoesKilled(id),
-                    run.maxCarriagesNoChest(), run.pacifistCarriages(), lifeDisplacement));
+                    run.maxCarriagesNoChest(), run.pacifistCarriages(), lifeDisplacement), cheated);
             DeathInventoryReporter.report(player);
         });
 
