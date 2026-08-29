@@ -105,9 +105,42 @@ public final class PortalRoomDoorPointer {
         String across = offset == 0 ? "centred" : (offset > 0 ? "+" + offset : Integer.toString(offset));
         String up = heightOffset == 0 ? "at the floor"
             : heightOffset + " block" + (heightOffset == 1 ? "" : "s") + " up";
+        String note = clampNote(dims, match, offset, heightOffset);
         player.displayClientMessage(Component.literal(
-            "Dimensional carriage '" + match.name() + "' door position: " + across + ", " + up + "."
-        ).withStyle(ChatFormatting.GREEN), true);
+            "Dimensional carriage '" + match.name() + "' door position: " + across + ", " + up + "." + note
+        ).withStyle(note.isEmpty() ? ChatFormatting.GREEN : ChatFormatting.YELLOW), true);
+    }
+
+    /**
+     * Why a click did not land where it was aimed, when it did not — or empty when it did.
+     *
+     * <p>Worth saying out loud, and the reason this method exists at all: a room is only free to move
+     * its door through the slack it has over {@link PortalRoomLayout#minWidth} /
+     * {@link PortalRoomLayout#minHeight}, because the corridor's own cross-section has to stay inside
+     * the room or its mouth cannot be sealed. <b>The built-in room has zero height slack</b> — it is
+     * exactly as tall as the corridor — so every vertical click on a stock room clamps to the floor
+     * and, without this note, reads as the feature being broken rather than as the room needing to be
+     * taller. Naming the axis and the fix turns a dead control into an instruction.</p>
+     */
+    private static String clampNote(CarriageDims dims, Match match, int offset, int heightOffset) {
+        boolean acrossClamped = offset != match.rawOffset();
+        boolean upClamped = heightOffset != match.rawHeightOffset();
+        if (!acrossClamped && !upClamped) return "";
+
+        int widthSlack = PortalRoomLayout.maxDoorOffset(dims, match.size().getZ());
+        int heightSlack = PortalRoomLayout.maxDoorHeightOffset(dims, match.size().getY());
+        if (acrossClamped && upClamped) {
+            return " Clamped on both axes — this room has " + widthSlack + " block"
+                + (widthSlack == 1 ? "" : "s") + " of slack across and " + heightSlack + " up."
+                + " Widen and heighten it to move the door further.";
+        }
+        if (acrossClamped) {
+            return " Clamped across — this room has " + widthSlack + " block"
+                + (widthSlack == 1 ? "" : "s") + " of slack either way. Widen it to move the door further.";
+        }
+        return " Clamped up — this room has " + heightSlack + " block"
+            + (heightSlack == 1 ? "" : "s") + " of slack above the corridor."
+            + " Make it taller to raise the door.";
     }
 
     /** One room's doorway column, matched against a click target, with the raw (unclamped) offsets it implies. */
