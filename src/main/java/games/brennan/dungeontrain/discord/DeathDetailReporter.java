@@ -156,12 +156,13 @@ public final class DeathDetailReporter {
         // to the world border is not a distance record. The record itself is still stored in full:
         // the data explorer wants every death, the boards only want the legitimate ones.
         //
-        // Written ONLY when true. An absent key reads as false on the relay, so a legitimate run's
-        // payload is byte-identical to what it was before the flag existed — the same treatment
-        // SharedCarriageClient gives its optional `mode`.
-        if (freePlay) {
-            body.addProperty("freePlay", true);
-        }
+        // ALWAYS written, true or false, and the `false` is the load-bearing half. The relay no
+        // longer reads an absent key as "legitimate": silence is what a client too old to know the
+        // question sends, and it is indistinguishable from what a cheated run looked like before
+        // the flag existed. So a run only reaches a board if this payload actively vouches for it.
+        // That is also why this may not be optimised back into a write-only-when-true: doing so
+        // would silently unrank every player on this build.
+        body.addProperty("freePlay", freePlay);
         return body;
     }
 
