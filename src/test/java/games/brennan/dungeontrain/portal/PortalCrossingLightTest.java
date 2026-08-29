@@ -51,25 +51,40 @@ final class PortalCrossingLightTest {
     }
 
     /**
-     * <b>The doorways are flat.</b> The ramp runs across the corridor's interior —
-     * {@link PortalFacing#FIRST_RAMP_BLOCK} to {@link PortalFacing#lastRampBlock}, the same span the
-     * facing sweep uses — so it is already finished a block before the room and the last step
-     * through the door changes nothing. A ramp that only reached full <i>at</i> the room door put its
-     * final slice of change in exactly the step where it is most visible.
+     * <b>The room doorway is flat, and the ramp is gentle either side of the walk.</b> The top of
+     * the ramp is {@link PortalFacing#lastRampBlock}, so the last step through the room door changes
+     * nothing — the step where a change is most visible. And the curve is a smoothstep rather than a
+     * line, so the first step out of the train and the last one before the room are small fractions
+     * of an even share: the steps next to somewhere that is not ramping at all are the ones a player
+     * reads as a jolt, and a straight line makes those exactly as large as the middle ones.
      */
     @Test
-    @DisplayName("the transition is over a block before the room, and has not begun a block after the train")
-    void rampIsFlatThroughBothDoorways() {
+    @DisplayName("the transition is over a block before the room, and eases in and out at both ends")
+    void rampEasesAtBothEndsAndFinishesEarly() {
         for (int length : new int[] {7, 9, 13, 16}) {
             PortalCarriageLayout l = layout(length);
             PortalCarriageRole role = PortalCarriageRole.ENTRY;
+            int last = PortalFacing.lastRampBlock(length);
+            double even = 1.0 / last;
 
             assertEquals(PortalCrossingLight.OFF,
-                PortalCrossingLight.intensityAt(PortalFacing.FIRST_RAMP_BLOCK + 0.5, l, role),
-                1e-9, "first ramp block should still be off at length " + length);
+                PortalCrossingLight.intensityAt(0.5, l, role), 1e-9,
+                "train door block should be off at length " + length);
             assertEquals(1.0,
-                PortalCrossingLight.intensityAt(PortalFacing.lastRampBlock(length) + 0.5, l, role),
-                1e-9, "last ramp block should be full at length " + length);
+                PortalCrossingLight.intensityAt(last + 0.5, l, role), 1e-9,
+                "last ramp block should be full at length " + length);
+            assertEquals(1.0,
+                PortalCrossingLight.intensityAt(l.farDoorX() + 0.5, l, role), 1e-9,
+                "the room doorway itself must add nothing at length " + length);
+
+            double firstStep = PortalCrossingLight.intensityAt(1.5, l, role);
+            double lastStep = 1.0 - PortalCrossingLight.intensityAt((last - 1) + 0.5, l, role);
+            assertTrue(firstStep < even * 0.75,
+                "first step " + firstStep + " should be well under an even " + even
+                    + " at length " + length);
+            assertTrue(lastStep < even * 0.75,
+                "last step " + lastStep + " should be well under an even " + even
+                    + " at length " + length);
         }
     }
 

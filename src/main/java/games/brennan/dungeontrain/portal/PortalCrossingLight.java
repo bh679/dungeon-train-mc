@@ -28,7 +28,8 @@ package games.brennan.dungeontrain.portal;
  *
  * <h2>One transition, not two</h2>
  * <p>This ramp runs <b>straight through</b>: nothing in the train-side door block, rising to full by
- * the block inside the room-side one. A corridor is the walk between two different places, and it should read as one
+ * the block inside the room-side one, and eased at both ends so neither the leaving nor the
+ * arriving is a step. A corridor is the walk between two different places, and it should read as one
  * change of lighting between them — the outside world at one end, the room at the other.</p>
  *
  * <p><b>It used to be symmetric</b>, holding at full across the middle and falling away at both
@@ -67,18 +68,20 @@ public final class PortalCrossingLight {
      * The ramp at {@code localX} in a corridor of this layout and role: {@link #OFF} through the
      * train-side door block, {@code 1} from the room-side one, and a straight line between.
      *
-     * <p><b>The two door planes are flat, and the ramp runs between the blocks inside them</b> —
-     * {@link PortalFacing#FIRST_RAMP_BLOCK} to {@link PortalFacing#lastRampBlock}, which is exactly
-     * the span the facing sweep runs over. A player standing in a doorway is in a doorway rather
-     * than in the corridor: it is the one place with a fixed reference right in front of them, and
-     * both the swap rule and this one leave it alone. It also means the transition is <i>finished</i>
-     * a block before the room rather than at its threshold, so the last step through the door
-     * changes nothing at all — which is the whole point of the exercise.</p>
+     * <p><b>It finishes a block early.</b> The top of the ramp is {@link PortalFacing#lastRampBlock},
+     * one in from the room-side door, so the last step through that doorway changes nothing at all —
+     * which is the whole point of the exercise. The bottom is the train-side door block itself
+     * rather than the block inside it: holding two blocks at zero and then starting meant the first
+     * change a player saw arrived all at once, and a walk that begins with a jolt is not a smooth
+     * walk however even the rest of it is.</p>
      *
-     * <p>Linear rather than eased. The client is already easing between the values it is sent
-     * ({@code ClientPortalCrossing}), and the corridor is nine blocks — a curve on top of that would
-     * be shaping something the player crosses in three paces, and would make the two ends
-     * asymmetric in a way nothing here means.</p>
+     * <p><b>Eased at both ends, not linear.</b> {@code t²(3-2t)}, the standard smoothstep: it leaves
+     * the train gently, arrives gently, and spends its steepness in the middle where there is no
+     * boundary for the player to notice it against. A straight line divides the change evenly per
+     * block, which sounds smooth and is not what it feels like — the steps that matter are the two
+     * at the ends, next to somewhere that is not ramping at all, and a line makes those the same
+     * size as the ones in the middle. The corridor is short enough that the whole curve is crossed
+     * in a few paces, so the cost of the steeper middle is not something a player can pick out.</p>
      *
      * @param localX corridor-local X; values outside the corridor clamp to its end blocks, matching
      *               {@link PortalFacing#depthFromTrainDoor}
@@ -90,14 +93,14 @@ public final class PortalCrossingLight {
         int length = layout.length();
         double depth = PortalFacing.depthFromTrainDoor(localX, length, role);
 
-        int first = PortalFacing.FIRST_RAMP_BLOCK;
-        // The span the sweep runs over: the corridor's interior, both door blocks excluded.
-        int span = PortalFacing.lastRampBlock(length) - first;
-        // A corridor with no interior to cross has no transition to make; MIN_LENGTH rules it out,
-        // and this is here so that loosening that constant cannot turn into a division by zero.
-        if (span <= 0) return depth >= first ? 1.0 : OFF;
+        // Train-side door block to one in from the room-side one.
+        int span = PortalFacing.lastRampBlock(length);
+        // A corridor with nothing to cross has no transition to make; MIN_LENGTH rules it out, and
+        // this is here so that loosening that constant cannot turn into a division by zero.
+        if (span <= 0) return depth > 0 ? 1.0 : OFF;
 
-        return Math.max(0.0, Math.min(1.0, (depth - first) / span));
+        double t = Math.max(0.0, Math.min(1.0, depth / span));
+        return t * t * (3.0 - 2.0 * t);
     }
 
     /** The wire form: {@code 0}..{@code 255}, which is all the resolution an eased lift can show. */
