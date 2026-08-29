@@ -107,7 +107,7 @@ public final class TrainDebugHudOverlay {
     }
 
     private static List<Line> buildLines() {
-        List<Line> lines = new ArrayList<>(7);
+        List<Line> lines = new ArrayList<>(8);
         lines.add(new Line(VersionInfo.DISPLAY, COLOR_TITLE));
         lines.add(new Line("Train seed: " + TrainDebugState.seed(), COLOR_BODY));
 
@@ -120,6 +120,10 @@ public final class TrainDebugHudOverlay {
         // Empty is meaningful here rather than unknown: the group draw landed on the parent's own
         // contents, or the parent has no group at all. Either way there is no sub-variant.
         lines.add(new Line("Sub variant: " + fieldOr(onTrain, TrainDebugState.subVariantId()), COLOR_BODY));
+        // Only meaningful inside a portal corridor's stacked copies; elsewhere "no" is the answer
+        // rather than a missing value, so this says so rather than showing a dash.
+        String copy = TrainDebugState.copy();
+        lines.add(new Line("Copy: " + (copy.isEmpty() ? "no" : copy), COLOR_BODY));
 
         // A "forever" grant (expiry 0) has no countdown to show.
         long expiresAtMs = TrainDebugState.expiresAtMs();

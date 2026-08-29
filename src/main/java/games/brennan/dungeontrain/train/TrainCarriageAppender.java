@@ -7,6 +7,8 @@ import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.debug.DebugAccessEvents;
 import games.brennan.dungeontrain.net.CarriageIndexPacket;
 import games.brennan.dungeontrain.portal.PortalCarriageSelection;
+import games.brennan.dungeontrain.portal.PortalGeometry;
+import games.brennan.dungeontrain.portal.PortalPairIndex;
 import games.brennan.dungeontrain.portal.PortalRegistry;
 import games.brennan.dungeontrain.portal.PortalStampRecord;
 import games.brennan.dungeontrain.portal.PortalTwinSpace;
@@ -1900,14 +1902,14 @@ public final class TrainCarriageAppender {
                     // In the pocket room there is no carriage to report, and the index they last
                     // stood at is not where they are. Forget it so walking back out re-sends.
                     if (LAST_SENT_DEBUG_PIDX.remove(uuid) != null) {
-                        DungeonTrainNet.sendTo(player, dimensionalCarriagePacket());
+                        DungeonTrainNet.sendTo(player, dimensionalCarriagePacket(level, player));
                     }
                 } else {
                     Occupied occupied = occupiedPIdx(train, player, dims, groupSize);
                     Integer lastDebug = LAST_SENT_DEBUG_PIDX.get(uuid);
                     if (occupied != null && !Integer.valueOf(occupied.pIdx()).equals(lastDebug)) {
                         DungeonTrainNet.sendTo(player, debugCarriageAt(
-                            level, occupied.pIdx(), occupied.slot(), groupSize));
+                            level, player, occupied.pIdx(), occupied.slot(), groupSize));
                         LAST_SENT_DEBUG_PIDX.put(uuid, occupied.pIdx());
                     }
                 }
@@ -4450,9 +4452,46 @@ public final class TrainCarriageAppender {
         return new Occupied(best.provider().getPIdx() + slot, slot);
     }
 
-    /** The panel's read-out for a player inside a portal pair's pocket room. */
-    private static TrainDebugCarriagePacket dimensionalCarriagePacket() {
-        return new TrainDebugCarriagePacket(true, 0, CART_TYPE_ROOM, "", "");
+    /**
+     * The panel's read-out for a player inside a portal pair's pocket room.
+     *
+     * <p>The room carries no record of its own: one furnishing draw serves a whole pair, so the
+     * room's contents are the ones its corridor recorded. {@code findByTwinPos} is what turns the
+     * player's position back into that pair's carriage index.</p>
+     */
+    private static TrainDebugCarriagePacket dimensionalCarriagePacket(ServerLevel level,
+                                                                      ServerPlayer player) {
+        String copy = copyLabel(level, player);
+        PortalPairIndex.Entry entry = PortalPairIndex.findByTwinPos(player.blockPosition());
+        if (entry == null) {
+            return new TrainDebugCarriagePacket(true, 0, CART_TYPE_ROOM, "", "", copy);
+        }
+        PlacedCarriageFacts.Facts facts = PlacedCarriageFacts.get(entry.carriageIndex());
+        if (facts == null) {
+            return new TrainDebugCarriagePacket(
+                true, entry.carriageIndex(), CART_TYPE_ROOM, "", "", copy);
+        }
+        return new TrainDebugCarriagePacket(true, entry.carriageIndex(), CART_TYPE_ROOM,
+            facts.contentsId(), facts.subVariantId(), copy);
+    }
+
+    /**
+     * Which of a portal corridor's two stacked copies the player is standing in, or {@code ""} for
+     * neither — which is the answer everywhere on the train, including inside the corridor that
+     * rides it. The registry holds the twin's world-space geometry, so only the underground copies
+     * can match.
+     */
+    private static String copyLabel(ServerLevel level, ServerPlayer player) {
+        double x = player.getX();
+        double y = player.getY();
+        double z = player.getZ();
+        for (PortalGeometry geo : PortalRegistry.get(level).all()) {
+            if (!geo.insideCorridor(x, y, z)) continue;
+            int copy = geo.copyAt(y);
+            if (copy == PortalGeometry.COPY_NEAR) return "near";
+            if (copy == PortalGeometry.COPY_FAR) return "far";
+        }
+        return "";
     }
 
     /** Cart-type labels for the places that never roll a variant. Player-facing wording. */
@@ -4508,17 +4547,18 @@ public final class TrainCarriageAppender {
      * session never placed reports empty ids — the panel shows a dash, which is the honest answer
      * rather than a confident wrong one.</p>
      */
-    private static TrainDebugCarriagePacket debugCarriageAt(ServerLevel level, int pIdx, int slot,
-                                                            int groupSize) {
+    private static TrainDebugCarriagePacket debugCarriageAt(ServerLevel level, ServerPlayer player,
+                                                            int pIdx, int slot, int groupSize) {
         String cartType = cartTypeAt(level, pIdx, slot, groupSize);
+        String copy = copyLabel(level, player);
         PlacedCarriageFacts.Facts facts = PlacedCarriageFacts.get(pIdx);
         if (facts == null) {
             // A pad, corridor or unplaced index still has a cart type worth showing, even though
             // nothing rolled contents for it.
-            return new TrainDebugCarriagePacket(true, pIdx, cartType, "", "");
+            return new TrainDebugCarriagePacket(true, pIdx, cartType, "", "", copy);
         }
         return new TrainDebugCarriagePacket(
-            true, pIdx, cartType, facts.contentsId(), facts.subVariantId());
+            true, pIdx, cartType, facts.contentsId(), facts.subVariantId(), copy);
     }
 
     /**
@@ -4539,7 +4579,7 @@ public final class TrainCarriageAppender {
                 // outside the train's near-radius and land here. They have not left the train —
                 // they are inside it in the only sense that matters to the panel.
                 DungeonTrainNet.sendTo(player, inDimensionalCarriage(level, player)
-                    ? dimensionalCarriagePacket()
+                    ? dimensionalCarriagePacket(level, player)
                     : TrainDebugCarriagePacket.absent());
             }
             it.remove();

@@ -91,6 +91,23 @@ public final class PlacedCarriageFacts {
     }
 
     /**
+     * Record the contents a portal corridor was furnished with. The cart-type label is left empty:
+     * a corridor's kind is resolved live from the portal registry, which is authoritative, and it
+     * never rolls a shell variant anyway.
+     *
+     * <p>One draw serves the whole pair — both corridors and the pocket room — so the room reads
+     * this back through its pair's carriage index rather than holding a record of its own.</p>
+     */
+    public static synchronized void recordPortalContents(int carriagePIdx, CarriageContents resolved) {
+        String resolvedId = resolved == null ? "" : resolved.id();
+        String parentId = resolvedId.isEmpty()
+            ? ""
+            : CarriageContentsGroupStore.findParentOf(resolvedId).orElse(resolvedId);
+        String subVariantId = parentId.equals(resolvedId) ? "" : resolvedId;
+        BY_PIDX.put(carriagePIdx, new Facts("", parentId, subVariantId));
+    }
+
+    /**
      * Record a slot stamped verbatim from the shared-carriage relay pool. It never reaches a
      * contents pick, so only the variant it was leased against is known.
      */

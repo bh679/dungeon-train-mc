@@ -27,12 +27,16 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  * the variant it rolled, but a flatbed pad, a portal corridor and a dimensional carriage report
  * what they are, since none of them roll a variant at all.</p>
  *
+ * <p>{@code copy} names which of a portal corridor's two stacked copies the player is standing in
+ * — {@code near} or {@code far} — and is empty anywhere else, including in the corridor that rides
+ * the train. Empty therefore means "not in a copy", which is itself the answer.</p>
+ *
  * <p>The contents ids are what the carriage index <em>rolls to</em>. A slot filled from the
  * shared-carriage relay pool holds another player's build placed verbatim, so for those carriages
  * these name what would have generated rather than what is standing.</p>
  */
 public record TrainDebugCarriagePacket(boolean present, int pIdx, String cartType,
-                                       String contentsId, String subVariantId)
+                                       String contentsId, String subVariantId, String copy)
         implements CustomPacketPayload {
 
     public static final Type<TrainDebugCarriagePacket> TYPE =
@@ -46,13 +50,14 @@ public record TrainDebugCarriagePacket(boolean present, int pIdx, String cartTyp
 
     public TrainDebugCarriagePacket {
         cartType = cartType == null ? "" : cartType;
+        copy = copy == null ? "" : copy;
         contentsId = contentsId == null ? "" : contentsId;
         subVariantId = subVariantId == null ? "" : subVariantId;
     }
 
     /** The "not on a train" form — carries no ids. */
     public static TrainDebugCarriagePacket absent() {
-        return new TrainDebugCarriagePacket(false, 0, "", "", "");
+        return new TrainDebugCarriagePacket(false, 0, "", "", "", "");
     }
 
     public void encode(FriendlyByteBuf buf) {
@@ -62,6 +67,7 @@ public record TrainDebugCarriagePacket(boolean present, int pIdx, String cartTyp
             buf.writeUtf(cartType);
             buf.writeUtf(contentsId);
             buf.writeUtf(subVariantId);
+            buf.writeUtf(copy);
         }
     }
 
@@ -71,7 +77,7 @@ public record TrainDebugCarriagePacket(boolean present, int pIdx, String cartTyp
             return absent();
         }
         return new TrainDebugCarriagePacket(
-            true, buf.readVarInt(), buf.readUtf(), buf.readUtf(), buf.readUtf());
+            true, buf.readVarInt(), buf.readUtf(), buf.readUtf(), buf.readUtf(), buf.readUtf());
     }
 
     @Override
@@ -81,6 +87,7 @@ public record TrainDebugCarriagePacket(boolean present, int pIdx, String cartTyp
 
     public static void handle(TrainDebugCarriagePacket packet, IPayloadContext ctx) {
         ctx.enqueueWork(() -> TrainDebugState.setCarriage(
-            packet.present, packet.pIdx, packet.cartType, packet.contentsId, packet.subVariantId));
+            packet.present, packet.pIdx, packet.cartType, packet.contentsId, packet.subVariantId,
+            packet.copy));
     }
 }

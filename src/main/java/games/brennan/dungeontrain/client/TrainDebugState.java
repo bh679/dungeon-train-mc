@@ -31,6 +31,7 @@ public final class TrainDebugState {
     private static volatile String cartType = "";
     private static volatile String contentsId = "";
     private static volatile String subVariantId = "";
+    private static volatile String copy = "";
 
     private TrainDebugState() {}
 
@@ -81,6 +82,14 @@ public final class TrainDebugState {
     }
 
     /**
+     * Which of a portal corridor's two stacked copies the player is in ({@code near} / {@code far}),
+     * or empty when they are not in one — which includes the corridor riding the train.
+     */
+    public static String copy() {
+        return copy;
+    }
+
+    /**
      * Flip the panel. A no-op without permission, so an ungranted player pressing F3+4 gets no
      * panel and no hint that the chord exists.
      */
@@ -104,12 +113,14 @@ public final class TrainDebugState {
 
     /** Fed by {@code TrainDebugCarriagePacket.handle} on every carriage-boundary crossing. */
     public static void setCarriage(boolean present, int carriagePIdx, String carriageCartType,
-                                   String carriageContentsId, String carriageSubVariantId) {
+                                   String carriageContentsId, String carriageSubVariantId,
+                                   String carriageCopy) {
         carriagePresent = present;
         pIdx = present ? carriagePIdx : 0;
         cartType = present ? orEmpty(carriageCartType) : "";
         contentsId = present ? orEmpty(carriageContentsId) : "";
         subVariantId = present ? orEmpty(carriageSubVariantId) : "";
+        copy = present ? orEmpty(carriageCopy) : "";
     }
 
     private static String orEmpty(String s) {
@@ -130,5 +141,6 @@ public final class TrainDebugState {
         cartType = "";
         contentsId = "";
         subVariantId = "";
+        copy = "";
     }
 }

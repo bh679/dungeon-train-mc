@@ -326,6 +326,10 @@ public final class CarriagePlacer {
             // PortalCarriageRole.corridorIndexOf.
             PortalCarriageBuilder.stampCarriage(
                 level, corridorOrigin, dims, kind, /*relight*/ false, pairKey, role);
+            // The pair's furnishing draw, for the debug panel. forPair is memoised per pair, so this
+            // returns exactly what the corridor was just stamped with rather than rolling again.
+            PlacedCarriageFacts.recordPortalContents(carriageIndex,
+                games.brennan.dungeontrain.portal.PortalCorridorContents.forPair(level, kind, pairKey));
             // Report the portal variant, not the one the roll happened to land on: what stands here
             // is a portal corridor, and a log line reading "variant=fancywood sources=portal" sends
             // anyone reading it after the fact looking for a bug that isn't there.
