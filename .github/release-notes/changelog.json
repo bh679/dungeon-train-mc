@@ -9717,6 +9717,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "relay-tick-perf-leaderboard-and-leases",
+      "version": "0.711.0",
+      "type": "perf",
+      "title": "Two runaway relay requests that were costing you frame time",
+      "summary": "Standing in a Stat Room, or riding past a community carriage, was quietly making the game ask the server the same thing over and over \u2014 twenty times a second, for the rest of the session. Two separate faults, both fixed. A Stat Room waiting on a leaderboard the server has no scores for yet now waits politely instead of asking on every tick, and a community carriage you have never touched no longer uploads a copy of itself moments after it appears. If reactions felt sluggish lately \u2014 chests opening slowly, hits not landing, items not picking up \u2014 this is a large part of why.",
+      "highlights": [
+        "Fixed: a leaderboard with no scores yet was re-requested every tick, forever",
+        "Fixed: every community carriage uploaded itself on arrival, even untouched",
+        "Stat Rooms still fill in as their boards arrive, just without the churn",
+        "Your own edits to a community carriage still sync exactly as before"
+      ],
+      "date": "2026-08-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

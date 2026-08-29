@@ -143,6 +143,49 @@ class SharedCarriageRegistryTest {
         assertEquals(java.util.List.of("Ann"), inst.deaths().names(), "but one name");
     }
 
+    /**
+     * A leased carriage is registered without an upload of its own behind it. Both halves of the
+     * entity sweep's state used to start at zero, which made the very first flush pass walk the live
+     * entities and then upload a delta encoding no edit — for every leased carriage, seconds after it
+     * spawned.
+     */
+    @Test
+    void aFreshInstanceIsNeitherDueForAnEntityScanNorHoldingABaseline() {
+        SharedCarriageRegistry.Instance inst = SharedCarriageRegistry.register(
+            null, UUID.randomUUID(), UUID.randomUUID(), 0, new BlockPos(0, 0, 0), DIMS, "shared", true, false, "",
+            42, "tok", 0, "stone", Credits.EMPTY, Deaths.EMPTY);
+
+        // The scan interval is counted from the carriage's own birth, not from the epoch.
+        assertFalse(inst.dueForEntityScan(System.currentTimeMillis(), 30_000L));
+        // And an unset fingerprint must not pass for a real one: 0 is not a fingerprint, so comparing
+        // against it read as "every entity in this carriage has changed".
+        assertFalse(inst.hasEntitySigBaseline());
+    }
+
+    @Test
+    void settingTheEntitySigEstablishesTheBaseline() {
+        SharedCarriageRegistry.Instance inst = SharedCarriageRegistry.register(
+            null, UUID.randomUUID(), UUID.randomUUID(), 0, new BlockPos(0, 0, 0), DIMS, "shared", true, false, "",
+            42, "tok", 0, "stone", Credits.EMPTY, Deaths.EMPTY);
+
+        inst.setEntitySig(1125899906842597L);
+        assertTrue(inst.hasEntitySigBaseline());
+        assertEquals(1125899906842597L, inst.entitySig());
+    }
+
+    @Test
+    void theEntityScanComesDueOnceTheIntervalHasPassedAndStampsAsItAnswers() {
+        SharedCarriageRegistry.Instance inst = SharedCarriageRegistry.register(
+            null, UUID.randomUUID(), UUID.randomUUID(), 0, new BlockPos(0, 0, 0), DIMS, "shared", true, false, "",
+            42, "tok", 0, "stone", Credits.EMPTY, Deaths.EMPTY);
+
+        long birth = System.currentTimeMillis();
+        assertFalse(inst.dueForEntityScan(birth, 30_000L));
+        assertTrue(inst.dueForEntityScan(birth + 30_000L, 30_000L));
+        // Stamped by the call that answered true, so polling cannot turn it into every-pass work.
+        assertFalse(inst.dueForEntityScan(birth + 30_000L, 30_000L));
+    }
+
     @Test
     void anUnconsentedDeathIsCountedWithoutNamingAnyone() {
         SharedCarriageRegistry.Instance inst = SharedCarriageRegistry.register(

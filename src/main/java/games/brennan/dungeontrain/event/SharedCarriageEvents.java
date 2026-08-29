@@ -27,6 +27,7 @@ import net.neoforged.neoforge.event.tick.LevelTickEvent;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -165,15 +166,19 @@ public final class SharedCarriageEvents {
         SharedCarriagePool.setHost(hostUuid, hostName);
         DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
         List<Integer> exclude = new ArrayList<>();
+        // Membership rides alongside the list rather than being read out of it: the list is ordered and
+        // goes to the relay as-is, but MAX_EXCLUDE_IDS of them turned the dedupe below into a scan per
+        // candidate.
+        Set<Integer> excluded = new HashSet<>();
         for (SharedCarriageRegistry.Instance inst : SharedCarriageRegistry.all()) {
             Integer id = inst.relayId();
-            if (id != null) exclude.add(id);
+            if (id != null && excluded.add(id)) exclude.add(id);
         }
         // Plus what this world has placed before — a build we've already shown is the one repeat that
         // reads as the generator running dry. Newest first, since the relay truncates the list.
         for (Integer id : data.recentUsedCarriageIds(MAX_EXCLUDE_IDS)) {
             if (exclude.size() >= MAX_EXCLUDE_IDS) break;
-            if (!exclude.contains(id)) exclude.add(id);
+            if (excluded.add(id)) exclude.add(id);
         }
         CarriageDims dims = data.dims();
         String stage = SharedCarriagePool.demandStage();
@@ -232,6 +237,15 @@ public final class SharedCarriageEvents {
         SableManagedShip ship = liveShip(inst.level, inst);
         if (ship == null) return false;
         long live = CarriageEntitySnapshot.liveDecorFingerprint(ship, inst.level, inst.shipyardOrigin, inst.dims);
+        if (!inst.hasEntitySigBaseline()) {
+            // A leased carriage was placed from the relay's own copy, so what stands in it now IS the
+            // uploaded state — there is nothing to report. Adopt it as the baseline; the next scan is
+            // the first that can honestly say a builder changed something. Without this the
+            // uninitialised 0 never matched a real fingerprint, so every leased carriage uploaded a
+            // full delta describing no edit, moments after it spawned.
+            inst.setEntitySig(live);
+            return false;
+        }
         return live != inst.entitySig();
     }
 
