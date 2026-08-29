@@ -40,10 +40,11 @@ import java.util.Optional;
  * height and drop cities nowhere near an island.</p>
  *
  * <p>Spacing differs as a balance call. The set uses {@code spacing 40 / separation 15} against vanilla's
- * {@code 20 / 11} — a quarter the candidate density. The band is not the real End: its core is a ~5000-block
- * strip the train drives straight down the middle of, so a player sweeps a long thin corridor of the
- * placement grid rather than wandering a whole dimension, and vanilla's grid made cities read as furniture
- * rather than a find.</p>
+ * {@code 20 / 11} — a quarter the candidate density — and on top of that a {@code frequency} of
+ * {@code 0.2}, which keeps only one in five of those candidate chunks. The band is not the real End: its
+ * core is a ~5000-block strip the train drives straight down the middle of, so a player sweeps a long thin
+ * corridor of the placement grid rather than wandering a whole dimension, and vanilla's grid made cities
+ * read as furniture rather than a find.</p>
  *
  * <p>So {@link #findGenerationPoint} keeps vanilla's rule — random rotation, the 5×5 box offset 7 blocks,
  * take the <em>lowest</em> corner, reject if too low — but reads its heights from
