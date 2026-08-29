@@ -9826,6 +9826,18 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "ain-052-supporter-names",
+      "version": "0.718.0",
+      "type": "content",
+      "title": "New supporter names in the item name pool",
+      "summary": "Adventure Item Names 0.52.0 brings a new Discord supporter into the name pool in five forms \u2014 sstasske, Staske, Stas, Stanislav, Stanislav The Russian \u2014 plus Testificate, the name Notch left on villagers in the Beta 1.9 pre-releases, and a spelling fix for supporter TJYongHeng.",
+      "highlights": [],
+      "date": "2026-08-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
