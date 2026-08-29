@@ -104,7 +104,24 @@ public final class BuilderSave {
         }
     }
 
+    /**
+     * Save the build in this builder world, and — on success — ask for a backup.
+     *
+     * <p>The backup request is the whole reason this wraps {@link #saveInternal}: a build that has
+     * just been written exists nowhere else, and before backups were taken here a carriage authored
+     * mid-session sat in no archive until the next world load. The request returns immediately and
+     * is debounced, so saving repeatedly while iterating costs nothing extra — see
+     * {@link games.brennan.dungeontrain.data.PlayerDataBackupHook}.</p>
+     */
     public static Result save(ServerLevel level) {
+        Result result = saveInternal(level);
+        if (result.saved()) {
+            games.brennan.dungeontrain.data.PlayerDataBackupHook.onTemplateSaved();
+        }
+        return result;
+    }
+
+    private static Result saveInternal(ServerLevel level) {
         if (!level.dimensionTypeRegistration().is(BuilderWorldLayout.BUILDER_DIMENSION_TYPE)) {
             return Result.failed("not a builder world");
         }

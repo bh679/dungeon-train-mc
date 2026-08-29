@@ -399,6 +399,24 @@ public final class AchievementEvents {
         ModAdvancementTriggers.BOOKS_BURNED_UNREAD.get().trigger(player, totalBurned);
     }
 
+    /**
+     * Called from {@link games.brennan.dungeontrain.event.StartingBookEvents#onEntityJoinLevel}
+     * when a leaderboard board burns. A board only becomes burnable once it has been held, so
+     * this fires for a board the player actually carried away — one-shot, no threshold.
+     */
+    public static void notifyLeaderboardBookBurned(ServerPlayer player) {
+        ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "burned_leaderboard_book");
+    }
+
+    /**
+     * Called from {@link games.brennan.dungeontrain.event.StartingBookEvents#onEntityJoinLevel}
+     * when a run-stat note — a page of the holder's own statistics — burns. Held-gated the same
+     * way as the board above, and likewise one-shot.
+     */
+    public static void notifyStatBookBurned(ServerPlayer player) {
+        ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "burned_stat_book");
+    }
+
     // ---------------- Player encounters ----------------
 
     /**

@@ -285,10 +285,39 @@ jobs:
             jei(optional)
             scribble(optional)
             shulkerboxtooltip(optional)
+            trashslot(optional)
+            balm(optional)
           java: 21
           retry-attempts: 2
           retry-delay: 10000
           fail-mode: warn
+
+      # An upload returning 200 is not a publish, and mc-publish runs with `fail-mode: warn` so a
+      # CurseForge 500 leaves this job GREEN with the jar live on Modrinth and missing on
+      # CurseForge. That is exactly how v0.692.0 shipped three-quarters of the way: two 500s, no
+      # third attempt, success. This is the guard the MODPACK already had and the mod did not.
+      #
+      # Verification only — recovery is `reupload-curseforge.yml`, which re-publishes the tag's
+      # existing artifact without burning a version number.
+      - name: Verify the CurseForge mod upload landed
+        if: ${{ always() && steps.publish_check.outputs.curseforge == 'true' }}
+        env:
+          CURSEFORGE_API_KEY: ${{ secrets.CURSEFORGE_API_KEY }}
+          CF_PROJECT: ${{ vars.CURSEFORGE_PROJECT_ID }}
+          RELEASE_TAG: ${{ env.RELEASE_TAG }}
+        run: |
+          set -euo pipefail
+          if [ -z "${{ steps.mcpublish.outputs.curseforge-version }}" ]; then
+            echo "::error::CurseForge upload produced no file id — the upload failed. Recover with:"
+            echo "::error::  gh workflow run reupload-curseforge.yml -f tag=$RELEASE_TAG"
+            exit 1
+          fi
+          python3 scripts/modpack/reconcile.py \
+            --verify "$RELEASE_TAG" \
+            --platform curseforge \
+            --curseforge-project "$CF_PROJECT" \
+            --timeout-minutes 30 \
+            --poll-seconds 60
 
       # Mirror REAL (operator-dispatched) mod releases into the CurseForge modpack.
       # Dispatches release-modpack.yml (which polls until CurseForge has APPROVED the

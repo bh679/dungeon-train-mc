@@ -3,7 +3,6 @@ package games.brennan.dungeontrain.config;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -64,20 +63,34 @@ class SharedCarriageDefaultsTest {
     }
 
     /**
-     * Leasing ships OFF while uploading ships ON — the deliberate asymmetry this switch exists for.
+     * Leasing ships ON — the asymmetry with uploading that this switch used to hold is over.
      *
      * <p>Asserted as a pair rather than one constant each, because it is the COMBINATION that is the
-     * product decision: builds are collected (players save them to the server and submit them for
-     * review) and nothing from the pool is served into a run yet. Either half flipping alone breaks
-     * that — leasing on would place unreviewed builds, the master off would stop collecting them.</p>
+     * product decision: a world both contributes carriages and is served them. Which builds it may be
+     * served is deliberately NOT decided here — the relay withholds Train Builder builds from every
+     * lease ({@code LEASE_BUILDER_BUILDS}, off), so that half opens with one ops switch and reaches
+     * every mod version already in players' hands, rather than waiting on a release.</p>
      */
     @Test
-    @DisplayName("carriages are collected but not served: master ON, leasing OFF")
-    void leasingShipsOffWhileUploadingShipsOn() {
+    @DisplayName("carriages are both collected and served: master ON, leasing ON")
+    void carriagesAreCollectedAndServed() {
         assertTrue(DungeonTrainConfig.DEFAULT_SHARED_CARRIAGES_ENABLED,
                 "the master must stay on or builds stop being uploaded at all");
-        assertFalse(DungeonTrainConfig.DEFAULT_SHARED_CARRIAGE_LEASING_ENABLED,
-                "leasing must ship off until the review pipeline opens — with this true, unreviewed "
-                        + "community builds are placed into players' runs");
+        assertTrue(DungeonTrainConfig.DEFAULT_SHARED_CARRIAGE_LEASING_ENABLED,
+                "leasing must ship on, or a shared slot places a blank template and no community "
+                        + "carriage is ever seen by anyone");
+    }
+
+    /**
+     * The leasing flip needs its own migration step, or it reaches new installs only — every install
+     * that has launched since the key shipped holds a stored {@code false}.
+     */
+    @Test
+    @DisplayName("the config version records the leasing migration")
+    void theLeasingFlipShipsWithItsOwnMigration() {
+        assertTrue(DungeonTrainConfig.CURRENT_CONFIG_VERSION >= 3,
+                "flipping DEFAULT_SHARED_CARRIAGE_LEASING_ENABLED needs a runPendingMigrations() step "
+                        + "above the previous version (2), or an existing dungeontrain-server.toml keeps "
+                        + "leasing off forever and nothing is ever placed");
     }
 }

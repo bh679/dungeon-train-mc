@@ -27,7 +27,7 @@ import java.util.UUID;
  *
  * <h2>What "every" means</h2>
  * <p>One run-stat note per {@link RunStatSubject} and one leaderboard book per
- * {@link LeaderboardCategory} — {@link #FULL_SET} books between them, 47 as the mod stands. The
+ * {@link LeaderboardCategory} — {@link #FULL_SET} books between them, 49 as the mod stands. The
  * notes need nothing fetched and go up immediately; the boards each need a fetch, so the room fills
  * in over the first minutes rather than all at once, and a server with no relay holds the notes and
  * nothing else.</p>

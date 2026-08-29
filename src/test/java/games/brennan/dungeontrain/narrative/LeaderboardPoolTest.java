@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -122,6 +123,32 @@ class LeaderboardPoolTest {
         LeaderboardPool.forget(PLAYER);
         assertTrue(LeaderboardPool.standing(PLAYER, LeaderboardCategory.LIVES).isEmpty());
         assertEquals(8, LeaderboardPool.standing(other, LeaderboardCategory.LIVES).orElseThrow().rank());
+    }
+
+    @Test
+    @DisplayName("a category that has never answered is not re-asked on every call")
+    void emptyAnswerIsHeldOffByTheAttemptCooldown() {
+        long t = 1_000_000L;
+        // Never asked, nothing cached: ask.
+        assertTrue(LeaderboardPool.dueForRequest(null, null, t));
+        // Just asked, and it left no board behind — empty rows, a bad_cat, a dropped connection. This
+        // is the case that used to fire one request per tick for the rest of the session.
+        assertFalse(LeaderboardPool.dueForRequest(null, t, t));
+        assertFalse(LeaderboardPool.dueForRequest(null, t, t + 59_000L));
+        // Once the cooldown is up it is worth another go, so a board the relay starts serving appears.
+        assertTrue(LeaderboardPool.dueForRequest(null, t, t + 60_000L));
+    }
+
+    @Test
+    @DisplayName("a board with rows is throttled by its own age, not the attempt cooldown")
+    void populatedBoardUsesTheBoardTtl() {
+        long t = 1_000_000L;
+        LeaderboardPool.Board fresh = new LeaderboardPool.Board(
+            List.of(new LeaderboardPool.Entry("Ada", 3L)), t);
+        // Fresh board: left alone, even though the attempt cooldown has long expired.
+        assertFalse(LeaderboardPool.dueForRequest(fresh, t - 600_000L, t + 299_000L));
+        // Past the 5-minute board TTL: refetched.
+        assertTrue(LeaderboardPool.dueForRequest(fresh, t - 600_000L, t + 300_000L));
     }
 
     @Test

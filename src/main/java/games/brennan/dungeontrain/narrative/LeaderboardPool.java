@@ -60,6 +60,20 @@ public final class LeaderboardPool {
     /** A board older than this is refetched the next time its category is wanted. */
     private static final long BOARD_TTL_MS = 300_000L;
 
+    /**
+     * How long a category that answered with nothing is left alone before being asked again.
+     *
+     * <p>{@link #BOARD_TTL_MS} can only throttle a category that produced rows, because a {@link Board}
+     * is the only thing carrying a timestamp. A category the relay has no rows for — one nobody has
+     * scored on yet, or an id this relay build does not serve and answers {@code bad_cat} — never
+     * reaches {@link #BOARDS} at all, so without this it was re-requested on every call. That is not
+     * hypothetical: {@link #warmAll()} runs from a stat room's per-tick stocking pass, so a single
+     * unservable category became one request per tick for the rest of the session.</p>
+     *
+     * <p>Shorter than the board TTL, so a board that starts being served still appears promptly.</p>
+     */
+    private static final long EMPTY_ATTEMPT_COOLDOWN_MS = 60_000L;
+
     /** Ceilings mirroring the relay's own, so an out-of-date or wrong relay can't push junk into a book. */
     static final int MAX_ROWS = 200;
     static final int MAX_NAME_LEN = 32;
@@ -94,6 +108,14 @@ public final class LeaderboardPool {
 
     private static final Map<LeaderboardCategory, Board> BOARDS = new ConcurrentHashMap<>();
     private static final Map<LeaderboardCategory, Boolean> IN_FLIGHT = new ConcurrentHashMap<>();
+
+    /**
+     * When each category was last asked, whatever the answer turned out to be — the brake for every
+     * outcome that leaves no {@link Board} behind: empty rows, a {@code bad_cat} 4xx, a transport
+     * error. Stamped before dispatch rather than on completion, so a request that never answers
+     * cannot spin either. See {@link #EMPTY_ATTEMPT_COOLDOWN_MS}.
+     */
+    private static final Map<LeaderboardCategory, Long> LAST_ATTEMPT_MS = new ConcurrentHashMap<>();
     private static final Map<UUID, Map<LeaderboardCategory, Standing>> RANKS = new ConcurrentHashMap<>();
 
     /**
@@ -173,14 +195,33 @@ public final class LeaderboardPool {
     }
 
     /**
+     * Whether a category is worth asking the relay about right now — over plain values, so the two
+     * brakes can be tested without a relay.
+     *
+     * <p>Two separate throttles, because they cover different outcomes. A board that produced rows
+     * carries its own {@code fetchedAt} and is good for {@link #BOARD_TTL_MS}. Everything else —
+     * empty rows, {@code bad_cat}, a transport error — leaves no board at all, and is held off by
+     * {@code lastAttempt} for {@link #EMPTY_ATTEMPT_COOLDOWN_MS} instead. Without the second one, a
+     * category the relay cannot serve was asked again on every single call.</p>
+     *
+     * @param cached      the board held for this category, or null if none has ever landed
+     * @param lastAttempt when it was last asked, or null if it never has been
+     */
+    static boolean dueForRequest(Board cached, Long lastAttempt, long now) {
+        if (cached != null && now - cached.fetchedAt() < BOARD_TTL_MS) return false;
+        return lastAttempt == null || now - lastAttempt >= EMPTY_ATTEMPT_COOLDOWN_MS;
+    }
+
+    /**
      * Fetch {@code category}'s board if it is missing or stale. Safe to call every tick: a fresh
-     * board and an in-flight one both return immediately without a request.
+     * board, one asked for too recently, and an in-flight one all return without a request.
      */
     public static void refresh(LeaderboardCategory category) {
         if (category == null) return;
-        Board cached = BOARDS.get(category);
-        if (cached != null && System.currentTimeMillis() - cached.fetchedAt() < BOARD_TTL_MS) return;
+        long now = System.currentTimeMillis();
+        if (!dueForRequest(BOARDS.get(category), LAST_ATTEMPT_MS.get(category), now)) return;
         if (Boolean.TRUE.equals(IN_FLIGHT.putIfAbsent(category, Boolean.TRUE))) return;
+        LAST_ATTEMPT_MS.put(category, now);
         try {
             String url = DungeonTrain.relayBaseUrl() + "/leaderboard?cat=" + enc(category.id())
                     + "&limit=" + FETCH_LIMIT;
@@ -321,6 +362,7 @@ public final class LeaderboardPool {
     static void clear() {
         BOARDS.clear();
         IN_FLIGHT.clear();
+        LAST_ATTEMPT_MS.clear();
         RANKS.clear();
         wanted = false;
         warmCursor = 0;

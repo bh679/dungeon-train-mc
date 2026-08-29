@@ -63,6 +63,22 @@ final class PluralRulesTest {
         check("pl_pl", 101, PluralRules.MANY);
     }
 
+    @Test @DisplayName("Romanian: few covers zero and every count ending 2-19, other starts at 20")
+    void romanian() {
+        check("ro_ro", 1, PluralRules.ONE);
+        check("ro_ro", 0, PluralRules.FEW);       // zero vagoane reads like the few form
+        check("ro_ro", 2, PluralRules.FEW);
+        check("ro_ro", 19, PluralRules.FEW);
+        check("ro_ro", 20, PluralRules.OTHER);    // 20 de vagoane — the "de" range
+        check("ro_ro", 21, PluralRules.OTHER);
+        check("ro_ro", 100, PluralRules.OTHER);
+        check("ro_ro", 101, PluralRules.OTHER);   // ends in 01, but 1 alone is the only "one"
+        check("ro_ro", 102, PluralRules.FEW);     // …102 ends in 02, back to few
+        check("ro_ro", 119, PluralRules.FEW);
+        check("ro_ro", 120, PluralRules.OTHER);
+        check("ro_ro", -3, PluralRules.FEW);      // magnitude, like every other family
+    }
+
     @Test @DisplayName("English and its family: one at exactly 1")
     void english() {
         check("en_us", 1, PluralRules.ONE);
@@ -133,7 +149,8 @@ final class PluralRulesTest {
         assertTrue(Files.isRegularFile(file), "plural_rules.json missing at " + file);
         JsonObject root = JsonParser.parseString(
                 Files.readString(file, StandardCharsets.UTF_8)).getAsJsonObject();
-        Set<String> known = Set.of("one_other", "zero_one_other", "east_slavic", "polish", "single");
+        Set<String> known = Set.of("one_other", "zero_one_other", "east_slavic", "polish", "romanian",
+                "single");
         JsonObject locales = root.getAsJsonObject("locales");
         assertTrue(locales.size() >= 17, "expected every shipped locale prefix, got " + locales.size());
         for (var e : locales.entrySet()) {
@@ -145,6 +162,7 @@ final class PluralRulesTest {
         assertEquals(List.of("one", "few", "many"), PluralRules.categoriesOf("pl_pl"));
         assertEquals(List.of("other"), PluralRules.categoriesOf("ja_jp"));
         assertEquals(List.of("one", "other"), PluralRules.categoriesOf("en_us"));
+        assertEquals(List.of("one", "few", "other"), PluralRules.categoriesOf("ro_ro"));
     }
 
     /**

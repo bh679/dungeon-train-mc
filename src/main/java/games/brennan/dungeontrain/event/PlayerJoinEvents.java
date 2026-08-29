@@ -197,6 +197,9 @@ public final class PlayerJoinEvents {
         // Seed debug flags so the in-world Debug menu's Toggle states render
         // the correct value the first time it's opened on this client.
         DebugFlags.sendSnapshotTo(player);
+        // Debug-panel access: the cached verdict first (so a granted player has the panel even with
+        // the relay down), then a relay fetch to correct it. Denied for everyone by default.
+        games.brennan.dungeontrain.debug.DebugAccessEvents.onPlayerLogin(player);
         // Same reason for the editor-menus mode: the client holds it in a static that outlives a
         // disconnect, so a reconnect has to be told what the server actually has for this player
         // rather than keeping whatever the last session left behind.

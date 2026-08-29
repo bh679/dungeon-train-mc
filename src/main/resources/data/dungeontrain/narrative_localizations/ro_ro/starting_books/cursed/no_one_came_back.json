@@ -1,0 +1,11 @@
+{
+  "id": "no_one_came_back",
+  "title": "Nimeni nu s-a întors",
+  "author": "Brennan Hatton",
+  "generation": 0,
+  "weight": 1,
+  "variants": [
+    "Ai scris un nume.\nÎți amintești?\n\n%TARGET%.\nAi scris %TARGET%.\n\nA funcționat.\nNu cum ai cerut.\nCum funcționează el mereu.\n\nAi murit la vagonul %CARRIAGE%.\nCeva din tine a rămas acolo.\n%GEAR%\n\nA așteptat %DAYS% zile.\n\nApoi %TARGET% a intrat în vagonul %CARRIAGE%, într-o lume pe care tu n-o vei vedea niciodată.\n\n%STORY%\n\nȘi acolo se oprește hârtia.\n\nNu știu cum s-a sfârșit.\nNici tu.\n\nĂsta e târgul pe care l-ai făcut.",
+    "Bine ai revenit.\nCe este trenul?\nDe ce ești aici?\nCe ai făcut?\n\nDoar una dintre ele s-a schimbat.\n\n%TARGET% te-a întâlnit la vagonul %CARRIAGE%.\n\nNu pe tine.\nPartea din tine care a rămas în urmă.\n\n%DAYS% zile a așteptat.\nLucru răbdător.\nAvea fața ta.\n\n%STORY%\n\n.\n\nȚi-aș spune cine a plecat de acolo.\n\nNimeni n-a scris-o."
+  ]
+}

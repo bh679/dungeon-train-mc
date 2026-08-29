@@ -44,6 +44,13 @@ import cf_api  # noqa: E402
 
 CF_MODPACK_PROJECT = int(os.environ.get("CURSEFORGE_MODPACK_PROJECT_ID") or 1556213)
 MR_MODPACK_PROJECT = os.environ.get("MODRINTH_MODPACK_PROJECT_ID") or "bEFyz3ji"
+
+# Which projects the listing readers below look at. Defaults are the two MODPACKS, which is what
+# this script was written for. ``--curseforge-project`` / ``--modrinth-project`` retarget it at any
+# project — notably the MOD, so ``reupload-curseforge.yml`` can verify a mod upload actually landed
+# with the same "an upload is not a publish" logic the pack already relies on.
+CF_PROJECT = CF_MODPACK_PROJECT
+MR_PROJECT = MR_MODPACK_PROJECT
 GITHUB_REPO = os.environ.get("GITHUB_REPOSITORY") or "bh679/dungeon-train-mc"
 
 USER_AGENT = cf_api.USER_AGENT
@@ -74,13 +81,13 @@ def curseforge_versions():
     """Publicly listed pack versions on CurseForge, newest-first."""
     if cf_api.is_authoritative():
         data = _get_json(
-            f"{cf_api.CF_API}/mods/{CF_MODPACK_PROJECT}/files?pageSize=10000",
+            f"{cf_api.CF_API}/mods/{CF_PROJECT}/files?pageSize=10000",
             headers=cf_api.api_headers(),
         )
         files = data.get("data", [])
         pairs = [(normalize(f.get("displayName", "")), f.get("fileDate", "")) for f in files]
     else:
-        data = _get_json(f"{cf_api.CFWIDGET_API}/{CF_MODPACK_PROJECT}")
+        data = _get_json(f"{cf_api.CFWIDGET_API}/{CF_PROJECT}")
         files = data.get("files", [])
         pairs = [(normalize(f.get("display", "")), f.get("uploaded_at", "")) for f in files]
     pairs = [(v, d) for v, d in pairs if v]
@@ -88,7 +95,7 @@ def curseforge_versions():
 
 
 def modrinth_versions():
-    data = _get_json(f"https://api.modrinth.com/v2/project/{MR_MODPACK_PROJECT}/version")
+    data = _get_json(f"https://api.modrinth.com/v2/project/{MR_PROJECT}/version")
     pairs = [(normalize(v.get("version_number", "")), v.get("date_published", "")) for v in data]
     pairs = [(v, d) for v, d in pairs if v]
     return sorted(pairs, key=lambda p: version_key(p[0]), reverse=True)
@@ -227,10 +234,22 @@ def main(argv=None):
                     help="How long --verify waits for the version to appear (default: 30).")
     ap.add_argument("--poll-seconds", type=int, default=60,
                     help="Delay between --verify polls (default: 60).")
+    ap.add_argument("--curseforge-project",
+                    help="CurseForge project to read (default: the modpack). Pass the MOD's "
+                         "project id to verify a mod upload rather than a pack upload.")
+    ap.add_argument("--modrinth-project",
+                    help="Modrinth project slug/id to read (default: the modpack).")
     ap.add_argument("--fail-if-stale-hours", type=float, default=0,
                     help="Drift mode: exit 1 if CurseForge has published nothing newer than "
                          "this many hours AND is behind the newest release. 0 = report only.")
     args = ap.parse_args(argv)
+
+    # Retarget the listing readers before anything calls them.
+    global CF_PROJECT, MR_PROJECT
+    if args.curseforge_project:
+        CF_PROJECT = int(args.curseforge_project)
+    if args.modrinth_project:
+        MR_PROJECT = args.modrinth_project
 
     if args.verify:
         outcome = verify(args.platform, args.verify, args.timeout_minutes, args.poll_seconds)

@@ -531,7 +531,8 @@ public class DungeonTrain {
         }
 
         // Price DT-relevant items in Trade Everything's villager "Trade Anything"
-        // slot (narrative books, ominous banners, edible backpacks). TE is bundled
+        // slot (narrative books, ominous banners, armor trim templates, edible
+        // backpacks). TE is bundled
         // (jarJar), but tolerate a build predating the valuation API: degrade to
         // default valuation.
         if (ModList.get().isLoaded("tradeeverything")) {

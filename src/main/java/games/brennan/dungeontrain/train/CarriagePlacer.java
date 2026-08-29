@@ -668,6 +668,12 @@ public final class CarriagePlacer {
                 ? null
                 : GateContext.forCarriageAtWorldX(level, groupAnchorWorldX, carriageIndex, dims.length());
             CarriageContents contents = CarriageContentsRegistry.pick(config.seed(), carriageIndex, variant, gateCtx);
+            // The one place the roll actually happens, with the placement-time gate context. The
+            // F3+4 panel reads this back rather than re-rolling, which it cannot do correctly once
+            // the train has moved — see PlacedCarriageFacts.
+            if (carriageIndex != CarriageContentsPlacer.EDITOR_SENTINEL_PIDX) {
+                PlacedCarriageFacts.record(carriageIndex, variant, contents);
+            }
             // Clear any entities left over from a previous carriage at this
             // shipyard position — the block-only clearBoundingBox in
             // TrainAssembler doesn't discard entities, so armor stands and
