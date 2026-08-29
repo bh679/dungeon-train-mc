@@ -376,7 +376,10 @@ public final class PortalRoomTiler {
         // window is the other case — it should leave nothing behind. Without this the floor
         // disappears and the mobs stay, falling to the world floor, and since they are all
         // persistence-required that is a permanent leak rather than a passing mess.
-        PortalRoomMobs.reapTile(level, box, pairKey, tile);
+        //
+        // The whole volume, not only what this copy placed: a mob that had walked one tile over used
+        // to be matched by no copy's reap at all. See PortalRoomMobs#sweepVolume.
+        PortalRoomMobs.sweepVolume(level, box, pairKey, "copy " + tile.x() + "," + tile.z());
 
         PortalCorridorMask mask = maskFor(structure, dims, tile);
         PortalClear.clearBox(level, box, mask);

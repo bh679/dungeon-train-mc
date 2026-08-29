@@ -67,6 +67,18 @@ public final class ChuncksBand {
     }
 
     /**
+     * True if the column at {@code worldX} lies in the chuncks band OR anywhere in the plain-overworld
+     * run-up to it (the upside-down exit gap, the chuncks lead gap, the entry fade) — see
+     * {@link WorldGenCycle#isInChuncksApproachOrBand}. The advancement gate for
+     * {@code reached_overworld_again} uses this so "Re-Over-World" is held back until the overworld that
+     * follows the band. False when the band is disabled or the world has no train.
+     */
+    public static boolean isInApproachOrBand(ServerLevel overworld, int worldX) {
+        if (startX(overworld) == OFF) return false;
+        return WorldGenCycle.fromConfig().isInChuncksApproachOrBand(worldX);
+    }
+
+    /**
      * Classify the chunk at {@code (chunkX, chunkZ)}. Uses the position-driven keep-density
      * ({@link WorldGenCycle#chuncksKeepDensityAt}) so the entry fade zone naturally produces sparse void
      * that thickens toward the core. A density {@code ≥ 1.0} — outside the band + fade, or when the band

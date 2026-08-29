@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.event;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
+import games.brennan.dungeontrain.worldgen.ChuncksBand;
 import games.brennan.dungeontrain.worldgen.Disintegration;
 import games.brennan.dungeontrain.worldgen.DisintegrationBand;
 import games.brennan.dungeontrain.worldgen.NetherBand;
@@ -30,7 +31,9 @@ import java.util.List;
  *   <li>{@code OVERWORLD} → {@code reached_overworld_again} ("Re-Over-World") — only once the
  *       player has already reached the void or the End islands (so it never fires from the spawn
  *       overworld) AND is outside the upside-down band/exit crossfade (see below — {@code zoneAt}
- *       alone would otherwise fire this the instant the mirrored band begins).</li>
+ *       alone would otherwise fire this the instant the mirrored band begins) AND outside the
+ *       chuncks band and its run-up (see below), so it lands on the overworld that follows the
+ *       whole journey rather than the gap leading into the last band.</li>
  * </ul>
  *
  * <p>Independently of the void/End {@code zoneAt} classification, the same scan also grants two
@@ -54,7 +57,16 @@ import java.util.List;
  * (via {@link UpsideDownBand#isInExitFade}) — both depth-gated the same way as {@code reached_nether},
  * since each zone is a single trapezoid.</p>
  *
- * <p>All seven are one-shot {@code gameplay_action} markers (same trigger as
+ * <p>Last in the cycle comes the chuncks band — the mostly-void stretch of floating chunks (see
+ * {@link ChuncksBand}) — which grants {@code reached_chuncks} ("Chunk Error") once the player is
+ * {@code CHUNCKS_DEPTH_BLOCKS} into the band core, depth-gated like the others. That band, and the
+ * plain-overworld run-up to it, is also what blocks {@code reached_overworld_again}: the gaps between
+ * the upside-down exit and the chuncks entry read as {@code OVERWORLD} to {@code zoneAt}, but the world
+ * has not settled back yet, so "Re-Over-World" waits for the overworld <em>after</em> the chunks (via
+ * {@link ChuncksBand#isInApproachOrBand}). With the chuncks band disabled that gate is inert and the
+ * pre-chuncks behaviour is unchanged.</p>
+ *
+ * <p>All eight are one-shot {@code gameplay_action} markers (same trigger as
  * {@code landed_on_tracks} etc.); vanilla advancement dedupe makes re-firing the same id every
  * scan a no-op. When disintegration is disabled {@link DisintegrationBand#zoneAt} always returns
  * {@code OVERWORLD} and the overworld-again gate is never satisfied, so nothing fires.</p>
@@ -88,6 +100,14 @@ public final class ZoneProgressEvents {
      * comfortably contains this depth.
      */
     private static final int UD_EXIT_FADE_DEPTH_BLOCKS = 3800;
+
+    /**
+     * How far (blocks) into the chuncks band core the player must be before {@code reached_chuncks} is
+     * granted — so it reads as "riding through the broken world", not "just crossed the edge". The band
+     * core is a single contiguous X range, so two in-band samples imply everything between; the default
+     * core (5,000 blocks) comfortably contains this depth.
+     */
+    private static final int CHUNCKS_DEPTH_BLOCKS = 500;
 
     private static final ResourceLocation REACHED_VOID =
         ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "dungeon_train/reached_void");
@@ -145,6 +165,15 @@ public final class ZoneProgressEvents {
                 ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "reassembly_required");
             }
 
+            // Chuncks band — the cycle's last phase, a mostly-void stretch of floating chunks. Same
+            // depth gate as the bands above: the core is one contiguous X range, so requiring the column
+            // CHUNCKS_DEPTH_BLOCKS behind the player to also read in-band proves they are properly
+            // inside it and not just at the leading edge.
+            if (ChuncksBand.isInBand(level, px)
+                && ChuncksBand.isInBand(level, px - CHUNCKS_DEPTH_BLOCKS)) {
+                ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "reached_chuncks");
+            }
+
             switch (DisintegrationBand.zoneAt(level, player.getBlockX())) {
                 case VOID ->
                     ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "reached_void");
@@ -160,8 +189,12 @@ public final class ZoneProgressEvents {
                     // since End flows into it with no void gap); without excluding it, "overworld
                     // again" would fire before the player ever reaches the upside-down band, and the
                     // exit-fade exclusion keeps it from firing among the dispersing islands.
+                    // Finally, exclude the chuncks band AND the plain-overworld run-up to it — those
+                    // gaps read as OVERWORLD but the world breaks apart again straight after them, so
+                    // the overworld has not actually restarted until the band is behind the player.
                     if ((earned(player, REACHED_VOID) || earned(player, REACHED_END_ISLANDS))
-                        && !UpsideDownBand.isInBandEntryLeadOrExit(level, px)) {
+                        && !UpsideDownBand.isInBandEntryLeadOrExit(level, px)
+                        && !ChuncksBand.isInApproachOrBand(level, px)) {
                         ModAdvancementTriggers.GAMEPLAY_ACTION.get()
                             .trigger(player, "reached_overworld_again");
                     }

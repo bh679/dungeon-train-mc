@@ -6506,9 +6506,15 @@ public final class EditorCommand {
         String sky = settings.sky().lights()
             ? ", sky: " + settings.sky().displayName()
             : "";
+        // Same rule again: "door position: centred" on every room would be noise, since centred is
+        // what every room did before this setting existed.
+        int doorOffsetValue = settings.doorOffset().value();
+        String doorOffset = doorOffsetValue != 0
+            ? ", door position: " + (doorOffsetValue > 0 ? "+" + doorOffsetValue : doorOffsetValue)
+            : "";
         source.sendSuccess(() -> Component.literal(
             "Dimensional carriage '" + name + "' walls: " + settings.mode().displayName() + copies + contents
-            + exits + books + sky
+            + exits + books + sky + doorOffset
             + ". Portals already standing keep the settings they were built with — this takes effect "
             + "on the next one the train reaches." + subVariantNote(name)
         ).withStyle(ChatFormatting.GREEN), true);

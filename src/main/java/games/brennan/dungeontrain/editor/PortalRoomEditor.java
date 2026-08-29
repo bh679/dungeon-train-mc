@@ -146,8 +146,9 @@ public final class PortalRoomEditor {
 
         player.sendSystemMessage(Component.literal(
             "[DungeonTrain] Dimensional carriage editor: this is the room between a portal's two corridors. "
-            + "Keep the way through clear on the walkway centre line — the corridors open onto it "
-            + "at both ends. Resize it from the X menu, or with "
+            + "The amber ghosts mark where the two doorways open — keep the way through clear there. "
+            + "Right-click a ghost with a door in hand to move both doorways along the wall or up it; "
+            + "resize the room from the X menu, or with "
             + "/dt editor portals length|width|height <blocks>."));
 
         LOGGER.info("[DungeonTrain] Editor enter: {} -> portal room '{}' plot at {} ({}x{}x{}, {} variants)",

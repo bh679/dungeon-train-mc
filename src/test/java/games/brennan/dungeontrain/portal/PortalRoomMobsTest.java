@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.portal;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -19,10 +20,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * The rule that keeps a repeating room's authored mobs from becoming a leak.
  *
- * <p>A copy of the room must reap the mobs <b>it</b> placed and leave its neighbour's standing. Get
- * that wrong in one direction and mobs pile up behind the player for as long as they keep walking;
- * get it wrong in the other and the room empties out around them. Neither is easy to spot in a live
- * run, which is why the mark is plain NBT and tested here rather than only in game.</p>
+ * <p>A retiring copy must take everything standing in <b>its own</b> volume and leave its
+ * neighbour's standing. Get that wrong in one direction and mobs pile up behind the player for as
+ * long as they keep walking — permanently, since they are all persistence-required; get it wrong in
+ * the other and the room empties out around them. Neither is easy to spot in a live run, which is
+ * why the membership rule is plain geometry and tested here rather than only in game.</p>
  */
 class PortalRoomMobsTest {
 
@@ -32,45 +34,34 @@ class PortalRoomMobsTest {
         return data;
     }
 
-    @Test
-    @DisplayName("A copy reaps the mobs it placed")
-    void marksRoundTrip() {
-        CompoundTag data = marked(6, 2, -3);
-        assertTrue(PortalRoomMobs.marks(data, 6, new PortalRoomTiling.Tile(2, -3)));
-        assertEquals(6, PortalRoomMobs.markedPair(data));
+    /** A copy's box: eleven wide, seven tall, eleven deep, with its low corner at the origin. */
+    private static BoundingBox copyBox(int x, int y, int z) {
+        return new BoundingBox(x, y, z, x + 10, y + 6, z + 10);
     }
 
     @Test
-    @DisplayName("A copy leaves its neighbours' mobs alone — every direction, including the diagonal")
-    void neighbouringCopiesDoNotReapEachOther() {
-        CompoundTag data = marked(6, 2, -3);
-        int[][] neighbours = {{1, -3}, {3, -3}, {2, -2}, {2, -4}, {1, -2}, {3, -4}, {0, 0}};
-        for (int[] n : neighbours) {
-            assertFalse(PortalRoomMobs.marks(data, 6, new PortalRoomTiling.Tile(n[0], n[1])),
-                "copy " + n[0] + "," + n[1] + " must not reap a mob placed by copy 2,-3");
-        }
+    @DisplayName("A retiring copy sweeps what stands in it, whichever copy placed it")
+    void sweepTakesTheWholeVolume() {
+        BoundingBox box = copyBox(0, 40, 0);
+        // The case the mark-scoped reap missed: a mob spawned by the copy next door that walked in
+        // here. Membership is the volume, so it goes with the floor it is standing on.
+        assertTrue(PortalRoomMobs.inside(box, 5.5, 41.0, 5.5));
+        assertTrue(PortalRoomMobs.inside(box, 0.0, 40.0, 0.0), "the low corner is inside");
+        assertTrue(PortalRoomMobs.inside(box, 10.9, 46.9, 10.9), "the high corner is inside");
     }
 
     @Test
-    @DisplayName("One portal never reaps another portal's mobs, even at the same copy coordinates")
-    void otherPairsDoNotReap() {
-        CompoundTag data = marked(6, 0, 0);
-        // Two structures share a Y lane and can tile toward each other, so the same tile coordinates
-        // genuinely do occur for different pairs. The pair key is what separates them.
-        for (int otherPair : new int[]{0, 12, -6, 7}) {
-            assertFalse(PortalRoomMobs.marks(data, otherPair, PortalRoomTiling.Tile.BASE),
-                "pair " + otherPair + " must not reap pair 6's mobs");
-        }
-    }
-
-    @Test
-    @DisplayName("An unmarked entity belongs to no portal — a wanderer is never reaped as ours")
-    void unmarkedBelongsToNobody() {
-        CompoundTag data = new CompoundTag();
-        assertFalse(PortalRoomMobs.marks(data, 0, PortalRoomTiling.Tile.BASE));
-        assertEquals(Integer.MIN_VALUE, PortalRoomMobs.markedPair(data));
-        // Pair 0 and tile 0,0 are both real values, so "absent" must not read as "matches zero".
-        assertFalse(PortalRoomMobs.marks(data, 0, new PortalRoomTiling.Tile(0, 0)));
+    @DisplayName("A retiring copy leaves the copy next door alone")
+    void sweepStopsAtTheSeam() {
+        BoundingBox box = copyBox(0, 40, 0);
+        // Copies abut, so a mob standing just over the shared wall has an AABB that touches this
+        // box. Membership is decided on its position, or a retiring copy would empty the room the
+        // player is about to walk back into.
+        assertFalse(PortalRoomMobs.inside(box, 11.0, 41.0, 5.5), "the next copy along +x");
+        assertFalse(PortalRoomMobs.inside(box, -0.5, 41.0, 5.5), "the next copy along -x");
+        assertFalse(PortalRoomMobs.inside(box, 5.5, 41.0, 11.0), "the next copy along +z");
+        assertFalse(PortalRoomMobs.inside(box, 5.5, 47.0, 5.5), "standing on the roof");
+        assertFalse(PortalRoomMobs.inside(box, 5.5, 39.0, 5.5), "already below the floor");
     }
 
     @Test
