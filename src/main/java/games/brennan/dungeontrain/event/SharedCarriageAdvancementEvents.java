@@ -1,13 +1,10 @@
 package games.brennan.dungeontrain.event;
 
-import dev.ryanhcode.sable.api.sublevel.ServerSubLevelContainer;
-import dev.ryanhcode.sable.api.sublevel.SubLevelContainer;
-import dev.ryanhcode.sable.sublevel.ServerSubLevel;
-import dev.ryanhcode.sable.sublevel.plot.LevelPlot;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
 import games.brennan.dungeontrain.net.SnapshotCue;
 import games.brennan.dungeontrain.net.SnapshotCuePacket;
+import games.brennan.dungeontrain.train.SharedCarriageLookup;
 import games.brennan.dungeontrain.train.SharedCarriageRegistry;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceKey;
@@ -15,7 +12,6 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Container;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -47,7 +43,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * <p><b>Why not the mixin.</b> {@code SableBlockChangeGuardMixin} already sees every carriage block
  * change, but Sable's hook carries no player, and these advancements are all about <i>who</i> did it.
  * NeoForge's own block events carry the actor, and fire in the same coordinate space the mixin resolves
- * in — sub-level plot space, which is what {@link SharedCarriageRegistry#resolve} expects.</p>
+ * in — sub-level plot space, which is what {@link SharedCarriageLookup} expects.</p>
  *
  * <p><b>Consent.</b> All three are gated on {@link SharedCarriageGate#canContribute(ServerPlayer)}.
  * Without network consent the edit never leaves this machine, and every one of these advancements
@@ -96,7 +92,7 @@ public final class SharedCarriageAdvancementEvents {
     /** Fire whichever edit advancement this carriage warrants, or nothing if it isn't a drifting one. */
     private static void creditEdit(ServerPlayer player, net.minecraft.world.level.LevelAccessor levelAccess, BlockPos pos) {
         if (!(levelAccess instanceof ServerLevel level)) return;
-        SharedCarriageRegistry.Instance inst = resolveCarriage(level, pos);
+        SharedCarriageRegistry.Instance inst = SharedCarriageLookup.byBlockPos(level, pos);
         if (inst == null || inst.isCulled()) return;
         // Ahead of the consent gate on purpose: a ride photo never leaves this machine, so the
         // player gets their record of building in a drifting carriage whether or not the build
@@ -126,7 +122,7 @@ public final class SharedCarriageAdvancementEvents {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         if (!(event.getLevel() instanceof ServerLevel level)) return;
         BlockPos pos = event.getPos();
-        SharedCarriageRegistry.Instance inst = resolveCarriage(level, pos);
+        SharedCarriageRegistry.Instance inst = SharedCarriageLookup.byBlockPos(level, pos);
         if (inst == null || inst.isCulled()) return;
         Container container = containerAt(level, pos);
         if (container == null) return;
@@ -184,22 +180,6 @@ public final class SharedCarriageAdvancementEvents {
     }
 
     // ---------------- Helpers ----------------
-
-    /**
-     * The drifting carriage a block at {@code pos} belongs to, or null. Same resolution path as
-     * {@code SableBlockChangeGuardMixin}: sub-level container → plot → sub-level id → footprint match.
-     */
-    private static SharedCarriageRegistry.Instance resolveCarriage(ServerLevel level, BlockPos pos) {
-        ServerSubLevelContainer container = SubLevelContainer.getContainer(level);
-        if (container == null) return null;
-        ChunkPos cpos = new ChunkPos(pos);
-        if (container.getChunkHolder(cpos) == null) return null; // ordinary world chunk
-        LevelPlot plot = container.getPlot(cpos);
-        if (plot == null || !(plot.getSubLevel() instanceof ServerSubLevel serverSub)) return null;
-        UUID subLevelId = serverSub.getUniqueId();
-        if (!SharedCarriageRegistry.hasSubLevel(subLevelId)) return null;
-        return SharedCarriageRegistry.resolve(subLevelId, pos.getX(), pos.getY(), pos.getZ());
-    }
 
     private static Container containerAt(ServerLevel level, BlockPos pos) {
         BlockEntity be = level.getBlockEntity(pos);
