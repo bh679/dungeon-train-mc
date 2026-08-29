@@ -9805,12 +9805,9 @@
       "id": "burnt-book-advancements",
       "version": "0.716.0",
       "type": "feat",
-      "title": "Advancements for burning leaderboard boards and stat notes",
-      "summary": "Two new advancements for two of the newer chest-book finds: burn a leaderboard board to see who's ahead of you and earn Top of the Board, or burn a note of your own run statistics and earn Know Thyself. Both fire on the ordinary read-then-close path, not just a manual throw.",
-      "highlights": [
-        "New advancement: Know Thyself (burn a run-stat note)",
-        "New advancement: Top of the Board (burn a leaderboard board)"
-      ],
+      "title": "A couple of new advancements",
+      "summary": "A couple of new hidden advancements have been added.",
+      "highlights": [],
       "pr": 1178,
       "date": "2026-08-29",
       "released": false,
