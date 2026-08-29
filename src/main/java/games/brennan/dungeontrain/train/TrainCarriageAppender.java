@@ -4520,22 +4520,36 @@ public final class TrainCarriageAppender {
      * <p>{@code slot} is the player's position within their group's enclosed run, so a value
      * outside {@code [0, groupSize)} means they are on one of the pads that wrap it.</p>
      */
-    private static String cartTypeAt(ServerLevel level, int pIdx, int slot, int groupSize) {
+    private record CartType(String label, boolean rollsContents) {}
+
+    private static CartType cartTypeAt(ServerLevel level, int pIdx, int slot, int groupSize) {
         if (groupSize > 1 && (slot < 0 || slot >= groupSize)) {
-            return CART_TYPE_PAD;
+            // A pad's pIdx is its neighbour's — slot -1 and slot groupSize both land on a real
+            // carriage index. Reporting that index's contents would show the carriage next door's
+            // furnishings as though they were the pad's, and a pad has none at all.
+            return new CartType(CART_TYPE_PAD, false);
         }
         // The registry is the authoritative post-placement answer — re-deriving whether an index is
         // a portal would drift the same way the contents roll does. See PortalRegistry#noteStamped.
         if (PortalRegistry.get(level).isStampedPortalPart(pIdx)) {
             if (!PortalStampRecord.isCorridorSlot(pIdx, groupSize)) {
-                return CART_TYPE_CORRIDOR_MIDDLE;
+                return new CartType(CART_TYPE_CORRIDOR_MIDDLE, true);
             }
-            return PortalCarriageSelection.slotOf(pIdx, groupSize) == PortalCarriageSelection.SLOT_ENTRY
-                ? CART_TYPE_CORRIDOR_ENTRY
-                : CART_TYPE_CORRIDOR_EXIT;
+            return new CartType(
+                PortalCarriageSelection.slotOf(pIdx, groupSize) == PortalCarriageSelection.SLOT_ENTRY
+                    ? CART_TYPE_CORRIDOR_ENTRY
+                    : CART_TYPE_CORRIDOR_EXIT,
+                true);
         }
         PlacedCarriageFacts.Facts facts = PlacedCarriageFacts.get(pIdx);
-        return facts == null ? "" : facts.variantId();
+        if (facts == null) {
+            return new CartType("", false);
+        }
+        // A FLATBED is a bare shell — it returns before the contents roll, so it has none. Saying so
+        // explicitly also stops a stale record, left at this index by whatever stood here before the
+        // rolling window came round, from being read as this flatbed's furnishings.
+        boolean flatbed = CarriagePlacer.CarriageType.FLATBED.id().equals(facts.variantId());
+        return new CartType(facts.variantId(), !flatbed);
     }
 
     /**
@@ -4549,16 +4563,16 @@ public final class TrainCarriageAppender {
      */
     private static TrainDebugCarriagePacket debugCarriageAt(ServerLevel level, ServerPlayer player,
                                                             int pIdx, int slot, int groupSize) {
-        String cartType = cartTypeAt(level, pIdx, slot, groupSize);
+        CartType cartType = cartTypeAt(level, pIdx, slot, groupSize);
         String copy = copyLabel(level, player);
-        PlacedCarriageFacts.Facts facts = PlacedCarriageFacts.get(pIdx);
+        PlacedCarriageFacts.Facts facts = cartType.rollsContents()
+            ? PlacedCarriageFacts.get(pIdx)
+            : null;
         if (facts == null) {
-            // A pad, corridor or unplaced index still has a cart type worth showing, even though
-            // nothing rolled contents for it.
-            return new TrainDebugCarriagePacket(true, pIdx, cartType, "", "", copy);
+            return new TrainDebugCarriagePacket(true, pIdx, cartType.label(), "", "", copy);
         }
         return new TrainDebugCarriagePacket(
-            true, pIdx, cartType, facts.contentsId(), facts.subVariantId(), copy);
+            true, pIdx, cartType.label(), facts.contentsId(), facts.subVariantId(), copy);
     }
 
     /**
