@@ -287,6 +287,9 @@ jobs:
             shulkerboxtooltip(optional)
             trashslot(optional)
             balm(optional)
+            enchantment-descriptions(optional)
+            bookshelf(optional)
+            prickle(optional)
           java: 21
           retry-attempts: 2
           retry-delay: 10000
