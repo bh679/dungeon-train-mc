@@ -4486,7 +4486,9 @@ public final class TrainCarriageAppender {
                 dims = DungeonTrainWorldData.get(level.getServer().overworld()).dims();
             }
             TrainDebugCarriagePacket packet = dimensionalCarriagePacket(level, player, dims);
-            sendDebugIfChanged(player, "r:" + packet.contentsId() + ":" + packet.copy(), () -> packet);
+            sendDebugIfChanged(player,
+                "r:" + packet.contentsId() + ":" + packet.subVariantId() + ":" + packet.copy(),
+                () -> packet);
         }
     }
 
@@ -4509,9 +4511,11 @@ public final class TrainCarriageAppender {
         }
         // A room has no contents parent or sub-variant — it rolls its furnishing from a per-tile
         // seed index. Its name and how its copies are made are the honest analogue.
+        // Sub variant carries the tile's own roll index, because the room's name and copies mode
+        // are the same in every copy — the index is what actually differs between them.
         return new TrainDebugCarriagePacket(true, 0, CART_TYPE_ROOM,
             room.roomName(),
-            room.copiesKind().name().toLowerCase(Locale.ROOT),
+            room.copiesKind().name().toLowerCase(Locale.ROOT) + " #" + room.variantIndex(),
             copy);
     }
 

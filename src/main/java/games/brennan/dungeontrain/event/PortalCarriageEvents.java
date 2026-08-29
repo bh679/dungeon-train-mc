@@ -1031,20 +1031,31 @@ public final class PortalCarriageEvents {
      * because under {@link games.brennan.dungeontrain.portal.PortalRoomCopies.Kind#DYNAMIC} each one
      * rerolls, so two copies of the same room are not the same room.</p>
      *
+     * <p>{@code variantIndex} is what the tile actually rolled from: identical across every copy
+     * under EXACT, and different per tile under DYNAMIC. It is the only field here that separates
+     * one copy from another, the room's name and copies mode being properties of the structure.</p>
+     *
      * <p>Null when the position is in no room. Another adapter that keeps {@link #STRUCTURES}
      * private, like {@link #isInRoom}.</p>
      */
     public static RoomFacts roomFactsAt(CarriageDims dims, double x, double y, double z) {
-        for (PortalStructure structure : STRUCTURES.values()) {
+        for (Map.Entry<Integer, PortalStructure> pair : STRUCTURES.entrySet()) {
+            PortalStructure structure = pair.getValue();
             AABB box = structureBox(dims, structure);
             int pad = structure.fogPad();
             if (pad > 0) box = box.inflate(pad, 0.0, pad);
             if (!box.contains(x, y, z)) continue;
             PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims, structure.kind());
+            games.brennan.dungeontrain.portal.PortalRoomTiling.Tile tile =
+                structure.tileAt(dims, layout, x, z);
+            // The index THIS tile rolled from, not the structure's. Under DYNAMIC it mixes the tile
+            // in, so it is the one value that separates one copy from another — which is the whole
+            // reason a copy looks different from the base room.
             return new RoomFacts(
                 structure.roomName(),
                 structure.settings().effectiveCopies().kind(),
-                structure.tileAt(dims, layout, x, z));
+                tile,
+                structure.variantIndexFor(tile, pair.getKey()));
         }
         return null;
     }
@@ -1052,7 +1063,8 @@ public final class PortalCarriageEvents {
     /** One room's identity at a position — see {@link #roomFactsAt}. */
     public record RoomFacts(String roomName,
                             games.brennan.dungeontrain.portal.PortalRoomCopies.Kind copiesKind,
-                            games.brennan.dungeontrain.portal.PortalRoomTiling.Tile tile) {}
+                            games.brennan.dungeontrain.portal.PortalRoomTiling.Tile tile,
+                            int variantIndex) {}
 
     /**
      * Whether the room standing at {@code pairKey} locks its books to an author, and how it picks one.
