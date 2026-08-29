@@ -364,7 +364,7 @@
       "slug": "enchantment-descriptions",
       "project_id": 250419,
       "file_id": 8693034,
-      "required": true,
+      "required": false,
       "modrinth_project": "enchantment-descriptions",
       "modrinth_version": "IktklYWh"
     },

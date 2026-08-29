@@ -178,6 +178,24 @@ def test_real_config_ships_optins_disabled_by_default():
     assert {"projectID": 508933, "fileID": 7350266, "required": False} in files, files  # Distant Horizons 2.x
 
 
+def test_real_config_ships_enchantment_descriptions_disabled_by_default():
+    """Guard: Enchantment Descriptions ships OFF, but its libraries stay ON.
+
+    ED file 8693034 declares a NeoForge floor of [21.1.233,) and DT ships neo_version=21.1.228,
+    so on a default install the pack hard-failed at mod loading with "Mod enchdesc requires
+    neoforge 21.1.233 or above". Shipped required:false until the pin is corrected — same class
+    of bug as the JEI floor pin, see modpack/README.md.
+
+    Bookshelf + Prickle stay required:true on purpose: the CurseForge app gives each manifest
+    entry its own checkbox and ticking ED does NOT pull its dependencies in, so shipping the
+    libraries OFF would swap one crash for a missing-dependency crash the moment a player opts in.
+    """
+    files = _render_real_config()
+    assert {"projectID": 250419, "fileID": 8693034, "required": False} in files, files  # Enchantment Descriptions
+    assert {"projectID": 228525, "fileID": 7606240, "required": True} in files, files   # Bookshelf (ED dep)
+    assert {"projectID": 1023259, "fileID": 6961457, "required": True} in files, files  # Prickle (ED dep)
+
+
 def test_real_config_ships_jade_with_sable_compat_enabled():
     """Guard: Jade + Jade Sable Compat ship ENABLED (required:true).
 
