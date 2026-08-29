@@ -9868,6 +9868,18 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "chunks-band-advancement",
+      "version": "0.721.0",
+      "type": "feat",
+      "title": "Advancement tweaks",
+      "summary": "A few advancement adjustments.",
+      "highlights": [],
+      "date": "2026-08-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
