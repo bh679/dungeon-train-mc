@@ -52,6 +52,8 @@ pack must list them explicitly. Everything else is a manifest file with a `requi
 | Just Enough Items (JEI) | `238222` | off (opt-in) | Recipe / item lookup overlay. Opt-in because it restyles every inventory screen — a change players should choose. No dependencies. 1.21.1 builds are published on the **beta** channel only (JEI ships no release-channel build for this MC line), same as Iris here. **Pinned** (19.39.0.372) — ⚠️ NOT the newest: JEI raised its NeoForge floor to `[21.1.238,)` in 19.42.0.379 (2026-07-27) and DT ships `neo_version=21.1.228`, so anything newer hard-fails at load with "Mod jei requires neoforge 21.1.238 or above". 19.39.0.372 is the last build declaring `[21.0.118-beta,)`. Re-check this pin whenever `neo_version` moves. |
 | TrashSlot | `235577` | **enabled** | Inventory QoL — a draggable trash slot for binning unwanted items. Client + server. Shipped **on**, but with the slot itself **hidden and all of its keys unbound** — see "TrashSlot ships silent" below. Requires **Balm**. **Pinned** (21.1.11). |
 | Balm | `531761` | **enabled** (library) | TrashSlot's required dependency — BlayTheNinth's multi-loader abstraction layer. Inert library with no gameplay of its own; also jarJars the **Kuma** keybind library TrashSlot binds through. **Pinned** (21.0.65). |
+| Durability Tooltip | `511040` | **enabled** | Client-side QoL — draws the remaining durability on an item's tooltip instead of making players read the damage bar. No render/physics/chunk hooks, safe with Sable. Requires **SuperMartijn642's Config Lib**. **Pinned** (1.1.6). |
+| SuperMartijn642's Config Lib | `438332` | **enabled** (library) | Durability Tooltip's required dependency — not jarJar'd. Inert config library with no gameplay of its own; enabled so Durability Tooltip loads on a default install. **Pinned** (1.1.8). |
 
 …plus NeoForge as the modloader (`neoforge-<neo_version>`) and the Minecraft version,
 both read from `gradle.properties`.
@@ -88,9 +90,12 @@ flag straight into the manifest:
   (block/item tooltip HUD) paired with **Jade Sable Compat** (the client-only mod that fixes Jade's
   tooltips on the moving train — the reason Jade is no longer opt-in), **Kinetic
   Hosting Integration** (partner banner on the multiplayer menu), plus their inert library deps
-  **CreativeCore** (AmbientSounds), **Iceberg** (Advancement Plaques) and **Balm** (TrashSlot).
+  **CreativeCore** (AmbientSounds), **Iceberg** (Advancement Plaques), **Balm** (TrashSlot) and
+  **SuperMartijn642's Config Lib** (Durability Tooltip), plus **Durability Tooltip** itself
+  (durability numbers on item tooltips).
   The libraries ship enabled so their dependent loads on a default install (CreativeCore —
-  AmbientSounds is on; Iceberg — AP is on; Balm — TrashSlot is on). **TrashSlot** is on this list
+  AmbientSounds is on; Iceberg — AP is on; Balm — TrashSlot is on; Config Lib — Durability
+  Tooltip is on). **TrashSlot** is on this list
   as an installed-and-loaded mod, but it ships deliberately inert — see "TrashSlot ships silent"
   below.
 - **Bundled but off by default (`required:false`)** — Mouse Tweaks, Nemo's Inventory Sorting,
