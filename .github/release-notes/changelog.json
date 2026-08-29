@@ -9852,9 +9852,9 @@
       ],
       "pr": 1181,
       "date": "2026-08-29",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.725.0",
+      "released_at": "2026-08-29T16:29:35Z"
     },
     {
       "id": "portal-tile-entity-sweep",
@@ -9865,9 +9865,9 @@
       "highlights": [],
       "pr": 1182,
       "date": "2026-08-29",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.725.0",
+      "released_at": "2026-08-29T16:29:35Z"
     },
     {
       "id": "chunks-band-advancement",
@@ -9877,9 +9877,9 @@
       "summary": "A few advancement adjustments.",
       "highlights": [],
       "date": "2026-08-29",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.725.0",
+      "released_at": "2026-08-29T16:29:35Z"
     },
     {
       "id": "end-city-rarity",
@@ -9890,9 +9890,9 @@
       "highlights": [],
       "pr": 1183,
       "date": "2026-08-29",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.725.0",
+      "released_at": "2026-08-29T16:29:35Z"
     },
     {
       "id": "infinite-difficulty-potion-effects",
@@ -9905,9 +9905,9 @@
       ],
       "pr": 1185,
       "date": "2026-08-29",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.725.0",
+      "released_at": "2026-08-29T16:29:35Z"
     },
     {
       "id": "enchantment-descriptions-modpack",
@@ -9921,9 +9921,9 @@
       ],
       "pr": 1186,
       "date": "2026-08-29",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.725.0",
+      "released_at": "2026-08-29T16:29:35Z"
     },
     {
       "id": "durability-tooltip-modpack",
@@ -9936,9 +9936,9 @@
         "Remaining durability shown as coloured numbers on tool, weapon and armour tooltips"
       ],
       "date": "2026-08-29",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.725.0",
+      "released_at": "2026-08-29T16:29:35Z"
     },
     {
       "id": "portal-corridor-progressive-fade",
@@ -9953,9 +9953,9 @@
       ],
       "pr": 1189,
       "date": "2026-08-29",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.725.0",
+      "released_at": "2026-08-29T16:29:35Z"
     },
     {
       "id": "portal-room-door-position",
