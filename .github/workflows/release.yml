@@ -287,6 +287,7 @@ jobs:
             shulkerboxtooltip(optional)
             trashslot(optional)
             balm(optional)
+            crafting-tweaks(optional)
           java: 21
           retry-attempts: 2
           retry-delay: 10000

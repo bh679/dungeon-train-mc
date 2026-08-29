@@ -52,6 +52,7 @@ pack must list them explicitly. Everything else is a manifest file with a `requi
 | Just Enough Items (JEI) | `238222` | off (opt-in) | Recipe / item lookup overlay. Opt-in because it restyles every inventory screen — a change players should choose. No dependencies. 1.21.1 builds are published on the **beta** channel only (JEI ships no release-channel build for this MC line), same as Iris here. **Pinned** (19.39.0.372) — ⚠️ NOT the newest: JEI raised its NeoForge floor to `[21.1.238,)` in 19.42.0.379 (2026-07-27) and DT ships `neo_version=21.1.228`, so anything newer hard-fails at load with "Mod jei requires neoforge 21.1.238 or above". 19.39.0.372 is the last build declaring `[21.0.118-beta,)`. Re-check this pin whenever `neo_version` moves. |
 | TrashSlot | `235577` | **enabled** | Inventory QoL — a draggable trash slot for binning unwanted items. Client + server. Shipped **on**, but with the slot itself **hidden and all of its keys unbound** — see "TrashSlot ships silent" below. Requires **Balm**. **Pinned** (21.1.11). |
 | Balm | `531761` | **enabled** (library) | TrashSlot's required dependency — BlayTheNinth's multi-loader abstraction layer. Inert library with no gameplay of its own; also jarJars the **Kuma** keybind library TrashSlot binds through. **Pinned** (21.0.65). |
+| Crafting Tweaks | `233071` | off (opt-in) | Crafting-grid QoL — rotate / balance / clear the grid and a craft-all button, in the 2×2 player grid and crafting tables. Client + server. Opt-in because it adds buttons and keybinds to every crafting screen — a change players should choose. Requires **Balm**, already bundled for TrashSlot. **Pinned** (21.1.11). |
 
 …plus NeoForge as the modloader (`neoforge-<neo_version>`) and the Minecraft version,
 both read from `gradle.properties`.
@@ -94,7 +95,8 @@ flag straight into the manifest:
   as an installed-and-loaded mod, but it ships deliberately inert — see "TrashSlot ships silent"
   below.
 - **Bundled but off by default (`required:false`)** — Mouse Tweaks, Nemo's Inventory Sorting,
-  Distant Horizons, Effortless Building, Punchy!, WorldEdit, Just Enough Items (JEI). Shipped in the pack so a player can flip them on with one click, but inert until they
+  Distant Horizons, Effortless Building, Punchy!, WorldEdit, Just Enough Items (JEI),
+  Crafting Tweaks. Shipped in the pack so a player can flip them on with one click, but inert until they
   do. (DT itself + Sable are hardcoded `required:true` in the builder.)
 
 ## ⚠️ A pack update replaces `config/` — keep player data out of it
