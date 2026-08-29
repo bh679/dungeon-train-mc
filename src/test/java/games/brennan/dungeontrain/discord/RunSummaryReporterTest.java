@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Assembly tests for {@link RunSummaryReporter#buildPayload}. The relay reads {@code runSec} as the
@@ -22,7 +23,7 @@ class RunSummaryReporterTest {
     @Test
     @DisplayName("full payload carries uuid, player, runSec, carriage, distanceBlocks")
     void fullPayload() {
-        JsonObject out = RunSummaryReporter.buildPayload(UUID, "NyoomBomb", 34861L, 33, 2013, NO_POS);
+        JsonObject out = RunSummaryReporter.buildPayload(UUID, "NyoomBomb", 34861L, 33, 2013, NO_POS, false);
         assertEquals(UUID, out.get("uuid").getAsString());
         assertEquals("NyoomBomb", out.get("player").getAsString());
         assertEquals(34861L, out.get("runSec").getAsLong());
@@ -33,16 +34,16 @@ class RunSummaryReporterTest {
     @Test
     @DisplayName("null or blank player is omitted")
     void playerOptional() {
-        assertFalse(RunSummaryReporter.buildPayload(UUID, null, 10L, 0, 0, NO_POS).has("player"));
-        assertFalse(RunSummaryReporter.buildPayload(UUID, "", 10L, 0, 0, NO_POS).has("player"));
+        assertFalse(RunSummaryReporter.buildPayload(UUID, null, 10L, 0, 0, NO_POS, false).has("player"));
+        assertFalse(RunSummaryReporter.buildPayload(UUID, "", 10L, 0, 0, NO_POS, false).has("player"));
     }
 
     @Test
     @DisplayName("runSec passes through unchanged (already whole seconds)")
     void runSecPassthrough() {
-        assertEquals(0L, RunSummaryReporter.buildPayload(UUID, "x", 0L, 0, 0, NO_POS).get("runSec").getAsLong());
+        assertEquals(0L, RunSummaryReporter.buildPayload(UUID, "x", 0L, 0, 0, NO_POS, false).get("runSec").getAsLong());
         assertEquals(7200L,
-                RunSummaryReporter.buildPayload(UUID, "x", 7200L, 5, 100, NO_POS).get("runSec").getAsLong());
+                RunSummaryReporter.buildPayload(UUID, "x", 7200L, 5, 100, NO_POS, false).get("runSec").getAsLong());
     }
 
     @Test
@@ -50,7 +51,7 @@ class RunSummaryReporterTest {
     void odometerAndDisplacementCoexist() {
         // A player who walked laps on a carriage: odometer 2013, but only 800 blocks down the line.
         JsonObject out = RunSummaryReporter.buildPayload(
-                UUID, "x", 34861L, 33, 2013, new RunPosition(200, 800, "overworld"));
+                UUID, "x", 34861L, 33, 2013, new RunPosition(200, 800, "overworld"), false);
         assertEquals(2013, out.get("distanceBlocks").getAsInt());
         assertEquals(800, out.get("distanceTravelled").getAsInt());
         assertEquals(200, out.get("spawnX").getAsInt());
@@ -60,9 +61,24 @@ class RunSummaryReporterTest {
     @Test
     @DisplayName("legacy shape: distanceBlocks alone when no origin was captured")
     void legacyShape() {
-        JsonObject out = RunSummaryReporter.buildPayload(UUID, "x", 10L, 1, 500, NO_POS);
+        JsonObject out = RunSummaryReporter.buildPayload(UUID, "x", 10L, 1, 500, NO_POS, false);
         assertEquals(500, out.get("distanceBlocks").getAsInt());
         assertFalse(out.has("distanceTravelled"));
         assertFalse(out.has("spawnX"));
+    }
+
+    @Test
+    @DisplayName("a Free Play life is flagged, so the relay can keep it off the public boards")
+    void freePlayFlagged() {
+        JsonObject out = RunSummaryReporter.buildPayload(UUID, "x", 60L, 2, 30, NO_POS, true);
+        assertTrue(out.get("freePlay").getAsBoolean());
+    }
+
+    @Test
+    @DisplayName("a legitimate life carries no freePlay key at all — absent, not false")
+    void legitimateRunOmitsTheFlag() {
+        // The relay reads an absent key as false, so omitting it keeps the common payload
+        // byte-identical to what it was before the flag existed.
+        assertFalse(RunSummaryReporter.buildPayload(UUID, "x", 60L, 2, 30, NO_POS, false).has("freePlay"));
     }
 }
