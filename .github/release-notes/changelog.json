@@ -9908,6 +9908,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "enchantment-descriptions-modpack",
+      "version": "0.723.0",
+      "type": "feat",
+      "title": "Enchantment tooltips now explain what each enchantment does",
+      "summary": "The modpack now ships Enchantment Descriptions, switched on by default. Hover any enchanted item and each enchantment carries a short plain-English line explaining what it actually does \u2014 handy when a train chest hands you something you've never rolled before. Its two library dependencies, Bookshelf and Prickle, ship enabled alongside it.",
+      "highlights": [
+        "Enchantment Descriptions bundled and enabled by default",
+        "Enchanted item tooltips now explain each enchantment's effect"
+      ],
+      "pr": 1186,
+      "date": "2026-08-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
