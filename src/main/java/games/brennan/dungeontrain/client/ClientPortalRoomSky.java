@@ -66,30 +66,45 @@ public final class ClientPortalRoomSky {
      * <p>Meant to be called exactly once per lightmap rebuild, before {@link #sky()}. The camera
      * position is read here rather than passed in because the two hooks that need this run at
      * different points in vanilla's method and only one of them is in a position to supply one.</p>
+     *
+     * <p><b>A corridor counts as partway in.</b> The room's own box stops at its walls, and a player
+     * walking a portal corridor toward a daylit room used to get the whole lift in the step that
+     * carried them through the doorway. {@code crossing} — the corridor ramp {@code ClientPortalRoomFog}
+     * and the crossing lift both ride — is the target while they are outside the box, so the room's
+     * light comes up over the walk and is already there when they arrive. It ramps down again on the
+     * way out, since the ramp is measured from the train end whichever corridor it is.</p>
+     *
+     * @param crossing how far through a portal corridor the camera is, {@code 0}..{@code 1}, or
+     *                 {@code 0} when it is in none — see {@link ClientPortalCrossing#current}
      */
-    public static float advance(double x, double y, double z) {
+    public static float advance(double x, double y, double z, float crossing) {
         PortalRoomSkyPacket r = region;
         PortalRoomSky wanted = r.skyKind();
         // An editor plot's lift is the author's to switch off; a room in the world is not. Read as
         // "not inside" rather than dropped on arrival, so turning it off mid-plot fades out through
         // the ease below exactly as walking out of the room does.
         boolean allowed = !r.editor() || ClientDisplayConfig.isEditorPlotLighting();
-        boolean inside = allowed && wanted.lights() && contains(r, x, y, z);
+        boolean lit = allowed && wanted.lights();
+        // Full inside the room, the corridor ramp on the way to it, nothing anywhere else.
+        float want = 0.0f;
+        if (lit) {
+            want = contains(r, x, y, z) ? 1.0f : Math.max(0.0f, Math.min(1.0f, crossing));
+        }
 
         // Changing sky mid-lift: fade the old one out first and only then adopt the new one, so the
         // tint never jumps from red to white at full strength. A room entered from nothing adopts
         // immediately, which is the ordinary case.
-        if (inside && wanted != easing) {
+        if (want > 0.0f && wanted != easing) {
             if (applied <= OFF_EPSILON) {
                 easing = wanted;
             } else {
-                inside = false;
+                want = 0.0f;
             }
         }
-        if (!inside && applied <= 0.0f) return 0.0f;
+        if (want <= 0.0f && applied <= 0.0f) return 0.0f;
 
-        applied += ((inside ? 1.0f : 0.0f) - applied) * EASE_PER_REBUILD;
-        if (!inside && applied <= OFF_EPSILON) {
+        applied += (want - applied) * EASE_PER_REBUILD;
+        if (want <= 0.0f && applied <= OFF_EPSILON) {
             applied = 0.0f;
             easing = PortalRoomSky.NONE;
             return 0.0f;
@@ -106,8 +121,9 @@ public final class ClientPortalRoomSky {
      * True when the camera is inside the copies of the room that have actually been stamped.
      *
      * <p>Unlike the fog's test this one has a real vertical term and no horizontal padding: the
-     * lift belongs to the room's own box and stops at its walls. A room is a lit place you stand
-     * in, not a region you approach.</p>
+     * lift belongs to the room's own box and stops at its walls. What reaches past them is not this
+     * box but the corridor ramp {@link #advance} takes, which is a walk toward the room rather than
+     * a region around it.</p>
      */
     private static boolean contains(PortalRoomSkyPacket r, double x, double y, double z) {
         return x >= r.minX() && x <= r.maxX() + 1
