@@ -9868,6 +9868,21 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "infinite-difficulty-potion-effects",
+      "version": "0.721.0",
+      "type": "fix",
+      "title": "Difficulty potion effects now show as infinite",
+      "summary": "Buffed mobs on the train carry their difficulty potion effects permanently, but the effect readout showed a nonsensical multi-thousand-hour countdown instead of the infinity symbol. The effects were always meant to be permanent \u2014 now they are marked as such, so Jade and the vanilla effect display both read the infinity symbol.",
+      "highlights": [
+        "Difficulty potion effects on train mobs read as infinite instead of an absurd hour count"
+      ],
+      "pr": 1185,
+      "date": "2026-08-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
