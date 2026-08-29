@@ -15,8 +15,8 @@ import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import org.joml.Vector3d;
 
 /**
- * Stops the client from <i>predicting</i> a shulker box onto a carriage, so a box the server is
- * about to refuse never appears at all.
+ * Stops the client from <i>predicting</i> a shulker box into either copy of a dimensional carriage,
+ * so a box the server is about to refuse never appears at all.
  *
  * <h2>Why the server-side refusal isn't enough on its own</h2>
  * <p>{@code MultiPlayerGameMode.useItemOn} places the block locally the instant you click and only
@@ -44,10 +44,11 @@ import org.joml.Vector3d;
  * the same wait vanilla gives you for anything the client cannot predict. Paid only by shulker boxes,
  * and only on the train.</p>
  *
- * <p><b>Not covered:</b> a twin corridor is ordinary world blocks, not a sub-level, so a box aimed at
- * one is still predicted and still flickers when the server refuses it. Twin space is somewhere a
- * player reaches by teleporting rather than by playing, so it is left as it is rather than paid for
- * with a synced region test.</p>
+ * <p><b>The twin needs telling.</b> A twin corridor is ordinary world blocks, not a sub-level, so
+ * nothing in the world tells the client where one is and a box aimed at one used to flicker. The
+ * boxes are therefore sent — {@link games.brennan.dungeontrain.net.PortalTwinBoxesPacket}, cached in
+ * {@link ClientPortalTwinBoxes} — which is affordable for a twin and would not be for a corridor,
+ * because a twin does not move: the packet goes out when the set changes rather than every tick.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class ClientShulkerBoxPrediction {
@@ -67,10 +68,9 @@ public final class ClientShulkerBoxPrediction {
         // side makes, so the two agree about which block is in question.
         BlockPos target = new BlockPlaceContext(
             new UseOnContext(event.getEntity(), event.getHand(), event.getHitVec())).getClickedPos();
-        if (Sable.HELPER.getContainingClient(
-                new Vector3d(target.getX() + 0.5, target.getY() + 0.5, target.getZ() + 0.5)) == null) {
-            return;
-        }
+        boolean onCarriage = Sable.HELPER.getContainingClient(
+            new Vector3d(target.getX() + 0.5, target.getY() + 0.5, target.getZ() + 0.5)) != null;
+        if (!onCarriage && !ClientPortalTwinBoxes.contains(target)) return;
 
         event.setUseItem(TriState.FALSE);
     }
