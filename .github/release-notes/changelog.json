@@ -10050,7 +10050,7 @@
     },
     {
       "id": "enchantment-descriptions-version-pin-fix",
-      "version": "0.731.0",
+      "version": "0.732.0",
       "type": "fix",
       "title": "Modpack no longer crashes on launch (Enchantment Descriptions)",
       "summary": "The modpack failed to load with \"Mod enchdesc requires neoforge 21.1.233 or above\" \u2014 the bundled build of Enchantment Descriptions needed a newer NeoForge than the pack ships. It is now pinned to 21.1.9, which the pack's NeoForge satisfies, so the pack launches cleanly and enchantment tooltips work as intended.",
