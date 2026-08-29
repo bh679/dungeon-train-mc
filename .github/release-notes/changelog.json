@@ -10032,6 +10032,21 @@
       "released": true,
       "released_in": "v0.729.0",
       "released_at": "2026-08-29T17:51:35Z"
+    },
+    {
+      "id": "credits-card-layout",
+      "version": "0.730.0",
+      "type": "feat",
+      "title": "Credits page redesign",
+      "summary": "The Credits page now matches the AI Policy page: the people who made the game and the translators each sit in their own card with a coloured heading, and the page has a scrollbar. Nothing about who is credited has changed.",
+      "highlights": [
+        "Credits sections are now cards with colour-coded headings",
+        "Added a scrollbar to the page"
+      ],
+      "date": "2026-08-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

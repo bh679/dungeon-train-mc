@@ -6,6 +6,7 @@ import games.brennan.dungeontrain.client.menu.AiPolicyIconButton;
 import games.brennan.dungeontrain.client.menu.DarkTintedButton;
 import games.brennan.dungeontrain.client.policy.AiPolicyScreen;
 import games.brennan.dungeontrain.client.support.SupportScreen;
+import games.brennan.dungeontrain.client.ui.CardCanvas;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -20,155 +21,94 @@ import net.minecraft.network.chat.Style;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.client.gui.screens.ConfirmLinkScreen;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.util.FormattedCharSequence;
-import net.minecraft.util.Mth;
 
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
  * The <b>Credits</b> page, opened from the title-screen book icon (see
- * {@code TitleScreenCreditsButton}). A vertically-scrolling column over the
- * blurred menu panorama, organised into three sections:
+ * {@code TitleScreenCreditsButton}). A vertically-scrolling column over the blurred menu panorama,
+ * organised into cards:
  *
  * <ol>
- *   <li><b>Created by</b> — Brennan Hatton, with an inline link to the original
- *       itch.io game.</li>
- *   <li><b>Built with</b> — Minecraft/NeoForge, Sable physics, bundled libraries
- *       (static copy).</li>
- *   <li><b>Translations</b> — every translator credit loaded by
- *       {@link LocalizationCreditRegistry} (across all locales, not just the
- *       selected one), each name clickable when the credit carries a URL. The
- *       whole section is omitted on stock installs where no credits exist.</li>
+ *   <li><b>Made by</b> — Brennan as the large lead card row, Wilson as a small secondary credit
+ *       below him, the two separated by a hairline rather than nested boxes.</li>
+ *   <li><b>Translations</b> — every translator credit from {@link TranslationCreditsMerge} (the
+ *       build-time list plus anyone the relay has approved since), each name clickable when the
+ *       credit carries a URL. The whole card is omitted on stock installs where no credits exist,
+ *       which is the normal en_us release-build path rather than an edge case.</li>
  * </ol>
  *
- * <p>The content column is laid out once in {@link #init} into a flat list of
- * positioned {@link Line}s (canvas-relative Y), then drawn in a scissor-clipped
- * viewport in {@link #render} offset by {@link #scrollY}. Inline links are
- * hit-tested in {@link #mouseClicked} against the same lines and opened through
- * vanilla's {@link ConfirmLinkScreen}, returning to this page. The {@code Done}
- * button is fixed below the viewport.</p>
+ * <p>Scrolling, clipping, the card/rule/photo draw order, inline-link hit-testing and the palette
+ * all live in {@link CardCanvas}, shared with the AI Policy page so the two cannot drift apart —
+ * which they did once already, this page being the copy that one was made from. This class is only
+ * the content and the bottom button row.</p>
  */
 public final class CreditsScreen extends Screen {
 
-
-    private static final int MAX_COL_W  = 360;
+    private static final int MAX_COL_W   = 360;
     private static final int SIDE_MARGIN = 40;
-    private static final int PANEL_PAD  = 10;
-    private static final int TOP        = 16;
-    private static final int HEADER_GAP = 3;
-    private static final int DESC_GAP   = 4;
-    private static final int SECTION_GAP = 10;
-    private static final int SCROLL_STEP = 12;
+    private static final int TOP         = 16;
+    private static final int DESC_GAP    = 4;
 
-    private static final int COLOUR_PANEL  = 0xC0101010;
-    private static final int COLOUR_HEADER = 0xFFFFFFFF;
-    private static final int COLOUR_DESC   = 0xFFCACACA;
-    /** Blue used for inline links (RGB, no alpha). */
-    private static final int COLOUR_LINK   = 0x5B9BFF;
+    /** Amber for the people who made it — the same accent the death screen titles use. */
+    private static final int ACCENT_TEAM = 0xFFE0B56A;
+    /** Green for the translators. */
+    private static final int ACCENT_TRANSLATIONS = 0xFF5FBF5F;
 
-    /** Team photos (128×128), one card each in the Made-by section. */
+    /** Team photos are 128×128 sources. */
     private static final int TEX = 128;
     /** Lead creator (Brennan) gets a large photo; the secondary credit (Wilson) a small one. */
     private static final int PHOTO_LEAD = 72;
     private static final int PHOTO_SUB = 32;
-    /** Gap between a card's photo and the text beside it. */
-    private static final int PHOTO_GAP = 6;
-    /** Vertical gap between the stacked, full-width team cards. */
-    private static final int CARD_GAP = 8;
+    /** Vertical gap either side of the hairline between the two team rows. */
+    private static final int CARD_ROW_GAP = 7;
+
     private static final ResourceLocation BRENNAN_PHOTO =
             ResourceLocation.fromNamespaceAndPath("dungeontrain", "textures/gui/credits/brennan.png");
     private static final ResourceLocation WILSON_PHOTO =
             ResourceLocation.fromNamespaceAndPath("dungeontrain", "textures/gui/credits/wilson.png");
 
     private final Screen parent;
-
-    // Computed in init(), consumed in render()/click handling.
-    private int colX;
-    private int colW;
-    private int viewportTop;
-    private int viewportBottom;
-    private int contentHeight;
-    private int scrollY;
-    private int maxScroll;
-    private final List<Line> lines = new ArrayList<>();
-    private final List<Img> imgs = new ArrayList<>();
-
-    /**
-     * One laid-out text line at a canvas-relative Y. {@code centered} lines are
-     * horizontally centred on the screen (title/subtitle); the rest draw at {@code x}
-     * (the content column for body copy, or a card's column for the team cards). The
-     * {@link FormattedCharSequence} carries any inline-link {@link Style}, so both drawing
-     * and hit-testing use it directly.
-     */
-    private record Line(FormattedCharSequence text, int canvasY, boolean centered, int x, int colour) {}
-
-    /** One laid-out image (a team photo) at a canvas-relative Y, drawn scaled from its {@link #TEX}² source. */
-    private record Img(ResourceLocation tex, int x, int canvasY, int w, int h) {}
+    private final CardCanvas canvas;
 
     public CreditsScreen(Screen parent) {
         super(Component.translatable("gui.dungeontrain.credits.title"));
         this.parent = parent;
+        this.canvas = new CardCanvas(Minecraft.getInstance().font);
     }
 
     @Override
     protected void init() {
-        lines.clear();
-        imgs.clear();
-        colW = Math.min(MAX_COL_W, this.width - SIDE_MARGIN);
-        colX = (this.width - colW) / 2;
-        int lh = this.font.lineHeight;
+        int colW = Math.min(MAX_COL_W, this.width - SIDE_MARGIN);
+        canvas.beginLayout((this.width - colW) / 2, colW);
 
         int y = 0;
 
-        // Title + subtitle, centred.
-        y = addCentered(this.title, y, lh, COLOUR_HEADER);
-        y += 6;
-        y = addCenteredWrapped(Component.translatable("gui.dungeontrain.credits.subtitle"), y, lh, COLOUR_DESC);
-        y += SECTION_GAP;
+        // Title + subtitle, centred and un-carded — they frame the page.
+        y = canvas.addCentered(this.title, y, CardCanvas.COLOUR_HEADER);
+        y += CardCanvas.PARA_GAP;
+        y = canvas.addCenteredWrapped(Component.translatable("gui.dungeontrain.credits.subtitle"),
+                y, CardCanvas.COLOUR_DESC);
+        y += CardCanvas.SECTION_GAP;
 
-        // Made by — Brennan as the large lead card, Wilson as a small secondary credit below.
-        y = addLeft(Component.translatable("gui.dungeontrain.credits.team.header"), y, lh, COLOUR_HEADER);
-        y += HEADER_GAP;
-        y = addTeamCard(colX, colW, Math.min(PHOTO_LEAD, colW), y, lh, BRENNAN_PHOTO,
-                "Brennan Hatton", "gui.dungeontrain.credits.team.designer",
-                "gui.dungeontrain.credits.team.brennan.bio");
-        y += CARD_GAP;
-        y = addTeamCard(colX, colW, Math.min(PHOTO_SUB, colW), y, lh, WILSON_PHOTO,
-                "Wilson Taylor", "gui.dungeontrain.credits.team.narrative",
-                "gui.dungeontrain.credits.team.wilson.bio");
-        y += SECTION_GAP;
+        y = addTeamCard(y);
 
-        // Translations — the generated, human-grouped translator list (one line per person,
-        // listing every language they worked on with a %). Fully derived from the provenance
-        // data at build time, so it never needs a hand-authored credit file. Skipped when empty.
-        // The build-time list PLUS anyone the relay has approved since — see TranslationCreditsMerge
-        // for why they are merged into one list rather than thanked twice in two.
+        // The generated, human-grouped translator list (one line per person, listing every language
+        // they worked on with a %). Fully derived from the provenance data at build time, so it
+        // never needs a hand-authored credit file. The build-time list PLUS anyone the relay has
+        // approved since — see TranslationCreditsMerge for why they are merged into one list rather
+        // than thanked twice in two. Skipped entirely when empty, so no empty card is drawn.
         List<TranslationContributor> contributors = TranslationCreditsMerge.merged();
         if (!contributors.isEmpty()) {
-            y = addLeft(Component.translatable("gui.dungeontrain.credits.translations.header"), y, lh, COLOUR_HEADER);
-            y += HEADER_GAP;
-            y = addLeftWrapped(Component.translatable("gui.dungeontrain.credits.translations.desc"), y, lh, COLOUR_DESC);
-            y += DESC_GAP;
-            for (TranslationContributor contributor : contributors) {
-                y = addLeftWrapped(personLine(contributor), y, lh, COLOUR_DESC);
-            }
-            y += SECTION_GAP;
+            y += CardCanvas.CARD_GAP;
+            y = addTranslationsCard(contributors, y);
         }
 
-        contentHeight = y;
-
-        // One bottom row: "Support the Developer" and the AI Policy icon beside Done. The
-        // viewport ends just above the row so scrolling content never overlaps the buttons.
+        // One bottom row: "Support the Developer" and the AI Policy icon beside Done. The viewport
+        // ends just above the row so scrolling content never overlaps the buttons.
         int rowY = this.height - 28;
-        viewportTop = TOP;
-        viewportBottom = rowY - 8;
-        if (viewportBottom < viewportTop) {
-            viewportBottom = viewportTop;
-        }
-        maxScroll = Math.max(0, contentHeight - (viewportBottom - viewportTop));
-        scrollY = Mth.clamp(scrollY, 0, maxScroll);
+        canvas.finishLayout(y, TOP, rowY - 8);
 
         int gap = 4;
         int supportW = 150;
@@ -197,57 +137,77 @@ public final class CreditsScreen extends Screen {
                 .build());
     }
 
-    /**
-     * Lay out one full-width team card at {@code x} (width {@code w}): photo on the left,
-     * name / role / wrapped bio in the column beside it. Returns the canvas Y just below
-     * the card — the taller of the photo and the text block.
-     */
-    private int addTeamCard(int x, int w, int photo, int y, int lh, ResourceLocation tex,
-                            String name, String roleKey, String bioKey) {
-        imgs.add(new Img(tex, x, y, photo, photo));
-        int textX = x + photo + PHOTO_GAP;
-        int textW = Math.max(1, w - photo - PHOTO_GAP);
-        int ty = y;
-        ty = addLineAt(Component.literal(name).getVisualOrderText(), textX, ty, lh, COLOUR_HEADER);
-        ty = addLineAt(Component.translatable(roleKey).getVisualOrderText(), textX, ty, lh, COLOUR_DESC);
-        ty += 2;
-        ty = addWrappedAt(Component.translatable(bioKey), textX, textW, ty, lh, COLOUR_DESC);
-        return Math.max(y + photo, ty);
-    }
+    /** The "Made by" card: heading, accent bar, then the two people separated by a hairline. */
+    private int addTeamCard(int top) {
+        int innerX = canvas.colX() + CardCanvas.CARD_PAD;
+        int innerW = Math.max(1, canvas.colW() - CardCanvas.CARD_PAD * 2);
+        int y = top + CardCanvas.CARD_PAD;
 
-    private int addCentered(Component text, int y, int lh, int colour) {
-        lines.add(new Line(text.getVisualOrderText(), y, true, 0, colour));
-        return y + lh;
-    }
+        y = canvas.addWrappedAt(Component.translatable("gui.dungeontrain.credits.team.header"),
+                innerX, innerW, y, CardCanvas.COLOUR_HEADER);
+        y += CardCanvas.RULE_GAP;
+        y = canvas.addRule(innerX, y, Math.min(CardCanvas.RULE_W, innerW), ACCENT_TEAM);
+        y += CardCanvas.RULE_TO_BODY;
 
-    private int addCenteredWrapped(Component text, int y, int lh, int colour) {
-        for (FormattedCharSequence line : this.font.split(text, colW)) {
-            lines.add(new Line(line, y, true, 0, colour));
-            y += lh;
-        }
+        y = addPersonRow(innerX, innerW, Math.min(PHOTO_LEAD, innerW), y, BRENNAN_PHOTO,
+                "Brennan Hatton", "gui.dungeontrain.credits.team.designer",
+                "gui.dungeontrain.credits.team.brennan.bio");
+
+        y += CARD_ROW_GAP;
+        y = canvas.addDivider(innerX, y, innerW);
+        y += CARD_ROW_GAP;
+
+        y = addPersonRow(innerX, innerW, Math.min(PHOTO_SUB, innerW), y, WILSON_PHOTO,
+                "Wilson Taylor", "gui.dungeontrain.credits.team.narrative",
+                "gui.dungeontrain.credits.team.wilson.bio");
+
+        y += CardCanvas.CARD_PAD;
+        canvas.addCard(top, y - top);
         return y;
     }
 
-    private int addLeft(Component text, int y, int lh, int colour) {
-        return addLineAt(text.getVisualOrderText(), colX, y, lh, colour);
+    /**
+     * One person inside the team card: photo on the left, name / role / wrapped bio in the column
+     * beside it. Returns the Y just below the row — the taller of the photo and the text block.
+     */
+    private int addPersonRow(int x, int w, int photo, int y, ResourceLocation tex,
+                             String name, String roleKey, String bioKey) {
+        canvas.addImg(tex, x, y, photo, photo, TEX);
+        int textX = x + photo + CardCanvas.ICON_GAP;
+        int textW = Math.max(1, w - photo - CardCanvas.ICON_GAP);
+
+        int ty = canvas.addLineAt(Component.literal(name).getVisualOrderText(), textX, y,
+                CardCanvas.COLOUR_HEADER);
+        ty = canvas.addLineAt(Component.translatable(roleKey).getVisualOrderText(), textX, ty,
+                CardCanvas.COLOUR_DESC);
+        ty += 2;
+        ty = canvas.addWrappedAt(Component.translatable(bioKey), textX, textW, ty,
+                CardCanvas.COLOUR_DESC);
+        return Math.max(y + photo, ty);
     }
 
-    private int addLeftWrapped(Component text, int y, int lh, int colour) {
-        return addWrappedAt(text, colX, colW, y, lh, colour);
-    }
+    /** The "Translations" card: heading, accent bar, the thank-you line, then one line per person. */
+    private int addTranslationsCard(List<TranslationContributor> contributors, int top) {
+        int innerX = canvas.colX() + CardCanvas.CARD_PAD;
+        int innerW = Math.max(1, canvas.colW() - CardCanvas.CARD_PAD * 2);
+        int y = top + CardCanvas.CARD_PAD;
 
-    /** A single left-aligned line drawn at {@code x}. */
-    private int addLineAt(FormattedCharSequence text, int x, int y, int lh, int colour) {
-        lines.add(new Line(text, y, false, x, colour));
-        return y + lh;
-    }
+        y = canvas.addWrappedAt(Component.translatable("gui.dungeontrain.credits.translations.header"),
+                innerX, innerW, y, CardCanvas.COLOUR_HEADER);
+        y += CardCanvas.RULE_GAP;
+        y = canvas.addRule(innerX, y, Math.min(CardCanvas.RULE_W, innerW), ACCENT_TRANSLATIONS);
+        y += CardCanvas.RULE_TO_BODY;
 
-    /** Text wrapped to {@code wrapW} and left-aligned at {@code x}. */
-    private int addWrappedAt(Component text, int x, int wrapW, int y, int lh, int colour) {
-        for (FormattedCharSequence line : this.font.split(text, wrapW)) {
-            lines.add(new Line(line, y, false, x, colour));
-            y += lh;
+        y = canvas.addWrappedAt(Component.translatable("gui.dungeontrain.credits.translations.desc"),
+                innerX, innerW, y, CardCanvas.COLOUR_DESC);
+        y += DESC_GAP;
+        for (TranslationContributor contributor : contributors) {
+            y = canvas.addWrappedAt(personLine(contributor), innerX, innerW, y,
+                    CardCanvas.COLOUR_DESC);
         }
+
+        y += CardCanvas.CARD_PAD;
+        canvas.addCard(top, y - top);
         return y;
     }
 
@@ -292,7 +252,7 @@ public final class CreditsScreen extends Screen {
     /** Style {@code label} as a blue, underlined, click-to-open-URL inline link. */
     private static Component link(MutableComponent label, String url) {
         return label.withStyle(s -> s
-                .withColor(COLOUR_LINK)
+                .withColor(CardCanvas.COLOUR_LINK)
                 .withUnderlined(true)
                 .withClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, url)));
     }
@@ -307,31 +267,10 @@ public final class CreditsScreen extends Screen {
         }, url, true));
     }
 
-    /** The clickable {@link Style} under the given mouse position within the scrolled viewport, or null. */
-    private Style styleAt(double mouseX, double mouseY) {
-        if (mouseY < viewportTop || mouseY >= viewportBottom) {
-            return null;
-        }
-        int lh = this.font.lineHeight;
-        double canvasY = mouseY - viewportTop + scrollY;
-        for (Line line : lines) {
-            if (canvasY < line.canvasY() || canvasY >= line.canvasY() + lh) {
-                continue;
-            }
-            int lineWidth = this.font.width(line.text());
-            int startX = line.centered() ? this.width / 2 - lineWidth / 2 : line.x();
-            if (mouseX < startX || mouseX >= startX + lineWidth) {
-                continue;
-            }
-            return this.font.getSplitter().componentStyleAtWidth(line.text(), (int) (mouseX - startX));
-        }
-        return null;
-    }
-
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (button == 0) {
-            Style style = styleAt(mouseX, mouseY);
+            Style style = canvas.styleAt(mouseX, mouseY, this.width);
             if (style != null && style.getClickEvent() != null
                     && style.getClickEvent().getAction() == ClickEvent.Action.OPEN_URL) {
                 openLink(style.getClickEvent().getValue());
@@ -343,47 +282,22 @@ public final class CreditsScreen extends Screen {
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
-        if (maxScroll > 0) {
-            this.scrollY = Mth.clamp(this.scrollY - (int) (scrollY * SCROLL_STEP), 0, maxScroll);
-            return true;
-        }
-        return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
+        return canvas.scroll(scrollY) || super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
     }
 
     @Override
     public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
-        // Blurred menu panorama (vanilla), then a translucent panel behind the
-        // scrolling viewport so text stays readable over the spinning background.
+        // Blurred menu panorama (vanilla), then the canvas's own translucent panel so text stays
+        // readable over the spinning background.
         super.renderBackground(g, mouseX, mouseY, partialTick);
-        g.fill(colX - PANEL_PAD, viewportTop - PANEL_PAD,
-                colX + colW + PANEL_PAD, viewportBottom + PANEL_PAD, COLOUR_PANEL);
+        canvas.renderPanel(g);
     }
 
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
-        // Draws the background (with our panel) and the Done widget.
+        // Draws the background (with our panel) and the button row.
         super.render(g, mouseX, mouseY, partialTick);
-
-        int lh = this.font.lineHeight;
-        g.enableScissor(colX - PANEL_PAD, viewportTop, colX + colW + PANEL_PAD, viewportBottom);
-        for (Img img : imgs) {
-            int drawY = viewportTop + img.canvasY() - scrollY;
-            if (drawY + img.h() < viewportTop || drawY > viewportBottom) {
-                continue; // cull off-viewport photos
-            }
-            g.blit(img.tex(), img.x(), drawY, img.w(), img.h(), 0.0F, 0.0F, TEX, TEX, TEX, TEX);
-        }
-        for (Line line : lines) {
-            int drawY = viewportTop + line.canvasY() - scrollY;
-            if (drawY + lh < viewportTop || drawY > viewportBottom) {
-                continue; // cull off-viewport lines
-            }
-            int x = line.centered()
-                    ? this.width / 2 - this.font.width(line.text()) / 2
-                    : line.x();
-            g.drawString(this.font, line.text(), x, drawY, line.colour(), false);
-        }
-        g.disableScissor();
+        canvas.render(g, this.width);
     }
 
     @Override
