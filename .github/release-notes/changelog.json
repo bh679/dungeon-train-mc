@@ -9855,6 +9855,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "portal-tile-entity-sweep",
+      "version": "0.720.0",
+      "type": "fix",
+      "title": "Endless portal rooms no longer leave mobs stranded under the world",
+      "summary": "Walking through an endless portal room used to leave a trail of mobs on the floor of the world. As the room's copies retire behind you their floor is deleted, and any mob that had wandered a room away from where it spawned was missed by the cleanup \u2014 it fell to the bottom of the world and stayed there forever, since room mobs never despawn. Retiring rooms and retiring side corridors now take everything standing in them along, so the room cleans up after itself however far you walk.",
+      "highlights": [
+        "Mobs that wander between copies of an endless room are cleaned up with the room",
+        "Side corridors take their occupants with them when they retire",
+        "Pets and villagers led into a portal are still carried along when the room moves"
+      ],
+      "pr": 1182,
+      "date": "2026-08-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
