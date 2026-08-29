@@ -9855,6 +9855,19 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "portal-tile-entity-sweep",
+      "version": "0.720.0",
+      "type": "fix",
+      "title": "Fixed mobs getting stuck behind in endless dimensional carriage rooms",
+      "summary": "Mobs that wandered into a room copy that later retired could get left behind instead of being cleaned up. Fixed.",
+      "highlights": [],
+      "pr": 1182,
+      "date": "2026-08-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
