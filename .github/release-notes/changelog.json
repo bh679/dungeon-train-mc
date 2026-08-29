@@ -9810,9 +9810,9 @@
       "highlights": [],
       "pr": 1178,
       "date": "2026-08-29",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.718.0",
+      "released_at": "2026-08-29T14:03:55Z"
     },
     {
       "id": "vanilla-spawn-upside-down-transitions",
@@ -9823,9 +9823,9 @@
       "highlights": [],
       "pr": 1179,
       "date": "2026-08-29",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.718.0",
+      "released_at": "2026-08-29T14:03:55Z"
     },
     {
       "id": "ain-052-supporter-names",
@@ -9835,9 +9835,9 @@
       "summary": "Adventure Item Names 0.52.0 brings a new Discord supporter into the name pool in five forms \u2014 sstasske, Staske, Stas, Stanislav, Stanislav The Russian \u2014 plus Testificate, the name Notch left on villagers in the Beta 1.9 pre-releases, and a spelling fix for supporter TJYongHeng.",
       "highlights": [],
       "date": "2026-08-29",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.718.0",
+      "released_at": "2026-08-29T14:03:55Z"
     },
     {
       "id": "upsidedown-shader-flip",
@@ -9870,8 +9870,48 @@
       "released_at": null
     },
     {
-      "id": "enchantment-descriptions-modpack",
+      "id": "chunks-band-advancement",
       "version": "0.721.0",
+      "type": "feat",
+      "title": "Advancement tweaks",
+      "summary": "A few advancement adjustments.",
+      "highlights": [],
+      "date": "2026-08-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "end-city-rarity",
+      "version": "0.722.0",
+      "type": "fix",
+      "title": "End cities are rarer",
+      "summary": "End cities in the End band now generate about 5\u00d7 less often.",
+      "highlights": [],
+      "pr": 1183,
+      "date": "2026-08-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "infinite-difficulty-potion-effects",
+      "version": "0.722.0",
+      "type": "fix",
+      "title": "Difficulty potion effects now show as infinite",
+      "summary": "Buffed mobs on the train carry their difficulty potion effects permanently, but the effect readout showed a nonsensical multi-thousand-hour countdown instead of the infinity symbol. The effects were always meant to be permanent \u2014 now they are marked as such, so Jade and the vanilla effect display both read the infinity symbol.",
+      "highlights": [
+        "Difficulty potion effects on train mobs read as infinite instead of an absurd hour count"
+      ],
+      "pr": 1185,
+      "date": "2026-08-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "enchantment-descriptions-modpack",
+      "version": "0.723.0",
       "type": "feat",
       "title": "Enchantment tooltips now explain what each enchantment does",
       "summary": "The modpack now ships Enchantment Descriptions, switched on by default. Hover any enchanted item and each enchantment carries a short plain-English line explaining what it actually does \u2014 handy when a train chest hands you something you've never rolled before. Its two library dependencies, Bookshelf and Prickle, ship enabled alongside it.",

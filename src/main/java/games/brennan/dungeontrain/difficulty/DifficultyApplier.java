@@ -178,7 +178,11 @@ public final class DifficultyApplier {
                             spec.id(), tier.name());
                     continue;
                 }
-                int duration = spec.durationTicks() < 0 ? Integer.MAX_VALUE : spec.durationTicks();
+                // -1 is the vanilla infinite sentinel (MobEffectInstance.INFINITE_DURATION);
+                // a huge finite duration would render as an absurd hour count in Jade.
+                int duration = spec.durationTicks() < 0
+                        ? MobEffectInstance.INFINITE_DURATION
+                        : spec.durationTicks();
                 mob.addEffect(new MobEffectInstance(holder, duration, Math.max(0, spec.amplifier()), false, true));
             }
         }
