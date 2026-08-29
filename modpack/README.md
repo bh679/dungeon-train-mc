@@ -55,6 +55,8 @@ pack must list them explicitly. Everything else is a manifest file with a `requi
 | Enchantment Descriptions | `250419` | **enabled** | Adds a plain-English description of what each enchantment does to item tooltips — DT hands out a lot of randomly-enchanted loot. Client-side tooltip text only, no render/physics/chunk hooks, safe with Sable. Requires **Bookshelf** and **Prickle** (both shipped enabled, below). **Pinned** (21.1.11). |
 | Bookshelf | `228525` | **enabled** (library) | Enchantment Descriptions' required dependency — Darkhax's shared utility library. Inert, no gameplay of its own; enabled so ED loads on a default install. **Pinned** (21.1.81). |
 | Prickle | `1023259` | **enabled** (library) | Enchantment Descriptions' other required dependency — Darkhax's config library. Inert; enabled so ED loads on a default install. **Pinned** (21.1.11). |
+| Durability Tooltip | `511040` | **enabled** | Client-side QoL — draws the remaining durability on an item's tooltip instead of making players read the damage bar. No render/physics/chunk hooks, safe with Sable. Requires **SuperMartijn642's Config Lib**. **Pinned** (1.1.6). |
+| SuperMartijn642's Config Lib | `438332` | **enabled** (library) | Durability Tooltip's required dependency — not jarJar'd. Inert config library with no gameplay of its own; enabled so Durability Tooltip loads on a default install. **Pinned** (1.1.8). |
 
 …plus NeoForge as the modloader (`neoforge-<neo_version>`) and the Minecraft version,
 both read from `gradle.properties`.
@@ -92,10 +94,12 @@ flag straight into the manifest:
   tooltips on the moving train — the reason Jade is no longer opt-in), **Kinetic
   Hosting Integration** (partner banner on the multiplayer menu), plus their inert library deps
   **CreativeCore** (AmbientSounds), **Iceberg** (Advancement Plaques), **Balm** (TrashSlot) and
-  **Bookshelf** + **Prickle** (Enchantment Descriptions). **Enchantment Descriptions** itself is
-  on this list too — enchantment tooltips every player benefits from reading.
+  **Bookshelf** + **Prickle** (Enchantment Descriptions) and **SuperMartijn642's Config Lib**
+  (Durability Tooltip). **Enchantment Descriptions** and **Durability Tooltip** are on this
+  list too — tooltip readability every player benefits from.
   The libraries ship enabled so their dependent loads on a default install (CreativeCore —
-  AmbientSounds is on; Iceberg — AP is on; Balm — TrashSlot is on). **TrashSlot** is on this list
+  AmbientSounds is on; Iceberg — AP is on; Balm — TrashSlot is on; Bookshelf + Prickle — ED is
+  on; Config Lib — Durability Tooltip is on). **TrashSlot** is on this list
   as an installed-and-loaded mod, but it ships deliberately inert — see "TrashSlot ships silent"
   below.
 - **Bundled but off by default (`required:false`)** — Mouse Tweaks, Nemo's Inventory Sorting,

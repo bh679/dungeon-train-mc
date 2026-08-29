@@ -394,6 +394,24 @@
       "required": true,
       "modrinth_project": "balm",
       "modrinth_version": "KgypwTqX"
+    },
+    {
+      "name": "Durability Tooltip",
+      "slug": "durability-tooltip",
+      "project_id": 511040,
+      "file_id": 6833316,
+      "required": true,
+      "modrinth_project": "durability-tooltip",
+      "modrinth_version": "mmYe9e5V"
+    },
+    {
+      "name": "SuperMartijn642's Config Lib",
+      "slug": "supermartijn642s-config-lib",
+      "project_id": 438332,
+      "file_id": 5546996,
+      "required": true,
+      "modrinth_project": "supermartijn642s-config-lib",
+      "modrinth_version": "qKL9jM75"
     }
   ],
   "curseforge_relations": [
