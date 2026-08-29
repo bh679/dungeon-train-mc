@@ -9880,6 +9880,19 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "end-city-rarity",
+      "version": "0.722.0",
+      "type": "fix",
+      "title": "End cities are rarer",
+      "summary": "End cities in the End band now generate about 5\u00d7 less often.",
+      "highlights": [],
+      "pr": 1183,
+      "date": "2026-08-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
