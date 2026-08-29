@@ -9873,12 +9873,9 @@
       "id": "chunks-band-advancement",
       "version": "0.721.0",
       "type": "feat",
-      "title": "New \"Chunk Error\" advancement, and Re-Over-World now waits for the real overworld",
-      "summary": "The stretch where the world breaks into floating chunks now has its own advancement, and \"Re-Over-World\" no longer congratulates you on getting back to solid ground while the world is still in pieces \u2014 it waits until the overworld genuinely resumes past the chunks.",
-      "highlights": [
-        "New hidden advancement \"Chunk Error\" for riding deep into the floating-chunk band",
-        "\"Re-Over-World\" now fires on the overworld that follows the chunks, not the gap leading into it"
-      ],
+      "title": "Advancement tweaks",
+      "summary": "A few advancement adjustments.",
+      "highlights": [],
       "date": "2026-08-29",
       "released": false,
       "released_in": null,
