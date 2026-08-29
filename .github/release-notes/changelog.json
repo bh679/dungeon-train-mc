@@ -9813,6 +9813,19 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "vanilla-spawn-upside-down-transitions",
+      "version": "0.716.0",
+      "type": "fix",
+      "title": "No more falling mobs at the edges of the upside-down zone",
+      "summary": "Ambient mobs could still spawn in the fade zones right before and after the upside-down stretch of track, where the mirrored terrain is only partially formed \u2014 they'd spawn with nothing solid underfoot and fall to their death. Those edges are now covered by the same no-spawn rule as the upside-down band itself.",
+      "highlights": [],
+      "pr": 1179,
+      "date": "2026-08-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
