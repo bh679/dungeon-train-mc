@@ -10049,16 +10049,16 @@
       "released_at": null
     },
     {
-      "id": "enchantment-descriptions-off-by-default",
-      "version": "0.731.0",
+      "id": "enchantment-descriptions-version-pin-fix",
+      "version": "0.732.0",
       "type": "fix",
       "title": "Modpack no longer crashes on launch (Enchantment Descriptions)",
-      "summary": "The modpack failed to load with \"Mod enchdesc requires neoforge 21.1.233 or above\" \u2014 the bundled build of Enchantment Descriptions needs a newer NeoForge than the pack ships. It is now switched OFF by default, so the pack launches cleanly again.",
+      "summary": "The modpack failed to load with \"Mod enchdesc requires neoforge 21.1.233 or above\" \u2014 the bundled build of Enchantment Descriptions needed a newer NeoForge than the pack ships. It is now pinned to 21.1.9, which the pack's NeoForge satisfies, so the pack launches cleanly and enchantment tooltips work as intended.",
       "highlights": [
-        "Enchantment Descriptions ships disabled until its version pin is corrected \u2014 leave it off for now, as switching it on brings the crash back.",
+        "Enchantment Descriptions is pinned to 21.1.9 and stays ON by default \u2014 enchanted loot keeps its plain-English tooltip descriptions.",
         "Its libraries Bookshelf and Prickle stay enabled, so nothing else in the pack changes."
       ],
-      "date": "2026-08-29",
+      "date": "2026-08-30",
       "released": false,
       "released_in": null,
       "released_at": null
