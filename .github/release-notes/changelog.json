@@ -9734,6 +9734,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "crafting-tweaks-companion",
+      "version": "0.712.0",
+      "type": "feat",
+      "title": "Crafting Tweaks joins the modpack (opt-in)",
+      "summary": "The modpack now ships Crafting Tweaks, a crafting-grid quality-of-life mod, switched off by default. Turn it on in the launcher's optional-mods list to get rotate, balance and clear buttons plus craft-all in your 2x2 grid and crafting tables. Leave it off and nothing about your game changes.",
+      "highlights": [
+        "Bundled in both the CurseForge and Modrinth packs, disabled on a fresh install.",
+        "One click in the launcher enables it \u2014 no separate download."
+      ],
+      "pr": 1173,
+      "date": "2026-08-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

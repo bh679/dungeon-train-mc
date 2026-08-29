@@ -367,6 +367,15 @@
       "required": true,
       "modrinth_project": "balm",
       "modrinth_version": "KgypwTqX"
+    },
+    {
+      "name": "Crafting Tweaks",
+      "slug": "crafting-tweaks",
+      "project_id": 233071,
+      "file_id": 8697050,
+      "required": false,
+      "modrinth_project": "crafting-tweaks",
+      "modrinth_version": "IhkQpEve"
     }
   ],
   "curseforge_relations": [
