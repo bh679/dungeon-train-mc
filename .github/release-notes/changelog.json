@@ -10019,6 +10019,19 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "no-shulker-boxes-in-dimensional-carriages",
+      "version": "0.729.0",
+      "type": "fix",
+      "title": "Shulker boxes near dimensional carriages",
+      "summary": "Shulker boxes can no longer be placed inside rooms adjacent to a dimensional carriage. Dimensional carriages themselves are unaffected.",
+      "highlights": [],
+      "pr": 1191,
+      "date": "2026-08-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
