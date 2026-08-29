@@ -1,5 +1,5 @@
 {
-  "parent": "dungeontrain:dungeon_train/taking_notes",
+  "parent": "dungeontrain:dungeon_train/burned_stat_book",
   "display": {
     "icon": { "id": "dungeontrain:random_leaderboard_book" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.burned_leaderboard_book.title" },
