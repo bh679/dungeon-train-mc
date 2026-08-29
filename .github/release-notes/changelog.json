@@ -9977,7 +9977,7 @@
     },
     {
       "id": "drifting-carriage-traps",
-      "version": "0.716.0",
+      "version": "0.726.0",
       "type": "feat",
       "title": "Traps are remembered",
       "summary": "Setting a trap in a drifting carriage, for whoever comes through next, leaves a mark on the temperament your echo is born with.",
