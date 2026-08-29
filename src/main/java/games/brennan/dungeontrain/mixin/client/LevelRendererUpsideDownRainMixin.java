@@ -4,6 +4,7 @@ import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import games.brennan.dungeontrain.client.ClientUpsideDownBand;
 import games.brennan.dungeontrain.client.UpsideDownRainRenderer;
+import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.LevelRenderer;
@@ -36,6 +37,7 @@ public abstract class LevelRendererUpsideDownRainMixin {
     @Shadow @Final private float[] rainSizeX;
     @Shadow @Final private float[] rainSizeZ;
     @Shadow private int ticks;
+    @Shadow private int rainSoundTime;
 
     @WrapMethod(method = "renderSnowAndRain(Lnet/minecraft/client/renderer/LightTexture;FDDD)V")
     private void dungeontrain$upwardWeatherInUpsideDownBand(LightTexture lightTexture, float partialTick,
@@ -50,5 +52,25 @@ public abstract class LevelRendererUpsideDownRainMixin {
         }
         UpsideDownRainRenderer.render(level, lightTexture, partialTick, camX, camY, camZ,
                 this.rainSizeX, this.rainSizeZ, this.ticks);
+    }
+
+    /**
+     * The splash particles and rain ambience that accompany the sheets. Vanilla drops them on the top
+     * face of the block under the camera; in the band the rain rises, so
+     * {@link UpsideDownRainRenderer#tickRain} puts them on the underside of the terrain overhead and
+     * hands back the sound timer to write through.
+     */
+    @WrapMethod(method = "tickRain(Lnet/minecraft/client/Camera;)V")
+    private void dungeontrain$upwardSplashesInUpsideDownBand(Camera camera, Operation<Void> original) {
+        Minecraft minecraft = Minecraft.getInstance();
+        ClientLevel level = minecraft.level;
+        if (level == null
+                || !level.dimension().equals(Level.OVERWORLD)
+                || !ClientUpsideDownBand.isInBand(Mth.floor(camera.getPosition().x))) {
+            original.call(camera);
+            return;
+        }
+        this.rainSoundTime = UpsideDownRainRenderer.tickRain(
+                minecraft, level, camera, this.ticks, this.rainSoundTime);
     }
 }
