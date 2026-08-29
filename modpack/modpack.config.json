@@ -261,6 +261,15 @@
       "modrinth_version": "5A6wiMVf"
     },
     {
+      "name": "Visual Workbench",
+      "slug": "visual-workbench",
+      "project_id": 500273,
+      "file_id": 6798196,
+      "required": false,
+      "modrinth_project": "visual-workbench",
+      "modrinth_version": "Jy5V5FNj"
+    },
+    {
       "name": "Smooth Swapping",
       "slug": "smooth-swapping",
       "project_id": 513689,

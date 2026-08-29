@@ -276,6 +276,7 @@ jobs:
             item-highlighter(optional)
             pick-up-notifier(optional)
             puzzles-lib(optional)
+            visual-workbench(optional)
             smooth-swapping(optional)
             overloaded-armor-bar(optional)
             kinetic-hosting-integration(optional)
