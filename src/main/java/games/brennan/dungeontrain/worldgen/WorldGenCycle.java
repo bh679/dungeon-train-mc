@@ -735,6 +735,25 @@ public record WorldGenCycle(long startX, int owGap,
     }
 
     /**
+     * True if {@code worldX} lies anywhere in the run-up to the chuncks band or the band core itself —
+     * the whole stretch from the end of the upside-down exit crossfade ({@code udExitGap}, the chuncks
+     * {@code leadGap}, the entry fade, then the core). The intervening gaps read as plain overworld to
+     * {@link DisintegrationBand#zoneAt}, but the world has not settled back yet: the chunks are still to
+     * come. Used by the {@code reached_overworld_again} advancement gate ({@code ZoneProgressEvents}) so
+     * "Re-Over-World" waits for the overworld that follows the band, not the one leading into it.
+     *
+     * <p>False when the chuncks band is disabled ({@code chuncksLen == 0}) — with no band there is
+     * nothing to wait for, and the pre-chuncks gating is preserved exactly.</p>
+     */
+    public boolean isInChuncksApproachOrBand(int worldX) {
+        if (chuncksLen() <= 0L) return false;
+        long o = offset(worldX);
+        if (o < 0L) return false;
+        long approachStart = udExitFadeStart() + udExitFadeLen();
+        return o >= approachStart && o < chuncksStart() + chuncksLen();
+    }
+
+    /**
      * Effective keep-density at a world-X, driving the entry transition: {@code chuncksKeepDensity}
      * across the band core, ramping linearly from {@code 1.0} (all real terrain, no void) at the entry
      * fade start up to {@code chuncksKeepDensity} at the core edge, and {@code 1.0} everywhere else (so
