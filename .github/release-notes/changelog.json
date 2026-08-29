@@ -9826,6 +9826,48 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "ain-052-supporter-names",
+      "version": "0.718.0",
+      "type": "content",
+      "title": "New supporter names in the item name pool",
+      "summary": "Adventure Item Names 0.52.0 brings a new Discord supporter into the name pool in five forms \u2014 sstasske, Staske, Stas, Stanislav, Stanislav The Russian \u2014 plus Testificate, the name Notch left on villagers in the Beta 1.9 pre-releases, and a spelling fix for supporter TJYongHeng.",
+      "highlights": [],
+      "date": "2026-08-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "upsidedown-shader-flip",
+      "version": "0.719.0",
+      "type": "fix",
+      "title": "The upside-down world is upside-down again \u2014 with shaders on",
+      "summary": "If you play with Sodium or Iris shaders \u2014 which the modpack ships \u2014 the upside-down stretch was quietly rendering the right way up. The world now hangs from the ceiling as it should, whether or not a shaderpack is loaded, while the train stays upright underneath you.",
+      "highlights": [
+        "Fixed: upside-down band terrain rendered upright for anyone running Sodium or Iris shaders",
+        "The flip now looks identical with shaders on and off",
+        "Terrain right beside the track flips too, not just the far hills"
+      ],
+      "pr": 1181,
+      "date": "2026-08-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "portal-tile-entity-sweep",
+      "version": "0.720.0",
+      "type": "fix",
+      "title": "Fixed mobs getting stuck behind in endless dimensional carriage rooms",
+      "summary": "Mobs that wandered into a room copy that later retired could get left behind instead of being cleaned up. Fixed.",
+      "highlights": [],
+      "pr": 1182,
+      "date": "2026-08-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
