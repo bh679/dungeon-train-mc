@@ -9784,6 +9784,22 @@
       "released": true,
       "released_in": "v0.714.0",
       "released_at": "2026-08-29T10:48:25Z"
+    },
+    {
+      "id": "abandon-run-confirmation",
+      "version": "0.715.0",
+      "type": "feat",
+      "title": "Abandoning a run now asks first",
+      "summary": "The pause menu's red \"Abandon This Run\" button used to kill you on the first click. It now asks, and says outright what abandoning means: your character dies, it counts as a death, and there is no undo.",
+      "highlights": [
+        "A confirmation step between the button and the kill \u2014 no more losing a long run to a stray click.",
+        "Escape or \"Go back\" leaves the run exactly as it was; only the red confirm ends it."
+      ],
+      "pr": 1176,
+      "date": "2026-08-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
