@@ -2140,6 +2140,12 @@
       ]
     }
   },
+  "gui.dungeontrain.ai_policy.used.3": {
+    "1": {
+      "label": "a link to the Discord channel the change logs are posted in",
+      "examples": ["#minor-updates on Discord"]
+    }
+  },
   "gui.dungeontrain.credits.translations.lang_percent": {
     "1": {
       "label": "the language",

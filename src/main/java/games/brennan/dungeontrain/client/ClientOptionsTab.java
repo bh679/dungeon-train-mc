@@ -80,6 +80,8 @@ public enum ClientOptionsTab {
         BACKUPS_PER_VERSION,
         /** Deletes every archive, in the instance and outside it. Shows the size on disk. */
         CLEAR_BACKUPS,
+        /** Opens the AI Policy page. Unconditional — every client can reach it. */
+        AI_POLICY,
         /** Only when {@code TranslationTarget.resolveForClient()} names a language to edit. */
         TRANSLATE,
 
@@ -113,7 +115,7 @@ public enum ClientOptionsTab {
      * LEADER is named — the rest of the group pairs among themselves as usual.</p>
      */
     private static final java.util.Set<Row> GROUP_LEADERS =
-            java.util.EnumSet.of(Row.BACKUPS_HEADING, Row.TRANSLATE);
+            java.util.EnumSet.of(Row.BACKUPS_HEADING, Row.AI_POLICY);
 
     /**
      * Rows that are captions rather than settings: no widget to operate, and always a line to
@@ -142,6 +144,10 @@ public enum ClientOptionsTab {
                 rows.add(Row.BOOK_AUTHOR_CHAT);
                 rows.add(Row.CINEMATIC_HOTKEY);
                 rows.add(Row.BACKPACK_BUTTON);
+                // The two rows that open a page rather than change a setting, led by the
+                // unconditional one so they pair on a line of their own — put TRANSLATE in the
+                // lead and the pair breaks apart on the release en_us clients where it is absent.
+                rows.add(Row.AI_POLICY);
                 if (hasTranslateTarget) {
                     rows.add(Row.TRANSLATE);
                 }

@@ -71,13 +71,15 @@ final class ClientOptionsTabTest {
     // ---- The conditional rows ----
 
     @Test
-    @DisplayName("Plain client: nineteen rows, neither conditional row present")
+    @DisplayName("Plain client: twenty rows, neither conditional row present")
     void plainClient() {
         List<ClientOptionsTab.Row> rows = allRows(false, false);
 
-        assertEquals(19, rows.size());
+        assertEquals(20, rows.size());
         assertFalse(rows.contains(ClientOptionsTab.Row.POLITICAL_FILTER));
         assertFalse(rows.contains(ClientOptionsTab.Row.TRANSLATE));
+        // Unconditional: the page must be reachable even on the barest client.
+        assertTrue(rows.contains(ClientOptionsTab.Row.AI_POLICY));
     }
 
     @Test
@@ -91,6 +93,7 @@ final class ClientOptionsTabTest {
                         ClientOptionsTab.Row.BOOK_AUTHOR_CHAT,
                         ClientOptionsTab.Row.CINEMATIC_HOTKEY,
                         ClientOptionsTab.Row.BACKPACK_BUTTON,
+                        ClientOptionsTab.Row.AI_POLICY,
                         ClientOptionsTab.Row.BACKUPS_HEADING,
                         ClientOptionsTab.Row.BACKUPS,
                         ClientOptionsTab.Row.BACKUPS_PER_VERSION,
@@ -123,11 +126,29 @@ final class ClientOptionsTabTest {
     }
 
     @Test
+    @DisplayName("AI Policy is present in every combination, always ahead of Help Translate")
+    void aiPolicyIsUnconditional() {
+        for (boolean chinese : BOOLS) {
+            for (boolean translate : BOOLS) {
+                List<ClientOptionsTab.Row> general =
+                        ClientOptionsTab.rowsFor(ClientOptionsTab.GENERAL, chinese, translate);
+                int policy = general.indexOf(ClientOptionsTab.Row.AI_POLICY);
+                assertTrue(policy >= 0,
+                        "AI Policy missing at chinese=" + chinese + " translate=" + translate);
+                if (translate) {
+                    // It leads the pair, so it must come first for them to pack onto one line.
+                    assertEquals(policy + 1, general.indexOf(ClientOptionsTab.Row.TRANSLATE));
+                }
+            }
+        }
+    }
+
+    @Test
     @DisplayName("Both conditions together surface every row the screen knows about")
     void bothConditions_surfaceEveryRow() {
         List<ClientOptionsTab.Row> rows = allRows(true, true);
 
-        assertEquals(21, rows.size());
+        assertEquals(22, rows.size());
         assertEquals(EnumSet.allOf(ClientOptionsTab.Row.class), EnumSet.copyOf(rows),
                 "every Row constant must appear in some tab when both conditions hold");
     }
@@ -143,8 +164,11 @@ final class ClientOptionsTabTest {
         assertFalse(ClientOptionsTab.startsGroup(ClientOptionsTab.Row.BACKUPS));
         assertFalse(ClientOptionsTab.startsGroup(ClientOptionsTab.Row.BACKUPS_PER_VERSION));
         assertFalse(ClientOptionsTab.startsGroup(ClientOptionsTab.Row.CLEAR_BACKUPS));
-        // Translate follows the group and must not be dragged into it.
-        assertTrue(ClientOptionsTab.startsGroup(ClientOptionsTab.Row.TRANSLATE));
+        // AI Policy leads the page-opening pair above the backup block. It, not Translate, is
+        // the leader: Translate is conditional, so leading with it would break the pair apart on
+        // every client where it is absent.
+        assertTrue(ClientOptionsTab.startsGroup(ClientOptionsTab.Row.AI_POLICY));
+        assertFalse(ClientOptionsTab.startsGroup(ClientOptionsTab.Row.TRANSLATE));
     }
 
     @Test
