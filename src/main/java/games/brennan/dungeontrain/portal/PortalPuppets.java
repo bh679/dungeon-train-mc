@@ -12,6 +12,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
 import org.joml.Vector3d;
 import org.slf4j.Logger;
@@ -235,7 +236,15 @@ public final class PortalPuppets {
         // local Y. The two frames' block grids differ by the ship's fractional pose, so the verbatim
         // offset stands a puppet a fraction inside the floor or a fraction above it — the same
         // mismatch that used to drop swapping players through a twin.
-        double y = source.onGround() ? frames.floorSurfaceY(dest.toFrame()) : dest.y();
+        //
+        // An item is the exception, and visibly so. It bobs, so its onGround flickers, so the clamp
+        // and the carried-across Y alternate as the answer from tick to tick — and the client lerps
+        // between whichever two it was last sent, which reads as a shake. Its mirrored Y already
+        // carries the difference between the two origins, which is the whole of what the clamp
+        // corrects for, so it needs none.
+        double y = source.onGround() && !(source instanceof ItemEntity)
+            ? frames.floorSurfaceY(dest.toFrame())
+            : dest.y();
 
         double x = dest.x();
         double z = dest.z();
