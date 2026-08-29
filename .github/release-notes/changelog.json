@@ -9908,6 +9908,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "portal-room-door-position",
+      "version": "0.722.0",
+      "type": "feat",
+      "title": "Dimensional carriage doorways can be moved off centre",
+      "summary": "The two doorways into a dimensional carriage used to be pinned to the exact middle of the room's end walls, at floor level, on every room ever built. Builders can now put them where they want: hold a door and right-click the doorway marker, and both doorways move to where you aimed \u2014 along the wall and up it. Nothing is placed; the door in your hand is just a pointer, which is what lets a doorway sit anywhere rather than only where a door would have something to stand on. How far it can move depends on how much bigger the room is than the corridor running into it, since the corridor still has to be sealed inside the room's walls \u2014 a room built at the smallest legal size has nowhere to move it to, and the game now tells you that, and what to grow to get the room.",
+      "highlights": [
+        "Hold a door and right-click a doorway marker to set where the doorways sit",
+        "Doorways move both across the end wall and up it",
+        "Wider and taller rooms give the doorways more room to move",
+        "Rooms built before this are untouched \u2014 their doorways stay exactly where they were"
+      ],
+      "pr": 1187,
+      "date": "2026-08-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
