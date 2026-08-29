@@ -92,5 +92,8 @@ public final class PortalRoomFogEvents {
         // The engine-audio region is the same shape of cache with the same failure mode — a stale one
         // would have the train audible in the next world's portal-shaped nowhere — so it goes too.
         ClientPortalTrainAudio.reset();
+        // The twin boxes are a region cache like the first two, and stale ones would have the next
+        // world declining to predict a shulker box in mid-air where a twin used to be.
+        games.brennan.dungeontrain.client.portal.ClientPortalTwinBoxes.reset();
     }
 }
