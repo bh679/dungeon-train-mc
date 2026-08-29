@@ -8,7 +8,8 @@ import games.brennan.dungeontrain.debug.DebugAccessEvents;
 import games.brennan.dungeontrain.net.CarriageIndexPacket;
 import games.brennan.dungeontrain.portal.PortalCarriageSelection;
 import games.brennan.dungeontrain.portal.PortalGeometry;
-import games.brennan.dungeontrain.portal.PortalPairIndex;
+import games.brennan.dungeontrain.portal.PortalRoomTiling;
+import games.brennan.dungeontrain.event.PortalCarriageEvents;
 import games.brennan.dungeontrain.portal.PortalRegistry;
 import games.brennan.dungeontrain.portal.PortalStampRecord;
 import games.brennan.dungeontrain.portal.PortalTwinSpace;
@@ -46,6 +47,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -1902,7 +1904,7 @@ public final class TrainCarriageAppender {
                     // In the pocket room there is no carriage to report, and the index they last
                     // stood at is not where they are. Forget it so walking back out re-sends.
                     if (LAST_SENT_DEBUG_PIDX.remove(uuid) != null) {
-                        DungeonTrainNet.sendTo(player, dimensionalCarriagePacket(level, player));
+                        DungeonTrainNet.sendTo(player, dimensionalCarriagePacket(level, player, dims));
                     }
                 } else {
                     Occupied occupied = occupiedPIdx(train, player, dims, groupSize);
@@ -4460,28 +4462,42 @@ public final class TrainCarriageAppender {
      * player's position back into that pair's carriage index.</p>
      */
     private static TrainDebugCarriagePacket dimensionalCarriagePacket(ServerLevel level,
-                                                                      ServerPlayer player) {
-        String copy = copyLabel(level, player);
-        PortalPairIndex.Entry entry = PortalPairIndex.findByTwinPos(player.blockPosition());
-        if (entry == null) {
+                                                                      ServerPlayer player,
+                                                                      CarriageDims dims) {
+        PortalCarriageEvents.RoomFacts room = PortalCarriageEvents.roomFactsAt(
+            dims, player.getX(), player.getY(), player.getZ());
+        String copy = copyLabel(level, player, room);
+        if (room == null) {
             return new TrainDebugCarriagePacket(true, 0, CART_TYPE_ROOM, "", "", copy);
         }
-        PlacedCarriageFacts.Facts facts = PlacedCarriageFacts.get(entry.carriageIndex());
-        if (facts == null) {
-            return new TrainDebugCarriagePacket(
-                true, entry.carriageIndex(), CART_TYPE_ROOM, "", "", copy);
-        }
-        return new TrainDebugCarriagePacket(true, entry.carriageIndex(), CART_TYPE_ROOM,
-            facts.contentsId(), facts.subVariantId(), copy);
+        // A room has no contents parent or sub-variant — it rolls its furnishing from a per-tile
+        // seed index. Its name and how its copies are made are the honest analogue.
+        return new TrainDebugCarriagePacket(true, 0, CART_TYPE_ROOM,
+            room.roomName(),
+            room.copiesKind().name().toLowerCase(Locale.ROOT),
+            copy);
     }
 
     /**
-     * Which of a portal corridor's two stacked copies the player is standing in, or {@code ""} for
-     * neither — which is the answer everywhere on the train, including inside the corridor that
-     * rides it. The registry holds the twin's world-space geometry, so only the underground copies
-     * can match.
+     * Whether the player is in a copy, and which — the one question, answered on whichever axis
+     * applies where they are standing.
+     *
+     * <p>Inside a room it is the tile: {@code base}, or {@code copy (x,z)}. Inside a portal
+     * corridor's twin it is {@code near} or {@code far}. Empty everywhere else, which includes the
+     * corridor riding the train — the registry holds the twin's world-space geometry, so only the
+     * underground copies can match, and the panel renders empty as "no".</p>
      */
-    private static String copyLabel(ServerLevel level, ServerPlayer player) {
+    private static String copyLabel(ServerLevel level, ServerPlayer player,
+                                    PortalCarriageEvents.RoomFacts room) {
+        // A room's copies are its tiles, and under DYNAMIC each one rerolls — so "which tile" is
+        // the question "am I in a copy" is really asking once you are inside a room. The corridor's
+        // near/far twin below is a different axis, and only one of the two can apply at a time.
+        if (room != null) {
+            PortalRoomTiling.Tile tile = room.tile();
+            return PortalRoomTiling.Tile.BASE.equals(tile)
+                ? "base"
+                : "copy (" + tile.x() + "," + tile.z() + ")";
+        }
         double x = player.getX();
         double y = player.getY();
         double z = player.getZ();
@@ -4564,7 +4580,7 @@ public final class TrainCarriageAppender {
     private static TrainDebugCarriagePacket debugCarriageAt(ServerLevel level, ServerPlayer player,
                                                             int pIdx, int slot, int groupSize) {
         CartType cartType = cartTypeAt(level, pIdx, slot, groupSize);
-        String copy = copyLabel(level, player);
+        String copy = copyLabel(level, player, /*room*/ null);
         PlacedCarriageFacts.Facts facts = cartType.rollsContents()
             ? PlacedCarriageFacts.get(pIdx)
             : null;
@@ -4592,8 +4608,11 @@ public final class TrainCarriageAppender {
                 // A pocket room sits below bedrock or above the roof, so its occupant can fall
                 // outside the train's near-radius and land here. They have not left the train —
                 // they are inside it in the only sense that matters to the panel.
+                // No group frame here to borrow dims from — this path exists precisely for players
+                // no train reached — so take them from the world.
+                CarriageDims worldDims = DungeonTrainWorldData.get(level.getServer().overworld()).dims();
                 DungeonTrainNet.sendTo(player, inDimensionalCarriage(level, player)
-                    ? dimensionalCarriagePacket(level, player)
+                    ? dimensionalCarriagePacket(level, player, worldDims)
                     : TrainDebugCarriagePacket.absent());
             }
             it.remove();

@@ -1022,6 +1022,39 @@ public final class PortalCarriageEvents {
     }
 
     /**
+     * What room a position is standing in, for the F3+4 debug panel: its name, how its copies are
+     * made, and which tile of it this is.
+     *
+     * <p>A room has no {@code CarriageContents} the way a carriage does — {@link PortalStructure}
+     * rolls block variants and container contents from a per-tile seed index instead — so the panel
+     * reports the room's own identity rather than inventing a contents analogue. The tile matters
+     * because under {@link games.brennan.dungeontrain.portal.PortalRoomCopies.Kind#DYNAMIC} each one
+     * rerolls, so two copies of the same room are not the same room.</p>
+     *
+     * <p>Null when the position is in no room. Another adapter that keeps {@link #STRUCTURES}
+     * private, like {@link #isInRoom}.</p>
+     */
+    public static RoomFacts roomFactsAt(CarriageDims dims, double x, double y, double z) {
+        for (PortalStructure structure : STRUCTURES.values()) {
+            AABB box = structureBox(dims, structure);
+            int pad = structure.fogPad();
+            if (pad > 0) box = box.inflate(pad, 0.0, pad);
+            if (!box.contains(x, y, z)) continue;
+            PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims, structure.kind());
+            return new RoomFacts(
+                structure.roomName(),
+                structure.settings().effectiveCopies().kind(),
+                structure.tileAt(dims, layout, x, z));
+        }
+        return null;
+    }
+
+    /** One room's identity at a position — see {@link #roomFactsAt}. */
+    public record RoomFacts(String roomName,
+                            games.brennan.dungeontrain.portal.PortalRoomCopies.Kind copiesKind,
+                            games.brennan.dungeontrain.portal.PortalRoomTiling.Tile tile) {}
+
+    /**
      * Whether the room standing at {@code pairKey} locks its books to an author, and how it picks one.
      *
      * <p>Reads the STANDING structure's settings rather than a fresh lookup of the room variant, so it
