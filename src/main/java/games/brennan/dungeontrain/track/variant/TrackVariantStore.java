@@ -233,6 +233,28 @@ public final class TrackVariantStore {
         return existed;
     }
 
+    /**
+     * Move a saved track template to a new name, keeping its cache entry with it.
+     *
+     * <p>The file half of a rename only — the caller re-registers the name, exactly as
+     * {@code CarriageTemplateStore.rename}'s callers do. Returns false when there is no config-dir
+     * copy to move, which is what a bundled-only template looks like: those are shadowed rather than
+     * renamed, and moving nothing is the honest answer.</p>
+     */
+    public static synchronized boolean rename(TrackKind kind, String sourceName, String targetName)
+            throws IOException {
+        Path src = fileFor(kind, sourceName);
+        Path dst = fileFor(kind, targetName);
+        if (!Files.isRegularFile(src)) return false;
+        Files.createDirectories(dst.getParent());
+        Files.move(src, dst, StandardCopyOption.REPLACE_EXISTING);
+        Optional<StructureTemplate> cached = CACHE.remove(key(kind, sourceName));
+        if (cached != null) CACHE.put(key(kind, targetName), cached);
+        LOGGER.info("[DungeonTrain] Renamed track template {}:{} -> {}:{}", kind.id(), sourceName,
+                kind.id(), targetName);
+        return true;
+    }
+
     public static boolean exists(TrackKind kind, String name) {
         return Files.isRegularFile(fileFor(kind, name));
     }

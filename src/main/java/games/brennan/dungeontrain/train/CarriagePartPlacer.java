@@ -4,18 +4,22 @@ import games.brennan.dungeontrain.editor.CarriagePartTemplateStore;
 import games.brennan.dungeontrain.editor.CarriagePartVariantBlocks;
 import games.brennan.dungeontrain.editor.CarriageVariantBlocks;
 import games.brennan.dungeontrain.editor.VariantState;
+import games.brennan.dungeontrain.template.TemplateDecor;
 import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 
+import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Consumer;
 
 /**
  * Stamp helpers for individual {@link CarriagePartKind} templates.
@@ -119,6 +123,12 @@ public final class CarriagePartPlacer {
             // part swaps (relight=true) are permanent blocks with no Sable lift, so they relight (flag 3).
             if (relight) {
                 CarriagePlacer.stampTemplateRelit(level, stampOrigin, template, settings);
+                // The part's hung decoration, under the placement's own mirror so a picture on a
+                // mirrored side faces the wall it is now on. Only on the relight path: these blocks
+                // stay where they are put (an editor plot, an in-carriage part swap). On the spawn
+                // path the carriage is lifted into a Sable sub-level the same tick, so its parts'
+                // decor is hung deferred instead — see {@link #spawnPartDecorAt}.
+                TemplateDecor.replace(level, stampOrigin, template, settings, /*mark*/ null);
             } else {
                 CarriagePlacer.stampTemplateSectionLocal(level, stampOrigin, template, settings);
             }
@@ -217,6 +227,35 @@ public final class CarriagePartPlacer {
      * as the block pass so mob spawn positions track the placement's mirror
      * orientation (left vs right wall etc.).</p>
      */
+    /**
+     * Hang every declared placement's template decoration on a carriage that has already been
+     * assembled — the deferred counterpart of the {@code relight} branch in
+     * {@link #placeAtPerPlacement}.
+     *
+     * <p>Same shape as {@link #spawnPartVariantMobsAt}: walk the kind's placements, skip the ones
+     * with no part linked, and work at each placement's own origin. The mirror goes through
+     * {@link StructurePlaceSettings} rather than {@link #transformLocal} because a hanging entity has
+     * a facing as well as a position, and only the settings carry it.</p>
+     *
+     * @param mark applied to each spawned entity — the carriage's contents tag, which is what makes
+     *             {@code TrainStaticContentsCarrier} move the decor with the train
+     */
+    public static void spawnPartDecorAt(ServerLevel level, BlockPos carriageOrigin,
+                                        CarriagePartKind kind, List<String> names, CarriageDims dims,
+                                        @Nullable Consumer<Entity> mark) {
+        List<CarriagePartKind.Placement> placements = kind.placements(dims);
+        for (int i = 0; i < placements.size(); i++) {
+            String name = i < names.size() ? names.get(i) : null;
+            if (name == null || name.isBlank() || CarriagePartKind.NONE.equals(name)) continue;
+            Optional<StructureTemplate> stored = CarriagePartTemplateStore.get(level, kind, name, dims);
+            if (stored.isEmpty()) continue;
+            CarriagePartKind.Placement p = placements.get(i);
+            StructurePlaceSettings settings = new StructurePlaceSettings().setMirror(p.mirror());
+            TemplateDecor.spawn(level, carriageOrigin.offset(p.originOffset()), stored.get(),
+                settings, mark);
+        }
+    }
+
     public static void spawnPartVariantMobsAt(ServerLevel level, BlockPos carriageOrigin,
                                                CarriagePartKind kind, List<String> names, CarriageDims dims,
                                                long seed, int carriageIndex) {

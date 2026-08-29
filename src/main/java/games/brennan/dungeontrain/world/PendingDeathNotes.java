@@ -71,6 +71,39 @@ public final class PendingDeathNotes extends SavedData {
     }
 
     /**
+     * Whether {@code authorUuid} already holds a pending note of {@code kind} naming
+     * {@code targetName} — i.e. they have already noted that player <em>this life</em>. The pending
+     * list is drained on the author's death ({@link #takeForAuthor}), so "still pending" and "signed
+     * this life" are the same set, which is what makes this the right place to catch the repeat.
+     */
+    public boolean hasPendingFor(UUID authorUuid, String targetName, NoteKind kind) {
+        return isDuplicate(notes, authorUuid, targetName, kind);
+    }
+
+    /**
+     * The duplicate rule itself, over a plain list so it stays unit-testable without a server: same
+     * author, same {@link NoteKind}, same target name ignoring case. The name — not the UUID — is the
+     * key, because {@code DeathNoteSigning} resolves the target UUID best-effort and leaves it "" for
+     * a player it has never seen, and the relay matches by name case-insensitively too.
+     *
+     * <p>Per kind, so a Death Note and a Love Note may both name one player in a single life: they
+     * are opposite stories about the same person, not a repeat of one.</p>
+     */
+    public static boolean isDuplicate(List<PendingDeathNote> notes, UUID authorUuid,
+                                      String targetName, NoteKind kind) {
+        if (notes == null || authorUuid == null || targetName == null || targetName.isBlank()) {
+            return false;
+        }
+        for (PendingDeathNote n : notes) {
+            if (authorUuid.equals(n.authorUuid()) && n.kind() == kind
+                    && targetName.equalsIgnoreCase(n.targetName())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * Remove and return every pending note authored by {@code authorUuid} — called when that player
      * dies, to upload them stamped with the carriage they died at. Empty when the author had none.
      */

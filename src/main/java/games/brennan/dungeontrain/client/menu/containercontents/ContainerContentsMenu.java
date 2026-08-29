@@ -1,6 +1,9 @@
 package games.brennan.dungeontrain.client.menu.containercontents;
 
+import games.brennan.dungeontrain.config.ClientDisplayConfig;
+import games.brennan.dungeontrain.config.EditorMenuSpace;
 import games.brennan.dungeontrain.net.ContainerContentsSyncPacket;
+import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
@@ -9,8 +12,10 @@ import net.minecraft.world.phys.Vec3;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 /**
  * Client singleton state for the container-contents world-space menu.
@@ -32,7 +37,11 @@ public final class ContainerContentsMenu {
         FILL_MAX,
         CLEAR,
         CLOSE,
-        ENTRY_NAME,
+        /**
+         * The item icon at the left of an entry row. Clicking toggles that row's
+         * expansion, which reveals the item's name beside the icon.
+         */
+        ENTRY_ICON,
         ENTRY_COUNT_MINUS,
         ENTRY_COUNT_PLUS,
         ENTRY_WEIGHT_MINUS,
@@ -64,6 +73,12 @@ public final class ContainerContentsMenu {
     private ContainerContentsMenu() {}
 
     private static boolean active;
+    /**
+     * Where this opening of the menu draws, latched when the server activates it rather than
+     * read live. The two modes tear down differently — a Screen to pop versus an event
+     * subscriber to stop drawing — so the menu must close in the mode it opened in.
+     */
+    private static EditorMenuSpace space = ClientDisplayConfig.DEFAULT_CONTAINER_CONTENTS_MENU_SPACE;
     private static String plotKey = "";
     @Nullable private static BlockPos localPos;
     private static List<ContainerContentsSyncPacket.Entry> entries = Collections.emptyList();
@@ -76,6 +91,14 @@ public final class ContainerContentsMenu {
     private static Vec3 anchorNormal = new Vec3(0, 0, 1);
     @Nullable private static String linkedPrefabId;
 
+    /**
+     * Entry indices whose name is currently revealed beside the icon. Cleared
+     * whenever the entry list changes size, because a removal shifts every later
+     * index and a stale index would expand the wrong row. Same-size edits (count,
+     * weight, slot, chance bumps) keep the expansion.
+     */
+    private static final Set<Integer> expandedRows = new HashSet<>();
+
     private static Screen screen = Screen.ROOT;
     private static String searchBuffer = "";
     private static Hit hovered = Hit.NONE;
@@ -83,6 +106,16 @@ public final class ContainerContentsMenu {
     @Nullable private static List<String> cachedItemIds;
 
     public static boolean isActive() { return active; }
+
+    /** Where this opening of the menu draws. See {@link #space}. */
+    public static EditorMenuSpace space() { return space; }
+
+    /**
+     * Active <em>and</em> drawing in the world — the guard the world-space renderer and input
+     * handler use. In screen-space {@link ContainerContentsMenuScreen} owns rendering and input,
+     * and both paths running would double-draw and double-hit-test.
+     */
+    public static boolean isActiveWorldspace() { return active && space.isWorldspace(); }
     public static String plotKey() { return plotKey; }
     @Nullable public static BlockPos localPos() { return localPos; }
     public static List<ContainerContentsSyncPacket.Entry> entries() { return entries; }
@@ -100,8 +133,17 @@ public final class ContainerContentsMenu {
 
     public static void setHovered(Hit h) { hovered = h == null ? Hit.NONE : h; }
 
+    /** True when entry {@code index}'s name is revealed beside its icon. */
+    public static boolean isExpanded(int index) { return expandedRows.contains(index); }
+
+    /** Reveal / hide the name for entry {@code index}. Purely client-side. */
+    public static void toggleExpanded(int index) {
+        if (!expandedRows.remove(index)) expandedRows.add(index);
+    }
+
     public static void applySync(ContainerContentsSyncPacket packet) {
         if (packet.localPos() == null) {
+            dismissScreen();
             active = false;
             localPos = null;
             entries = Collections.emptyList();
@@ -109,11 +151,17 @@ public final class ContainerContentsMenu {
             screen = Screen.ROOT;
             searchBuffer = "";
             hovered = Hit.NONE;
+            expandedRows.clear();
             return;
         }
         boolean newCell = !packet.plotKey().equals(plotKey)
             || !packet.localPos().equals(localPos);
+        boolean sizeChanged = packet.entries().size() != entries.size();
+        boolean wasActive = active;
         active = true;
+        if (!wasActive) {
+            space = ClientDisplayConfig.getContainerContentsMenuSpace();
+        }
         plotKey = packet.plotKey();
         localPos = packet.localPos();
         entries = List.copyOf(packet.entries());
@@ -129,7 +177,25 @@ public final class ContainerContentsMenu {
             screen = Screen.ROOT;
             searchBuffer = "";
         }
+        if (newCell || sizeChanged) expandedRows.clear();
         hovered = Hit.NONE;
+        // Re-pushed after every edit so the rows stay live, so only the first sync of an opening
+        // puts the screen up; the ones after it just refresh what it is drawing.
+        if (!wasActive && space.isScreenspace()) {
+            Minecraft.getInstance().setScreen(new ContainerContentsMenuScreen());
+        }
+    }
+
+    /** Pop our screen if it is the active one — guarded so another mod's GUI isn't clobbered. */
+    private static void dismissScreen() {
+        Minecraft mc = Minecraft.getInstance();
+        if (!(mc.screen instanceof ContainerContentsMenuScreen)) return;
+        try {
+            mc.setScreen(null);
+        } catch (IllegalStateException disconnectRace) {
+            // setScreen throws during world disconnect ("Trying to return to in-game GUI during
+            // disconnection"). MC is tearing the screen down anyway, so our state is already clean.
+        }
     }
 
     public static void enterSearch() {

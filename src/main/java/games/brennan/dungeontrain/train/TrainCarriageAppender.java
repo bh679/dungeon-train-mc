@@ -4,11 +4,15 @@ import com.mojang.logging.LogUtils;
 import dev.ryanhcode.sable.SableConfig;
 import games.brennan.dungeontrain.bootstrap.BootstrapProgress;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
+import games.brennan.dungeontrain.debug.DebugAccessEvents;
 import games.brennan.dungeontrain.net.CarriageIndexPacket;
+import games.brennan.dungeontrain.net.TrainDebugCarriagePacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.Shipyard;
 import games.brennan.dungeontrain.ship.Shipyards;
+import games.brennan.dungeontrain.ship.sable.PhysicsFreeze;
+import games.brennan.dungeontrain.ship.sable.SableManagedShip;
 import games.brennan.dungeontrain.ship.sable.WorldgenForceGuard;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.world.StartingDimension;
@@ -70,6 +74,13 @@ public final class TrainCarriageAppender {
      * {@link CarriageIndexPacket}. Server-thread only.
      */
     private static final Map<UUID, Integer> LAST_SENT_PIDX = new HashMap<>();
+
+    /**
+     * Last carriage index sent to each player for the F3+4 debug panel. Separate from
+     * {@link #LAST_SENT_PIDX} because the two are computed in different frames and cross their
+     * boundaries at different moments — sharing one record would swallow debug updates.
+     */
+    private static final Map<UUID, Integer> LAST_SENT_DEBUG_PIDX = new ConcurrentHashMap<>();
 
     /**
      * The carriage index last pushed to {@code playerId}'s HUD — the same value the
@@ -137,8 +148,8 @@ public final class TrainCarriageAppender {
      * gate stays closed even after the pending sub-level is removed —
      * extension in that direction halts until placement actually succeeds.
      */
-    private static final Map<UUID, Boolean> CULL_CLEARED_FORWARD = new ConcurrentHashMap<>();
-    private static final Map<UUID, Boolean> CULL_CLEARED_BACKWARD = new ConcurrentHashMap<>();
+    private static final Map<UUID, Long> CULL_CLEARED_FORWARD = new ConcurrentHashMap<>();
+    private static final Map<UUID, Long> CULL_CLEARED_BACKWARD = new ConcurrentHashMap<>();
 
     /**
      * Per-train, per-direction (option 2): the game tick at which the
@@ -339,7 +350,7 @@ public final class TrainCarriageAppender {
      * the tracker counted any non-overlapping gap as clean, letting carriages
      * settle and permanently place a hair from their neighbour.</p>
      */
-    private static final double MIN_GAP_BLOCKS = 0.3;
+    static final double MIN_GAP_BLOCKS = 0.3;
 
     /**
      * Chunk pre-warm reach bias (in blocks) used by {@link #eagerFillForBootstrap}
@@ -510,6 +521,20 @@ public final class TrainCarriageAppender {
     private static final long CULL_DETECTION_GRACE_TICKS = 60L;
 
     /**
+     * How long a cull-clear latch (see {@link #isLanePlacementGateClear}) may hold its lane shut
+     * before it expires and the lane is allowed one more attempt. 600 ticks = 30 s.
+     *
+     * <p>The latch exists to stop a runaway {@code cull → clear → spawn → cull} cascade, and it is
+     * only lifted by a later spawn in that direction reaching {@code placedSuccessfully} — which can
+     * never happen while the latch itself keeps the lane shut. Without an expiry the only escape was
+     * the player physically walking past the registry's edge anchor, so a single ill-timed Sable cull
+     * could halt backward generation for the rest of the session: the train simply ended. Expiry
+     * restores forward progress while keeping the cascade bounded to one speculative spawn per
+     * window per direction instead of one per tick.</p>
+     */
+    static final long CULL_LATCH_EXPIRY_TICKS = 600L;
+
+    /**
      * How many trailing GROUPS (nearest the tail) Dungeon Train force-loads.
      * Sable culls any sub-level whose world chunks leave the player-centred
      * simulation bubble; the backmost carriages of a backward-riding train do
@@ -612,6 +637,13 @@ public final class TrainCarriageAppender {
     private static final Map<UUID, Long> PLACEMENT_TRACKER_LAST_SHIFT = new ConcurrentHashMap<>();
 
     /**
+     * Consecutive ticks each unplaced sub-level has read a gap past
+     * {@link #LARGE_GAP_REPLACE_BLOCKS}. Reset the moment a reading comes back inside the nudgeable
+     * range, so only a sustained separation triggers the one-step re-place.
+     */
+    private static final Map<UUID, Integer> PLACEMENT_TRACKER_LARGE_GAP_TICKS = new ConcurrentHashMap<>();
+
+    /**
      * Ticks the tracker must wait after shifting a carriage before it may shift
      * it again. The gap it reads comes from {@link ManagedShip#worldAABB()},
      * which lags a shift by a tick or two (Sable applies the new kinematic pose
@@ -653,7 +685,7 @@ public final class TrainCarriageAppender {
      * target in one move and, with the shift cooldown, converges without
      * oscillating.</p>
      */
-    private static final double MAX_GAP_BLOCKS = 0.5;
+    static final double MAX_GAP_BLOCKS = 0.5;
 
     /**
      * Target seam gap the placement tracker converges every carriage toward —
@@ -661,8 +693,34 @@ public final class TrainCarriageAppender {
      * Proportional shifts aim here so gaps end up small and uniform (~0.4) while
      * staying above the ~0.3 Sable broad-phase floor (no touching).
      */
-    private static final double TARGET_GAP_BLOCKS =
+    static final double TARGET_GAP_BLOCKS =
         (MIN_GAP_BLOCKS + MAX_GAP_BLOCKS) / 2.0;
+
+    /**
+     * A seam gap this wide is no longer a settling error — it is a group that has fallen out of the
+     * train, and nudging cannot bring it back.
+     *
+     * <p>The tracker's shift is capped at {@link #COLLISION_SHIFT_BLOCKS} once per
+     * {@link #SHIFT_SETTLE_TICKS}, i.e. 0.125 blocks/tick, so within the
+     * {@link #MAX_PLACEMENT_SETTLE_TICKS} budget it can close at most ~25 blocks — and only by
+     * spending the entire budget doing it. Observed live on a cold-generation world: a freshly
+     * appended group's physics was starved for ~5 s while the train kept moving, it ended up 67.5
+     * blocks behind its real neighbour, and the tracker chased at 0.5 a shift until the safety valve
+     * fired 200 ticks later, leaving the hole. 4 blocks sits well clear of the worst legitimate
+     * spawn offset (~1.6, when the collision pass moves the origin and the sub-block pre-seed is
+     * dropped) and far below what nudging could ever recover, so anything past it is pathological
+     * by construction.</p>
+     */
+    static final double LARGE_GAP_REPLACE_BLOCKS = 4.0;
+
+    /**
+     * Consecutive ticks a gap must read past {@link #LARGE_GAP_REPLACE_BLOCKS} before the group is
+     * re-placed in one step. A single frame of stale geometry must never teleport a carriage; five
+     * ticks of agreement means the separation is real. Frozen bodies never reach this code (the
+     * tracker skips them) and absent/degenerate neighbours read as infinite, so the remaining
+     * stale-read surface is small — this is belt and braces over it.
+     */
+    static final int LARGE_GAP_CONFIRM_TICKS = 5;
 
     /** Snapshot of the most recent post-spawn collision check per train. */
     public static Map<UUID, SpawnCollisionCheck> snapshotSpawnCollisionChecks() {
@@ -741,6 +799,23 @@ public final class TrainCarriageAppender {
                 // permanently. Force-finalise after MAX_PLACEMENT_SETTLE_TICKS
                 // with a WARN snapshot so the underlying bug stays visible.
                 long firstSeenTick = PLACEMENT_TRACKER_FIRST_SEEN.computeIfAbsent(subLevelId, k -> now);
+
+                // Frozen body ⇒ the settle clock stops. A DT-frozen carriage (#646 soft-freeze) stops
+                // receiving its per-tick teleport, so its worldAABB is stuck: every collision/gap
+                // reading below would be a stale re-read of the same frame, no shift could ever land,
+                // and the tracker would nudge spawnWorldPos blind until the safety valve fired —
+                // banking tens of blocks of offset that snap into a wide seam on unfreeze.
+                // {@link PhysicsFreezeController} now exempts unplaced carriages outright, so this is
+                // defence in depth for any other reason a body stops moving (non-resident ship, Sable
+                // never firing the first physics tick). Roll firstSeen forward so the frozen ticks
+                // don't count toward MAX_PLACEMENT_SETTLE_TICKS, and drop the shift throttle so the
+                // first tick after unfreeze may act immediately.
+                if (isBodyFrozen(carriage)) {
+                    PLACEMENT_TRACKER_FIRST_SEEN.put(subLevelId, firstSeenTick + 1L);
+                    PLACEMENT_TRACKER_LAST_SHIFT.remove(subLevelId);
+                    continue;
+                }
+
                 long ticksSinceFirstSeen = now - firstSeenTick;
                 if (ticksSinceFirstSeen > MAX_PLACEMENT_SETTLE_TICKS) {
                     logPlacementStallState(trainId, carriage, train, provider, now, ticksSinceFirstSeen, "SAFETY-VALVE-FIRE");
@@ -776,6 +851,27 @@ public final class TrainCarriageAppender {
                 double gap = check.colliding()
                     ? 0.0
                     : gapToTrainFacingSibling(trainId, carriage, train);
+                // Unreachable gap ⇒ re-place, don't nudge. See LARGE_GAP_REPLACE_BLOCKS: past a few
+                // blocks the 0.5-per-4-ticks nudge cannot close the distance inside the settle
+                // budget, so chasing it only burns the budget and hands the safety valve a group
+                // still far out of line. One corrective step puts the seam straight on
+                // TARGET_GAP_BLOCKS; the next tick reads clean and the normal 60-tick settle runs.
+                if (isUnreachableGap(check.colliding(), gap)) {
+                    int confirmed = PLACEMENT_TRACKER_LARGE_GAP_TICKS.merge(subLevelId, 1, Integer::sum);
+                    if (confirmed >= LARGE_GAP_CONFIRM_TICKS) {
+                        double jump = placementTrackerReplaceDx(gap, provider.isSpawnedBackward());
+                        provider.shiftSpawnPosition(jump, 0.0, 0.0);
+                        provider.resetConsecutiveCleanTicks();
+                        PLACEMENT_TRACKER_LAST_SHIFT.put(subLevelId, now);
+                        PLACEMENT_TRACKER_LARGE_GAP_TICKS.remove(subLevelId);
+                        LOGGER.info("[DungeonTrain] Placement tracker: pIdx={} unreachable gap={} blocks after {} confirming ticks — re-placed {} X onto the {}-block target seam",
+                            provider.getPIdx(), String.format("%.2f", gap), LARGE_GAP_CONFIRM_TICKS,
+                            String.format("%+.2f", jump), TARGET_GAP_BLOCKS);
+                    }
+                    continue;
+                }
+                PLACEMENT_TRACKER_LARGE_GAP_TICKS.remove(subLevelId);
+
                 double dx = placementTrackerShiftDx(
                     check.colliding(),
                     check.selfPIdx(),
@@ -849,6 +945,18 @@ public final class TrainCarriageAppender {
         // entries for despawned groups.
         PLACEMENT_TRACKER_FIRST_SEEN.keySet().retainAll(liveSubLevelIds);
         PLACEMENT_TRACKER_LAST_SHIFT.keySet().retainAll(liveSubLevelIds);
+        PLACEMENT_TRACKER_LARGE_GAP_TICKS.keySet().retainAll(liveSubLevelIds);
+    }
+
+    /**
+     * True while this carriage's body is DT-frozen by the #646 soft-freeze — i.e. it is no longer
+     * being teleported each tick, so its {@code worldAABB()} is frozen too and nothing the placement
+     * tracker does to {@code spawnWorldPos} can be observed. Non-Sable ships (tests, other backends)
+     * are never frozen.
+     */
+    private static boolean isBodyFrozen(Trains.Carriage carriage) {
+        return carriage.ship() instanceof SableManagedShip sable
+            && PhysicsFreeze.isFrozen(sable.subLevel());
     }
 
     /**
@@ -1025,6 +1133,27 @@ public final class TrainCarriageAppender {
      * so the two systems can't fight; the separating (too-close) branch stays
      * active so a locked carriage is never stranded touching.</p>
      */
+    /**
+     * Whether {@code gap} is too wide for the tracker's nudge to ever close — see
+     * {@link #LARGE_GAP_REPLACE_BLOCKS}. Never true while colliding: an overlap is resolved by the
+     * pushback branch, and its gap is reported as zero anyway. Infinite gaps (no trustworthy
+     * train-facing neighbour) are not separations and never qualify.
+     */
+    static boolean isUnreachableGap(boolean colliding, double gap) {
+        return !colliding && Double.isFinite(gap) && gap > LARGE_GAP_REPLACE_BLOCKS;
+    }
+
+    /**
+     * The single corrective shift that puts a group that has fallen out of the train back onto a
+     * {@link #TARGET_GAP_BLOCKS} seam — the whole remaining distance, not a capped nudge. Sign
+     * matches the move-together branch of {@link #placementTrackerShiftDx}: a backward-spawned group
+     * closes toward +X, a forward-spawned one toward −X.
+     */
+    static double placementTrackerReplaceDx(double gap, boolean spawnedBackward) {
+        double mag = gap - TARGET_GAP_BLOCKS;
+        return spawnedBackward ? +mag : -mag;
+    }
+
     static double placementTrackerShiftDx(
         boolean colliding,
         int selfPIdx,
@@ -1069,21 +1198,29 @@ public final class TrainCarriageAppender {
     }
 
     /**
-     * X-axis gap from this carriage's train-facing face to the nearest sibling
-     * AABB on that side, in world blocks. Forward spawns measure the LOW-X face
-     * (carriage faces train at -X); backward spawns measure the HIGH-X face.
-     * Y/Z must overlap (siblings on the same lane).
+     * X-axis gap from this carriage's train-facing face to its IMMEDIATE train-facing neighbour's
+     * AABB, in world blocks. Forward spawns measure the LOW-X face against anchor
+     * {@code pIdx − groupSize}; backward spawns measure the HIGH-X face against
+     * {@code pIdx + groupSize}. Y/Z must overlap (same lane).
      *
-     * <p>Returns {@link Double#POSITIVE_INFINITY} when no sibling sits on the
-     * train-facing side — e.g. the seed carriage of a fresh train, where any
-     * pull-toward action would be meaningless. The caller's
-     * {@code gap > MAX_GAP_BLOCKS} check short-circuits on infinity via
-     * {@link Double#isFinite}.</p>
+     * <p>Returns {@link Double#POSITIVE_INFINITY} — "nothing to settle against", read as clean by
+     * the caller's finite check — whenever that one neighbour can't be trusted: it doesn't exist
+     * (seed carriage), it has been culled ({@code !isResident}), its AABB is still degenerate
+     * (spawned but not yet physics-ticked), or it doesn't qualify as train-facing.</p>
      *
-     * <p>Sibling set: visible train ∪ {@link Trains#knownGroups} registry,
-     * deduped by ship id, skipping zero-AABB ships and self. Mirrors
-     * {@link #checkOneCarriage} so the gap loop and collision loop draw from
-     * the same neighbour set.</p>
+     * <p><b>Adjacency is the whole point.</b> This used to take the minimum facing gap over EVERY
+     * sibling in the visible train and the registry, skipping culled and zero-AABB ones. But a
+     * skipped neighbour doesn't remove the measurement — it silently promotes a carriage two or
+     * three groups away into the neighbour's place, and the "seam gap" reads as one or two whole
+     * strides. Observed live: a correctly placed backward group (spawn log {@code gapBlocks=0.4000})
+     * whose neighbour had just been culled measured a 90-block gap, and the tracker dragged it
+     * 0.5 blocks/tick toward the train for the full MAX_PLACEMENT_SETTLE_TICKS budget before the
+     * safety valve fired — which is exactly the wide hole a backward-riding player walks into. A
+     * missing neighbour means there is no seam to settle, not a seam that is enormous.</p>
+     *
+     * <p>Collision detection deliberately does NOT scope this way ({@link #checkOneCarriage} still
+     * tests every sibling): overlapping anything is real regardless of adjacency, whereas a seam
+     * only exists between neighbours.</p>
      */
     private static double gapToTrainFacingSibling(
         UUID trainId,
@@ -1092,41 +1229,38 @@ public final class TrainCarriageAppender {
     ) {
         AABBdc selfAabb = self.ship().worldAABB();
         if (isZeroAabb(selfAabb)) return Double.POSITIVE_INFINITY;
-        boolean spawnedBackward = self.provider().isSpawnedBackward();
-        double selfMinX = selfAabb.minX(), selfMaxX = selfAabb.maxX();
-        double selfMinY = selfAabb.minY(), selfMaxY = selfAabb.maxY();
-        double selfMinZ = selfAabb.minZ(), selfMaxZ = selfAabb.maxZ();
+        TrainTransformProvider provider = self.provider();
+        boolean spawnedBackward = provider.isSpawnedBackward();
+        int groupSize = Math.max(1, provider.getGroupSize());
+        int neighbourAnchor = provider.getPIdx() + (spawnedBackward ? groupSize : -groupSize);
 
-        long selfId = self.ship().id();
-        Set<Long> seen = new HashSet<>();
-        seen.add(selfId);
-
-        double best = Double.POSITIVE_INFINITY;
+        AABBdc neighbourAabb = null;
         for (Trains.Carriage other : train) {
-            if (!seen.add(other.ship().id())) continue;
+            if (other.ship().id() == self.ship().id()) continue;
+            if (other.provider().getPIdx() != neighbourAnchor) continue;
             AABBdc o = other.ship().worldAABB();
-            if (isZeroAabb(o)) continue;
-            double g = facingGapBetween(
-                selfMinX, selfMaxX, selfMinY, selfMaxY, selfMinZ, selfMaxZ,
-                o.minX(), o.maxX(), o.minY(), o.maxY(), o.minZ(), o.maxZ(),
-                spawnedBackward);
-            if (g < best) best = g;
+            if (!isZeroAabb(o)) neighbourAabb = o;
+            break;
         }
-        Map<Integer, ManagedShip> registry = Trains.knownGroups(trainId);
-        for (ManagedShip ship : registry.values()) {
-            if (!seen.add(ship.id())) continue;
-            // Skip culled registry-only siblings — a stale cull-time AABB would
-            // give a bogus "too-far" gap and pull a settling carriage off true.
-            if (!ship.isResident()) continue;
-            AABBdc o = ship.worldAABB();
-            if (isZeroAabb(o)) continue;
-            double g = facingGapBetween(
-                selfMinX, selfMaxX, selfMinY, selfMaxY, selfMinZ, selfMaxZ,
-                o.minX(), o.maxX(), o.minY(), o.maxY(), o.minZ(), o.maxZ(),
-                spawnedBackward);
-            if (g < best) best = g;
+        if (neighbourAabb == null) {
+            ManagedShip registered = Trains.knownGroups(trainId).get(neighbourAnchor);
+            // A culled neighbour's AABB is frozen at its cull-time pose — worse than no reading,
+            // because the train has moved on since. Treat it as absent.
+            if (registered != null && registered.id() != self.ship().id() && registered.isResident()) {
+                AABBdc o = registered.worldAABB();
+                if (!isZeroAabb(o)) neighbourAabb = o;
+            }
         }
-        return best;
+        if (neighbourAabb == null) return Double.POSITIVE_INFINITY;
+
+        return facingGapBetween(
+            selfAabb.minX(), selfAabb.maxX(),
+            selfAabb.minY(), selfAabb.maxY(),
+            selfAabb.minZ(), selfAabb.maxZ(),
+            neighbourAabb.minX(), neighbourAabb.maxX(),
+            neighbourAabb.minY(), neighbourAabb.maxY(),
+            neighbourAabb.minZ(), neighbourAabb.maxZ(),
+            spawnedBackward);
     }
 
     /**
@@ -1753,6 +1887,18 @@ public final class TrainCarriageAppender {
                 LAST_SENT_PIDX.put(uuid, pIdx);
             }
 
+            // The debug panel resolves the carriage independently, in the frame of the group the
+            // player is actually standing in rather than the lead group's — see occupiedPIdx. It
+            // therefore changes on its own schedule and needs its own "did it change" record.
+            if (DebugAccessEvents.isPermitted(player)) {
+                Integer occupied = occupiedPIdx(train, player, dims, groupSize);
+                Integer lastDebug = LAST_SENT_DEBUG_PIDX.get(uuid);
+                if (occupied != null && !occupied.equals(lastDebug)) {
+                    DungeonTrainNet.sendTo(player, debugCarriageAt(occupied));
+                    LAST_SENT_DEBUG_PIDX.put(uuid, occupied);
+                }
+            }
+
             int pTargetCount = (configCount > 0)
                 ? configCount
                 : autoTargetFromRenderDistance(player, length);
@@ -2151,21 +2297,24 @@ public final class TrainCarriageAppender {
      * {@link Trains#byTrainId}), we log a {@code WARN} and drop the entry
      * so the lane reopens.</p>
      *
-     * <p>Cull-clear is bounded by {@code cullClearedFlags}: at most ONE
-     * cull-clear per natural placement success. Once the latch fires, the
-     * gate stays closed in this direction even after we remove the pending
-     * sub-level — extension halts until a future spawn's
-     * {@code placedSuccessfully} flips through the normal tracker path, at
-     * which point we clear the latch (the train has caught up to the player
-     * and Sable's plot covers the train's end). This prevents the runaway
-     * cull→clear→spawn→cull cascade where each cull-cleared anchor advances
-     * the registry frontier without filling in, producing a long chain of
-     * registered-but-invisible ghost carriages.</p>
+     * <p>Cull-clear is bounded by {@code cullClearedFlags}, which maps a train to the game tick its
+     * latch was stamped: at most ONE cull-clear per natural placement success. Once the latch fires,
+     * the gate stays closed in this direction even after we remove the pending sub-level — extension
+     * halts until a future spawn's {@code placedSuccessfully} flips through the normal tracker path,
+     * at which point we clear the latch (the train has caught up to the player and Sable's plot
+     * covers the train's end). This prevents the runaway cull→clear→spawn→cull cascade where each
+     * cull-cleared anchor advances the registry frontier without filling in, producing a long chain
+     * of registered-but-invisible ghost carriages.</p>
+     *
+     * <p>...but a latch whose only exit is "a later spawn succeeds" deadlocks the lane it shuts,
+     * because no later spawn can happen. So the latch also expires after
+     * {@link #CULL_LATCH_EXPIRY_TICKS} and lets one attempt through, re-stamping itself each time —
+     * bounding the cascade by rate instead of by a one-shot that never re-arms.</p>
      */
     private static boolean isLanePlacementGateClear(
         Map<UUID, ManagedShip> lane,
         Map<UUID, Long> laneTickMap,
-        Map<UUID, Boolean> cullClearedFlags,
+        Map<UUID, Long> cullClearedFlags,
         UUID trainId,
         List<Trains.Carriage> currentTrain,
         long now,
@@ -2173,7 +2322,25 @@ public final class TrainCarriageAppender {
     ) {
         ManagedShip pending = lane.get(trainId);
         if (pending == null) {
-            return !cullClearedFlags.getOrDefault(trainId, false);
+            Long latchedAtTick = cullClearedFlags.get(trainId);
+            if (latchedAtTick == null) {
+                return true;
+            }
+            if (!cullLatchExpired(latchedAtTick, now)) {
+                return false;
+            }
+            // Latch expired (see CULL_LATCH_EXPIRY_TICKS) — the "next placement success clears it"
+            // path can't fire while the lane it gates is shut, so let one more spawn through. The
+            // latch is re-stamped rather than removed, so if that spawn is culled too the next
+            // window is another full CULL_LATCH_EXPIRY_TICKS: progress stays bounded, and a
+            // genuinely broken plot keeps announcing itself here once every 30 s.
+            LOGGER.warn(
+                "[DungeonTrain] Lane {} cull-clear latch expired after {} ticks — allowing one more spawn attempt (trainId={})",
+                forward ? "forward" : "backward",
+                now - latchedAtTick,
+                trainId);
+            cullClearedFlags.put(trainId, now);
+            return true;
         }
         if (pending.getKinematicDriver() instanceof TrainTransformProvider provider
             && !provider.isPlacedSuccessfully()) {
@@ -2192,7 +2359,7 @@ public final class TrainCarriageAppender {
             if (stillLoaded) {
                 return false;
             }
-            if (cullClearedFlags.getOrDefault(trainId, false)) {
+            if (cullClearedFlags.containsKey(trainId)) {
                 return false;
             }
             long ticksSinceSpawn = (spawnTick == null) ? -1L : (now - spawnTick);
@@ -2202,7 +2369,7 @@ public final class TrainCarriageAppender {
                 pendingSubLevelId,
                 ticksSinceSpawn,
                 trainId);
-            cullClearedFlags.put(trainId, true);
+            cullClearedFlags.put(trainId, now);
             lane.remove(trainId);
             return true;
         }
@@ -2220,6 +2387,15 @@ public final class TrainCarriageAppender {
     // accumulated seam gaps → a frozen void. Option 2 removes the mismatch at
     // the source: resolve the reference to the registry-EDGE carriage's live
     // pose, so subLevelDelta is ±1 by construction.
+
+    /**
+     * Whether a cull-clear latch stamped at {@code latchedAtTick} has aged out of its
+     * {@link #CULL_LATCH_EXPIRY_TICKS} window and may let one spawn attempt through. Pure helper so
+     * the expiry boundary is unit-testable without a level.
+     */
+    static boolean cullLatchExpired(long latchedAtTick, long now) {
+        return now - latchedAtTick >= CULL_LATCH_EXPIRY_TICKS;
+    }
 
     /** What to do with one extension edge this tick (output of {@link #decideEdgeAction}). */
     enum EdgeAction { SPAWN, RELOAD_DEFER, DEFER }
@@ -3724,6 +3900,9 @@ public final class TrainCarriageAppender {
 
         ManagedShip newShip = TrainAssembler.spawnGroup(
             level, plan.origin, velocity, newAnchor, groupSize, dims, trainId);
+        // Land the seam on TARGET_GAP_BLOCKS rather than the integer origin's quantisation of it,
+        // so the group starts inside the tracker's clean dead-band (see planSpawnPlacement).
+        preSeedGapShift(newShip, plan.preSeedRemainderX);
 
         LOGGER.info("[DungeonTrain] Appender added group anchorPIdx={} groupSize={} trainId={} ship id={} placedAt={} (idealX={}, dir={}, gapBlocks={}, subLevelStride={}, collisionAdjustments={})",
             newAnchor, groupSize, trainId, newShip.id(), plan.origin,
@@ -3801,9 +3980,16 @@ public final class TrainCarriageAppender {
         double idealZ = refWorldOriginVec.z;
 
         boolean forward = newAnchor > refAnchor;
-        int initialPlaceX = forward
-            ? (int) Math.ceil(idealX + MIN_GAP_BLOCKS)
-            : (int) Math.floor(idealX - MIN_GAP_BLOCKS);
+        // Aim the seam at TARGET_GAP_BLOCKS and carry the sub-block leftover in the group's world
+        // transform (preSeedGapShift), exactly as the bootstrap eager fill does. The old
+        // ceil/floor ± MIN_GAP_BLOCKS bias landed the seam anywhere in [0.3, 1.3] while the
+        // tracker's clean dead-band is only [MIN_GAP_BLOCKS, MAX_GAP_BLOCKS] — so most appended
+        // groups started out of band and had to run a move-together pass before they could settle,
+        // which is the opening leg of the collide → move-together → collide cycle. Spawning inside
+        // the band means the usual group settles in one uninterrupted CLEAN_TICKS_FOR_SUCCESS run
+        // with no shift at all, which is also the appender's per-lane spawn-rate floor.
+        double desiredWorldX = preSeedDesiredX(idealX, forward);
+        int initialPlaceX = (int) Math.round(desiredWorldX);
         int placeY = (int) Math.round(idealY);
         int placeZ = (int) Math.round(idealZ);
 
@@ -3811,8 +3997,15 @@ public final class TrainCarriageAppender {
             initialPlaceX, placeY, placeZ, subLevelStride, dims, train, refTrainId, forward, newAnchor);
         int adjustedPlaceX = adjusted.placeX();
 
+        // Drop the sub-block remainder if the collision pass moved the origin — that pass placed the
+        // group deliberately, and a fractional nudge on top would work against its clearance.
+        double preSeedRemainderX = (adjustedPlaceX == initialPlaceX)
+            ? (desiredWorldX - initialPlaceX)
+            : 0.0;
+
         BlockPos origin = new BlockPos(adjustedPlaceX, placeY, placeZ);
-        double gap = forward ? (adjustedPlaceX - idealX) : (idealX - adjustedPlaceX);
+        double effectivePlaceX = adjustedPlaceX + preSeedRemainderX;
+        double gap = forward ? (effectivePlaceX - idealX) : (idealX - effectivePlaceX);
 
         return new Plan(
             origin,
@@ -3829,7 +4022,21 @@ public final class TrainCarriageAppender {
             initialPlaceX,
             adjustedPlaceX,
             adjusted.lastOffenderPIdx(),
-            adjusted.lastOffenderRegistryOnly());
+            adjusted.lastOffenderRegistryOnly(),
+            preSeedRemainderX);
+    }
+
+    /**
+     * World X a newly appended group's origin should land on so its seam against the reference
+     * measures exactly {@link #TARGET_GAP_BLOCKS} — the centre of the placement tracker's clean
+     * dead-band. {@code idealX} is the abutting (zero-gap) origin; forward spawns sit that gap
+     * further along +X, backward spawns that gap further along −X.
+     *
+     * <p>Split out as a pure helper so the rounding/remainder split is unit-testable without a
+     * level (mirrors {@link #placementTrackerShiftDx}).</p>
+     */
+    static double preSeedDesiredX(double idealX, boolean forward) {
+        return forward ? (idealX + TARGET_GAP_BLOCKS) : (idealX - TARGET_GAP_BLOCKS);
     }
 
     private record Plan(
@@ -3851,7 +4058,12 @@ public final class TrainCarriageAppender {
         int initialPlaceX,
         int adjustedPlaceX,
         int lastOffenderPIdx,
-        boolean lastOffenderRegistryOnly
+        boolean lastOffenderRegistryOnly,
+        // Sub-block world-X leftover from rounding the target-gap placement onto an integer
+        // BlockPos origin. Applied once via preSeedGapShift so the seam lands on
+        // TARGET_GAP_BLOCKS instead of a whole-block quantisation of it. Zero when the collision
+        // pass moved the origin, and a no-op at zero.
+        double preSeedRemainderX
     ) {}
 
     /**
@@ -4165,6 +4377,80 @@ public final class TrainCarriageAppender {
     }
 
     /**
+     * The variant carriage {@code pIdx} rolls to — the "cart type" the F3+4 debug panel shows.
+     * Uses the same pair {@link TrainAssembler} picks with at placement time, so the two agree.
+     *
+     * <p>Only called when a player actually crosses a carriage boundary, which is rare enough that
+     * re-deriving it beats recording every placed variant. Never throws: a debug read-out is not
+     * worth risking the train tick, so any failure degrades to an empty id and a blank line.</p>
+     */
+    /**
+     * The carriage the player is standing in, resolved in the frame of the group that actually
+     * holds them.
+     *
+     * <p>The train-wide {@code pIdx} computed above works entirely in the <b>lead</b> group's
+     * frame: it projects the player through the lead ship's transform and divides by carriage
+     * length. That assumes the train is one rigid body of evenly spaced carriages, but every group
+     * is its own Sable sub-level, placed relative to the previous group's live position plus
+     * {@code MIN_GAP} and a collision nudge. The gaps accumulate, so the further a player is from
+     * the lead group the further that figure drifts from the carriage they are really in — which
+     * is precisely the range where a debug read-out has to be trusted.</p>
+     *
+     * <p>So this finds the group whose own bounds contain the player (nearest, if they are in a
+     * gap between groups) and indexes within that group's frame, off that group's own anchor pIdx.
+     * Returns null when the train has no group to attribute them to.</p>
+     */
+    private static Integer occupiedPIdx(List<Trains.Carriage> train, ServerPlayer player,
+                                        CarriageDims dims, int groupSize) {
+        double px = player.getX();
+        double py = player.getY();
+        double pz = player.getZ();
+
+        Trains.Carriage best = null;
+        double bestDistSq = Double.MAX_VALUE;
+        for (Trains.Carriage c : train) {
+            AABBdc aabb = c.ship().worldAABB();
+            double dx = Math.max(0, Math.max(aabb.minX() - px, px - aabb.maxX()));
+            double dy = Math.max(0, Math.max(aabb.minY() - py, py - aabb.maxY()));
+            double dz = Math.max(0, Math.max(aabb.minZ() - pz, pz - aabb.maxZ()));
+            double distSq = dx * dx + dy * dy + dz * dz;
+            if (distSq < bestDistSq) {
+                bestDistSq = distSq;
+                best = c;
+                if (distSq == 0.0) break; // inside this group — no closer answer exists
+            }
+        }
+        if (best == null) return null;
+
+        int length = dims.length();
+        int enclosedStartOffset = (groupSize > 1) ? CarriagePlacer.halfPadLen(dims) : 0;
+        Vector3d local = new Vector3d(px, py, pz);
+        best.ship().worldToShip(local);
+        int slot = (int) Math.floor(
+            (local.x - best.provider().getShipyardOrigin().getX() - enclosedStartOffset)
+                / (double) length);
+        return best.provider().getPIdx() + slot;
+    }
+
+    /**
+     * What carriage {@code pIdx} was actually built as, for the F3+4 panel.
+     *
+     * <p>Read back from {@link PlacedCarriageFacts} rather than re-rolled. The pick is gated on the
+     * group's world-X at the moment it was placed, and the train has moved since, so a recomputed
+     * answer drifts further from the standing carriage the longer the run goes. An index this
+     * session never placed reports empty ids — the panel shows a dash, which is the honest answer
+     * rather than a confident wrong one.</p>
+     */
+    private static TrainDebugCarriagePacket debugCarriageAt(int pIdx) {
+        PlacedCarriageFacts.Facts facts = PlacedCarriageFacts.get(pIdx);
+        if (facts == null) {
+            return new TrainDebugCarriagePacket(true, pIdx, "", "", "");
+        }
+        return new TrainDebugCarriagePacket(
+            true, pIdx, facts.variantId(), facts.contentsId(), facts.subVariantId());
+    }
+
+    /**
      * Clear the HUD for any player who had a pIdx last tick but wasn't
      * reached by any train this tick — they walked outside {@link #NEAR_RADIUS}.
      */
@@ -4178,8 +4464,10 @@ public final class TrainCarriageAppender {
             ServerPlayer player = level.getServer().getPlayerList().getPlayer(uuid);
             if (player != null) {
                 DungeonTrainNet.sendTo(player, CarriageIndexPacket.absent());
+                DungeonTrainNet.sendTo(player, TrainDebugCarriagePacket.absent());
             }
             it.remove();
+            LAST_SENT_DEBUG_PIDX.remove(uuid);
         }
     }
 }

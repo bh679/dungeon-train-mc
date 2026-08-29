@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.client.menu;
 
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
+import games.brennan.dungeontrain.config.EditorMenuSpace;
 
 import java.util.List;
 import java.util.Locale;
@@ -51,6 +52,15 @@ public final class OptionsMenuScreen implements MenuScreen {
             trainVolumeStepper(),
             snapshotChatLogRow(),
             snapshotMaxResolutionRow(),
+            bookAuthorChatRow(),
+            menuSpaceRow("X Menu", ClientDisplayConfig.getCommandMenuSpace(),
+                ClientDisplayConfig::setCommandMenuSpace),
+            menuSpaceRow("V Blocks Menu", ClientDisplayConfig.getTemplateBlocksMenuSpace(),
+                ClientDisplayConfig::setTemplateBlocksMenuSpace),
+            menuSpaceRow("C Contents Menu", ClientDisplayConfig.getContainerContentsMenuSpace(),
+                ClientDisplayConfig::setContainerContentsMenuSpace),
+            menuSpaceRow("Z Variant Menu", ClientDisplayConfig.getBlockVariantMenuSpace(),
+                ClientDisplayConfig::setBlockVariantMenuSpace),
             new CommandMenuEntry.Back("< Back")
         );
     }
@@ -94,6 +104,18 @@ public final class OptionsMenuScreen implements MenuScreen {
     }
 
     /**
+     * ON/OFF toggle for the "The book by X burns" author line. Same {@link CommandMenuEntry.ClientAction}
+     * shape as {@link #snapshotChatLogRow()}; the setter also pushes the new value to the server,
+     * which is what actually prints the line when a book ignites.
+     */
+    private static CommandMenuEntry bookAuthorChatRow() {
+        boolean on = ClientDisplayConfig.isBookAuthorBurnChatEnabled();
+        String label = "Book Author Chat: " + (on ? "ON" : "OFF");
+        return new CommandMenuEntry.ClientAction(label,
+            () -> ClientDisplayConfig.setBookAuthorBurnChat(!ClientDisplayConfig.isBookAuthorBurnChatEnabled()));
+    }
+
+    /**
      * Train engine volume as a percentage, reading {@code OFF} at zero the way the sliders on the
      * other two surfaces do. Steps the same stored value they set, by the same {@code STEP}.
      */
@@ -105,6 +127,22 @@ public final class OptionsMenuScreen implements MenuScreen {
                 ClientDisplayConfig.getTrainEngineVolume() - ClientDisplayConfig.STEP),
             () -> ClientDisplayConfig.setTrainEngineVolume(
                 ClientDisplayConfig.getTrainEngineVolume() + ClientDisplayConfig.STEP));
+    }
+
+    /**
+     * Worldspace/Screenspace toggle for one editor menu. Same
+     * {@link CommandMenuEntry.ClientAction} shape as the toggles above, so it flips client-side
+     * config and stays open; the per-tick rebuild refreshes the label.
+     *
+     * <p>Flipping the row the X menu itself is drawn by does not redraw it mid-session — the mode
+     * is latched when a menu opens, so the change lands the next time it is opened. That is
+     * deliberate: the two modes tear down differently, and swapping under a live panel would
+     * strand it half torn down.</p>
+     */
+    private static CommandMenuEntry menuSpaceRow(String name, EditorMenuSpace current,
+                                                 java.util.function.Consumer<EditorMenuSpace> set) {
+        String label = name + ": " + (current.isScreenspace() ? "Screen" : "World");
+        return new CommandMenuEntry.ClientAction(label, () -> set.accept(current.toggled()));
     }
 
     private static CommandMenuEntry scaleStepper(String name, double currentValue, Runnable onMinus, Runnable onPlus) {

@@ -1,0 +1,305 @@
+{
+  "id": "adventureitemnames:title_prefix",
+  "entries": [
+    {
+      "text": "Prințesă"
+    },
+    {
+      "text": "Prinț"
+    },
+    {
+      "text": "Regină"
+    },
+    {
+      "text": "Rege"
+    },
+    {
+      "text": "Stăpân"
+    },
+    {
+      "text": "Doamnă"
+    },
+    {
+      "text": "Maestru"
+    },
+    {
+      "text": "Stăpână"
+    },
+    {
+      "text": "Slujitor"
+    },
+    {
+      "text": "Zeu"
+    },
+    {
+      "text": "Zeiță"
+    },
+    {
+      "text": "Spectru"
+    },
+    {
+      "text": "Fantomă"
+    },
+    {
+      "text": "Titan"
+    },
+    {
+      "text": "Fiu"
+    },
+    {
+      "text": "Tată"
+    },
+    {
+      "text": "Mamă"
+    },
+    {
+      "text": "Fiică"
+    },
+    {
+      "text": "Soră"
+    },
+    {
+      "text": "Frate"
+    },
+    {
+      "text": "Iubit"
+    },
+    {
+      "text": "Aducător"
+    },
+    {
+      "text": "Distrugător"
+    },
+    {
+      "text": "Gladiator"
+    },
+    {
+      "text": "Barbar"
+    },
+    {
+      "text": "Urmăritor"
+    },
+    {
+      "text": "Ciumat"
+    },
+    {
+      "text": "Aducător de Pieire"
+    },
+    {
+      "text": "Păzitor de Flăcări"
+    },
+    {
+      "text": "Prințesă"
+    },
+    {
+      "text": "Dezvoltator"
+    },
+    {
+      "text": "Dezvoltator Șef"
+    },
+    {
+      "text": "Creator"
+    },
+    {
+      "text": "Proprietar"
+    },
+    {
+      "text": "Inventator"
+    },
+    {
+      "text": "Împărat"
+    },
+    {
+      "text": "Cuceritor"
+    },
+    {
+      "text": "Căpitan"
+    },
+    {
+      "text": "Doctor"
+    },
+    {
+      "text": "Doctor în Științe"
+    },
+    {
+      "text": "Absolvent"
+    },
+    {
+      "text": "Bucătar-Șef"
+    },
+    {
+      "text": "Majestate"
+    },
+    {
+      "text": "Primar"
+    },
+    {
+      "text": "Prorector"
+    },
+    {
+      "text": "Profesor"
+    },
+    {
+      "text": "Cărturar"
+    },
+    {
+      "text": "Baron"
+    },
+    {
+      "text": "Baroneasă"
+    },
+    {
+      "text": "Duce"
+    },
+    {
+      "text": "Ducesă"
+    },
+    {
+      "text": "Domnul"
+    },
+    {
+      "text": "Doamna"
+    },
+    {
+      "text": "Conte"
+    },
+    {
+      "text": "Contesă"
+    },
+    {
+      "text": "General"
+    },
+    {
+      "text": "Cavaler"
+    },
+    {
+      "text": "Scutier"
+    },
+    {
+      "text": "Campion"
+    },
+    {
+      "text": "Campion Mondial"
+    },
+    {
+      "text": "Suveran"
+    },
+    {
+      "text": "Suveran al Lumii"
+    },
+    {
+      "text": "Suveran Suprem"
+    },
+    {
+      "text": "Suveran Suprem al Lumii"
+    },
+    {
+      "text": "Vrăjitor"
+    },
+    {
+      "text": "Vrăjitoare"
+    },
+    {
+      "text": "Necromant"
+    },
+    {
+      "text": "Paladin"
+    },
+    {
+      "text": "Bard"
+    },
+    {
+      "text": "Înțelept"
+    },
+    {
+      "text": "Pustnic"
+    },
+    {
+      "text": "Druid"
+    },
+    {
+      "text": "Alchimist"
+    },
+    {
+      "text": "Oracol"
+    },
+    {
+      "text": "Șaman"
+    },
+    {
+      "text": "Episcop"
+    },
+    {
+      "text": "Sfânt"
+    },
+    {
+      "text": "Profet"
+    },
+    {
+      "text": "Mare Preot"
+    },
+    {
+      "text": "Papă"
+    },
+    {
+      "text": "Fondator"
+    },
+    {
+      "text": "Președinte"
+    },
+    {
+      "text": "Șefu'"
+    },
+    {
+      "text": "Fierar"
+    },
+    {
+      "text": "Vânător"
+    },
+    {
+      "text": "Străjer"
+    },
+    {
+      "text": "Berar"
+    },
+    {
+      "text": "Meșter"
+    },
+    {
+      "text": "Mare Mahăr"
+    },
+    {
+      "text": "Numărul Unu"
+    },
+    {
+      "text": "Goblin"
+    },
+    {
+      "text": "Drăcușor"
+    },
+    {
+      "text": "Campionu'"
+    },
+    {
+      "text": "Căpetenie"
+    },
+    {
+      "text": "Onorabilul"
+    },
+    {
+      "text": "Amicul"
+    },
+    {
+      "text": "Prietenu'"
+    },
+    {
+      "text": "Frate"
+    },
+    {
+      "text": "Soro"
+    },
+    {
+      "text": "Vrăjitor"
+    }
+  ]
+}

@@ -5,7 +5,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
-import net.neoforged.fml.loading.FMLPaths;
+import games.brennan.dungeontrain.data.PlayerDataPaths;
 import org.slf4j.Logger;
 
 import java.nio.charset.StandardCharsets;
@@ -48,7 +48,11 @@ public final class TranslationOutbox {
     static final int MAX_ITEMS = 100;
     /** A submission this old is stale — the locale has almost certainly moved on. */
     static final long MAX_AGE_MS = java.time.Duration.ofDays(30).toMillis();
+    /** Pre-relocation name, sitting loose in {@code config/}. Kept for the read fallback. */
     private static final String FILE_NAME = "dungeontrain-translation-outbox.json";
+
+    /** Name inside {@code <gameDir>/dungeontrain/outbox/}. */
+    private static final String NEW_FILE_NAME = "translation-outbox.json";
 
     /** key → item, insertion-ordered so the oldest submission is delivered first. */
     private final Map<String, Item> pending = new LinkedHashMap<>();
@@ -148,7 +152,9 @@ public final class TranslationOutbox {
         }
         loaded = true;
         try {
-            this.file = FMLPaths.CONFIGDIR.get().resolve(FILE_NAME);
+            this.file = new PlayerDataPaths.Located(
+                PlayerDataPaths.dir(PlayerDataPaths.OUTBOX).resolve(NEW_FILE_NAME),
+                PlayerDataPaths.configRoot().resolve(FILE_NAME)).read();
         } catch (Exception e) {
             LOGGER.debug("[DungeonTrain] Translations: no config dir for the outbox — {}", e.toString());
             return;

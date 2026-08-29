@@ -9,6 +9,7 @@ import games.brennan.dungeontrain.editor.CarriageEditor;
 import games.brennan.dungeontrain.editor.CarriageTemplateStore;
 import games.brennan.dungeontrain.editor.EditorCategory;
 import games.brennan.dungeontrain.editor.PillarEditor;
+import games.brennan.dungeontrain.editor.PlotCategory;
 import games.brennan.dungeontrain.editor.TunnelEditor;
 import games.brennan.dungeontrain.template.Template;
 import games.brennan.dungeontrain.train.CarriageContents;
@@ -99,6 +100,42 @@ public record EditorPlotActionPacket(
         return TYPE;
     }
 
+    /**
+     * Resolve the packet's category to the plot set the dispatch switch below understands,
+     * or {@code null} when there is nothing to dispatch.
+     *
+     * <p>Split out from {@link #handle} so it is unit-testable — {@code handle} needs a live
+     * server. Two things changed here when {@link PlotCategory} arrived:</p>
+     *
+     * <ul>
+     *   <li>The parse is lenient and case-insensitive. It used to be
+     *       {@code EditorCategory.valueOf}, which accepted only the uppercase spelling, so a
+     *       lowercase category — the spelling the keyboard menus and commands use — was
+     *       logged as "unknown" and the action silently dropped.</li>
+     *   <li>{@code PARTS} gets an explicit answer instead of an exception.
+     *       {@code EditorCategory} has no PARTS constant, so {@code valueOf("PARTS")} threw
+     *       and the action vanished into the same "unknown category" branch. Parts genuinely
+     *       have no action row — their save/reset commands are position-resolved rather than
+     *       addressed by {@code (modelId, modelName)} — so refusing is correct; being unable
+     *       to say so was not. The only thing keeping a PARTS action off this path was the
+     *       renderer declining to draw the row, which is a cosmetic guard in front of a
+     *       server-side failure.</li>
+     * </ul>
+     */
+    static EditorCategory resolve(String rawCategory) {
+        PlotCategory category = PlotCategory.fromId(rawCategory).orElse(null);
+        if (category == null) {
+            LOGGER.warn("[DungeonTrain] EditorPlotAction: unknown category '{}'", rawCategory);
+            return null;
+        }
+        if (!category.hasActionRow()) {
+            LOGGER.warn("[DungeonTrain] EditorPlotAction: category '{}' has no plot actions"
+                + " (parts are saved by position, not by id)", rawCategory);
+            return null;
+        }
+        return category.owner();
+    }
+
     public static void handle(EditorPlotActionPacket packet, IPayloadContext ctx) {
         ctx.enqueueWork(() -> {
             Player p = ctx.player();
@@ -117,13 +154,8 @@ public record EditorPlotActionPacket(
             ServerLevel overworld = server.overworld();
             CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
 
-            EditorCategory category;
-            try {
-                category = EditorCategory.valueOf(packet.category);
-            } catch (IllegalArgumentException e) {
-                LOGGER.warn("[DungeonTrain] EditorPlotAction: unknown category '{}'", packet.category);
-                return;
-            }
+            EditorCategory category = resolve(packet.category);
+            if (category == null) return;
 
             try {
                 switch (category) {

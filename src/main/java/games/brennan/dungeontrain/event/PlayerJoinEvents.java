@@ -197,6 +197,24 @@ public final class PlayerJoinEvents {
         // Seed debug flags so the in-world Debug menu's Toggle states render
         // the correct value the first time it's opened on this client.
         DebugFlags.sendSnapshotTo(player);
+        // Debug-panel access: the cached verdict first (so a granted player has the panel even with
+        // the relay down), then a relay fetch to correct it. Denied for everyone by default.
+        games.brennan.dungeontrain.debug.DebugAccessEvents.onPlayerLogin(player);
+        // Same reason for the editor-menus mode: the client holds it in a static that outlives a
+        // disconnect, so a reconnect has to be told what the server actually has for this player
+        // rather than keeping whatever the last session left behind.
+        DungeonTrainNet.sendTo(player, games.brennan.dungeontrain.net.EditorMenusModePacket.of(
+            games.brennan.dungeontrain.editor.PartPositionMenuController.mode(player)));
+        // Somebody who quit standing in a test dimensional carriage comes back standing in it, and
+        // the client assumes no session until told otherwise — without this the Back row is gone and
+        // the only way out of a sealed basement is a manual /tp. The session itself is server-side
+        // and outlived their absence.
+        games.brennan.dungeontrain.portal.PortalTestSession.Session testTrip =
+            games.brennan.dungeontrain.portal.PortalTestSession.get(player.getUUID());
+        if (testTrip != null) {
+            DungeonTrainNet.sendTo(player, new games.brennan.dungeontrain.net.PortalTestSessionPacket(
+                true, testTrip.roomName()));
+        }
         // Sync the disintegration-band geometry (per-world carriage length + train
         // flag) so the client can fade the sky/fog toward the End across the band.
         ServerLevel bandLevel = player.serverLevel().getServer().overworld();
@@ -251,6 +269,7 @@ public final class PlayerJoinEvents {
             NetworkConsentMirror.forget(player.getUUID());
             PoliticalFilterMirror.forget(player.getUUID());
             ContentModeMirror.forget(player.getUUID());
+            BookAuthorChatMirror.forget(player.getUUID());
             SharedBookReadMirror.forget(player.getUUID());
             // Which library they were last told about. Dropped so somebody who logs out inside a
             // locked room is greeted again when they come back — the line is the only thing that

@@ -41,7 +41,7 @@ public final class CommandMenuInputHandler {
 
     @SubscribeEvent
     public static void onInteraction(InputEvent.InteractionKeyMappingTriggered event) {
-        if (!CommandMenuState.isOpen()) return;
+        if (!CommandMenuState.isOpenWorldspace()) return;
         event.setCanceled(true);
         event.setSwingHand(false);
         pressArmed = true;
@@ -49,7 +49,7 @@ public final class CommandMenuInputHandler {
 
     @SubscribeEvent
     public static void onMouseButton(InputEvent.MouseButton.Pre event) {
-        if (!CommandMenuState.isOpen()) {
+        if (!CommandMenuState.isOpenWorldspace()) {
             pressArmed = false;
             return;
         }
@@ -75,12 +75,12 @@ public final class CommandMenuInputHandler {
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onLeftClickBlock(PlayerInteractEvent.LeftClickBlock event) {
-        if (CommandMenuState.isOpen()) event.setCanceled(true);
+        if (CommandMenuState.isOpenWorldspace()) event.setCanceled(true);
     }
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
-        if (CommandMenuState.isOpen()) event.setCanceled(true);
+        if (CommandMenuState.isOpenWorldspace()) event.setCanceled(true);
     }
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)
@@ -95,12 +95,12 @@ public final class CommandMenuInputHandler {
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onRightClickItem(PlayerInteractEvent.RightClickItem event) {
-        if (CommandMenuState.isOpen()) event.setCanceled(true);
+        if (CommandMenuState.isOpenWorldspace()) event.setCanceled(true);
     }
 
     @SubscribeEvent
     public static void onKey(InputEvent.Key event) {
-        if (!CommandMenuState.isOpen() || !CommandMenuState.typingMode()) return;
+        if (!CommandMenuState.isOpenWorldspace() || !CommandMenuState.typingMode()) return;
         // While a Screen is up (typically MenuTypingScreen, which we open in
         // beginTyping), keystrokes go through Screen.keyPressed / charTyped
         // and should not be double-processed here.

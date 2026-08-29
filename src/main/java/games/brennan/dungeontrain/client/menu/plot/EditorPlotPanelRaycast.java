@@ -58,9 +58,14 @@ public final class EditorPlotPanelRaycast {
         double closestT = Double.POSITIVE_INFINITY;
 
         for (int i = 0; i < entries.size(); i++) {
+            // A panel the renderer is hiding under Auto must not be hoverable either — otherwise
+            // the crosshair would arm clicks on an invisible plot's Save / Clear row.
+            if (!games.brennan.dungeontrain.client.EditorMenusModeState.isPanelVisible(entries, i)) continue;
             EditorPlotLabelsPacket.Entry entry = entries.get(i);
             BlockPos pos = entry.worldPos();
             Vec3 anchor = new Vec3(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5);
+            // Same range test the renderer applies, against the same camera position.
+            if (!games.brennan.dungeontrain.client.EditorMenusModeState.withinRange(anchor, rayOrigin)) continue;
 
             Vec3[] basis = EditorPlotLabelsRenderer.basis(anchor, rayOrigin);
             Vec3 right = basis[0], up = basis[1], normal = basis[2];

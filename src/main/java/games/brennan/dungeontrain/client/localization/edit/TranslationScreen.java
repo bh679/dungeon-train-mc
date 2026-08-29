@@ -74,6 +74,9 @@ public final class TranslationScreen extends Screen {
         ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "icon/import");
     private static final ResourceLocation TRASH_ICON =
         ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "icon/trash");
+    /** Stacked cards: the sets of variations this collapses into one row each. */
+    private static final ResourceLocation GROUP_ICON =
+        ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "icon/group");
     /** Vanilla's own globe — the icon Minecraft uses for this exact choice. */
     private static final ResourceLocation LANGUAGE_ICON =
         ResourceLocation.withDefaultNamespace("icon/language");
@@ -82,6 +85,8 @@ public final class TranslationScreen extends Screen {
     /** Authored sizes, drawn 1:1 — scaling pixel art by a fraction is what makes it look soft. */
     private static final int OWN_ICON_PX = 16;
     private static final int VANILLA_ICON_PX = 12;
+    /** The ring drawn round the grouping toggle while it is on — a sprite button has no on state. */
+    private static final int TOGGLE_ON_COLOUR = 0xFF4CCC59;
     /** How long an export/import result holds the subtitle's line: ~8 seconds at 20 ticks/s. */
     private static final int STATUS_TICKS = 160;
 
@@ -169,6 +174,23 @@ public final class TranslationScreen extends Screen {
     /** The magnifier that reveals the search box, and whether it currently is. */
     private SpriteIconButton searchToggle;
     private boolean searchOpen;
+    /**
+     * Collapse each set of variations to a single row, and whether it currently does.
+     *
+     * <p>Held on the SCREEN, like {@link #query} and {@link #listScroll}, so a trip into the edit
+     * screen and back does not silently expand the list the translator was working down.</p>
+     *
+     * <p>Off by default: the flat list is what the editor has always opened on, and grouping is an
+     * answer to a list being long rather than a different way of reading it.</p>
+     */
+    private SpriteIconButton groupToggle;
+    private boolean grouped;
+    /**
+     * Group key → members, over the WHOLE catalog rather than the visible rows — see
+     * {@link TranslationGroups#index}. Rebuilt on every {@link #refresh}, which is also what keeps
+     * it in step with a resource reload.
+     */
+    private Map<String, List<TranslationUnit>> groupIndex = Map.of();
     /** The row's icons — one list so the search toggle has one thing to flip, not four. */
     private final List<SpriteIconButton> fileIcons = new ArrayList<>();
     /** Where the current language's name is drawn, right of the globe, and where it must stop. */
@@ -252,9 +274,11 @@ public final class TranslationScreen extends Screen {
             stateFilter = StateFilter.AI_UNREVIEWED;
         }
         int cycleWidth = Math.min(FILTER_MAX_W, (contentWidth - GAP * 2) / 4);
-        // Search costs one square until you want it. Both ends of the row are pinned — icon left,
+        // Search costs one square until you want it. Both ends of the row are pinned — icons left,
         // cycles right — so opening the box fills the middle instead of shoving anything sideways.
-        int searchX = MARGIN + ROW_H + GAP;
+        // Two squares now: grouping is a view control like search, and unlike the file actions it
+        // stays put when the box opens, because a list that is grouped has to keep saying so.
+        int searchX = MARGIN + (ROW_H + GAP) * 2;
         int cyclesX = MARGIN + contentWidth - (cycleWidth + GAP) - cycleWidth;
         cyclesLeftEdge = cyclesX;
         int searchWidth = Math.max(ROW_H, cyclesX - GAP - searchX);
@@ -262,6 +286,10 @@ public final class TranslationScreen extends Screen {
         searchToggle = addRenderableWidget(spriteButton(MARGIN, TOP, SEARCH_ICON, VANILLA_ICON_PX,
             Component.translatable("gui.dungeontrain.translate.search"),
             b -> setSearchOpen(!searchOpen)));
+        groupToggle = addRenderableWidget(spriteButton(MARGIN + ROW_H + GAP, TOP, GROUP_ICON,
+            OWN_ICON_PX, Component.translatable("gui.dungeontrain.translate.group"),
+            b -> setGrouped(!grouped)));
+        applyGroupTooltip();
 
         // Working outside the game lives here too, in the gap the open search box wants. The
         // magnifier keeps the corner: it is the one control that stays put in both states, so it is
@@ -514,6 +542,28 @@ public final class TranslationScreen extends Screen {
         if (bodyCycle != null) {
             bodyCycle.visible = unfinished;
         }
+        // Grouping goes with them, and for the same reason: a finished submission is a record of
+        // what was sent, and folding it into sets would hide strings the translator is here to read.
+        if (groupToggle != null) {
+            groupToggle.visible = unfinished;
+        }
+    }
+
+    /** Collapse the sets, or lay them back out. */
+    private void setGrouped(boolean on) {
+        grouped = on;
+        applyGroupTooltip();
+        refresh();
+    }
+
+    private void applyGroupTooltip() {
+        if (groupToggle == null) {
+            return;
+        }
+        Component name = Component.translatable(grouped
+            ? "gui.dungeontrain.translate.group.close" : "gui.dungeontrain.translate.group");
+        groupToggle.setTooltip(Tooltip.create(name.copy().append("\n")
+            .append(Component.translatable("gui.dungeontrain.translate.group.tip"))));
     }
 
     /**
@@ -684,6 +734,8 @@ public final class TranslationScreen extends Screen {
         list.setApproved(TranslationOverrides.approvedFor(locale));
         list.setDismissed(this::isDismissed);
         list.setNoteText(TranslationReviewNotes::textFor);
+        groupIndex = TranslationGroups.index(TranslationCatalog.forLocale(locale));
+        list.setGroupBadge(grouped ? this::badgeFor : null);
         list.setUnits(visibleUnits());
     }
 
@@ -710,7 +762,21 @@ public final class TranslationScreen extends Screen {
             }
             out.add(unit);
         }
-        return out;
+        // Collapsing LAST, over what the filters and the search have already left: the row standing
+        // for a set has to be one that survived them, or clicking it would open a string the list
+        // was told not to show.
+        return grouped ? TranslationGroups.collapse(out, groupIndex, approved, this::isDismissed)
+            : out;
+    }
+
+    /** How big the set behind a row is, and how much of it is still waiting — null when ungrouped. */
+    private TranslationGroups.Badge badgeFor(TranslationUnit unit) {
+        List<TranslationUnit> members = TranslationGroups.membersOf(groupIndex, unit);
+        if (members.isEmpty()) {
+            return null;
+        }
+        return new TranslationGroups.Badge(members.size(), TranslationGroups.needingReview(
+            members, TranslationOverrides.approvedFor(locale), this::isDismissed));
     }
 
     private boolean matchesBody(TranslationUnit unit) {
@@ -778,7 +844,10 @@ public final class TranslationScreen extends Screen {
     }
 
     private void openEditor(TranslationUnit unit) {
-        minecraft.setScreen(new TranslationEditScreen(this, locale, unit));
+        // The whole set, from the catalog rather than from the visible rows: "next one that needs
+        // review" is a question about the text, not about what this screen is currently filtered to.
+        minecraft.setScreen(new TranslationEditScreen(this, locale, unit,
+            TranslationGroups.membersOf(groupIndex, unit)));
     }
 
     /** Drop every local override for this locale, after the player confirms. */
@@ -809,6 +878,12 @@ public final class TranslationScreen extends Screen {
         g.drawCenteredString(font, showStatus ? status : subtitle(), width / 2,
             8 + font.lineHeight + 2,
             showStatus ? (statusIsError ? STATUS_ERROR_COLOUR : STATUS_OK_COLOUR) : SUBTITLE_COLOUR);
+
+        // A sprite button has no pressed state, so the one control here that is a MODE rather than
+        // an action says so with a ring — drawn after the widgets, over the button's own frame.
+        if (grouped && groupToggle != null && groupToggle.visible) {
+            g.renderOutline(groupToggle.getX(), groupToggle.getY(), ROW_H, ROW_H, TOGGLE_ON_COLOUR);
+        }
 
         // The language being translated, beside the globe that changes it. A readout, not a widget:
         // there is nothing to click that the button next to it does not already do. Truncated to the

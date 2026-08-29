@@ -2,6 +2,8 @@ package games.brennan.dungeontrain.client.menu;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
+import games.brennan.dungeontrain.config.ClientDisplayConfig;
+import games.brennan.dungeontrain.config.EditorMenuSpace;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
@@ -44,6 +46,15 @@ public final class CommandMenuState {
     private CommandMenuState() {}
 
     private static boolean open;
+    /**
+     * Where this instance of the menu draws, captured at {@link #openInternal} time rather than
+     * read live from the config.
+     *
+     * <p>Latched on purpose: the two modes have different teardown (a Screen to pop vs. an event
+     * subscriber to stop drawing), so a menu that opened in one mode must close in that same mode.
+     * Reading the setting live would let a flip mid-open strand a half-torn-down panel.</p>
+     */
+    private static EditorMenuSpace space = ClientDisplayConfig.DEFAULT_COMMAND_MENU_SPACE;
     private static Vec3 anchorPos = Vec3.ZERO;
     private static Vec3 anchorOffset = Vec3.ZERO;
     private static Vec3 anchorRight = new Vec3(1, 0, 0);
@@ -72,6 +83,16 @@ public final class CommandMenuState {
     private static int typingOriginSubIdx = 0;
 
     public static boolean isOpen() { return open; }
+
+    /** Where the currently-open menu draws. See {@link #space}. */
+    public static EditorMenuSpace space() { return space; }
+
+    /**
+     * Open <em>and</em> drawing in the world — the guard every world-space subscriber uses.
+     * In screen-space mode {@link CommandMenuGuiScreen} owns rendering and input instead, so
+     * those subscribers must stay silent or the two paths would both draw and both hit-test.
+     */
+    public static boolean isOpenWorldspace() { return open && space.isWorldspace(); }
     public static Vec3 anchorPos() { return anchorPos; }
     public static Vec3 anchorOffset() { return anchorOffset; }
     public static Vec3 anchorRight() { return anchorRight; }
@@ -172,22 +193,26 @@ public final class CommandMenuState {
         LocalPlayer player = mc.player;
         if (player == null) return;
 
-        Vec3 eye = player.getEyePosition();
-        Vec3 look = player.getLookAngle();
-        anchorPos = eye.add(look.scale(ANCHOR_DISTANCE));
-        // World-space offset captured at open time; the per-tick refresh keeps
-        // the panel translating with the player while orientation stays fixed.
-        anchorOffset = anchorPos.subtract(eye);
+        space = ClientDisplayConfig.getCommandMenuSpace();
 
-        anchorNormal = look.scale(-1.0).normalize();
-        Vec3 worldUp = new Vec3(0, 1, 0);
-        Vec3 up = worldUp.subtract(anchorNormal.scale(worldUp.dot(anchorNormal)));
-        if (up.lengthSqr() < 1.0e-4) {
-            up = new Vec3(0, 0, 1);
+        if (space.isWorldspace()) {
+            Vec3 eye = player.getEyePosition();
+            Vec3 look = player.getLookAngle();
+            anchorPos = eye.add(look.scale(ANCHOR_DISTANCE));
+            // World-space offset captured at open time; the per-tick refresh keeps
+            // the panel translating with the player while orientation stays fixed.
+            anchorOffset = anchorPos.subtract(eye);
+
+            anchorNormal = look.scale(-1.0).normalize();
+            Vec3 worldUp = new Vec3(0, 1, 0);
+            Vec3 up = worldUp.subtract(anchorNormal.scale(worldUp.dot(anchorNormal)));
+            if (up.lengthSqr() < 1.0e-4) {
+                up = new Vec3(0, 0, 1);
+            }
+            anchorUp = up.normalize();
+            // Right-handed basis: X x Y = Z, so right = up x normal.
+            anchorRight = anchorUp.cross(anchorNormal).normalize();
         }
-        anchorUp = up.normalize();
-        // Right-handed basis: X × Y = Z ⇒ right = up × normal.
-        anchorRight = anchorUp.cross(anchorNormal).normalize();
 
         stack.clear();
         stack.addAll(initialStack);
@@ -200,20 +225,26 @@ public final class CommandMenuState {
         hoveredSubIdx = 0;
         open = true;
 
-        // Suppress any mining that was in progress when the menu opened,
-        // and clobber the crosshair target so the tick after open can't
-        // damage the block we popped up in front of. The per-frame renderer
-        // keeps clobbering hitResult after this; stopDestroyBlock cancels
-        // any lingering destroy state on the server.
+        // Suppress any mining that was in progress when the menu opened.
         if (mc.gameMode != null) mc.gameMode.stopDestroyBlock();
-        mc.hitResult = net.minecraft.world.phys.BlockHitResult.miss(
-            eye,
-            net.minecraft.core.Direction.UP,
-            player.blockPosition()
-        );
 
+        if (space.isWorldspace()) {
+            // Clobber the crosshair target so the tick after open can't damage the block we
+            // popped up in front of. The per-frame renderer keeps clobbering hitResult after
+            // this; stopDestroyBlock above cancels any lingering destroy state on the server.
+            mc.hitResult = net.minecraft.world.phys.BlockHitResult.miss(
+                player.getEyePosition(),
+                net.minecraft.core.Direction.UP,
+                player.blockPosition()
+            );
+        }
+
+        // Entries first: in screen-space the screen renders from them on its very first frame.
         rebuildEntries();
-        LOGGER.info("Command menu opened at {} (screens: {})", anchorPos, stack.size());
+        if (space.isScreenspace()) {
+            mc.setScreen(new CommandMenuGuiScreen());
+        }
+        LOGGER.info("Command menu opened in {} (screens: {})", space, stack.size());
     }
 
     public static void close() {
@@ -232,7 +263,7 @@ public final class CommandMenuState {
         anchorOffset = Vec3.ZERO;
         stack.clear();
         entries = List.of();
-        dismissTypingScreen();
+        dismissMenuScreen();
         LOGGER.debug("Command menu closed");
     }
 
@@ -344,10 +375,9 @@ public final class CommandMenuState {
     /** Typing-mode activator that also captures a command suffix (e.g. the
      *  {@code [source]} after the typed name in {@code editor new <name> <source>}).
      *
-     *  <p>Opens {@link MenuTypingScreen} so vanilla keybindings (movement,
-     *  hotbar, inventory) pause while the player types. The screen is
-     *  invisible — the worldspace menu's renderer keeps drawing the typing
-     *  field underneath.</p>
+     *  <p>Typing is handled inline by {@link CommandMenuGuiScreen}: it is already the
+     *  active screen, so vanilla keybindings are suppressed for free and the buffer is
+     *  drawn in the cell the player clicked. No second screen is opened.</p>
      */
     public static void beginTyping(String argName, String prefix, String suffix) {
         beginTyping(argName, prefix, suffix, "");
@@ -365,7 +395,12 @@ public final class CommandMenuState {
         typingCommandSuffix = suffix == null ? "" : suffix;
         hoveredIdx = -1;
         hoveredSubIdx = 0;
-        Minecraft.getInstance().setScreen(new MenuTypingScreen());
+        if (space.isWorldspace()) {
+            // No screen is up in world-space mode, so vanilla is still polling keybindings —
+            // typing "w" would walk. MenuTypingScreen is an invisible screen whose only job is
+            // to swallow that input; the world-space renderer keeps drawing the field beneath it.
+            Minecraft.getInstance().setScreen(new MenuTypingScreen());
+        }
     }
 
     public static void cancelTyping() {
@@ -376,7 +411,7 @@ public final class CommandMenuState {
         typingCommandSuffix = "";
         typingOriginRowIdx = -1;
         typingOriginSubIdx = 0;
-        dismissTypingScreen();
+        dismissMenuScreen();
     }
 
     public static void submitTyped() {
@@ -387,26 +422,26 @@ public final class CommandMenuState {
             cmd = cmd + " " + typingCommandSuffix;
         }
         CommandRunner.run(cmd);
-        dismissTypingScreen();
+        dismissMenuScreen();
         close();
     }
 
     /**
-     * Pop our {@link MenuTypingScreen} if it's the active screen. Guarded so
-     * we don't clobber a screen another mod (or the chat HUD) opened. The
-     * screen's own {@link MenuTypingScreen#removed()} also calls
-     * {@link #cancelTyping}; the {@code typingMode} guard there prevents
-     * recursion when the cancel originates from this side.
+     * Pop whichever screen this menu owns, if it is the active one — {@link CommandMenuGuiScreen}
+     * in screen-space mode, {@link MenuTypingScreen} in world-space mode while typing. Guarded so
+     * we don't clobber a screen another mod (or the chat HUD) opened. {@link #close()} has already
+     * set {@code open = false} by the time this runs, so the resulting
+     * {@code Screen#onClose} -> {@code close()} hop returns immediately rather than
+     * recursing.
      *
-     * <p>{@link Minecraft#setScreen} throws {@link IllegalStateException}
-     * when called during world disconnect ("Trying to return to in-game GUI
-     * during disconnection"). The screen is being torn down by MC anyway in
-     * that case, so swallow the exception — our cleanup completed via the
-     * typingMode reset before this call.</p>
+     * <p>{@link Minecraft#setScreen} throws {@link IllegalStateException} when called
+     * during world disconnect ("Trying to return to in-game GUI during disconnection").
+     * The screen is being torn down by MC anyway in that case, so swallow it — our state
+     * cleanup already completed.</p>
      */
-    private static void dismissTypingScreen() {
+    private static void dismissMenuScreen() {
         Minecraft mc = Minecraft.getInstance();
-        if (!(mc.screen instanceof MenuTypingScreen)) return;
+        if (!(mc.screen instanceof CommandMenuGuiScreen) && !(mc.screen instanceof MenuTypingScreen)) return;
         try {
             mc.setScreen(null);
         } catch (IllegalStateException disconnectRace) {

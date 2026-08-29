@@ -1,6 +1,8 @@
 package games.brennan.dungeontrain.config;
 
+import games.brennan.dungeontrain.client.BookAuthorChatSyncClient;
 import games.brennan.dungeontrain.client.FramerateThrottle;
+import games.brennan.dungeontrain.data.BackupMode;
 import net.neoforged.neoforge.common.ModConfigSpec;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -48,6 +50,71 @@ public final class ClientDisplayConfig {
     /** Step applied per click of the menu's {@code [-]} / {@code [+]} buttons. */
     public static final double STEP = 0.10;
 
+    // ----- Editor world-space menu render distance -----
+
+    /**
+     * Default cap on how far the editor's world-space menus draw, in blocks.
+     *
+     * <p>A hundred and twenty-eight is generous on purpose — half the range, and past the point
+     * where a panel is readable anyway — so the setting ships as a backstop against the far end of
+     * a big build area rather than as something you immediately have to loosen. Auto's own
+     * in-template rule is far tighter (see {@link #AUTO_TEMPLATE_DISTANCE_BLOCKS}); the smaller of
+     * the two applies.</p>
+     */
+    public static final int DEFAULT_MENU_RENDER_DISTANCE = 128;
+    /** Floor for the setting — below this the panel for the plot you are standing in starts to vanish. */
+    public static final int MIN_MENU_RENDER_DISTANCE = 5;
+    /** Ceiling — past a couple of hundred blocks the panels are unreadable anyway, so this is "no limit". */
+    public static final int MAX_MENU_RENDER_DISTANCE = 256;
+    /** Blocks per click of the Menu Distance row's {@code −} / {@code +} cells. */
+    public static final int MENU_RENDER_DISTANCE_STEP = 8;
+
+    /**
+     * Whether a portal room's editor plot is lit by the room's own Sky setting, by default.
+     *
+     * <p>On, because a room authored under light it will not ship with is a room authored wrong —
+     * the whole point of the Sky setting is what the room looks like, and until now the only way to
+     * see that was to walk a test session. The switch exists for the times an author wants the
+     * unlit box back to see where their own light sources actually reach.</p>
+     */
+    public static final boolean DEFAULT_EDITOR_PLOT_LIGHTING = true;
+
+    /**
+     * The tighter distance {@code AUTO} applies while the player stands in a template, in blocks.
+     *
+     * <p>Lives here beside its sibling so the config comment can name it and the two numbers are
+     * read together; the rule that uses it is
+     * {@code EditorMenusModeState.withinRange}.</p>
+     */
+    public static final int AUTO_TEMPLATE_DISTANCE_BLOCKS = 15;
+
+    // ----- Where each editor menu draws (see EditorMenuSpace) -----
+
+    /**
+     * Shipped default for the X command menu: a GUI panel with a free cursor.
+     *
+     * <p>X and V act on the whole plot, so there is no particular block for a panel to sit beside
+     * and the precision of a cursor is the thing worth having.</p>
+     */
+    public static final EditorMenuSpace DEFAULT_COMMAND_MENU_SPACE = EditorMenuSpace.SCREENSPACE;
+
+    /** Shipped default for the V template-blocks menu. See {@link #DEFAULT_COMMAND_MENU_SPACE}. */
+    public static final EditorMenuSpace DEFAULT_TEMPLATE_BLOCKS_MENU_SPACE = EditorMenuSpace.SCREENSPACE;
+
+    /**
+     * Shipped default for the C container-contents menu: anchored in the world.
+     *
+     * <p>C and Z edit one block cell and carry its position, so the world-space panel appears
+     * beside the very container or variant being edited. Which cell you are looking at is real
+     * information, and a screen-space panel — centred, identical wherever you stand — throws it
+     * away. Authors opening C on one chest of several in a carriage rely on it, so these two keep
+     * the head-aim by default and opt in to the cursor.</p>
+     */
+    public static final EditorMenuSpace DEFAULT_CONTAINER_CONTENTS_MENU_SPACE = EditorMenuSpace.WORLDSPACE;
+
+    /** Shipped default for the Z block-variant menu. See {@link #DEFAULT_CONTAINER_CONTENTS_MENU_SPACE}. */
+    public static final EditorMenuSpace DEFAULT_BLOCK_VARIANT_MENU_SPACE = EditorMenuSpace.WORLDSPACE;
+
     /** Silent. A real setting, not a "not configured" sentinel — see {@link #getTrainEngineVolume()}. */
     public static final double MIN_TRAIN_ENGINE_VOLUME = 0.0;
     /** The engine at the volume the distance curve computes, unscaled. */
@@ -83,8 +150,15 @@ public final class ClientDisplayConfig {
     public static final ModConfigSpec.BooleanValue DELETE_WORLD_ON_REBOARD;
     /** Tiles per row in the Train Builder's Open screen grid. See {@link #getBuilderTilesPerRow()}. */
     public static final ModConfigSpec.IntValue BUILDER_TILES_PER_ROW;
+    /** Cap on how far the editor's world-space menus draw. See {@link #getMenuRenderDistance()}. */
+    public static final ModConfigSpec.IntValue MENU_RENDER_DISTANCE;
+    /** Whether a portal room's Sky lights its editor plot. See {@link #isEditorPlotLighting()}. */
+    public static final ModConfigSpec.BooleanValue EDITOR_PLOT_LIGHTING;
     public static final ModConfigSpec.BooleanValue SKYBOX_PUNCH_ENABLED;
+    public static final ModConfigSpec.BooleanValue PORTAL_CROSSING_FADE;
     public static final ModConfigSpec.BooleanValue SCRIBBLE_COLOR_PICKER_VISIBLE;
+    public static final ModConfigSpec.BooleanValue CINEMATIC_HOTKEY_ENABLED;
+    public static final ModConfigSpec.BooleanValue CREATIVE_SHIFT_CLICK_TO_HOTBAR;
     /**
      * Relay pool ids of community (player-written) books this player has read, stored as decimal strings.
      * GLOBAL client-side read history — persists across worlds and servers (unlike the retired per-world
@@ -107,6 +181,30 @@ public final class ClientDisplayConfig {
      * dismissing once doesn't silently sign the player up to every future edit.
      */
     public static final ModConfigSpec.ConfigValue<String> CONFIG_DEVIATION_ACKNOWLEDGED;
+    /**
+     * Whether the player has dismissed the DPI-bypass warning for good (see
+     * {@code DpiBypassPromptHandler}). A plain opt-out rather than a signature: unlike a config
+     * deviation there is nothing here that can change into a NEW thing worth re-asking about — the
+     * tool is either running or it isn't, and someone who knows why it's running has heard enough.
+     */
+    public static final ModConfigSpec.BooleanValue DPI_BYPASS_WARNING_OPTED_OUT;
+    public static final ModConfigSpec.BooleanValue BOOK_AUTHOR_BURN_CHAT;
+
+    /**
+     * Where each of the editor's three author-facing menus draws — see {@link EditorMenuSpace}.
+     *
+     * <p>Three values rather than one global switch because the menus are used differently: the
+     * X command menu is read and clicked through, while V's Swap and C's steppers are often
+     * driven with a block in hand. Client-scope, so an author's choice follows them across
+     * worlds and servers — the server has no interest in where a panel draws.</p>
+     */
+    public static final ModConfigSpec.EnumValue<EditorMenuSpace> COMMAND_MENU_SPACE;
+    /** Where the V (template blocks) menu draws. See {@link #COMMAND_MENU_SPACE}. */
+    public static final ModConfigSpec.EnumValue<EditorMenuSpace> TEMPLATE_BLOCKS_MENU_SPACE;
+    /** Where the C (container contents) menu draws. See {@link #COMMAND_MENU_SPACE}. */
+    public static final ModConfigSpec.EnumValue<EditorMenuSpace> CONTAINER_CONTENTS_MENU_SPACE;
+    /** Where the Z (block variant) menu draws. See {@link #COMMAND_MENU_SPACE}. */
+    public static final ModConfigSpec.EnumValue<EditorMenuSpace> BLOCK_VARIANT_MENU_SPACE;
 
     /**
      * Remembered answer to the custom-Train-Editor-content prompt — see
@@ -127,6 +225,22 @@ public final class ClientDisplayConfig {
      * had ever actually chosen it.</p>
      */
     public static final ModConfigSpec.EnumValue<PoliticalFilter> POLITICAL_FILTER;
+
+    /**
+     * Where restore points are written. See {@link games.brennan.dungeontrain.data.BackupMode}.
+     *
+     * <p>A CLIENT setting on purpose: backups are this machine's local files, so the choice belongs
+     * to whoever is sitting at it. On a dedicated server the client spec is never loaded and every
+     * read falls back to the default — which is deliberate, because a server must not stop backing
+     * up just because a client-side toggle is absent.</p>
+     */
+    public static final ModConfigSpec.EnumValue<BackupMode> BACKUP_MODE;
+
+    /**
+     * How many backup archives to keep per mod version. See
+     * {@link games.brennan.dungeontrain.data.PlayerDataBackup#prune}.
+     */
+    public static final ModConfigSpec.IntValue BACKUPS_PER_VERSION;
 
     /** The player's answer to the Political Filter prompt. See {@link #POLITICAL_FILTER}. */
     public enum PoliticalFilter {
@@ -168,15 +282,28 @@ public final class ClientDisplayConfig {
         TRAIN_ENGINE_VOLUME = pair.getLeft().trainEngineVolume;
         DELETE_WORLD_ON_REBOARD = pair.getLeft().deleteWorldOnReboard;
         BUILDER_TILES_PER_ROW = pair.getLeft().builderTilesPerRow;
+        MENU_RENDER_DISTANCE = pair.getLeft().menuRenderDistance;
+        EDITOR_PLOT_LIGHTING = pair.getLeft().editorPlotLighting;
         SKYBOX_PUNCH_ENABLED = pair.getLeft().skyboxPunchEnabled;
+        PORTAL_CROSSING_FADE = pair.getLeft().portalCrossingFade;
         SCRIBBLE_COLOR_PICKER_VISIBLE = pair.getLeft().scribbleColorPickerVisible;
+        CINEMATIC_HOTKEY_ENABLED = pair.getLeft().cinematicHotkeyEnabled;
+        CREATIVE_SHIFT_CLICK_TO_HOTBAR = pair.getLeft().creativeShiftClickToHotbar;
         SHARED_BOOKS_READ = pair.getLeft().sharedBooksRead;
         DEATH_SCREEN_LAST_NPS = pair.getLeft().deathScreenLastNps;
         POLITICAL_FILTER = pair.getLeft().politicalFilter;
+        BACKUP_MODE = pair.getLeft().backupMode;
+        BACKUPS_PER_VERSION = pair.getLeft().backupsPerVersion;
         CONTENT_MODE = pair.getLeft().contentMode;
         CUSTOM_CONTENT_PREFERENCE = pair.getLeft().customContentPreference;
         CUSTOM_CONTENT_LAST_ANSWER = pair.getLeft().customContentLastAnswer;
         CONFIG_DEVIATION_ACKNOWLEDGED = pair.getLeft().configDeviationAcknowledged;
+        DPI_BYPASS_WARNING_OPTED_OUT = pair.getLeft().dpiBypassWarningOptedOut;
+        BOOK_AUTHOR_BURN_CHAT = pair.getLeft().bookAuthorBurnChat;
+        COMMAND_MENU_SPACE = pair.getLeft().commandMenuSpace;
+        TEMPLATE_BLOCKS_MENU_SPACE = pair.getLeft().templateBlocksMenuSpace;
+        CONTAINER_CONTENTS_MENU_SPACE = pair.getLeft().containerContentsMenuSpace;
+        BLOCK_VARIANT_MENU_SPACE = pair.getLeft().blockVariantMenuSpace;
     }
 
     private ClientDisplayConfig() {}
@@ -286,10 +413,31 @@ public final class ClientDisplayConfig {
                 .define("punchEnabled", true);
         b.pop();
 
+        b.push("portal");
+        ModConfigSpec.BooleanValue portalCrossingFade = b
+                .comment("Fade a portal carriage's lighting into a flat hold as you walk toward the middle of its corridor, instead of leaving each copy lit by its own doorway. A portal carriage and the twin you are swapped into are built from the same blocks, but only one of them has a real door onto the train, so light leaks into one and not the other and the brightness can jump as you cross - most visibly near the train door, where turning round is enough to swap you. The hold is the same constant in both copies, so there is nothing left for the crossing to change; it ramps in from each doorway and is at full strength between the baffles. Set false for the old hard cut.")
+                .define("crossingFade", true);
+        b.pop();
+
         b.push("scribble");
         ModConfigSpec.BooleanValue scribbleColorPickerVisible = b
                 .comment("Show the Scribble mod's 16-swatch colour picker on the book-writing screen. Off by default: Dungeon Train keeps the book screen close to vanilla, and the picker is the one part of Scribble that changes what a book LOOKS like rather than how it is edited. No in-game control by design — flip this by hand to get the swatches back. Has no effect unless the Scribble mod is installed.")
                 .define("colorPickerVisible", false);
+        b.pop();
+
+        b.push("cinematic");
+        ModConfigSpec.BooleanValue cinematicHotkeyEnabled = b
+                .comment("Let the cinematographer hotkey (C by default, rebindable under Controls > Dungeon Train) replay the intro cinematic while you are in spectator mode. Turn this off to reclaim the key for something else without unbinding it. Only the hotkey is affected - /dungeontrain cinematic still works either way.")
+                .define("hotkeyEnabled", true);
+        b.pop();
+
+        b.push("creative");
+        ModConfigSpec.BooleanValue creativeShiftClickToHotbar = b
+                .comment("Shift-clicking an item in the creative menu a second time drops that full stack",
+                         "straight into your hotbar (and a third, fourth... click fills the next slot along).",
+                         "The first shift-click is untouched — it still just maxes the stack on your cursor.",
+                         "Turn this off for pure vanilla creative-menu behaviour.")
+                .define("shiftClickToHotbar", true);
         b.pop();
 
         b.push("world");
@@ -307,6 +455,34 @@ public final class ClientDisplayConfig {
         ModConfigSpec.IntValue builderTilesPerRow = b
                 .comment("How many template tiles per row the Train Builder's Open screen lays out. The grid block stays the same width whichever you pick, so a higher number shows more of a library at once by making each tile smaller. Set in-game from the numbered button beside the Open screen's controls (left-click for more, right-click for fewer) — on a small window or a high GUI scale the count stops below 6, where a further column would no longer fit.")
                 .defineInRange("tilesPerRow", 3, 2, 6);
+        b.pop();
+
+        b.push("editorMenus");
+        ModConfigSpec.IntValue menuRenderDistance = b
+                .comment("How far away, in blocks, the editor's world-space menus keep drawing — plot panels, the row-start nav menus, the help board, the package and Stages panels. Applies whether or not you are standing in a template, and in both the On and Auto menu modes. Auto additionally tightens to " + AUTO_TEMPLATE_DISTANCE_BLOCKS + " blocks while you are inside a template, so the smaller of the two wins there. Set in-game from the Menu Distance row of the editor's X-menu.")
+                .defineInRange("menuRenderDistance", DEFAULT_MENU_RENDER_DISTANCE,
+                        MIN_MENU_RENDER_DISTANCE, MAX_MENU_RENDER_DISTANCE);
+        ModConfigSpec.BooleanValue editorPlotLighting = b
+                .comment("Whether a portal room standing on its editor plot is lit by its own Sky setting, the way it will be once it is a dimensional carriage in the world. Off leaves the plot lit by whatever the blocks in it emit, which is how the editor behaved before this setting existed. Affects the editor plot only — a live room and a /dt portal test session are lit by their Sky either way. Set in-game from the Plot Lighting row of the editor's X-menu Settings tab.")
+                .define("editorPlotLighting", DEFAULT_EDITOR_PLOT_LIGHTING);
+        ModConfigSpec.EnumValue<EditorMenuSpace> commandMenuSpace = b
+                .comment("Where the X command menu draws. SCREENSPACE is a GUI panel with a free mouse",
+                         "cursor; WORLDSPACE anchors a flat panel in the world that you aim your head at,",
+                         "leaving you free to keep walking. Set in-game from Options > Dungeon Train >",
+                         "Editor Settings, or the X menu -> Options.")
+                .defineEnum("commandMenuSpace", DEFAULT_COMMAND_MENU_SPACE);
+        ModConfigSpec.EnumValue<EditorMenuSpace> templateBlocksMenuSpace = b
+                .comment("Where the V (template blocks) menu draws. See commandMenuSpace. Defaults to SCREENSPACE.")
+                .defineEnum("templateBlocksMenuSpace", DEFAULT_TEMPLATE_BLOCKS_MENU_SPACE);
+        ModConfigSpec.EnumValue<EditorMenuSpace> containerContentsMenuSpace = b
+                .comment("Where the C (container contents) menu draws. See commandMenuSpace. Defaults to",
+                         "WORLDSPACE: C edits one block cell, so the in-world panel sits beside the very",
+                         "container being edited, which a centred GUI panel cannot show.")
+                .defineEnum("containerContentsMenuSpace", DEFAULT_CONTAINER_CONTENTS_MENU_SPACE);
+        ModConfigSpec.EnumValue<EditorMenuSpace> blockVariantMenuSpace = b
+                .comment("Where the Z (block variant) menu draws. See commandMenuSpace. Defaults to",
+                         "WORLDSPACE for the same reason as containerContentsMenuSpace.")
+                .defineEnum("blockVariantMenuSpace", DEFAULT_BLOCK_VARIANT_MENU_SPACE);
         b.pop();
 
         b.push("sharedBooks");
@@ -372,6 +548,26 @@ public final class ClientDisplayConfig {
                 .defineEnum("politicalFilter", PoliticalFilter.UNSET);
         b.pop();
 
+        b.push("backups");
+        ModConfigSpec.EnumValue<BackupMode> backupMode = b
+                .comment("Where Dungeon Train keeps restore points of your builds, advancements and stats.",
+                         "EXTERNAL writes them outside this Minecraft instance as well as inside it, so they",
+                         "survive the instance being deleted, reset or reinstalled — not just a modpack update.",
+                         "INSTANCE keeps them inside the instance only: LIKELY safe from a pack update (which",
+                         "replaces the config folder) but not guaranteed — a pack can ship files into the data",
+                         "root too — and certainly lost with the instance itself. OFF disables backups entirely.",
+                         "Set from the Backups row in Options > Dungeon Train.")
+                .defineEnum("backupMode", BackupMode.DEFAULT);
+        ModConfigSpec.IntValue backupsPerVersion = b
+                .comment("How many backup archives to keep for each Dungeon Train version.",
+                         "Older archives of the same version are removed once there are more than this.",
+                         "Lowering it takes effect the next time a backup is written, which will remove",
+                         "archives already on disk. A total size ceiling also applies as a backstop.",
+                         "Set from the Backups per version row in Options > Dungeon Train.")
+                .defineInRange("backupsPerVersion",
+                    games.brennan.dungeontrain.data.PlayerDataBackup.DEFAULT_PER_VERSION, 1, 20);
+        b.pop();
+
         b.push("configIntegrity");
         ModConfigSpec.ConfigValue<String> configDeviationAcknowledged = b
                 .comment("Internal: the Dungeon Train config change you last chose to keep at the launch prompt,",
@@ -381,18 +577,43 @@ public final class ClientDisplayConfig {
                 .define("deviationAcknowledged", "");
         b.pop();
 
+        b.push("connectionWarnings");
+        ModConfigSpec.BooleanValue dpiBypassWarningOptedOut = b
+                .comment("Internal: set when you dismiss the \"connection blocker detected\" notice for good.",
+                         "That notice appears on the title screen when a DPI-bypass tool (zapret, GoodbyeDPI)",
+                         "is running, because those tools can stop Dungeon Train reaching brennan.games. The",
+                         "check is local — a look at running process names, nothing sent anywhere. Set this",
+                         "back to false to be told again.")
+                .define("dpiBypassWarningOptedOut", false);
+        b.pop();
+
+        b.push("books");
+        ModConfigSpec.BooleanValue bookAuthorBurnChat = b
+                .comment("Print a chat line crediting the author each time a Dungeon Train book burns",
+                         "(\"The book by X burns\") — the books you read, throw away or drop on death all",
+                         "catch fire, and this is the only place their writer is named after the fact.",
+                         "Toggle in-game via Options > Dungeon Train, or the X menu -> Options. Off by default.")
+                .define("authorBurnChat", false);
+        b.pop();
+
         return new Holder(allScale, worldspaceChannel, hudChannel, developerPopupShownBefore, developerPopupOptedOut, freePlayConfirmOptedOut,
                 devConsentGranted, devConsentGrantSession, devConsentLastMsgToDev, openedAdvancementsBefore,
                 rideSnapshotsEnabled, rideSnapshotIntervalSeconds, rideSnapshotMaxStored, rideSnapshotChatLog,
                 rideSnapshotMinFps, rideSnapshotMinTps,
                 rideSnapshotDiskOffload, rideSnapshotFlushMinFps, rideSnapshotFlushMinTps, rideSnapshotMaxOnDisk,
                 rideSnapshotMaxResolution,
-                framerateThrottleEnabled, framerateThrottleFps, trainEngineVolume, skyboxPunchEnabled, scribbleColorPickerVisible, deleteWorldOnReboard,
+                framerateThrottleEnabled, framerateThrottleFps, trainEngineVolume, skyboxPunchEnabled, portalCrossingFade, scribbleColorPickerVisible, cinematicHotkeyEnabled, creativeShiftClickToHotbar, deleteWorldOnReboard,
                 builderTilesPerRow,
+                menuRenderDistance,
+                editorPlotLighting,
                 sharedBooksRead,
                 deathScreenLastNps, politicalFilter, contentMode, customContentPreference,
                 customContentLastAnswer,
-                configDeviationAcknowledged);
+                configDeviationAcknowledged, dpiBypassWarningOptedOut, bookAuthorBurnChat,
+                commandMenuSpace, templateBlocksMenuSpace, containerContentsMenuSpace,
+                blockVariantMenuSpace,
+                backupMode,
+                backupsPerVersion);
     }
 
     /**
@@ -526,6 +747,21 @@ public final class ClientDisplayConfig {
         CONFIG_DEVIATION_ACKNOWLEDGED.save();
     }
 
+    // ----- DPI-bypass warning (see client/DpiBypassPromptHandler) -----
+
+    /** Whether the player has told the DPI-bypass warning to stop appearing. */
+    public static boolean isDpiBypassWarningOptedOut() {
+        return isLoaded() && DPI_BYPASS_WARNING_OPTED_OUT.get();
+    }
+
+    /** Record "don't show again" (or clear it, to be warned once more next launch). */
+    public static void setDpiBypassWarningOptedOut(boolean value) {
+        if (!isLoaded()) return;
+        if (DPI_BYPASS_WARNING_OPTED_OUT.get() == value) return; // skip a needless TOML write
+        DPI_BYPASS_WARNING_OPTED_OUT.set(value);
+        DPI_BYPASS_WARNING_OPTED_OUT.save();
+    }
+
     // ----- Political content filter (see client/PoliticalFilterPrefs) -----
 
     /**
@@ -542,6 +778,47 @@ public final class ClientDisplayConfig {
         if (!isLoaded() || value == null) return;
         POLITICAL_FILTER.set(value);
         POLITICAL_FILTER.save();
+    }
+
+    // ----- Backups (see games.brennan.dungeontrain.data.PlayerDataBackupHook) -----
+
+    /**
+     * Where restore points are written.
+     *
+     * <p>The pre-load answer is the DEFAULT rather than OFF, and that is load-bearing: this is read
+     * on the server thread, including on dedicated servers where the client spec never loads, and
+     * resolving an unreadable setting to "no backups" would silently disable the safety net for
+     * exactly the installs least able to notice.</p>
+     */
+    public static BackupMode getBackupMode() {
+        return isLoaded() ? BACKUP_MODE.get() : BackupMode.DEFAULT;
+    }
+
+    /**
+     * Archives kept per mod version.
+     *
+     * <p>Falls back to the default (not to zero, and not to "unlimited") wherever the client spec
+     * is absent — a dedicated server reading this must get a sane retention, not one that either
+     * deletes everything or never prunes.</p>
+     */
+    public static int getBackupsPerVersion() {
+        return isLoaded()
+            ? BACKUPS_PER_VERSION.get()
+            : games.brennan.dungeontrain.data.PlayerDataBackup.DEFAULT_PER_VERSION;
+    }
+
+    public static void setBackupsPerVersion(int value) {
+        if (!isLoaded()) return;
+        if (BACKUPS_PER_VERSION.get() == value) return; // skip a needless TOML write
+        BACKUPS_PER_VERSION.set(value);
+        BACKUPS_PER_VERSION.save();
+    }
+
+    public static void setBackupMode(BackupMode value) {
+        if (!isLoaded() || value == null) return;
+        if (BACKUP_MODE.get() == value) return; // skip a needless TOML write
+        BACKUP_MODE.set(value);
+        BACKUP_MODE.save();
     }
 
     // ----- Developer-message consent state (see DevMessageConsentClient) -----
@@ -663,6 +940,25 @@ public final class ClientDisplayConfig {
         if (!isLoaded()) return;
         RIDE_SNAPSHOT_CHAT_LOG.set(value);
         RIDE_SNAPSHOT_CHAT_LOG.save();
+    }
+
+    /**
+     * Print "The book by X burns" in chat each time a Dungeon Train book catches fire? Off by
+     * default. Toggled from Options &gt; Dungeon Train and the X menu &rarr; Options.
+     *
+     * <p>The burn itself is decided server-side, so the setter also pushes the new value over
+     * {@link games.brennan.dungeontrain.net.BookAuthorChatSyncPacket} — see
+     * {@link games.brennan.dungeontrain.client.BookAuthorChatSyncClient}.</p>
+     */
+    public static boolean isBookAuthorBurnChatEnabled() {
+        return isLoaded() && BOOK_AUTHOR_BURN_CHAT.get();
+    }
+
+    public static void setBookAuthorBurnChat(boolean value) {
+        if (!isLoaded()) return;
+        BOOK_AUTHOR_BURN_CHAT.set(value);
+        BOOK_AUTHOR_BURN_CHAT.save();
+        BookAuthorChatSyncClient.syncNow();
     }
 
     /** Minimum client FPS required to take a ride photo; {@code 0} disables the FPS gate. */
@@ -803,6 +1099,19 @@ public final class ClientDisplayConfig {
     }
 
     /**
+     * Should a portal corridor's lighting fade into a flat hold across its crossing? Defaults to
+     * {@code true}, and to {@code true} pre-load as well, on the same rule as the flag above: the
+     * effect is what stops the swap from popping, so the safe fallback while the TOML is still
+     * loading is the effect being on.
+     *
+     * <p>Read once per lightmap rebuild by {@code LightTexturePortalCrossingMixin} — about 20 times
+     * a second, which is why it is a plain flag read and not a listener.</p>
+     */
+    public static boolean isPortalCrossingFadeEnabled() {
+        return !isLoaded() || PORTAL_CROSSING_FADE.get();
+    }
+
+    /**
      * Show Scribble's colour-swatch grid on the book-writing screen? Defaults to {@code false}.
      *
      * <p>Note this reads {@code isLoaded() &&}, not the {@code !isLoaded() ||} form used by the
@@ -825,6 +1134,32 @@ public final class ClientDisplayConfig {
         if (SCRIBBLE_COLOR_PICKER_VISIBLE.get() == value) return;
         SCRIBBLE_COLOR_PICKER_VISIBLE.set(value);
         SCRIBBLE_COLOR_PICKER_VISIBLE.save();
+    }
+
+    /**
+     * Does the cinematographer hotkey replay the cinematic? Defaults to {@code true}, and to
+     * {@code true} pre-load as well — the key doing nothing until the config lands would read as
+     * a dead binding rather than as a setting.
+     */
+    public static boolean isCinematicHotkeyEnabled() {
+        return !isLoaded() || CINEMATIC_HOTKEY_ENABLED.get();
+    }
+
+    /** Persist the cinematic-hotkey toggle. Idempotent: skips the TOML write when unchanged. */
+    public static void setCinematicHotkeyEnabled(boolean value) {
+        if (!isLoaded()) return;
+        if (CINEMATIC_HOTKEY_ENABLED.get() == value) return;
+        CINEMATIC_HOTKEY_ENABLED.set(value);
+        CINEMATIC_HOTKEY_ENABLED.save();
+    }
+
+    /**
+     * Does a repeat shift-click in the creative menu send the stack to the hotbar? Defaults to
+     * {@code true}, and to {@code true} pre-load as well — the creative menu can be open before
+     * the config lands, and the feature silently missing reads worse than it being on.
+     */
+    public static boolean isCreativeShiftClickToHotbar() {
+        return !isLoaded() || CREATIVE_SHIFT_CLICK_TO_HOTBAR.get();
     }
 
     /**
@@ -874,6 +1209,80 @@ public final class ClientDisplayConfig {
         if (BUILDER_TILES_PER_ROW.get() == clamped) return;
         BUILDER_TILES_PER_ROW.set(clamped);
         BUILDER_TILES_PER_ROW.save();
+    }
+
+    // ----- Editor world-space menu render distance -----
+
+    /**
+     * How far the editor's world-space menus keep drawing, in blocks. Falls back to
+     * {@link #DEFAULT_MENU_RENDER_DISTANCE} before the config loads and when it never does, so a
+     * client with no config file behaves like one that has just accepted the default.
+     *
+     * <p>This is the cap that applies everywhere — in a template or between plots, in Auto or On.
+     * Auto layers its own tighter in-template rule on top; whichever is smaller wins.</p>
+     */
+    public static int getMenuRenderDistance() {
+        return isLoaded() ? MENU_RENDER_DISTANCE.get() : DEFAULT_MENU_RENDER_DISTANCE;
+    }
+
+    /**
+     * Persist the menu render distance. Idempotent — skips the TOML write when unchanged, because
+     * this is driven by a button the player clicks repeatedly while watching panels appear and
+     * disappear around them.
+     */
+    public static void setMenuRenderDistance(int value) {
+        if (!isLoaded()) return;
+        int clamped = Math.max(MIN_MENU_RENDER_DISTANCE, Math.min(MAX_MENU_RENDER_DISTANCE, value));
+        if (MENU_RENDER_DISTANCE.get() == clamped) return;
+        MENU_RENDER_DISTANCE.set(clamped);
+        MENU_RENDER_DISTANCE.save();
+    }
+
+    /**
+     * The next value up from {@code current}, snapped to a multiple of
+     * {@link #MENU_RENDER_DISTANCE_STEP}.
+     *
+     * <p>Snapping rather than plain addition so the numbers the player lands on read cleanly:
+     * from the {@link #MIN_MENU_RENDER_DISTANCE} floor of 5 the first step goes to 8, then 16, 24,
+     * and so on, instead of the 13 / 21 / 29 an offset-by-five ladder would give.</p>
+     */
+    public static int stepMenuRenderDistanceUp(int current) {
+        int next = (current / MENU_RENDER_DISTANCE_STEP + 1) * MENU_RENDER_DISTANCE_STEP;
+        return Math.min(MAX_MENU_RENDER_DISTANCE, next);
+    }
+
+    /** The next value down from {@code current}, snapped the same way, floored at the minimum. */
+    public static int stepMenuRenderDistanceDown(int current) {
+        int down = current % MENU_RENDER_DISTANCE_STEP == 0
+            ? current - MENU_RENDER_DISTANCE_STEP
+            : (current / MENU_RENDER_DISTANCE_STEP) * MENU_RENDER_DISTANCE_STEP;
+        return Math.max(MIN_MENU_RENDER_DISTANCE, down);
+    }
+
+    // ----- Editor plot lighting -----
+
+    /**
+     * Whether a portal room on its editor plot is lit by its own Sky setting.
+     *
+     * <p>Defaults to {@link #DEFAULT_EDITOR_PLOT_LIGHTING} before the config loads and when it never
+     * does, so a client with no config file behaves like one that has just accepted the default.</p>
+     *
+     * <p><b>The editor plot only.</b> A live dimensional carriage and a {@code /dt portal test}
+     * session are lit by the room's Sky whatever this says — the room's lighting is a property of
+     * the room, and this is a preference about looking at it while you build. The server sends the
+     * plot's box either way and the flag on {@code PortalRoomSkyPacket} is what separates the
+     * two.</p>
+     */
+    public static boolean isEditorPlotLighting() {
+        return isLoaded() ? EDITOR_PLOT_LIGHTING.get() : DEFAULT_EDITOR_PLOT_LIGHTING;
+    }
+
+    /** Persist the editor plot lighting preference. Idempotent — skips the TOML write when unchanged. */
+    public static void setEditorPlotLighting(boolean on) {
+        if (!isLoaded()) return;
+        if (EDITOR_PLOT_LIGHTING.get() == on) return;
+        EDITOR_PLOT_LIGHTING.set(on);
+        EDITOR_PLOT_LIGHTING.save();
     }
 
     // ----- Content mode (Adult / Kid) — see ContentMode -----
@@ -987,6 +1396,59 @@ public final class ClientDisplayConfig {
         return true;
     }
 
+    // ----- Where each editor menu draws (see EditorMenuSpace) -----
+
+    /**
+     * Where the X command menu draws. Falls back to this menu's own shipped default pre-load —
+     * these are read from the render thread, which can run before the client config is ready.
+     */
+    public static EditorMenuSpace getCommandMenuSpace() {
+        return isLoaded() ? COMMAND_MENU_SPACE.get() : DEFAULT_COMMAND_MENU_SPACE;
+    }
+
+    /** Where the V (template blocks) menu draws. See {@link #getCommandMenuSpace()}. */
+    public static EditorMenuSpace getTemplateBlocksMenuSpace() {
+        return isLoaded() ? TEMPLATE_BLOCKS_MENU_SPACE.get() : DEFAULT_TEMPLATE_BLOCKS_MENU_SPACE;
+    }
+
+    /** Where the C (container contents) menu draws. See {@link #getCommandMenuSpace()}. */
+    public static EditorMenuSpace getContainerContentsMenuSpace() {
+        return isLoaded() ? CONTAINER_CONTENTS_MENU_SPACE.get() : DEFAULT_CONTAINER_CONTENTS_MENU_SPACE;
+    }
+
+    /** Where the Z (block variant) menu draws. See {@link #getCommandMenuSpace()}. */
+    public static EditorMenuSpace getBlockVariantMenuSpace() {
+        return isLoaded() ? BLOCK_VARIANT_MENU_SPACE.get() : DEFAULT_BLOCK_VARIANT_MENU_SPACE;
+    }
+
+    /** Persist the Z menu's space. Idempotent: skips the TOML write when unchanged. */
+    public static void setBlockVariantMenuSpace(EditorMenuSpace value) {
+        setMenuSpace(BLOCK_VARIANT_MENU_SPACE, value);
+    }
+
+    /** Persist the X menu's space. Idempotent: skips the TOML write when unchanged. */
+    public static void setCommandMenuSpace(EditorMenuSpace value) {
+        setMenuSpace(COMMAND_MENU_SPACE, value);
+    }
+
+    /** Persist the V menu's space. Idempotent: skips the TOML write when unchanged. */
+    public static void setTemplateBlocksMenuSpace(EditorMenuSpace value) {
+        setMenuSpace(TEMPLATE_BLOCKS_MENU_SPACE, value);
+    }
+
+    /** Persist the C menu's space. Idempotent: skips the TOML write when unchanged. */
+    public static void setContainerContentsMenuSpace(EditorMenuSpace value) {
+        setMenuSpace(CONTAINER_CONTENTS_MENU_SPACE, value);
+    }
+
+    /** Shared body of the three setters above — the three differ only in which value they write. */
+    private static void setMenuSpace(ModConfigSpec.EnumValue<EditorMenuSpace> slot, EditorMenuSpace value) {
+        if (!isLoaded() || value == null) return;
+        if (slot.get() == value) return;
+        slot.set(value);
+        slot.save();
+    }
+
     private record Holder(
             ModConfigSpec.DoubleValue allScale,
             ModConfigSpec.DoubleValue worldspaceChannel,
@@ -1013,15 +1475,28 @@ public final class ClientDisplayConfig {
             ModConfigSpec.IntValue framerateThrottleFps,
             ModConfigSpec.DoubleValue trainEngineVolume,
             ModConfigSpec.BooleanValue skyboxPunchEnabled,
+            ModConfigSpec.BooleanValue portalCrossingFade,
             ModConfigSpec.BooleanValue scribbleColorPickerVisible,
+            ModConfigSpec.BooleanValue cinematicHotkeyEnabled,
+            ModConfigSpec.BooleanValue creativeShiftClickToHotbar,
             ModConfigSpec.BooleanValue deleteWorldOnReboard,
             ModConfigSpec.IntValue builderTilesPerRow,
+            ModConfigSpec.IntValue menuRenderDistance,
+            ModConfigSpec.BooleanValue editorPlotLighting,
             ModConfigSpec.ConfigValue<List<? extends String>> sharedBooksRead,
             ModConfigSpec.IntValue deathScreenLastNps,
             ModConfigSpec.EnumValue<PoliticalFilter> politicalFilter,
             ModConfigSpec.EnumValue<ContentMode> contentMode,
             ModConfigSpec.EnumValue<CustomContentPreference> customContentPreference,
             ModConfigSpec.EnumValue<CustomContentPreference> customContentLastAnswer,
-            ModConfigSpec.ConfigValue<String> configDeviationAcknowledged
+            ModConfigSpec.ConfigValue<String> configDeviationAcknowledged,
+            ModConfigSpec.BooleanValue dpiBypassWarningOptedOut,
+            ModConfigSpec.BooleanValue bookAuthorBurnChat,
+            ModConfigSpec.EnumValue<EditorMenuSpace> commandMenuSpace,
+            ModConfigSpec.EnumValue<EditorMenuSpace> templateBlocksMenuSpace,
+            ModConfigSpec.EnumValue<EditorMenuSpace> containerContentsMenuSpace,
+            ModConfigSpec.EnumValue<EditorMenuSpace> blockVariantMenuSpace,
+            ModConfigSpec.EnumValue<BackupMode> backupMode,
+            ModConfigSpec.IntValue backupsPerVersion
     ) {}
 }

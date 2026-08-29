@@ -103,6 +103,25 @@ public final class FundingGoals {
     }
 
     /**
+     * A goal's display name <b>on the ticked-off line</b>, where it is no longer a tile with a
+     * figure beside it. Running costs are a recurring bill, so ticked off with no period named the
+     * line reads as though the bill is settled for good; every other rung is a one-off and reads
+     * correctly as its own name.
+     */
+    public static Component doneLabel(Goal goal) {
+        String key = doneLabelKey(goal.id());
+        return Language.getInstance().has(key) ? Component.translatable(key) : label(goal);
+    }
+
+    /**
+     * The key a goal would use on the ticked-off line. Optional by design: a goal with no such
+     * string — every one-off rung — falls back to its ordinary label.
+     */
+    public static String doneLabelKey(String id) {
+        return labelKey(id) + "_done";
+    }
+
+    /**
      * The tooltip key for a goal's tile — its own if this jar has one, else the generic
      * "what is this percentage?" text, which is true of any rung.
      */

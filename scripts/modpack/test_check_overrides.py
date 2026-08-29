@@ -130,3 +130,21 @@ def _main():
 
 if __name__ == "__main__":
     sys.exit(_main())
+
+
+def test_pack_may_never_write_into_the_player_data_root():
+    """<instance>/dungeontrain/ holds the player's builds, advancements and backups.
+
+    The data moved there precisely because config/ is replaced on every pack update; shipping an
+    override into it would repeat the same data loss one folder over.
+    """
+    result = run(*BASELINE, "dungeontrain/backups/x.zip")
+    assert result.returncode == 1
+    assert "player-data root" in result.stderr
+
+
+def test_forbidden_dir_beats_the_allowlist():
+    """".gitkeep" is allowlisted everywhere, but not inside the player-data root."""
+    result = run(*BASELINE, "dungeontrain/.gitkeep")
+    assert result.returncode == 1
+    assert "player-data root" in result.stderr

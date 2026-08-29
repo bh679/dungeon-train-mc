@@ -53,19 +53,42 @@ public final class DeathDetailReporter {
         }
     }
 
+    /**
+     * The five per-death figures the public leaderboards need that {@link DeathStatsPacket} does not
+     * carry. Kept off the packet on purpose: the death screen doesn't display any of them, and the
+     * packet is synced to every dying client, so widening it would spend bandwidth on values nothing
+     * renders. They are read straight off the run state at the death site instead.
+     *
+     * <p>{@code echoesKilled} and {@code maxCarriagesNoChest} are this run's; {@code lifeEchoesKilled}
+     * is the cross-world total (accrued live at each kill, like echoes encountered);
+     * {@code pacifistCarriages} is this run's carriages passed while dealing no damage at all.</p>
+     *
+     * <p>{@code lifeDisplacement} is metres of DISPLACEMENT summed over every life — how far from
+     * where each life began the player got, not how far they walked. This run's own displacement is
+     * already on {@code /telemetry/run-summary} as {@code distanceTravelled}, so only the lifetime
+     * sum needs carrying here. Neither is the {@code lifeDistance} odometer sent above, which is a
+     * path length a player inflates by pacing a carriage.</p>
+     */
+    public record Feats(int echoesKilled, long lifeEchoesKilled, int maxCarriagesNoChest, int pacifistCarriages,
+                        long lifeDisplacement) {
+        static final Feats NONE = new Feats(0, 0L, 0, 0, 0L);
+    }
+
     private DeathDetailReporter() {}
 
     /**
      * Build and fire the death-detail record for {@code player} from the death-screen {@code
      * packet}. No-op when disabled or on any error — this must never disrupt death handling.
      */
-    public static void report(ServerPlayer player, DeathStatsPacket packet) {
+    public static void report(ServerPlayer player, DeathStatsPacket packet, Feats feats,
+                              boolean freePlay) {
         try {
             if (!DungeonTrainConfig.isWorldInfoToRelay()) {
                 return;
             }
             String uuid = player.getUUID().toString().replace("-", "");
-            JsonObject payload = buildPayload(uuid, packet.narrative(), DeathStats.from(packet));
+            JsonObject payload = buildPayload(uuid, packet.narrative(), DeathStats.from(packet), feats,
+                    freePlay);
             post(uuid, payload.toString());
         } catch (Throwable t) {
             LOGGER.warn("[DungeonTrain] death-detail relay report failed: {}", t.toString());
@@ -76,7 +99,8 @@ public final class DeathDetailReporter {
      * Pure payload assembly over plain data — package-private so the shape can be unit-tested
      * without bootstrapping the game.
      */
-    static JsonObject buildPayload(String uuid, DeathNarrative narrative, DeathStats s) {
+    static JsonObject buildPayload(String uuid, DeathNarrative narrative, DeathStats s, Feats feats,
+                                   boolean freePlay) {
         JsonObject body = new JsonObject();
         body.addProperty("uuid", uuid);
 
@@ -118,6 +142,27 @@ public final class DeathDetailReporter {
         body.addProperty("lifeAdvancements", s.lifeAdvancements());
         body.addProperty("lifeDamageDealt", s.lifeDamageDealt());
         body.addProperty("lifeDamageTaken", s.lifeDamageTaken());
+
+        // Leaderboard-only figures. New in this payload, so every board built on them starts empty
+        // and fills from here forward — there is no history to backfill for any of the five.
+        body.addProperty("echoesKilled", feats.echoesKilled());
+        body.addProperty("lifeEchoesKilled", feats.lifeEchoesKilled());
+        body.addProperty("maxCarriagesNoChest", feats.maxCarriagesNoChest());
+        body.addProperty("pacifistCarriages", feats.pacifistCarriages());
+        body.addProperty("lifeDistanceTravelled", feats.lifeDisplacement());
+
+        // Was this life Free Play (creative/spectator, a cheat mod, a non-allowlisted command)? The
+        // relay refuses to score a flagged payload onto the public leaderboards — a creative flight
+        // to the world border is not a distance record. The record itself is still stored in full:
+        // the data explorer wants every death, the boards only want the legitimate ones.
+        //
+        // ALWAYS written, true or false, and the `false` is the load-bearing half. The relay no
+        // longer reads an absent key as "legitimate": silence is what a client too old to know the
+        // question sends, and it is indistinguishable from what a cheated run looked like before
+        // the flag existed. So a run only reaches a board if this payload actively vouches for it.
+        // That is also why this may not be optimised back into a write-only-when-true: doing so
+        // would silently unrank every player on this build.
+        body.addProperty("freePlay", freePlay);
         return body;
     }
 

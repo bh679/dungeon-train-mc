@@ -12,6 +12,7 @@ import games.brennan.dungeontrain.discord.DeathDetailReporter;
 import games.brennan.dungeontrain.discord.DeathEquipmentReporter;
 import games.brennan.dungeontrain.discord.DeathInventoryReporter;
 import games.brennan.dungeontrain.discord.DeathReporter;
+import games.brennan.dungeontrain.discord.RunPosition;
 import games.brennan.dungeontrain.discord.RunSummaryReporter;
 import games.brennan.dungeontrain.discord.DeathManifestFormat;
 import games.brennan.dungeontrain.discord.DeathReportFormat;
@@ -176,12 +177,21 @@ public final class RunStatsEvents {
         // screen still renders below — it reads the per-run state plus the current
         // (un-incremented) totals — so a cheating player still sees their summary.
         boolean cheated = RunIntegrity.isCheated(player);
+        // Where this life started and where it ended, resolved ONCE — respawn re-stamps the origin
+        // it is measured from, so there is exactly one moment this can be read. Shared by the
+        // lifetime displacement counter below and by every reporter that describes this death.
+        RunPosition pos = RunPosition.of(player);
         long lifeDeaths;
+        long lifeDisplacement;
         if (cheated) {
             lifeDeaths = GlobalPlayerStats.totalDeaths(id);
+            lifeDisplacement = (long) GlobalPlayerStats.totalDisplacement(id);
         } else {
             GlobalPlayerStats.addCarriages(id, run.cartsSinceDeath());
             GlobalPlayerStats.addDistance(id, run.distanceBlocks());
+            // Ground actually covered this life, not the odometer: how far from the spawn point the
+            // player got. Feeds the public distance leaderboard.
+            lifeDisplacement = (long) GlobalPlayerStats.addDisplacement(id, pos.forwardMetres());
             GlobalPlayerStats.addBooks(id, run.booksReadCount());
             GlobalPlayerStats.addFriends(id, run.befriendedCount());
             // All-lives icon-row lifetime totals. (playersEncountered + echos already accrue live in
@@ -230,16 +240,20 @@ public final class RunStatsEvents {
                     packet.armorHead(), packet.armorChest(), packet.armorLegs(), packet.armorFeet());
 
             // This life's run summary (duration + carriage + distance) -> the per-life playtime view.
-            RunSummaryReporter.report(player, packet);
+            // `cheated` rides along so the relay can keep a Free Play run off the public leaderboards
+            // while still storing the record — see RunSummaryReporter.buildPayload.
+            RunSummaryReporter.report(player, packet, pos, cheated);
 
             // A first-class per-death record so the explorer counts EVERY death, not only the ones that
             // post a Discord death report below. Fires independent of isDeathReportToDiscord() (Free
             // Play / short-abandon / report-disabled deaths still count).
-            DeathReporter.report(player, packet);
+            DeathReporter.report(player, packet, pos);
 
             // The full paginated narrative + death-screen stats, and the full hotbar/main-inventory +
             // offhand, so the per-death detail view can show everything the death screen did.
-            DeathDetailReporter.report(player, packet);
+            DeathDetailReporter.report(player, packet, new DeathDetailReporter.Feats(
+                    run.echoesKilled(), GlobalPlayerStats.totalEchoesKilled(id),
+                    run.maxCarriagesNoChest(), run.pacifistCarriages(), lifeDisplacement), cheated);
             DeathInventoryReporter.report(player);
         });
 

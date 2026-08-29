@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.mixin.client;
 
 import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen;
+import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.CreativeModeTab;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
@@ -18,6 +19,10 @@ public interface CreativeModeInventoryScreenAccessor {
 
     @Invoker("selectTab")
     void dungeontrain$invokeSelectTab(CreativeModeTab tab);
+
+    /** Is this slot one of the creative item-list slots (as opposed to the player inventory)? */
+    @Invoker("isCreativeSlot")
+    boolean dungeontrain$isCreativeSlot(Slot slot);
 
     @Accessor("selectedTab")
     static CreativeModeTab dungeontrain$getSelectedTab() {

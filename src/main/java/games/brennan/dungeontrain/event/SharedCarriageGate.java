@@ -40,6 +40,28 @@ public final class SharedCarriageGate {
     }
 
     /**
+     * Whether this world may LEASE relay carriages onto its trains — the placing half of the feature.
+     *
+     * <p>Narrower than {@link #canDiscover()} on purpose, and it held the lease sites shut for a while:
+     * uploading costs a world's players nothing, while placing someone else's build puts geometry
+     * nobody here has seen into a run. It ships ON now that the pool being served is the community one
+     * — the relay leases only rows it recorded as {@code source='play'}, carriages captured off a
+     * running train and screened to {@code approved}. Train Builder builds are a separate system the relay
+     * withholds from every lease until an operator flips {@code LEASE_BUILDER_BUILDS} there — a switch
+     * kept on the relay precisely so it reaches every mod version already in players' hands.</p>
+     *
+     * <p>A server that wants its trains built only from its own carriages still turns this off, and
+     * keeps contributing.</p>
+     *
+     * <p>ANDed with the master switch rather than read alone, so a world that opted out of the feature
+     * entirely can never be brought back in by the leasing switch.</p>
+     */
+    public static boolean canLease() {
+        return DungeonTrainConfig.isSharedCarriagesEnabled()
+                && DungeonTrainConfig.isSharedCarriageLeasingEnabled();
+    }
+
+    /**
      * Whether carriage leases must be restricted to builds the relay flagged kid-safe.
      *
      * <p>HOST-scoped, unlike the per-player book filter: the train is world geometry with one shared

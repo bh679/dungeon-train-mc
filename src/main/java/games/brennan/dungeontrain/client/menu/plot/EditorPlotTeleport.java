@@ -1,5 +1,7 @@
 package games.brennan.dungeontrain.client.menu.plot;
 
+import games.brennan.dungeontrain.editor.PlotCategory;
+
 /**
  * Shared client-side dispatcher: maps a panel entry's {@code (category,
  * modelId, modelName)} tuple to the slash command that teleports the player
@@ -23,19 +25,21 @@ public final class EditorPlotTeleport {
      * {@code (category, modelId, modelName)}, or {@code null} if no
      * teleport target exists for the entry.
      */
-    public static String commandFor(String category, String modelId, String modelName) {
+    public static String commandFor(PlotCategory category, String modelId, String modelName) {
+        if (category == null) return null;
         return switch (category) {
-            case "CARRIAGES" -> "dungeontrain editor enter " + modelId;
-            case "CONTENTS" -> "dungeontrain editor contents enter " + modelId;
-            case "TRACKS" -> trackTeleportCommand(modelId);
+            case CARRIAGES -> "dungeontrain editor enter " + modelId;
+            case CONTENTS -> "dungeontrain editor contents enter " + modelId;
+            case TRACKS -> trackTeleportCommand(modelId);
             // Portals address a specific room by name — there is only one kind, so modelId
             // carries no information the command needs.
-            case "PORTALS" -> "dungeontrain editor portals enter " + modelName;
+            case PORTALS -> "dungeontrain editor portals enter " + modelName;
             // Parts: modelId is the kind tag ("floor"/"walls"/"roof"/"doors"),
             // modelName is the variant name. Server command is
             // {@code /dt editor part enter <kind> <name>}.
-            case "PARTS" -> "dungeontrain editor part enter " + modelId + " " + modelName;
-            default -> null;
+            case PARTS -> "dungeontrain editor part enter " + modelId + " " + modelName;
+            // Nothing authored yet, so no plot to stand in.
+            case ARCHITECTURE -> null;
         };
     }
 
@@ -45,13 +49,14 @@ public final class EditorPlotTeleport {
      * ({@code "inc"} or {@code "dec"}). Returns {@code null} for categories
      * without a weight pool (currently {@code PARTS}).
      */
-    public static String weightCommandFor(String category, String modelId, String modelName, String dir) {
+    public static String weightCommandFor(PlotCategory category, String modelId, String modelName, String dir) {
+        if (category == null || !category.hasWeightPool()) return null;
         return switch (category) {
-            case "CARRIAGES" -> "dungeontrain editor weight " + modelId + " " + dir;
-            case "CONTENTS" -> "dungeontrain editor contents weight " + modelId + " " + dir;
-            case "TRACKS" -> "dungeontrain editor tracks weight " + modelId + " " + modelName + " " + dir;
-            case "PORTALS" -> "dungeontrain editor portals weight " + modelId + " " + modelName + " " + dir;
-            default -> null;
+            case CARRIAGES -> "dungeontrain editor weight " + modelId + " " + dir;
+            case CONTENTS -> "dungeontrain editor contents weight " + modelId + " " + dir;
+            case TRACKS -> "dungeontrain editor tracks weight " + modelId + " " + modelName + " " + dir;
+            case PORTALS -> "dungeontrain editor portals weight " + modelId + " " + modelName + " " + dir;
+            case PARTS, ARCHITECTURE -> null; // no weight pool — refused by the guard above
         };
     }
 
@@ -63,8 +68,8 @@ public final class EditorPlotTeleport {
      * is spliced in. That is safe because the dimension rows only render while the player is inside
      * the plot.</p>
      */
-    public static String dimensionCommandFor(String category, String axis, String dir) {
-        if (!"PORTALS".equals(category)) return null;
+    public static String dimensionCommandFor(PlotCategory category, String axis, String dir) {
+        if (category == null || !category.hasRoomBox()) return null;
         return "dungeontrain editor portals " + axis + " " + dir;
     }
 
@@ -75,14 +80,14 @@ public final class EditorPlotTeleport {
      * <p>Addressed by the plot the player is in rather than by name, like the dimension steppers and
      * for the same reason: the row only exists while they are standing in it.</p>
      */
-    public static String modeCycleCommandFor(String category) {
-        if (!"PORTALS".equals(category)) return null;
+    public static String modeCycleCommandFor(PlotCategory category) {
+        if (category == null || !category.hasRoomBox()) return null;
         return "dungeontrain editor portals mode next";
     }
 
     /** As {@link #modeCycleCommandFor}, for the Copies sub-mode under Endless Repetition. */
-    public static String copiesCycleCommandFor(String category) {
-        if (!"PORTALS".equals(category)) return null;
+    public static String copiesCycleCommandFor(PlotCategory category) {
+        if (category == null || !category.hasRoomBox()) return null;
         return "dungeontrain editor portals copies next";
     }
 
@@ -96,53 +101,62 @@ public final class EditorPlotTeleport {
      * it.</p>
      */
     public static String copiesBlockHeldCommandFor(
-        String category, games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane plane
+        PlotCategory category, games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane plane
     ) {
-        if (!"PORTALS".equals(category)) return null;
+        if (category == null || !category.hasRoomBox()) return null;
         return "dungeontrain editor portals copies " + plane.id() + " held";
     }
 
     /** As {@link #copiesBlockHeldCommandFor}, for opening the Block Variant menu on that plane. */
     public static String copiesBlockEditCommandFor(
-        String category, games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane plane
+        PlotCategory category, games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane plane
     ) {
-        if (!"PORTALS".equals(category)) return null;
+        if (category == null || !category.hasRoomBox()) return null;
         return "dungeontrain editor portals copies " + plane.id() + " edit";
     }
 
     /** As {@link #modeCycleCommandFor}, for whether the room is furnished from the contents pool. */
-    public static String roomContentsCycleCommandFor(String category) {
-        if (!"PORTALS".equals(category)) return null;
+    public static String roomContentsCycleCommandFor(PlotCategory category) {
+        if (category == null || !category.hasRoomBox()) return null;
         return "dungeontrain editor portals contents next";
     }
 
+    /**
+     * As {@link #modeCycleCommandFor}, for whether a copy carries its own end wall through a corridor
+     * mouth's plane.
+     */
+    public static String doorWallCycleCommandFor(PlotCategory category) {
+        if (category == null || !category.hasRoomBox()) return null;
+        return "dungeontrain editor portals doorwall next";
+    }
+
     /** As {@link #modeCycleCommandFor}, for whether the room is lit as though it stood outdoors. */
-    public static String roomSkyCycleCommandFor(String category) {
-        if (!"PORTALS".equals(category)) return null;
+    public static String roomSkyCycleCommandFor(PlotCategory category) {
+        if (category == null || !category.hasRoomBox()) return null;
         return "dungeontrain editor portals sky next";
     }
 
     /** As {@link #modeCycleCommandFor}, for how many extra corridors an endless room lays. */
-    public static String exitsCycleCommandFor(String category) {
-        if (!"PORTALS".equals(category)) return null;
+    public static String exitsCycleCommandFor(PlotCategory category) {
+        if (category == null || !category.hasRoomBox()) return null;
         return "dungeontrain editor portals exits next";
     }
 
     /** As {@link #modeCycleCommandFor}, for whether every book in the room is by one author. */
-    public static String roomBooksCycleCommandFor(String category) {
-        if (!"PORTALS".equals(category)) return null;
+    public static String roomBooksCycleCommandFor(PlotCategory category) {
+        if (category == null || !category.hasRoomBox()) return null;
         return "dungeontrain editor portals books next";
     }
 
     /** As {@link #dimensionCommandFor}, for the spacing those extra corridors are laid at. */
-    public static String exitEveryCommandFor(String category, String dir) {
-        if (!"PORTALS".equals(category)) return null;
+    public static String exitEveryCommandFor(PlotCategory category, String dir) {
+        if (category == null || !category.hasRoomBox()) return null;
         return "dungeontrain editor portals exitevery " + dir;
     }
 
     /** As {@link #dimensionCommandFor}, for how often the base pair's exit is walled off. */
-    public static String exitMoveCommandFor(String category, String dir) {
-        if (!"PORTALS".equals(category)) return null;
+    public static String exitMoveCommandFor(PlotCategory category, String dir) {
+        if (category == null || !category.hasRoomBox()) return null;
         return "dungeontrain editor portals exitmove " + dir;
     }
 
@@ -153,13 +167,14 @@ public final class EditorPlotTeleport {
      * ({@code "inc"} / {@code "dec"}). Mirrors {@link #weightCommandFor}; null
      * for categories without a gate pool.
      */
-    public static String levelCommandFor(String category, String modelId, String modelName, String sub, String dir) {
+    public static String levelCommandFor(PlotCategory category, String modelId, String modelName, String sub, String dir) {
+        if (category == null || !category.hasGate()) return null;
         return switch (category) {
-            case "CARRIAGES" -> "dungeontrain editor " + sub + " " + modelId + " " + dir;
-            case "CONTENTS" -> "dungeontrain editor contents " + sub + " " + modelId + " " + dir;
-            case "TRACKS" -> "dungeontrain editor tracks " + sub + " " + modelId + " " + modelName + " " + dir;
-            case "PORTALS" -> "dungeontrain editor portals " + sub + " " + modelId + " " + modelName + " " + dir;
-            default -> null;
+            case CARRIAGES -> "dungeontrain editor " + sub + " " + modelId + " " + dir;
+            case CONTENTS -> "dungeontrain editor contents " + sub + " " + modelId + " " + dir;
+            case TRACKS -> "dungeontrain editor tracks " + sub + " " + modelId + " " + modelName + " " + dir;
+            case PORTALS -> "dungeontrain editor portals " + sub + " " + modelId + " " + modelName + " " + dir;
+            case PARTS, ARCHITECTURE -> null; // no spawn gate — refused by the guard above
         };
     }
 
@@ -170,14 +185,15 @@ public final class EditorPlotTeleport {
      * click) or {@code others} (shift-click — "toggle all but that one"). Null for categories
      * without a gate pool.
      */
-    public static String phaseCommandFor(String category, String modelId, String modelName,
+    public static String phaseCommandFor(PlotCategory category, String modelId, String modelName,
                                          String phaseToken, String action) {
+        if (category == null || !category.hasGate()) return null;
         return switch (category) {
-            case "CARRIAGES" -> "dungeontrain editor phase " + modelId + " " + phaseToken + " " + action;
-            case "CONTENTS" -> "dungeontrain editor contents phase " + modelId + " " + phaseToken + " " + action;
-            case "TRACKS" -> "dungeontrain editor tracks phase " + modelId + " " + modelName + " " + phaseToken + " " + action;
-            case "PORTALS" -> "dungeontrain editor portals phase " + modelId + " " + modelName + " " + phaseToken + " " + action;
-            default -> null;
+            case CARRIAGES -> "dungeontrain editor phase " + modelId + " " + phaseToken + " " + action;
+            case CONTENTS -> "dungeontrain editor contents phase " + modelId + " " + phaseToken + " " + action;
+            case TRACKS -> "dungeontrain editor tracks phase " + modelId + " " + modelName + " " + phaseToken + " " + action;
+            case PORTALS -> "dungeontrain editor portals phase " + modelId + " " + modelName + " " + phaseToken + " " + action;
+            case PARTS, ARCHITECTURE -> null; // no spawn gate — refused by the guard above
         };
     }
 
@@ -263,18 +279,20 @@ public final class EditorPlotTeleport {
      * {@code (category, modelId, modelName)} to a Stage ({@code stageToken} = a stage id, or
      * {@code custom} to detach). Mirrors {@link #levelCommandFor}'s category mapping; null for
      * categories without a per-template gate pool (PARTS uses its own packet path).
+     *
+     * <p>Used to be the one builder that normalised case, because it alone received both the
+     * uppercase and lowercase spellings. Now that the parameter is typed, every builder takes the
+     * same thing and no normalisation is needed anywhere.</p>
      */
-    public static String stageApplyCommandFor(String category, String modelId, String modelName, String stageToken) {
-        // Category arrives uppercase from the world-space rows (EditorCategory.name()) and lowercase
-        // from the keyboard menu (EditorStatusHudOverlay.category()) — normalise so both route.
-        String c = category == null ? "" : category.toUpperCase(java.util.Locale.ROOT);
-        return switch (c) {
-            case "CARRIAGES" -> "dungeontrain editor stage apply carriage " + modelId + " " + stageToken;
-            case "CONTENTS" -> "dungeontrain editor stage apply contents " + modelId + " " + stageToken;
-            case "TRACKS" -> "dungeontrain editor stage apply tracks " + modelId + " " + modelName + " " + stageToken;
+    public static String stageApplyCommandFor(PlotCategory category, String modelId, String modelName, String stageToken) {
+        if (category == null || !category.hasGate()) return null;
+        return switch (category) {
+            case CARRIAGES -> "dungeontrain editor stage apply carriage " + modelId + " " + stageToken;
+            case CONTENTS -> "dungeontrain editor stage apply contents " + modelId + " " + stageToken;
+            case TRACKS -> "dungeontrain editor stage apply tracks " + modelId + " " + modelName + " " + stageToken;
             // Rooms are a TrackKind under the hood, so the stage-apply route is the tracks one.
-            case "PORTALS" -> "dungeontrain editor stage apply tracks " + modelId + " " + modelName + " " + stageToken;
-            default -> null;
+            case PORTALS -> "dungeontrain editor stage apply tracks " + modelId + " " + modelName + " " + stageToken;
+            case PARTS, ARCHITECTURE -> null; // no stage link — refused by the guard above
         };
     }
 

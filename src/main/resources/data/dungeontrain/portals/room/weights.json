@@ -94,11 +94,11 @@
   "library_dimension": {
     "weight": 3,
     "minLevel": 5,
-    "mode": "endless_repetition/dynamic"
+    "mode": "endless_repetition/dynamic/off/on/off/none/repeated"
   },
   "midlibrary": {
     "weight": 1,
-    "mode": "bedrock_lock/exact/off/off/mix:3:1:1:24:120"
+    "mode": "bedrock_lock/exact/off/off/mix:3:1:1:1:24:120"
   },
   "miniword": {
     "weight": 1,
@@ -122,6 +122,10 @@
     "minLevel": 5,
     "mode": "endless_repetition"
   },
+  "pretty": {
+    "weight": 1,
+    "mode": "endless_repetition/dynamic"
+  },
   "randomized": {
     "weight": 1,
     "mode": "endless_repetition/dynamic/fit"
@@ -138,7 +142,7 @@
   },
   "smalllibrary": {
     "weight": 1,
-    "mode": "bedrock_lock/exact/off/off/mix:3:1:1:10:24"
+    "mode": "bedrock_lock/exact/off/off/mix:1:1:1:0:10:0"
   },
   "trap": {
     "weight": 1,

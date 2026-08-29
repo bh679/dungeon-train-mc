@@ -19,7 +19,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "55";
+    public static final String PROTOCOL_VERSION = "56";
 
     private DungeonTrainNet() {}
 
@@ -53,6 +53,7 @@ public final class DungeonTrainNet {
         registrar.playToClient(EditorPlotLabelsPacket.TYPE, EditorPlotLabelsPacket.STREAM_CODEC, EditorPlotLabelsPacket::handle);
         registrar.playToServer(EditorPlotActionPacket.TYPE, EditorPlotActionPacket.STREAM_CODEC, EditorPlotActionPacket::handle);
         registrar.playToClient(EditorTypeMenusPacket.TYPE, EditorTypeMenusPacket.STREAM_CODEC, EditorTypeMenusPacket::handle);
+        registrar.playToClient(EditorMenusModePacket.TYPE, EditorMenusModePacket.STREAM_CODEC, EditorMenusModePacket::handle);
         registrar.playToClient(CarriageGroupGapPacket.TYPE, CarriageGroupGapPacket.STREAM_CODEC, CarriageGroupGapPacket::handle);
         registrar.playToClient(CarriageNextSpawnPacket.TYPE, CarriageNextSpawnPacket.STREAM_CODEC, CarriageNextSpawnPacket::handle);
         registrar.playToClient(CarriageSpawnCollisionPacket.TYPE, CarriageSpawnCollisionPacket.STREAM_CODEC, CarriageSpawnCollisionPacket::handle);
@@ -73,6 +74,10 @@ public final class DungeonTrainNet {
         // though it stood outdoors is named to the client as a box, and the client lifts its own
         // lightmap inside it. See client/ClientPortalRoomSky.
         registrar.playToClient(PortalRoomSkyPacket.TYPE, PortalRoomSkyPacket.STREAM_CODEC, PortalRoomSkyPacket::handle);
+        // …and the lightmap again for a portal CORRIDOR, which is the one portal region that cannot be
+        // sent as a box: it rides a Sable sub-level, so the box the client would test moves with the
+        // train every tick. The ramp itself is sent instead. See client/ClientPortalCrossing.
+        registrar.playToClient(PortalCrossingPacket.TYPE, PortalCrossingPacket.STREAM_CODEC, PortalCrossingPacket::handle);
         // …and the swap itself, which the client cannot infer from the position packet that carries it:
         // the renderer has to be told to finish its occlusion rebuild before drawing, or the first
         // frames in the twin draw nothing at all. See client/portal/ClientPortalSwap.
@@ -158,6 +163,7 @@ public final class DungeonTrainNet {
         // On-train spawn deck-hold: server → joining/respawning player to keep
         // the client from free-falling off the deck during the spawn-storm stall.
         registrar.playToClient(SpawnDeckHoldPacket.TYPE, SpawnDeckHoldPacket.STREAM_CODEC, SpawnDeckHoldPacket::handle);
+        registrar.playToClient(PortalTestSessionPacket.TYPE, PortalTestSessionPacket.STREAM_CODEC, PortalTestSessionPacket::handle);
 
         // Advancements keybind hint: server → the earning player on a gameplay
         // advancement. The client decides whether to show it (gated on its local
@@ -197,6 +203,8 @@ public final class DungeonTrainNet {
         registrar.playToServer(BuilderProfileRequestPacket.TYPE, BuilderProfileRequestPacket.STREAM_CODEC, BuilderProfileRequestPacket::handle);
         registrar.playToClient(BuilderProfilePacket.TYPE, BuilderProfilePacket.STREAM_CODEC, BuilderProfilePacket::handle);
         registrar.playToServer(BuilderProfileActionPacket.TYPE, BuilderProfileActionPacket.STREAM_CODEC, BuilderProfileActionPacket::handle);
+        registrar.playToServer(BuilderProfileDownloadPacket.TYPE, BuilderProfileDownloadPacket.STREAM_CODEC, BuilderProfileDownloadPacket::handle);
+        registrar.playToClient(BuilderProfileDownloadResultPacket.TYPE, BuilderProfileDownloadResultPacket.STREAM_CODEC, BuilderProfileDownloadResultPacket::handle);
 
         // Remote-echo encounter screenshot: server → player at first eye-contact to frame + capture the
         // echo; client → server with the resulting PNG, buffered on the encounter journal for its story embed.
@@ -216,6 +224,7 @@ public final class DungeonTrainNet {
         // Political Filter (community content): client → server login sync (+ on change) of the
         // player's preference, so per-player book selection can withhold politically-tagged content.
         registrar.playToServer(PoliticalFilterSyncPacket.TYPE, PoliticalFilterSyncPacket.STREAM_CODEC, PoliticalFilterSyncPacket::handle);
+        registrar.playToServer(BookAuthorChatSyncPacket.TYPE, BookAuthorChatSyncPacket.STREAM_CODEC, BookAuthorChatSyncPacket::handle);
 
         // Community shared-book read history: client → server login sync (+ per-read top-ups) of the
         // player's GLOBAL client-side read set, the fallback source for the loot selector's unread-first
@@ -239,6 +248,12 @@ public final class DungeonTrainNet {
 
         // Editor middle-click: copy the looked-at cell's variants into the hotbar (C2S).
         registrar.playToServer(BlockVariantCopyPickPacket.TYPE, BlockVariantCopyPickPacket.STREAM_CODEC, BlockVariantCopyPickPacket::handle);
+
+        // Why this run is in Free Play, server → client, pushed whenever the badge goes on or off.
+        // Feeds the effect's hover tooltip — see FreePlayCausePacket.
+        registrar.playToClient(FreePlayCausePacket.TYPE, FreePlayCausePacket.STREAM_CODEC, FreePlayCausePacket::handle);
+        registrar.playToClient(TrainDebugSyncPacket.TYPE, TrainDebugSyncPacket.STREAM_CODEC, TrainDebugSyncPacket::handle);
+        registrar.playToClient(TrainDebugCarriagePacket.TYPE, TrainDebugCarriagePacket.STREAM_CODEC, TrainDebugCarriagePacket::handle);
     }
 
     /** Convenience: send a payload to the server (client → server). */

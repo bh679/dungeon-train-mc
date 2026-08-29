@@ -35,7 +35,7 @@ public final class CommandMenuRaycast {
     private CommandMenuRaycast() {}
 
     public static void updateHovered() {
-        if (!CommandMenuState.isOpen()) return;
+        if (!CommandMenuState.isOpenWorldspace()) return;
 
         Minecraft mc = Minecraft.getInstance();
         Camera camera = mc.gameRenderer.getMainCamera();

@@ -46,6 +46,16 @@ public final class DeathNoteSigning {
         // insensitive via NoteKind.of). Signing the note is the rewarded action.
         ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, signedActionId(kind));
 
+        // Per-run tally, for the Faulthurst stat book's twin of the notes-written leaderboards.
+        // Counted here rather than at delivery for the same reason the advancement is: signing is
+        // the act, and whether the note ever finds a target is somebody else's world's business.
+        var run = player.getData(games.brennan.dungeontrain.registry.ModDataAttachments.PLAYER_RUN_STATE.get());
+        if (kind == NoteKind.LOVE) {
+            run.incrementLoveNotesWritten();
+        } else {
+            run.incrementDeathNotesWritten();
+        }
+
         // Consume the writable book & quill — the player keeps nothing (as when signing a shared book).
         writable.shrink(1);
 
@@ -64,7 +74,7 @@ public final class DeathNoteSigning {
 
         if (targetName == null || targetName.isBlank()) {
             player.sendSystemMessage(Component.translatable(chatKey(kind, "no_name"))
-                .withStyle(kind == NoteKind.LOVE ? ChatFormatting.GRAY : ChatFormatting.DARK_GRAY));
+                .withStyle(bodyStyle(kind)));
             return;
         }
 
@@ -74,15 +84,35 @@ public final class DeathNoteSigning {
             ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, selfTargetActionId(kind));
         }
 
+        // One note per target per life. The pending list holds exactly the notes signed since the
+        // author last died, so a name already in it has already been noted this life — the book still
+        // burns (it was written and signed), but a second echo is not armed for the same player.
+        PendingDeathNotes pending = PendingDeathNotes.get(player.serverLevel());
+        if (pending.hasPendingFor(player.getUUID(), targetName, kind)) {
+            player.sendSystemMessage(
+                Component.translatable(chatKey(kind, "already"),
+                        Component.literal(targetName).withStyle(nameStyle(kind)))
+                    .withStyle(bodyStyle(kind)));
+            return;
+        }
+
         String targetUuid = resolveTargetUuid(player.getServer(), targetName);
-        PendingDeathNotes.get(player.serverLevel())
-            .add(new PendingDeathNotes.PendingDeathNote(player.getUUID(), author, targetName, targetUuid, kind));
+        pending.add(new PendingDeathNotes.PendingDeathNote(player.getUUID(), author, targetName, targetUuid, kind));
 
         player.sendSystemMessage(
             Component.translatable(chatKey(kind, "taken"),
-                    Component.literal(targetName).withStyle(
-                        kind == NoteKind.LOVE ? ChatFormatting.LIGHT_PURPLE : ChatFormatting.GRAY))
-                .withStyle(kind == NoteKind.LOVE ? ChatFormatting.GRAY : ChatFormatting.DARK_GRAY));
+                    Component.literal(targetName).withStyle(nameStyle(kind)))
+                .withStyle(bodyStyle(kind)));
+    }
+
+    /** Colour the target's name is written in for {@code kind}'s sign-time chat lines. */
+    private static ChatFormatting nameStyle(NoteKind kind) {
+        return kind == NoteKind.LOVE ? ChatFormatting.LIGHT_PURPLE : ChatFormatting.GRAY;
+    }
+
+    /** Colour the surrounding line is written in for {@code kind}'s sign-time chat lines. */
+    private static ChatFormatting bodyStyle(NoteKind kind) {
+        return kind == NoteKind.LOVE ? ChatFormatting.GRAY : ChatFormatting.DARK_GRAY;
     }
 
     /** Advancement action id granted for signing a note of {@code kind}. */

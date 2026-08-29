@@ -77,6 +77,36 @@ public final class PortalRoomLibrarian {
     private static final Map<Integer, Pending> PENDING = new ConcurrentHashMap<>();
 
     /**
+     * pair key → which books a stat room already holds, by {@code PortalRoomStatShelves} key.
+     *
+     * <p>A stat room is stocked over many ticks as its boards arrive, so unlike a library room it
+     * cannot simply drop out of {@link #PENDING} after one pass. This is what stops the second pass
+     * shelving a duplicate of everything the first pass placed. Empty for library rooms, which are
+     * stocked once and forgotten.</p>
+     */
+    private static final Map<Integer, Set<String>> PLACED = new ConcurrentHashMap<>();
+
+    /**
+     * Ticks between two stocking passes over the same stat room.
+     *
+     * <p>A stat room that is merely incomplete stays pending indefinitely and is re-asked on every
+     * tick — deliberate, because a board the relay has not served yet is not a failure. What was not
+     * deliberate is the cost of asking: each pass allocates through {@code missingStats},
+     * {@code LeaderboardPool.populated()} (which allocates <em>and</em> sorts) and
+     * {@code missingBoards}, then calls {@link PortalRoomStatShelves#requestBoards()} over every
+     * category — at 20 Hz, for up to {@link #MAX_PENDING_ROOMS} rooms, for the rest of the session.
+     * A board arrives over minutes, so asking once a second finds it just as fast.</p>
+     */
+    private static final int STAT_ROOM_PASS_PERIOD_TICKS = 20;
+
+    /**
+     * pair key → the game tick before which that stat room should not be stocked again. Absent for a
+     * room that has never been passed over, so a player walking into a fresh room is served at once
+     * rather than waiting out a period.
+     */
+    private static final Map<Integer, Long> NEXT_STAT_PASS_TICK = new ConcurrentHashMap<>();
+
+    /**
      * Hands out {@link Pending#seq}. Monotonic for the life of the process, which is all eviction
      * order needs — it is only ever compared against other live entries, never persisted.
      */
@@ -101,6 +131,8 @@ public final class PortalRoomLibrarian {
      */
     public static void register(int pairKey, BlockPos origin, Vec3i size, PortalRoomBooks books) {
         REPORTED_NONE.remove(pairKey);
+        PLACED.remove(pairKey);
+        NEXT_STAT_PASS_TICK.remove(pairKey);
         if (books == null || !books.locks() || origin == null || size == null) {
             // A room re-stamped with the setting turned off must not keep an old pending record, or
             // it would be stocked from a decision its author has since taken back.
@@ -111,6 +143,11 @@ public final class PortalRoomLibrarian {
         // eviction queue — it is the most recently seen room, whatever it was before.
         PENDING.put(pairKey, new Pending(origin.immutable(), size, books,
             REGISTRATIONS.incrementAndGet()));
+        // The roll is deterministic on the pair key, so whether this room is the tally is knowable
+        // now — and if it is, it wants every board there is. warmNext()'s one-per-tick rotation takes
+        // about twelve minutes to get through them; ask for the set while the player is still walking
+        // in. (Only the roll, not the whole resolution, which needs a reader.)
+        if (books.resolveShare(pairKey).isStats()) PortalRoomStatShelves.requestBoards();
         evictOldest();
     }
 
@@ -139,6 +176,8 @@ public final class PortalRoomLibrarian {
             if (oldest == null) return;
             PENDING.remove(oldest);
             REPORTED_NONE.remove(oldest);
+            PLACED.remove(oldest);
+            NEXT_STAT_PASS_TICK.remove(oldest);
         }
     }
 
@@ -146,6 +185,8 @@ public final class PortalRoomLibrarian {
     public static void forget(int pairKey) {
         PENDING.remove(pairKey);
         REPORTED_NONE.remove(pairKey);
+        PLACED.remove(pairKey);
+        NEXT_STAT_PASS_TICK.remove(pairKey);
     }
 
     /**
@@ -180,7 +221,6 @@ public final class PortalRoomLibrarian {
      */
     public static void tick(ServerLevel level, List<ServerPlayer> players) {
         if (PENDING.isEmpty() || level == null || players == null || players.isEmpty()) return;
-        if (!SharedBookGate.canDiscover()) return;   // discovery off — no author to stock from
 
         for (Map.Entry<Integer, Pending> entry : new ArrayList<>(PENDING.entrySet())) {
             int pairKey = entry.getKey();
@@ -188,8 +228,19 @@ public final class PortalRoomLibrarian {
             ServerPlayer reader = readerFor(players, pending.origin());
             if (reader == null) continue;
 
+            // Resolve first, gate second. Which of the four shares this room came up is settled by
+            // the pair key alone, and the tally needs no community-book discovery — so gating on
+            // discovery before the roll is read would leave a stat room bare on a server that has
+            // simply turned sharing off.
             PortalRoomAuthorLocks.Resolution resolved = PortalRoomAuthorLocks.resolve(
                 reader, pairKey, pending.books(), ContentModeMirror.isKid(reader));
+            if (resolved.outcome() == PortalRoomAuthorLocks.Outcome.STATS) {
+                stockStatRoom(level, pairKey, pending, reader);
+                continue;
+            }
+
+            // Everything past here wants an author, which is the only thing discovery gates.
+            if (!SharedBookGate.canDiscover()) continue;   // discovery off — no author to stock from
             if (resolved.outcome() == PortalRoomAuthorLocks.Outcome.PENDING) continue;  // ask again
 
             if (resolved.outcome() == PortalRoomAuthorLocks.Outcome.NONE) {
@@ -229,6 +280,51 @@ public final class PortalRoomLibrarian {
     }
 
     /**
+     * One incremental pass over a stat room: shelve whatever it is still missing.
+     *
+     * <p>Unlike the library room this runs again and again — a stat room's leaderboard books arrive
+     * from the relay over the first minutes, so one pass could only ever place the run-stat notes.
+     * The room leaves {@link #PENDING} on either of the two ways it can be finished: it holds the
+     * full set, or it turns out to have no shelves to hold anything.</p>
+     *
+     * <p>A room that is merely incomplete stays pending indefinitely, which is deliberate — a board
+     * the relay has not served yet is not a failure, and there is nothing to do about it but ask
+     * again. The pass costs a map lookup once the room is full, because it is no longer in the map.</p>
+     */
+    private static void stockStatRoom(ServerLevel level, int pairKey, Pending pending, ServerPlayer reader) {
+        // Incomplete rooms are re-asked forever by design; they just don't need asking every tick.
+        // A room seen for the first time has no entry and is stocked immediately.
+        long gameTime = level.getGameTime();
+        Long notBefore = NEXT_STAT_PASS_TICK.get(pairKey);
+        if (notBefore != null && gameTime < notBefore) return;
+        NEXT_STAT_PASS_TICK.put(pairKey, gameTime + STAT_ROOM_PASS_PERIOD_TICKS);
+
+        Set<String> already = PLACED.getOrDefault(pairKey, Set.of());
+        PortalRoomStatShelves.Progress progress = PortalRoomStatShelves.stock(
+            level, pending.origin(), pending.size(), already, pairKey, reader.getUUID());
+        PLACED.put(pairKey, progress.placed());
+
+        if (progress.stalled()) {
+            // Nowhere to put a book — no shelves, or a template that spoke for every slot. More
+            // boards arriving will not change that, so stop asking rather than rescan the room's box
+            // on every tick for the rest of the session.
+            LOGGER.info("[DungeonTrain] Portal room {} is a stat room with no free shelf slots — "
+                + "it holds {} of {} book(s) and will not fill further",
+                pairKey, progress.placed().size(), PortalRoomStatShelves.FULL_SET);
+            PENDING.remove(pairKey);
+            NEXT_STAT_PASS_TICK.remove(pairKey);
+            return;
+        }
+        if (PortalRoomStatShelves.isComplete(progress.placed())) {
+            PENDING.remove(pairKey);
+            NEXT_STAT_PASS_TICK.remove(pairKey);
+            return;
+        }
+        // Still filling. Keep the boards coming rather than waiting on warmNext()'s rotation.
+        PortalRoomStatShelves.requestBoards();
+    }
+
+    /**
      * The rider a room is stocked for: whoever is nearest it.
      *
      * <p>Nearest rather than first-in-the-list because the Self share names "the player the room was
@@ -253,6 +349,8 @@ public final class PortalRoomLibrarian {
     public static void clear() {
         PENDING.clear();
         REPORTED_NONE.clear();
+        PLACED.clear();
+        NEXT_STAT_PASS_TICK.clear();
     }
 
     /** Test hook: whether a pair is still waiting for its books. */

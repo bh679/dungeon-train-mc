@@ -2,6 +2,8 @@ package games.brennan.dungeontrain.client.menu;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import net.minecraft.client.Minecraft;
+import net.minecraft.core.Direction;
+import net.minecraft.world.phys.BlockHitResult;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -11,15 +13,15 @@ import net.neoforged.fml.common.Mod;
 /**
  * Client tick handler that:
  * <ol>
- *   <li>Drains pending {@code [} key presses and toggles the menu open/closed.</li>
+ *   <li>Drains pending toggle-key presses and opens the menu.</li>
  *   <li>While open, runs the per-tick state maintenance (auto-close on
- *       distance, live entry rebuild) and the hover-raycast update.</li>
+ *       distance, live entry rebuild).</li>
  * </ol>
  *
- * <p>Because the menu does not open a Minecraft
- * {@link net.minecraft.client.gui.screens.Screen},
- * {@link net.minecraft.client.KeyMapping#consumeClick()} fires for both
- * open and close presses — no need for a Screen-level keyPressed handler.</p>
+ * <p>This handler only ever <i>opens</i> the menu. Once
+ * {@link CommandMenuGuiScreen} is up, vanilla stops polling keybindings, so
+ * {@link net.minecraft.client.KeyMapping#consumeClick()} cannot fire again —
+ * the screen matches the toggle key itself in {@code keyPressed} to close.</p>
  */
 @EventBusSubscriber(
     modid = DungeonTrain.MOD_ID,
@@ -34,13 +36,15 @@ public final class CommandMenuToggleHandler {
 
         Minecraft mc = Minecraft.getInstance();
 
-        // If any other screen opens while our worldspace menu is up, close
-        // it — otherwise the player can't look around (mouse captured by the
-        // screen) and the floating menu becomes useless. Exempt our own
-        // MenuTypingScreen though: beginTyping opens it intentionally to
-        // suppress vanilla keybindings, and closing the menu here would
-        // immediately cancel the typing field the user just activated.
+        // Screen-space: the menu IS a screen, so its own screen being up is the normal state.
+        // What still matters is another screen replacing ours — the inventory, a sign, another
+        // mod's GUI — which would leave our state open with nothing rendering it.
+        //
+        // World-space: no screen of ours is up at all, except the invisible MenuTypingScreen
+        // while the player is typing a row's argument. Any OTHER screen means something took
+        // over the display, and a world-space panel drawn behind an inventory is just clutter.
         if (CommandMenuState.isOpen() && mc.screen != null
+                && !(mc.screen instanceof CommandMenuGuiScreen)
                 && !(mc.screen instanceof MenuTypingScreen)) {
             CommandMenuState.close();
         }
@@ -68,16 +72,23 @@ public final class CommandMenuToggleHandler {
 
         if (CommandMenuState.isOpen()) {
             CommandMenuState.onClientTick();
-            if (CommandMenuState.isOpen()) {
+            // In screen-space, hover is resolved from the cursor in CommandMenuGuiScreen#render.
+            // In world-space there is no cursor, so the camera ray has to be re-run every tick,
+            // and the crosshair target kept clobbered so the block behind the panel can't be
+            // mined or placed against through it.
+            if (CommandMenuState.isOpenWorldspace()) {
                 CommandMenuRaycast.updateHovered();
-                // stopDestroyBlock on every tick halts any accumulated
-                // destroy progress. The hitResult clobber lives in the
-                // renderer — it has to run after gameRenderer.pick() or
-                // the next pick() overwrites it before continueAttack
-                // reads it.
-                if (mc.gameMode != null) {
-                    mc.gameMode.stopDestroyBlock();
+                if (mc.player != null) {
+                    mc.hitResult = BlockHitResult.miss(
+                        mc.player.getEyePosition(),
+                        Direction.UP,
+                        mc.player.blockPosition()
+                    );
                 }
+            }
+            // stopDestroyBlock halts destroy progress accumulated before the menu opened.
+            if (CommandMenuState.isOpen() && mc.gameMode != null) {
+                mc.gameMode.stopDestroyBlock();
             }
         }
     }

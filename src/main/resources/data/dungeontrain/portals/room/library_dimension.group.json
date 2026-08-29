@@ -1,13 +1,17 @@
 {
   "schemaVersion": 3,
-  "selfWeight": 1,
+  "selfWeight": 2,
   "variants": [
     {
       "id": "smalllibrary",
-      "weight": 1
+      "weight": 2
     },
     {
       "id": "midlibrary",
+      "weight": 2
+    },
+    {
+      "id": "pretty",
       "weight": 1
     }
   ]

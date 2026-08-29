@@ -72,18 +72,24 @@ public final class ContainerContentsMenuRaycast {
         }
     }
 
-    private static ContainerContentsMenu.Hit rootHit(double hitX, double hitY) {
+    /**
+     * Which cell sits at these panel-local coordinates on the root panel. Pure — the raycast
+     * above only produces the pair, and the screen-space host produces the same pair from the
+     * mouse cursor, so both modes resolve hover and clicks through this one function.
+     */
+    static ContainerContentsMenu.Hit rootHit(double hitX, double hitY) {
         List<ContainerContentsSyncPacket.Entry> entries = ContainerContentsMenu.entries();
         int n = entries.size();
         int colCount = Math.max(1, (n + ContainerContentsMenu.ROWS_PER_COLUMN - 1) / ContainerContentsMenu.ROWS_PER_COLUMN);
-        double panelW = Math.max(ContainerContentsMenuRenderer.MIN_PANEL_WIDTH, colCount * ContainerContentsMenuRenderer.COLUMN_WIDTH);
+        // Single source of truth for the grid geometry — column widths vary with
+        // which rows are expanded, so the renderer's layout is what decides them.
         ContainerContentsMenuRenderer.EntryLayout layout = ContainerContentsMenuRenderer.computeLayout(entries, colCount);
+        double panelW = layout.panelWidth();
         double gridH = layout.gridHeight();
         double linkH = ContainerContentsMenuRenderer.hasLinkRow() ? ContainerContentsMenuRenderer.LINK_ROW_HEIGHT : 0.0;
         double panelH = ContainerContentsMenuRenderer.HEADER_HEIGHT + linkH + ContainerContentsMenuRenderer.TOOLBAR_HEIGHT + gridH;
         double halfW = panelW / 2.0;
         double halfH = panelH / 2.0;
-        double colActualW = panelW / colCount;
 
         if (hitX < -halfW || hitX > halfW || hitY < -halfH || hitY > halfH) {
             return ContainerContentsMenu.Hit.NONE;
@@ -126,8 +132,9 @@ public final class ContainerContentsMenuRaycast {
         double gridTop = toolbarBottom;
         double yFromGridTop = gridTop - hitY;
         if (yFromGridTop < 0 || yFromGridTop > gridH) return ContainerContentsMenu.Hit.NONE;
-        int col = (int) Math.floor((hitX + halfW) / colActualW);
-        if (col < 0 || col >= colCount) return ContainerContentsMenu.Hit.NONE;
+        int col = columnAt(layout, hitX + halfW);
+        if (col < 0) return ContainerContentsMenu.Hit.NONE;
+        double colActualW = layout.colWidth()[col];
         int colStart = col * ContainerContentsMenu.ROWS_PER_COLUMN;
         int colEnd = Math.min(n, colStart + ContainerContentsMenu.ROWS_PER_COLUMN);
         int idx = -1;
@@ -149,7 +156,7 @@ public final class ContainerContentsMenuRaycast {
         double yWithinBlock = yFromGridTop - layout.rowDispTop()[idx];
         boolean inSubRow = (showDur || showEnch) && yWithinBlock > ContainerContentsMenuRenderer.ROW_HEIGHT;
 
-        double colXL = -halfW + col * colActualW;
+        double colXL = -halfW + layout.colLeft()[col];
         double colXR = colXL + colActualW;
 
         if (inSubRow) {
@@ -198,15 +205,31 @@ public final class ContainerContentsMenuRaycast {
             return new ContainerContentsMenu.Hit(ContainerContentsMenu.CellKind.ENTRY_WEIGHT_PLUS, idx);
         if (hitX >= countL && hitX <= countR)
             return new ContainerContentsMenu.Hit(ContainerContentsMenu.CellKind.ENTRY_COUNT_PLUS, idx);
-        return new ContainerContentsMenu.Hit(ContainerContentsMenu.CellKind.ENTRY_NAME, idx);
+        // Everything left of the count cell is the icon cell — which, on an
+        // expanded row, also covers the revealed name.
+        return new ContainerContentsMenu.Hit(ContainerContentsMenu.CellKind.ENTRY_ICON, idx);
     }
 
-    private static ContainerContentsMenu.Hit searchHit(double hitX, double hitY) {
+    /**
+     * Index of the column containing {@code xFromLeft} (distance from the panel's
+     * left edge), or -1 when the point falls outside every column.
+     */
+    private static int columnAt(ContainerContentsMenuRenderer.EntryLayout layout, double xFromLeft) {
+        double[] widths = layout.colWidth();
+        for (int c = 0; c < widths.length; c++) {
+            double left = layout.colLeft()[c];
+            if (xFromLeft >= left && xFromLeft < left + widths[c]) return c;
+        }
+        return -1;
+    }
+
+    /** {@link #rootHit} for the Add-search panel. */
+    static ContainerContentsMenu.Hit searchHit(double hitX, double hitY) {
         List<String> filtered = ContainerContentsMenu.filteredItemIds();
         int maxRows = ContainerContentsMenu.ROWS_PER_COLUMN * 4;
         int n = Math.min(filtered.size(), maxRows);
         int colCount = Math.max(1, (n + ContainerContentsMenu.ROWS_PER_COLUMN - 1) / ContainerContentsMenu.ROWS_PER_COLUMN);
-        double panelW = Math.max(ContainerContentsMenuRenderer.MIN_PANEL_WIDTH, colCount * ContainerContentsMenuRenderer.COLUMN_WIDTH);
+        double panelW = Math.max(ContainerContentsMenuRenderer.MIN_PANEL_WIDTH, colCount * ContainerContentsMenuRenderer.SEARCH_COLUMN_WIDTH);
         int displayedRows = Math.min(n, ContainerContentsMenu.ROWS_PER_COLUMN);
         if (displayedRows == 0) displayedRows = 1;
         double gridH = displayedRows * ContainerContentsMenuRenderer.ROW_HEIGHT;

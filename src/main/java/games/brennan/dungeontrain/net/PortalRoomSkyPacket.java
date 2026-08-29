@@ -30,17 +30,36 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  * that away.</p>
  *
  * @param minX world bounds of the stamped copies, inclusive
- * @param sky  {@link PortalRoomSky#ordinal()} of the sky the room stands under. {@code 0} is
- *             {@link PortalRoomSky#NONE} — "no longer in a daylit room", which is also what a fresh
- *             client assumes
+ * @param sky    {@link PortalRoomSky#ordinal()} of the sky the room stands under. {@code 0} is
+ *               {@link PortalRoomSky#NONE} — "no longer in a daylit room", which is also what a
+ *               fresh client assumes
+ * @param editor true when this box is a room standing on its editor plot rather than one in the
+ *               world. The lift itself is identical; the flag exists so the author can switch the
+ *               plot's lighting off while they build without that switch reaching a live room or a
+ *               test session — a preference about the editor, not about the room
  */
 public record PortalRoomSkyPacket(int minX, int minY, int minZ, int maxX, int maxY, int maxZ,
-                                  int sky)
+                                  int sky, boolean editor)
     implements CustomPacketPayload {
 
     /** What the server sends to take the daylight away. */
     public static PortalRoomSkyPacket none() {
-        return new PortalRoomSkyPacket(0, 0, 0, 0, 0, 0, PortalRoomSky.NONE.ordinal());
+        return new PortalRoomSkyPacket(0, 0, 0, 0, 0, 0, PortalRoomSky.NONE.ordinal(), false);
+    }
+
+    /** A room in the world — a live pair or a test session. The lift is not optional for these. */
+    public static PortalRoomSkyPacket inWorld(int minX, int minY, int minZ,
+                                              int maxX, int maxY, int maxZ, int sky) {
+        return new PortalRoomSkyPacket(minX, minY, minZ, maxX, maxY, maxZ, sky, false);
+    }
+
+    /**
+     * A room standing on its editor plot. Carries the same box and sky as the live form and differs
+     * only in that the author can switch it off — see {@code ClientDisplayConfig.isEditorPlotLighting}.
+     */
+    public static PortalRoomSkyPacket onPlot(int minX, int minY, int minZ,
+                                             int maxX, int maxY, int maxZ, int sky) {
+        return new PortalRoomSkyPacket(minX, minY, minZ, maxX, maxY, maxZ, sky, true);
     }
 
     public static final Type<PortalRoomSkyPacket> TYPE =
@@ -56,9 +75,11 @@ public record PortalRoomSkyPacket(int minX, int minY, int minZ, int maxX, int ma
                 buf.writeVarInt(packet.maxY);
                 buf.writeVarInt(packet.maxZ);
                 buf.writeVarInt(packet.sky);
+                buf.writeBoolean(packet.editor);
             },
             buf -> new PortalRoomSkyPacket(buf.readVarInt(), buf.readVarInt(), buf.readVarInt(),
-                buf.readVarInt(), buf.readVarInt(), buf.readVarInt(), buf.readVarInt()));
+                buf.readVarInt(), buf.readVarInt(), buf.readVarInt(), buf.readVarInt(),
+                buf.readBoolean()));
 
     /**
      * The sky this names, or {@link PortalRoomSky#NONE} when it names nothing this build knows.

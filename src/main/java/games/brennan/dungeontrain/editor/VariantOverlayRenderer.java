@@ -181,6 +181,7 @@ public final class VariantOverlayRenderer {
         LAST_PART_VIS_KEY.clear();
         LAST_STRAYS_KEY.clear();
         LAST_DOOR_GHOSTS_KEY.clear();
+        EditorPlotSky.clearAll();
     }
 
     /** Toggle the overlay for {@code player}. {@code on == true} resumes rendering. */
@@ -206,6 +207,9 @@ public final class VariantOverlayRenderer {
             DungeonTrainNet.sendTo(player, EditorStatusPacket.empty());
         }
         PartPositionMenuController.forget(player);
+        // Take the plot's daylight back off — they have left the build area, and the client would
+        // otherwise hold a box it can no longer be inside.
+        EditorPlotSky.forget(player);
         // Clear the client lock-id overlay too — player has left every plot.
         if (LAST_LOCK_SNAPSHOT_KEY.remove(player.getUUID()) != null) {
             DungeonTrainNet.sendTo(player, BlockVariantLockIdsPacket.empty());
@@ -220,22 +224,12 @@ public final class VariantOverlayRenderer {
     }
 
     /**
-     * Minimum player Y for the editor overlay to do any work. Every editor plot
-     * sits in the sky at {@link EditorLayout#PLOT_Y}; gameplay and trains run far
-     * below. A player under this line can't be at a plot, so the per-player
-     * {@code plotContaining} locate cascade is skipped entirely for them.
-     * That cascade used to run every tick for every player even during normal play
-     * with the editor closed (~9ms/tick on a long train — the profiler's "overlay"
-     * cost). A few blocks below the floor for standing-on-the-plot-floor margin —
-     * derived rather than written out, because a gate left ABOVE the plot floor
-     * would silently disable labels and menus for a player standing on their plot.
-     */
-    private static final int EDITOR_Y_MIN = EditorLayout.PLOT_Y - 5;
-
-    /**
      * Call once per server level tick. Cheap when no players are up at the editor
-     * build area ({@code y >= EDITOR_Y_MIN}): every player below that is
-     * short-circuited before any {@code plotContaining} scan runs.
+     * build area ({@link EditorLayout#isAtPlotHeight}): every player below that line
+     * can't be at a plot, so the per-player {@code plotContaining} locate cascade is
+     * skipped entirely for them. That cascade used to run every tick for every player
+     * even during normal play with the editor closed (~9ms/tick on a long train — the
+     * profiler's "overlay" cost).
      */
     public static void onLevelTick(ServerLevel level) {
         List<ServerPlayer> players = level.players();
@@ -256,7 +250,7 @@ public final class VariantOverlayRenderer {
             // ~9ms/tick the profiler flagged, which ran unconditionally during normal play.
             // forget() clears any lingering editor HUD once on the way out, then no-ops (cheap
             // map checks), so a player descending from the build area doesn't keep stale overlay.
-            if (player.getBlockY() < EDITOR_Y_MIN) {
+            if (!EditorLayout.isAtPlotHeight(player.getBlockY())) {
                 forget(player);
                 continue;
             }
@@ -268,6 +262,9 @@ public final class VariantOverlayRenderer {
             pushPartVisibilitySnapshot(player);
             pushStraysSnapshot(player);
             pushDoorGhostsSnapshot(player, dims);
+            // Light a portal room's plot with the room's own Sky — the lighting it will ship with,
+            // rather than the dark box it was authored in until now.
+            EditorPlotSky.update(player, dims);
 
             if (!isEnabled(player)) {
                 clearHoverIfStale(player);
@@ -794,12 +791,21 @@ public final class VariantOverlayRenderer {
         menus = appendPackageMenu(menus, dims);
         menus = appendStagesMenu(menus, dims);
 
+        // Whether this player has closed the world-space Welcome panel in this world. World state
+        // rather than client config, so it survives a relog and stays scoped to this save.
+        net.minecraft.server.MinecraftServer server = player.getServer();
+        boolean helpPanelDismissed = server != null
+            && DungeonTrainWorldData.get(server.overworld()).isHelpPanelDismissed(uuid);
+
         StringBuilder keyBuf = new StringBuilder(64);
         keyBuf.append(category.name()).append('|');
         // Include the focused stage (effective: explicit selection, else the first stage) so selecting /
         // deselecting — or adding / deleting a stage that shifts the default — re-pushes the snapshot and
         // the highlight updates live (steady-state still dedups to zero packets).
         keyBuf.append("sel:").append(EditorStageSelection.effective()).append('|');
+        // In the key as well as the packet, or closing / reopening the Welcome panel would be
+        // deduped away and the panel would not react until something else changed the snapshot.
+        keyBuf.append("help:").append(helpPanelDismissed).append('|');
         for (EditorTypeMenusPacket.Menu m : menus) {
             BlockPos p = m.worldPos();
             keyBuf.append(p.getX()).append(',').append(p.getY()).append(',').append(p.getZ())
@@ -833,7 +839,8 @@ public final class VariantOverlayRenderer {
         LOGGER.info("[DungeonTrain] EditorTypeMenus: send {} menus (category {}, first '{}' with {} variants @ {}) to {}",
             menus.size(), category, first.typeName(), first.variants().size(), first.worldPos(),
             player.getName().getString());
-        DungeonTrainNet.sendTo(player, new EditorTypeMenusPacket(menus, EditorStageSelection.effective()));
+        DungeonTrainNet.sendTo(player, new EditorTypeMenusPacket(
+            menus, EditorStageSelection.effective(), helpPanelDismissed));
     }
 
     /** Send the empty type-menus packet if the player previously had a non-empty snapshot. */
@@ -930,7 +937,7 @@ public final class VariantOverlayRenderer {
         if (!level.dimension().equals(net.minecraft.world.level.Level.OVERWORLD)) return;
         if (EditorStampedCategoryState.current().isEmpty()) return;
         for (ServerPlayer player : players) {
-            if (player.getBlockY() >= EDITOR_Y_MIN) {
+            if (EditorLayout.isAtPlotHeight(player.getBlockY())) {
                 EditorStrayBlocks.sweepStep(level, dims);
                 return;
             }

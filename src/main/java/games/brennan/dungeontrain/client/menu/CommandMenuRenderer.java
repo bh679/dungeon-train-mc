@@ -74,7 +74,7 @@ public final class CommandMenuRenderer {
     @SubscribeEvent
     public static void onRenderLevelStage(RenderLevelStageEvent event) {
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS) return;
-        if (!CommandMenuState.isOpen()) return;
+        if (!CommandMenuState.isOpenWorldspace()) return;
 
         // Re-anchor every frame against the partial-tick interpolated eye so
         // the panel tracks player translation smoothly. Must run before the
@@ -465,6 +465,12 @@ public final class CommandMenuRenderer {
             return 0x80FFAA33;
         }
         if (entry instanceof CommandMenuEntry.DrillIn d && d.highlighted()) {
+            return 0x80FFAA33;
+        }
+        if (entry instanceof CommandMenuEntry.ClientAction c && c.highlighted()) {
+            // Added after this renderer was first written: the File/Current/Settings/Nav tab
+            // strip is a Split/Triple/Quad of ClientAction cells, and the active tab is marked
+            // by nothing but this flag. Without the branch the strip draws with no tab lit.
             return 0x80FFAA33;
         }
         return 0;

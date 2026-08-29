@@ -32,8 +32,13 @@ public final class RunSummaryReporter {
     /**
      * Build and fire the run-summary record for {@code player} from the death-screen {@code packet}.
      * No-op when disabled or on any error — this must never disrupt death handling.
+     *
+     * <p>{@code pos} is resolved once by the caller and shared with the sibling reporters and the
+     * lifetime displacement counter, so no two of them can describe the same death differently.
+     * Its {@code distanceTravelled} is what the public distance leaderboard is built from.</p>
      */
-    public static void report(ServerPlayer player, DeathStatsPacket packet) {
+    public static void report(ServerPlayer player, DeathStatsPacket packet, RunPosition pos,
+                              boolean freePlay) {
         try {
             if (!DungeonTrainConfig.isWorldInfoToRelay()) {
                 return;
@@ -43,8 +48,7 @@ public final class RunSummaryReporter {
             long runSec = Math.max(0L, packet.runTicks() / TICKS_PER_SECOND);
             int carriage = packet.cartsTravelled();
             int distanceBlocks = (int) Math.round(packet.distanceBlocks());
-            RunPosition pos = RunPosition.of(player);
-            JsonObject payload = buildPayload(uuid, name, runSec, carriage, distanceBlocks, pos);
+            JsonObject payload = buildPayload(uuid, name, runSec, carriage, distanceBlocks, pos, freePlay);
             post(uuid, payload.toString());
         } catch (Throwable t) {
             LOGGER.warn("[DungeonTrain] run-summary relay report failed: {}", t.toString());
@@ -61,7 +65,7 @@ public final class RunSummaryReporter {
      * ship so the relay can fall back to the odometer for lives predating the origin capture.</p>
      */
     static JsonObject buildPayload(String uuid, String player, long runSec, int carriage, int distanceBlocks,
-                                   RunPosition pos) {
+                                   RunPosition pos, boolean freePlay) {
         JsonObject body = new JsonObject();
         body.addProperty("uuid", uuid);
         if (player != null && !player.isEmpty()) {
@@ -71,6 +75,11 @@ public final class RunSummaryReporter {
         body.addProperty("carriage", carriage);
         body.addProperty("distanceBlocks", distanceBlocks);
         DeathReporter.addPosition(body, pos);
+        // Was this life Free Play? Same flag, same reason, same ALWAYS-sent rule as
+        // DeathDetailReporter — see the note there. This is the payload the one-life distance,
+        // playtime and carriage boards are built from, so it is the one that was showing
+        // world-border "distances" before the flag existed.
+        body.addProperty("freePlay", freePlay);
         return body;
     }
 

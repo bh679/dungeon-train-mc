@@ -53,6 +53,79 @@ class PortalCorridorMaskTest {
         return x == s.origin().getX() + CORRIDOR_LENGTH - 1 || x == s.exitOrigin(DIMS).getX();
     }
 
+    private static PortalCorridorMask maskWithoutSeals(PortalStructure structure) {
+        return PortalCorridorMask.forStructure(structure, DIMS,
+            PortalCarriageBuilder.layoutFor(DIMS, PortalCorridorKind.LONG), PLUG_DEPTH,
+            /*withSeals*/ false);
+    }
+
+    @Test
+    @DisplayName("A seal plane IS the wall plane of the room copy beside it")
+    void sealPlanesLandOnTheNeighbouringTilesWall() {
+        PortalStructure s = structure();
+        PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(DIMS, PortalCorridorKind.LONG);
+        Vec3i size = s.roomSize();
+
+        // This is the whole reason the seals are droppable. The exit mouth seals at the minimum X of
+        // the tile at (+1, 0) and the entry mouth at the maximum X of the tile at (-1, 0) — so while
+        // both were masked, neither copy ever wrote the wall that touches the portal carriage.
+        BlockPos ahead = s.tileOrigin(DIMS, layout, new PortalRoomTiling.Tile(1, 0));
+        BlockPos behind = s.tileOrigin(DIMS, layout, new PortalRoomTiling.Tile(-1, 0));
+        assertEquals(ahead.getX(), s.exitOrigin(DIMS).getX(), "exit seal is the next tile's -X wall");
+        assertEquals(behind.getX() + size.getX() - 1, s.origin().getX() + CORRIDOR_LENGTH - 1,
+            "entry seal is the previous tile's +X wall");
+    }
+
+    @Test
+    @DisplayName("Dropping the seals frees exactly the two wall planes and nothing else")
+    void withoutSealsFreesOnlyTheSealPlanes() {
+        PortalStructure s = structure();
+        PortalCorridorMask full = mask(s);
+        PortalCorridorMask bare = maskWithoutSeals(s);
+        Vec3i size = s.roomSize();
+        BlockPos room = s.roomOrigin(DIMS,
+            PortalCarriageBuilder.layoutFor(DIMS, PortalCorridorKind.LONG));
+
+        // Sweep every cell either mask can speak for. The two may differ only on a seal plane, and on
+        // a seal plane only outside the corridor's own cross-section — release a corridor cell and the
+        // doorway a player walks through gets bricked up by the next copy stamped over it.
+        for (int x = s.origin().getX() - PLUG_DEPTH; x <= s.exitOrigin(DIMS).getX() + CORRIDOR_LENGTH + PLUG_DEPTH; x++) {
+            for (int y = room.getY(); y < room.getY() + size.getY(); y++) {
+                for (int z = room.getZ() - 1; z < room.getZ() + size.getZ() + 1; z++) {
+                    if (bare.covers(x, y, z)) {
+                        assertTrue(full.covers(x, y, z),
+                            "seal-less mask covers a cell the full one does not: " + x + "," + y + "," + z);
+                        continue;
+                    }
+                    if (!full.covers(x, y, z)) continue;
+                    assertTrue(isSealPlane(s, x),
+                        "released a cell off a seal plane: " + x + "," + y + "," + z);
+                }
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("The corridors and plugs stay covered without the seals")
+    void withoutSealsStillCoversCorridorsAndPlugs() {
+        PortalStructure s = structure();
+        PortalCorridorMask bare = maskWithoutSeals(s);
+        for (int dx = 0; dx < CORRIDOR_LENGTH; dx++) {
+            for (int dz = 0; dz < DIMS.width(); dz++) {
+                for (int dy = 0; dy < DIMS.height(); dy++) {
+                    assertTrue(bare.covers(s.origin().getX() + dx, ORIGIN.getY() + dy,
+                        ORIGIN.getZ() + dz), "entry corridor cell " + dx + "," + dy + "," + dz);
+                    assertTrue(bare.covers(s.exitOrigin(DIMS).getX() + dx, ORIGIN.getY() + dy,
+                        ORIGIN.getZ() + dz), "exit corridor cell " + dx + "," + dy + "," + dz);
+                }
+            }
+        }
+        assertTrue(bare.covers(s.origin().getX() - 1, ORIGIN.getY(), ORIGIN.getZ()),
+            "entry plug still covered");
+        assertTrue(bare.covers(s.exitOrigin(DIMS).getX() + CORRIDOR_LENGTH, ORIGIN.getY(), ORIGIN.getZ()),
+            "exit plug still covered");
+    }
+
     @Test
     @DisplayName("Every cell of both corridors is covered, along the CORRIDOR's length")
     void coversBothCorridors() {

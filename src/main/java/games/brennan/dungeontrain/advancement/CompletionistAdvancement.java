@@ -32,7 +32,9 @@ import org.slf4j.Logger;
  * <p><b>Dynamic by construction.</b> The required set is computed at call time
  * from {@link ServerAdvancementManager#getAllAdvancements()}, filtered to the
  * {@code dungeontrain} namespace, excluding the {@code editor/} path, this
- * advancement itself, and display-less (recipe-style) advancements. A new
+ * advancement itself, {@link StartAgainAdvancement} (which sits <em>after</em>
+ * the capstone — requiring it would make the capstone unreachable), and
+ * display-less (recipe-style) advancements. A new
  * {@code dungeon_train/*} advancement added in a future update is therefore
  * required automatically, with no change to this class. The {@code editor/}
  * partition is the same one
@@ -52,7 +54,8 @@ public final class CompletionistAdvancement {
 
     /**
      * Grant the capstone to {@code player} iff every other non-editor
-     * {@code dungeontrain} advancement is already done for them. Cheap and
+     * {@code dungeontrain} advancement (bar {@link StartAgainAdvancement}) is
+     * already done for them. Cheap and
      * idempotent: returns early when the server/advancement is unavailable or
      * the capstone is already earned, scans the live advancement registry for
      * any still-incomplete prerequisite, and only when none remain awards the
@@ -72,6 +75,7 @@ public final class CompletionistAdvancement {
             if (!DungeonTrain.MOD_ID.equals(rl.getNamespace())) continue; // other mods / vanilla
             if (rl.getPath().startsWith("editor/")) continue;             // editor tree excluded
             if (rl.equals(ID)) continue;                                  // never require itself
+            if (rl.equals(StartAgainAdvancement.ID)) continue;            // downstream of the capstone, not a prerequisite
             if (holder.value().display().isEmpty()) continue;             // skip recipe/display-less
             if (!player.getAdvancements().getOrStartProgress(holder).isDone()) return; // not complete yet
         }

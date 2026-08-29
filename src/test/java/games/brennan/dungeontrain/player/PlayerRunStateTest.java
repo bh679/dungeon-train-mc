@@ -225,4 +225,89 @@ final class PlayerRunStateTest {
         assertTrue(state.recordNarrativeRead("augustus_park#1"),
             "after respawn the letter is fresh again — counts toward the new life's books-read");
     }
+
+    @Test
+    @DisplayName("the chest-free streak keeps its high-water mark when a loot container ends it")
+    void chestFreeStreakHighWaterMark() {
+        PlayerRunState state = new PlayerRunState();
+        state.recordCartMovement(5);
+        state.recordCartMovement(4);
+        assertEquals(9, state.maxCarriagesNoChest(), "nine carriages passed with nothing opened");
+
+        state.openedLootContainer(); // streak ends, the record it set does not
+        assertEquals(9, state.maxCarriagesNoChest());
+
+        state.recordCartMovement(3);
+        assertEquals(9, state.maxCarriagesNoChest(), "a shorter later run does not beat the record");
+        state.recordCartMovement(20);
+        assertEquals(23, state.maxCarriagesNoChest(), "a longer one does");
+    }
+
+    @Test
+    @DisplayName("a vase counts as a container opened, but is not loot enough to end the streak")
+    void vaseCountsWithoutEndingTheChestFreeStreak() {
+        PlayerRunState state = new PlayerRunState();
+        state.recordCartMovement(6);
+
+        // The pot-break path. It tallies, because the player did open something...
+        assertEquals(1, state.incrementContainersOpened(), "the vase counts toward containers opened");
+        state.recordCartMovement(4);
+        assertEquals(10, state.maxCarriagesNoChest(),
+            "...but the streak ran straight through it — Walk Past The Loot is about leaving "
+                + "chests alone, and a vase is not loot");
+
+        // The chest path is the one that ends it, and tallies on the same counter.
+        assertEquals(2, state.openedLootContainer(), "a chest counts too");
+        state.recordCartMovement(2);
+        assertEquals(10, state.maxCarriagesNoChest(), "the chest reset it; two carriages do not beat ten");
+    }
+
+    @Test
+    @DisplayName("backward carriages count towards the chest-free streak, same as the absolute cart counter")
+    void chestFreeStreakCountsBackwardTravel() {
+        PlayerRunState state = new PlayerRunState();
+        state.recordCartMovement(4);
+        state.recordCartMovement(-3);
+        assertEquals(7, state.maxCarriagesNoChest());
+    }
+
+    @Test
+    @DisplayName("pacifist carriages count only while no damage has been dealt at all")
+    void pacifistCarriagesRequireZeroDamage() {
+        PlayerRunState state = new PlayerRunState();
+        state.advanceTravelled(14);
+        assertEquals(14, state.pacifistCarriages(), "no damage dealt — every carriage counts");
+
+        state.addDamageDealt(0.5);
+        assertEquals(0, state.pacifistCarriages(), "one hit disqualifies the whole run, not just the rest");
+    }
+
+    @Test
+    @DisplayName("pacifist carriages measure distance travelled either way, never a negative")
+    void pacifistCarriagesUseAbsoluteTravel() {
+        PlayerRunState state = new PlayerRunState();
+        state.advanceTravelled(-6);
+        assertEquals(6, state.pacifistCarriages());
+    }
+
+    @Test
+    @DisplayName("echo kills tally per run and reset on death")
+    void echoKillsResetOnDeath() {
+        PlayerRunState state = new PlayerRunState();
+        assertEquals(1, state.incrementEchoesKilled());
+        assertEquals(2, state.incrementEchoesKilled());
+        state.resetDeathStats();
+        assertEquals(0, state.echoesKilled(), "a new life starts its own count");
+    }
+
+    @Test
+    @DisplayName("resetDeathStats clears the chest-free streak AND its high-water mark")
+    void chestFreeStreakResetsOnDeath() {
+        PlayerRunState state = new PlayerRunState();
+        state.recordCartMovement(11);
+        state.resetDeathStats();
+        assertEquals(0, state.maxCarriagesNoChest());
+        state.recordCartMovement(2);
+        assertEquals(2, state.maxCarriagesNoChest(), "the streak restarts rather than resuming");
+    }
 }

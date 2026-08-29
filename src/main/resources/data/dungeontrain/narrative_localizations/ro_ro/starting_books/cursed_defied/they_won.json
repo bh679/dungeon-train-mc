@@ -1,0 +1,11 @@
+{
+  "id": "they_won",
+  "title": "Au câștigat",
+  "author": "Brennan Hatton",
+  "generation": 0,
+  "weight": 1,
+  "variants": [
+    "Au câștigat.\n\n%TARGET% te-a ucis.\nDin nou, tehnic vorbind.\nErai deja dus.\n\nVagonul %CARRIAGE%.\n%DAYS% zile de așteptare.\n\n%STORY%\n\nAu luat biletul de pe cadavru.\nScrisul tău.\nNumele tău pe el.\n\nUndeva, într-o lume pe care n-o vei vizita niciodată, cineva are caietul morții tale într-un cufăr.\n\nCum ți se pare?",
+    "Despre numele acela pe care l-ai scris.\n\n%TARGET%.\n\nÎncă respiră.\n\nEcho-ul tău l-a găsit la vagonul %CARRIAGE%, cu %DAYS% zile întârziere, și a pierdut.\n\n%GEAR%\nAvea fața ta.\nSe lupta ca tine.\n\n%STORY%\n\nPoate că partea asta din urmă e problema.\n\n.\n\nBaftă în viața următoare."
+  ]
+}

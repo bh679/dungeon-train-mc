@@ -5,6 +5,8 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.client.menu.MenuBlockIcons;
+import games.brennan.dungeontrain.client.menu.PanelIconBatch;
 import games.brennan.dungeontrain.client.menu.MenuRenderStates;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.net.ContainerContentsSyncPacket;
@@ -26,6 +28,7 @@ import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 
+import javax.annotation.Nullable;
 import java.util.List;
 
 /**
@@ -71,14 +74,33 @@ public final class ContainerContentsMenuRenderer {
     static final double LINK_ROW_HEIGHT = 0.26;
     /** Width of the unlink 'X' on the link sub-row. */
     static final double LINK_UNLINK_WIDTH = 0.30;
-    static final double COLUMN_WIDTH = 1.9;
     static final double MIN_PANEL_WIDTH = 2.4;
     static final double X_CELL_WIDTH = 0.30;
     static final double COUNT_CELL_WIDTH = 0.40;
     static final double WEIGHT_CELL_WIDTH = 0.40;
     /** Width of the slot-override cell ("auto" / "in" / "fuel" / "out"). */
     static final double SLOT_CELL_WIDTH = 0.40;
+    /** Width of the item-icon cell at the left of an entry row. */
+    static final double ICON_CELL_WIDTH = 0.30;
+    /** Rendered icon edge length — matches the Stages panel's row icons. */
+    static final double ICON_SIZE = 0.22;
+    /** Breathing room around a revealed name when a row is expanded. */
+    static final double NAME_PAD = 0.08;
     static final double TEXT_SCALE = 0.012;
+
+    /**
+     * Compact width of an entry column: the icon cell plus the four fixed
+     * right-hand cells. A column grows beyond this only for the widest name
+     * revealed inside it (see {@link #computeLayout}).
+     */
+    static final double COLUMN_WIDTH =
+        ICON_CELL_WIDTH + COUNT_CELL_WIDTH + WEIGHT_CELL_WIDTH + SLOT_CELL_WIDTH + X_CELL_WIDTH;
+
+    /**
+     * The ADD-search list still shows full item ids as text, so it keeps the
+     * wider pre-icon column width rather than the compact grid one.
+     */
+    static final double SEARCH_COLUMN_WIDTH = 1.9;
 
     /** True when the menu currently has a link sub-row to draw. */
     static boolean hasLinkRow() {
@@ -90,7 +112,7 @@ public final class ContainerContentsMenuRenderer {
     @SubscribeEvent
     public static void onRenderLevelStage(RenderLevelStageEvent event) {
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS) return;
-        if (!ContainerContentsMenu.isActive()) return;
+        if (!ContainerContentsMenu.isActiveWorldspace()) return;
         if (ContainerContentsMenu.localPos() == null) return;
 
         ContainerContentsMenuRaycast.updateHovered();
@@ -122,26 +144,72 @@ public final class ContainerContentsMenuRenderer {
 
         MultiBufferSource.BufferSource buffer = mc.renderBuffers().bufferSource();
 
-        if (ContainerContentsMenu.screen() == ContainerContentsMenu.Screen.ROOT) {
-            drawRoot(ps, buffer, font);
-        } else {
-            drawSearch(ps, buffer, font);
-        }
+        drawPanel(ps, buffer, font, null);
 
         buffer.endBatch(PANEL_QUAD);
+        // Item icons render through the item render types, not PANEL_QUAD —
+        // flush them too before the pose pops (mirrors StagePanelMenuRenderer).
+        buffer.endBatch();
         ps.popPose();
     }
 
-    private static void drawRoot(PoseStack ps, MultiBufferSource buffer, Font font) {
+    /**
+     * The active panel's outer size in panel-local units.
+     *
+     * <p>Only the screen-space host needs this — it has to know how big the panel is before it
+     * can centre and scale it, where the world-space path just draws outward from an anchor.
+     * Derived from the same {@link #computeLayout} the draw bodies and the raycast use, so it
+     * cannot drift from what is actually drawn.</p>
+     */
+    record PanelSize(double panelW, double panelH) {}
+
+    static PanelSize panelSize() {
+        if (ContainerContentsMenu.screen() != ContainerContentsMenu.Screen.ROOT) {
+            List<String> filtered = ContainerContentsMenu.filteredItemIds();
+            int maxRows = ContainerContentsMenu.ROWS_PER_COLUMN * 4;
+            int n = Math.min(filtered.size(), maxRows);
+            int colCount = Math.max(1, (n + ContainerContentsMenu.ROWS_PER_COLUMN - 1) / ContainerContentsMenu.ROWS_PER_COLUMN);
+            double panelW = Math.max(MIN_PANEL_WIDTH, colCount * SEARCH_COLUMN_WIDTH);
+            int displayedRows = Math.max(1, Math.min(n, ContainerContentsMenu.ROWS_PER_COLUMN));
+            return new PanelSize(panelW, HEADER_HEIGHT + TOOLBAR_HEIGHT + displayedRows * ROW_HEIGHT);
+        }
         List<ContainerContentsSyncPacket.Entry> entries = ContainerContentsMenu.entries();
         int n = entries.size();
         int colCount = Math.max(1, (n + ContainerContentsMenu.ROWS_PER_COLUMN - 1) / ContainerContentsMenu.ROWS_PER_COLUMN);
-        double panelW = Math.max(MIN_PANEL_WIDTH, colCount * COLUMN_WIDTH);
+        EntryLayout layout = computeLayout(entries, colCount);
+        double linkH = hasLinkRow() ? LINK_ROW_HEIGHT : 0.0;
+        return new PanelSize(layout.panelWidth(),
+            HEADER_HEIGHT + linkH + TOOLBAR_HEIGHT + layout.gridHeight());
+    }
+
+    /**
+     * Draw the active panel — the entry point the screen-space host calls.
+     *
+     * @param icons non-null in screen-space, where item icons are batched for the host to replay
+     *              through vanilla's GUI item path rather than drawn inline. See
+     *              {@link games.brennan.dungeontrain.client.menu.PanelIconBatch}.
+     */
+    static void drawPanel(PoseStack ps, MultiBufferSource buffer, Font font,
+                          @Nullable PanelIconBatch icons) {
+        if (ContainerContentsMenu.screen() == ContainerContentsMenu.Screen.ROOT) {
+            drawRoot(ps, buffer, font, icons);
+        } else {
+            drawSearch(ps, buffer, font);
+        }
+    }
+
+    private static void drawRoot(PoseStack ps, MultiBufferSource buffer, Font font,
+                                 @Nullable PanelIconBatch icons) {
+        List<ContainerContentsSyncPacket.Entry> entries = ContainerContentsMenu.entries();
+        int n = entries.size();
+        int colCount = Math.max(1, (n + ContainerContentsMenu.ROWS_PER_COLUMN - 1) / ContainerContentsMenu.ROWS_PER_COLUMN);
 
         // Per-entry layout — variable row height. An item that supports
         // neither random durability nor random enchantment collapses to a
-        // single-strip row (no sub-row drawn).
+        // single-strip row (no sub-row drawn). Column widths vary too: a
+        // column widens to fit the longest name revealed inside it.
         EntryLayout layout = computeLayout(entries, colCount);
+        double panelW = layout.panelWidth();
         double gridH = layout.gridHeight();
         double linkH = hasLinkRow() ? LINK_ROW_HEIGHT : 0.0;
         double panelH = HEADER_HEIGHT + linkH + TOOLBAR_HEIGHT + gridH;
@@ -234,11 +302,11 @@ public final class ContainerContentsMenuRenderer {
         }
 
         // Grid
-        double colActualW = panelW / colCount;
         double gridTop = toolbarBottom;
         for (int i = 0; i < n; i++) {
             int col = i / ContainerContentsMenu.ROWS_PER_COLUMN;
-            double colXL = -halfW + col * colActualW;
+            double colActualW = layout.colWidth()[col];
+            double colXL = -halfW + layout.colLeft()[col];
             double colXR = colXL + colActualW;
             // Top strip — name / count / weight / × (existing layout).
             double rowTop = gridTop - layout.rowDispTop[i];
@@ -251,7 +319,7 @@ public final class ContainerContentsMenuRenderer {
 
             ContainerContentsSyncPacket.Entry entry = entries.get(i);
 
-            // Right-to-left: [×] [slot] [weight] [count] [name]
+            // Right-to-left: [×] [slot] [weight] [count] [icon (+ name when expanded)]
             double xCellL = colXR - X_CELL_WIDTH;
             double xCellR = colXR;
             double slotR = xCellL;
@@ -260,18 +328,24 @@ public final class ContainerContentsMenuRenderer {
             double weightL = weightR - WEIGHT_CELL_WIDTH;
             double countR = weightL;
             double countL = countR - COUNT_CELL_WIDTH;
-            double nameL = colXL;
-            double nameR = countL;
+            double iconL = colXL;
+            double iconR = countL;
 
-            // Name
-            boolean nameHover = hovered.kind() == ContainerContentsMenu.CellKind.ENTRY_NAME && hovered.index() == i;
-            if (nameHover) {
-                drawQuad(ps, buffer, nameL + 0.01, rowBottom + 0.005,
-                    nameR - 0.005, rowTop - 0.005, 0x60FFCC33);
+            // Icon cell — click to reveal / hide the item name beside it. The
+            // hit region spans the revealed name too, so a second click on the
+            // name collapses the row again.
+            boolean iconHover = hovered.kind() == ContainerContentsMenu.CellKind.ENTRY_ICON && hovered.index() == i;
+            if (iconHover) {
+                drawQuad(ps, buffer, iconL + 0.01, rowBottom + 0.005,
+                    iconR - 0.005, rowTop - 0.005, 0x60FFCC33);
             }
-            drawLeftText(ps, buffer, font, shortenItemLabel(entry.itemId()),
-                nameL + 0.04, rowCY,
-                nameHover ? 0xFF000000 : 0xFFFFFFFF);
+            MenuBlockIcons.drawItemIcon(ps, buffer, entry.itemId(),
+                iconL + ICON_CELL_WIDTH / 2.0, rowCY, ICON_SIZE, icons);
+            if (ContainerContentsMenu.isExpanded(i)) {
+                drawLeftText(ps, buffer, font, shortenItemLabel(entry.itemId()),
+                    iconL + ICON_CELL_WIDTH + NAME_PAD / 2.0, rowCY,
+                    iconHover ? 0xFF000000 : 0xFFFFFFFF);
+            }
 
             // Count cell
             boolean countHover = hovered.kind() == ContainerContentsMenu.CellKind.ENTRY_COUNT_PLUS && hovered.index() == i;
@@ -400,15 +474,27 @@ public final class ContainerContentsMenuRenderer {
      * <p>{@code rowDispTop[i]} is the entry's top-edge displacement from the
      * grid's top edge (positive going down). {@code gridHeight} is the height
      * needed by the tallest column.</p>
+     *
+     * <p>Columns are not uniform in width: {@code colWidth[c]} is
+     * {@link #COLUMN_WIDTH} plus whatever the longest name revealed in that
+     * column needs, {@code colLeft[c]} is its left edge measured from the
+     * panel's left edge, and {@code panelWidth} is their sum. The raycast reads
+     * the same record so hover and render never disagree about where a cell
+     * is.</p>
      */
-    record EntryLayout(double[] rowDispTop, boolean[] showDur, boolean[] showEnch, double gridHeight) {}
+    record EntryLayout(double[] rowDispTop, boolean[] showDur, boolean[] showEnch, double gridHeight,
+                       double[] colWidth, double[] colLeft, double panelWidth) {}
 
     static EntryLayout computeLayout(List<ContainerContentsSyncPacket.Entry> entries, int colCount) {
         int n = entries.size();
+        int cols = Math.max(colCount, 1);
         double[] rowDispTop = new double[n];
         boolean[] showDur = new boolean[n];
         boolean[] showEnch = new boolean[n];
-        double[] colTotalH = new double[Math.max(colCount, 1)];
+        double[] colTotalH = new double[cols];
+        // Extra width each column needs for the longest name revealed inside it.
+        double[] colNameW = new double[cols];
+        Font font = Minecraft.getInstance().font;
         for (int i = 0; i < n; i++) {
             int col = i / ContainerContentsMenu.ROWS_PER_COLUMN;
             String id = entries.get(i).itemId();
@@ -417,13 +503,34 @@ public final class ContainerContentsMenuRenderer {
             double h = (showDur[i] || showEnch[i]) ? ENTRY_BLOCK_HEIGHT : ROW_HEIGHT;
             rowDispTop[i] = colTotalH[col];
             colTotalH[col] += h;
+            if (ContainerContentsMenu.isExpanded(i)) {
+                double nameW = font.width(shortenItemLabel(id)) * TEXT_SCALE + NAME_PAD;
+                colNameW[col] = Math.max(colNameW[col], nameW);
+            }
         }
         double gridH = 0;
         for (double h : colTotalH) gridH = Math.max(gridH, h);
         // Empty-state min height — keeps the panel visually anchored when the
         // pool has zero entries.
         if (gridH <= 0) gridH = ENTRY_BLOCK_HEIGHT;
-        return new EntryLayout(rowDispTop, showDur, showEnch, gridH);
+
+        double[] colWidth = new double[cols];
+        double sumW = 0;
+        for (int c = 0; c < cols; c++) {
+            colWidth[c] = COLUMN_WIDTH + colNameW[c];
+            sumW += colWidth[c];
+        }
+        // A narrow grid still fills MIN_PANEL_WIDTH so the header and toolbar
+        // stay readable — hand the slack to the columns evenly so their right
+        // edges keep lining up with the panel edge.
+        if (sumW < MIN_PANEL_WIDTH) {
+            double slack = (MIN_PANEL_WIDTH - sumW) / cols;
+            for (int c = 0; c < cols; c++) colWidth[c] += slack;
+            sumW = MIN_PANEL_WIDTH;
+        }
+        double[] colLeft = new double[cols];
+        for (int c = 1; c < cols; c++) colLeft[c] = colLeft[c - 1] + colWidth[c - 1];
+        return new EntryLayout(rowDispTop, showDur, showEnch, gridH, colWidth, colLeft, sumW);
     }
 
     /**
@@ -457,7 +564,7 @@ public final class ContainerContentsMenuRenderer {
         int maxRows = ContainerContentsMenu.ROWS_PER_COLUMN * 4;
         int n = Math.min(filtered.size(), maxRows);
         int colCount = Math.max(1, (n + ContainerContentsMenu.ROWS_PER_COLUMN - 1) / ContainerContentsMenu.ROWS_PER_COLUMN);
-        double panelW = Math.max(MIN_PANEL_WIDTH, colCount * COLUMN_WIDTH);
+        double panelW = Math.max(MIN_PANEL_WIDTH, colCount * SEARCH_COLUMN_WIDTH);
         int displayedRows = Math.min(n, ContainerContentsMenu.ROWS_PER_COLUMN);
         if (displayedRows == 0) displayedRows = 1;
         double gridH = displayedRows * ROW_HEIGHT;

@@ -9,6 +9,7 @@ import games.brennan.dungeontrain.client.menu.EditorPlotLabelsRenderer;
 import games.brennan.dungeontrain.client.menu.MenuRenderStates;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.net.EditorTypeMenusPacket;
+import games.brennan.dungeontrain.editor.PlotCategory;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.LightTexture;
@@ -48,7 +49,7 @@ import org.joml.Quaternionf;
 public final class EditorHelpPanelRenderer {
 
     /** Cell kinds the raycast / input handler need to identify. */
-    public enum CellKind { NONE, WIKI_BUTTON }
+    public enum CellKind { NONE, WIKI_BUTTON, CLOSE_BUTTON }
 
     /** Resolved hover state — set each tick by {@link EditorHelpPanelRaycast}. */
     public record Hovered(CellKind cell) {
@@ -86,12 +87,20 @@ public final class EditorHelpPanelRenderer {
      */
     static final double WORLD_OFFSET_BLOCKS = 5.0;
 
+    /**
+     * Width of the close (X) cell at the right end of the header band. A square — one row tall by
+     * one row wide — so the button reads as a corner control rather than a slice of the title.
+     */
+    static final double CLOSE_W = ROW_H;
+
     private static final int BACKDROP_COLOR = 0xC8000000;
     private static final int HEADER_BG = 0x60FFEEBB;
     private static final int ROW_SEP_COLOR = 0x40FFFFFF;
     /** Faint green band behind the wiki button — same family as the +New row tint. */
     private static final int BUTTON_BG = 0x4055FF55;
     private static final int HOVER_COLOR = 0x60FFCC33;
+    /** Muted red behind the close cell — the one destructive-ish control on the panel. */
+    private static final int CLOSE_BG = 0x50FF5555;
 
     private static final int HEADER_COLOR = 0xFFFFEEBB;
     private static final int BODY_COLOR = 0xFFFFFFFF;
@@ -99,6 +108,15 @@ public final class EditorHelpPanelRenderer {
     private static final int KEY_COLOR = 0xFFCCCCCC;
     /** Bright green text for the wiki button so it stands out as the actionable row. */
     private static final int BUTTON_COLOR = 0xFFAAFFAA;
+    /** Close glyph, tinted to match its band. */
+    private static final int CLOSE_COLOR = 0xFFFFDDDD;
+
+    /**
+     * The close glyph. Plain ASCII rather than {@code ✕} / {@code ✖}: nothing else in this mod
+     * depends on the extended font, and {@code X} is also the keybind the panel itself teaches for
+     * the editor menu.
+     */
+    private static final String CLOSE_GLYPH = "X";
 
     /** 8 rows total: header, 3 welcome lines, 3 keybind hints, wiki button. */
     static final int ROW_COUNT = 8;
@@ -153,7 +171,8 @@ public final class EditorHelpPanelRenderer {
         // Portal room plots share the track-side +Z row layout, so they need the same
         // perpendicular anchor.
         String activeCategory = navMenu.activeCategoryId();
-        boolean isZRow = "tracks".equals(activeCategory) || "portals".equals(activeCategory);
+        PlotCategory cat = PlotCategory.fromId(activeCategory).orElse(null);
+        boolean isZRow = cat == PlotCategory.TRACKS || cat == PlotCategory.PORTALS;
         if (isZRow) {
             return new Vec3(cx - WORLD_OFFSET_BLOCKS, cy, cz);
         }
@@ -165,6 +184,11 @@ public final class EditorHelpPanelRenderer {
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS) return;
         // Master "Editor Menus" toggle — hide all world-space editor panels when off.
         if (!games.brennan.dungeontrain.client.EditorStatusHudOverlay.isEditorMenusVisible()) {
+            HOVERED = Hovered.NONE;
+            return;
+        }
+        // Closed by this player in this world (server-reported, persisted in the world save).
+        if (EditorTypeMenuRenderer.helpPanelDismissed()) {
             HOVERED = Hovered.NONE;
             return;
         }
@@ -183,6 +207,11 @@ public final class EditorHelpPanelRenderer {
         MultiBufferSource.BufferSource buffer = mc.renderBuffers().bufferSource();
 
         Vec3 anchor = helpAnchor(navMenu);
+        // Auto culls the board once you have walked away from the door it sits beside.
+        if (!games.brennan.dungeontrain.client.EditorMenusModeState.withinRange(anchor, cam)) {
+            HOVERED = Hovered.NONE;
+            return;
+        }
         drawPanel(ps, buffer, font, cam, anchor, hovered());
 
         buffer.endBatch(PANEL_QUAD);
@@ -232,6 +261,18 @@ public final class EditorHelpPanelRenderer {
         drawCenteredText(ps, buffer, font,
             Component.translatable("gui.dungeontrain.editor_help.title").getString(),
             0, headerCY, HEADER_COLOR);
+
+        // Close (X) — top-right corner of the header band. Drawn after the title so it sits over
+        // the header tint; the title stays centred on the full width, which reads fine because the
+        // title is far shorter than the panel.
+        double closeLeft = halfW - CLOSE_W;
+        drawQuad(ps, buffer, closeLeft, headerBottom, halfW, headerTop, CLOSE_BG);
+        if (hovered.cell == CellKind.CLOSE_BUTTON) {
+            drawQuad(ps, buffer, closeLeft + 0.005, headerBottom + 0.005,
+                halfW - 0.005, headerTop - 0.005, HOVER_COLOR);
+        }
+        drawCenteredText(ps, buffer, font, CLOSE_GLYPH,
+            closeLeft + CLOSE_W / 2.0, headerCY, CLOSE_COLOR);
 
         // Rows 1..3 — welcome body.
         drawBodyRow(ps, buffer, font, topY, 1, "gui.dungeontrain.editor_help.welcome_1", BODY_COLOR);
@@ -309,6 +350,7 @@ public final class EditorHelpPanelRenderer {
         double halfH = halfHeight();
         if (hitX < -HALF_W || hitX > HALF_W || hitY < -halfH || hitY > halfH) return Hovered.NONE;
         int rowFromTop = (int) Math.floor((halfH - hitY) / ROW_H);
+        if (rowFromTop == 0 && hitX >= HALF_W - CLOSE_W) return new Hovered(CellKind.CLOSE_BUTTON);
         if (rowFromTop == ROW_WIKI_BUTTON) return new Hovered(CellKind.WIKI_BUTTON);
         return Hovered.NONE;
     }

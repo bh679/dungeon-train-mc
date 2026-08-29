@@ -72,8 +72,16 @@ public final class TrainAssembler {
     private static SharedPick tryLeaseShared(ServerLevel level, CarriageVariant variant, int carriagePIdx,
                                              CarriageDims dims, CarriageGenerationConfig genCfg,
                                              String stageId, List<String> onlineUuids) {
-        if (!games.brennan.dungeontrain.event.SharedCarriageGate.canDiscover()) return null;
         if (!SharedCarriageFlags.isSharedVariant(variant.id())) return null;
+        // canLease, not canDiscover: uploads stay on while the pool is not being served into runs.
+        // Logged rather than returned silently — "the train has no community carriages" was
+        // indistinguishable from a broken relay until logLeaseOutcome existed. Placed after the
+        // shared-variant test for the same reason the portal check below is: the line then fires at
+        // the frequency of shared slots (~1 in 73) rather than on every carriage in the world.
+        if (!games.brennan.dungeontrain.event.SharedCarriageGate.canLease()) {
+            logLeaseOutcome(carriagePIdx, "LEASING_OFF", null);
+            return null;
+        }
         // No part of a portal can be served from the pool. The variant rolled for this slot is an
         // ordinary one even here — the portal substitution happens later, inside CarriagePlacer.placeAt
         // — so without this check a buffered lease is stamped verbatim over the slot and the corridor
@@ -214,13 +222,11 @@ public final class TrainAssembler {
     /** Fold a lease's opaque delta log (seq &gt; baseSeq, ascending seq) onto its decoded base snapshot. */
     private static net.minecraft.nbt.CompoundTag foldLeaseDeltas(net.minecraft.nbt.CompoundTag base,
                                                                  SharedCarriageClient.PoolLease lease) {
-        List<SharedCarriageClient.DeltaRec> deltas = lease.deltas();
-        if (deltas == null || deltas.isEmpty()) return base;
-        List<SharedCarriageClient.DeltaRec> sorted = new java.util.ArrayList<>(deltas);
-        sorted.sort(java.util.Comparator.comparingInt(SharedCarriageClient.DeltaRec::seq));
+        List<SharedCarriageClient.DeltaRec> pending =
+                SharedCarriageClient.pendingDeltas(lease.deltas(), lease.baseSeq());
+        if (pending.isEmpty()) return base;
         net.minecraft.nbt.CompoundTag folded = base;
-        for (SharedCarriageClient.DeltaRec d : sorted) {
-            if (d.seq() <= lease.baseSeq()) continue; // already folded into the base blob
+        for (SharedCarriageClient.DeltaRec d : pending) {
             try {
                 folded = CarriageBlockSnapshot.applyDeltaCells(folded, CarriageBlockSnapshot.decode(d.cells()));
             } catch (Exception e) {
@@ -413,7 +419,14 @@ public final class TrainAssembler {
         // shell / contents / parts dimension gate makes the whole group's stage flip in lockstep
         // with the band beneath it, instead of trailing it by the appender's accumulated MIN_GAP /
         // collision drift (worst at the End and on leaving the Nether). See GateContext.forCarriageAtWorldX.
-        int groupAnchorWorldX = origin.getX() + enclosedStartOffset;
+        // Pin the gate X to whatever this anchor FIRST resolved at. An anchor can be spawned fresh
+        // more than once — cleanupGhostAnchors deletes + unregisters anchors past the visible edge and
+        // the appender re-spawns them — and by then the train has travelled, so a live re-sample lands
+        // in a different band and rebuilds the group as a different stage and a different carriage
+        // (the "one carriage at render distance loads from a different stage" report). Placement below
+        // still uses the live `origin`; only the gate input is stable. See Trains.gateWorldXOrRecord.
+        int placedAnchorWorldX = origin.getX() + enclosedStartOffset;
+        int groupAnchorWorldX = Trains.gateWorldXOrRecord(trainId, anchorPIdx, placedAnchorWorldX);
 
         int cleared = clearSubLevelVolume(level, origin, subLevelLength, dims);
         long tAfterClear = System.nanoTime();
@@ -498,6 +511,9 @@ public final class TrainAssembler {
                     // mode; a slot recorded as a corridor and then leased over would keep a swap
                     // plane standing above a shared carriage. See PortalStampRecord.
                     PortalRegistry.get(level).noteStamped(carriagePIdx, false);
+                    // Stamped verbatim — no contents pick happens for this slot, so the debug
+                    // panel is told that rather than being left to guess.
+                    PlacedCarriageFacts.recordRelayBuild(carriagePIdx, variant);
                 }
             }
             if (carriageBlocks == null) {
@@ -640,8 +656,13 @@ public final class TrainAssembler {
         Trains.registerSpawned(trainId, anchorPIdx, ship);
 
         long tEnd = System.nanoTime();
-        LOGGER.info("[DungeonTrain] Spawned group anchorPIdx={} groupSize={} enclosed=[{}] pads={} trainId={} ship id={} shipyardOrigin={} blocks={} timing(ms): clear={} place={} assemble={} contents={} total={}",
+        // stages=[...] and gateX are the only in-log view of the worldgen stage this group resolved.
+        // A second spawn of the same anchorPIdx must show the SAME stages and the SAME enclosed
+        // variants as the first — that equality is what Trains.gateWorldXOrRecord buys, and how the
+        // "different stage at render distance" regression would announce itself again.
+        LOGGER.info("[DungeonTrain] Spawned group anchorPIdx={} groupSize={} enclosed=[{}] stages=[{}] gateX={} placedX={} pads={} trainId={} ship id={} shipyardOrigin={} blocks={} timing(ms): clear={} place={} assemble={} contents={} total={}",
             anchorPIdx, groupSize, summariseVariants(enclosedBySlot),
+            summariseStages(stageBySlot), groupAnchorWorldX, placedAnchorWorldX,
             wrapWithPads ? "back+front" : "none",
             trainId, ship.id(), shipyardOrigin, blocks.size(),
             (tAfterClear - tStart) / 1_000_000,
@@ -651,6 +672,20 @@ public final class TrainAssembler {
             (tEnd - tStart) / 1_000_000);
 
         return ship;
+    }
+
+    /**
+     * Comma-joined stage ids for the log line. {@code StageResolver.stageIdFor} returns null when no
+     * stage covers a slot's level/phase (it warns separately), so nulls render as {@code -} rather
+     * than blowing up the spawn on a logging call.
+     */
+    private static String summariseStages(String[] stages) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < stages.length; i++) {
+            if (i > 0) sb.append(',');
+            sb.append(stages[i] == null ? "-" : stages[i]);
+        }
+        return sb.toString();
     }
 
     private static String summariseVariants(CarriageVariant[] variants) {
@@ -697,6 +732,9 @@ public final class TrainAssembler {
         // the appender's wait-for-Sable-settle tracker so the first
         // post-wipe spawn doesn't get gated on a now-deleted ship's AABB.
         Trains.clearRegistry();
+        // A regenerated train re-rolls every index, so last train's identities must not survive
+        // to be reported for the new one.
+        PlacedCarriageFacts.clear();
         // The stopped-tick counts go with the ids they are keyed on: the train being wiped here is
         // the only thing they described, and a fresh train must start from zero.
         TrainMotionFreeze.clear();

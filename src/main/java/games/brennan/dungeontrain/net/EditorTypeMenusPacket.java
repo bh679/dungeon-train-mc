@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.net;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.editor.PlotCategory;
 import games.brennan.dungeontrain.client.menu.plot.EditorTypeMenuRenderer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
@@ -35,8 +36,20 @@ import java.util.List;
  * <p>Empty list ({@link #empty()}) clears the client cache when the editor
  * exits or switches categories — same lifecycle as
  * {@link EditorPlotLabelsPacket}.</p>
+ *
+ * <p>{@code helpPanelDismissed} rides along: the recipient has closed the world-space Welcome panel
+ * in this world (persisted per player in {@code DungeonTrainWorldData}). It travels here rather than
+ * on {@code EditorStatusPacket} because the Welcome panel is anchored off a nav menu — the status
+ * packet stops while the player stands outside a plot, and its defaulted clear packet would pop a
+ * dismissed panel back up.</p>
  */
-public record EditorTypeMenusPacket(List<Menu> menus, String selectedStageId) implements CustomPacketPayload {
+public record EditorTypeMenusPacket(List<Menu> menus, String selectedStageId,
+                                    boolean helpPanelDismissed) implements CustomPacketPayload {
+
+    /** Convenience: no dismissal — keeps pre-close-button call sites compiling unchanged. */
+    public EditorTypeMenusPacket(List<Menu> menus, String selectedStageId) {
+        this(menus, selectedStageId, false);
+    }
 
     public EditorTypeMenusPacket {
         // Global "focused stage" for the per-stage carriage preview (empty = none). Normalise null → ""
@@ -129,7 +142,18 @@ public record EditorTypeMenusPacket(List<Menu> menus, String selectedStageId) im
      * existing {@code Variant} fields so the dispatch can call
      * {@code EditorPlotTeleport.commandFor} directly).
      */
-    public record TypeTab(String typeName, String category, String modelId, String modelName) {}
+    public record TypeTab(String typeName, String category, String modelId, String modelName) {
+        /**
+         * {@link #category()} resolved to the type the client routes on, or {@code null} when it is
+         * not a category — including the {@code "stages"} sentinel the Stages panel's rows carry.
+         *
+         * <p>Derived, not stored: the component stays a {@code String} because that is the wire
+         * format, but nothing past this point should be comparing category strings.</p>
+         */
+        public PlotCategory plotCategory() {
+            return PlotCategory.fromId(category).orElse(null);
+        }
+}
 
     /**
      * One variant row inside a type menu.
@@ -173,6 +197,17 @@ public record EditorTypeMenusPacket(List<Menu> menus, String selectedStageId) im
 
         public Variant {
             stageIds = stageIds == null ? List.of() : List.copyOf(stageIds);
+        }
+
+        /**
+         * {@link #category()} resolved to the type the client routes on, or {@code null} when it is
+         * not a category — including the {@code "stages"} sentinel the Stages panel's rows carry.
+         *
+         * <p>Derived, not stored: the component stays a {@code String} because that is the wire
+         * format, but nothing past this point should be comparing category strings.</p>
+         */
+        public PlotCategory plotCategory() {
+            return PlotCategory.fromId(category).orElse(null);
         }
 
         /** True when this row is linked to at least one named Stage — the renderer draws a Stage chip
@@ -249,7 +284,7 @@ public record EditorTypeMenusPacket(List<Menu> menus, String selectedStageId) im
         );
 
     public static EditorTypeMenusPacket empty() {
-        return new EditorTypeMenusPacket(Collections.emptyList(), "");
+        return new EditorTypeMenusPacket(Collections.emptyList(), "", false);
     }
 
     public boolean isEmpty() {
@@ -260,6 +295,9 @@ public record EditorTypeMenusPacket(List<Menu> menus, String selectedStageId) im
         // Written first so decode reads it before the "no menus" early-return — keeps the buffer
         // symmetric for the empty() snapshot.
         buf.writeUtf(selectedStageId, 64);
+        // Same reason as selectedStageId: written before the "no menus" early-return so the empty()
+        // snapshot stays buffer-symmetric.
+        buf.writeBoolean(helpPanelDismissed);
         buf.writeVarInt(menus.size());
         for (Menu m : menus) {
             buf.writeBlockPos(m.worldPos());
@@ -335,8 +373,11 @@ public record EditorTypeMenusPacket(List<Menu> menus, String selectedStageId) im
 
     public static EditorTypeMenusPacket decode(FriendlyByteBuf buf) {
         String selectedStageId = buf.readUtf(64);
+        boolean helpPanelDismissed = buf.readBoolean();
         int n = buf.readVarInt();
-        if (n <= 0) return new EditorTypeMenusPacket(Collections.emptyList(), selectedStageId);
+        if (n <= 0) {
+            return new EditorTypeMenusPacket(Collections.emptyList(), selectedStageId, helpPanelDismissed);
+        }
         List<Menu> out = new ArrayList<>(n);
         for (int i = 0; i < n; i++) {
             BlockPos pos = buf.readBlockPos();
@@ -369,7 +410,7 @@ public record EditorTypeMenusPacket(List<Menu> menus, String selectedStageId) im
             out.add(new Menu(pos, typeName, variants, isCompanion,
                 activeCategoryId, categoryBar, typeStrip, isPackageMenu, isStagesMenu));
         }
-        return new EditorTypeMenusPacket(out, selectedStageId);
+        return new EditorTypeMenusPacket(out, selectedStageId, helpPanelDismissed);
     }
 
     @Override

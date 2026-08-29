@@ -52,10 +52,13 @@
     "RuinedPortalStructureMixin",
     "StructureBandBiomeFilterMixin",
     "JigsawStructureAccessor",
-    "RuinedPortalStructureAccessor"
+    "RuinedPortalStructureAccessor",
+    "CommandsSelfRevokeMixin"
   ],
   "client": [
+    "client.KeyboardHandlerDebugChordMixin",
     "client.BookViewScreenAccessor",
+    "client.BookEditScreenAccessor",
     "client.BookEditScreenSignMixin",
     "client.BookEditScreenSuspensionMixin",
     "CreateWorldScreenAccessor",
@@ -66,6 +69,7 @@
     "client.CreateWorldScreenCustomContentMixin",
     "client.CreateWorldScreenInvoker",
     "client.CreativeModeInventoryScreenPrefabMixin",
+    "client.CreativeShiftToHotbarMixin",
     "client.CreativeModeInventoryScreenAccessor",
     "client.AbstractContainerScreenPrefabTintMixin",
     "client.MainMenuLogoMixin",
@@ -83,6 +87,7 @@
     "client.LightTextureNetherBandMixin",
     "client.LightTextureUpsideDownBandMixin",
     "client.LightTexturePortalRoomMixin",
+    "client.LightTexturePortalCrossingMixin",
     "client.LevelGetShadeMixin",
     "client.ModelBlockRendererUpsideDownMixin",
     "client.MinecraftFramerateThrottleMixin",

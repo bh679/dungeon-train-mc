@@ -211,6 +211,15 @@ public final class EditorCommand {
             return builder.buildFuture();
         };
 
+    private static final SuggestionProvider<CommandSourceStack> PORTAL_ROOM_DOOR_WALL_SUGGESTIONS =
+        (ctx, builder) -> {
+            for (games.brennan.dungeontrain.portal.PortalRoomDoorWall doorWall
+                    : games.brennan.dungeontrain.portal.PortalRoomDoorWall.values()) {
+                builder.suggest(doorWall.id());
+            }
+            return builder.buildFuture();
+        };
+
     private static final SuggestionProvider<CommandSourceStack> PORTAL_ROOM_SKY_SUGGESTIONS =
         (ctx, builder) -> {
             for (games.brennan.dungeontrain.portal.PortalRoomSky sky
@@ -512,6 +521,16 @@ public final class EditorCommand {
                         .suggests(PORTAL_ROOM_CONTENTS_SUGGESTIONS)
                         .executes(ctx -> runPortalRoomContents(ctx.getSource(),
                             StringArgumentType.getString(ctx, "contents")))))
+                // Whether the copies standing against the portal carriages carry their own end wall
+                // through the corridor mouth's plane. Sealed by default — what every room did before
+                // the setting existed — and means nothing outside Endless Repetition.
+                .then(Commands.literal("doorwall")
+                    .then(Commands.literal("next")
+                        .executes(ctx -> runPortalRoomDoorWallCycle(ctx.getSource())))
+                    .then(Commands.argument("doorwall", StringArgumentType.word())
+                        .suggests(PORTAL_ROOM_DOOR_WALL_SUGGESTIONS)
+                        .executes(ctx -> runPortalRoomDoorWall(ctx.getSource(),
+                            StringArgumentType.getString(ctx, "doorwall")))))
                 // Whether the room is lit as though it stood outdoors, and under which sky. Off by
                 // default, which is every room lit only by whatever its own build gives it.
                 .then(Commands.literal("sky")
@@ -562,15 +581,17 @@ public final class EditorCommand {
                         .suggests(PORTAL_ROOM_BOOKS_SUGGESTIONS)
                         .executes(ctx -> runPortalRoomBooks(ctx.getSource(),
                             StringArgumentType.getString(ctx, "books")))))
-                // The three shares of the author roll, and the band of author a room will accept.
-                // All five mean nothing while Books is Off, which is why the edit screen is only
-                // reachable from a room that stocks an author at all.
+                // The four shares of the roll — three ways to name an author, plus the tally —
+                // and the band of author a room will accept. All six mean nothing while Books is
+                // Off, which is why the edit screen is only reachable from a room that stocks at all.
                 .then(portalRoomBookWeightNode("booksself",
                     games.brennan.dungeontrain.portal.PortalRoomBooks.Share.SELF))
                 .then(portalRoomBookWeightNode("booksplayer",
                     games.brennan.dungeontrain.portal.PortalRoomBooks.Share.PLAYER))
                 .then(portalRoomBookWeightNode("bookssignature",
                     games.brennan.dungeontrain.portal.PortalRoomBooks.Share.SIGNATURE))
+                .then(portalRoomBookWeightNode("booksstats",
+                    games.brennan.dungeontrain.portal.PortalRoomBooks.Share.STATS))
                 .then(portalRoomBookBoundNode("booksmin", true))
                 .then(portalRoomBookBoundNode("booksmax", false))
                 // Sub-variants: one named room standing for several designs, drawn by weight.
@@ -656,8 +677,15 @@ public final class EditorCommand {
                 .then(Commands.literal("on").executes(ctx -> runPartMenu(ctx.getSource(), true)))
                 .then(Commands.literal("off").executes(ctx -> runPartMenu(ctx.getSource(), false))))
             .then(Commands.literal("editormenus")
-                .then(Commands.literal("on").executes(ctx -> runEditorMenus(ctx.getSource(), true)))
-                .then(Commands.literal("off").executes(ctx -> runEditorMenus(ctx.getSource(), false))))
+                .then(Commands.literal("on").executes(ctx -> runEditorMenus(ctx.getSource(),
+                    games.brennan.dungeontrain.editor.EditorMenusMode.ON)))
+                .then(Commands.literal("auto").executes(ctx -> runEditorMenus(ctx.getSource(),
+                    games.brennan.dungeontrain.editor.EditorMenusMode.AUTO)))
+                .then(Commands.literal("off").executes(ctx -> runEditorMenus(ctx.getSource(),
+                    games.brennan.dungeontrain.editor.EditorMenusMode.OFF))))
+            .then(Commands.literal("helppanel")
+                .then(Commands.literal("on").executes(ctx -> runHelpPanel(ctx.getSource(), true)))
+                .then(Commands.literal("off").executes(ctx -> runHelpPanel(ctx.getSource(), false))))
             .then(Commands.literal("carriage-contents")
                 .then(Commands.argument("variant", StringArgumentType.word())
                     .suggests(CARRIAGE_VARIANT_SUGGESTIONS)
@@ -3383,10 +3411,17 @@ public final class EditorCommand {
     private static int runExit(CommandSourceStack source) {
         ServerPlayer player = requirePlayer(source);
         if (player == null) return 0;
-        // Try tunnel-session first (separate session map from CarriageEditor).
-        // A user who entered a carriage plot, then a tunnel plot, needs to run
-        // exit twice to unwind both sessions.
-        boolean exited = TunnelEditor.exit(player) || CarriageEditor.exit(player);
+        // Three editors keep their own session map — PortalRoomEditor, TunnelEditor and
+        // CarriageEditor — and every one of them has to be in this chain or a player who entered
+        // through it never gets their position, dimension and game mode back. Portal rooms were
+        // missing here, so a direct `/dt editor portals` left the player stuck in the plot, in
+        // creative, told there was "no saved editor session".
+        //
+        // Each session restores its OWN entry point, so stacked sessions unwind one press at a
+        // time: a user who entered a carriage plot, then a tunnel or room plot, runs exit twice.
+        boolean exited = games.brennan.dungeontrain.editor.PortalRoomEditor.exit(player)
+            || TunnelEditor.exit(player)
+            || CarriageEditor.exit(player);
         if (!exited) {
             source.sendFailure(Component.literal(
                 "No saved editor session — nothing to exit to."
@@ -3763,19 +3798,25 @@ public final class EditorCommand {
     }
 
     /**
-     * Master toggle for all editor world-space menus. Drives the persistent
-     * parts-position auto-open flag (the only menu with persistent state) and,
-     * when turning OFF, also force-closes the two on-demand menus (block-variant
+     * Master mode for all editor world-space menus — {@code on} / {@code auto} / {@code off}.
+     * Drives the persistent parts-position auto-open flag (the only menu with persistent state) and,
+     * when switching to OFF, also force-closes the two on-demand menus (block-variant
      * tap-Z, container-contents tap-C) if they happen to be open. Those two stay
      * reopenable on demand while OFF — this only closes what's currently up.
+     *
+     * <p>{@code auto} is the default and differs from {@code on} only in what the client draws:
+     * once the player is standing in a plot, the other plots' panels stop rendering. Nothing
+     * server-side changes between the two.</p>
      */
-    private static int runEditorMenus(CommandSourceStack source, boolean on) {
+    private static int runEditorMenus(CommandSourceStack source,
+                                      games.brennan.dungeontrain.editor.EditorMenusMode mode) {
         net.minecraft.server.level.ServerPlayer player = source.getPlayer();
         if (player == null) {
             source.sendFailure(Component.literal("Editor menus: only players can toggle the menu."));
             return 0;
         }
-        games.brennan.dungeontrain.editor.PartPositionMenuController.setMenuEnabled(player, on);
+        boolean on = mode != games.brennan.dungeontrain.editor.EditorMenusMode.OFF;
+        games.brennan.dungeontrain.editor.PartPositionMenuController.setMode(player, mode);
         if (!on) {
             // Close any open on-demand world-space menus. Both are no-ops when
             // nothing is open (drop the OPEN entry + send an empty sync packet).
@@ -3783,8 +3824,38 @@ public final class EditorCommand {
             games.brennan.dungeontrain.editor.ContainerContentsMenuController.toggle(player, false);
         }
         source.sendSuccess(() -> Component.literal(
-            "Editor menus: " + (on ? "ON" : "OFF")
+            "Editor menus: " + mode.name()
         ).withStyle(on ? ChatFormatting.GREEN : ChatFormatting.YELLOW), true);
+        return 1;
+    }
+
+    /**
+     * Show / hide the editor's world-space Welcome panel for the calling player. Run by the panel's
+     * own close (X) button and by the "Welcome Panel" row in the editor (X) menu.
+     *
+     * <p>The flag is stored per player in the world save
+     * ({@link games.brennan.dungeontrain.world.DungeonTrainWorldData}), so a dismissal survives a
+     * relog and does not follow the player into other worlds. The client picks the new value up on
+     * the next {@code EditorTypeMenusPacket} — its dedup key includes the flag, so the toggle
+     * always re-pushes.</p>
+     */
+    private static int runHelpPanel(CommandSourceStack source, boolean on) {
+        net.minecraft.server.level.ServerPlayer player = source.getPlayer();
+        if (player == null) {
+            source.sendFailure(Component.literal("Welcome panel: only players can toggle the panel."));
+            return 0;
+        }
+        net.minecraft.server.MinecraftServer server = player.getServer();
+        if (server == null) {
+            source.sendFailure(Component.literal("Welcome panel: no server to store the setting on."));
+            return 0;
+        }
+        games.brennan.dungeontrain.world.DungeonTrainWorldData.get(server.overworld())
+            .setHelpPanelDismissed(player.getUUID(), !on);
+        source.sendSuccess(() -> Component.literal(on
+            ? "Welcome panel: ON"
+            : "Welcome panel: OFF — press X and pick 'Welcome Panel' to bring it back."
+        ).withStyle(on ? ChatFormatting.GREEN : ChatFormatting.YELLOW), false);
         return 1;
     }
 
@@ -3940,9 +4011,13 @@ public final class EditorCommand {
             return 0;
         }
         boolean enabled = games.brennan.dungeontrain.config.DungeonTrainConfig.isSharedCarriagesEnabled();
+        // Leasing is the half that PLACES community builds, and it ships off — say so here, or a
+        // builder flags a variant shared, never sees a pooled carriage, and reads that as a bug.
+        boolean leasing = games.brennan.dungeontrain.event.SharedCarriageGate.canLease();
         source.sendSuccess(() -> Component.literal(
             "Carriage '" + current.id() + "' shared: " + (target ? "ON" : "off")
             + (enabled ? "" : " — note: sharedCarriagesEnabled is OFF in dungeontrain-server.toml, so the feature is inactive")
+            + (!enabled || leasing ? "" : " — note: sharedCarriageLeasingEnabled is OFF, so builds upload but none are placed")
         ).withStyle(target ? ChatFormatting.GREEN : ChatFormatting.GRAY), true);
         return 1;
     }
@@ -5919,6 +5994,36 @@ public final class EditorCommand {
         return applyPortalRoomSettings(source, name, current.withContents(current.contents().next()));
     }
 
+    /** {@code /dt editor portals doorwall next} — step Sealed → Repeated. */
+    private static int runPortalRoomDoorWallCycle(CommandSourceStack source) {
+        String name = portalRoomPlotUnderPlayer(source);
+        if (name == null) return 0;
+        return applyPortalRoomSettings(source, name,
+            games.brennan.dungeontrain.portal.PortalRoomSettings.of(name).nextDoorWall());
+    }
+
+    /**
+     * {@code /dt editor portals doorwall <sealed|repeated>} — set it outright.
+     *
+     * <p>Compared on the parsed id rather than trusting {@code parse} outright, for the reason the
+     * sky and contents setters do the same: parsing is deliberately total, so a typo would otherwise
+     * silently set the room to Sealed and report success.</p>
+     */
+    private static int runPortalRoomDoorWall(CommandSourceStack source, String raw) {
+        String name = portalRoomPlotUnderPlayer(source);
+        if (name == null) return 0;
+
+        games.brennan.dungeontrain.portal.PortalRoomDoorWall wanted =
+            games.brennan.dungeontrain.portal.PortalRoomDoorWall.parse(raw);
+        if (!wanted.id().equalsIgnoreCase(raw.trim())) {
+            source.sendFailure(Component.literal(
+                "Unknown door wall option '" + raw + "'. Try sealed or repeated."));
+            return 0;
+        }
+        return applyPortalRoomSettings(source, name,
+            games.brennan.dungeontrain.portal.PortalRoomSettings.of(name).withDoorWall(wanted));
+    }
+
     /** {@code /dt editor portals sky next} — step Off → Daylight → Day/Night → Nether → End. */
     private static int runPortalRoomSkyCycle(CommandSourceStack source) {
         String name = portalRoomPlotUnderPlayer(source);
@@ -6391,7 +6496,7 @@ public final class EditorCommand {
         String books = settings.books().locks()
             ? ", books: " + settings.books().displayName()
                 + " (" + settings.books().selfWeight() + "/" + settings.books().playerWeight()
-                + "/" + settings.books().signatureWeight() + ")"
+                + "/" + settings.books().signatureWeight() + "/" + settings.books().statsWeight() + ")"
                 + ", authors with " + settings.books().minBooks() + "+"
                 + (settings.books().maxBooks() == games.brennan.dungeontrain.portal.PortalRoomBooks.NO_MAXIMUM
                     ? "" : "\u2013" + settings.books().maxBooks())

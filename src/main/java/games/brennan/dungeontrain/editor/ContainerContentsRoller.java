@@ -50,6 +50,9 @@ import games.brennan.adventureitemstats.api.StatsModifier;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.event.SharedBookGate;
 import games.brennan.dungeontrain.narrative.NarrativeProgressData;
+import games.brennan.dungeontrain.narrative.LeaderboardBookPendingTag;
+import games.brennan.dungeontrain.narrative.RunStatBookFactory;
+import games.brennan.dungeontrain.narrative.LeaderboardPool;
 import games.brennan.dungeontrain.narrative.RandomBookFactory;
 import games.brennan.dungeontrain.narrative.RandomBookRegistry;
 import games.brennan.dungeontrain.narrative.PlayerBookPendingTag;
@@ -91,6 +94,15 @@ public final class ContainerContentsRoller {
     private static final long SALT_ENCH_VALUE  = 0xBADDCAFE0FF1CE00L;
     /** Salt for the random-book placeholder substitution. */
     private static final long SALT_RANDOM_BOOK = 0xB0011AB1ECAFEBE0L;
+    private static final long SALT_LEADERBOARD_BOOK = 0x1EADE7B0A2DB00C5L;
+    private static final long SALT_STAT_BOOK = 0x5A7B00C0FA017A11L;
+
+    /**
+     * Which of the two kinds a {@code stats_book} slot comes up. Its own salt, so the flip does not
+     * correlate with either kind's own content roll — a slot that comes up leaderboard must not
+     * thereby always pick the same board.
+     */
+    static final long SALT_STATS_BOOK_KIND = 0x57A751CF11C0DE55L;
     /** Salt for the "shared vs local pool" coin-flip on a placeholder book roll. */
     private static final long SALT_SHARED_BOOK_CHANCE = 0x5A1EDB00C0FFEE12L;
 
@@ -856,6 +868,10 @@ public final class ContainerContentsRoller {
         // Furnace path note: a substituted written book lands in the output
         // slot (fails isCookable + isFuel). Cosmetically odd but harmless.
         if (item == ModItems.RANDOM_BOOK.get()) {
+            // No leaderboard share here any more. A random book is a random book; the numbers-about-you
+            // books reach loot through their own entry (dungeontrain:stats_book), which the loot tables
+            // place explicitly. Hiding them inside this roll meant an author reading a loot table could
+            // not see they were in it at all.
             // Community shared-books DISCOVERY: when the server has opted in and the per-roll coin-flip
             // hits the read-scaled chance (0% until hardcoded random books get read, up to the config
             // max at 100% read), substitute an approved community book from the relay pool (crediting
@@ -884,6 +900,25 @@ public final class ContainerContentsRoller {
         // taper), so player books are the primary source. When discovery is
         // off or the shared pool is empty/offline it falls back to a hardcoded
         // local random book so the slot is never wasted.
+        // Editor-only placeholder dungeontrain:random_leaderboard_book — a
+        // deliberately-placed leaderboard book. Same bake-and-stamp as the
+        // random_book share above, minus the coin flip: somebody asked for one.
+        if (item == ModItems.RANDOM_LEADERBOARD_BOOK.get()) {
+            return bakeLeaderboardPlaceholder(localPos, worldSeed, carriageIndex, slot);
+        }
+
+        // Editor-only placeholder dungeontrain:random_stat_book — a deliberately-placed Faulthurst stat
+        // book. Same bake as the random_book share above, minus the coin flip: somebody asked for one.
+        if (item == ModItems.RANDOM_STAT_BOOK.get()) {
+            return bakeStatBook(localPos, worldSeed, carriageIndex, slot);
+        }
+
+        // Loot-facing dungeontrain:stats_book — the coin-flip between the two above, and the entry
+        // ordinary loot tables carry. Which kind a slot becomes is decided here and for good.
+        if (item == ModItems.STATS_BOOK.get()) {
+            return bakeStatsBook(localPos, worldSeed, carriageIndex, slot);
+        }
+
         if (item == ModItems.RANDOM_PLAYERBOOK.get()) {
             if (SharedBookGate.canDiscover()) {
                 // Always defer to per-player selection at hand-time. Bake a local placeholder so the slot
@@ -1298,6 +1333,79 @@ public final class ContainerContentsRoller {
     }
 
     /**
+     * Bake a Faulthurst stat book for this slot.
+     *
+     * <p>Simpler than {@link #bakeLeaderboardPlaceholder} in the one way that matters: nothing has to
+     * be fetched, so this always produces a real, readable, signed book and never returns empty. The
+     * seed fixes the note's WORDING — its opener and its closing remark — here and for good.</p>
+     *
+     * <p>What a container cannot know is the READER, and the number is about them. So the book leaves
+     * here with no stat line at all — an opener and a follow-up, which is a terse but honest scrap —
+     * and {@code RunStatBookEvents} fills the number in the moment it reaches a hand, keeping it
+     * current until the book is opened. See {@code RunStatBookTag}.</p>
+     */
+    private static ItemStack bakeStatBook(BlockPos localPos, long worldSeed,
+                                          int carriageIndex, int slot) {
+        return RunStatBookFactory.create(mix(localPos, worldSeed, carriageIndex, slot, SALT_STAT_BOOK));
+    }
+
+    /**
+     * Flip for a {@code stats_book} slot: half a tall leaderboard board, half a Faulthurst note about
+     * the finder's own run.
+     *
+     * <p>Deterministic on the same seed inputs as every other roll, so a chest at a given world seed
+     * always holds the same kind — a player who reloads to re-roll a chest gets what they got.</p>
+     *
+     * <p><b>The stat note is the fallback, not a third outcome.</b> The leaderboard side can come back
+     * empty (it needs a carrier book from the local random-book pool), and an empty slot is the one
+     * result this entry must never produce: a loot table asked for a book here. The stat note needs
+     * nothing fetched and nothing pooled, so it can always answer.</p>
+     */
+    private static ItemStack bakeStatsBook(BlockPos localPos, long worldSeed,
+                                           int carriageIndex, int slot) {
+        boolean board = rollDoubleChance(0.5, localPos, worldSeed, carriageIndex, slot, SALT_STATS_BOOK_KIND);
+        if (board) {
+            ItemStack leaderboard = bakeLeaderboardPlaceholder(localPos, worldSeed, carriageIndex, slot);
+            if (!leaderboard.isEmpty()) {
+                if (DebugFlags.logLootRolls()) {
+                    LOGGER.info("[DT-stats] kind=leaderboard carriageIdx={} localPos={} slot={}",
+                        carriageIndex, localPos, slot);
+                }
+                return leaderboard;
+            }
+        }
+        if (DebugFlags.logLootRolls()) {
+            // Worth distinguishing: "the flip said stat note" and "the flip said board and the local
+            // pool could not carry one" look identical in a chest and are very different problems.
+            LOGGER.info("[DT-stats] kind=stat carriageIdx={} localPos={} slot={} flip={}",
+                carriageIndex, localPos, slot, board ? "board-unavailable" : "stat");
+        }
+        return bakeStatBook(localPos, worldSeed, carriageIndex, slot);
+    }
+
+    /**
+     * Bake the stand-in for a leaderboard book: an ordinary local random book carrying the pending
+     * marker and the roll seed.
+     *
+     * <p>It cannot be the real thing yet for two reasons — the board may not have been fetched (the
+     * pool only asks for one once a book exists, which is what this call signals), and the closing
+     * line is the READER's rank, which a container has no way of knowing. So the slot holds a real,
+     * readable book either way, and {@code NarrativeBookEvents} upgrades it at the first hand.</p>
+     *
+     * <p>Returns empty only when the local random-book pool itself is empty, which leaves the caller
+     * to fall through rather than drop a useless placeholder into the world.</p>
+     */
+    private static ItemStack bakeLeaderboardPlaceholder(BlockPos localPos, long worldSeed,
+                                                        int carriageIndex, int slot) {
+        long seed = mix(localPos, worldSeed, carriageIndex, slot, SALT_LEADERBOARD_BOOK);
+        ItemStack local = RandomBookFactory.rollFromPool(seed).orElse(ItemStack.EMPTY);
+        if (local.isEmpty()) return ItemStack.EMPTY;
+        LeaderboardBookPendingTag.markPending(local, seed);
+        LeaderboardPool.noteWanted(); // demand signal — nothing is fetched until a book actually exists
+        return local;
+    }
+
+    /**
      * Deterministic coin-flip against a {@code [0,1]} double probability (unlike {@link #rollChance},
      * which takes an int percentage) — used for the shared-book substitution chance so the config's
      * fractional {@code sharedBookLootChance} isn't quantised to whole percents. Same seed inputs →
@@ -1309,8 +1417,8 @@ public final class ContainerContentsRoller {
     }
 
     /** Generalised fractional-probability variant of {@link #rollChance} — salt-parameterised. */
-    private static boolean rollDoubleChance(double chance, BlockPos localPos, long worldSeed,
-                                            int carriageIndex, int slot, long salt) {
+    static boolean rollDoubleChance(double chance, BlockPos localPos, long worldSeed,
+                                    int carriageIndex, int slot, long salt) {
         if (chance <= 0.0) return false;
         if (chance >= 1.0) return true;
         long state = mix(localPos, worldSeed, carriageIndex, slot, salt);
