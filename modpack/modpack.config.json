@@ -360,6 +360,33 @@
       "modrinth_version": "HY8Ybozd"
     },
     {
+      "name": "Enchantment Descriptions",
+      "slug": "enchantment-descriptions",
+      "project_id": 250419,
+      "file_id": 8693034,
+      "required": true,
+      "modrinth_project": "enchantment-descriptions",
+      "modrinth_version": "IktklYWh"
+    },
+    {
+      "name": "Bookshelf",
+      "slug": "bookshelf",
+      "project_id": 228525,
+      "file_id": 7606240,
+      "required": true,
+      "modrinth_project": "bookshelf-lib",
+      "modrinth_version": "1sdJl7J1"
+    },
+    {
+      "name": "Prickle",
+      "slug": "prickle",
+      "project_id": 1023259,
+      "file_id": 6961457,
+      "required": true,
+      "modrinth_project": "prickle",
+      "modrinth_version": "EE1FHDyD"
+    },
+    {
       "name": "Balm",
       "slug": "balm",
       "project_id": 531761,
@@ -367,6 +394,24 @@
       "required": true,
       "modrinth_project": "balm",
       "modrinth_version": "KgypwTqX"
+    },
+    {
+      "name": "Durability Tooltip",
+      "slug": "durability-tooltip",
+      "project_id": 511040,
+      "file_id": 6833316,
+      "required": true,
+      "modrinth_project": "durability-tooltip",
+      "modrinth_version": "mmYe9e5V"
+    },
+    {
+      "name": "SuperMartijn642's Config Lib",
+      "slug": "supermartijn642s-config-lib",
+      "project_id": 438332,
+      "file_id": 5546996,
+      "required": true,
+      "modrinth_project": "supermartijn642s-config-lib",
+      "modrinth_version": "qKL9jM75"
     }
   ],
   "curseforge_relations": [
