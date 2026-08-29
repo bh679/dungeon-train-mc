@@ -189,4 +189,43 @@ class PortalRoomDoorCellsTest {
         assertTrue(PortalRoomDoorCells.forRoom(origin, null).isEmpty());
         assertTrue(PortalRoomDoorCells.forRoom(null, new Vec3i(11, 7, 13)).isEmpty());
     }
+    // ---- the room's two doorways, placed apart ----
+
+    @Test
+    @DisplayName("Each end reads its own offsets — the far door does not follow the near one")
+    void forRoom_placesTheTwoDoorsIndependently() {
+        BlockPos origin = new BlockPos(10, 60, -20);
+        Vec3i size = new Vec3i(11, 13, 21);
+
+        List<BlockPos> cells = PortalRoomDoorCells.forRoom(origin, size, 2, 3, -4, 1);
+        assertEquals(PortalRoomDoorCells.CELLS_PER_ROOM, cells.size());
+
+        // Entry end: the near column, on the entry door's own line and floor.
+        assertEquals(origin.getX() - 1, cells.get(0).getX());
+        assertEquals(PortalRoomDoorCells.doorZ(origin, size, 2), cells.get(0).getZ());
+        assertEquals(origin.getY() + 3 + 1, cells.get(0).getY());
+        assertEquals(cells.get(0).above(), cells.get(1));
+
+        // Exit end: the far column, on the exit door's.
+        assertEquals(origin.getX() + size.getX(), cells.get(2).getX());
+        assertEquals(PortalRoomDoorCells.doorZ(origin, size, -4), cells.get(2).getZ());
+        assertEquals(origin.getY() + 1 + 1, cells.get(2).getY());
+        assertEquals(cells.get(2).above(), cells.get(3));
+    }
+
+    @Test
+    @DisplayName("Passing one pair of offsets is the mirrored room the shorter overloads always drew")
+    void forRoom_mirrorsWhenBothEndsAreGivenTheSameOffsets() {
+        BlockPos origin = new BlockPos(-5, 40, 7);
+        Vec3i size = new Vec3i(9, 11, 17);
+        for (int offset = -3; offset <= 3; offset++) {
+            for (int up = 0; up <= 4; up++) {
+                assertEquals(PortalRoomDoorCells.forRoom(origin, size, offset, up),
+                    PortalRoomDoorCells.forRoom(origin, size, offset, up, offset, up),
+                    "offset " + offset + ", up " + up);
+                assertEquals(PortalRoomDoorCells.doorBases(origin, size, offset, up),
+                    PortalRoomDoorCells.doorBases(origin, size, offset, up, offset, up));
+            }
+        }
+    }
 }

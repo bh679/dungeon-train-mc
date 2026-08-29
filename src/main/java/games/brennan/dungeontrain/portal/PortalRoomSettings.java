@@ -25,6 +25,13 @@ import games.brennan.dungeontrain.track.variant.TrackVariantWeights;
  * Books or Sky existed has one to five segments and still parses, to a room that behaves exactly as
  * it did.</p>
  *
+ * <h2>A room's two doorways are stored as one door and a difference</h2>
+ * <p>{@code doorOffset} / {@code doorHeightOffset} place the room's box; the exit pair says where
+ * the <b>exit</b> doorway sits on that same box. An absent exit segment does not mean "centred", it
+ * means "wherever the entry door is" — which is what makes every tag written before this parse to
+ * the mirrored behaviour it has always had, and what keeps {@link #toTag} writing the shorter form
+ * for the rooms (nearly all of them) whose two doors agree.</p>
+ *
  * <h2>Exits is the one setting whose default depends on another</h2>
  * <p>An absent Exits segment does not mean "off", it means "whatever this mode wants" — see
  * {@link PortalRoomMode#defaultExits}. That is what lets the shipped {@code labrynth} room, tagged
@@ -42,12 +49,17 @@ import games.brennan.dungeontrain.track.variant.TrackVariantWeights;
  *                 through the corridor mouth's plane, or leave it to the mouth's seal ring
  * @param doorOffset how far the shared walkway line sits from dead centre of the room's own width
  * @param doorHeightOffset how far the corridor's floor line sits above the room's own bottom edge
+ * @param exitDoorOffset the same, for the room's <b>exit</b> doorway — null means "not said", which
+ *                       resolves to {@code doorOffset} so the two doors mirror as they always did
+ * @param exitDoorHeightOffset the vertical twin of {@code exitDoorOffset}, null meaning the same
  */
 public record PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
                                  PortalRoomContents contents, PortalRoomExits exits,
                                  PortalRoomBooks books, PortalRoomSky sky,
                                  PortalRoomDoorWall doorWall, PortalRoomDoorOffset doorOffset,
-                                 PortalRoomDoorHeightOffset doorHeightOffset) {
+                                 PortalRoomDoorHeightOffset doorHeightOffset,
+                                 PortalRoomDoorOffset exitDoorOffset,
+                                 PortalRoomDoorHeightOffset exitDoorHeightOffset) {
 
     /** Separates the mode from the settings that follow it in the stored tag. */
     private static final String SEPARATOR = "/";
@@ -55,7 +67,7 @@ public record PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
     public static final PortalRoomSettings DEFAULT = new PortalRoomSettings(
         PortalRoomMode.DEFAULT, PortalRoomCopies.DEFAULT, PortalRoomContents.DEFAULT, null,
         PortalRoomBooks.DEFAULT, PortalRoomSky.NONE, PortalRoomDoorWall.DEFAULT,
-        PortalRoomDoorOffset.DEFAULT, PortalRoomDoorHeightOffset.DEFAULT);
+        PortalRoomDoorOffset.DEFAULT, PortalRoomDoorHeightOffset.DEFAULT, null, null);
 
     public PortalRoomSettings {
         if (mode == null) mode = PortalRoomMode.DEFAULT;
@@ -69,6 +81,21 @@ public record PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
         if (doorWall == null) doorWall = PortalRoomDoorWall.DEFAULT;
         if (doorOffset == null) doorOffset = PortalRoomDoorOffset.DEFAULT;
         if (doorHeightOffset == null) doorHeightOffset = PortalRoomDoorHeightOffset.DEFAULT;
+        // After the two entry offsets have been settled, never before — on exactly the reasoning the
+        // `exits` line above uses. A null here means "this room said nothing about its exit door",
+        // and what that resolves to is the entry door, which is what mirroring is.
+        if (exitDoorOffset == null) exitDoorOffset = doorOffset;
+        if (exitDoorHeightOffset == null) exitDoorHeightOffset = doorHeightOffset;
+    }
+
+    /** The nine settings this record carried before the two doors could differ — both mirrored. */
+    public PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
+                              PortalRoomContents contents, PortalRoomExits exits,
+                              PortalRoomBooks books, PortalRoomSky sky, PortalRoomDoorWall doorWall,
+                              PortalRoomDoorOffset doorOffset,
+                              PortalRoomDoorHeightOffset doorHeightOffset) {
+        this(mode, copies, contents, exits, books, sky, doorWall, doorOffset, doorHeightOffset,
+            null, null);
     }
 
     /** The eight settings this record carried before Door Height Offset existed, corridor at the floor. */
@@ -145,7 +172,11 @@ public record PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
             PortalRoomSky.parse(segment(parts, 5)),
             PortalRoomDoorWall.parse(segment(parts, 6)),
             PortalRoomDoorOffset.parse(segment(parts, 7)),
-            PortalRoomDoorHeightOffset.parse(segment(parts, 8)));
+            PortalRoomDoorHeightOffset.parse(segment(parts, 8)),
+            // Null rather than the centred default when absent: an unsaid exit door mirrors the
+            // entry door, and only the constructor knows what that is.
+            segment(parts, 9) == null ? null : PortalRoomDoorOffset.parse(segment(parts, 9)),
+            segment(parts, 10) == null ? null : PortalRoomDoorHeightOffset.parse(segment(parts, 10)));
     }
 
     /** Segment {@code index} of a split tag, or null when the tag is shorter than that. */
@@ -177,8 +208,19 @@ public record PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
         PortalRoomCopies effectiveCopies = effectiveCopies();
         PortalRoomExits effectiveExits = effectiveExits();
         PortalRoomDoorWall effectiveDoorWall = effectiveDoorWall();
+        if (doorsDiffer()) {
+            // The longest tag this class writes, and the only shape that names the exit door at all.
+            // "Would change something" here means differs from the ENTRY door rather than from a
+            // fixed value, on the same reasoning Exits uses against its mode's default: a room whose
+            // two doors agree is saying what the entry segment already says.
+            return mode.id() + SEPARATOR + effectiveCopies.id() + SEPARATOR + contents.id()
+                + SEPARATOR + effectiveExits.id() + SEPARATOR + books.id() + SEPARATOR + sky.id()
+                + SEPARATOR + effectiveDoorWall.id() + SEPARATOR + doorOffset.id()
+                + SEPARATOR + doorHeightOffset.id()
+                + SEPARATOR + exitDoorOffset.id() + SEPARATOR + exitDoorHeightOffset.id();
+        }
         if (!PortalRoomDoorHeightOffset.DEFAULT.equals(doorHeightOffset)) {
-            // The longest tag this class writes. Every earlier segment goes out at whatever it
+            // Every earlier segment goes out at whatever it
             // effectively is — a later segment cannot be written without the ones in front of it,
             // and each parse reads its own placeholder back as the same value.
             return mode.id() + SEPARATOR + effectiveCopies.id() + SEPARATOR + contents.id()
@@ -320,37 +362,37 @@ public record PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
     public PortalRoomSettings withMode(PortalRoomMode newMode) {
         boolean inherited = exits.equals(mode.defaultExits());
         return new PortalRoomSettings(newMode, copies, contents, inherited ? null : exits, books, sky,
-            doorWall, doorOffset, doorHeightOffset);
+            doorWall, doorOffset, doorHeightOffset, exitDoorOffset, exitDoorHeightOffset);
     }
 
     public PortalRoomSettings withCopies(PortalRoomCopies newCopies) {
         return new PortalRoomSettings(mode, newCopies, contents, exits, books, sky, doorWall, doorOffset,
-            doorHeightOffset);
+            doorHeightOffset, exitDoorOffset, exitDoorHeightOffset);
     }
 
     public PortalRoomSettings withContents(PortalRoomContents newContents) {
         return new PortalRoomSettings(mode, copies, newContents, exits, books, sky, doorWall, doorOffset,
-            doorHeightOffset);
+            doorHeightOffset, exitDoorOffset, exitDoorHeightOffset);
     }
 
     public PortalRoomSettings withExits(PortalRoomExits newExits) {
         return new PortalRoomSettings(mode, copies, contents, newExits, books, sky, doorWall, doorOffset,
-            doorHeightOffset);
+            doorHeightOffset, exitDoorOffset, exitDoorHeightOffset);
     }
 
     public PortalRoomSettings withBooks(PortalRoomBooks newBooks) {
         return new PortalRoomSettings(mode, copies, contents, exits, newBooks, sky, doorWall, doorOffset,
-            doorHeightOffset);
+            doorHeightOffset, exitDoorOffset, exitDoorHeightOffset);
     }
 
     public PortalRoomSettings withSky(PortalRoomSky newSky) {
         return new PortalRoomSettings(mode, copies, contents, exits, books, newSky, doorWall, doorOffset,
-            doorHeightOffset);
+            doorHeightOffset, exitDoorOffset, exitDoorHeightOffset);
     }
 
     public PortalRoomSettings withDoorWall(PortalRoomDoorWall newDoorWall) {
         return new PortalRoomSettings(mode, copies, contents, exits, books, sky, newDoorWall, doorOffset,
-            doorHeightOffset);
+            doorHeightOffset, exitDoorOffset, exitDoorHeightOffset);
     }
 
     /** The same settings at the next Door Wall value — what the editor's one cycling button steps to. */
@@ -364,18 +406,56 @@ public record PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
      * <p>Unclamped because the legal range depends on the room's own width and the world's
      * {@code CarriageDims}, neither of which this record carries — the door pointer clamps via
      * {@link PortalRoomLayout#clampDoorOffset} before calling this.</p>
+     *
+     * <p><b>The exit door is re-derived when it was only ever mirroring this one</b>, on exactly the
+     * reasoning {@link #withMode} re-derives Exits: a room whose two doors agree has not chosen to
+     * have two, so moving the entry door must move both. Carrying the resolved value across instead
+     * would silently decouple every mirrored room the moment its door was nudged — which is the one
+     * way this feature could change a room nobody asked to change.</p>
      */
     public PortalRoomSettings withDoorOffset(PortalRoomDoorOffset newDoorOffset) {
+        boolean mirrored = doorOffset.equals(exitDoorOffset);
         return new PortalRoomSettings(mode, copies, contents, exits, books, sky, doorWall, newDoorOffset,
-            doorHeightOffset);
+            doorHeightOffset, mirrored ? null : exitDoorOffset, exitDoorHeightOffset);
     }
 
     /**
      * The same settings with the door height offset set to {@code newDoorHeightOffset}, unclamped —
-     * see {@link #withDoorOffset} for why unclamped is correct here too.
+     * see {@link #withDoorOffset} for why unclamped is correct here too, and for why a mirroring exit
+     * door is re-derived rather than carried across.
      */
     public PortalRoomSettings withDoorHeightOffset(PortalRoomDoorHeightOffset newDoorHeightOffset) {
+        boolean mirrored = doorHeightOffset.equals(exitDoorHeightOffset);
         return new PortalRoomSettings(mode, copies, contents, exits, books, sky, doorWall, doorOffset,
-            newDoorHeightOffset);
+            newDoorHeightOffset, exitDoorOffset, mirrored ? null : exitDoorHeightOffset);
+    }
+
+    /**
+     * The same settings with the <b>exit</b> door offset set to {@code newExitDoorOffset}, unclamped —
+     * see {@link #withDoorOffset} for why unclamped is correct here too.
+     */
+    public PortalRoomSettings withExitDoorOffset(PortalRoomDoorOffset newExitDoorOffset) {
+        return new PortalRoomSettings(mode, copies, contents, exits, books, sky, doorWall, doorOffset,
+            doorHeightOffset, newExitDoorOffset, exitDoorHeightOffset);
+    }
+
+    /** The vertical twin of {@link #withExitDoorOffset}, likewise unclamped. */
+    public PortalRoomSettings withExitDoorHeightOffset(
+        PortalRoomDoorHeightOffset newExitDoorHeightOffset) {
+        return new PortalRoomSettings(mode, copies, contents, exits, books, sky, doorWall, doorOffset,
+            doorHeightOffset, exitDoorOffset, newExitDoorHeightOffset);
+    }
+
+    /**
+     * True when this room's two doorways are authored apart — the one question every writer of the
+     * exit corridor's position, and {@link #toTag}, actually asks.
+     *
+     * <p>Compared as stored rather than as clamped: two offsets that clamp to the same place in
+     * today's room still differ as authored, and a room later widened should recover the author's
+     * intent rather than have had it silently folded away on the last save.</p>
+     */
+    public boolean doorsDiffer() {
+        return !doorOffset.equals(exitDoorOffset)
+            || !doorHeightOffset.equals(exitDoorHeightOffset);
     }
 }

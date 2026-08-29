@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.editor;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.portal.PortalCarriageRole;
 import games.brennan.dungeontrain.portal.PortalRoomDoorHeightOffset;
 import games.brennan.dungeontrain.portal.PortalRoomDoorOffset;
 import games.brennan.dungeontrain.portal.PortalRoomLayout;
@@ -61,6 +62,16 @@ import java.io.IOException;
  * {@link PortalRoomDoorHeightOffset}). Clamped to whatever slack this room's own width and height
  * actually have, the same clamp the real corridor is built against, so a click past the edge of what
  * is achievable lands exactly on the edge rather than being refused.</p>
+ *
+ * <h2>Which door — the column clicked, and nothing else</h2>
+ * <p>A room has two doorways and they may stand apart. Which one a click sets is already in the
+ * click: the near column ({@code origin.x - 1}) is the <b>entry</b> mouth, the far column
+ * ({@code origin.x + size.x}) the <b>exit</b> one, and {@link #resolve} has always had to tell them
+ * apart to know it was on a doorway column at all. So there is no mode to arm, no second item and no
+ * screen — an author aims at the door they mean and clicks it, which is what they were already
+ * doing. Setting the entry door on a room whose two doors still agree moves both, because a room
+ * that has not chosen to have two doorways is not silently given them; see
+ * {@code PortalRoomSettings.withDoorOffset}.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class PortalRoomDoorPointer {
@@ -158,9 +169,13 @@ public final class PortalRoomDoorPointer {
             dims, match.size().getY(), match.rawHeightOffset());
 
         PortalRoomSettings current = PortalRoomSettings.of(match.name());
-        PortalRoomSettings updated = current
-            .withDoorOffset(new PortalRoomDoorOffset(offset))
-            .withDoorHeightOffset(new PortalRoomDoorHeightOffset(heightOffset));
+        PortalRoomSettings updated = match.role() == PortalCarriageRole.ENTRY
+            ? current
+                .withDoorOffset(new PortalRoomDoorOffset(offset))
+                .withDoorHeightOffset(new PortalRoomDoorHeightOffset(heightOffset))
+            : current
+                .withExitDoorOffset(new PortalRoomDoorOffset(offset))
+                .withExitDoorHeightOffset(new PortalRoomDoorHeightOffset(heightOffset));
 
         try {
             TrackVariantWeights.setMode(TrackKind.PORTAL_ROOM, match.name(), updated.toTag());
@@ -175,8 +190,12 @@ public final class PortalRoomDoorPointer {
         String up = heightOffset == 0 ? "at the floor"
             : heightOffset + " block" + (heightOffset == 1 ? "" : "s") + " up";
         String note = clampNote(dims, match, offset, heightOffset);
+        // Name the door, not just the room. The two ends can stand apart now, so a message that said
+        // only "door position" would leave an author unable to tell which of their two clicks landed.
+        String which = match.role() == PortalCarriageRole.ENTRY ? "entry" : "exit";
         player.displayClientMessage(Component.literal(
-            "Dimensional carriage '" + match.name() + "' door position: " + across + ", " + up + "." + note
+            "Dimensional carriage '" + match.name() + "' " + which + " door position: "
+                + across + ", " + up + "." + note
         ).withStyle(note.isEmpty() ? ChatFormatting.GREEN : ChatFormatting.YELLOW), true);
     }
 
@@ -212,8 +231,12 @@ public final class PortalRoomDoorPointer {
             + " Make it taller to raise the door.";
     }
 
-    /** One room's doorway column, matched against a click target, with the raw (unclamped) offsets it implies. */
-    private record Match(String name, Vec3i size, int rawOffset, int rawHeightOffset) {}
+    /**
+     * One room's doorway column, matched against a click target, with the raw (unclamped) offsets it
+     * implies and which of the room's two doorways it is.
+     */
+    private record Match(String name, Vec3i size, PortalCarriageRole role, int rawOffset,
+                         int rawHeightOffset) {}
 
     /**
      * Which portal room's doorway column {@code target} falls on, or {@code null} if it matches
@@ -242,7 +265,12 @@ public final class PortalRoomDoorPointer {
             int centreZ = origin.getZ() + 1 + (size.getZ() - 2) / 2;
             int rawOffset = target.getZ() - centreZ;
             int rawHeightOffset = target.getY() - (origin.getY() + 1);
-            return new Match(name, size, rawOffset, rawHeightOffset);
+            // The near column is the entry mouth and the far column the exit one — the same pair of
+            // columns PortalRoomDoorCells ghosts, in the same order, and the same rule
+            // stampCorridorHalf seals them by.
+            PortalCarriageRole role =
+                nearColumn ? PortalCarriageRole.ENTRY : PortalCarriageRole.EXIT;
+            return new Match(name, size, role, rawOffset, rawHeightOffset);
         }
         return null;
     }
