@@ -9810,9 +9810,9 @@
       "highlights": [],
       "pr": 1178,
       "date": "2026-08-29",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.718.0",
+      "released_at": "2026-08-29T14:03:55Z"
     },
     {
       "id": "vanilla-spawn-upside-down-transitions",
@@ -9823,9 +9823,9 @@
       "highlights": [],
       "pr": 1179,
       "date": "2026-08-29",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.718.0",
+      "released_at": "2026-08-29T14:03:55Z"
     },
     {
       "id": "ain-052-supporter-names",
@@ -9835,9 +9835,9 @@
       "summary": "Adventure Item Names 0.52.0 brings a new Discord supporter into the name pool in five forms \u2014 sstasske, Staske, Stas, Stanislav, Stanislav The Russian \u2014 plus Testificate, the name Notch left on villagers in the Beta 1.9 pre-releases, and a spelling fix for supporter TJYongHeng.",
       "highlights": [],
       "date": "2026-08-29",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.718.0",
+      "released_at": "2026-08-29T14:03:55Z"
     },
     {
       "id": "upsidedown-shader-flip",
