@@ -511,6 +511,9 @@ public final class TrainAssembler {
                     // mode; a slot recorded as a corridor and then leased over would keep a swap
                     // plane standing above a shared carriage. See PortalStampRecord.
                     PortalRegistry.get(level).noteStamped(carriagePIdx, false);
+                    // Stamped verbatim — no contents pick happens for this slot, so the debug
+                    // panel is told that rather than being left to guess.
+                    PlacedCarriageFacts.recordRelayBuild(carriagePIdx, variant);
                 }
             }
             if (carriageBlocks == null) {
@@ -729,6 +732,9 @@ public final class TrainAssembler {
         // the appender's wait-for-Sable-settle tracker so the first
         // post-wipe spawn doesn't get gated on a now-deleted ship's AABB.
         Trains.clearRegistry();
+        // A regenerated train re-rolls every index, so last train's identities must not survive
+        // to be reported for the new one.
+        PlacedCarriageFacts.clear();
         // The stopped-tick counts go with the ids they are keyed on: the train being wiped here is
         // the only thing they described, and a fresh train must start from zero.
         TrainMotionFreeze.clear();

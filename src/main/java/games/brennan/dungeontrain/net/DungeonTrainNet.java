@@ -252,6 +252,8 @@ public final class DungeonTrainNet {
         // Why this run is in Free Play, server → client, pushed whenever the badge goes on or off.
         // Feeds the effect's hover tooltip — see FreePlayCausePacket.
         registrar.playToClient(FreePlayCausePacket.TYPE, FreePlayCausePacket.STREAM_CODEC, FreePlayCausePacket::handle);
+        registrar.playToClient(TrainDebugSyncPacket.TYPE, TrainDebugSyncPacket.STREAM_CODEC, TrainDebugSyncPacket::handle);
+        registrar.playToClient(TrainDebugCarriagePacket.TYPE, TrainDebugCarriagePacket.STREAM_CODEC, TrainDebugCarriagePacket::handle);
     }
 
     /** Convenience: send a payload to the server (client → server). */

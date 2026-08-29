@@ -9705,6 +9705,18 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "internal-diagnostics",
+      "version": "0.710.0",
+      "type": "chore",
+      "title": "Internal improvements",
+      "summary": "Behind-the-scenes maintenance work. Nothing to see or do differently in game.",
+      "highlights": [],
+      "date": "2026-08-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

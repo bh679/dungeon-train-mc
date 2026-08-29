@@ -4,7 +4,9 @@ import com.mojang.logging.LogUtils;
 import dev.ryanhcode.sable.SableConfig;
 import games.brennan.dungeontrain.bootstrap.BootstrapProgress;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
+import games.brennan.dungeontrain.debug.DebugAccessEvents;
 import games.brennan.dungeontrain.net.CarriageIndexPacket;
+import games.brennan.dungeontrain.net.TrainDebugCarriagePacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.Shipyard;
@@ -72,6 +74,13 @@ public final class TrainCarriageAppender {
      * {@link CarriageIndexPacket}. Server-thread only.
      */
     private static final Map<UUID, Integer> LAST_SENT_PIDX = new HashMap<>();
+
+    /**
+     * Last carriage index sent to each player for the F3+4 debug panel. Separate from
+     * {@link #LAST_SENT_PIDX} because the two are computed in different frames and cross their
+     * boundaries at different moments — sharing one record would swallow debug updates.
+     */
+    private static final Map<UUID, Integer> LAST_SENT_DEBUG_PIDX = new ConcurrentHashMap<>();
 
     /**
      * The carriage index last pushed to {@code playerId}'s HUD — the same value the
@@ -1876,6 +1885,18 @@ public final class TrainCarriageAppender {
             if (lastSent == null || lastSent != pIdx) {
                 DungeonTrainNet.sendTo(player, new CarriageIndexPacket(true, pIdx));
                 LAST_SENT_PIDX.put(uuid, pIdx);
+            }
+
+            // The debug panel resolves the carriage independently, in the frame of the group the
+            // player is actually standing in rather than the lead group's — see occupiedPIdx. It
+            // therefore changes on its own schedule and needs its own "did it change" record.
+            if (DebugAccessEvents.isPermitted(player)) {
+                Integer occupied = occupiedPIdx(train, player, dims, groupSize);
+                Integer lastDebug = LAST_SENT_DEBUG_PIDX.get(uuid);
+                if (occupied != null && !occupied.equals(lastDebug)) {
+                    DungeonTrainNet.sendTo(player, debugCarriageAt(occupied));
+                    LAST_SENT_DEBUG_PIDX.put(uuid, occupied);
+                }
             }
 
             int pTargetCount = (configCount > 0)
@@ -4356,6 +4377,80 @@ public final class TrainCarriageAppender {
     }
 
     /**
+     * The variant carriage {@code pIdx} rolls to — the "cart type" the F3+4 debug panel shows.
+     * Uses the same pair {@link TrainAssembler} picks with at placement time, so the two agree.
+     *
+     * <p>Only called when a player actually crosses a carriage boundary, which is rare enough that
+     * re-deriving it beats recording every placed variant. Never throws: a debug read-out is not
+     * worth risking the train tick, so any failure degrades to an empty id and a blank line.</p>
+     */
+    /**
+     * The carriage the player is standing in, resolved in the frame of the group that actually
+     * holds them.
+     *
+     * <p>The train-wide {@code pIdx} computed above works entirely in the <b>lead</b> group's
+     * frame: it projects the player through the lead ship's transform and divides by carriage
+     * length. That assumes the train is one rigid body of evenly spaced carriages, but every group
+     * is its own Sable sub-level, placed relative to the previous group's live position plus
+     * {@code MIN_GAP} and a collision nudge. The gaps accumulate, so the further a player is from
+     * the lead group the further that figure drifts from the carriage they are really in — which
+     * is precisely the range where a debug read-out has to be trusted.</p>
+     *
+     * <p>So this finds the group whose own bounds contain the player (nearest, if they are in a
+     * gap between groups) and indexes within that group's frame, off that group's own anchor pIdx.
+     * Returns null when the train has no group to attribute them to.</p>
+     */
+    private static Integer occupiedPIdx(List<Trains.Carriage> train, ServerPlayer player,
+                                        CarriageDims dims, int groupSize) {
+        double px = player.getX();
+        double py = player.getY();
+        double pz = player.getZ();
+
+        Trains.Carriage best = null;
+        double bestDistSq = Double.MAX_VALUE;
+        for (Trains.Carriage c : train) {
+            AABBdc aabb = c.ship().worldAABB();
+            double dx = Math.max(0, Math.max(aabb.minX() - px, px - aabb.maxX()));
+            double dy = Math.max(0, Math.max(aabb.minY() - py, py - aabb.maxY()));
+            double dz = Math.max(0, Math.max(aabb.minZ() - pz, pz - aabb.maxZ()));
+            double distSq = dx * dx + dy * dy + dz * dz;
+            if (distSq < bestDistSq) {
+                bestDistSq = distSq;
+                best = c;
+                if (distSq == 0.0) break; // inside this group — no closer answer exists
+            }
+        }
+        if (best == null) return null;
+
+        int length = dims.length();
+        int enclosedStartOffset = (groupSize > 1) ? CarriagePlacer.halfPadLen(dims) : 0;
+        Vector3d local = new Vector3d(px, py, pz);
+        best.ship().worldToShip(local);
+        int slot = (int) Math.floor(
+            (local.x - best.provider().getShipyardOrigin().getX() - enclosedStartOffset)
+                / (double) length);
+        return best.provider().getPIdx() + slot;
+    }
+
+    /**
+     * What carriage {@code pIdx} was actually built as, for the F3+4 panel.
+     *
+     * <p>Read back from {@link PlacedCarriageFacts} rather than re-rolled. The pick is gated on the
+     * group's world-X at the moment it was placed, and the train has moved since, so a recomputed
+     * answer drifts further from the standing carriage the longer the run goes. An index this
+     * session never placed reports empty ids — the panel shows a dash, which is the honest answer
+     * rather than a confident wrong one.</p>
+     */
+    private static TrainDebugCarriagePacket debugCarriageAt(int pIdx) {
+        PlacedCarriageFacts.Facts facts = PlacedCarriageFacts.get(pIdx);
+        if (facts == null) {
+            return new TrainDebugCarriagePacket(true, pIdx, "", "", "");
+        }
+        return new TrainDebugCarriagePacket(
+            true, pIdx, facts.variantId(), facts.contentsId(), facts.subVariantId());
+    }
+
+    /**
      * Clear the HUD for any player who had a pIdx last tick but wasn't
      * reached by any train this tick — they walked outside {@link #NEAR_RADIUS}.
      */
@@ -4369,8 +4464,10 @@ public final class TrainCarriageAppender {
             ServerPlayer player = level.getServer().getPlayerList().getPlayer(uuid);
             if (player != null) {
                 DungeonTrainNet.sendTo(player, CarriageIndexPacket.absent());
+                DungeonTrainNet.sendTo(player, TrainDebugCarriagePacket.absent());
             }
             it.remove();
+            LAST_SENT_DEBUG_PIDX.remove(uuid);
         }
     }
 }
