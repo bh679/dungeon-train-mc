@@ -57,6 +57,10 @@ import java.util.UUID;
  * is proof of keyboard input, and it is the one movement signal the train's own motion cannot
  * fake.</p>
  *
+ * <p>One blind spot the server cannot cover on its own: with a screen open the camera stops
+ * turning, so sampled yaw sits still however much the mouse moves. The client reports that case
+ * directly — see {@link games.brennan.dungeontrain.net.ClientInputPacket}.</p>
+ *
  * <p>All state is transient and keyed by UUID — dropped on logout, seeded on login and respawn. A
  * player the tracker has never seen counts as active, so a missed login can only over-count, never
  * silently freeze someone's timers.</p>
@@ -245,6 +249,16 @@ public final class PlayerActivityTracker {
 
     // ------------------------------------------------------------- recording
 
+    /**
+     * Stamp {@code uuid} as having moved the mouse. Called by the sampler below, and by
+     * {@link games.brennan.dungeontrain.net.ClientInputPacket} for cursor movement inside an open
+     * screen — with a screen up the camera does not turn, so the sampler sees a perfectly still
+     * yaw no matter how busy the player is.
+     */
+    public static void markLook(UUID uuid, long nowTick) {
+        LAST_LOOK_TICK.put(uuid, nowTick);
+    }
+
     /** Stamp {@code uuid} as having provided non-look input, crediting {@code trigger}. */
     public static void markInput(UUID uuid, long nowTick, String trigger) {
         LAST_INPUT_TICK.put(uuid, nowTick);
@@ -277,7 +291,7 @@ public final class PlayerActivityTracker {
         } else {
             PAUSED.remove(uuid);
             long now = player.level().getGameTime();
-            LAST_LOOK_TICK.put(uuid, now);
+            markLook(uuid, now);
             markInput(uuid, now, "un-paused");
         }
     }
@@ -301,7 +315,7 @@ public final class PlayerActivityTracker {
             float[] previousLook = LAST_LOOK.get(uuid);
             if (previousLook == null
                     || lookChanged(previousLook[0], previousLook[1], yaw, pitch, LOOK_EPSILON_DEG)) {
-                LAST_LOOK_TICK.put(uuid, now);
+                markLook(uuid, now);
             }
             LAST_LOOK.put(uuid, new float[] { yaw, pitch });
 
@@ -430,7 +444,7 @@ public final class PlayerActivityTracker {
         if (!(player instanceof ServerPlayer serverPlayer)) return;
         UUID uuid = serverPlayer.getUUID();
         long now = serverPlayer.level().getGameTime();
-        LAST_LOOK_TICK.put(uuid, now);
+        markLook(uuid, now);
         markInput(uuid, now, trigger);
     }
 }

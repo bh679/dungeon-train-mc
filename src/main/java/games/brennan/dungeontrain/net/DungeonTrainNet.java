@@ -124,6 +124,10 @@ public final class DungeonTrainNet {
         // server the world keeps ticking behind the menu — see PlayerActivityTracker.
         registrar.playToServer(PlayerPausedPacket.TYPE, PlayerPausedPacket.STREAM_CODEC, PlayerPausedPacket::handle);
 
+        // Mouse movement / clicks inside an open screen, which freeze the camera and so are
+        // invisible to the server's own look sampling — see PlayerActivityTracker.
+        registrar.playToServer(ClientInputPacket.TYPE, ClientInputPacket.STREAM_CODEC, ClientInputPacket::handle);
+
         // Book vote: client casts 👍/👎 from the virtual vote page (buttons or Y/N hotkeys); server
         // re-validates the held stack's identity, stamps dt_book_vote (offline burn color), and
         // consent-gates the relay POST.
