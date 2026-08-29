@@ -9800,6 +9800,19 @@
       "released": true,
       "released_in": "v0.715.0",
       "released_at": "2026-08-29T12:01:41Z"
+    },
+    {
+      "id": "burnt-book-advancements",
+      "version": "0.716.0",
+      "type": "feat",
+      "title": "A couple of new advancements",
+      "summary": "A couple of new hidden advancements have been added.",
+      "highlights": [],
+      "pr": 1178,
+      "date": "2026-08-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
