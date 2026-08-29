@@ -10044,9 +10044,9 @@
         "Added a scrollbar to the page"
       ],
       "date": "2026-08-29",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.732.0",
+      "released_at": "2026-08-29T19:58:02Z"
     },
     {
       "id": "enchantment-descriptions-version-pin-fix",
@@ -10059,9 +10059,9 @@
         "Its libraries Bookshelf and Prickle stay enabled, so nothing else in the pack changes."
       ],
       "date": "2026-08-30",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.732.0",
+      "released_at": "2026-08-29T19:58:02Z"
     }
   ]
 }
