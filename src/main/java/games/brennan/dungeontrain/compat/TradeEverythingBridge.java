@@ -31,11 +31,12 @@ public final class TradeEverythingBridge {
     private static final int OMINOUS_BANNER_VALUE_SIXTEENTHS = 80;
 
     /**
-     * Every armor trim smithing template — a flat 2 emeralds. Vanilla rarity is
-     * COMMON, so without this they resolve to the 1-sixteenth floor and a Silence
-     * template sells for the same as a stick.
+     * Every armor trim smithing template — a flat 2.2 emeralds. Values are integer
+     * sixteenths, so 2.2 is not representable exactly (35.2); 35 is the nearest,
+     * i.e. 2.1875 emeralds. Vanilla rarity is COMMON, so without this they resolve
+     * to the 1-sixteenth floor and a Silence template sells for the same as a stick.
      */
-    private static final int TRIM_TEMPLATE_VALUE_SIXTEENTHS = 32;
+    private static final int TRIM_TEMPLATE_VALUE_SIXTEENTHS = 35;
 
     /** +1 permanent backpack slot — 5 emeralds. */
     private static final int EDIBLE_BACKPACK_VALUE_SIXTEENTHS = 80;
