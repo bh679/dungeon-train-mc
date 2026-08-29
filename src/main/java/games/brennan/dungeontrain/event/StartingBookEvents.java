@@ -17,11 +17,13 @@ import games.brennan.dungeontrain.narrative.CursedStoryTag;
 import games.brennan.dungeontrain.narrative.DeathNoteBookTag;
 import games.brennan.dungeontrain.narrative.LoveNoteBookTag;
 import games.brennan.dungeontrain.narrative.NoteKind;
+import games.brennan.dungeontrain.narrative.LeaderboardBookTag;
 import games.brennan.dungeontrain.narrative.LetterBookTag;
 import games.brennan.dungeontrain.narrative.NarrativeProgressData;
 import games.brennan.dungeontrain.narrative.PlayerPlayedMarker;
 import games.brennan.dungeontrain.narrative.PlayerWrittenBookTag;
 import games.brennan.dungeontrain.narrative.RandomBookTag;
+import games.brennan.dungeontrain.narrative.RunStatBookTag;
 import games.brennan.dungeontrain.narrative.SharedBookFoundTag;
 import games.brennan.dungeontrain.narrative.SharedBookTag;
 import games.brennan.dungeontrain.narrative.StartingBookContext;
@@ -574,6 +576,13 @@ public final class StartingBookEvents {
                 player.getName().getString(), noteId);
         });
 
+        // Credit the "you found one of these" advancement here rather than leaving it to the
+        // entity-join hook: the drop below passes includeThrowerName=false, so the spawned
+        // ItemEntity has no owner and notifyBurnedSpecialBook(ItemEntity, ..) can't resolve a
+        // player from it. This is the read-then-burn path; the entity hook still covers a book
+        // thrown away by hand.
+        notifyBurnedSpecialBook(player, stack);
+
         ItemEntity dropped = player.drop(stack, /*dropAround*/ false, /*includeThrowerName*/ false);
         if (dropped == null) {
             // Player.drop returned null (e.g. dropped in creative with
@@ -656,6 +665,39 @@ public final class StartingBookEvents {
         BookBurnAuthorMessage.announce(level, item, stack);
 
         notifyIfBurnedUnread(item, stack);
+        notifyBurnedSpecialBook(item, stack);
+    }
+
+    /**
+     * Grants the one-shot "you found one of these" advancement for the two book kinds that
+     * always end in fire — a leaderboard board ({@link LeaderboardBookTag}) and a run-stat
+     * note ({@link RunStatBookTag}). Both are held-gated by
+     * {@link BurnableBookTag#isBurnable}, so reaching here means the player actually carried
+     * (and, in practice, read) the book rather than merely spilling it out of a chest.
+     *
+     * <p>Like {@link #notifyIfBurnedUnread}, the drop must be player-initiated — the
+     * {@link ItemEntity#getOwner} has to resolve to a {@link ServerPlayer}. Unlike it, there
+     * is no {@link RunIntegrity#isCheated} gate: nothing cumulative is being written here, and
+     * whether the advancement survives a cheated run is already decided by
+     * {@link RunIntegrity#persistsAdvancement}, as for every other gameplay-action marker.</p>
+     */
+    private static void notifyBurnedSpecialBook(ItemEntity item, ItemStack stack) {
+        if (!(item.getOwner() instanceof ServerPlayer player)) return;
+        notifyBurnedSpecialBook(player, stack);
+    }
+
+    /**
+     * The grant itself, once a player is known. Called twice over: from
+     * {@link #handleStartingBookClosed} for the read-then-burn path (whose drop is owner-less,
+     * so the entity hook can't credit it) and from the entity hook for a book thrown away by
+     * hand. Both advancements are one-shot, so crediting the same burn twice is a no-op.
+     */
+    private static void notifyBurnedSpecialBook(ServerPlayer player, ItemStack stack) {
+        if (LeaderboardBookTag.is(stack)) {
+            AchievementEvents.notifyLeaderboardBookBurned(player);
+        } else if (RunStatBookTag.is(stack)) {
+            AchievementEvents.notifyStatBookBurned(player);
+        }
     }
 
     /**

@@ -23,7 +23,8 @@ import net.neoforged.neoforge.event.entity.living.FinalizeSpawnEvent;
  *   <li><b>Upside-down band:</b> the terrain is a vertical mirror — the "ground" is a ceiling with
  *       an open gap at the train — so any naturally-spawned mob has nothing to stand on and simply
  *       falls to its death. Every ambient spawn (hostile <em>and</em> passive) in the band is
- *       cancelled.</li>
+ *       cancelled — as well as in its entry lead-in and exit-fade transition zones, whose terrain
+ *       is the same partial/composited mirror and just as unreliable to stand on.</li>
  * </ul>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
@@ -48,9 +49,10 @@ public final class BandMobSpawnEvents {
             return;
         }
 
-        // Upside-down band: the mirrored terrain gives ambient mobs nothing to stand on, so they just
-        // fall to their death — cancel every natural spawn (hostile and passive) in the band.
-        if (UpsideDownBand.isInBand(level, x)) {
+        // Upside-down band (plus its entry lead-in and exit-fade transition zones): the mirrored /
+        // partial terrain gives ambient mobs nothing to stand on, so they just fall to their death —
+        // cancel every natural spawn (hostile and passive) across all three.
+        if (UpsideDownBand.isInBandEntryLeadOrExit(level, x)) {
             event.setSpawnCancelled(true);
         }
     }
