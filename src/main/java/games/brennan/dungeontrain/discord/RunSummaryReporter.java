@@ -44,7 +44,7 @@ public final class RunSummaryReporter {
             }
             String uuid = player.getUUID().toString().replace("-", "");
             String name = player.getGameProfile().getName();
-            long runSec = Math.max(0L, packet.runTicks() / TICKS_PER_SECOND);
+            long runSec = Math.max(0L, packet.trainTimeTicks() / TICKS_PER_SECOND);
             int carriage = packet.cartsTravelled();
             int distanceBlocks = (int) Math.round(packet.distanceBlocks());
             JsonObject payload = buildPayload(uuid, name, runSec, carriage, distanceBlocks, pos);

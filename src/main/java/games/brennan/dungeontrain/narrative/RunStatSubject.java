@@ -41,8 +41,12 @@ public enum RunStatSubject {
     /** Net carriages travelled this life. Absolute: going backwards is still getting somewhere. */
     CARRIAGE("carriage", Format.PLAIN, 1, s -> Math.abs(s.travelledCarriageIndex()), "carriages"),
 
-    /** Seconds since the run began. The fallback subject — see {@link #eligible}. */
-    PLAYTIME("playtime", Format.DURATION, 60, s -> s.runTicks() / Ticks.PER_SECOND, "playtime"),
+    /**
+     * Seconds spent aboard this life — the "Longest Aboard" boards' figure, gated by
+     * {@link games.brennan.dungeontrain.event.PlayerActivityTracker} so idle and paused stretches
+     * do not count. The fallback subject — see {@link #eligible}.
+     */
+    PLAYTIME("playtime", Format.DURATION, 60, s -> s.trainTimeTicks() / Ticks.PER_SECOND, "playtime"),
 
     CHESTS("chests", Format.COUNT, 1, PlayerRunState::containersOpened, "chests"),
     MOB_KILLS("mob_kills", Format.COUNT, 1, PlayerRunState::mobKills),

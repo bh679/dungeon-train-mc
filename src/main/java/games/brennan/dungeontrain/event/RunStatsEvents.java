@@ -348,7 +348,7 @@ public final class RunStatsEvents {
                     packet.containersOpened());
             List<DeathField> manifestFields = DeathManifestFormat.fields(
                     packet.deathCause(),
-                    packet.distanceBlocks(), packet.runTicks(), packet.damageDealt(), packet.damageTaken(),
+                    packet.distanceBlocks(), packet.trainTimeTicks(), packet.damageDealt(), packet.damageTaken(),
                     packet.containersOpened(), packet.booksRead(), advTitles,
                     packet.playersEncountered(), packet.playersBefriended(), packet.playersKilled(),
                     packet.tamedCount());
@@ -476,7 +476,9 @@ public final class RunStatsEvents {
                 run.mobKills(),
                 run.cartsSinceDeath(),
                 run.distanceBlocks(),
-                run.runTicks(),
+                // Time on the train, NOT wall-clock since spawn: this is the figure every death
+                // surface and both "Longest Aboard" leaderboards report.
+                run.trainTimeTicks(),
                 run.containersOpened(),
                 run.booksReadCount(),
                 run.booksWrittenCount(),
@@ -508,7 +510,7 @@ public final class RunStatsEvents {
         return List.of(
                 // Run-stats strip (top death-screen row).
                 new DeathField("Distance", DeathReportFormat.distance(packet.distanceBlocks())),
-                new DeathField("Time", DeathReportFormat.time(packet.runTicks())),
+                new DeathField("Time", DeathReportFormat.time(packet.trainTimeTicks())),
                 new DeathField("Carts travelled", Integer.toString(packet.cartsTravelled())),
                 new DeathField("Loot containers", Integer.toString(packet.containersOpened())),
                 new DeathField("Books read", Integer.toString(packet.booksRead())),
@@ -548,8 +550,9 @@ public final class RunStatsEvents {
     @SubscribeEvent
     public static void onPlayerTick(PlayerTickEvent.Post event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
-        // Paused / idle time isn't play time — see PlayerActivityTracker.
-        if (!PlayerActivityTracker.isCounting(player)) return;
+        // Paused / idle time isn't play time — see PlayerActivityTracker. The carriage-progress
+        // rule deliberately does NOT gate this one: it freezes time on the train only.
+        if (!PlayerActivityTracker.isCountingRun(player)) return;
         player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).addRunTicks(1L);
     }
 

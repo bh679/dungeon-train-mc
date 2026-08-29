@@ -50,7 +50,7 @@ public final class DeathReporter {
             }
             String uuid = player.getUUID().toString().replace("-", "");
             String name = player.getGameProfile().getName();
-            long runSec = Math.max(0L, packet.runTicks() / TICKS_PER_SECOND);
+            long runSec = Math.max(0L, packet.trainTimeTicks() / TICKS_PER_SECOND);
             int carriage = packet.cartsTravelled();
             JsonObject payload = buildPayload(uuid, name, packet.deathCause(), runSec, carriage, pos);
             post(uuid, payload.toString());
