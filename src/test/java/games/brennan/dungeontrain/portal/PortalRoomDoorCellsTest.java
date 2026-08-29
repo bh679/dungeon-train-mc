@@ -103,6 +103,32 @@ class PortalRoomDoorCellsTest {
     }
 
     @Test
+    @DisplayName("The ghosted door floor agrees with an off-height roomOrigin too, at every legal height offset")
+    void forRoom_agreesWithRoomOriginHeightOffset() {
+        BlockPos entry = new BlockPos(0, 0, 0);
+        PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(DEFAULT_DIMS, PortalCorridorKind.LONG);
+
+        int width = PortalRoomLayout.minWidth(DEFAULT_DIMS);
+        int height = PortalRoomLayout.minHeight(DEFAULT_DIMS) + 8;
+        int maxHeightOffset = PortalRoomLayout.maxDoorHeightOffset(DEFAULT_DIMS, height);
+
+        for (int heightOffset = 0; heightOffset <= maxHeightOffset; heightOffset++) {
+            BlockPos room = PortalRoomLayout.roomOrigin(
+                entry, DEFAULT_DIMS, layout, width, height, 0, heightOffset);
+            Vec3i size = new Vec3i(PortalRoomLayout.BUILT_IN_LENGTH, height, width);
+
+            List<BlockPos> cells = PortalRoomDoorCells.forRoom(room, size, 0, heightOffset);
+            // The corridor's own floor never moves — every ghosted lower cell must be one above
+            // entry.getY(), whatever the room's own floor (room.getY()) sank to.
+            for (int i = 0; i < cells.size(); i += PortalRoomDoorCells.CELLS_PER_DOOR) {
+                assertEquals(entry.getY() + 1, cells.get(i).getY(),
+                    "height offset " + heightOffset + ": the ghosted lower cell must sit on the"
+                        + " corridor's own fixed floor line, not the room's sunk one");
+            }
+        }
+    }
+
+    @Test
     @DisplayName("A door cell is the corridor's own doorway cell, in the room's frame")
     void forRoom_landsOnTheCorridorsDoorwayColumn() {
         BlockPos entry = new BlockPos(-300, 12, 88);

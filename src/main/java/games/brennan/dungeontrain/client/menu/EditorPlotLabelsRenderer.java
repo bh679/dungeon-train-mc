@@ -388,28 +388,31 @@ public final class EditorPlotLabelsRenderer {
      * dimension rows, since this is a property of the room's own box rather than of its walls.
      *
      * <p>Read-only: unlike every other row here, there is no control behind it. The value is
-     * whatever {@link games.brennan.dungeontrain.portal.PortalRoomDoorDetection} last read off a
-     * door the author actually placed one column outside the room, on the doorway's own surface —
-     * the same surface {@link EditorDoorGhosts} ghosts. This row exists purely so that value is
-     * visible without counting blocks by eye.</p>
+     * whatever {@code PortalRoomDoorPointer} last set from a right-click with a door in hand, on the
+     * doorway's own surface — the same surface {@link EditorDoorGhosts} ghosts. This row exists
+     * purely so that value is visible without counting blocks by eye.</p>
      */
     public static boolean hasDoorOffsetRow(EditorPlotLabelsPacket.Entry entry) {
         return hasModeRow(entry);
     }
 
     /**
-     * What the Door Position row reads, e.g. {@code "Door Position: Centred"} or
-     * {@code "Door Position: +2"}.
+     * What the Door Position row reads, e.g. {@code "Door Position: Centred, at the floor"} or
+     * {@code "Door Position: +2, 3 blocks up"}.
      *
-     * <p>Signed rather than a bare number: {@link games.brennan.dungeontrain.portal.PortalRoomLayout}
-     * treats offset as a direction along {@code Z}, and "off to one side" reads better as a sign than
-     * as an unlabelled magnitude an author has to remember the meaning of.</p>
+     * <p>Signed for the across component: {@link games.brennan.dungeontrain.portal.PortalRoomLayout}
+     * treats that offset as a direction along {@code Z}, and "off to one side" reads better as a sign
+     * than as an unlabelled magnitude an author has to remember the meaning of. The height component
+     * is unsigned — it only ever moves up from the room's own floor.</p>
      */
     public static String doorOffsetLabel(String modeTag) {
-        int value = games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag)
-            .doorOffset().value();
-        if (value == 0) return "Door Position: Centred";
-        return "Door Position: " + (value > 0 ? "+" + value : value);
+        games.brennan.dungeontrain.portal.PortalRoomSettings settings =
+            games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag);
+        int value = settings.doorOffset().value();
+        int height = settings.doorHeightOffset().value();
+        String across = value == 0 ? "Centred" : (value > 0 ? "+" + value : Integer.toString(value));
+        String up = height == 0 ? "at the floor" : height + " block" + (height == 1 ? "" : "s") + " up";
+        return "Door Position: " + across + ", " + up;
     }
 
     /**

@@ -113,6 +113,56 @@ class PortalRoomSettingsTest {
     }
 
     @Test
+    @DisplayName("Door Height Offset is absent from every tag ever written, and reads back the floor")
+    void doorHeightOffsetDefaultsToFloorForEveryLegacyTag() {
+        for (String tag : new String[] {
+            "bedrock_lock", "bedrockless", "endless_open", "endless_repetition",
+            "endless_repetition/dynamic", "endless_repetition/dynamic/fit",
+            "endless_repetition/dynamic/fit/random:12",
+            "endless_repetition/dynamic/fit/random:12/mix:0:0:1",
+            "endless_repetition/dynamic/fit/random:12/mix:0:0:1/day",
+            "endless_repetition/dynamic/fit/random:12/mix:0:0:1/day/repeated",
+            "endless_repetition/dynamic/fit/random:12/mix:0:0:1/day/repeated/3",
+        }) {
+            assertEquals(PortalRoomDoorHeightOffset.DEFAULT,
+                PortalRoomSettings.parse(tag).doorHeightOffset(), tag);
+            assertEquals(tag, PortalRoomSettings.parse(tag).toTag(), tag + " round-trips unchanged");
+        }
+    }
+
+    @Test
+    @DisplayName("A raised door height is written as the ninth segment, with the eight in front of it")
+    void raisedDoorHeightOffsetRoundTrips() {
+        String tag = PortalRoomSettings.DEFAULT
+            .withDoorOffset(new PortalRoomDoorOffset(3))
+            .withDoorHeightOffset(new PortalRoomDoorHeightOffset(5))
+            .toTag();
+        assertEquals(9, tag.split("/", -1).length, tag);
+        assertTrue(tag.endsWith("/3/5"), tag);
+        assertEquals(new PortalRoomDoorHeightOffset(5), PortalRoomSettings.parse(tag).doorHeightOffset());
+        assertEquals(tag, PortalRoomSettings.parse(tag).toTag());
+
+        // withDoorHeightOffset must not disturb the door offset already set alongside it.
+        assertEquals(new PortalRoomDoorOffset(3), PortalRoomSettings.parse(tag).doorOffset());
+    }
+
+    @Test
+    @DisplayName("Every with* method preserves the door offset and height offset it did not set")
+    void withMethodsPreserveBothDoorOffsets() {
+        PortalRoomSettings base = PortalRoomSettings.DEFAULT
+            .withDoorOffset(new PortalRoomDoorOffset(2))
+            .withDoorHeightOffset(new PortalRoomDoorHeightOffset(4));
+
+        PortalRoomSettings afterMode = base.withMode(PortalRoomMode.ENDLESS_OPEN);
+        assertEquals(new PortalRoomDoorOffset(2), afterMode.doorOffset());
+        assertEquals(new PortalRoomDoorHeightOffset(4), afterMode.doorHeightOffset());
+
+        PortalRoomSettings afterSky = base.withSky(PortalRoomSky.DAY);
+        assertEquals(new PortalRoomDoorOffset(2), afterSky.doorOffset());
+        assertEquals(new PortalRoomDoorHeightOffset(4), afterSky.doorHeightOffset());
+    }
+
+    @Test
     @DisplayName("A room that does not repeat stores the bare mode id it always did")
     void nonRepeatingRoomsRoundTripAsBareIds() {
         assertEquals("bedrock_lock",

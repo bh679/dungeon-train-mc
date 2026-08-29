@@ -28,11 +28,13 @@ import java.util.List;
  *   <li><b>Z: the walkway centre line.</b> {@link PortalRoomLayout#roomOrigin} centres the room's
  *       <i>interior</i> ({@code size.z - 2}) on {@link PortalCarriageLayout#doorZ()}, which puts the
  *       line at {@code roomOrigin.z + 1 + (size.z - 2) / 2} — for odd and even widths alike.</li>
- *   <li><b>Y: two blocks, sitting on the floor.</b> {@link PortalCarriageLayout#isDoorwayCell} opens
- *       {@code dy <= floorY() + 2}, and {@link PortalCarriageLayout#isShellCell} claims the floor row
- *       itself, so what is left for the door is {@code floorY() + 1} and {@code floorY() + 2}. A
- *       corridor's {@code floorY()} is 0 and its origin shares the room's Y, so those are
- *       {@code roomOrigin.y + 1} and {@code + 2}.</li>
+ *   <li><b>Y: two blocks, {@code doorHeightOffset} above the room's own floor.</b>
+ *       {@link PortalCarriageLayout#isDoorwayCell} opens {@code dy <= floorY() + 2}, and
+ *       {@link PortalCarriageLayout#isShellCell} claims the floor row itself, so what is left for the
+ *       door is {@code floorY() + 1} and {@code + 2} relative to wherever the corridor's own floor
+ *       actually sits — {@code roomOrigin.y + doorHeightOffset + 1} and {@code + 2}. At the default
+ *       offset (0) the corridor's floor is the room's own floor, which is {@code roomOrigin.y + 1}
+ *       and {@code + 2} exactly as it always was.</li>
  * </ul>
  *
  * <p>Pure: no level, no dims, no registry. Everything it needs is in the room's own box, which is
@@ -60,7 +62,7 @@ public final class PortalRoomDoorCells {
      * tick that would have primed it.</p>
      */
     public static List<BlockPos> forRoom(BlockPos roomOrigin, Vec3i size) {
-        return forRoom(roomOrigin, size, 0);
+        return forRoom(roomOrigin, size, 0, 0);
     }
 
     /**
@@ -70,13 +72,24 @@ public final class PortalRoomDoorCells {
      * it placed the box this is called against.
      */
     public static List<BlockPos> forRoom(BlockPos roomOrigin, Vec3i size, int doorOffset) {
+        return forRoom(roomOrigin, size, doorOffset, 0);
+    }
+
+    /**
+     * As {@link #forRoom(BlockPos, Vec3i, int)}, with the door line also raised {@code
+     * doorHeightOffset} blocks above the room's own bottom edge — see {@link PortalRoomDoorHeightOffset}.
+     */
+    public static List<BlockPos> forRoom(
+        BlockPos roomOrigin, Vec3i size, int doorOffset, int doorHeightOffset
+    ) {
         if (roomOrigin == null || size == null) return List.of();
         if (size.getX() <= 0 || size.getY() <= 0 || size.getZ() <= 2) return List.of();
 
         int doorZ = doorZ(roomOrigin, size, doorOffset);
+        int floorY = roomOrigin.getY() + doorHeightOffset;
         List<BlockPos> cells = new ArrayList<>(CELLS_PER_ROOM);
-        addDoor(cells, roomOrigin.getX() - 1, roomOrigin.getY(), doorZ);
-        addDoor(cells, roomOrigin.getX() + size.getX(), roomOrigin.getY(), doorZ);
+        addDoor(cells, roomOrigin.getX() - 1, floorY, doorZ);
+        addDoor(cells, roomOrigin.getX() + size.getX(), floorY, doorZ);
         return cells;
     }
 
@@ -89,12 +102,19 @@ public final class PortalRoomDoorCells {
      * asking "is this cell a doorway", which is a different question.</p>
      */
     public static List<BlockPos> doorBases(BlockPos roomOrigin, Vec3i size) {
-        return doorBases(roomOrigin, size, 0);
+        return doorBases(roomOrigin, size, 0, 0);
     }
 
     /** As {@link #doorBases(BlockPos, Vec3i)}, with the door line shifted by {@code doorOffset}. */
     public static List<BlockPos> doorBases(BlockPos roomOrigin, Vec3i size, int doorOffset) {
-        List<BlockPos> all = forRoom(roomOrigin, size, doorOffset);
+        return doorBases(roomOrigin, size, doorOffset, 0);
+    }
+
+    /** As {@link #doorBases(BlockPos, Vec3i, int)}, also raised by {@code doorHeightOffset}. */
+    public static List<BlockPos> doorBases(
+        BlockPos roomOrigin, Vec3i size, int doorOffset, int doorHeightOffset
+    ) {
+        List<BlockPos> all = forRoom(roomOrigin, size, doorOffset, doorHeightOffset);
         if (all.isEmpty()) return List.of();
         List<BlockPos> bases = new ArrayList<>(2);
         for (int i = 0; i < all.size(); i += CELLS_PER_DOOR) {

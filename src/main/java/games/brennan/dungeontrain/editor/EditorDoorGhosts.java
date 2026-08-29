@@ -2,11 +2,9 @@ package games.brennan.dungeontrain.editor;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.portal.PortalRoomDoorCells;
-import games.brennan.dungeontrain.portal.PortalRoomDoorDetection;
 import games.brennan.dungeontrain.train.CarriageDims;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
-import net.minecraft.server.level.ServerLevel;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
@@ -28,16 +26,12 @@ import java.util.UUID;
  * walkway centre line yields a room whose door opens onto it. That mistake used to surface only by
  * walking a portal in a real world; the ghosts move it into the plot.</p>
  *
- * <h2>Geometry, not a sweep — but a live one</h2>
+ * <h2>Geometry, not a sweep</h2>
  * <p>The contrast with {@link EditorStrayBlocks} is the whole design. A stray is a fact about what an
- * author happened to place, so it has to be looked for; a door <b>cell</b> is a fact about the plot's
- * box, so it is simply computed — {@link PortalRoomDoorCells#forRoom} over each plot's origin and
- * size. There is no budget, no cursor and no per-chunk cache here.</p>
- *
- * <p>Where the door actually <b>sits</b> along that box, though, is a fact about what an author has
- * built — {@link PortalRoomDoorDetection} reads it off a placed door the same way a stray is read off
- * a misplaced block, and {@link #compute} runs that scan fresh every time it is called, for every
- * room, so the ghost tracks a door as it is placed, moved or removed without needing a save first.</p>
+ * author happened to place, so it has to be looked for; a door is a fact about the plot's box, so it
+ * is simply computed — {@link PortalRoomDoorCells#forRoom} over each plot's origin and size. There is
+ * no budget, no cursor and no per-chunk cache here, and the answer cannot go stale: it is recomputed
+ * from the live plot grid each time the dedup key is compared.</p>
  *
  * <p>Rebuilt rather than cached for the same reason {@code EditorStrayBlocks.startCycle} rebuilds its
  * boxes — rooms resize, and variants are created and deleted. A stale door cell is worse than a
@@ -45,9 +39,6 @@ import java.util.UUID;
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class EditorDoorGhosts {
-
-    /** {@link #compute}'s result: the dedup key and the ghost cells it was built from, together so a caller cannot compute one without the other and have them drift apart. */
-    public record Result(String key, List<BlockPos> cells) {}
 
     /** Players who have turned the door ghosts OFF. Default is on. */
     private static final Set<UUID> DISABLED = new HashSet<>();
@@ -80,8 +71,8 @@ public final class EditorDoorGhosts {
 
     /**
      * The lower cell of every corridor door at every registered portal room plot, at the current
-     * world dims, plus the dedup key that says whether any of it changed — two cells per room, live
-     * off {@code level}.
+     * world dims — two per room. The renderer draws the door's upper half from the block above, so
+     * a base is the whole door.
      *
      * <p>Absolute positions, like {@link EditorStrayBlocks#snapshot}: the ghosts are drawn in world
      * space, and a door cell sits one column <i>outside</i> its plot, so it has no plot-local
@@ -90,29 +81,58 @@ public final class EditorDoorGhosts {
      * <p>A plot whose size has not been primed yet ({@link PortalRoomEditor#primeSizes}) contributes
      * whatever the built-in figure says, which is where the plot is actually standing until the
      * template is read — so the ghosts always agree with the box the author can see.</p>
-     *
-     * <p>Runs {@link PortalRoomDoorDetection#detect} for every room on every call — the same scan
-     * {@code PortalRoomEditor.save} runs once at save time, run continuously here instead so the
-     * ghost tracks a door the moment it is placed. That is two thin, one-block-wide columns per room,
-     * not a chunk sweep, so the cost stays well under what {@link EditorStrayBlocks} already pays
-     * every tick in the same editor.</p>
      */
-    public static Result compute(ServerLevel level, CarriageDims dims) {
+    public static List<BlockPos> snapshot(CarriageDims dims) {
         List<String> names = PortalRoomEditor.names();
-        List<BlockPos> cells = new ArrayList<>(names.size() * 2);
-        StringBuilder key = new StringBuilder();
+        List<BlockPos> out = new ArrayList<>(names.size() * 2);
         for (String name : names) {
             BlockPos origin = PortalRoomEditor.plotOrigin(name, dims);
             if (origin == null) continue;
             Vec3i size = PortalRoomEditor.plotSize(name, dims);
-            int offset = PortalRoomDoorDetection.detect(level, origin, size, dims).value();
-            cells.addAll(PortalRoomDoorCells.doorBases(origin, size, offset));
-
-            key.append(origin.getX()).append(',').append(origin.getY()).append(',')
-               .append(origin.getZ()).append('/')
-               .append(size.getX()).append(',').append(size.getY()).append(',')
-               .append(size.getZ()).append('/').append(offset).append(';');
+            // Clamped to what this room's own width and height can actually spend — the same clamps
+            // PortalRoomLayout.roomOrigin applies when the real corridors are stamped, so a ghost
+            // never shows a door further off centre, or higher, than the room really can build.
+            games.brennan.dungeontrain.portal.PortalRoomSettings settings =
+                games.brennan.dungeontrain.portal.PortalRoomSettings.of(name);
+            int offset = games.brennan.dungeontrain.portal.PortalRoomLayout.clampDoorOffset(
+                dims, size.getZ(), settings.doorOffset().value());
+            int heightOffset = games.brennan.dungeontrain.portal.PortalRoomLayout.clampDoorHeightOffset(
+                dims, size.getY(), settings.doorHeightOffset().value());
+            out.addAll(PortalRoomDoorCells.doorBases(origin, size, offset, heightOffset));
         }
-        return new Result(key.toString(), cells);
+        return out;
+    }
+
+    /**
+     * Dedup key for the per-player push — the plot grid itself, one {@code origin/size/doorOffset}
+     * per room.
+     *
+     * <p>Keyed on the boxes rather than on the cells because the boxes are what the cells are a
+     * function of, and the string stays short as rooms are added. A resize, a new variant or a
+     * deletion all move it; nothing else does, so a steady editor sends no traffic.</p>
+     *
+     * <p>Door offset is included alongside the box, not folded into it: a change to it moves the
+     * ghost cells without moving the plot itself, and a dedup key that missed it would leave the
+     * ghosts standing at the old line until something else nudged the box.</p>
+     */
+    public static String key(CarriageDims dims) {
+        StringBuilder sb = new StringBuilder();
+        for (String name : PortalRoomEditor.names()) {
+            BlockPos origin = PortalRoomEditor.plotOrigin(name, dims);
+            if (origin == null) continue;
+            Vec3i size = PortalRoomEditor.plotSize(name, dims);
+            games.brennan.dungeontrain.portal.PortalRoomSettings settings =
+                games.brennan.dungeontrain.portal.PortalRoomSettings.of(name);
+            int offset = games.brennan.dungeontrain.portal.PortalRoomLayout.clampDoorOffset(
+                dims, size.getZ(), settings.doorOffset().value());
+            int heightOffset = games.brennan.dungeontrain.portal.PortalRoomLayout.clampDoorHeightOffset(
+                dims, size.getY(), settings.doorHeightOffset().value());
+            sb.append(origin.getX()).append(',').append(origin.getY()).append(',')
+              .append(origin.getZ()).append('/')
+              .append(size.getX()).append(',').append(size.getY()).append(',')
+              .append(size.getZ()).append('/').append(offset).append(',').append(heightOffset)
+              .append(';');
+        }
+        return sb.toString();
     }
 }

@@ -10,7 +10,6 @@ import net.minecraft.core.Vec3i;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.DoorBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.chunk.LevelChunkSection;
@@ -47,11 +46,6 @@ import java.util.UUID;
  * {@link CarriagePartEditor}, {@link TrackEditor}, {@link PillarEditor}, {@link TunnelEditor},
  * {@link games.brennan.dungeontrain.editor.PortalRoomEditor}) draws its 12 cage edges with the
  * same {@code OUTLINE_BLOCK}, and nothing else is ever stamped outside a footprint.</p>
- *
- * <p>One more exemption, {@link EditorCategory#PORTALS} only: a door block standing on a room's own
- * doorway column — see {@link #isDoorColumnBlock}. That column is one block outside the room's box
- * by construction, the same surface {@link games.brennan.dungeontrain.portal.PortalRoomDoorDetection}
- * reads a door's position from, so a door built there is the point rather than a mistake.</p>
  *
  * <h2>A sweep, not an event hook</h2>
  * <p>Detection is a budgeted round-robin scan of the region rather than a block-place listener.
@@ -106,8 +100,6 @@ public final class EditorStrayBlocks {
     // --- Current sweep cycle -------------------------------------------------
 
     private static List<PlotBox> boxes = Collections.emptyList();
-    /** True while the stamped category is {@link EditorCategory#PORTALS} — gates the door exemption. */
-    private static boolean portalRoomsStamped = false;
     private static List<ChunkPos> queue = Collections.emptyList();
     private static int cursor = 0;
     private static int scanMinY = 0;
@@ -146,32 +138,6 @@ public final class EditorStrayBlocks {
             if (plots.get(i).contains(x, y, z)) return false;
         }
         return true;
-    }
-
-    /**
-     * True when {@code (x, y, z)} is a door block standing on one of {@code plots}' own doorway
-     * columns — {@link games.brennan.dungeontrain.portal.PortalRoomDoorCells}'s two ghosted columns,
-     * one outside each end of a portal room's box, spanning its two doorway rows.
-     *
-     * <p>Only ever true under {@link EditorCategory#PORTALS}: those are the only plots this column
-     * geometry means anything for, and every other category's cage really does end at its box.
-     * {@link games.brennan.dungeontrain.portal.PortalRoomDoorDetection} reads the very same columns
-     * to decide where the door goes — a block this method exempts is a block that detection can see,
-     * by construction, since both read the identical geometry off {@code PlotBox}.</p>
-     */
-    private static boolean isDoorColumnBlock(BlockState state, int x, int y, int z, List<PlotBox> plots) {
-        if (!portalRoomsStamped) return false;
-        if (!(state.getBlock() instanceof DoorBlock)) return false;
-        for (int i = 0; i < plots.size(); i++) {
-            PlotBox box = plots.get(i);
-            boolean nearColumn = x == box.origin().getX() - 1;
-            boolean farColumn = x == box.origin().getX() + box.size().getX();
-            if (!nearColumn && !farColumn) continue;
-            if (y != box.origin().getY() + 1 && y != box.origin().getY() + 2) continue;
-            if (z < box.origin().getZ() + 1 || z > box.origin().getZ() + box.size().getZ() - 2) continue;
-            return true;
-        }
-        return false;
     }
 
     // --- Per-player toggle ---------------------------------------------------
@@ -214,7 +180,6 @@ public final class EditorStrayBlocks {
         boolean had = !BY_CHUNK.isEmpty();
         BY_CHUNK.clear();
         boxes = Collections.emptyList();
-        portalRoomsStamped = false;
         queue = Collections.emptyList();
         cursor = 0;
         clippedThisCycle = false;
@@ -263,11 +228,9 @@ public final class EditorStrayBlocks {
         Optional<EditorCategory> category = EditorStampedCategoryState.current();
         if (category.isEmpty()) {
             boxes = Collections.emptyList();
-            portalRoomsStamped = false;
             queue = Collections.emptyList();
             return;
         }
-        portalRoomsStamped = category.get() == EditorCategory.PORTALS;
 
         List<PlotBox> found = new ArrayList<>();
         for (Template model : category.get().models()) {
@@ -359,9 +322,6 @@ public final class EditorStrayBlocks {
                         int wx = baseX + lx;
                         int wz = baseZ + lz;
                         if (!outsideAll(wx, cy, wz, local)) continue;
-                        // A door standing on the doorway's own surface is expected, not a mistake —
-                        // it is what PortalRoomDoorDetection reads to place the door.
-                        if (isDoorColumnBlock(state, wx, cy, wz, local)) continue;
                         found.add(new BlockPos(wx, cy, wz));
                     }
                 }

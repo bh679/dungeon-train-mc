@@ -4,11 +4,8 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.portal.PortalCarriageBuilder;
 import games.brennan.dungeontrain.portal.PortalClear;
 import games.brennan.dungeontrain.portal.PortalCorridorMask;
-import games.brennan.dungeontrain.portal.PortalRoomDoorDetection;
-import games.brennan.dungeontrain.portal.PortalRoomDoorOffset;
 import games.brennan.dungeontrain.portal.PortalRoomLayout;
 import games.brennan.dungeontrain.portal.PortalRoomResize;
-import games.brennan.dungeontrain.portal.PortalRoomSettings;
 import games.brennan.dungeontrain.portal.PortalRoomSizes;
 import games.brennan.dungeontrain.editor.relay.EditorRelaySave;
 import games.brennan.dungeontrain.template.Template;
@@ -16,7 +13,6 @@ import games.brennan.dungeontrain.template.TemplateDecor;
 import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.track.variant.TrackVariantBlocks;
 import games.brennan.dungeontrain.track.variant.TrackVariantRegistry;
-import games.brennan.dungeontrain.track.variant.TrackVariantWeights;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.world.PortalRoomResizeMemory;
@@ -150,8 +146,9 @@ public final class PortalRoomEditor {
 
         player.sendSystemMessage(Component.literal(
             "[DungeonTrain] Dimensional carriage editor: this is the room between a portal's two corridors. "
-            + "Keep the way through clear on the walkway centre line — the corridors open onto it "
-            + "at both ends. Resize it from the X menu, or with "
+            + "The amber ghosts mark where the two doorways open — keep the way through clear there. "
+            + "Right-click a ghost with a door in hand to move both doorways along the wall or up it; "
+            + "resize the room from the X menu, or with "
             + "/dt editor portals length|width|height <blocks>."));
 
         LOGGER.info("[DungeonTrain] Editor enter: {} -> portal room '{}' plot at {} ({}x{}x{}, {} variants)",
@@ -221,33 +218,6 @@ public final class PortalRoomEditor {
         PortalCarriageBuilder.stampRoomAt(level, origin, dims, name, size, /*relight*/ true);
         if (outline) {
             setOutline(level, origin, size, OUTLINE_BLOCK);
-            setDoorSills(level, origin, size, OUTLINE_BLOCK);
-        }
-    }
-
-    /**
-     * Lay a one-block floor under each doorway column, one row outside the room box — so a door can
-     * be placed there without an author first building something of their own to rest it on.
-     *
-     * <p>Sits at the room's own floor level ({@link PortalCarriageLayout#floorY} is always local 0,
-     * sharing the room's origin Y) across every legal door Z, the same span
-     * {@link games.brennan.dungeontrain.portal.PortalRoomDoorDetection} scans for a door and
-     * {@link games.brennan.dungeontrain.portal.PortalRoomDoorCells} ghosts.</p>
-     *
-     * <p>Drawn in {@link #OUTLINE_BLOCK} — the cage's own bedrock — deliberately: {@link
-     * EditorStrayBlocks} already exempts every bedrock cell wherever it stands, so this sill needs no
-     * exemption of its own to keep in sync with, and the door placed on top of it is exempted
-     * separately by {@code EditorStrayBlocks.isDoorColumnBlock}. Nothing here is ever captured
-     * either way: the whole column is one block outside the box {@link #saveRoomFrom} reads.</p>
-     */
-    private static void setDoorSills(ServerLevel level, BlockPos origin, Vec3i size, BlockState state) {
-        if (size.getZ() <= 2) return;
-        int minZ = origin.getZ() + 1;
-        int maxZ = origin.getZ() + size.getZ() - 2;
-        int y = origin.getY();
-        for (int z = minZ; z <= maxZ; z++) {
-            level.setBlock(new BlockPos(origin.getX() - 1, y, z), state, 3);
-            level.setBlock(new BlockPos(origin.getX() + size.getX(), y, z), state, 3);
         }
     }
 
@@ -690,8 +660,6 @@ public final class PortalRoomEditor {
         BlockPos origin = plotOrigin(name, dims);
         Vec3i size = plotSize(name, dims);
 
-        saveDetectedDoorOffset(overworld, origin, size, name, dims);
-
         SaveResult result = saveRoomFrom(overworld, origin, size, name);
 
         // The saved size is the authored one now. A row filed by an earlier shrink would put blocks
@@ -706,33 +674,6 @@ public final class PortalRoomEditor {
         LOGGER.info("[DungeonTrain] Editor save: {} -> portal room '{}' template ({}x{}x{})",
             player.getName().getString(), name, size.getX(), size.getY(), size.getZ());
         return result;
-    }
-
-    /**
-     * Detect the door an author has built at {@code name}'s two doorway columns
-     * ({@link PortalRoomDoorDetection}) and persist the offset it implies, before the box itself is
-     * captured — so the settings tag and the blocks about to be saved always agree.
-     *
-     * <p>Failure here does not fail the save: a room with no settings file yet, or one whose weights
-     * write fails, still keeps whatever blocks the author built. The door offset just falls back to
-     * whatever it already was.</p>
-     *
-     * <p>Public: the Train Builder's portal room save ({@code BuilderSave.savePortalRoom}) calls this
-     * too, so a room saved from either place picks up the same detection.</p>
-     */
-    public static void saveDetectedDoorOffset(
-        ServerLevel level, BlockPos origin, Vec3i size, String name, CarriageDims dims
-    ) {
-        PortalRoomDoorOffset detected = PortalRoomDoorDetection.detect(level, origin, size, dims);
-        PortalRoomSettings current = PortalRoomSettings.of(name);
-        if (detected.equals(current.doorOffset())) return;
-        try {
-            TrackVariantWeights.setMode(TrackKind.PORTAL_ROOM, name,
-                current.withDoorOffset(detected).toTag());
-        } catch (IOException e) {
-            LOGGER.warn("[DungeonTrain] Portal room save: door offset write failed for {}: {}",
-                name, e.toString());
-        }
     }
 
     /**

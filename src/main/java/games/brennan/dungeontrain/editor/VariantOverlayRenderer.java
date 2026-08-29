@@ -1007,16 +1007,17 @@ public final class VariantOverlayRenderer {
             clearDoorGhostsIfStale(player);
             return;
         }
-        EditorDoorGhosts.Result result = EditorDoorGhosts.compute(player.serverLevel(), dims);
-        if (result.key().equals(LAST_DOOR_GHOSTS_KEY.get(uuid))) return;
+        String key = EditorDoorGhosts.key(dims);
+        if (key.equals(LAST_DOOR_GHOSTS_KEY.get(uuid))) return;
 
-        if (result.cells().isEmpty()) {
+        List<BlockPos> cells = EditorDoorGhosts.snapshot(dims);
+        if (cells.isEmpty()) {
             clearDoorGhostsIfStale(player);
             return;
         }
-        LAST_DOOR_GHOSTS_KEY.put(uuid, result.key());
+        LAST_DOOR_GHOSTS_KEY.put(uuid, key);
         DungeonTrainNet.sendTo(player,
-            new games.brennan.dungeontrain.net.EditorDoorGhostsPacket(result.cells()));
+            new games.brennan.dungeontrain.net.EditorDoorGhostsPacket(cells));
     }
 
     /** Send the empty door-ghost packet if the player previously had a non-empty snapshot. */

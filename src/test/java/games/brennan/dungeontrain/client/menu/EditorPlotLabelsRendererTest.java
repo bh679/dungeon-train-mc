@@ -234,15 +234,20 @@ class EditorPlotLabelsRendererTest {
     }
 
     @Test
-    @DisplayName("The Door Position label reads Centred at the default, and a signed number off it")
+    @DisplayName("The Door Position label reads Centred/at the floor at the default, and signed/up off it")
     void doorOffsetLabelReadsSignedOrCentred() {
-        assertEquals("Door Position: Centred", EditorPlotLabelsRenderer.doorOffsetLabel("bedrock_lock"));
-        assertEquals("Door Position: Centred",
+        assertEquals("Door Position: Centred, at the floor",
+            EditorPlotLabelsRenderer.doorOffsetLabel("bedrock_lock"));
+        assertEquals("Door Position: Centred, at the floor",
             EditorPlotLabelsRenderer.doorOffsetLabel("endless_repetition/dynamic/off/lattice:8/off/none/repeated"));
-        assertEquals("Door Position: +3", EditorPlotLabelsRenderer.doorOffsetLabel(
+        assertEquals("Door Position: +3, at the floor", EditorPlotLabelsRenderer.doorOffsetLabel(
             "endless_repetition/dynamic/off/lattice:8/off/none/repeated/3"));
-        assertEquals("Door Position: -2", EditorPlotLabelsRenderer.doorOffsetLabel(
+        assertEquals("Door Position: -2, at the floor", EditorPlotLabelsRenderer.doorOffsetLabel(
             "endless_repetition/dynamic/off/lattice:8/off/none/repeated/-2"));
+        assertEquals("Door Position: Centred, 1 block up", EditorPlotLabelsRenderer.doorOffsetLabel(
+            "endless_repetition/dynamic/off/lattice:8/off/none/repeated/0/1"));
+        assertEquals("Door Position: +3, 4 blocks up", EditorPlotLabelsRenderer.doorOffsetLabel(
+            "endless_repetition/dynamic/off/lattice:8/off/none/repeated/3/4"));
     }
 
     @Test

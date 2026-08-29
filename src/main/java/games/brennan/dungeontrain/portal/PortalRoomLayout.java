@@ -292,4 +292,48 @@ public final class PortalRoomLayout {
         int max = maxDoorOffset(dims, width);
         return Math.max(-max, Math.min(max, doorOffset));
     }
+
+    /**
+     * As {@link #roomOrigin(BlockPos, CarriageDims, PortalCarriageLayout, int, int)}, additionally
+     * shifting the corridor's fixed floor line {@code doorHeightOffset} blocks up from the room's own
+     * bottom edge.
+     *
+     * <p>Unlike the Z split, this is not a centring — every room's corridor sits at the room's own
+     * floor by default (offset 0), because that is the only Y a room built before this existed ever
+     * used, and there is nothing below a floor to give the offset the other way. A room taller than
+     * {@link #minHeight} has an attic above the corridor to spend; {@code doorHeightOffset} spends it
+     * as a basement below the corridor instead, one block at a time, up to the full slack — see
+     * {@link #maxDoorHeightOffset}.</p>
+     *
+     * <p>The corridor's own Y is exactly as fixed as its Z: {@code entryOrigin.getY()} is where
+     * {@link PortalTwinLanes} placed this pair's lane, shared by nothing else, so it never moves —
+     * what moves is how far below it the room's own floor sits.</p>
+     */
+    public static BlockPos roomOrigin(BlockPos entryOrigin, CarriageDims dims,
+                                      PortalCarriageLayout layout, int width, int height,
+                                      int doorOffset, int doorHeightOffset) {
+        BlockPos flat = roomOrigin(entryOrigin, dims, layout, width, doorOffset);
+        int clampedHeightOffset = clampDoorHeightOffset(dims, height, doorHeightOffset);
+        return flat.atY(flat.getY() - clampedHeightOffset);
+    }
+
+    /**
+     * How far {@link #roomOrigin}'s door-height-offset may run above the room's own floor, for a room
+     * of {@code height} in a world of {@code dims} — the room's whole slack over {@link #minHeight},
+     * unhalved because it only ever spends in one direction.
+     *
+     * <p>Zero at {@link #minHeight} itself, for the same reason {@link #maxDoorOffset} is zero at
+     * {@link #minWidth}: no spare height to give the corridor a basement, so it stays at the floor
+     * regardless of what was authored.</p>
+     */
+    public static int maxDoorHeightOffset(CarriageDims dims, int height) {
+        int slack = height - minHeight(dims);
+        return Math.max(0, slack);
+    }
+
+    /** {@code doorHeightOffset} held inside {@code 0}..{@link #maxDoorHeightOffset}. */
+    public static int clampDoorHeightOffset(CarriageDims dims, int height, int doorHeightOffset) {
+        int max = maxDoorHeightOffset(dims, height);
+        return Math.max(0, Math.min(max, doorHeightOffset));
+    }
 }
