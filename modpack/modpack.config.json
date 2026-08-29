@@ -39,13 +39,13 @@
       "name": "Interactive Player Mobs",
       "slug": "interactive-player-mobs",
       "project_id": 1559379,
-      "file_id": 8736081,
+      "file_id": 8762749,
       "required": true,
       "dependency_type": "required",
-      "version": "0.94.0",
+      "version": "0.97.0",
       "gradle_property": "playermob_min_version",
       "modrinth_project": "interactive-player-mobs",
-      "modrinth_version": "s0uLmHrV"
+      "modrinth_version": "rOjOs77z"
     },
     {
       "name": "Ender Chest Persistence",
