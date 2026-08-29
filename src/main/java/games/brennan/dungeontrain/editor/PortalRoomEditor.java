@@ -221,6 +221,33 @@ public final class PortalRoomEditor {
         PortalCarriageBuilder.stampRoomAt(level, origin, dims, name, size, /*relight*/ true);
         if (outline) {
             setOutline(level, origin, size, OUTLINE_BLOCK);
+            setDoorSills(level, origin, size, OUTLINE_BLOCK);
+        }
+    }
+
+    /**
+     * Lay a one-block floor under each doorway column, one row outside the room box — so a door can
+     * be placed there without an author first building something of their own to rest it on.
+     *
+     * <p>Sits at the room's own floor level ({@link PortalCarriageLayout#floorY} is always local 0,
+     * sharing the room's origin Y) across every legal door Z, the same span
+     * {@link games.brennan.dungeontrain.portal.PortalRoomDoorDetection} scans for a door and
+     * {@link games.brennan.dungeontrain.portal.PortalRoomDoorCells} ghosts.</p>
+     *
+     * <p>Drawn in {@link #OUTLINE_BLOCK} — the cage's own bedrock — deliberately: {@link
+     * EditorStrayBlocks} already exempts every bedrock cell wherever it stands, so this sill needs no
+     * exemption of its own to keep in sync with, and the door placed on top of it is exempted
+     * separately by {@code EditorStrayBlocks.isDoorColumnBlock}. Nothing here is ever captured
+     * either way: the whole column is one block outside the box {@link #saveRoomFrom} reads.</p>
+     */
+    private static void setDoorSills(ServerLevel level, BlockPos origin, Vec3i size, BlockState state) {
+        if (size.getZ() <= 2) return;
+        int minZ = origin.getZ() + 1;
+        int maxZ = origin.getZ() + size.getZ() - 2;
+        int y = origin.getY();
+        for (int z = minZ; z <= maxZ; z++) {
+            level.setBlock(new BlockPos(origin.getX() - 1, y, z), state, 3);
+            level.setBlock(new BlockPos(origin.getX() + size.getX(), y, z), state, 3);
         }
     }
 
