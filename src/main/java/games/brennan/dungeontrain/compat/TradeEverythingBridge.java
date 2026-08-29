@@ -30,6 +30,13 @@ public final class TradeEverythingBridge {
     /** Raid-captain drop, not craftable — 5 emeralds. */
     private static final int OMINOUS_BANNER_VALUE_SIXTEENTHS = 80;
 
+    /**
+     * Every armor trim smithing template — a flat 2 emeralds. Vanilla rarity is
+     * COMMON, so without this they resolve to the 1-sixteenth floor and a Silence
+     * template sells for the same as a stick.
+     */
+    private static final int TRIM_TEMPLATE_VALUE_SIXTEENTHS = 32;
+
     /** +1 permanent backpack slot — 5 emeralds. */
     private static final int EDIBLE_BACKPACK_VALUE_SIXTEENTHS = 80;
 
@@ -59,6 +66,15 @@ public final class TradeEverythingBridge {
         TradeEverythingApi.registerValueProvider(stack ->
             isOminousBanner(stack)
                 ? OptionalInt.of(OMINOUS_BANNER_VALUE_SIXTEENTHS)
+                : OptionalInt.empty());
+
+        // Tag-matched rather than 17 item overrides: a provider also beats TE's
+        // recipe derivation (which would price a template off the 7-diamond
+        // duplication recipe), and a datapack-added trim template is covered too.
+        // The tag excludes netherite_upgrade_smithing_template — not an armor trim.
+        TradeEverythingApi.registerValueProvider(stack ->
+            stack.is(ItemTags.TRIM_TEMPLATES)
+                ? OptionalInt.of(TRIM_TEMPLATE_VALUE_SIXTEENTHS)
                 : OptionalInt.empty());
 
         // Sibling-mod items, addressed by id so the sibling is never classloaded:
