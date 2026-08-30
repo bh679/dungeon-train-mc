@@ -51,14 +51,24 @@ jobs:
             exit 1
           fi
 
-      # No --register-new: an unknown translator FAILS the run on purpose. localization/authors.json
-      # is what keeps the AI-vs-human counts honest, and a name added by a bot loses the profile
-      # URL that makes the credit worth having. A failure here means "add them by hand, then re-run".
+      # --register-new, because "somebody translated for the first time" is the ordinary case for
+      # this job, not an error. It used to fail the run: on 2026-08-30 that cost four dispatches,
+      # two of them spent hand-writing an authors.json PR and merging it before anything could be
+      # imported at all — and it will recur every time the queue reaches a new name.
+      #
+      # localization/authors.json still has to be right, and it still is: the registration lands in
+      # the SAME PR as the text it credits, which is a human review gate that hand-authoring the
+      # JSON first did not add anything to. What the importer will not do is credit a name it has
+      # not accounted for — it registers only translators whose work actually landed in this diff,
+      # names every one of them in the PR body, and still HARD-FAILS on a submission credited to a
+      # name registered as "ai". Profile URLs are the one thing a bot cannot supply, so the PR body
+      # asks for them instead of blocking on them (none of the first eight names had one anyway).
       - name: Import approved units
         env:
           DUNGEONTRAIN_RELAY_ADMIN_BASE: ${{ secrets.RELAY_ADMIN_BASE }}
         run: |
           python3 scripts/localization/import-approved-translations.py \
+            --register-new --new-authors-out "$RUNNER_TEMP/new-authors.json" \
             ${{ inputs.dry_run && '--dry-run' || '' }} \
             ${{ inputs.locale && format('--locale {0}', inputs.locale) || '' }}
 
@@ -86,6 +96,42 @@ jobs:
           if [ -n "$locales" ]; then
             python3 scripts/localization/validate-locale.py $locales
           fi
+
+      # The static template plus, when the import registered anyone, the names it added — a
+      # reviewer should not have to spot a new person in the authors.json hunk to know they are
+      # being asked to vouch for one. Composed in Python because a translator name is arbitrary
+      # player-supplied text and has no business being interpolated into a shell string.
+      - name: Compose the PR body
+        if: steps.changed.outputs.yes == 'true' && !inputs.dry_run
+        run: |
+          python3 - <<'PY'
+          import json, os, pathlib
+          template = pathlib.Path('.github/import-approved-translations-pr-body.md')
+          body = template.read_text(encoding='utf-8')
+          report = pathlib.Path(os.environ['RUNNER_TEMP']) / 'new-authors.json'
+          names = json.loads(report.read_text(encoding='utf-8')) if report.is_file() else []
+          if names:
+              # Rendered as the authors.json lines themselves: a name is arbitrary player-supplied
+              # text, and inside a fence it cannot break the page's markdown the way a backtick or
+              # an underscore in an inline code span would. It is also what you would edit.
+              entries = '\n'.join(f'  {json.dumps(n, ensure_ascii=False)}: "human",'
+                                  for n in names)
+              section = (
+                  f'## {len(names)} newly registered translator(s)\n\n'
+                  'These names were not in `localization/authors.json` before this run, so the '
+                  'import added them, as plain `"human"` entries:\n\n'
+                  f'```json\n{entries}\n```\n\n'
+                  'Their work is in this diff — vouching for them is part of reviewing it. They '
+                  'carry **no profile URL**, the one thing the importer cannot know; if you know '
+                  'where one of them would like to be linked, give that entry the object form '
+                  'the file already uses (`{ "kind": "human", "url": "…" }`).\n\n')
+              trailer = 'Opened by `.github/workflows/import-approved-translations.yml`.'
+              body = (body.replace(trailer, section + trailer) if trailer in body
+                      else body + '\n' + section)
+          (pathlib.Path(os.environ['RUNNER_TEMP']) / 'pr-body.md').write_text(body,
+                                                                             encoding='utf-8')
+          print(body)
+          PY
 
       # Every path staged explicitly. `git add -A` is unsafe in this repo: the in-game editor's
       # dev mode writes into src/main/resources, so a blanket add can sweep up unrelated content.
@@ -115,4 +161,4 @@ jobs:
           git push origin "$branch"
           gh pr create --base main --head "$branch" \
             --title 'feat(localization): import approved player translations from the relay' \
-            --body-file .github/import-approved-translations-pr-body.md
+            --body-file "$RUNNER_TEMP/pr-body.md"

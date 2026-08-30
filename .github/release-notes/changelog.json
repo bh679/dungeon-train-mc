@@ -10079,6 +10079,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "import-registers-new-translators",
+      "version": "0.736.0",
+      "type": "ci",
+      "title": "New translators are credited without a manual step",
+      "summary": "When someone translates part of the game for the first time, the weekly job that pulls approved player translations back into the mod used to stop dead until a maintainer added that person to the credits registry by hand. It now adds them itself, as part of the same change a human reviews and approves \u2014 so a new translator's work no longer waits on a round trip nobody is scheduled to make.",
+      "highlights": [
+        "A first-time translator no longer blocks the whole week's import",
+        "New names are added only once their work has actually landed, and are listed for review",
+        "Work credited to a machine is still refused outright"
+      ],
+      "pr": 1201,
+      "date": "2026-08-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

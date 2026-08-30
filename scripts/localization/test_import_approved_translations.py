@@ -154,6 +154,57 @@ def test_register_new_adds_the_translator_as_human():
     assert prov_of(ws)["a.key"]["author"] == "Newcomer"
 
 
+def test_register_new_reports_the_names_it_added():
+    """The report the PR body is built from — who is new, so the reviewer is told."""
+    ws = workspace()
+    out = os.path.join(ws, "new-authors.json")
+    proc = run(ws, [unit(translator="Newcomer")], "--register-new", "--new-authors-out", out)
+    assert proc.returncode == 0, proc.stderr
+    assert read_json(out) == ["Newcomer"]
+    assert read_json(os.path.join(ws, "authors.json"))["Newcomer"] == "human"
+
+
+def test_the_report_is_empty_when_every_translator_is_already_known():
+    ws = workspace()
+    out = os.path.join(ws, "new-authors.json")
+    proc = run(ws, [unit()], "--register-new", "--new-authors-out", out)
+    assert proc.returncode == 0, proc.stderr
+    assert read_json(out) == []
+
+
+def test_register_new_dry_run_writes_neither_registry_nor_report():
+    ws = workspace()
+    out = os.path.join(ws, "new-authors.json")
+    proc = run(ws, [unit(translator="Newcomer")],
+               "--register-new", "--new-authors-out", out, "--dry-run")
+    assert proc.returncode == 0, proc.stderr
+    assert "would register" in proc.stdout
+    assert not os.path.exists(out), "a dry run must write no report file"
+    assert read_json(os.path.join(ws, "authors.json")) == AUTHORS
+
+
+def test_ai_credited_submission_is_refused_even_with_register_new():
+    """--register-new must not become a way to smuggle a machine into the human counts."""
+    ws = workspace()
+    proc = run(ws, [unit(translator="Opus 5 (Claude)")], "--register-new")
+    assert proc.returncode != 0
+    assert "registered as AI" in proc.stderr
+    assert read_json(os.path.join(ws, "authors.json")) == AUTHORS
+    assert lang_of(ws)["a.key"] == "AI Alpha"
+
+
+def test_a_translator_whose_every_approval_was_skipped_is_not_registered():
+    """Registering on sight would leave a name in the ledger with no stamped line behind it."""
+    ws = workspace()
+    out = os.path.join(ws, "new-authors.json")
+    proc = run(ws, [unit(translator="Newcomer", source="Some older English")],
+               "--register-new", "--new-authors-out", out)
+    assert proc.returncode == 0, proc.stderr
+    assert "en_us changed" in proc.stdout
+    assert read_json(os.path.join(ws, "authors.json")) == AUTHORS
+    assert read_json(out) == []
+
+
 def test_anonymous_submission_is_credited_to_one_registered_name():
     ws = workspace()
     proc = run(ws, [unit(translator="")], "--register-new")
