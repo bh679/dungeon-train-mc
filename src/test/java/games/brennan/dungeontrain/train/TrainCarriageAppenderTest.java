@@ -636,19 +636,23 @@ final class TrainCarriageAppenderTest {
     // window. catchUpBurstGroups is the ONLY thing that lets a lane exceed
     // that, so its boundary is where "steady state unchanged" is enforced.
 
+    private static int burstGroups(int deficitPIdx, int groupSize) {
+        return TrainCarriageAppender.catchUpBurstGroups(deficitPIdx, groupSize, CatchUpBurstMode.BURST_TWO);
+    }
+
     @Test
     @DisplayName("catchUpBurstGroups: a covered lane keeps the one-group cadence")
     void burst_coveredLane_noBurst() {
-        assertEquals(1, TrainCarriageAppender.catchUpBurstGroups(0, GROUP_SIZE));
-        assertEquals(1, TrainCarriageAppender.catchUpBurstGroups(-9, GROUP_SIZE),
+        assertEquals(1, burstGroups(0, GROUP_SIZE));
+        assertEquals(1, burstGroups(-9, GROUP_SIZE),
             "a lane already past the needed window is not behind");
     }
 
     @Test
     @DisplayName("catchUpBurstGroups: one group behind is ordinary extension, not a burst")
     void burst_oneGroupBehind_noBurst() {
-        assertEquals(1, TrainCarriageAppender.catchUpBurstGroups(1, GROUP_SIZE));
-        assertEquals(1, TrainCarriageAppender.catchUpBurstGroups(GROUP_SIZE, GROUP_SIZE),
+        assertEquals(1, burstGroups(1, GROUP_SIZE));
+        assertEquals(1, burstGroups(GROUP_SIZE, GROUP_SIZE),
             "exactly one group short is what every normal spawn starts from");
     }
 
@@ -656,33 +660,83 @@ final class TrainCarriageAppenderTest {
     @DisplayName("catchUpBurstGroups: two groups behind engages the burst")
     void burst_twoGroupsBehind_bursts() {
         assertEquals(TrainCarriageAppender.CATCH_UP_BURST_GROUPS,
-            TrainCarriageAppender.catchUpBurstGroups(GROUP_SIZE + 1, GROUP_SIZE),
+            burstGroups(GROUP_SIZE + 1, GROUP_SIZE),
             "a partial second group still means the lane cannot cover the window this spawn");
         assertEquals(TrainCarriageAppender.CATCH_UP_BURST_GROUPS,
-            TrainCarriageAppender.catchUpBurstGroups(2 * GROUP_SIZE, GROUP_SIZE));
+            burstGroups(2 * GROUP_SIZE, GROUP_SIZE));
     }
 
     @Test
     @DisplayName("catchUpBurstGroups: far behind is still capped at the burst size")
     void burst_farBehind_capped() {
         assertEquals(TrainCarriageAppender.CATCH_UP_BURST_GROUPS,
-            TrainCarriageAppender.catchUpBurstGroups(40 * GROUP_SIZE, GROUP_SIZE),
-            "the burst is a rate bump, not an unbounded fill");
+            burstGroups(40 * GROUP_SIZE, GROUP_SIZE),
+            "BURST_TWO is a rate bump, not an unbounded fill");
     }
 
     @Test
     @DisplayName("catchUpBurstGroups: groupSize 1 measures the deficit in carriages")
     void burst_groupSizeOne() {
-        assertEquals(1, TrainCarriageAppender.catchUpBurstGroups(1, 1));
-        assertEquals(TrainCarriageAppender.CATCH_UP_BURST_GROUPS,
-            TrainCarriageAppender.catchUpBurstGroups(2, 1));
+        assertEquals(1, burstGroups(1, 1));
+        assertEquals(TrainCarriageAppender.CATCH_UP_BURST_GROUPS, burstGroups(2, 1));
     }
 
     @Test
-    @DisplayName("catchUpBurstGroups: a non-positive groupSize throws")
+    @DisplayName("catchUpBurstGroups: a non-positive groupSize throws in every mode")
     void burst_groupSizeZero_throws() {
-        assertThrows(IllegalArgumentException.class,
-            () -> TrainCarriageAppender.catchUpBurstGroups(9, 0));
+        for (CatchUpBurstMode mode : CatchUpBurstMode.values()) {
+            assertThrows(IllegalArgumentException.class,
+                () -> TrainCarriageAppender.catchUpBurstGroups(9, 0, mode));
+        }
+    }
+
+    @Test
+    @DisplayName("OFF never bursts, however far behind the lane is")
+    void burstMode_off_neverBursts() {
+        for (int deficit : new int[] { 0, 1, GROUP_SIZE, 2 * GROUP_SIZE, 40 * GROUP_SIZE }) {
+            assertEquals(1, TrainCarriageAppender.catchUpBurstGroups(deficit, GROUP_SIZE, CatchUpBurstMode.OFF),
+                "OFF is the pre-feature cadence: one group per lane per settle window");
+        }
+    }
+
+    @Test
+    @DisplayName("FILL spawns exactly the number of groups the lane is short")
+    void burstMode_fill_coversTheDeficit() {
+        assertEquals(2, TrainCarriageAppender.catchUpBurstGroups(2 * GROUP_SIZE, GROUP_SIZE, CatchUpBurstMode.FILL));
+        assertEquals(5, TrainCarriageAppender.catchUpBurstGroups(5 * GROUP_SIZE, GROUP_SIZE, CatchUpBurstMode.FILL));
+        assertEquals(3, TrainCarriageAppender.catchUpBurstGroups(2 * GROUP_SIZE + 1, GROUP_SIZE, CatchUpBurstMode.FILL),
+            "a partial group still needs a whole group to cover it");
+    }
+
+    @Test
+    @DisplayName("FILL leaves the steady state alone")
+    void burstMode_fill_steadyStateUnchanged() {
+        assertEquals(1, TrainCarriageAppender.catchUpBurstGroups(0, GROUP_SIZE, CatchUpBurstMode.FILL));
+        assertEquals(1, TrainCarriageAppender.catchUpBurstGroups(-9, GROUP_SIZE, CatchUpBurstMode.FILL));
+        assertEquals(1, TrainCarriageAppender.catchUpBurstGroups(GROUP_SIZE, GROUP_SIZE, CatchUpBurstMode.FILL),
+            "one group short is one group spawned — the same as every other mode");
+    }
+
+    @Test
+    @DisplayName("FILL is bounded by the runaway guard")
+    void burstMode_fill_clampedAtCap() {
+        int huge = 500 * GROUP_SIZE;
+        assertEquals(TrainCarriageAppender.CATCH_UP_FILL_MAX_GROUPS,
+            TrainCarriageAppender.catchUpBurstGroups(huge, GROUP_SIZE, CatchUpBurstMode.FILL),
+            "a pathological deficit must not ask for a thousand sub-levels on one tick");
+    }
+
+    @Test
+    @DisplayName("the follower-chain depth cap covers the longest chain FILL can build")
+    void burstChain_depthCapCoversFill() {
+        assertTrue(TrainCarriageAppender.CATCH_UP_FILL_MAX_GROUPS >= TrainCarriageAppender.CATCH_UP_BURST_GROUPS,
+            "FILL is the widest mode");
+        // shiftBurstFollowers stops at CATCH_UP_FILL_MAX_GROUPS. If a mode could ever
+        // chain more groups than that, a leader's shift would stop propagating partway
+        // down the chain and silently re-open the seam the lockstep fix closed.
+        assertEquals(TrainCarriageAppender.CATCH_UP_FILL_MAX_GROUPS,
+            Math.max(TrainCarriageAppender.CATCH_UP_FILL_MAX_GROUPS, TrainCarriageAppender.CATCH_UP_BURST_GROUPS),
+            "the depth cap must be the widest mode's group count");
     }
 
     @Test

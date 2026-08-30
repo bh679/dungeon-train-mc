@@ -1067,12 +1067,18 @@ public final class TrainCarriageAppender {
 
     /**
      * Walk the burst chain from {@code leaderSubLevelId}, applying {@code dx}
-     * to each linked follower. Depth-capped at {@link #CATCH_UP_BURST_GROUPS}
-     * — the longest chain a burst can build — so a corrupted link can never
-     * recurse without bound.
+     * to each linked follower. Depth-capped at
+     * {@link #CATCH_UP_FILL_MAX_GROUPS} — the longest chain any burst can
+     * build, since {@link CatchUpBurstMode#FILL} chains one group per group of
+     * deficit — so a corrupted link can never recurse without bound.
+     *
+     * <p>The cap MUST cover the largest possible chain, not the
+     * {@link CatchUpBurstMode#BURST_TWO} chain of 2: stopping early would
+     * silently leave the tail of a filled run behind when its leader shifts,
+     * re-opening exactly the seam this propagation exists to hold.</p>
      */
     static void shiftBurstFollowers(UUID leaderSubLevelId, double dx, long now, int depth) {
-        if (depth >= CATCH_UP_BURST_GROUPS) return;
+        if (depth >= CATCH_UP_FILL_MAX_GROUPS) return;
         List<BurstFollower> followers = BURST_FOLLOWERS.get(leaderSubLevelId);
         if (followers == null || followers.isEmpty()) return;
         for (BurstFollower follower : followers) {
@@ -1679,27 +1685,52 @@ public final class TrainCarriageAppender {
     static final int CATCH_UP_DEFICIT_GROUPS = 2;
 
     /**
-     * Groups one lane may spawn this tick, given how far that lane is behind.
+     * Hard ceiling on a {@link CatchUpBurstMode#FILL} burst, as a runaway guard
+     * rather than a policy: the needed pIdx window is already bounded by
+     * {@code numCarriages} (or the render-distance-derived target), which is
+     * ~15 groups at the default carriage count and groupSize 3, so a
+     * legitimate fill never reaches this. It exists so a corrupted anchor or a
+     * pathological deficit cannot ask for a thousand sub-levels on one tick.
+     *
+     * <p>A clamped fill is logged — a silently truncated fill would look
+     * exactly like a complete one.</p>
+     */
+    static final int CATCH_UP_FILL_MAX_GROUPS = 16;
+
+    /**
+     * Groups one lane may spawn this tick, given how far that lane is behind
+     * and which {@link CatchUpBurstMode} is configured.
      *
      * <p>{@code deficitPIdx} is the lane's shortfall in CARRIAGE indices —
      * {@code globalMaxNeededPIdx − trainMaxAnchor} forward,
-     * {@code trainMinAnchor − globalMinNeededPIdx} backward. Returns 1 (the
-     * steady-state cadence) unless that shortfall is
-     * {@link #CATCH_UP_DEFICIT_GROUPS} whole groups or more, in which case the
-     * lane may spawn {@link #CATCH_UP_BURST_GROUPS} in one tick.</p>
+     * {@code trainMinAnchor − globalMinNeededPIdx} backward.</p>
      *
-     * <p>Non-positive shortfalls clamp to 1: the lane is already covering the
-     * window, so the group it is spawning is the last one it needs. Pure and
+     * <ul>
+     *   <li>{@link CatchUpBurstMode#OFF} — always 1.</li>
+     *   <li>{@link CatchUpBurstMode#BURST_TWO} — {@link #CATCH_UP_BURST_GROUPS}
+     *       once the shortfall reaches {@link #CATCH_UP_DEFICIT_GROUPS} whole
+     *       groups, else 1.</li>
+     *   <li>{@link CatchUpBurstMode#FILL} — exactly the number of groups the
+     *       shortfall spans, clamped to {@link #CATCH_UP_FILL_MAX_GROUPS}.</li>
+     * </ul>
+     *
+     * <p>Non-positive shortfalls clamp to 1 in every mode: the lane is already
+     * covering the window, so the group it is spawning is the last one it
+     * needs — which is also why no mode changes the steady state. Pure and
      * JOML-free so the trigger boundary is unit-testable without a level.</p>
      *
      * @throws IllegalArgumentException if {@code groupSize} is not positive
      */
-    static int catchUpBurstGroups(int deficitPIdx, int groupSize) {
+    static int catchUpBurstGroups(int deficitPIdx, int groupSize, CatchUpBurstMode mode) {
         if (groupSize <= 0) {
             throw new IllegalArgumentException("groupSize must be > 0, got " + groupSize);
         }
+        if (mode == CatchUpBurstMode.OFF) return 1;
         if (deficitPIdx <= 0) return 1;
         int deficitGroups = Math.ceilDiv(deficitPIdx, groupSize);
+        if (mode == CatchUpBurstMode.FILL) {
+            return Math.max(1, Math.min(deficitGroups, CATCH_UP_FILL_MAX_GROUPS));
+        }
         return (deficitGroups >= CATCH_UP_DEFICIT_GROUPS) ? CATCH_UP_BURST_GROUPS : 1;
     }
 
@@ -1730,9 +1761,12 @@ public final class TrainCarriageAppender {
      * deduped against the registry (the burst re-checks it per group). The
      * throttle is the architectural fix; the registry is the safety net.</p>
      *
-     * <p>Throughput cost: at groupSize=3, this caps carriages added per
+     * <p>Throughput cost: at groupSize=3 and the default
+     * {@link CatchUpBurstMode#BURST_TWO}, this caps carriages added per
      * tick at 12 (3 per group × 2 groups × 2 directions), and only while
-     * both lanes are behind. The seed group from
+     * both lanes are behind. {@link CatchUpBurstMode#FILL} raises the per-lane
+     * ceiling to {@link #CATCH_UP_FILL_MAX_GROUPS} for the one tick that
+     * closes the deficit — a deliberate spike, chosen by the setting. The seed group from
      * {@link TrainAssembler#spawnTrain} plus the appender's first ~15
      * ticks fully populate a typical auto-rd window (~14 groups at
      * render distance 12) in &lt;1 second per side — imperceptible.</p>
@@ -4254,8 +4288,15 @@ public final class TrainCarriageAppender {
         long now,
         boolean forward
     ) {
-        int allowed = catchUpBurstGroups(deficitPIdx, groupSize);
+        CatchUpBurstMode mode = DungeonTrainConfig.getCatchUpBurstMode();
+        int allowed = catchUpBurstGroups(deficitPIdx, groupSize, mode);
         if (allowed <= 1) return 0;
+        if (mode == CatchUpBurstMode.FILL && allowed == CATCH_UP_FILL_MAX_GROUPS
+            && Math.ceilDiv(deficitPIdx, groupSize) > CATCH_UP_FILL_MAX_GROUPS) {
+            LOGGER.info("[DungeonTrain] Catch-up fill clamped to {} groups on lane {} (deficitPIdx={} groupSize={} would need {}) — the rest follows next tick (trainId={})",
+                CATCH_UP_FILL_MAX_GROUPS, forward ? "forward" : "backward",
+                deficitPIdx, groupSize, Math.ceilDiv(deficitPIdx, groupSize), trainId);
+        }
 
         Plan prevPlan = firstPlan;
         int prevAnchor = firstAnchor;
@@ -4291,8 +4332,8 @@ public final class TrainCarriageAppender {
         }
 
         if (extra > 0) {
-            LOGGER.info("[DungeonTrain] Catch-up burst on lane {}: deficitPIdx={} groupSize={} extraGroups={} anchors {}..{} trainId={}",
-                forward ? "forward" : "backward",
+            LOGGER.info("[DungeonTrain] Catch-up burst on lane {} [{}]: deficitPIdx={} groupSize={} extraGroups={} anchors {}..{} trainId={}",
+                forward ? "forward" : "backward", mode,
                 deficitPIdx, groupSize, extra, firstAnchor, prevAnchor, trainId);
         }
         return extra;
