@@ -39,11 +39,18 @@ public final class CinematicLoadingScreen extends Screen {
     private static final int TIP_MAX_WIDTH = 260;
     private static final int PROMPT_BOTTOM_MARGIN = 18;
 
+    /** Dim left over the live world once the panel has faded — black at 70% opacity. */
+    private static final int WORLD_DIM = 0xB3000000;
+    /** How long the panel takes to fade away into that dim, in milliseconds. */
+    private static final float REVEAL_FADE_MS = 600.0f;
+
     /** Replaces the title once the bar reads 100% — loading is done, the train is boarding. */
     private static final Component READY_TITLE = Component.translatable("gui.dungeontrain.cinematic.loading.ready");
 
     /** Distinct Space presses so far (0..{@link #SKIP_PRESSES}). */
     private int spacePresses = 0;
+    /** When the bar first read 100% — start of the fade to the world. -1 until then. */
+    private long revealStartNanos = -1L;
     /** Guards against key-repeat: only the first frame of a held Space counts. */
     private boolean spaceHeld = false;
 
@@ -92,10 +99,32 @@ public final class CinematicLoadingScreen extends Screen {
         return false;
     }
 
-    /** Opaque fill replaces the vanilla world blur/dim so the loading terrain never shows. */
+    /**
+     * Opaque while loading, so the popping-in terrain never shows — then, once the bar reads
+     * 100% and {@link CinematicPreloadGate} has parked the camera at the shot's opening pose,
+     * the panel fades away over {@link #REVEAL_FADE_MS} to leave the live world under
+     * {@link #WORLD_DIM}. Vanilla's world blur is replaced either way.
+     */
     @Override
     public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
-        LoadingScreenTheme.fillBackground(g, this.width, this.height);
+        float panel = 1.0f - revealProgress();
+        if (panel < 1.0f) {
+            g.fill(0, 0, this.width, this.height, WORLD_DIM);
+        }
+        LoadingScreenTheme.fillBackground(g, this.width, this.height, panel);
+    }
+
+    /** 0 until the bar reads 100%, then eases to 1 across {@link #REVEAL_FADE_MS}. */
+    private float revealProgress() {
+        if (!LoadingScreenTheme.readsComplete(CinematicPreloadGate.progress())) {
+            return 0.0f;
+        }
+        long now = System.nanoTime();
+        if (revealStartNanos < 0) {
+            revealStartNanos = now;
+        }
+        float elapsedMs = (now - revealStartNanos) / 1.0e6f;
+        return Math.min(1.0f, elapsedMs / REVEAL_FADE_MS);
     }
 
     @Override

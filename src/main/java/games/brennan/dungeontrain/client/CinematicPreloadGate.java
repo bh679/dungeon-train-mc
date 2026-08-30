@@ -303,6 +303,11 @@ public final class CinematicPreloadGate {
                 loadingReady = true;
                 loadingReadyReason = settled ? "chunks ready" : "cap reached";
                 localFraction = 1.0; // reads as "done" while we hold for the story
+                // The screen now fades to a dim over the live world — park the camera at the
+                // shot's opening pose so what shows through is the composed cinematic frame.
+                CinematicCameraController.beginPreview(
+                    new Vec3(pending.camX(), pending.camY(), pending.camZ()),
+                    pending.startYaw(), pending.startPitch());
             }
         }
 
@@ -352,6 +357,9 @@ public final class CinematicPreloadGate {
     }
 
     private static void reset() {
+        // Before anything else: hand the HUD back, so a following start() saves the player's
+        // real hideGui setting rather than the preview's forced true.
+        CinematicCameraController.endPreview();
         phase = Phase.IDLE;
         pending = null;
         freezePos = null;

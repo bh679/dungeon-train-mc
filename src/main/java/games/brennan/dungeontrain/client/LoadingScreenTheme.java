@@ -52,6 +52,23 @@ public final class LoadingScreenTheme {
         g.fillGradient(0, 0, width, height, BG_TOP, BG_BOTTOM);
     }
 
+    /**
+     * The same gradient at {@code alpha} (0..1) of its own opacity, for fading the panel away
+     * over the live world once loading is done. At 1.0 this is identical to
+     * {@link #fillBackground(GuiGraphics, int, int)}; at 0.0 it draws nothing.
+     */
+    public static void fillBackground(GuiGraphics g, int width, int height, float alpha) {
+        float a = Mth.clamp(alpha, 0.0f, 1.0f);
+        if (a <= 0.0f) return;
+        g.fillGradient(0, 0, width, height, scaleAlpha(BG_TOP, a), scaleAlpha(BG_BOTTOM, a));
+    }
+
+    /** ARGB colour with its alpha channel multiplied by {@code factor}. */
+    public static int scaleAlpha(int argb, float factor) {
+        int a = Math.round(((argb >>> 24) & 0xFF) * Mth.clamp(factor, 0.0f, 1.0f));
+        return (a << 24) | (argb & 0x00FFFFFF);
+    }
+
     public static void drawTitle(GuiGraphics g, Font font, Component title, int cx, int cy) {
         g.drawCenteredString(font, title, cx, cy, TITLE_TEAL);
     }

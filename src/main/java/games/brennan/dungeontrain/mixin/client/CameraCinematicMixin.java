@@ -49,6 +49,14 @@ public abstract class CameraCinematicMixin {
             }
             return;
         }
+        // Loading screen holding at 100%: park the camera at the shot's opening pose so the
+        // world behind the dim is the composed shot, waiting for Space.
+        CinematicCameraController.Pose preview = CinematicCameraController.previewPose();
+        if (preview != null) {
+            this.setPosition(preview.pos());
+            this.setRotation(preview.yaw(), preview.pitch());
+            return;
+        }
         if (!CinematicCameraController.isActive()) return;
         CinematicCameraController.Pose pose = CinematicCameraController.computePose(partialTick);
         this.setPosition(pose.pos());
