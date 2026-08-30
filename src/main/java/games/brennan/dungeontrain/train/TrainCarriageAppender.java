@@ -4128,6 +4128,11 @@ public final class TrainCarriageAppender {
                 break;
             }
             Plan chained = planChainedSpawn(prevPlan, prevAnchor, nextAnchor, dims, train, trainId);
+            if (!burstChainIsCommittable(chained.collisionAdjustments())) {
+                LOGGER.info("[DungeonTrain] Catch-up burst: chained anchor={} needed a {}-block collision shove — abandoning burst (trainId={})",
+                    nextAnchor, chained.collisionAdjustments(), trainId);
+                break;
+            }
             ManagedShip extraShip = spawnPlannedGroup(
                 level, chained, null, nextAnchor, groupSize, dims, velocity, trainId, train);
             if (extraShip == null) break;
@@ -4221,6 +4226,31 @@ public final class TrainCarriageAppender {
             adjusted.lastOffenderPIdx(),
             adjusted.lastOffenderRegistryOnly(),
             preSeedRemainderX);
+    }
+
+    /**
+     * Whether a chained burst group may be committed, given how far
+     * {@link #adjustForCollisions} had to move it off the placement
+     * {@link #planChainedSpawn} computed.
+     *
+     * <p>Only an untouched placement counts. The chain's whole premise is that
+     * the previous group landed exactly where it was planned, so the next one
+     * can be derived from that plan rather than from a pose Sable hasn't
+     * written yet. The moment the collision pass has to shove the chained group,
+     * that premise is already false — something is sitting where the stride
+     * said the group goes — and the honest answer is to abandon the burst and
+     * let the lane re-plan against the registry edge on a later tick at its
+     * normal cadence.</p>
+     *
+     * <p>Observed in play (2026-08-30, backward lane): a group whose registry
+     * edge had diverged ~190 blocks from the previous group's real position
+     * produced a chained plan the collision pass moved <b>116 blocks</b>, and
+     * the burst committed it — a carriage-sized hole in the train. The
+     * divergence itself is a separate, pre-existing backward-edge bug; this
+     * guard stops the burst from turning it into a placed group.</p>
+     */
+    static boolean burstChainIsCommittable(int collisionAdjustments) {
+        return collisionAdjustments == 0;
     }
 
     /**

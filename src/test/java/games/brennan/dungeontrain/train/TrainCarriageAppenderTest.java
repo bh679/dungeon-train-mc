@@ -709,6 +709,19 @@ final class TrainCarriageAppenderTest {
     }
 
     @Test
+    @DisplayName("burstChainIsCommittable: only an unshoved chained placement may be committed")
+    void burstChain_onlyCleanPlacementsCommit() {
+        assertTrue(TrainCarriageAppender.burstChainIsCommittable(0),
+            "a placement that landed exactly where the stride put it is the chain's premise");
+        assertFalse(TrainCarriageAppender.burstChainIsCommittable(-116),
+            "the 116-block shove observed in play must abandon the burst, not place a hole");
+        assertFalse(TrainCarriageAppender.burstChainIsCommittable(-1),
+            "even a one-block shove means something already sits where the chain expected free space");
+        assertFalse(TrainCarriageAppender.burstChainIsCommittable(1),
+            "direction of the shove is irrelevant — any correction voids the chain");
+    }
+
+    @Test
     @DisplayName("chainedSpawnDesiredX: chaining twice never accumulates drift")
     void chainedStride_chainsWithoutDrift() {
         int stride = 31;
