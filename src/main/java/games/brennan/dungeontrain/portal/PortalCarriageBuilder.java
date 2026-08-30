@@ -1811,13 +1811,32 @@ public final class PortalCarriageBuilder {
      */
     public static void stampRoomFromLive(ServerLevel level, BlockPos roomOrigin, Vec3i size,
                                          StructureTemplate live, Vec3i shift, boolean relight) {
+        stampRoomFromLive(level, roomOrigin, size, live, shift, relight, PortalCorridorMask.NONE);
+    }
+
+    /**
+     * {@link #stampRoomFromLive} leaving every cell {@code blank} covers as air.
+     *
+     * <p>What a <b>grow</b> passes: the row the step just added. The box is still cleared in full —
+     * {@code blank} is the built-in shell's write mask only — so the new row ends up empty rather
+     * than floored, walled and lit. Guessing a shell into it is guessing at the author's build; the
+     * one thing that may legitimately appear there is a row an earlier shrink filed, which
+     * {@code PortalRoomResizeSlabs.restore} paints back afterwards.</p>
+     *
+     * <p>The live room is masked too, though it has nothing to say about that row in practice: a
+     * capture of the old box, shifted, never reaches the row the resize added. Masked anyway so the
+     * blank means "nothing writes here" rather than "nothing happens to write here".</p>
+     */
+    public static void stampRoomFromLive(ServerLevel level, BlockPos roomOrigin, Vec3i size,
+                                         StructureTemplate live, Vec3i shift, boolean relight,
+                                         PortalCorridorMask blank) {
         clearRoomBox(level, roomOrigin, size, PortalCorridorMask.NONE, relight);
         clearIntruders(level, roomOrigin, size);
         plugFluidsAround(level, roomOrigin, size);
 
-        stampRoomBuiltIn(level, roomOrigin, size, relight, PortalCorridorMask.NONE);
+        stampRoomBuiltIn(level, roomOrigin, size, relight, blank);
         CarriagePlacer.stampTemplateAt(level, roomOrigin.offset(shift), live,
-            clipTo(roomOrigin, size, PortalCorridorMask.NONE), relight, boxOf(roomOrigin, size));
+            clipTo(roomOrigin, size, blank), relight, boxOf(roomOrigin, size));
     }
 
     /**

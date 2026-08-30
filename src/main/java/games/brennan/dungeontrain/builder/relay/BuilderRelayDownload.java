@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.builder.relay;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.builder.BuilderPhotoPaths;
+import games.brennan.dungeontrain.net.relay.RelayTarget;
 import games.brennan.dungeontrain.net.relay.SharedCarriageClient;
 import games.brennan.dungeontrain.train.CarriageBlockSnapshot;
 import games.brennan.dungeontrain.train.CarriageSnapshotTemplate;
@@ -67,7 +68,7 @@ public final class BuilderRelayDownload {
      * is not asked to accept them coming down either.</p>
      */
     public static CompletableFuture<Result> download(ServerPlayer player, ServerLevel level, int relayId) {
-        return download(player, level, relayId, BuilderRelayInstall.Resolution.AS_IS, "");
+        return download(player, level, relayId, BuilderRelayInstall.Resolution.AS_IS, "", "", false);
     }
 
     /**
@@ -81,16 +82,19 @@ public final class BuilderRelayDownload {
      */
     public static CompletableFuture<Result> download(ServerPlayer player, ServerLevel level, int relayId,
                                                      BuilderRelayInstall.Resolution resolution,
-                                                     String newName) {
+                                                     String newName, String ownerUuid, boolean live) {
         if (player == null || level == null || !BuilderRelayUpload.canUpload(player)) {
             return CompletableFuture.completedFuture(Result.of(Outcome.UNAVAILABLE));
         }
-        return SharedCarriageClient.fetchBuild(relayId, player.getUUID().toString())
+        String own = player.getUUID().toString();
+        String owner = ownerUuid == null || ownerUuid.isBlank() ? own : ownerUuid.trim();
+        boolean mine = owner.equals(own);
+        return SharedCarriageClient.fetchBuild(relayId, owner, RelayTarget.of(live))
                 .thenCompose(result -> switch (result.status()) {
                     case FORBIDDEN -> CompletableFuture.completedFuture(Result.of(Outcome.NOT_YOURS));
                     case UNKNOWN -> CompletableFuture.completedFuture(Result.of(Outcome.GONE));
                     case ERROR -> CompletableFuture.completedFuture(Result.of(Outcome.UNAVAILABLE));
-                    case OK -> onServer(level, () -> install(level, result.build(), resolution, newName));
+                    case OK -> onServer(level, () -> install(level, result.build(), resolution, newName, mine));
                 });
     }
 
@@ -103,7 +107,7 @@ public final class BuilderRelayDownload {
      * as it is now.</p>
      */
     private static Result install(ServerLevel level, SharedCarriageClient.BuildFetch build,
-                                  BuilderRelayInstall.Resolution resolution, String newName) {
+                                  BuilderRelayInstall.Resolution resolution, String newName, boolean mine) {
         BuilderPhotoPaths.Kind kind = BuilderRelayKinds.kindOf(build.kind());
         if (kind == null || build.buildName().isEmpty()) {
             // A kind this build of the mod does not know, or a build the relay never named. Neither
@@ -149,7 +153,11 @@ public final class BuilderRelayDownload {
         // Only a build that kept its relay name is still that relay row. A copy loaded under a new
         // name is a new build as far as the relay is concerned — recording the link would point this
         // world's saves of it at a row whose name no longer matches, quietly renaming the original.
-        if (resolution != BuilderRelayInstall.Resolution.LOAD_AS_NEW) {
+        //
+        // Somebody ELSE's build is the same case for a stronger reason: the fetch hands back the
+        // owner's durable secret, and remembering it would let this world save over their row. A
+        // foreign build lands here as a local copy and nothing more.
+        if (resolution != BuilderRelayInstall.Resolution.LOAD_AS_NEW && mine) {
             remember(level, build, kind);
         }
         return new Result(Outcome.INSTALLED, kind, installedAs, build.subKind());
