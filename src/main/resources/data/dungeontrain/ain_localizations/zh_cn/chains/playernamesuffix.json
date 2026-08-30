@@ -23,8 +23,7 @@
           "ref": "adventureitemnames:numbers",
           "weight": 10.0
         }
-      ],
-      "label": "数字"
+      ]
     },
     {
       "chance": 0.20216364,
@@ -35,8 +34,7 @@
           "ref": "adventureitemnames:numbers",
           "weight": 10.0
         }
-      ],
-      "label": "数字"
+      ]
     },
     {
       "chance": 0.22258088,
@@ -47,8 +45,7 @@
           "ref": "adventureitemnames:numbers",
           "weight": 10.0
         }
-      ],
-      "label": "数字"
+      ]
     },
     {
       "chance": 0.06383079,
@@ -59,8 +56,7 @@
           "ref": "adventureitemnames:numbers",
           "weight": 10.0
         }
-      ],
-      "label": "数字"
+      ]
     }
   ]
 }
