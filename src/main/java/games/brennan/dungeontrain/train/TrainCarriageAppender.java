@@ -677,6 +677,13 @@ public final class TrainCarriageAppender {
     private record BurstFollower(UUID subLevelId, TrainTransformProvider provider) {}
 
     /**
+     * Reverse index of {@link #BURST_FOLLOWERS}: follower sub-level id → the
+     * group it is chained off. Present exactly while that link is alive, which
+     * is what {@link #isBurstFollower} reads.
+     */
+    private static final Map<UUID, UUID> BURST_FOLLOWER_OF = new ConcurrentHashMap<>();
+
+    /**
      * Ticks the tracker must wait after shifting a carriage before it may shift
      * it again. The gap it reads comes from {@link ManagedShip#worldAABB()},
      * which lags a shift by a tick or two (Sable applies the new kinematic pose
@@ -867,12 +874,23 @@ public final class TrainCarriageAppender {
                 SpawnCollisionCheck check = checkOneCarriage(trainId, carriage, train, now);
                 if (check == null) continue;
 
+                // A catch-up burst's follower is positionally OWNED by its leader while the
+                // link is alive: its seam to that leader is exact by construction and is held
+                // by lockstep propagation, so measuring it here can only act on an AABB that
+                // has not formed yet. Observed in play (2026-08-31, anchors 153..156): one
+                // tick after spawn the follower read its 0.4 seam as 1.00, "corrected" -0.5,
+                // and collided with its leader on the very next tick — the pair sawing at
+                // each other instead of settling. It still accrues clean ticks and settles
+                // normally; the link drops the moment the leader is placed, after which it
+                // self-corrects like any other carriage.
+                boolean burstFollower = isBurstFollower(subLevelId);
+
                 // Drive the collide→move-together→collide lock BEFORE the
                 // shift decision so this tick's pushback observation can
                 // suppress this tick's move-together (the carriage doesn't
                 // get a "one last move-together" after the locking collision).
                 boolean lockFiredThisTick = false;
-                if (check.colliding()) {
+                if (check.colliding() && !burstFollower) {
                     if (provider.hasRunMoveTogetherAfterCollision() && !provider.isMoveTogetherLocked()) {
                         provider.markMoveTogetherLocked();
                         lockFiredThisTick = true;
@@ -884,7 +902,7 @@ public final class TrainCarriageAppender {
                 //   colliding             → shift AWAY from offender (existing)
                 //   gap > MAX_GAP_BLOCKS  → shift TOWARD train-facing sibling (new)
                 //   otherwise             → clean tick, eventually placedSuccessfully
-                double gap = check.colliding()
+                double gap = (check.colliding() && !burstFollower)
                     ? 0.0
                     : gapToTrainFacingSibling(trainId, carriage, train);
                 // Unreachable gap ⇒ re-place, don't nudge. See LARGE_GAP_REPLACE_BLOCKS: past a few
@@ -892,7 +910,7 @@ public final class TrainCarriageAppender {
                 // budget, so chasing it only burns the budget and hands the safety valve a group
                 // still far out of line. One corrective step puts the seam straight on
                 // TARGET_GAP_BLOCKS; the next tick reads clean and the normal 60-tick settle runs.
-                if (isUnreachableGap(check.colliding(), gap)) {
+                if (!burstFollower && isUnreachableGap(check.colliding(), gap)) {
                     int confirmed = PLACEMENT_TRACKER_LARGE_GAP_TICKS.merge(subLevelId, 1, Integer::sum);
                     if (confirmed >= LARGE_GAP_CONFIRM_TICKS) {
                         double jump = placementTrackerReplaceDx(gap, provider.isSpawnedBackward());
@@ -908,7 +926,7 @@ public final class TrainCarriageAppender {
                 }
                 PLACEMENT_TRACKER_LARGE_GAP_TICKS.remove(subLevelId);
 
-                double dx = placementTrackerShiftDx(
+                double dx = burstFollower ? 0.0 : placementTrackerShiftDx(
                     check.colliding(),
                     check.selfPIdx(),
                     check.collidingPIdx(),
@@ -983,6 +1001,9 @@ public final class TrainCarriageAppender {
         PLACEMENT_TRACKER_LAST_SHIFT.keySet().retainAll(liveSubLevelIds);
         PLACEMENT_TRACKER_LARGE_GAP_TICKS.keySet().retainAll(liveSubLevelIds);
         BURST_FOLLOWERS.keySet().retainAll(liveSubLevelIds);
+        BURST_FOLLOWER_OF.keySet().retainAll(liveSubLevelIds);
+        // A follower whose leader is gone is nobody's passenger any more.
+        BURST_FOLLOWER_OF.values().removeIf(leaderId -> !liveSubLevelIds.contains(leaderId));
     }
 
     /**
@@ -1017,6 +1038,15 @@ public final class TrainCarriageAppender {
         BURST_FOLLOWERS
             .computeIfAbsent(leaderSubLevelId, k -> new ArrayList<>())
             .add(new BurstFollower(followerSubLevelId, follower));
+        BURST_FOLLOWER_OF.put(followerSubLevelId, leaderSubLevelId);
+    }
+
+    /**
+     * Whether this sub-level is a catch-up burst's follower with a live link —
+     * i.e. its position is owned by its leader and it must not steer itself.
+     */
+    static boolean isBurstFollower(UUID subLevelId) {
+        return BURST_FOLLOWER_OF.containsKey(subLevelId);
     }
 
     /**
@@ -1025,7 +1055,14 @@ public final class TrainCarriageAppender {
      * nothing left to propagate and the providers must not be held.
      */
     static void forgetBurstFollowers(UUID leaderSubLevelId) {
-        BURST_FOLLOWERS.remove(leaderSubLevelId);
+        List<BurstFollower> released = BURST_FOLLOWERS.remove(leaderSubLevelId);
+        if (released == null) return;
+        // Released followers become ordinary carriages again: the tracker may
+        // steer them from here on, which is what should happen once their
+        // leader has stopped moving.
+        for (BurstFollower follower : released) {
+            BURST_FOLLOWER_OF.remove(follower.subLevelId(), leaderSubLevelId);
+        }
     }
 
     /**
@@ -1545,6 +1582,7 @@ public final class TrainCarriageAppender {
         SPAWN_GEN_WAIT_FORWARD.clear();
         SPAWN_GEN_WAIT_BACKWARD.clear();
         BURST_FOLLOWERS.clear();
+        BURST_FOLLOWER_OF.clear();
         lastSyncGenTick = Long.MIN_VALUE;
     }
 

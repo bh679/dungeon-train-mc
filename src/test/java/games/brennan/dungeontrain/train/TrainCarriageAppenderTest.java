@@ -735,6 +735,10 @@ final class TrainCarriageAppenderTest {
         assertEquals(1, follower.getConsecutiveCleanTicks());
 
         TrainCarriageAppender.linkBurstFollower(leaderId, followerId, follower);
+        assertTrue(TrainCarriageAppender.isBurstFollower(followerId),
+            "a linked follower is owned by its leader — the tracker must not steer it");
+        assertFalse(TrainCarriageAppender.isBurstFollower(leaderId),
+            "the leader still steers for the pair");
         TrainCarriageAppender.shiftBurstFollowers(leaderId, -0.5, 100L, 0);
 
         assertEquals(0, follower.getConsecutiveCleanTicks(),
@@ -744,6 +748,8 @@ final class TrainCarriageAppenderTest {
 
         // Once the leader is placed the link is dropped: it never shifts again.
         TrainCarriageAppender.forgetBurstFollowers(leaderId);
+        assertFalse(TrainCarriageAppender.isBurstFollower(followerId),
+            "once the leader is placed the follower is an ordinary carriage again");
         follower.incrementConsecutiveCleanTicks();
         TrainCarriageAppender.shiftBurstFollowers(leaderId, -0.5, 101L, 0);
         assertEquals(1, follower.getConsecutiveCleanTicks(),
