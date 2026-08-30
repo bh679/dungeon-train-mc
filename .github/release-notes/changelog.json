@@ -10393,6 +10393,20 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "cheat-list-cad-editor",
+      "version": "0.751.0",
+      "type": "chore",
+      "title": "CAD Editor counts as a cheat mod",
+      "summary": "Installing CAD Editor (Component And Data Editor) now puts the run into Free Play, alongside the other in-game item editors. It edits an item's components straight from a GUI, so it does the work of /give without a command.",
+      "highlights": [
+        "CAD Editor added to the cheat-mod list"
+      ],
+      "date": "2026-08-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
