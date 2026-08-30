@@ -412,6 +412,15 @@
       "required": true,
       "modrinth_project": "supermartijn642s-config-lib",
       "modrinth_version": "qKL9jM75"
+    },
+    {
+      "name": "Crash Assistant",
+      "slug": "crash-assistant",
+      "project_id": 1154099,
+      "file_id": 8636685,
+      "required": true,
+      "modrinth_project": "crash-assistant",
+      "modrinth_version": "18SR4EJw"
     }
   ],
   "curseforge_relations": [

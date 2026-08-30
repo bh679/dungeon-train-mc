@@ -10079,6 +10079,75 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "import-registers-new-translators",
+      "version": "0.736.0",
+      "type": "ci",
+      "title": "New translators are credited without a manual step",
+      "summary": "When someone translates part of the game for the first time, the weekly job that pulls approved player translations back into the mod used to stop dead until a maintainer added that person to the credits registry by hand. It now adds them itself, as part of the same change a human reviews and approves \u2014 so a new translator's work no longer waits on a round trip nobody is scheduled to make.",
+      "highlights": [
+        "A first-time translator no longer blocks the whole week's import",
+        "New names are added only once their work has actually landed, and are listed for review",
+        "Work credited to a machine is still refused outright"
+      ],
+      "pr": 1201,
+      "date": "2026-08-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "crash-assistant-modpack",
+      "version": "0.737.0",
+      "type": "feat",
+      "title": "Crash Assistant now ships with the modpack",
+      "summary": "If the game ever crashes, a window now opens explaining what went wrong \u2014 it checks your logs against dozens of known causes, from graphics-driver faults to running out of memory. One button uploads every relevant log and hands you a ready-to-paste report, and the help button drops you straight into #bugs-feedback on the Dungeon Train Discord.",
+      "highlights": [
+        "A post-crash window that diagnoses dozens of common crash causes",
+        "One click uploads every log and gives you a ready-to-paste report",
+        "Takes you straight to #bugs-feedback on the Dungeon Train Discord",
+        "Client-side only \u2014 dedicated servers are unaffected"
+      ],
+      "pr": 1202,
+      "date": "2026-08-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "early-onboarding-shorter",
+      "version": "0.738.0",
+      "type": "feat",
+      "title": "The opening ramp is half as long",
+      "summary": "Your first ride used to spend 25 carriages easing you in \u2014 nothing hostile at all for the first 10, then only small slimes for another 15. That is now 10 carriages: no hostiles through carriage 5, slimes through carriage 10, and the real mobs from there. Starter-tier chest loot follows the same window, so the gentle stretch stays consistent and then gets out of your way.",
+      "highlights": [
+        "No hostiles for the first 5 carriages (was 10)",
+        "Small slimes for carriages 5-10 (was 10-25)",
+        "Authored mobs \u2014 and their proper chest loot \u2014 from carriage 10 instead of 25"
+      ],
+      "pr": 1203,
+      "date": "2026-08-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "loading-sequence-continuous-reveal",
+      "version": "0.738.0",
+      "type": "feat",
+      "title": "The loading screen now hands you the shot",
+      "summary": "Joining a run reads as one continuous themed loading screen \u2014 no more flash back to a vanilla screen when the world finishes loading and the train starts. Once the bar fills it says \"All Aboard!\", the panel fades away over 30 seconds into a dim over the live world, and the camera is already sitting exactly where the arrival shot begins, so pressing Space flies you in from the frame you were looking at. The train's engine now eases in from silence instead of arriving at full volume.",
+      "highlights": [
+        "The world-join loading screen no longer flashes back to the vanilla \"Downloading terrain\" panorama",
+        "At 100% the screen reads \"All Aboard!\" and slowly reveals the composed arrival shot behind a dim",
+        "The train engine ambient fades in over 30 seconds when you first come aboard"
+      ],
+      "pr": 1205,
+      "date": "2026-08-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

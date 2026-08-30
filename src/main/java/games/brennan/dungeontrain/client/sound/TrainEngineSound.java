@@ -61,6 +61,17 @@ public final class TrainEngineSound extends AbstractTickableSoundInstance {
     private static final float MAX_RANGE = 64.0f;
 
     /**
+     * How long the engine takes to rise from silence to its computed volume when it first
+     * becomes audible in a world, in nanoseconds.
+     *
+     * <p>Anchored to the engine's own start — the first tick the curve reports a real volume,
+     * i.e. the moment the player is aboard/in range — not to anything on screen. One ramp per
+     * client level: {@link TrainSoundManager} builds a fresh instance per world, so walking back
+     * into range later plays at full strength.</p>
+     */
+    private static final long FADE_IN_NANOS = 30L * 1_000_000_000L;
+
+    /**
      * Death-screen fade multiplier (1 = normal). {@code NarrativeDeathScreen}
      * drops this toward 0 as the player advances pages, so the train recedes
      * into silence while they read; reset to 1 when that screen closes.
@@ -117,6 +128,27 @@ public final class TrainEngineSound extends AbstractTickableSoundInstance {
     }
 
     /**
+     * {@code base} eased in over {@link #FADE_IN_NANOS} from the first moment the engine has a
+     * real volume to play. Silent (floor-level) results pass straight through and do not start
+     * the clock, so the ramp begins exactly where the engine itself begins, and every rule's
+     * shape survives it — this only scales what the rule already decided.
+     */
+    private float fadeIn(float base) {
+        if (base <= TrainEngineVolume.KEEP_ALIVE_FLOOR) {
+            return base;
+        }
+        long now = System.nanoTime();
+        if (fadeInStartNanos < 0) {
+            fadeInStartNanos = now;
+        }
+        long elapsed = now - fadeInStartNanos;
+        if (elapsed >= FADE_IN_NANOS) {
+            return base;
+        }
+        return base * (elapsed / (float) FADE_IN_NANOS);
+    }
+
+    /**
      * Vanilla {@code SoundEngine.play(...)} short-circuits and never
      * registers a sound whose initial computed volume is &lt;= 0 unless
      * this returns {@code true}. Our volume is recomputed every tick from
@@ -129,6 +161,8 @@ public final class TrainEngineSound extends AbstractTickableSoundInstance {
     }
 
     private long tickCounter = 0;
+    /** When the engine first had something to play — start of {@link #FADE_IN_NANOS}. -1 until then. */
+    private long fadeInStartNanos = -1L;
 
     @Override
     public void tick() {
@@ -162,7 +196,7 @@ public final class TrainEngineSound extends AbstractTickableSoundInstance {
         float portal = ClientPortalTrainAudio.volumeAt(player.getX(), player.getY(), player.getZ());
         if (portal != ClientPortalTrainAudio.NOT_APPLICABLE) {
             this.volume = TrainEngineVolume.scale(
-                Math.max(TrainEngineVolume.KEEP_ALIVE_FLOOR, portal), setting);
+                Math.max(TrainEngineVolume.KEEP_ALIVE_FLOOR, fadeIn(portal)), setting);
             return;
         }
 
@@ -216,7 +250,7 @@ public final class TrainEngineSound extends AbstractTickableSoundInstance {
             float dist = (float) Math.sqrt(minDistSq);
             curve = Mth.clamp(1.0f - (dist / MAX_RANGE), TrainEngineVolume.KEEP_ALIVE_FLOOR, 1.0f);
         }
-        this.volume = TrainEngineVolume.scale(curve, setting);
+        this.volume = TrainEngineVolume.scale(fadeIn(curve), setting);
         // (Death-screen volume is handled by the deathScreenActive branch above.)
 
         // Log once per 5s (100 ticks) so we can verify the volume curve
