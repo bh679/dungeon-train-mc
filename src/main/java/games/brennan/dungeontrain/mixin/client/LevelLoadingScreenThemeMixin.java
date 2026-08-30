@@ -106,7 +106,9 @@ public abstract class LevelLoadingScreenThemeMixin {
     /** This screen's own 0..1 progress estimate — folded into the shared timeline by the caller. */
     private double dungeontrain$computeLocalProgress() {
         long now = System.nanoTime();
-        double elapsedSec = LoadingSequenceProgress.animNanos() / 1.0e9;
+        // The bar's own clock, not the animation clock: it starts when this screen first paints,
+        // so the percentage begins at 0% on screen instead of already part-way up.
+        double elapsedSec = LoadingSequenceProgress.worldLoadElapsedNanos() / 1.0e9;
         double phaseA = PHASE_A_CAP * (1.0 - Math.exp(-PHASE_A_RATE * elapsedSec));
 
         double target;

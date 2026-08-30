@@ -26,8 +26,13 @@ public final class JoinIntroFade {
 
     /** Menu chrome dissolve — deliberately brisk; this is a button press, not a scene change. */
     private static final long MENU_FADE_MS = 100L;
-    /** Panorama → themed panel. Sized to the early-load window, before the bar leaves 0%. */
-    private static final long THEME_FADE_MS = 1200L;
+    /**
+     * Panorama → themed panel. Short on purpose: the world open is held back for the length of
+     * this fade ({@link JoinOpenDelay}), because the render thread stops painting the moment the
+     * open begins — so every millisecond here is latency added to starting a world. Long enough to
+     * read as a dissolve, short enough not to feel like a wait.
+     */
+    private static final long THEME_FADE_MS = 250L;
 
     /** Millisecond clock at {@link #begin()}; negative while no hand-off is under way. */
     private static long startMillis = -1L;

@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.logging.LogUtils;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
@@ -73,6 +74,13 @@ public final class WorldOpenLoadingScreen extends Screen {
         float menuAlpha = JoinIntroFade.menuAlpha();
         if (menuAlpha > 0.0f && renderOutgoing(g, mouseX, mouseY, partialTick)) {
             // The menu drew the panorama itself; lay it back over the top to dissolve the chrome.
+            // State has to be reset first: the screen we just rendered leaves the depth buffer
+            // written and the blend func wherever its last draw left it, and the panorama is drawn
+            // through a 3D projection with depthMask(false) — so it gets depth-rejected and never
+            // appears at all. This is why the overlay drew nothing over a fully-painted menu.
+            RenderSystem.disableDepthTest();
+            RenderSystem.enableBlend();
+            RenderSystem.defaultBlendFunc();
             PANORAMA.render(g, this.width, this.height, 1.0f - menuAlpha, partialTick);
         } else {
             PANORAMA.render(g, this.width, this.height, 1.0f, partialTick);
@@ -94,6 +102,12 @@ public final class WorldOpenLoadingScreen extends Screen {
         if (screen == null) return false;
         try {
             screen.render(g, mouseX, mouseY, partialTick);
+            // Force the screen's batched content out to the framebuffer before returning. Text and
+            // other GuiGraphics work is queued in a buffer source that is not flushed until the end
+            // of the frame, while the panorama the caller lays over the top is immediate-mode GL —
+            // so without this the menu's own labels come back down ON TOP of the fade and the
+            // chrome never visibly dissolves at all.
+            g.flush();
             return true;
         } catch (Throwable t) {
             // Rendering a screen that has already been removed is best-effort by nature. Log once,

@@ -75,6 +75,7 @@
     "client.LevelLoadingScreenThemeMixin",
     "client.ReceivingLevelScreenThemeMixin",
     "client.ProgressScreenThemeMixin",
+    "client.WorldOpenFlowsDelayMixin",
     "client.AdvancementsScreenAccessor",
     "client.AdvancementWidgetHideDescMixin",
     "client.AdvancementsCompactLayoutMixin",

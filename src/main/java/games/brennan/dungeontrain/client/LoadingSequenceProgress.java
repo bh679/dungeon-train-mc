@@ -23,6 +23,14 @@ public final class LoadingSequenceProgress {
     private static final double WORLD_LOAD_SHARE = 0.55;
 
     private static long startNanos = -1L;
+    /**
+     * When the world-load screen first reported — the clock the <em>bar</em> runs on, kept separate
+     * from {@link #startNanos} (which is the animation clock, started the instant the join does).
+     * The two used to be one, which meant the second or so of blocked render thread before
+     * anything was painted had already been spent easing the bar: its first visible frame read 12%.
+     * Progress should start where the player can see it start.
+     */
+    private static long worldLoadStartNanos = -1L;
     private static double displayFraction = 0.0;
     /** Set once the themed world-load screen has rendered — i.e. a join sequence is under way. */
     private static boolean sequenceActive = false;
@@ -42,6 +50,9 @@ public final class LoadingSequenceProgress {
     /** Report the world-load (first) screen's own 0..1 local progress; returns the overall fraction to render. */
     public static double reportWorldLoad(double local) {
         ensureStarted();
+        if (worldLoadStartNanos < 0) {
+            worldLoadStartNanos = System.nanoTime();
+        }
         sequenceActive = true;
         double overall = WORLD_LOAD_SHARE * Mth.clamp(local, 0.0, 1.0);
         displayFraction = Math.max(displayFraction, overall);
@@ -90,6 +101,15 @@ public final class LoadingSequenceProgress {
         sequenceFinished = true;
     }
 
+    /**
+     * Nanos since the world-load screen first painted — what the bar's own easing runs on, so it
+     * starts at 0% on the first frame the player actually sees rather than partway up. Zero until
+     * that first report.
+     */
+    public static long worldLoadElapsedNanos() {
+        return worldLoadStartNanos < 0 ? 0L : System.nanoTime() - worldLoadStartNanos;
+    }
+
     /** Shared animation clock (smoke drift, ∞ pulse) — continuous across both screens. */
     public static long animNanos() {
         ensureStarted();
@@ -99,9 +119,11 @@ public final class LoadingSequenceProgress {
     /** Called on logout so the next login starts a fresh timeline. */
     public static void reset() {
         startNanos = -1L;
+        worldLoadStartNanos = -1L;
         displayFraction = 0.0;
         sequenceActive = false;
         sequenceFinished = false;
         JoinIntroFade.reset();
+        JoinOpenDelay.reset();
     }
 }
