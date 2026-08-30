@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.editor;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.net.EditorDoorGhostsPacket;
 import games.brennan.dungeontrain.portal.PortalRoomDoorCells;
 import games.brennan.dungeontrain.train.CarriageDims;
 import net.minecraft.core.BlockPos;
@@ -71,8 +72,10 @@ public final class EditorDoorGhosts {
 
     /**
      * The lower cell of every corridor door at every registered portal room plot, at the current
-     * world dims — two per room. The renderer draws the door's upper half from the block above, so
-     * a base is the whole door.
+     * world dims — two per room, each tagged with which of the room's two mouths it is. The
+     * renderer draws the door's upper half from the block above, so a base is the whole door, and
+     * it draws the entry and exit mouths in different colours, so the tag is what tells them
+     * apart.
      *
      * <p>Absolute positions, like {@link EditorStrayBlocks#snapshot}: the ghosts are drawn in world
      * space, and a door cell sits one column <i>outside</i> its plot, so it has no plot-local
@@ -82,9 +85,9 @@ public final class EditorDoorGhosts {
      * whatever the built-in figure says, which is where the plot is actually standing until the
      * template is read — so the ghosts always agree with the box the author can see.</p>
      */
-    public static List<BlockPos> snapshot(CarriageDims dims) {
+    public static List<EditorDoorGhostsPacket.Door> snapshot(CarriageDims dims) {
         List<String> names = PortalRoomEditor.names();
-        List<BlockPos> out = new ArrayList<>(names.size() * 2);
+        List<EditorDoorGhostsPacket.Door> out = new ArrayList<>(names.size() * 2);
         for (String name : names) {
             BlockPos origin = PortalRoomEditor.plotOrigin(name, dims);
             if (origin == null) continue;
@@ -106,8 +109,15 @@ public final class EditorDoorGhosts {
             int exitHeightOffset =
                 games.brennan.dungeontrain.portal.PortalRoomLayout.clampDoorHeightOffset(
                     dims, size.getY(), settings.exitDoorHeightOffset().value());
-            out.addAll(PortalRoomDoorCells.doorBases(origin, size, offset, heightOffset,
-                exitOffset, exitHeightOffset));
+            // doorBases returns the entry end first and the exit end second — its own documented
+            // order, which PortalRoomDoorCellsTest pins. Tagged here rather than left to the
+            // client to infer from the flattened list's parity: a room with a degenerate box
+            // contributes no pair at all, and one missing pair would relabel every door after it.
+            List<BlockPos> bases = PortalRoomDoorCells.doorBases(origin, size, offset, heightOffset,
+                exitOffset, exitHeightOffset);
+            for (int i = 0; i < bases.size(); i++) {
+                out.add(new EditorDoorGhostsPacket.Door(bases.get(i), /*entry*/ i == 0));
+            }
         }
         return out;
     }
