@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.net.CinematicIntroPacket;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.LevelLoadingScreen;
+import net.minecraft.client.gui.screens.ReceivingLevelScreen;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.world.level.chunk.ChunkSource;
 import net.minecraft.world.phys.Vec3;
@@ -188,17 +189,23 @@ public final class CinematicPreloadGate {
     }
 
     /**
-     * Catches the vanilla {@link LevelLoadingScreen} closing to no screen
-     * (world considered "ready" from vanilla's perspective) and substitutes
+     * Catches a vanilla loading screen closing to no screen (world considered
+     * "ready" from vanilla's perspective) and substitutes
      * {@link CinematicLoadingScreen} in the same synchronous call — same
      * substitution trick as {@code DeathScreenLayoutHandler}. Without this,
      * the swap only happened on the next {@link #onClientTick}, up to a
      * client-tick's worth of raw, unrendered world showing through first.
+     *
+     * <p>Both join screens count: {@link LevelLoadingScreen} (world load) and
+     * {@link ReceivingLevelScreen} (vanilla's "Downloading terrain", themed by
+     * {@code ReceivingLevelScreenThemeMixin}), which is the one actually up when
+     * the gate arms.</p>
      */
     @SubscribeEvent
     public static void onScreenOpening(ScreenEvent.Opening event) {
         if (phase == Phase.IDLE) return;
-        if (!(event.getCurrentScreen() instanceof LevelLoadingScreen)) return;
+        if (!(event.getCurrentScreen() instanceof LevelLoadingScreen)
+            && !(event.getCurrentScreen() instanceof ReceivingLevelScreen)) return;
         if (event.getNewScreen() instanceof CinematicLoadingScreen) return;
         event.setNewScreen(new CinematicLoadingScreen());
     }
