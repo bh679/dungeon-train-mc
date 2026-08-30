@@ -10460,6 +10460,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "builder-load-own-build",
+      "version": "0.757.0",
+      "type": "fix",
+      "title": "Loading your own build from My Builds works again",
+      "summary": "Loading one of your own builds back from My Builds could refuse with \"you already have a build by that name here\" when you didn't. Any name Dungeon Train itself ships counted as one you already had \u2014 which is every sub-variant of a contents group, so those could never be loaded at all. Your own builds now load; a build by somebody else still asks before it replaces anything built in. Loading a dimensional carriage also opens it properly instead of failing with \"Unknown dimensional carriage\" straight after downloading it.",
+      "highlights": [
+        "Your own builds load from My Builds even when the name matches one Dungeon Train ships",
+        "Contents sub-variants can be loaded at all \u2014 every one of them was blocked",
+        "A downloaded dimensional carriage opens in the editor and shows up in the list right away"
+      ],
+      "pr": 1237,
+      "date": "2026-08-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
