@@ -52,7 +52,7 @@
       "languages": [
         {
           "locale": "ru_ru",
-          "contributed": 9,
+          "contributed": 8,
           "total": 1857
         }
       ]
@@ -74,6 +74,16 @@
           "locale": "ko_kr",
           "contributed": 1,
           "total": 1803
+        }
+      ]
+    },
+    {
+      "name": "DyingDol",
+      "languages": [
+        {
+          "locale": "zh_cn",
+          "contributed": 1,
+          "total": 1817
         }
       ]
     },

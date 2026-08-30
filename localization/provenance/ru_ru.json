@@ -1531,7 +1531,7 @@
   "effect.dungeontrain.free_play.trigger.unknown": {"author": "helluvaboy", "reviewer": "helluvaboy"},
   "gui.dungeontrain.config_deviation.title": {"author": "helluvaboy", "reviewer": "helluvaboy"},
   "gui.dungeontrain.config_deviation.body": {"author": "helluvaboy", "reviewer": "helluvaboy"},
-  "gui.dungeontrain.config_deviation.more": {"author": "SandRuin", "reviewer": "helluvaboy"},
+  "gui.dungeontrain.config_deviation.more": {"author": "helluvaboy", "reviewer": "helluvaboy"},
   "gui.dungeontrain.config_deviation.reset": {"author": "helluvaboy", "reviewer": "helluvaboy"},
   "gui.dungeontrain.config_deviation.reset.tooltip": {"author": "helluvaboy", "reviewer": "helluvaboy"},
   "gui.dungeontrain.config_deviation.keep": {"author": "helluvaboy", "reviewer": "helluvaboy"},
