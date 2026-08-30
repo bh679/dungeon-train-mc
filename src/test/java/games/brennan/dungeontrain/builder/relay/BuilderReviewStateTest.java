@@ -31,21 +31,6 @@ final class BuilderReviewStateTest {
     }
 
     @Test
-    @DisplayName("only the states worth naming get a tile caption")
-    void labelKeys() {
-        assertEquals("gui.dungeontrain.builder.profile.review.submitted",
-                BuilderReviewState.labelKeyFor(BuilderReviewState.SUBMITTED));
-        assertEquals("gui.dungeontrain.builder.profile.review.accepted",
-                BuilderReviewState.labelKeyFor(BuilderReviewState.ACCEPTED));
-        assertEquals("gui.dungeontrain.builder.profile.review.declined",
-                BuilderReviewState.labelKeyFor(BuilderReviewState.DECLINED));
-        // Never-submitted deliberately has none: the tile falls back to where the build lives, which
-        // is the same fact told better.
-        assertNull(BuilderReviewState.labelKeyFor(BuilderReviewState.NONE));
-        assertNull(BuilderReviewState.labelKeyFor("nonsense"));
-    }
-
-    @Test
     @DisplayName("three states ring their tile; never-submitted is left alone")
     void borderColours() {
         assertEquals(BuilderReviewState.BORDER_SUBMITTED,

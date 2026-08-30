@@ -63,6 +63,9 @@ final class BuilderTemplateTile {
 
     private static final String ELLIPSIS = "…";
 
+    /** Padding between the state badge and the two cell edges it sits in the corner of. */
+    private static final int BADGE_INSET = 3;
+
     private BuilderTemplateTile() {}
 
     /**
@@ -103,23 +106,26 @@ final class BuilderTemplateTile {
                        int x, int y, int width, int height, boolean hovered, boolean openable,
                        float yaw) {
         render(g, mode, modeArtAvailable, photoKind, id, partKind, trackKind, label,
-                x, y, width, height, hovered, openable, yaw, 0);
+                x, y, width, height, hovered, openable, yaw, null, 0);
     }
 
     /**
-     * As above, ringed in {@code statusColour}.
+     * As above, badged with a submission state.
      *
      * <p>Only My Builds passes one: everywhere else a tile is a thing you might open, and its border
      * says one thing — whether you are pointing at it. There a tile also has a STATE, and the state is
-     * what the screen is for, so it gets a two-pixel band of its own that survives being selected
-     * (the hover ring takes the outer pixel, the state keeps the inner one). {@code 0} means no state,
-     * and draws exactly what every other grid draws.</p>
+     * what the screen is for, so it gets a coloured band and an icon in the corner. {@code null}
+     * means no state, and draws exactly what every other grid draws.</p>
+     *
+     * @param badgeSize the icon's edge in pixels, from the grid that laid this cell out — geometry
+     *                  the layout owns rather than the renderer, so the two can't disagree about
+     *                  where the corner is
      */
     static void render(GuiGraphics g, BuilderMode mode, boolean modeArtAvailable,
                        BuilderPhotoPaths.Kind photoKind, String id, CarriagePartKind partKind,
                        TrackKind trackKind, Component label,
                        int x, int y, int width, int height, boolean hovered, boolean openable,
-                       float yaw, int statusColour) {
+                       float yaw, BuilderReviewBadge badge, int badgeSize) {
         BuilderTileMesh mesh = BuilderTileMeshCache.meshFor(photoKind, id, partKind, trackKind);
 
         if (mesh != null) {
@@ -141,14 +147,18 @@ final class BuilderTemplateTile {
             // Dim until hovered, so the focused option pops out of the wall.
             g.fill(x, y, x + width, y + height, IDLE_DIM);
         }
-        if (statusColour == 0) {
+        if (badge == null) {
             g.renderOutline(x, y, width, height, highlight ? BORDER_HOVER : BORDER_IDLE);
         } else {
             // Two rings. The outer one is the ordinary hover border, so pointing at a tile reads the
             // same here as anywhere; the inner one is the state, and it stays put underneath — a
             // selected build must not lose the only mark saying where it stands.
-            g.renderOutline(x, y, width, height, highlight ? BORDER_HOVER : statusColour);
-            g.renderOutline(x + 1, y + 1, width - 2, height - 2, statusColour);
+            g.renderOutline(x, y, width, height, highlight ? BORDER_HOVER : badge.borderColour());
+            g.renderOutline(x + 1, y + 1, width - 2, height - 2, badge.borderColour());
+            // Top-right: the drill-in chip has the bottom-right, and a badge that moved to dodge it
+            // would be a badge whose position meant something it doesn't.
+            g.blitSprite(badge.icon(), x + width - badgeSize - BADGE_INSET, y + BADGE_INSET,
+                    badgeSize, badgeSize);
         }
 
         int stripTop = y + height - LABEL_STRIP_H;

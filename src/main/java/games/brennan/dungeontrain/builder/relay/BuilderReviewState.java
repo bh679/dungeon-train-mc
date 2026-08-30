@@ -33,22 +33,6 @@ public final class BuilderReviewState {
         return NONE;
     }
 
-    /**
-     * The caption under a submittable build's tile: where it stands, in one word.
-     *
-     * <p>Only three of the four states have one. A build nobody has submitted is described by where
-     * it lives ({@code in_profile}), which is what the screen said before there was a queue at all —
-     * "not submitted" would be the same fact told twice, and worse.</p>
-     */
-    public static String labelKeyFor(String review) {
-        return switch (of(review)) {
-            case SUBMITTED -> "gui.dungeontrain.builder.profile.review.submitted";
-            case ACCEPTED -> "gui.dungeontrain.builder.profile.review.accepted";
-            case DECLINED -> "gui.dungeontrain.builder.profile.review.declined";
-            default -> null;
-        };
-    }
-
     /** Waiting on a person: the blue of Minecraft's own §b, which reads as "in progress", not "wrong". */
     public static final int BORDER_SUBMITTED = 0xFF55AAFF;
     /** In the game — §a. */
