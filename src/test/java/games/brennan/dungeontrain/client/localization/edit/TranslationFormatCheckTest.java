@@ -95,4 +95,73 @@ class TranslationFormatCheckTest {
     void proseIsUnconstrained() {
         assertNull(TranslationFormatCheck.check(NONE, "любой текст без подстановок"));
     }
+
+    // ---- books: {braces}, not printf --------------------------------------------------------
+
+    /** The English epitaph the ru_ru import nearly broke. */
+    private static final String EPITAPH = "the {deaths_nth} to fall. perhaps not the last.";
+
+    @Test
+    @DisplayName("A book keeping its figure is fine wherever the grammar puts it")
+    void bookKeepingItsFigureIsFine() {
+        assertNull(TranslationFormatCheck.checkBook(EPITAPH, "{deaths_nth}, кто пал."));
+        assertNull(TranslationFormatCheck.checkBook(EPITAPH, "павший {deaths_nth}."));
+    }
+
+    @Test
+    @DisplayName("A book that drops its figure names the one it lost")
+    void bookDroppingItsFigureIsBlocked() {
+        TranslationFormatCheck.Problem problem =
+                TranslationFormatCheck.checkBook(EPITAPH, "кто пал. и похоже, не последний.");
+        assertNotNull(problem);
+        assertEquals(TranslationFormatCheck.MISSING_VARS, problem.messageKey());
+        assertEquals("{deaths_nth}", problem.tokens());
+    }
+
+    @Test
+    @DisplayName("The Russian ordinal regression: {deaths_nth} swapped for a suffixed {deaths}")
+    void theOrdinalRegressionIsBlocked() {
+        TranslationFormatCheck.Problem problem =
+                TranslationFormatCheck.checkBook(EPITAPH, "{deaths}й, кто пал.");
+        assertNotNull(problem);
+        assertEquals(TranslationFormatCheck.MISSING_VARS, problem.messageKey());
+    }
+
+    @Test
+    @DisplayName("A book that invents a figure is blocked too — nothing would fill it")
+    void bookInventingAFigureIsBlocked() {
+        TranslationFormatCheck.Problem problem =
+                TranslationFormatCheck.checkBook(EPITAPH, "{deaths_nth} из {mobs}");
+        assertNotNull(problem);
+        assertEquals(TranslationFormatCheck.EXTRA_VARS, problem.messageKey());
+        assertEquals("{mobs}", problem.tokens());
+    }
+
+    @Test
+    @DisplayName("Naming the figure once where English names it twice is the translator's call")
+    void sayingTheFigureFewerTimesIsAllowed() {
+        // ru_ru's live rendering: "столько же раз" — "as many times" — for the second {deaths}.
+        String english = "{deaths} times the dark took you, and {deaths} times you boarded again.";
+        assertNull(TranslationFormatCheck.checkBook(
+                english, "{deaths} раз тьма забирала тебя, и столько же раз ты садился вновь."));
+    }
+
+    @Test
+    @DisplayName("A percent in a story is just a percent — books never reach the format parser")
+    void aPercentInAStoryIsNotAnError() {
+        assertNull(TranslationFormatCheck.checkBook("100% of the line", "100% линии"));
+    }
+
+    @Test
+    @DisplayName("Blank means 'no override' for a book too")
+    void blankBookReverts() {
+        assertNull(TranslationFormatCheck.checkBook(EPITAPH, ""));
+        assertNull(TranslationFormatCheck.checkBook(EPITAPH, null));
+    }
+
+    @Test
+    @DisplayName("Prose braces that are not figures are left alone")
+    void proseBracesAreNotFigures() {
+        assertNull(TranslationFormatCheck.checkBook("a { and a }", "ein { und ein }"));
+    }
 }
