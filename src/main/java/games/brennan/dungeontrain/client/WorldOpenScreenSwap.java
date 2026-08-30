@@ -40,6 +40,9 @@ public final class WorldOpenScreenSwap {
         if (!(event.getNewScreen() instanceof GenericMessageScreen opening)) return;
         if (!isWorldOpenPhase(opening.getTitle())) return;
         if (BuilderWorldCheck.isBuilderWorld()) return; // sandbox keeps vanilla chrome
+        // From here the join is under way — this is what tells the vanilla screens that follow
+        // (ProgressScreen, ReceivingLevelScreen) they are part of it and should be themed.
+        LoadingSequenceProgress.beginJoin();
         event.setNewScreen(new WorldOpenLoadingScreen());
     }
 
