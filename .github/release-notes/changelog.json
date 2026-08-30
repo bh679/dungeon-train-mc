@@ -10247,9 +10247,9 @@
       ],
       "pr": 1209,
       "date": "2026-08-30",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.750.0",
+      "released_at": "2026-08-30T14:14:51Z"
     },
     {
       "id": "carriage-test-save-prompt",
@@ -10263,9 +10263,9 @@
       ],
       "pr": 1216,
       "date": "2026-08-30",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.750.0",
+      "released_at": "2026-08-30T14:14:51Z"
     },
     {
       "id": "portal-room-grow-into-air",
@@ -10279,9 +10279,9 @@
       ],
       "pr": 1217,
       "date": "2026-08-30",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.750.0",
+      "released_at": "2026-08-30T14:14:51Z"
     },
     {
       "id": "builder-load-other-player-builds",
@@ -10292,9 +10292,9 @@
       "highlights": [],
       "pr": 1213,
       "date": "2026-08-30",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.750.0",
+      "released_at": "2026-08-30T14:14:51Z"
     },
     {
       "id": "editor-validates-placeholders",
@@ -10309,9 +10309,9 @@
       ],
       "pr": 1214,
       "date": "2026-08-30",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.750.0",
+      "released_at": "2026-08-30T14:14:51Z"
     },
     {
       "id": "import-validates-format-tokens",
@@ -10326,9 +10326,9 @@
       ],
       "pr": 1210,
       "date": "2026-08-30",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.750.0",
+      "released_at": "2026-08-30T14:14:51Z"
     },
     {
       "id": "mirror-by-edited-template",
@@ -10342,9 +10342,9 @@
       ],
       "pr": 1220,
       "date": "2026-08-30",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.750.0",
+      "released_at": "2026-08-30T14:14:51Z"
     },
     {
       "id": "portal-room-doorway-placement-fixes",
@@ -10360,9 +10360,9 @@
       ],
       "pr": 1218,
       "date": "2026-08-30",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.750.0",
+      "released_at": "2026-08-30T14:14:51Z"
     },
     {
       "id": "rank-translators-by-contribution",
@@ -10377,9 +10377,9 @@
       ],
       "pr": 1222,
       "date": "2026-08-30",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.750.0",
+      "released_at": "2026-08-30T14:14:51Z"
     },
     {
       "id": "menu-to-loading-transition",
