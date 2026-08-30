@@ -660,11 +660,20 @@ def set_book_field_text(text: str, field: str, value: str) -> str | None:
     Books are edited at the text level for the same reason lang files are: 36 of them group
     array entries with blank lines and 34 are CRLF, both of which a json.dumps round trip
     would silently rewrite end to end. So this swaps the ENCODED old string for the encoded
-    new one, and only when that encoding occurs exactly once — two identical prose strings in
-    one book make the target ambiguous, and guessing would corrupt the wrong variant.
+    new one.
 
-    The result is parsed and compared against the tree the edit was supposed to produce, so a
-    replacement that landed anywhere unintended returns None instead of being written.
+    When that encoding occurs more than once the target is ambiguous by inspection, and this
+    used to give up — which cost real work: 11 approved Russian death_lore translations were
+    refused on 2026-08-30 because prose like "Всё это хорошие вопросы" is deliberately reused
+    across four entries. Ambiguity is not the same as danger, though. Each occurrence in turn is
+    replaced and the result parsed, and the one whose tree matches what the edit was supposed to
+    produce is the right one. Where two identical strings sit in different fields, only the
+    intended one yields the expected tree; where they sit in the SAME field (an entry repeated
+    verbatim), either replacement produces it, and they are interchangeable by construction.
+
+    Every candidate is verified this way, so a replacement that landed anywhere unintended is
+    never returned — the check that made the single-occurrence case safe is what makes the
+    ambiguous case safe too.
     """
     try:
         book = json.loads(text)
@@ -675,18 +684,20 @@ def set_book_field_text(text: str, field: str, value: str) -> str | None:
         return None
     if old == value:
         return text  # already the approved text — nothing to write, and not an error
-    encoded_old = json.dumps(old, ensure_ascii=False)
-    if text.count(encoded_old) != 1:
-        return None
-    edited = text.replace(encoded_old, json.dumps(value, ensure_ascii=False))
     if not set_book_field(book, field, value):
         return None
-    try:
-        if json.loads(edited) != book:
-            return None
-    except json.JSONDecodeError:
-        return None
-    return edited
+    encoded_old = json.dumps(old, ensure_ascii=False)
+    encoded_new = json.dumps(value, ensure_ascii=False)
+    at = text.find(encoded_old)
+    while at != -1:
+        edited = text[:at] + encoded_new + text[at + len(encoded_old):]
+        try:
+            if json.loads(edited) == book:
+                return edited
+        except json.JSONDecodeError:
+            pass  # this occurrence was inside some other string; keep looking
+        at = text.find(encoded_old, at + 1)
+    return None
 
 
 def book_field_value(book: dict | list, field: str) -> str | None:
