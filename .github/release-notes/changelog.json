@@ -10345,6 +10345,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "rank-translators-by-contribution",
+      "version": "0.749.0",
+      "type": "feat",
+      "title": "Translators ranked by how much they translated",
+      "summary": "The Credits page now lists translators biggest-contribution-first, counting everything a person has translated across every language they worked on. Volunteers whose work is serving live from the relay rank alongside those already baked into the build, so the person who translated the most of the mod is at the top of the card rather than at the bottom of it.",
+      "highlights": [
+        "Credits ranks translators by total lines translated, not by arrival order",
+        "Work approved since the last release now ranks equally with work shipped in the jar",
+        "Each translator's languages are listed strongest-first"
+      ],
+      "pr": 1222,
+      "date": "2026-08-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
