@@ -10201,6 +10201,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "backpack-panels-in-containers",
+      "version": "0.741.0",
+      "type": "feat",
+      "title": "Your backpack is there when you open a chest",
+      "summary": "Until now the backpack only existed on your own inventory screen, so opening a chest made it vanish \u2014 moving a stack between the two meant closing the chest, opening your inventory, dragging, and opening the chest again. The panels now sit either side of chests, ender chests, barrels and shulker boxes as well, and shift-click moves stacks straight between the container, your inventory and the backpack. Shift-clicking out of the backpack puts things in the chest, the way a shift-click in a chest always has. The open/close button is also smaller and quieter, and now shows at a glance whether the backpack is open.",
+      "highlights": [
+        "Backpack panels appear in chests, ender chests, barrels and shulker boxes",
+        "Shift-click moves stacks between the container, your inventory and the backpack in one click",
+        "Shift-clicking out of the backpack deposits into the container, falling back to your inventory when it is full",
+        "The open/close button is smaller, and its icon dims while the backpack is shut"
+      ],
+      "pr": 1204,
+      "date": "2026-08-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
