@@ -10,6 +10,7 @@ import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
 import games.brennan.dungeontrain.advancement.SurveyAdvancement;
 import games.brennan.dungeontrain.compat.DiscordAdvancementSuffix;
 import games.brennan.dungeontrain.compat.EnderChestLockBridge;
+import games.brennan.dungeontrain.compat.SableRagdollBridge;
 import games.brennan.dungeontrain.compat.TradeEverythingBridge;
 import games.brennan.dungeontrain.compat.PlayerMobSocialBridge;
 import games.brennan.dungeontrain.compat.DiscordInboundBridge;
@@ -541,6 +542,20 @@ public class DungeonTrain {
             } catch (Throwable t) {
                 LOGGER.warn("TradeEverything present but valuation API unavailable ({}); "
                         + "default trade values apply.", t.toString());
+            }
+        }
+
+        // Death ragdolls: hold each death open for a beat while the player's body tumbles, and
+        // cancel every ragdoll DT did not itself start (the mod's own H keybind included), so
+        // ragdolls stay a death-only effect. Sable: Ragdolls is a hard dependency, so this is
+        // always present in a real install; the guard keeps a stripped dev run — and any future
+        // build that moves the API — degrading to instant deaths instead of crashing mod load.
+        if (ModList.get().isLoaded(SableRagdollBridge.RAGDOLL_MOD_ID)) {
+            try {
+                SableRagdollBridge.install();
+            } catch (Throwable t) {
+                LOGGER.warn("Sable: Ragdolls present but the ragdoll API is unavailable ({}); "
+                        + "deaths are instant and the tumble keybind is not suppressed.", t.toString());
             }
         }
 

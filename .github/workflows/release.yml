@@ -242,6 +242,7 @@ jobs:
           # platform on purpose — don't "fix" one to match the other.
           dependencies: |
             sable(required)
+            sable-ragdolls(required)
             adventureitemnames(required)
             adventure-items-stats(required)
             interactive-player-mobs(required)
@@ -249,6 +250,7 @@ jobs:
             trade-everything(required)
           curseforge-dependencies: |
             sable(required)
+            sable-ragdolls(required)
             adventure-item-names(required)
             adventure-item-stats(required)
             interactive-player-mobs(required)

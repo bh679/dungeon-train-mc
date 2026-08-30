@@ -101,6 +101,21 @@ public final class DungeonTrainConfig {
     public static final int MAX_RANDOM_BOOK_ONE_IN = 1_000_000;
     public static final int DEFAULT_RANDOM_BOOK_ONE_IN = 100;
 
+    /** Master switch for the on-death player ragdoll (see {@code event/DeathRagdollEvents}). */
+    public static final boolean DEFAULT_DEATH_RAGDOLL_ENABLED = true;
+    /** How long the death is held open while the ragdoll plays. 20 ticks = 1 second. */
+    public static final int MIN_DEATH_RAGDOLL_TICKS = 0;
+    public static final int MAX_DEATH_RAGDOLL_TICKS = 200;
+    public static final int DEFAULT_DEATH_RAGDOLL_HOLD_TICKS = 30;
+    /** How long to wait for the ragdoll to actually assemble before completing the death anyway. */
+    public static final int DEFAULT_DEATH_RAGDOLL_ASSEMBLE_TIMEOUT_TICKS = 20;
+    /** Ticks after launch before the body despawns. Must outlive the hold, or the body vanishes mid-fall. */
+    public static final int MIN_DEATH_RAGDOLL_DESPAWN_TICKS = 20;
+    public static final int MAX_DEATH_RAGDOLL_DESPAWN_TICKS = 2400;
+    public static final int DEFAULT_DEATH_RAGDOLL_DESPAWN_TICKS = 200;
+    /** When true, DT cancels every ragdoll it did not itself start — including the mod's own H keybind. */
+    public static final boolean DEFAULT_DEATH_RAGDOLL_BLOCK_OTHER_TRIGGERS = true;
+
     public static final boolean DEFAULT_DEATH_REPORT_TO_DISCORD = true;
 
     public static final boolean DEFAULT_FREE_PLAY_NOTICE_TO_DISCORD = true;
@@ -303,6 +318,11 @@ public final class DungeonTrainConfig {
     public static final ModConfigSpec.BooleanValue FIRST_LEVEL_STARTER_LOOT;
     public static final ModConfigSpec.BooleanValue DIFFICULTY_ISOLATED_STASH;
     public static final ModConfigSpec.IntValue RANDOM_BOOK_FROM_BOOKSHELF_ONE_IN;
+    public static final ModConfigSpec.BooleanValue DEATH_RAGDOLL_ENABLED;
+    public static final ModConfigSpec.IntValue DEATH_RAGDOLL_HOLD_TICKS;
+    public static final ModConfigSpec.IntValue DEATH_RAGDOLL_ASSEMBLE_TIMEOUT_TICKS;
+    public static final ModConfigSpec.IntValue DEATH_RAGDOLL_DESPAWN_TICKS;
+    public static final ModConfigSpec.BooleanValue DEATH_RAGDOLL_BLOCK_OTHER_TRIGGERS;
     public static final ModConfigSpec.BooleanValue DEATH_REPORT_TO_DISCORD;
     public static final ModConfigSpec.BooleanValue FREE_PLAY_NOTICE_TO_DISCORD;
     public static final ModConfigSpec.BooleanValue DEV_MESSAGE_CONSENT_TO_DISCORD;
@@ -359,6 +379,11 @@ public final class DungeonTrainConfig {
         FIRST_LEVEL_STARTER_LOOT = pair.getLeft().firstLevelStarterLoot;
         DIFFICULTY_ISOLATED_STASH = pair.getLeft().difficultyIsolatedStash;
         RANDOM_BOOK_FROM_BOOKSHELF_ONE_IN = pair.getLeft().randomBookFromBookshelfOneIn;
+        DEATH_RAGDOLL_ENABLED = pair.getLeft().deathRagdollEnabled;
+        DEATH_RAGDOLL_HOLD_TICKS = pair.getLeft().deathRagdollHoldTicks;
+        DEATH_RAGDOLL_ASSEMBLE_TIMEOUT_TICKS = pair.getLeft().deathRagdollAssembleTimeoutTicks;
+        DEATH_RAGDOLL_DESPAWN_TICKS = pair.getLeft().deathRagdollDespawnTicks;
+        DEATH_RAGDOLL_BLOCK_OTHER_TRIGGERS = pair.getLeft().deathRagdollBlockOtherTriggers;
         DEATH_REPORT_TO_DISCORD = pair.getLeft().deathReportToDiscord;
         FREE_PLAY_NOTICE_TO_DISCORD = pair.getLeft().freePlayNoticeToDiscord;
         DEV_MESSAGE_CONSENT_TO_DISCORD = pair.getLeft().devMessageConsentToDiscord;
@@ -692,6 +717,37 @@ public final class DungeonTrainConfig {
                         "start the cinematic immediately on spawn as before.")
                 .define("introCinematicChunkPreloadEnabled", DEFAULT_INTRO_CINEMATIC_CHUNK_PRELOAD_ENABLED);
         b.pop();
+        b.push("ragdoll");
+        ModConfigSpec.BooleanValue deathRagdollEnabled = b
+                .comment("Ragdoll the player's body on death, using the required Sable: Ragdolls mod. The death is held",
+                        "open for deathRagdollHoldTicks while the body tumbles (the camera rides it), then the real death",
+                        "lands exactly as it would have — same damage source, same narrative, same reports. False restores",
+                        "the instant death of builds before this, and DT then drives no ragdolls at all.")
+                .define("deathRagdollEnabled", DEFAULT_DEATH_RAGDOLL_ENABLED);
+        ModConfigSpec.IntValue deathRagdollHoldTicks = b
+                .comment("How long the death animation plays before the death screen opens, in ticks (20 = 1 second).",
+                        "Default 30. 0 makes the ragdoll effectively instantaneous.")
+                .defineInRange("deathRagdollHoldTicks", DEFAULT_DEATH_RAGDOLL_HOLD_TICKS,
+                        MIN_DEATH_RAGDOLL_TICKS, MAX_DEATH_RAGDOLL_TICKS);
+        ModConfigSpec.IntValue deathRagdollAssembleTimeoutTicks = b
+                .comment("How long to wait for the ragdoll to assemble before giving up and completing the death anyway.",
+                        "Assembly needs a pose snapshot from the dying player's client, so a dropped packet or a client",
+                        "without the mod would otherwise leave them held at 0 hearts. Default 20 ticks (1 second).")
+                .defineInRange("deathRagdollAssembleTimeoutTicks", DEFAULT_DEATH_RAGDOLL_ASSEMBLE_TIMEOUT_TICKS,
+                        MIN_DEATH_RAGDOLL_TICKS, MAX_DEATH_RAGDOLL_TICKS);
+        ModConfigSpec.IntValue deathRagdollDespawnTicks = b
+                .comment("Ticks after launch before the body despawns. Sable: Ragdolls leaves bodies forever by default,",
+                        "so DT always attaches this expiry. Default 200 (10 seconds) — long enough to watch the body",
+                        "settle behind the death screen, short enough that repeated deaths leave nothing behind.")
+                .defineInRange("deathRagdollDespawnTicks", DEFAULT_DEATH_RAGDOLL_DESPAWN_TICKS,
+                        MIN_DEATH_RAGDOLL_DESPAWN_TICKS, MAX_DEATH_RAGDOLL_DESPAWN_TICKS);
+        ModConfigSpec.BooleanValue deathRagdollBlockOtherTriggers = b
+                .comment("Cancel every ragdoll DT did not itself start — Sable: Ragdolls' own tumble keybind (H), its",
+                        "commands, and any addon mod's launches. This is what makes ragdolls a death-only effect; DT",
+                        "cannot write another mod's config, so it enforces the rule on the mod's own start event.",
+                        "False hands the keybind back and lets players tumble whenever they like.")
+                .define("deathRagdollBlockOtherTriggers", DEFAULT_DEATH_RAGDOLL_BLOCK_OTHER_TRIGGERS);
+        b.pop();
         return new Holder(configVersion, numCarriages, speed, trainY, generateTracks, generateTunnels, generationMode, groupSize,
                 difficultyEnabled, carriagesPerTier, difficultyTravelledOffset, difficultyAffectsBabyMobs, progressionLevelDelay,
                 difficultyScaleHostileGearPastCap, difficultyIsolatedStash,
@@ -706,7 +762,9 @@ public final class DungeonTrainConfig {
                 difficultyLevelNoticeToDiscord, introCinematicEnabled, introCinematicDurationTicks,
                 introCinematicChunkPreloadEnabled, sharedCarriagesEnabled, sharedCarriageLeasingEnabled,
                 sharedCarriagePoolChance,
-                sharedCarriageOwnChance, sharedCarriageMaxEntities, builderProfileEnabled);
+                sharedCarriageOwnChance, sharedCarriageMaxEntities, builderProfileEnabled,
+                deathRagdollEnabled, deathRagdollHoldTicks, deathRagdollAssembleTimeoutTicks,
+                deathRagdollDespawnTicks, deathRagdollBlockOtherTriggers);
     }
 
     /**
@@ -875,6 +933,31 @@ public final class DungeonTrainConfig {
     /** 1-in-N chance a book dropped by breaking a bookshelf becomes a narrative Random Book; 0 disables. */
     public static int getRandomBookFromBookshelfOneIn() {
         return isLoaded() ? RANDOM_BOOK_FROM_BOOKSHELF_ONE_IN.get() : DEFAULT_RANDOM_BOOK_ONE_IN;
+    }
+
+    /** Master switch for the on-death player ragdoll. */
+    public static boolean isDeathRagdollEnabled() {
+        return isLoaded() ? DEATH_RAGDOLL_ENABLED.get() : DEFAULT_DEATH_RAGDOLL_ENABLED;
+    }
+
+    /** How long the death is held open while the ragdoll plays, in ticks. */
+    public static int getDeathRagdollHoldTicks() {
+        return isLoaded() ? DEATH_RAGDOLL_HOLD_TICKS.get() : DEFAULT_DEATH_RAGDOLL_HOLD_TICKS;
+    }
+
+    /** How long to wait for the ragdoll to assemble before completing the death anyway, in ticks. */
+    public static int getDeathRagdollAssembleTimeoutTicks() {
+        return isLoaded() ? DEATH_RAGDOLL_ASSEMBLE_TIMEOUT_TICKS.get() : DEFAULT_DEATH_RAGDOLL_ASSEMBLE_TIMEOUT_TICKS;
+    }
+
+    /** Ticks after launch before the body despawns. */
+    public static int getDeathRagdollDespawnTicks() {
+        return isLoaded() ? DEATH_RAGDOLL_DESPAWN_TICKS.get() : DEFAULT_DEATH_RAGDOLL_DESPAWN_TICKS;
+    }
+
+    /** Whether DT cancels every ragdoll it did not itself start (the mod's H keybind included). */
+    public static boolean isDeathRagdollBlockOtherTriggers() {
+        return isLoaded() ? DEATH_RAGDOLL_BLOCK_OTHER_TRIGGERS.get() : DEFAULT_DEATH_RAGDOLL_BLOCK_OTHER_TRIGGERS;
     }
 
     /** Whether to post the death-screen run summary to Discord (via the bundled Discord Presence mod). */
@@ -1193,6 +1276,11 @@ public final class DungeonTrainConfig {
             ModConfigSpec.DoubleValue sharedCarriagePoolChance,
             ModConfigSpec.DoubleValue sharedCarriageOwnChance,
             ModConfigSpec.IntValue sharedCarriageMaxEntities,
-            ModConfigSpec.BooleanValue builderProfileEnabled
+            ModConfigSpec.BooleanValue builderProfileEnabled,
+            ModConfigSpec.BooleanValue deathRagdollEnabled,
+            ModConfigSpec.IntValue deathRagdollHoldTicks,
+            ModConfigSpec.IntValue deathRagdollAssembleTimeoutTicks,
+            ModConfigSpec.IntValue deathRagdollDespawnTicks,
+            ModConfigSpec.BooleanValue deathRagdollBlockOtherTriggers
     ) {}
 }

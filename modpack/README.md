@@ -28,6 +28,7 @@ pack must list them explicitly. Everything else is a manifest file with a `requi
 |---|---|---|---|
 | Dungeon Train | `1527512` | **required** | The file ID changes every release — injected at build time. |
 | Sable | `1312371` | **required** | Un-bundled runtime dep (PolyForm Shield forbids redistribution). **Pinned** — see below. |
+| Sable: Ragdolls | `1572492` | **enabled** | Third-party, un-bundled hard dep — DT ragdolls the player's body on death through its API. **Pinned to `0.7.2`**: Modrinth has newer builds, but CurseForge's listing stops there and both packs must pin a version their own platform has. Floor `sableragdoll_min_version`. |
 | Adventure Item Names | `1546573` | **enabled** | Sibling mod, un-bundled hard dep. **Pinned**; floor `adventureitemnames_min_version`. |
 | Adventure Item Stats | `1554362` | **enabled** | Sibling mod, un-bundled hard dep. **Pinned**; floor `adventureitemstats_min_version`. |
 | Interactive Player Mobs | `1559379` | **enabled** | Sibling mod, un-bundled hard dep. **Pinned**; floor `playermob_min_version`. |
@@ -163,6 +164,7 @@ at all. The upload declares relations from `curseforge_relations` in `modpack.co
 | Slug | Relation | Why |
 |---|---|---|
 | `sable` | `requiredDependency` | Un-bundled runtime dep (also a `files` entry). |
+| `sable-ragdolls` | `requiredDependency` | Un-bundled runtime dep (also a `files` entry) — DT's death ragdolls. |
 
 The sibling mods used to appear here as `embeddedLibrary`. They no longer do: now that they are
 un-bundled, each is a manifest `files` entry, and CurseForge auto-creates the relation from the
@@ -184,7 +186,7 @@ The declared type is **`optional` by default** — regardless of whether the pac
 enabled (`required:true`) or off (`required:false`), the mod's relationship to a companion is
 "optional" either way, because DT runs fine without it.
 
-The exception is the five sibling mods, which DT genuinely cannot run without. They carry
+The exception is the sibling mods plus Sable: Ragdolls, which DT genuinely cannot run without. They carry
 `"dependency_type": "required"` in `modpack.config.json` and are declared `<slug>(required)` in
 `release.yml`. That `required` declaration is what makes the CurseForge and Modrinth apps
 auto-install them — the whole point of un-bundling.

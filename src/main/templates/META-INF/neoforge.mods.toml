@@ -26,6 +26,23 @@ logoFile="logo.png"
     ordering="AFTER"
     side="BOTH"
 
+# Sable: Ragdolls — third-party, NOT bundled (a separate required download, same contract as
+# Sable). DT drives it on death (compat/SableRagdollBridge) and cancels every ragdoll it did not
+# itself start, so the mod's own tumble keybind never fires here.
+#
+# A MINIMUM range (from sableragdoll_min_version), unlike Sable's exact pin: the ragdoll API is
+# additive to DT's compat surface, so a newer build is fine, and an exact pin would lock every
+# player out on a patch release.
+#
+# side="BOTH" is load-bearing, not boilerplate: assembling a ragdoll needs a pose snapshot from
+# the dying player's own client, so a client without the mod could never produce one.
+[[dependencies.${mod_id}]]
+    modId="sable_player_ragdoll"
+    type="required"
+    versionRange="[${sableragdoll_min_version},)"
+    ordering="AFTER"
+    side="BOTH"
+
 # Sibling mods (same author). These are NOT bundled — each is a separate required
 # download, so its own Modrinth/CurseForge page gets credited for the install.
 #

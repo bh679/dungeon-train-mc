@@ -276,6 +276,13 @@ dependencies {
     // neoforge.mods.toml so the loader prompts the user.
     implementation "maven.modrinth:sable:${sable_version}"
 
+    // Sable: Ragdolls — third-party ragdoll physics on top of Sable. Same
+    // external-required-dep contract as Sable itself: NOT bundled, declared as a
+    // hard mod-dep in neoforge.mods.toml so the loader prompts the user, and
+    // fetched here from Modrinth's Maven proxy for compile + dev-run. DT touches
+    // its API from exactly one class (compat/SableRagdollBridge).
+    implementation "maven.modrinth:sable-ragdolls:${sableragdoll_version}"
+
     // AdventureItemNames — sibling mod by the same author. NOT bundled: it is a
     // separate required download, the same distribution contract as Sable above,
     // so that AIN's own Modrinth/CurseForge pages get credited for the install.
@@ -485,6 +492,7 @@ tasks.register('generateModMetadata', ProcessResources) {
         git_branch                 : gitBranch,
         dev_hours                  : devHours,
         sable_mod_version          : sable_mod_version,
+        sableragdoll_min_version   : sableragdoll_min_version,
         adventureitemnames_version : adventureitemnames_version,
         adventureitemstats_version : adventureitemstats_version,
         playermob_version          : playermob_version,

@@ -12,6 +12,18 @@
   },
   "optional_mods": [
     {
+      "name": "Sable: Ragdolls",
+      "slug": "sable-ragdolls",
+      "project_id": 1572492,
+      "file_id": 8295399,
+      "required": true,
+      "dependency_type": "required",
+      "version": "0.7.2",
+      "gradle_property": "sableragdoll_min_version",
+      "modrinth_project": "sable-ragdolls",
+      "modrinth_version": "imE1vUMn"
+    },
+    {
       "name": "Adventure Item Names",
       "slug": "adventure-item-names",
       "project_id": 1546573,
@@ -426,6 +438,10 @@
   "curseforge_relations": [
     {
       "slug": "sable",
+      "type": "requiredDependency"
+    },
+    {
+      "slug": "sable-ragdolls",
       "type": "requiredDependency"
     }
   ]
