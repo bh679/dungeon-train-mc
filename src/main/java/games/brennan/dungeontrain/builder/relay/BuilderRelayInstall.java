@@ -375,11 +375,25 @@ public final class BuilderRelayInstall {
     }
 
     /**
-     * A portal room. One write and no registry call: rooms are discovered from their files, and
-     * {@code PortalRoomTemplateStore.save} records the room's size for that discovery itself.
+     * A portal room: write the file, then register the name — the ordering every arm here uses.
+     *
+     * <p>The write covers half of a room's discovery on its own ({@code PortalRoomTemplateStore.save}
+     * settles the size into {@link PortalRoomSizes}), and rooms are otherwise found by scanning their
+     * directory — but that scan runs at startup. Without the register the name is unknown for the
+     * rest of the session, and everything that addresses a room by name goes through
+     * {@link TrackVariantRegistry}: the room is missing from the editor's list, and the Open this
+     * screen fires straight after the download ({@code dungeontrain editor portals enter <name>})
+     * fails with "Unknown dimensional carriage" on a build that had just installed cleanly.</p>
+     *
+     * <p>No {@code PortalRoomEditor.relayout} around the register, unlike
+     * {@code PortalRoomEditor.createFromBuiltIn}: {@code enter} primes the sizes and stamps every
+     * plot on the way in, so the row rebuilds itself — and relayout writes blocks into the world,
+     * which in a builder world or an ordinary one (where this button also lives, and where no editor
+     * row was ever stamped) would put plots into terrain nothing asked for.</p>
      */
     private static Outcome installPortalRoom(String id, StructureTemplate template) throws IOException {
         PortalRoomTemplateStore.save(id, template);
+        TrackVariantRegistry.register(TrackKind.PORTAL_ROOM, id);
         LOGGER.info("[DungeonTrain] Builder relay download: installed portal room '{}'", id);
         return Outcome.INSTALLED;
     }
