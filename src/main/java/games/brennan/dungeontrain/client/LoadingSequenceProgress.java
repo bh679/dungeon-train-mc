@@ -68,8 +68,12 @@ public final class LoadingSequenceProgress {
      * and left alone everywhere else.
      */
     public static void beginJoin() {
+        // Reset first, then arm: a join owns its own timeline outright, so it cannot inherit a
+        // spent bar or a finished flag from whatever the previous session left behind.
+        reset();
         ensureStarted();
         sequenceActive = true;
+        JoinIntroFade.begin();
     }
 
     /**
@@ -98,5 +102,6 @@ public final class LoadingSequenceProgress {
         displayFraction = 0.0;
         sequenceActive = false;
         sequenceFinished = false;
+        JoinIntroFade.reset();
     }
 }
