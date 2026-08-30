@@ -10378,7 +10378,7 @@
     },
     {
       "id": "menu-to-loading-transition",
-      "version": "0.750.0",
+      "version": "0.751.0",
       "type": "feat",
       "title": "Smoother world join",
       "summary": "Starting a world now fades from the menu into the loading screen instead of cutting, with no more flash of vanilla chrome.",
