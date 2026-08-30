@@ -35,6 +35,23 @@ BOOK = {
     "variants": ["AI one", "AI two"],
 }
 
+#: The English original the fixture book translates. Placeholder-free, like most of the 60 real
+#: books, so the ordinary book tests are about provenance and text-level edits and nothing else.
+#: The tests that are about placeholders pass their own via ``workspace(book_en=...)``.
+BOOK_EN = {
+    "id": "deathnote",
+    "title": "Title",
+    "variants": ["one", "two"],
+}
+
+#: An English original that names a figure. Book prose is Component.literal and writes its figures
+#: as {deaths}, so lang_format's printf rule cannot see them at all — see book_format.
+BOOK_EN_WITH_FIGURE = {
+    "id": "deathnote",
+    "title": "Title",
+    "variants": ["the {deaths_nth} to fall", "two"],
+}
+
 
 def unit(**over):
     """One approved row in the shape the relay's admin listing returns."""
@@ -45,19 +62,22 @@ def unit(**over):
     return row
 
 
-def workspace(lang=XX, prov=PROV, authors=AUTHORS, book=BOOK):
-    """A miniature repo: one locale's lang file + sidecar, one book, an author registry."""
+def workspace(lang=XX, prov=PROV, authors=AUTHORS, book=BOOK, book_en=BOOK_EN):
+    """A miniature repo: one locale's lang file + sidecar, one book + its English, a registry."""
     ws = tempfile.mkdtemp(prefix="import-approved-test-")
     lang_dir = os.path.join(ws, "lang")
     prov_dir = os.path.join(ws, "prov")
     nar_prov_dir = os.path.join(ws, "narrative-prov")
     nar_dir = os.path.join(ws, "narrative", "xx_yy", "random_books")
-    for d in (lang_dir, prov_dir, nar_prov_dir, nar_dir):
+    nar_en_dir = os.path.join(ws, "narrative-en", "narratives", "random_books")
+    for d in (lang_dir, prov_dir, nar_prov_dir, nar_dir, nar_en_dir):
         os.makedirs(d)
     write_json(os.path.join(lang_dir, "en_us.json"), EN)
     write_json(os.path.join(lang_dir, "xx_yy.json"), lang)
     write_json(os.path.join(ws, "authors.json"), authors)
     write_json(os.path.join(nar_dir, "deathnote.json"), book)
+    if book_en is not None:
+        write_json(os.path.join(nar_en_dir, "deathnote.json"), book_en)
     write_provenance(os.path.join(prov_dir, "xx_yy.json"), prov)
     write_provenance(os.path.join(nar_prov_dir, "xx_yy.json"),
                      {"random_books/deathnote": {"author": "Opus 5 (Claude)", "reviewer": ""}})
@@ -99,6 +119,7 @@ def run(ws, rows, *extra):
          "--lang-dir", os.path.join(ws, "lang"),
          "--provenance-dir", os.path.join(ws, "prov"),
          "--narrative-dir", os.path.join(ws, "narrative"),
+         "--narrative-en-dir", os.path.join(ws, "narrative-en"),
          "--narrative-provenance-dir", os.path.join(ws, "narrative-prov"), *extra],
         capture_output=True, text=True)
 
@@ -126,6 +147,77 @@ def test_matching_line_is_reviewed_not_reauthored():
     proc = run(ws, [unit(value="AI Alpha")])
     assert proc.returncode == 0, proc.stderr
     assert prov_of(ws)["a.key"] == {"author": "Opus 5 (Claude)", "reviewer": "老本願"}
+
+
+# ---- two people, one line -----------------------------------------------------
+#
+# The relay lets two translators both hold an approved unit for the same key (38 keys did in the
+# 2026-08-30 import). Only one text can ship and the sidecar has one author and one reviewer, so
+# these prove which text wins and that the runner-up is still credited — before the fix the
+# per-translator stamp groups overwrote each other and one of the two vanished from the credits.
+
+CONTESTED_AUTHORS = {**AUTHORS, "SandRuin": "human", "ecodead": "human"}
+
+
+def contested(ws, *extra):
+    """Two approved units for a.key, the older one listed first so order cannot be what decides."""
+    return run(ws, [unit(id=4, ts=100, translator="SandRuin", value="早い Alpha"),
+                    unit(id=9, ts=200, translator="老本願", value="新しい Alpha")], *extra)
+
+
+def test_the_newest_of_two_approvals_ships_and_both_are_credited():
+    ws = workspace(authors=CONTESTED_AUTHORS)
+    contributors = os.path.join(ws, "contributors.json")
+    proc = contested(ws, "--contributors-file", contributors)
+    assert proc.returncode == 0, proc.stderr
+    # Newest wins because that is the one the relay already serves every player in this locale.
+    assert lang_of(ws)["a.key"] == "新しい Alpha"
+    assert prov_of(ws)["a.key"] == {"author": "老本願", "reviewer": "SandRuin"}
+    # build_contributors counts a key for its author OR its reviewer, so neither name is lost.
+    names = {c["name"] for c in read_json(contributors)["contributors"]}
+    assert names == {"老本願", "SandRuin"}, names
+
+
+def test_a_contested_key_is_stamped_exactly_once():
+    ws = workspace(authors=CONTESTED_AUTHORS)
+    proc = contested(ws)
+    assert proc.returncode == 0, proc.stderr
+    stamps = [ln for ln in proc.stdout.splitlines() if "--keys" in ln and "a.key" in ln]
+    assert len(stamps) == 1, proc.stdout
+
+
+def test_a_relay_pick_outranks_the_newest_approval():
+    ws = workspace(authors=CONTESTED_AUTHORS)
+    proc = run(ws, [unit(id=9, ts=200, translator="老本願", value="新しい Alpha"),
+                    unit(id=4, ts=100, translator="SandRuin", value="選ばれた Alpha", picked=True)])
+    assert proc.returncode == 0, proc.stderr
+    assert lang_of(ws)["a.key"] == "選ばれた Alpha"
+    assert prov_of(ws)["a.key"] == {"author": "SandRuin", "reviewer": "老本願"}
+
+
+def test_a_contender_for_a_line_that_already_matches_is_named_not_credited():
+    ws = workspace(authors=CONTESTED_AUTHORS)
+    # The winner's text is what the file already holds, so the AI author stands and the only slot
+    # left is the reviewer's — there is nowhere to put the runner-up but the report.
+    proc = run(ws, [unit(id=9, ts=200, translator="老本願", value="AI Alpha"),
+                    unit(id=4, ts=100, translator="ecodead", value="別の Alpha")])
+    assert proc.returncode == 0, proc.stderr
+    assert prov_of(ws)["a.key"] == {"author": "Opus 5 (Claude)", "reviewer": "老本願"}
+    assert "WARNING" in proc.stdout and "ecodead" in proc.stdout, proc.stdout
+
+
+def test_a_third_translator_of_one_line_is_named_and_not_registered():
+    ws = workspace()  # neither SandRuin nor ecodead is in the registry yet
+    proc = run(ws, [unit(id=9, ts=300, translator="老本願", value="一 Alpha"),
+                    unit(id=8, ts=200, translator="SandRuin", value="二 Alpha"),
+                    unit(id=7, ts=100, translator="ecodead", value="三 Alpha")], "--register-new")
+    assert proc.returncode == 0, proc.stderr
+    assert prov_of(ws)["a.key"] == {"author": "老本願", "reviewer": "SandRuin"}
+    assert "WARNING" in proc.stdout and "ecodead" in proc.stdout, proc.stdout
+    # Registering a name nothing credits is what put ecodead in authors.json with no line behind
+    # them and no entry in the shipped credits.
+    authors = read_json(os.path.join(ws, "authors.json"))
+    assert "SandRuin" in authors and "ecodead" not in authors, authors
 
 
 def test_stale_approval_is_skipped():
@@ -430,6 +522,69 @@ def test_repeated_book_text_edits_the_field_that_was_approved():
     assert book["title"] == "Same"       # the identical string in the OTHER field is untouched
 
 
+def book_of(ws):
+    return read_json(os.path.join(ws, "narrative", "xx_yy", "random_books", "deathnote.json"))
+
+
+def figure_unit(value):
+    """An approved translation of the one English field that names a figure."""
+    return unit(unitType="book", unitId="random_books/deathnote#variants.0",
+                source="", value=value)
+
+
+def test_book_translation_that_drops_a_figure_is_deferred_not_written():
+    """The gap #1210 and #1214 both left open: they check printf, book prose uses {braces}."""
+    ws = workspace(book_en=BOOK_EN_WITH_FIGURE)
+    proc = run(ws, [figure_unit("кто пал")])
+    assert proc.returncode == 0, proc.stderr
+    assert "nowhere to land" in proc.stdout
+    assert "{deaths_nth}" in proc.stdout
+    assert book_of(ws)["variants"] == ["AI one", "AI two"], "the broken value must not be written"
+
+
+def test_the_russian_ordinal_regression_is_deferred():
+    """{deaths_nth} swapped for {deaths} plus a glued adjective ending — the live 2026-08-30 near
+    miss, which read "2й, кто пал" where it should read "второй, кто пал"."""
+    ws = workspace(book_en=BOOK_EN_WITH_FIGURE)
+    proc = run(ws, [figure_unit("{deaths}й, кто пал.")])
+    assert proc.returncode == 0, proc.stderr
+    assert "needs fixing at the relay" in proc.stdout
+    assert book_of(ws)["variants"][0] == "AI one"
+
+
+def test_a_book_translation_that_invents_a_figure_is_deferred():
+    ws = workspace(book_en=BOOK_EN_WITH_FIGURE)
+    proc = run(ws, [figure_unit("{deaths_nth} из {mobs}")])
+    assert proc.returncode == 0, proc.stderr
+    assert book_of(ws)["variants"][0] == "AI one"
+
+
+def test_a_book_translation_that_keeps_the_figure_is_imported():
+    """Order is the translator's business — the figure moves to wherever the grammar wants it."""
+    ws = workspace(book_en=BOOK_EN_WITH_FIGURE)
+    proc = run(ws, [figure_unit("павший {deaths_nth}")])
+    assert proc.returncode == 0, proc.stderr
+    assert book_of(ws)["variants"] == ["павший {deaths_nth}", "AI two"]
+
+
+def test_one_broken_field_does_not_hold_up_the_rest_of_its_book():
+    """Deferred, not fatal: somebody has to look at that field, nobody has to abandon the book."""
+    ws = workspace(book_en=BOOK_EN_WITH_FIGURE)
+    proc = run(ws, [figure_unit("кто пал"),
+                    unit(id=2, unitType="book", unitId="random_books/deathnote#variants.1",
+                         source="", value="人工 two")])
+    assert proc.returncode == 0, proc.stderr
+    assert book_of(ws)["variants"] == ["AI one", "人工 two"]
+
+
+def test_a_book_with_no_english_original_still_imports():
+    """A locale-only book has nothing to be measured against; that is not a reason to refuse it."""
+    ws = workspace(book_en=None)
+    proc = run(ws, [figure_unit("{deaths} что угодно")])
+    assert proc.returncode == 0, proc.stderr
+    assert book_of(ws)["variants"][0] == "{deaths} что угодно"
+
+
 def test_rerun_is_idempotent():
     ws = workspace()
     assert run(ws, [unit()]).returncode == 0
@@ -486,6 +641,7 @@ def run_http(ws, base, *extra):
          "--lang-dir", os.path.join(ws, "lang"),
          "--provenance-dir", os.path.join(ws, "prov"),
          "--narrative-dir", os.path.join(ws, "narrative"),
+         "--narrative-en-dir", os.path.join(ws, "narrative-en"),
          "--narrative-provenance-dir", os.path.join(ws, "narrative-prov"), *extra],
         capture_output=True, text=True)
 
