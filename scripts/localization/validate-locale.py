@@ -12,7 +12,8 @@ shape byte-identical. This gate enforces that:
   2. The narrative_localizations/ and ain_localizations/ subtrees mirror es_es's file set.
   3. Every JSON parses and is *shape-identical* to es_es: same object keys, same array
      lengths, equal numbers/booleans/null, and equal structural strings (id / ref / page /
-     _translator_note). Only translatable string values may differ.
+     _translator_note). Only translatable string values may differ. The single exemption is
+     array LENGTH in a flat AIN word pool — see ``flat_text_pool``.
   4. Every trigger-book title (Death Note, Love Note) is <= 15 characters (Minecraft book-title
      limit) — a longer one can't be typed, so that language silently loses the mechanic.
   5. The localization credit names the locale.
@@ -23,12 +24,12 @@ Exit code is non-zero if any locale fails.
 
 ``--values-only`` checks just the things a change to TRANSLATED TEXT can break — placeholders,
 empty strings, trigger-book title length, note offsets into prose — and skips key sets, file
-sets and structural shape. It exists for the relay import job, which edits values and nothing
-else: gating that job on the whole structural suite meant a translation of one Vietnamese string
-could not be imported because the vi_vn AIN overlay had been missing `item_types` for months.
-A tool that refuses today's correct work over yesterday's unrelated debt gets ignored, so the
-import job asks the narrower question it is entitled to ask — "did I break anything?" — and the
-full suite stays the gate for PRs.
+sets and structural shape. **Nothing runs it today**: it was written for the relay import job
+while the AIN overlays carried structural debt that job could not have caused (vi_vn had been
+missing `item_types` for months, and gating on the whole suite meant one Vietnamese string could
+not be imported over it). That debt is paid off and both build.yml and the import job ask the
+full question again. The flag is kept as the escape hatch for the same situation recurring —
+reach for it only to unblock work while a locale is being repaired, never as the steady state.
 """
 import json
 import re
@@ -91,6 +92,38 @@ def placeholders(value):
     if not isinstance(value, str):
         return []
     return sorted(t for t in PLACEHOLDER.findall(value) if t != "%%")
+
+
+def flat_text_pool(ref):
+    """True for an AIN pool that is nothing but a word list — every entry exactly ``{"text": …}``.
+
+    ``type_synonyms`` is the only pool of the 31 whose entries carry anything else: its
+    ``item_types`` binds each synonym to the item tag it may name, so a missing or extra entry
+    there shifts every later tag and a sword starts being called a pair of boots. Length is
+    load-bearing, and it stays checked.
+
+    The other 30 are flat lists drawn at random by ``NameComposer.pickPoolEntry``. Position binds
+    nothing, so requiring a locale to hold *exactly* as many synonyms as Spanish is parity for its
+    own sake: it fails zh_cn for having thought of five more titles than es_es did, which is the
+    gate objecting to a translator doing the job well. Entry SHAPE is still enforced — every entry
+    must be a one-key ``text`` string — so a malformed pool is still caught.
+    """
+    entries = ref.get("entries") if isinstance(ref, dict) else None
+    return bool(entries) and isinstance(entries, list) and all(
+        isinstance(e, dict) and set(e) == {"text"} and isinstance(e["text"], str) for e in entries)
+
+
+def compare_flat_pool(ref, loc, path, errors):
+    """Shape-check a flat word pool without comparing its length."""
+    if not isinstance(loc, dict) or set(ref) != set(loc):
+        errors.append(f"{path}: pool keys {sorted(loc) if isinstance(loc, dict) else loc!r} "
+                      f"!= {sorted(ref)}")
+        return
+    if ref.get("id") != loc.get("id"):
+        errors.append(f"{path}.id: structural value changed "
+                      f"({loc.get('id')!r} != {ref.get('id')!r})")
+    if not flat_text_pool(loc):
+        errors.append(f"{path}.entries: every entry must be a single 'text' string")
 
 
 def compare_shape(ref, loc, path, errors):
@@ -194,7 +227,11 @@ def validate_data(loc, errors, values_only=False):
                 errors.append(f"[{sub}] {rel}: JSON error: {exc}")
                 continue
             if not values_only:
-                compare_shape(ref, cur, f"{sub}/{rel}", errors)
+                if sub == "ain_localizations" and rel.startswith("pools/") \
+                        and flat_text_pool(ref):
+                    compare_flat_pool(ref, cur, f"{sub}/{rel}", errors)
+                else:
+                    compare_shape(ref, cur, f"{sub}/{rel}", errors)
             if any(rel.endswith(f"random_books/{book}.json") for book in TRIGGER_BOOKS):
                 title = cur.get("title", "")
                 if len(title) > MAX_TITLE_CHARS:

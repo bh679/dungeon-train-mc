@@ -2,256 +2,508 @@
   "id": "adventureitemnames:type_synonyms",
   "entries": [
     {
-      "text": "Talim"
+      "text": "Talim",
+      "item_types": [
+        "minecraft:swords"
+      ]
     },
     {
-      "text": "Espada"
+      "text": "Espada",
+      "item_types": [
+        "minecraft:swords"
+      ]
     },
     {
-      "text": "Malaking Espada"
+      "text": "Malaking Espada",
+      "item_types": [
+        "minecraft:swords"
+      ]
     },
     {
-      "text": "Panghiwa"
+      "text": "Panghiwa",
+      "item_types": [
+        "minecraft:swords"
+      ]
     },
     {
-      "text": "Saber"
+      "text": "Saber",
+      "item_types": [
+        "minecraft:swords"
+      ]
     },
     {
-      "text": "Gilid"
+      "text": "Gilid",
+      "item_types": [
+        "minecraft:swords"
+      ]
     },
     {
-      "text": "Reaver"
+      "text": "Reaver",
+      "item_types": [
+        "minecraft:swords"
+      ]
     },
     {
-      "text": "Tusok"
+      "text": "Tusok",
+      "item_types": [
+        "minecraft:swords"
+      ]
     },
     {
-      "text": "Palakol"
+      "text": "Palakol",
+      "item_types": [
+        "minecraft:axes"
+      ]
     },
     {
-      "text": "Palakol-Digma"
+      "text": "Palakol-Digma",
+      "item_types": [
+        "minecraft:axes"
+      ]
     },
     {
-      "text": "Pamutol"
+      "text": "Pamutol",
+      "item_types": [
+        "minecraft:axes"
+      ]
     },
     {
-      "text": "Palakol na Maliit"
+      "text": "Palakol na Maliit",
+      "item_types": [
+        "minecraft:axes"
+      ]
     },
     {
-      "text": "Panghati"
+      "text": "Panghati",
+      "item_types": [
+        "minecraft:axes"
+      ]
     },
     {
-      "text": "Bardiche"
+      "text": "Bardiche",
+      "item_types": [
+        "minecraft:axes"
+      ]
     },
     {
-      "text": "Tomahawk"
+      "text": "Tomahawk",
+      "item_types": [
+        "minecraft:axes"
+      ]
     },
     {
-      "text": "Sira-Kahoy"
+      "text": "Sira-Kahoy",
+      "item_types": [
+        "minecraft:axes"
+      ]
     },
     {
-      "text": "Piko"
+      "text": "Piko",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
     },
     {
-      "text": "Pikuwas"
+      "text": "Pikuwas",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
     },
     {
-      "text": "Martilyo"
+      "text": "Martilyo",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
     },
     {
-      "text": "Maso"
+      "text": "Maso",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
     },
     {
-      "text": "Mattock"
+      "text": "Mattock",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
     },
     {
-      "text": "Pantaga"
+      "text": "Pantaga",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
     },
     {
-      "text": "Pambayo"
+      "text": "Pambayo",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
     },
     {
-      "text": "Panghukay"
+      "text": "Panghukay",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
     },
     {
-      "text": "Kagat-Bato"
+      "text": "Kagat-Bato",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
     },
     {
-      "text": "Pala"
+      "text": "Pala",
+      "item_types": [
+        "minecraft:shovels"
+      ]
     },
     {
-      "text": "Espada-Pala"
+      "text": "Espada-Pala",
+      "item_types": [
+        "minecraft:shovels"
+      ]
     },
     {
-      "text": "Dulos"
+      "text": "Dulos",
+      "item_types": [
+        "minecraft:shovels"
+      ]
     },
     {
-      "text": "Panandok"
+      "text": "Panandok",
+      "item_types": [
+        "minecraft:shovels"
+      ]
     },
     {
-      "text": "Panghukay-Patpat"
+      "text": "Panghukay-Patpat",
+      "item_types": [
+        "minecraft:shovels"
+      ]
     },
     {
-      "text": "Panggalaw-Lupa"
+      "text": "Panggalaw-Lupa",
+      "item_types": [
+        "minecraft:shovels"
+      ]
     },
     {
-      "text": "Excavator"
+      "text": "Excavator",
+      "item_types": [
+        "minecraft:shovels"
+      ]
     },
     {
-      "text": "Panandok-Buhangin"
+      "text": "Panandok-Buhangin",
+      "item_types": [
+        "minecraft:shovels"
+      ]
     },
     {
-      "text": "Asarol"
+      "text": "Asarol",
+      "item_types": [
+        "minecraft:hoes"
+      ]
     },
     {
-      "text": "Karit"
+      "text": "Karit",
+      "item_types": [
+        "minecraft:hoes"
+      ]
     },
     {
-      "text": "Pang-araro"
+      "text": "Pang-araro",
+      "item_types": [
+        "minecraft:hoes"
+      ]
     },
     {
-      "text": "Panghukay-Bukid"
+      "text": "Panghukay-Bukid",
+      "item_types": [
+        "minecraft:hoes"
+      ]
     },
     {
-      "text": "Kalaykay"
+      "text": "Kalaykay",
+      "item_types": [
+        "minecraft:hoes"
+      ]
     },
     {
-      "text": "Reaper"
+      "text": "Reaper",
+      "item_types": [
+        "minecraft:hoes"
+      ]
     },
     {
-      "text": "Araro"
+      "text": "Araro",
+      "item_types": [
+        "minecraft:hoes"
+      ]
     },
     {
-      "text": "Lilik"
+      "text": "Lilik",
+      "item_types": [
+        "minecraft:hoes"
+      ]
     },
     {
-      "text": "Helmet"
+      "text": "Helmet",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
     },
     {
-      "text": "Sumbrero"
+      "text": "Sumbrero",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
     },
     {
-      "text": "Takip"
+      "text": "Takip",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
     },
     {
-      "text": "Korona"
+      "text": "Korona",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
     },
     {
-      "text": "Kapya"
+      "text": "Kapya",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
     },
     {
-      "text": "Panakip-Ulo"
+      "text": "Panakip-Ulo",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
     },
     {
-      "text": "Coif"
+      "text": "Coif",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
     },
     {
-      "text": "Skullcap"
+      "text": "Skullcap",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
     },
     {
-      "text": "Diadema"
+      "text": "Diadema",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
     },
     {
-      "text": "Timba-Utak"
+      "text": "Timba-Utak",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
     },
     {
-      "text": "Tunika"
+      "text": "Tunika",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
     },
     {
-      "text": "Kamiseta"
+      "text": "Kamiseta",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
     },
     {
-      "text": "Baluti"
+      "text": "Baluti",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
     },
     {
-      "text": "Cuirass"
+      "text": "Cuirass",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
     },
     {
-      "text": "Tsaleko"
+      "text": "Tsaleko",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
     },
     {
-      "text": "Kadena-Baluti"
+      "text": "Kadena-Baluti",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
     },
     {
-      "text": "Doublet"
+      "text": "Doublet",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
     },
     {
-      "text": "Bib"
+      "text": "Bib",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
     },
     {
-      "text": "Pambaba"
+      "text": "Pambaba",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
     },
     {
-      "text": "Pantalon"
+      "text": "Pantalon",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
     },
     {
-      "text": "Mahahabang-Binti"
+      "text": "Mahahabang-Binti",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
     },
     {
-      "text": "Pantalon"
+      "text": "Pantalon",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
     },
     {
-      "text": "Greaves"
+      "text": "Greaves",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
     },
     {
-      "text": "Britches"
+      "text": "Britches",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
     },
     {
-      "text": "Slacks"
+      "text": "Slacks",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
     },
     {
-      "text": "Medyas-Bagay"
+      "text": "Medyas-Bagay",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
     },
     {
-      "text": "Sapatos"
+      "text": "Sapatos",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
     },
     {
-      "text": "Bota"
+      "text": "Bota",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
     },
     {
-      "text": "Sandalyas"
+      "text": "Sandalyas",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
     },
     {
-      "text": "Kuko"
+      "text": "Kuko",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
     },
     {
-      "text": "Tsinelas"
+      "text": "Tsinelas",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
     },
     {
-      "text": "Galoshes"
+      "text": "Galoshes",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
     },
     {
-      "text": "Pantapak"
+      "text": "Pantapak",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
     },
     {
-      "text": "Foot-Mittens"
+      "text": "Foot-Mittens",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
     },
     {
-      "text": "Clompers"
+      "text": "Clompers",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
     },
     {
-      "text": "Kalasag"
+      "text": "Kalasag",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
     },
     {
-      "text": "Buckler"
+      "text": "Buckler",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
     },
     {
-      "text": "Aegis"
+      "text": "Aegis",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
     },
     {
-      "text": "Bulwark"
+      "text": "Bulwark",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
     },
     {
-      "text": "Targe"
+      "text": "Targe",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
     },
     {
-      "text": "Pavise"
+      "text": "Pavise",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
     },
     {
-      "text": "Tagatanggol"
+      "text": "Tagatanggol",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
     },
     {
-      "text": "Pantigil"
+      "text": "Pantigil",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
     }
   ]
 }

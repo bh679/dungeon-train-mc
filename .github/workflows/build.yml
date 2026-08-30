@@ -120,15 +120,18 @@ jobs:
       - name: Every locale carries every English key
         run: python3 scripts/localization/check-lang-parity.py
 
-      # Values only: placeholders, empty strings, trigger-book title length, note offsets. The
-      # full structural suite is not run here because it is failing on main for eight locales
-      # over unrelated AIN-overlay debt (vi_vn has been missing `item_types` for months), and a
-      # gate that is already red teaches everyone to ignore it. Key sets are covered above.
-      - name: Translated values are safe to render
+      # The full structural suite: key sets, file sets, and shape against the es_es template,
+      # plus the value checks (placeholders, empty strings, trigger-book title length, note
+      # offsets). It ran --values-only until the AIN overlay debt it was tripping over was paid
+      # off — vi_vn and fil_ph missing `item_types`, three locales carrying a stray segment
+      # `label`, and zh_cn's synonym pool written against a different layout. Those are fixed,
+      # so this asks the whole question again. If it ever goes red, fix the locale rather than
+      # narrowing the gate: a check that is permanently failing is a check nobody reads.
+      - name: Locale trees are structurally intact
         run: |
           locales=$(ls src/main/resources/assets/dungeontrain/lang \
             | sed 's/\.json$//' | grep -v '^en_us$' | tr '\n' ' ')
-          python3 scripts/localization/validate-locale.py --values-only $locales
+          python3 scripts/localization/validate-locale.py $locales
 
       - name: Per-line translation provenance aligned with lang files (all namespaces)
         run: python3 scripts/localization/check-provenance.py

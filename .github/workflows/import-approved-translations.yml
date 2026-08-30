@@ -88,12 +88,11 @@ jobs:
       # (a token-authored PR raises no workflow events), so the same guards run HERE, before the
       # PR exists. A broken import must never reach review looking green.
       #
-      # validate-locale runs --values-only: this job edits translated VALUES and never key sets,
-      # file sets or shape, so those are the only failures it can cause. Asking for the full
-      # structural suite meant unrelated debt elsewhere in a locale's tree blocked importing that
-      # locale's text — vi_vn's AIN overlay has been missing `item_types` for months, which would
-      # have failed this step for a Vietnamese translation that had nothing to do with it.
-      # check-lang-parity.py in build.yml is what guards the key sets, on every PR.
+      # validate-locale runs in full. It was narrowed to --values-only while the AIN overlays
+      # carried structural debt this job could not have caused — vi_vn missing `item_types` would
+      # have refused a Vietnamese translation that had nothing to do with it. That debt is paid
+      # off, so the job asks the whole question. If a locale ever fails here on something this
+      # job did not touch, that is the signal to go and fix the locale.
       - name: Provenance + locale checks
         if: steps.changed.outputs.yes == 'true'
         run: |
@@ -102,7 +101,7 @@ jobs:
           locales=$(git status --porcelain -- src/main/resources/assets/dungeontrain/lang \
             | sed -E 's#.*/([a-z_]+)\.json#\1#' | sort -u | tr '\n' ' ')
           if [ -n "$locales" ]; then
-            python3 scripts/localization/validate-locale.py --values-only $locales
+            python3 scripts/localization/validate-locale.py $locales
           fi
 
       # The static template plus, when the import registered anyone, the names it added — a
