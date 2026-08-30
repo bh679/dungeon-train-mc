@@ -824,10 +824,14 @@ public final class PortalCarriageBuilder {
      * roomier of the two, and holding an in-band room down to the basement's budget would shorten it
      * for no reason. See {@link PortalTwinSpace}.</p>
      *
+     * <p>Public because the editor's {@code /dungeontrain portal test} stands a structure up outside
+     * the pair machinery entirely, and a test that showed a room taller than play would ever stamp
+     * would be testing something no player can reach. Same call, same held size.</p>
+     *
      * <p>Held on the way onto the record, not at stamp time, so {@code eraseTwin} reads back the
      * same box that was written.</p>
      */
-    private static Vec3i heldInRegion(PortalTwinRegion region, Vec3i size) {
+    public static Vec3i heldInRegion(PortalTwinRegion region, Vec3i size) {
         int ceiling = PortalTwinLanes.maxStructureHeight(region.base(), region.ceiling());
         return size.getY() <= ceiling
             ? size
@@ -1208,9 +1212,12 @@ public final class PortalCarriageBuilder {
         int holeYHi = floorY + dims.height() - 1;
 
         List<BoundingBox> boxes = new ArrayList<>(4);
-        // Under and over the corridor, full width, so the corners belong to them.
+        // Under and over the corridor, full width, so the corners belong to them. The row over it
+        // exists only where the world does — a structure standing outside the build range has its
+        // whole cap clamped away, and asking for it as a box would invert the bounds and throw. Same
+        // guard, and the same reasoning, as corridorLockBoxes.
         if (belowY < floorY) boxes.add(new BoundingBox(planeX, belowY, zLo, planeX, floorY - 1, zHi));
-        boxes.add(new BoundingBox(planeX, holeYHi + 1, zLo, planeX, aboveY, zHi));
+        if (holeYHi < aboveY) boxes.add(new BoundingBox(planeX, holeYHi + 1, zLo, planeX, aboveY, zHi));
         // Either side of it, only as tall as the corridor.
         boxes.add(new BoundingBox(planeX, floorY, zLo, planeX, holeYHi, holeZLo - 1));
         boxes.add(new BoundingBox(planeX, floorY, holeZHi + 1, planeX, holeYHi, zHi));
@@ -1256,6 +1263,12 @@ public final class PortalCarriageBuilder {
             : corridorOrigin.getX() + length - 1 + PLUG_DEPTH;
 
         List<BoundingBox> boxes = new ArrayList<>(4);
+        // Nothing of this corridor is inside the world, so there is nothing to skin. Only reachable
+        // from a structure placed outside the build range, which the lane maths now prevents
+        // (PortalStructure#corridorLift) — this is what keeps such a placement a missing shell
+        // rather than an inverted BoundingBox, which throws out of the command that asked for it.
+        if (aboveY < belowY) return boxes;
+
         // Sides, the full height of the shell so their corners meet the roof and floor planes.
         boxes.add(new BoundingBox(xLo, belowY, zLo, xHi, aboveY, zLo));
         boxes.add(new BoundingBox(xLo, belowY, zHi, xHi, aboveY, zHi));
@@ -1461,7 +1474,11 @@ public final class PortalCarriageBuilder {
             structureTopY = Math.max(structureTopY, corridors.maxY() + 1);
         }
         int minY = lowestWritableY(level.getMinBuildHeight(), structureFloorY);
-        int maxY = structureTopY;
+        // Never below the clamp: a structure standing entirely outside the build range has a top
+        // under the floor the clamp holds, and a box is asked for here by callers that only want to
+        // sweep it. Degenerate is a box nothing is in; inverted is an exception thrown at whoever
+        // asked. Same guard as corridorLockBoxes.
+        int maxY = Math.max(minY, structureTopY);
 
         return new BoundingBox(minX, minY, minZ, maxX, maxY, maxZ);
     }
