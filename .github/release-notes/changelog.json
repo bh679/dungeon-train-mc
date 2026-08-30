@@ -10432,16 +10432,14 @@
       "released_at": null
     },
     {
-      "id": "book-placeholder-guard",
+      "id": "cheat-list-visual-mobs-edit",
       "version": "0.754.0",
-      "type": "feat",
-      "title": "Translation editor catches a book losing its numbers",
-      "summary": "When you translate a story book in the in-game translation editor, the editor now tells you if your text has lost one of the numbers the game fills in \u2014 the death count in an epitaph, the carriage you fell in. Those are written as {deaths} or {deaths_nth} in the English, and until now nothing noticed when one went missing on the way through: the line would ship with the number simply gone. Only bracketed figures are checked, so a percent sign or a stray brace in a story is still just prose.",
+      "type": "chore",
+      "title": "More editors count as cheat mods",
+      "summary": "Installing Visual Mobs Edit or In-game NBTEdit Reborn now puts the run into Free Play. One rewrites mob health, damage, immunities and spawn rules from a menu \u2014 the difficulty curve a run is measured against \u2014 and the other rewrites the NBT of whatever you are holding or looking at.",
       "highlights": [
-        "The editor names the missing figure while you are still typing",
-        "Approved translations that lost a figure are held back instead of shipped"
+        "Visual Mobs Edit and In-game NBTEdit Reborn added to the cheat-mod list"
       ],
-      "pr": 1235,
       "date": "2026-08-30",
       "released": false,
       "released_in": null,
