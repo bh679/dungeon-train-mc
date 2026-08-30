@@ -10167,6 +10167,21 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "join-first-frame-themed",
+      "version": "0.739.0",
+      "type": "feat",
+      "title": "The loading screen starts themed",
+      "summary": "Opening a world no longer flashes the main-menu panorama before the Dungeon Train loading screen appears \u2014 the themed screen is there from the first frame of the load.",
+      "highlights": [
+        "The world-open screens are themed, so the join starts on the train panel instead of vanilla chrome"
+      ],
+      "pr": 1209,
+      "date": "2026-08-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
