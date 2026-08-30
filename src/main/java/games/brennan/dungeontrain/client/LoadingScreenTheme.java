@@ -52,7 +52,38 @@ public final class LoadingScreenTheme {
      */
     private static final int TEXT_ALPHA_FLOOR = 4;
 
+    /** Width the story/status line wraps at, shared by every screen that shows one. */
+    public static final int TIP_MAX_WIDTH = 260;
+
     private LoadingScreenTheme() {}
+
+    /**
+     * The whole loading panel — background, title, filling train, percentage and story line — laid
+     * out identically on every screen of the join sequence ({@link WorldOpenLoadingScreen},
+     * {@code ProgressScreenThemeMixin}, {@code LevelLoadingScreenThemeMixin}), which is the point:
+     * the sequence has to read as one screen that never moves, not four that happen to agree.
+     *
+     * @param alpha 0..1 opacity for the panel as a whole, driven by {@link JoinIntroFade} while
+     *              the panel is rising over the menu panorama; 1 once it owns the frame.
+     */
+    public static void drawPanel(GuiGraphics g, Font font, int width, int height,
+                                 double progress, long animNanos, float alpha) {
+        float a = Mth.clamp(alpha, 0.0f, 1.0f);
+        if (a <= 0.0f) return;
+
+        fillBackground(g, width, height, a);
+
+        int cx = width / 2;
+        int cy = height / 2;
+        int railW = Math.min(MAX_RAIL_W, width - 80);
+        int railLeft = cx - railW / 2;
+        int railY = cy + 8;
+
+        drawTitle(g, font, Component.translatable("gui.dungeontrain.loading.title"), cx, cy - 30, a);
+        drawFillingTrain(g, font, railLeft, railW, railY, progress, animNanos, a);
+        drawPercent(g, font, progress, cx, cy + 34, a);
+        drawTip(g, font, LoadingStories.currentLine(), cx, cy + 52, TIP_MAX_WIDTH, a);
+    }
 
     /** Opaque gradient fill replacing the vanilla world blur/grid — never a flash of vanilla UI. */
     public static void fillBackground(GuiGraphics g, int width, int height) {
@@ -105,8 +136,18 @@ public final class LoadingScreenTheme {
     }
 
     public static void drawPercent(GuiGraphics g, Font font, double progress, int cx, int cy) {
+        drawPercent(g, font, progress, cx, cy, 1.0f);
+    }
+
+    /**
+     * The percentage at {@code alpha} (0..1) of its own opacity, so it fades in with the rest of
+     * the panel. Dropped below {@link #TEXT_ALPHA_FLOOR}, per the {@code Font.adjustColor} trap.
+     */
+    public static void drawPercent(GuiGraphics g, Font font, double progress, int cx, int cy, float alpha) {
+        int color = scaleAlpha(PCT, alpha);
+        if (!textVisible(color)) return;
         String pct = (int) Math.round(Mth.clamp(progress, 0.0, 1.0) * 100.0) + "%";
-        g.drawCenteredString(font, pct, cx, cy, PCT);
+        g.drawCenteredString(font, pct, cx, cy, color);
     }
 
     /**
@@ -115,10 +156,20 @@ public final class LoadingScreenTheme {
      * {@code BootstrapProgress} phase label.
      */
     public static void drawTip(GuiGraphics g, Font font, Component tip, int cx, int y, int maxWidth) {
+        drawTip(g, font, tip, cx, y, maxWidth, 1.0f);
+    }
+
+    /**
+     * The same line at {@code alpha} (0..1) of its own opacity. Dropped below
+     * {@link #TEXT_ALPHA_FLOOR}, per the {@code Font.adjustColor} trap.
+     */
+    public static void drawTip(GuiGraphics g, Font font, Component tip, int cx, int y, int maxWidth, float alpha) {
+        int color = scaleAlpha(TIP_TEXT, alpha);
+        if (!textVisible(color)) return;
         List<FormattedText> lines = font.getSplitter().splitLines(tip, maxWidth, tip.getStyle());
         int lineY = y;
         for (FormattedText line : lines) {
-            g.drawCenteredString(font, Component.literal(line.getString()), cx, lineY, TIP_TEXT);
+            g.drawCenteredString(font, Component.literal(line.getString()), cx, lineY, color);
             lineY += font.lineHeight + 2;
         }
     }

@@ -26,6 +26,10 @@ class TranslationCreditsMergeTest {
         return all.stream().filter((c) -> c.name().equals(name)).findFirst().orElse(null);
     }
 
+    private static List<String> names(List<TranslationContributor> all) {
+        return all.stream().map(TranslationContributor::name).toList();
+    }
+
     @Test
     @DisplayName("somebody only the relay knows about is added, with a percentage")
     void relayOnlyPersonIsAdded() {
@@ -63,12 +67,59 @@ class TranslationCreditsMergeTest {
     }
 
     @Test
-    @DisplayName("the baked order is kept; relay-only people join the end")
-    void bakedOrderIsStable() {
+    @DisplayName("a relay-only translator who did the most work ranks first, above the baked list")
+    void biggestContributionRanksFirst() {
+        // The shape of the real data: ru_ru reached the page entirely through the relay, and is
+        // larger than anything in the jar. Ranking the merged list as a whole is the point --
+        // appending relay-only people put the mod's biggest translator last.
         List<TranslationContributor> out = TranslationCreditsMerge.merge(
-            List.of(baked("Ada", "de_de", 1, 10), baked("Bo", "fr_fr", 1, 10)),
-            Map.of("pl_pl", List.of(new Credit("Cy", 5))), (l) -> 10);
-        assertEquals(List.of("Ada", "Bo", "Cy"), out.stream().map(TranslationContributor::name).toList());
+            List.of(baked("Ada", "de_de", 900, 1200), baked("Bo", "fr_fr", 40, 1200)),
+            Map.of("ru_ru", List.of(new Credit("Cy", 1683))), (l) -> 1854);
+        assertEquals(List.of("Cy", "Ada", "Bo"), names(out));
+    }
+
+    @Test
+    @DisplayName("a translator is ranked on their total across languages, not their largest share")
+    void rankIsTheSumNotTheStrongestShare() {
+        // Ada holds the bigger single share (75% vs 60%), Bo the bigger body of work (1200 keys
+        // over two languages vs 900). Bo ranks first.
+        List<TranslationContributor> out = TranslationCreditsMerge.merge(
+            List.of(baked("Ada", "de_de", 900, 1200), baked("Bo", "fr_fr", 600, 1000)),
+            Map.of("pl_pl", List.of(new Credit("Bo", 600))), (l) -> 1000);
+        assertEquals(List.of("Bo", "Ada"), names(out));
+        assertEquals(2, find(out, "Bo").languages().size());
+    }
+
+    @Test
+    @DisplayName("equal totals fall back to name order, so the page never reshuffles itself")
+    void equalTotalsAreOrderedByName() {
+        List<TranslationContributor> out = TranslationCreditsMerge.merge(
+            List.of(baked("Zed", "de_de", 5, 10), baked("Ada", "fr_fr", 5, 10)),
+            Map.of("pl_pl", List.of(new Credit("Mo", 5))), (l) -> 10);
+        assertEquals(List.of("Ada", "Mo", "Zed"), names(out));
+    }
+
+    @Test
+    @DisplayName("a credit with no known denominator is still ranked, on its key count")
+    void unknownTotalStillRanks() {
+        // hu_hu has no baked totals, so the screen prints no percentage for Ada -- but she still
+        // did more work than Bo, and being unmeasurable must not cost her the position.
+        List<TranslationContributor> out = TranslationCreditsMerge.merge(
+            List.of(baked("Bo", "fr_fr", 3, 10)),
+            Map.of("hu_hu", List.of(new Credit("Ada", 7))), (l) -> "hu_hu".equals(l) ? 0 : 10);
+        assertEquals(List.of("Ada", "Bo"), names(out));
+        assertEquals(0, find(out, "Ada").languages().get(0).total());
+    }
+
+    @Test
+    @DisplayName("a merged person's languages come back strongest-share-first")
+    void languagesAreOrderedByShare() {
+        // withShare appends the relay language to the end; de_de (75%) must still lead pl_pl (5%).
+        List<TranslationContributor> out = TranslationCreditsMerge.merge(
+            List.of(baked("Ada", "de_de", 900, 1200)),
+            Map.of("pl_pl", List.of(new Credit("Ada", 50))), (l) -> 1000);
+        assertEquals(List.of("de_de", "pl_pl"), find(out, "Ada").languages().stream()
+            .map(TranslationContributor.LanguageShare::locale).toList());
     }
 
     @Test

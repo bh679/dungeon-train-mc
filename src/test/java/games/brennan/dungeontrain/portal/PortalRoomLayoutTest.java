@@ -440,6 +440,39 @@ class PortalRoomLayoutTest {
      * Both corridor cross-sections lie inside the room box — the property {@code sealCorridorMouth}
      * relies on, and the one thing two independently-placed doors could break.
      */
+    @Test
+    @DisplayName("A lane lifted by the door-height offset stands the ROOM's floor on the lane floor")
+    void laneLiftedByOffset_standsTheRoomOnTheLane() {
+        // The rule both stamp sites use — PortalTestCommand.originFor and the live twin placement in
+        // PortalCarriageEvents.ensureStructure. They stamp the corridor LANE, a room spends its
+        // door-height offset by dropping its own floor below that line, and a lane's floor is only a
+        // couple of blocks off the bottom of the world: a room that hung below it hung out of the
+        // world, where setBlock is a silent no-op and the author's lowest rows were never written.
+        // Lifting the lane by the same clamped offset is what makes the box the one a lane is sized
+        // for, whatever the author asked for.
+        PortalCarriageLayout layout =
+            PortalCarriageBuilder.layoutFor(DEFAULT_DIMS, PortalCorridorKind.DEFAULT);
+        int laneFloor = -46;
+
+        for (int height : new int[]{PortalRoomLayout.minHeight(DEFAULT_DIMS), 12, 40, 70,
+                                    PortalRoomLayout.MAX_HEIGHT}) {
+            // Past the legal maximum as well as inside it: an author's raw number is unclamped, and
+            // the lift has to agree with roomOrigin about how far it may actually run.
+            for (int authored : new int[]{0, 1, 4, 47, height, height + 25}) {
+                int lift = PortalRoomLayout.clampDoorHeightOffset(DEFAULT_DIMS, height, authored);
+                BlockPos entryOrigin = new BlockPos(0, laneFloor + lift, 0);
+                BlockPos room = PortalRoomLayout.roomOrigin(
+                    entryOrigin, DEFAULT_DIMS, layout, PortalRoomLayout.minWidth(DEFAULT_DIMS),
+                    height, 0, authored);
+
+                assertEquals(laneFloor, room.getY(),
+                    "h=" + height + " offset=" + authored + ": the room's floor must land on the lane");
+                assertTrue(entryOrigin.getY() + DEFAULT_DIMS.height() <= laneFloor + height,
+                    "h=" + height + " offset=" + authored + ": the corridor must stay under the lane's ceiling");
+            }
+        }
+    }
+
     private static void assertCorridorsInsideRoom(PortalCarriageLayout layout, BlockPos entryOrigin,
                                                   int width, int height, int entryZ, int entryY,
                                                   int exitZ, int exitY) {

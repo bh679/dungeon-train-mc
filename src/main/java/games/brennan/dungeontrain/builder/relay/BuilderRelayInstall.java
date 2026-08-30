@@ -65,8 +65,8 @@ public final class BuilderRelayInstall {
      * a template of that kind under that name, and overwriting it is the one outcome here that can
      * destroy work — the local copy may be newer than the relay's, or a different build that merely
      * shares a name. The player is told instead. The case the download exists for (a world that has
-     * never saved the build) never reaches it, a name the jar merely ships included — see
-     * {@link #occupied}.</p>
+     * never saved the build) never reaches it, and a name the jar merely ships stops the player's own
+     * build only when the build is somebody else's — see {@link #taken}.</p>
      */
     public enum Outcome { INSTALLED, ALREADY_HERE, NAME_TAKEN, UNSUPPORTED, FAILED }
 
@@ -100,22 +100,24 @@ public final class BuilderRelayInstall {
      *                save links it; ignored when empty or unknown to this install
      */
     public static Outcome install(BuilderPhotoPaths.Kind kind, String id, String subKind,
-                                  String stageId, StructureTemplate template) {
-        return install(kind, id, subKind, stageId, template, Resolution.AS_IS, "");
+                                  String stageId, StructureTemplate template, boolean mine) {
+        return install(kind, id, subKind, stageId, template, Resolution.AS_IS, "", mine);
     }
 
     /**
-     * As {@link #install(BuilderPhotoPaths.Kind, String, String, String, StructureTemplate)}, with the
-     * player's answer to a name collision.
+     * As {@link #install(BuilderPhotoPaths.Kind, String, String, String, StructureTemplate, boolean)},
+     * with the player's answer to a name collision.
      *
      * @param resolution what to do about a name already in use here
      * @param newName    the name the player chose — the local template's new name for
      *                   {@link Resolution#RENAME_EXISTING}, the downloaded build's for
      *                   {@link Resolution#LOAD_AS_NEW}, and ignored otherwise
+     * @param mine       whether the build being installed is the downloading player's own — see
+     *                   {@link #taken}, the one thing it decides
      */
     public static Outcome install(BuilderPhotoPaths.Kind kind, String id, String subKind,
                                   String stageId, StructureTemplate template,
-                                  Resolution resolution, String newName) {
+                                  Resolution resolution, String newName, boolean mine) {
         if (kind == null || id == null || id.isEmpty() || template == null) return Outcome.UNSUPPORTED;
         Resolution how = resolution == null ? Resolution.AS_IS : resolution;
         String chosen = newName == null ? "" : newName.trim();
@@ -124,18 +126,18 @@ public final class BuilderRelayInstall {
                 // The downloaded build takes the new name outright. Nothing local moves, so the only
                 // question is whether the name the player picked is free.
                 if (chosen.isEmpty()) return Outcome.UNSUPPORTED;
-                if (occupied(kind, chosen, subKind)) return Outcome.NAME_TAKEN;
+                if (taken(kind, chosen, subKind, mine)) return Outcome.NAME_TAKEN;
                 return write(kind, chosen, subKind, stageId, template);
             }
             if (how == Resolution.RENAME_EXISTING) {
                 if (chosen.isEmpty()) return Outcome.UNSUPPORTED;
-                if (occupied(kind, chosen, subKind)) return Outcome.NAME_TAKEN;
+                if (taken(kind, chosen, subKind, mine)) return Outcome.NAME_TAKEN;
                 // Move the local one aside FIRST. If that fails the download is abandoned, which is
                 // the safe direction: the player still has exactly what they had.
                 if (!renameLocal(kind, id, subKind, chosen)) return Outcome.FAILED;
                 return write(kind, id, subKind, stageId, template);
             }
-            if (how == Resolution.AS_IS && occupied(kind, id, subKind)) return Outcome.ALREADY_HERE;
+            if (how == Resolution.AS_IS && taken(kind, id, subKind, mine)) return Outcome.ALREADY_HERE;
             // REPLACE falls through with no check at all — overwriting is what was asked for.
             return write(kind, id, subKind, stageId, template);
         } catch (Throwable t) {
@@ -163,6 +165,21 @@ public final class BuilderRelayInstall {
     }
 
     /**
+     * Whether {@code id} is a name this install will not write over — the collision question, whole.
+     *
+     * <p>Two tiers and one distinction. {@link #occupied} — saved work — always counts: overwriting
+     * it is the one outcome here that can destroy something. The <b>bundled</b> tier counts only for
+     * somebody else's build, and that asymmetry is the point. Shadowing a built-in by pressing a
+     * button on a build you found through a creator search is the surprise the check was written to
+     * prevent; doing it to fetch <em>your own</em> build back is the request itself, and refusing it
+     * made every one of the 161 shipped contents sub-variants — and any build sharing a shipped
+     * part, rail or room name — permanently un-loadable by its own author.</p>
+     */
+    private static boolean taken(BuilderPhotoPaths.Kind kind, String id, String subKind, boolean mine) {
+        return occupied(kind, id, subKind) || (!mine && bundled(kind, id, subKind));
+    }
+
+    /**
      * Whether this install has <b>saved work</b> of {@code kind} under {@code id} — a file in its own
      * library, and nothing else.
      *
@@ -176,8 +193,8 @@ public final class BuilderRelayInstall {
      *
      * <p>Refusing over a saved copy stays: that one may be newer than the relay's, or a different
      * build that merely shares a name, and overwriting it is the one outcome here that can lose
-     * something. This is a profile screen — the relay only ever hands a player their own builds —
-     * so it is their own work on both sides of the question.</p>
+     * something. Whether the bundled tier joins it depends on whose build is landing — see
+     * {@link #taken}, which is what callers ask.</p>
      */
     public static boolean occupied(BuilderPhotoPaths.Kind kind, String id, String subKind) {
         if (kind == null || id == null || id.isEmpty()) return false;

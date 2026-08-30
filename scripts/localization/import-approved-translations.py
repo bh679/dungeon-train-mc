@@ -34,6 +34,10 @@ Three things it deliberately will NOT do:
 * **Invent a line to write.** An approved unit whose key the locale file does not carry has
   nowhere to land. That is not always the same failure, though, and the difference decides
   whether the run may continue — see ``report`` and ``classify_absent_key``.
+* **Write a value that will not render.** ``Component.translatable`` runs Minecraft's format
+  parser, so an approved translation that drops a ``%s``, invents a ``%2$s``, or contains a bare
+  ``%`` is broken text however well meant. It is deferred with the reason, not written — see
+  ``lang_format.mismatch``.
 * **Reformat anything.** Lang files carry blank-line grouping and zh_cn is CRLF; 36 books group
   their variants the same way. Every write is a text-level edit of one value (see
   ``provenance_io.set_lang_value`` / ``set_book_field_text``), so the diff is the translation and
@@ -49,6 +53,7 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
+import lang_format
 import plural_forms
 import provenance_io as pio
 
@@ -319,6 +324,13 @@ def import_lang(rows: list[dict], ns_dirs: dict, dry_run: bool, problems: list[s
         source = row.get("source") or ""
         if source and key in english and english[key] != source:
             stale.append(f"{locale} [{name}] {key}: en_us changed since this was translated")
+            continue
+        # Checked BEFORE the already-matches branch on purpose: if a malformed value is what the
+        # file already holds, the shipped file is malformed too, and that is worth being told.
+        broken = lang_format.mismatch(value, english.get(key, "")) if key in english else None
+        if broken:
+            deferred.append(f"{locale} [{name}] {key}: {broken} — the text needs fixing at the "
+                            "relay before it can be imported")
             continue
         group = (name, locale, translator_of(row))
         if lang[key] == value:

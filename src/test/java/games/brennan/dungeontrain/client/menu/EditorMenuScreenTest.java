@@ -448,8 +448,13 @@ final class EditorMenuScreenTest {
         List<String> carriages = labelsIn(tabsFor(PlotCategory.CARRIAGES, "brass_dining").get(EditorMenuTab.NAV));
         assertEquals(List.of("Enter", "Exit"), carriages);
 
-        List<String> portals = labelsIn(tabsFor(PlotCategory.PORTALS, "crypt_hall").get(EditorMenuTab.NAV));
-        assertEquals(List.of("Enter", "Test the Carriage", "Exit"), portals);
+        List<CommandMenuEntry> portalNav = tabsFor(PlotCategory.PORTALS, "crypt_hall").get(EditorMenuTab.NAV);
+        assertEquals(List.of("Enter", "Test the Carriage", "Exit"), labelsIn(portalNav));
+
+        // Test drills into the save prompt rather than dispatching the command — a dirty room has
+        // to be offered a save before it is stamped from its last one.
+        assertInstanceOf(PortalTestSaveCheckScreen.class,
+            assertInstanceOf(CommandMenuEntry.DrillIn.class, portalNav.get(1)).target());
     }
 
     @Test
