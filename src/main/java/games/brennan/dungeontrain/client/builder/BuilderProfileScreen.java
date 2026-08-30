@@ -384,7 +384,8 @@ public final class BuilderProfileScreen extends Screen {
                         photoKindOf(entry), entry.buildName(), partKindOf(entry), trackKindOf(entry),
                         labelFor(entry),
                         x, y, grid.cellWidth(), grid.cellHeight(), hovered || i == selected, true,
-                        spin.advance(String.valueOf(entry.relayId()), hovered, seconds));
+                        spin.advance(String.valueOf(entry.relayId()), hovered, seconds),
+                        borderColourOf(entry));
             }
             g.disableScissor();
         }
@@ -417,6 +418,19 @@ public final class BuilderProfileScreen extends Screen {
                     : "gui.dungeontrain.builder.profile.in_profile";
         }
         return Component.literal(name + " · ").append(Component.translatable(key));
+    }
+
+    /**
+     * The colour to ring this tile with: where the build stands with the reviewer, said in a way that
+     * survives not reading the caption.
+     *
+     * <p>Only a submittable kind gets one. A portal room or a shell part has no submission state to be
+     * in — colouring it would invent a status for something that was never asked about.</p>
+     */
+    private static int borderColourOf(BuilderProfilePacket.Entry entry) {
+        return BuilderRelayKinds.canJoinTheTrain(entry.kind())
+                ? BuilderReviewState.borderColourFor(entry.review())
+                : BuilderReviewState.BORDER_NONE;
     }
 
     /** Which local store to draw this build's tile from — the mirror of {@link BuilderRelayKinds#idOf}. */

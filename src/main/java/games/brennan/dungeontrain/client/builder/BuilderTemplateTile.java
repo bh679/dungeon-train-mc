@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.builder.BuilderPhotoPaths;
 import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.train.CarriagePartKind;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 import net.neoforged.api.distmarker.Dist;
@@ -57,7 +58,32 @@ final class BuilderTemplateTile {
      */
     private static final String MORE_GLYPH = "»";
 
+    /** Breathing room either side of a caption, so a fitted one doesn't touch its own border. */
+    private static final int LABEL_PADDING = 6;
+
+    private static final String ELLIPSIS = "…";
+
     private BuilderTemplateTile() {}
+
+    /**
+     * A caption cut to fit its cell.
+     *
+     * <p>Centred text draws from the middle outwards, so an over-long one does not simply overflow its
+     * tile — it grows in BOTH directions and lands on top of the captions either side of it, which is
+     * how three names end up reading as one run-on string. Nothing clipped it before because every
+     * caption was a short template name; a caption that also carries a state is routinely wider than
+     * the cell.</p>
+     *
+     * <p>Cut rather than scissored: a scissor would slice a glyph in half at the tile edge and leave
+     * no sign that anything was missing, where an ellipsis says so.</p>
+     */
+    private static Component fit(Font font, Component label, int maxWidth) {
+        String text = label.getString();
+        if (maxWidth <= 0 || font.width(text) <= maxWidth) return label;
+        int room = maxWidth - font.width(ELLIPSIS);
+        if (room <= 0) return Component.literal(ELLIPSIS);
+        return Component.literal(font.plainSubstrByWidth(text, room) + ELLIPSIS);
+    }
 
     /**
      * Draw one cell.
@@ -76,6 +102,24 @@ final class BuilderTemplateTile {
                        TrackKind trackKind, Component label,
                        int x, int y, int width, int height, boolean hovered, boolean openable,
                        float yaw) {
+        render(g, mode, modeArtAvailable, photoKind, id, partKind, trackKind, label,
+                x, y, width, height, hovered, openable, yaw, 0);
+    }
+
+    /**
+     * As above, ringed in {@code statusColour}.
+     *
+     * <p>Only My Builds passes one: everywhere else a tile is a thing you might open, and its border
+     * says one thing — whether you are pointing at it. There a tile also has a STATE, and the state is
+     * what the screen is for, so it gets a two-pixel band of its own that survives being selected
+     * (the hover ring takes the outer pixel, the state keeps the inner one). {@code 0} means no state,
+     * and draws exactly what every other grid draws.</p>
+     */
+    static void render(GuiGraphics g, BuilderMode mode, boolean modeArtAvailable,
+                       BuilderPhotoPaths.Kind photoKind, String id, CarriagePartKind partKind,
+                       TrackKind trackKind, Component label,
+                       int x, int y, int width, int height, boolean hovered, boolean openable,
+                       float yaw, int statusColour) {
         BuilderTileMesh mesh = BuilderTileMeshCache.meshFor(photoKind, id, partKind, trackKind);
 
         if (mesh != null) {
@@ -97,12 +141,20 @@ final class BuilderTemplateTile {
             // Dim until hovered, so the focused option pops out of the wall.
             g.fill(x, y, x + width, y + height, IDLE_DIM);
         }
-        g.renderOutline(x, y, width, height, highlight ? BORDER_HOVER : BORDER_IDLE);
+        if (statusColour == 0) {
+            g.renderOutline(x, y, width, height, highlight ? BORDER_HOVER : BORDER_IDLE);
+        } else {
+            // Two rings. The outer one is the ordinary hover border, so pointing at a tile reads the
+            // same here as anywhere; the inner one is the state, and it stays put underneath — a
+            // selected build must not lose the only mark saying where it stands.
+            g.renderOutline(x, y, width, height, highlight ? BORDER_HOVER : statusColour);
+            g.renderOutline(x + 1, y + 1, width - 2, height - 2, statusColour);
+        }
 
         int stripTop = y + height - LABEL_STRIP_H;
         g.fill(x + 1, stripTop, x + width - 1, y + height - 1, LABEL_STRIP_BG);
         Minecraft mc = Minecraft.getInstance();
-        g.drawCenteredString(mc.font, label, x + width / 2,
+        g.drawCenteredString(mc.font, fit(mc.font, label, width - LABEL_PADDING), x + width / 2,
                 stripTop + (LABEL_STRIP_H - mc.font.lineHeight) / 2,
                 openable ? LABEL_COLOUR : LABEL_INACTIVE);
     }

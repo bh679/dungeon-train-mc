@@ -49,6 +49,32 @@ public final class BuilderReviewState {
         };
     }
 
+    /** Waiting on a person: the blue of Minecraft's own §b, which reads as "in progress", not "wrong". */
+    public static final int BORDER_SUBMITTED = 0xFF55AAFF;
+    /** In the game — §a. */
+    public static final int BORDER_ACCEPTED = 0xFF55FF55;
+    /** Turned down — §c. */
+    public static final int BORDER_DECLINED = 0xFFFF5555;
+    /** No colour: the tile keeps the ordinary border every other builder grid draws. */
+    public static final int BORDER_NONE = 0;
+
+    /**
+     * The colour to ring a build's tile with, so "which of mine are in, out, or waiting" is answerable
+     * without reading a single caption — which is the question My Builds exists to answer.
+     *
+     * <p>A never-submitted build gets {@link #BORDER_NONE} rather than a fourth colour. Most builds
+     * are in that state most of the time, and colouring them too would turn the wall into noise and
+     * leave the three that mean something with nothing to stand out against.</p>
+     */
+    public static int borderColourFor(String review) {
+        return switch (of(review)) {
+            case SUBMITTED -> BORDER_SUBMITTED;
+            case ACCEPTED -> BORDER_ACCEPTED;
+            case DECLINED -> BORDER_DECLINED;
+            default -> BORDER_NONE;
+        };
+    }
+
     /**
      * The line under the grid explaining a state that needs more than a word — or null when it
      * doesn't. Waiting and declined both leave a player looking at a build that never appears in

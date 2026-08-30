@@ -46,6 +46,28 @@ final class BuilderReviewStateTest {
     }
 
     @Test
+    @DisplayName("three states ring their tile; never-submitted is left alone")
+    void borderColours() {
+        assertEquals(BuilderReviewState.BORDER_SUBMITTED,
+                BuilderReviewState.borderColourFor(BuilderReviewState.SUBMITTED));
+        assertEquals(BuilderReviewState.BORDER_ACCEPTED,
+                BuilderReviewState.borderColourFor(BuilderReviewState.ACCEPTED));
+        assertEquals(BuilderReviewState.BORDER_DECLINED,
+                BuilderReviewState.borderColourFor(BuilderReviewState.DECLINED));
+        // Most builds are in this state most of the time; a fourth colour would be noise.
+        assertEquals(BuilderReviewState.BORDER_NONE,
+                BuilderReviewState.borderColourFor(BuilderReviewState.NONE));
+        assertEquals(BuilderReviewState.BORDER_NONE, BuilderReviewState.borderColourFor("nonsense"));
+
+        // Opaque, or the tile art shows through and the state reads as a different colour on every
+        // build behind it.
+        for (int colour : new int[]{BuilderReviewState.BORDER_SUBMITTED,
+                BuilderReviewState.BORDER_ACCEPTED, BuilderReviewState.BORDER_DECLINED}) {
+            assertEquals(0xFF, (colour >>> 24) & 0xFF, "alpha must be full");
+        }
+    }
+
+    @Test
     @DisplayName("waiting and declined explain themselves under the grid; accepted needs no line")
     void noteKeys() {
         assertNotNull(BuilderReviewState.noteKeyFor(BuilderReviewState.SUBMITTED));
