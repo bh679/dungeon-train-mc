@@ -156,6 +156,7 @@
   "gui.dungeontrain.content_mode.adult": {"author": "Opus 5 (Claude)", "reviewer": "老本願"},
   "gui.dungeontrain.content_mode.kid": {"author": "Opus 5 (Claude)", "reviewer": "老本願"},
   "gui.dungeontrain.cinematic.loading": {"author": "老本願", "reviewer": "老本願"},
+  "gui.dungeontrain.cinematic.loading.ready": {"author": "Opus 5 (Claude)", "reviewer": ""},
   "gui.dungeontrain.cinematic.press_space_to_start": {"author": "老本願", "reviewer": "老本願"},
   "gui.dungeontrain.cinematic.press_space_to_skip": {"author": "老本願", "reviewer": "老本願"},
   "gui.dungeontrain.loading.title": {"author": "老本願", "reviewer": "老本願"},

@@ -156,6 +156,7 @@
   "gui.dungeontrain.content_mode.adult": "ผู้ใหญ่",
   "gui.dungeontrain.content_mode.kid": "เด็ก",
   "gui.dungeontrain.cinematic.loading": "กำลังเตรียมการเดินทางของคุณ…",
+  "gui.dungeontrain.cinematic.loading.ready": "ขึ้นรถได้แล้ว!",
   "gui.dungeontrain.cinematic.press_space_to_start": "กดสเปซเพื่อเริ่ม",
   "gui.dungeontrain.cinematic.press_space_to_skip": "กดสเปซเพื่อข้าม",
   "gui.dungeontrain.loading.title": "กำลังโหลดโลก…",

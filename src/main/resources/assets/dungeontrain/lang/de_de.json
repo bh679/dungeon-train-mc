@@ -171,6 +171,7 @@
   "gui.dungeontrain.content_mode.adult": "Erwachsen",
   "gui.dungeontrain.content_mode.kid": "Kind",
   "gui.dungeontrain.cinematic.loading": "Deine Reise wird vorbereitet…",
+  "gui.dungeontrain.cinematic.loading.ready": "Alles einsteigen!",
   "gui.dungeontrain.cinematic.press_space_to_start": "Leertaste zum Starten",
   "gui.dungeontrain.cinematic.press_space_to_skip": "Leertaste zum Überspringen",
   "gui.dungeontrain.loading.title": "Welt wird geladen…",

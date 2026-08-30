@@ -171,6 +171,7 @@
   "gui.dungeontrain.content_mode.adult": "Adulto",
   "gui.dungeontrain.content_mode.kid": "Bambino",
   "gui.dungeontrain.cinematic.loading": "Preparazione del viaggio…",
+  "gui.dungeontrain.cinematic.loading.ready": "Tutti a bordo!",
   "gui.dungeontrain.cinematic.press_space_to_start": "Premi Spazio per iniziare",
   "gui.dungeontrain.cinematic.press_space_to_skip": "Premi Spazio per saltare",
   "gui.dungeontrain.loading.title": "Caricamento del mondo…",

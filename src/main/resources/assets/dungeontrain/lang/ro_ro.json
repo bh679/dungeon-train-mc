@@ -245,6 +245,7 @@
   "gui.dungeontrain.content_mode.adult": "Adult",
   "gui.dungeontrain.content_mode.kid": "Copil",
   "gui.dungeontrain.cinematic.loading": "Îți pregătim călătoria…",
+  "gui.dungeontrain.cinematic.loading.ready": "Toată lumea la bord!",
   "gui.dungeontrain.cinematic.press_space_to_start": "Apasă Space ca să începi",
   "gui.dungeontrain.cinematic.press_space_to_skip": "Apasă Space ca să sari peste",
   "gui.dungeontrain.loading.title": "Se încarcă lumea…",

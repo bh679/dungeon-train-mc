@@ -72,6 +72,7 @@
       "gui.dungeontrain.difficulty_confirm.change",
       "gui.dungeontrain.difficulty_confirm.cancel",
       "chat.dungeontrain.difficulty_profile.swapped",
+      "gui.dungeontrain.cinematic.loading.ready",
       "chat.dungeontrain.portal.reviving",
       "chat.dungeontrain.portal.no_train",
       "chat.dungeontrain.portal.returned",

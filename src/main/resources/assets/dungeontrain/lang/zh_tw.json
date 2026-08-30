@@ -156,6 +156,7 @@
   "gui.dungeontrain.content_mode.adult": "成人",
   "gui.dungeontrain.content_mode.kid": "兒童",
   "gui.dungeontrain.cinematic.loading": "正在準備你的旅程……",
+  "gui.dungeontrain.cinematic.loading.ready": "全員上車！",
   "gui.dungeontrain.cinematic.press_space_to_start": "按空白鍵開始",
   "gui.dungeontrain.cinematic.press_space_to_skip": "按空白鍵跳過",
   "gui.dungeontrain.loading.title": "正在載入世界……",

@@ -156,6 +156,7 @@
   "gui.dungeontrain.content_mode.adult": "Dewasa",
   "gui.dungeontrain.content_mode.kid": "Anak",
   "gui.dungeontrain.cinematic.loading": "Menyiapkan perjalananmu…",
+  "gui.dungeontrain.cinematic.loading.ready": "Semua naik!",
   "gui.dungeontrain.cinematic.press_space_to_start": "Tekan Spasi untuk Mulai",
   "gui.dungeontrain.cinematic.press_space_to_skip": "Tekan Spasi untuk melewati",
   "gui.dungeontrain.loading.title": "Memuat dunia…",

@@ -171,6 +171,7 @@
   "gui.dungeontrain.content_mode.adult": "Volwassen",
   "gui.dungeontrain.content_mode.kid": "Kind",
   "gui.dungeontrain.cinematic.loading": "Je reis wordt voorbereid…",
+  "gui.dungeontrain.cinematic.loading.ready": "Instappen maar!",
   "gui.dungeontrain.cinematic.press_space_to_start": "Druk op spatie om te beginnen",
   "gui.dungeontrain.cinematic.press_space_to_skip": "Druk op spatie om over te slaan",
   "gui.dungeontrain.loading.title": "De wereld wordt geladen…",

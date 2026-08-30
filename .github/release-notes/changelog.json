@@ -10133,6 +10133,23 @@
       "released_at": null
     },
     {
+      "id": "loading-sequence-continuous-reveal",
+      "version": "0.738.0",
+      "type": "feat",
+      "title": "The loading screen now hands you the shot",
+      "summary": "Joining a run reads as one continuous themed loading screen \u2014 no more flash back to a vanilla screen when the world finishes loading and the train starts. Once the bar fills it says \"All Aboard!\", the panel fades away over 30 seconds into a dim over the live world, and the camera is already sitting exactly where the arrival shot begins, so pressing Space flies you in from the frame you were looking at. The train's engine now eases in from silence instead of arriving at full volume.",
+      "highlights": [
+        "The world-join loading screen no longer flashes back to the vanilla \"Downloading terrain\" panorama",
+        "At 100% the screen reads \"All Aboard!\" and slowly reveals the composed arrival shot behind a dim",
+        "The train engine ambient fades in over 30 seconds when you first come aboard"
+      ],
+      "pr": 1205,
+      "date": "2026-08-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "close-locale-drift-and-unblock-import",
       "version": "0.739.0",
       "type": "fix",
@@ -10140,7 +10157,7 @@
       "summary": "Every language except English was missing the same 144 pieces of interface text \u2014 the data-recovery screen, the backup options, the abandon-run confirmation, twelve advancements and the leaderboard headers all read in English no matter what language you play in. All 144 are now translated in all 20 languages. The same gap had also jammed the weekly job that pulls player-submitted translations back into the mod: it had never once succeeded, because 198 approved submissions had nowhere to land and took 979 good ones down with them every time it ran.",
       "highlights": [
         "144 missing strings translated into all 20 languages \u2014 2,850 in total",
-        "Player-approved translations import again: 979 that were being discarded now land, and anything that cannot is listed by name instead of failing the whole run",
+        "Player-approved translations import again: 1,102 that were being discarded now land, and anything that cannot is listed by name instead of failing the whole run",
         "The in-game translation editor no longer asks you for plural forms your language does not have \u2014 Russian was being shown 27 of them",
         "Fixed a crash on the AI-policy screen caused by an unescaped percent sign in the English text",
         "Three buttons in the editor settings showed raw key names in English; the note markers on one story letter pointed past the end of the translated text in five languages"

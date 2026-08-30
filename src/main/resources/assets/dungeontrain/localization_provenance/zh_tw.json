@@ -160,6 +160,7 @@
       "gui.dungeontrain.content_mode.adult",
       "gui.dungeontrain.content_mode.kid",
       "gui.dungeontrain.cinematic.loading",
+      "gui.dungeontrain.cinematic.loading.ready",
       "gui.dungeontrain.cinematic.press_space_to_start",
       "gui.dungeontrain.cinematic.press_space_to_skip",
       "gui.dungeontrain.loading.title",

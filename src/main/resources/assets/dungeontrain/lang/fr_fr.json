@@ -171,6 +171,7 @@
   "gui.dungeontrain.content_mode.adult": "Adulte",
   "gui.dungeontrain.content_mode.kid": "Enfant",
   "gui.dungeontrain.cinematic.loading": "Préparation de ton voyage…",
+  "gui.dungeontrain.cinematic.loading.ready": "En voiture !",
   "gui.dungeontrain.cinematic.press_space_to_start": "Appuie sur Espace pour commencer",
   "gui.dungeontrain.cinematic.press_space_to_skip": "Appuie sur Espace pour passer",
   "gui.dungeontrain.loading.title": "Chargement du monde…",

@@ -191,6 +191,7 @@
   "gui.dungeontrain.content_mode.adult": {"author": "Opus 5 (Claude)", "reviewer": ""},
   "gui.dungeontrain.content_mode.kid": {"author": "Opus 5 (Claude)", "reviewer": ""},
   "gui.dungeontrain.cinematic.loading": {"author": "Opus 4.8 (Claude)", "reviewer": ""},
+  "gui.dungeontrain.cinematic.loading.ready": {"author": "Opus 5 (Claude)", "reviewer": ""},
   "gui.dungeontrain.cinematic.press_space_to_start": {"author": "Opus 4.8 (Claude)", "reviewer": ""},
   "gui.dungeontrain.cinematic.press_space_to_skip": {"author": "Opus 4.8 (Claude)", "reviewer": ""},
   "gui.dungeontrain.loading.title": {"author": "Opus 4.8 (Claude)", "reviewer": ""},

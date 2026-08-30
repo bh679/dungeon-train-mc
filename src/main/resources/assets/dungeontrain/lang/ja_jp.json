@@ -156,6 +156,7 @@
   "gui.dungeontrain.content_mode.adult": "大人",
   "gui.dungeontrain.content_mode.kid": "子ども",
   "gui.dungeontrain.cinematic.loading": "旅の準備をしています…",
+  "gui.dungeontrain.cinematic.loading.ready": "ご乗車ください！",
   "gui.dungeontrain.cinematic.press_space_to_start": "スペースキーで開始",
   "gui.dungeontrain.cinematic.press_space_to_skip": "スペースキーでスキップ",
   "gui.dungeontrain.loading.title": "ワールドを読み込み中…",

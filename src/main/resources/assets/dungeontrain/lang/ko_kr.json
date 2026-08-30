@@ -156,6 +156,7 @@
   "gui.dungeontrain.content_mode.adult": "성인",
   "gui.dungeontrain.content_mode.kid": "어린이",
   "gui.dungeontrain.cinematic.loading": "여정을 준비하는 중…",
+  "gui.dungeontrain.cinematic.loading.ready": "모두 탑승!",
   "gui.dungeontrain.cinematic.press_space_to_start": "스페이스를 눌러 시작",
   "gui.dungeontrain.cinematic.press_space_to_skip": "스페이스를 눌러 건너뛰기",
   "gui.dungeontrain.loading.title": "세계를 불러오는 중…",
