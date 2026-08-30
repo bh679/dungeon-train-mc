@@ -10184,6 +10184,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "close-ain-overlay-drift",
+      "version": "0.740.0",
+      "type": "fix",
+      "title": "Item names match the item again in Vietnamese, Filipino and Simplified Chinese",
+      "summary": "Three languages were drawing item-name synonyms from the whole pool instead of the right category, so a sword could end up called \"Boots\". They now name swords like swords and helmets like helmets, the way the other seventeen languages already did. Simplified Chinese also gained the Discord Presence screens \u2014 the consent prompt, the feedback survey and the chat auto-responses \u2014 which had been showing in English.",
+      "highlights": [
+        "Vietnamese, Filipino and Simplified Chinese item names now match the item's category",
+        "Simplified Chinese: rebuilt the synonym list, which had drifted onto a different set of item categories",
+        "Simplified Chinese: Discord Presence consent screen, feedback survey and chat replies are translated"
+      ],
+      "pr": 1208,
+      "date": "2026-08-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
