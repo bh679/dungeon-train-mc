@@ -41,9 +41,16 @@ public final class WorldOpenScreenSwap {
         if (!isWorldOpenPhase(opening.getTitle())) return;
         if (BuilderWorldCheck.isBuilderWorld()) return; // sandbox keeps vanilla chrome
         // From here the join is under way — this is what tells the vanilla screens that follow
-        // (ProgressScreen, ReceivingLevelScreen) they are part of it and should be themed.
-        LoadingSequenceProgress.beginJoin();
-        event.setNewScreen(new WorldOpenLoadingScreen());
+        // (ProgressScreen, ReceivingLevelScreen) they are part of it and should be themed. It also
+        // starts JoinIntroFade's clock, so the hand-off is timed from this exact instant.
+        boolean firstPhase = !(event.getCurrentScreen() instanceof WorldOpenLoadingScreen);
+        if (firstPhase) {
+            LoadingSequenceProgress.beginJoin();
+        }
+        // The screen the player pressed the button on, handed over so it can be faded out rather
+        // than cut away. Only on the first phase — the second one is replacing our own screen, and
+        // fading that into itself would restart the hand-off midway through.
+        event.setNewScreen(new WorldOpenLoadingScreen(firstPhase ? event.getCurrentScreen() : null));
     }
 
     /**

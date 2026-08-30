@@ -370,8 +370,21 @@ public final class CinematicPreloadGate {
         loadingReadyReason = null;
     }
 
+    /**
+     * Tears the loading sequence down when the player actually leaves a world.
+     *
+     * <p><b>Only when there is a player.</b> {@code Minecraft.doWorldLoad} — the method that opens
+     * a world — begins with {@code this.disconnect()}, and NeoForge's {@code firePlayerLogout}
+     * posts this event unconditionally, null player and all. So every world <em>open</em> fires a
+     * "logout" roughly a second after {@link WorldOpenScreenSwap} started the join, and an
+     * unguarded reset here wiped {@link LoadingSequenceProgress#beginJoin()}'s flag before the
+     * screens that read it ever rendered — which is exactly why the {@code ProgressScreen} that
+     * same {@code disconnect()} puts on screen stayed un-themed. A real logout always has a
+     * player; a null one is that pre-open teardown and must leave the new join alone.</p>
+     */
     @SubscribeEvent
     public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
+        if (event.getPlayer() == null) return;
         reset();
         LoadingStories.reset();
         LoadingSequenceProgress.reset();
