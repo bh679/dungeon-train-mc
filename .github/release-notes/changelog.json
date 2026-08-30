@@ -10062,6 +10062,23 @@
       "released": true,
       "released_in": "v0.732.0",
       "released_at": "2026-08-29T19:58:02Z"
+    },
+    {
+      "id": "portal-independent-doorway-positions",
+      "version": "0.734.0",
+      "type": "feat",
+      "title": "Dimensional carriage doorways can be placed independently",
+      "summary": "A dimensional carriage's two doorways no longer have to line up. Builders can put the way in and the way out at different points along a room's wall and at different heights, so a portal room can bend your path instead of running you straight through it. Place a door on the mouth you want to move and only that mouth moves; rooms built before this keep both doorways where they were.",
+      "highlights": [
+        "Set each of a portal room's two doorways separately \u2014 along the wall and up it",
+        "Aim a door at the near opening to move the way in, the far one to move the way out",
+        "Fixed doorways that could be bricked over at the top, or leave a gap to the rock below, when a door was raised off the room's floor"
+      ],
+      "pr": 1200,
+      "date": "2026-08-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
