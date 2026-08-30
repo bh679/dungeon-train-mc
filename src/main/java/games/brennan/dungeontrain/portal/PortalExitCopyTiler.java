@@ -28,9 +28,12 @@ import java.util.Set;
  * tiles were stamped <i>around</i> it through the corridor mask. Clearing a copy while one of them
  * still stands would leave a corridor-shaped pit with no floor in a room the player can walk straight
  * back into — a hole with loot in it and no way to explain it. {@link PortalExitCopies#nextToRemove}
- * therefore holds a copy until its anchor is {@link PortalRoomTiling#MAX_RADIUS} <i>plus</i>
- * {@link PortalExitSites#tileReach} away, by which point every tile it touches has left the window
- * and the erase lands in space that is already gone.</p>
+ * therefore holds a copy until its anchor is <i>the radius the tiles themselves are retiring at</i>
+ * plus {@link PortalExitSites#tileReach} away, by which point every tile it touches has left the
+ * window and the erase lands in space that is already gone. That first term is
+ * {@link PortalRoomTiling#retireRadius} rather than {@link PortalRoomTiling#MAX_RADIUS} because the
+ * tiles are held a margin past the window once their budget is spent — the two have to move
+ * together, or this hold stops covering what it is measured against.</p>
  *
  * <h2>Why a copy might not appear</h2>
  * <p>The same three reasons a room copy might not, and with the same consequence — the site is simply
@@ -90,7 +93,14 @@ public final class PortalExitCopyTiler {
         // onto the train empties the room, which collapses the radius to APPROACH_RADIUS and would
         // otherwise retire the copy they had just that second walked out of — so the way back in
         // would always lead to the original, and the binding could never do its job.
-        Site stale = standing.nextToRemove(standingIn, radius, reachOf(structure, dims),
+        // The TILES' retire radius, not the raw window one: a copy is held until every tile it
+        // reaches into has gone, and the tiles are themselves held a margin past the window once
+        // their budget is spent (PortalRoomTiling#retireRadius). Hand the raw radius in here and a
+        // copy retires while the room at its mouth is still standing — a corridor-shaped pit with no
+        // floor in a room the player can walk straight back into, which is what this hold is for.
+        int retireRadius = PortalRoomTiling.retireRadius(
+            radius, structure.tiling().size(), structure.tileBudget(standingIn.size()));
+        Site stale = standing.nextToRemove(standingIn, retireRadius, reachOf(structure, dims),
             site -> !PortalExitBindings.anyBoundTo(pairKey, site.tile()));
         if (stale != null) return erase(level, dims, structure, stale, pairKey);
 
@@ -140,7 +150,9 @@ public final class PortalExitCopyTiler {
      * observed live at one full corridor stamp and erase every tick, 113 of them at a single site in
      * a five-minute session. Adding inside {@code radius} and removing beyond
      * {@code radius + reach} leaves the reach as a hysteresis band between the two rules, which is
-     * what stops them arguing. The band survives the move to several centres unchanged: adding is
+     * what stops them arguing. The room tiles now carry the same band for the same reason —
+     * {@link PortalRoomTiling#RETIRE_MARGIN} — so the two are one idea rather than two
+     * coincidences. The band survives the move to several centres unchanged: adding is
      * inside {@code radius} of <i>any</i> occupant and removing is beyond {@code radius + reach} of
      * <i>every</i> one, so the two rules still cannot both fire on the same site.</p>
      */

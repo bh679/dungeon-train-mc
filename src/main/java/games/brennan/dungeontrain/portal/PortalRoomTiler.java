@@ -138,11 +138,16 @@ public final class PortalRoomTiler {
         // what the budget says.
         PortalRoomTiling tiling = structure.tiling();
 
+        // The same number for both rules below, so they cannot come to disagree about whether the
+        // budget is spent — which is the state the whole of PortalRoomTiling#RETIRE_MARGIN is about.
+        int budget = structure.tileBudget(standingIn.size());
+
         // Build ahead of the player before shedding what is behind them. What is ahead is what they
         // can see — the fog sits at the edge of what has been built — whereas what is behind is
         // already out of sight. When the budget is spent this finds nothing, and the retire below
-        // frees a slot for the next tick, so a sliding window still slides.
-        Tile next = tiling.nextToAdd(standingIn, radius, structure.tileBudget(standingIn.size()),
+        // frees a slot only for tiles that have fallen a whole tile past the window — so a player
+        // genuinely walking still slides it, and a player shifting between two tiles moves nothing.
+        Tile next = tiling.nextToAdd(standingIn, radius, budget,
             candidate -> canStamp(level, dims, structure, candidate, neighbours));
         if (next != null) return stampTile(level, dims, structure, next, pairKey);
 
@@ -157,7 +162,11 @@ public final class PortalRoomTiler {
         // The occupied tiles themselves need no explicit sparing any more — they are centres, so
         // nextToRemove will not offer one up. Kept all the same: it costs a set lookup and it states
         // the rule at the point somebody reading the erase path will look for it.
-        Tile stale = tiling.nextToRemove(standingIn, radius,
+        // Wider than the radius the add rule was given, once the budget is spent: PortalRoomTiling
+        // #retireRadius. Without that band the two rules pass one tile back and forth forever in a
+        // room whose budget is smaller than its window — a full stamp and a full erase every tick.
+        Tile stale = tiling.nextToRemove(standingIn,
+            PortalRoomTiling.retireRadius(radius, tiling.size(), budget),
             candidate -> !standingIn.contains(candidate)
                 && !candidate.equals(structure.exitTile())
                 && !PortalExitBindings.anyBoundTo(pairKey, candidate));

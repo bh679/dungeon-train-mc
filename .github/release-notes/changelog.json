@@ -10247,9 +10247,9 @@
       ],
       "pr": 1209,
       "date": "2026-08-30",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.750.0",
+      "released_at": "2026-08-30T14:14:51Z"
     },
     {
       "id": "carriage-test-save-prompt",
@@ -10263,9 +10263,9 @@
       ],
       "pr": 1216,
       "date": "2026-08-30",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.750.0",
+      "released_at": "2026-08-30T14:14:51Z"
     },
     {
       "id": "portal-room-grow-into-air",
@@ -10279,9 +10279,9 @@
       ],
       "pr": 1217,
       "date": "2026-08-30",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.750.0",
+      "released_at": "2026-08-30T14:14:51Z"
     },
     {
       "id": "builder-load-other-player-builds",
@@ -10292,9 +10292,9 @@
       "highlights": [],
       "pr": 1213,
       "date": "2026-08-30",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.750.0",
+      "released_at": "2026-08-30T14:14:51Z"
     },
     {
       "id": "editor-validates-placeholders",
@@ -10309,9 +10309,9 @@
       ],
       "pr": 1214,
       "date": "2026-08-30",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.750.0",
+      "released_at": "2026-08-30T14:14:51Z"
     },
     {
       "id": "import-validates-format-tokens",
@@ -10326,9 +10326,9 @@
       ],
       "pr": 1210,
       "date": "2026-08-30",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.750.0",
+      "released_at": "2026-08-30T14:14:51Z"
     },
     {
       "id": "mirror-by-edited-template",
@@ -10342,27 +10342,22 @@
       ],
       "pr": 1220,
       "date": "2026-08-30",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.750.0",
+      "released_at": "2026-08-30T14:14:51Z"
     },
     {
       "id": "portal-room-doorway-placement-fixes",
       "version": "0.749.0",
       "type": "fix",
-      "title": "Rooms with a moved doorway build in full, and stay built",
-      "summary": "A dimensional carriage whose doorway had been moved off the room's floor was being stamped partly outside the world, so the bottom of the room simply never appeared \u2014 the author walked into the top of their own build standing on nothing. Those rooms now stand on solid ground, keep their endless copies while you walk through them, and are fogged and lit all the way down.",
-      "highlights": [
-        "A room with a raised doorway builds every row the author made, instead of losing everything below the world's floor",
-        "Endless rooms no longer shed their copies around a player standing on the room's own floor",
-        "Fog and daylight now fill the whole room, rather than stopping at the corridor's floor line",
-        "Test the Carriage says so when a room is too tall for the world you are testing it in, instead of failing"
-      ],
+      "title": "Editor fixes",
+      "summary": "Assorted fixes to the dimensional carriage editor.",
+      "highlights": [],
       "pr": 1218,
       "date": "2026-08-30",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.750.0",
+      "released_at": "2026-08-30T14:14:51Z"
     },
     {
       "id": "rank-translators-by-contribution",
@@ -10377,22 +10372,60 @@
       ],
       "pr": 1222,
       "date": "2026-08-30",
+      "released": true,
+      "released_in": "v0.750.0",
+      "released_at": "2026-08-30T14:14:51Z"
+    },
+    {
+      "id": "menu-to-loading-transition",
+      "version": "0.751.0",
+      "type": "feat",
+      "title": "Smoother world join",
+      "summary": "Starting a world now fades from the menu into the loading screen instead of cutting, with no more flash of vanilla chrome.",
+      "highlights": [],
+      "pr": 1223,
+      "date": "2026-08-30",
       "released": false,
       "released_in": null,
       "released_at": null
     },
     {
-      "id": "menu-to-loading-transition",
-      "version": "0.750.0",
-      "type": "feat",
-      "title": "The menu now hands off to the loading screen",
-      "summary": "Starting a world no longer cuts straight from the menu, and no longer flashes a frame of vanilla Minecraft chrome on the way. The menu dissolves into its own background, that background fades into the Dungeon Train loading screen, and the load itself happens behind the finished screen \u2014 so the moment the game pauses to read your world, you are already looking at the train.",
+      "id": "endless-room-tiling-settles",
+      "version": "0.751.0",
+      "type": "fix",
+      "title": "Big endless rooms stop rebuilding themselves on the spot",
+      "summary": "A large endless portal room used to rebuild one of its copies every tick \u2014 tearing one down and putting another up \u2014 for as long as anyone was standing in it. It now settles once the room is fully built around you, and only moves copies when you actually walk.",
       "highlights": [
-        "The menu fades into the loading screen instead of cutting",
-        "No more flash of vanilla Minecraft chrome while a world opens",
-        "The loading bar now starts at 0% instead of jumping straight to 12%"
+        "Standing still in a big endless room no longer churns the server",
+        "Walking still opens the room ahead of you exactly as before"
       ],
-      "pr": 1223,
+      "pr": 1225,
+      "date": "2026-08-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "cheat-list-cad-editor",
+      "version": "0.752.0",
+      "type": "chore",
+      "title": "In-game editors count as cheat mods",
+      "summary": "Installing CAD Editor, DINE or AnkiNBT now puts the run into Free Play, alongside the other in-game editors. They rewrite an item's components, a mob or block entity's NBT, or a villager's trades from a GUI, so they do the work of a command without one.",
+      "highlights": [
+        "CAD Editor, DINE and AnkiNBT added to the cheat-mod list"
+      ],
+      "date": "2026-08-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "relay-admin-url-machine-wide",
+      "version": "0.753.0",
+      "type": "chore",
+      "title": "Internal tooling",
+      "summary": "Development tooling changes.",
+      "highlights": [],
       "date": "2026-08-30",
       "released": false,
       "released_in": null,
