@@ -10430,6 +10430,20 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "cheat-list-visual-mobs-edit",
+      "version": "0.754.0",
+      "type": "chore",
+      "title": "More editors count as cheat mods",
+      "summary": "Installing Visual Mobs Edit or In-game NBTEdit Reborn now puts the run into Free Play. One rewrites mob health, damage, immunities and spawn rules from a menu \u2014 the difficulty curve a run is measured against \u2014 and the other rewrites the NBT of whatever you are holding or looking at.",
+      "highlights": [
+        "Visual Mobs Edit and In-game NBTEdit Reborn added to the cheat-mod list"
+      ],
+      "date": "2026-08-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
