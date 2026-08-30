@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.client.builder;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
@@ -31,8 +32,32 @@ import java.util.function.Consumer;
 @OnlyIn(Dist.CLIENT)
 final class BuilderProfileFilterButton extends Button {
 
-    /** One choice: what it filters to, and what the chip reads while it is chosen. */
-    record Option(String value, String labelKey) {}
+    /**
+     * One choice: what it filters to, what the chip reads while it is chosen, and the colour the chip
+     * wears while it is chosen.
+     *
+     * <p>{@code tint} is a full-strength state colour — the same one the matching tiles are ringed in
+     * — which the chip fades itself (see {@link #TINT_ALPHA}). Passing the faded value instead would
+     * put the same colour in the codebase twice at two different opacities, and the second one would
+     * be the one nobody remembered to change. {@code 0} for an option with no colour of its own,
+     * which is every type and the two status options that aren't a verdict.</p>
+     */
+    record Option(String value, String labelKey, int tint) {
+
+        Option(String value, String labelKey) {
+            this(value, labelKey, 0);
+        }
+    }
+
+    /**
+     * How much of the state colour the chip wears: a wash, not a fill.
+     *
+     * <p>It goes on over the finished button — sprite and label both — because vanilla's
+     * {@code Button} draws the two together and there is no seam between them to paint into. So it
+     * has to be light enough to leave white text on grey legible, which is what a quarter is: enough
+     * to name the colour, not enough to be read as text of that colour.</p>
+     */
+    private static final int TINT_ALPHA = 0x40000000;
 
     private final List<Option> options;
     private final Consumer<String> onChange;
@@ -89,6 +114,24 @@ final class BuilderProfileFilterButton extends Button {
             if (options.get(i).value().equals(value)) return i;
         }
         return 0;
+    }
+
+    /**
+     * The ordinary button, washed in the colour of whatever it is currently filtering to.
+     *
+     * <p>Only the status chip ever has one, and it is the point of the wash: the grid it filters is
+     * colour-coded, so a chip reading "Accepted" in green says which slice you are looking at in the
+     * same language the tiles answer in — and a chip left narrowed is a good deal harder to forget
+     * about when it is coloured.</p>
+     */
+    @Override
+    protected void renderWidget(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+        super.renderWidget(g, mouseX, mouseY, partialTick);
+        int tint = options.get(indexOfCurrent()).tint();
+        if (tint == 0) return;
+        // Inset by one so the wash sits inside the button's own border rather than softening its edge.
+        g.fill(getX() + 1, getY() + 1, getX() + getWidth() - 1, getY() + getHeight() - 1,
+                (tint & 0x00FFFFFF) | TINT_ALPHA);
     }
 
     @Override

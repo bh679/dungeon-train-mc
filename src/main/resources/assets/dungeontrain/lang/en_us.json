@@ -1017,7 +1017,7 @@
   "gui.dungeontrain.builder.profile.type.contents": "Carriage rooms",
   "gui.dungeontrain.builder.profile.type.part": "Parts",
   "gui.dungeontrain.builder.profile.type.track": "Tracks",
-  "gui.dungeontrain.builder.profile.type.portal_room": "Portal rooms",
+  "gui.dungeontrain.builder.profile.type.portal_room": "Dimensions",
   "gui.dungeontrain.builder.profile.type.tooltip": "Which kind of build to show. Click for the next, right-click or shift-click for the previous.",
   "gui.dungeontrain.builder.profile.status.all": "Any status",
   "gui.dungeontrain.builder.profile.status.none": "Not submitted",

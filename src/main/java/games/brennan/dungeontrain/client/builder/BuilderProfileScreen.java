@@ -100,12 +100,17 @@ public final class BuilderProfileScreen extends Screen {
                     "gui.dungeontrain.builder.profile.status.all"),
             new BuilderProfileFilterButton.Option(BuilderReviewState.NONE,
                     "gui.dungeontrain.builder.profile.status.none"),
+            // The three verdicts carry their tile colour onto the chip, so the chip answers in the
+            // same language the grid does. "All" and "not submitted" have no colour on a tile either.
             new BuilderProfileFilterButton.Option(BuilderReviewState.SUBMITTED,
-                    "gui.dungeontrain.builder.profile.status.submitted"),
+                    "gui.dungeontrain.builder.profile.status.submitted",
+                    BuilderReviewState.BORDER_SUBMITTED),
             new BuilderProfileFilterButton.Option(BuilderReviewState.ACCEPTED,
-                    "gui.dungeontrain.builder.profile.status.accepted"),
+                    "gui.dungeontrain.builder.profile.status.accepted",
+                    BuilderReviewState.BORDER_ACCEPTED),
             new BuilderProfileFilterButton.Option(BuilderReviewState.DECLINED,
-                    "gui.dungeontrain.builder.profile.status.declined"));
+                    "gui.dungeontrain.builder.profile.status.declined",
+                    BuilderReviewState.BORDER_DECLINED));
 
     /**
      * Where the player left the two chips.
