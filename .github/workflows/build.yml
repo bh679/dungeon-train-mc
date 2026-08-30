@@ -110,6 +110,26 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # The check nothing was doing. Both existing guards are self-referential — validate-locale
+      # compared each locale to the es_es template (which carried the identical gap) and
+      # check-provenance compares each sidecar to its OWN lang file — so a GUI string added to
+      # en_us.json alone left nineteen languages showing English with every check green. That
+      # shipped twice: 109 keys in v0.619.0 and 144 keys again by 2026-08-30, the second time
+      # also blocking the relay import, because players had translated the drifted keys from the
+      # in-game editor and there was no line to write them to.
+      - name: Every locale carries every English key
+        run: python3 scripts/localization/check-lang-parity.py
+
+      # Values only: placeholders, empty strings, trigger-book title length, note offsets. The
+      # full structural suite is not run here because it is failing on main for eight locales
+      # over unrelated AIN-overlay debt (vi_vn has been missing `item_types` for months), and a
+      # gate that is already red teaches everyone to ignore it. Key sets are covered above.
+      - name: Translated values are safe to render
+        run: |
+          locales=$(ls src/main/resources/assets/dungeontrain/lang \
+            | sed 's/\.json$//' | grep -v '^en_us$' | tr '\n' ' ')
+          python3 scripts/localization/validate-locale.py --values-only $locales
+
       - name: Per-line translation provenance aligned with lang files (all namespaces)
         run: python3 scripts/localization/check-provenance.py
 
@@ -124,3 +144,5 @@ jobs:
           python3 scripts/localization/test_stamp_narrative_provenance.py
           python3 scripts/localization/test_provenance_io.py
           python3 scripts/localization/test_import_approved_translations.py
+          python3 -m pytest scripts/localization/test_plural_forms.py \
+                            scripts/localization/test_merge_locale_keys.py -q

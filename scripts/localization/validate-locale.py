@@ -80,7 +80,17 @@ def load(path):
 
 
 def placeholders(value):
-    return sorted(PLACEHOLDER.findall(value)) if isinstance(value, str) else []
+    """A value's ARGUMENT tokens, sorted.
+
+    `%%` is matched by the pattern but excluded here: it is an escaped literal percent, not an
+    argument the caller passes. A translation is entitled to contain one where the English does
+    not, or to drop one by rephrasing — six locales render the AI-policy line without a percent
+    sign at all, and that is a translation decision, not a defect. What must match is the
+    arguments, because those are positional.
+    """
+    if not isinstance(value, str):
+        return []
+    return sorted(t for t in PLACEHOLDER.findall(value) if t != "%%")
 
 
 def compare_shape(ref, loc, path, errors):
