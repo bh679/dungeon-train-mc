@@ -1,7 +1,9 @@
 package games.brennan.dungeontrain.portal;
 
 import games.brennan.dungeontrain.train.CarriageDims;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
+import net.minecraft.world.level.levelgen.structure.BoundingBox;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -154,6 +156,26 @@ public final class PortalRoomResize {
             if (!forAxis.isEmpty()) size = forAxis.get(forAxis.size() - 1).sizeAfter();
         }
         return steps;
+    }
+
+    /**
+     * The world box of the single row {@code step} adds or removes.
+     *
+     * <p>{@code size} is the box the row is indexed against — {@link Step#sizeAfter} for a grow, the
+     * size before the step for a shrink, which is the same pairing {@link Step#slabIndex} documents.
+     * One block thick on {@code step}'s axis and the room's full cross-section on the other two.</p>
+     *
+     * <p>Here rather than inlined in the editor because it is the one piece of the "grow into air"
+     * rule that is pure arithmetic: what a grow must leave blank is exactly this box.</p>
+     */
+    public static BoundingBox slabBox(BlockPos origin, Vec3i size, Step step) {
+        BlockPos at = origin.offset(along(step.axis(), step.slabIndex()));
+        Vec3i slab = with(size, step.axis(), 1);
+        return new BoundingBox(
+            at.getX(), at.getY(), at.getZ(),
+            at.getX() + slab.getX() - 1,
+            at.getY() + slab.getY() - 1,
+            at.getZ() + slab.getZ() - 1);
     }
 
     /** Total shift the surviving content undergoes across {@code steps}. */
