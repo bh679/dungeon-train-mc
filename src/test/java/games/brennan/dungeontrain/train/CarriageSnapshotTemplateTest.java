@@ -88,17 +88,17 @@ final class CarriageSnapshotTemplateTest {
     }
 
     @Test
-    @DisplayName("a blob's entities become the template's, positioned in the build's own frame")
+    @DisplayName("a blob's decor becomes the template's, positioned in the build's own frame")
     void entitiesComeAcross() {
         CompoundTag snapshot = snapshot(4, 4, 4, cell(0, 0, 0, "minecraft:stone", null));
-        snapshot.put("ents", ents(ent("minecraft:armor_stand", 1.5, 2.25, 3.5)));
+        snapshot.put("ents", ents(ent("minecraft:item_frame", 1.5, 2.25, 3.5)));
 
         ListTag entities = CarriageSnapshotTemplate.toTemplateTag(snapshot)
                 .getList("entities", Tag.TAG_COMPOUND);
 
         assertEquals(1, entities.size());
         CompoundTag entity = entities.getCompound(0);
-        assertEquals("minecraft:armor_stand", entity.getCompound("nbt").getString("id"));
+        assertEquals("minecraft:item_frame", entity.getCompound("nbt").getString("id"));
         ListTag pos = entity.getList("pos", Tag.TAG_DOUBLE);
         assertEquals(1.5, pos.getDouble(0));
         assertEquals(2.25, pos.getDouble(1));
@@ -111,15 +111,35 @@ final class CarriageSnapshotTemplateTest {
     @DisplayName("an entity with no type is skipped rather than written as one nothing can spawn")
     void skipsUntypedEntities() {
         CompoundTag snapshot = snapshot(4, 4, 4);
-        CompoundTag typeless = ent("minecraft:armor_stand", 1.0, 1.0, 1.0);
+        CompoundTag typeless = ent("minecraft:item_frame", 1.0, 1.0, 1.0);
         typeless.getCompound("n").remove("id");
-        snapshot.put("ents", ents(typeless, ent("minecraft:item_frame", 2.0, 2.0, 2.0)));
+        snapshot.put("ents", ents(typeless, ent("minecraft:painting", 2.0, 2.0, 2.0)));
 
         ListTag entities = CarriageSnapshotTemplate.toTemplateTag(snapshot)
                 .getList("entities", Tag.TAG_COMPOUND);
 
         assertEquals(1, entities.size(), "the good one still comes across");
-        assertEquals("minecraft:item_frame", entities.getCompound(0).getCompound("nbt").getString("id"));
+        assertEquals("minecraft:painting", entities.getCompound(0).getCompound("nbt").getString("id"));
+    }
+
+    @Test
+    @DisplayName("a mob standing in the plot is left out, exactly as a local save leaves it out")
+    void nonDecorIsLeftOut() {
+        // TemplateDecor.keepOnlyDecor strips these as a template is written, so a downloaded build
+        // that kept them would hold something the author's own file never did — and no stamp path
+        // puts one back, so it would never appear either way.
+        CompoundTag snapshot = snapshot(4, 4, 4);
+        snapshot.put("ents", ents(
+                ent("minecraft:parrot", 1.0, 1.0, 1.0),
+                ent("minecraft:armor_stand", 2.0, 1.0, 2.0),
+                ent("minecraft:glow_item_frame", 3.0, 1.0, 3.0)));
+
+        ListTag entities = CarriageSnapshotTemplate.toTemplateTag(snapshot)
+                .getList("entities", Tag.TAG_COMPOUND);
+
+        assertEquals(1, entities.size(), "only the decor survives");
+        assertEquals("minecraft:glow_item_frame",
+                entities.getCompound(0).getCompound("nbt").getString("id"));
     }
 
     // ---- helpers ----

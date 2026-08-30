@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.train;
 
+import games.brennan.dungeontrain.template.TemplateDecor;
 import net.minecraft.core.HolderGetter;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.DoubleTag;
@@ -32,11 +33,19 @@ import java.util.Map;
  * its air — but the snapshot dropped that air at <em>upload</em> time, long before this code, so
  * there is nothing here that could put it back.)</p>
  *
- * <p><b>Entities come across.</b> A v2 blob's {@code ents} list becomes the template's
- * {@code entities}, because that is what a local save holds: every editor writes its template through
- * {@code TemplateDecor.capture}, which is {@code fillFromWorld(…, includeEntities = true)}. Dropping
- * them here would produce a template unlike anything a save writes — an armour stand the author
- * placed, and saved, and uploaded, simply absent on the way back.</p>
+ * <p><b>Decor entities come across; nothing else does.</b> A v2 blob's {@code ents} list becomes the
+ * template's {@code entities}, filtered to {@link TemplateDecor#DECOR_TYPES} — the item frames, glow
+ * item frames and paintings a local save keeps. Dropping them entirely would produce a template
+ * unlike anything a save writes: a picture the author hung, and saved, and uploaded, absent on the
+ * way back. Keeping the rest would be the same mistake in the other direction, because a local save
+ * does not keep it — {@code TemplateDecor.keepOnlyDecor} strips every other entity as the template
+ * is written, on the grounds that mobs are authored as per-cell variant entries and the contents
+ * pass owns armour stands and end crystals. A downloaded template must hold what a saved one holds,
+ * or a build gains on the way back something its own author's file never had.</p>
+ *
+ * <p>The <b>blob</b> still carries them all, and should: the same {@code ents} list is what an
+ * in-play lease spawns through {@link CarriageEntitySnapshot#spawn}, and what the web viewer draws
+ * its entity cards from. The narrowing belongs here, at the blob → template seam, not at capture.</p>
  *
  * <p>The two formats describe an entity in nearly the same terms: an {@code ents} entry's {@code n}
  * is {@code saveAsPassenger} output with {@code Pos}, {@code Motion} and every UUID already stripped
@@ -112,7 +121,8 @@ public final class CarriageSnapshotTemplate {
      * will not reshape costs that entity, and refusing the download over it would cost the build.
      * An entry with no stored NBT is skipped rather than written as an entity with no type — vanilla
      * reads {@code nbt.id} to decide what to spawn, and an entry without one is a crash waiting on
-     * whoever next stamps the template.</p>
+     * whoever next stamps the template. Anything that is not decor is skipped too, so the list
+     * matches what a local save writes.</p>
      */
     private static ListTag entities(CompoundTag snapshot) {
         ListTag out = new ListTag();
@@ -122,6 +132,10 @@ public final class CarriageSnapshotTemplate {
             if (!ent.contains("n", Tag.TAG_COMPOUND)) continue;
             CompoundTag nbt = ent.getCompound("n");
             if (!nbt.contains("id", Tag.TAG_STRING)) continue;
+            // What a local save would have kept — see the class javadoc. A mob here is not a build's
+            // decoration, it is a mob somebody left standing in the plot, and no stamp path puts one
+            // back.
+            if (!TemplateDecor.DECOR_TYPES.contains(nbt.getString("id"))) continue;
             ListTag p = ent.getList("p", Tag.TAG_DOUBLE);
             if (p.size() != 3) continue;
             double x = p.getDouble(0), y = p.getDouble(1), z = p.getDouble(2);
