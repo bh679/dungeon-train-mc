@@ -756,7 +756,8 @@
       "screen.adventureitemnames.action.delete",
       "screen.adventureitemnames.action.reset"
     ],
-    "playermob": []
+    "playermob": [],
+    "discordpresence": "*"
   },
   "books": [
     "random_books/lovenote",
