@@ -926,7 +926,7 @@
   "gui.dungeontrain.ai_policy.not_ai.header": "What is explicitly NOT AI",
   "gui.dungeontrain.ai_policy.not_ai.1": "The books are written by players, myself or my narrative director.",
   "gui.dungeontrain.ai_policy.not_ai.2": "In-game chat — if you tag @dev you'll either hear directly from me, or not at all. Same on Discord.",
-  "gui.dungeontrain.ai_policy.not_ai.3": "The player mobs are bot behaviour run by code, not AI. They are a complex system of behaviours that involve 0% machine learning or LLMs.",
+  "gui.dungeontrain.ai_policy.not_ai.3": "The player mobs are bot behaviour run by code, not AI. They are a complex system of behaviours that involve 0%% machine learning or LLMs.",
   "gui.dungeontrain.ai_policy.not_ai.4": "I am not training LLM, AI or Machine Learning with your data or data from the game.",
   "gui.dungeontrain.ai_policy.not_ai.5": "Artwork. I made the artwork myself.",
   "gui.dungeontrain.ai_policy.not_ai.6": "The naming system — names are generated from a program, not AI.",
