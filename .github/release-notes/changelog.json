@@ -10339,7 +10339,8 @@
       "highlights": [
         "A room with a raised doorway builds every row the author made, instead of losing everything below the world's floor",
         "Endless rooms no longer shed their copies around a player standing on the room's own floor",
-        "Fog and daylight now fill the whole room, rather than stopping at the corridor's floor line"
+        "Fog and daylight now fill the whole room, rather than stopping at the corridor's floor line",
+        "Test the Carriage says so when a room is too tall for the world you are testing it in, instead of failing"
       ],
       "pr": 1218,
       "date": "2026-08-30",

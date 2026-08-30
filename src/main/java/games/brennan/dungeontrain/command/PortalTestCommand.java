@@ -18,6 +18,8 @@ import games.brennan.dungeontrain.portal.PortalRoomTiling;
 import games.brennan.dungeontrain.portal.PortalStructure;
 import games.brennan.dungeontrain.portal.PortalTestSession;
 import games.brennan.dungeontrain.portal.PortalTwinLanes;
+import games.brennan.dungeontrain.portal.PortalTwinRegion;
+import games.brennan.dungeontrain.portal.PortalTwinSpace;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.ChatFormatting;
@@ -103,9 +105,39 @@ public final class PortalTestCommand {
         }
 
         // The room as authored, so what is tested is what was built: its own size and its own
-        // settings (walls mode, contents, books), not the defaults.
-        Vec3i roomSize = PortalRoomSizes.sizeOf(roomName, dims);
+        // settings (walls mode, contents, books), not the defaults. Its HEIGHT is held to what this
+        // world's basement can stand up, exactly as PortalCarriageBuilder.planStructure holds it in
+        // play: a test that stamped a taller room than a player will ever meet would be testing a
+        // room that does not exist, and would push it up through the bedrock to do so.
+        //
+        // The basement rather than PortalTwinSpace.regionFor, because the basement is the region this
+        // command actually stamps into — originFor stands the lane on the build floor.
+        Vec3i authored = PortalRoomSizes.sizeOf(roomName, dims);
         PortalRoomSettings settings = PortalRoomSettings.of(roomName);
+        PortalTwinRegion region = PortalTwinSpace.basementOf(overworld);
+        Vec3i roomSize = PortalCarriageBuilder.heldInRegion(region, authored);
+
+        // The one thing a twin has to do is fit in the space it is stamped into, and this command
+        // never asked. In play a pair that does not fit simply goes without a twin
+        // (PortalCarriageEvents.ensureStructure); here an author asked out loud, so answer them —
+        // rather than stamping through the world's floor and failing somewhere in the block writes.
+        int structureHeight = Math.max(dims.height(), roomSize.getY());
+        int twinY = PortalTwinLanes.floorY(region.base());
+        if (!PortalTwinLanes.fitsUnderWorld(region.base(), region.ceiling(), twinY, structureHeight)) {
+            source.sendFailure(Component.literal(
+                "'" + roomName + "' needs " + structureHeight + " blocks and the sealed space under "
+                    + "this world's bedrock only has "
+                    + PortalTwinLanes.maxStructureHeight(region.base(), region.ceiling())
+                    + ". Make it shorter to test it here.").withStyle(ChatFormatting.RED));
+            return 0;
+        }
+        if (roomSize.getY() < authored.getY()) {
+            int held = roomSize.getY();
+            source.sendSuccess(() -> Component.literal(
+                "'" + roomName + "' is " + authored.getY() + " tall and this world can only stand up "
+                    + held + " — testing it at that height, which is what a player would walk into."
+            ).withStyle(ChatFormatting.YELLOW), false);
+        }
         // Both entry-door offsets, clamped exactly as roomOrigin will clamp them: the raw authored
         // values can sit outside what this room's width and height can spend, and re-deriving either
         // the stamp height or the doorway from an unclamped number lands beside the opening rather
