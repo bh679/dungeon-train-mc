@@ -35,6 +35,23 @@ BOOK = {
     "variants": ["AI one", "AI two"],
 }
 
+#: The English original the fixture book translates. Placeholder-free, like most of the 60 real
+#: books, so the ordinary book tests are about provenance and text-level edits and nothing else.
+#: The tests that are about placeholders pass their own via ``workspace(book_en=...)``.
+BOOK_EN = {
+    "id": "deathnote",
+    "title": "Title",
+    "variants": ["one", "two"],
+}
+
+#: An English original that names a figure. Book prose is Component.literal and writes its figures
+#: as {deaths}, so lang_format's printf rule cannot see them at all — see book_format.
+BOOK_EN_WITH_FIGURE = {
+    "id": "deathnote",
+    "title": "Title",
+    "variants": ["the {deaths_nth} to fall", "two"],
+}
+
 
 def unit(**over):
     """One approved row in the shape the relay's admin listing returns."""
@@ -45,19 +62,22 @@ def unit(**over):
     return row
 
 
-def workspace(lang=XX, prov=PROV, authors=AUTHORS, book=BOOK):
-    """A miniature repo: one locale's lang file + sidecar, one book, an author registry."""
+def workspace(lang=XX, prov=PROV, authors=AUTHORS, book=BOOK, book_en=BOOK_EN):
+    """A miniature repo: one locale's lang file + sidecar, one book + its English, a registry."""
     ws = tempfile.mkdtemp(prefix="import-approved-test-")
     lang_dir = os.path.join(ws, "lang")
     prov_dir = os.path.join(ws, "prov")
     nar_prov_dir = os.path.join(ws, "narrative-prov")
     nar_dir = os.path.join(ws, "narrative", "xx_yy", "random_books")
-    for d in (lang_dir, prov_dir, nar_prov_dir, nar_dir):
+    nar_en_dir = os.path.join(ws, "narrative-en", "narratives", "random_books")
+    for d in (lang_dir, prov_dir, nar_prov_dir, nar_dir, nar_en_dir):
         os.makedirs(d)
     write_json(os.path.join(lang_dir, "en_us.json"), EN)
     write_json(os.path.join(lang_dir, "xx_yy.json"), lang)
     write_json(os.path.join(ws, "authors.json"), authors)
     write_json(os.path.join(nar_dir, "deathnote.json"), book)
+    if book_en is not None:
+        write_json(os.path.join(nar_en_dir, "deathnote.json"), book_en)
     write_provenance(os.path.join(prov_dir, "xx_yy.json"), prov)
     write_provenance(os.path.join(nar_prov_dir, "xx_yy.json"),
                      {"random_books/deathnote": {"author": "Opus 5 (Claude)", "reviewer": ""}})
@@ -99,6 +119,7 @@ def run(ws, rows, *extra):
          "--lang-dir", os.path.join(ws, "lang"),
          "--provenance-dir", os.path.join(ws, "prov"),
          "--narrative-dir", os.path.join(ws, "narrative"),
+         "--narrative-en-dir", os.path.join(ws, "narrative-en"),
          "--narrative-provenance-dir", os.path.join(ws, "narrative-prov"), *extra],
         capture_output=True, text=True)
 
@@ -430,6 +451,69 @@ def test_repeated_book_text_edits_the_field_that_was_approved():
     assert book["title"] == "Same"       # the identical string in the OTHER field is untouched
 
 
+def book_of(ws):
+    return read_json(os.path.join(ws, "narrative", "xx_yy", "random_books", "deathnote.json"))
+
+
+def figure_unit(value):
+    """An approved translation of the one English field that names a figure."""
+    return unit(unitType="book", unitId="random_books/deathnote#variants.0",
+                source="", value=value)
+
+
+def test_book_translation_that_drops_a_figure_is_deferred_not_written():
+    """The gap #1210 and #1214 both left open: they check printf, book prose uses {braces}."""
+    ws = workspace(book_en=BOOK_EN_WITH_FIGURE)
+    proc = run(ws, [figure_unit("кто пал")])
+    assert proc.returncode == 0, proc.stderr
+    assert "nowhere to land" in proc.stdout
+    assert "{deaths_nth}" in proc.stdout
+    assert book_of(ws)["variants"] == ["AI one", "AI two"], "the broken value must not be written"
+
+
+def test_the_russian_ordinal_regression_is_deferred():
+    """{deaths_nth} swapped for {deaths} plus a glued adjective ending — the live 2026-08-30 near
+    miss, which read "2й, кто пал" where it should read "второй, кто пал"."""
+    ws = workspace(book_en=BOOK_EN_WITH_FIGURE)
+    proc = run(ws, [figure_unit("{deaths}й, кто пал.")])
+    assert proc.returncode == 0, proc.stderr
+    assert "needs fixing at the relay" in proc.stdout
+    assert book_of(ws)["variants"][0] == "AI one"
+
+
+def test_a_book_translation_that_invents_a_figure_is_deferred():
+    ws = workspace(book_en=BOOK_EN_WITH_FIGURE)
+    proc = run(ws, [figure_unit("{deaths_nth} из {mobs}")])
+    assert proc.returncode == 0, proc.stderr
+    assert book_of(ws)["variants"][0] == "AI one"
+
+
+def test_a_book_translation_that_keeps_the_figure_is_imported():
+    """Order is the translator's business — the figure moves to wherever the grammar wants it."""
+    ws = workspace(book_en=BOOK_EN_WITH_FIGURE)
+    proc = run(ws, [figure_unit("павший {deaths_nth}")])
+    assert proc.returncode == 0, proc.stderr
+    assert book_of(ws)["variants"] == ["павший {deaths_nth}", "AI two"]
+
+
+def test_one_broken_field_does_not_hold_up_the_rest_of_its_book():
+    """Deferred, not fatal: somebody has to look at that field, nobody has to abandon the book."""
+    ws = workspace(book_en=BOOK_EN_WITH_FIGURE)
+    proc = run(ws, [figure_unit("кто пал"),
+                    unit(id=2, unitType="book", unitId="random_books/deathnote#variants.1",
+                         source="", value="人工 two")])
+    assert proc.returncode == 0, proc.stderr
+    assert book_of(ws)["variants"] == ["AI one", "人工 two"]
+
+
+def test_a_book_with_no_english_original_still_imports():
+    """A locale-only book has nothing to be measured against; that is not a reason to refuse it."""
+    ws = workspace(book_en=None)
+    proc = run(ws, [figure_unit("{deaths} что угодно")])
+    assert proc.returncode == 0, proc.stderr
+    assert book_of(ws)["variants"][0] == "{deaths} что угодно"
+
+
 def test_rerun_is_idempotent():
     ws = workspace()
     assert run(ws, [unit()]).returncode == 0
@@ -486,6 +570,7 @@ def run_http(ws, base, *extra):
          "--lang-dir", os.path.join(ws, "lang"),
          "--provenance-dir", os.path.join(ws, "prov"),
          "--narrative-dir", os.path.join(ws, "narrative"),
+         "--narrative-en-dir", os.path.join(ws, "narrative-en"),
          "--narrative-provenance-dir", os.path.join(ws, "narrative-prov"), *extra],
         capture_output=True, text=True)
 

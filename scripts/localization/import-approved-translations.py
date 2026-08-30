@@ -38,6 +38,12 @@ Three things it deliberately will NOT do:
   parser, so an approved translation that drops a ``%s``, invents a ``%2$s``, or contains a bare
   ``%`` is broken text however well meant. It is deferred with the reason, not written — see
   ``lang_format.mismatch``.
+* **Write a book that has lost a figure.** Book prose does not go near that parser — it is
+  ``Component.literal`` — and names its figures ``{deaths}``, ``{carriage_nth}``, substituted by
+  ``DeathLoreStore.sub``. So it gets the same treatment under its own rule: an approved field that
+  no longer names the placeholders its English original does is deferred, not written. This is the
+  check that would have stopped five ru_ru epitaphs shipping with ``{deaths_nth}`` replaced by
+  ``{deaths}й`` on 2026-08-30 — see ``book_format.mismatch``.
 * **Reformat anything.** Lang files carry blank-line grouping and zh_cn is CRLF; 36 books group
   their variants the same way. Every write is a text-level edit of one value (see
   ``provenance_io.set_lang_value`` / ``set_book_field_text``), so the diff is the translation and
@@ -53,6 +59,7 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
+import book_format
 import lang_format
 import plural_forms
 import provenance_io as pio
@@ -64,6 +71,10 @@ STAMP_NARRATIVE = HERE / "stamp-narrative-provenance.py"
 #: Holds the admin capability in its path, so it is a secret: env only, and scrubbed from every
 #: message this script prints (see redact).
 BASE_ENV = "DUNGEONTRAIN_RELAY_ADMIN_BASE"
+
+#: Both English narrative trees live here: narratives/ (the books) and death_lore/ (the epitaphs).
+#: Redirected together with --narrative-dir so a test run cannot reach the real assets tree.
+DEFAULT_NARRATIVE_EN_DIR = pio.DEFAULT_NARRATIVE_DIR.parent
 
 #: Approvals whose submitter left the "credit me" box unticked arrive with an empty translator.
 #: Their text is still a person's work, so it is attributed here rather than left to read as
@@ -353,8 +364,38 @@ def targets_structure(field: str) -> bool:
                for seg in field.split("."))
 
 
-def import_books(rows: list[dict], narrative_dir: Path, dry_run: bool, problems: list[str],
-                 deferred: list[str]) -> tuple[dict, dict]:
+def english_book_path(english_dir: Path, book_path: str) -> Path:
+    """The English original for a locale-relative book path.
+
+    The Python inverse of ``TranslationCatalog.bookPathFor``, which is what named these paths in
+    the first place: the locale overlay flattens two English trees into one namespace, keeping
+    ``death_lore/`` as its own category and dropping the ``narratives/`` prefix from everything
+    else. Shared with ``check-book-placeholders.py``, which asks the same question of the whole
+    repo rather than of one import.
+    """
+    if book_path == "death_lore" or book_path.startswith("death_lore/"):
+        return english_dir / f"{book_path}.json"
+    return english_dir / "narratives" / f"{book_path}.json"
+
+
+def english_fields(path: Path) -> dict | None:
+    """The parsed English original at ``path``, or None when there is none to read.
+
+    None means no comparison is possible rather than no problem: a locale-only book has no
+    original, and a malformed one is somebody else's failure to report. Either way the placeholder
+    check is skipped for that book — silently, because the alternative is deferring every unit of
+    it for a reason the translator cannot act on.
+    """
+    if not path.is_file():
+        return None
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        return None
+
+
+def import_books(rows: list[dict], narrative_dir: Path, english_dir: Path, dry_run: bool,
+                 problems: list[str], deferred: list[str]) -> tuple[dict, dict]:
     """Apply approved book units, one file open per book however many fields it has.
 
     Returns ``(rewritten, revised)`` keyed by ``(locale, translator)``: narrative provenance is
@@ -379,8 +420,19 @@ def import_books(rows: list[dict], narrative_dir: Path, dry_run: bool, problems:
             continue
         original = pio.read_verbatim(path)
         text = original
+        english = english_fields(english_book_path(english_dir, book_path))
         applied: dict[str, set[str]] = {}
         for row in book_rows:
+            # Checked before the edit is attempted, and deferred rather than fatal, for the same
+            # reasons as import_lang's printf branch: the file is fine and the translation is
+            # nearly fine, so somebody has to look at this one field — not abandon the other 979.
+            if english is not None:
+                source = pio.book_field_value(english, row["field"])
+                broken = book_format.mismatch(row["value"], source) if source is not None else None
+                if broken:
+                    deferred.append(f"{locale} {book_path}#{row['field']}: {broken} — the text "
+                                    "needs fixing at the relay before it can be imported")
+                    continue
             edited = pio.set_book_field_text(text, row["field"], row["value"])
             if edited is None:
                 if targets_structure(row["field"]):
@@ -496,6 +548,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--locale", action="append", help="restrict to this locale (repeatable)")
     parser.add_argument("--authors-file", type=Path, default=pio.DEFAULT_AUTHORS_FILE)
     parser.add_argument("--narrative-dir", type=Path, default=pio.DEFAULT_NARRATIVE_DIR)
+    parser.add_argument("--narrative-en-dir", type=Path, default=DEFAULT_NARRATIVE_EN_DIR,
+                        help="the tree holding the English originals (narratives/ + death_lore/), "
+                             "which approved book text is checked for placeholders against")
     parser.add_argument("--register-new", action="store_true",
                        help='add unregistered translators to authors.json as "human"')
     parser.add_argument("--new-authors-out", type=Path,
@@ -538,8 +593,8 @@ def main(argv: list[str] | None = None) -> int:
     revised, confirmed, stale = import_lang(
         [r for r in rows if r["unitType"] == "lang"], ns_dirs, args.dry_run, problems, deferred)
     rewritten, reviewed = import_books(
-        [r for r in rows if r["unitType"] == "book"], args.narrative_dir, args.dry_run, problems,
-        deferred)
+        [r for r in rows if r["unitType"] == "book"], args.narrative_dir, args.narrative_en_dir,
+        args.dry_run, problems, deferred)
 
     counts = (sum(map(len, revised.values())), sum(map(len, confirmed.values())),
               sum(map(len, rewritten.values())) + sum(map(len, reviewed.values())))
