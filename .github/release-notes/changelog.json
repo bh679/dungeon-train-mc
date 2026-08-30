@@ -10219,6 +10219,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "editor-validates-placeholders",
+      "version": "0.742.0",
+      "type": "feat",
+      "title": "The translation editor now catches a broken placeholder as you type",
+      "summary": "When you translate the game from inside the game, some lines contain slots the game fills in \u2014 a player's name, a number, a key binding. Dropping one, adding one, or typing a lone percent sign makes that line display wrongly or not at all, and until now nothing said so: the mistake was only found weeks later, when the translation was pulled into the mod and quietly set aside. The editor now tells you the moment you type it, names the slot you have lost, and holds Save until it is right.",
+      "highlights": [
+        "A missing or invented fill-in slot is flagged under the text box as you type",
+        "Save is held until the line will actually display, so no more work is lost weeks later",
+        "Reordering slots to suit your language is still fine \u2014 only losing or inventing them is not"
+      ],
+      "date": "2026-08-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
