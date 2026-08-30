@@ -10329,6 +10329,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "endless-room-tiling-settles",
+      "version": "0.747.0",
+      "type": "fix",
+      "title": "Big endless rooms stop rebuilding themselves on the spot",
+      "summary": "A large endless portal room used to rebuild one of its copies every tick \u2014 tearing one down and putting another up \u2014 for as long as anyone was standing in it. It now settles once the room is fully built around you, and only moves copies when you actually walk.",
+      "highlights": [
+        "Standing still in a big endless room no longer churns the server",
+        "Walking still opens the room ahead of you exactly as before"
+      ],
+      "pr": 1225,
+      "date": "2026-08-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
