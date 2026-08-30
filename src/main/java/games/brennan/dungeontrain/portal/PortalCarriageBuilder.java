@@ -1446,8 +1446,22 @@ public final class PortalCarriageBuilder {
         }
 
         // One row below the floor as well as one past the top: Bedrock Lock skins both.
-        int minY = lowestWritableY(level.getMinBuildHeight(), origin.getY());
-        int maxY = origin.getY() + Math.max(dims.height(), roomSize.getY());
+        //
+        // Measured from the ROOM's own floor, not the corridor lane's. They are the same row only
+        // when the door sits at the room's floor; a door-height offset drops the room's floor below
+        // the lane, and an exit door placed apart from its entry door drops one corridor below the
+        // other. A footprint that started at the lane would leave those rows outside the box — blocks
+        // this structure wrote that its own erase never reaches, and that another pair may stamp
+        // into. Held to the corridors' own bounds for the same reason the X/Z terms above are.
+        int structureFloorY = Math.min(origin.getY(), roomOrigin.getY());
+        int structureTopY = Math.max(origin.getY() + dims.height(),
+            roomOrigin.getY() + roomSize.getY());
+        if (corridors != null) {
+            structureFloorY = Math.min(structureFloorY, corridors.minY());
+            structureTopY = Math.max(structureTopY, corridors.maxY() + 1);
+        }
+        int minY = lowestWritableY(level.getMinBuildHeight(), structureFloorY);
+        int maxY = structureTopY;
 
         return new BoundingBox(minX, minY, minZ, maxX, maxY, maxZ);
     }
@@ -2015,9 +2029,17 @@ public final class PortalCarriageBuilder {
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         for (int z = roomOrigin.getZ(); z < roomOrigin.getZ() + roomSize.getZ(); z++) {
             for (int y = floorY; y <= ceilingY; y++) {
+                // The corridor's own cross-section, read off the CORRIDOR on both axes. Y used to
+                // be measured from the room's floor (`y < floorY + dims.height()`), which is only
+                // the same row range while the corridor sits at it — a room with a door-height
+                // offset, or an exit door placed apart from its entry door, stands its corridor
+                // somewhere else in the box. The old test then bricked the top rows of the doorway
+                // and left the rows beneath it unfilled, which is a hole into the rock at the mouth.
+                // PortalCorridorMask.forCorridor and PortalRoomSealRepair already read it this way.
                 boolean coveredByCorridor = z >= corridorOrigin.getZ()
                     && z < corridorOrigin.getZ() + dims.width()
-                    && y < floorY + dims.height();
+                    && y >= corridorOrigin.getY()
+                    && y < corridorOrigin.getY() + dims.height();
                 if (coveredByCorridor) continue;
                 BlockState fill = sealFillFor(level, baseRoomOrigin, roomOrigin, roomSize, role,
                     y, z, floorY);

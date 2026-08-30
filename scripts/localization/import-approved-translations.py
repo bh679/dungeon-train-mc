@@ -23,9 +23,11 @@ drive this and how an offline import of a saved queue works.
 
 Three things it deliberately will NOT do:
 
-* **Credit an unregistered name.** ``localization/authors.json`` is what keeps the AI-vs-human
-  counts honest, so an unknown translator fails the run until someone puts them in the registry
-  — by hand, or with ``--register-new``.
+* **Credit a name it has not accounted for.** ``localization/authors.json`` is what keeps the
+  AI-vs-human counts honest. An unknown translator fails the run until someone puts them in the
+  registry, unless ``--register-new`` is passed — and then they are added only once their work
+  has actually landed, listed in the run's output, and written to ``--new-authors-out`` so the
+  reviewer of the resulting diff is told exactly which names are new.
 * **Import a stale approval.** Every submission stores the English it was translated from. When
   ``en_us`` has changed since, the approved text answers a question no longer being asked; it is
   reported and skipped rather than shipped.
@@ -59,10 +61,14 @@ BASE_ENV = "DUNGEONTRAIN_RELAY_ADMIN_BASE"
 #: machine translation — under one registered name that stands in for all of them.
 ANONYMOUS = "Anonymous contributor"
 
-#: The relay clamps its admin listing to 1000 rows and has no cursor, so a locale that returns
-#: exactly this many has almost certainly been truncated. Reported loudly rather than imported
-#: as if it were the whole queue.
+#: Rows per request. The relay clamps its admin listing to 1000, and pages older rows through the
+#: `before` keyset cursor it returns as `oldestId` — see fetch_locale.
 PAGE_LIMIT = 1000
+
+#: Hard stop on the paging loop. At PAGE_LIMIT rows a page this is far more than any real queue,
+#: and it means a relay that kept answering `hasMore` with a cursor that never advanced could not
+#: spin this script forever.
+MAX_PAGES = 50
 
 REQUEST_TIMEOUT = 30
 
@@ -84,20 +90,53 @@ def units_of(payload) -> list[dict]:
 
 
 def fetch_locale(base: str, cap: str, locale: str) -> list[dict]:
-    """Every approved unit for one locale, newest first (the relay's admin listing order)."""
-    query = urllib.parse.urlencode(
-        {"flag": "approved", "cap": cap, "locale": locale, "limit": PAGE_LIMIT}
-    )
-    url = f"{base.rstrip('/')}/translations?{query}"
-    try:
-        with urllib.request.urlopen(url, timeout=REQUEST_TIMEOUT) as resp:
-            rows = units_of(json.loads(resp.read().decode("utf-8")))
-    except (urllib.error.URLError, TimeoutError, ValueError, json.JSONDecodeError) as exc:
-        sys.exit(f"error: could not read the approved queue for {locale} — {redact(exc, base)}")
-    if len(rows) >= PAGE_LIMIT:
-        print(f"  WARNING: {locale} returned the {PAGE_LIMIT}-row ceiling — the queue is longer "
-              "than one request can carry, so this import is INCOMPLETE for that locale.",
-              file=sys.stderr)
+    """
+    Every approved unit for one locale, newest first (the relay's admin listing order).
+
+    Pages through the whole queue rather than taking the first response. The relay clamps a single
+    listing to ``PAGE_LIMIT`` rows and returns ``hasMore`` plus ``oldestId``, the keyset cursor to
+    pass back as ``before`` for the next (older) page — the same cursor the explorer's review page
+    walks backwards on.
+
+    This matters more than it looks: ru_ru alone is past the ceiling, and because the listing is
+    ordered newest-first, a single-request import would take the same first page every run. Rows
+    older than the ceiling would never be imported at all, on any run, ever.
+    """
+    rows: list[dict] = []
+    seen_ids: set = set()
+    before = None
+
+    for _ in range(MAX_PAGES):
+        params = {"flag": "approved", "cap": cap, "locale": locale, "limit": PAGE_LIMIT}
+        if before is not None:
+            params["before"] = before
+        url = f"{base.rstrip('/')}/translations?{urllib.parse.urlencode(params)}"
+        try:
+            with urllib.request.urlopen(url, timeout=REQUEST_TIMEOUT) as resp:
+                payload = json.loads(resp.read().decode("utf-8"))
+        except (urllib.error.URLError, TimeoutError, ValueError, json.JSONDecodeError) as exc:
+            sys.exit(f"error: could not read the approved queue for {locale} — {redact(exc, base)}")
+
+        page = units_of(payload)
+        # Ignore any row already collected, so a relay that re-serves a boundary row cannot
+        # duplicate it into the import.
+        fresh = [r for r in page if r.get("id") not in seen_ids]
+        for r in fresh:
+            if r.get("id") is not None:
+                seen_ids.add(r["id"])
+        rows += fresh
+
+        # A bare list carries no envelope, so there is nothing to page with.
+        if not isinstance(payload, dict):
+            break
+        cursor = payload.get("oldestId")
+        if not payload.get("hasMore") or cursor is None or cursor == before or not fresh:
+            break
+        before = cursor
+    else:
+        print(f"  WARNING: {locale} hit the {MAX_PAGES}-page ceiling — this import is INCOMPLETE "
+              "for that locale.", file=sys.stderr)
+
     return rows
 
 
@@ -148,8 +187,17 @@ def register_authors(path: Path, names: list[str]) -> None:
     pio.load_authors(path)  # a malformed append must fail here, not in CI
 
 
-def ensure_registered(names: set[str], path: Path, register_new: bool, dry_run: bool) -> None:
-    """Every translator must be a registered human before a single line is stamped to them."""
+def check_registered(names: set[str], path: Path, register_new: bool) -> list[str]:
+    """The refusals that must happen before a single byte is written; returns the unknown names.
+
+    A name registered as ``"ai"`` always stops the run, ``--register-new`` or not: whatever the
+    relay was told, a machine did not translate this, and crediting it would corrupt the very
+    counts the registry exists to keep honest.
+
+    An unknown name is a different thing — it is the ordinary case of somebody translating for
+    the first time. Without ``--register-new`` it still fails the run, having changed nothing.
+    With it, the names are handed back for register_landed to add after the import.
+    """
     authors = pio.load_authors(path)
     machines = sorted(n for n in names if authors.get(n) == "ai")
     if machines:
@@ -157,19 +205,39 @@ def ensure_registered(names: set[str], path: Path, register_new: bool, dry_run: 
                  f"{path.name}: {', '.join(machines)}. A machine cannot be a translator — fix "
                  "the registry or the submission before importing.")
     unknown = sorted(n for n in names if n not in authors)
-    if not unknown:
-        return
-    if not register_new:
+    if unknown and not register_new:
         listed = "\n".join(f'  "{name}": "human",' for name in unknown)
         sys.exit(f"error: {len(unknown)} translator name(s) are not in {path.name}:\n{listed}\n"
                  "Nothing was changed. Add them (with a profile URL where they gave one — see "
                  "the object form in that file) and re-run, or pass --register-new to add them "
                  "as plain humans.")
+    return unknown
+
+
+def register_landed(unknown: list[str], landed: set[str], path: Path,
+                    dry_run: bool) -> list[str]:
+    """Register the new translators whose work this run actually imported. Returns their names.
+
+    Registration deliberately waits for the import pass. A name is read off the payload long
+    before anyone knows whether anything of theirs survives: an approval can be dropped as stale
+    because the English moved on, or refused as unapplyable. Registering on sight would put
+    people in the credit ledger with not one stamped line behind them, so only the names that
+    landed something are added — the rest are named as skipped and can arrive on a later run.
+    """
+    if not unknown:
+        return []
+    new = [name for name in unknown if name in landed]
+    idle = [name for name in unknown if name not in landed]
+    if idle:
+        print(f"  not registered — nothing of theirs could be imported: {', '.join(idle)}")
+    if not new:
+        return []
     if dry_run:
-        print(f"  would register in {path.name}: {', '.join(unknown)}")
-        return
-    register_authors(path, unknown)
-    print(f"  registered in {path.name}: {', '.join(unknown)}")
+        print(f"  would register in {path.name}: {', '.join(new)}")
+        return new
+    register_authors(path, new)
+    print(f"  registered in {path.name}: {', '.join(new)}")
+    return new
 
 
 # ---- lang units --------------------------------------------------------------
@@ -363,6 +431,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--narrative-dir", type=Path, default=pio.DEFAULT_NARRATIVE_DIR)
     parser.add_argument("--register-new", action="store_true",
                        help='add unregistered translators to authors.json as "human"')
+    parser.add_argument("--new-authors-out", type=Path,
+                       help="write the names registered this run to this path as a JSON array, "
+                            "so the PR that carries them can say who is new (a --dry-run writes "
+                            "no file, like every other write here)")
     parser.add_argument("--dry-run", action="store_true",
                        help="report what would be imported and stamped, writing nothing")
     # stamp-provenance.py's single-namespace escape hatch, mirrored so a redirected run
@@ -384,8 +456,8 @@ def main(argv: list[str] | None = None) -> int:
         print("no approved units to import" + (" (see problems below)" if problems else ""))
         return report(problems, [])
 
-    ensure_registered({translator_of(r) for r in rows}, args.authors_file,
-                      args.register_new, args.dry_run)
+    unknown = check_registered({translator_of(r) for r in rows}, args.authors_file,
+                               args.register_new)
 
     if args.lang_dir:
         ns_dirs = {"dungeontrain": pio.Namespace("dungeontrain", args.lang_dir,
@@ -401,6 +473,14 @@ def main(argv: list[str] | None = None) -> int:
               sum(map(len, rewritten.values())) + sum(map(len, reviewed.values())))
     print(f"{len(rows)} approved unit(s): {counts[0]} string(s) revised, {counts[1]} confirmed "
           f"as already matching, {counts[2]} book(s) touched, {len(stale)} stale")
+
+    # The translator is the last element of every group key, lang (namespace, locale, name) and
+    # book (locale, name) alike — so this is everyone who ended up with something to be stamped.
+    landed = {group[-1] for group in (*revised, *confirmed, *rewritten, *reviewed)}
+    registered = register_landed(unknown, landed, args.authors_file, args.dry_run)
+    if args.new_authors_out and not args.dry_run:
+        args.new_authors_out.write_text(json.dumps(registered, ensure_ascii=False, indent=2)
+                                        + "\n", encoding="utf-8")
 
     stamp_lang(revised, confirmed, args)
     stamp_books(rewritten, reviewed, args)
