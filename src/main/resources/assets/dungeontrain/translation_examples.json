@@ -3578,5 +3578,23 @@
         "/Users/sam/minecraft/dungeontrain/backups"
       ]
     }
+  },
+  "gui.dungeontrain.translate.edit.blocked.missing_vars": {
+    "1": {
+      "label": "the placeholders this translation has dropped",
+      "examples": [
+        "%1$s",
+        "%1$s, %2$s"
+      ]
+    }
+  },
+  "gui.dungeontrain.translate.edit.blocked.extra_vars": {
+    "1": {
+      "label": "the placeholders this translation has added",
+      "examples": [
+        "%2$s",
+        "%2$s, %3$s"
+      ]
+    }
   }
 }

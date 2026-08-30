@@ -296,6 +296,58 @@ def test_deferred_out_writes_nothing_on_a_dry_run():
     assert not os.path.exists(out)
 
 
+def test_a_translation_that_drops_an_argument_is_deferred_not_written():
+    """The live 2026-08-30 blocker, in miniature.
+
+    ru_ru's approved `clear_backups.confirm.both` carried one %s where the English has two. The
+    importer wrote it, and the post-import validator then failed the whole run — so one malformed
+    submission held 1,105 good ones hostage, which is the exact failure deferral exists to prevent.
+    """
+    ws = workspace(lang={"a.key": "AI Alpha", "b.key": "AI Beta", "c.key": "AI %s and %s"},
+                   prov=dict(PROV, **{"c.key": {"author": "Opus 5 (Claude)", "reviewer": ""}}))
+    write_json(os.path.join(ws, "lang", "en_us.json"), dict(EN, **{"c.key": "%s and %s"}))
+    out = os.path.join(ws, "deferred.json")
+    proc = run(ws, [unit(unitId="c.key", source="", value="только %s"),
+                    unit(id=2, unitId="a.key", source="Alpha", value="人工 Alpha")],
+               "--deferred-out", out)
+    assert proc.returncode == 0, proc.stderr
+    assert "do not match" in proc.stdout
+    assert lang_of(ws)["c.key"] == "AI %s and %s"      # the broken value was NOT written
+    assert lang_of(ws)["a.key"] == "人工 Alpha"          # the good one in the same batch still landed
+    assert len(read_json(out)) == 1
+
+
+def test_a_translation_with_a_bare_percent_is_deferred():
+    """Component.translatable runs MC's format parser: a bare % throws and takes the screen down.
+
+    Nothing else catches this — validate-locale compares argument tokens, and a bare % produces
+    none, so it compares EQUAL to an English that has none either.
+    """
+    ws = workspace()
+    proc = run(ws, [unit(unitId="a.key", source="Alpha", value="Готово на 50%")])
+    assert proc.returncode == 0, proc.stderr
+    assert "bare" in proc.stdout
+    assert lang_of(ws)["a.key"] == "AI Alpha"
+
+
+def test_a_literal_percent_the_english_lacks_is_still_imported():
+    """`%%` is an escape, not an argument — a translation may add one where English has none."""
+    ws = workspace()
+    proc = run(ws, [unit(unitId="a.key", source="Alpha", value="Готово на 50%%")])
+    assert proc.returncode == 0, proc.stderr
+    assert lang_of(ws)["a.key"] == "Готово на 50%%"
+
+
+def test_reordered_positional_arguments_are_imported():
+    """Grammar may move arguments; the multiset is what has to match."""
+    ws = workspace(lang={"a.key": "AI Alpha", "b.key": "AI Beta", "c.key": "AI %1$s %2$s"},
+                   prov=dict(PROV, **{"c.key": {"author": "Opus 5 (Claude)", "reviewer": ""}}))
+    write_json(os.path.join(ws, "lang", "en_us.json"), dict(EN, **{"c.key": "%1$s before %2$s"}))
+    proc = run(ws, [unit(unitId="c.key", source="", value="%2$s vor %1$s")])
+    assert proc.returncode == 0, proc.stderr
+    assert lang_of(ws)["c.key"] == "%2$s vor %1$s"
+
+
 def test_book_field_that_no_longer_exists_is_deferred():
     ws = workspace()
     proc = run(ws, [unit(unitType="book", unitId="random_books/deathnote#gone",
