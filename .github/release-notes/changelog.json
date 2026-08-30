@@ -10314,8 +10314,25 @@
       "released_at": null
     },
     {
-      "id": "mirror-by-edited-template",
+      "id": "import-validates-format-tokens",
       "version": "0.747.0",
+      "type": "fix",
+      "title": "Player translations no longer blocked by a single mistyped one",
+      "summary": "The weekly job that pulls player-submitted translations into the mod was still stopping dead on one bad submission out of 1,790 \u2014 a Russian line that had lost one of its two fill-in slots. Everything else, more than a thousand approved translations, was thrown away with it. A submission that would not display correctly is now set aside and named, and the rest are imported.",
+      "highlights": [
+        "One malformed submission no longer discards the other 1,100",
+        "A translation that loses or gains a fill-in slot is set aside with the reason, so it can be corrected rather than silently shipped broken",
+        "Closed a crash route: a stray percent sign in a submitted translation would have taken down whichever screen showed it"
+      ],
+      "pr": 1210,
+      "date": "2026-08-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "mirror-by-edited-template",
+      "version": "0.748.0",
       "type": "fix",
       "title": "Editor mirroring follows the template you build into",
       "summary": "Template mirroring now keys off the block you place, not where you are standing. Building into a mirror-enabled template from its roof, from the gap between plots, or from a neighbouring plot is mirrored using that template's own settings \u2014 previously those edits silently lost their mirror image.",

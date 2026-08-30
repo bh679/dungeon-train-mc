@@ -155,6 +155,10 @@ jobs:
                    'retire them at the relay.'),
                   ('edit this one by hand', 'a book field that would not apply',
                    'The field is gone from that book, or is not prose. Open the file.'),
+                  ('needs fixing at the relay', 'text that would not render',
+                   'Component.translatable runs Minecraft\'s format parser, so a translation that '
+                   'drops a `%s`, invents one, or contains a bare `%` is broken however well '
+                   'meant. Fix the text at the relay and it imports on the next run.'),
               ]
               blocks = []
               rest = list(left)
