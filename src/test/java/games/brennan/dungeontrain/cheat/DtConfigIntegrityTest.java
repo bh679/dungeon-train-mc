@@ -144,8 +144,54 @@ class DtConfigIntegrityTest {
     @DisplayName("Harder-than-default counts too — the rule is symmetric")
     void harderThanDefaultIsReported() {
         // A shortened onboarding stage makes the game harder, and just as incomparable.
-        assertEquals(List.of("difficulty.firstLevelNoHostilesCarriages=0 (expected 10)"),
-            server("difficulty.firstLevelNoHostilesCarriages", 0L));
+        assertEquals(List.of("difficulty.firstLevelNoHostilesCarriages=0 (expected 5)"),
+            server("configVersion", (long) DungeonTrainConfig.CURRENT_CONFIG_VERSION,
+                "difficulty.firstLevelNoHostilesCarriages", 0L));
+    }
+
+    // ---- Keys whose default changed: not judged before their migration runs ----
+
+    /**
+     * The case this grace exists for. The onboarding lengths shipped as 10 + 15 for every release up
+     * to config v3, so every install on earth has those numbers on disk. The migration that rewrites
+     * them runs when the SERVER config loads — which has not happened yet at the title screen, where
+     * this same check answers for {@code ConfigDeviationScreen}. Without the grace, the first launch
+     * after updating tells the entire player base they are in Free Play over a number DT itself wrote.
+     */
+    @Test
+    @DisplayName("A pre-migration file holding the OLD shipped onboarding lengths is clean")
+    void staleDefaultBeforeItsMigrationIsClean() {
+        assertTrue(server(
+            "configVersion", (long) (DungeonTrainConfig.ONBOARDING_LENGTHS_CONFIG_VERSION - 1),
+            "difficulty.firstLevelNoHostilesCarriages",
+            (long) DungeonTrainConfig.LEGACY_FIRST_LEVEL_NO_HOSTILES_CARRIAGES,
+            "difficulty.firstLevelEasyMobsCarriages",
+            (long) DungeonTrainConfig.LEGACY_FIRST_LEVEL_EASY_MOBS_CARRIAGES).isEmpty());
+    }
+
+    @Test
+    @DisplayName("A file with no version stamp at all is treated as pre-migration, not as edited")
+    void unstampedFileIsClean() {
+        assertTrue(server("difficulty.firstLevelNoHostilesCarriages",
+            (long) DungeonTrainConfig.LEGACY_FIRST_LEVEL_NO_HOSTILES_CARRIAGES).isEmpty());
+    }
+
+    /** Once the migration has run, the same number is a choice someone made — and is reported. */
+    @Test
+    @DisplayName("The same old value on a MIGRATED file is a real deviation")
+    void staleDefaultAfterItsMigrationIsReported() {
+        assertEquals(List.of("difficulty.firstLevelNoHostilesCarriages=10 (expected 5)"),
+            server("configVersion", (long) DungeonTrainConfig.ONBOARDING_LENGTHS_CONFIG_VERSION,
+                "difficulty.firstLevelNoHostilesCarriages",
+                (long) DungeonTrainConfig.LEGACY_FIRST_LEVEL_NO_HOSTILES_CARRIAGES));
+    }
+
+    /** The grace is scoped to dated keys — an undated one is judged whatever the file's version. */
+    @Test
+    @DisplayName("A pre-migration file is still judged on keys whose default never changed")
+    void undatedKeysAreJudgedRegardlessOfVersion() {
+        assertEquals(List.of("difficulty.difficultyEnabled=false (expected true)"),
+            server("configVersion", 0L, "difficulty.difficultyEnabled", false));
     }
 
     @Test

@@ -13,4 +13,9 @@ absent below. The same guards (`check-provenance.py`, `check-narrative-provenanc
 `validate-locale.py`) ran in the import job that opened this PR; push an empty commit to this
 branch if you want the full CI suite on it too.
 
+A translator who is new to the repo is registered in `localization/authors.json` as part of
+this diff rather than in a hand-written PR merged first — the import only adds people whose work
+actually landed here, and never a name the registry already calls `"ai"`. When it registered
+anyone, they are listed below.
+
 Opened by `.github/workflows/import-approved-translations.yml`.
