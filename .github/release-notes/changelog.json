@@ -10282,6 +10282,19 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "builder-load-other-player-builds",
+      "version": "0.745.0",
+      "type": "chore",
+      "title": "Internal tooling",
+      "summary": "Development tooling changes.",
+      "highlights": [],
+      "pr": 1213,
+      "date": "2026-08-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
