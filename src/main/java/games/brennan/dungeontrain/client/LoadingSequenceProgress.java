@@ -24,6 +24,10 @@ public final class LoadingSequenceProgress {
 
     private static long startNanos = -1L;
     private static double displayFraction = 0.0;
+    /** Set once the themed world-load screen has rendered — i.e. a join sequence is under way. */
+    private static boolean sequenceActive = false;
+    /** Set when the player is finally in the world; ends the sequence until the next login. */
+    private static boolean sequenceFinished = false;
 
     private LoadingSequenceProgress() {}
 
@@ -38,6 +42,7 @@ public final class LoadingSequenceProgress {
     /** Report the world-load (first) screen's own 0..1 local progress; returns the overall fraction to render. */
     public static double reportWorldLoad(double local) {
         ensureStarted();
+        sequenceActive = true;
         double overall = WORLD_LOAD_SHARE * Mth.clamp(local, 0.0, 1.0);
         displayFraction = Math.max(displayFraction, overall);
         return displayFraction;
@@ -51,6 +56,25 @@ public final class LoadingSequenceProgress {
         return displayFraction;
     }
 
+    /** The fraction currently on screen, without reporting any new progress. */
+    public static double displayed() {
+        return displayFraction;
+    }
+
+    /**
+     * True from the themed world-load screen until the player is actually in the world
+     * ({@link LoadingSequenceWatcher}). Screens vanilla reuses outside the join — notably
+     * {@code ReceivingLevelScreen} for portal travel — only wear the DT theme while this holds.
+     */
+    public static boolean isJoining() {
+        return sequenceActive && !sequenceFinished;
+    }
+
+    /** Called once the player is in the world with no loading screen left in front of them. */
+    public static void finishJoin() {
+        sequenceFinished = true;
+    }
+
     /** Shared animation clock (smoke drift, ∞ pulse) — continuous across both screens. */
     public static long animNanos() {
         ensureStarted();
@@ -61,5 +85,7 @@ public final class LoadingSequenceProgress {
     public static void reset() {
         startNanos = -1L;
         displayFraction = 0.0;
+        sequenceActive = false;
+        sequenceFinished = false;
     }
 }

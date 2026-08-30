@@ -110,6 +110,29 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # The check nothing was doing. Both existing guards are self-referential — validate-locale
+      # compared each locale to the es_es template (which carried the identical gap) and
+      # check-provenance compares each sidecar to its OWN lang file — so a GUI string added to
+      # en_us.json alone left nineteen languages showing English with every check green. That
+      # shipped twice: 109 keys in v0.619.0 and 144 keys again by 2026-08-30, the second time
+      # also blocking the relay import, because players had translated the drifted keys from the
+      # in-game editor and there was no line to write them to.
+      - name: Every locale carries every English key
+        run: python3 scripts/localization/check-lang-parity.py
+
+      # The full structural suite: key sets, file sets, and shape against the es_es template,
+      # plus the value checks (placeholders, empty strings, trigger-book title length, note
+      # offsets). It ran --values-only until the AIN overlay debt it was tripping over was paid
+      # off — vi_vn and fil_ph missing `item_types`, three locales carrying a stray segment
+      # `label`, and zh_cn's synonym pool written against a different layout. Those are fixed,
+      # so this asks the whole question again. If it ever goes red, fix the locale rather than
+      # narrowing the gate: a check that is permanently failing is a check nobody reads.
+      - name: Locale trees are structurally intact
+        run: |
+          locales=$(ls src/main/resources/assets/dungeontrain/lang \
+            | sed 's/\.json$//' | grep -v '^en_us$' | tr '\n' ' ')
+          python3 scripts/localization/validate-locale.py $locales
+
       - name: Per-line translation provenance aligned with lang files (all namespaces)
         run: python3 scripts/localization/check-provenance.py
 
@@ -124,3 +147,5 @@ jobs:
           python3 scripts/localization/test_stamp_narrative_provenance.py
           python3 scripts/localization/test_provenance_io.py
           python3 scripts/localization/test_import_approved_translations.py
+          python3 scripts/localization/test_plural_forms.py
+          python3 scripts/localization/test_merge_locale_keys.py

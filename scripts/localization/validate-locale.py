@@ -12,23 +12,45 @@ shape byte-identical. This gate enforces that:
   2. The narrative_localizations/ and ain_localizations/ subtrees mirror es_es's file set.
   3. Every JSON parses and is *shape-identical* to es_es: same object keys, same array
      lengths, equal numbers/booleans/null, and equal structural strings (id / ref / page /
-     _translator_note). Only translatable string values may differ.
+     _translator_note). Only translatable string values may differ. The single exemption is
+     array LENGTH in a flat AIN word pool — see ``flat_text_pool``.
   4. Every trigger-book title (Death Note, Love Note) is <= 15 characters (Minecraft book-title
      limit) — a longer one can't be typed, so that language silently loses the mechanic.
   5. The localization credit names the locale.
 
 Usage:  validate-locale.py <loc> [<loc> ...]
+        validate-locale.py --values-only <loc> [<loc> ...]
 Exit code is non-zero if any locale fails.
+
+``--values-only`` checks just the things a change to TRANSLATED TEXT can break — placeholders,
+empty strings, trigger-book title length, note offsets into prose — and skips key sets, file
+sets and structural shape. **Nothing runs it today**: it was written for the relay import job
+while the AIN overlays carried structural debt that job could not have caused (vi_vn had been
+missing `item_types` for months, and gating on the whole suite meant one Vietnamese string could
+not be imported over it). That debt is paid off and both build.yml and the import job ask the
+full question again. The flag is kept as the escape hatch for the same situation recurring —
+reach for it only to unblock work while a locale is being repaired, never as the steady state.
 """
 import json
 import re
 import sys
 from pathlib import Path
 
+from plural_forms import PLURAL_SUFFIXES, expected_keys, plural_categories  # noqa: F401
+
 REPO = Path(__file__).resolve().parents[2]
 ASSETS = REPO / "src/main/resources/assets"
 DATA = REPO / "src/main/resources/data/dungeontrain"
 REF = "es_es"                       # structural template (validated in PR #768)
+# The GUI key set is measured against ENGLISH for our own namespace, and against the es_es
+# template for the three sibling overlays — those ship no en_us here at all (their English lives
+# in the upstream mod's jar), so es_es remains the only reference they have.
+#
+# `dungeontrain` used to be measured against es_es too, and that is precisely how three weeks of
+# drift stayed invisible twice: a key added to en_us.json alone left every locale INCLUDING the
+# reference untouched, so the comparison was of one gap against an identical gap and passed. By
+# 2026-08-30 en_us had 1791 keys and every other locale was short by 144.
+GUI_REF = {"dungeontrain": "en_us"}
 GUI_MODS = ["dungeontrain", "adventureitemnames", "playermob", "discordpresence"]
 DATA_SUBTREES = ["narrative_localizations", "ain_localizations"]
 
@@ -43,57 +65,6 @@ MAX_TITLE_CHARS = 15               # DeathNoteTitleLocalization.VANILLA_MAX_TITL
 # Instruction books whose TITLE is itself the in-game trigger word a player types (NoteKind).
 # Their translated titles must stay typeable, or that language loses the mechanic silently.
 TRIGGER_BOOKS = ("deathnote", "lovenote")
-# Locale -> plural rule family, shared verbatim with PluralRules.java. A count-dependent key is a
-# FAMILY of sibling keys (`<base>.one`, `<base>.few`, …) and each locale carries exactly the forms
-# its own grammar can reach, so the key set is derived per locale rather than matched to the
-# reference: Russian must have `.few`/`.many` that English cannot use, Japanese must NOT carry a
-# `.one` its rules can never select.
-PLURAL_RULES = ASSETS / "dungeontrain" / "plural_rules.json"
-FAMILY_CATEGORIES = {
-    "one_other": ("one", "other"),
-    "zero_one_other": ("one", "other"),
-    "east_slavic": ("one", "few", "many"),
-    "polish": ("one", "few", "many"),
-    "romanian": ("one", "few", "other"),
-    "single": ("other",),
-}
-PLURAL_SUFFIXES = {"one", "two", "few", "many", "other"}
-
-
-def plural_categories(loc, errors=None):
-    """The plural categories `loc`'s rules can produce, e.g. ("one", "few", "many") for ru_ru."""
-    try:
-        table = load(PLURAL_RULES)["locales"]
-    except (OSError, json.JSONDecodeError, KeyError) as exc:
-        if errors is not None:
-            errors.append(f"[plural] cannot read {PLURAL_RULES.name}: {exc}")
-        return FAMILY_CATEGORIES["one_other"]
-    family = table.get(loc[:2].lower(), "one_other")
-    if family not in FAMILY_CATEGORIES:
-        if errors is not None:
-            errors.append(f"[plural] {loc}: unknown rule family '{family}'")
-        return FAMILY_CATEGORIES["one_other"]
-    return FAMILY_CATEGORIES[family]
-
-
-def plural_bases(keys):
-    """Bases in `keys` that form a plural family — a base carrying BOTH `.one` and `.other`."""
-    return {k.rsplit(".", 1)[0] for k in keys if k.endswith(".one")
-            and k.rsplit(".", 1)[0] + ".other" in keys}
-
-
-def expected_keys(ref_keys, loc, errors=None):
-    """The reference key set rewritten into the forms `loc` is required to carry."""
-    bases = plural_bases(ref_keys)
-    cats = plural_categories(loc, errors)
-    out = set()
-    for key in ref_keys:
-        base, _, suffix = key.rpartition(".")
-        if base in bases and suffix in PLURAL_SUFFIXES:
-            out.update(f"{base}.{c}" for c in cats)
-        else:
-            out.add(key)
-    return out, bases
 
 
 def reference_twin(key, ref, bases):
@@ -110,7 +81,49 @@ def load(path):
 
 
 def placeholders(value):
-    return sorted(PLACEHOLDER.findall(value)) if isinstance(value, str) else []
+    """A value's ARGUMENT tokens, sorted.
+
+    `%%` is matched by the pattern but excluded here: it is an escaped literal percent, not an
+    argument the caller passes. A translation is entitled to contain one where the English does
+    not, or to drop one by rephrasing — six locales render the AI-policy line without a percent
+    sign at all, and that is a translation decision, not a defect. What must match is the
+    arguments, because those are positional.
+    """
+    if not isinstance(value, str):
+        return []
+    return sorted(t for t in PLACEHOLDER.findall(value) if t != "%%")
+
+
+def flat_text_pool(ref):
+    """True for an AIN pool that is nothing but a word list — every entry exactly ``{"text": …}``.
+
+    ``type_synonyms`` is the only pool of the 31 whose entries carry anything else: its
+    ``item_types`` binds each synonym to the item tag it may name, so a missing or extra entry
+    there shifts every later tag and a sword starts being called a pair of boots. Length is
+    load-bearing, and it stays checked.
+
+    The other 30 are flat lists drawn at random by ``NameComposer.pickPoolEntry``. Position binds
+    nothing, so requiring a locale to hold *exactly* as many synonyms as Spanish is parity for its
+    own sake: it fails zh_cn for having thought of five more titles than es_es did, which is the
+    gate objecting to a translator doing the job well. Entry SHAPE is still enforced — every entry
+    must be a one-key ``text`` string — so a malformed pool is still caught.
+    """
+    entries = ref.get("entries") if isinstance(ref, dict) else None
+    return bool(entries) and isinstance(entries, list) and all(
+        isinstance(e, dict) and set(e) == {"text"} and isinstance(e["text"], str) for e in entries)
+
+
+def compare_flat_pool(ref, loc, path, errors):
+    """Shape-check a flat word pool without comparing its length."""
+    if not isinstance(loc, dict) or set(ref) != set(loc):
+        errors.append(f"{path}: pool keys {sorted(loc) if isinstance(loc, dict) else loc!r} "
+                      f"!= {sorted(ref)}")
+        return
+    if ref.get("id") != loc.get("id"):
+        errors.append(f"{path}.id: structural value changed "
+                      f"({loc.get('id')!r} != {ref.get('id')!r})")
+    if not flat_text_pool(loc):
+        errors.append(f"{path}.entries: every entry must be a single 'text' string")
 
 
 def compare_shape(ref, loc, path, errors):
@@ -159,15 +172,17 @@ def rel_json_set(root):
     return {p.relative_to(root).as_posix() for p in root.rglob("*.json")} if root.is_dir() else set()
 
 
-def validate_gui(loc, errors):
+def validate_gui(loc, errors, warnings, values_only=False):
     for mod in GUI_MODS:
-        ref_path = ASSETS / mod / "lang" / f"{REF}.json"
+        ref_name = GUI_REF.get(mod, REF)
+        ref_path = ASSETS / mod / "lang" / f"{ref_name}.json"
         loc_path = ASSETS / mod / "lang" / f"{loc}.json"
         if not ref_path.exists():
-            errors.append(f"[gui:{mod}] reference {REF}.json missing — cannot validate")
+            errors.append(f"[gui:{mod}] reference {ref_name}.json missing — cannot validate")
             continue
         if not loc_path.exists():
-            errors.append(f"[gui:{mod}] {loc}.json missing")
+            if not values_only:      # nothing to check the values OF; that is a structural gap
+                errors.append(f"[gui:{mod}] {loc}.json missing")
             continue
         try:
             ref, cur = load(ref_path), load(loc_path)
@@ -177,10 +192,16 @@ def validate_gui(loc, errors):
         wanted, bases = expected_keys(set(ref), loc, errors)
         missing = wanted - set(cur)
         extra = set(cur) - wanted
-        if missing:
+        if missing and not values_only:
             errors.append(f"[gui:{mod}] missing {len(missing)} keys e.g. {sorted(missing)[:3]}")
-        if extra:
-            errors.append(f"[gui:{mod}] {len(extra)} unexpected keys e.g. {sorted(extra)[:3]}")
+        if extra and not values_only:
+            # A warning, not an error: a locale is allowed to carry keys English does not. zh_cn
+            # and zh_tw legitimately ship 14 of them (extra death.discarding_world_* lines and
+            # modpack-specific support copy), and a key surviving here after en_us dropped it
+            # costs a few bytes in the jar, not a broken screen. Missing keys are the failure
+            # that matters — those are the ones players see in English.
+            warnings.append(f"[gui:{mod}] {len(extra)} key(s) not in {ref_name} "
+                            f"e.g. {sorted(extra)[:3]}")
         for key in wanted & set(cur):
             twin = reference_twin(key, ref, bases)
             if twin in ref and placeholders(ref[twin]) != placeholders(cur[key]):
@@ -190,21 +211,27 @@ def validate_gui(loc, errors):
                 errors.append(f"[gui:{mod}] '{key}': empty value")
 
 
-def validate_data(loc, errors):
+def validate_data(loc, errors, values_only=False):
     for sub in DATA_SUBTREES:
         ref_root, loc_root = DATA / sub / REF, DATA / sub / loc
         ref_files, loc_files = rel_json_set(ref_root), rel_json_set(loc_root)
-        for miss in sorted(ref_files - loc_files):
-            errors.append(f"[{sub}] missing file {miss}")
-        for extra in sorted(loc_files - ref_files):
-            errors.append(f"[{sub}] unexpected file {extra}")
+        if not values_only:
+            for miss in sorted(ref_files - loc_files):
+                errors.append(f"[{sub}] missing file {miss}")
+            for extra in sorted(loc_files - ref_files):
+                errors.append(f"[{sub}] unexpected file {extra}")
         for rel in sorted(ref_files & loc_files):
             try:
                 ref, cur = load(ref_root / rel), load(loc_root / rel)
             except json.JSONDecodeError as exc:
                 errors.append(f"[{sub}] {rel}: JSON error: {exc}")
                 continue
-            compare_shape(ref, cur, f"{sub}/{rel}", errors)
+            if not values_only:
+                if sub == "ain_localizations" and rel.startswith("pools/") \
+                        and flat_text_pool(ref):
+                    compare_flat_pool(ref, cur, f"{sub}/{rel}", errors)
+                else:
+                    compare_shape(ref, cur, f"{sub}/{rel}", errors)
             if any(rel.endswith(f"random_books/{book}.json") for book in TRIGGER_BOOKS):
                 title = cur.get("title", "")
                 if len(title) > MAX_TITLE_CHARS:
@@ -245,13 +272,16 @@ def validate_credit(loc, errors):
         errors.append("[credit] empty name")
 
 
-def main(locales):
+def main(locales, values_only=False):
     overall_ok = True
     for loc in locales:
-        errors = []
-        validate_gui(loc, errors)
-        validate_data(loc, errors)
-        validate_credit(loc, errors)
+        errors, warnings = [], []
+        validate_gui(loc, errors, warnings, values_only)
+        validate_data(loc, errors, values_only)
+        if not values_only:
+            validate_credit(loc, errors)
+        for warn in warnings:
+            print(f"⚠️  {loc}: {warn}")
         if errors:
             overall_ok = False
             print(f"❌ {loc}: {len(errors)} problem(s)")
@@ -265,7 +295,10 @@ def main(locales):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
+    argv = sys.argv[1:]
+    values_only = "--values-only" in argv
+    argv = [a for a in argv if a != "--values-only"]
+    if not argv:
         print(__doc__)
         sys.exit(2)
-    sys.exit(main(sys.argv[1:]))
+    sys.exit(main(argv, values_only))

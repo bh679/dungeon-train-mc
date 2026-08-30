@@ -109,7 +109,13 @@ public final class TranslationCatalog {
             }
             // English order first (that is the order the sidecars and review CSVs use), then any
             // key the locale has but English doesn't — zh_cn/zh_tw legitimately carry extras.
-            Set<String> keys = new LinkedHashSet<>(english.keySet());
+            //
+            // English's keys are projected through this language's plural rules on the way in, so
+            // a translator is offered the forms their own grammar reaches rather than English's.
+            // The union with what the locale really ships happens AFTER, so a key already in the
+            // file stays editable either way. See TranslationPluralForms.
+            Set<String> keys = new LinkedHashSet<>(
+                TranslationPluralForms.project(english.keySet(), locale));
             keys.addAll(translated.keySet());
             for (String key : keys) {
                 out.add(new TranslationUnit(

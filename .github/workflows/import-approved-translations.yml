@@ -69,6 +69,7 @@ jobs:
         run: |
           python3 scripts/localization/import-approved-translations.py \
             --register-new --new-authors-out "$RUNNER_TEMP/new-authors.json" \
+            --deferred-out "$RUNNER_TEMP/deferred.json" \
             ${{ inputs.dry_run && '--dry-run' || '' }} \
             ${{ inputs.locale && format('--locale {0}', inputs.locale) || '' }}
 
@@ -86,6 +87,12 @@ jobs:
       # build.yml's localization-checks does not run on a PR opened with the default GITHUB_TOKEN
       # (a token-authored PR raises no workflow events), so the same guards run HERE, before the
       # PR exists. A broken import must never reach review looking green.
+      #
+      # validate-locale runs in full. It was narrowed to --values-only while the AIN overlays
+      # carried structural debt this job could not have caused — vi_vn missing `item_types` would
+      # have refused a Vietnamese translation that had nothing to do with it. That debt is paid
+      # off, so the job asks the whole question. If a locale ever fails here on something this
+      # job did not touch, that is the signal to go and fix the locale.
       - name: Provenance + locale checks
         if: steps.changed.outputs.yes == 'true'
         run: |
@@ -108,8 +115,11 @@ jobs:
           import json, os, pathlib
           template = pathlib.Path('.github/import-approved-translations-pr-body.md')
           body = template.read_text(encoding='utf-8')
-          report = pathlib.Path(os.environ['RUNNER_TEMP']) / 'new-authors.json'
+          temp = pathlib.Path(os.environ['RUNNER_TEMP'])
+          report = temp / 'new-authors.json'
           names = json.loads(report.read_text(encoding='utf-8')) if report.is_file() else []
+          skipped = temp / 'deferred.json'
+          left = json.loads(skipped.read_text(encoding='utf-8')) if skipped.is_file() else []
           if names:
               # Rendered as the authors.json lines themselves: a name is arbitrary player-supplied
               # text, and inside a fence it cannot break the page's markdown the way a backtick or
@@ -128,8 +138,48 @@ jobs:
               trailer = 'Opened by `.github/workflows/import-approved-translations.yml`.'
               body = (body.replace(trailer, section + trailer) if trailer in body
                       else body + '\n' + section)
-          (pathlib.Path(os.environ['RUNNER_TEMP']) / 'pr-body.md').write_text(body,
-                                                                             encoding='utf-8')
+          if left:
+              # Named here because this is the only place anyone will look. These units are not
+              # errors and do not fail the run, but they are approved player work that did NOT
+              # land, and a PR that quietly carried 979 translations while dropping 171 without
+              # saying so would be worse than the failing job it replaced. Grouped by the reason,
+              # since the reasons want completely different things done about them.
+              causes = [
+                  ('locale drift', 'locale drift',
+                   'The key exists in `en_us.json` but not in that locale\'s file, so there is no '
+                   'line to write. Translating the missing keys into every locale imports these '
+                   'on the next run — `scripts/localization/check-lang-parity.py` lists them.'),
+                  ('not a plural form', 'a plural form the language cannot use',
+                   'The in-game editor offered the raw English key set, so translators were shown '
+                   '`.other` forms their grammar never selects. These can never be imported; '
+                   'retire them at the relay.'),
+                  ('edit this one by hand', 'a book field that would not apply',
+                   'The field is gone from that book, or is not prose. Open the file.'),
+              ]
+              blocks = []
+              rest = list(left)
+              for needle, heading, why in causes:
+                  hits = [line for line in rest if needle in line]
+                  if not hits:
+                      continue
+                  rest = [line for line in rest if needle not in line]
+                  # Just the unit — the heading above already carries the reason, and repeating
+                  # it on all 144 bullets buries the one thing a reviewer is scanning for.
+                  units = sorted(line.split(': ', 1)[0] for line in hits)
+                  listed = '\n'.join(f'- `{u}`' for u in units[:40])
+                  more = (f'\n- …and {len(hits) - 40} more' if len(hits) > 40 else '')
+                  blocks.append(f'### {len(hits)} × {heading}\n\n{why}\n\n{listed}{more}\n')
+              if rest:
+                  listed = '\n'.join(f'- `{line}`' for line in sorted(rest)[:40])   # reason kept: unclassified
+                  blocks.append(f'### {len(rest)} × other\n\n{listed}\n')
+              section = (f'## {len(left)} approved unit(s) could not be imported\n\n'
+                         'Approved work with nowhere to land. Nothing here failed the run, and '
+                         'nothing here is lost — every one is still approved at the relay and will '
+                         'import as soon as it has somewhere to go.\n\n' + '\n'.join(blocks) + '\n')
+              trailer = 'Opened by `.github/workflows/import-approved-translations.yml`.'
+              body = (body.replace(trailer, section + trailer) if trailer in body
+                      else body + '\n' + section)
+          (temp / 'pr-body.md').write_text(body, encoding='utf-8')
           print(body)
           PY
 
