@@ -10331,8 +10331,24 @@
       "released_at": null
     },
     {
-      "id": "portal-room-doorway-placement-fixes",
+      "id": "mirror-by-edited-template",
       "version": "0.748.0",
+      "type": "fix",
+      "title": "Editor mirroring follows the template you build into",
+      "summary": "Template mirroring now keys off the block you place, not where you are standing. Building into a mirror-enabled template from its roof, from the gap between plots, or from a neighbouring plot is mirrored using that template's own settings \u2014 previously those edits silently lost their mirror image.",
+      "highlights": [
+        "Mirroring works when you build into a template from outside it",
+        "Each template's own mirror axes apply, even while you stand in a neighbouring plot"
+      ],
+      "pr": 1220,
+      "date": "2026-08-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "portal-room-doorway-placement-fixes",
+      "version": "0.749.0",
       "type": "fix",
       "title": "Rooms with a moved doorway build in full, and stay built",
       "summary": "A dimensional carriage whose doorway had been moved off the room's floor was being stamped partly outside the world, so the bottom of the room simply never appeared \u2014 the author walked into the top of their own build standing on nothing. Those rooms now stand on solid ground, keep their endless copies while you walk through them, and are fogged and lit all the way down.",
