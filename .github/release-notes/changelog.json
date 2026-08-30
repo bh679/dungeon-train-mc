@@ -10096,6 +10096,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "close-locale-drift-and-unblock-import",
+      "version": "0.736.0",
+      "type": "fix",
+      "title": "Nineteen languages stop falling back to English, and player translations flow again",
+      "summary": "Every language except English was missing the same 144 pieces of interface text \u2014 the data-recovery screen, the backup options, the abandon-run confirmation, twelve advancements and the leaderboard headers all read in English no matter what language you play in. All 144 are now translated in all 20 languages. The same gap had also jammed the weekly job that pulls player-submitted translations back into the mod: it had never once succeeded, because 198 approved submissions had nowhere to land and took 979 good ones down with them every time it ran.",
+      "highlights": [
+        "144 missing strings translated into all 20 languages \u2014 2,850 in total",
+        "Player-approved translations import again: 979 that were being discarded now land, and anything that cannot is listed by name instead of failing the whole run",
+        "The in-game translation editor no longer asks you for plural forms your language does not have \u2014 Russian was being shown 27 of them",
+        "Fixed a crash on the AI-policy screen caused by an unescaped percent sign in the English text",
+        "Three buttons in the editor settings showed raw key names in English; the note markers on one story letter pointed past the end of the translated text in five languages"
+      ],
+      "date": "2026-08-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
