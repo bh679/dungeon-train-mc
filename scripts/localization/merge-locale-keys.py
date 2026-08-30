@@ -32,41 +32,15 @@ Usage:
 """
 import argparse
 import json
-import re
 import sys
 from pathlib import Path
 
+from lang_format import placeholders, unsafe
 from plural_forms import PLURAL_SUFFIXES, expected_keys, plural_bases
 
 REPO = Path(__file__).resolve().parents[2]
 LANG = REPO / "src/main/resources/assets/dungeontrain/lang"
 SOURCE = "en_us"
-#: The printf-style tokens MC's format parser recognises, same expression validate-locale.py uses.
-PLACEHOLDER = re.compile(r"%(?:\d+\$)?[a-zA-Z%]")
-
-
-def placeholders(text: str) -> list[str]:
-    """A value's ARGUMENT tokens, sorted.
-
-    `%%` is matched by the pattern but dropped here: it is an escaped literal percent, not an
-    argument, and a translation is entitled to contain one where the English does not (or to drop
-    one). What must match is the arguments — those are passed positionally by the caller.
-    """
-    return sorted(t for t in PLACEHOLDER.findall(text) if t != "%%")
-
-
-def unsafe(text: str) -> str | None:
-    """Why `text` would break at render time, or None.
-
-    Both of these have shipped before. `Component.translatable` runs Minecraft's format parser, so
-    a LITERAL percent must be doubled or the screen throws TranslatableFormatException — and a
-    translator who drops or invents a placeholder produces a string that either loses its argument
-    or reads one that was never passed.
-    """
-    stripped = PLACEHOLDER.sub("", text)
-    if "%" in stripped:
-        return "a bare '%' — a literal percent must be written '%%'"
-    return None
 
 
 def load(path: Path) -> dict:
