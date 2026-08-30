@@ -10114,6 +10114,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "early-onboarding-shorter",
+      "version": "0.738.0",
+      "type": "feat",
+      "title": "The opening ramp is half as long",
+      "summary": "Your first ride used to spend 25 carriages easing you in \u2014 nothing hostile at all for the first 10, then only small slimes for another 15. That is now 10 carriages: no hostiles through carriage 5, slimes through carriage 10, and the real mobs from there. Starter-tier chest loot follows the same window, so the gentle stretch stays consistent and then gets out of your way.",
+      "highlights": [
+        "No hostiles for the first 5 carriages (was 10)",
+        "Small slimes for carriages 5-10 (was 10-25)",
+        "Authored mobs \u2014 and their proper chest loot \u2014 from carriage 10 instead of 25"
+      ],
+      "pr": 1203,
+      "date": "2026-08-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
