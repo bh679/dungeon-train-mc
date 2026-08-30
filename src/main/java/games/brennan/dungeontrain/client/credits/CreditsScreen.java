@@ -242,9 +242,12 @@ public final class CreditsScreen extends Screen {
             // and the language are real; the percentage would be invented, so it is left off.
             return language;
         }
-        // At least 1% so a small-but-real contribution never reads as "0%". The "%" lives in the
-        // literal (not the translation format) so no locale has to escape it.
-        int percent = Math.max(1, (int) Math.round(share.fraction() * 100));
+        // At least 1% so a small-but-real contribution never reads as "0%", and never above 100%:
+        // LanguageShare's contributed <= total invariant is the GENERATOR's, and a relay credit
+        // counts approved submissions (books and narrative units included) against a denominator
+        // that is only the locale's lang-key count. The "%" lives in the literal (not the
+        // translation format) so no locale has to escape it.
+        int percent = Math.min(100, Math.max(1, (int) Math.round(share.fraction() * 100)));
         return Component.translatable("gui.dungeontrain.credits.translations.lang_percent",
                 language, Component.literal(percent + "%"));
     }

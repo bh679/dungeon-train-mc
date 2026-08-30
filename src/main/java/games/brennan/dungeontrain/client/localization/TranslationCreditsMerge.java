@@ -3,6 +3,8 @@ package games.brennan.dungeontrain.client.localization;
 import games.brennan.dungeontrain.client.localization.edit.TranslationCoverageClient;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -48,14 +50,14 @@ public final class TranslationCreditsMerge {
     public static List<TranslationContributor> merge(List<TranslationContributor> baked,
                                                      Map<String, List<TranslationCoverageClient.Credit>> relay,
                                                      ToIntFunction<String> totalForLocale) {
-        // Insertion-ordered: the baked list's order is the one the screen has always shown, and
-        // people who appear only through the relay join the end rather than reshuffling it.
+        // Keyed by name so the two sources fold into one person. Whatever order the map ends up
+        // holding them in does not survive ranked() below.
         Map<String, TranslationContributor> byName = new LinkedHashMap<>();
         for (TranslationContributor person : baked) {
             byName.put(person.name(), person);
         }
         if (relay == null) {
-            return List.copyOf(byName.values());
+            return ranked(byName.values());
         }
 
         for (Map.Entry<String, List<TranslationCoverageClient.Credit>> entry : relay.entrySet()) {
@@ -72,7 +74,52 @@ public final class TranslationCreditsMerge {
                     (name, existing) -> withShare(name, existing, locale, credit.units(), total));
             }
         }
-        return List.copyOf(byName.values());
+        return ranked(byName.values());
+    }
+
+    /**
+     * Biggest contribution first: everybody's keys summed across every language they touched,
+     * descending, then by name so equal totals still have one fixed order.
+     *
+     * <p>The whole merged list is ranked, not just the baked half. Somebody the relay approved
+     * yesterday can easily have translated more of the mod than anyone in the jar — ru_ru arrived
+     * that way, 1,683 lines of it — and listing them last because their work had not been through
+     * a release yet put the page's order exactly backwards.</p>
+     *
+     * <p>A person's languages are ordered here too, by share, matching what
+     * {@code provenance_io.build_contributors} generates: {@link #withShare} appends a relay
+     * language to the end of a baked person's list, so without this their strongest language could
+     * sit below their weakest.</p>
+     */
+    private static List<TranslationContributor> ranked(Collection<TranslationContributor> people) {
+        return people.stream()
+            .map(TranslationCreditsMerge::withLanguagesByShare)
+            .sorted(Comparator.comparingInt(TranslationCreditsMerge::totalContributed).reversed()
+                .thenComparing(TranslationContributor::name))
+            .toList();
+    }
+
+    /** Every key this person contributed, across every language they are credited for. */
+    private static int totalContributed(TranslationContributor person) {
+        int total = 0;
+        for (TranslationContributor.LanguageShare share : person.languages()) {
+            total += share.contributed();
+        }
+        return total;
+    }
+
+    /** {@code person} with their languages strongest-share-first, then by locale. */
+    private static TranslationContributor withLanguagesByShare(TranslationContributor person) {
+        if (person.languages().size() < 2) {
+            return person;
+        }
+        List<TranslationContributor.LanguageShare> ordered = person.languages().stream()
+            .sorted(Comparator.comparingDouble(TranslationContributor.LanguageShare::fraction)
+                .reversed()
+                .thenComparing(TranslationContributor.LanguageShare::locale))
+            .toList();
+        return ordered.equals(person.languages()) ? person
+            : new TranslationContributor(person.name(), person.url(), ordered);
     }
 
     /**
