@@ -10404,6 +10404,20 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "cheat-list-cad-editor",
+      "version": "0.752.0",
+      "type": "chore",
+      "title": "In-game editors count as cheat mods",
+      "summary": "Installing CAD Editor, DINE or AnkiNBT now puts the run into Free Play, alongside the other in-game editors. They rewrite an item's components, a mob or block entity's NBT, or a villager's trades from a GUI, so they do the work of a command without one.",
+      "highlights": [
+        "CAD Editor, DINE and AnkiNBT added to the cheat-mod list"
+      ],
+      "date": "2026-08-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
