@@ -10295,6 +10295,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "portal-room-doorway-placement-fixes",
+      "version": "0.746.0",
+      "type": "fix",
+      "title": "Rooms with a moved doorway build in full, and stay built",
+      "summary": "A dimensional carriage whose doorway had been moved off the room's floor was being stamped partly outside the world, so the bottom of the room simply never appeared \u2014 the author walked into the top of their own build standing on nothing. Those rooms now stand on solid ground, keep their endless copies while you walk through them, and are fogged and lit all the way down.",
+      "highlights": [
+        "A room with a raised doorway builds every row the author made, instead of losing everything below the world's floor",
+        "Endless rooms no longer shed their copies around a player standing on the room's own floor",
+        "Fog and daylight now fill the whole room, rather than stopping at the corridor's floor line"
+      ],
+      "pr": 1218,
+      "date": "2026-08-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
