@@ -41,8 +41,8 @@ public final class CinematicLoadingScreen extends Screen {
 
     /** Dim left over the live world once the panel has faded — black at 70% opacity. */
     private static final int WORLD_DIM = 0xB3000000;
-    /** How long the panel takes to fade away into that dim, in milliseconds. */
-    private static final float REVEAL_FADE_MS = 600.0f;
+    /** How long the panel takes to fade away into that dim, in milliseconds — a slow reveal. */
+    private static final float REVEAL_FADE_MS = 30_000.0f;
 
     /** Replaces the title once the bar reads 100% — loading is done, the train is boarding. */
     private static final Component READY_TITLE = Component.translatable("gui.dungeontrain.cinematic.loading.ready");
