@@ -64,21 +64,42 @@ public final class DtConfigIntegrity {
      * One governed entry: which file it lives in, its dotted path, the expected (default) value,
      * and — for numbers — the range NeoForge would clamp to. A value outside that range is one
      * NeoForge replaces with the default on load, so it is not a deviation.
+     *
+     * <p>{@code sinceVersion} dates the <em>current</em> expected value to a
+     * {@link DungeonTrainConfig#CURRENT_CONFIG_VERSION config version}: the version whose
+     * {@code runPendingMigrations()} step writes it into files that predate it. {@link #ALWAYS} —
+     * the value every key that has never had its default changed carries — means "compare
+     * unconditionally". See {@link #notYetMigrated}.</p>
      */
-    record Key(String file, String path, Object expected, double min, double max) {
+    record Key(String file, String path, Object expected, double min, double max, int sinceVersion) {
+
+        /** A key whose shipped default has never changed, so no file can be behind on it. */
+        static final int ALWAYS = 0;
 
         static Key flag(String file, String path, boolean expected) {
-            return new Key(file, path, expected, 0, 0);
+            return new Key(file, path, expected, 0, 0, ALWAYS);
         }
 
         static Key number(String file, String path, Number expected, double min, double max) {
-            return new Key(file, path, expected, min, max);
+            return new Key(file, path, expected, min, max, ALWAYS);
         }
 
         static Key option(String file, String path, Enum<?> expected) {
-            return new Key(file, path, expected, 0, 0);
+            return new Key(file, path, expected, 0, 0, ALWAYS);
+        }
+
+        /**
+         * As {@link #number}, for a key whose default changed in {@code sinceVersion}: a file
+         * recording an older config version has not been migrated yet and is not judged on it.
+         */
+        static Key numberSince(String file, String path, Number expected, double min, double max,
+                               int sinceVersion) {
+            return new Key(file, path, expected, min, max, sinceVersion);
         }
     }
+
+    /** The migration bookkeeping key, read alongside the governed ones to date the server file. */
+    static final String CONFIG_VERSION_PATH = "configVersion";
 
     /**
      * The balance surface. Adding a key here makes changing it cost persistence, so each one has
@@ -126,16 +147,18 @@ public final class DtConfigIntegrity {
             DungeonTrainConfig.MAX_VILLAGER_TRADE_SCALING_TIERS_PER_STEP),
         Key.flag(SERVER_FILE, "difficulty.firstLevelNoHostiles",
             DungeonTrainConfig.DEFAULT_FIRST_LEVEL_NO_HOSTILES),
-        Key.number(SERVER_FILE, "difficulty.firstLevelNoHostilesCarriages",
+        Key.numberSince(SERVER_FILE, "difficulty.firstLevelNoHostilesCarriages",
             DungeonTrainConfig.DEFAULT_FIRST_LEVEL_NO_HOSTILES_CARRIAGES,
             DungeonTrainConfig.MIN_ONBOARDING_STAGE_CARRIAGES,
-            DungeonTrainConfig.MAX_ONBOARDING_STAGE_CARRIAGES),
+            DungeonTrainConfig.MAX_ONBOARDING_STAGE_CARRIAGES,
+            DungeonTrainConfig.ONBOARDING_LENGTHS_CONFIG_VERSION),
         Key.flag(SERVER_FILE, "difficulty.firstLevelEasyMobs",
             DungeonTrainConfig.DEFAULT_FIRST_LEVEL_EASY_MOBS),
-        Key.number(SERVER_FILE, "difficulty.firstLevelEasyMobsCarriages",
+        Key.numberSince(SERVER_FILE, "difficulty.firstLevelEasyMobsCarriages",
             DungeonTrainConfig.DEFAULT_FIRST_LEVEL_EASY_MOBS_CARRIAGES,
             DungeonTrainConfig.MIN_ONBOARDING_STAGE_CARRIAGES,
-            DungeonTrainConfig.MAX_ONBOARDING_STAGE_CARRIAGES),
+            DungeonTrainConfig.MAX_ONBOARDING_STAGE_CARRIAGES,
+            DungeonTrainConfig.ONBOARDING_LENGTHS_CONFIG_VERSION),
         Key.flag(SERVER_FILE, "difficulty.firstLevelStarterLoot",
             DungeonTrainConfig.DEFAULT_FIRST_LEVEL_STARTER_LOOT),
 
@@ -210,6 +233,12 @@ public final class DtConfigIntegrity {
         if (!Files.exists(file)) return values;
         try (FileConfig config = FileConfig.of(file)) {
             config.load();
+            // The version stamp rides along in the server map so the pure comparison below can tell
+            // "behind on a migration" from "edited", without changing its signature.
+            if (SERVER_FILE.equals(fileName)) {
+                Object version = config.get(CONFIG_VERSION_PATH);
+                if (version != null) values.put(CONFIG_VERSION_PATH, version);
+            }
             for (Key key : GOVERNED) {
                 if (!key.file().equals(fileName)) continue;
                 Object raw = config.get(key.path());
@@ -229,7 +258,9 @@ public final class DtConfigIntegrity {
      */
     static List<String> deviationsOf(Map<String, Object> serverValues, Map<String, Object> commonValues) {
         List<String> found = new ArrayList<>();
+        int fileVersion = configVersionOf(serverValues);
         for (Key key : GOVERNED) {
+            if (notYetMigrated(key, fileVersion)) continue;
             Map<String, Object> values = SERVER_FILE.equals(key.file()) ? serverValues : commonValues;
             Object effective = effectiveValue(key, values.get(key.path()));
             if (!effective.equals(key.expected())) {
@@ -237,6 +268,36 @@ public final class DtConfigIntegrity {
             }
         }
         return List.copyOf(found);
+    }
+
+    /**
+     * Whether {@code key}'s expected value postdates the config file, i.e. the
+     * {@code runPendingMigrations()} step that writes it has not run on this install yet.
+     *
+     * <p>The two are read at different moments and only one of them loads the spec: the migration
+     * runs when the SERVER config loads (world load), while this check also answers at the title
+     * screen for {@code ConfigDeviationScreen} — so on the first launch after an update the file
+     * still holds DT's own previous default. That is a value the player never chose and is about to
+     * be corrected automatically, so treating it as a deviation would put the entire existing player
+     * base into Free Play and offer to move their configs aside. Skipping it here is the same
+     * reasoning as the absent / wrong-typed / out-of-range cases in {@link #effectiveValue}: judge
+     * the value the file is about to be worth, not the stale one on disk. Pure, for tests.</p>
+     */
+    static boolean notYetMigrated(Key key, int fileConfigVersion) {
+        return key.sinceVersion() > Key.ALWAYS && fileConfigVersion < key.sinceVersion();
+    }
+
+    /**
+     * The migration version the server file records, or {@link DungeonTrainConfig#DEFAULT_CONFIG_VERSION}
+     * (pre-versioning) when it is absent or unreadable — the reading that skips dated keys rather than
+     * judging on them, matching how the rest of this class fails open. A file with no stamp is either
+     * one NeoForge has not written yet or one predating the mechanism entirely, and NeoForge writes the
+     * stamp back on the very next load, so the gap closes itself. Pure, for tests.
+     */
+    static int configVersionOf(Map<String, Object> serverValues) {
+        return serverValues.get(CONFIG_VERSION_PATH) instanceof Number n
+            ? n.intValue()
+            : DungeonTrainConfig.DEFAULT_CONFIG_VERSION;
     }
 
     /** What this entry would actually be worth once NeoForge has loaded and corrected the file. */

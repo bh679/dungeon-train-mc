@@ -10098,8 +10098,43 @@
       "released_at": null
     },
     {
+      "id": "crash-assistant-modpack",
+      "version": "0.737.0",
+      "type": "feat",
+      "title": "Crash Assistant now ships with the modpack",
+      "summary": "If the game ever crashes, a window now opens explaining what went wrong \u2014 it checks your logs against dozens of known causes, from graphics-driver faults to running out of memory. One button uploads every relevant log and hands you a ready-to-paste report, and the help button drops you straight into #bugs-feedback on the Dungeon Train Discord.",
+      "highlights": [
+        "A post-crash window that diagnoses dozens of common crash causes",
+        "One click uploads every log and gives you a ready-to-paste report",
+        "Takes you straight to #bugs-feedback on the Dungeon Train Discord",
+        "Client-side only \u2014 dedicated servers are unaffected"
+      ],
+      "pr": 1202,
+      "date": "2026-08-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "early-onboarding-shorter",
+      "version": "0.738.0",
+      "type": "feat",
+      "title": "The opening ramp is half as long",
+      "summary": "Your first ride used to spend 25 carriages easing you in \u2014 nothing hostile at all for the first 10, then only small slimes for another 15. That is now 10 carriages: no hostiles through carriage 5, slimes through carriage 10, and the real mobs from there. Starter-tier chest loot follows the same window, so the gentle stretch stays consistent and then gets out of your way.",
+      "highlights": [
+        "No hostiles for the first 5 carriages (was 10)",
+        "Small slimes for carriages 5-10 (was 10-25)",
+        "Authored mobs \u2014 and their proper chest loot \u2014 from carriage 10 instead of 25"
+      ],
+      "pr": 1203,
+      "date": "2026-08-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "close-locale-drift-and-unblock-import",
-      "version": "0.736.0",
+      "version": "0.739.0",
       "type": "fix",
       "title": "Nineteen languages stop falling back to English, and player translations flow again",
       "summary": "Every language except English was missing the same 144 pieces of interface text \u2014 the data-recovery screen, the backup options, the abandon-run confirmation, twelve advancements and the leaderboard headers all read in English no matter what language you play in. All 144 are now translated in all 20 languages. The same gap had also jammed the weekly job that pulls player-submitted translations back into the mod: it had never once succeeded, because 198 approved submissions had nowhere to land and took 979 good ones down with them every time it ran.",
@@ -10110,6 +10145,7 @@
         "Fixed a crash on the AI-policy screen caused by an unescaped percent sign in the English text",
         "Three buttons in the editor settings showed raw key names in English; the note markers on one story letter pointed past the end of the translated text in five languages"
       ],
+      "pr": 1206,
       "date": "2026-08-30",
       "released": false,
       "released_in": null,
