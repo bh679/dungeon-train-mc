@@ -45,6 +45,13 @@ public final class LoadingScreenTheme {
     private static final int INF_RESERVE = 18; // room at the right end for the ∞ glyph
     private static final int TIE_SPACING = 8;
 
+    /**
+     * Smallest alpha byte text may be drawn with. {@code Font.adjustColor} treats anything under
+     * this as "no alpha given" and forces the colour opaque, so a fading string must be dropped
+     * rather than drawn once it gets this faint.
+     */
+    private static final int TEXT_ALPHA_FLOOR = 4;
+
     private LoadingScreenTheme() {}
 
     /** Opaque gradient fill replacing the vanilla world blur/grid — never a flash of vanilla UI. */
@@ -71,6 +78,19 @@ public final class LoadingScreenTheme {
 
     public static void drawTitle(GuiGraphics g, Font font, Component title, int cx, int cy) {
         g.drawCenteredString(font, title, cx, cy, TITLE_TEAL);
+    }
+
+    /**
+     * The title at {@code alpha} (0..1) of its own opacity, for fading it away over the world.
+     *
+     * <p>Dropped entirely below {@link #TEXT_ALPHA_FLOOR}: {@code Font.adjustColor} forces a
+     * colour whose alpha byte is under 4 back to fully opaque, so the last frames of a text fade
+     * would otherwise pop back to solid.</p>
+     */
+    public static void drawTitle(GuiGraphics g, Font font, Component title, int cx, int cy, float alpha) {
+        int color = scaleAlpha(TITLE_TEAL, alpha);
+        if (!textVisible(color)) return;
+        g.drawCenteredString(font, title, cx, cy, color);
     }
 
     /**
@@ -110,6 +130,16 @@ public final class LoadingScreenTheme {
      * gently pulsing {@code ∞} closes the line.
      */
     public static void drawFillingTrain(GuiGraphics g, Font font, int railLeft, int railW, int railY, double progress, long animNanos) {
+        drawFillingTrain(g, font, railLeft, railW, railY, progress, animNanos, 1.0f);
+    }
+
+    /**
+     * The same graphic at {@code alpha} (0..1) of its own opacity, for fading the whole train
+     * away as the panel dissolves into the world. At 1.0 it is identical to the opaque call.
+     */
+    public static void drawFillingTrain(GuiGraphics g, Font font, int railLeft, int railW, int railY, double progress, long animNanos, float alpha) {
+        float a = Mth.clamp(alpha, 0.0f, 1.0f);
+        if (a <= 0.0f) return;
         int railRight = railLeft + railW;
         int startX = railLeft + 2;
         int slots = Math.max(1, (railW - INF_RESERVE) / SPACING);
@@ -117,21 +147,21 @@ public final class LoadingScreenTheme {
         if (solid > slots) solid = slots;
 
         // Rail + ties.
-        g.fill(railLeft, railY, railRight, railY + 2, RAIL);
+        g.fill(railLeft, railY, railRight, railY + 2, scaleAlpha(RAIL, a));
         for (int x = railLeft; x < railRight; x += TIE_SPACING) {
-            g.fill(x, railY + 2, x + 2, railY + 4, TIE);
+            g.fill(x, railY + 2, x + 2, railY + 4, scaleAlpha(TIE, a));
         }
 
         // Solid carriages.
         for (int i = 0; i < solid; i++) {
-            drawCarriage(g, startX + i * SPACING, railY);
+            drawCarriage(g, startX + i * SPACING, railY, a);
         }
 
         // Smoke drifting off the lead carriage, and fade tail ahead of it — only
         // while the rail isn't full yet.
         if (solid < slots) {
             int leadX = startX + Math.max(0, solid - 1) * SPACING;
-            drawSmoke(g, leadX + CAR_W / 2, railY - CAR_H, animNanos);
+            drawSmoke(g, leadX + CAR_W / 2, railY - CAR_H, animNanos, a);
 
             int fadeX = startX + solid * SPACING;
             for (int j = 0; j < FADE_TAIL.length; j++) {
@@ -139,27 +169,34 @@ public final class LoadingScreenTheme {
                 if (cxp + CAR_W > railRight - INF_RESERVE) break;
                 int fh = CAR_H - j * 3;
                 if (fh < 5) fh = 5;
-                g.fill(cxp, railY - fh, cxp + CAR_W, railY, FADE_TAIL[j]);
+                g.fill(cxp, railY - fh, cxp + CAR_W, railY, scaleAlpha(FADE_TAIL[j], a));
             }
         }
 
         // ∞ terminus — the line runs on forever. Gentle alpha pulse.
         double pulse = 0.55 + 0.45 * (0.5 + 0.5 * Math.sin(animNanos / 6.0e8));
-        int infColor = (INF & 0x00FFFFFF) | ((int) (0xFF * pulse) << 24);
-        g.drawString(font, "∞", railRight - INF_RESERVE + 4, railY - 8, infColor, false);
+        int infColor = scaleAlpha((INF & 0x00FFFFFF) | ((int) (0xFF * pulse) << 24), a);
+        if (textVisible(infColor)) {
+            g.drawString(font, "∞", railRight - INF_RESERVE + 4, railY - 8, infColor, false);
+        }
     }
 
-    /** A single carriage: dark body, red roof stripe, two windows. */
-    private static void drawCarriage(GuiGraphics g, int x, int railY) {
+    /** A single carriage: dark body, red roof stripe, two windows — all at {@code alpha}. */
+    private static void drawCarriage(GuiGraphics g, int x, int railY, float alpha) {
         int top = railY - CAR_H;
-        g.fill(x, top, x + CAR_W, railY, CAR_BODY);
-        g.fill(x, top, x + CAR_W, top + 2, CAR_ROOF);
-        g.fill(x + 3, top + 4, x + 7, top + 8, CAR_WINDOW);
-        g.fill(x + 11, top + 4, x + 15, top + 8, CAR_WINDOW);
+        g.fill(x, top, x + CAR_W, railY, scaleAlpha(CAR_BODY, alpha));
+        g.fill(x, top, x + CAR_W, top + 2, scaleAlpha(CAR_ROOF, alpha));
+        g.fill(x + 3, top + 4, x + 7, top + 8, scaleAlpha(CAR_WINDOW, alpha));
+        g.fill(x + 11, top + 4, x + 15, top + 8, scaleAlpha(CAR_WINDOW, alpha));
+    }
+
+    /** True while {@code argb} still carries enough alpha for {@code Font} to honour it. */
+    private static boolean textVisible(int argb) {
+        return ((argb >>> 24) & 0xFF) >= TEXT_ALPHA_FLOOR;
     }
 
     /** Three soft puffs drifting up and to the right off the lead carriage, looping over time. */
-    private static void drawSmoke(GuiGraphics g, int baseX, int baseY, long animNanos) {
+    private static void drawSmoke(GuiGraphics g, int baseX, int baseY, long animNanos, float alpha) {
         double t = (animNanos / 1.0e9) % 3.0; // 3s loop
         for (int i = 0; i < 3; i++) {
             double phase = (t + i * 1.0) % 3.0;
@@ -167,8 +204,8 @@ public final class LoadingScreenTheme {
             int size = 2 + (int) Math.round(life * 3);
             int x = baseX + (int) Math.round(life * 10);
             int y = baseY - (int) Math.round(life * 14);
-            int alpha = (int) Math.round((1.0 - life) * 0x30);
-            int color = (SMOKE & 0x00FFFFFF) | (alpha << 24);
+            int puff = (int) Math.round((1.0 - life) * 0x30);
+            int color = scaleAlpha((SMOKE & 0x00FFFFFF) | (puff << 24), alpha);
             g.fill(x, y, x + size, y + size, color);
         }
     }

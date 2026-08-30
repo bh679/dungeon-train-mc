@@ -4,6 +4,7 @@ import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+import net.minecraft.util.Mth;
 
 /**
  * Themed loading screen shown by {@link CinematicPreloadGate} between world-entry
@@ -43,6 +44,11 @@ public final class CinematicLoadingScreen extends Screen {
     private static final int WORLD_DIM = 0xB3000000;
     /** How long the panel takes to fade away into that dim, in milliseconds — a slow reveal. */
     private static final float REVEAL_FADE_MS = 30_000.0f;
+    /**
+     * Share of the reveal the train graphic fades over. The title fades across the rest, so the
+     * two go in sequence — art first, then "All Aboard!" — rather than dissolving together.
+     */
+    private static final float TRAIN_FADE_SHARE = 0.5f;
 
     /** Replaces the title once the bar reads 100% — loading is done, the train is boarding. */
     private static final Component READY_TITLE = Component.translatable("gui.dungeontrain.cinematic.loading.ready");
@@ -143,8 +149,13 @@ public final class CinematicLoadingScreen extends Screen {
         // Once the bar reads 100% the train is ready and only the story (or a Space press) is
         // left — say so, instead of still claiming to be preparing.
         Component heading = LoadingScreenTheme.readsComplete(progress) ? READY_TITLE : this.title;
-        LoadingScreenTheme.drawTitle(g, this.font, heading, cx, cy - 30);
-        LoadingScreenTheme.drawFillingTrain(g, this.font, railLeft, railW, railY, progress, animNanos);
+        // Staged fade during the reveal: the train clears first, the title follows once it is gone.
+        float reveal = revealProgress();
+        float trainAlpha = 1.0f - Mth.clamp(reveal / TRAIN_FADE_SHARE, 0.0f, 1.0f);
+        float titleAlpha = 1.0f - Mth.clamp((reveal - TRAIN_FADE_SHARE) / (1.0f - TRAIN_FADE_SHARE), 0.0f, 1.0f);
+
+        LoadingScreenTheme.drawTitle(g, this.font, heading, cx, cy - 30, titleAlpha);
+        LoadingScreenTheme.drawFillingTrain(g, this.font, railLeft, railW, railY, progress, animNanos, trainAlpha);
         LoadingScreenTheme.drawPercent(g, this.font, progress, cx, cy + 34);
         LoadingScreenTheme.drawTip(g, this.font, LoadingStories.currentLine(), cx, cy + 52, TIP_MAX_WIDTH);
 
