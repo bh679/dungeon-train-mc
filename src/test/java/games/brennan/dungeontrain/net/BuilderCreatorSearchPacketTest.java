@@ -43,10 +43,22 @@ final class BuilderCreatorSearchPacketTest {
     }
 
     @Test
+    @DisplayName("a release build never addresses the live relay, however the packet asked")
+    void releaseBuildIgnoresTheLiveFlag() {
+        // On a dev worktree isDevBuild() is true, so the honoured direction is what runs here; the
+        // refusing direction is the branch a release jar takes and is asserted through the same helper.
+        assertEquals(games.brennan.dungeontrain.DungeonTrain.isDevBuild(),
+                BuilderProfileRequestPacket.liveRequested(true),
+                "live is honoured on a dev build and refused on a release one");
+        assertFalse(BuilderProfileRequestPacket.liveRequested(false), "not asked for is never live");
+    }
+
+    @Test
     @DisplayName("the profile request carries the owner it asks about")
     void requestRoundTrip() {
         assertEquals("", new BuilderProfileRequestPacket().ownerUuid(), "the ordinary ask is about me");
-        BuilderProfileRequestPacket original = new BuilderProfileRequestPacket(THEIRS);
+        assertFalse(new BuilderProfileRequestPacket().live(), "the ordinary ask is this build's own relay");
+        BuilderProfileRequestPacket original = new BuilderProfileRequestPacket(THEIRS, true);
         FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
         BuilderProfileRequestPacket.STREAM_CODEC.encode(buf, original);
         assertEquals(original, BuilderProfileRequestPacket.STREAM_CODEC.decode(buf));
@@ -75,7 +87,7 @@ final class BuilderCreatorSearchPacketTest {
     @Test
     @DisplayName("a search and its results survive the wire, query included")
     void searchRoundTrip() {
-        BuilderCreatorSearchPacket query = new BuilderCreatorSearchPacket("bren");
+        BuilderCreatorSearchPacket query = new BuilderCreatorSearchPacket("bren", true);
         FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
         BuilderCreatorSearchPacket.STREAM_CODEC.encode(buf, query);
         assertEquals(query, BuilderCreatorSearchPacket.STREAM_CODEC.decode(buf));

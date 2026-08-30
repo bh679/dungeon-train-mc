@@ -18,11 +18,20 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  * nothing asks. The relay refuses the same search on the live cap, so this gate and the relay's agree
  * without depending on each other.</p>
  *
+ * <p>{@code live} searches the PRODUCTION pool instead. The relay answers the ordinary search on the
+ * dev cap alone, so the live one goes out through the operator route and the admin secret this
+ * machine holds — a jar carries no way to make that call.</p>
+ *
  * <p>Gated on {@link BuilderRelayUpload#canUpload} as well, for the same reason
  * {@link BuilderProfileRequestPacket} is: a player whose builds may not go to the relay has no
  * business reading it either.</p>
  */
-public record BuilderCreatorSearchPacket(String query) implements CustomPacketPayload {
+public record BuilderCreatorSearchPacket(String query, boolean live) implements CustomPacketPayload {
+
+    /** A search of this build's own relay. */
+    public BuilderCreatorSearchPacket(String query) {
+        this(query, false);
+    }
 
     public static final Type<BuilderCreatorSearchPacket> TYPE =
         new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "builder_creator_search"));
@@ -35,8 +44,11 @@ public record BuilderCreatorSearchPacket(String query) implements CustomPacketPa
 
     public static final StreamCodec<FriendlyByteBuf, BuilderCreatorSearchPacket> STREAM_CODEC =
         StreamCodec.of(
-            (buf, packet) -> buf.writeUtf(packet.query, MAX_QUERY),
-            buf -> new BuilderCreatorSearchPacket(buf.readUtf(MAX_QUERY))
+            (buf, packet) -> {
+                buf.writeUtf(packet.query, MAX_QUERY);
+                buf.writeBoolean(packet.live);
+            },
+            buf -> new BuilderCreatorSearchPacket(buf.readUtf(MAX_QUERY), buf.readBoolean())
         );
 
     @Override
@@ -52,7 +64,8 @@ public record BuilderCreatorSearchPacket(String query) implements CustomPacketPa
                 DungeonTrainNet.sendTo(player, BuilderCreatorResultsPacket.empty(query));
                 return;
             }
-            SharedCarriageClient.searchCreators(query, MAX_RESULTS).thenAccept(creators -> {
+            boolean live = BuilderProfileRequestPacket.liveRequested(packet.live);
+            SharedCarriageClient.searchCreators(query, MAX_RESULTS, live).thenAccept(creators -> {
                 if (player.getServer() == null) return;
                 player.getServer().execute(() -> {
                     if (player.hasDisconnected()) return;

@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.builder.relay;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.builder.BuilderPhotoPaths;
+import games.brennan.dungeontrain.net.relay.RelayTarget;
 import games.brennan.dungeontrain.net.relay.SharedCarriageClient;
 import games.brennan.dungeontrain.train.CarriageBlockSnapshot;
 import games.brennan.dungeontrain.train.CarriageSnapshotTemplate;
@@ -67,7 +68,7 @@ public final class BuilderRelayDownload {
      * is not asked to accept them coming down either.</p>
      */
     public static CompletableFuture<Result> download(ServerPlayer player, ServerLevel level, int relayId) {
-        return download(player, level, relayId, BuilderRelayInstall.Resolution.AS_IS, "", "");
+        return download(player, level, relayId, BuilderRelayInstall.Resolution.AS_IS, "", "", false);
     }
 
     /**
@@ -81,14 +82,14 @@ public final class BuilderRelayDownload {
      */
     public static CompletableFuture<Result> download(ServerPlayer player, ServerLevel level, int relayId,
                                                      BuilderRelayInstall.Resolution resolution,
-                                                     String newName, String ownerUuid) {
+                                                     String newName, String ownerUuid, boolean live) {
         if (player == null || level == null || !BuilderRelayUpload.canUpload(player)) {
             return CompletableFuture.completedFuture(Result.of(Outcome.UNAVAILABLE));
         }
         String own = player.getUUID().toString();
         String owner = ownerUuid == null || ownerUuid.isBlank() ? own : ownerUuid.trim();
         boolean mine = owner.equals(own);
-        return SharedCarriageClient.fetchBuild(relayId, owner)
+        return SharedCarriageClient.fetchBuild(relayId, owner, RelayTarget.of(live))
                 .thenCompose(result -> switch (result.status()) {
                     case FORBIDDEN -> CompletableFuture.completedFuture(Result.of(Outcome.NOT_YOURS));
                     case UNKNOWN -> CompletableFuture.completedFuture(Result.of(Outcome.GONE));

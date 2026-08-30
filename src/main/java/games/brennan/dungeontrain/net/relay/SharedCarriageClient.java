@@ -210,9 +210,14 @@ public final class SharedCarriageClient {
      * two, so they must not collapse into one another.</p>
      */
     public static CompletableFuture<List<ProfileBuild>> listMine(String ownerUuid) {
+        return listMine(ownerUuid, RelayTarget.dev());
+    }
+
+    /** As above against a named relay — the live toggle's path. */
+    public static CompletableFuture<List<ProfileBuild>> listMine(String ownerUuid, String baseUrl) {
         JsonObject body = new JsonObject();
         body.addProperty("uuid", ownerUuid == null ? "" : ownerUuid);
-        return post("/carriages/mine", body).thenApply(resp -> {
+        return post(baseUrl, "/carriages/mine", body).thenApply(resp -> {
             JsonObject o = okJson(resp);
             if (o == null || !o.has("carriages") || !o.get("carriages").isJsonArray()) return null;
             List<ProfileBuild> out = new java.util.ArrayList<>();
@@ -245,25 +250,73 @@ public final class SharedCarriageClient {
      * same two-answer convention {@link #listMine} follows.</p>
      */
     public static CompletableFuture<List<Creator>> searchCreators(String query, int limit) {
+        return searchCreators(query, limit, false);
+    }
+
+    /**
+     * As above, against the live pool when {@code useLive}.
+     *
+     * <p>A different route, not just a different base URL: the relay answers the search on the dev cap
+     * alone, so the live one goes through the operator route and the admin secret this machine holds
+     * ({@link RelayTarget#adminSearchBase()}). No admin URL configured resolves to {@code null} — the
+     * same "could not search" the screen shows for an unreachable relay, which is what it is.</p>
+     */
+    public static CompletableFuture<List<Creator>> searchCreators(String query, int limit, boolean useLive) {
+        String q = query == null ? "" : query;
+        if (useLive) {
+            String admin = RelayTarget.adminSearchBase();
+            if (admin.isEmpty()) return CompletableFuture.completedFuture(null);
+            String url = admin + "/carriages/creators?cap=live&q=" + urlEncode(q)
+                    + (limit > 0 ? "&limit=" + limit : "");
+            return get(url).thenApply(SharedCarriageClient::parseCreators);
+        }
         JsonObject body = new JsonObject();
-        body.addProperty("q", query == null ? "" : query);
+        body.addProperty("q", q);
         if (limit > 0) body.addProperty("limit", limit);
-        return post("/carriages/creators", body).thenApply(resp -> {
-            JsonObject o = okJson(resp);
-            if (o == null || !o.has("creators") || !o.get("creators").isJsonArray()) return null;
-            List<Creator> out = new java.util.ArrayList<>();
-            for (JsonElement el : o.getAsJsonArray("creators")) {
-                if (!el.isJsonObject()) continue;
-                JsonObject r = el.getAsJsonObject();
-                String uuid = str(r, "uuid");
-                if (uuid.isEmpty()) continue;
-                // A builder whose builds all predate name capture is still a builder: fall back to the
-                // uuid so the row can be picked rather than dropped for having nothing to print.
-                String name = str(r, "name");
-                out.add(new Creator(uuid, name.isEmpty() ? uuid : name, intOf(r, "builds")));
-            }
-            return List.copyOf(out);
-        });
+        return post("/carriages/creators", body).thenApply(SharedCarriageClient::parseCreators);
+    }
+
+    /** The creator rows in a search answer, or null when there was no usable answer. */
+    private static List<Creator> parseCreators(HttpResponse<String> resp) {
+        JsonObject o = okJson(resp);
+        if (o == null || !o.has("creators") || !o.get("creators").isJsonArray()) return null;
+        List<Creator> out = new java.util.ArrayList<>();
+        for (JsonElement el : o.getAsJsonArray("creators")) {
+            if (!el.isJsonObject()) continue;
+            JsonObject r = el.getAsJsonObject();
+            String uuid = str(r, "uuid");
+            if (uuid.isEmpty()) continue;
+            // A builder whose builds all predate name capture is still a builder: fall back to the
+            // uuid so the row can be picked rather than dropped for having nothing to print.
+            String name = str(r, "name");
+            out.add(new Creator(uuid, name.isEmpty() ? uuid : name, intOf(r, "builds")));
+        }
+        return List.copyOf(out);
+    }
+
+    /** GET a JSON URL; resolves to the HttpResponse, or null on transport failure. */
+    private static CompletableFuture<HttpResponse<String>> get(String url) {
+        try {
+            HttpRequest req = HttpRequest.newBuilder(URI.create(url))
+                    .timeout(REQUEST_TIMEOUT)
+                    .header("Accept", "application/json")
+                    .GET()
+                    .build();
+            return HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString())
+                    .exceptionally(e -> {
+                        // The URL carries the admin capability, so it is never logged — only the fact.
+                        LOGGER.debug("[DungeonTrain] admin carriage GET failed: {}", e.toString());
+                        return null;
+                    });
+        } catch (Throwable t) {
+            LOGGER.debug("[DungeonTrain] admin carriage GET failed to start: {}", t.toString());
+            return CompletableFuture.completedFuture(null);
+        }
+    }
+
+    /** Percent-encode one query value. */
+    private static String urlEncode(String value) {
+        return java.net.URLEncoder.encode(value, java.nio.charset.StandardCharsets.UTF_8);
     }
 
     /**
@@ -376,10 +429,15 @@ public final class SharedCarriageClient {
      * caller says different things about those, so they must not collapse into one another.</p>
      */
     public static CompletableFuture<FetchResult> fetchBuild(int id, String ownerUuid) {
+        return fetchBuild(id, ownerUuid, RelayTarget.dev());
+    }
+
+    /** As above against a named relay — a build is always fetched from the pool it was listed from. */
+    public static CompletableFuture<FetchResult> fetchBuild(int id, String ownerUuid, String baseUrl) {
         JsonObject body = new JsonObject();
         body.addProperty("id", id);
         body.addProperty("uuid", ownerUuid == null ? "" : ownerUuid);
-        return post("/carriages/fetch", body).thenApply(resp -> {
+        return post(baseUrl, "/carriages/fetch", body).thenApply(resp -> {
             if (resp == null) {
                 logFailure("/carriages/fetch", null);
                 return FetchResult.failed(CallStatus.ERROR);
@@ -695,10 +753,21 @@ public final class SharedCarriageClient {
         return d;
     }
 
-    /** POST the JSON body; resolves to the HttpResponse (status < 0 on transport failure). */
+    /** POST the JSON body to this build's own relay — see {@link RelayTarget#dev()}. */
     private static CompletableFuture<HttpResponse<String>> post(String path, JsonObject body) {
+        return post(RelayTarget.dev(), path, body);
+    }
+
+    /**
+     * POST the JSON body to a named relay; resolves to the HttpResponse (null on transport failure).
+     *
+     * <p>The base URL is a parameter for one reason only: My Builds' live toggle, which reads the
+     * production pool from a dev build. Everything else goes through {@link #post(String, JsonObject)}
+     * and cannot address another relay by accident.</p>
+     */
+    private static CompletableFuture<HttpResponse<String>> post(String baseUrl, String path, JsonObject body) {
         try {
-            HttpRequest req = HttpRequest.newBuilder(URI.create(DungeonTrain.relayBaseUrl() + path))
+            HttpRequest req = HttpRequest.newBuilder(URI.create(baseUrl + path))
                     .timeout(REQUEST_TIMEOUT)
                     .header("Content-Type", "application/json")
                     .header("Accept", "application/json")

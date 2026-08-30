@@ -4,6 +4,7 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.builder.relay.BuilderRelayUpload;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.event.NetworkConsentMirror;
+import games.brennan.dungeontrain.net.relay.RelayTarget;
 import games.brennan.dungeontrain.net.relay.SharedCarriageClient;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
@@ -19,17 +20,22 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  * reply is a {@link BuilderProfilePacket}, sent once the relay answers rather than in this handler: the
  * fetch is a network call and the server thread does not wait on one.</p>
  *
+ * <p>{@code live} is the other dev-build affordance: it points the whole screen at the PRODUCTION
+ * relay rather than the one this build writes to, so a developer can look at real players' builds.
+ * Same fail-closed rule as below — a release server serves its own relay however the packet was
+ * crafted.</p>
+ *
  * <p>{@code ownerUuid} is the one exception, and it is a DEV-BUILD affordance: it names somebody else
  * whose builds to list, which is how a developer looks at a player's work to reproduce a problem. It
  * is honoured only on a dev build ({@link DungeonTrain#isDevBuild()}), and a release server answers a
  * packet carrying one with the caller's own profile rather than an error — the safe answer is the
  * ordinary one, so nothing a client sends can widen what it may see.</p>
  */
-public record BuilderProfileRequestPacket(String ownerUuid) implements CustomPacketPayload {
+public record BuilderProfileRequestPacket(String ownerUuid, boolean live) implements CustomPacketPayload {
 
-    /** The ordinary ask: my own builds. */
+    /** The ordinary ask: my own builds, on this build's own relay. */
     public BuilderProfileRequestPacket() {
-        this("");
+        this("", false);
     }
 
     public static final Type<BuilderProfileRequestPacket> TYPE =
@@ -40,8 +46,11 @@ public record BuilderProfileRequestPacket(String ownerUuid) implements CustomPac
 
     public static final StreamCodec<FriendlyByteBuf, BuilderProfileRequestPacket> STREAM_CODEC =
         StreamCodec.of(
-            (buf, packet) -> buf.writeUtf(packet.ownerUuid, MAX_UUID),
-            buf -> new BuilderProfileRequestPacket(buf.readUtf(MAX_UUID))
+            (buf, packet) -> {
+                buf.writeUtf(packet.ownerUuid, MAX_UUID);
+                buf.writeBoolean(packet.live);
+            },
+            buf -> new BuilderProfileRequestPacket(buf.readUtf(MAX_UUID), buf.readBoolean())
         );
 
     @Override
@@ -53,6 +62,7 @@ public record BuilderProfileRequestPacket(String ownerUuid) implements CustomPac
         ctx.enqueueWork(() -> {
             if (!(ctx.player() instanceof ServerPlayer player)) return;
             String owner = viewedOwner(player, packet.ownerUuid);
+            String relay = RelayTarget.of(liveRequested(packet.live));
             boolean mine = owner.equals(ownProfile(player));
             // A foreign profile is named by whoever the relay says built those rows, which the screen
             // already knows: it picked the creator. Sending the uuid back is what lets it tell an answer
@@ -69,7 +79,7 @@ public record BuilderProfileRequestPacket(String ownerUuid) implements CustomPac
                 DungeonTrainNet.sendTo(player, BuilderProfilePacket.of(blocked, owner, name, mine));
                 return;
             }
-            SharedCarriageClient.listMine(owner).thenAccept(rows -> {
+            SharedCarriageClient.listMine(owner, relay).thenAccept(rows -> {
                 if (player.getServer() == null) return;
                 player.getServer().execute(() -> {
                     if (player.hasDisconnected()) return;
@@ -96,6 +106,16 @@ public record BuilderProfileRequestPacket(String ownerUuid) implements CustomPac
     static String viewedOwner(String own, String requested, boolean devBuild) {
         if (requested == null || requested.isBlank()) return own;
         return devBuild ? requested.trim() : own;
+    }
+
+    /**
+     * Whether this call should address the LIVE relay.
+     *
+     * <p>The other half of the dev gate, kept beside {@link #viewedOwner} for the same reason: one
+     * place decides, and a release build can only ever be told to use its own relay.</p>
+     */
+    static boolean liveRequested(boolean requested) {
+        return requested && DungeonTrain.isDevBuild();
     }
 
     private static String ownProfile(ServerPlayer player) {

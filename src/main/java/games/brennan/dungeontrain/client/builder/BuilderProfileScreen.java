@@ -67,6 +67,10 @@ public final class BuilderProfileScreen extends Screen {
     private static final int OWNER_TOP = 28;
     private static final int OWNER_BUTTON_H = 16;
     private static final int GRID_TOP_GAP = 26;
+    private static final int TARGET_BUTTON_W = 56;
+    /** Green while the screen is reading PRODUCTION; a dim grey on this build's own relay. */
+    private static final int LIVE_DOT = 0x55FF55;
+    private static final int DEV_DOT = 0x808080;
     private static final int BACK_BUTTON_WIDTH = 200;
     private static final int BACK_BUTTON_BOTTOM_MARGIN = 28;
     private static final int STATUS_GAP = 14;
@@ -143,7 +147,7 @@ public final class BuilderProfileScreen extends Screen {
         // may predate a save, a publish, or a build somebody else's world just returned.
         BuilderProfileState.listen(this::onProfile);
         BuilderProfileState.listenForDownloads(this::onDownload);
-        DungeonTrainNet.sendToServer(new BuilderProfileRequestPacket(viewedUuid));
+        DungeonTrainNet.sendToServer(new BuilderProfileRequestPacket(viewedUuid, BuilderProfileState.live()));
 
         this.spin.clear();
         this.lastFrameNanos = 0L;
@@ -220,6 +224,12 @@ public final class BuilderProfileScreen extends Screen {
                         .bounds(this.width / 2 + width / 2 + ACTION_GAP, OWNER_TOP, 100, OWNER_BUTTON_H)
                         .build());
             }
+            // Which relay these builds come from. A dot rather than a sentence, because it is read at a
+            // glance and its only job is to stop a developer mistaking production for their own pool.
+            addRenderableWidget(Button.builder(targetLabel(), b -> toggleTarget())
+                    .bounds(this.width / 2 - width / 2 - TARGET_BUTTON_W - ACTION_GAP, OWNER_TOP,
+                            TARGET_BUTTON_W, OWNER_BUTTON_H)
+                    .build());
         }
         this.grid = BuilderTemplateGridLayout.of(this.width, gridTop, gridBottom, builds.size(), TILES_PER_ROW);
         this.scrollY = grid.clampScroll(scrollY);
@@ -296,7 +306,7 @@ public final class BuilderProfileScreen extends Screen {
     private void downloadSelected() {
         BuilderProfilePacket.Entry entry = selectedBuild();
         if (entry == null) return;
-        DungeonTrainNet.sendToServer(new BuilderProfileDownloadPacket(entry.relayId(), viewedUuid));
+        DungeonTrainNet.sendToServer(new BuilderProfileDownloadPacket(entry.relayId(), viewedUuid, BuilderProfileState.live()));
         this.downloadButton.active = false;
         this.downloadNote = Component.translatable("gui.dungeontrain.builder.profile.downloading");
     }
@@ -392,7 +402,7 @@ public final class BuilderProfileScreen extends Screen {
      * question up again rather than silently doing nothing.</p>
      */
     private void resolveDownload(int relayId, BuilderRelayInstall.Resolution resolution, String name) {
-        DungeonTrainNet.sendToServer(new BuilderProfileDownloadPacket(relayId, resolution, name, viewedUuid));
+        DungeonTrainNet.sendToServer(new BuilderProfileDownloadPacket(relayId, resolution, name, viewedUuid, BuilderProfileState.live()));
         this.downloadNote = Component.translatable("gui.dungeontrain.builder.profile.downloading");
         if (this.downloadButton != null) this.downloadButton.active = false;
     }
@@ -484,6 +494,33 @@ public final class BuilderProfileScreen extends Screen {
             g.drawCenteredString(this.font, note, this.width / 2,
                     this.height - BACK_BUTTON_BOTTOM_MARGIN - STATUS_GAP + 2, NOTE_COLOUR);
         }
+    }
+
+    /** The relay-target button: a green dot on live, a dim one on this build's own relay. */
+    private Component targetLabel() {
+        boolean live = BuilderProfileState.live();
+        // The dot carries the state and the word names it: colour alone would be a poor signal, and a
+        // word alone is not readable at a glance from across the header.
+        return Component.literal("\u25CF ")
+                .withStyle(style -> style.withColor(live ? LIVE_DOT : DEV_DOT))
+                .append(Component.translatable(live
+                        ? "gui.dungeontrain.builder.profile.target.live"
+                        : "gui.dungeontrain.builder.profile.target.dev")
+                        .withStyle(style -> style.withColor(0xFFFFFF)));
+    }
+
+    /**
+     * Point the screen at the other relay and start again from the player's own profile.
+     *
+     * <p>Not a relist of what is on screen: the two pools hold different builds under different ids,
+     * so a selection, a viewed builder and a note about a download all describe rows that do not
+     * exist on the other side. Going back to your own profile is the one thing that means the same
+     * on both.</p>
+     */
+    private void toggleTarget() {
+        BuilderProfileState.setLive(!BuilderProfileState.live());
+        BuilderProfileState.clearCache();
+        viewProfile(null);
     }
 
     /**

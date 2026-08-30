@@ -141,7 +141,9 @@ public final class BuilderCreatorSearchScreen extends Screen {
         String q = query.trim();
         if (q.isEmpty()) return;
         this.searching = true;
-        DungeonTrainNet.sendToServer(new BuilderCreatorSearchPacket(q));
+        // The search follows whatever pool the profile screen is showing — finding a builder on one
+        // relay and then listing them on the other would name somebody with nothing to see.
+        DungeonTrainNet.sendToServer(new BuilderCreatorSearchPacket(q, BuilderProfileState.live()));
     }
 
     /**

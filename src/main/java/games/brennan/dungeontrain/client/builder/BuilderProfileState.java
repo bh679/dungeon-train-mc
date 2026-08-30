@@ -25,6 +25,16 @@ public final class BuilderProfileState {
     private static volatile Consumer<BuilderProfileDownloadResultPacket> downloadListener = null;
     private static volatile Consumer<BuilderCreatorResultsPacket> creatorListener = null;
 
+    /**
+     * Whether My Builds is pointed at the LIVE relay rather than the one this build writes to.
+     *
+     * <p>A dev-build affordance, and deliberately session-scoped rather than persisted: it starts on
+     * this build's own relay every launch, so looking at production data is always something the
+     * developer just did rather than something a config file remembered. Cleared with the cached
+     * profile on the way out of a world, for the same reason the profile is.</p>
+     */
+    private static volatile boolean live = false;
+
     private BuilderProfileState() {}
 
     public static void accept(BuilderProfilePacket packet) {
@@ -78,6 +88,27 @@ public final class BuilderProfileState {
     }
 
     /**
+     * Drop the cached profile without touching the listeners.
+     *
+     * <p>What {@link #clear} does on the way out of a world is heavier than a screen wants: switching
+     * relay target only invalidates the LIST, and a screen that is still open still needs its
+     * listener attached to receive the replacement.</p>
+     */
+    public static void clearCache() {
+        latest = null;
+    }
+
+    /** Whether calls from the profile screens should address the live relay. */
+    public static boolean live() {
+        return live;
+    }
+
+    /** Flip the target. The caller re-asks — nothing here refreshes anything by itself. */
+    public static void setLive(boolean value) {
+        live = value;
+    }
+
+    /**
      * Forget the cached profile, so a reopened screen shows "loading" rather than a stale list.
      * Called when leaving a world: the next world may be a different player's.
      */
@@ -86,5 +117,6 @@ public final class BuilderProfileState {
         listener = null;
         downloadListener = null;
         creatorListener = null;
+        live = false;
     }
 }
