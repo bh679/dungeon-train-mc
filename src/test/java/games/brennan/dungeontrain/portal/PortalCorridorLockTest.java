@@ -198,4 +198,26 @@ class PortalCorridorLockTest {
             }
         }
     }
+
+    /**
+     * A corridor standing entirely below the world has no shell to write — and asking for one must
+     * not throw.
+     *
+     * <p>This is the author's crash, in its own numbers: a {@code 11x70x11} room with its entry door
+     * 59 blocks up hung its exit corridor at {@code y=-105} in a world floored at {@code -48}. The
+     * clamps then pulled the bottom of the shell up to {@code -47} while its top stayed at
+     * {@code -98}, and {@code new BoundingBox(...)} threw out of {@code /dungeontrain portal test}.
+     * {@link PortalStructure#corridorLift} is what stops a structure being placed there at all; this
+     * is what stops such a placement ever being a stack trace again.</p>
+     */
+    @Test
+    @DisplayName("A corridor below the world gets no shell, rather than an inverted box")
+    void belowTheWorld_writesNothing() {
+        BlockPos sunken = new BlockPos(126, -105, 512);
+        for (PortalCarriageRole role : PortalCarriageRole.values()) {
+            assertTrue(PortalCarriageBuilder.corridorLockBoxes(
+                    sunken, new CarriageDims(9, 7, 7), LENGTH, role, -48, 320).isEmpty(),
+                role + " must write nothing outside the world");
+        }
+    }
 }
