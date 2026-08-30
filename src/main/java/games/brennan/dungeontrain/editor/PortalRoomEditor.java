@@ -559,13 +559,25 @@ public final class PortalRoomEditor {
         return template;
     }
 
-    /** Lay a captured plot back down at its new box, applying {@code step}'s shift and stashed row. */
+    /**
+     * Lay a captured plot back down at its new box, applying {@code step}'s shift and stashed row.
+     *
+     * <p>A grow's new row is left <b>empty</b>. The built-in shell used to fill it — a floor, walls,
+     * a ceiling and its lights — which is a guess at what the author wants in space they have not
+     * built yet, and one they then had to demolish. The only blocks that may appear there are the
+     * ones an earlier shrink filed for this exact size, which {@link PortalRoomResizeSlabs#restore}
+     * puts back below.</p>
+     */
     private static void restampLive(ServerLevel overworld, String name, CarriageDims dims,
                                     PlotBox box, StructureTemplate captured,
                                     PortalRoomResize.Step step) {
         Vec3i shift = step == null ? Vec3i.ZERO : step.shift();
+        PortalCorridorMask blank = step != null && step.grow()
+            ? PortalCorridorMask.NONE.plus(
+                PortalRoomResize.slabBox(box.origin(), box.size(), step))
+            : PortalCorridorMask.NONE;
         PortalCarriageBuilder.stampRoomFromLive(overworld, box.origin(), box.size(), captured,
-            shift, /*relight*/ true);
+            shift, /*relight*/ true, blank);
 
         // Cells first, then the row: both are addressed in plot-local coordinates, and a restored
         // row's coordinates are already in the new frame.

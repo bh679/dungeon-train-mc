@@ -10266,6 +10266,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "portal-room-grow-into-air",
+      "version": "0.744.0",
+      "type": "feat",
+      "title": "Growing a portal room gives you empty space, not a room you have to demolish",
+      "summary": "Resizing a dimensional carriage in the editor used to fill the new space with the built-in room \u2014 a floor, walls, a ceiling and its lights \u2014 so every step of the size dial handed you blocks you then had to clear out. New space now arrives as plain air, ready to build in. The one thing that still comes back is what you cropped: shrink past something and step back up, and the row returns exactly as it was, blocks, decoration, chests and all.",
+      "highlights": [
+        "Growing a dimensional carriage now opens empty space instead of stamping the built-in room into it",
+        "Shrinking then growing still restores the row you cropped, unchanged"
+      ],
+      "pr": 1217,
+      "date": "2026-08-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
