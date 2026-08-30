@@ -1802,6 +1802,26 @@ public final class PortalCarriageEvents {
             planned = planned.movedTo(wanted);
         }
 
+        // twinY is where the structure's BOX goes; the origin is its CORRIDOR LANE, and those stopped
+        // being the same row when a room gained a movable doorway. A door-height offset is spent
+        // downward — PortalRoomLayout.roomOrigin drops the room's own floor below the lane — so a
+        // structure stamped with its lane on the lane floor hung its room into the lane beneath it,
+        // and in lane 0 out of the bottom of the world, where setBlock is a silent no-op and the
+        // author's lowest rows were simply never written. Lifting the lane by the offset stands the
+        // ROOM on the lane floor instead, which is the span PortalTwinLanes.laneHeight sizes a lane
+        // for and exactly what every room without an offset already occupied. So every fit test below
+        // — the train clearance, the build ceiling, fitsUnderWorld — still reads twinY and is still
+        // asking about the whole structure.
+        //
+        // The exit corridor cannot escape that box either: exitDoorDeltaY is bounded below by this
+        // same clamped offset, so the lowest an exit corridor can stand is the room's own floor.
+        int doorLift = PortalRoomLayout.clampDoorHeightOffset(
+            dims, planned.roomSize().getY(), planned.settings().doorHeightOffset().value());
+        if (doorLift > 0) {
+            wanted = BlockPos.containing(originX, twinY + doorLift, originZ);
+            planned = planned.movedTo(wanted);
+        }
+
         int structureTop = twinY + structureHeight;
         if (!clearOfTheTrain(region, twinY, structureTop, originY, dims)
             || structureTop > level.getMaxBuildHeight() - CEILING_MARGIN
