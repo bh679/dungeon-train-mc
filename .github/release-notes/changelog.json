@@ -10297,8 +10297,25 @@
       "released_at": null
     },
     {
-      "id": "mirror-by-edited-template",
+      "id": "editor-validates-placeholders",
       "version": "0.746.0",
+      "type": "feat",
+      "title": "The translation editor now catches a broken placeholder as you type",
+      "summary": "When you translate the game from inside the game, some lines contain slots the game fills in \u2014 a player's name, a number, a key binding. Dropping one, adding one, or typing a lone percent sign makes that line display wrongly or not at all, and until now nothing said so: the mistake was only found weeks later, when the translation was pulled into the mod and quietly set aside. The editor now tells you the moment you type it, names the slot you have lost, and holds Save until it is right.",
+      "highlights": [
+        "A missing or invented fill-in slot is flagged under the text box as you type",
+        "Save is held until the line will actually display, so no more work is lost weeks later",
+        "Reordering slots to suit your language is still fine \u2014 only losing or inventing them is not"
+      ],
+      "pr": 1214,
+      "date": "2026-08-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "mirror-by-edited-template",
+      "version": "0.747.0",
       "type": "fix",
       "title": "Editor mirroring follows the template you build into",
       "summary": "Template mirroring now keys off the block you place, not where you are standing. Building into a mirror-enabled template from its roof, from the gap between plots, or from a neighbouring plot is mirrored using that template's own settings \u2014 previously those edits silently lost their mirror image.",
