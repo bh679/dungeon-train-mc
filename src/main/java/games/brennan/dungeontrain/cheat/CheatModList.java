@@ -121,7 +121,15 @@ public final class CheatModList {
         // "ankinbt" (AnkiNBT) covers all three surfaces at once — items, live entities and
         // villager trades — with a simple mode for names/enchantments/attributes and a full NBT
         // tree behind it.
-        "infinityeditor", "infinity_item_editor_re", "cadeditor", "dine", "ankinbt"
+        // "nbtedit" is In-game NBTEdit Reborn, the maintained continuation of the original
+        // NBTEdit — an /nbtedit tree over the held item or the entity you look at.
+        "infinityeditor", "infinity_item_editor_re", "cadeditor", "dine", "ankinbt", "nbtedit",
+        // mob-stat / spawn-rule rewriters — a GUI over every living entity's health, armour,
+        // speed, attack damage, damage-type immunities, and the biome + group-size rules that
+        // decide what spawns. That is DT's difficulty curve and spawn tables rewritten from a
+        // menu, so a run made under one is not comparable to anyone else's. Presence-based like
+        // the rest of the list: it flips Free Play whether the player tuned mobs down OR up.
+        "visual_mobs_edit"
     );
 
     /** Cache file under the loader config dir; written on each successful relay fetch. */
