@@ -10385,9 +10385,9 @@
       "highlights": [],
       "pr": 1223,
       "date": "2026-08-30",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.752.0",
+      "released_at": "2026-08-30T14:58:40Z"
     },
     {
       "id": "endless-room-tiling-settles",
@@ -10401,9 +10401,9 @@
       ],
       "pr": 1225,
       "date": "2026-08-30",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.752.0",
+      "released_at": "2026-08-30T14:58:40Z"
     },
     {
       "id": "cheat-list-cad-editor",
@@ -10414,6 +10414,18 @@
       "highlights": [
         "CAD Editor, DINE and AnkiNBT added to the cheat-mod list"
       ],
+      "date": "2026-08-30",
+      "released": true,
+      "released_in": "v0.752.0",
+      "released_at": "2026-08-30T14:58:40Z"
+    },
+    {
+      "id": "relay-admin-url-machine-wide",
+      "version": "0.753.0",
+      "type": "chore",
+      "title": "Internal tooling",
+      "summary": "Development tooling changes.",
+      "highlights": [],
       "date": "2026-08-30",
       "released": false,
       "released_in": null,
