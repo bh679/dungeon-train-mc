@@ -61,11 +61,12 @@ public final class BuilderRelayInstall {
     /**
      * What became of an install.
      *
-     * <p>{@link #ALREADY_HERE} is not a failure and not a silent success: this install already has a
-     * template of that kind under that name, and overwriting it is the one outcome here that can
+     * <p>{@link #ALREADY_HERE} is not a failure and not a silent success: this install has <b>saved</b>
+     * a template of that kind under that name, and overwriting it is the one outcome here that can
      * destroy work — the local copy may be newer than the relay's, or a different build that merely
      * shares a name. The player is told instead. The case the download exists for (a world that has
-     * never seen the build) never reaches it.</p>
+     * never saved the build) never reaches it, a name the jar merely ships included — see
+     * {@link #occupied}.</p>
      */
     public enum Outcome { INSTALLED, ALREADY_HERE, NAME_TAKEN, UNSUPPORTED, FAILED }
 
@@ -146,6 +147,11 @@ public final class BuilderRelayInstall {
     /** Write the template into its store and register the id — the collision question already settled. */
     private static Outcome write(BuilderPhotoPaths.Kind kind, String id, String subKind,
                                  String stageId, StructureTemplate template) throws IOException {
+        if (bundled(kind, id, subKind)) {
+            LOGGER.info("[DungeonTrain] Builder relay download: '{}' {} '{}' shadows the copy the mod ships — "
+                    + "the bundled one is untouched, /dt reset default brings it back",
+                    kind.id(), subKind == null || subKind.isEmpty() ? "template" : subKind, id);
+        }
         return switch (kind) {
             case CARRIAGE -> installCarriage(id, stageId, template);
             case CARRIAGE_GROUP -> installGroup(id, template);
@@ -157,12 +163,21 @@ public final class BuilderRelayInstall {
     }
 
     /**
-     * Whether this install already has a template of {@code kind} under {@code id} — a saved copy or
-     * a bundled one.
+     * Whether this install has <b>saved work</b> of {@code kind} under {@code id} — a file in its own
+     * library, and nothing else.
      *
-     * <p>Bundled counts. A downloaded build written under a built-in's name would not overwrite the
-     * jar's copy but WOULD shadow it for this whole install, which is a surprising thing to have
-     * happened by pressing a button on somebody else's build.</p>
+     * <p>The bundled tier is deliberately not counted, and that is the whole rule: a name only the
+     * jar holds is not the player's work, so a download landing on it destroys nothing. It writes
+     * into the config dir and shadows the jar's copy for this install, which {@code /dt reset
+     * default} undoes and which is what a player asking for their own build back is asking for.
+     * Counting it instead made every one of the 161 shipped contents sub-variants — and any build
+     * sharing a shipped part, rail or room name — permanently un-loadable, because a name the mod
+     * ships is occupied on every install of the mod.</p>
+     *
+     * <p>Refusing over a saved copy stays: that one may be newer than the relay's, or a different
+     * build that merely shares a name, and overwriting it is the one outcome here that can lose
+     * something. This is a profile screen — the relay only ever hands a player their own builds —
+     * so it is their own work on both sides of the question.</p>
      */
     public static boolean occupied(BuilderPhotoPaths.Kind kind, String id, String subKind) {
         if (kind == null || id == null || id.isEmpty()) return false;
@@ -170,28 +185,53 @@ public final class BuilderRelayInstall {
             case CARRIAGE -> {
                 CarriageVariant variant = CarriageVariantRegistry.find(id).orElse(null);
                 yield WholeCarriageTemplateStore.exists(WholeCarriage.of(id))
-                        || (variant != null
-                            && (CarriageTemplateStore.exists(variant) || CarriageTemplateStore.bundled(variant)));
+                        || (variant != null && CarriageTemplateStore.exists(variant));
             }
             case CARRIAGE_GROUP -> CarriageGroupTemplateStore.exists(CarriageGroup.of(id));
             case CONTENTS -> {
                 CarriageContents existing = CarriageContentsRegistry.find(id).orElse(null);
-                yield existing != null
-                        && (CarriageContentsStore.exists(existing) || CarriageContentsStore.bundled(existing));
+                yield existing != null && CarriageContentsStore.exists(existing);
             }
             case PART -> {
                 CarriagePartKind partKind = CarriagePartKind.fromId(subKind);
-                yield partKind != null
-                        && (CarriagePartTemplateStore.exists(partKind, id)
-                            || CarriagePartTemplateStore.bundled(partKind, id));
+                yield partKind != null && CarriagePartTemplateStore.exists(partKind, id);
             }
             case TRACK -> {
                 TrackKind trackKind = TrackKind.fromId(subKind);
-                yield trackKind != null
-                        && (TrackVariantStore.exists(trackKind, id) || TrackVariantStore.bundled(trackKind, id));
+                yield trackKind != null && TrackVariantStore.exists(trackKind, id);
             }
-            case PORTAL_ROOM -> PortalRoomTemplateStore.exists(id)
-                    || TrackVariantStore.bundled(TrackKind.PORTAL_ROOM, id);
+            case PORTAL_ROOM -> PortalRoomTemplateStore.exists(id);
+        };
+    }
+
+    /**
+     * Whether the mod jar ships a template of {@code kind} under {@code id}.
+     *
+     * <p>Not a collision — see {@link #occupied}. Read for one thing only: to say in the log that an
+     * install has just shadowed a built-in, which is invisible from the game and worth being able to
+     * find afterwards.</p>
+     */
+    private static boolean bundled(BuilderPhotoPaths.Kind kind, String id, String subKind) {
+        if (kind == null || id == null || id.isEmpty()) return false;
+        return switch (kind) {
+            case CARRIAGE -> {
+                CarriageVariant variant = CarriageVariantRegistry.find(id).orElse(null);
+                yield variant != null && CarriageTemplateStore.bundled(variant);
+            }
+            case CARRIAGE_GROUP -> false;   // groups have no bundled tier
+            case CONTENTS -> {
+                CarriageContents existing = CarriageContentsRegistry.find(id).orElse(null);
+                yield existing != null && CarriageContentsStore.bundled(existing);
+            }
+            case PART -> {
+                CarriagePartKind partKind = CarriagePartKind.fromId(subKind);
+                yield partKind != null && CarriagePartTemplateStore.bundled(partKind, id);
+            }
+            case TRACK -> {
+                TrackKind trackKind = TrackKind.fromId(subKind);
+                yield trackKind != null && TrackVariantStore.bundled(trackKind, id);
+            }
+            case PORTAL_ROOM -> TrackVariantStore.bundled(TrackKind.PORTAL_ROOM, id);
         };
     }
 
