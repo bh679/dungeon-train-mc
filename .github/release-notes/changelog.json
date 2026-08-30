@@ -10444,6 +10444,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "book-placeholder-guard",
+      "version": "0.756.0",
+      "type": "feat",
+      "title": "Translation editor catches a book losing its numbers",
+      "summary": "When you translate a story book in the in-game translation editor, the editor now tells you if your text has lost one of the numbers the game fills in \u2014 the death count in an epitaph, the carriage you fell in. Those are written as {deaths} or {deaths_nth} in the English, and until now nothing noticed when one went missing on the way through: the line would ship with the number simply gone. Only bracketed figures are checked, so a percent sign or a stray brace in a story is still just prose.",
+      "highlights": [
+        "The editor names the missing figure while you are still typing",
+        "Approved translations that lost a figure are held back instead of shipped"
+      ],
+      "pr": 1235,
+      "date": "2026-08-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
