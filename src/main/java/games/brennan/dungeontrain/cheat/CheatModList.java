@@ -112,8 +112,10 @@ public final class CheatModList {
         // do anything (which OperatorIntegrity now catches on its own), but naming them lets the
         // login notice say WHAT tripped Free Play rather than just "someone has cheats".
         // "infinityeditor" is the original Ruukas build, "infinity_item_editor_re" the
-        // maintained NeoForge fork.
-        "infinityeditor", "infinity_item_editor_re"
+        // maintained NeoForge fork, and "cadeditor" the CAD (Component And Data) Editor — the
+        // IBE Editor successor, which edits the 1.20.5+ component set (attributes, enchantments,
+        // stack size, unbreakable, container contents, item type) from a GUI.
+        "infinityeditor", "infinity_item_editor_re", "cadeditor"
     );
 
     /** Cache file under the loader config dir; written on each successful relay fetch. */
