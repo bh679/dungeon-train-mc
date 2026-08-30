@@ -60,6 +60,11 @@ import java.util.List;
  * long before a wireframe stops being visible, so at plot distance the colour is the whole answer;
  * a box whose colour disagreed with its word would be worse than no colour at all.</p>
  *
+ * <p>Which is also why the two are culled at different ranges: the ghost carries to
+ * {@link #MAX_DISTANCE_CHUNKS} chunks, the label only to {@link #LABEL_MAX_DISTANCE} blocks. Every
+ * registered room is in the plot grid at once, so drawing the words at the ghosts' full range
+ * stacks a dozen of them across the editor.</p>
+ *
  * <p>Driven by {@link EditorDoorGhostsPacket}: the server pushes an absolute-position snapshot of
  * each door's <b>lower</b> cell, and which mouth it is, when the plot grid moves — a resize, a new room, a deletion — or when
  * the player toggles the ghosts, and an empty snapshot clears the cache. Positions are absolute
@@ -111,6 +116,20 @@ public final class EditorDoorGhostRenderer {
 
     /** How far above the door's top the label floats, in blocks. Clear of the lintel, still on it. */
     private static final double LABEL_RISE = 0.45;
+
+    /**
+     * How close the camera has to be for a label to be drawn, in blocks — much tighter than the
+     * ghosts' own {@link #MAX_DISTANCE_CHUNKS} cull.
+     *
+     * <p>The word is for the door you are working on. A plot grid holds every registered room, so
+     * at the ghosts' full range a dozen Entrance/Exit labels stack up across the editor and read as
+     * clutter rather than as an answer. The colours carry the distinction at distance — that is
+     * what they are for — and the text only has to be there when you are close enough to be aiming
+     * at the door.</p>
+     */
+    private static final double LABEL_MAX_DISTANCE = 10.0;
+
+    private static final double LABEL_MAX_DISTANCE_SQ = LABEL_MAX_DISTANCE * LABEL_MAX_DISTANCE;
 
     /**
      * Glyph→world scale for the label. {@code EditorPlotLabelsRenderer.TEXT_SCALE}, so the two
@@ -180,7 +199,7 @@ public final class EditorDoorGhostRenderer {
         // interleaving them with the line batch above would break both batches into per-door draws.
         Font font = mc.font;
         for (EditorDoorGhostsPacket.Door d : snapshot) {
-            if (culled(d, cam)) continue;
+            if (d.base().distToCenterSqr(cam.x, cam.y, cam.z) > LABEL_MAX_DISTANCE_SQ) continue;
             label(ps, buffer, font, cam, d);
         }
         buffer.endBatch();
