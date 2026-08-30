@@ -210,6 +210,11 @@ public final class TranslationSubmitScreen extends Screen {
             if (value == null) {
                 continue;
             }
+            // Belt and braces for an override stored before the edit screen started checking, or
+            // one pulled down from the relay. Sending it would only have it deferred at import.
+            if (!book && TranslationFormatCheck.check(unit.source(), value) != null) {
+                continue;
+            }
             units.add(new TranslationSubmitClient.Unit(book ? "book" : "lang",
                 unit.namespace(), unit.id(), unit.source(), unit.shipped(), value));
             sending = book ? sending.withBook(unit.id(), value) : sending.withLang(unit.id(), value);
