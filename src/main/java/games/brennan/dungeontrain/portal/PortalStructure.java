@@ -199,10 +199,30 @@ public record PortalStructure(BlockPos origin, String roomName, Vec3i roomSize,
      * that is about shifting it per tick, as the tiling grows. This offset is fixed for the life of
      * the structure and survives a relocation ({@link #movedTo}), so every reader still agrees with
      * every other, which is the property that warning is really protecting.</p>
+     *
+     * <h2>Y and Z: the room's two doorways, placed apart</h2>
+     * <p>{@link #roomOrigin} spends this room's width and height slack to put the <b>box</b> where the
+     * <i>entry</i> door asks for it. The exit door is then a displacement of this corridor within that
+     * box — {@link PortalRoomLayout#exitDoorDeltaZ} and {@link PortalRoomLayout#exitDoorDeltaY}, each
+     * zero for the mirrored rooms that are nearly all of them, so nothing an existing world is
+     * standing in moves.</p>
+     *
+     * <p><b>Why this does not disturb the swap.</b> {@code PortalFrames} maps a carriage corridor to
+     * <i>its own</i> twin — an entry carriage to the entry twin, an exit carriage to the exit twin —
+     * and never one twin to the other. So it carries a corridor-local offset between two frames whose
+     * origins it is told, and moving this one is a change to an origin it already reads from here.
+     * The two corridors' <i>interiors</i> stay identical, which is the property the illusion actually
+     * rests on: nothing here touches {@link PortalCarriageLayout}, whose {@code doorZ}/{@code floorY}
+     * must keep describing every corridor in the world alike — the carriages on the train share a
+     * walkway line and cannot bend off it.</p>
      */
     public BlockPos exitOrigin(CarriageDims dims) {
         return origin.offset(
-            exitTwinOffsetX(dims) + exitTile.x() * roomLength(), 0, exitTile.z() * roomWidth());
+            exitTwinOffsetX(dims) + exitTile.x() * roomLength(),
+            PortalRoomLayout.exitDoorDeltaY(dims, roomSize.getY(),
+                settings.doorHeightOffset().value(), settings.exitDoorHeightOffset().value()),
+            exitTile.z() * roomWidth() + PortalRoomLayout.exitDoorDeltaZ(dims, roomSize.getZ(),
+                settings.doorOffset().value(), settings.exitDoorOffset().value()));
     }
 
     /**

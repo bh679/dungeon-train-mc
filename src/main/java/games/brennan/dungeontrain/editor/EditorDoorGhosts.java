@@ -98,7 +98,16 @@ public final class EditorDoorGhosts {
                 dims, size.getZ(), settings.doorOffset().value());
             int heightOffset = games.brennan.dungeontrain.portal.PortalRoomLayout.clampDoorHeightOffset(
                 dims, size.getY(), settings.doorHeightOffset().value());
-            out.addAll(PortalRoomDoorCells.doorBases(origin, size, offset, heightOffset));
+            // The exit door on its own clamps, not the entry door's: the two ends may stand apart,
+            // and a ghost that drew the far door on the near door's line would be showing the author
+            // a mouth the builder is not going to cut there.
+            int exitOffset = games.brennan.dungeontrain.portal.PortalRoomLayout.clampDoorOffset(
+                dims, size.getZ(), settings.exitDoorOffset().value());
+            int exitHeightOffset =
+                games.brennan.dungeontrain.portal.PortalRoomLayout.clampDoorHeightOffset(
+                    dims, size.getY(), settings.exitDoorHeightOffset().value());
+            out.addAll(PortalRoomDoorCells.doorBases(origin, size, offset, heightOffset,
+                exitOffset, exitHeightOffset));
         }
         return out;
     }
@@ -113,7 +122,9 @@ public final class EditorDoorGhosts {
      *
      * <p>Door offset is included alongside the box, not folded into it: a change to it moves the
      * ghost cells without moving the plot itself, and a dedup key that missed it would leave the
-     * ghosts standing at the old line until something else nudged the box.</p>
+     * ghosts standing at the old line until something else nudged the box. <b>Both doors', not one
+     * door's</b> — the two ends may stand apart, and moving only the exit door has to move the key
+     * or the far ghost would never be re-sent.</p>
      */
     public static String key(CarriageDims dims) {
         StringBuilder sb = new StringBuilder();
@@ -127,10 +138,16 @@ public final class EditorDoorGhosts {
                 dims, size.getZ(), settings.doorOffset().value());
             int heightOffset = games.brennan.dungeontrain.portal.PortalRoomLayout.clampDoorHeightOffset(
                 dims, size.getY(), settings.doorHeightOffset().value());
+            int exitOffset = games.brennan.dungeontrain.portal.PortalRoomLayout.clampDoorOffset(
+                dims, size.getZ(), settings.exitDoorOffset().value());
+            int exitHeightOffset =
+                games.brennan.dungeontrain.portal.PortalRoomLayout.clampDoorHeightOffset(
+                    dims, size.getY(), settings.exitDoorHeightOffset().value());
             sb.append(origin.getX()).append(',').append(origin.getY()).append(',')
               .append(origin.getZ()).append('/')
               .append(size.getX()).append(',').append(size.getY()).append(',')
               .append(size.getZ()).append('/').append(offset).append(',').append(heightOffset)
+              .append(',').append(exitOffset).append(',').append(exitHeightOffset)
               .append(';');
         }
         return sb.toString();

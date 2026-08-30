@@ -11,6 +11,7 @@ import games.brennan.dungeontrain.portal.PortalCarriageLayout;
 import games.brennan.dungeontrain.portal.PortalClear;
 import games.brennan.dungeontrain.portal.PortalCorridorMask;
 import games.brennan.dungeontrain.portal.PortalRoomDoorCells;
+import games.brennan.dungeontrain.portal.PortalRoomLayout;
 import games.brennan.dungeontrain.portal.PortalRoomSettings;
 import games.brennan.dungeontrain.portal.PortalRoomSizes;
 import games.brennan.dungeontrain.portal.PortalRoomTiling;
@@ -122,13 +123,22 @@ public final class PortalTestCommand {
         // legal width, so this cannot drift away from where the opening really is.
         PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims, structure.kind());
         BlockPos roomOrigin = structure.roomOrigin(dims, layout);
+        // The ENTRY door's own offsets, clamped exactly as roomOrigin clamped them: the raw authored
+        // values can sit outside what this room's width and height can spend, and re-deriving the
+        // doorway from an unclamped number lands beside the opening rather than in it. The exit
+        // door's offsets are deliberately not read here — a test session arrives at the entry mouth.
+        int doorOffset = PortalRoomLayout.clampDoorOffset(
+            dims, roomSize.getZ(), settings.doorOffset().value());
+        int doorHeightOffset = PortalRoomLayout.clampDoorHeightOffset(
+            dims, roomSize.getY(), settings.doorHeightOffset().value());
         BlockPos arrival = new BlockPos(
             roomOrigin.getX() - 1,
-            roomOrigin.getY() + 1,
+            // The CORRIDOR's floor, which is the room's own only while the door sits at it.
+            roomOrigin.getY() + doorHeightOffset + 1,
             // roomOrigin already has the door offset baked into where it sits — the SAME offset has
             // to be handed to doorZ, or this re-derives a symmetric centre off a box that is no
             // longer symmetric about the corridor and lands off the real doorway.
-            PortalRoomDoorCells.doorZ(roomOrigin, roomSize, settings.doorOffset().value()));
+            PortalRoomDoorCells.doorZ(roomOrigin, roomSize, doorOffset));
 
         GameType previous = player.gameMode.getGameModeForPlayer();
         PortalTestSession.put(player.getUUID(), new PortalTestSession.Session(

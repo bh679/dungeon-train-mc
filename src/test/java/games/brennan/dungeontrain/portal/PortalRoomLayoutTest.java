@@ -377,4 +377,94 @@ class PortalRoomLayoutTest {
                     + " is one block more conservative than it needs to be");
         }
     }
+    // ---- the room's two doorways, placed apart ----
+
+    @Test
+    @DisplayName("A room whose two doors agree displaces its exit corridor by nothing at all")
+    void exitDoorDelta_isZeroWhileTheDoorsMirror() {
+        Vec3i size = new Vec3i(11, 13, 21);
+        for (int offset = -6; offset <= 6; offset++) {
+            assertEquals(0, PortalRoomLayout.exitDoorDeltaZ(
+                DEFAULT_DIMS, size.getZ(), offset, offset), "Z at offset " + offset);
+        }
+        for (int up = 0; up <= 8; up++) {
+            assertEquals(0, PortalRoomLayout.exitDoorDeltaY(
+                DEFAULT_DIMS, size.getY(), up, up), "Y at offset " + up);
+        }
+    }
+
+    @Test
+    @DisplayName("The delta is the difference of the two CLAMPED doors, never the clamped difference")
+    void exitDoorDelta_clampsEachDoorBeforeSubtracting() {
+        // 21 wide against a 9-wide floor gives 6 either way; 13 tall against 7 gives 6 up.
+        int width = 21;
+        int height = 13;
+        assertEquals(6, PortalRoomLayout.maxDoorOffset(DEFAULT_DIMS, width));
+        assertEquals(6, PortalRoomLayout.maxDoorHeightOffset(DEFAULT_DIMS, height));
+
+        // Both doors asked for more than the room can spend. Clamping the difference would give 0
+        // for the first and 94 for the second; clamping each door first is what keeps both
+        // corridors inside the box, which is what the mouth's seal needs.
+        assertEquals(0, PortalRoomLayout.exitDoorDeltaZ(DEFAULT_DIMS, width, 50, 50));
+        assertEquals(12, PortalRoomLayout.exitDoorDeltaZ(DEFAULT_DIMS, width, -50, 50));
+        assertEquals(-12, PortalRoomLayout.exitDoorDeltaZ(DEFAULT_DIMS, width, 50, -50));
+        assertEquals(6, PortalRoomLayout.exitDoorDeltaY(DEFAULT_DIMS, height, 0, 100));
+        assertEquals(-6, PortalRoomLayout.exitDoorDeltaY(DEFAULT_DIMS, height, 100, 0));
+    }
+
+    @Test
+    @DisplayName("Both corridors stay inside the room at every pair of doors, at every legal width")
+    void exitDoorDelta_keepsBothCorridorsInsideTheRoom() {
+        PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(DEFAULT_DIMS, PortalCorridorKind.LONG);
+        BlockPos entryOrigin = new BlockPos(100, -50, 40);
+
+        for (int width = PortalRoomLayout.minWidth(DEFAULT_DIMS); width <= 25; width++) {
+            for (int height = PortalRoomLayout.minHeight(DEFAULT_DIMS); height <= 15; height++) {
+                int maxZ = PortalRoomLayout.maxDoorOffset(DEFAULT_DIMS, width);
+                int maxY = PortalRoomLayout.maxDoorHeightOffset(DEFAULT_DIMS, height);
+                for (int entryZ = -maxZ; entryZ <= maxZ; entryZ++) {
+                    for (int exitZ = -maxZ; exitZ <= maxZ; exitZ++) {
+                        for (int entryY = 0; entryY <= maxY; entryY++) {
+                            for (int exitY = 0; exitY <= maxY; exitY++) {
+                                assertCorridorsInsideRoom(layout, entryOrigin, width, height,
+                                    entryZ, entryY, exitZ, exitY);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Both corridor cross-sections lie inside the room box — the property {@code sealCorridorMouth}
+     * relies on, and the one thing two independently-placed doors could break.
+     */
+    private static void assertCorridorsInsideRoom(PortalCarriageLayout layout, BlockPos entryOrigin,
+                                                  int width, int height, int entryZ, int entryY,
+                                                  int exitZ, int exitY) {
+        BlockPos room = PortalRoomLayout.roomOrigin(
+            entryOrigin, DEFAULT_DIMS, layout, width, height, entryZ, entryY);
+        String where = "w=" + width + " h=" + height + " entry=(" + entryZ + "," + entryY
+            + ") exit=(" + exitZ + "," + exitY + ")";
+
+        // The entry corridor stands where the lane put it; the exit one is displaced by the delta.
+        assertInside(room, width, height, entryOrigin.getZ(), entryOrigin.getY(), "entry " + where);
+        assertInside(room, width, height,
+            entryOrigin.getZ() + PortalRoomLayout.exitDoorDeltaZ(DEFAULT_DIMS, width, entryZ, exitZ),
+            entryOrigin.getY() + PortalRoomLayout.exitDoorDeltaY(DEFAULT_DIMS, height, entryY, exitY),
+            "exit " + where);
+    }
+
+    private static void assertInside(BlockPos room, int width, int height,
+                                     int corridorZ, int corridorY, String where) {
+        assertTrue(corridorZ >= room.getZ(), where + ": corridor minZ " + corridorZ
+            + " is outside room minZ " + room.getZ());
+        assertTrue(corridorZ + DEFAULT_DIMS.width() - 1 <= room.getZ() + width - 1,
+            where + ": corridor maxZ is outside room maxZ");
+        assertTrue(corridorY >= room.getY(), where + ": corridor minY " + corridorY
+            + " is outside room minY " + room.getY());
+        assertTrue(corridorY + DEFAULT_DIMS.height() - 1 <= room.getY() + height - 1,
+            where + ": corridor maxY is outside room maxY");
+    }
 }
