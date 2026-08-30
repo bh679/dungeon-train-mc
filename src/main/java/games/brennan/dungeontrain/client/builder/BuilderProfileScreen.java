@@ -6,6 +6,7 @@ import games.brennan.dungeontrain.builder.relay.BuilderRelayKinds;
 import games.brennan.dungeontrain.builder.BuilderMode;
 import games.brennan.dungeontrain.builder.relay.BuilderRelayDownload;
 import games.brennan.dungeontrain.builder.relay.BuilderRelayInstall;
+import games.brennan.dungeontrain.builder.relay.BuilderReviewState;
 import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
 import games.brennan.dungeontrain.client.menu.CommandMenuState;
 import games.brennan.dungeontrain.client.menu.CommandRunner;
@@ -49,6 +50,12 @@ import java.util.List;
  * <p>Only a whole carriage can be submitted ({@link BuilderRelayKinds#canJoinTheTrain}); every other
  * kind the builder authors is a piece of something rather than a thing a train slot can hold, so its
  * tile says where it lives and offers nothing to press.</p>
+ *
+ * <p>Submitting is a request, not an outcome. A submitted build waits for a person to look at it
+ * ({@link BuilderReviewState}), and until they do it is neither in the profile nor on the train — so
+ * a submittable carriage's tile reads from its review state rather than from the published flag,
+ * which only says what its author asked for. This screen is the one place either half of that can be
+ * told to the person who made it.</p>
  */
 @OnlyIn(Dist.CLIENT)
 public final class BuilderProfileScreen extends Screen {
@@ -399,10 +406,17 @@ public final class BuilderProfileScreen extends Screen {
         String name = entry.buildName().isEmpty()
                 ? "#" + entry.relayId()
                 : BuilderLabels.pretty(entry.buildName());
-        Component where = Component.translatable(entry.published()
-                ? "gui.dungeontrain.builder.profile.on_train"
-                : "gui.dungeontrain.builder.profile.in_profile");
-        return Component.literal(name + " · ").append(where);
+        // A submittable carriage says where it stands with the reviewer; everything else — and a
+        // carriage nobody has submitted — falls back to where it lives, which is all there is to say.
+        String key = BuilderRelayKinds.canJoinTheTrain(entry.kind())
+                ? BuilderReviewState.labelKeyFor(entry.review())
+                : null;
+        if (key == null) {
+            key = entry.published()
+                    ? "gui.dungeontrain.builder.profile.on_train"
+                    : "gui.dungeontrain.builder.profile.in_profile";
+        }
+        return Component.literal(name + " · ").append(Component.translatable(key));
     }
 
     /** Which local store to draw this build's tile from — the mirror of {@link BuilderRelayKinds#idOf}. */
@@ -460,12 +474,21 @@ public final class BuilderProfileScreen extends Screen {
         if ("flagged".equals(entry.flag()) || "rejected".equals(entry.flag())) {
             return Component.translatable("gui.dungeontrain.builder.profile.withheld");
         }
+        // A declined build is a decision about this build and outranks everything below: fixing its
+        // stage would not put it on the train, and saying "waiting" of it would be untrue.
+        if (BuilderReviewState.DECLINED.equals(BuilderReviewState.of(entry.review()))) {
+            return Component.translatable("gui.dungeontrain.builder.profile.review.declined_note");
+        }
         // A carriage is only placed into a stage it belongs to, and a build authored without one
         // belongs to none — so it can be submitted and still never appear anywhere. Said here because
         // "on the train and never seen" is indistinguishable from a broken feature otherwise.
         if (BuilderRelayKinds.canJoinTheTrain(entry.kind()) && entry.stage().isEmpty()) {
             return Component.translatable("gui.dungeontrain.builder.profile.no_stage");
         }
+        // Last, and deliberately below the stage line: waiting is the ordinary, healthy state, while a
+        // build with no stage has something its author can still fix while it waits.
+        String reviewNote = BuilderReviewState.noteKeyFor(entry.review());
+        if (reviewNote != null) return Component.translatable(reviewNote);
         return null;
     }
 
