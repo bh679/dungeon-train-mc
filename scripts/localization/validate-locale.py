@@ -32,10 +32,10 @@ full question again. The flag is kept as the escape hatch for the same situation
 reach for it only to unblock work while a locale is being repaired, never as the steady state.
 """
 import json
-import re
 import sys
 from pathlib import Path
 
+from lang_format import placeholders
 from plural_forms import PLURAL_SUFFIXES, expected_keys, plural_categories  # noqa: F401
 
 REPO = Path(__file__).resolve().parents[2]
@@ -59,8 +59,6 @@ STRUCT_STR_KEYS = {"id", "ref", "page", "_translator_note"}
 # Numeric keys whose value legitimately varies per translation (character offsets into prose).
 # These are shape-checked (must be a number) but range-checked separately, not equality-checked.
 SOFT_NUM_KEYS = {"offset"}
-# printf-style tokens MC's format parser recognises ( %s %d %1$s %% … ).
-PLACEHOLDER = re.compile(r"%(?:\d+\$)?[a-zA-Z%]")
 MAX_TITLE_CHARS = 15               # DeathNoteTitleLocalization.VANILLA_MAX_TITLE_CHARS
 # Instruction books whose TITLE is itself the in-game trigger word a player types (NoteKind).
 # Their translated titles must stay typeable, or that language loses the mechanic silently.
@@ -78,20 +76,6 @@ def reference_twin(key, ref, bases):
 def load(path):
     with open(path, encoding="utf-8") as fh:
         return json.load(fh)
-
-
-def placeholders(value):
-    """A value's ARGUMENT tokens, sorted.
-
-    `%%` is matched by the pattern but excluded here: it is an escaped literal percent, not an
-    argument the caller passes. A translation is entitled to contain one where the English does
-    not, or to drop one by rephrasing — six locales render the AI-policy line without a percent
-    sign at all, and that is a translation decision, not a defect. What must match is the
-    arguments, because those are positional.
-    """
-    if not isinstance(value, str):
-        return []
-    return sorted(t for t in PLACEHOLDER.findall(value) if t != "%%")
 
 
 def flat_text_pool(ref):

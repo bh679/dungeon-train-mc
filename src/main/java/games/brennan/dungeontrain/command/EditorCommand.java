@@ -6695,7 +6695,9 @@ public final class EditorCommand {
             : min > 0 && max > 0 ? "both ends"
             : min > 0 ? "the near end" : "the far end";
         return steps.get(0).grow()
-            ? " Grown at " + where + "."
+            // Says "empty" out loud because the new space used to arrive floored, walled and lit,
+            // and an author who remembers that would read air as a stamp that half-failed.
+            ? " Grown at " + where + " — the new space is empty, ready to build in."
             : " Cropped at " + where + " — step back up and those blocks come back.";
     }
 

@@ -8,12 +8,14 @@ import games.brennan.dungeontrain.portal.PortalRoomTiler;
 import games.brennan.dungeontrain.portal.PortalRoomTiling;
 import games.brennan.dungeontrain.portal.PortalStructure;
 import games.brennan.dungeontrain.portal.PortalTestSession;
+import games.brennan.dungeontrain.portal.PortalTestWindow;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
@@ -90,8 +92,11 @@ public final class PortalTestTicker {
     /**
      * The tile this player occupies, as a set so it reads the way the tiler's parameter does.
      *
-     * <p>Bounded by the room's own tiled span rather than by a fixed box: the window is what they
-     * are walking through, and a player past its edge is the signal to drain.</p>
+     * <p>Bounded by {@link PortalTestWindow#occupancyBox} rather than by a fixed box: the window is
+     * what they are walking through, and a player past its edge is the signal to drain. The box is
+     * over there rather than here so it can be swept by a test — and so that it reads the room's
+     * own floor and the corridors' own bounds, which a room that has moved either of its doorways
+     * off the corridor lane needs it to.</p>
      */
     private static Set<PortalRoomTiling.Tile> occupiedTiles(ServerPlayer player, CarriageDims dims,
                                                             PortalCarriageLayout layout,
@@ -100,16 +105,8 @@ public final class PortalTestTicker {
         double y = player.getY();
         double z = player.getZ();
 
-        int minX = Math.min(structure.origin().getX() - 1, structure.tiledMinX(dims, layout) - 1);
-        int maxX = Math.max(structure.origin().getX() + structure.spanX(dims) + 1,
-            structure.tiledMaxX(dims, layout) + 2);
-        int minZ = Math.min(structure.origin().getZ() - 1, structure.tiledMinZ(dims, layout) - 1);
-        int maxZ = Math.max(structure.origin().getZ() + dims.width() + 1,
-            structure.tiledMaxZ(dims, layout) + 2);
-        int minY = structure.origin().getY() - 1;
-        int maxY = structure.origin().getY() + Math.max(dims.height(), structure.roomSize().getY()) + 2;
-
-        if (x < minX || x > maxX || z < minZ || z > maxZ || y < minY || y > maxY) return Set.of();
+        BoundingBox window = PortalTestWindow.occupancyBox(structure, dims, layout);
+        if (!PortalTestWindow.contains(window, x, y, z)) return Set.of();
         return Set.of(structure.tileAt(dims, layout, x, z));
     }
 }

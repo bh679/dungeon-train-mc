@@ -411,10 +411,14 @@ public final class EditorMenuScreen implements MenuScreen {
 
         // Go and stand in one. Portals only, because that is the only category where "the carriage"
         // names something you can walk into. It stamps the room the player is standing in — under
-        // the world, corridor each side, no train — so there is nothing to pick and no save prompt
-        // to answer.
+        // the world, corridor each side, no train — so there is nothing to pick.
+        //
+        // It stamps it from the SAVED template, though, so an unsaved edit would be silently absent
+        // from what the author walked in to look at. PortalTestSaveCheckScreen asks first when this
+        // room is dirty, and dispatches straight through when it isn't.
         if (ctx.isPortals()) {
-            out.add(new CommandMenuEntry.Run("Test the Carriage", "dungeontrain portal test"));
+            out.add(new CommandMenuEntry.DrillIn("Test the Carriage",
+                new PortalTestSaveCheckScreen(ctx.modelName())));
         }
 
         // Exit unwinds the active editor session, clears the editor plots, and teleports the player

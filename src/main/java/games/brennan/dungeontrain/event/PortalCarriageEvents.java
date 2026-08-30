@@ -1140,12 +1140,19 @@ public final class PortalCarriageEvents {
         int pad = structure.fogPad();
         AABB box = structureBox(dims, structure);
         if (pad > 0) box = box.inflate(pad, 0.0, pad);
+        // Y off the ROOM, not off the corridor lane: they are the same row only while the door sits
+        // at the room's own floor. A door-height offset stands the floor below the lane, so a region
+        // measured from the lane left the bottom rows of the room — the very rows moving the door
+        // created — unfogged and unlit, while reaching the same distance up into the rock above the
+        // ceiling. The room's own box still covers both corridors' full height: the offset can never
+        // exceed the room's slack over PortalRoomLayout.minHeight, which is the corridor's height.
+        BlockPos roomOrigin = structure.roomOrigin(dims, layout);
         PortalRoomFogPacket region = new PortalRoomFogPacket(
             structure.tiledMinX(dims, layout) - pad,
-            structure.origin().getY(),
+            roomOrigin.getY(),
             structure.tiledMinZ(dims, layout) - pad,
             structure.tiledMaxX(dims, layout) + pad,
-            structure.origin().getY() + structure.roomSize().getY(),
+            roomOrigin.getY() + structure.roomSize().getY(),
             structure.tiledMaxZ(dims, layout) + pad,
             structure.fogRadius(),
             // The pad is also the ramp: the fog closes in over exactly the space that was swept, so
@@ -1182,12 +1189,15 @@ public final class PortalCarriageEvents {
         games.brennan.dungeontrain.portal.PortalRoomSky sky = structure.settings().sky();
         if (!sky.lights() || !DungeonTrainConfig.isPortalRoomDaylight()) return;
 
+        // Y off the ROOM rather than the corridor lane, for the reason sendFogFor gives: a room with
+        // a door-height offset stands its floor below the lane, and the rows below it are the room.
+        BlockPos roomOrigin = structure.roomOrigin(dims, layout);
         PortalRoomSkyPacket region = PortalRoomSkyPacket.inWorld(
             structure.tiledMinX(dims, layout),
-            structure.origin().getY(),
+            roomOrigin.getY(),
             structure.tiledMinZ(dims, layout),
             structure.tiledMaxX(dims, layout),
-            structure.origin().getY() + structure.roomSize().getY() - 1,
+            roomOrigin.getY() + structure.roomSize().getY() - 1,
             structure.tiledMaxZ(dims, layout),
             sky.ordinal());
 
@@ -1789,6 +1799,26 @@ public final class PortalCarriageEvents {
             twinY = PortalTwinLanes.twinFloorY(
                 region.base(), region.ceiling(), pairKey, groupSize, structureHeight);
             wanted = BlockPos.containing(originX, twinY, originZ);
+            planned = planned.movedTo(wanted);
+        }
+
+        // twinY is where the structure's BOX goes; the origin is its CORRIDOR LANE, and those stopped
+        // being the same row when a room gained a movable doorway. A door-height offset is spent
+        // downward — PortalRoomLayout.roomOrigin drops the room's own floor below the lane — so a
+        // structure stamped with its lane on the lane floor hung its room into the lane beneath it,
+        // and in lane 0 out of the bottom of the world, where setBlock is a silent no-op and the
+        // author's lowest rows were simply never written. Lifting the lane by the offset stands the
+        // ROOM on the lane floor instead, which is the span PortalTwinLanes.laneHeight sizes a lane
+        // for and exactly what every room without an offset already occupied. So every fit test below
+        // — the train clearance, the build ceiling, fitsUnderWorld — still reads twinY and is still
+        // asking about the whole structure.
+        //
+        // The exit corridor cannot escape that box either: exitDoorDeltaY is bounded below by this
+        // same clamped offset, so the lowest an exit corridor can stand is the room's own floor.
+        int doorLift = PortalRoomLayout.clampDoorHeightOffset(
+            dims, planned.roomSize().getY(), planned.settings().doorHeightOffset().value());
+        if (doorLift > 0) {
+            wanted = BlockPos.containing(originX, twinY + doorLift, originZ);
             planned = planned.movedTo(wanted);
         }
 

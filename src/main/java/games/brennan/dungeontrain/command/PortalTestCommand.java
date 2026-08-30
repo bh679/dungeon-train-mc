@@ -18,6 +18,8 @@ import games.brennan.dungeontrain.portal.PortalRoomTiling;
 import games.brennan.dungeontrain.portal.PortalStructure;
 import games.brennan.dungeontrain.portal.PortalTestSession;
 import games.brennan.dungeontrain.portal.PortalTwinLanes;
+import games.brennan.dungeontrain.portal.PortalTwinRegion;
+import games.brennan.dungeontrain.portal.PortalTwinSpace;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.ChatFormatting;
@@ -103,11 +105,51 @@ public final class PortalTestCommand {
         }
 
         // The room as authored, so what is tested is what was built: its own size and its own
-        // settings (walls mode, contents, books), not the defaults.
-        Vec3i roomSize = PortalRoomSizes.sizeOf(roomName, dims);
+        // settings (walls mode, contents, books), not the defaults. Its HEIGHT is held to what this
+        // world's basement can stand up, exactly as PortalCarriageBuilder.planStructure holds it in
+        // play: a test that stamped a taller room than a player will ever meet would be testing a
+        // room that does not exist, and would push it up through the bedrock to do so.
+        //
+        // The basement rather than PortalTwinSpace.regionFor, because the basement is the region this
+        // command actually stamps into — originFor stands the lane on the build floor.
+        Vec3i authored = PortalRoomSizes.sizeOf(roomName, dims);
         PortalRoomSettings settings = PortalRoomSettings.of(roomName);
+        PortalTwinRegion region = PortalTwinSpace.basementOf(overworld);
+        Vec3i roomSize = PortalCarriageBuilder.heldInRegion(region, authored);
+
+        // The one thing a twin has to do is fit in the space it is stamped into, and this command
+        // never asked. In play a pair that does not fit simply goes without a twin
+        // (PortalCarriageEvents.ensureStructure); here an author asked out loud, so answer them —
+        // rather than stamping through the world's floor and failing somewhere in the block writes.
+        int structureHeight = Math.max(dims.height(), roomSize.getY());
+        int twinY = PortalTwinLanes.floorY(region.base());
+        if (!PortalTwinLanes.fitsUnderWorld(region.base(), region.ceiling(), twinY, structureHeight)) {
+            source.sendFailure(Component.literal(
+                "'" + roomName + "' needs " + structureHeight + " blocks and the sealed space under "
+                    + "this world's bedrock only has "
+                    + PortalTwinLanes.maxStructureHeight(region.base(), region.ceiling())
+                    + ". Make it shorter to test it here.").withStyle(ChatFormatting.RED));
+            return 0;
+        }
+        if (roomSize.getY() < authored.getY()) {
+            int held = roomSize.getY();
+            source.sendSuccess(() -> Component.literal(
+                "'" + roomName + "' is " + authored.getY() + " tall and this world can only stand up "
+                    + held + " — testing it at that height, which is what a player would walk into."
+            ).withStyle(ChatFormatting.YELLOW), false);
+        }
+        // Both entry-door offsets, clamped exactly as roomOrigin will clamp them: the raw authored
+        // values can sit outside what this room's width and height can spend, and re-deriving either
+        // the stamp height or the doorway from an unclamped number lands beside the opening rather
+        // than in it. The exit door's offsets are deliberately not read here — a test session
+        // arrives at the entry mouth, and the exit corridor can never hang below the room's floor.
+        int doorOffset = PortalRoomLayout.clampDoorOffset(
+            dims, roomSize.getZ(), settings.doorOffset().value());
+        int doorHeightOffset = PortalRoomLayout.clampDoorHeightOffset(
+            dims, roomSize.getY(), settings.doorHeightOffset().value());
+
         PortalStructure structure = new PortalStructure(
-            originFor(player, overworld, dims), roomName, roomSize, settings,
+            originFor(player, overworld, doorHeightOffset), roomName, roomSize, settings,
             // Starts at the base tile and grows from there: PortalTestTicker drives the real
             // PortalRoomTiler around the player, so an endless room repeats here exactly as it does
             // on the train, block variants and all.
@@ -123,14 +165,6 @@ public final class PortalTestCommand {
         // legal width, so this cannot drift away from where the opening really is.
         PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims, structure.kind());
         BlockPos roomOrigin = structure.roomOrigin(dims, layout);
-        // The ENTRY door's own offsets, clamped exactly as roomOrigin clamped them: the raw authored
-        // values can sit outside what this room's width and height can spend, and re-deriving the
-        // doorway from an unclamped number lands beside the opening rather than in it. The exit
-        // door's offsets are deliberately not read here — a test session arrives at the entry mouth.
-        int doorOffset = PortalRoomLayout.clampDoorOffset(
-            dims, roomSize.getZ(), settings.doorOffset().value());
-        int doorHeightOffset = PortalRoomLayout.clampDoorHeightOffset(
-            dims, roomSize.getY(), settings.doorHeightOffset().value());
         BlockPos arrival = new BlockPos(
             roomOrigin.getX() - 1,
             // The CORRIDOR's floor, which is the room's own only while the door sits at it.
@@ -232,11 +266,25 @@ public final class PortalTestCommand {
      *
      * <p>The X is theirs only so a structure is near the region they already have loaded; nothing
      * about it has to line up with anything, because nothing it is stamped beside is a train.</p>
+     *
+     * <h2>{@code doorHeightOffset} is what stands the room ON the lane floor</h2>
+     * <p>This returns the <b>corridor lane</b>, and a room spends its door-height offset by dropping
+     * its own floor below that line ({@link games.brennan.dungeontrain.portal.PortalRoomLayout#roomOrigin}).
+     * The lowest lane's floor is {@link PortalTwinLanes#FLOOR_MARGIN} blocks over the bottom of the
+     * world, so a room that hung below it hung out of the world — and {@code setBlock} out of range
+     * is a <b>silent no-op</b>, so the bottom of the author's build was quietly never written. A room
+     * with a 47-block offset lost 46 of its 70 rows and stood on nothing.</p>
+     *
+     * <p>Lifting the lane by the offset puts the room's floor exactly on the lane floor, so the
+     * structure occupies {@code [laneFloor, laneFloor + roomHeight]} — which is the span a lane is
+     * sized for in the first place ({@link PortalTwinLanes#laneHeight}), and what every room without
+     * an offset has always occupied. Clamped by the caller, because an unclamped offset would lift
+     * the structure further than the room's own height can spend.</p>
      */
-    private static BlockPos originFor(ServerPlayer player, ServerLevel level, CarriageDims dims) {
+    private static BlockPos originFor(ServerPlayer player, ServerLevel level, int doorHeightOffset) {
         return new BlockPos(
             player.blockPosition().getX(),
-            PortalTwinLanes.floorY(level.getMinBuildHeight()),
+            PortalTwinLanes.floorY(level.getMinBuildHeight()) + doorHeightOffset,
             TEST_Z_OFFSET);
     }
 
