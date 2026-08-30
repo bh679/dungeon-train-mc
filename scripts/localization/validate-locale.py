@@ -24,12 +24,12 @@ Exit code is non-zero if any locale fails.
 
 ``--values-only`` checks just the things a change to TRANSLATED TEXT can break — placeholders,
 empty strings, trigger-book title length, note offsets into prose — and skips key sets, file
-sets and structural shape. It exists for the relay import job, which edits values and nothing
-else: gating that job on the whole structural suite meant a translation of one Vietnamese string
-could not be imported because the vi_vn AIN overlay had been missing `item_types` for months.
-A tool that refuses today's correct work over yesterday's unrelated debt gets ignored, so the
-import job asks the narrower question it is entitled to ask — "did I break anything?" — and the
-full suite stays the gate for PRs.
+sets and structural shape. **Nothing runs it today**: it was written for the relay import job
+while the AIN overlays carried structural debt that job could not have caused (vi_vn had been
+missing `item_types` for months, and gating on the whole suite meant one Vietnamese string could
+not be imported over it). That debt is paid off and both build.yml and the import job ask the
+full question again. The flag is kept as the escape hatch for the same situation recurring —
+reach for it only to unblock work while a locale is being repaired, never as the steady state.
 """
 import json
 import re
