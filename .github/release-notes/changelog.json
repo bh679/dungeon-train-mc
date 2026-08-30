@@ -10398,10 +10398,10 @@
       "id": "cheat-list-cad-editor",
       "version": "0.751.0",
       "type": "chore",
-      "title": "CAD Editor counts as a cheat mod",
-      "summary": "Installing CAD Editor (Component And Data Editor) now puts the run into Free Play, alongside the other in-game item editors. It edits an item's components straight from a GUI, so it does the work of /give without a command.",
+      "title": "In-game editors count as cheat mods",
+      "summary": "Installing CAD Editor (Component And Data Editor) or DINE (Dynamic In-Game NBT Editor) now puts the run into Free Play, alongside the other in-game editors. One rewrites an item's components from a GUI, the other rewrites a mob or block entity's NBT live, so both do the work of a command without one.",
       "highlights": [
-        "CAD Editor added to the cheat-mod list"
+        "CAD Editor and DINE added to the cheat-mod list"
       ],
       "date": "2026-08-30",
       "released": false,

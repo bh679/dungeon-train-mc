@@ -90,6 +90,7 @@ class CheatModListTest {
         assertTrue(eff.contains("infinity_item_editor_re"),
             "infinity_item_editor_re is blacklisted");
         assertTrue(eff.contains("cadeditor"), "cadeditor is blacklisted");
+        assertTrue(eff.contains("dine"), "dine is blacklisted");
     }
 
     @Test

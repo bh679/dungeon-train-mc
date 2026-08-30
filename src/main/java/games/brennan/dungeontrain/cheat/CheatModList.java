@@ -114,8 +114,11 @@ public final class CheatModList {
         // "infinityeditor" is the original Ruukas build, "infinity_item_editor_re" the
         // maintained NeoForge fork, and "cadeditor" the CAD (Component And Data) Editor — the
         // IBE Editor successor, which edits the 1.20.5+ component set (attributes, enchantments,
-        // stack size, unbreakable, container contents, item type) from a GUI.
-        "infinityeditor", "infinity_item_editor_re", "cadeditor"
+        // stack size, unbreakable, container contents, item type) from a GUI. "dine" (Dynamic
+        // In-Game NBT Editor) is the same idea aimed at entities and block entities — a live NBT
+        // tree you can rewrite mid-run. It drives the vanilla /data command, so its edits already
+        // need permission level 2, but naming it here lets the notice say what tripped Free Play.
+        "infinityeditor", "infinity_item_editor_re", "cadeditor", "dine"
     );
 
     /** Cache file under the loader config dir; written on each successful relay fetch. */
