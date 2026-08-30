@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.net;
 
+import games.brennan.dungeontrain.builder.relay.BuilderReviewState;
 import io.netty.buffer.Unpooled;
 import net.minecraft.network.FriendlyByteBuf;
 import org.junit.jupiter.api.DisplayName;
@@ -68,7 +69,8 @@ final class BuilderCreatorSearchPacketTest {
     @DisplayName("a profile reply says whose builds it is, so a late answer can be recognised")
     void profileReplyRoundTrip() {
         BuilderProfilePacket original = new BuilderProfilePacket(BuilderProfilePacket.Status.OK,
-                List.of(new BuilderProfilePacket.Entry(7, "carriage", "", "brick_cabin", true, "approved", "stone", 3)),
+                List.of(new BuilderProfilePacket.Entry(7, "carriage", "", "brick_cabin", true, "approved",
+                        BuilderReviewState.SUBMITTED, "stone", 3)),
                 THEIRS, "", false);
         FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
         BuilderProfilePacket.STREAM_CODEC.encode(buf, original);

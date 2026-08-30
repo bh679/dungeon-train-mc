@@ -154,6 +154,57 @@ def test_register_new_adds_the_translator_as_human():
     assert prov_of(ws)["a.key"]["author"] == "Newcomer"
 
 
+def test_register_new_reports_the_names_it_added():
+    """The report the PR body is built from — who is new, so the reviewer is told."""
+    ws = workspace()
+    out = os.path.join(ws, "new-authors.json")
+    proc = run(ws, [unit(translator="Newcomer")], "--register-new", "--new-authors-out", out)
+    assert proc.returncode == 0, proc.stderr
+    assert read_json(out) == ["Newcomer"]
+    assert read_json(os.path.join(ws, "authors.json"))["Newcomer"] == "human"
+
+
+def test_the_report_is_empty_when_every_translator_is_already_known():
+    ws = workspace()
+    out = os.path.join(ws, "new-authors.json")
+    proc = run(ws, [unit()], "--register-new", "--new-authors-out", out)
+    assert proc.returncode == 0, proc.stderr
+    assert read_json(out) == []
+
+
+def test_register_new_dry_run_writes_neither_registry_nor_report():
+    ws = workspace()
+    out = os.path.join(ws, "new-authors.json")
+    proc = run(ws, [unit(translator="Newcomer")],
+               "--register-new", "--new-authors-out", out, "--dry-run")
+    assert proc.returncode == 0, proc.stderr
+    assert "would register" in proc.stdout
+    assert not os.path.exists(out), "a dry run must write no report file"
+    assert read_json(os.path.join(ws, "authors.json")) == AUTHORS
+
+
+def test_ai_credited_submission_is_refused_even_with_register_new():
+    """--register-new must not become a way to smuggle a machine into the human counts."""
+    ws = workspace()
+    proc = run(ws, [unit(translator="Opus 5 (Claude)")], "--register-new")
+    assert proc.returncode != 0
+    assert "registered as AI" in proc.stderr
+    assert read_json(os.path.join(ws, "authors.json")) == AUTHORS
+    assert lang_of(ws)["a.key"] == "AI Alpha"
+
+
+def test_a_translator_whose_every_approval_was_skipped_is_not_registered():
+    """Registering on sight would leave a name in the ledger with no stamped line behind it."""
+    ws = workspace()
+    out = os.path.join(ws, "new-authors.json")
+    proc = run(ws, [unit(translator="Newcomer", source="Some older English")],
+               "--register-new", "--new-authors-out", out)
+    assert proc.returncode == 0, proc.stderr
+    assert "en_us changed" in proc.stdout
+    assert read_json(os.path.join(ws, "authors.json")) == AUTHORS
+    assert read_json(out) == []
+
+
 def test_anonymous_submission_is_credited_to_one_registered_name():
     ws = workspace()
     proc = run(ws, [unit(translator="")], "--register-new")
@@ -181,10 +232,76 @@ def test_dry_run_writes_nothing():
 
 
 def test_unknown_key_is_reported_not_invented():
+    """A key neither the locale nor English has means relay and repo disagree. Still fatal."""
     ws = workspace()
     proc = run(ws, [unit(unitId="nope.key", source="")])
     assert proc.returncode != 0
     assert "not a key" in proc.stderr
+
+
+def test_key_english_has_but_the_locale_lacks_is_deferred_not_fatal():
+    """Locale drift: a real translation of a real string, with no line to edit yet.
+
+    On 2026-08-30 this was 144 of the 198 failures that stopped the weekly import dead — the
+    editor offers the English key set, so players translate keys their locale has not caught up
+    to. Nothing can be written for them, but nothing about them is wrong either.
+    """
+    ws = workspace(lang={"a.key": "AI Alpha", "b.key": "AI Beta"},   # c.key missing, EN has it
+                   prov={"a.key": {"author": "Opus 5 (Claude)", "reviewer": ""},
+                         "b.key": {"author": "Opus 5 (Claude)", "reviewer": ""}})
+    proc = run(ws, [unit(unitId="c.key", source="Gamma", value="人工 Gamma")])
+    assert proc.returncode == 0, proc.stderr
+    assert "locale drift" in proc.stdout
+    assert "c.key" not in lang_of(ws)          # nothing invented
+
+
+def test_plural_form_the_locale_cannot_use_is_deferred_and_named_as_such():
+    """A `.few` offered to a one/other language: approved work that must never be written.
+
+    Russian was shown 27 of these and translated them all. Writing them would put a key in the
+    file that validate-locale.py rejects and the language can never select.
+    """
+    en = dict(EN, **{"n.one": "one thing", "n.other": "many things"})
+    xx = dict(XX, **{"n.one": "AI one", "n.other": "AI many"})
+    prov = dict(PROV, **{"n.one": {"author": "Opus 5 (Claude)", "reviewer": ""},
+                         "n.other": {"author": "Opus 5 (Claude)", "reviewer": ""}})
+    ws = workspace(lang=xx, prov=prov)
+    write_json(os.path.join(ws, "lang", "en_us.json"), en)
+    proc = run(ws, [unit(unitId="n.few", source="", value="人工")])
+    assert proc.returncode == 0, proc.stderr
+    assert "not a plural form" in proc.stdout
+    assert "n.few" not in lang_of(ws)
+
+
+def test_deferred_units_do_not_hold_up_the_ones_that_can_land():
+    """The whole point: 979 good translations must not be lost to units that have nowhere to go."""
+    ws = workspace(lang={"a.key": "AI Alpha", "b.key": "AI Beta"},
+                   prov={"a.key": {"author": "Opus 5 (Claude)", "reviewer": ""},
+                         "b.key": {"author": "Opus 5 (Claude)", "reviewer": ""}})
+    out = os.path.join(ws, "deferred.json")
+    proc = run(ws, [unit(unitId="c.key", source="Gamma", value="人工 Gamma"),
+                    unit(id=2, unitId="a.key", source="Alpha", value="人工 Alpha")],
+               "--deferred-out", out)
+    assert proc.returncode == 0, proc.stderr
+    assert lang_of(ws)["a.key"] == "人工 Alpha"
+    assert prov_of(ws)["a.key"]["author"] == "老本願"
+    assert len(read_json(out)) == 1
+
+
+def test_deferred_out_writes_nothing_on_a_dry_run():
+    ws = workspace()
+    out = os.path.join(ws, "deferred.json")
+    proc = run(ws, [unit(unitId="zzz.key", source="")], "--dry-run", "--deferred-out", out)
+    assert proc.returncode != 0          # zzz.key is in neither file — a genuine disagreement
+    assert not os.path.exists(out)
+
+
+def test_book_field_that_no_longer_exists_is_deferred():
+    ws = workspace()
+    proc = run(ws, [unit(unitType="book", unitId="random_books/deathnote#gone",
+                         source="", value="人工")])
+    assert proc.returncode == 0, proc.stderr
+    assert "edit this one by hand" in proc.stdout
     assert "nope.key" not in lang_of(ws)
 
 
@@ -243,15 +360,22 @@ def test_book_structural_field_is_refused():
     assert book["id"] == "deathnote"
 
 
-def test_ambiguous_book_text_is_refused_rather_than_guessed():
+def test_repeated_book_text_edits_the_field_that_was_approved():
+    """Two fields holding the same prose: the approved one is edited and only that one.
+
+    This used to be refused as ambiguous, which is what stopped 11 approved Russian death_lore
+    translations on 2026-08-30 — that file reuses the same question across four entries on
+    purpose. Ambiguity by inspection is resolved by trying each occurrence and keeping the one
+    whose parsed tree is the tree the edit was meant to produce.
+    """
     ws = workspace(book={"id": "deathnote", "title": "Same", "variants": ["Same", "Other"]})
     rows = [unit(unitType="book", unitId="random_books/deathnote#variants.0",
                  source="", value="人工")]
     proc = run(ws, rows)
-    assert proc.returncode != 0
-    assert "more than once" in proc.stderr
+    assert proc.returncode == 0, proc.stderr
     book = read_json(os.path.join(ws, "narrative", "xx_yy", "random_books", "deathnote.json"))
-    assert book["variants"] == ["Same", "Other"]
+    assert book["variants"] == ["人工", "Other"]
+    assert book["title"] == "Same"       # the identical string in the OTHER field is untouched
 
 
 def test_rerun_is_idempotent():

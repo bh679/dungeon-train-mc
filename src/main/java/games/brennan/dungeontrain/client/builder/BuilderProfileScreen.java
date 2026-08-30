@@ -6,6 +6,7 @@ import games.brennan.dungeontrain.builder.relay.BuilderRelayKinds;
 import games.brennan.dungeontrain.builder.BuilderMode;
 import games.brennan.dungeontrain.builder.relay.BuilderRelayDownload;
 import games.brennan.dungeontrain.builder.relay.BuilderRelayInstall;
+import games.brennan.dungeontrain.builder.relay.BuilderReviewState;
 import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
 import games.brennan.dungeontrain.client.menu.CommandMenuState;
 import games.brennan.dungeontrain.client.menu.CommandRunner;
@@ -53,6 +54,12 @@ import java.util.List;
  * kind the builder authors is a piece of something rather than a thing a train slot can hold, so its
  * tile says where it lives and offers nothing to press.</p>
  *
+ * <p>Submitting is a request, not an outcome. A submitted build waits for a person to look at it
+ * ({@link BuilderReviewState}), and until they do it is neither in the profile nor on the train — so
+ * a submittable carriage's tile reads from its review state rather than from the published flag,
+ * which only says what its author asked for. This screen is the one place either half of that can be
+ * told to the person who made it.</p>
+ *
  * <p>The header names whose builds these are. On a DEV BUILD that name is a button: it opens
  * {@link BuilderCreatorSearchScreen}, and picking a builder relists this screen against their
  * profile — how a developer looks at a player's work to reproduce a problem. A foreign profile is
@@ -64,9 +71,9 @@ import java.util.List;
 public final class BuilderProfileScreen extends Screen {
 
     private static final int TITLE_TOP = 14;
-    private static final int OWNER_TOP = 28;
+    /** The owner row sits between the title and the filter chips, and is present on every build. */
+    private static final int OWNER_TOP = 26;
     private static final int OWNER_BUTTON_H = 16;
-    private static final int GRID_TOP_GAP = 26;
     private static final int TARGET_BUTTON_W = 56;
     /** Green while the screen is reading PRODUCTION; a dim grey on this build's own relay. */
     private static final int LIVE_DOT = 0x55FF55;
@@ -76,8 +83,63 @@ public final class BuilderProfileScreen extends Screen {
     private static final int STATUS_GAP = 14;
     private static final int SCROLL_STEP = 24;
     private static final int NOTE_COLOUR = 0xA0A0A0;
-    private static final int TILES_PER_ROW = 3;
     private static final int ACTION_GAP = 4;
+
+    /** The one row of controls above the grid: two filter chips and the tiles-per-row chip. */
+    private static final int CONTROL_ROW_H = 20;
+    private static final int CONTROL_GAP = 4;
+    private static final int FILTER_WIDTH = 96;
+
+    /**
+     * The kinds a profile can hold, in the order the chip offers them — {@link BuilderProfileFilters#ALL}
+     * first, then a carriage, which is the only kind a train can hold and so the one a builder is
+     * usually looking for.
+     */
+    private static final List<BuilderProfileFilterButton.Option> TYPE_OPTIONS = List.of(
+            new BuilderProfileFilterButton.Option(BuilderProfileFilters.ALL,
+                    "gui.dungeontrain.builder.profile.type.all"),
+            new BuilderProfileFilterButton.Option(BuilderRelayKinds.CARRIAGE,
+                    "gui.dungeontrain.builder.profile.type.carriage"),
+            new BuilderProfileFilterButton.Option(BuilderRelayKinds.CARRIAGE_GROUP,
+                    "gui.dungeontrain.builder.profile.type.carriage_group"),
+            new BuilderProfileFilterButton.Option(BuilderRelayKinds.CONTENTS,
+                    "gui.dungeontrain.builder.profile.type.contents"),
+            new BuilderProfileFilterButton.Option(BuilderRelayKinds.PART,
+                    "gui.dungeontrain.builder.profile.type.part"),
+            new BuilderProfileFilterButton.Option(BuilderRelayKinds.TRACK,
+                    "gui.dungeontrain.builder.profile.type.track"),
+            new BuilderProfileFilterButton.Option(BuilderRelayKinds.PORTAL_ROOM,
+                    "gui.dungeontrain.builder.profile.type.portal_room"));
+
+    /** The review states, in funnel order: never asked → waiting → decided. */
+    private static final List<BuilderProfileFilterButton.Option> STATUS_OPTIONS = List.of(
+            new BuilderProfileFilterButton.Option(BuilderProfileFilters.ALL,
+                    "gui.dungeontrain.builder.profile.status.all"),
+            new BuilderProfileFilterButton.Option(BuilderReviewState.NONE,
+                    "gui.dungeontrain.builder.profile.status.none"),
+            // The three verdicts carry their tile colour onto the chip, so the chip answers in the
+            // same language the grid does. "All" and "not submitted" have no colour on a tile either.
+            new BuilderProfileFilterButton.Option(BuilderReviewState.SUBMITTED,
+                    "gui.dungeontrain.builder.profile.status.submitted",
+                    BuilderReviewState.BORDER_SUBMITTED),
+            new BuilderProfileFilterButton.Option(BuilderReviewState.ACCEPTED,
+                    "gui.dungeontrain.builder.profile.status.accepted",
+                    BuilderReviewState.BORDER_ACCEPTED),
+            new BuilderProfileFilterButton.Option(BuilderReviewState.DECLINED,
+                    "gui.dungeontrain.builder.profile.status.declined",
+                    BuilderReviewState.BORDER_DECLINED));
+
+    /**
+     * Where the player left the two chips.
+     *
+     * <p>Static, so closing the screen and reopening it — which is what pressing Submit and coming
+     * back amounts to — does not throw away the narrowing they set up. Not persisted to disk, unlike
+     * the tiles-per-row count: that is a preference about how you like to look at things, while a
+     * filter is where you are in a job, and a filter still applied a week later would read as a
+     * profile that had lost most of its builds.</p>
+     */
+    private static String typeFilter = BuilderProfileFilters.ALL;
+    private static String statusFilter = BuilderProfileFilters.ALL;
 
     /** Longest timestep the tile spin will accept, so a stalled frame doesn't fling it round. */
     private static final float MAX_FRAME_SECONDS = 0.1F;
@@ -90,6 +152,14 @@ public final class BuilderProfileScreen extends Screen {
     private String viewedName;
 
     private List<BuilderProfilePacket.Entry> builds = List.of();
+
+    /**
+     * {@link #builds} narrowed by the two chips — what the grid lays out, what a click indexes into,
+     * and what {@link #selected} is an index of. Everything downstream of the filter reads this, so
+     * there is no path on which a hidden build can be selected or acted on.
+     */
+    private List<BuilderProfilePacket.Entry> shown = List.of();
+
     private BuilderProfilePacket.Status status = null;
     private BuilderTemplateGridLayout grid;
     private int scrollY;
@@ -172,13 +242,34 @@ public final class BuilderProfileScreen extends Screen {
         this.downloadNote = null;
         this.builds = packet.builds();
         this.status = packet.status();
+        refilter(selectedId);
+        rebuild();
+    }
+
+    /**
+     * Re-apply the chips, keeping the selection on the same BUILD where the narrowing still shows it.
+     *
+     * <p>By relay id rather than by index, because the index means something different in every
+     * filtered list — keeping the number would silently move the selection onto whichever build now
+     * happens to sit there, and the next press would act on a build the player never chose.</p>
+     */
+    private void refilter(int keepRelayId) {
+        this.shown = BuilderProfileFilters.apply(builds, typeFilter, statusFilter);
         this.selected = -1;
-        for (int i = 0; i < builds.size(); i++) {
-            if (builds.get(i).relayId() == selectedId) {
+        for (int i = 0; i < shown.size(); i++) {
+            if (shown.get(i).relayId() == keepRelayId) {
                 this.selected = i;
                 break;
             }
         }
+    }
+
+    /** A chip moved: same profile, different slice of it. */
+    private void onFilterChanged() {
+        int selectedId = selectedBuild() == null ? -1 : selectedBuild().relayId();
+        this.downloadNote = null;
+        refilter(selectedId);
+        this.scrollY = 0;   // a different list — an inherited offset would land mid-nowhere
         rebuild();
     }
 
@@ -213,33 +304,57 @@ public final class BuilderProfileScreen extends Screen {
 
     private void rebuild() {
         clearWidgets();
-        int gridTop = TITLE_TOP + this.font.lineHeight + GRID_TOP_GAP;
-        int gridBottom = this.height - BACK_BUTTON_BOTTOM_MARGIN - STATUS_GAP - 24;
 
-        // Whose builds these are. A release build has no other profile to reach, so the name is drawn
-        // as text in render(); a dev build makes it the way in to somebody else's.
+        // Whose builds these are, above the chips. A release build has no other profile to reach, so
+        // the name is drawn as text in render(); a dev build makes it the way in to somebody else's.
         if (DungeonTrain.isDevBuild()) {
             Component name = ownerLine();
-            int width = Math.max(this.font.width(name) + 16, 80);
+            int nameWidth = Math.max(this.font.width(name) + 16, 80);
             addRenderableWidget(Button.builder(name,
                             b -> this.minecraft.setScreen(new BuilderCreatorSearchScreen(this, this::viewProfile)))
-                    .bounds(this.width / 2 - width / 2, OWNER_TOP, width, OWNER_BUTTON_H)
+                    .bounds(this.width / 2 - nameWidth / 2, OWNER_TOP, nameWidth, OWNER_BUTTON_H)
                     .build());
             if (viewingOther()) {
                 addRenderableWidget(Button.builder(
                                 Component.translatable("gui.dungeontrain.builder.profile.back_to_mine"),
                                 b -> viewProfile(null))
-                        .bounds(this.width / 2 + width / 2 + ACTION_GAP, OWNER_TOP, 100, OWNER_BUTTON_H)
+                        .bounds(this.width / 2 + nameWidth / 2 + ACTION_GAP, OWNER_TOP, 100, OWNER_BUTTON_H)
                         .build());
             }
             // Which relay these builds come from. A dot rather than a sentence, because it is read at a
             // glance and its only job is to stop a developer mistaking production for their own pool.
             addRenderableWidget(Button.builder(targetLabel(), b -> toggleTarget())
-                    .bounds(this.width / 2 - width / 2 - TARGET_BUTTON_W - ACTION_GAP, OWNER_TOP,
+                    .bounds(this.width / 2 - nameWidth / 2 - TARGET_BUTTON_W - ACTION_GAP, OWNER_TOP,
                             TARGET_BUTTON_W, OWNER_BUTTON_H)
                     .build());
         }
-        this.grid = BuilderTemplateGridLayout.of(this.width, gridTop, gridBottom, builds.size(), TILES_PER_ROW);
+
+        // One row of controls, all three chips on it: the grid is the tightest thing on this screen
+        // for vertical space, and two rows of narrowing above a wall of pictures would be furniture
+        // competing with the thing it is meant to help you look at. Below the owner row, which is
+        // there on every build — the two would otherwise land on the same pixels.
+        int controlY = OWNER_TOP + OWNER_BUTTON_H + CONTROL_GAP;
+        int rowWidth = FILTER_WIDTH * 2 + BuilderTilesPerRowButton.WIDTH + CONTROL_GAP * 2;
+        int controlX = this.width / 2 - rowWidth / 2;
+        addRenderableWidget(new BuilderProfileFilterButton(controlX, controlY, FILTER_WIDTH,
+                CONTROL_ROW_H, TYPE_OPTIONS, () -> typeFilter,
+                v -> { typeFilter = v; onFilterChanged(); },
+                "gui.dungeontrain.builder.profile.type.tooltip"));
+        addRenderableWidget(new BuilderProfileFilterButton(controlX + FILTER_WIDTH + CONTROL_GAP,
+                controlY, FILTER_WIDTH, CONTROL_ROW_H, STATUS_OPTIONS, () -> statusFilter,
+                v -> { statusFilter = v; onFilterChanged(); },
+                "gui.dungeontrain.builder.profile.status.tooltip"));
+        // The same chip the Open screen has, reading and writing the same stored count: it is one
+        // answer to "how big do I like builder tiles", and two screens disagreeing about it would be
+        // a bug rather than a choice.
+        addRenderableWidget(new BuilderTilesPerRowButton(
+                controlX + (FILTER_WIDTH + CONTROL_GAP) * 2, controlY, CONTROL_ROW_H, this.width,
+                this::rebuild));
+
+        int gridTop = controlY + CONTROL_ROW_H + CONTROL_GAP;
+        int gridBottom = this.height - BACK_BUTTON_BOTTOM_MARGIN - STATUS_GAP - 24;
+        this.grid = BuilderTemplateGridLayout.of(this.width, gridTop, gridBottom, shown.size(),
+                BuilderTilesPerRowButton.effectiveColumns(this.width));
         this.scrollY = grid.clampScroll(scrollY);
 
         // Two actions, side by side across the same width the Back button occupies: what the build
@@ -267,7 +382,7 @@ public final class BuilderProfileScreen extends Screen {
     }
 
     private BuilderProfilePacket.Entry selectedBuild() {
-        return selected >= 0 && selected < builds.size() ? builds.get(selected) : null;
+        return selected >= 0 && selected < shown.size() ? shown.get(selected) : null;
     }
 
     /**
@@ -444,8 +559,8 @@ public final class BuilderProfileScreen extends Screen {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (button == 0 && !builds.isEmpty()) {
-            int index = grid.indexAt(mouseX, mouseY, scrollY, builds.size());
+        if (button == 0 && !shown.isEmpty()) {
+            int index = grid.indexAt(mouseX, mouseY, scrollY, shown.size());
             if (index >= 0) {
                 this.selected = index;
                 this.downloadNote = null;
@@ -476,13 +591,13 @@ public final class BuilderProfileScreen extends Screen {
             g.drawCenteredString(this.font, ownerLine(), this.width / 2, OWNER_TOP + 4, NOTE_COLOUR);
         }
 
-        if (!builds.isEmpty()) {
+        if (!shown.isEmpty()) {
             float seconds = frameSeconds();
             BuilderTileMeshCache.beginFrame();
             g.enableScissor(0, grid.topY(), this.width, grid.bottomY());
-            for (int i = 0; i < builds.size(); i++) {
+            for (int i = 0; i < shown.size(); i++) {
                 if (!grid.isVisible(i, scrollY)) continue;
-                BuilderProfilePacket.Entry entry = builds.get(i);
+                BuilderProfilePacket.Entry entry = shown.get(i);
                 int x = grid.xFor(i);
                 int y = grid.yFor(i, scrollY);
                 boolean hovered = mouseX >= x && mouseX < x + grid.cellWidth()
@@ -492,7 +607,8 @@ public final class BuilderProfileScreen extends Screen {
                         photoKindOf(entry), entry.buildName(), partKindOf(entry), trackKindOf(entry),
                         labelFor(entry),
                         x, y, grid.cellWidth(), grid.cellHeight(), hovered || i == selected, true,
-                        spin.advance(String.valueOf(entry.relayId()), hovered, seconds));
+                        spin.advance(String.valueOf(entry.relayId()), hovered, seconds),
+                        badgeOf(entry), grid.badgeSize());
             }
             g.disableScissor();
         }
@@ -548,17 +664,27 @@ public final class BuilderProfileScreen extends Screen {
     /**
      * The caption under a tile: what the build is called, and where it currently lives.
      *
-     * <p>The state is on every tile rather than only the selected one, because "which of my builds are
-     * actually on the train" is the question this screen exists to answer at a glance.</p>
+     * <p>The name alone: the state used to ride here as a second clause, which made the strip wider
+     * than its own cell and said in words what {@link BuilderReviewBadge}'s corner icon and coloured
+     * border now say at a glance across the whole grid.</p>
      */
     private Component labelFor(BuilderProfilePacket.Entry entry) {
-        String name = entry.buildName().isEmpty()
+        return Component.literal(entry.buildName().isEmpty()
                 ? "#" + entry.relayId()
-                : BuilderLabels.pretty(entry.buildName());
-        Component where = Component.translatable(entry.published()
-                ? "gui.dungeontrain.builder.profile.on_train"
-                : "gui.dungeontrain.builder.profile.in_profile");
-        return Component.literal(name + " · ").append(where);
+                : BuilderLabels.pretty(entry.buildName()));
+    }
+
+    /**
+     * How this tile is marked: where the build stands with the reviewer, said in a way that survives
+     * not reading the caption at all.
+     *
+     * <p>Only a submittable kind gets one. A portal room or a shell part has no submission state to be
+     * in — colouring it would invent a status for something that was never asked about.</p>
+     */
+    private static BuilderReviewBadge badgeOf(BuilderProfilePacket.Entry entry) {
+        return BuilderRelayKinds.canJoinTheTrain(entry.kind())
+                ? BuilderReviewBadge.of(entry.review())
+                : null;
     }
 
     /** Which local store to draw this build's tile from — the mirror of {@link BuilderRelayKinds#idOf}. */
@@ -609,10 +735,14 @@ public final class BuilderProfileScreen extends Screen {
             return Component.translatable("gui.dungeontrain.builder.profile.unavailable");
         }
         if (builds.isEmpty()) {
+            // Three empties now, and each sends the player somewhere different: your own profile with
+            // nothing in it needs a save, somebody else's is simply bare, and a filtered list that
+            // came up dry needs a different chip rather than a different build.
             return Component.translatable(viewingOther()
                     ? "gui.dungeontrain.builder.profile.empty_other"
                     : "gui.dungeontrain.builder.profile.empty");
         }
+        if (shown.isEmpty()) return Component.translatable("gui.dungeontrain.builder.profile.no_matches");
         BuilderProfilePacket.Entry entry = selectedBuild();
         if (entry == null) return Component.translatable("gui.dungeontrain.builder.profile.pick");
         // A flagged build is withheld from the pool however published it is, and this is the only place
@@ -620,12 +750,21 @@ public final class BuilderProfileScreen extends Screen {
         if ("flagged".equals(entry.flag()) || "rejected".equals(entry.flag())) {
             return Component.translatable("gui.dungeontrain.builder.profile.withheld");
         }
+        // A declined build is a decision about this build and outranks everything below: fixing its
+        // stage would not put it on the train, and saying "waiting" of it would be untrue.
+        if (BuilderReviewState.DECLINED.equals(BuilderReviewState.of(entry.review()))) {
+            return Component.translatable("gui.dungeontrain.builder.profile.review.declined_note");
+        }
         // A carriage is only placed into a stage it belongs to, and a build authored without one
         // belongs to none — so it can be submitted and still never appear anywhere. Said here because
         // "on the train and never seen" is indistinguishable from a broken feature otherwise.
         if (BuilderRelayKinds.canJoinTheTrain(entry.kind()) && entry.stage().isEmpty()) {
             return Component.translatable("gui.dungeontrain.builder.profile.no_stage");
         }
+        // Last, and deliberately below the stage line: waiting is the ordinary, healthy state, while a
+        // build with no stage has something its author can still fix while it waits.
+        String reviewNote = BuilderReviewState.noteKeyFor(entry.review());
+        if (reviewNote != null) return Component.translatable(reviewNote);
         return null;
     }
 

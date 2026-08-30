@@ -84,8 +84,17 @@ public final class DungeonTrainConfig {
     // Onboarding stage lengths in carriages of player progress (independent of carriagesPerTier).
     public static final int MIN_ONBOARDING_STAGE_CARRIAGES = 0;
     public static final int MAX_ONBOARDING_STAGE_CARRIAGES = 1000;
-    public static final int DEFAULT_FIRST_LEVEL_NO_HOSTILES_CARRIAGES = 10;
-    public static final int DEFAULT_FIRST_LEVEL_EASY_MOBS_CARRIAGES = 15;
+    public static final int DEFAULT_FIRST_LEVEL_NO_HOSTILES_CARRIAGES = 5;
+    public static final int DEFAULT_FIRST_LEVEL_EASY_MOBS_CARRIAGES = 5;
+    /**
+     * The onboarding lengths shipped before {@link #CURRENT_CONFIG_VERSION} 4 (10 + 15 carriages).
+     * Read by the v3 -> v4 step of {@link #runPendingMigrations()} to tell a stale shipped default
+     * apart from a number an operator chose, and by {@code DtConfigIntegrity} to date the keys.
+     */
+    public static final int LEGACY_FIRST_LEVEL_NO_HOSTILES_CARRIAGES = 10;
+    public static final int LEGACY_FIRST_LEVEL_EASY_MOBS_CARRIAGES = 15;
+    /** Config version that shortened the onboarding stages — see {@link #runPendingMigrations()}. */
+    public static final int ONBOARDING_LENGTHS_CONFIG_VERSION = 4;
 
     /** 1-in-N chance that a book dropped by breaking a bookshelf becomes a narrative Random Book. 0 disables. */
     public static final int MIN_RANDOM_BOOK_ONE_IN = 0;
@@ -264,7 +273,7 @@ public final class DungeonTrainConfig {
      *
      * <p>0 = pre-versioning (any file written before this mechanism existed).</p>
      */
-    public static final int CURRENT_CONFIG_VERSION = 3;
+    public static final int CURRENT_CONFIG_VERSION = 4;
     public static final int DEFAULT_CONFIG_VERSION = 0;
     public static final int MIN_CONFIG_VERSION = 0;
     public static final int MAX_CONFIG_VERSION = 1_000_000;
@@ -447,13 +456,13 @@ public final class DungeonTrainConfig {
                 .comment("First onboarding stage. When true, hostile (Enemy) mobs authored into carriage interiors do not spawn at all while the lead player is within the first firstLevelNoHostilesCarriages carriages of progress, for a combat-free opening stretch. Passive/neutral carriage mobs (villagers, traders, animals, PlayerMobs) are unaffected. Keys off raw travelled carriages (independent of progressionLevelDelay).")
                 .define("firstLevelNoHostiles", DEFAULT_FIRST_LEVEL_NO_HOSTILES);
         ModConfigSpec.IntValue firstLevelNoHostilesCarriages = b
-                .comment("Length, in carriages of player progress, of the no-hostiles opening stage (see firstLevelNoHostiles). Default 10. Independent of carriagesPerTier; 0 disables the stage.")
+                .comment("Length, in carriages of player progress, of the no-hostiles opening stage (see firstLevelNoHostiles). Default 5. Independent of carriagesPerTier; 0 disables the stage.")
                 .defineInRange("firstLevelNoHostilesCarriages", DEFAULT_FIRST_LEVEL_NO_HOSTILES_CARRIAGES, MIN_ONBOARDING_STAGE_CARRIAGES, MAX_ONBOARDING_STAGE_CARRIAGES);
         ModConfigSpec.BooleanValue firstLevelEasyMobs = b
                 .comment("Second onboarding stage. When true, hostile (Enemy) mobs authored into carriage interiors are replaced with small slimes (or small magma cubes for nether/raider mobs, per the dungeontrain:first_band_magma_mobs entity-type tag; piglins/piglin brutes in dungeontrain:first_band_nether_only_mobs only become magma cubes in the Nether and otherwise spawn as authored; mobs in dungeontrain:first_band_no_substitute_mobs, e.g. zombified piglins, are never substituted) while the lead player is within the slimes stage — the firstLevelEasyMobsCarriages carriages that follow the no-hostiles stage — giving an easy combat intro. Passive/neutral carriage mobs (villagers, animals, PlayerMobs) are unaffected. Keys off raw travelled carriages (independent of progressionLevelDelay).")
                 .define("firstLevelEasyMobs", DEFAULT_FIRST_LEVEL_EASY_MOBS);
         ModConfigSpec.IntValue firstLevelEasyMobsCarriages = b
-                .comment("Length, in carriages of player progress, of the slimes stage (see firstLevelEasyMobs), starting after the no-hostiles stage. Default 15. Independent of carriagesPerTier; 0 disables the stage.")
+                .comment("Length, in carriages of player progress, of the slimes stage (see firstLevelEasyMobs), starting after the no-hostiles stage. Default 5. Independent of carriagesPerTier; 0 disables the stage.")
                 .defineInRange("firstLevelEasyMobsCarriages", DEFAULT_FIRST_LEVEL_EASY_MOBS_CARRIAGES, MIN_ONBOARDING_STAGE_CARRIAGES, MAX_ONBOARDING_STAGE_CARRIAGES);
         ModConfigSpec.BooleanValue firstLevelStarterLoot = b
                 .comment("When true, carriage-interior chests linked to the rich 'loot' or 'loot_irongold' loot prefabs instead roll the 'starter' prefab while the lead player is still within the gentle opening window (the firstLevelNoHostilesCarriages + firstLevelEasyMobsCarriages carriages spanning both the no-hostiles and slimes stages), so the easy intro hands out starter-tier loot. Other loot prefabs (wood, stone, mining, villager, etc.) are unaffected. Keys off raw travelled carriages (independent of progressionLevelDelay).")
@@ -1035,6 +1044,24 @@ public final class DungeonTrainConfig {
             SHARED_CARRIAGE_LEASING_ENABLED.set(true);
             LOGGER.info("[DungeonTrain] Config migration v{}→v{}: enabled shared carriage leasing.",
                     from, CURRENT_CONFIG_VERSION);
+        }
+
+        // v3 -> v4: adopt the shortened onboarding stages (10 + 15 carriages -> 5 + 5). Unlike the
+        // three steps above, these keys are GOVERNED by DtConfigIntegrity: a file still holding the
+        // old lengths reads as a deviation and puts the session into Free Play, so without this step
+        // every existing install would be tainted by a default change it never made. Each length moves
+        // only if it still holds the old shipped value — an operator who picked their own number keeps
+        // it, and keeps it permanently, since this step never runs a second time.
+        if (from < 4) {
+            if (FIRST_LEVEL_NO_HOSTILES_CARRIAGES.get() == LEGACY_FIRST_LEVEL_NO_HOSTILES_CARRIAGES) {
+                FIRST_LEVEL_NO_HOSTILES_CARRIAGES.set(DEFAULT_FIRST_LEVEL_NO_HOSTILES_CARRIAGES);
+            }
+            if (FIRST_LEVEL_EASY_MOBS_CARRIAGES.get() == LEGACY_FIRST_LEVEL_EASY_MOBS_CARRIAGES) {
+                FIRST_LEVEL_EASY_MOBS_CARRIAGES.set(DEFAULT_FIRST_LEVEL_EASY_MOBS_CARRIAGES);
+            }
+            LOGGER.info("[DungeonTrain] Config migration v{}->v{}: onboarding stages now {} + {} carriages.",
+                    from, CURRENT_CONFIG_VERSION,
+                    FIRST_LEVEL_NO_HOSTILES_CARRIAGES.get(), FIRST_LEVEL_EASY_MOBS_CARRIAGES.get());
         }
 
         CONFIG_VERSION.set(CURRENT_CONFIG_VERSION);

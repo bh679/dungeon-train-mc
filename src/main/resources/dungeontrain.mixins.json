@@ -73,6 +73,7 @@
     "client.AbstractContainerScreenPrefabTintMixin",
     "client.MainMenuLogoMixin",
     "client.LevelLoadingScreenThemeMixin",
+    "client.ReceivingLevelScreenThemeMixin",
     "client.AdvancementsScreenAccessor",
     "client.AdvancementWidgetHideDescMixin",
     "client.AdvancementsCompactLayoutMixin",

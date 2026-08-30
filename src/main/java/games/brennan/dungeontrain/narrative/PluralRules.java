@@ -124,8 +124,10 @@ public final class PluralRules {
     }
 
     /**
-     * Every category {@code localeCode}'s rules can produce. Not used at runtime — it is the seam a test
-     * asserts the lang files against, and the shape the validator reimplements.
+     * Every category {@code localeCode}'s rules can produce — the seam a test asserts the lang files
+     * against, the shape {@code scripts/localization/plural_forms.py} validates with, and what the
+     * in-game translation editor projects the English key set through so a translator is offered the
+     * forms their language actually selects (see {@code TranslationPluralForms}).
      */
     public static java.util.List<String> categoriesOf(String localeCode) {
         return switch (familyOf(localeCode)) {

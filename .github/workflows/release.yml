@@ -292,6 +292,7 @@ jobs:
             prickle(optional)
             durability-tooltip(optional)
             supermartijn642s-config-lib(optional)
+            crash-assistant(optional)
           java: 21
           retry-attempts: 2
           retry-delay: 10000

@@ -150,6 +150,19 @@ record BuilderTemplateGridLayout(int columns, int cellWidth, int cellHeight,
         return Math.max(MORE_MIN_SIZE, cellHeight / 6);
     }
 
+    /**
+     * The edge of the state badge My Builds draws in a cell's top-right corner.
+     *
+     * <p>Deliberately {@link #moreSize} — the two corner chips are the same furniture at opposite
+     * ends of the same picture, and one of them growing differently as the grid reflows would read as
+     * a mistake. Only the size lives here: unlike the drill-in button the badge takes no clicks, so
+     * there is no hit-test to keep in step with the drawing and the renderer places it from the cell
+     * rect it was already given.</p>
+     */
+    int badgeSize() {
+        return moreSize();
+    }
+
     int moreX(int index) {
         return xFor(index) + cellWidth - moreSize() - MORE_INSET;
     }
