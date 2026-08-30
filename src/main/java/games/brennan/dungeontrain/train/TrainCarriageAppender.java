@@ -644,6 +644,39 @@ public final class TrainCarriageAppender {
     private static final Map<UUID, Integer> PLACEMENT_TRACKER_LARGE_GAP_TICKS = new ConcurrentHashMap<>();
 
     /**
+     * One catch-up burst's groups, linked so they settle as a RIGID UNIT:
+     * sub-level id → the groups {@link #planChainedSpawn} chained directly off
+     * it in the same tick. A burst of N groups forms a chain (leader → first
+     * follower → …), not a star, so a shift walks down it.
+     *
+     * <p><b>Why this must exist.</b> A burst puts two UNPLACED groups next to
+     * each other, and {@link #runPlacementCollisionTracker} treats every
+     * carriage independently. When the leader shifts to correct its seam
+     * against the old end of the train, the follower — spawned at exactly
+     * {@link #TARGET_GAP_BLOCKS} from it — would stay put, and the whole shift
+     * would be taken out of the leader/follower seam instead: a shift toward
+     * the follower drives 0.4 to −0.1, i.e. an overlap under Sable's ~0.3
+     * broad-phase floor (jitter → smoke → disposal), and a shift away leaves
+     * the follower chasing it across settle windows. Before the burst this
+     * could not happen — only one group per lane was ever unplaced at a time.
+     *
+     * <p>Propagating the identical {@code dx} keeps the intra-burst seam at
+     * exactly the value it was planned with, so the follower's own tracker pass
+     * reads clean and never counter-shifts. The spawn-time
+     * {@link #adjustForCollisions} move needs no such handling — the chained
+     * plan is derived from the leader's already-adjusted origin.</p>
+     *
+     * <p>Lifetime mirrors the other {@code PLACEMENT_TRACKER_*} maps: entries
+     * go when a group is placed (or force-finalised — a settled group never
+     * shifts again, so there is nothing left to propagate), on the per-tick
+     * reconciliation against live sub-levels, and on state reset.</p>
+     */
+    private static final Map<UUID, List<BurstFollower>> BURST_FOLLOWERS = new ConcurrentHashMap<>();
+
+    /** A group chained onto another by a catch-up burst — see {@link #BURST_FOLLOWERS}. */
+    private record BurstFollower(UUID subLevelId, TrainTransformProvider provider) {}
+
+    /**
      * Ticks the tracker must wait after shifting a carriage before it may shift
      * it again. The gap it reads comes from {@link ManagedShip#worldAABB()},
      * which lags a shift by a tick or two (Sable applies the new kinematic pose
@@ -788,6 +821,8 @@ public final class TrainCarriageAppender {
                 if (provider.isPlacedSuccessfully()) {
                     PLACEMENT_TRACKER_FIRST_SEEN.remove(subLevelId);
                     PLACEMENT_TRACKER_LAST_SHIFT.remove(subLevelId);
+                    // A settled group never shifts again — nothing left to propagate.
+                    forgetBurstFollowers(subLevelId);
                     continue;
                 }
 
@@ -821,6 +856,7 @@ public final class TrainCarriageAppender {
                     logPlacementStallState(trainId, carriage, train, provider, now, ticksSinceFirstSeen, "SAFETY-VALVE-FIRE");
                     provider.markPlacedSuccessfully();
                     PLACEMENT_TRACKER_FIRST_SEEN.remove(subLevelId);
+                    forgetBurstFollowers(subLevelId);
                     continue;
                 }
                 if (ticksSinceFirstSeen > MAX_PLACEMENT_SETTLE_TICKS - PLACEMENT_STALL_APPROACH_TICKS
@@ -860,7 +896,7 @@ public final class TrainCarriageAppender {
                     int confirmed = PLACEMENT_TRACKER_LARGE_GAP_TICKS.merge(subLevelId, 1, Integer::sum);
                     if (confirmed >= LARGE_GAP_CONFIRM_TICKS) {
                         double jump = placementTrackerReplaceDx(gap, provider.isSpawnedBackward());
-                        provider.shiftSpawnPosition(jump, 0.0, 0.0);
+                        applyPlacementShift(provider, subLevelId, jump, now);
                         provider.resetConsecutiveCleanTicks();
                         PLACEMENT_TRACKER_LAST_SHIFT.put(subLevelId, now);
                         PLACEMENT_TRACKER_LARGE_GAP_TICKS.remove(subLevelId);
@@ -891,7 +927,7 @@ public final class TrainCarriageAppender {
                         continue;
                     }
                     PLACEMENT_TRACKER_LAST_SHIFT.put(subLevelId, now);
-                    provider.shiftSpawnPosition(dx, 0.0, 0.0);
+                    applyPlacementShift(provider, subLevelId, dx, now);
                     provider.resetConsecutiveCleanTicks();
                     if (check.colliding()) {
                         LOGGER.info("[DungeonTrain] Placement tracker: pIdx={} colliding (overlaps pIdx={}) — shifted {} X, timer reset",
@@ -946,6 +982,70 @@ public final class TrainCarriageAppender {
         PLACEMENT_TRACKER_FIRST_SEEN.keySet().retainAll(liveSubLevelIds);
         PLACEMENT_TRACKER_LAST_SHIFT.keySet().retainAll(liveSubLevelIds);
         PLACEMENT_TRACKER_LARGE_GAP_TICKS.keySet().retainAll(liveSubLevelIds);
+        BURST_FOLLOWERS.keySet().retainAll(liveSubLevelIds);
+    }
+
+    /**
+     * Apply one placement-tracker shift to {@code provider}, then propagate the
+     * IDENTICAL {@code dx} to every group a catch-up burst chained off it, so a
+     * burst settles as a rigid unit (see {@link #BURST_FOLLOWERS} for why).
+     *
+     * <p>Each follower also has its clean-tick counter reset and its shift
+     * throttle stamped: the pair must settle together, and the follower must
+     * not immediately re-shift off a gap reading that predates the move — the
+     * same stale-read stacking {@link #SHIFT_SETTLE_TICKS} exists to
+     * prevent.</p>
+     */
+    static void applyPlacementShift(
+        TrainTransformProvider provider, UUID subLevelId, double dx, long now) {
+        provider.shiftSpawnPosition(dx, 0.0, 0.0);
+        // Propagate only a shift that actually landed. shiftSpawnPosition is a
+        // no-op until Sable captures spawnWorldPos, so moving the followers
+        // while the leader stood still would open the very seam this linkage
+        // exists to hold.
+        if (provider.hasCapturedSpawnPosition()) {
+            shiftBurstFollowers(subLevelId, dx, now, 0);
+        }
+    }
+
+    /**
+     * Link {@code follower} to the group it was chained off by a catch-up
+     * burst, so a placement-tracker shift on that group moves this one by the
+     * same {@code dx} (see {@link #BURST_FOLLOWERS}).
+     */
+    static void linkBurstFollower(UUID leaderSubLevelId, UUID followerSubLevelId, TrainTransformProvider follower) {
+        BURST_FOLLOWERS
+            .computeIfAbsent(leaderSubLevelId, k -> new ArrayList<>())
+            .add(new BurstFollower(followerSubLevelId, follower));
+    }
+
+    /**
+     * Drop {@code leaderSubLevelId}'s burst links. Called once that group is
+     * placed (or force-finalised): it will never shift again, so there is
+     * nothing left to propagate and the providers must not be held.
+     */
+    static void forgetBurstFollowers(UUID leaderSubLevelId) {
+        BURST_FOLLOWERS.remove(leaderSubLevelId);
+    }
+
+    /**
+     * Walk the burst chain from {@code leaderSubLevelId}, applying {@code dx}
+     * to each linked follower. Depth-capped at {@link #CATCH_UP_BURST_GROUPS}
+     * — the longest chain a burst can build — so a corrupted link can never
+     * recurse without bound.
+     */
+    static void shiftBurstFollowers(UUID leaderSubLevelId, double dx, long now, int depth) {
+        if (depth >= CATCH_UP_BURST_GROUPS) return;
+        List<BurstFollower> followers = BURST_FOLLOWERS.get(leaderSubLevelId);
+        if (followers == null || followers.isEmpty()) return;
+        for (BurstFollower follower : followers) {
+            follower.provider().shiftOrDeferSpawnShiftX(dx);
+            follower.provider().resetConsecutiveCleanTicks();
+            PLACEMENT_TRACKER_LAST_SHIFT.put(follower.subLevelId(), now);
+            LOGGER.info("[DungeonTrain] Placement tracker: pIdx={} moved {} X in sync with its burst leader (intra-burst seam preserved)",
+                follower.provider().getPIdx(), String.format("%+.2f", dx));
+            shiftBurstFollowers(follower.subLevelId(), dx, now, depth + 1);
+        }
     }
 
     /**
@@ -1444,6 +1544,7 @@ public final class TrainCarriageAppender {
         RESUME_STARTED_TICK.clear();
         SPAWN_GEN_WAIT_FORWARD.clear();
         SPAWN_GEN_WAIT_BACKWARD.clear();
+        BURST_FOLLOWERS.clear();
         lastSyncGenTick = Long.MIN_VALUE;
     }
 
@@ -2311,7 +2412,7 @@ public final class TrainCarriageAppender {
                 // groups short of the players' window, chain further groups on in the
                 // same tick rather than paying a full settle window each. A no-op at
                 // the steady-state one-group deficit.
-                spawnCatchUpBurst(level, trainId, train, forwardPlan, forwardAnchor,
+                spawnCatchUpBurst(level, trainId, train, newShip, forwardPlan, forwardAnchor,
                     forwardDeficitPIdx, groupSize, dims, velocity, now, true);
                 didForwardSpawn = true;
             }
@@ -2327,7 +2428,7 @@ public final class TrainCarriageAppender {
                 // Catch-up burst — mirror of the forward lane (see there). This is the
                 // end a stationary player watches pass them by when one group per
                 // settle window can't keep up with the train's speed.
-                spawnCatchUpBurst(level, trainId, train, backwardPlan, backwardAnchor,
+                spawnCatchUpBurst(level, trainId, train, newShip, backwardPlan, backwardAnchor,
                     backwardDeficitPIdx, groupSize, dims, velocity, now, false);
                 didBackwardSpawn = true;
             }
@@ -4105,6 +4206,7 @@ public final class TrainCarriageAppender {
         ServerLevel level,
         UUID trainId,
         List<Trains.Carriage> train,
+        ManagedShip firstShip,
         Plan firstPlan,
         int firstAnchor,
         int deficitPIdx,
@@ -4119,6 +4221,7 @@ public final class TrainCarriageAppender {
 
         Plan prevPlan = firstPlan;
         int prevAnchor = firstAnchor;
+        UUID prevSubLevelId = firstShip.subLevelId();
         int extra = 0;
         for (int i = 1; i < allowed; i++) {
             int nextAnchor = forward ? (prevAnchor + groupSize) : (prevAnchor - groupSize);
@@ -4137,6 +4240,13 @@ public final class TrainCarriageAppender {
                 level, chained, null, nextAnchor, groupSize, dims, velocity, trainId, train);
             if (extraShip == null) break;
             recordSpawnedGroup(level, trainId, extraShip, nextAnchor, train, now, forward);
+            // Link it to the group it was chained off, so any placement-tracker
+            // shift applied up-chain moves this one by the same dx and the
+            // intra-burst seam survives (see BURST_FOLLOWERS).
+            if (extraShip.getKinematicDriver() instanceof TrainTransformProvider extraProvider) {
+                linkBurstFollower(prevSubLevelId, extraShip.subLevelId(), extraProvider);
+            }
+            prevSubLevelId = extraShip.subLevelId();
             prevPlan = chained;
             prevAnchor = nextAnchor;
             extra++;

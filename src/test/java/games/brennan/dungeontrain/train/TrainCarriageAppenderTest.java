@@ -1,6 +1,8 @@
 package games.brennan.dungeontrain.train;
 
 import games.brennan.dungeontrain.train.TrainCarriageAppender.TrailingId;
+import net.minecraft.core.BlockPos;
+import org.joml.Vector3d;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -706,6 +708,52 @@ final class TrainCarriageAppenderTest {
         assertTrue(gap >= TrainCarriageAppender.MIN_GAP_BLOCKS
                 && gap <= TrainCarriageAppender.MAX_GAP_BLOCKS,
             "a burst group must not need a shift pass to settle");
+    }
+
+    /** Bare provider — the constructor only stores its arguments, so no Minecraft bootstrap. */
+    private static TrainTransformProvider burstProvider(int pIdx) {
+        return new TrainTransformProvider(
+            new Vector3d(2.0, 0.0, 0.0),
+            new BlockPos(0, 78, 0),
+            null,
+            pIdx,
+            GROUP_SIZE,
+            CarriageDims.DEFAULT,
+            UUID.randomUUID());
+    }
+
+    @Test
+    @DisplayName("a burst's follower is moved by its leader's shift, and stops being once unlinked")
+    void burstFollower_movesInSyncWithItsLeader() {
+        TrainTransformProvider leader = burstProvider(3);
+        TrainTransformProvider follower = burstProvider(6);
+        UUID leaderId = UUID.randomUUID();
+        UUID followerId = UUID.randomUUID();
+
+        // The follower was quietly settling on its own seam.
+        follower.incrementConsecutiveCleanTicks();
+        assertEquals(1, follower.getConsecutiveCleanTicks());
+
+        TrainCarriageAppender.linkBurstFollower(leaderId, followerId, follower);
+        TrainCarriageAppender.shiftBurstFollowers(leaderId, -0.5, 100L, 0);
+
+        assertEquals(0, follower.getConsecutiveCleanTicks(),
+            "the follower moved with its leader, so it must re-settle as part of the pair — "
+                + "if it kept counting, the pair would settle at different times and the "
+                + "intra-burst seam would be judged on a stale reading");
+
+        // Once the leader is placed the link is dropped: it never shifts again.
+        TrainCarriageAppender.forgetBurstFollowers(leaderId);
+        follower.incrementConsecutiveCleanTicks();
+        TrainCarriageAppender.shiftBurstFollowers(leaderId, -0.5, 101L, 0);
+        assertEquals(1, follower.getConsecutiveCleanTicks(),
+            "an unlinked follower must not be dragged by a stale link");
+
+        // The propagation is gated on the leader's shift having actually landed:
+        // shiftSpawnPosition no-ops until Sable captures spawnWorldPos, and a
+        // fresh provider has not.
+        assertFalse(leader.hasCapturedSpawnPosition(),
+            "a provider that has never kinematically ticked cannot be shifted, so nothing propagates");
     }
 
     @Test
