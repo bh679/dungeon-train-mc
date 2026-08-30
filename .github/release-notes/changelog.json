@@ -10076,9 +10076,9 @@
       ],
       "pr": 1200,
       "date": "2026-08-30",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.742.0",
+      "released_at": "2026-08-30T12:28:15Z"
     },
     {
       "id": "import-registers-new-translators",
@@ -10093,9 +10093,9 @@
       ],
       "pr": 1201,
       "date": "2026-08-30",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.742.0",
+      "released_at": "2026-08-30T12:28:15Z"
     },
     {
       "id": "crash-assistant-modpack",
@@ -10111,9 +10111,9 @@
       ],
       "pr": 1202,
       "date": "2026-08-30",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.742.0",
+      "released_at": "2026-08-30T12:28:15Z"
     },
     {
       "id": "early-onboarding-shorter",
@@ -10128,9 +10128,9 @@
       ],
       "pr": 1203,
       "date": "2026-08-30",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.742.0",
+      "released_at": "2026-08-30T12:28:15Z"
     },
     {
       "id": "loading-sequence-continuous-reveal",
@@ -10145,9 +10145,9 @@
       ],
       "pr": 1205,
       "date": "2026-08-30",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.742.0",
+      "released_at": "2026-08-30T12:28:15Z"
     },
     {
       "id": "build-submission-readiness",
@@ -10162,9 +10162,9 @@
       ],
       "pr": 1207,
       "date": "2026-08-30",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.742.0",
+      "released_at": "2026-08-30T12:28:15Z"
     },
     {
       "id": "close-locale-drift-and-unblock-import",
@@ -10181,9 +10181,9 @@
       ],
       "pr": 1206,
       "date": "2026-08-30",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.742.0",
+      "released_at": "2026-08-30T12:28:15Z"
     },
     {
       "id": "close-ain-overlay-drift",
@@ -10198,9 +10198,9 @@
       ],
       "pr": 1208,
       "date": "2026-08-30",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.742.0",
+      "released_at": "2026-08-30T12:28:15Z"
     },
     {
       "id": "backpack-panels-in-containers",
@@ -10216,9 +10216,9 @@
       ],
       "pr": 1204,
       "date": "2026-08-30",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.742.0",
+      "released_at": "2026-08-30T12:28:15Z"
     },
     {
       "id": "portal-room-door-labels",
@@ -10232,9 +10232,9 @@
       ],
       "pr": 1212,
       "date": "2026-08-30",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.742.0",
+      "released_at": "2026-08-30T12:28:15Z"
     },
     {
       "id": "join-first-frame-themed",
