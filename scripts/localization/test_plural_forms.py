@@ -7,6 +7,7 @@ would test the arithmetic and let the two drift apart, which is the failure it e
 
 Run: python3 -m pytest scripts/localization/test_plural_forms.py
 """
+import sys
 import plural_forms as pf
 
 #: A plural family (both forms present) plus an ordinary key that merely ends in ".one".
@@ -67,3 +68,21 @@ def test_the_real_english_key_set_projects_onto_russian_without_losing_keys():
     assert bases, "en_us.json should contain at least one plural family"
     assert not any(k.endswith(".other") for k in ru if k.rsplit(".", 1)[0] in bases)
     assert len(ru) > len(english)     # one/few/many replaces one/other
+
+
+def _main():
+    funcs = [v for k, v in sorted(globals().items()) if k.startswith("test_") and callable(v)]
+    failures = 0
+    for fn in funcs:
+        try:
+            fn()
+            print(f"ok   {fn.__name__}")
+        except AssertionError as exc:
+            failures += 1
+            print(f"FAIL {fn.__name__}: {exc}")
+    print(f"\n{len(funcs) - failures}/{len(funcs)} passed")
+    return 1 if failures else 0
+
+
+if __name__ == "__main__":
+    sys.exit(_main())

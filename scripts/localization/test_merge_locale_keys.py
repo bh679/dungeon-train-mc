@@ -8,6 +8,7 @@ below is really the same assertion from a different angle: the old text is byte-
 
 Run: python3 -m pytest scripts/localization/test_merge_locale_keys.py
 """
+import sys
 import importlib.util
 import json
 import os
@@ -181,3 +182,21 @@ def test_a_missing_key_in_the_reply_is_refused():
     (src / "de_de.json").write_text(json.dumps({"gui.b": "Beta DE"}), encoding="utf-8")
     assert mod.main(["--apply", str(src), "de_de"]) == 1
 
+
+
+def _main():
+    funcs = [v for k, v in sorted(globals().items()) if k.startswith("test_") and callable(v)]
+    failures = 0
+    for fn in funcs:
+        try:
+            fn()
+            print(f"ok   {fn.__name__}")
+        except AssertionError as exc:
+            failures += 1
+            print(f"FAIL {fn.__name__}: {exc}")
+    print(f"\n{len(funcs) - failures}/{len(funcs)} passed")
+    return 1 if failures else 0
+
+
+if __name__ == "__main__":
+    sys.exit(_main())

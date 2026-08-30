@@ -144,5 +144,5 @@ jobs:
           python3 scripts/localization/test_stamp_narrative_provenance.py
           python3 scripts/localization/test_provenance_io.py
           python3 scripts/localization/test_import_approved_translations.py
-          python3 -m pytest scripts/localization/test_plural_forms.py \
-                            scripts/localization/test_merge_locale_keys.py -q
+          python3 scripts/localization/test_plural_forms.py
+          python3 scripts/localization/test_merge_locale_keys.py
