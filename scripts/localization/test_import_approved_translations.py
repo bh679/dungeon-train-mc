@@ -128,6 +128,77 @@ def test_matching_line_is_reviewed_not_reauthored():
     assert prov_of(ws)["a.key"] == {"author": "Opus 5 (Claude)", "reviewer": "老本願"}
 
 
+# ---- two people, one line -----------------------------------------------------
+#
+# The relay lets two translators both hold an approved unit for the same key (38 keys did in the
+# 2026-08-30 import). Only one text can ship and the sidecar has one author and one reviewer, so
+# these prove which text wins and that the runner-up is still credited — before the fix the
+# per-translator stamp groups overwrote each other and one of the two vanished from the credits.
+
+CONTESTED_AUTHORS = {**AUTHORS, "SandRuin": "human", "ecodead": "human"}
+
+
+def contested(ws, *extra):
+    """Two approved units for a.key, the older one listed first so order cannot be what decides."""
+    return run(ws, [unit(id=4, ts=100, translator="SandRuin", value="早い Alpha"),
+                    unit(id=9, ts=200, translator="老本願", value="新しい Alpha")], *extra)
+
+
+def test_the_newest_of_two_approvals_ships_and_both_are_credited():
+    ws = workspace(authors=CONTESTED_AUTHORS)
+    contributors = os.path.join(ws, "contributors.json")
+    proc = contested(ws, "--contributors-file", contributors)
+    assert proc.returncode == 0, proc.stderr
+    # Newest wins because that is the one the relay already serves every player in this locale.
+    assert lang_of(ws)["a.key"] == "新しい Alpha"
+    assert prov_of(ws)["a.key"] == {"author": "老本願", "reviewer": "SandRuin"}
+    # build_contributors counts a key for its author OR its reviewer, so neither name is lost.
+    names = {c["name"] for c in read_json(contributors)["contributors"]}
+    assert names == {"老本願", "SandRuin"}, names
+
+
+def test_a_contested_key_is_stamped_exactly_once():
+    ws = workspace(authors=CONTESTED_AUTHORS)
+    proc = contested(ws)
+    assert proc.returncode == 0, proc.stderr
+    stamps = [ln for ln in proc.stdout.splitlines() if "--keys" in ln and "a.key" in ln]
+    assert len(stamps) == 1, proc.stdout
+
+
+def test_a_relay_pick_outranks_the_newest_approval():
+    ws = workspace(authors=CONTESTED_AUTHORS)
+    proc = run(ws, [unit(id=9, ts=200, translator="老本願", value="新しい Alpha"),
+                    unit(id=4, ts=100, translator="SandRuin", value="選ばれた Alpha", picked=True)])
+    assert proc.returncode == 0, proc.stderr
+    assert lang_of(ws)["a.key"] == "選ばれた Alpha"
+    assert prov_of(ws)["a.key"] == {"author": "SandRuin", "reviewer": "老本願"}
+
+
+def test_a_contender_for_a_line_that_already_matches_is_named_not_credited():
+    ws = workspace(authors=CONTESTED_AUTHORS)
+    # The winner's text is what the file already holds, so the AI author stands and the only slot
+    # left is the reviewer's — there is nowhere to put the runner-up but the report.
+    proc = run(ws, [unit(id=9, ts=200, translator="老本願", value="AI Alpha"),
+                    unit(id=4, ts=100, translator="ecodead", value="別の Alpha")])
+    assert proc.returncode == 0, proc.stderr
+    assert prov_of(ws)["a.key"] == {"author": "Opus 5 (Claude)", "reviewer": "老本願"}
+    assert "WARNING" in proc.stdout and "ecodead" in proc.stdout, proc.stdout
+
+
+def test_a_third_translator_of_one_line_is_named_and_not_registered():
+    ws = workspace()  # neither SandRuin nor ecodead is in the registry yet
+    proc = run(ws, [unit(id=9, ts=300, translator="老本願", value="一 Alpha"),
+                    unit(id=8, ts=200, translator="SandRuin", value="二 Alpha"),
+                    unit(id=7, ts=100, translator="ecodead", value="三 Alpha")], "--register-new")
+    assert proc.returncode == 0, proc.stderr
+    assert prov_of(ws)["a.key"] == {"author": "老本願", "reviewer": "SandRuin"}
+    assert "WARNING" in proc.stdout and "ecodead" in proc.stdout, proc.stdout
+    # Registering a name nothing credits is what put ecodead in authors.json with no line behind
+    # them and no entry in the shipped credits.
+    authors = read_json(os.path.join(ws, "authors.json"))
+    assert "SandRuin" in authors and "ecodead" not in authors, authors
+
+
 def test_stale_approval_is_skipped():
     ws = workspace()
     proc = run(ws, [unit(source="Some older English")])

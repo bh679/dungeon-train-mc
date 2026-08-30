@@ -38,6 +38,13 @@ Three things it deliberately will NOT do:
   parser, so an approved translation that drops a ``%s``, invents a ``%2$s``, or contains a bare
   ``%`` is broken text however well meant. It is deferred with the reason, not written — see
   ``lang_format.mismatch``.
+* **Ship two answers to the same question.** Two people can both have an approved unit for one
+  key — 38 keys did on 2026-08-30 — and only one text can be in the file. The winner is the one
+  the relay operator ``picked``, and failing that the newest approval, which is the one the relay
+  is already serving every player in that locale (dp-relay ``translations.js``, ``approvedFor``).
+  ``picked`` is stage one of that rule and lives at the relay; nothing here needs it to exist, and
+  rows without it simply fall through to newest-wins. The runner-up is not discarded: they take
+  the key's reviewer slot, so they stay in the shipped credits — see ``import_lang``.
 * **Reformat anything.** Lang files carry blank-line grouping and zh_cn is CRLF; 36 books group
   their variants the same way. Every write is a text-level edit of one value (see
   ``provenance_io.set_lang_value`` / ``set_book_field_text``), so the diff is the translation and
@@ -52,6 +59,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from pathlib import Path
+from typing import NamedTuple
 
 import lang_format
 import plural_forms
@@ -277,19 +285,68 @@ def classify_absent_key(locale: str, name: str, key: str, english: dict) -> str 
     return None
 
 
-def import_lang(rows: list[dict], ns_dirs: dict, dry_run: bool, problems: list[str],
-                deferred: list[str]) -> tuple[dict, dict, list[str]]:
-    """Apply approved lang units.
+def num(value) -> int:
+    """``value`` as an int, or 0. The relay validates on the way in, not on the way out."""
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return 0
 
-    Returns ``(revised, confirmed, stale)`` keyed by ``(namespace, locale, translator)``:
-    ``revised`` are the keys whose text this changed — the translator becomes author AND
-    reviewer, the documented "fixed" case — and ``confirmed`` are keys whose text already
-    matched, where a person has demonstrably read the line but did not write it, so the
-    original author stands and only the reviewer is stamped.
+
+def approval_rank(row: dict, index: int) -> tuple:
+    """How much this submission outranks the others for the same key. Highest wins.
+
+    ``picked`` is the operator's choice at the relay and outranks everything — stage one of the
+    two-stage rule, and the only part of it that lives over there.
+
+    With no pick, this is dp-relay ``approvedFor``'s ``COALESCE(reviewedTs, ts) ASC, id ASC``
+    turned around: that query walks the approved rows oldest-first and overwrites, so its LAST
+    write — the newest approval — is what every player in the locale is already being served. The
+    jar agreeing with the relay is the whole point of ranking at all.
+
+    ``index`` is the row's place in the listing, which is newest-first, and breaks ties only for a
+    payload carrying neither timestamp — a hand-written ``--from-file`` queue, or the tests.
+    """
+    return (1 if row.get("picked") else 0,
+            num(row.get("reviewedTs") or row.get("ts")), num(row.get("id")), -index)
+
+
+class LangImport(NamedTuple):
+    """What ``import_lang`` did, for the summary, the registry and the stamps.
+
+    ``revised``/``confirmed`` are keyed by ``(namespace, locale, author, reviewer)`` — one group
+    per distinct stamp, NOT one per translator, so every key belongs to exactly one group and is
+    stamped exactly once. ``contenders`` is everyone who had an importable submission, whether or
+    not a slot was found for them; ``contested`` counts the keys more than one person translated.
+    """
+    revised: dict
+    confirmed: dict
+    stale: list
+    contenders: set
+    contested: int
+
+
+def import_lang(rows: list[dict], ns_dirs: dict, dry_run: bool, problems: list[str],
+                deferred: list[str]) -> LangImport:
+    """Apply approved lang units, one winner per key.
+
+    ``revised`` are the keys whose text this changed — the winner becomes author — and
+    ``confirmed`` are keys whose text already matched, where a person has demonstrably read the
+    line but did not write it, so the original author stands and only the reviewer is stamped.
+
+    TWO PEOPLE, ONE LINE. Nothing stops two translators having an approved unit for the same key,
+    and 38 keys in the 2026-08-30 import did. Only one text can ship and the sidecar holds one
+    author and one reviewer, so the rule is: the winner (see ``approval_rank``) authors it and the
+    runner-up takes the reviewer slot — they translated the line, and crediting them there is the
+    difference between a name in the game's credits and a name nowhere at all. A third contender
+    has nowhere to go; ``main`` names anyone left uncredited rather than dropping them silently,
+    which is exactly what this function used to do to all of them.
     """
     revised: dict[tuple, list[str]] = {}
     confirmed: dict[tuple, list[str]] = {}
     stale: list[str] = []
+    contenders: set[str] = set()
+    contested = 0
     lang_cache: dict[Path, dict] = {}
 
     def lang_of(path: Path) -> dict | None:
@@ -297,17 +354,23 @@ def import_lang(rows: list[dict], ns_dirs: dict, dry_run: bool, problems: list[s
             lang_cache[path] = pio.load_lang(path) if path.is_file() else None
         return lang_cache[path]
 
-    for row in rows:
+    def usable(row: dict) -> dict | None:
+        """The lang file this row could be written into — or None, having reported why not.
+
+        Every candidate for a key is asked, not just the winner, so a submission is reported the
+        same way whether or not somebody else also translated that line, and a stale newest still
+        falls through to an importable older one.
+        """
         locale, key, value = row["locale"], row["unitId"], row["value"]
         name = row.get("namespace") or "dungeontrain"
         ns = ns_dirs.get(name)
         if ns is None:
             problems.append(f"{locale} [{name}] {key}: unknown namespace")
-            continue
+            return None
         lang = lang_of(ns.lang_dir / f"{locale}.json")
         if lang is None:
             problems.append(f"{locale} [{name}] {key}: no {locale}.json in {name}'s lang dir")
-            continue
+            return None
         english = lang_of(ns.lang_dir / "en_us.json") or {}
         if key not in lang:
             # Classified before the stale check on purpose: a key with no line to edit cannot be
@@ -320,29 +383,52 @@ def import_lang(rows: list[dict], ns_dirs: dict, dry_run: bool, problems: list[s
                 problems.append(f"{locale} [{name}] {key}: not a key in {locale}.json, {whence}")
             else:
                 deferred.append(excuse)
-            continue
+            return None
         source = row.get("source") or ""
         if source and key in english and english[key] != source:
             stale.append(f"{locale} [{name}] {key}: en_us changed since this was translated")
-            continue
+            return None
         # Checked BEFORE the already-matches branch on purpose: if a malformed value is what the
         # file already holds, the shipped file is malformed too, and that is worth being told.
         broken = lang_format.mismatch(value, english.get(key, "")) if key in english else None
         if broken:
             deferred.append(f"{locale} [{name}] {key}: {broken} — the text needs fixing at the "
                             "relay before it can be imported")
+            return None
+        return lang
+
+    by_key: dict[tuple, list[tuple]] = {}
+    for index, row in enumerate(rows):
+        unit = (row.get("namespace") or "dungeontrain", row["locale"], row["unitId"])
+        by_key.setdefault(unit, []).append((approval_rank(row, index), row))
+
+    for (name, locale, key), candidates in by_key.items():
+        passed = []
+        for _, row in sorted(candidates, key=lambda c: c[0], reverse=True):
+            lang = usable(row)
+            if lang is not None:
+                passed.append((row, lang, translator_of(row)))
+        if not passed:
             continue
-        group = (name, locale, translator_of(row))
+        # Distinct names, still in preference order: the winner first, the runner-up second.
+        names = list(dict.fromkeys(who for _, _, who in passed))
+        contenders.update(names)
+        if len(names) > 1:
+            contested += 1
+        row, lang, winner = passed[0]
+        value = row["value"]
         if lang[key] == value:
-            confirmed.setdefault(group, []).append(key)
+            # The author slot is not ours to take, so a runner-up has nowhere to go here.
+            confirmed.setdefault((name, locale, "", winner), []).append(key)
             continue
         if not dry_run:
-            if not pio.set_lang_value(ns.lang_dir / f"{locale}.json", key, value):
+            if not pio.set_lang_value(ns_dirs[name].lang_dir / f"{locale}.json", key, value):
                 problems.append(f"{locale} [{name}] {key}: value line not found in {locale}.json")
                 continue
             lang[key] = value
-        revised.setdefault(group, []).append(key)
-    return revised, confirmed, stale
+        reviewer = names[1] if len(names) > 1 else winner
+        revised.setdefault((name, locale, winner, reviewer), []).append(key)
+    return LangImport(revised, confirmed, stale, contenders, contested)
 
 
 # ---- book units --------------------------------------------------------------
@@ -441,17 +527,21 @@ def lang_dirs(args) -> list[str]:
 
 
 def stamp_lang(revised: dict, confirmed: dict, args) -> None:
-    for group, keys, author in (
-        *[(g, k, True) for g, k in sorted(revised.items())],
-        *[(g, k, False) for g, k in sorted(confirmed.items())],
-    ):
-        namespace, locale, name = group
+    """One stamp per distinct (author, reviewer) pair.
+
+    Groups are the unit of stamping and a key is in exactly one of them, so no stamp can land on
+    a key another stamp has already written. It could before: the groups were per translator, a
+    contested key sat in two of them, and the last call silently overwrote the first — which is
+    how ecodead's only approved line ended up credited to somebody else.
+    """
+    for group, keys in (*sorted(revised.items()), *sorted(confirmed.items())):
+        namespace, locale, author, reviewer = group
         cmd = [sys.executable, str(STAMP), "--authors-file", str(args.authors_file)]
         cmd += lang_dirs(args) or ["--namespace", namespace]
         cmd += ["--locale", locale]
         if author:
-            cmd += ["--author", name]
-        run(cmd + ["--reviewer", name, "--keys", *sorted(keys)], args.dry_run)
+            cmd += ["--author", author]
+        run(cmd + ["--reviewer", reviewer, "--keys", *sorted(keys)], args.dry_run)
 
 
 def stamp_books(rewritten: dict, revised: dict, args) -> None:
@@ -535,8 +625,9 @@ def main(argv: list[str] | None = None) -> int:
                                                  args.provenance_dir, None, None)}
     else:
         ns_dirs = {ns.name: ns for ns in pio.namespaces()}
-    revised, confirmed, stale = import_lang(
+    lang = import_lang(
         [r for r in rows if r["unitType"] == "lang"], ns_dirs, args.dry_run, problems, deferred)
+    revised, confirmed, stale = lang.revised, lang.confirmed, lang.stale
     rewritten, reviewed = import_books(
         [r for r in rows if r["unitType"] == "book"], args.narrative_dir, args.dry_run, problems,
         deferred)
@@ -544,11 +635,21 @@ def main(argv: list[str] | None = None) -> int:
     counts = (sum(map(len, revised.values())), sum(map(len, confirmed.values())),
               sum(map(len, rewritten.values())) + sum(map(len, reviewed.values())))
     print(f"{len(rows)} approved unit(s): {counts[0]} string(s) revised, {counts[1]} confirmed "
-          f"as already matching, {counts[2]} book(s) touched, {len(stale)} stale")
+          f"as already matching, {counts[2]} book(s) touched, {len(stale)} stale, "
+          f"{lang.contested} key(s) translated by more than one person")
 
-    # The translator is the last element of every group key, lang (namespace, locale, name) and
-    # book (locale, name) alike — so this is everyone who ended up with something to be stamped.
-    landed = {group[-1] for group in (*revised, *confirmed, *rewritten, *reviewed)}
+    # Everyone a stamp will actually name: both people on a lang group (namespace, locale, author,
+    # reviewer) — author is "" on a confirmed one — and the single name on a book group.
+    landed = {name for group in (*revised, *confirmed) for name in group[2:] if name}
+    landed |= {group[-1] for group in (*rewritten, *reviewed)}
+    # A key holds one author and one reviewer, so a third translator of the same line cannot be
+    # recorded at all. Say so: this is the one path by which real work still goes uncredited, and
+    # it staying quiet is what let a whole translator vanish from the credits unnoticed.
+    uncredited = sorted(lang.contenders - landed)
+    if uncredited:
+        print(f"  WARNING: {len(uncredited)} translator(s) had approved text that another "
+              "translator was credited for, and hold no author or reviewer slot of their own: "
+              f"{', '.join(uncredited)}")
     registered = register_landed(unknown, landed, args.authors_file, args.dry_run)
     if args.new_authors_out and not args.dry_run:
         args.new_authors_out.write_text(json.dumps(registered, ensure_ascii=False, indent=2)
