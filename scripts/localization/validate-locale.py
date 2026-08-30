@@ -78,6 +78,38 @@ def load(path):
         return json.load(fh)
 
 
+def flat_text_pool(ref):
+    """True for an AIN pool that is nothing but a word list — every entry exactly ``{"text": …}``.
+
+    ``type_synonyms`` is the only pool of the 31 whose entries carry anything else: its
+    ``item_types`` binds each synonym to the item tag it may name, so a missing or extra entry
+    there shifts every later tag and a sword starts being called a pair of boots. Length is
+    load-bearing, and it stays checked.
+
+    The other 30 are flat lists drawn at random by ``NameComposer.pickPoolEntry``. Position binds
+    nothing, so requiring a locale to hold *exactly* as many synonyms as Spanish is parity for its
+    own sake: it fails zh_cn for having thought of five more titles than es_es did, which is the
+    gate objecting to a translator doing the job well. Entry SHAPE is still enforced — every entry
+    must be a one-key ``text`` string — so a malformed pool is still caught.
+    """
+    entries = ref.get("entries") if isinstance(ref, dict) else None
+    return bool(entries) and isinstance(entries, list) and all(
+        isinstance(e, dict) and set(e) == {"text"} and isinstance(e["text"], str) for e in entries)
+
+
+def compare_flat_pool(ref, loc, path, errors):
+    """Shape-check a flat word pool without comparing its length."""
+    if not isinstance(loc, dict) or set(ref) != set(loc):
+        errors.append(f"{path}: pool keys {sorted(loc) if isinstance(loc, dict) else loc!r} "
+                      f"!= {sorted(ref)}")
+        return
+    if ref.get("id") != loc.get("id"):
+        errors.append(f"{path}.id: structural value changed "
+                      f"({loc.get('id')!r} != {ref.get('id')!r})")
+    if not flat_text_pool(loc):
+        errors.append(f"{path}.entries: every entry must be a single 'text' string")
+
+
 def compare_shape(ref, loc, path, errors):
     """Recursively assert loc has the same shape as ref (values may differ only for prose)."""
     if type(ref) is not type(loc):
