@@ -15,6 +15,7 @@ import subprocess
 import sys
 import tempfile
 import threading
+import urllib.parse
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SCRIPT = os.path.join(HERE, "import-approved-translations.py")
@@ -271,7 +272,23 @@ def serve(rows):
     class Handler(http.server.BaseHTTPRequestHandler):
         def do_GET(self):
             seen.append(self.path)
-            body = json.dumps({"ok": True, "units": rows}).encode("utf-8")
+            # Emulate the relay's keyset paging: `before` is the previous page's `oldestId`, and
+            # the listing walks backwards from it. Inert for a row set that fits one page, so the
+            # tests that serve a handful of rows see exactly what they always did.
+            query = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+            limit = int((query.get("limit") or ["1000"])[0])
+            before = (query.get("before") or [None])[0]
+            start = 0
+            if before is not None:
+                ids = [str(r.get("id")) for r in rows]
+                start = ids.index(before) + 1 if before in ids else len(rows)
+            page = rows[start:start + limit]
+            body = json.dumps({
+                "ok": True,
+                "units": page,
+                "hasMore": start + limit < len(rows),
+                "oldestId": page[-1]["id"] if page else None,
+            }).encode("utf-8")
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
             self.send_header("Content-Length", str(len(body)))
@@ -309,15 +326,59 @@ def test_fetches_the_approved_queue_from_the_relay():
     assert lang_of(ws)["a.key"] == "人工 Alpha"
 
 
-def test_a_truncated_queue_is_reported_not_imported_silently():
+def test_a_queue_past_the_page_ceiling_is_paged_through_not_truncated():
+    """
+    The listing is newest-first, so taking only the first response would import the same page on
+    every run and never reach anything older than the ceiling — which is precisely what was
+    happening to ru_ru. Serve two and a half pages and require every row to arrive.
+    """
     ws = workspace()
-    base, _seen, stop = serve([unit(id=i) for i in range(1000)])
+    rows = [unit(id=i) for i in range(2500)]
+    base, seen, stop = serve(rows)
     try:
         proc = run_http(ws, base, "--dry-run")
     finally:
         stop()
     assert proc.returncode == 0, proc.stderr
-    assert "INCOMPLETE" in proc.stderr, proc.stderr
+    assert "INCOMPLETE" not in proc.stderr, proc.stderr
+    # Three requests: rows 0-999, 1000-1999, 2000-2499. The first carries no cursor, the rest do.
+    assert len(seen) == 3, seen
+    assert "before=" not in seen[0], seen[0]
+    assert "before=999" in seen[1], seen[1]
+    assert "before=1999" in seen[2], seen[2]
+
+
+def test_paging_stops_when_the_cursor_stops_advancing():
+    """A relay that keeps saying hasMore while re-serving the same page must not spin forever."""
+    ws = workspace()
+
+    stuck = [unit(id=i) for i in range(10)]
+
+    class Stuck(http.server.BaseHTTPRequestHandler):
+        hits = 0
+
+        def do_GET(self):
+            Stuck.hits += 1
+            body = json.dumps({"ok": True, "units": stuck,
+                               "hasMore": True, "oldestId": 9}).encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def log_message(self, *a):
+            pass
+
+    server = http.server.HTTPServer(("127.0.0.1", 0), Stuck)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    try:
+        proc = run_http(ws, f"http://127.0.0.1:{server.server_port}/cap", "--dry-run")
+    finally:
+        server.shutdown()
+    assert proc.returncode == 0, proc.stderr
+    # Second request repeats the same rows, none of them fresh, so it stops there.
+    assert Stuck.hits <= 2, Stuck.hits
 
 
 def _main():
