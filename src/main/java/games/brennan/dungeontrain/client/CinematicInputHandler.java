@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.client;
 
 import com.mojang.blaze3d.platform.InputConstants;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.client.death.DeathCinematic;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.PauseScreen;
 import net.neoforged.api.distmarker.Dist;
@@ -45,33 +46,54 @@ public final class CinematicInputHandler {
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Pre event) {
         CinematicCameraController.clientTick();
+        DeathCinematic.clientTick();
     }
 
     @SubscribeEvent
     public static void onKey(InputEvent.Key event) {
-        if (!CinematicCameraController.isActive()) return;
+        if (!anyCinematicActive()) return;
         if (Minecraft.getInstance().screen != null) return;
         if (event.getAction() != InputConstants.PRESS) return;
         if (event.getKey() == InputConstants.KEY_SPACE) {
+            skipWhicheverIsRunning();
+        } else {
+            CinematicSkipHudOverlay.show();
+        }
+    }
+
+    /** Either cinematic owns the camera: the spawn intro / builder shot, or the death sequence. */
+    private static boolean anyCinematicActive() {
+        return CinematicCameraController.isActive() || DeathCinematic.isActive();
+    }
+
+    /**
+     * Skip whichever is running. The death sequence takes the click as a skip as well as Space —
+     * a player who has just died is reaching for the recap, and there is nothing else to click.
+     */
+    private static void skipWhicheverIsRunning() {
+        if (DeathCinematic.isActive()) {
+            DeathCinematic.skip();
+        } else {
             CinematicCameraController.skip();
+        }
+    }
+
+    @SubscribeEvent
+    public static void onMouseButton(InputEvent.MouseButton.Pre event) {
+        if (!anyCinematicActive()) return;
+        if (Minecraft.getInstance().screen != null) return;
+        event.setCanceled(true);
+        if (event.getAction() != InputConstants.PRESS) return;
+        if (DeathCinematic.isActive()) {
+            DeathCinematic.skip();
         } else {
             CinematicSkipHudOverlay.show();
         }
     }
 
     @SubscribeEvent
-    public static void onMouseButton(InputEvent.MouseButton.Pre event) {
-        if (!CinematicCameraController.isActive()) return;
-        if (Minecraft.getInstance().screen != null) return;
-        event.setCanceled(true);
-        if (event.getAction() == InputConstants.PRESS) {
-            CinematicSkipHudOverlay.show();
-        }
-    }
-
-    @SubscribeEvent
     public static void onMouseScroll(InputEvent.MouseScrollingEvent event) {
-        if (!CinematicCameraController.isActive()) return;
+        if (!anyCinematicActive()) return;
         if (Minecraft.getInstance().screen != null) return;
         event.setCanceled(true);
         CinematicSkipHudOverlay.show();
@@ -79,7 +101,7 @@ public final class CinematicInputHandler {
 
     @SubscribeEvent
     public static void onInteraction(InputEvent.InteractionKeyMappingTriggered event) {
-        if (!CinematicCameraController.isActive()) return;
+        if (!anyCinematicActive()) return;
         if (Minecraft.getInstance().screen != null) return;
         event.setCanceled(true);
         CinematicSkipHudOverlay.show();
@@ -87,7 +109,7 @@ public final class CinematicInputHandler {
 
     @SubscribeEvent
     public static void onScreenOpening(ScreenEvent.Opening event) {
-        if (!CinematicCameraController.isActive()) return;
+        if (!anyCinematicActive()) return;
         // A screen is already open ⇒ the cinematic is suspended and the player is in
         // menu-land; allow every in-menu navigation (Options / Advancements / Stats /
         // confirm-link, etc.). getCurrentScreen() is the screen being replaced — it is
@@ -104,7 +126,7 @@ public final class CinematicInputHandler {
     public static void onRenderHand(RenderHandEvent event) {
         // The camera is detached during the cinematic; suppress the first-person
         // held item so it doesn't float in the shot.
-        if (CinematicCameraController.isActive()) {
+        if (anyCinematicActive()) {
             event.setCanceled(true);
         }
     }
@@ -112,5 +134,6 @@ public final class CinematicInputHandler {
     @SubscribeEvent
     public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
         CinematicCameraController.forceStop();
+        DeathCinematic.forceStop();
     }
 }

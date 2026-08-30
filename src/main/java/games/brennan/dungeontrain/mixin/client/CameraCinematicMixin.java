@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.mixin.client;
 
 import games.brennan.dungeontrain.client.CinematicCameraController;
+import games.brennan.dungeontrain.client.death.DeathCinematic;
 import games.brennan.dungeontrain.client.snapshot.RideSnapshotCapture;
 import net.minecraft.client.Camera;
 import net.minecraft.world.entity.Entity;
@@ -55,6 +56,15 @@ public abstract class CameraCinematicMixin {
         if (preview != null) {
             this.setPosition(preview.pos());
             this.setRotation(preview.yaw(), preview.pitch());
+            return;
+        }
+        // The run's last shots: the body, then the train running on without it. Ahead of the
+        // intro cinematic's check only because the two can never both be active — a dead player
+        // isn't spawning in.
+        if (DeathCinematic.isActive()) {
+            CinematicCameraController.Pose death = DeathCinematic.computePose(partialTick);
+            this.setPosition(death.pos());
+            this.setRotation(death.yaw(), death.pitch());
             return;
         }
         if (!CinematicCameraController.isActive()) return;

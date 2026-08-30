@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.client;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.client.death.DeathCinematic;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.network.chat.Component;
@@ -11,7 +12,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 
 /**
- * Bottom-centre "Press Space to skip" prompt for the spawn intro cinematic.
+ * Bottom-centre "Press Space to skip" prompt for the intro cinematic and the death sequence.
  *
  * <p>Hidden until the player tries a non-Space input (matching the requested
  * behaviour: Space skips, anything else surfaces the hint). Visibility is
@@ -45,7 +46,8 @@ public final class CinematicSkipHudOverlay {
         event.registerAboveAll(
             ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "cinematic_skip"),
             (graphics, deltaTracker) -> {
-                if (!CinematicCameraController.isActive() || !showPrompt) return;
+                if (!CinematicCameraController.isActive() && !DeathCinematic.isActive()) return;
+                if (!showPrompt) return;
                 // No hideGui guard: the cinematic forces hideGui=true to hide the
                 // rest of the HUD, but this skip prompt is the one intended UI.
                 Minecraft mc = Minecraft.getInstance();

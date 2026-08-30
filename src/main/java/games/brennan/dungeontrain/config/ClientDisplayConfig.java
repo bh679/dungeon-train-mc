@@ -168,6 +168,7 @@ public final class ClientDisplayConfig {
     public static final ModConfigSpec.ConfigValue<List<? extends String>> SHARED_BOOKS_READ;
     /** The player's most recent NPS ("recommend") answer (0-10), or -1 if never answered. */
     public static final ModConfigSpec.IntValue DEATH_SCREEN_LAST_NPS;
+    public static final ModConfigSpec.BooleanValue DEATH_CINEMATIC_ENABLED;
     /**
      * Which tier of other-players' content this client accepts — see {@link ContentMode}. Client-scope
      * so it follows the player across worlds and servers, like the dev-consent and shared-book-read
@@ -291,6 +292,7 @@ public final class ClientDisplayConfig {
         CREATIVE_SHIFT_CLICK_TO_HOTBAR = pair.getLeft().creativeShiftClickToHotbar;
         SHARED_BOOKS_READ = pair.getLeft().sharedBooksRead;
         DEATH_SCREEN_LAST_NPS = pair.getLeft().deathScreenLastNps;
+        DEATH_CINEMATIC_ENABLED = pair.getLeft().deathCinematicEnabled;
         POLITICAL_FILTER = pair.getLeft().politicalFilter;
         BACKUP_MODE = pair.getLeft().backupMode;
         BACKUPS_PER_VERSION = pair.getLeft().backupsPerVersion;
@@ -536,6 +538,9 @@ public final class ClientDisplayConfig {
         ModConfigSpec.IntValue deathScreenLastNps = b
                 .comment("Internal: the player's most recent NPS (\"how likely to recommend\") answer, 0-10, or -1 if never answered. Used to decide when the death-screen donation page appears. Managed automatically.")
                 .defineInRange("lastNpsScore", -1, -1, 10);
+        ModConfigSpec.BooleanValue deathCinematicEnabled = b
+                .comment("Play three short camera shots when you die - your body where it fell, then the train running on without you - before the death screen appears. Space or a click skips them. Set false to go straight to the death screen as before.")
+                .define("cinematicEnabled", true);
         b.pop();
 
         b.push("contentFilter");
@@ -607,7 +612,7 @@ public final class ClientDisplayConfig {
                 menuRenderDistance,
                 editorPlotLighting,
                 sharedBooksRead,
-                deathScreenLastNps, politicalFilter, contentMode, customContentPreference,
+                deathScreenLastNps, deathCinematicEnabled, politicalFilter, contentMode, customContentPreference,
                 customContentLastAnswer,
                 configDeviationAcknowledged, dpiBypassWarningOptedOut, bookAuthorBurnChat,
                 commandMenuSpace, templateBlocksMenuSpace, containerContentsMenuSpace,
@@ -1154,6 +1159,15 @@ public final class ClientDisplayConfig {
     }
 
     /**
+     * Do the death cinematic's three shots play before the death screen? Defaults to {@code true},
+     * but to {@code false} pre-load: the config not having landed yet is no reason to hold a
+     * player's recap behind a camera, and going straight to the screen is the old behaviour.
+     */
+    public static boolean isDeathCinematicEnabled() {
+        return isLoaded() && DEATH_CINEMATIC_ENABLED.get();
+    }
+
+    /**
      * Does a repeat shift-click in the creative menu send the stack to the hotbar? Defaults to
      * {@code true}, and to {@code true} pre-load as well — the creative menu can be open before
      * the config lands, and the feature silently missing reads worse than it being on.
@@ -1485,6 +1499,7 @@ public final class ClientDisplayConfig {
             ModConfigSpec.BooleanValue editorPlotLighting,
             ModConfigSpec.ConfigValue<List<? extends String>> sharedBooksRead,
             ModConfigSpec.IntValue deathScreenLastNps,
+            ModConfigSpec.BooleanValue deathCinematicEnabled,
             ModConfigSpec.EnumValue<PoliticalFilter> politicalFilter,
             ModConfigSpec.EnumValue<ContentMode> contentMode,
             ModConfigSpec.EnumValue<CustomContentPreference> customContentPreference,

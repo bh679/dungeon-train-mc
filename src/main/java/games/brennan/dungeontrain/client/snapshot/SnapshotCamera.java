@@ -5,9 +5,6 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.level.ClipContext;
-import net.minecraft.world.phys.BlockHitResult;
-import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.List;
@@ -33,8 +30,6 @@ import java.util.List;
  */
 public final class SnapshotCamera {
 
-    /** Keep the camera this far off a hit block so it isn't flush against the face. */
-    private static final double CLIP_MARGIN = 0.4;
     /** Reject a framing that can't see the player from at least this far (too cramped). */
     private static final double MIN_VISIBLE_DIST = 2.5;
     /** Prefer well-lit moments — skip when the player's spot is darker than this (0-15). */
@@ -157,34 +152,15 @@ public final class SnapshotCamera {
     }
 
     /**
-     * Clip the segment {@code from → want} against world blocks. Clear → return
-     * {@code want}. Blocked → return a point just short of the hit so the camera
-     * sits in open air on the subject's side (nothing between it and the subject).
+     * Clip the segment {@code from → want} against world blocks — see
+     * {@link CameraClip#towardOpenAir}, which the death cinematic's shots share.
      */
     private static Vec3 clipTowardOpenAir(ClientLevel level, Entity subject, Vec3 from, Vec3 want) {
-        double len = want.subtract(from).length();
-        if (len < 1.0e-6) return from;
-        BlockHitResult hit = level.clip(new ClipContext(
-                from, want, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, subject));
-        if (hit.getType() == HitResult.Type.MISS) return want;
-        double hitDist = hit.getLocation().distanceTo(from);
-        // A real hit lies on the from→want segment (hitDist ≤ len). Sable wraps Level.clip to
-        // redirect the ray into a ship's sub-level, which returns a hit at far sub-level coords —
-        // ignore those and keep the nice-coord candidate, or the camera teleports into the void.
-        if (hitDist > len + 0.5) return want;
-        Vec3 dir = want.subtract(from).scale(1.0 / len);
-        double d = Math.max(0.0, hitDist - CLIP_MARGIN);
-        return from.add(dir.scale(d));
+        return CameraClip.towardOpenAir(level, subject, from, want);
     }
 
     /** Yaw/pitch (MC convention) to look from {@code pos} toward {@code target}. */
     private static float[] lookAt(Vec3 pos, Vec3 target) {
-        double dx = target.x - pos.x;
-        double dy = target.y - pos.y;
-        double dz = target.z - pos.z;
-        double horizontal = Math.sqrt(dx * dx + dz * dz);
-        float yaw = (float) Math.toDegrees(Math.atan2(-dx, dz));
-        float pitch = (float) Math.toDegrees(-Math.atan2(dy, horizontal));
-        return new float[] { yaw, pitch };
+        return CameraClip.lookAt(pos, target);
     }
 }

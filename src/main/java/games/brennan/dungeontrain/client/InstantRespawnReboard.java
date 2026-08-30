@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.client;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.client.death.DeathCinematic;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.DeathScreen;
 import net.minecraft.client.gui.screens.Screen;
@@ -146,20 +147,28 @@ public final class InstantRespawnReboard {
             case NEW_WORLD -> {
                 launchScheduled = true;
                 LOGGER.info("InstantRespawnReboard: doImmediateRespawn is on — reboarding into a fresh world");
-                // Deferred to the next client-loop task drain rather than run inline: the
-                // reboard tears down the integrated server and the connection this packet
-                // is still being dispatched on.
-                mc.execute(() -> DeathScreenLayoutHandler.launchWorld(
+                // Same Shift contract as the death screen's reboard chip: held preserves the
+                // current game mode, otherwise the next run is survival. Read here rather than
+                // when the reboard finally runs — what it asks about is the moment of death, and
+                // the death cinematic can put seconds between the two.
+                boolean survival = !Screen.hasShiftDown();
+                Runnable reboard = () -> DeathScreenLayoutHandler.launchWorld(
                         mc.screen != null ? mc.screen : new TitleScreen(),
                         false,
-                        // Same Shift contract as the death screen's reboard chip: held
-                        // preserves the current game mode, otherwise the next run is survival.
-                        !Screen.hasShiftDown(),
+                        survival,
                         // Never ask here. Vanilla's death screen is suppressed on this path, so there is
                         // no menu to return to if the player dismisses a prompt, and launchScheduled above
                         // is already set — a dismissal would strand them dead with no way to reboard. The
                         // last answer is reused instead.
-                        false));
+                        false);
+                // Deferred to the next client-loop task drain rather than run inline: the
+                // reboard tears down the integrated server and the connection this packet
+                // is still being dispatched on. There is no screen to hold on this path, so the
+                // death cinematic runs in front of the teardown instead — and hands straight
+                // over to it, in full, if it can't play.
+                mc.execute(() -> {
+                    if (!DeathCinematic.playThen(reboard)) reboard.run();
+                });
                 return true;
             }
             case VANILLA -> {

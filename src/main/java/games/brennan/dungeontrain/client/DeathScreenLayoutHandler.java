@@ -5,6 +5,7 @@ import dev.ryanhcode.sable.api.sublevel.ServerSubLevelContainer;
 import dev.ryanhcode.sable.api.sublevel.SubLevelContainer;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.builder.BuilderWorldCheck;
+import games.brennan.dungeontrain.client.death.DeathCinematic;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
@@ -129,6 +130,12 @@ public final class DeathScreenLayoutHandler {
      * Swap the vanilla death screen for the narrative one as it opens. The new
      * screen is not a {@link DeathScreen}, so the re-fired {@code Opening} event
      * for it is a no-op — no recursion.
+     *
+     * <p>When the death cinematic can play, the recap is <em>held</em> instead: the screen would
+     * paint an opaque backdrop over the world from its first frame, so nothing of the run's last
+     * seconds would be seen. {@link DeathCinematic} opens it itself when the shots end or the
+     * player skips them, and answers {@code false} — nothing started, open it now — whenever there
+     * is no shot to be had.</p>
      */
     @SubscribeEvent
     public static void onScreenOpening(ScreenEvent.Opening event) {
@@ -139,6 +146,16 @@ public final class DeathScreenLayoutHandler {
         // to narrate. This one guard covers everything downstream of the swap: the narrative
         // pages, the survey, mod recommendations, the support card, and reboard.
         if (BuilderWorldCheck.isBuilderWorld()) return;
+        // A death screen re-opening mid-shot (a duplicate packet) must not cut the sequence short;
+        // the one already running owns the hand-over.
+        if (DeathCinematic.isActive()) {
+            event.setCanceled(true);
+            return;
+        }
+        if (DeathCinematic.playThen(() -> Minecraft.getInstance().setScreen(new NarrativeDeathScreen()))) {
+            event.setCanceled(true);
+            return;
+        }
         event.setNewScreen(new NarrativeDeathScreen());
     }
 
