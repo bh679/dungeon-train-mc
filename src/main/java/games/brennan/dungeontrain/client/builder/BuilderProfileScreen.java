@@ -110,8 +110,12 @@ public final class BuilderProfileScreen extends Screen {
     private final BuilderTileSpin spin = new BuilderTileSpin();
     private long lastFrameNanos;
 
+    /**
+     * My Builds as the menus open it — showing whoever was last looked at, which is the player
+     * themselves until a builder has been picked this session.
+     */
     public BuilderProfileScreen(Screen lastScreen) {
-        this(lastScreen, "", "");
+        this(lastScreen, BuilderProfileState.viewedUuid(), BuilderProfileState.viewedName());
     }
 
     /**
@@ -192,6 +196,10 @@ public final class BuilderProfileScreen extends Screen {
      * {@link #init} instead of the two of them racing.</p>
      */
     private void viewProfile(BuilderCreatorResultsPacket.Creator creator) {
+        // Recorded before the screen swaps, so the menus reopen on this builder too — not just the
+        // screen being replaced here.
+        BuilderProfileState.setViewed(creator == null ? "" : creator.uuid(),
+                creator == null ? "" : creator.name());
         this.minecraft.setScreen(creator == null
                 ? new BuilderProfileScreen(lastScreen)
                 : new BuilderProfileScreen(lastScreen, creator.uuid(), creator.name()));

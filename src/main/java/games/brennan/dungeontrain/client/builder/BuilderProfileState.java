@@ -35,6 +35,18 @@ public final class BuilderProfileState {
      */
     private static volatile boolean live = false;
 
+    /**
+     * The builder whose profile My Builds last showed — {@code ""} for the player's own.
+     *
+     * <p>Remembered so that reopening the screen comes back to whoever was being looked at, rather
+     * than snapping home and making the search a toll on every visit: looking at somebody's builds is
+     * usually several trips, not one. Session-scoped like {@link #live}, and reset by the same two
+     * events — leaving a world, and switching relay, where the remembered uuid may name a builder the
+     * other pool has never heard of.</p>
+     */
+    private static volatile String viewedUuid = "";
+    private static volatile String viewedName = "";
+
     private BuilderProfileState() {}
 
     public static void accept(BuilderProfilePacket packet) {
@@ -108,6 +120,22 @@ public final class BuilderProfileState {
         live = value;
     }
 
+    /** The remembered builder's uuid, or {@code ""} when My Builds should show the player's own. */
+    public static String viewedUuid() {
+        return viewedUuid;
+    }
+
+    /** What to call the remembered builder — their display name as the search gave it. */
+    public static String viewedName() {
+        return viewedName;
+    }
+
+    /** Remember who is being looked at. Empty uuid means "back to my own builds". */
+    public static void setViewed(String uuid, String name) {
+        viewedUuid = uuid == null ? "" : uuid;
+        viewedName = name == null ? "" : name;
+    }
+
     /**
      * Forget the cached profile, so a reopened screen shows "loading" rather than a stale list.
      * Called when leaving a world: the next world may be a different player's.
@@ -118,5 +146,6 @@ public final class BuilderProfileState {
         downloadListener = null;
         creatorListener = null;
         live = false;
+        setViewed("", "");
     }
 }
