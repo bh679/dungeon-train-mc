@@ -1958,6 +1958,7 @@ public final class PortalCarriageEvents {
         int span = structure.spanX(dims);
         Vec3i room = structure.roomSize();
         PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims, structure.kind());
+        BlockPos roomOrigin = structure.roomOrigin(dims, layout);
         // Half the room's overhang either side of the corridor, plus a block; never less than the
         // slack the built-in room was tuned with.
         int slackZ = Math.max(POCKET_ROOM_SLACK, (room.getZ() - dims.width()) / 2 + 1);
@@ -1972,15 +1973,25 @@ public final class PortalCarriageEvents {
         // Read off the masks that place them, so this cannot disagree about where a corridor is —
         // the extra copies, and the pair's own exit when it stands beside another tile entirely.
         BoundingBox corridors = PortalCarriageBuilder.allCorridorMask(structure, dims).bounds();
+        // Y as well as X and Z, and for the same reason. The box used to start one row under the
+        // corridor LANE, which is the room's own floor only while the door sits at it — a room with a
+        // door-height offset stands its floor below the lane, and an exit door placed apart from its
+        // entry door stands one corridor below the other. Everything this box drives (the fog, the
+        // train audio, "is this player in the structure") then stopped at the lane and left the rest
+        // of the room outside it.
+        // slackY already reaches past the room's own ceiling, so only the FLOOR term moves here.
+        int minY = Math.min(origin.getY(), roomOrigin.getY()) - 1;
+        int maxY = origin.getY() + dims.height() + slackY;
         if (corridors != null) {
             minX = Math.min(minX, corridors.minX() - 1);
             maxX = Math.max(maxX, corridors.maxX() + 2);
             minZ = Math.min(minZ, corridors.minZ() - 1);
             maxZ = Math.max(maxZ, corridors.maxZ() + 2);
+            minY = Math.min(minY, corridors.minY() - 1);
+            maxY = Math.max(maxY, corridors.maxY() + 2);
         }
 
-        return new AABB(minX, origin.getY() - 1, minZ,
-            maxX, origin.getY() + dims.height() + slackY, maxZ);
+        return new AABB(minX, minY, minZ, maxX, maxY, maxZ);
     }
 
     /**

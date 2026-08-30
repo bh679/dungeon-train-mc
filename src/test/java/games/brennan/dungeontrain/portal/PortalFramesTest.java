@@ -540,4 +540,86 @@ final class PortalFramesTest {
 
     /** Just past the band, so the position is unambiguously on one side of the line. */
     private static final double SWAP_PAST = PortalFrames.SWAP_HYSTERESIS + 0.1;
+    // ---- a twin displaced off the carriage's own Y/Z line -----------------------
+
+    /**
+     * The exit twin of a room whose two doorways are authored apart: same layout, same role, an
+     * origin displaced in Y and Z from where a mirrored room would have put it.
+     *
+     * <p>This is the whole of what independent door positions do to the swap — {@code exitOrigin}
+     * moves, and {@code PortalFrames} is told the moved origin exactly as it is told the original.</p>
+     */
+    private static PortalFrames displacedTwinFrames(double dy, double dz) {
+        return new PortalFrames(LAYOUT,
+            new PortalFrames.Origin(CAR_X, CAR_Y, CAR_Z),
+            new PortalFrames.Origin(TWIN_X, TWIN_Y + dy, TWIN_Z + dz),
+            PortalCarriageRole.ENTRY);
+    }
+
+    @Test
+    @DisplayName("A twin displaced in Y and Z still carries the corridor-local offset across exactly")
+    void displacedTwin_preservesTheLocalOffset() {
+        for (double dy = -4; dy <= 4; dy++) {
+            for (double dz = -6; dz <= 6; dz++) {
+                PortalFrames f = displacedTwinFrames(dy, dz);
+                double localX = LAYOUT.midX() + PortalFrames.SWAP_HYSTERESIS + 0.5;
+
+                PortalFrames.Move move =
+                    f.requiredMove(CAR_X + localX, CAR_Y + FEET_Y, CAR_Z + WALK_Z);
+                assertNotNull(move, "dy=" + dy + " dz=" + dz);
+                assertEquals(PortalFrames.FRAME_TWIN, move.toFrame());
+                // The mapping is frame-local: the offset out of the carriage goes into the twin
+                // unchanged, wherever the twin stands. That is why the illusion survives the move.
+                assertEquals(TWIN_X + localX, move.x(), 1e-9);
+                assertEquals(TWIN_Y + dy + FEET_Y, move.y(), 1e-9);
+                assertEquals(TWIN_Z + dz + WALK_Z, move.z(), 1e-9);
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("The destination floor follows the displaced twin, so a grounded player is not dropped")
+    void displacedTwin_reportsItsOwnFloorSurface() {
+        PortalFrames f = displacedTwinFrames(-3, 5);
+        assertEquals(CAR_Y + LAYOUT.floorY() + 1, f.floorSurfaceY(PortalFrames.FRAME_CARRIAGE), 1e-9);
+        assertEquals(TWIN_Y - 3 + LAYOUT.floorY() + 1, f.floorSurfaceY(PortalFrames.FRAME_TWIN), 1e-9);
+    }
+
+    @Test
+    @DisplayName("A displaced twin's corridor is found where it stands, not where a mirrored one would be")
+    void displacedTwin_isFoundAtItsOwnOrigin() {
+        PortalFrames f = displacedTwinFrames(-3, 5);
+        assertEquals(PortalFrames.FRAME_TWIN,
+            f.frameAt(TWIN_X + 3, TWIN_Y - 3 + FEET_Y, TWIN_Z + 5 + WALK_Z));
+        // And the old, undisplaced line is now outside both corridors.
+        assertEquals(PortalFrames.FRAME_NONE,
+            f.frameAt(TWIN_X + 3, TWIN_Y + FEET_Y, TWIN_Z + WALK_Z));
+    }
+
+    @Test
+    @DisplayName("Walking back out of a displaced twin returns the same local offset to the carriage")
+    void displacedTwin_roundTripsBackToTheCarriage() {
+        PortalFrames f = displacedTwinFrames(-3, 5);
+        double localX = LAYOUT.midX() - PortalFrames.SWAP_HYSTERESIS - 0.5;
+
+        PortalFrames.Move back = f.requiredMove(
+            TWIN_X + localX, TWIN_Y - 3 + FEET_Y, TWIN_Z + 5 + WALK_Z);
+        assertNotNull(back);
+        assertEquals(PortalFrames.FRAME_CARRIAGE, back.toFrame());
+        assertEquals(CAR_X + localX, back.x(), 1e-9);
+        assertEquals(CAR_Y + FEET_Y, back.y(), 1e-9);
+        assertEquals(CAR_Z + WALK_Z, back.z(), 1e-9);
+    }
+
+    @Test
+    @DisplayName("The crossing light reads the same in a displaced twin as in the carriage it mirrors")
+    void displacedTwin_lightsTheCrossingIdentically() {
+        PortalFrames f = displacedTwinFrames(-3, 5);
+        for (double localX = 0.5; localX < LAYOUT.length(); localX += 1.0) {
+            assertEquals(
+                f.crossingIntensityAt(CAR_X + localX, CAR_Y + FEET_Y, CAR_Z + WALK_Z),
+                f.crossingIntensityAt(TWIN_X + localX, TWIN_Y - 3 + FEET_Y, TWIN_Z + 5 + WALK_Z),
+                1e-9, "localX " + localX);
+        }
+    }
 }
