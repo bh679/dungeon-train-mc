@@ -25,6 +25,10 @@ import java.util.List;
  *       {@code roomOrigin.x - 1}; an exit corridor's is its near door, at
  *       {@code roomOrigin.x + size.x}. Those are {@code stampCorridorHalf}'s two {@code sealX}
  *       values, and the same pair of columns {@code bedrockSkin} reaches out to.</li>
+ *   <li><b>Z and Y are asked per end.</b> A room's two doorways are separately authored — the entry
+ *       pair places the room's box, the exit pair displaces the exit corridor within it — so each
+ *       end reads its own offsets. A mirrored room passes the same pair twice, which is what the
+ *       shorter overloads do and what every room did before the two could differ.</li>
  *   <li><b>Z: the walkway centre line.</b> {@link PortalRoomLayout#roomOrigin} centres the room's
  *       <i>interior</i> ({@code size.z - 2}) on {@link PortalCarriageLayout#doorZ()}, which puts the
  *       line at {@code roomOrigin.z + 1 + (size.z - 2) / 2} — for odd and even widths alike.</li>
@@ -82,14 +86,30 @@ public final class PortalRoomDoorCells {
     public static List<BlockPos> forRoom(
         BlockPos roomOrigin, Vec3i size, int doorOffset, int doorHeightOffset
     ) {
+        return forRoom(roomOrigin, size, doorOffset, doorHeightOffset, doorOffset, doorHeightOffset);
+    }
+
+    /**
+     * As {@link #forRoom(BlockPos, Vec3i, int, int)}, with the room's <b>exit</b> doorway placed
+     * independently of its entry one.
+     *
+     * <p>The two ends are separate positions rather than one line because they are separately
+     * authored: the entry offsets place the room's box and the exit offsets displace the exit
+     * corridor within it (see {@link PortalRoomLayout#exitDoorDeltaZ}). Passing the same pair twice —
+     * which the shorter overloads do — is the mirrored room this class described until now.</p>
+     */
+    public static List<BlockPos> forRoom(
+        BlockPos roomOrigin, Vec3i size, int doorOffset, int doorHeightOffset,
+        int exitDoorOffset, int exitDoorHeightOffset
+    ) {
         if (roomOrigin == null || size == null) return List.of();
         if (size.getX() <= 0 || size.getY() <= 0 || size.getZ() <= 2) return List.of();
 
-        int doorZ = doorZ(roomOrigin, size, doorOffset);
-        int floorY = roomOrigin.getY() + doorHeightOffset;
         List<BlockPos> cells = new ArrayList<>(CELLS_PER_ROOM);
-        addDoor(cells, roomOrigin.getX() - 1, floorY, doorZ);
-        addDoor(cells, roomOrigin.getX() + size.getX(), floorY, doorZ);
+        addDoor(cells, roomOrigin.getX() - 1, roomOrigin.getY() + doorHeightOffset,
+            doorZ(roomOrigin, size, doorOffset));
+        addDoor(cells, roomOrigin.getX() + size.getX(), roomOrigin.getY() + exitDoorHeightOffset,
+            doorZ(roomOrigin, size, exitDoorOffset));
         return cells;
     }
 
@@ -114,7 +134,17 @@ public final class PortalRoomDoorCells {
     public static List<BlockPos> doorBases(
         BlockPos roomOrigin, Vec3i size, int doorOffset, int doorHeightOffset
     ) {
-        List<BlockPos> all = forRoom(roomOrigin, size, doorOffset, doorHeightOffset);
+        return doorBases(roomOrigin, size, doorOffset, doorHeightOffset, doorOffset,
+            doorHeightOffset);
+    }
+
+    /** As {@link #doorBases(BlockPos, Vec3i, int, int)}, with the exit doorway placed on its own. */
+    public static List<BlockPos> doorBases(
+        BlockPos roomOrigin, Vec3i size, int doorOffset, int doorHeightOffset,
+        int exitDoorOffset, int exitDoorHeightOffset
+    ) {
+        List<BlockPos> all = forRoom(roomOrigin, size, doorOffset, doorHeightOffset,
+            exitDoorOffset, exitDoorHeightOffset);
         if (all.isEmpty()) return List.of();
         List<BlockPos> bases = new ArrayList<>(2);
         for (int i = 0; i < all.size(); i += CELLS_PER_DOOR) {

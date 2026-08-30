@@ -336,4 +336,41 @@ public final class PortalRoomLayout {
         int max = maxDoorHeightOffset(dims, height);
         return Math.max(0, Math.min(max, doorHeightOffset));
     }
+
+    /**
+     * How far the <b>exit</b> corridor stands off the entry corridor's line in {@code Z}, in blocks —
+     * the whole of what makes a room's two doorways independent.
+     *
+     * <p><b>Why a delta and not a second centring.</b> {@link #roomOrigin} spends a room's width slack
+     * to place the box, and it can only be placed once: a box has one position, not two. So the
+     * <i>entry</i> door is what positions it, exactly as it always did, and the exit door is expressed
+     * as a displacement of its own corridor <i>within</i> that box. Same two degrees of freedom,
+     * redistributed — and a room whose two doors agree gets a delta of zero, which is why nothing an
+     * existing world is standing in moves by so much as a block.</p>
+     *
+     * <p>Both offsets go through {@link #clampDoorOffset} <b>before</b> subtracting, never after: the
+     * clamp is what guarantees each corridor's cross-section stays inside the room, and clamping their
+     * difference instead would let a pair of individually-legal doors produce a corridor outside the
+     * box that {@code sealCorridorMouth} then cannot seal.</p>
+     */
+    public static int exitDoorDeltaZ(CarriageDims dims, int width, int doorOffset,
+                                     int exitDoorOffset) {
+        return clampDoorOffset(dims, width, exitDoorOffset)
+            - clampDoorOffset(dims, width, doorOffset);
+    }
+
+    /**
+     * The vertical twin of {@link #exitDoorDeltaZ} — how far the exit corridor sits above or below the
+     * entry corridor's floor lane, in blocks.
+     *
+     * <p>Signed, unlike {@link PortalRoomDoorHeightOffset} itself: each door is unsigned against the
+     * room's own floor, but an exit door lower than the entry door displaces its corridor downward,
+     * and that difference is a direction. Clamped per door first, for the reason
+     * {@link #exitDoorDeltaZ} gives.</p>
+     */
+    public static int exitDoorDeltaY(CarriageDims dims, int height, int doorHeightOffset,
+                                     int exitDoorHeightOffset) {
+        return clampDoorHeightOffset(dims, height, exitDoorHeightOffset)
+            - clampDoorHeightOffset(dims, height, doorHeightOffset);
+    }
 }

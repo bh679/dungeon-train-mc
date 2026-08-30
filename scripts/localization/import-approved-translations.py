@@ -59,10 +59,14 @@ BASE_ENV = "DUNGEONTRAIN_RELAY_ADMIN_BASE"
 #: machine translation — under one registered name that stands in for all of them.
 ANONYMOUS = "Anonymous contributor"
 
-#: The relay clamps its admin listing to 1000 rows and has no cursor, so a locale that returns
-#: exactly this many has almost certainly been truncated. Reported loudly rather than imported
-#: as if it were the whole queue.
+#: Rows per request. The relay clamps its admin listing to 1000, and pages older rows through the
+#: `before` keyset cursor it returns as `oldestId` — see fetch_locale.
 PAGE_LIMIT = 1000
+
+#: Hard stop on the paging loop. At PAGE_LIMIT rows a page this is far more than any real queue,
+#: and it means a relay that kept answering `hasMore` with a cursor that never advanced could not
+#: spin this script forever.
+MAX_PAGES = 50
 
 REQUEST_TIMEOUT = 30
 
@@ -84,20 +88,53 @@ def units_of(payload) -> list[dict]:
 
 
 def fetch_locale(base: str, cap: str, locale: str) -> list[dict]:
-    """Every approved unit for one locale, newest first (the relay's admin listing order)."""
-    query = urllib.parse.urlencode(
-        {"flag": "approved", "cap": cap, "locale": locale, "limit": PAGE_LIMIT}
-    )
-    url = f"{base.rstrip('/')}/translations?{query}"
-    try:
-        with urllib.request.urlopen(url, timeout=REQUEST_TIMEOUT) as resp:
-            rows = units_of(json.loads(resp.read().decode("utf-8")))
-    except (urllib.error.URLError, TimeoutError, ValueError, json.JSONDecodeError) as exc:
-        sys.exit(f"error: could not read the approved queue for {locale} — {redact(exc, base)}")
-    if len(rows) >= PAGE_LIMIT:
-        print(f"  WARNING: {locale} returned the {PAGE_LIMIT}-row ceiling — the queue is longer "
-              "than one request can carry, so this import is INCOMPLETE for that locale.",
-              file=sys.stderr)
+    """
+    Every approved unit for one locale, newest first (the relay's admin listing order).
+
+    Pages through the whole queue rather than taking the first response. The relay clamps a single
+    listing to ``PAGE_LIMIT`` rows and returns ``hasMore`` plus ``oldestId``, the keyset cursor to
+    pass back as ``before`` for the next (older) page — the same cursor the explorer's review page
+    walks backwards on.
+
+    This matters more than it looks: ru_ru alone is past the ceiling, and because the listing is
+    ordered newest-first, a single-request import would take the same first page every run. Rows
+    older than the ceiling would never be imported at all, on any run, ever.
+    """
+    rows: list[dict] = []
+    seen_ids: set = set()
+    before = None
+
+    for _ in range(MAX_PAGES):
+        params = {"flag": "approved", "cap": cap, "locale": locale, "limit": PAGE_LIMIT}
+        if before is not None:
+            params["before"] = before
+        url = f"{base.rstrip('/')}/translations?{urllib.parse.urlencode(params)}"
+        try:
+            with urllib.request.urlopen(url, timeout=REQUEST_TIMEOUT) as resp:
+                payload = json.loads(resp.read().decode("utf-8"))
+        except (urllib.error.URLError, TimeoutError, ValueError, json.JSONDecodeError) as exc:
+            sys.exit(f"error: could not read the approved queue for {locale} — {redact(exc, base)}")
+
+        page = units_of(payload)
+        # Ignore any row already collected, so a relay that re-serves a boundary row cannot
+        # duplicate it into the import.
+        fresh = [r for r in page if r.get("id") not in seen_ids]
+        for r in fresh:
+            if r.get("id") is not None:
+                seen_ids.add(r["id"])
+        rows += fresh
+
+        # A bare list carries no envelope, so there is nothing to page with.
+        if not isinstance(payload, dict):
+            break
+        cursor = payload.get("oldestId")
+        if not payload.get("hasMore") or cursor is None or cursor == before or not fresh:
+            break
+        before = cursor
+    else:
+        print(f"  WARNING: {locale} hit the {MAX_PAGES}-page ceiling — this import is INCOMPLETE "
+              "for that locale.", file=sys.stderr)
+
     return rows
 
 
