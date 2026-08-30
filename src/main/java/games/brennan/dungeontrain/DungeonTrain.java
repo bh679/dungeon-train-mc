@@ -139,6 +139,17 @@ public class DungeonTrain {
         return !"main".equals(VersionInfo.BRANCH);
     }
 
+    /**
+     * The LIVE relay capability, whatever branch this is.
+     *
+     * <p>Everything routed by branch goes through {@link #relayBaseUrl()} instead — this exists for the
+     * one dev-build affordance that deliberately looks at production data (My Builds\' live toggle),
+     * and is a read of the cap that every release jar already carries, not a way around any gate.</p>
+     */
+    public static String liveRelayBaseUrl() {
+        return RELAY_LIVE_BASE_URL;
+    }
+
     /** The relay capability this build reports through: the dev channel for dev builds, live on main. */
     private static String discordRelayBaseUrl() {
         return relayBaseUrlForBranch(VersionInfo.BRANCH);
