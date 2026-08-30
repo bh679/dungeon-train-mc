@@ -450,7 +450,7 @@ public final class TrainCarriageAppender {
 
     /**
      * Post-spawn diagnostic check region. After every successful
-     * {@link #spawnNewGroup} we run an AABB-vs-AABB intersection between
+     * {@link #spawnPlannedGroup} we run an AABB-vs-AABB intersection between
      * a fixed-size 1×3×5 box anchored at the new sub-level's first block
      * (world-space lowest-X corner) and every other carriage of the same
      * train. The result is recorded here for the wireframe overlay so
@@ -1494,9 +1494,80 @@ public final class TrainCarriageAppender {
     }
 
     /**
+     * Groups ONE lane may spawn in a single server tick while that lane is
+     * <b>catching up</b> — see {@link #catchUpBurstGroups}. The steady-state
+     * cadence is unchanged at one group per lane per gate opening: the burst
+     * engages only while the lane is {@link #CATCH_UP_DEFICIT_GROUPS} groups or
+     * more short of the players' needed pIdx window, and stops on its own the
+     * moment that deficit closes.
+     *
+     * <p><b>Why the lane can't simply spawn faster.</b> The per-lane gate
+     * ({@link #isLanePlacementGateClear}) holds the next spawn until the
+     * previous one has run {@link #CLEAN_TICKS_FOR_SUCCESS} collision-free
+     * ticks, because the placement tracker needs a settled neighbour before the
+     * next group can be landed inside the [{@link #MIN_GAP_BLOCKS},
+     * {@link #MAX_GAP_BLOCKS}] seam band. That gate IS the inter-spawn delay,
+     * and dropping it is what puts carriages too close together or too far
+     * apart. A burst adds throughput without touching it: the extra groups are
+     * placed relative to the group spawned alongside them, not to a settling
+     * neighbour.</p>
+     *
+     * <p><b>Why &gt; 1 is safe.</b> A burst's follow-on groups are NOT placed
+     * against a live pose. {@link TrainAssembler#spawnGroup} deliberately
+     * leaves {@code spawnWorldPos} unseeded (Sable fills it from
+     * {@code input.currentPosition()} on the first kinematic tick), so a
+     * just-spawned ship's {@code shipToWorld} is not yet meaningful this tick.
+     * {@link #planChainedSpawn} therefore chains the previous group's
+     * <em>planned</em> world X by a whole {@code subLevelStride +
+     * TARGET_GAP_BLOCKS} — the same rolling-reference trick
+     * {@link #eagerFillForBootstrap} uses to drop an entire train in one
+     * tick.</p>
+     */
+    static final int CATCH_UP_BURST_GROUPS = 2;
+
+    /**
+     * How many groups behind its needed pIdx window a lane must be before the
+     * catch-up burst engages.
+     *
+     * <p>At 2, a lane bursts only when the group it is about to spawn would
+     * still leave it a full group short — i.e. one group per settle window is
+     * provably not keeping up with the players' window (fast {@code speed}
+     * config, a Sable cull/reload cycle, a chunk-gen deferral, or a placement
+     * that needed shift cycles). At 1 the burst would fire on every ordinary
+     * extension, which is exactly the un-paced spawning the placement gate
+     * exists to prevent.</p>
+     */
+    static final int CATCH_UP_DEFICIT_GROUPS = 2;
+
+    /**
+     * Groups one lane may spawn this tick, given how far that lane is behind.
+     *
+     * <p>{@code deficitPIdx} is the lane's shortfall in CARRIAGE indices —
+     * {@code globalMaxNeededPIdx − trainMaxAnchor} forward,
+     * {@code trainMinAnchor − globalMinNeededPIdx} backward. Returns 1 (the
+     * steady-state cadence) unless that shortfall is
+     * {@link #CATCH_UP_DEFICIT_GROUPS} whole groups or more, in which case the
+     * lane may spawn {@link #CATCH_UP_BURST_GROUPS} in one tick.</p>
+     *
+     * <p>Non-positive shortfalls clamp to 1: the lane is already covering the
+     * window, so the group it is spawning is the last one it needs. Pure and
+     * JOML-free so the trigger boundary is unit-testable without a level.</p>
+     *
+     * @throws IllegalArgumentException if {@code groupSize} is not positive
+     */
+    static int catchUpBurstGroups(int deficitPIdx, int groupSize) {
+        if (groupSize <= 0) {
+            throw new IllegalArgumentException("groupSize must be > 0, got " + groupSize);
+        }
+        if (deficitPIdx <= 0) return 1;
+        int deficitGroups = Math.ceilDiv(deficitPIdx, groupSize);
+        return (deficitGroups >= CATCH_UP_DEFICIT_GROUPS) ? CATCH_UP_BURST_GROUPS : 1;
+    }
+
+    /**
      * Hard upper bound on how many GROUPS the appender will spawn in a
-     * single server tick. Set to 2 — one per direction. Forward and
-     * backward spawn lanes run independently (separate
+     * single server tick: {@link #CATCH_UP_BURST_GROUPS} per direction.
+     * Forward and backward spawn lanes run independently (separate
      * {@code LAST_SPAWNED_SHIP_*} gates and separate placement-success
      * waits), so a forward spawn at the +X end and a backward spawn at
      * the −X end in the same tick don't race each other: they touch
@@ -1509,21 +1580,25 @@ public final class TrainCarriageAppender {
      * <p>Within a single direction, the per-direction
      * {@code LAST_SPAWNED_SHIP_*} gate enforces the "one in flight at a
      * time" constraint that the previous {@code MAX_SPAWNS_PER_TICK = 1}
-     * was approximating, so the Sable-lag protection is preserved.</p>
+     * was approximating, so the Sable-lag protection is preserved. The
+     * catch-up burst is the one exception, and it stays inside that
+     * protection by chaining planned placements rather than reading the
+     * in-flight group's pose — see {@link #CATCH_UP_BURST_GROUPS}.</p>
      *
      * <p>The {@link Trains#knownAnchors} registry remains the
      * source of truth for "what anchors does this train own" — even with
      * the throttle, any duplicate the appender accidentally requests is
-     * deduped against the registry. The throttle is the architectural
-     * fix; the registry is the safety net.</p>
+     * deduped against the registry (the burst re-checks it per group). The
+     * throttle is the architectural fix; the registry is the safety net.</p>
      *
      * <p>Throughput cost: at groupSize=3, this caps carriages added per
-     * tick at 6 (3 per direction × 2 directions). The seed group from
+     * tick at 12 (3 per group × 2 groups × 2 directions), and only while
+     * both lanes are behind. The seed group from
      * {@link TrainAssembler#spawnTrain} plus the appender's first ~15
      * ticks fully populate a typical auto-rd window (~14 groups at
      * render distance 12) in &lt;1 second per side — imperceptible.</p>
      */
-    private static final int MAX_SPAWNS_PER_TICK = 2;
+    private static final int MAX_SPAWNS_PER_TICK = 2 * CATCH_UP_BURST_GROUPS;
 
     private TrainCarriageAppender() {}
 
@@ -2074,6 +2149,17 @@ public final class TrainCarriageAppender {
         int forwardAnchor = trainMaxAnchor + groupSize;
         int backwardAnchor = trainMinAnchor - groupSize;
 
+        // How far each lane is BEHIND the players' needed window, in carriage
+        // indices — the input to {@link #catchUpBurstGroups}. Sentinel-guarded:
+        // with no near player the needed pIdx is Integer.MIN/MAX_VALUE and the
+        // subtraction would overflow. Manual mode reports no deficit at all, so
+        // a J press keeps its "spawn one group in front" contract instead of
+        // occasionally spawning two.
+        int forwardDeficitPIdx = (MANUAL_MODE || globalMaxNeededPIdx == Integer.MIN_VALUE)
+            ? 0 : (globalMaxNeededPIdx - trainMaxAnchor);
+        int backwardDeficitPIdx = (MANUAL_MODE || globalMinNeededPIdx == Integer.MAX_VALUE)
+            ? 0 : (trainMinAnchor - globalMinNeededPIdx);
+
         // Belt-and-braces: even though trainMin/Max came from the
         // registry, drop any anchor that's already known. Protects against
         // races and future logic changes. Done per-direction so the other
@@ -2213,50 +2299,36 @@ public final class TrainCarriageAppender {
         boolean didBackwardSpawn = false;
 
         if (needsForward && isLanePlacementGateClear(LAST_SPAWNED_SHIP_FORWARD, LAST_SPAWNED_TICK_FORWARD, CULL_CLEARED_FORWARD, trainId, train, now, true)) {
-            ManagedShip newShip = spawnNewGroup(level, forwardRef, forwardAnchor, groupSize, dims, velocity, trainId, train);
+            Plan forwardPlan = planSpawnPlacement(forwardRef, forwardAnchor, groupSize, dims, train);
+            ManagedShip newShip = spawnPlannedGroup(
+                level, forwardPlan, forwardRef, forwardAnchor, groupSize, dims, velocity, trainId, train);
             // null ⇒ spawn deferred this tick while its footprint chunks generate
             // asynchronously (see ensureSpawnFootprintReady). Retry next tick; skip
             // all post-spawn bookkeeping and leave didForwardSpawn false.
             if (newShip != null) {
-                if (newShip.getKinematicDriver() instanceof TrainTransformProvider newProvider) {
-                    newProvider.setSpawnedBackward(false);
-                }
-                LAST_SPAWNED_SHIP_FORWARD.put(trainId, newShip);
-                LAST_SPAWNED_TICK_FORWARD.put(trainId, now);
-                recordPostSpawnCollisionCheck(trainId, newShip, forwardAnchor, train);
-                // Hold the new forward group resident until it has serialized at least once —
-                // symmetric with the backward lane (forceLoadSpawnedBackward) and the bootstrap
-                // lane (holdGroupResident). Sable's per-tick simulation-distance cull can otherwise
-                // drop a just-spawned forward group — at low sim distance, the SAME tick it appears,
-                // while it sits ahead of the player and outside the ticking bubble — into a holding
-                // entry with a null serialization pointer that reloadFromHolding can't revive,
-                // permanently losing the carriage (the "train vanishes on autosave" report). The hold
-                // self-drains via reconcileForceLoads once the next save mints a pointer (bounded by
-                // autosave cadence); after that a cull lands in reloadable holding — the "reloads on
-                // approach" the old behaviour intended, now made recoverable.
-                if (shouldHoldSpawnedGroup(true)) holdGroupResident(level, trainId, newShip);
-                announceSpawn(level, forwardAnchor);
+                recordSpawnedGroup(level, trainId, newShip, forwardAnchor, train, now, true);
+                // Catch-up burst: while this lane is CATCH_UP_DEFICIT_GROUPS or more
+                // groups short of the players' window, chain further groups on in the
+                // same tick rather than paying a full settle window each. A no-op at
+                // the steady-state one-group deficit.
+                spawnCatchUpBurst(level, trainId, train, forwardPlan, forwardAnchor,
+                    forwardDeficitPIdx, groupSize, dims, velocity, now, true);
                 didForwardSpawn = true;
             }
         }
 
         if (needsBackward && isLanePlacementGateClear(LAST_SPAWNED_SHIP_BACKWARD, LAST_SPAWNED_TICK_BACKWARD, CULL_CLEARED_BACKWARD, trainId, train, now, false)) {
-            ManagedShip newShip = spawnNewGroup(level, backwardRef, backwardAnchor, groupSize, dims, velocity, trainId, train);
+            Plan backwardPlan = planSpawnPlacement(backwardRef, backwardAnchor, groupSize, dims, train);
+            ManagedShip newShip = spawnPlannedGroup(
+                level, backwardPlan, backwardRef, backwardAnchor, groupSize, dims, velocity, trainId, train);
             // null ⇒ spawn deferred this tick for async footprint generation (see forward lane).
             if (newShip != null) {
-                if (newShip.getKinematicDriver() instanceof TrainTransformProvider newProvider) {
-                    newProvider.setSpawnedBackward(true);
-                }
-                LAST_SPAWNED_SHIP_BACKWARD.put(trainId, newShip);
-                LAST_SPAWNED_TICK_BACKWARD.put(trainId, now);
-                recordPostSpawnCollisionCheck(trainId, newShip, backwardAnchor, train);
-                // Force-load the new trailing carriage immediately, before any cull
-                // pass can move it to holding (it isn't in the visible train yet,
-                // so the per-tick window above can't cover it this tick). Gated on the
-                // same shouldHoldSpawnedGroup policy as the forward lane, so the two lanes
-                // are provably symmetric at a single tested decision point.
-                if (shouldHoldSpawnedGroup(false)) forceLoadSpawnedBackward(level, trainId, newShip);
-                announceSpawn(level, backwardAnchor);
+                recordSpawnedGroup(level, trainId, newShip, backwardAnchor, train, now, false);
+                // Catch-up burst — mirror of the forward lane (see there). This is the
+                // end a stationary player watches pass them by when one group per
+                // settle window can't keep up with the train's speed.
+                spawnCatchUpBurst(level, trainId, train, backwardPlan, backwardAnchor,
+                    backwardDeficitPIdx, groupSize, dims, velocity, now, false);
                 didBackwardSpawn = true;
             }
         }
@@ -3872,14 +3944,27 @@ public final class TrainCarriageAppender {
     }
 
     /**
+     * Create the group described by {@code plan}: chunk-readiness gate, Sable
+     * assembly, sub-block seam nudge, then the neighbour collision marking.
+     *
+     * <p>Takes the {@link Plan} rather than computing it so a caller can plan
+     * once and reuse the result — the two spawn lanes plan against the registry
+     * edge via {@link #planSpawnPlacement}, while a catch-up burst chains the
+     * previous group's plan via {@link #planChainedSpawn}.</p>
+     *
+     * @param reference the carriage the plan was placed against, used ONLY by
+     *     the opt-in {@code [bwd-place]} diagnostic; {@code null} for a chained
+     *     burst group, whose reference was spawned this same tick and has no
+     *     meaningful pose yet
      * @return the spawned group's {@link ManagedShip}, or {@code null} if the
      *     spawn was <b>deferred</b> this tick because its footprint chunks are
      *     still generating (see {@link #ensureSpawnFootprintReady}). A {@code null}
      *     return means "nothing spawned, retry next tick"; callers must skip all
      *     post-spawn bookkeeping.
      */
-    private static ManagedShip spawnNewGroup(
+    private static ManagedShip spawnPlannedGroup(
         ServerLevel level,
+        Plan plan,
         Trains.Carriage reference,
         int newAnchor,
         int groupSize,
@@ -3888,8 +3973,6 @@ public final class TrainCarriageAppender {
         UUID trainId,
         List<Trains.Carriage> train
     ) {
-        Plan plan = planSpawnPlacement(reference, newAnchor, groupSize, dims, train);
-
         // Chunk-readiness gate — keep synchronous world-generation off the spawn
         // tick (profiled as the dominant appender spike: a cold forward spawn's
         // getBlockState scan forces ~170–280 ms of world-gen). If the footprint
@@ -3925,8 +4008,13 @@ public final class TrainCarriageAppender {
                 if (a < registryMin) registryMin = a;
                 if (a > registryMax) registryMax = a;
             }
-            AABBdc refAabb = reference.ship().worldAABB();
-            double refWorldAabbMaxX = isZeroAabb(refAabb) ? Double.NaN : refAabb.maxX();
+            // NaN for a chained burst group: its reference was spawned this tick
+            // and Sable has not given it a pose yet (see the parameter javadoc).
+            double refWorldAabbMaxX = Double.NaN;
+            if (reference != null) {
+                AABBdc refAabb = reference.ship().worldAABB();
+                refWorldAabbMaxX = isZeroAabb(refAabb) ? Double.NaN : refAabb.maxX();
+            }
             LOGGER.info("[DungeonTrain][bwd-place] gameTick={} trainId={} newAnchor={} refAnchor={} registryMin={} registryMax={} subLevelDelta={} subLevelStride={} refShipToWorldX={} refWorldAabbMaxX={} idealX={} initialPlaceX={} adjustedPlaceX={} collisionAdjustments={} offenderPIdx={} offenderRegistryOnly={}",
                 level.getGameTime(), trainId, newAnchor, plan.refAnchor,
                 registryMin, registryMax, plan.subLevelDelta, plan.subLevelStride,
@@ -3942,7 +4030,216 @@ public final class TrainCarriageAppender {
     }
 
     /**
-     * Pure-ish placement helper: replays {@link #spawnNewGroup}'s ideal-X
+     * Post-spawn bookkeeping shared by both lanes and by every group of a
+     * {@link #spawnCatchUpBurst}: stamp the direction flag, arm the lane's
+     * in-flight placement gate, register the post-spawn collision check, hold
+     * the group resident, and announce it.
+     *
+     * <p>The hold is what stops Sable's per-tick simulation-distance cull from
+     * dropping a just-spawned group — at low sim distance, the SAME tick it
+     * appears, while it sits outside the ticking bubble — into a holding entry
+     * with a null serialization pointer that {@code reloadFromHolding} can't
+     * revive, permanently losing the carriage (the "train vanishes on autosave"
+     * report). It self-drains via {@code reconcileForceLoads} once the next
+     * save mints a pointer (bounded by autosave cadence); after that a cull
+     * lands in reloadable holding — the "reloads on approach" the old behaviour
+     * intended, now made recoverable. The backward lane force-loads at the
+     * spawn site instead, because the new trailing group isn't in the visible
+     * train yet this tick and so the per-tick trailing window can't cover it.
+     * Both are gated on the same {@link #shouldHoldSpawnedGroup} policy, which
+     * is what keeps the two lanes provably symmetric at a single tested
+     * decision point.</p>
+     *
+     * <p>Called once per spawned group, so a burst's LAST group ends up in
+     * {@code LAST_SPAWNED_SHIP_*} — the gate then waits on the outermost
+     * carriage, which is exactly the one the next spawn is placed against.</p>
+     */
+    private static void recordSpawnedGroup(
+        ServerLevel level,
+        UUID trainId,
+        ManagedShip newShip,
+        int anchor,
+        List<Trains.Carriage> train,
+        long now,
+        boolean forward
+    ) {
+        if (newShip.getKinematicDriver() instanceof TrainTransformProvider newProvider) {
+            newProvider.setSpawnedBackward(!forward);
+        }
+        if (forward) {
+            LAST_SPAWNED_SHIP_FORWARD.put(trainId, newShip);
+            LAST_SPAWNED_TICK_FORWARD.put(trainId, now);
+        } else {
+            LAST_SPAWNED_SHIP_BACKWARD.put(trainId, newShip);
+            LAST_SPAWNED_TICK_BACKWARD.put(trainId, now);
+        }
+        recordPostSpawnCollisionCheck(trainId, newShip, anchor, train);
+        if (shouldHoldSpawnedGroup(forward)) {
+            if (forward) holdGroupResident(level, trainId, newShip);
+            else forceLoadSpawnedBackward(level, trainId, newShip);
+        }
+        announceSpawn(level, anchor);
+    }
+
+    /**
+     * Spawn a lane's follow-on catch-up groups, each chained off the PLANNED
+     * placement of the group before it. No-op (returns 0) unless
+     * {@link #catchUpBurstGroups} says this lane is behind — so the steady
+     * state keeps the one-group-per-settle-window cadence exactly as before.
+     *
+     * <p>Every extra group repeats the lane's own guards: the anchor is
+     * re-checked against {@link Trains#knownAnchors} (never re-spawn an anchor
+     * the registry owns), and a {@code null} from {@link #spawnPlannedGroup}
+     * (footprint chunks still generating) simply ends the burst — the lane
+     * retries on a later tick as it always has. Burst groups stay under the
+     * normal {@link #runPlacementCollisionTracker}, so its proportional shift
+     * and {@link #SHIFT_SETTLE_TICKS} cooldown still correct a seam that lands
+     * outside the band.</p>
+     *
+     * @param firstPlan  the plan of the group the lane just spawned
+     * @param firstAnchor that group's anchor pIdx
+     * @param deficitPIdx how far this lane is behind, in carriage indices
+     * @return how many EXTRA groups were spawned (0 when not catching up)
+     */
+    private static int spawnCatchUpBurst(
+        ServerLevel level,
+        UUID trainId,
+        List<Trains.Carriage> train,
+        Plan firstPlan,
+        int firstAnchor,
+        int deficitPIdx,
+        int groupSize,
+        CarriageDims dims,
+        Vector3dc velocity,
+        long now,
+        boolean forward
+    ) {
+        int allowed = catchUpBurstGroups(deficitPIdx, groupSize);
+        if (allowed <= 1) return 0;
+
+        Plan prevPlan = firstPlan;
+        int prevAnchor = firstAnchor;
+        int extra = 0;
+        for (int i = 1; i < allowed; i++) {
+            int nextAnchor = forward ? (prevAnchor + groupSize) : (prevAnchor - groupSize);
+            if (Trains.knownAnchors(trainId).contains(nextAnchor)) {
+                LOGGER.debug("[DungeonTrain] Catch-up burst: skipping already-spawned anchor={} for trainId={} (in registry)",
+                    nextAnchor, trainId);
+                break;
+            }
+            Plan chained = planChainedSpawn(prevPlan, prevAnchor, nextAnchor, dims, train, trainId);
+            ManagedShip extraShip = spawnPlannedGroup(
+                level, chained, null, nextAnchor, groupSize, dims, velocity, trainId, train);
+            if (extraShip == null) break;
+            recordSpawnedGroup(level, trainId, extraShip, nextAnchor, train, now, forward);
+            prevPlan = chained;
+            prevAnchor = nextAnchor;
+            extra++;
+        }
+
+        if (extra > 0) {
+            LOGGER.info("[DungeonTrain] Catch-up burst on lane {}: deficitPIdx={} groupSize={} extraGroups={} anchors {}..{} trainId={}",
+                forward ? "forward" : "backward",
+                deficitPIdx, groupSize, extra, firstAnchor, prevAnchor, trainId);
+        }
+        return extra;
+    }
+
+    /**
+     * Plan the next group of a {@link #spawnCatchUpBurst}, chained off the
+     * PLANNED placement of the group before it rather than off a live pose.
+     *
+     * <p>{@link #planSpawnPlacement} can't be used here: it derives
+     * {@code idealX} from {@code reference.ship().shipToWorld(...)}, and the
+     * previous burst group was created this same tick —
+     * {@link TrainAssembler#spawnGroup} deliberately leaves its
+     * {@code spawnWorldPos} unseeded until Sable's first kinematic tick, so its
+     * transform is not yet meaningful. Chaining the previous group's own
+     * placement instead is exactly what {@link #eagerFillForBootstrap} does
+     * when it drops a whole train in one tick (its rolling
+     * {@code forwardRefX}/{@code backwardRefX}), and it makes the seam
+     * deterministic: one whole {@code subLevelStride} plus
+     * {@link #TARGET_GAP_BLOCKS}, the centre of the placement tracker's clean
+     * dead-band, so the group starts in band and needs no shift pass.</p>
+     *
+     * <p>{@link #adjustForCollisions} still runs, for the same reason the
+     * normal path runs it — a stale/ghost sibling box could sit in the way. The
+     * previous burst group is not among the boxes it can see (a fresh ship's
+     * {@code worldAABB} is zero and zero-AABB siblings are skipped), which is
+     * precisely why the placement must come from the chained stride.</p>
+     */
+    private static Plan planChainedSpawn(
+        Plan previous,
+        int previousAnchor,
+        int newAnchor,
+        CarriageDims dims,
+        List<Trains.Carriage> train,
+        UUID trainId
+    ) {
+        boolean forward = previous.forward();
+        int subLevelStride = previous.subLevelStride();
+        // Where the previous group actually ended up, sub-block nudge included.
+        double previousEffectiveX = previous.adjustedPlaceX() + previous.preSeedRemainderX();
+        // Abutting (zero-gap) origin, mirroring planSpawnPlacement's idealX.
+        double idealX = forward
+            ? (previousEffectiveX + subLevelStride)
+            : (previousEffectiveX - subLevelStride);
+        double desiredWorldX = chainedSpawnDesiredX(previousEffectiveX, subLevelStride, forward);
+
+        int initialPlaceX = (int) Math.round(desiredWorldX);
+        int placeY = previous.origin().getY();
+        int placeZ = previous.origin().getZ();
+
+        CollisionAdjustResult adjusted = adjustForCollisions(
+            initialPlaceX, placeY, placeZ, subLevelStride, dims, train, trainId, forward, newAnchor);
+        int adjustedPlaceX = adjusted.placeX();
+
+        // Same rule as planSpawnPlacement: drop the sub-block remainder if the
+        // collision pass moved the origin deliberately.
+        double preSeedRemainderX = (adjustedPlaceX == initialPlaceX)
+            ? (desiredWorldX - initialPlaceX)
+            : 0.0;
+
+        BlockPos origin = new BlockPos(adjustedPlaceX, placeY, placeZ);
+        double effectivePlaceX = adjustedPlaceX + preSeedRemainderX;
+        double gap = forward ? (effectivePlaceX - idealX) : (idealX - effectivePlaceX);
+
+        return new Plan(
+            origin,
+            subLevelStride,
+            dims.height(),
+            dims.width(),
+            idealX,
+            gap,
+            forward,
+            adjustedPlaceX - initialPlaceX,
+            previousAnchor,
+            previousEffectiveX,
+            forward ? 1 : -1,
+            initialPlaceX,
+            adjustedPlaceX,
+            adjusted.lastOffenderPIdx(),
+            adjusted.lastOffenderRegistryOnly(),
+            preSeedRemainderX);
+    }
+
+    /**
+     * World X a chained catch-up group's origin should land on so its seam
+     * against the group before it measures exactly {@link #TARGET_GAP_BLOCKS}:
+     * one whole sub-level stride beyond that group's effective origin, plus
+     * (forward) or minus (backward) the target gap.
+     *
+     * <p>Split out as a pure helper so the chained stride is unit-testable
+     * without a level (mirrors {@link #preSeedDesiredX}).</p>
+     */
+    static double chainedSpawnDesiredX(double previousEffectiveX, int subLevelStride, boolean forward) {
+        return forward
+            ? (previousEffectiveX + subLevelStride + TARGET_GAP_BLOCKS)
+            : (previousEffectiveX - subLevelStride - TARGET_GAP_BLOCKS);
+    }
+
+    /**
+     * Pure-ish placement helper: replays {@link #spawnPlannedGroup}'s ideal-X
      * derivation, the {@link #MIN_GAP_BLOCKS}-rounding bias, and the
      * iterative {@link #adjustForCollisions} pass — but stops before
      * {@link TrainAssembler#spawnGroup}, so callers can inspect the planned
