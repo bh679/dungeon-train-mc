@@ -152,9 +152,12 @@ public final class SharedCarriageClient {
      * @param flag       the moderation verdict; a flagged build is withheld from the pool however
      *                   published it is, which is the only way the player can be told why theirs
      *                   isn't turning up
+     * @param review     where it stands in the operator's submission queue — a SECOND axis, see
+     *                   {@link games.brennan.dungeontrain.builder.relay.BuilderReviewState}. Empty
+     *                   from a relay that predates the queue, which reads as never-submitted.
      */
     public record ProfileBuild(int id, String kind, String subKind, String buildName, String visibility,
-                               String source, String stage, String flag, int l, int h, int w,
+                               String source, String stage, String flag, String review, int l, int h, int w,
                                int changeCount, long updatedTs) {}
 
     /**
@@ -223,7 +226,7 @@ public final class SharedCarriageClient {
                 JsonObject d = r.has("dims") && r.get("dims").isJsonObject() ? r.getAsJsonObject("dims") : null;
                 out.add(new ProfileBuild(r.get("id").getAsInt(), str(r, "kind"), str(r, "subKind"),
                         str(r, "buildName"), str(r, "visibility"), str(r, "source"), str(r, "stage"),
-                        str(r, "flag"), intOf(d, "l"), intOf(d, "h"), intOf(d, "w"),
+                        str(r, "flag"), str(r, "review"), intOf(d, "l"), intOf(d, "h"), intOf(d, "w"),
                         intOf(r, "changeCount"), longOf(r, "updatedTs")));
             }
             return List.copyOf(out);
