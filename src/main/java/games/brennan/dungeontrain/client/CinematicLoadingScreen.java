@@ -39,6 +39,9 @@ public final class CinematicLoadingScreen extends Screen {
     private static final int TIP_MAX_WIDTH = 260;
     private static final int PROMPT_BOTTOM_MARGIN = 18;
 
+    /** Replaces the title once the bar reads 100% — loading is done, the train is boarding. */
+    private static final Component READY_TITLE = Component.translatable("gui.dungeontrain.cinematic.loading.ready");
+
     /** Distinct Space presses so far (0..{@link #SKIP_PRESSES}). */
     private int spacePresses = 0;
     /** Guards against key-repeat: only the first frame of a held Space counts. */
@@ -108,7 +111,10 @@ public final class CinematicLoadingScreen extends Screen {
         int railLeft = cx - railW / 2;
         int railY = cy + 8;
 
-        LoadingScreenTheme.drawTitle(g, this.font, this.title, cx, cy - 30);
+        // Once the bar reads 100% the train is ready and only the story (or a Space press) is
+        // left — say so, instead of still claiming to be preparing.
+        Component heading = LoadingScreenTheme.readsComplete(progress) ? READY_TITLE : this.title;
+        LoadingScreenTheme.drawTitle(g, this.font, heading, cx, cy - 30);
         LoadingScreenTheme.drawFillingTrain(g, this.font, railLeft, railW, railY, progress, animNanos);
         LoadingScreenTheme.drawPercent(g, this.font, progress, cx, cy + 34);
         LoadingScreenTheme.drawTip(g, this.font, LoadingStories.currentLine(), cx, cy + 52, TIP_MAX_WIDTH);

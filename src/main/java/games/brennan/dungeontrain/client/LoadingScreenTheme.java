@@ -56,6 +56,17 @@ public final class LoadingScreenTheme {
         g.drawCenteredString(font, title, cx, cy, TITLE_TEAL);
     }
 
+    /**
+     * True once {@link #drawPercent} would read "100%" — the point the loading sequence is done
+     * from the player's side (the bar itself is deliberately capped just under 1.0 by
+     * {@link LoadingSequenceProgress#reportGate}, so a {@code >= 1.0} test would never fire).
+     * Screens use it to swap "Preparing your journey…" for "All Aboard!" on exactly the frame
+     * the percentage tips over.
+     */
+    public static boolean readsComplete(double progress) {
+        return Math.round(Mth.clamp(progress, 0.0, 1.0) * 100.0) >= 100L;
+    }
+
     public static void drawPercent(GuiGraphics g, Font font, double progress, int cx, int cy) {
         String pct = (int) Math.round(Mth.clamp(progress, 0.0, 1.0) * 100.0) + "%";
         g.drawCenteredString(font, pct, cx, cy, PCT);
