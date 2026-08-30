@@ -10096,6 +10096,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "crash-assistant-modpack",
+      "version": "0.737.0",
+      "type": "feat",
+      "title": "Crash Assistant now ships with the modpack",
+      "summary": "If the game ever crashes, a window now opens explaining what went wrong \u2014 it checks your logs against dozens of known causes, from graphics-driver faults to running out of memory. One button uploads every relevant log and hands you a ready-to-paste report, and the help button drops you straight into #bugs-feedback on the Dungeon Train Discord.",
+      "highlights": [
+        "A post-crash window that diagnoses dozens of common crash causes",
+        "One click uploads every log and gives you a ready-to-paste report",
+        "Takes you straight to #bugs-feedback on the Dungeon Train Discord",
+        "Client-side only \u2014 dedicated servers are unaffected"
+      ],
+      "pr": 1202,
+      "date": "2026-08-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
