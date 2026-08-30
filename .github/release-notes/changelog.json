@@ -10418,6 +10418,18 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "relay-admin-url-machine-wide",
+      "version": "0.753.0",
+      "type": "chore",
+      "title": "Internal tooling",
+      "summary": "Development tooling changes.",
+      "highlights": [],
+      "date": "2026-08-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
