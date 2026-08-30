@@ -10219,6 +10219,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "builder-load-other-player-builds",
+      "version": "0.742.0",
+      "type": "chore",
+      "title": "Developer tooling: load another builder's builds",
+      "summary": "Dev builds can now look up any builder by name in My Builds and load one of their builds into the local editor, against either the dev relay or production. Invisible in released builds \u2014 the server refuses the request and the relay answers the search on the dev capability alone.",
+      "highlights": [
+        "My Builds names whose profile it is showing",
+        "Dev builds only: search builders by name, and keep the one you picked"
+      ],
+      "pr": 0,
+      "date": "2026-08-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
