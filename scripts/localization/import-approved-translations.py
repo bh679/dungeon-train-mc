@@ -31,6 +31,9 @@ Three things it deliberately will NOT do:
 * **Import a stale approval.** Every submission stores the English it was translated from. When
   ``en_us`` has changed since, the approved text answers a question no longer being asked; it is
   reported and skipped rather than shipped.
+* **Invent a line to write.** An approved unit whose key the locale file does not carry has
+  nowhere to land. That is not always the same failure, though, and the difference decides
+  whether the run may continue — see ``report`` and ``classify_absent_key``.
 * **Reformat anything.** Lang files carry blank-line grouping and zh_cn is CRLF; 36 books group
   their variants the same way. Every write is a text-level edit of one value (see
   ``provenance_io.set_lang_value`` / ``set_book_field_text``), so the diff is the translation and
@@ -46,6 +49,7 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
+import plural_forms
 import provenance_io as pio
 
 HERE = Path(__file__).resolve().parent
@@ -242,8 +246,34 @@ def register_landed(unknown: list[str], landed: set[str], path: Path,
 
 # ---- lang units --------------------------------------------------------------
 
-def import_lang(rows: list[dict], ns_dirs: dict, dry_run: bool,
-                problems: list[str]) -> tuple[dict, dict, list[str]]:
+def classify_absent_key(locale: str, name: str, key: str, english: dict) -> str | None:
+    """Why `key` is not in `locale`'s lang file — or None when there is no innocent explanation.
+
+    The relay hands us keys the in-game editor offered players, and the editor offers the raw
+    English key set (``TranslationCatalog.collectLangUnits``). Two entirely different things
+    therefore arrive looking identical, and only one of them is anybody's mistake:
+
+    * **drift** — English has the key and this locale has fallen behind. A real translation of a
+      real string, waiting on a line to edit. It imports itself once the locale catches up.
+    * **a phantom plural form** — ``<base>.other`` for a language whose grammar never selects
+      ``other``. Russian was shown 27 of these, translated them, and had them approved; they can
+      never be written, because ``validate-locale.py`` would then reject the file for carrying a
+      key the language cannot use. The work was real, the question was not.
+
+    Anything else — a key English does not have either — means the relay and the repo disagree
+    about what exists, and that is worth stopping for.
+    """
+    if plural_forms.wrong_plural_form(key, locale, english):
+        return (f"{locale} [{name}] {key}: not a plural form {locale} uses — the editor should "
+                "not have offered it; retire this unit at the relay")
+    if key in english:
+        return (f"{locale} [{name}] {key}: {locale}.json has no line for this key yet (locale "
+                "drift) — it imports once that locale carries the key")
+    return None
+
+
+def import_lang(rows: list[dict], ns_dirs: dict, dry_run: bool, problems: list[str],
+                deferred: list[str]) -> tuple[dict, dict, list[str]]:
     """Apply approved lang units.
 
     Returns ``(revised, confirmed, stale)`` keyed by ``(namespace, locale, translator)``:
@@ -273,11 +303,20 @@ def import_lang(rows: list[dict], ns_dirs: dict, dry_run: bool,
         if lang is None:
             problems.append(f"{locale} [{name}] {key}: no {locale}.json in {name}'s lang dir")
             continue
+        english = lang_of(ns.lang_dir / "en_us.json") or {}
         if key not in lang:
-            problems.append(f"{locale} [{name}] {key}: not a key in {locale}.json")
+            # Classified before the stale check on purpose: a key with no line to edit cannot be
+            # imported whatever its English says, and "we are missing this key" is the more
+            # useful thing to be told about it.
+            excuse = classify_absent_key(locale, name, key, english)
+            if excuse is None:
+                whence = ("and not in en_us.json either" if english else
+                          f"and {name} ships no en_us.json here to check it against")
+                problems.append(f"{locale} [{name}] {key}: not a key in {locale}.json, {whence}")
+            else:
+                deferred.append(excuse)
             continue
         source = row.get("source") or ""
-        english = lang_of(ns.lang_dir / "en_us.json") or {}
         if source and key in english and english[key] != source:
             stale.append(f"{locale} [{name}] {key}: en_us changed since this was translated")
             continue
@@ -296,8 +335,14 @@ def import_lang(rows: list[dict], ns_dirs: dict, dry_run: bool,
 
 # ---- book units --------------------------------------------------------------
 
-def import_books(rows: list[dict], narrative_dir: Path, dry_run: bool,
-                 problems: list[str]) -> tuple[dict, dict]:
+def targets_structure(field: str) -> bool:
+    """True when a book unit's dotted path names a field the loaders read rather than a reader."""
+    return any(seg in pio.BOOK_STRUCTURAL_KEYS or seg == pio.BOOK_UNUSED_KEY
+               for seg in field.split("."))
+
+
+def import_books(rows: list[dict], narrative_dir: Path, dry_run: bool, problems: list[str],
+                 deferred: list[str]) -> tuple[dict, dict]:
     """Apply approved book units, one file open per book however many fields it has.
 
     Returns ``(rewritten, revised)`` keyed by ``(locale, translator)``: narrative provenance is
@@ -326,9 +371,19 @@ def import_books(rows: list[dict], narrative_dir: Path, dry_run: bool,
         for row in book_rows:
             edited = pio.set_book_field_text(text, row["field"], row["value"])
             if edited is None:
-                problems.append(f"{locale} {book_path}#{row['field']}: could not be applied "
-                                "safely (field missing, not prose, or its current text appears "
-                                "more than once) — edit this one by hand")
+                if targets_structure(row["field"]):
+                    # `id`, `ref`, `page`, `_translator_note` are load-bearing: the loaders match
+                    # on them and the translator note carries rules to the next translator. A unit
+                    # aimed at one is not a translation that failed to apply, it is a unit that
+                    # should never have existed — the editor never offers these. Stop.
+                    problems.append(f"{locale} {book_path}#{row['field']}: targets a structural "
+                                    "field, which is never translatable")
+                    continue
+                # Deferred, not fatal: the translation is fine and the book is fine, the two just
+                # cannot be married by a text-level edit. Somebody has to open the file; nobody
+                # has to abandon the other 979 units.
+                deferred.append(f"{locale} {book_path}#{row['field']}: could not be applied "
+                                "safely (field missing or not prose) — edit this one by hand")
                 continue
             text = edited
             applied.setdefault(translator_of(row), set()).add(row["field"])
@@ -435,6 +490,9 @@ def main(argv: list[str] | None = None) -> int:
                        help="write the names registered this run to this path as a JSON array, "
                             "so the PR that carries them can say who is new (a --dry-run writes "
                             "no file, like every other write here)")
+    parser.add_argument("--deferred-out", type=Path,
+                       help="write the units that could not be imported to this JSON file, so "
+                            "the PR body can name them")
     parser.add_argument("--dry-run", action="store_true",
                        help="report what would be imported and stamped, writing nothing")
     # stamp-provenance.py's single-namespace escape hatch, mirrored so a redirected run
@@ -451,10 +509,11 @@ def main(argv: list[str] | None = None) -> int:
         parser.error("--lang-dir and --provenance-dir go together")
 
     problems: list[str] = []
+    deferred: list[str] = []
     rows = [row for row in load_rows(args) if valid(row, problems)]
     if not rows:
         print("no approved units to import" + (" (see problems below)" if problems else ""))
-        return report(problems, [])
+        return report(problems, [], deferred, args)
 
     unknown = check_registered({translator_of(r) for r in rows}, args.authors_file,
                                args.register_new)
@@ -465,9 +524,10 @@ def main(argv: list[str] | None = None) -> int:
     else:
         ns_dirs = {ns.name: ns for ns in pio.namespaces()}
     revised, confirmed, stale = import_lang(
-        [r for r in rows if r["unitType"] == "lang"], ns_dirs, args.dry_run, problems)
+        [r for r in rows if r["unitType"] == "lang"], ns_dirs, args.dry_run, problems, deferred)
     rewritten, reviewed = import_books(
-        [r for r in rows if r["unitType"] == "book"], args.narrative_dir, args.dry_run, problems)
+        [r for r in rows if r["unitType"] == "book"], args.narrative_dir, args.dry_run, problems,
+        deferred)
 
     counts = (sum(map(len, revised.values())), sum(map(len, confirmed.values())),
               sum(map(len, rewritten.values())) + sum(map(len, reviewed.values())))
@@ -484,15 +544,33 @@ def main(argv: list[str] | None = None) -> int:
 
     stamp_lang(revised, confirmed, args)
     stamp_books(rewritten, reviewed, args)
-    return report(problems, stale)
+    return report(problems, stale, deferred, args)
 
 
-def report(problems: list[str], stale: list[str]) -> int:
-    """Print what was skipped. Stale approvals are expected; problems are not, and fail the run."""
+def report(problems: list[str], stale: list[str], deferred: list[str], args) -> int:
+    """Print what was skipped, and decide whether any of it should stop the run.
+
+    Three outcomes, and the distinction is the whole point. STALE and DEFERRED units are expected:
+    players translate faster than the repo moves, and a queue of 1790 approvals will always carry
+    some that no longer have anywhere to go. PROBLEMS mean the importer or the repo is wrong.
+
+    Only problems fail the run. Until 2026-08-30 every category failed it, so 198 units the repo
+    could not accept — 171 of them a single key set English had and Russian did not — took 979
+    good translations down with them, seven dispatches in a row, and the job never once opened a
+    PR. Nothing is silently dropped either way: what could not land is printed here, and written
+    to --deferred-out for the PR body to name.
+    """
     if stale:
         print("\nskipped — the English has changed since these were translated:")
         for line in stale:
             print(f"  - {line}")
+    if deferred:
+        print(f"\n{len(deferred)} unit(s) had nowhere to land — kept for a later run:")
+        for line in deferred:
+            print(f"  - {line}")
+    if args is not None and args.deferred_out and not args.dry_run:
+        args.deferred_out.write_text(json.dumps(deferred, ensure_ascii=False, indent=2) + "\n",
+                                     encoding="utf-8")
     if problems:
         print("\nunits that could not be imported:", file=sys.stderr)
         for line in problems:
