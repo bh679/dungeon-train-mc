@@ -10221,6 +10221,22 @@
       "released_at": null
     },
     {
+      "id": "portal-room-door-labels",
+      "version": "0.741.0",
+      "type": "feat",
+      "title": "The portal room's two doorways now say which is which",
+      "summary": "Building a portal room, the two corridor doorways used to be identical amber outlines, so there was no way to tell the way in from the way out until you had already clicked one. The entrance is now blue and the exit yellow, and standing near either one names it.",
+      "highlights": [
+        "Entrance and Exit labels float over the doorway you are standing at",
+        "The entry mouth is drawn blue, the exit yellow, at any distance"
+      ],
+      "pr": 1212,
+      "date": "2026-08-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "builder-load-other-player-builds",
       "version": "0.742.0",
       "type": "chore",
@@ -10230,7 +10246,7 @@
         "My Builds names whose profile it is showing",
         "Dev builds only: search builders by name, and keep the one you picked"
       ],
-      "pr": 0,
+      "pr": 1213,
       "date": "2026-08-30",
       "released": false,
       "released_in": null,
