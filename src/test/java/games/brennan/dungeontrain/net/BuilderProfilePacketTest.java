@@ -20,6 +20,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  */
 final class BuilderProfilePacketTest {
 
+    /** Whose profile these replies are about — the owner fields ride along on every one. */
+    private static final String MINE = "11111111-1111-4111-8111-111111111111";
+
     @Test
     @DisplayName("a build's submission state survives the wire alongside everything else")
     void entryRoundTrip() {
@@ -27,7 +30,8 @@ final class BuilderProfilePacketTest {
                 new BuilderProfilePacket.Entry(41, "carriage", "", "brick_cabin", true,
                         "approved", BuilderReviewState.SUBMITTED, "stone", 12),
                 new BuilderProfilePacket.Entry(42, "portal_room", "", "library", false,
-                        "approved", BuilderReviewState.NONE, "", 0)));
+                        "approved", BuilderReviewState.NONE, "", 0)),
+                MINE, "Brennan", true);
         assertEquals(original, roundTrip(original));
     }
 
@@ -35,7 +39,7 @@ final class BuilderProfilePacketTest {
     @DisplayName("a status with no builds still round-trips its reason")
     void statusRoundTrip() {
         for (BuilderProfilePacket.Status status : BuilderProfilePacket.Status.values()) {
-            BuilderProfilePacket original = BuilderProfilePacket.of(status);
+            BuilderProfilePacket original = BuilderProfilePacket.of(status, MINE, "Brennan", true);
             assertEquals(original, roundTrip(original), "the screen tells these six apart: " + status);
         }
     }
@@ -48,7 +52,7 @@ final class BuilderProfilePacketTest {
         SharedCarriageClient.ProfileBuild row = new SharedCarriageClient.ProfileBuild(
                 7, "carriage", "", "brick_cabin", "published", "builder", "stone", "approved", "",
                 7, 5, 5, 3, 1L);
-        BuilderProfilePacket packet = BuilderProfilePacket.of(List.of(row));
+        BuilderProfilePacket packet = BuilderProfilePacket.of(List.of(row), MINE, "Brennan", true);
         assertEquals(BuilderReviewState.NONE, packet.builds().get(0).review());
         assertEquals(packet, roundTrip(packet));
     }

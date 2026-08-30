@@ -74,6 +74,7 @@
     "client.MainMenuLogoMixin",
     "client.LevelLoadingScreenThemeMixin",
     "client.ReceivingLevelScreenThemeMixin",
+    "client.ProgressScreenThemeMixin",
     "client.AdvancementsScreenAccessor",
     "client.AdvancementWidgetHideDescMixin",
     "client.AdvancementsCompactLayoutMixin",

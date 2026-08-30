@@ -2756,6 +2756,31 @@
       ]
     }
   },
+  "gui.dungeontrain.builder.profile.owner_other": {
+    "1": {
+      "label": "the player whose builds are being looked at",
+      "examples": [
+        "Brennan",
+        "Steve"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.creators.row": {
+    "1": {
+      "label": "a builder's name, as a row in the search results",
+      "examples": [
+        "Brennan",
+        "Steve"
+      ]
+    },
+    "2": {
+      "label": "how many builds that builder has on the relay",
+      "examples": [
+        "12",
+        "3"
+      ]
+    }
+  },
   "gui.dungeontrain.builder.profile.collision.title": {
     "1": {
       "label": "the build whose name this install already uses",

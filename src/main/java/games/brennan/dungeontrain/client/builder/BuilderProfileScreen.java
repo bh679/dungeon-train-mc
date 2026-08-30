@@ -12,6 +12,8 @@ import games.brennan.dungeontrain.client.menu.CommandMenuState;
 import games.brennan.dungeontrain.client.menu.CommandRunner;
 import games.brennan.dungeontrain.client.menu.EditorTemplateJump;
 import games.brennan.dungeontrain.client.menu.UnsavedCheckScreen;
+import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.net.BuilderCreatorResultsPacket;
 import games.brennan.dungeontrain.net.BuilderOpenPacket;
 import games.brennan.dungeontrain.net.BuilderProfileActionPacket;
 import games.brennan.dungeontrain.net.BuilderProfileDownloadPacket;
@@ -21,6 +23,7 @@ import games.brennan.dungeontrain.net.BuilderProfileRequestPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.train.CarriagePartKind;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
@@ -56,11 +59,25 @@ import java.util.List;
  * a submittable carriage's tile reads from its review state rather than from the published flag,
  * which only says what its author asked for. This screen is the one place either half of that can be
  * told to the person who made it.</p>
+ *
+ * <p>The header names whose builds these are. On a DEV BUILD that name is a button: it opens
+ * {@link BuilderCreatorSearchScreen}, and picking a builder relists this screen against their
+ * profile — how a developer looks at a player's work to reproduce a problem. A foreign profile is
+ * read-only apart from <b>Load into editor</b>: submitting or withdrawing somebody else's build is
+ * not something this screen will do, and a build loaded from one arrives as a local copy with no
+ * link back to their relay row.</p>
  */
 @OnlyIn(Dist.CLIENT)
 public final class BuilderProfileScreen extends Screen {
 
     private static final int TITLE_TOP = 14;
+    /** The owner row sits between the title and the filter chips, and is present on every build. */
+    private static final int OWNER_TOP = 26;
+    private static final int OWNER_BUTTON_H = 16;
+    private static final int TARGET_BUTTON_W = 56;
+    /** Green while the screen is reading PRODUCTION; a dim grey on this build's own relay. */
+    private static final int LIVE_DOT = 0x55FF55;
+    private static final int DEV_DOT = 0x808080;
     private static final int BACK_BUTTON_WIDTH = 200;
     private static final int BACK_BUTTON_BOTTOM_MARGIN = 28;
     private static final int STATUS_GAP = 14;
@@ -129,6 +146,11 @@ public final class BuilderProfileScreen extends Screen {
 
     private final Screen lastScreen;
 
+    /** Whose profile to show: empty for this player's own, otherwise a builder picked from the search. */
+    private final String viewedUuid;
+    /** What to call them. Blank until the player's own name is known or a creator has been picked. */
+    private String viewedName;
+
     private List<BuilderProfilePacket.Entry> builds = List.of();
 
     /**
@@ -158,31 +180,64 @@ public final class BuilderProfileScreen extends Screen {
     private final BuilderTileSpin spin = new BuilderTileSpin();
     private long lastFrameNanos;
 
+    /**
+     * My Builds as the menus open it — showing whoever was last looked at, which is the player
+     * themselves until a builder has been picked this session.
+     */
     public BuilderProfileScreen(Screen lastScreen) {
+        this(lastScreen, BuilderProfileState.viewedUuid(), BuilderProfileState.viewedName());
+    }
+
+    /**
+     * As above for one particular builder — the dev-build path, entered by picking a name in
+     * {@link BuilderCreatorSearchScreen}. An empty {@code viewedUuid} is the player's own profile.
+     */
+    public BuilderProfileScreen(Screen lastScreen, String viewedUuid, String viewedName) {
         super(Component.translatable("gui.dungeontrain.builder.profile.title"));
         this.lastScreen = lastScreen;
+        this.viewedUuid = viewedUuid == null ? "" : viewedUuid;
+        this.viewedName = viewedName == null ? "" : viewedName;
+    }
+
+    /** Whether the profile on screen belongs to somebody other than the player. */
+    private boolean viewingOther() {
+        return !viewedUuid.isEmpty();
     }
 
     @Override
     protected void init() {
+        // The cached list is what makes a reopened screen instant, but it is a cache of ONE profile —
+        // showing it under another builder's name would be worse than showing nothing.
         BuilderProfilePacket latest = BuilderProfileState.latest();
-        if (latest != null) {
+        if (latest != null && isForViewed(latest)) {
             this.builds = latest.builds();
             this.status = latest.status();
+            if (latest.mine() && !latest.ownerName().isEmpty()) this.viewedName = latest.ownerName();
+        } else {
+            this.builds = List.of();
+            this.status = null;
         }
         // Always re-ask on the way in. The cached list is what makes a reopened screen instant, but it
         // may predate a save, a publish, or a build somebody else's world just returned.
         BuilderProfileState.listen(this::onProfile);
         BuilderProfileState.listenForDownloads(this::onDownload);
-        DungeonTrainNet.sendToServer(new BuilderProfileRequestPacket());
+        DungeonTrainNet.sendToServer(new BuilderProfileRequestPacket(viewedUuid, BuilderProfileState.live()));
 
         this.spin.clear();
         this.lastFrameNanos = 0L;
         rebuild();
     }
 
-    /** A profile arrived. Keep the selection on the same build where it survives the refresh. */
+    /**
+     * A profile arrived. Keep the selection on the same build where it survives the refresh.
+     *
+     * <p>An answer about a profile this screen is no longer showing is dropped: on a dev build two
+     * asks can be in flight (the player switched builders while the first was out), and the network
+     * does not promise to answer them in the order they were sent.</p>
+     */
     private void onProfile(BuilderProfilePacket packet) {
+        if (!isForViewed(packet)) return;
+        if (packet.mine() && !packet.ownerName().isEmpty()) this.viewedName = packet.ownerName();
         int selectedId = selectedBuild() == null ? -1 : selectedBuild().relayId();
         this.downloadNote = null;
         this.builds = packet.builds();
@@ -218,13 +273,67 @@ public final class BuilderProfileScreen extends Screen {
         rebuild();
     }
 
+    /** Whether this reply is about the profile on screen — see {@link #onProfile}. */
+    private boolean isForViewed(BuilderProfilePacket packet) {
+        return viewingOther() ? viewedUuid.equals(packet.ownerUuid()) : packet.mine();
+    }
+
+    /**
+     * Show a different builder's profile, or the player's own when {@code creator} is null.
+     *
+     * <p>A whole new screen rather than a relist: everything on this one — the selection, the note
+     * about a download, the cached tiles, the profile the state holder is caching — belongs to the
+     * builds that were listed, and a fresh screen asks for the right profile in its own
+     * {@link #init} instead of the two of them racing.</p>
+     */
+    private void viewProfile(BuilderCreatorResultsPacket.Creator creator) {
+        // Recorded before the screen swaps, so the menus reopen on this builder too — not just the
+        // screen being replaced here.
+        BuilderProfileState.setViewed(creator == null ? "" : creator.uuid(),
+                creator == null ? "" : creator.name());
+        this.minecraft.setScreen(creator == null
+                ? new BuilderProfileScreen(lastScreen)
+                : new BuilderProfileScreen(lastScreen, creator.uuid(), creator.name()));
+    }
+
+    /** This player's own name, for the header before any profile has come back to confirm it. */
+    private static String ownName() {
+        Minecraft mc = Minecraft.getInstance();
+        return mc.getUser() == null ? "" : mc.getUser().getName();
+    }
+
     private void rebuild() {
         clearWidgets();
 
+        // Whose builds these are, above the chips. A release build has no other profile to reach, so
+        // the name is drawn as text in render(); a dev build makes it the way in to somebody else's.
+        if (DungeonTrain.isDevBuild()) {
+            Component name = ownerLine();
+            int nameWidth = Math.max(this.font.width(name) + 16, 80);
+            addRenderableWidget(Button.builder(name,
+                            b -> this.minecraft.setScreen(new BuilderCreatorSearchScreen(this, this::viewProfile)))
+                    .bounds(this.width / 2 - nameWidth / 2, OWNER_TOP, nameWidth, OWNER_BUTTON_H)
+                    .build());
+            if (viewingOther()) {
+                addRenderableWidget(Button.builder(
+                                Component.translatable("gui.dungeontrain.builder.profile.back_to_mine"),
+                                b -> viewProfile(null))
+                        .bounds(this.width / 2 + nameWidth / 2 + ACTION_GAP, OWNER_TOP, 100, OWNER_BUTTON_H)
+                        .build());
+            }
+            // Which relay these builds come from. A dot rather than a sentence, because it is read at a
+            // glance and its only job is to stop a developer mistaking production for their own pool.
+            addRenderableWidget(Button.builder(targetLabel(), b -> toggleTarget())
+                    .bounds(this.width / 2 - nameWidth / 2 - TARGET_BUTTON_W - ACTION_GAP, OWNER_TOP,
+                            TARGET_BUTTON_W, OWNER_BUTTON_H)
+                    .build());
+        }
+
         // One row of controls, all three chips on it: the grid is the tightest thing on this screen
         // for vertical space, and two rows of narrowing above a wall of pictures would be furniture
-        // competing with the thing it is meant to help you look at.
-        int controlY = TITLE_TOP + this.font.lineHeight + CONTROL_GAP;
+        // competing with the thing it is meant to help you look at. Below the owner row, which is
+        // there on every build — the two would otherwise land on the same pixels.
+        int controlY = OWNER_TOP + OWNER_BUTTON_H + CONTROL_GAP;
         int rowWidth = FILTER_WIDTH * 2 + BuilderTilesPerRowButton.WIDTH + CONTROL_GAP * 2;
         int controlX = this.width / 2 - rowWidth / 2;
         addRenderableWidget(new BuilderProfileFilterButton(controlX, controlY, FILTER_WIDTH,
@@ -283,11 +392,15 @@ public final class BuilderProfileScreen extends Screen {
      */
     private boolean canActOnSelection() {
         BuilderProfilePacket.Entry entry = selectedBuild();
-        return entry != null && BuilderRelayKinds.canJoinTheTrain(entry.kind());
+        // Never on somebody else's profile: putting their build on the train, or pulling it off, is
+        // their decision to make and the relay would refuse it anyway (the action is authed by the
+        // owner secret, which this world does not hold).
+        return entry != null && !viewingOther() && BuilderRelayKinds.canJoinTheTrain(entry.kind());
     }
 
     private Component actionLabel() {
         BuilderProfilePacket.Entry entry = selectedBuild();
+        if (viewingOther()) return Component.translatable("gui.dungeontrain.builder.profile.not_yours_short");
         if (entry == null) return Component.translatable("gui.dungeontrain.builder.profile.submit_for_review");
         if (!BuilderRelayKinds.canJoinTheTrain(entry.kind())) {
             return Component.translatable("gui.dungeontrain.builder.profile.not_a_carriage");
@@ -299,7 +412,7 @@ public final class BuilderProfileScreen extends Screen {
 
     private void submitSelected() {
         BuilderProfilePacket.Entry entry = selectedBuild();
-        if (entry == null || !BuilderRelayKinds.canJoinTheTrain(entry.kind())) return;
+        if (entry == null || viewingOther() || !BuilderRelayKinds.canJoinTheTrain(entry.kind())) return;
         DungeonTrainNet.sendToServer(new BuilderProfileActionPacket(entry.relayId(), !entry.published()));
         // The server re-reads the profile once the relay answers, which lands back on this screen
         // through onProfile — so nothing is assumed to have worked here.
@@ -316,7 +429,7 @@ public final class BuilderProfileScreen extends Screen {
     private void downloadSelected() {
         BuilderProfilePacket.Entry entry = selectedBuild();
         if (entry == null) return;
-        DungeonTrainNet.sendToServer(new BuilderProfileDownloadPacket(entry.relayId()));
+        DungeonTrainNet.sendToServer(new BuilderProfileDownloadPacket(entry.relayId(), viewedUuid, BuilderProfileState.live()));
         this.downloadButton.active = false;
         this.downloadNote = Component.translatable("gui.dungeontrain.builder.profile.downloading");
     }
@@ -412,7 +525,7 @@ public final class BuilderProfileScreen extends Screen {
      * question up again rather than silently doing nothing.</p>
      */
     private void resolveDownload(int relayId, BuilderRelayInstall.Resolution resolution, String name) {
-        DungeonTrainNet.sendToServer(new BuilderProfileDownloadPacket(relayId, resolution, name));
+        DungeonTrainNet.sendToServer(new BuilderProfileDownloadPacket(relayId, resolution, name, viewedUuid, BuilderProfileState.live()));
         this.downloadNote = Component.translatable("gui.dungeontrain.builder.profile.downloading");
         if (this.downloadButton != null) this.downloadButton.active = false;
     }
@@ -473,6 +586,10 @@ public final class BuilderProfileScreen extends Screen {
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
         super.render(g, mouseX, mouseY, partialTick);
         g.drawCenteredString(this.font, this.title, this.width / 2, TITLE_TOP, 0xFFFFFF);
+        if (!DungeonTrain.isDevBuild()) {
+            // On a dev build the same line is a button, added in rebuild().
+            g.drawCenteredString(this.font, ownerLine(), this.width / 2, OWNER_TOP + 4, NOTE_COLOUR);
+        }
 
         if (!shown.isEmpty()) {
             float seconds = frameSeconds();
@@ -501,6 +618,47 @@ public final class BuilderProfileScreen extends Screen {
             g.drawCenteredString(this.font, note, this.width / 2,
                     this.height - BACK_BUTTON_BOTTOM_MARGIN - STATUS_GAP + 2, NOTE_COLOUR);
         }
+    }
+
+    /** The relay-target button: a green dot on live, a dim one on this build's own relay. */
+    private Component targetLabel() {
+        boolean live = BuilderProfileState.live();
+        // The dot carries the state and the word names it: colour alone would be a poor signal, and a
+        // word alone is not readable at a glance from across the header.
+        return Component.literal("\u25CF ")
+                .withStyle(style -> style.withColor(live ? LIVE_DOT : DEV_DOT))
+                .append(Component.translatable(live
+                        ? "gui.dungeontrain.builder.profile.target.live"
+                        : "gui.dungeontrain.builder.profile.target.dev")
+                        .withStyle(style -> style.withColor(0xFFFFFF)));
+    }
+
+    /**
+     * Point the screen at the other relay and start again from the player's own profile.
+     *
+     * <p>Not a relist of what is on screen: the two pools hold different builds under different ids,
+     * so a selection, a viewed builder and a note about a download all describe rows that do not
+     * exist on the other side. Going back to your own profile is the one thing that means the same
+     * on both.</p>
+     */
+    private void toggleTarget() {
+        BuilderProfileState.setLive(!BuilderProfileState.live());
+        BuilderProfileState.clearCache();
+        viewProfile(null);
+    }
+
+    /**
+     * The header's second line: who these builds belong to.
+     *
+     * <p>The player's own name stands alone under a title that already says "My Builds"; somebody
+     * else's is spelt out, because that is the one case where the title and the list disagree.</p>
+     */
+    private Component ownerLine() {
+        if (viewingOther()) {
+            return Component.translatable("gui.dungeontrain.builder.profile.owner_other",
+                    viewedName.isEmpty() ? viewedUuid : viewedName);
+        }
+        return Component.literal(viewedName.isEmpty() ? ownName() : viewedName);
     }
 
     /**
@@ -576,10 +734,14 @@ public final class BuilderProfileScreen extends Screen {
         if (status == BuilderProfilePacket.Status.UNAVAILABLE) {
             return Component.translatable("gui.dungeontrain.builder.profile.unavailable");
         }
-        if (builds.isEmpty()) return Component.translatable("gui.dungeontrain.builder.profile.empty");
-        // Two different empties again, and the difference is whether the player can fix it by
-        // touching a chip: an unfiltered profile with nothing in it needs a save, a filtered one that
-        // came up dry needs a different filter.
+        if (builds.isEmpty()) {
+            // Three empties now, and each sends the player somewhere different: your own profile with
+            // nothing in it needs a save, somebody else's is simply bare, and a filtered list that
+            // came up dry needs a different chip rather than a different build.
+            return Component.translatable(viewingOther()
+                    ? "gui.dungeontrain.builder.profile.empty_other"
+                    : "gui.dungeontrain.builder.profile.empty");
+        }
         if (shown.isEmpty()) return Component.translatable("gui.dungeontrain.builder.profile.no_matches");
         BuilderProfilePacket.Entry entry = selectedBuild();
         if (entry == null) return Component.translatable("gui.dungeontrain.builder.profile.pick");
