@@ -10363,6 +10363,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "menu-to-loading-transition",
+      "version": "0.749.0",
+      "type": "feat",
+      "title": "The menu now hands off to the loading screen",
+      "summary": "Starting a world no longer cuts straight from the menu, and no longer flashes a frame of vanilla Minecraft chrome on the way. The menu dissolves into its own background, that background fades into the Dungeon Train loading screen, and the load itself happens behind the finished screen \u2014 so the moment the game pauses to read your world, you are already looking at the train.",
+      "highlights": [
+        "The menu fades into the loading screen instead of cutting",
+        "No more flash of vanilla Minecraft chrome while a world opens",
+        "The loading bar now starts at 0% instead of jumping straight to 12%"
+      ],
+      "pr": 1223,
+      "date": "2026-08-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
