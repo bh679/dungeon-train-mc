@@ -22,8 +22,16 @@ import java.util.List;
  *
  * <p>{@code status} distinguishes an empty profile from a relay that couldn't be reached, which the
  * screen must not conflate: one says "you haven't uploaded anything", the other says "we don't know".</p>
+ *
+ * <p>{@code ownerUuid} says WHOSE profile this is. On a dev build the screen can be showing somebody
+ * else's builds, and two asks can be in flight at once — so the screen matches this against the
+ * profile it is displaying and drops anything else, rather than drawing one player's builds under
+ * another's name. {@code mine} answers the same question for the ordinary case without the screen
+ * having to know its own uuid, and {@code ownerName} names the player for their own profile; a
+ * foreign one is named by the creator row the screen picked.</p>
  */
-public record BuilderProfilePacket(Status status, List<Entry> builds) implements CustomPacketPayload {
+public record BuilderProfilePacket(Status status, List<Entry> builds, String ownerUuid,
+                                   String ownerName, boolean mine) implements CustomPacketPayload {
 
     /** Why the list is what it is. */
     public enum Status {
@@ -74,6 +82,9 @@ public record BuilderProfilePacket(Status status, List<Entry> builds) implements
         StreamCodec.of(
             (buf, packet) -> {
                 buf.writeEnum(packet.status);
+                buf.writeUtf(packet.ownerUuid, MAX_STRING);
+                buf.writeUtf(packet.ownerName, MAX_STRING);
+                buf.writeBoolean(packet.mine);
                 int n = Math.min(packet.builds.size(), MAX_ENTRIES);
                 buf.writeVarInt(n);
                 for (int i = 0; i < n; i++) {
@@ -90,6 +101,9 @@ public record BuilderProfilePacket(Status status, List<Entry> builds) implements
             },
             buf -> {
                 Status status = buf.readEnum(Status.class);
+                String ownerUuid = buf.readUtf(MAX_STRING);
+                String ownerName = buf.readUtf(MAX_STRING);
+                boolean mine = buf.readBoolean();
                 int n = Math.min(buf.readVarInt(), MAX_ENTRIES);
                 List<Entry> out = new ArrayList<>(n);
                 for (int i = 0; i < n; i++) {
@@ -97,23 +111,24 @@ public record BuilderProfilePacket(Status status, List<Entry> builds) implements
                             buf.readUtf(MAX_STRING), buf.readBoolean(), buf.readUtf(MAX_STRING),
                             buf.readUtf(MAX_STRING), buf.readVarInt()));
                 }
-                return new BuilderProfilePacket(status, List.copyOf(out));
+                return new BuilderProfilePacket(status, List.copyOf(out), ownerUuid, ownerName, mine);
             }
         );
 
-    public static BuilderProfilePacket of(Status status) {
-        return new BuilderProfilePacket(status, List.of());
+    public static BuilderProfilePacket of(Status status, String ownerUuid, String ownerName, boolean mine) {
+        return new BuilderProfilePacket(status, List.of(), ownerUuid, ownerName, mine);
     }
 
     /** Reduce the relay's rows to what the screen draws. */
-    public static BuilderProfilePacket of(List<SharedCarriageClient.ProfileBuild> rows) {
+    public static BuilderProfilePacket of(List<SharedCarriageClient.ProfileBuild> rows,
+                                          String ownerUuid, String ownerName, boolean mine) {
         List<Entry> out = new ArrayList<>(Math.min(rows.size(), MAX_ENTRIES));
         for (SharedCarriageClient.ProfileBuild r : rows) {
             if (out.size() >= MAX_ENTRIES) break;
             out.add(new Entry(r.id(), r.kind(), r.subKind(), r.buildName(),
                     "published".equals(r.visibility()), r.flag(), r.stage(), r.changeCount()));
         }
-        return new BuilderProfilePacket(Status.OK, List.copyOf(out));
+        return new BuilderProfilePacket(Status.OK, List.copyOf(out), ownerUuid, ownerName, mine);
     }
 
     @Override

@@ -33,7 +33,7 @@ final class BuilderProfileDownloadPacketTest {
     void resolvedRequestRoundTrip() {
         for (BuilderRelayInstall.Resolution resolution : BuilderRelayInstall.Resolution.values()) {
             BuilderProfileDownloadPacket original =
-                    new BuilderProfileDownloadPacket(4271, resolution, "brick_cabin_2");
+                    new BuilderProfileDownloadPacket(4271, resolution, "brick_cabin_2", "");
             assertEquals(original, roundTrip(original),
                     "the second press must survive the wire for " + resolution);
         }
@@ -43,6 +43,15 @@ final class BuilderProfileDownloadPacketTest {
         FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
         BuilderProfileDownloadPacket.STREAM_CODEC.encode(buf, packet);
         return BuilderProfileDownloadPacket.STREAM_CODEC.decode(buf);
+    }
+
+    @Test
+    @DisplayName("a request for somebody else's build names whose it is")
+    void foreignRequestRoundTrip() {
+        BuilderProfileDownloadPacket original =
+                new BuilderProfileDownloadPacket(4271, "2b1f9e00-0000-4000-8000-00000000abcd");
+        assertEquals("2b1f9e00-0000-4000-8000-00000000abcd", original.ownerUuid());
+        assertEquals(original, roundTrip(original));
     }
 
     @Test

@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.builder;
 
+import games.brennan.dungeontrain.net.BuilderCreatorResultsPacket;
 import games.brennan.dungeontrain.net.BuilderProfileDownloadResultPacket;
 import games.brennan.dungeontrain.net.BuilderProfilePacket;
 import net.neoforged.api.distmarker.Dist;
@@ -22,6 +23,7 @@ public final class BuilderProfileState {
     private static volatile BuilderProfilePacket latest = null;
     private static volatile Consumer<BuilderProfilePacket> listener = null;
     private static volatile Consumer<BuilderProfileDownloadResultPacket> downloadListener = null;
+    private static volatile Consumer<BuilderCreatorResultsPacket> creatorListener = null;
 
     private BuilderProfileState() {}
 
@@ -62,6 +64,20 @@ public final class BuilderProfileState {
     }
 
     /**
+     * A creator search answered. Not cached, for the same reason a download result is not: it belongs
+     * to one query typed into one open screen, and a search screen opened later starts empty.
+     */
+    public static void creatorResults(BuilderCreatorResultsPacket packet) {
+        Consumer<BuilderCreatorResultsPacket> current = creatorListener;
+        if (current != null) current.accept(packet);
+    }
+
+    /** Listen for creator search results while the search screen is open; null clears it. */
+    public static void listenForCreators(Consumer<BuilderCreatorResultsPacket> consumer) {
+        creatorListener = consumer;
+    }
+
+    /**
      * Forget the cached profile, so a reopened screen shows "loading" rather than a stale list.
      * Called when leaving a world: the next world may be a different player's.
      */
@@ -69,5 +85,6 @@ public final class BuilderProfileState {
         latest = null;
         listener = null;
         downloadListener = null;
+        creatorListener = null;
     }
 }

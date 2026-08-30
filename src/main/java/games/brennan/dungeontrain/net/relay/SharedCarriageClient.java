@@ -230,6 +230,42 @@ public final class SharedCarriageClient {
         });
     }
 
+    /** One builder the relay knows, as a creator search names them. */
+    public record Creator(String uuid, String name, int builds) {}
+
+    /**
+     * Builders whose display name (or uuid) contains {@code query} — the name→uuid step that lets a
+     * dev build look at somebody else's builds through {@link #listMine}.
+     *
+     * <p>The relay answers this on the DEV cap only, so on a release build it comes back {@code null}
+     * exactly as an unreachable relay does. That is deliberate and not worth distinguishing in game:
+     * nothing on a release build asks in the first place.</p>
+     *
+     * <p>{@code null} on an unreachable or unusable answer, an empty list when nobody matched — the
+     * same two-answer convention {@link #listMine} follows.</p>
+     */
+    public static CompletableFuture<List<Creator>> searchCreators(String query, int limit) {
+        JsonObject body = new JsonObject();
+        body.addProperty("q", query == null ? "" : query);
+        if (limit > 0) body.addProperty("limit", limit);
+        return post("/carriages/creators", body).thenApply(resp -> {
+            JsonObject o = okJson(resp);
+            if (o == null || !o.has("creators") || !o.get("creators").isJsonArray()) return null;
+            List<Creator> out = new java.util.ArrayList<>();
+            for (JsonElement el : o.getAsJsonArray("creators")) {
+                if (!el.isJsonObject()) continue;
+                JsonObject r = el.getAsJsonObject();
+                String uuid = str(r, "uuid");
+                if (uuid.isEmpty()) continue;
+                // A builder whose builds all predate name capture is still a builder: fall back to the
+                // uuid so the row can be picked rather than dropped for having nothing to print.
+                String name = str(r, "name");
+                out.add(new Creator(uuid, name.isEmpty() ? uuid : name, intOf(r, "builds")));
+            }
+            return List.copyOf(out);
+        });
+    }
+
     /**
      * Put one of this player's builds on the train, or take it back to their profile. Authed by the
      * build's owner {@code secret}.
