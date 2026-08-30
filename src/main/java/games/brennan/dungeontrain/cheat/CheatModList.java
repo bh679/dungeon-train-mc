@@ -118,7 +118,10 @@ public final class CheatModList {
         // In-Game NBT Editor) is the same idea aimed at entities and block entities — a live NBT
         // tree you can rewrite mid-run. It drives the vanilla /data command, so its edits already
         // need permission level 2, but naming it here lets the notice say what tripped Free Play.
-        "infinityeditor", "infinity_item_editor_re", "cadeditor", "dine"
+        // "ankinbt" (AnkiNBT) covers all three surfaces at once — items, live entities and
+        // villager trades — with a simple mode for names/enchantments/attributes and a full NBT
+        // tree behind it.
+        "infinityeditor", "infinity_item_editor_re", "cadeditor", "dine", "ankinbt"
     );
 
     /** Cache file under the loader config dir; written on each successful relay fetch. */
