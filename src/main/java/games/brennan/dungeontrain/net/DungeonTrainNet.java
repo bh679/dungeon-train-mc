@@ -206,6 +206,11 @@ public final class DungeonTrainNet {
         registrar.playToServer(BuilderProfileActionPacket.TYPE, BuilderProfileActionPacket.STREAM_CODEC, BuilderProfileActionPacket::handle);
         registrar.playToServer(BuilderProfileDownloadPacket.TYPE, BuilderProfileDownloadPacket.STREAM_CODEC, BuilderProfileDownloadPacket::handle);
         registrar.playToClient(BuilderProfileDownloadResultPacket.TYPE, BuilderProfileDownloadResultPacket.STREAM_CODEC, BuilderProfileDownloadResultPacket::handle);
+        // Dev builds only: find another player by name, so their profile can be listed and one of
+        // their builds pulled into this install. Refused server-side on a release build, and refused
+        // again by the relay, which answers this search on the dev cap alone.
+        registrar.playToServer(BuilderCreatorSearchPacket.TYPE, BuilderCreatorSearchPacket.STREAM_CODEC, BuilderCreatorSearchPacket::handle);
+        registrar.playToClient(BuilderCreatorResultsPacket.TYPE, BuilderCreatorResultsPacket.STREAM_CODEC, BuilderCreatorResultsPacket::handle);
 
         // Remote-echo encounter screenshot: server → player at first eye-contact to frame + capture the
         // echo; client → server with the resulting PNG, buffered on the encounter journal for its story embed.

@@ -10076,9 +10076,9 @@
       ],
       "pr": 1200,
       "date": "2026-08-30",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.742.0",
+      "released_at": "2026-08-30T12:28:15Z"
     },
     {
       "id": "import-registers-new-translators",
@@ -10093,9 +10093,9 @@
       ],
       "pr": 1201,
       "date": "2026-08-30",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.742.0",
+      "released_at": "2026-08-30T12:28:15Z"
     },
     {
       "id": "crash-assistant-modpack",
@@ -10111,9 +10111,9 @@
       ],
       "pr": 1202,
       "date": "2026-08-30",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.742.0",
+      "released_at": "2026-08-30T12:28:15Z"
     },
     {
       "id": "early-onboarding-shorter",
@@ -10128,9 +10128,9 @@
       ],
       "pr": 1203,
       "date": "2026-08-30",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.742.0",
+      "released_at": "2026-08-30T12:28:15Z"
     },
     {
       "id": "loading-sequence-continuous-reveal",
@@ -10145,9 +10145,9 @@
       ],
       "pr": 1205,
       "date": "2026-08-30",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.742.0",
+      "released_at": "2026-08-30T12:28:15Z"
     },
     {
       "id": "build-submission-readiness",
@@ -10162,9 +10162,9 @@
       ],
       "pr": 1207,
       "date": "2026-08-30",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.742.0",
+      "released_at": "2026-08-30T12:28:15Z"
     },
     {
       "id": "close-locale-drift-and-unblock-import",
@@ -10181,9 +10181,9 @@
       ],
       "pr": 1206,
       "date": "2026-08-30",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.742.0",
+      "released_at": "2026-08-30T12:28:15Z"
     },
     {
       "id": "close-ain-overlay-drift",
@@ -10198,13 +10198,124 @@
       ],
       "pr": 1208,
       "date": "2026-08-30",
+      "released": true,
+      "released_in": "v0.742.0",
+      "released_at": "2026-08-30T12:28:15Z"
+    },
+    {
+      "id": "backpack-panels-in-containers",
+      "version": "0.741.0",
+      "type": "feat",
+      "title": "Your backpack is there when you open a chest",
+      "summary": "Until now the backpack only existed on your own inventory screen, so opening a chest made it vanish \u2014 moving a stack between the two meant closing the chest, opening your inventory, dragging, and opening the chest again. The panels now sit either side of chests, ender chests, barrels and shulker boxes as well, and shift-click moves stacks straight between the container, your inventory and the backpack. Shift-clicking out of the backpack puts things in the chest, the way a shift-click in a chest always has. The open/close button is also smaller and quieter, and now shows at a glance whether the backpack is open.",
+      "highlights": [
+        "Backpack panels appear in chests, ender chests, barrels and shulker boxes",
+        "Shift-click moves stacks between the container, your inventory and the backpack in one click",
+        "Shift-clicking out of the backpack deposits into the container, falling back to your inventory when it is full",
+        "The open/close button is smaller, and its icon dims while the backpack is shut"
+      ],
+      "pr": 1204,
+      "date": "2026-08-30",
+      "released": true,
+      "released_in": "v0.742.0",
+      "released_at": "2026-08-30T12:28:15Z"
+    },
+    {
+      "id": "portal-room-door-labels",
+      "version": "0.741.0",
+      "type": "feat",
+      "title": "The portal room's two doorways now say which is which",
+      "summary": "Building a portal room, the two corridor doorways used to be identical amber outlines, so there was no way to tell the way in from the way out until you had already clicked one. The entrance is now blue and the exit yellow, and standing near either one names it.",
+      "highlights": [
+        "Entrance and Exit labels float over the doorway you are standing at",
+        "The entry mouth is drawn blue, the exit yellow, at any distance"
+      ],
+      "pr": 1212,
+      "date": "2026-08-30",
+      "released": true,
+      "released_in": "v0.742.0",
+      "released_at": "2026-08-30T12:28:15Z"
+    },
+    {
+      "id": "join-first-frame-themed",
+      "version": "0.741.0",
+      "type": "feat",
+      "title": "The loading screen starts themed",
+      "summary": "Opening a world no longer flashes the main-menu panorama before the Dungeon Train loading screen appears \u2014 the themed screen is there from the first frame of the load.",
+      "highlights": [
+        "The world-open screens are themed, so the join starts on the train panel instead of vanilla chrome"
+      ],
+      "pr": 1209,
+      "date": "2026-08-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "carriage-test-save-prompt",
+      "version": "0.743.0",
+      "type": "feat",
+      "title": "Testing a dimensional carriage offers to save it first",
+      "summary": "Test the Carriage stamps the room from its last save, so an unsaved edit was quietly missing from the room you walked into. It now offers to save that one carriage first \u2014 save and test, or test the saved version anyway. A carriage with nothing to save goes straight in, as before.",
+      "highlights": [
+        "Test the Carriage asks to save when the room you are standing in has unsaved changes",
+        "Catches an unsaved resize as well as unsaved blocks"
+      ],
+      "pr": 1216,
+      "date": "2026-08-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "portal-room-grow-into-air",
+      "version": "0.744.0",
+      "type": "feat",
+      "title": "Growing a portal room gives you empty space, not a room you have to demolish",
+      "summary": "Resizing a dimensional carriage in the editor used to fill the new space with the built-in room \u2014 a floor, walls, a ceiling and its lights \u2014 so every step of the size dial handed you blocks you then had to clear out. New space now arrives as plain air, ready to build in. The one thing that still comes back is what you cropped: shrink past something and step back up, and the row returns exactly as it was, blocks, decoration, chests and all.",
+      "highlights": [
+        "Growing a dimensional carriage now opens empty space instead of stamping the built-in room into it",
+        "Shrinking then growing still restores the row you cropped, unchanged"
+      ],
+      "pr": 1217,
+      "date": "2026-08-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "builder-load-other-player-builds",
+      "version": "0.745.0",
+      "type": "chore",
+      "title": "Internal tooling",
+      "summary": "Development tooling changes.",
+      "highlights": [],
+      "pr": 1213,
+      "date": "2026-08-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "editor-validates-placeholders",
+      "version": "0.746.0",
+      "type": "feat",
+      "title": "The translation editor now catches a broken placeholder as you type",
+      "summary": "When you translate the game from inside the game, some lines contain slots the game fills in \u2014 a player's name, a number, a key binding. Dropping one, adding one, or typing a lone percent sign makes that line display wrongly or not at all, and until now nothing said so: the mistake was only found weeks later, when the translation was pulled into the mod and quietly set aside. The editor now tells you the moment you type it, names the slot you have lost, and holds Save until it is right.",
+      "highlights": [
+        "A missing or invented fill-in slot is flagged under the text box as you type",
+        "Save is held until the line will actually display, so no more work is lost weeks later",
+        "Reordering slots to suit your language is still fine \u2014 only losing or inventing them is not"
+      ],
+      "pr": 1214,
+      "date": "2026-08-30",
       "released": false,
       "released_in": null,
       "released_at": null
     },
     {
       "id": "import-validates-format-tokens",
-      "version": "0.742.0",
+      "version": "0.747.0",
       "type": "fix",
       "title": "Player translations no longer blocked by a single mistyped one",
       "summary": "The weekly job that pulls player-submitted translations into the mod was still stopping dead on one bad submission out of 1,790 \u2014 a Russian line that had lost one of its two fill-in slots. Everything else, more than a thousand approved translations, was thrown away with it. A submission that would not display correctly is now set aside and named, and the rest are imported.",

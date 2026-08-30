@@ -62,6 +62,17 @@ public final class LoadingSequenceProgress {
     }
 
     /**
+     * Mark the join as under way from its very first screen ({@link WorldOpenLoadingScreen}),
+     * before any progress has been reported — this is what lets the screens vanilla reuses
+     * outside the join (its {@code ProgressScreen}, {@code ReceivingLevelScreen}) be themed here
+     * and left alone everywhere else.
+     */
+    public static void beginJoin() {
+        ensureStarted();
+        sequenceActive = true;
+    }
+
+    /**
      * True from the themed world-load screen until the player is actually in the world
      * ({@link LoadingSequenceWatcher}). Screens vanilla reuses outside the join — notably
      * {@code ReceivingLevelScreen} for portal travel — only wear the DT theme while this holds.
