@@ -10131,6 +10131,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "loading-sequence-continuous-reveal",
+      "version": "0.738.0",
+      "type": "feat",
+      "title": "The loading screen now hands you the shot",
+      "summary": "Joining a run reads as one continuous themed loading screen \u2014 no more flash back to a vanilla screen when the world finishes loading and the train starts. Once the bar fills it says \"All Aboard!\", the panel fades away over 30 seconds into a dim over the live world, and the camera is already sitting exactly where the arrival shot begins, so pressing Space flies you in from the frame you were looking at. The train's engine now eases in from silence instead of arriving at full volume.",
+      "highlights": [
+        "The world-join loading screen no longer flashes back to the vanilla \"Downloading terrain\" panorama",
+        "At 100% the screen reads \"All Aboard!\" and slowly reveals the composed arrival shot behind a dim",
+        "The train engine ambient fades in over 30 seconds when you first come aboard"
+      ],
+      "pr": 1205,
+      "date": "2026-08-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
