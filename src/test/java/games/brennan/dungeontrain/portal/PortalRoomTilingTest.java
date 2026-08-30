@@ -169,6 +169,99 @@ class PortalRoomTilingTest {
         assertNull(tiling.nextToRemove(walkedTo, RADIUS));
     }
 
+    // ---- settling at budget ----
+
+    /**
+     * The room that found this: 11x70x13 is 10,010 blocks a tile, so its budget is 92 against a
+     * window of 121 — the regime where the add rule and the retire rule can disagree about which
+     * tiles the resident set should be.
+     */
+    private static final int BIG_ROOM_BLOCKS = 11 * 70 * 13;
+
+    /**
+     * One tick of {@code PortalRoomTiler#tick}'s geometry: stamp if it can, otherwise retire if it
+     * may — at the retire rule's own radius, which is the whole of the fix.
+     */
+    private static PortalRoomTiling tickOnce(PortalRoomTiling tiling, Set<Tile> centres,
+                                             int radius, int budget) {
+        Tile next = tiling.nextToAdd(centres, radius, budget, t -> true);
+        if (next != null) return tiling.with(next);
+        Tile stale = tiling.nextToRemove(centres,
+            PortalRoomTiling.retireRadius(radius, tiling.size(), budget), t -> true);
+        return stale != null ? tiling.without(stale) : tiling;
+    }
+
+    @Test
+    @DisplayName("a budget-capped window with a still player is a fixed point — no stamp, no erase")
+    void budgetCappedWindowIsAFixedPoint() {
+        int budget = PortalRoomTiling.budgetTiles(BIG_ROOM_BLOCKS);
+        assertTrue(budget < (2 * RADIUS + 1) * (2 * RADIUS + 1),
+            "this room is only interesting because its budget is smaller than its window");
+
+        PortalRoomTiling tiling = fillAround(Tile.BASE, RADIUS, budget);
+        assertEquals(budget, tiling.size());
+        // Nothing to add — the budget is spent. Nothing to retire — every copy is still in range.
+        assertNull(tiling.nextToAdd(Set.of(Tile.BASE), RADIUS, budget, t -> true));
+        assertNull(tiling.nextToRemove(Set.of(Tile.BASE),
+            PortalRoomTiling.retireRadius(RADIUS, tiling.size(), budget), t -> true));
+        // So the tick is a no-op by reference, which is what the tiler's callers read to decide
+        // whether anything was written at all.
+        assertSame(tiling, tickOnce(tiling, Set.of(Tile.BASE), RADIUS, budget));
+    }
+
+    @Test
+    @DisplayName("a player shifting between two tiles does not churn a ten-thousand-block room every tick")
+    void aOneTileWobbleDoesNotChurn() {
+        // The arrival doorway stands half a block from a tile boundary, so a player nudged by a
+        // block write flips between two tiles. Without the retire margin each flip cost a full
+        // stamp and a full erase of a 10,010-block copy, forever, for a player who never walked.
+        int budget = PortalRoomTiling.budgetTiles(BIG_ROOM_BLOCKS);
+        PortalRoomTiling settled = fillAround(Tile.BASE, RADIUS, budget);
+        Tile nextDoor = new Tile(1, 0);
+
+        PortalRoomTiling tiling = settled;
+        for (int tick = 0; tick < 40; tick++) {
+            tiling = tickOnce(tiling, Set.of(tick % 2 == 0 ? Tile.BASE : nextDoor), RADIUS, budget);
+        }
+        assertEquals(settled.tiles(), tiling.tiles(), "a one-tile wobble should move no blocks at all");
+
+        // And the contrast: retiring at the add rule's own radius is what churned. The resident
+        // disc reaches RADIUS from the base, so one step out puts its far edge at RADIUS + 1 —
+        // outside, retired, and refilled by the next tick's add.
+        assertNotNull(settled.nextToRemove(Set.of(nextDoor), RADIUS, t -> true));
+    }
+
+    @Test
+    @DisplayName("the margin is transient: a room nobody is in still sheds back to one ring")
+    void theApproachShrinkStillLandsOnOneRing() {
+        int budget = PortalRoomTiling.budgetTiles(BIG_ROOM_BLOCKS);
+        PortalRoomTiling tiling = fillAround(Tile.BASE, RADIUS, budget);
+
+        for (PortalRoomTiling after; ; tiling = after) {
+            after = tickOnce(tiling, Set.of(Tile.BASE), PortalRoomTiling.APPROACH_RADIUS, budget);
+            if (after.tiles().equals(tiling.tiles())) break;
+        }
+        // The 3x3 it always shed to, not the 5x5 an unconditional margin would have held: the first
+        // retire drops the tiling below budget and the margin goes with it.
+        assertEquals(9, tiling.size());
+        assertFalse(tiling.has(new Tile(0, 2)), "one ring, not two");
+    }
+
+    @Test
+    @DisplayName("the retire radius widens only at budget — below it, both rules use the same window")
+    void retireRadiusWidensOnlyAtBudget() {
+        assertEquals(RADIUS, PortalRoomTiling.retireRadius(RADIUS, 10, 92));
+        assertEquals(RADIUS, PortalRoomTiling.retireRadius(RADIUS, 91, 92));
+        assertEquals(RADIUS + PortalRoomTiling.RETIRE_MARGIN,
+            PortalRoomTiling.retireRadius(RADIUS, 92, 92));
+        // Over budget too — a room whose budget shrank under it keeps the band while it sheds.
+        assertEquals(RADIUS + PortalRoomTiling.RETIRE_MARGIN,
+            PortalRoomTiling.retireRadius(RADIUS, 200, 92));
+        // A window that fits inside its budget is never gated, so a small room is untouched by all
+        // of this — which is why the default 11x7x13 room never churned.
+        assertEquals(RADIUS, PortalRoomTiling.retireRadius(RADIUS, 100, UNLIMITED));
+    }
+
     @Test
     @DisplayName("the approach radius builds one ring — eight copies, not a hundred and twenty")
     void approachRadiusBuildsOneRing() {

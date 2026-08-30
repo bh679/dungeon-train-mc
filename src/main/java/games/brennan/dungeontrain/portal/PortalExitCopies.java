@@ -20,9 +20,11 @@ import java.util.function.Predicate;
  * reach into the tiles either side of its anchor ({@link PortalExitSites#tileReach}), and those tiles
  * were stamped <i>around</i> it through the corridor mask. Clearing it while one of them still stands
  * would leave a corridor-shaped pit with no floor in a room the player can walk straight back into.
- * So a copy is held until its anchor is {@link PortalRoomTiling#MAX_RADIUS} <b>plus the reach</b>
+ * So a copy is held until its anchor is <b>the radius the tiles are retiring at, plus the reach</b>
  * away, by which point every tile it touches has left the window too and the erase lands in space
- * that is already gone. See {@link #nextToRemove}.</p>
+ * that is already gone. The caller hands that first term in as {@code radius} — it is
+ * {@link PortalRoomTiling#retireRadius}, which is a margin wider than the window once a big room's
+ * budget is spent, not the raw {@link PortalRoomTiling#MAX_RADIUS}. See {@link #nextToRemove}.</p>
  *
  * @param sites the standing set
  */
