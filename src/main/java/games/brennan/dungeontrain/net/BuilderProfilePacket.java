@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.net;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.builder.relay.BuilderReviewState;
 import games.brennan.dungeontrain.client.builder.BuilderProfileState;
 import games.brennan.dungeontrain.net.relay.SharedCarriageClient;
 import net.minecraft.network.FriendlyByteBuf;
@@ -57,11 +58,14 @@ public record BuilderProfilePacket(Status status, List<Entry> builds) implements
      * @param buildName  the template name, which is also how the client finds the local file to draw
      * @param published  whether it is on the train
      * @param flag       the moderation verdict, so a withheld build can say why it isn't appearing
+     * @param review     where it stands in the submission queue ({@link BuilderReviewState}). Distinct
+     *                   from {@code published}, which is only the author's own intent: a submitted
+     *                   build is published AND waiting, and the screen has to say which
      * @param stage      the stage it was authored in, or empty
      * @param changes    how many recorded changes it has — a rough "how much work is in this"
      */
     public record Entry(int relayId, String kind, String subKind, String buildName, boolean published,
-                        String flag, String stage, int changes) {}
+                        String flag, String review, String stage, int changes) {}
 
     public static final Type<BuilderProfilePacket> TYPE =
         new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "builder_profile"));
@@ -84,6 +88,7 @@ public record BuilderProfilePacket(Status status, List<Entry> builds) implements
                     buf.writeUtf(e.buildName(), MAX_STRING);
                     buf.writeBoolean(e.published());
                     buf.writeUtf(e.flag(), MAX_STRING);
+                    buf.writeUtf(e.review(), MAX_STRING);
                     buf.writeUtf(e.stage(), MAX_STRING);
                     buf.writeVarInt(e.changes());
                 }
@@ -95,7 +100,7 @@ public record BuilderProfilePacket(Status status, List<Entry> builds) implements
                 for (int i = 0; i < n; i++) {
                     out.add(new Entry(buf.readVarInt(), buf.readUtf(MAX_STRING), buf.readUtf(MAX_STRING),
                             buf.readUtf(MAX_STRING), buf.readBoolean(), buf.readUtf(MAX_STRING),
-                            buf.readUtf(MAX_STRING), buf.readVarInt()));
+                            buf.readUtf(MAX_STRING), buf.readUtf(MAX_STRING), buf.readVarInt()));
                 }
                 return new BuilderProfilePacket(status, List.copyOf(out));
             }
@@ -111,7 +116,8 @@ public record BuilderProfilePacket(Status status, List<Entry> builds) implements
         for (SharedCarriageClient.ProfileBuild r : rows) {
             if (out.size() >= MAX_ENTRIES) break;
             out.add(new Entry(r.id(), r.kind(), r.subKind(), r.buildName(),
-                    "published".equals(r.visibility()), r.flag(), r.stage(), r.changeCount()));
+                    "published".equals(r.visibility()), r.flag(), BuilderReviewState.of(r.review()),
+                    r.stage(), r.changeCount()));
         }
         return new BuilderProfilePacket(Status.OK, List.copyOf(out));
     }

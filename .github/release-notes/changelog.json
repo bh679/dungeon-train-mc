@@ -10150,6 +10150,23 @@
       "released_at": null
     },
     {
+      "id": "build-submission-readiness",
+      "version": "0.739.0",
+      "type": "feat",
+      "title": "Submit a build for review, and see where it stands",
+      "summary": "Submitting a build from My Builds now actually reaches a person. Your build waits in a review queue, and the screen tells you whether it is waiting, accepted, or not accepted \u2014 instead of quietly publishing and never mentioning it again. Only accepted builds can ride other players' trains.",
+      "highlights": [
+        "My Builds shows each build's review state as a coloured badge in the corner of its tile",
+        "Filter your builds by kind and by review state, and choose how many fit in a row",
+        "A build that wasn't accepted says so, so you can change it and submit it again"
+      ],
+      "pr": 1207,
+      "date": "2026-08-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "close-locale-drift-and-unblock-import",
       "version": "0.739.0",
       "type": "fix",
