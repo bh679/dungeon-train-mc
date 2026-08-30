@@ -10250,6 +10250,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "carriage-test-save-prompt",
+      "version": "0.743.0",
+      "type": "feat",
+      "title": "Testing a dimensional carriage offers to save it first",
+      "summary": "Test the Carriage stamps the room from its last save, so an unsaved edit was quietly missing from the room you walked into. It now offers to save that one carriage first \u2014 save and test, or test the saved version anyway. A carriage with nothing to save goes straight in, as before.",
+      "highlights": [
+        "Test the Carriage asks to save when the room you are standing in has unsaved changes",
+        "Catches an unsaved resize as well as unsaved blocks"
+      ],
+      "pr": 1216,
+      "date": "2026-08-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
