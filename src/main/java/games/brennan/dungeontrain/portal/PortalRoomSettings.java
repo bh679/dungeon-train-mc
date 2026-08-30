@@ -32,6 +32,11 @@ import games.brennan.dungeontrain.track.variant.TrackVariantWeights;
  * the mirrored behaviour it has always had, and what keeps {@link #toTag} writing the shorter form
  * for the rooms (nearly all of them) whose two doors agree.</p>
  *
+ * <p><b>That inheritance is a rule about reading a tag, not about editing one.</b> It resolves once,
+ * on the way in. Every wither then moves the one door it names and leaves the other alone, so an
+ * author who places a door on one mouth moves that mouth and nothing else — see
+ * {@link #withDoorOffset}.</p>
+ *
  * <h2>Exits is the one setting whose default depends on another</h2>
  * <p>An absent Exits segment does not mean "off", it means "whatever this mode wants" — see
  * {@link PortalRoomMode#defaultExits}. That is what lets the shipped {@code labrynth} room, tagged
@@ -407,27 +412,26 @@ public record PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
      * {@code CarriageDims}, neither of which this record carries — the door pointer clamps via
      * {@link PortalRoomLayout#clampDoorOffset} before calling this.</p>
      *
-     * <p><b>The exit door is re-derived when it was only ever mirroring this one</b>, on exactly the
-     * reasoning {@link #withMode} re-derives Exits: a room whose two doors agree has not chosen to
-     * have two, so moving the entry door must move both. Carrying the resolved value across instead
-     * would silently decouple every mirrored room the moment its door was nudged — which is the one
-     * way this feature could change a room nobody asked to change.</p>
+     * <p><b>The exit door is left exactly where it is</b>, mirroring or not — deliberately unlike the
+     * way {@link #withMode} re-derives Exits. An author moves a doorway by placing a door on <i>that
+     * doorway</i>, so the door they placed is the only one that may move; a room whose two doors
+     * happened to agree simply stops agreeing, which is the author saying so. Re-deriving here would
+     * mean a click on the near mouth silently dragged the far one with it, and there would then be no
+     * gesture that moves one door of a mirrored room at all.</p>
      */
     public PortalRoomSettings withDoorOffset(PortalRoomDoorOffset newDoorOffset) {
-        boolean mirrored = doorOffset.equals(exitDoorOffset);
         return new PortalRoomSettings(mode, copies, contents, exits, books, sky, doorWall, newDoorOffset,
-            doorHeightOffset, mirrored ? null : exitDoorOffset, exitDoorHeightOffset);
+            doorHeightOffset, exitDoorOffset, exitDoorHeightOffset);
     }
 
     /**
      * The same settings with the door height offset set to {@code newDoorHeightOffset}, unclamped —
-     * see {@link #withDoorOffset} for why unclamped is correct here too, and for why a mirroring exit
-     * door is re-derived rather than carried across.
+     * see {@link #withDoorOffset} for why unclamped is correct here too, and for why the exit door
+     * stays where it is rather than following this one.
      */
     public PortalRoomSettings withDoorHeightOffset(PortalRoomDoorHeightOffset newDoorHeightOffset) {
-        boolean mirrored = doorHeightOffset.equals(exitDoorHeightOffset);
         return new PortalRoomSettings(mode, copies, contents, exits, books, sky, doorWall, doorOffset,
-            newDoorHeightOffset, exitDoorOffset, mirrored ? null : exitDoorHeightOffset);
+            newDoorHeightOffset, exitDoorOffset, exitDoorHeightOffset);
     }
 
     /**

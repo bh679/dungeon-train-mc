@@ -133,9 +133,14 @@ class PortalRoomSettingsTest {
     @Test
     @DisplayName("A raised door height is written as the ninth segment, with the eight in front of it")
     void raisedDoorHeightOffsetRoundTrips() {
+        // Both doors at the same place, which is what nine segments mean — the tenth and eleventh
+        // are written only once the two mouths differ. Set through the exit withers as well as the
+        // entry ones, because moving one door no longer moves the other; see eachDoorMovesAlone.
         String tag = PortalRoomSettings.DEFAULT
             .withDoorOffset(new PortalRoomDoorOffset(3))
             .withDoorHeightOffset(new PortalRoomDoorHeightOffset(5))
+            .withExitDoorOffset(new PortalRoomDoorOffset(3))
+            .withExitDoorHeightOffset(new PortalRoomDoorHeightOffset(5))
             .toTag();
         assertEquals(9, tag.split("/", -1).length, tag);
         assertTrue(tag.endsWith("/3/5"), tag);
@@ -785,6 +790,19 @@ class PortalRoomSettingsTest {
     }
     // ---- the room's two doorways ----
 
+    /**
+     * A room whose two doorways agree, built the way every real one is: by parsing a nine-segment
+     * tag from before the exit door existed.
+     *
+     * <p>Deliberately not {@code DEFAULT.withDoorOffset(...)} — that moves one door and leaves the
+     * other where it was, which is the whole point of {@link #eachDoorMovesAlone} and would make this
+     * a room with two different doorways rather than a mirrored one.</p>
+     */
+    private static PortalRoomSettings mirroredAt(int offset, int heightOffset) {
+        return PortalRoomSettings.parse(
+            "bedrock_lock/exact/off/off/off/none/sealed/" + offset + "/" + heightOffset);
+    }
+
     @Test
     @DisplayName("An exit door is absent from every tag ever written, and reads back mirroring the entry one")
     void exitDoor_isAbsentFromEveryOlderTag() {
@@ -806,9 +824,8 @@ class PortalRoomSettingsTest {
     @Test
     @DisplayName("Two doors placed apart round-trip through the tag; two that agree stay out of it")
     void exitDoor_roundTripsOnlyWhenItDiffers() {
-        PortalRoomSettings mirrored = PortalRoomSettings.DEFAULT
-            .withDoorOffset(new PortalRoomDoorOffset(2))
-            .withDoorHeightOffset(new PortalRoomDoorHeightOffset(3));
+        // A room mirrored the way every real one is: a tag written before the exit door existed.
+        PortalRoomSettings mirrored = mirroredAt(2, 3);
         // Nine segments, exactly as before the exit door existed — the shape most rooms keep forever.
         assertEquals("bedrock_lock/exact/off/off/off/none/sealed/2/3", mirrored.toTag());
         assertFalse(mirrored.doorsDiffer());
@@ -843,22 +860,31 @@ class PortalRoomSettingsTest {
     }
 
     @Test
-    @DisplayName("Moving the entry door of a MIRRORED room moves both — it is not silently decoupled")
-    void entryDoor_carriesTheExitDoorWhileTheyMirror() {
-        PortalRoomSettings moved = PortalRoomSettings.DEFAULT
-            .withDoorOffset(new PortalRoomDoorOffset(4))
-            .withDoorHeightOffset(new PortalRoomDoorHeightOffset(2));
-        assertEquals(4, moved.exitDoorOffset().value());
-        assertEquals(2, moved.exitDoorHeightOffset().value());
-        assertFalse(moved.doorsDiffer());
+    @DisplayName("Placing a door moves only that doorway — never the other one, mirrored or not")
+    void eachDoorMovesAlone() {
+        // A mirrored room. Moving its ENTRY door leaves the exit door exactly where it was, so the
+        // two stop agreeing — which is the author saying so, not a silent decoupling.
+        PortalRoomSettings mirrored = mirroredAt(2, 3);
+        assertFalse(mirrored.doorsDiffer(), "an older room's doors agree until one is moved");
 
-        // But a room that HAS chosen two doors keeps the one it chose when the other moves.
-        PortalRoomSettings apart = moved.withExitDoorOffset(new PortalRoomDoorOffset(-1));
-        PortalRoomSettings entryMoved = apart.withDoorOffset(new PortalRoomDoorOffset(6));
-        assertEquals(-1, entryMoved.exitDoorOffset().value());
-        assertEquals(6, entryMoved.doorOffset().value());
-        // The height axis was still mirroring, so it follows its entry door.
-        assertEquals(2, entryMoved.exitDoorHeightOffset().value());
+        PortalRoomSettings entryMoved = mirrored.withDoorOffset(new PortalRoomDoorOffset(5));
+        assertEquals(5, entryMoved.doorOffset().value());
+        assertEquals(2, entryMoved.exitDoorOffset().value(), "the exit door must not have followed");
+        assertEquals(3, entryMoved.doorHeightOffset().value(), "the untouched axis must not move");
+        assertEquals(3, entryMoved.exitDoorHeightOffset().value());
+        assertTrue(entryMoved.doorsDiffer());
+        assertEquals("bedrock_lock/exact/off/off/off/none/sealed/5/3/2/3", entryMoved.toTag());
+
+        // And the mirror image: moving the EXIT door leaves the entry door alone.
+        PortalRoomSettings exitMoved = mirrored.withExitDoorOffset(new PortalRoomDoorOffset(-4));
+        assertEquals(2, exitMoved.doorOffset().value(), "the entry door must not have followed");
+        assertEquals(-4, exitMoved.exitDoorOffset().value());
+
+        // Same on the height axis, in both directions.
+        assertEquals(3, mirrored.withDoorHeightOffset(new PortalRoomDoorHeightOffset(6))
+            .exitDoorHeightOffset().value());
+        assertEquals(3, mirrored.withExitDoorHeightOffset(new PortalRoomDoorHeightOffset(6))
+            .doorHeightOffset().value());
     }
 
     @Test

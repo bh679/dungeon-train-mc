@@ -69,9 +69,12 @@ import java.io.IOException;
  * ({@code origin.x + size.x}) the <b>exit</b> one, and {@link #resolve} has always had to tell them
  * apart to know it was on a doorway column at all. So there is no mode to arm, no second item and no
  * screen — an author aims at the door they mean and clicks it, which is what they were already
- * doing. Setting the entry door on a room whose two doors still agree moves both, because a room
- * that has not chosen to have two doorways is not silently given them; see
- * {@code PortalRoomSettings.withDoorOffset}.</p>
+ * doing.</p>
+ *
+ * <p><b>A click moves only the doorway it landed on.</b> Placing a door on the near mouth never
+ * drags the far one with it, even on a room whose two doors currently agree — the door you placed is
+ * the door you were editing, and a room that stops mirroring is the author saying so. Moving both is
+ * two clicks, one per mouth. See {@code PortalRoomSettings.withDoorOffset}.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class PortalRoomDoorPointer {
