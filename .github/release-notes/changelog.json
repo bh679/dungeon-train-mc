@@ -10385,9 +10385,9 @@
       "highlights": [],
       "pr": 1223,
       "date": "2026-08-30",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.752.0",
+      "released_at": "2026-08-30T14:58:40Z"
     },
     {
       "id": "endless-room-tiling-settles",
@@ -10401,9 +10401,9 @@
       ],
       "pr": 1225,
       "date": "2026-08-30",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.752.0",
+      "released_at": "2026-08-30T14:58:40Z"
     },
     {
       "id": "cheat-list-cad-editor",
@@ -10413,6 +10413,32 @@
       "summary": "Installing CAD Editor, DINE or AnkiNBT now puts the run into Free Play, alongside the other in-game editors. They rewrite an item's components, a mob or block entity's NBT, or a villager's trades from a GUI, so they do the work of a command without one.",
       "highlights": [
         "CAD Editor, DINE and AnkiNBT added to the cheat-mod list"
+      ],
+      "date": "2026-08-30",
+      "released": true,
+      "released_in": "v0.752.0",
+      "released_at": "2026-08-30T14:58:40Z"
+    },
+    {
+      "id": "relay-admin-url-machine-wide",
+      "version": "0.753.0",
+      "type": "chore",
+      "title": "Internal tooling",
+      "summary": "Development tooling changes.",
+      "highlights": [],
+      "date": "2026-08-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "cheat-list-visual-mobs-edit",
+      "version": "0.754.0",
+      "type": "chore",
+      "title": "More editors count as cheat mods",
+      "summary": "Installing Visual Mobs Edit or In-game NBTEdit Reborn now puts the run into Free Play. One rewrites mob health, damage, immunities and spawn rules from a menu \u2014 the difficulty curve a run is measured against \u2014 and the other rewrites the NBT of whatever you are holding or looking at.",
+      "highlights": [
+        "Visual Mobs Edit and In-game NBTEdit Reborn added to the cheat-mod list"
       ],
       "date": "2026-08-30",
       "released": false,

@@ -7,7 +7,6 @@ import org.slf4j.Logger;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
 
 /**
  * Which relay a Train Builder profile call goes to.
@@ -25,8 +24,14 @@ import java.util.List;
  * {@code <gamedir>/relay-admin-url.txt}. Absent is an ordinary state — live listing and downloading
  * still work, and the search says it cannot search.</p>
  *
- * <p>The admin URL contains a secret and is never logged. Whether one was found is worth a line;
- * what it is, never.</p>
+ * <p>Three places are searched, in this order: the environment variable, the game directory, then
+ * {@code ~/.config/dungeontrain/}. The last is the durable one — a dev client's game directory is
+ * inside a git worktree, so a URL kept only there dies with the worktree and the next session starts
+ * with live search dark for no visible reason. The per-worktree file still wins over it, so pointing
+ * ONE checkout at a different relay is not silently overridden by the machine default.</p>
+ *
+ * <p>The admin URL contains a secret and is never logged. Whether one was found, and which of the
+ * three it came from, is worth a line; what it is, never.</p>
  */
 public final class RelayTarget {
 
@@ -37,6 +42,9 @@ public final class RelayTarget {
 
     /** Gitignored: {@code run/} is already ignored, and this is where a dev client's game dir is. */
     private static final String FILE = "relay-admin-url.txt";
+
+    /** Outside every checkout, so the value survives a worktree being removed. */
+    private static final String HOME_DIR = ".config/dungeontrain";
 
     /** Resolved once. A dev poking at the file mid-session is not worth a filesystem hit per search. */
     private static volatile String adminBase = null;
@@ -67,19 +75,47 @@ public final class RelayTarget {
         if (cached != null) return cached;
         String resolved = resolveAdminBase();
         adminBase = resolved;
-        LOGGER.info("[DungeonTrain] Relay admin base for live builder search: {}",
-                resolved.isEmpty() ? "not configured" : "configured");
         return resolved;
     }
 
     private static String resolveAdminBase() {
         String env = System.getenv(ENV);
-        if (env != null && !env.isBlank()) return trimTrailingSlash(env.trim());
+        if (env != null && !env.isBlank()) {
+            log("the " + ENV + " environment variable");
+            return trimTrailingSlash(env.trim());
+        }
+        // The game directory first: a checkout deliberately pointed at another relay must not be
+        // quietly overridden by the machine-wide value.
+        Path local = FMLPaths.GAMEDIR.get().resolve(FILE);
+        String fromLocal = readUrlFrom(local);
+        if (fromLocal != null) {
+            if (!fromLocal.isEmpty()) log("the game directory");
+            // A file that exists and holds something unusable stops the search HERE. Falling through
+            // would answer with a stale machine default and make the typo in front of you invisible.
+            return fromLocal;
+        }
+        Path home = Path.of(System.getProperty("user.home", ""), HOME_DIR, FILE);
+        String fromHome = readUrlFrom(home);
+        if (fromHome != null) {
+            if (!fromHome.isEmpty()) log("~/" + HOME_DIR);
+            return fromHome;
+        }
+        log("");
+        return "";
+    }
+
+    /**
+     * The URL in {@code path}, or {@code null} when this place has nothing to say.
+     *
+     * <p>Three answers, not two, and the distinction is what keeps a typo diagnosable: {@code null}
+     * means "nothing here, try the next place"; {@code ""} means "something was here and it was not a
+     * URL", which is a refusal the caller must not fall through. Blank lines and {@code #} comments
+     * are skipped, so the file can explain itself.</p>
+     */
+    static String readUrlFrom(Path path) {   // package-private: the unit test drives this seam
         try {
-            Path path = FMLPaths.GAMEDIR.get().resolve(FILE);
-            if (!Files.isRegularFile(path)) return "";
-            List<String> lines = Files.readAllLines(path);
-            for (String line : lines) {
+            if (!Files.isRegularFile(path)) return null;
+            for (String line : Files.readAllLines(path)) {
                 String trimmed = line.trim();
                 if (trimmed.isEmpty() || trimmed.startsWith("#")) continue;
                 // Only something shaped like a URL counts. A file where the paste landed on the wrong
@@ -87,16 +123,23 @@ public final class RelayTarget {
                 // every call with a DNS error, which reads like an outage rather than a typo.
                 if (!trimmed.startsWith("http://") && !trimmed.startsWith("https://")) {
                     LOGGER.warn("[DungeonTrain] {} holds a line that is not an http(s) URL — "
-                            + "live builder search stays off until it does", FILE);
+                            + "live builder search stays off until it does", path.getFileName());
                     return "";
                 }
                 return trimTrailingSlash(trimmed);
             }
+            return null;   // comments only: the file is a placeholder, not an answer
         } catch (Exception e) {
             // Deliberately without the exception's message: a path or a URL could ride along in it.
-            LOGGER.warn("[DungeonTrain] Could not read {} — live builder search stays off", FILE);
+            LOGGER.warn("[DungeonTrain] Could not read {} — trying the next place", path.getFileName());
+            return null;
         }
-        return "";
+    }
+
+    /** Say whether a URL was found and where from — never what it is. */
+    private static void log(String where) {
+        LOGGER.info("[DungeonTrain] Relay admin base for live builder search: {}",
+                where.isEmpty() ? "not configured" : "configured from " + where);
     }
 
     private static String trimTrailingSlash(String url) {
