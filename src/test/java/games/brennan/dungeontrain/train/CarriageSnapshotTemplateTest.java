@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.train;
 
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.DoubleTag;
 import net.minecraft.nbt.IntArrayTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
@@ -8,7 +9,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -83,11 +83,67 @@ final class CarriageSnapshotTemplateTest {
         assertEquals(0, out.getList("blocks", Tag.TAG_COMPOUND).size());
         assertEquals(0, out.getList("palette", Tag.TAG_COMPOUND).size());
         assertTrue(out.contains("entities", Tag.TAG_LIST), "shaped like a tag vanilla saves");
-        assertFalse(out.getList("entities", Tag.TAG_COMPOUND).size() > 0,
-                "entities are dropped: no local template has ever carried one");
+        assertEquals(0, out.getList("entities", Tag.TAG_COMPOUND).size(),
+                "a blob with no ents list still produces the empty list vanilla writes");
+    }
+
+    @Test
+    @DisplayName("a blob's entities become the template's, positioned in the build's own frame")
+    void entitiesComeAcross() {
+        CompoundTag snapshot = snapshot(4, 4, 4, cell(0, 0, 0, "minecraft:stone", null));
+        snapshot.put("ents", ents(ent("minecraft:armor_stand", 1.5, 2.25, 3.5)));
+
+        ListTag entities = CarriageSnapshotTemplate.toTemplateTag(snapshot)
+                .getList("entities", Tag.TAG_COMPOUND);
+
+        assertEquals(1, entities.size());
+        CompoundTag entity = entities.getCompound(0);
+        assertEquals("minecraft:armor_stand", entity.getCompound("nbt").getString("id"));
+        ListTag pos = entity.getList("pos", Tag.TAG_DOUBLE);
+        assertEquals(1.5, pos.getDouble(0));
+        assertEquals(2.25, pos.getDouble(1));
+        assertEquals(3.5, pos.getDouble(2));
+        // Floored, not rounded: blockPos is the block the entity stands IN.
+        assertEquals(List3.of(1, 2, 3), List3.of(entity.getList("blockPos", Tag.TAG_INT)));
+    }
+
+    @Test
+    @DisplayName("an entity with no type is skipped rather than written as one nothing can spawn")
+    void skipsUntypedEntities() {
+        CompoundTag snapshot = snapshot(4, 4, 4);
+        CompoundTag typeless = ent("minecraft:armor_stand", 1.0, 1.0, 1.0);
+        typeless.getCompound("n").remove("id");
+        snapshot.put("ents", ents(typeless, ent("minecraft:item_frame", 2.0, 2.0, 2.0)));
+
+        ListTag entities = CarriageSnapshotTemplate.toTemplateTag(snapshot)
+                .getList("entities", Tag.TAG_COMPOUND);
+
+        assertEquals(1, entities.size(), "the good one still comes across");
+        assertEquals("minecraft:item_frame", entities.getCompound(0).getCompound("nbt").getString("id"));
     }
 
     // ---- helpers ----
+
+    private static ListTag ents(CompoundTag... entries) {
+        ListTag list = new ListTag();
+        for (CompoundTag entry : entries) list.add(entry);
+        return list;
+    }
+
+    /** The shape {@code CarriageEntitySnapshot.encodeEntity} produces, trimmed to what matters here. */
+    private static CompoundTag ent(String id, double x, double y, double z) {
+        CompoundTag nbt = new CompoundTag();
+        nbt.putString("id", id);
+        CompoundTag entry = new CompoundTag();
+        entry.putString("id", id);
+        ListTag pos = new ListTag();
+        pos.add(DoubleTag.valueOf(x));
+        pos.add(DoubleTag.valueOf(y));
+        pos.add(DoubleTag.valueOf(z));
+        entry.put("p", pos);
+        entry.put("n", nbt);
+        return entry;
+    }
 
     private static CompoundTag snapshot(int l, int h, int w, CompoundTag... cells) {
         ListTag list = new ListTag();

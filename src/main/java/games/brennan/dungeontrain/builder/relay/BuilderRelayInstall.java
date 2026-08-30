@@ -11,6 +11,7 @@ import games.brennan.dungeontrain.editor.CarriageTemplateStore;
 import games.brennan.dungeontrain.editor.CarriageVariantBlocks;
 import games.brennan.dungeontrain.editor.PortalRoomTemplateStore;
 import games.brennan.dungeontrain.editor.StageStore;
+import games.brennan.dungeontrain.editor.TemplateSidecars;
 import games.brennan.dungeontrain.editor.WholeCarriageTemplateStore;
 import games.brennan.dungeontrain.portal.PortalRoomSizes;
 import games.brennan.dungeontrain.track.variant.TrackKind;
@@ -48,9 +49,14 @@ import java.util.Optional;
  * so there is no re-cropping to do here, only the choice of store. That choice is the whole risk in
  * this class, which is why {@link BuilderRelayKinds#kindOf} states it once.</p>
  *
- * <p><b>What does not come back:</b> the {@code .variants.json}, contents-allow and loot sidecars
- * are not part of what gets uploaded, so a downloaded template arrives with the defaults for all of
- * them. The blocks are the build; the rest is configuration the author sets again.</p>
+ * <p><b>The sidecars come back too.</b> A build's {@code .variants.json}, part assignments,
+ * contents-allow list, copies variant, container links and {@code weights.json} entry ride along in
+ * their own relay field and are written by {@link TemplateSidecars#apply} once the template itself is
+ * on disk — that ordering deliberately, so an interruption never leaves sidecars beside a template
+ * that is not there. Loot prefabs and contents-pool definitions are the exception and stay behind:
+ * they are library objects shared by every template, and installing one build must not overwrite an
+ * unrelated local prefab. An empty document — an older build, or an older relay — changes nothing,
+ * which is what leaves this install's own sidecars alone rather than resetting them.</p>
  */
 public final class BuilderRelayInstall {
 
@@ -100,7 +106,7 @@ public final class BuilderRelayInstall {
      */
     public static Outcome install(BuilderPhotoPaths.Kind kind, String id, String subKind,
                                   String stageId, StructureTemplate template) {
-        return install(kind, id, subKind, stageId, template, Resolution.AS_IS, "");
+        return install(kind, id, subKind, stageId, template, Resolution.AS_IS, "", "");
     }
 
     /**
@@ -115,6 +121,18 @@ public final class BuilderRelayInstall {
     public static Outcome install(BuilderPhotoPaths.Kind kind, String id, String subKind,
                                   String stageId, StructureTemplate template,
                                   Resolution resolution, String newName) {
+        return install(kind, id, subKind, stageId, template, resolution, newName, "");
+    }
+
+    /**
+     * As above, with the build's sidecar document — see {@link TemplateSidecars}.
+     *
+     * @param sidecars the document the relay handed back; blank leaves this install's own sidecars
+     *                 for that template untouched
+     */
+    public static Outcome install(BuilderPhotoPaths.Kind kind, String id, String subKind,
+                                  String stageId, StructureTemplate template,
+                                  Resolution resolution, String newName, String sidecars) {
         if (kind == null || id == null || id.isEmpty() || template == null) return Outcome.UNSUPPORTED;
         Resolution how = resolution == null ? Resolution.AS_IS : resolution;
         String chosen = newName == null ? "" : newName.trim();
@@ -124,7 +142,7 @@ public final class BuilderRelayInstall {
                 // question is whether the name the player picked is free.
                 if (chosen.isEmpty()) return Outcome.UNSUPPORTED;
                 if (occupied(kind, chosen, subKind)) return Outcome.NAME_TAKEN;
-                return write(kind, chosen, subKind, stageId, template);
+                return write(kind, chosen, subKind, stageId, template, sidecars);
             }
             if (how == Resolution.RENAME_EXISTING) {
                 if (chosen.isEmpty()) return Outcome.UNSUPPORTED;
@@ -132,21 +150,30 @@ public final class BuilderRelayInstall {
                 // Move the local one aside FIRST. If that fails the download is abandoned, which is
                 // the safe direction: the player still has exactly what they had.
                 if (!renameLocal(kind, id, subKind, chosen)) return Outcome.FAILED;
-                return write(kind, id, subKind, stageId, template);
+                return write(kind, id, subKind, stageId, template, sidecars);
             }
             if (how == Resolution.AS_IS && occupied(kind, id, subKind)) return Outcome.ALREADY_HERE;
             // REPLACE falls through with no check at all — overwriting is what was asked for.
-            return write(kind, id, subKind, stageId, template);
+            return write(kind, id, subKind, stageId, template, sidecars);
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] Builder relay download: could not install {} '{}'", kind.id(), id, t);
             return Outcome.FAILED;
         }
     }
 
-    /** Write the template into its store and register the id — the collision question already settled. */
+    /**
+     * Write the template into its store, register the id, then lay its sidecars down beside it — the
+     * collision question already settled.
+     *
+     * <p>Sidecars last, and only once the template landed: a {@code .variants.json} next to no
+     * {@code .nbt} is a file nothing reads and nothing cleans up, whereas a template that briefly has
+     * no sidecars is just a template at its defaults. Written under {@code id} — the name the build
+     * actually landed under, which for {@code LOAD_AS_NEW} is not the name it was uploaded as.</p>
+     */
     private static Outcome write(BuilderPhotoPaths.Kind kind, String id, String subKind,
-                                 String stageId, StructureTemplate template) throws IOException {
-        return switch (kind) {
+                                 String stageId, StructureTemplate template,
+                                 String sidecars) throws IOException {
+        Outcome outcome = switch (kind) {
             case CARRIAGE -> installCarriage(id, stageId, template);
             case CARRIAGE_GROUP -> installGroup(id, template);
             case CONTENTS -> installContents(id, template);
@@ -154,6 +181,8 @@ public final class BuilderRelayInstall {
             case TRACK -> installTrack(id, subKind, template);
             case PORTAL_ROOM -> installPortalRoom(id, template);
         };
+        if (outcome == Outcome.INSTALLED) TemplateSidecars.apply(kind, subKind, id, sidecars);
+        return outcome;
     }
 
     /**

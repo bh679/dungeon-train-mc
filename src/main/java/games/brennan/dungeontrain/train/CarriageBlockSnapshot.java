@@ -135,9 +135,15 @@ public final class CarriageBlockSnapshot {
      *
      * <p>{@code size} rather than {@link CarriageDims} because the builder authors things that are not
      * carriage-shaped — a portal room's volume is the author's, and a part's is its kind's.</p>
+     *
+     * <p>The build's free entities come with it, through {@link CarriageEntitySnapshot#captureLevel}
+     * — the no-ship twin of the sweep {@link #capture} uses, sharing its exclusion list and its text
+     * scrape. Every editor save captures its template with {@code includeEntities = true} (see
+     * {@code TemplateDecor.capture}), so the armour stands and item frames standing in a build are
+     * part of it; leaving them out here would upload something the author never saved.</p>
      */
     public static Captured captureLevel(ServerLevel level, BlockPos origin, Vec3i size,
-                                        HolderLookup.Provider registries) {
+                                        HolderLookup.Provider registries, int maxEntities) {
         ListTag cells = new ListTag();
         StringBuilder text = new StringBuilder();
         for (int dx = 0; dx < size.getX(); dx++) {
@@ -164,12 +170,16 @@ public final class CarriageBlockSnapshot {
                 }
             }
         }
+        CarriageEntitySnapshot.Captured entities =
+                CarriageEntitySnapshot.captureLevel(level, origin, size, maxEntities);
         CompoundTag root = new CompoundTag();
         root.putInt("v", FORMAT_VERSION);
         root.putInt("l", size.getX());
         root.putInt("h", size.getY());
         root.putInt("w", size.getZ());
         root.put("cells", cells);
+        root.put("ents", entities.ents());
+        if (!entities.text().isEmpty()) text.append(text.length() > 0 ? "\n" : "").append(entities.text());
         return new Captured(root, text.toString());
     }
 

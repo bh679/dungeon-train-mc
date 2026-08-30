@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.builder.relay;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.builder.BuilderSave;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
+import games.brennan.dungeontrain.editor.TemplateSidecars;
 import games.brennan.dungeontrain.event.NetworkConsentMirror;
 import games.brennan.dungeontrain.event.SharedCarriageMode;
 import games.brennan.dungeontrain.net.relay.SharedCarriageClient;
@@ -78,7 +79,8 @@ public final class BuilderRelayUpload {
         String text;
         try {
             CarriageBlockSnapshot.Captured captured = CarriageBlockSnapshot.captureLevel(
-                    level, written.origin(), written.size(), level.registryAccess());
+                    level, written.origin(), written.size(), level.registryAccess(),
+                    DungeonTrainConfig.getSharedCarriageMaxEntities());
             blocks = CarriageBlockSnapshot.encode(captured.tag());
             text = captured.text();
         } catch (Throwable t) {
@@ -93,30 +95,38 @@ public final class BuilderRelayUpload {
             return;
         }
 
+        // Everything about the template that is not its blocks — see TemplateSidecars. Read from the
+        // files on disk rather than plumbed through BuilderSave.Written and the save packet: those
+        // files are the source of truth for both the builder and the editor call site, and the save
+        // that just ran has already written them.
+        String sidecars = TemplateSidecars.collect(written.kind(), written.subKind(), written.id());
+
         DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
         String key = BuilderRelayBuilds.keyOf(BuilderRelayKinds.idOf(written.kind()), written.subKind(), written.id());
         BuilderRelayBuilds.Entry known = data.builderRelayBuilds().get(key);
         if (known != null && !known.token().isEmpty()) {
-            saveThrough(player, level, key, known, blocks, text, written);
+            saveThrough(player, level, key, known, blocks, text, sidecars, written);
             return;
         }
         if (known != null) {
             // Known build, but this world isn't holding the lease — it was published, or the lease
             // expired. Take it back first; a save without a token is refused by the relay.
-            claimThenSave(player, level, key, known, blocks, text, written);
+            claimThenSave(player, level, key, known, blocks, text, sidecars, written);
             return;
         }
-        submitNew(player, level, key, blocks, text, written, data, stageId);
+        submitNew(player, level, key, blocks, text, sidecars, written, data, stageId);
     }
 
     /** First upload of this template: create the profile entry and remember what came back. */
     private static void submitNew(ServerPlayer player, ServerLevel level, String key, String blocks, String text,
-                                  BuilderSave.Written written, DungeonTrainWorldData data, String stageId) {
+                                  String sidecars, BuilderSave.Written written,
+                                  DungeonTrainWorldData data, String stageId) {
         SharedCarriageClient.submitBuild(
                 player.getUUID().toString(), player.getGameProfile().getName(), blocks,
                 written.size().getX(), written.size().getY(), written.size().getZ(),
                 text, stageId == null ? "" : stageId, poolFor(),
-                BuilderRelayKinds.idOf(written.kind()), written.subKind(), written.id(), "profile")
+                BuilderRelayKinds.idOf(written.kind()), written.subKind(), written.id(), "profile",
+                sidecars)
                 .thenAccept(result -> onServer(level, () -> {
                     if (result.isEmpty()) {
                         tell(player, "gui.dungeontrain.builder.profile.upload_failed", ChatFormatting.RED, written.id());
@@ -134,8 +144,8 @@ public final class BuilderRelayUpload {
     /** A later save of a template this world still holds the lease on. */
     private static void saveThrough(ServerPlayer player, ServerLevel level, String key,
                                     BuilderRelayBuilds.Entry entry, String blocks, String text,
-                                    BuilderSave.Written written) {
-        SharedCarriageClient.save(entry.relayId(), entry.token(), blocks, text, 0)
+                                    String sidecars, BuilderSave.Written written) {
+        SharedCarriageClient.save(entry.relayId(), entry.token(), blocks, text, 0, sidecars)
                 .thenAccept(status -> onServer(level, () -> {
                     if (status == SharedCarriageClient.CallStatus.OK) {
                         tell(player, "gui.dungeontrain.builder.profile.saved", ChatFormatting.GRAY, written.id());
@@ -156,7 +166,7 @@ public final class BuilderRelayUpload {
                         DungeonTrainWorldData live = DungeonTrainWorldData.get(level);
                         live.builderRelayBuilds().put(key, tokenless);
                         live.markBuilderRelayBuildsDirty();
-                        claimThenSave(player, level, key, tokenless, blocks, text, written);
+                        claimThenSave(player, level, key, tokenless, blocks, text, sidecars, written);
                         return;
                     }
                     LOGGER.warn("[DungeonTrain] Builder relay upload: saving '{}' through its lease failed — {}",
@@ -174,7 +184,7 @@ public final class BuilderRelayUpload {
      */
     private static void claimThenSave(ServerPlayer player, ServerLevel level, String key,
                                       BuilderRelayBuilds.Entry entry, String blocks, String text,
-                                      BuilderSave.Written written) {
+                                      String sidecars, BuilderSave.Written written) {
         SharedCarriageClient.claim(entry.relayId(), entry.secret(),
                         player.getUUID().toString(), player.getGameProfile().getName())
                 .thenAccept(claim -> onServer(level, () -> {
@@ -183,7 +193,7 @@ public final class BuilderRelayUpload {
                         BuilderRelayBuilds.Entry leased = entry.withToken(claim.token());
                         live.builderRelayBuilds().put(key, leased);
                         live.markBuilderRelayBuildsDirty();
-                        saveThrough(player, level, key, leased, blocks, text, written);
+                        saveThrough(player, level, key, leased, blocks, text, sidecars, written);
                         return;
                     }
                     if (claim.inUse()) {
