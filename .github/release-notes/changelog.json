@@ -10477,6 +10477,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "owner-authoritative-build-save",
+      "version": "0.758.0",
+      "type": "fix",
+      "title": "Saving a build you've submitted always syncs",
+      "summary": "Saving a template in the Train Editor could tell you it was \"out on someone's train\" and quietly skip the upload to My Builds \u2014 and saying it would sync next time was wrong, because every later save stopped in the same place. Your own saves no longer wait for anyone: they go straight to your build, whoever happens to be riding it.",
+      "highlights": [
+        "An editor or builder save always reaches My Builds, even for a build you've submitted for review",
+        "Nobody riding a build is interrupted by its author saving it"
+      ],
+      "pr": 1238,
+      "date": "2026-08-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
