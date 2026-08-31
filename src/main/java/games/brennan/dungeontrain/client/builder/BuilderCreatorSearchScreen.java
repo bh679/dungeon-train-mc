@@ -15,6 +15,7 @@ import net.minecraft.network.chat.Component;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -29,6 +30,12 @@ import java.util.function.Consumer;
  * matches no builder is a name with nothing to look at. Picking a row hands their uuid back to
  * {@link BuilderProfileScreen}, which lists that player's profile exactly as it lists the player's
  * own.</p>
+ *
+ * <p>An EMPTY box is not an empty screen: it lists the builders this player has starred. A star on a
+ * builder exists to save exactly the search this screen asks for, so making you type a name to reach
+ * one would undo the point of setting it — and it is also the only place the star is discoverable
+ * before you have used it. Typing replaces the list with search results; clearing the box brings the
+ * starred ones back.</p>
  *
  * <p>Typing searches on a short delay rather than on every keystroke — each query is a round trip
  * through the server to the relay, and a name is typed faster than one completes. Answers carry the
@@ -78,6 +85,16 @@ public final class BuilderCreatorSearchScreen extends Screen {
      */
     private final Set<String> starred = new HashSet<>();
 
+    /**
+     * The starred builders, as the rows an empty box shows.
+     *
+     * <p>Held as {@link BuilderCreatorResultsPacket.Creator} rather than as the favourites packet's own
+     * type so that every row-drawing and row-indexing path stays on ONE type. The two records carry the
+     * same three fields, so the conversion is free and the alternative — two shapes of row through the
+     * same list — is how a screen ends up drawing one thing and clicking another.</p>
+     */
+    private List<BuilderCreatorResultsPacket.Creator> favouriteRows = List.of();
+
     public BuilderCreatorSearchScreen(Screen lastScreen, Consumer<BuilderCreatorResultsPacket.Creator> onPick) {
         super(Component.translatable("gui.dungeontrain.builder.creators.title"));
         this.lastScreen = lastScreen;
@@ -107,6 +124,9 @@ public final class BuilderCreatorSearchScreen extends Screen {
                 this.results = List.of();
                 this.answered = "";
                 this.searching = false;
+                this.unavailable = false;  // a failed search must not label the favourites list
+                this.scrollRow = 0;        // a different list — an inherited offset lands mid-nowhere
+                rebuild();                 // back to the starred builders, rather than to nothing
             }
         });
         addRenderableWidget(this.field);
@@ -115,15 +135,27 @@ public final class BuilderCreatorSearchScreen extends Screen {
         rebuild();
     }
 
+    /**
+     * What is on screen: the search results, or the starred builders when nothing has been typed.
+     *
+     * <p>Everything that draws a row, indexes one, or clamps the scroll goes through here. Reading
+     * {@link #results} directly anywhere would be the bug worth avoiding — the screen would draw the
+     * favourites and index into the search results, and a click would open a builder nobody chose.</p>
+     */
+    private List<BuilderCreatorResultsPacket.Creator> rows() {
+        return query.trim().isEmpty() ? favouriteRows : results;
+    }
+
     /** The result rows, and the Back button under them. Rebuilt whenever the list or the scroll moves. */
     private void rebuild() {
         clearWidgets();
         addRenderableWidget(this.field);
 
+        List<BuilderCreatorResultsPacket.Creator> shown = rows();
         int rows = visibleRows();
-        this.scrollRow = Math.max(0, Math.min(scrollRow, Math.max(0, results.size() - rows)));
-        for (int i = 0; i < rows && scrollRow + i < results.size(); i++) {
-            BuilderCreatorResultsPacket.Creator creator = results.get(scrollRow + i);
+        this.scrollRow = Math.max(0, Math.min(scrollRow, Math.max(0, shown.size() - rows)));
+        for (int i = 0; i < rows && scrollRow + i < shown.size(); i++) {
+            BuilderCreatorResultsPacket.Creator creator = shown.get(scrollRow + i);
             int rowY = RESULTS_TOP + i * (ROW_H + ROW_GAP);
             // The name keeps the row's width less the star, so the two hit targets are visibly
             // separate: opening somebody's profile and starring them are different intentions and a
@@ -185,6 +217,18 @@ public final class BuilderCreatorSearchScreen extends Screen {
         }
         DungeonTrainNet.sendToServer(
                 BuilderFavouritePacket.forBuilder(creator.uuid(), next, BuilderProfileState.live()));
+        // The empty-box list IS the favourites, so un-starring there removes the row rather than
+        // leaving a hollow star sitting in a list of things that are supposed to be starred.
+        if (!next) {
+            this.favouriteRows = favouriteRows.stream()
+                    .filter(c -> !c.uuid().equals(creator.uuid())).toList();
+        } else if (favouriteRows.stream().noneMatch(c -> c.uuid().equals(creator.uuid()))) {
+            // Starred from a search result: it belongs in the empty-box list from now on, without
+            // waiting for a fresh listing to say so.
+            List<BuilderCreatorResultsPacket.Creator> next_ = new ArrayList<>(favouriteRows);
+            next_.add(creator);
+            this.favouriteRows = List.copyOf(next_);
+        }
         rebuild();
     }
 
@@ -196,7 +240,12 @@ public final class BuilderCreatorSearchScreen extends Screen {
 
     private void rememberStarred(BuilderFavouritesPacket packet) {
         starred.clear();
-        for (BuilderFavouritesPacket.Builder b : packet.builders()) starred.add(b.uuid());
+        List<BuilderCreatorResultsPacket.Creator> favs = new ArrayList<>(packet.builders().size());
+        for (BuilderFavouritesPacket.Builder b : packet.builders()) {
+            starred.add(b.uuid());
+            favs.add(new BuilderCreatorResultsPacket.Creator(b.uuid(), b.name(), b.builds()));
+        }
+        this.favouriteRows = List.copyOf(favs);
     }
 
     @Override
@@ -230,7 +279,7 @@ public final class BuilderCreatorSearchScreen extends Screen {
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
-        if (results.size() > visibleRows()) {
+        if (rows().size() > visibleRows()) {
             this.scrollRow -= (int) Math.signum(scrollY);
             rebuild();
             return true;
@@ -256,7 +305,12 @@ public final class BuilderCreatorSearchScreen extends Screen {
      */
     private Component statusNote() {
         if (searching) return Component.translatable("gui.dungeontrain.builder.creators.searching");
-        if (query.trim().isEmpty()) return Component.translatable("gui.dungeontrain.builder.creators.prompt");
+        if (query.trim().isEmpty()) {
+            // Nothing starred is not a state worth explaining — it reads as the ordinary prompt.
+            return Component.translatable(favouriteRows.isEmpty()
+                    ? "gui.dungeontrain.builder.creators.prompt"
+                    : "gui.dungeontrain.builder.creators.favourites");
+        }
         if (unavailable) return Component.translatable("gui.dungeontrain.builder.creators.unavailable");
         if (results.isEmpty() && !answered.isEmpty()) {
             return Component.translatable("gui.dungeontrain.builder.creators.none");
