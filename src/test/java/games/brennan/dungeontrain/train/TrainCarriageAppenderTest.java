@@ -717,12 +717,50 @@ final class TrainCarriageAppenderTest {
     }
 
     @Test
-    @DisplayName("FILL spawns exactly the number of groups the lane is short")
-    void burstMode_fill_coversTheDeficit() {
-        assertEquals(2, TrainCarriageAppender.catchUpBurstGroups(2 * GROUP_SIZE, GROUP_SIZE, CatchUpBurstMode.FILL));
-        assertEquals(5, TrainCarriageAppender.catchUpBurstGroups(5 * GROUP_SIZE, GROUP_SIZE, CatchUpBurstMode.FILL));
-        assertEquals(3, TrainCarriageAppender.catchUpBurstGroups(2 * GROUP_SIZE + 1, GROUP_SIZE, CatchUpBurstMode.FILL),
+    @DisplayName("FILL spawns its per-tick cap, however deep the shortfall — the rest follows on later ticks")
+    void burstMode_fill_capsPerTick() {
+        int cap = TrainCarriageAppender.CATCH_UP_FILL_GROUPS_PER_TICK;
+        for (int groups : new int[] { 2, 5, 20 }) {
+            assertEquals(cap,
+                TrainCarriageAppender.catchUpBurstGroups(groups * GROUP_SIZE, GROUP_SIZE, CatchUpBurstMode.FILL),
+                "a deep shortfall must not be paid on one tick — that is the 170ms stall this replaced");
+        }
+        assertEquals(cap,
+            TrainCarriageAppender.catchUpBurstGroups(2 * GROUP_SIZE + 1, GROUP_SIZE, CatchUpBurstMode.FILL),
             "a partial group still needs a whole group to cover it");
+    }
+
+    @Test
+    @DisplayName("deficitGroups counts whole groups, and nothing when the lane is level")
+    void deficitGroups_counting() {
+        assertEquals(0, TrainCarriageAppender.deficitGroups(0, GROUP_SIZE));
+        assertEquals(0, TrainCarriageAppender.deficitGroups(-9, GROUP_SIZE));
+        assertEquals(1, TrainCarriageAppender.deficitGroups(1, GROUP_SIZE));
+        assertEquals(1, TrainCarriageAppender.deficitGroups(GROUP_SIZE, GROUP_SIZE));
+        assertEquals(2, TrainCarriageAppender.deficitGroups(GROUP_SIZE + 1, GROUP_SIZE));
+        assertThrows(IllegalArgumentException.class, () -> TrainCarriageAppender.deficitGroups(9, 0));
+    }
+
+    @Test
+    @DisplayName("a fill run keeps going while it is behind and contiguous")
+    void fillRun_continuesWhileBehind() {
+        assertTrue(TrainCarriageAppender.fillRunShouldContinue(100L, 101L, 3, 5),
+            "advanced last tick, still five groups short");
+        assertTrue(TrainCarriageAppender.fillRunShouldContinue(100L, 100L, 3, 5),
+            "twice in the same tick is contiguous by definition");
+    }
+
+    @Test
+    @DisplayName("a fill run stops when level, at its cap, or after a skipped tick")
+    void fillRun_stopConditions() {
+        assertFalse(TrainCarriageAppender.fillRunShouldContinue(100L, 101L, 3, 0),
+            "caught up — the run is done");
+        assertFalse(TrainCarriageAppender.fillRunShouldContinue(100L, 101L,
+                TrainCarriageAppender.CATCH_UP_FILL_MAX_GROUPS, 5),
+            "the runaway guard bounds a run, not just a tick");
+        assertFalse(TrainCarriageAppender.fillRunShouldContinue(100L, 103L, 3, 5),
+            "a gap means something interrupted it — the stored plan is no longer trustworthy, "
+                + "so the lane must re-resolve its edge through the normal gate");
     }
 
     @Test
@@ -735,12 +773,13 @@ final class TrainCarriageAppenderTest {
     }
 
     @Test
-    @DisplayName("FILL is bounded by the runaway guard")
-    void burstMode_fill_clampedAtCap() {
-        int huge = 500 * GROUP_SIZE;
-        assertEquals(TrainCarriageAppender.CATCH_UP_FILL_MAX_GROUPS,
-            TrainCarriageAppender.catchUpBurstGroups(huge, GROUP_SIZE, CatchUpBurstMode.FILL),
-            "a pathological deficit must not ask for a thousand sub-levels on one tick");
+    @DisplayName("FILL is bounded per tick, so a pathological deficit can't ask for a thousand sub-levels")
+    void burstMode_fill_boundedPerTick() {
+        assertEquals(TrainCarriageAppender.CATCH_UP_FILL_GROUPS_PER_TICK,
+            TrainCarriageAppender.catchUpBurstGroups(500 * GROUP_SIZE, GROUP_SIZE, CatchUpBurstMode.FILL));
+        assertTrue(TrainCarriageAppender.CATCH_UP_FILL_GROUPS_PER_TICK
+                <= TrainCarriageAppender.CATCH_UP_FILL_MAX_GROUPS,
+            "one tick can never exceed what a whole run is allowed");
     }
 
     @Test

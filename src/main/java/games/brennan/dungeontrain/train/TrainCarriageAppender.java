@@ -1606,6 +1606,8 @@ public final class TrainCarriageAppender {
         SPAWN_GEN_WAIT_BACKWARD.clear();
         BURST_FOLLOWERS.clear();
         BURST_FOLLOWER_OF.clear();
+        FILL_RUN_FORWARD.clear();
+        FILL_RUN_BACKWARD.clear();
         lastSyncGenTick = Long.MIN_VALUE;
     }
 
@@ -1715,6 +1717,59 @@ public final class TrainCarriageAppender {
     static final int CATCH_UP_FILL_MAX_GROUPS = 16;
 
     /**
+     * Groups {@link CatchUpBurstMode#FILL} may spawn in ONE tick. The rest of the shortfall follows
+     * on the ticks after it (see {@link FillRun}), so a deep deficit costs a run of ordinary ticks
+     * instead of one long one.
+     *
+     * <p>Measured on the shipped one-tick fill: cost scales at ~30 ms per group in a tick — 1 group
+     * 32 ms, 2 groups 64 ms, 3 groups 73 ms, 5 groups 170 ms. A server tick's budget is 50 ms, so
+     * ONE group is the only value that stays inside it, and it still adds ~20 groups per second: a
+     * 7-group shortfall closes in about a third of a second rather than in one 210 ms stall. Raise
+     * this only with that table in hand.</p>
+     */
+    static final int CATCH_UP_FILL_GROUPS_PER_TICK = 1;
+
+    /**
+     * A {@link CatchUpBurstMode#FILL} catch-up in progress on one lane, carried across ticks.
+     *
+     * <p>Holds the PLANNED placement of the last group the run spawned, which is what the next one
+     * chains off. That is the whole reason a run may skip {@link #isLanePlacementGateClear}: the
+     * gate exists because {@link #planSpawnPlacement} reads the reference carriage's live pose, and
+     * a run never does — {@link #planChainedSpawn} extends the stored plan by a whole
+     * {@code subLevelStride + TARGET_GAP_BLOCKS}. Re-resolving the edge each tick would read an
+     * AABB one tick old, which is the stale-geometry trap that produced a 116-block shove and
+     * touching seams.</p>
+     *
+     * @param lastPlan       placement of the most recent group in the run
+     * @param lastAnchor     that group's anchor pIdx
+     * @param lastSubLevelId that group's sub-level id — the lockstep chain's tail
+     * @param groupsSoFar    groups this run has spawned, bounded by {@link #CATCH_UP_FILL_MAX_GROUPS}
+     * @param lastAdvancedTick the tick it last spawned on; a gap means the chain is no longer
+     *                       contiguous and the lane must re-resolve its edge
+     */
+    private record FillRun(Plan lastPlan, int lastAnchor, UUID lastSubLevelId,
+                           int groupsSoFar, long lastAdvancedTick) {}
+
+    /** In-progress fill runs, one per lane per train. See {@link FillRun}. */
+    private static final Map<UUID, FillRun> FILL_RUN_FORWARD = new ConcurrentHashMap<>();
+    private static final Map<UUID, FillRun> FILL_RUN_BACKWARD = new ConcurrentHashMap<>();
+
+    /**
+     * Whether a fill run may spawn again this tick.
+     *
+     * <p>False when the lane has caught up ({@code deficitGroups <= 0}), when the run has hit
+     * {@link #CATCH_UP_FILL_MAX_GROUPS}, or when it did not advance on the previous tick — a gap
+     * means something interrupted it (a deferral, a cull, the player leaving), and the stored plan
+     * is no longer a trustworthy description of where the lane's edge is. Pure so the boundary is
+     * unit-testable without a level.</p>
+     */
+    static boolean fillRunShouldContinue(long lastAdvancedTick, long now, int groupsSoFar, int deficitGroups) {
+        if (deficitGroups <= 0) return false;
+        if (groupsSoFar >= CATCH_UP_FILL_MAX_GROUPS) return false;
+        return now - lastAdvancedTick <= 1L;
+    }
+
+    /**
      * Groups one lane may spawn this tick, given how far that lane is behind
      * and which {@link CatchUpBurstMode} is configured.
      *
@@ -1746,7 +1801,9 @@ public final class TrainCarriageAppender {
         if (deficitPIdx <= 0) return 1;
         int deficitGroups = Math.ceilDiv(deficitPIdx, groupSize);
         if (mode == CatchUpBurstMode.FILL) {
-            return Math.max(1, Math.min(deficitGroups, CATCH_UP_FILL_MAX_GROUPS));
+            // Per TICK, not per shortfall: the rest follows on later ticks via FillRun, so the
+            // catch-up stays fast without any one tick carrying the whole cost.
+            return Math.max(1, Math.min(deficitGroups, CATCH_UP_FILL_GROUPS_PER_TICK));
         }
         return (deficitGroups >= CATCH_UP_DEFICIT_GROUPS) ? CATCH_UP_BURST_GROUPS : 1;
     }
@@ -2039,6 +2096,8 @@ public final class TrainCarriageAppender {
         // maps. Both directions are pruned in lock-step.
         NEXT_PLANNED_SPAWNS_FORWARD.keySet().retainAll(trainsTouchedThisTick);
         NEXT_PLANNED_SPAWNS_BACKWARD.keySet().retainAll(trainsTouchedThisTick);
+        FILL_RUN_FORWARD.keySet().retainAll(trainsTouchedThisTick);
+        FILL_RUN_BACKWARD.keySet().retainAll(trainsTouchedThisTick);
         BLOCKED_SINCE_FORWARD.keySet().retainAll(trainsTouchedThisTick);
         BLOCKED_SINCE_BACKWARD.keySet().retainAll(trainsTouchedThisTick);
         STALL_WARNED_FORWARD.keySet().retainAll(trainsTouchedThisTick);
@@ -2488,7 +2547,16 @@ public final class TrainCarriageAppender {
         boolean didForwardSpawn = false;
         boolean didBackwardSpawn = false;
 
-        if (needsForward && isLanePlacementGateClear(LAST_SPAWNED_SHIP_FORWARD, LAST_SPAWNED_TICK_FORWARD, CULL_CLEARED_FORWARD, trainId, train, now, true)) {
+        // A FILL run already under way continues WITHOUT the placement gate — it extends its own
+        // stored plan rather than reading a live pose, which is the only reason skipping the gate is
+        // sound (see FillRun). Everything else, including the first spawn of every run, still goes
+        // through the gate exactly as before.
+        if (needsForward) {
+            didForwardSpawn = advanceFillRun(level, trainId, train, FILL_RUN_FORWARD,
+                forwardDeficitPIdx, groupSize, dims, velocity, now, true);
+        }
+        if (!didForwardSpawn && needsForward
+            && isLanePlacementGateClear(LAST_SPAWNED_SHIP_FORWARD, LAST_SPAWNED_TICK_FORWARD, CULL_CLEARED_FORWARD, trainId, train, now, true)) {
             Plan forwardPlan = planSpawnPlacement(forwardRef, forwardAnchor, groupSize, dims, train);
             ManagedShip newShip = spawnPlannedGroup(
                 level, forwardPlan, forwardRef, forwardAnchor, groupSize, dims, velocity, trainId, train);
@@ -2503,11 +2571,18 @@ public final class TrainCarriageAppender {
                 // the steady-state one-group deficit.
                 spawnCatchUpBurst(level, trainId, train, newShip, forwardPlan, forwardAnchor,
                     forwardDeficitPIdx, groupSize, dims, velocity, now, true);
+                openFillRun(trainId, FILL_RUN_FORWARD, forwardPlan, forwardAnchor, newShip, now,
+                    forwardDeficitPIdx, groupSize);
                 didForwardSpawn = true;
             }
         }
 
-        if (needsBackward && isLanePlacementGateClear(LAST_SPAWNED_SHIP_BACKWARD, LAST_SPAWNED_TICK_BACKWARD, CULL_CLEARED_BACKWARD, trainId, train, now, false)) {
+        if (needsBackward) {
+            didBackwardSpawn = advanceFillRun(level, trainId, train, FILL_RUN_BACKWARD,
+                backwardDeficitPIdx, groupSize, dims, velocity, now, false);
+        }
+        if (!didBackwardSpawn && needsBackward
+            && isLanePlacementGateClear(LAST_SPAWNED_SHIP_BACKWARD, LAST_SPAWNED_TICK_BACKWARD, CULL_CLEARED_BACKWARD, trainId, train, now, false)) {
             Plan backwardPlan = planSpawnPlacement(backwardRef, backwardAnchor, groupSize, dims, train);
             ManagedShip newShip = spawnPlannedGroup(
                 level, backwardPlan, backwardRef, backwardAnchor, groupSize, dims, velocity, trainId, train);
@@ -2519,6 +2594,8 @@ public final class TrainCarriageAppender {
                 // settle window can't keep up with the train's speed.
                 spawnCatchUpBurst(level, trainId, train, newShip, backwardPlan, backwardAnchor,
                     backwardDeficitPIdx, groupSize, dims, velocity, now, false);
+                openFillRun(trainId, FILL_RUN_BACKWARD, backwardPlan, backwardAnchor, newShip, now,
+                    backwardDeficitPIdx, groupSize);
                 didBackwardSpawn = true;
             }
         }
@@ -4323,13 +4400,6 @@ public final class TrainCarriageAppender {
         CatchUpBurstMode mode = DungeonTrainConfig.getCatchUpBurstMode();
         int allowed = catchUpBurstGroups(deficitPIdx, groupSize, mode);
         if (allowed <= 1) return 0;
-        if (mode == CatchUpBurstMode.FILL && allowed == CATCH_UP_FILL_MAX_GROUPS
-            && Math.ceilDiv(deficitPIdx, groupSize) > CATCH_UP_FILL_MAX_GROUPS) {
-            LOGGER.info("[DungeonTrain] Catch-up fill clamped to {} groups on lane {} (deficitPIdx={} groupSize={} would need {}) — the rest follows next tick (trainId={})",
-                CATCH_UP_FILL_MAX_GROUPS, forward ? "forward" : "backward",
-                deficitPIdx, groupSize, Math.ceilDiv(deficitPIdx, groupSize), trainId);
-        }
-
         Plan prevPlan = firstPlan;
         int prevAnchor = firstAnchor;
         UUID prevSubLevelId = firstShip.subLevelId();
@@ -4369,6 +4439,101 @@ public final class TrainCarriageAppender {
                 deficitPIdx, groupSize, extra, firstAnchor, prevAnchor, trainId);
         }
         return extra;
+    }
+
+    /**
+     * Open a fill run on this lane, if the mode is {@link CatchUpBurstMode#FILL} and the lane is
+     * still short after the spawn that just happened. The run picks up on the next tick.
+     */
+    private static void openFillRun(UUID trainId, Map<UUID, FillRun> lane, Plan plan, int anchor,
+                                    ManagedShip ship, long now, int deficitPIdx, int groupSize) {
+        if (DungeonTrainConfig.getCatchUpBurstMode() != CatchUpBurstMode.FILL) return;
+        if (deficitGroups(deficitPIdx, groupSize) <= 1) return;
+        lane.put(trainId, new FillRun(plan, anchor, ship.subLevelId(), 1, now));
+    }
+
+    /** The lane's shortfall in whole groups; 0 when it is level or ahead. */
+    static int deficitGroups(int deficitPIdx, int groupSize) {
+        if (groupSize <= 0) throw new IllegalArgumentException("groupSize must be > 0, got " + groupSize);
+        return deficitPIdx <= 0 ? 0 : Math.ceilDiv(deficitPIdx, groupSize);
+    }
+
+    /**
+     * Advance an in-progress {@link CatchUpBurstMode#FILL} run by up to
+     * {@link #CATCH_UP_FILL_GROUPS_PER_TICK} groups, chained off the plan it stored — no placement
+     * gate, no live-pose read.
+     *
+     * <p>This is what turns a one-tick fill into a run of ordinary ticks: the shortfall closes just
+     * as fast in wall-clock terms, but no single tick carries more than the per-tick cap. The run
+     * ends the moment anything looks off — the lane caught up, the chain would need a collision
+     * correction, a spawn deferred for chunk generation, the run hit its cap, or a tick passed
+     * without it advancing — and the lane goes back through the normal gate.</p>
+     *
+     * @return whether a group was spawned this tick
+     */
+    private static boolean advanceFillRun(
+        ServerLevel level,
+        UUID trainId,
+        List<Trains.Carriage> train,
+        Map<UUID, FillRun> lane,
+        int deficitPIdx,
+        int groupSize,
+        CarriageDims dims,
+        Vector3dc velocity,
+        long now,
+        boolean forward
+    ) {
+        FillRun run = lane.get(trainId);
+        if (run == null) return false;
+        if (DungeonTrainConfig.getCatchUpBurstMode() != CatchUpBurstMode.FILL) {
+            lane.remove(trainId);
+            return false;
+        }
+        if (!fillRunShouldContinue(run.lastAdvancedTick(), now, run.groupsSoFar(),
+                deficitGroups(deficitPIdx, groupSize))) {
+            lane.remove(trainId);
+            return false;
+        }
+
+        Plan prevPlan = run.lastPlan();
+        int prevAnchor = run.lastAnchor();
+        UUID prevSubLevelId = run.lastSubLevelId();
+        int spawned = 0;
+
+        for (int i = 0; i < CATCH_UP_FILL_GROUPS_PER_TICK; i++) {
+            int nextAnchor = forward ? (prevAnchor + groupSize) : (prevAnchor - groupSize);
+            if (Trains.knownAnchors(trainId).contains(nextAnchor)) break;
+            Plan chained = planChainedSpawn(prevPlan, prevAnchor, nextAnchor, dims, train, trainId);
+            if (!burstChainIsCommittable(chained.collisionAdjustments())) {
+                LOGGER.info("[DungeonTrain] Catch-up fill: chained anchor={} needed a {}-block collision shove — ending the run (trainId={})",
+                    nextAnchor, chained.collisionAdjustments(), trainId);
+                break;
+            }
+            ManagedShip ship = spawnPlannedGroup(
+                level, chained, null, nextAnchor, groupSize, dims, velocity, trainId, train);
+            if (ship == null) break;
+            recordSpawnedGroup(level, trainId, ship, nextAnchor, train, now, forward);
+            // Same lockstep link the within-tick burst makes, so a run built across ticks is one
+            // chain and a leader's shift still reaches its tail.
+            if (ship.getKinematicDriver() instanceof TrainTransformProvider chainedProvider) {
+                linkBurstFollower(prevSubLevelId, ship.subLevelId(), chainedProvider);
+            }
+            prevPlan = chained;
+            prevAnchor = nextAnchor;
+            prevSubLevelId = ship.subLevelId();
+            spawned++;
+        }
+
+        if (spawned == 0) {
+            lane.remove(trainId);
+            return false;
+        }
+        lane.put(trainId, new FillRun(prevPlan, prevAnchor, prevSubLevelId,
+            run.groupsSoFar() + spawned, now));
+        LOGGER.info("[DungeonTrain] Catch-up fill on lane {}: +{} group(s) this tick (run total {}, deficitPIdx={} anchors up to {}) trainId={}",
+            forward ? "forward" : "backward", spawned, run.groupsSoFar() + spawned,
+            deficitPIdx, prevAnchor, trainId);
+        return true;
     }
 
     /**
