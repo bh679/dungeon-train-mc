@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.client.builder;
 import games.brennan.dungeontrain.builder.BuilderLabels;
 import games.brennan.dungeontrain.builder.relay.BuilderRelayInstall;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
@@ -45,6 +46,11 @@ public final class BuilderProfileReplaceScreen extends BuilderProfileChoiceScree
 
         addChoice(Component.translatable("gui.dungeontrain.builder.profile.collision.replace"),
                 () -> choose(BuilderRelayInstall.Resolution.REPLACE));
+    }
+
+    @Override
+    protected Component leaveLabel() {
+        return CommonComponents.GUI_BACK;
     }
 
     @Override

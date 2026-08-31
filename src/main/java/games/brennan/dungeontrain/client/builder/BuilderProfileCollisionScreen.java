@@ -43,11 +43,13 @@ public final class BuilderProfileCollisionScreen extends BuilderProfileChoiceScr
 
     @Override
     protected void addChoices() {
-        addChoice(Component.translatable("gui.dungeontrain.builder.profile.collision.load_as_new"),
+        // One row: these are the two halves of a single either/or, and stacking them read as a list
+        // of three things to weigh instead of one fork with a second question behind it.
+        addChoiceRow(
+                Component.translatable("gui.dungeontrain.builder.profile.collision.load_as_new"),
                 () -> promptFor(BuilderRelayInstall.Resolution.LOAD_AS_NEW,
-                        "gui.dungeontrain.builder.profile.name.load_as_new"));
-
-        addChoice(Component.translatable("gui.dungeontrain.builder.profile.collision.replace_existing"),
+                        "gui.dungeontrain.builder.profile.name.load_as_new"),
+                Component.translatable("gui.dungeontrain.builder.profile.collision.replace_existing"),
                 () -> this.minecraft.setScreen(
                         new BuilderProfileReplaceScreen(this, lastScreen, buildName, onChosen)));
     }

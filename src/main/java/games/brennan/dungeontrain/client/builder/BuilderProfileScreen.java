@@ -458,6 +458,12 @@ public final class BuilderProfileScreen extends Screen {
         }
         if (packet.outcome() != BuilderRelayDownload.Outcome.INSTALLED) return;
 
+        // An install is the end of this menu either way: the build is on disk, and leaving the
+        // player looking at the list they loaded it from is a step they would only have to undo.
+        // Closed first so the open path's own screens — the unsaved-work prompt, the category
+        // switch — land in front of the game rather than on top of a list nobody is reading.
+        closeToGame();
+
         BuilderPhotoPaths.Kind kind = BuilderPhotoPaths.Kind.fromId(packet.kindId()).orElse(null);
         if (kind == null) return;
         if (BuilderWorldCheck.isBuilderWorld()) {
@@ -484,7 +490,6 @@ public final class BuilderProfileScreen extends Screen {
                         packet.id(), false)
                 : new BuilderOpenPacket(mode.id(), kind.id(), packet.id(),
                         kind == BuilderPhotoPaths.Kind.PART ? packet.subKind() : "", false));
-        closeToGame();
     }
 
     /**
@@ -492,29 +497,40 @@ public final class BuilderProfileScreen extends Screen {
      *
      * <p>Two cases, and the difference is whether the editor has to be moved between categories.
      * Inside the right one already, the per-template enter command teleports and nothing is
-     * disturbed. From a different category the switch has to happen first — and that switch clears
-     * and restamps every plot, which silently destroys unsaved edits, so it goes through the same
+     * disturbed. From anywhere else the switch has to happen first — and that switch clears and
+     * restamps every plot, which silently destroys unsaved edits, so it goes through the same
      * {@link UnsavedCheckScreen} the Enter menu uses rather than around it. A clean editor never
      * sees that screen: it dispatches and closes on its own.</p>
      *
-     * <p>Does nothing when no editor session is running — the player downloaded a build from the
-     * pause menu of an ordinary world, where there is no plot to stand them on. The build is
-     * installed and the screen has already said so.</p>
+     * <p>Standing in an editor plot is deliberately <em>not</em> required. A load ends with the
+     * build in front of you, and the player who has just downloaded one has said plainly enough
+     * where they want to be — so no session yet is simply the switch case, the same path the Enter
+     * menu takes when it moves between categories. What is required is being allowed to run the
+     * editor commands at all ({@link #canRunEditorCommands}), which is what keeps a plain survival
+     * download from restamping the world around someone who only wanted the file.</p>
      */
     private void openInEditor(BuilderPhotoPaths.Kind kind, BuilderProfileDownloadResultPacket packet) {
-        if (!EditorStatusHudOverlay.isActive()) return;
         String target = EditorTemplateJump.categoryIdFor(kind, packet.subKind());
-        if (target == null) return;   // nothing in the editor holds this kind — a carriage group
+        // Nothing in the editor holds a carriage group, and a player without the editor's commands
+        // can't be sent anywhere — either way the build is installed and the menu is done.
+        if (target == null || !canRunEditorCommands()) return;
         String enter = EditorTemplateJump.enterCommandFor(kind, packet.id(), packet.subKind());
 
         String current = EditorStatusHudOverlay.category().toLowerCase(java.util.Locale.ROOT);
         if (target.equals(current)) {
             if (enter != null) CommandRunner.run(enter);
-            closeToGame();
             return;
         }
-        closeToGame();
         CommandMenuState.openAt(new UnsavedCheckScreen(target, enter == null ? "" : enter));
+    }
+
+    /**
+     * Whether this player can run the editor's commands, which is the client-side half of the
+     * server's permission check — the op level the server synced at login.
+     */
+    private boolean canRunEditorCommands() {
+        return this.minecraft != null && this.minecraft.player != null
+                && this.minecraft.player.hasPermissions(2);
     }
 
     /**

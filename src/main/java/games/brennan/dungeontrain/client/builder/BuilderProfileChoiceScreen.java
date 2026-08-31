@@ -28,6 +28,8 @@ import java.util.function.BiConsumer;
 abstract class BuilderProfileChoiceScreen extends Screen {
 
     protected static final int BUTTON_WIDTH = 220;
+    /** Half of a row, less the gap between the two halves, so a pair fills the same column width. */
+    protected static final int HALF_WIDTH = (BUTTON_WIDTH - 4) / 2;
     protected static final int BUTTON_HEIGHT = 20;
     protected static final int BUTTON_GAP = 4;
     private static final int LINE_HEIGHT = 11;
@@ -56,8 +58,16 @@ abstract class BuilderProfileChoiceScreen extends Screen {
     /** The note under the title, explaining what the answers do to the build already here. */
     protected abstract Component hint();
 
-    /** Add the answers, in order, with {@link #addChoice}. */
+    /** Add the answers, in order, with {@link #addChoice} or {@link #addChoiceRow}. */
     protected abstract void addChoices();
+
+    /**
+     * The label on the way out. Cancel on the first question, since leaving it abandons the load;
+     * Back on anything reached from it, where leaving only undoes the last answer.
+     */
+    protected Component leaveLabel() {
+        return CommonComponents.GUI_CANCEL;
+    }
 
     @Override
     protected void init() {
@@ -70,13 +80,24 @@ abstract class BuilderProfileChoiceScreen extends Screen {
         addChoices();
 
         this.nextY += BUTTON_GAP * 2;
-        addRenderableWidget(Button.builder(CommonComponents.GUI_CANCEL, b -> onClose())
+        addRenderableWidget(Button.builder(leaveLabel(), b -> onClose())
                 .bounds(left(), this.nextY, BUTTON_WIDTH, BUTTON_HEIGHT).build());
     }
 
     protected void addChoice(Component label, Runnable action) {
         addRenderableWidget(Button.builder(label, b -> action.run())
                 .bounds(left(), this.nextY, BUTTON_WIDTH, BUTTON_HEIGHT).build());
+        this.nextY += BUTTON_HEIGHT + BUTTON_GAP;
+    }
+
+    /** Two answers side by side, for a pair that is one either/or rather than a list. */
+    protected void addChoiceRow(Component leftLabel, Runnable leftAction,
+                                Component rightLabel, Runnable rightAction) {
+        addRenderableWidget(Button.builder(leftLabel, b -> leftAction.run())
+                .bounds(left(), this.nextY, HALF_WIDTH, BUTTON_HEIGHT).build());
+        addRenderableWidget(Button.builder(rightLabel, b -> rightAction.run())
+                .bounds(left() + BUTTON_WIDTH - HALF_WIDTH, this.nextY, HALF_WIDTH, BUTTON_HEIGHT)
+                .build());
         this.nextY += BUTTON_HEIGHT + BUTTON_GAP;
     }
 
@@ -94,7 +115,7 @@ abstract class BuilderProfileChoiceScreen extends Screen {
      * question differs, and it matters which build the player thinks they are naming.
      */
     protected void promptFor(BuilderRelayInstall.Resolution resolution, String promptKey) {
-        this.minecraft.setScreen(new BuilderProfileNameScreen(lastScreen,
+        this.minecraft.setScreen(new BuilderProfileNameScreen(lastScreen, this,
                 Component.translatable(promptKey, prettyName()),
                 buildName.isEmpty() ? "" : buildName + "_2",
                 chosen -> onChosen.accept(resolution, chosen)));
