@@ -23,6 +23,16 @@
       ]
     },
     {
+      "name": "SandRuin",
+      "languages": [
+        {
+          "locale": "ru_ru",
+          "contributed": 43,
+          "total": 1857
+        }
+      ]
+    },
+    {
       "name": "ShadowsVoid_vn",
       "languages": [
         {
@@ -48,11 +58,11 @@
       ]
     },
     {
-      "name": "SandRuin",
+      "name": "WeeKsT",
       "languages": [
         {
           "locale": "ru_ru",
-          "contributed": 9,
+          "contributed": 3,
           "total": 1857
         }
       ]
@@ -78,7 +88,17 @@
       ]
     },
     {
-      "name": "WeeKsT",
+      "name": "DyingDol",
+      "languages": [
+        {
+          "locale": "zh_cn",
+          "contributed": 1,
+          "total": 1817
+        }
+      ]
+    },
+    {
+      "name": "ecodead",
       "languages": [
         {
           "locale": "ru_ru",
