@@ -61,11 +61,12 @@ public final class BuilderRelayInstall {
     /**
      * What became of an install.
      *
-     * <p>{@link #ALREADY_HERE} is not a failure and not a silent success: this install already has a
-     * template of that kind under that name, and overwriting it is the one outcome here that can
+     * <p>{@link #ALREADY_HERE} is not a failure and not a silent success: this install has <b>saved</b>
+     * a template of that kind under that name, and overwriting it is the one outcome here that can
      * destroy work — the local copy may be newer than the relay's, or a different build that merely
      * shares a name. The player is told instead. The case the download exists for (a world that has
-     * never seen the build) never reaches it.</p>
+     * never saved the build) never reaches it, and a name the jar merely ships stops the player's own
+     * build only when the build is somebody else's — see {@link #taken}.</p>
      */
     public enum Outcome { INSTALLED, ALREADY_HERE, NAME_TAKEN, UNSUPPORTED, FAILED }
 
@@ -99,22 +100,24 @@ public final class BuilderRelayInstall {
      *                save links it; ignored when empty or unknown to this install
      */
     public static Outcome install(BuilderPhotoPaths.Kind kind, String id, String subKind,
-                                  String stageId, StructureTemplate template) {
-        return install(kind, id, subKind, stageId, template, Resolution.AS_IS, "");
+                                  String stageId, StructureTemplate template, boolean mine) {
+        return install(kind, id, subKind, stageId, template, Resolution.AS_IS, "", mine);
     }
 
     /**
-     * As {@link #install(BuilderPhotoPaths.Kind, String, String, String, StructureTemplate)}, with the
-     * player's answer to a name collision.
+     * As {@link #install(BuilderPhotoPaths.Kind, String, String, String, StructureTemplate, boolean)},
+     * with the player's answer to a name collision.
      *
      * @param resolution what to do about a name already in use here
      * @param newName    the name the player chose — the local template's new name for
      *                   {@link Resolution#RENAME_EXISTING}, the downloaded build's for
      *                   {@link Resolution#LOAD_AS_NEW}, and ignored otherwise
+     * @param mine       whether the build being installed is the downloading player's own — see
+     *                   {@link #taken}, the one thing it decides
      */
     public static Outcome install(BuilderPhotoPaths.Kind kind, String id, String subKind,
                                   String stageId, StructureTemplate template,
-                                  Resolution resolution, String newName) {
+                                  Resolution resolution, String newName, boolean mine) {
         if (kind == null || id == null || id.isEmpty() || template == null) return Outcome.UNSUPPORTED;
         Resolution how = resolution == null ? Resolution.AS_IS : resolution;
         String chosen = newName == null ? "" : newName.trim();
@@ -123,18 +126,18 @@ public final class BuilderRelayInstall {
                 // The downloaded build takes the new name outright. Nothing local moves, so the only
                 // question is whether the name the player picked is free.
                 if (chosen.isEmpty()) return Outcome.UNSUPPORTED;
-                if (occupied(kind, chosen, subKind)) return Outcome.NAME_TAKEN;
+                if (taken(kind, chosen, subKind, mine)) return Outcome.NAME_TAKEN;
                 return write(kind, chosen, subKind, stageId, template);
             }
             if (how == Resolution.RENAME_EXISTING) {
                 if (chosen.isEmpty()) return Outcome.UNSUPPORTED;
-                if (occupied(kind, chosen, subKind)) return Outcome.NAME_TAKEN;
+                if (taken(kind, chosen, subKind, mine)) return Outcome.NAME_TAKEN;
                 // Move the local one aside FIRST. If that fails the download is abandoned, which is
                 // the safe direction: the player still has exactly what they had.
                 if (!renameLocal(kind, id, subKind, chosen)) return Outcome.FAILED;
                 return write(kind, id, subKind, stageId, template);
             }
-            if (how == Resolution.AS_IS && occupied(kind, id, subKind)) return Outcome.ALREADY_HERE;
+            if (how == Resolution.AS_IS && taken(kind, id, subKind, mine)) return Outcome.ALREADY_HERE;
             // REPLACE falls through with no check at all — overwriting is what was asked for.
             return write(kind, id, subKind, stageId, template);
         } catch (Throwable t) {
@@ -146,6 +149,11 @@ public final class BuilderRelayInstall {
     /** Write the template into its store and register the id — the collision question already settled. */
     private static Outcome write(BuilderPhotoPaths.Kind kind, String id, String subKind,
                                  String stageId, StructureTemplate template) throws IOException {
+        if (bundled(kind, id, subKind)) {
+            LOGGER.info("[DungeonTrain] Builder relay download: '{}' {} '{}' shadows the copy the mod ships — "
+                    + "the bundled one is untouched, /dt reset default brings it back",
+                    kind.id(), subKind == null || subKind.isEmpty() ? "template" : subKind, id);
+        }
         return switch (kind) {
             case CARRIAGE -> installCarriage(id, stageId, template);
             case CARRIAGE_GROUP -> installGroup(id, template);
@@ -157,12 +165,36 @@ public final class BuilderRelayInstall {
     }
 
     /**
-     * Whether this install already has a template of {@code kind} under {@code id} — a saved copy or
-     * a bundled one.
+     * Whether {@code id} is a name this install will not write over — the collision question, whole.
      *
-     * <p>Bundled counts. A downloaded build written under a built-in's name would not overwrite the
-     * jar's copy but WOULD shadow it for this whole install, which is a surprising thing to have
-     * happened by pressing a button on somebody else's build.</p>
+     * <p>Two tiers and one distinction. {@link #occupied} — saved work — always counts: overwriting
+     * it is the one outcome here that can destroy something. The <b>bundled</b> tier counts only for
+     * somebody else's build, and that asymmetry is the point. Shadowing a built-in by pressing a
+     * button on a build you found through a creator search is the surprise the check was written to
+     * prevent; doing it to fetch <em>your own</em> build back is the request itself, and refusing it
+     * made every one of the 161 shipped contents sub-variants — and any build sharing a shipped
+     * part, rail or room name — permanently un-loadable by its own author.</p>
+     */
+    private static boolean taken(BuilderPhotoPaths.Kind kind, String id, String subKind, boolean mine) {
+        return occupied(kind, id, subKind) || (!mine && bundled(kind, id, subKind));
+    }
+
+    /**
+     * Whether this install has <b>saved work</b> of {@code kind} under {@code id} — a file in its own
+     * library, and nothing else.
+     *
+     * <p>The bundled tier is deliberately not counted, and that is the whole rule: a name only the
+     * jar holds is not the player's work, so a download landing on it destroys nothing. It writes
+     * into the config dir and shadows the jar's copy for this install, which {@code /dt reset
+     * default} undoes and which is what a player asking for their own build back is asking for.
+     * Counting it instead made every one of the 161 shipped contents sub-variants — and any build
+     * sharing a shipped part, rail or room name — permanently un-loadable, because a name the mod
+     * ships is occupied on every install of the mod.</p>
+     *
+     * <p>Refusing over a saved copy stays: that one may be newer than the relay's, or a different
+     * build that merely shares a name, and overwriting it is the one outcome here that can lose
+     * something. Whether the bundled tier joins it depends on whose build is landing — see
+     * {@link #taken}, which is what callers ask.</p>
      */
     public static boolean occupied(BuilderPhotoPaths.Kind kind, String id, String subKind) {
         if (kind == null || id == null || id.isEmpty()) return false;
@@ -170,28 +202,53 @@ public final class BuilderRelayInstall {
             case CARRIAGE -> {
                 CarriageVariant variant = CarriageVariantRegistry.find(id).orElse(null);
                 yield WholeCarriageTemplateStore.exists(WholeCarriage.of(id))
-                        || (variant != null
-                            && (CarriageTemplateStore.exists(variant) || CarriageTemplateStore.bundled(variant)));
+                        || (variant != null && CarriageTemplateStore.exists(variant));
             }
             case CARRIAGE_GROUP -> CarriageGroupTemplateStore.exists(CarriageGroup.of(id));
             case CONTENTS -> {
                 CarriageContents existing = CarriageContentsRegistry.find(id).orElse(null);
-                yield existing != null
-                        && (CarriageContentsStore.exists(existing) || CarriageContentsStore.bundled(existing));
+                yield existing != null && CarriageContentsStore.exists(existing);
             }
             case PART -> {
                 CarriagePartKind partKind = CarriagePartKind.fromId(subKind);
-                yield partKind != null
-                        && (CarriagePartTemplateStore.exists(partKind, id)
-                            || CarriagePartTemplateStore.bundled(partKind, id));
+                yield partKind != null && CarriagePartTemplateStore.exists(partKind, id);
             }
             case TRACK -> {
                 TrackKind trackKind = TrackKind.fromId(subKind);
-                yield trackKind != null
-                        && (TrackVariantStore.exists(trackKind, id) || TrackVariantStore.bundled(trackKind, id));
+                yield trackKind != null && TrackVariantStore.exists(trackKind, id);
             }
-            case PORTAL_ROOM -> PortalRoomTemplateStore.exists(id)
-                    || TrackVariantStore.bundled(TrackKind.PORTAL_ROOM, id);
+            case PORTAL_ROOM -> PortalRoomTemplateStore.exists(id);
+        };
+    }
+
+    /**
+     * Whether the mod jar ships a template of {@code kind} under {@code id}.
+     *
+     * <p>Not a collision — see {@link #occupied}. Read for one thing only: to say in the log that an
+     * install has just shadowed a built-in, which is invisible from the game and worth being able to
+     * find afterwards.</p>
+     */
+    private static boolean bundled(BuilderPhotoPaths.Kind kind, String id, String subKind) {
+        if (kind == null || id == null || id.isEmpty()) return false;
+        return switch (kind) {
+            case CARRIAGE -> {
+                CarriageVariant variant = CarriageVariantRegistry.find(id).orElse(null);
+                yield variant != null && CarriageTemplateStore.bundled(variant);
+            }
+            case CARRIAGE_GROUP -> false;   // groups have no bundled tier
+            case CONTENTS -> {
+                CarriageContents existing = CarriageContentsRegistry.find(id).orElse(null);
+                yield existing != null && CarriageContentsStore.bundled(existing);
+            }
+            case PART -> {
+                CarriagePartKind partKind = CarriagePartKind.fromId(subKind);
+                yield partKind != null && CarriagePartTemplateStore.bundled(partKind, id);
+            }
+            case TRACK -> {
+                TrackKind trackKind = TrackKind.fromId(subKind);
+                yield trackKind != null && TrackVariantStore.bundled(trackKind, id);
+            }
+            case PORTAL_ROOM -> TrackVariantStore.bundled(TrackKind.PORTAL_ROOM, id);
         };
     }
 
@@ -318,11 +375,25 @@ public final class BuilderRelayInstall {
     }
 
     /**
-     * A portal room. One write and no registry call: rooms are discovered from their files, and
-     * {@code PortalRoomTemplateStore.save} records the room's size for that discovery itself.
+     * A portal room: write the file, then register the name — the ordering every arm here uses.
+     *
+     * <p>The write covers half of a room's discovery on its own ({@code PortalRoomTemplateStore.save}
+     * settles the size into {@link PortalRoomSizes}), and rooms are otherwise found by scanning their
+     * directory — but that scan runs at startup. Without the register the name is unknown for the
+     * rest of the session, and everything that addresses a room by name goes through
+     * {@link TrackVariantRegistry}: the room is missing from the editor's list, and the Open this
+     * screen fires straight after the download ({@code dungeontrain editor portals enter <name>})
+     * fails with "Unknown dimensional carriage" on a build that had just installed cleanly.</p>
+     *
+     * <p>No {@code PortalRoomEditor.relayout} around the register, unlike
+     * {@code PortalRoomEditor.createFromBuiltIn}: {@code enter} primes the sizes and stamps every
+     * plot on the way in, so the row rebuilds itself — and relayout writes blocks into the world,
+     * which in a builder world or an ordinary one (where this button also lives, and where no editor
+     * row was ever stamped) would put plots into terrain nothing asked for.</p>
      */
     private static Outcome installPortalRoom(String id, StructureTemplate template) throws IOException {
         PortalRoomTemplateStore.save(id, template);
+        TrackVariantRegistry.register(TrackKind.PORTAL_ROOM, id);
         LOGGER.info("[DungeonTrain] Builder relay download: installed portal room '{}'", id);
         return Outcome.INSTALLED;
     }

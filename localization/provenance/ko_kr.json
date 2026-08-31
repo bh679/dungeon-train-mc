@@ -111,7 +111,7 @@
   "chat.dungeontrain.free_play.consequence": {"author": "Opus 4.8 (Claude)", "reviewer": ""},
   "container.dungeontrain.enderchest.profile": {"author": "Opus 5 (Claude)", "reviewer": ""},
   "container.dungeontrain.enderchest.separator": {"author": "Opus 5 (Claude)", "reviewer": ""},
-  "container.dungeontrain.enderchest.free_play": {"author": "Opus 5 (Claude)", "reviewer": ""},
+  "container.dungeontrain.enderchest.free_play": {"author": "gogogockj", "reviewer": "gogogockj"},
   "gui.dungeontrain.difficulty_confirm.title": {"author": "Opus 5 (Claude)", "reviewer": ""},
   "gui.dungeontrain.difficulty_confirm.body": {"author": "Opus 5 (Claude)", "reviewer": ""},
   "gui.dungeontrain.difficulty_confirm.loss": {"author": "Opus 5 (Claude)", "reviewer": ""},

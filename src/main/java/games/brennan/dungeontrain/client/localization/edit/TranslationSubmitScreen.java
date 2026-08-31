@@ -212,7 +212,11 @@ public final class TranslationSubmitScreen extends Screen {
             }
             // Belt and braces for an override stored before the edit screen started checking, or
             // one pulled down from the relay. Sending it would only have it deferred at import.
-            if (!book && TranslationFormatCheck.check(unit.source(), value) != null) {
+            // Each kind gets its own rule: printf tokens for a lang string, {braces} for a book.
+            TranslationFormatCheck.Problem broken = book
+                ? TranslationFormatCheck.checkBook(unit.source(), value)
+                : TranslationFormatCheck.check(unit.source(), value);
+            if (broken != null) {
                 continue;
             }
             units.add(new TranslationSubmitClient.Unit(book ? "book" : "lang",

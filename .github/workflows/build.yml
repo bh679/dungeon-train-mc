@@ -139,6 +139,12 @@ jobs:
       - name: Per-book narrative provenance aligned with book files
         run: python3 scripts/localization/check-narrative-provenance.py
 
+      # Book prose is Component.literal and names its figures {deaths}, so neither the printf
+      # guard on the import side nor the one in the in-game editor can see them. Without this a
+      # translation that drops one ships silently — see check-book-placeholders.py.
+      - name: Translated books keep every {placeholder} their English original has
+        run: python3 scripts/localization/check-book-placeholders.py
+
       - name: Provenance script tests
         run: |
           python3 scripts/localization/test_check_provenance.py
@@ -148,5 +154,7 @@ jobs:
           python3 scripts/localization/test_provenance_io.py
           python3 scripts/localization/test_import_approved_translations.py
           python3 scripts/localization/test_lang_format.py
+          python3 scripts/localization/test_book_format.py
+          python3 scripts/localization/test_check_book_placeholders.py
           python3 scripts/localization/test_plural_forms.py
           python3 scripts/localization/test_merge_locale_keys.py

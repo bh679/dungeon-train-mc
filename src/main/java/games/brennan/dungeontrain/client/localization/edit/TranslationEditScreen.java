@@ -427,13 +427,15 @@ public final class TranslationEditScreen extends Screen {
     /**
      * What is wrong with {@code typed}, or null.
      *
-     * <p>Books are exempt: their prose is rendered with {@code Component.literal}
-     * ({@code narrative/BookFactory}), never reaches the format parser, and a {@code %} in a story
-     * is just a percent sign.</p>
+     * <p>Books are asked a different question, not spared one. Their prose is rendered with
+     * {@code Component.literal} ({@code narrative/BookFactory}) and never reaches the format
+     * parser, so a {@code %} in a story is just a percent sign — but it writes its figures as
+     * {@code {deaths}} instead, and losing one of those costs the sentence its number just as
+     * surely.</p>
      */
     private TranslationFormatCheck.Problem problemWith(String typed) {
         if (unit.type() == TranslationUnit.Type.BOOK) {
-            return null;
+            return TranslationFormatCheck.checkBookTyped(unit.source(), typed);
         }
         return TranslationFormatCheck.checkTyped(unit.source(), typed);
     }

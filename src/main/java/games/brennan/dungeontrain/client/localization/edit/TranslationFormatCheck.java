@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.client.localization.edit;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -21,10 +22,20 @@ import java.util.stream.Collectors;
  * import — after the translator's effort had been spent. This asks the same question at the
  * keystroke, so the answer arrives while the text is still in front of them.</p>
  *
+ * <p>Books answer a second question, and it took a near miss to notice. Book prose is rendered with
+ * {@code Component.literal} ({@code narrative/BookFactory}), never reaches the format parser, and
+ * writes its figures as {@code {deaths}} / {@code {deaths_nth}}, substituted afterwards by
+ * {@code DeathLoreStore.sub}. So {@link #check} has nothing to say about one — a {@code %} in a
+ * story really is just a percent sign — but the braces matter every bit as much as a {@code %s}
+ * does, and until 2026-08-30 nothing checked them anywhere. Five approved ru_ru epitaphs came back
+ * with {@code {deaths_nth}} replaced by {@code {deaths}й}, gluing an adjective ending onto the
+ * CARDINAL: "2й, кто пал" for what should read "второй, кто пал". {@link #checkBook} is that
+ * question.</p>
+ *
  * <p>Deliberately free of Minecraft types, like {@link TranslationVariableScanner} which it builds
  * on: it returns a lang KEY and the tokens to name, and the screen turns that into a component.
- * The rule is the one {@code scripts/localization/lang_format.py} enforces on the import side, so
- * both ends of the pipe agree about what a valid translation is.</p>
+ * The rules are the ones {@code scripts/localization/lang_format.py} and {@code book_format.py}
+ * enforce on the import side, so both ends of the pipe agree about what a valid translation is.</p>
  */
 public final class TranslationFormatCheck {
 
@@ -41,6 +52,9 @@ public final class TranslationFormatCheck {
      * removing all of these is one the parser will choke on.
      */
     private static final Pattern TOKEN = Pattern.compile("%(?:%|(?:\\d+\\$)?[a-zA-Z])");
+
+    /** A figure the narrative layer substitutes — the book counterpart of {@link #TOKEN}. */
+    private static final Pattern BRACE = Pattern.compile("\\{[a-zA-Z0-9_]+}");
 
     private TranslationFormatCheck() {}
 
@@ -89,8 +103,9 @@ public final class TranslationFormatCheck {
         return out;
     }
 
-    private static List<Integer> difference(Set<Integer> from, Set<Integer> without) {
-        return from.stream().filter(slot -> !without.contains(slot)).toList();
+    /** Everything in {@code from} that {@code without} does not have, keeping {@code from}'s order. */
+    private static <T> List<T> difference(Set<T> from, Set<T> without) {
+        return from.stream().filter(item -> !without.contains(item)).toList();
     }
 
     /** Slots named the way a translator sees them in the source: {@code %1$s, %2$s}. */
@@ -98,8 +113,56 @@ public final class TranslationFormatCheck {
         return slots.stream().map(slot -> "%" + slot + "$s").collect(Collectors.joining(", "));
     }
 
+    /**
+     * What is wrong with {@code translated} as a rendering of a BOOK field's {@code source}, or null.
+     *
+     * <p>No bare-percent branch: books never reach the format parser, so a percent sign in a story is
+     * only a percent sign. What is checked is that the translation still names every figure the
+     * English names — see the class note for the epitaph that did not.</p>
+     *
+     * <p>Which placeholders, not how many or where. A translation moves the figure to wherever its
+     * grammar wants it, and may name it fewer times than the English does: English writes "{@code
+     * {deaths} times the dark has taken you, and {deaths} times you boarded again}", and ru_ru
+     * renders the second as "столько же раз" — "as many times". The number is not lost, the sentence
+     * says it in Russian, and blocking that would be the editor telling a translator their own
+     * language is wrong.</p>
+     */
+    public static Problem checkBook(String source, String translated) {
+        if (translated == null || translated.isBlank()) {
+            return null;
+        }
+        Set<String> wanted = braces(source);
+        Set<String> got = braces(translated);
+        String missing = String.join(", ", difference(wanted, got));
+        if (!missing.isEmpty()) {
+            return new Problem(MISSING_VARS, missing);
+        }
+        String extra = String.join(", ", difference(got, wanted));
+        if (!extra.isEmpty()) {
+            return new Problem(EXTRA_VARS, extra);
+        }
+        return null;
+    }
+
+    /** The distinct figures {@code text} names, in a stable order so the message reads the same. */
+    private static Set<String> braces(String text) {
+        Set<String> out = new TreeSet<>();
+        if (text != null) {
+            Matcher matcher = BRACE.matcher(text);
+            while (matcher.find()) {
+                out.add(matcher.group());
+            }
+        }
+        return out;
+    }
+
     /** Convenience for callers holding a raw edit-box value rather than a stored one. */
     public static Problem checkTyped(String source, String typed) {
         return check(source, TranslationEdits.normalizeValue(typed));
+    }
+
+    /** {@link #checkBook} for a caller holding a raw edit-box value rather than a stored one. */
+    public static Problem checkBookTyped(String source, String typed) {
+        return checkBook(source, TranslationEdits.normalizeValue(typed));
     }
 }

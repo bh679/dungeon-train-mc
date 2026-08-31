@@ -112,8 +112,24 @@ public final class CheatModList {
         // do anything (which OperatorIntegrity now catches on its own), but naming them lets the
         // login notice say WHAT tripped Free Play rather than just "someone has cheats".
         // "infinityeditor" is the original Ruukas build, "infinity_item_editor_re" the
-        // maintained NeoForge fork.
-        "infinityeditor", "infinity_item_editor_re"
+        // maintained NeoForge fork, and "cadeditor" the CAD (Component And Data) Editor — the
+        // IBE Editor successor, which edits the 1.20.5+ component set (attributes, enchantments,
+        // stack size, unbreakable, container contents, item type) from a GUI. "dine" (Dynamic
+        // In-Game NBT Editor) is the same idea aimed at entities and block entities — a live NBT
+        // tree you can rewrite mid-run. It drives the vanilla /data command, so its edits already
+        // need permission level 2, but naming it here lets the notice say what tripped Free Play.
+        // "ankinbt" (AnkiNBT) covers all three surfaces at once — items, live entities and
+        // villager trades — with a simple mode for names/enchantments/attributes and a full NBT
+        // tree behind it.
+        // "nbtedit" is In-game NBTEdit Reborn, the maintained continuation of the original
+        // NBTEdit — an /nbtedit tree over the held item or the entity you look at.
+        "infinityeditor", "infinity_item_editor_re", "cadeditor", "dine", "ankinbt", "nbtedit",
+        // mob-stat / spawn-rule rewriters — a GUI over every living entity's health, armour,
+        // speed, attack damage, damage-type immunities, and the biome + group-size rules that
+        // decide what spawns. That is DT's difficulty curve and spawn tables rewritten from a
+        // menu, so a run made under one is not comparable to anyone else's. Presence-based like
+        // the rest of the list: it flips Free Play whether the player tuned mobs down OR up.
+        "visual_mobs_edit"
     );
 
     /** Cache file under the loader config dir; written on each successful relay fetch. */

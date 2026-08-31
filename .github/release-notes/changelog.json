@@ -10350,14 +10350,9 @@
       "id": "portal-room-doorway-placement-fixes",
       "version": "0.749.0",
       "type": "fix",
-      "title": "Rooms with a moved doorway build in full, and stay built",
-      "summary": "A dimensional carriage whose doorway had been moved off the room's floor was being stamped partly outside the world, so the bottom of the room simply never appeared \u2014 the author walked into the top of their own build standing on nothing. Those rooms now stand on solid ground, keep their endless copies while you walk through them, and are fogged and lit all the way down.",
-      "highlights": [
-        "A room with a raised doorway builds every row the author made, instead of losing everything below the world's floor",
-        "Endless rooms no longer shed their copies around a player standing on the room's own floor",
-        "Fog and daylight now fill the whole room, rather than stopping at the corridor's floor line",
-        "Test the Carriage says so when a room is too tall for the world you are testing it in, instead of failing"
-      ],
+      "title": "Editor fixes",
+      "summary": "Assorted fixes to the dimensional carriage editor.",
+      "highlights": [],
       "pr": 1218,
       "date": "2026-08-30",
       "released": true,
@@ -10383,16 +10378,16 @@
     },
     {
       "id": "menu-to-loading-transition",
-      "version": "0.750.0",
+      "version": "0.751.0",
       "type": "feat",
       "title": "Smoother world join",
       "summary": "Starting a world now fades from the menu into the loading screen instead of cutting, with no more flash of vanilla chrome.",
       "highlights": [],
       "pr": 1223,
       "date": "2026-08-30",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.752.0",
+      "released_at": "2026-08-30T14:58:40Z"
     },
     {
       "id": "endless-room-tiling-settles",
@@ -10405,6 +10400,79 @@
         "Walking still opens the room ahead of you exactly as before"
       ],
       "pr": 1225,
+      "date": "2026-08-30",
+      "released": true,
+      "released_in": "v0.752.0",
+      "released_at": "2026-08-30T14:58:40Z"
+    },
+    {
+      "id": "cheat-list-cad-editor",
+      "version": "0.752.0",
+      "type": "chore",
+      "title": "In-game editors count as cheat mods",
+      "summary": "Installing CAD Editor, DINE or AnkiNBT now puts the run into Free Play, alongside the other in-game editors. They rewrite an item's components, a mob or block entity's NBT, or a villager's trades from a GUI, so they do the work of a command without one.",
+      "highlights": [
+        "CAD Editor, DINE and AnkiNBT added to the cheat-mod list"
+      ],
+      "date": "2026-08-30",
+      "released": true,
+      "released_in": "v0.752.0",
+      "released_at": "2026-08-30T14:58:40Z"
+    },
+    {
+      "id": "relay-admin-url-machine-wide",
+      "version": "0.753.0",
+      "type": "chore",
+      "title": "Internal tooling",
+      "summary": "Development tooling changes.",
+      "highlights": [],
+      "date": "2026-08-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "cheat-list-visual-mobs-edit",
+      "version": "0.754.0",
+      "type": "chore",
+      "title": "More editors count as cheat mods",
+      "summary": "Installing Visual Mobs Edit or In-game NBTEdit Reborn now puts the run into Free Play. One rewrites mob health, damage, immunities and spawn rules from a menu \u2014 the difficulty curve a run is measured against \u2014 and the other rewrites the NBT of whatever you are holding or looking at.",
+      "highlights": [
+        "Visual Mobs Edit and In-game NBTEdit Reborn added to the cheat-mod list"
+      ],
+      "date": "2026-08-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "book-placeholder-guard",
+      "version": "0.756.0",
+      "type": "feat",
+      "title": "Translation editor catches a book losing its numbers",
+      "summary": "When you translate a story book in the in-game translation editor, the editor now tells you if your text has lost one of the numbers the game fills in \u2014 the death count in an epitaph, the carriage you fell in. Those are written as {deaths} or {deaths_nth} in the English, and until now nothing noticed when one went missing on the way through: the line would ship with the number simply gone. Only bracketed figures are checked, so a percent sign or a stray brace in a story is still just prose.",
+      "highlights": [
+        "The editor names the missing figure while you are still typing",
+        "Approved translations that lost a figure are held back instead of shipped"
+      ],
+      "pr": 1235,
+      "date": "2026-08-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "builder-load-own-build",
+      "version": "0.757.0",
+      "type": "fix",
+      "title": "Loading your own build from My Builds works again",
+      "summary": "Loading one of your own builds back from My Builds could refuse with \"you already have a build by that name here\" when you didn't. Any name Dungeon Train itself ships counted as one you already had \u2014 which is every sub-variant of a contents group, so those could never be loaded at all. Your own builds now load; a build by somebody else still asks before it replaces anything built in. Loading a dimensional carriage also opens it properly instead of failing with \"Unknown dimensional carriage\" straight after downloading it.",
+      "highlights": [
+        "Your own builds load from My Builds even when the name matches one Dungeon Train ships",
+        "Contents sub-variants can be loaded at all \u2014 every one of them was blocked",
+        "A downloaded dimensional carriage opens in the editor and shows up in the list right away"
+      ],
+      "pr": 1237,
       "date": "2026-08-30",
       "released": false,
       "released_in": null,

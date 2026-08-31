@@ -800,8 +800,6 @@
     "discordpresence": "*"
   },
   "books": [
-    "random_books/lovenote",
-    "random_books/where_the_writing_goes",
     "starting_books/cursed/no_one_came_back",
     "starting_books/cursed_defied/they_won",
     "starting_books/cursed_fulfilled/it_worked",
