@@ -50,14 +50,17 @@ import java.util.List;
  * be opened like anything else. In a builder world it is opened straight away, through the ordinary
  * Open path.</p>
  *
- * <p>Only a whole carriage can be submitted ({@link BuilderRelayKinds#canJoinTheTrain}); every other
- * kind the builder authors is a piece of something rather than a thing a train slot can hold, so its
- * tile says where it lives and offers nothing to press.</p>
+ * <p>Every kind the builder authors can be submitted ({@link BuilderRelayKinds#canSubmitForReview}):
+ * a carriage room, a shell part, a length of track and a portal room are all things a person can look
+ * at and accept, and offering the button on carriages alone left the rest of a builder's work with
+ * nowhere to go. What acceptance leads to still differs by kind — only a carriage is a thing a train
+ * slot can hold ({@link BuilderRelayKinds#canJoinTheTrain}) — which is why this screen promises a
+ * review and never a ride.</p>
  *
  * <p>Submitting is a request, not an outcome. A submitted build waits for a person to look at it
- * ({@link BuilderReviewState}), and until they do it is neither in the profile nor on the train — so
- * a submittable carriage's tile reads from its review state rather than from the published flag,
- * which only says what its author asked for. This screen is the one place either half of that can be
+ * ({@link BuilderReviewState}), and until they do it is neither purely the author's nor accepted into
+ * the game — so a tile reads from its review state rather than from the published flag, which only
+ * says what its author asked for. This screen is the one place either half of that can be
  * told to the person who made it.</p>
  *
  * <p>The header names whose builds these are. On a DEV BUILD that name is a button: it opens
@@ -386,25 +389,22 @@ public final class BuilderProfileScreen extends Screen {
     }
 
     /**
-     * Whether the button can do anything: a build has to be selected, and it has to be the kind a
-     * train can hold. Withdrawing is always allowed on a submitted build — the relay is what refuses,
-     * when somebody else is out riding it.
+     * Whether the button can do anything: a build has to be selected, and it has to be a kind this
+     * version knows how to describe. Withdrawing is always allowed on a submitted build — the relay is
+     * what refuses, when somebody else is out riding it.
      */
     private boolean canActOnSelection() {
         BuilderProfilePacket.Entry entry = selectedBuild();
-        // Never on somebody else's profile: putting their build on the train, or pulling it off, is
-        // their decision to make and the relay would refuse it anyway (the action is authed by the
-        // owner secret, which this world does not hold).
-        return entry != null && !viewingOther() && BuilderRelayKinds.canJoinTheTrain(entry.kind());
+        // Never on somebody else's profile: submitting their build, or withdrawing it, is their
+        // decision to make and the relay would refuse it anyway (the action is authed by the owner
+        // secret, which this world does not hold).
+        return entry != null && !viewingOther() && BuilderRelayKinds.canSubmitForReview(entry.kind());
     }
 
     private Component actionLabel() {
         BuilderProfilePacket.Entry entry = selectedBuild();
         if (viewingOther()) return Component.translatable("gui.dungeontrain.builder.profile.not_yours_short");
         if (entry == null) return Component.translatable("gui.dungeontrain.builder.profile.submit_for_review");
-        if (!BuilderRelayKinds.canJoinTheTrain(entry.kind())) {
-            return Component.translatable("gui.dungeontrain.builder.profile.not_a_carriage");
-        }
         return Component.translatable(entry.published()
                 ? "gui.dungeontrain.builder.profile.withdraw_submission"
                 : "gui.dungeontrain.builder.profile.submit_for_review");
@@ -412,7 +412,7 @@ public final class BuilderProfileScreen extends Screen {
 
     private void submitSelected() {
         BuilderProfilePacket.Entry entry = selectedBuild();
-        if (entry == null || viewingOther() || !BuilderRelayKinds.canJoinTheTrain(entry.kind())) return;
+        if (entry == null || viewingOther() || !BuilderRelayKinds.canSubmitForReview(entry.kind())) return;
         DungeonTrainNet.sendToServer(new BuilderProfileActionPacket(entry.relayId(), !entry.published()));
         // The server re-reads the profile once the relay answers, which lands back on this screen
         // through onProfile — so nothing is assumed to have worked here.
@@ -678,11 +678,12 @@ public final class BuilderProfileScreen extends Screen {
      * How this tile is marked: where the build stands with the reviewer, said in a way that survives
      * not reading the caption at all.
      *
-     * <p>Only a submittable kind gets one. A portal room or a shell part has no submission state to be
-     * in — colouring it would invent a status for something that was never asked about.</p>
+     * <p>Only a submittable kind gets one — which is now every kind this version knows, since every
+     * one of them can be offered to the operator. A kind it does not know goes unbadged rather than
+     * being coloured by a state it cannot vouch for.</p>
      */
     private static BuilderReviewBadge badgeOf(BuilderProfilePacket.Entry entry) {
-        return BuilderRelayKinds.canJoinTheTrain(entry.kind())
+        return BuilderRelayKinds.canSubmitForReview(entry.kind())
                 ? BuilderReviewBadge.of(entry.review())
                 : null;
     }

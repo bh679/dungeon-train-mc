@@ -10,6 +10,13 @@ import games.brennan.dungeontrain.builder.BuilderPhotoPaths;
  * can check the other: the upload writes the kind, and the relay refuses to lease anything that is not
  * a {@code carriage} into a train. A kind that mapped wrong would put a portal room in the pool as a
  * cart — so the mapping is stated once, here, and tested.</p>
+ *
+ * <p>Two different questions are asked of a kind, and keeping them apart is the point of the two
+ * predicates below. {@link #canSubmitForReview} asks whether a build may be offered to the operator
+ * at all — every kind may, because a room and a length of track are things a person can look at and
+ * accept. {@link #canJoinTheTrain} asks the narrower thing: whether a train slot can hold it. Only a
+ * carriage can, and the relay's lease says so in SQL literals, so the two can never be conflated into
+ * one flag without one of them quietly becoming wrong.</p>
  */
 public final class BuilderRelayKinds {
 
@@ -88,12 +95,44 @@ public final class BuilderRelayKinds {
     }
 
     /**
-     * Whether a build of this kind can be submitted to the train.
+     * Whether a build of this kind can be offered to the operator — what My Builds' Submit button does.
+     *
+     * <p>Every kind can. Submitting is a request for a person to look at a build and say yes or no to
+     * it, and a carriage room, a shell part, a length of track and a portal room are all things a
+     * person can answer that about; only what happens <em>after</em> a yes differs by kind. The relay
+     * agrees: publishing never reads the kind, and the review verdict it records is the same column
+     * whatever was submitted.</p>
+     *
+     * <p>Deliberately not {@link #canJoinTheTrain}. A build being reviewable and a train slot being
+     * able to hold it are two different questions with two different answers for five of the six
+     * kinds, and the one flag that used to answer both is what left a portal room with a dead
+     * button.</p>
+     */
+    public static boolean canSubmitForReview(BuilderPhotoPaths.Kind kind) {
+        return kind != null;
+    }
+
+    /**
+     * As above, from the relay's own kind string (what a profile listing carries).
+     *
+     * <p>A kind this build of the mod does not know is refused rather than guessed at, the same way
+     * {@link #kindOf} refuses one: a newer relay naming a kind this version has never heard of is a
+     * build this version cannot say anything true about.</p>
+     */
+    public static boolean canSubmitForReview(String kindId) {
+        return kindOf(kindId) != null;
+    }
+
+    /**
+     * Whether a train slot can hold a build of this kind.
      *
      * <p>Only a whole carriage. Everything else the builder authors — a room, a shell part, a length of
-     * track, a portal room — is a piece of something rather than a thing a train slot can hold, so it
-     * lives in its author's profile and stops there. The relay enforces the same rule on its side; this
-     * is what keeps the game from offering a button that could only ever fail.</p>
+     * track, a portal room — is a piece of something rather than a thing a train slot can hold. The
+     * relay enforces the same rule on its side, in the lease query's literals, so this is a statement
+     * about what the pool will serve rather than a preference either side could relax alone.</p>
+     *
+     * <p>No longer the submit gate — see {@link #canSubmitForReview}. What is still asked of it is
+     * what only a carriage has: the stage that decides which stretch of line it belongs to.</p>
      */
     public static boolean canJoinTheTrain(BuilderPhotoPaths.Kind kind) {
         return kind == BuilderPhotoPaths.Kind.CARRIAGE;

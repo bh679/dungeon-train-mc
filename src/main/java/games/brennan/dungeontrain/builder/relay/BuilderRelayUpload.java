@@ -202,11 +202,16 @@ public final class BuilderRelayUpload {
     }
 
     /**
-     * Put one of this player's builds on the train, or take it back off — the My Builds screen's action.
+     * Offer one of this player's builds to the operator, or take it back — the My Builds screen's action.
      *
-     * <p>Publishing hands the build to the pool and frees this world's lease with it, so the entry's
-     * token is cleared; the next save of that template claims it back. Resolves to the message the
-     * screen shows.</p>
+     * <p>Publishing hands the build to the relay's submission queue and frees this world's lease with
+     * it, so the entry's token is cleared; the next save of that template claims it back. Resolves to
+     * the message the screen shows.</p>
+     *
+     * <p>Every kind may be submitted. The pool refusal below is the one thing that is still a carriage
+     * question: a carriage is what a train slot holds, so submitting one to a world whose pool is off
+     * would be asking for something that world has switched away — while a portal room or a shell part
+     * is asking to be looked at, which the pool has no say over.</p>
      */
     public static CompletableFuture<Component> submitToTrain(ServerPlayer player, ServerLevel level,
                                                              int relayId, boolean publish) {
@@ -218,9 +223,11 @@ public final class BuilderRelayUpload {
             return CompletableFuture.completedFuture(
                     msg("gui.dungeontrain.builder.profile.not_yours", ChatFormatting.YELLOW));
         }
-        if (publish && !DungeonTrainConfig.isSharedCarriagesEnabled()) {
-            // Nothing leases from the pool while the feature is off, so publishing would put the build
-            // somewhere nothing can reach. Say so rather than appearing to succeed.
+        boolean carriage = BuilderRelayKinds.canJoinTheTrain(BuilderRelayBuilds.kindOfKey(key));
+        if (publish && carriage && !DungeonTrainConfig.isSharedCarriagesEnabled()) {
+            // Nothing leases from the pool while the feature is off, so publishing a carriage would put
+            // it somewhere nothing can reach. Say so rather than appearing to succeed. Every other kind
+            // is submitted to be read by a person, not spawned, so the switch does not speak for it.
             return CompletableFuture.completedFuture(
                     msg("gui.dungeontrain.builder.profile.pool_off", ChatFormatting.YELLOW));
         }
