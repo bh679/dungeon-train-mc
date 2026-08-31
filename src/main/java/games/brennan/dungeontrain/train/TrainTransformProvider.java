@@ -766,6 +766,31 @@ public final class TrainTransformProvider implements KinematicDriver {
     }
 
     /**
+     * Whether {@code spawnWorldPos} has been captured on the first kinematic
+     * tick — i.e. whether {@link #shiftSpawnPosition} does anything yet.
+     *
+     * <p>Read by {@code TrainCarriageAppender.applyPlacementShift} so a
+     * catch-up burst propagates only a shift the leader actually applied:
+     * leader and followers must move together or not at all, otherwise the
+     * intra-burst seam is exactly what absorbs the difference.</p>
+     */
+    public boolean hasCapturedSpawnPosition() {
+        return spawnWorldPos != null;
+    }
+
+    /**
+     * Shift world X by {@code dx} now if the spawn position has been captured,
+     * otherwise bank it via {@link #preSeedSpawnShiftX} so it lands the instant
+     * it is. Used to move a catch-up burst's follower in lockstep with its
+     * leader even in the first ticks after spawn, when Sable may have given the
+     * two sub-levels their first kinematic tick on different ticks.
+     */
+    public void shiftOrDeferSpawnShiftX(double dx) {
+        if (spawnWorldPos == null) preSeedSpawnShiftX(dx);
+        else spawnWorldPos.add(dx, 0.0, 0.0);
+    }
+
+    /**
      * Advance the sub-level's reference frame forward by {@code shipyardDelta}.
      * Used by {@link ShipyardShifter} on VS to keep the pivot close to the
      * player's current shipyard position. No-op-equivalent on Sable (no
