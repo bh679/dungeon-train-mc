@@ -786,6 +786,18 @@ public final class TrainTransformProvider implements KinematicDriver {
      * leader and followers must move together or not at all, otherwise the
      * intra-burst seam is exactly what absorbs the difference.</p>
      */
+    /**
+     * World distance a train travels along one axis in {@code ticks} at {@code velocity} blocks per
+     * second — the same {@code velocity * ticks * PHYSICS_DT} the canonical-position formula uses.
+     *
+     * <p>Exposed because a catch-up fill run plans a group against the placement of the group
+     * before it, which was computed on an earlier tick: the train has moved since, and at
+     * speed 12 that is 0.6 blocks per tick — wider than the seam itself.</p>
+     */
+    public static double travelDistance(double velocity, long ticks) {
+        return velocity * ticks * PHYSICS_DT;
+    }
+
     public boolean hasCapturedSpawnPosition() {
         return spawnWorldPos != null;
     }

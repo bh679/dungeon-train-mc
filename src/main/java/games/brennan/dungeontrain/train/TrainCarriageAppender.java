@@ -1747,7 +1747,7 @@ public final class TrainCarriageAppender {
      * @param lastAdvancedTick the tick it last spawned on; a gap means the chain is no longer
      *                       contiguous and the lane must re-resolve its edge
      */
-    private record FillRun(Plan lastPlan, int lastAnchor, UUID lastSubLevelId,
+    private record FillRun(Plan lastPlan, int lastAnchor, UUID lastSubLevelId, long lastShipId,
                            int groupsSoFar, long lastAdvancedTick) {}
 
     /** In-progress fill runs, one per lane per train. See {@link FillRun}. */
@@ -4403,6 +4403,7 @@ public final class TrainCarriageAppender {
         Plan prevPlan = firstPlan;
         int prevAnchor = firstAnchor;
         UUID prevSubLevelId = firstShip.subLevelId();
+        long prevShipId = firstShip.id();
         int extra = 0;
         for (int i = 1; i < allowed; i++) {
             int nextAnchor = forward ? (prevAnchor + groupSize) : (prevAnchor - groupSize);
@@ -4411,7 +4412,10 @@ public final class TrainCarriageAppender {
                     nextAnchor, trainId);
                 break;
             }
-            Plan chained = planChainedSpawn(prevPlan, prevAnchor, nextAnchor, dims, train, trainId);
+            // Same tick, so no drift; the predecessor is excluded for the same reason a run
+            // excludes its own (its seam is guaranteed by construction).
+            Plan chained = planChainedSpawn(prevPlan, prevAnchor, nextAnchor, dims, train, trainId,
+                0.0, prevShipId);
             if (!burstChainIsCommittable(chained.collisionAdjustments())) {
                 LOGGER.info("[DungeonTrain] Catch-up burst: chained anchor={} needed a {}-block collision shove — abandoning burst (trainId={})",
                     nextAnchor, chained.collisionAdjustments(), trainId);
@@ -4428,6 +4432,7 @@ public final class TrainCarriageAppender {
                 linkBurstFollower(prevSubLevelId, extraShip.subLevelId(), extraProvider);
             }
             prevSubLevelId = extraShip.subLevelId();
+            prevShipId = extraShip.id();
             prevPlan = chained;
             prevAnchor = nextAnchor;
             extra++;
@@ -4449,7 +4454,7 @@ public final class TrainCarriageAppender {
                                     ManagedShip ship, long now, int deficitPIdx, int groupSize) {
         if (DungeonTrainConfig.getCatchUpBurstMode() != CatchUpBurstMode.FILL) return;
         if (deficitGroups(deficitPIdx, groupSize) <= 1) return;
-        lane.put(trainId, new FillRun(plan, anchor, ship.subLevelId(), 1, now));
+        lane.put(trainId, new FillRun(plan, anchor, ship.subLevelId(), ship.id(), 1, now));
     }
 
     /** The lane's shortfall in whole groups; 0 when it is level or ahead. */
@@ -4498,12 +4503,18 @@ public final class TrainCarriageAppender {
         Plan prevPlan = run.lastPlan();
         int prevAnchor = run.lastAnchor();
         UUID prevSubLevelId = run.lastSubLevelId();
+        long prevShipId = run.lastShipId();
         int spawned = 0;
+        // The stored plan describes where that group was placed on an EARLIER tick. The train has
+        // carried it since — 0.1 blocks/tick at the default speed, 0.6 at speed 12 — so the chain
+        // has to advance by the same distance or it plans the next group on top of it.
+        double driftX = TrainTransformProvider.travelDistance(velocity.x(), now - run.lastAdvancedTick());
 
         for (int i = 0; i < CATCH_UP_FILL_GROUPS_PER_TICK; i++) {
             int nextAnchor = forward ? (prevAnchor + groupSize) : (prevAnchor - groupSize);
             if (Trains.knownAnchors(trainId).contains(nextAnchor)) break;
-            Plan chained = planChainedSpawn(prevPlan, prevAnchor, nextAnchor, dims, train, trainId);
+            Plan chained = planChainedSpawn(prevPlan, prevAnchor, nextAnchor, dims, train, trainId,
+                i == 0 ? driftX : 0.0, prevShipId);
             if (!burstChainIsCommittable(chained.collisionAdjustments())) {
                 LOGGER.info("[DungeonTrain] Catch-up fill: chained anchor={} needed a {}-block collision shove — ending the run (trainId={})",
                     nextAnchor, chained.collisionAdjustments(), trainId);
@@ -4521,6 +4532,7 @@ public final class TrainCarriageAppender {
             prevPlan = chained;
             prevAnchor = nextAnchor;
             prevSubLevelId = ship.subLevelId();
+            prevShipId = ship.id();
             spawned++;
         }
 
@@ -4528,7 +4540,7 @@ public final class TrainCarriageAppender {
             lane.remove(trainId);
             return false;
         }
-        lane.put(trainId, new FillRun(prevPlan, prevAnchor, prevSubLevelId,
+        lane.put(trainId, new FillRun(prevPlan, prevAnchor, prevSubLevelId, prevShipId,
             run.groupsSoFar() + spawned, now));
         LOGGER.info("[DungeonTrain] Catch-up fill on lane {}: +{} group(s) this tick (run total {}, deficitPIdx={} anchors up to {}) trainId={}",
             forward ? "forward" : "backward", spawned, run.groupsSoFar() + spawned,
@@ -4565,12 +4577,17 @@ public final class TrainCarriageAppender {
         int newAnchor,
         CarriageDims dims,
         List<Trains.Carriage> train,
-        UUID trainId
+        UUID trainId,
+        double previousDriftX,
+        long excludeShipId
     ) {
         boolean forward = previous.forward();
         int subLevelStride = previous.subLevelStride();
-        // Where the previous group actually ended up, sub-block nudge included.
-        double previousEffectiveX = previous.adjustedPlaceX() + previous.preSeedRemainderX();
+        // Where the previous group actually ended up, sub-block nudge included, PLUS however far
+        // the train has carried it since its plan was made. Zero within one tick; at speed 12 it is
+        // 0.6 blocks per tick — wider than the seam, so a run that spans ticks would otherwise plan
+        // the next group on top of the one before it.
+        double previousEffectiveX = previous.adjustedPlaceX() + previous.preSeedRemainderX() + previousDriftX;
         // Abutting (zero-gap) origin, mirroring planSpawnPlacement's idealX.
         double idealX = forward
             ? (previousEffectiveX + subLevelStride)
@@ -4582,7 +4599,8 @@ public final class TrainCarriageAppender {
         int placeZ = previous.origin().getZ();
 
         CollisionAdjustResult adjusted = adjustForCollisions(
-            initialPlaceX, placeY, placeZ, subLevelStride, dims, train, trainId, forward, newAnchor);
+            initialPlaceX, placeY, placeZ, subLevelStride, dims, train, trainId, forward, newAnchor,
+            excludeShipId);
         int adjustedPlaceX = adjusted.placeX();
 
         // Same rule as planSpawnPlacement: drop the sub-block remainder if the
@@ -4806,6 +4824,9 @@ public final class TrainCarriageAppender {
      * time we get here, the previous spawn's {@code worldAABB} is
      * non-zero and the collision pass can see it.</p>
      */
+    /** Sentinel for {@code excludeShipId}: judge the placement against every sibling. */
+    static final long NO_EXCLUDED_SHIP = Long.MIN_VALUE;
+
     private static CollisionAdjustResult adjustForCollisions(
         int placeX,
         int placeY,
@@ -4816,6 +4837,31 @@ public final class TrainCarriageAppender {
         UUID trainId,
         boolean forward,
         int newAnchor
+    ) {
+        return adjustForCollisions(placeX, placeY, placeZ, subLevelStride, dims, train, trainId,
+            forward, newAnchor, NO_EXCLUDED_SHIP);
+    }
+
+    /**
+     * @param excludeShipId a sibling to leave OUT of the collision set, or {@link #NO_EXCLUDED_SHIP}.
+     *     Used for the group a catch-up chain was planned against: the chain places the new group a
+     *     whole {@code subLevelStride + TARGET_GAP_BLOCKS} beyond it BY CONSTRUCTION, so that seam
+     *     needs no checking — while its {@code worldAABB} can still describe a pose one or two ticks
+     *     old and wrongly read as an overlap. Within a single tick the predecessor is invisible here
+     *     anyway (a fresh ship's AABB is zero and zero-AABB siblings are skipped); this keeps a run
+     *     that spans ticks behaving the same way.
+     */
+    private static CollisionAdjustResult adjustForCollisions(
+        int placeX,
+        int placeY,
+        int placeZ,
+        int subLevelStride,
+        CarriageDims dims,
+        List<Trains.Carriage> train,
+        UUID trainId,
+        boolean forward,
+        int newAnchor,
+        long excludeShipId
     ) {
         int height = dims.height();
         int width = dims.width();
@@ -4829,6 +4875,7 @@ public final class TrainCarriageAppender {
         Set<Long> seen = new HashSet<>();
         for (Trains.Carriage other : train) {
             long id = other.ship().id();
+            if (id == excludeShipId) continue;
             if (!seen.add(id)) continue;
             AABBdc aabb = other.ship().worldAABB();
             if (isZeroAabb(aabb)) continue;
@@ -4839,6 +4886,7 @@ public final class TrainCarriageAppender {
         for (Map.Entry<Integer, ManagedShip> e : registry.entrySet()) {
             ManagedShip ship = e.getValue();
             long id = ship.id();
+            if (id == excludeShipId) continue;
             if (!seen.add(id)) continue;
             // Skip registry-only ships that have been culled (isRemoved): their
             // worldAABB is frozen at the stale cull-time pose. Shoving a new
