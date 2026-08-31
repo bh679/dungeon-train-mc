@@ -10477,6 +10477,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "carriage-catch-up-spawning",
+      "version": "0.757.0",
+      "type": "feat",
+      "title": "The train catches up when it gets ahead of you",
+      "summary": "When the train outran you \u2014 you sprinted ahead, or it rolled past while you stood still \u2014 its ends could only grow back one group of carriages at a time, so a fast train just left you behind. Each end now adds carriages faster while it is behind, and settles back to its normal pace once it has caught up. A new Catch-up spawning setting under Options \u2192 Dungeon Train \u2192 Train chooses how hard it tries: Off keeps the old one-group-at-a-time pace, Burst 2 adds two at a time, and Fill all adds every missing group at once so the train catches up immediately. It applies to the train you are already riding.",
+      "highlights": [
+        "Train ends re-extend faster after falling behind, instead of letting a fast train run away from you",
+        "New Catch-up spawning setting (Off / Burst 2 / Fill all) in Options \u2192 Dungeon Train \u2192 Train",
+        "Carriage gaps stay even while catching up \u2014 groups added together move as one unit until they settle"
+      ],
+      "date": "2026-08-31",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
