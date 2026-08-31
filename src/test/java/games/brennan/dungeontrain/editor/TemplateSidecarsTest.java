@@ -1,6 +1,9 @@
 package games.brennan.dungeontrain.editor;
 
 import games.brennan.dungeontrain.builder.BuilderPhotoPaths;
+import games.brennan.dungeontrain.portal.PortalRoomSettings;
+import games.brennan.dungeontrain.template.TemplateGate;
+import games.brennan.dungeontrain.template.TemplateMeta;
 import games.brennan.dungeontrain.track.variant.TrackKind;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -111,6 +114,50 @@ final class TemplateSidecarsTest {
 
         assertEquals("library_copy.variants.json", variants.basename(),
                 "Load as new must file its sidecars beside its own .nbt");
+    }
+
+    @Test
+    @DisplayName("a moved door survives the weights entry, which is the only thing carrying it")
+    void doorPositionSurvivesTheWeightsEntry() {
+        // The tag PortalRoomSettings.toTag() writes for a room whose two doorways are authored apart
+        // — the long form, and the only shape that names the exit door at all.
+        String moved = "bedrock_lock/exact/off/off/off/none/sealed/0/0/1/0";
+        TemplateMeta authored = new TemplateMeta(3, TemplateGate.DEFAULT, "", moved);
+
+        TemplateMeta back = TemplateSidecars.decodeWeights(
+                TemplateSidecars.encodeWeights("library", authored));
+
+        assertEquals(moved, back.mode(), "the door offsets ride in the mode tag or nowhere");
+        assertEquals(3, back.weight());
+        assertEquals(PortalRoomSettings.parse(moved), PortalRoomSettings.parse(back.mode()),
+                "and parse back to the same settings the author saved");
+        assertTrue(PortalRoomSettings.parse(back.mode()).doorsDiffer(),
+                "the two doorways are still authored apart");
+    }
+
+    @Test
+    @DisplayName("a room at its defaults still round-trips, and says nothing about a stage")
+    void defaultsRoundTripWithoutAStage() {
+        // The stage link travels as its own relay field. Carrying it here too would give an install
+        // two sources for it that could disagree.
+        TemplateMeta linked = new TemplateMeta(1, TemplateGate.DEFAULT, "desert", null);
+
+        TemplateMeta back = TemplateSidecars.decodeWeights(
+                TemplateSidecars.encodeWeights("plain", linked));
+
+        assertEquals(1, back.weight());
+        assertEquals("", back.stageId() == null ? "" : back.stageId());
+    }
+
+    @Test
+    @DisplayName("a non-default gate rides along with the weight")
+    void gateRoundTrips() {
+        TemplateGate gate = new TemplateGate(3, 20, TemplateGate.ALL_PHASES);
+        TemplateMeta back = TemplateSidecars.decodeWeights(
+                TemplateSidecars.encodeWeights("gated", new TemplateMeta(4, gate, "", null)));
+
+        assertEquals(3, back.gate().minLevel());
+        assertEquals(20, back.gate().maxLevel());
     }
 
     @Test

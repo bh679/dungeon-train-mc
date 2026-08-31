@@ -188,9 +188,29 @@ public final class TemplateSidecars {
      */
     private static JsonElement weightsEntry(BuilderPhotoPaths.Kind kind, String subKind, String id) {
         TemplateMeta meta = metaOf(kind, subKind, id);
-        if (meta == null) return null;
-        JsonObject one = TemplateWeightCodec.toJson(Map.of(id, meta.withStage("")));
-        return one.get(id);
+        return meta == null ? null : encodeWeights(id, meta);
+    }
+
+    /**
+     * One template's weights entry as the codec would write it into {@code weights.json}, with the
+     * stage link stripped.
+     *
+     * <p>Split out from {@link #weightsEntry} so the encoding can be tested without a world, which is
+     * worth doing for one reason above the rest: a portal room's <b>door position</b> is carried in
+     * this entry's {@code mode} tag and nowhere else. If it does not survive here it does not survive
+     * at all, and nothing downstream would complain — the room would simply install with its doorway
+     * back at dead centre.</p>
+     *
+     * <p>{@code id} is only the key the codec writes under; the caller takes the value straight back
+     * out, so a build installed under a different name is unaffected.</p>
+     */
+    static JsonElement encodeWeights(String id, TemplateMeta meta) {
+        return TemplateWeightCodec.toJson(Map.of(id, meta.withStage(""))).get(id);
+    }
+
+    /** The inverse of {@link #encodeWeights} — what {@link #applyWeights} writes back to the store. */
+    static TemplateMeta decodeWeights(JsonElement entry) {
+        return TemplateWeightCodec.parseEntry(entry, CarriageWeights::clamp);
     }
 
     /** What the kind's weight store currently holds for {@code id}, or null when it keeps none. */
@@ -279,7 +299,7 @@ public final class TemplateSidecars {
         if (!root.has(K_WEIGHTS)) return;
         TemplateMeta meta;
         try {
-            meta = TemplateWeightCodec.parseEntry(root.get(K_WEIGHTS), CarriageWeights::clamp);
+            meta = decodeWeights(root.get(K_WEIGHTS));
         } catch (Exception e) {
             LOGGER.warn("[DungeonTrain] Template sidecars: '{}' came with a weights entry that would "
                     + "not parse: {}", id, e.toString());
