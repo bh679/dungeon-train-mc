@@ -123,26 +123,31 @@ final class CarriageSnapshotTemplateTest {
     }
 
     @Test
-    @DisplayName("a mob standing in the plot is left out, exactly as a local save leaves it out")
-    void nonDecorIsLeftOut() {
-        // TemplateDecor.keepOnlyDecor strips these as a template is written, so a downloaded build
-        // that kept them would hold something the author's own file never did — and no stamp path
-        // puts one back, so it would never appear either way.
+    @DisplayName("a downloaded build holds what a local save holds — the mobs, not the litter")
+    void carriesWhatALocalSaveWouldKeep() {
+        // The same rule TemplateDecor.keepOnlyDecor applies as a template is written. A mob the
+        // author placed is part of the build; a minecart left parked in the plot is not, and a
+        // downloaded template that kept it would hold something the author's own file never did.
         CompoundTag snapshot = snapshot(4, 4, 4);
         snapshot.put("ents", ents(
                 ent("minecraft:parrot", 1.0, 1.0, 1.0),
-                ent("minecraft:armor_stand", 2.0, 1.0, 2.0),
+                ent("minecraft:minecart", 2.0, 1.0, 2.0),
                 ent("minecraft:glow_item_frame", 3.0, 1.0, 3.0)));
 
         ListTag entities = CarriageSnapshotTemplate.toTemplateTag(snapshot)
                 .getList("entities", Tag.TAG_COMPOUND);
 
-        assertEquals(1, entities.size(), "only the decor survives");
+        assertEquals(2, entities.size(), "the parrot and the frame; not the minecart");
+        assertEquals("minecraft:parrot", entities.getCompound(0).getCompound("nbt").getString("id"));
         assertEquals("minecraft:glow_item_frame",
-                entities.getCompound(0).getCompound("nbt").getString("id"));
+                entities.getCompound(1).getCompound("nbt").getString("id"));
     }
 
     // ---- helpers ----
+
+    /** Which of the ids used above are living, for {@link #ent}'s Health tag. */
+    private static final java.util.Set<String> LIVING =
+            java.util.Set.of("minecraft:parrot", "minecraft:armor_stand");
 
     private static ListTag ents(CompoundTag... entries) {
         ListTag list = new ListTag();
@@ -150,10 +155,15 @@ final class CarriageSnapshotTemplateTest {
         return list;
     }
 
-    /** The shape {@code CarriageEntitySnapshot.encodeEntity} produces, trimmed to what matters here. */
+    /**
+     * The shape {@code CarriageEntitySnapshot.encodeEntity} produces, trimmed to what matters here.
+     * Living types carry the {@code Health} value a real save writes, which is what
+     * {@code TemplateDecor.carries} reads to tell a mob from a minecart.
+     */
     private static CompoundTag ent(String id, double x, double y, double z) {
         CompoundTag nbt = new CompoundTag();
         nbt.putString("id", id);
+        if (LIVING.contains(id)) nbt.putFloat("Health", 20.0f);
         CompoundTag entry = new CompoundTag();
         entry.putString("id", id);
         ListTag pos = new ListTag();

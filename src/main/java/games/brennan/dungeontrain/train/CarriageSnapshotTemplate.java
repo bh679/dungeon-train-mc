@@ -33,9 +33,9 @@ import java.util.Map;
  * its air — but the snapshot dropped that air at <em>upload</em> time, long before this code, so
  * there is nothing here that could put it back.)</p>
  *
- * <p><b>Decor entities come across; nothing else does.</b> A v2 blob's {@code ents} list becomes the
- * template's {@code entities}, filtered to {@link TemplateDecor#DECOR_TYPES} — the item frames, glow
- * item frames and paintings a local save keeps. Dropping them entirely would produce a template
+ * <p><b>What a local save would keep comes across; nothing else does.</b> A v2 blob's {@code ents}
+ * list becomes the template's {@code entities}, filtered through {@link TemplateDecor#carries} —
+ * the same rule {@code TemplateDecor.keepOnlyDecor} applies as a template is written. Dropping them entirely would produce a template
  * unlike anything a save writes: a picture the author hung, and saved, and uploaded, absent on the
  * way back. Keeping the rest would be the same mistake in the other direction, because a local save
  * does not keep it — {@code TemplateDecor.keepOnlyDecor} strips every other entity as the template
@@ -135,7 +135,7 @@ public final class CarriageSnapshotTemplate {
             // What a local save would have kept — see the class javadoc. A mob here is not a build's
             // decoration, it is a mob somebody left standing in the plot, and no stamp path puts one
             // back.
-            if (!TemplateDecor.DECOR_TYPES.contains(nbt.getString("id"))) continue;
+            if (!TemplateDecor.carries(nbt)) continue;
             ListTag p = ent.getList("p", Tag.TAG_DOUBLE);
             if (p.size() != 3) continue;
             double x = p.getDouble(0), y = p.getDouble(1), z = p.getDouble(2);

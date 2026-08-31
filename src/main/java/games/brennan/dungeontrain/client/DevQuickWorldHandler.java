@@ -4,6 +4,8 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.builder.BuilderMode;
 import games.brennan.dungeontrain.builder.BuilderQuietRules;
+import games.brennan.dungeontrain.editor.EditorQuietRuleEvents;
+import games.brennan.dungeontrain.editor.EditorQuietRules;
 import games.brennan.dungeontrain.builder.BuilderWorldLayout;
 import games.brennan.dungeontrain.cheat.EditorContentIntegrity;
 import games.brennan.dungeontrain.client.menu.CustomContentToggleButton;
@@ -88,7 +90,12 @@ public final class DevQuickWorldHandler {
     private static final Component PERF_ICON_LABEL =
             Component.literal("⏱").withStyle(ChatFormatting.BOLD);
 
-    private static final String EDITOR_WORLD_PREFIX = "train editor ";
+    /**
+     * Shared with {@code EditorQuietRuleEvents}, which identifies an editor world by this prefix on
+     * every server start. Two copies of the string would mean editor worlds that quietly miss the
+     * rule, so there is only the one.
+     */
+    private static final String EDITOR_WORLD_PREFIX = EditorQuietRuleEvents.EDITOR_WORLD_PREFIX;
     private static final String BUILDER_WORLD_PREFIX = "train builder ";
 
     private static final int GAP = 4;
@@ -268,15 +275,26 @@ public final class DevQuickWorldHandler {
         return null;
     }
 
+    /**
+     * Create the world the Train Editor's plot grid is laid out in.
+     *
+     * <p><b>No natural mob spawning</b> — see {@link EditorQuietRules}. A template carries the mobs
+     * standing in its plot, so anything that wanders in is saved as part of somebody's build; this
+     * bake is what makes "a mob in a plot is one the author placed" true. {@code
+     * EditorQuietRuleEvents} re-applies it on every start, so this is the default rather than the
+     * only enforcement.</p>
+     */
     static void launchEditorWorld(Screen lastScreen) {
         String name = nextWorldName(EDITOR_WORLD_PREFIX);
+        GameRules rules = new GameRules();
+        EditorQuietRules.apply(rules, null);   // no server yet — world is still being created
         LevelSettings settings = new LevelSettings(
                 name,
                 GameType.CREATIVE,
                 false,
                 Difficulty.NORMAL,
                 true,
-                new GameRules(),
+                rules,
                 WorldDataConfiguration.DEFAULT);
         openLevel(name, settings, lastScreen, PerfTestMode.ENABLED);
     }
