@@ -697,7 +697,7 @@ public final class TrainCarriageAppender {
      * the band, so the carriage settles in one or two corrections. Chosen ≥ the
      * observed AABB lag with margin; still far under the settle budget.
      */
-    private static final int SHIFT_SETTLE_TICKS = 4;
+    static final int SHIFT_SETTLE_TICKS = 4;
 
     /**
      * Per-collision shift distance in the spawn (+X) direction. The
@@ -855,6 +855,23 @@ public final class TrainCarriageAppender {
                 if (isBodyFrozen(carriage)) {
                     PLACEMENT_TRACKER_FIRST_SEEN.put(subLevelId, firstSeenTick + 1L);
                     PLACEMENT_TRACKER_LAST_SHIFT.remove(subLevelId);
+                    continue;
+                }
+
+                // Don't judge a seam the body's AABB hasn't caught up with. A group is placed on an
+                // INTEGER block origin and carries its sub-block remainder in pendingSpawnShiftX,
+                // applied when Sable captures the pose; for a tick or two after that the worldAABB
+                // every reading below measures still describes the un-nudged placement. Measured in
+                // play (2026-08-31): the first reading was ALWAYS exactly TARGET_GAP_BLOCKS minus
+                // that remainder — 0.60, 0.70, 0.80 — so the tracker "corrected" a seam that was
+                // already right, the nudge then landed on top, and the seam swung down to 0.10 and
+                // even 0.00 (touching) before a second shift undid the first. Waiting the same
+                // SHIFT_SETTLE_TICKS this system already waits after any other shift makes the
+                // first reading describe the placement it is supposed to be judging.
+                if (!placementReadingIsTrustworthy(provider.getSpawnCaptureGameTick(), now)) {
+                    // Roll firstSeen forward so these ticks don't eat the settle budget — the same
+                    // treatment the frozen-body branch above gives a carriage that cannot yet move.
+                    PLACEMENT_TRACKER_FIRST_SEEN.put(subLevelId, firstSeenTick + 1L);
                     continue;
                 }
 
@@ -2632,6 +2649,21 @@ public final class TrainCarriageAppender {
     // accumulated seam gaps → a frozen void. Option 2 removes the mismatch at
     // the source: resolve the reference to the registry-EDGE carriage's live
     // pose, so subLevelDelta is ±1 by construction.
+
+    /**
+     * Whether a placement-tracker reading taken at {@code now} can be trusted for a carriage whose
+     * pose was captured at {@code spawnCaptureGameTick}.
+     *
+     * <p>False while the carriage has never kinematically ticked ({@code -1}: its AABB describes a
+     * pose it is about to leave), and for {@link #SHIFT_SETTLE_TICKS} after the capture, which is
+     * when the pre-seeded sub-block nudge is applied to the pose but not yet reflected in the
+     * body's AABB. Pure so the boundary is unit-testable without a level, mirroring
+     * {@link #cullLatchExpired}.</p>
+     */
+    static boolean placementReadingIsTrustworthy(long spawnCaptureGameTick, long now) {
+        if (spawnCaptureGameTick < 0L) return false;
+        return now - spawnCaptureGameTick >= SHIFT_SETTLE_TICKS;
+    }
 
     /**
      * Whether a cull-clear latch stamped at {@code latchedAtTick} has aged out of its

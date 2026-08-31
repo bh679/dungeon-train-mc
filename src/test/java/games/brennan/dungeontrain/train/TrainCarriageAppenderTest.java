@@ -630,6 +630,23 @@ final class TrainCarriageAppenderTest {
             "one frame of stale geometry must never teleport a carriage");
     }
 
+    @Test
+    @DisplayName("a seam reading is trusted only once the pose it measures is the final one")
+    void placementReading_waitsForTheCapturedPose() {
+        int settle = TrainCarriageAppender.SHIFT_SETTLE_TICKS;
+
+        assertFalse(TrainCarriageAppender.placementReadingIsTrustworthy(-1L, 1000L),
+            "a carriage that has never kinematically ticked has an AABB it is about to leave");
+        assertFalse(TrainCarriageAppender.placementReadingIsTrustworthy(1000L, 1000L),
+            "the sub-block nudge lands on the pose this tick; the AABB still shows the old one");
+        assertFalse(TrainCarriageAppender.placementReadingIsTrustworthy(1000L, 1000L + settle - 1),
+            "still inside the lag the throttle exists to cover");
+        assertTrue(TrainCarriageAppender.placementReadingIsTrustworthy(1000L, 1000L + settle),
+            "same window this system waits after any other shift");
+        assertTrue(TrainCarriageAppender.placementReadingIsTrustworthy(1000L, 1000L + 600),
+            "a long-settled carriage is always readable");
+    }
+
     // ---- catch-up burst ----------------------------------------------------
     //
     // The per-lane placement gate paces spawning at one group per settle
