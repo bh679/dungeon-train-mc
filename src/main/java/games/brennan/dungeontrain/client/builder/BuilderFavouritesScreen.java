@@ -3,7 +3,6 @@ package games.brennan.dungeontrain.client.builder;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.builder.BuilderPhotoPaths;
 import games.brennan.dungeontrain.builder.relay.BuilderRelayDownload;
-import games.brennan.dungeontrain.builder.relay.BuilderRelayKinds;
 import games.brennan.dungeontrain.net.BuilderFavouritePacket;
 import games.brennan.dungeontrain.net.BuilderFavouritesPacket;
 import games.brennan.dungeontrain.net.BuilderFavouritesRequestPacket;
@@ -11,8 +10,6 @@ import games.brennan.dungeontrain.net.BuilderProfileDownloadPacket;
 import games.brennan.dungeontrain.net.BuilderProfileDownloadResultPacket;
 import games.brennan.dungeontrain.net.BuilderProfilePacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
-import games.brennan.dungeontrain.track.variant.TrackKind;
-import games.brennan.dungeontrain.train.CarriagePartKind;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
@@ -48,7 +45,6 @@ public final class BuilderFavouritesScreen extends Screen {
 
     private static final int TITLE_TOP = 14;
     private static final int CONTROL_TOP = 30;
-    private static final int CONTROL_ROW_H = 20;
     private static final int BACK_BUTTON_WIDTH = 200;
     private static final int BACK_BUTTON_BOTTOM_MARGIN = 28;
     private static final int STATUS_GAP = 14;
