@@ -5,7 +5,6 @@ import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.train.CarriageGenerationConfig;
 import games.brennan.dungeontrain.train.CarriageGenerationMode;
-import games.brennan.dungeontrain.train.CatchUpBurstMode;
 import games.brennan.dungeontrain.train.TrainAssembler;
 import games.brennan.dungeontrain.train.TrainTransformProvider;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
@@ -52,7 +51,6 @@ public final class DungeonTrainSettingsScreen extends Screen {
     private EditBox playerMobBehindSpawnField;
     private EditBox groupSizeField;
     private CycleButton<Boolean> compatibleTerrainButton;
-    private CycleButton<CatchUpBurstMode> catchUpBurstButton;
 
     public DungeonTrainSettingsScreen(Screen parent) {
         super(Component.translatable("gui.dungeontrain.settings.title"));
@@ -62,7 +60,7 @@ public final class DungeonTrainSettingsScreen extends Screen {
     @Override
     protected void init() {
         int centerX = this.width / 2;
-        int topY = this.height / 2 - 93;
+        int topY = this.height / 2 - 80;
 
         carriagesField = new EditBox(this.font, centerX + 10, topY, FIELD_WIDTH, FIELD_HEIGHT,
                 Component.translatable("gui.dungeontrain.settings.narrate.carriages"));
@@ -126,23 +124,12 @@ public final class DungeonTrainSettingsScreen extends Screen {
                         Component.translatable("gui.dungeontrain.settings.narrate.compatible_terrain"));
         addRenderableWidget(compatibleTerrainButton);
 
-        // Catch-up spawning: how fast an end of the train may extend once it has
-        // fallen behind the carriages a nearby player needs. Applies live — the
-        // appender reads the config every tick, so no restart or respawn needed.
-        catchUpBurstButton = CycleButton.<CatchUpBurstMode>builder(DungeonTrainSettingsScreen::catchUpBurstLabel)
-                .withValues(CatchUpBurstMode.values())
-                .withInitialValue(DungeonTrainConfig.getCatchUpBurstMode())
-                .displayOnlyValue()
-                .create(centerX + 10, topY + ROW_GAP * 8, FIELD_WIDTH, FIELD_HEIGHT,
-                        Component.translatable("gui.dungeontrain.settings.narrate.catch_up_burst"));
-        addRenderableWidget(catchUpBurstButton);
-
         addRenderableWidget(Button.builder(Component.translatable("gui.dungeontrain.settings.save"), b -> saveAndClose())
-                .bounds(centerX - 105, topY + ROW_GAP * 9 + 20, 100, 20)
+                .bounds(centerX - 105, topY + ROW_GAP * 8 + 20, 100, 20)
                 .build());
 
         addRenderableWidget(Button.builder(CommonComponents.GUI_CANCEL, b -> onClose())
-                .bounds(centerX + 5, topY + ROW_GAP * 9 + 20, 100, 20)
+                .bounds(centerX + 5, topY + ROW_GAP * 8 + 20, 100, 20)
                 .build());
     }
 
@@ -156,7 +143,7 @@ public final class DungeonTrainSettingsScreen extends Screen {
         super.render(graphics, mouseX, mouseY, partialTick);
 
         int centerX = this.width / 2;
-        int topY = this.height / 2 - 93;
+        int topY = this.height / 2 - 80;
 
         graphics.drawCenteredString(this.font, this.title, centerX, topY - 40, 0xFFFFFFFF);
 
@@ -170,7 +157,6 @@ public final class DungeonTrainSettingsScreen extends Screen {
             graphics.drawString(this.font, Component.translatable("gui.dungeontrain.settings.label.group_size"), centerX - LABEL_OFFSET, topY + ROW_GAP * 6 + 6, 0xFFFFFFFF);
         }
         graphics.drawString(this.font, Component.translatable("gui.dungeontrain.settings.label.compatible_terrain"), centerX - LABEL_OFFSET, topY + ROW_GAP * 7 + 6, 0xFFFFFFFF);
-        graphics.drawString(this.font, Component.translatable("gui.dungeontrain.settings.label.catch_up_burst"), centerX - LABEL_OFFSET, topY + ROW_GAP * 8 + 6, 0xFFFFFFFF);
 
         Component rangeHint = Component.translatable("gui.dungeontrain.settings.range_hint",
                 DungeonTrainConfig.MIN_CARRIAGES, DungeonTrainConfig.MAX_CARRIAGES,
@@ -178,26 +164,26 @@ public final class DungeonTrainSettingsScreen extends Screen {
                 DungeonTrainConfig.MIN_TRAIN_Y, DungeonTrainConfig.MAX_TRAIN_Y,
                 CarriageGenerationConfig.MIN_GROUP_SIZE, CarriageGenerationConfig.MAX_GROUP_SIZE,
                 DungeonTrainCommonConfig.MIN_PLAYER_MOB_SPAWN_ONE_IN, DungeonTrainCommonConfig.MAX_PLAYER_MOB_SPAWN_ONE_IN);
-        graphics.drawCenteredString(this.font, rangeHint, centerX, topY + ROW_GAP * 9 - 4, 0xFFAAAAAA);
+        graphics.drawCenteredString(this.font, rangeHint, centerX, topY + ROW_GAP * 8 - 4, 0xFFAAAAAA);
 
         graphics.drawCenteredString(this.font,
                 Component.translatable("gui.dungeontrain.settings.hint_general"),
-                centerX, topY + ROW_GAP * 9 + 50, 0xFFAAAAAA);
+                centerX, topY + ROW_GAP * 8 + 50, 0xFFAAAAAA);
 
         boolean inWorld = Minecraft.getInstance().getSingleplayerServer() != null;
         Component playerMobScope = Component.translatable(inWorld
                 ? "gui.dungeontrain.settings.hint_playermob_world"
                 : "gui.dungeontrain.settings.hint_playermob_title");
-        graphics.drawCenteredString(this.font, playerMobScope, centerX, topY + ROW_GAP * 9 + 64, 0xFFAAAAAA);
+        graphics.drawCenteredString(this.font, playerMobScope, centerX, topY + ROW_GAP * 8 + 64, 0xFFAAAAAA);
 
         graphics.drawCenteredString(this.font,
                 Component.translatable("gui.dungeontrain.settings.hint_compat_terrain"),
-                centerX, topY + ROW_GAP * 9 + 78, 0xFFAAAAAA);
+                centerX, topY + ROW_GAP * 8 + 78, 0xFFAAAAAA);
 
         if (!inWorld) {
             graphics.drawCenteredString(this.font,
                     Component.translatable("gui.dungeontrain.settings.hint_note"),
-                    centerX, topY + ROW_GAP * 9 + 92, 0xFFFFAA55);
+                    centerX, topY + ROW_GAP * 8 + 92, 0xFFFFAA55);
         }
     }
 
@@ -222,7 +208,6 @@ public final class DungeonTrainSettingsScreen extends Screen {
         DungeonTrainConfig.setTrainY(trainY);
         DungeonTrainConfig.setGenerationMode(modeButton.getValue());
         DungeonTrainConfig.setGroupSize(groupSize);
-        DungeonTrainConfig.setCatchUpBurstMode(catchUpBurstButton.getValue());
 
         // Global default for new worlds (no per-world override in v1). Setting this in a
         // world changes the default for future worlds, not the current one (terrain is baked).
@@ -283,10 +268,6 @@ public final class DungeonTrainSettingsScreen extends Screen {
 
     private static Component modeLabel(CarriageGenerationMode mode) {
         return Component.translatable("gui.dungeontrain.options.mode." + mode.name().toLowerCase(Locale.ROOT));
-    }
-
-    private static Component catchUpBurstLabel(CatchUpBurstMode mode) {
-        return Component.translatable("gui.dungeontrain.options.catch_up_burst." + mode.name().toLowerCase(Locale.ROOT));
     }
 
     private static void applyToLiveTrains(int carriages, double speed) {
