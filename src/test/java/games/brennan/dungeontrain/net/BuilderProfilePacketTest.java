@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Wire-format round trips for the profile the My Builds screen draws.
@@ -28,9 +29,11 @@ final class BuilderProfilePacketTest {
     void entryRoundTrip() {
         BuilderProfilePacket original = new BuilderProfilePacket(BuilderProfilePacket.Status.OK, List.of(
                 new BuilderProfilePacket.Entry(41, "carriage", "", "brick_cabin", true,
-                        "approved", BuilderReviewState.SUBMITTED, "stone", 12),
+                        "approved", BuilderReviewState.SUBMITTED, "stone", 12,
+                        true, MINE, "Brennan"),
                 new BuilderProfilePacket.Entry(42, "portal_room", "", "library", false,
-                        "approved", BuilderReviewState.NONE, "", 0)),
+                        "approved", BuilderReviewState.NONE, "", 0,
+                        false, MINE, "Brennan")),
                 MINE, "Brennan", true);
         assertEquals(original, roundTrip(original));
     }
@@ -51,9 +54,24 @@ final class BuilderProfilePacketTest {
         // string. It must not reach the screen, which looks up lang keys by this value.
         SharedCarriageClient.ProfileBuild row = new SharedCarriageClient.ProfileBuild(
                 7, "carriage", "", "brick_cabin", "published", "builder", "stone", "approved", "",
-                7, 5, 5, 3, 1L);
+                7, 5, 5, 3, 1L, false, MINE, "Brennan");
         BuilderProfilePacket packet = BuilderProfilePacket.of(List.of(row), MINE, "Brennan", true);
         assertEquals(BuilderReviewState.NONE, packet.builds().get(0).review());
+        assertEquals(packet, roundTrip(packet));
+    }
+
+    @Test
+    @DisplayName("the star and the build's owner survive the wire")
+    void favouriteRoundTrip() {
+        // Appended last in a hand-written positional codec, so a reader that stopped early would
+        // silently drop them rather than fail — which is what this pins.
+        SharedCarriageClient.ProfileBuild starred = new SharedCarriageClient.ProfileBuild(
+                9, "carriage", "", "brick_cabin", "profile", "builder", "stone", "approved", "none",
+                7, 5, 5, 0, 1L, true, "22222222-2222-4222-8222-222222222222", "Someone");
+        BuilderProfilePacket packet = BuilderProfilePacket.of(List.of(starred), MINE, "Brennan", false);
+        BuilderProfilePacket.Entry entry = packet.builds().get(0);
+        assertTrue(entry.favourite());
+        assertEquals("Someone", entry.ownerName());
         assertEquals(packet, roundTrip(packet));
     }
 

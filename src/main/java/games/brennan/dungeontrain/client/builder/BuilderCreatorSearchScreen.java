@@ -1,6 +1,9 @@
 package games.brennan.dungeontrain.client.builder;
 
 import games.brennan.dungeontrain.net.BuilderCreatorResultsPacket;
+import games.brennan.dungeontrain.net.BuilderFavouritePacket;
+import games.brennan.dungeontrain.net.BuilderFavouritesPacket;
+import games.brennan.dungeontrain.net.BuilderFavouritesRequestPacket;
 import games.brennan.dungeontrain.net.BuilderCreatorSearchPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import net.minecraft.client.gui.GuiGraphics;
@@ -12,7 +15,9 @@ import net.minecraft.network.chat.Component;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Consumer;
 
 /**
@@ -40,6 +45,9 @@ public final class BuilderCreatorSearchScreen extends Screen {
     private static final int ROW_GAP = 2;
     private static final int RESULTS_TOP = FIELD_TOP + 28;
     private static final int BUTTON_WIDTH = 200;
+    /** The star beside each result, and the gap between it and the name it belongs to. */
+    private static final int STAR_WIDTH = 20;
+    private static final int STAR_GAP = 2;
     private static final int BACK_BUTTON_BOTTOM_MARGIN = 28;
     private static final int STATUS_GAP = 14;
     private static final int NOTE_COLOUR = 0xA0A0A0;
@@ -61,6 +69,15 @@ public final class BuilderCreatorSearchScreen extends Screen {
     private List<BuilderCreatorResultsPacket.Creator> results = List.of();
     private int scrollRow;
 
+    /**
+     * Which of the builders on screen this player has starred.
+     *
+     * <p>Read from the favourites list rather than from the search answer: a creator search asks the
+     * relay "who is called this", which is a question about the pool and not about the person asking.
+     * Held as a set of uuids so a result arriving later can be badged without another round trip.</p>
+     */
+    private final Set<String> starred = new HashSet<>();
+
     public BuilderCreatorSearchScreen(Screen lastScreen, Consumer<BuilderCreatorResultsPacket.Creator> onPick) {
         super(Component.translatable("gui.dungeontrain.builder.creators.title"));
         this.lastScreen = lastScreen;
@@ -70,6 +87,13 @@ public final class BuilderCreatorSearchScreen extends Screen {
     @Override
     protected void init() {
         BuilderProfileState.listenForCreators(this::onResults);
+        BuilderProfileState.listenForFavourites(this::onFavourites);
+        BuilderFavouritesPacket cached = BuilderProfileState.favourites();
+        if (cached != null) rememberStarred(cached);
+        // Asked once on the way in rather than per search: the list is small, it is the same answer
+        // for every query typed on this screen, and a star that only appeared after the second search
+        // would look like it had been forgotten.
+        DungeonTrainNet.sendToServer(new BuilderFavouritesRequestPacket(BuilderProfileState.live()));
 
         this.field = new EditBox(this.font, this.width / 2 - FIELD_WIDTH / 2, FIELD_TOP, FIELD_WIDTH, ROW_H,
                 Component.translatable("gui.dungeontrain.builder.creators.search"));
@@ -100,9 +124,17 @@ public final class BuilderCreatorSearchScreen extends Screen {
         this.scrollRow = Math.max(0, Math.min(scrollRow, Math.max(0, results.size() - rows)));
         for (int i = 0; i < rows && scrollRow + i < results.size(); i++) {
             BuilderCreatorResultsPacket.Creator creator = results.get(scrollRow + i);
+            int rowY = RESULTS_TOP + i * (ROW_H + ROW_GAP);
+            // The name keeps the row's width less the star, so the two hit targets are visibly
+            // separate: opening somebody's profile and starring them are different intentions and a
+            // near-miss between them would be an annoying one.
+            int nameWidth = BUTTON_WIDTH - STAR_WIDTH - STAR_GAP;
+            int rowX = this.width / 2 - BUTTON_WIDTH / 2;
             addRenderableWidget(Button.builder(rowLabel(creator), b -> pick(creator))
-                    .bounds(this.width / 2 - BUTTON_WIDTH / 2, RESULTS_TOP + i * (ROW_H + ROW_GAP),
-                            BUTTON_WIDTH, ROW_H)
+                    .bounds(rowX, rowY, nameWidth, ROW_H)
+                    .build());
+            addRenderableWidget(Button.builder(starLabel(creator), b -> toggleStar(creator))
+                    .bounds(rowX + nameWidth + STAR_GAP, rowY, STAR_WIDTH, ROW_H)
                     .build());
         }
 
@@ -130,6 +162,41 @@ public final class BuilderCreatorSearchScreen extends Screen {
      */
     private void pick(BuilderCreatorResultsPacket.Creator creator) {
         onPick.accept(creator);
+    }
+
+    /** A filled star for a builder this player has starred, a hollow one for the rest. */
+    private Component starLabel(BuilderCreatorResultsPacket.Creator creator) {
+        return Component.literal(starred.contains(creator.uuid()) ? "\u2605" : "\u2606");
+    }
+
+    /**
+     * Star or un-star a builder.
+     *
+     * <p>Optimistic, like every other star: the label flips now and the packet follows. Being wrong
+     * costs a stale glyph until the next listing, where waiting on a round trip through the server to
+     * the relay would cost every press feeling broken.</p>
+     */
+    private void toggleStar(BuilderCreatorResultsPacket.Creator creator) {
+        boolean next = !starred.contains(creator.uuid());
+        if (next) {
+            starred.add(creator.uuid());
+        } else {
+            starred.remove(creator.uuid());
+        }
+        DungeonTrainNet.sendToServer(
+                BuilderFavouritePacket.forBuilder(creator.uuid(), next, BuilderProfileState.live()));
+        rebuild();
+    }
+
+    /** The favourites list arrived — badge whatever is on screen against it. */
+    private void onFavourites(BuilderFavouritesPacket packet) {
+        rememberStarred(packet);
+        rebuild();
+    }
+
+    private void rememberStarred(BuilderFavouritesPacket packet) {
+        starred.clear();
+        for (BuilderFavouritesPacket.Builder b : packet.builders()) starred.add(b.uuid());
     }
 
     @Override
@@ -201,6 +268,7 @@ public final class BuilderCreatorSearchScreen extends Screen {
     public void removed() {
         super.removed();
         BuilderProfileState.listenForCreators(null);
+        BuilderProfileState.listenForFavourites(null);
     }
 
     @Override
