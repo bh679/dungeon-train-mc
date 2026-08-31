@@ -54,11 +54,16 @@ public final class DungeonTrainConfig {
 
     public static final CarriageGenerationMode DEFAULT_GENERATION_MODE = CarriageGenerationMode.RANDOM_GROUPED;
     /**
-     * Catch-up spawning defaults ON at two groups: the pacing that keeps seams
-     * even is preserved in the steady state, and only a lane that has actually
-     * fallen behind spawns faster. See {@link CatchUpBurstMode}.
+     * Catch-up spawning defaults to filling the whole shortfall in one tick.
+     * Measured in play, two groups per settle window HELD a ~8-group deficit
+     * steady at speed without ever closing it — the train stayed gone, which is
+     * the complaint the feature exists to answer. The pacing that keeps seams
+     * even is untouched in the steady state (at a one-group deficit every mode
+     * adds exactly one); the cost is one bigger server-tick spike on the tick
+     * that catches up, which {@code BURST_TWO} and {@code OFF} are there to
+     * trade away. See {@link CatchUpBurstMode}.
      */
-    public static final CatchUpBurstMode DEFAULT_CATCH_UP_BURST_MODE = CatchUpBurstMode.BURST_TWO;
+    public static final CatchUpBurstMode DEFAULT_CATCH_UP_BURST_MODE = CatchUpBurstMode.FILL;
     public static final int DEFAULT_GROUP_SIZE = CarriageGenerationConfig.DEFAULT_GROUP_SIZE;
 
     public static final boolean DEFAULT_DIFFICULTY_ENABLED = true;
@@ -430,7 +435,7 @@ public final class DungeonTrainConfig {
                         CarriageGenerationConfig.MIN_GROUP_SIZE,
                         CarriageGenerationConfig.MAX_GROUP_SIZE);
         ModConfigSpec.EnumValue<CatchUpBurstMode> catchUpBurstMode = b
-                .comment("How fast the train may extend when a spawn lane has fallen BEHIND the carriages a player needs around them (fast speed, a reload, a chunk-gen wait). Normally each end adds one group per settle window, which is what keeps the seams between groups even — and also what lets a fast train run away from a standing player. OFF = never add more than one group at a time. BURST_TWO = add two in one tick while an end is two or more groups short. FILL = add however many that end is short, all in one tick (catches up instantly; costs one bigger server-tick spike). No mode changes the steady state, where an end is at most one group short.")
+                .comment("How fast the train may extend when a spawn lane has fallen BEHIND the carriages a player needs around them (fast speed, a reload, a chunk-gen wait). Normally each end adds one group per settle window, which is what keeps the seams between groups even — and also what lets a fast train run away from a standing player. FILL (default) = add however many groups that end is short, all in one tick, so it catches up instantly; costs one bigger server-tick spike as they appear. BURST_TWO = add two in one tick while an end is two or more groups short — a gentler catch-up that may not keep up at high speed. OFF = never add more than one group at a time. No mode changes the steady state, where an end is at most one group short.")
                 .defineEnum("catchUpBurstMode", DEFAULT_CATCH_UP_BURST_MODE);
         b.pop();
         b.push("difficulty");

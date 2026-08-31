@@ -33,8 +33,8 @@ public enum CatchUpBurstMode {
     BURST_TWO,
 
     /**
-     * Add as many groups as the lane is short, in the one tick — the train
-     * catches up immediately. Pays every one of those groups'
+     * <b>Default.</b> Add as many groups as the lane is short, in the one tick
+     * — the train catches up immediately. Pays every one of those groups'
      * {@code TrainAssembler.spawnGroup} cost on a single server tick, so a
      * large fill is a deliberate one-off hitch traded for the train never
      * being seen to run away.

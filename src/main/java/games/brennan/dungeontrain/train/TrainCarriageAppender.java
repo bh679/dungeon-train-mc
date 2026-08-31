@@ -1761,12 +1761,12 @@ public final class TrainCarriageAppender {
      * deduped against the registry (the burst re-checks it per group). The
      * throttle is the architectural fix; the registry is the safety net.</p>
      *
-     * <p>Throughput cost: at groupSize=3 and the default
-     * {@link CatchUpBurstMode#BURST_TWO}, this caps carriages added per
-     * tick at 12 (3 per group × 2 groups × 2 directions), and only while
-     * both lanes are behind. {@link CatchUpBurstMode#FILL} raises the per-lane
-     * ceiling to {@link #CATCH_UP_FILL_MAX_GROUPS} for the one tick that
-     * closes the deficit — a deliberate spike, chosen by the setting. The seed group from
+     * <p>Throughput cost: under {@link CatchUpBurstMode#BURST_TWO} and
+     * groupSize=3 this caps carriages added per tick at 12 (3 per group × 2
+     * groups × 2 directions), and only while both lanes are behind. The
+     * DEFAULT {@link CatchUpBurstMode#FILL} raises the per-lane ceiling to
+     * {@link #CATCH_UP_FILL_MAX_GROUPS} for the one tick that closes the
+     * deficit — a deliberate spike, and the reason the gentler modes exist. The seed group from
      * {@link TrainAssembler#spawnTrain} plus the appender's first ~15
      * ticks fully populate a typical auto-rd window (~14 groups at
      * render distance 12) in &lt;1 second per side — imperceptible.</p>
