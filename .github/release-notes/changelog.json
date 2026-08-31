@@ -10479,8 +10479,24 @@
       "released_at": null
     },
     {
+      "id": "owner-authoritative-build-save",
+      "version": "0.758.0",
+      "type": "fix",
+      "title": "Saving a build you've submitted always syncs",
+      "summary": "Saving a template in the Train Editor could tell you it was \"out on someone's train\" and quietly skip the upload to My Builds \u2014 and saying it would sync next time was wrong, because every later save stopped in the same place. Your own saves no longer wait for anyone: they go straight to your build, whoever happens to be riding it.",
+      "highlights": [
+        "An editor or builder save always reaches My Builds, even for a build you've submitted for review",
+        "Nobody riding a build is interrupted by its author saving it"
+      ],
+      "pr": 1238,
+      "date": "2026-08-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "carriage-catch-up-spawning",
-      "version": "0.757.0",
+      "version": "0.758.0",
       "type": "feat",
       "title": "The train catches up when it gets ahead of you",
       "summary": "When the train outran you \u2014 you sprinted ahead, or it rolled past while you stood still \u2014 its ends could only grow back one group of carriages at a time, so a fast train just left you behind. Each end now fills in every carriage it is missing the moment it falls behind, and settles back to its normal pace once it has caught up. A new Catch-up spawning setting under Options \u2192 Dungeon Train \u2192 Train chooses how hard it tries: Fill all, the default, adds every missing group at once so the train catches up immediately; Burst 2 adds two at a time for a gentler catch-up; and Off keeps the old one-group-at-a-time pace. It applies to the train you are already riding.",
@@ -10489,6 +10505,7 @@
         "New Catch-up spawning setting in Options \u2192 Dungeon Train \u2192 Train \u2014 Fill all (default), Burst 2, or Off",
         "Carriage gaps stay even while catching up \u2014 groups added together move as one unit until they settle"
       ],
+      "pr": 1240,
       "date": "2026-08-31",
       "released": false,
       "released_in": null,
