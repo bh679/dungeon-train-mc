@@ -33,6 +33,8 @@ public final class BuilderProfileNameScreen extends Screen {
     private static final int FIELD_WIDTH = 220;
     private static final int ROW_HEIGHT = 20;
     private static final int ROW_GAP = 6;
+    /** Space either side of "Done" — enough to look like a button, not enough to be a column. */
+    private static final int DONE_PADDING = 6;
 
     private final Screen lastScreen;
     private final Screen backScreen;
@@ -60,7 +62,12 @@ public final class BuilderProfileNameScreen extends Screen {
         int x = this.width / 2 - FIELD_WIDTH / 2;
         int y = this.height / 2 - 10;
 
-        this.nameField = new EditBox(this.font, x, y, FIELD_WIDTH, ROW_HEIGHT,
+        // Done sits on the name's own row, at the width of its own label: it answers this one field
+        // and nothing else, and a full-width button under the box read as a second question.
+        int doneWidth = this.font.width(CommonComponents.GUI_DONE) + DONE_PADDING * 2;
+        int fieldWidth = FIELD_WIDTH - doneWidth - ROW_GAP;
+
+        this.nameField = new EditBox(this.font, x, y, fieldWidth, ROW_HEIGHT,
                 Component.translatable("gui.dungeontrain.builder.new.name"));
         this.nameField.setMaxLength(32);
         this.nameField.setValue(name);
@@ -72,12 +79,11 @@ public final class BuilderProfileNameScreen extends Screen {
         });
         addRenderableWidget(this.nameField);
         setInitialFocus(this.nameField);
-        y += ROW_HEIGHT + ROW_GAP * 2;
 
         this.confirmButton = Button.builder(CommonComponents.GUI_DONE, b -> confirm())
-                .bounds(x, y, FIELD_WIDTH, ROW_HEIGHT).build();
+                .bounds(x + FIELD_WIDTH - doneWidth, y, doneWidth, ROW_HEIGHT).build();
         addRenderableWidget(this.confirmButton);
-        y += ROW_HEIGHT + ROW_GAP;
+        y += ROW_HEIGHT + ROW_GAP * 2;
 
         addRenderableWidget(Button.builder(CommonComponents.GUI_BACK, b -> onClose())
                 .bounds(x, y, FIELD_WIDTH, ROW_HEIGHT).build());
