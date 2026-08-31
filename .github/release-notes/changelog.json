@@ -10510,6 +10510,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "builder-load-collision-flow",
+      "version": "0.759.0",
+      "type": "fix",
+      "title": "Loading one of your own builds back is a shorter question",
+      "summary": "Loading a build from My Builds now ends with you standing at it: the menu closes and the editor takes you to the template, even if you weren't in an editor plot when you started. When the name is already in use, the question fits on screen and comes in two halves \u2014 New loads it under a fresh name, or Replace Existing asks whether to keep a copy of the build you have or overwrite it.",
+      "highlights": [
+        "A load finishes at the build, not at the menu you started from",
+        "The name-clash question no longer runs off the edge of the screen",
+        "New / Replace Existing, with keep-a-copy or overwrite behind the second"
+      ],
+      "date": "2026-08-31",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
