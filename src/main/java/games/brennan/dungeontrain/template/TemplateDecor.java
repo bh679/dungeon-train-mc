@@ -14,6 +14,7 @@ import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Mirror;
@@ -275,6 +276,13 @@ public final class TemplateDecor {
             // TileX/Y/Z rebased above when the NBT loaded, so there is nothing left to move.
             entity.setYRot(yaw);
         }
+        // An authored mob must not wander off or despawn. A Mob created from NBT starts with
+        // persistence off, so a parrot somebody placed in a room would vanish the first time a player
+        // walked far enough away — indistinguishable, from the author's side, from it never having
+        // been saved. The same flag {@code CarriageContentsPlacer.spawnVariantMob} sets on a
+        // variant-rolled mob, for the same reason, and what makes the live-mob caps meaningful:
+        // a count that despawns behind your back cannot be a budget.
+        if (entity instanceof Mob mob) mob.setPersistenceRequired();
         if (mark != null) mark.accept(entity);
         if (!level.addFreshEntity(entity)) {
             LOGGER.debug("[DungeonTrain] template decor: level rejected {} at {}",
