@@ -97,6 +97,16 @@ public final class ShaderSweep {
     /** Band intensity counted as "fully inside" for a capture. */
     private static final double SCAN_TARGET = 0.95;
 
+    /**
+     * The authored dimensional carriage the carriage sites stamp. A tiling room on purpose — the
+     * room fog only engages for the modes that tile, so a one-off room would measure the fog system
+     * as "never asked" and say nothing about the pack.
+     */
+    private static final String CARRIAGE_ROOM = "backrooms";
+
+    /** A command of the form {@code wait:<ticks>} pauses the setup instead of being sent. */
+    private static final String WAIT_PREFIX = "wait:";
+
     private enum Phase { BOOT, JOINING, SETTLE, SITE_SETUP, SITE_WAIT, CAPTURE, CAPTURE_WAIT, FINISHED }
 
     /** One measurement stop: the commands that reach it, and how long it needs to settle. */
@@ -107,6 +117,7 @@ public final class ShaderSweep {
     private static List<Site> sites = List.of();
     private static int siteIndex = 0;
     private static int commandIndex = 0;
+    private static int setupWait = 0;
     private static boolean worldRequested = false;
 
     /** Set by the tick loop, consumed by the render hook on the next completed frame. */
@@ -224,17 +235,43 @@ public final class ShaderSweep {
         phase = Phase.SITE_SETUP;
     }
 
-    /** One command per tick. A burst down one tick is the kind of thing a command source drops. */
+    /**
+     * One command per tick, with {@code wait:<ticks>} pauses between them.
+     *
+     * <p>One per tick because a burst down a single tick is the kind of thing a command source
+     * drops. The pauses are for the commands that depend on the world catching up with the previous
+     * one: {@code /fill} right after a long {@code /tp} answered "that position is not loaded",
+     * because the chunk had not arrived yet, and the editor's settings commands have to be issued
+     * from inside the plot the {@code enter} before them is still travelling to.</p>
+     */
     private static void tickSiteSetup(Minecraft mc) {
         Site site = sites.get(siteIndex);
+        if (setupWait > 0) {
+            setupWait--;
+            return;
+        }
         if (commandIndex < site.commands().size()) {
             String command = site.commands().get(commandIndex++);
+            if (command.startsWith(WAIT_PREFIX)) {
+                setupWait = parseWait(command);
+                LOGGER.info("[DungeonTrain] sweep[{}]: waiting {} ticks", site.id(), setupWait);
+                return;
+            }
             LOGGER.info("[DungeonTrain] sweep[{}]: /{}", site.id(), command);
             CommandRunner.run(command);
             return;
         }
         phase = Phase.SITE_WAIT;
         timer = site.settleTicks();
+    }
+
+    private static int parseWait(String command) {
+        try {
+            return Math.max(0, Integer.parseInt(command.substring(WAIT_PREFIX.length()).trim()));
+        } catch (NumberFormatException e) {
+            LOGGER.warn("[DungeonTrain] sweep: bad wait '{}' — treated as none", command);
+            return 0;
+        }
     }
 
     private static void tickSiteWait(Minecraft mc) {
@@ -257,6 +294,7 @@ public final class ShaderSweep {
         if (--timer > 0) return;
         siteIndex++;
         commandIndex = 0;
+        setupWait = 0;
         if (siteIndex >= sites.size()) {
             finish("all sites visited");
             return;
@@ -281,12 +319,24 @@ public final class ShaderSweep {
         addBandSite(out, "02-band-nether", here, ClientNetherBand::netherIntensityAt);
         addBandSite(out, "03-band-upsidedown", here, ClientUpsideDownBand::upsideDownIntensityAt);
 
-        // Skybox blocks: a wall of one variant four blocks ahead, then face it. Placed rather than
-        // hunted for, so the site exists in any world.
-        out.add(new Site("04-skybox-blocks", List.of(
-            "gamemode creative",
-            "fill ~4 ~-1 ~-3 ~4 ~4 ~3 dungeontrain:skybox_end",
-            "tp @s ~ ~ ~ -90 0"), SITE_TICKS));
+        // Skybox blocks: a wall of one variant in open, static air.
+        //
+        // The obvious version — fill a wall in front of the player and turn to face it — measured
+        // nothing: the player stands on a moving train, so the wall is laid in world space and the
+        // train carries the camera away from it before the shot. The control run caught this
+        // honestly (14 cubes indexed, drew=no, camera inside a carriage looking at a door), which
+        // is precisely the kind of false "the shader broke it" the control exists to prevent.
+        // Spectator well off the track holds the camera still, and open sky behind the wall is
+        // what makes the hole legible at all.
+        if (plainX != Integer.MIN_VALUE) {
+            out.add(new Site("04-skybox-blocks", List.of(
+                "gamemode spectator",
+                "tp @s " + plainX + " 150 200 -90 0",
+                // The control answered "that position is not loaded" here: the fill followed the
+                // teleport by one tick, and the destination chunk had not arrived.
+                WAIT_PREFIX + "200",
+                "fill ~4 ~-3 ~-3 ~4 ~3 ~3 dungeontrain:skybox_end"), SITE_TICKS));
+        }
 
         // A real dimensional carriage on a real train — the only way to reach the fog, the room's
         // sky lift and the corridor ramp together, since all three are driven by the live swap.
@@ -295,20 +345,32 @@ public final class ShaderSweep {
         // were LAID under the rate that claims it, so an existing train answers `portal tp` with
         // "no corridor is stamped in it" — which is exactly what the first run got. Re-seeding the
         // train at a fresh X after the rate change is what makes the groups stamped ones.
-        if (plainX != Integer.MIN_VALUE) {
-            out.add(new Site("05-carriage-setup", List.of(
-                "gamemode creative",
-                "dungeontrain portal carriage 1",
-                "dtp " + plainX), CARRIAGE_TICKS));
-            out.add(new Site("06-carriage-inside", List.of(
-                "dungeontrain portal tp"), SITE_TICKS));
-            // A step further down the corridor: the transition ramp is a function of how far along
-            // it the camera is, so the arrival point alone never shows it engaged.
-            out.add(new Site("07-carriage-corridor", List.of(
-                "tp @s ^ ^ ^6"), SITE_TICKS));
-        } else {
-            LOGGER.warn("[DungeonTrain] sweep: no band-free stretch found — carriage sites skipped");
-        }
+        // The dimensional carriage, reached through the editor rather than through play.
+        //
+        // `portal tp` was the wrong door: it teleports to a HALLWAY portal, so the control run sat
+        // in an ordinary carriage with room=NONE. Raising the carriage rate and re-seeding the
+        // train was the wrong door too — a group only carries a corridor if its blocks were laid
+        // under the rate that claims it, and even then finding the group is a matter of luck.
+        // `portal test` stamps the authored room as a twin — [plug][corridor][room][corridor][plug]
+        // — and puts the camera at the corridor mouth facing down it, which is deterministic. It
+        // insists on being run from inside a room's plot, hence the editor hop first.
+        // The room's own authored settings decide whether there is anything to measure: the fog is
+        // only sent for a mode that fogs (`if (!structure.mode().fogs()) return`), and the sky lift
+        // only for a room that names a sky. The control found `backrooms` doing neither, which
+        // would have read as "the pack discarded it" for a system that was never asked. Forced here
+        // so a zero is always the pack's doing.
+        out.add(new Site("05-carriage-plot", List.of(
+            "gamemode creative",
+            "dungeontrain editor portals enter " + CARRIAGE_ROOM,
+            WAIT_PREFIX + "100",
+            "dungeontrain editor portals mode endless_repetition",
+            "dungeontrain editor portals sky day"), CARRIAGE_TICKS));
+        out.add(new Site("06-carriage-corridor", List.of(
+            "dungeontrain portal test"), SITE_TICKS));
+        // Forward into the room itself: the fog and the sky lift belong to the room, and the
+        // corridor mouth is outside its box.
+        out.add(new Site("07-carriage-room", List.of(
+            "tp @s ^ ^ ^14"), SITE_TICKS));
 
         return out;
     }
