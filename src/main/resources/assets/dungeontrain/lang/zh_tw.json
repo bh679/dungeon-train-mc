@@ -809,7 +809,7 @@
   "gui.dungeontrain.video_tools.notes.desc": "死亡筆記與戀愛筆記能在不同的安裝之間往來。看你直播的人可以從自己的遊戲裡，送出一樣在你這邊即時出現的東西——你們不必在同一個伺服器上，他們也從不直接更動你的世界。",
   "gui.dungeontrain.video_tools.notes.how": "它是怎麼運作的？",
   "gui.dungeontrain.video_tools.notes.secret": "懂的人自然懂。這裡就不揭祕了。",
-  "gui.dungeontrain.video_tools.notes.gate": "兩端都需要開啟連線功能，而兒童模式既不傳送也不接收。如果直播中始終沒有東西送到，先從這裡查起。",
+  "gui.dungeontrain.video_tools.notes.gate": "兩端都需要開啟連線功能，而兒童模式既不傳送也不接收。",
   "gui.dungeontrain.video_tools.share.header": "做出東西了嗎？把連結貼上來。",
   "gui.dungeontrain.video_tools.share.desc": "貼到 %s 的 #streams-and-media-of-dungeontrain —— 我會看那個頻道，也會分享在那裡貼出的內容。",
   "gui.dungeontrain.video_tools.help.header": "需要幫忙嗎？",

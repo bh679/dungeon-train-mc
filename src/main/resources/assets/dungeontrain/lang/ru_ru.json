@@ -860,7 +860,7 @@
   "gui.dungeontrain.video_tools.notes.desc": "Тетради смерти и тетради любви переходят между разными установками. Тот, кто смотрит тебя, может из своей игры отправить то, что появится вживую в твоей: быть на одном сервере не нужно, и твой мир при этом никто не трогает напрямую.",
   "gui.dungeontrain.video_tools.notes.how": "Как это работает?",
   "gui.dungeontrain.video_tools.notes.secret": "Кто знает — тот знает. Секреты я здесь раскрывать не стану.",
-  "gui.dungeontrain.video_tools.notes.gate": "С обеих сторон нужны включённые сетевые функции, а детский режим их не отправляет и не получает. Если в эфир ничего не приходит, начни проверку с этого.",
+  "gui.dungeontrain.video_tools.notes.gate": "С обеих сторон нужны включённые сетевые функции, а детский режим их не отправляет и не получает.",
   "gui.dungeontrain.video_tools.share.header": "Что-то сняли? Скиньте ссылку.",
   "gui.dungeontrain.video_tools.share.desc": "Выложите её в #streams-and-media-of-dungeontrain в %s — я слежу за этим каналом и делюсь тем, что там появляется.",
   "gui.dungeontrain.video_tools.help.header": "Нужна помощь?",

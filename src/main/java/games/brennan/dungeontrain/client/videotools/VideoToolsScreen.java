@@ -60,10 +60,10 @@ public final class VideoToolsScreen extends Screen {
 
     /**
      * The example {@code /dtp} invocation shown under the tiles. A literal, like every other command
-     * on this page: it is typed, not translated, and the number is only there to show the shape of
-     * the argument ({@code DtpCommand} takes a world-X).
+     * on this page: it is typed, not translated. The angle brackets mark the number as the slot to
+     * fill rather than the value to copy — {@code DtpCommand} takes a bare world-X.
      */
-    private static final String DTP_COMMAND = "/dtp 40000";
+    private static final String DTP_COMMAND = "/dtp <15000>";
     /** 1px frame around each tile — brightens on hover so the tile reads as clickable. */
     private static final int COLOUR_TILE_EDGE = 0xFF3A3A3A;
     private static final int COLOUR_TILE_EDGE_HOVER = 0xFFFFFFFF;

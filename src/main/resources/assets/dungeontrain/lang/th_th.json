@@ -809,7 +809,7 @@
   "gui.dungeontrain.video_tools.notes.desc": "สมุดมรณะและสมุดรักข้ามไปมาระหว่างเครื่องที่ติดตั้งคนละชุดได้ คนที่ดูคุณอยู่สามารถส่งบางอย่างจากเกมของตัวเองให้ไปโผล่สดๆ ในเกมของคุณ โดยไม่ต้องอยู่เซิร์ฟเวอร์เดียวกัน และไม่มีใครแตะโลกของคุณโดยตรง",
   "gui.dungeontrain.video_tools.notes.how": "มันทำงานยังไง?",
   "gui.dungeontrain.video_tools.notes.secret": "ใครรู้ก็รู้ ผมจะไม่เฉลยความลับตรงนี้",
-  "gui.dungeontrain.video_tools.notes.gate": "ทั้งสองฝั่งต้องเปิดฟีเจอร์ออนไลน์ไว้ และโหมดเด็กจะไม่ส่งและไม่รับ ถ้าไลฟ์แล้วไม่มีอะไรมาถึงเลย ให้ตรวจตรงนี้ก่อน",
+  "gui.dungeontrain.video_tools.notes.gate": "ทั้งสองฝั่งต้องเปิดฟีเจอร์ออนไลน์ไว้ และโหมดเด็กจะไม่ส่งและไม่รับ",
   "gui.dungeontrain.video_tools.share.header": "ทำอะไรเสร็จแล้วเหรอ? วางลิงก์ไว้เลย",
   "gui.dungeontrain.video_tools.share.desc": "โพสต์ใน #streams-and-media-of-dungeontrain บน %s — ฉันดูช่องนั้นอยู่ และจะช่วยแบ่งปันสิ่งที่ถูกโพสต์ที่นั่น",
   "gui.dungeontrain.video_tools.help.header": "ต้องการความช่วยเหลือไหม?",

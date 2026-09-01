@@ -832,7 +832,7 @@
   "gui.dungeontrain.video_tools.notes.desc": "Todesnotizen und Liebesnotizen wirken über Installationen hinweg. Wer dir zusieht, kann aus dem eigenen Spiel heraus etwas schicken, das live in deinem auftaucht — ihr müsst nicht auf demselben Server sein, und deine Welt wird nie direkt berührt.",
   "gui.dungeontrain.video_tools.notes.how": "Wie funktioniert das?",
   "gui.dungeontrain.video_tools.notes.secret": "Wer es weiß, weiß es. Die Geheimnisse verrate ich hier nicht.",
-  "gui.dungeontrain.video_tools.notes.gate": "Beide Seiten brauchen aktivierte Netzwerkfunktionen, und im Kindermodus wird weder gesendet noch empfangen. Kommt im Stream nichts an, ist das der erste Punkt zum Prüfen.",
+  "gui.dungeontrain.video_tools.notes.gate": "Beide Seiten brauchen aktivierte Netzwerkfunktionen, und im Kindermodus wird weder gesendet noch empfangen.",
   "gui.dungeontrain.video_tools.share.header": "Etwas gemacht? Lass den Link da.",
   "gui.dungeontrain.video_tools.share.desc": "Poste es in #streams-and-media-of-dungeontrain auf dem %s — ich schaue in diesen Kanal, und was dort landet, teile ich weiter.",
   "gui.dungeontrain.video_tools.help.header": "Brauchst du Hilfe?",

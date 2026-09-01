@@ -855,7 +855,7 @@
   "gui.dungeontrain.video_tools.notes.desc": "Notesy śmierci i notesy miłości przechodzą między osobnymi instalacjami. Ktoś, kto cię ogląda, może ze swojej gry wysłać coś, co pojawi się na żywo w twojej — nie musicie być na tym samym serwerze, a twój świat nigdy nie jest ruszany bezpośrednio.",
   "gui.dungeontrain.video_tools.notes.how": "Jak to działa?",
   "gui.dungeontrain.video_tools.notes.secret": "Kto wie, ten wie. Sekretów tutaj nie zdradzę.",
-  "gui.dungeontrain.video_tools.notes.gate": "Po obu stronach muszą być włączone funkcje sieciowe, a tryb dziecięcy ani ich nie wysyła, ani nie odbiera. Jeśli na streamie nic nie przychodzi, sprawdź to najpierw.",
+  "gui.dungeontrain.video_tools.notes.gate": "Po obu stronach muszą być włączone funkcje sieciowe, a tryb dziecięcy ani ich nie wysyła, ani nie odbiera.",
   "gui.dungeontrain.video_tools.share.header": "Zrobiłeś coś? Wrzuć link.",
   "gui.dungeontrain.video_tools.share.desc": "Wrzuć go na #streams-and-media-of-dungeontrain na %s — oglądam ten kanał i udostępniam to, co się tam pojawia.",
   "gui.dungeontrain.video_tools.help.header": "Potrzebujesz pomocy?",

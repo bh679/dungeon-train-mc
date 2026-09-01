@@ -832,7 +832,7 @@
   "gui.dungeontrain.video_tools.notes.desc": "Doodsnotities en Liefdesnotities steken over tussen installaties. Wie naar je kijkt kan vanuit zijn eigen spel iets sturen dat live in het jouwe opduikt — jullie hoeven niet op dezelfde server te zitten, en je wereld wordt nooit rechtstreeks aangeraakt.",
   "gui.dungeontrain.video_tools.notes.how": "Hoe werkt het?",
   "gui.dungeontrain.video_tools.notes.secret": "Wie het weet, weet het. De geheimen verklap ik hier niet.",
-  "gui.dungeontrain.video_tools.notes.gate": "Aan beide kanten moeten de netwerkfuncties aanstaan, en de kindermodus verstuurt noch ontvangt ze. Komt er tijdens de stream niets binnen, dan is dat het eerste om te controleren.",
+  "gui.dungeontrain.video_tools.notes.gate": "Aan beide kanten moeten de netwerkfuncties aanstaan, en de kindermodus verstuurt noch ontvangt ze.",
   "gui.dungeontrain.video_tools.share.header": "Iets gemaakt? Plaats de link.",
   "gui.dungeontrain.video_tools.share.desc": "Post hem in #streams-and-media-of-dungeontrain op de %s — ik volg dat kanaal en deel wat daar geplaatst wordt.",
   "gui.dungeontrain.video_tools.help.header": "Hulp nodig?",

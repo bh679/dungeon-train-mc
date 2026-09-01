@@ -832,7 +832,7 @@
   "gui.dungeontrain.video_tools.notes.desc": "Les Notes de Mort et les Notes d'Amour traversent d'une installation à l'autre. Quelqu'un qui te regarde peut, depuis sa propre partie, envoyer quelque chose qui apparaît en direct dans la tienne — inutile d'être sur le même serveur, et ton monde n'est jamais touché directement.",
   "gui.dungeontrain.video_tools.notes.how": "Comment ça marche ?",
   "gui.dungeontrain.video_tools.notes.secret": "Ceux qui savent savent. Je ne révélerai pas les secrets ici.",
-  "gui.dungeontrain.video_tools.notes.gate": "Les deux côtés doivent avoir les fonctions réseau activées, et le mode enfant n'envoie ni ne reçoit rien. Si rien n'arrive pendant le live, c'est la première chose à vérifier.",
+  "gui.dungeontrain.video_tools.notes.gate": "Les deux côtés doivent avoir les fonctions réseau activées, et le mode enfant n'envoie ni ne reçoit rien.",
   "gui.dungeontrain.video_tools.share.header": "Tu as fait quelque chose ? Balance le lien.",
   "gui.dungeontrain.video_tools.share.desc": "Publie-le dans #streams-and-media-of-dungeontrain sur le %s — je surveille ce salon, et je partage ce qui y est posté.",
   "gui.dungeontrain.video_tools.help.header": "Besoin d'un coup de main ?",

@@ -809,7 +809,7 @@
   "gui.dungeontrain.video_tools.notes.desc": "デスノートとラブノートは、別々のインストールをまたいで届きます。あなたを見ている人は自分のゲームから、あなたのゲームに生で現れる何かを送れます。同じサーバーにいる必要はなく、あなたのワールドが直接いじられることもありません。",
   "gui.dungeontrain.video_tools.notes.how": "どういう仕組み？",
   "gui.dungeontrain.video_tools.notes.secret": "知っている人は知っています。ここで種明かしはしません。",
-  "gui.dungeontrain.video_tools.notes.gate": "両側でネットワーク機能を有効にしておく必要があり、キッズモードでは送信も受信もされません。配信中に何も届かないときは、まずここを確認してください。",
+  "gui.dungeontrain.video_tools.notes.gate": "両側でネットワーク機能を有効にしておく必要があり、キッズモードでは送信も受信もされません。",
   "gui.dungeontrain.video_tools.share.header": "何か作りましたか？リンクをどうぞ。",
   "gui.dungeontrain.video_tools.share.desc": "%sの #streams-and-media-of-dungeontrain に投稿してください——あのチャンネルは見ていますし、投稿されたものは紹介しています。",
   "gui.dungeontrain.video_tools.help.header": "困ったときは",

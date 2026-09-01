@@ -990,7 +990,7 @@
   "gui.dungeontrain.video_tools.notes.desc": "Caietele morții și biletele de iubire trec de la o instalare la alta. Cine te privește poate, din propriul joc, să trimită ceva care apare în direct în al tău — nu trebuie să fiți pe același server, iar lumea ta nu este atinsă niciodată direct.",
   "gui.dungeontrain.video_tools.notes.how": "Cum funcționează?",
   "gui.dungeontrain.video_tools.notes.secret": "Cine știe, știe. Secretele nu le dezvălui aici.",
-  "gui.dungeontrain.video_tools.notes.gate": "Ambele capete au nevoie de funcțiile de rețea pornite, iar modul pentru copii nici nu le trimite, nici nu le primește. Dacă nu sosește nimic în timpul stream-ului, ăsta e primul lucru de verificat.",
+  "gui.dungeontrain.video_tools.notes.gate": "Ambele capete au nevoie de funcțiile de rețea pornite, iar modul pentru copii nici nu le trimite, nici nu le primește.",
   "gui.dungeontrain.video_tools.share.header": "Ai făcut ceva? Lasă linkul.",
   "gui.dungeontrain.video_tools.share.desc": "Postează-l în #streams-and-media-of-dungeontrain pe %s — urmăresc canalul ăla și distribui ce se postează acolo.",
   "gui.dungeontrain.video_tools.help.header": "Ai nevoie de ajutor?",

@@ -832,7 +832,7 @@
   "gui.dungeontrain.video_tools.notes.desc": "Las Notas mortales y las Notas de amor cruzan de una instalación a otra. Quien te está viendo puede, desde su propia partida, mandar algo que aparece en vivo en la tuya: no necesitan estar en el mismo servidor y nunca tocan tu mundo directamente.",
   "gui.dungeontrain.video_tools.notes.how": "¿Cómo funciona?",
   "gui.dungeontrain.video_tools.notes.secret": "El que sabe, sabe. Aquí no voy a revelar los secretos.",
-  "gui.dungeontrain.video_tools.notes.gate": "Ambos lados necesitan las funciones de red activadas, y el modo infantil ni envía ni recibe. Si no llega nada en la transmisión, eso es lo primero que hay que revisar.",
+  "gui.dungeontrain.video_tools.notes.gate": "Ambos lados necesitan las funciones de red activadas, y el modo infantil ni envía ni recibe.",
   "gui.dungeontrain.video_tools.share.header": "¿Hiciste algo? Deja el link.",
   "gui.dungeontrain.video_tools.share.desc": "Publícalo en #streams-and-media-of-dungeontrain en el %s: yo veo ese canal y comparto lo que se sube ahí.",
   "gui.dungeontrain.video_tools.help.header": "¿Necesitas una mano?",

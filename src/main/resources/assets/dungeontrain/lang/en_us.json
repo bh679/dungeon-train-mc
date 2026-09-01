@@ -968,7 +968,7 @@
   "gui.dungeontrain.video_tools.notes.desc": "Death Notes and Love Notes cross between installs. Someone watching you can, from their own game, send something that turns up live in yours — you don't have to be on a server together, and they never touch your world directly.",
   "gui.dungeontrain.video_tools.notes.how": "How does it work?",
   "gui.dungeontrain.video_tools.notes.secret": "If they know, they know. I won't reveal the secrets here.",
-  "gui.dungeontrain.video_tools.notes.gate": "Both ends need network features switched on, and Kid mode neither sends nor receives them. If nothing is arriving on stream, that's the first thing to check.",
+  "gui.dungeontrain.video_tools.notes.gate": "Both ends need network features switched on, and Kid mode neither sends nor receives them.",
   "gui.dungeontrain.video_tools.share.header": "Made something? Drop the link.",
   "gui.dungeontrain.video_tools.share.desc": "Post it in #streams-and-media-of-dungeontrain on the %s — I watch that channel, and I share what gets posted there.",
   "gui.dungeontrain.video_tools.help.header": "Need a hand?",

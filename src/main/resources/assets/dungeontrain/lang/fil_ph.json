@@ -809,7 +809,7 @@
   "gui.dungeontrain.video_tools.notes.desc": "Tumatawid ang Tala ng Patay at Tala ng Puso sa pagitan ng magkaibang install. Ang nanonood sa iyo ay puwedeng magpadala, mula sa sarili niyang laro, ng isang bagay na lilitaw nang live sa iyo — hindi kailangang magkasama kayo sa iisang server, at hindi nila hinahawakan ang mundo mo nang direkta.",
   "gui.dungeontrain.video_tools.notes.how": "Paano ito gumagana?",
   "gui.dungeontrain.video_tools.notes.secret": "Kung alam mo, alam mo. Hindi ko ibubunyag dito ang mga sikreto.",
-  "gui.dungeontrain.video_tools.notes.gate": "Kailangan ng magkabilang panig na naka-on ang mga network feature, at sa Kid mode ay walang naipapadala ni natatanggap. Kung walang dumarating habang nag-i-stream, iyon ang unang tingnan.",
+  "gui.dungeontrain.video_tools.notes.gate": "Kailangan ng magkabilang panig na naka-on ang mga network feature, at sa Kid mode ay walang naipapadala ni natatanggap.",
   "gui.dungeontrain.video_tools.share.header": "May nagawa ka? Ilagay ang link.",
   "gui.dungeontrain.video_tools.share.desc": "I-post ito sa #streams-and-media-of-dungeontrain sa %s — binabantayan ko ang channel na iyon, at ibinabahagi ko ang mga na-post doon.",
   "gui.dungeontrain.video_tools.help.header": "Kailangan ng tulong?",

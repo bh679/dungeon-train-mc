@@ -809,7 +809,7 @@
   "gui.dungeontrain.video_tools.notes.desc": "Catatan Maut dan Catatan Cinta melintas antar-instalasi. Orang yang menontonmu bisa, dari permainannya sendiri, mengirim sesuatu yang muncul langsung di permainanmu — kalian tak perlu berada di server yang sama, dan duniamu tidak pernah disentuh langsung.",
   "gui.dungeontrain.video_tools.notes.how": "Bagaimana cara kerjanya?",
   "gui.dungeontrain.video_tools.notes.secret": "Yang tahu, tahu. Rahasianya tidak akan kubongkar di sini.",
-  "gui.dungeontrain.video_tools.notes.gate": "Kedua sisi butuh fitur jaringan aktif, dan Mode Anak tidak mengirim maupun menerimanya. Kalau tidak ada yang datang saat siaran, itu hal pertama yang perlu diperiksa.",
+  "gui.dungeontrain.video_tools.notes.gate": "Kedua sisi butuh fitur jaringan aktif, dan Mode Anak tidak mengirim maupun menerimanya.",
   "gui.dungeontrain.video_tools.share.header": "Sudah bikin sesuatu? Bagikan tautannya.",
   "gui.dungeontrain.video_tools.share.desc": "Kirim ke #streams-and-media-of-dungeontrain di %s — aku memantau kanal itu, dan aku ikut membagikan apa pun yang masuk ke sana.",
   "gui.dungeontrain.video_tools.help.header": "Butuh bantuan?",
