@@ -1748,7 +1748,7 @@ public final class TrainCarriageAppender {
      *                       contiguous and the lane must re-resolve its edge
      */
     private record FillRun(Plan lastPlan, int lastAnchor, UUID lastSubLevelId, long lastShipId,
-                           int groupsSoFar, long lastAdvancedTick) {}
+                           int groupsSoFar, long planTick, long lastActiveTick) {}
 
     /** In-progress fill runs, one per lane per train. See {@link FillRun}. */
     private static final Map<UUID, FillRun> FILL_RUN_FORWARD = new ConcurrentHashMap<>();
@@ -1763,10 +1763,10 @@ public final class TrainCarriageAppender {
      * is no longer a trustworthy description of where the lane's edge is. Pure so the boundary is
      * unit-testable without a level.</p>
      */
-    static boolean fillRunShouldContinue(long lastAdvancedTick, long now, int groupsSoFar, int deficitGroups) {
+    static boolean fillRunShouldContinue(long lastActiveTick, long now, int groupsSoFar, int deficitGroups) {
         if (deficitGroups <= 0) return false;
         if (groupsSoFar >= CATCH_UP_FILL_MAX_GROUPS) return false;
-        return now - lastAdvancedTick <= 1L;
+        return now - lastActiveTick <= 1L;
     }
 
     /**
@@ -4454,7 +4454,7 @@ public final class TrainCarriageAppender {
                                     ManagedShip ship, long now, int deficitPIdx, int groupSize) {
         if (DungeonTrainConfig.getCatchUpBurstMode() != CatchUpBurstMode.FILL) return;
         if (deficitGroups(deficitPIdx, groupSize) <= 1) return;
-        lane.put(trainId, new FillRun(plan, anchor, ship.subLevelId(), ship.id(), 1, now));
+        lane.put(trainId, new FillRun(plan, anchor, ship.subLevelId(), ship.id(), 1, now, now));
     }
 
     /** The lane's shortfall in whole groups; 0 when it is level or ahead. */
@@ -4494,7 +4494,7 @@ public final class TrainCarriageAppender {
             lane.remove(trainId);
             return false;
         }
-        if (!fillRunShouldContinue(run.lastAdvancedTick(), now, run.groupsSoFar(),
+        if (!fillRunShouldContinue(run.lastActiveTick(), now, run.groupsSoFar(),
                 deficitGroups(deficitPIdx, groupSize))) {
             lane.remove(trainId);
             return false;
@@ -4505,10 +4505,11 @@ public final class TrainCarriageAppender {
         UUID prevSubLevelId = run.lastSubLevelId();
         long prevShipId = run.lastShipId();
         int spawned = 0;
+        boolean deferred = false;
         // The stored plan describes where that group was placed on an EARLIER tick. The train has
         // carried it since — 0.1 blocks/tick at the default speed, 0.6 at speed 12 — so the chain
         // has to advance by the same distance or it plans the next group on top of it.
-        double driftX = TrainTransformProvider.travelDistance(velocity.x(), now - run.lastAdvancedTick());
+        double driftX = TrainTransformProvider.travelDistance(velocity.x(), now - run.planTick());
 
         for (int i = 0; i < CATCH_UP_FILL_GROUPS_PER_TICK; i++) {
             int nextAnchor = forward ? (prevAnchor + groupSize) : (prevAnchor - groupSize);
@@ -4522,7 +4523,15 @@ public final class TrainCarriageAppender {
             }
             ManagedShip ship = spawnPlannedGroup(
                 level, chained, null, nextAnchor, groupSize, dims, velocity, trainId, train);
-            if (ship == null) break;
+            if (ship == null) {
+                // Footprint chunks are still generating. That is a WAIT, not a fault: the async
+                // gen ticket is already requested and the same placement will be valid next tick
+                // (drift is measured from planTick, so it keeps accumulating correctly). Ending
+                // the run here is what put the lane back on the 60-tick gate after a single
+                // advance — the exact stall FILL exists to avoid.
+                deferred = true;
+                break;
+            }
             recordSpawnedGroup(level, trainId, ship, nextAnchor, train, now, forward);
             // Same lockstep link the within-tick burst makes, so a run built across ticks is one
             // chain and a leader's shift still reaches its tail.
@@ -4537,11 +4546,17 @@ public final class TrainCarriageAppender {
         }
 
         if (spawned == 0) {
+            if (deferred) {
+                // Hold the run open across the wait: same plan, same chain, continuity preserved.
+                lane.put(trainId, new FillRun(run.lastPlan(), run.lastAnchor(), run.lastSubLevelId(),
+                    run.lastShipId(), run.groupsSoFar(), run.planTick(), now));
+                return false;
+            }
             lane.remove(trainId);
             return false;
         }
         lane.put(trainId, new FillRun(prevPlan, prevAnchor, prevSubLevelId, prevShipId,
-            run.groupsSoFar() + spawned, now));
+            run.groupsSoFar() + spawned, now, now));
         LOGGER.info("[DungeonTrain] Catch-up fill on lane {}: +{} group(s) this tick (run total {}, deficitPIdx={} anchors up to {}) trainId={}",
             forward ? "forward" : "backward", spawned, run.groupsSoFar() + spawned,
             deficitPIdx, prevAnchor, trainId);
