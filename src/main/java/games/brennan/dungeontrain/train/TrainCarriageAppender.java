@@ -394,8 +394,9 @@ public final class TrainCarriageAppender {
     /**
      * When {@code true}, the appender skips its automatic spawn loop on
      * {@link #onLevelTick}; spawns happen only via
-     * {@link #requestManualSpawn()} (one J-press = one spawn cycle = up to
-     * {@link #MAX_SPAWNS_PER_TICK} per train). HUD updates and planned-spawn
+     * {@link #requestManualSpawn()} (one J-press = one spawn cycle = one
+     * spawn per lane, or a catch-up burst on a lane that is behind). HUD
+     * updates and planned-spawn
      * broadcasting still run every tick so the wireframe preview stays
      * fresh as the reference carriage drifts.
      *
@@ -1686,6 +1687,31 @@ public final class TrainCarriageAppender {
      * TARGET_GAP_BLOCKS} — the same rolling-reference trick
      * {@link #eagerFillForBootstrap} uses to drop an entire train in one
      * tick.</p>
+     *
+     * <p><b>Why a per-direction count is a safe bound.</b> Forward and backward
+     * spawn lanes run independently (separate {@code LAST_SPAWNED_SHIP_*} gates
+     * and separate placement-success waits), so a forward spawn at the +X end
+     * and a backward spawn at the -X end in the same tick don't race each
+     * other: they touch different reference carriages and different sub-level
+     * neighbours, and Sable's async
+     * {@link dev.ryanhcode.sable.api.sublevel.SubLevelContainer#getAllSubLevels}
+     * lag is irrelevant because each direction's collision check consults
+     * {@link Trains#knownGroups} (the spawn-time registry, not the visible
+     * train) for sibling AABBs. Within a single direction, the per-direction
+     * {@code LAST_SPAWNED_SHIP_*} gate enforces "one in flight at a time"; this
+     * burst is the one exception, and it stays inside that protection by
+     * chaining planned placements rather than reading the in-flight group's
+     * pose.</p>
+     *
+     * <p>{@link Trains#knownAnchors} remains the source of truth for "what
+     * anchors does this train own": any duplicate the appender accidentally
+     * requests is deduped against the registry (the burst re-checks it per
+     * group). The per-lane gate is the architectural bound; the registry is the
+     * safety net.</p>
+     *
+     * <p>Throughput cost: under {@link CatchUpBurstMode#BURST_TWO} and
+     * groupSize=3 this caps carriages added per tick at 12 (3 per group x 2
+     * groups x 2 directions), and only while both lanes are behind.</p>
      */
     static final int CATCH_UP_BURST_GROUPS = 2;
 
@@ -1726,6 +1752,12 @@ public final class TrainCarriageAppender {
      * ONE group is the only value that stays inside it, and it still adds ~20 groups per second: a
      * 7-group shortfall closes in about a third of a second rather than in one 210 ms stall. Raise
      * this only with that table in hand.</p>
+     *
+     * <p>This is the real per-tick ceiling for the DEFAULT {@link CatchUpBurstMode#FILL} mode:
+     * a fill spends its {@link #CATCH_UP_FILL_MAX_GROUPS} budget over a RUN of ticks, not in the
+     * one tick that closes the deficit. Measured over 73 spawns / 46 fill ticks, spreading the run
+     * this way took the appender's per-tick max from 264 ms to 56 ms with no tick at or above
+     * 100 ms, while still closing a 7-group deficit in ~1 s.</p>
      */
     static final int CATCH_UP_FILL_GROUPS_PER_TICK = 1;
 
@@ -1807,45 +1839,6 @@ public final class TrainCarriageAppender {
         }
         return (deficitGroups >= CATCH_UP_DEFICIT_GROUPS) ? CATCH_UP_BURST_GROUPS : 1;
     }
-
-    /**
-     * Hard upper bound on how many GROUPS the appender will spawn in a
-     * single server tick: {@link #CATCH_UP_BURST_GROUPS} per direction.
-     * Forward and backward spawn lanes run independently (separate
-     * {@code LAST_SPAWNED_SHIP_*} gates and separate placement-success
-     * waits), so a forward spawn at the +X end and a backward spawn at
-     * the −X end in the same tick don't race each other: they touch
-     * different reference carriages and different sub-level neighbours,
-     * and Sable's async {@link dev.ryanhcode.sable.api.sublevel.SubLevelContainer#getAllSubLevels}
-     * lag is irrelevant because each direction's collision check consults
-     * {@link Trains#knownGroups} (the spawn-time registry, not the visible
-     * train) for sibling AABBs.
-     *
-     * <p>Within a single direction, the per-direction
-     * {@code LAST_SPAWNED_SHIP_*} gate enforces the "one in flight at a
-     * time" constraint that the previous {@code MAX_SPAWNS_PER_TICK = 1}
-     * was approximating, so the Sable-lag protection is preserved. The
-     * catch-up burst is the one exception, and it stays inside that
-     * protection by chaining planned placements rather than reading the
-     * in-flight group's pose — see {@link #CATCH_UP_BURST_GROUPS}.</p>
-     *
-     * <p>The {@link Trains#knownAnchors} registry remains the
-     * source of truth for "what anchors does this train own" — even with
-     * the throttle, any duplicate the appender accidentally requests is
-     * deduped against the registry (the burst re-checks it per group). The
-     * throttle is the architectural fix; the registry is the safety net.</p>
-     *
-     * <p>Throughput cost: under {@link CatchUpBurstMode#BURST_TWO} and
-     * groupSize=3 this caps carriages added per tick at 12 (3 per group × 2
-     * groups × 2 directions), and only while both lanes are behind. The
-     * DEFAULT {@link CatchUpBurstMode#FILL} raises the per-lane ceiling to
-     * {@link #CATCH_UP_FILL_MAX_GROUPS} for the one tick that closes the
-     * deficit — a deliberate spike, and the reason the gentler modes exist. The seed group from
-     * {@link TrainAssembler#spawnTrain} plus the appender's first ~15
-     * ticks fully populate a typical auto-rd window (~14 groups at
-     * render distance 12) in &lt;1 second per side — imperceptible.</p>
-     */
-    private static final int MAX_SPAWNS_PER_TICK = 2 * CATCH_UP_BURST_GROUPS;
 
     private TrainCarriageAppender() {}
 
