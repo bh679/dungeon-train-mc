@@ -117,8 +117,15 @@ public final class DeathNoteEchoController {
     }
 
     /**
-     * Read out the next line of the note, if the echo is alongside its target and the previous line
-     * has had its say. Both kinds speak — a Love Note echo has come a long way to say something too.
+     * Read out the next line of the note, if the echo is near enough to its target and the previous
+     * line has had its say. Both kinds speak — a Love Note echo has come a long way to say something
+     * too.
+     *
+     * <p>"Near enough" scales with the length of the note: one carriage of run-up per two lines
+     * ({@link NoteSpokenLines#startCarriageGap}), so a long note begins while the echo is still
+     * several carriages off and lands its last line about when it reaches you. Carriages, not
+     * blocks — the echo sits in its carriage's shipyard coordinates and the target in world space,
+     * so the index is the only frame the two share.</p>
      *
      * <p>Everything the recital needs lives on the entity ({@code KEY_LINES} /
      * {@code KEY_LINE_INDEX} / {@code KEY_NEXT_SPEAK}), so an echo that is saved and reloaded picks
@@ -132,8 +139,10 @@ public final class DeathNoteEchoController {
         int echoIdx = TrainConfinement.carriageIndex(echo);
         int targetIdx = TrainConfinement.carriageIndex(target);
         if (echoIdx == TrainConfinement.NO_CARRIAGE || targetIdx == TrainConfinement.NO_CARRIAGE) return;
-        if (Math.abs(echoIdx - targetIdx) > 1) return;                   // not close enough yet
         ListTag lines = data.getList(DeathNoteEchoSpawner.KEY_LINES, Tag.TAG_STRING);
+        // A longer note starts from further off, so it has room to finish around the time the echo
+        // arrives rather than still being mid-page (NoteSpokenLines.startCarriageGap).
+        if (Math.abs(echoIdx - targetIdx) > NoteSpokenLines.startCarriageGap(lines.size())) return;
         int spoken = data.getInt(DeathNoteEchoSpawner.KEY_LINE_INDEX);
         if (spoken > lines.size()) return;                               // the note has been read out
         long now = level.getGameTime();
