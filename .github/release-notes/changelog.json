@@ -10605,6 +10605,23 @@
       "released": true,
       "released_in": "v0.763.0",
       "released_at": "2026-09-01T13:08:12Z"
+    },
+    {
+      "id": "video-tools-tabs-and-notes",
+      "version": "0.764.0",
+      "type": "feat",
+      "title": "Video Tools page rebuilt, with a section for what your viewers can send you",
+      "summary": "The Video Tools page is now tabbed \u2014 Commands, Viewers, Fresh start, Contact \u2014 and looks like the Credits and AI Policy pages rather than one long scroll. A new Viewers tab points at Death Notes and Love Notes: things someone watching your stream can send into your game from their own. /dtp is documented alongside the filming commands, and Reset Everything and Join the Discord are now coloured buttons on the sections they belong to.",
+      "highlights": [
+        "Video Tools split into four tabs",
+        "New Viewers section on Death Notes and Love Notes",
+        "/dtp documented with the filming commands"
+      ],
+      "pr": 1250,
+      "date": "2026-09-01",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
