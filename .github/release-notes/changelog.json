@@ -10586,9 +10586,9 @@
       "highlights": [],
       "pr": 1245,
       "date": "2026-09-01",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.763.0",
+      "released_at": "2026-09-01T13:08:12Z"
     },
     {
       "id": "leaderboard-standing-after-death",
@@ -10602,9 +10602,9 @@
       ],
       "pr": 1246,
       "date": "2026-09-01",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.763.0",
+      "released_at": "2026-09-01T13:08:12Z"
     },
     {
       "id": "trade-everything-diamond-payout-half",
