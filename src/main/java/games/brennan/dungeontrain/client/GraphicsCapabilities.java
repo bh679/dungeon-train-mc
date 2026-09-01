@@ -6,10 +6,15 @@ import net.minecraft.client.OptionInstance;
 import net.neoforged.fml.ModList;
 import org.slf4j.Logger;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Method;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Properties;
 
 /**
  * Client-side probe of the player's <em>graphics stack</em> — whether Distant Horizons is present, an
@@ -46,6 +51,10 @@ public final class GraphicsCapabilities {
     private static Method isShaderPackInUse;
     private static Method getCurrentPackName;
 
+    // Memo of config/iris.properties' shaderPack, keyed on the file's mtime.
+    private static volatile String irisConfigPackName = "";
+    private static volatile long irisConfigStamp = Long.MIN_VALUE;
+
     private GraphicsCapabilities() {}
 
     /** Whether Distant Horizons is loaded. Loaded is treated as "in use" — DH has no cheap, stable
@@ -72,18 +81,63 @@ public final class GraphicsCapabilities {
     }
 
     /**
-     * The active Iris/Oculus shaderpack's name (e.g. {@code "ComplementaryReimagined"}), or {@code ""}
-     * when no pack is active or Iris is absent. Best-effort reflective read of {@code getCurrentPackName()}.
+     * The active Iris/Oculus shaderpack's name (e.g. {@code "ComplementaryReimagined_r5.8.1.zip"}), or
+     * {@code ""} when no pack is active or Iris is absent.
+     *
+     * <p><b>The API cannot be relied on for this.</b> {@code IrisApi} v0 as shipped in Iris
+     * 1.8.14 declares no pack-name getter at all — {@code isShaderPackInUse}, {@code getConfig},
+     * {@code getSunPathRotation} and little else — so the reflective lookup finds nothing and this
+     * returned {@code ""} for every pack. It is read reflectively anyway in case a later API adds
+     * one, and falls back to {@code config/iris.properties}, which is where Iris persists the
+     * active pack and is authoritative for what is loaded right now.</p>
+     *
+     * <p>The fallback is what makes the pack name usable at all: the photo {@code gfx} facet
+     * ({@code SnapshotMeta}) and the shader-compatibility matrix both key on it, and an empty
+     * name silently collapses every pack into one bucket.</p>
      */
     public static String shaderPackName() {
         try {
             resolveIris();
-            if (irisApiInstance == null || getCurrentPackName == null || !shaderPackActive()) return "";
-            Object v = getCurrentPackName.invoke(irisApiInstance);
-            return v instanceof String s ? s : "";
+            if (!shaderPackActive()) return "";
+            if (irisApiInstance != null && getCurrentPackName != null) {
+                Object v = getCurrentPackName.invoke(irisApiInstance);
+                if (v instanceof String s && !s.isEmpty()) return s;
+            }
+            return packNameFromIrisConfig();
         } catch (Throwable t) {
             return "";
         }
+    }
+
+    /**
+     * {@code shaderPack} out of {@code <gameDir>/config/iris.properties}, memoised against the
+     * file's modification time so switching packs in the Video Settings GUI is picked up without
+     * re-reading the file on every frame.
+     */
+    private static String packNameFromIrisConfig() {
+        try {
+            Minecraft mc = Minecraft.getInstance();
+            if (mc == null || mc.gameDirectory == null) return "";
+            Path file = mc.gameDirectory.toPath().resolve("config").resolve("iris.properties");
+            if (!Files.isRegularFile(file)) return "";
+            long stamp = Files.getLastModifiedTime(file).toMillis();
+            if (stamp == irisConfigStamp) return irisConfigPackName;
+            String name = readShaderPackKey(file);
+            irisConfigPackName = name;
+            irisConfigStamp = stamp;
+            return name;
+        } catch (Throwable t) {
+            return "";
+        }
+    }
+
+    private static String readShaderPackKey(Path file) throws IOException {
+        Properties props = new Properties();
+        try (InputStream in = Files.newInputStream(file)) {
+            props.load(in);
+        }
+        String name = props.getProperty("shaderPack");
+        return name == null ? "" : name.trim();
     }
 
     /** The vanilla graphics mode (FAST / FANCY / FABULOUS), or {@code null} if it can't be read. */

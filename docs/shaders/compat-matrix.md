@@ -84,16 +84,24 @@ is applied by dropping the file in — no GUI. Three are in place from the ones 
 > Fast → v1.19 Fancy. The Complementary build sent was also bundled with the `Clrwl_1.0.3` add-on,
 > which the plain Modrinth pack does not include.
 
-**Switching packs** — one line, then relaunch:
+---
+
+## Running the sweep
+
+The mod drives itself. One command per pack, or one command for all of them:
+
+```bash
+scripts/shaders/sweep-all.sh "Dev World 1788237061079"
+```
+
+Each pack gets its own client launch: the script points `run/config/iris.properties` at that pack,
+launches with `-PshaderSweep=<world>`, and `client/ShaderSweep` opens the world, walks the sites,
+writes `run/screenshots/sweep-<pack>-<site>.png` with the F3+5 panel up, logs
+`SHADER SWEEP COMPLETE`, and quits. A single pack:
 
 ```bash
 printf 'enableShaders=true\nshaderPack=%s\nmaxShadowRenderDistance=32\n' "BSL_v10.1.3.zip" > run/config/iris.properties
-```
-
-**Launching** — from the worktree root, with JDK 17 on `JAVA_HOME`:
-
-```bash
-JAVA_HOME=/opt/homebrew/opt/openjdk@17 ./gradlew runClient --no-daemon
+JAVA_HOME=/opt/homebrew/opt/openjdk@17 ./gradlew runClient --no-daemon -PshaderSweep="Dev World 1788237061079"
 ```
 
 Confirm the stack took, in `run/logs/latest.log`:
@@ -101,24 +109,40 @@ Confirm the stack took, in `run/logs/latest.log`:
 - `[Iris/]: Creating pipeline for dimension minecraft:overworld`
 - `[AbstractSableMixinPlugin/]: Using Sodium renderer mixins`
 
----
+Alongside each screenshot the harness logs a `sweep[<site>]` line carrying every panel value, so a
+result can be grepped across all eleven runs rather than only read off an image.
 
-## The five sites
+> **The window must be allowed to render, but not to be focused.** The sweep sets
+> `pauseOnLostFocus=false` in code and in `run/options.txt`. Without it a background window is an
+> unfocused one, vanilla opens the pause screen, the integrated server halts, and every site is
+> photographed in a frozen world — which is exactly how the first run failed.
 
-Open **F3+5** first; it is both the record and the navigation aid.
+### The sites
 
-1. **Band skybox — End/void.** `/dtp <x>`, stepping forward until `Band t: void` rises above 0.
-   Capture at `void ≈ 1.0`. Look up and at the horizon.
-2. **Band skybox — Nether.** Same sweep, `Band t: nether`.
-3. **Band skybox — upside-down.** Same sweep, `Band t: flip`. Check the cloud plane too.
-4. **Skybox Blocks.** Place `skybox_end` / `skybox_surface` / `skybox_night` blocks in a wall
-   (creative), both in the world and on a carriage. `Skybox blocks:` should count them.
-5. **Carriage fog + sky/lighting + transition.** `/dungeontrain portal test` for a dimensional
-   carriage. `Fog dist:` engages inside, `Room sky:` rises with the lift, and `Transition:` ramps
-   while walking the corridor. Capture mid-corridor and inside the room.
+| Site | How it is reached |
+|---|---|
+| `00-plain` | Baseline, creative, wherever the world left the player |
+| `01-band-void` | `/dtp` to the first X where the End ramp reads ≥ 0.95 |
+| `02-band-nether` | Same, on the Nether ramp |
+| `03-band-upsidedown` | Same, on the upside-down ramp |
+| `04-skybox-blocks` | `/fill` a wall of `dungeontrain:skybox_end` four blocks ahead, then face it |
+| `05-carriage-room` | `/dungeontrain portal carriage 1`, then wait for the train to roll a portal group |
+| `06-carriage-inside` | `/dungeontrain portal tp` |
 
-Screenshots (F2) land in `run/screenshots/`; file them as
-`test-results/gate2-shader-compat-2026-09/<pack-id>-<site>.png`.
+Band stops are **located at runtime** by scanning each ramp forward from the player, not hard-coded:
+the bands are a function of the world's own cycle config, so a fixed X would quietly photograph the
+wrong place. A band that is not found within 400k blocks is logged and skipped rather than faked.
+
+A site that cannot be reached is skipped, not fatal — four measured cells and one honest "unreachable"
+beats a run that returns nothing.
+
+### Doing it by hand
+
+If the harness is unavailable, the same sites are reachable manually. Open **F3+5** first; the
+`Band t:` line is both the record and the navigation aid — `/dtp <x>` forward until it rises.
+Screenshots are F2, into `run/screenshots/`.
+
+File the results as `test-results/gate2-shader-compat-2026-09/<pack-id>-<site>.png`.
 
 ---
 

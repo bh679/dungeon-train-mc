@@ -82,11 +82,35 @@ public final class ShaderDiagnostics {
     public static void toggleVisible() {
         if (!TrainDebugState.permitted()) return;
         visible = !visible;
-        if (visible) consumeFrame();
+        if (visible) clearFrame();
     }
 
-    /** Clear the per-frame record. Called by the HUD once it has drawn this frame's values. */
+    /**
+     * The last per-frame record that was actually drawn into a frame.
+     *
+     * <p>Exists because the panel and the log read at different moments. {@link #consumeFrame()}
+     * clears the live fields as soon as the HUD has drawn them, but anything reading on a
+     * <em>tick</em> — the sweep's log line — runs after that clear and would record zeros for a
+     * frame that plainly showed otherwise. Keeping the values the HUD last drew means the log and
+     * the screenshot agree, which is the whole basis for trusting either.</p>
+     */
+    private static volatile Frame lastDrawn = Frame.EMPTY;
+
+    /** The per-frame values as last drawn — what the newest screenshot actually shows. */
+    public static Frame lastDrawn() {
+        return lastDrawn;
+    }
+
+    /** Clear the per-frame record, keeping a copy of what was drawn. Called by the HUD each frame. */
     public static void consumeFrame() {
+        lastDrawn = new Frame(skyVoid, skyNether, skyUpsideDown,
+            fogColorSource, fogColorIn, fogColorOut,
+            fogDistanceAsked, fogVanillaFar, fogFar, fogNear, fogCancelled,
+            skyboxCubes, skyboxVariants, skyboxStencil, skyboxDrew);
+        clearFrame();
+    }
+
+    private static void clearFrame() {
         skyVoid = 0.0f;
         skyNether = 0.0f;
         skyUpsideDown = 0.0f;
@@ -107,7 +131,8 @@ public final class ShaderDiagnostics {
     /** Drop everything on disconnect, so one world's readings never colour the next. */
     public static void reset() {
         visible = false;
-        consumeFrame();
+        clearFrame();
+        lastDrawn = Frame.EMPTY;
         roomSkyKind = "";
         roomSkyT = 0.0f;
         roomSkyLift = 0.0f;
@@ -211,6 +236,20 @@ public final class ShaderDiagnostics {
 
     private static int channel(float v) {
         return Math.max(0, Math.min(255, Math.round(v * 255.0f)));
+    }
+
+    /**
+     * One frame's worth of per-frame asks, as drawn. A value type so a reader on another thread
+     * (or another moment in the frame) sees one coherent set rather than a torn mixture.
+     */
+    public record Frame(float skyVoid, float skyNether, float skyUpsideDown,
+                        String fogColorSource, int fogColorIn, int fogColorOut,
+                        boolean fogDistanceAsked, float fogVanillaFar, float fogFar, float fogNear,
+                        boolean fogCancelled,
+                        int skyboxCubes, String skyboxVariants, boolean skyboxStencil, boolean skyboxDrew) {
+
+        public static final Frame EMPTY =
+            new Frame(0, 0, 0, "", 0, 0, false, 0, 0, 0, false, 0, "", false, false);
     }
 
     /** Which band sky overlay a recording came from. */

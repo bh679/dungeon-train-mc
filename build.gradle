@@ -151,6 +151,15 @@ neoForge {
             if (project.hasProperty('dpiBypassTest')) {
                 systemProperty 'dungeontrain.dpi_bypass_test', project.property('dpiBypassTest').toString()
             }
+            // Shader-compat sweep: ./gradlew runClient -PshaderSweep="<world folder name>" opens that
+            // world and drives itself round the five atmosphere sites, writing one screenshot each to
+            // run/screenshots/ with the F3+5 panel up, then logs SHADER SWEEP COMPLETE and stops. Lets
+            // one pack be measured per shell command instead of by hand. See client/ShaderSweep and
+            // docs/shaders/compat-matrix.md. Property rather than env var for the same daemon-
+            // environment reason as relayBaseUrl above.
+            if (project.hasProperty('shaderSweep')) {
+                systemProperty 'dungeontrain.shader_sweep', project.property('shaderSweep').toString()
+            }
         }
 
         server {
