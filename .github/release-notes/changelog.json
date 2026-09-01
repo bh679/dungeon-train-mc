@@ -10716,8 +10716,25 @@
       "released_at": null
     },
     {
-      "id": "builder-load-name-and-unsaved-guards",
+      "id": "builder-build-restore",
       "version": "0.769.0",
+      "type": "feat",
+      "title": "Builds the build server lost come back on their own",
+      "summary": "If the build server no longer has builds you uploaded, Dungeon Train now notices at the title screen and sends them back up from your own copy \u2014 including builds that survive only inside a backup. They return private, so nothing is published without you.",
+      "highlights": [
+        "Runs at startup, with no prompt: your build, your copy, your private profile.",
+        "Recovers builds that are gone from this install but still inside a backup archive, without writing anything back to disk.",
+        "Turn on Confirm restores in Options > Dungeon Train to be asked first, and to choose whether backup-only builds are included.",
+        "Saving a build when your profile is full now tells you, instead of the server quietly deleting your oldest build to make room."
+      ],
+      "date": "2026-09-01",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "builder-load-name-and-unsaved-guards",
+      "version": "0.770.0",
       "type": "fix",
       "title": "Loading your own builds back is less of a maze",
       "summary": "Loading a build from My Builds no longer dead-ends. A dimensional carriage you move aside or load under a new name is usable straight away instead of after a restart, the name box opens on a name that is actually free, and a name already in use is a warning you can edit rather than a refusal that throws your answer away. Loading also stops asking you to save every unrelated plot in the editor, and asks about the one build it is going to replace instead.",
@@ -10726,6 +10743,7 @@
         "The name box suggests the first free number, and says so in place when you type one that is taken",
         "Load no longer shows the 'save before switch?' list; it warns only when the build being replaced has unsaved edits, before anything is written"
       ],
+      "pr": 1255,
       "date": "2026-09-01",
       "released": false,
       "released_in": null,

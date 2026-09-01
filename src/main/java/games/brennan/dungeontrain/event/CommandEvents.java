@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.command.EchoEncounterTestCommand;
 import games.brennan.dungeontrain.command.FixAisConfigCommand;
 import games.brennan.dungeontrain.command.BackupCommand;
 import games.brennan.dungeontrain.command.FixConfigCommand;
+import games.brennan.dungeontrain.command.RebuildCommand;
 import games.brennan.dungeontrain.command.RestoreCommand;
 import games.brennan.dungeontrain.command.ReportCarriageCommand;
 import games.brennan.dungeontrain.command.TrainCommand;
@@ -45,6 +46,8 @@ public final class CommandEvents {
         FixConfigCommand.register(event.getDispatcher());
         BackupCommand.register(event.getDispatcher());
         RestoreCommand.register(event.getDispatcher());
+        // /dtrebuild [backups] — re-upload builds the relay has lost (the card's work, on demand).
+        RebuildCommand.register(event.getDispatcher());
         // /reportcarriage [reason] — player-facing report of the shared carriage underfoot (also a
         // subcommand of the op-gated /dungeontrain root). Any player, any game mode.
         ReportCarriageCommand.register(event.getDispatcher());
