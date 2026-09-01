@@ -804,7 +804,7 @@
   "gui.dungeontrain.video_tools.cinematic.desc": "Menjalankan sinematik pembuka dari mana pun kamu berada, sebanyak yang kamu mau — untuk kartu pembuka, pengambilan ulang, atau cold open. /dt cinematic current menjalankannya dari pandanganmu saat ini, bukan dari awal ala titik spawn. Ini tidak mengusik perjalananmu — tak ada yang berhenti disimpan.",
   "gui.dungeontrain.video_tools.cinematic.hotkey": "Sudah di mode penonton? Tekan C saja.",
   "gui.dungeontrain.video_tools.dtp.header": "Melompat jauh ke depan di jalur",
-  "gui.dungeontrain.video_tools.dtp.desc": "Membuatmu berpindah ke world-X itu dan memunculkan kereta di sana untuk kamu daratkan, dengan tingkat kesulitan dinaikkan seolah kamu sudah menempuh seluruh perjalanan — cara tercepat merekam cuplikan permainan akhir tanpa harus memainkannya sampai sana. Kereta yang kamu tumpangi akan digantikan, jadi ini untuk b-roll, bukan untuk tengah permainan yang ingin kamu simpan. Perlu cheat aktif, seperti perintah lain di sini.",
+  "gui.dungeontrain.video_tools.dtp.desc": "Memindahkanmu jauh ke depan di jalur, ke atas kereta.",
   "gui.dungeontrain.video_tools.notes.header": "Penontonmu bisa menjangkau permainanmu",
   "gui.dungeontrain.video_tools.notes.desc": "Catatan Maut dan Catatan Cinta melintas antar-instalasi. Orang yang menontonmu bisa, dari permainannya sendiri, mengirim sesuatu yang muncul langsung di permainanmu — kalian tak perlu berada di server yang sama, dan duniamu tidak pernah disentuh langsung.",
   "gui.dungeontrain.video_tools.notes.how": "Bagaimana cara kerjanya?",

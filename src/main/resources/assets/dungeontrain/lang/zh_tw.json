@@ -804,7 +804,7 @@
   "gui.dungeontrain.video_tools.cinematic.desc": "從你所在的任何位置播放開場動畫，想跑幾次都行——做片頭、重拍，或是冷開場。/dt cinematic current 會從你目前的視角開始，而不是出生點式的起手。它不會動到你的旅程——什麼都照常儲存。",
   "gui.dungeontrain.video_tools.cinematic.hotkey": "已經在旁觀者模式了嗎？直接按 C。",
   "gui.dungeontrain.video_tools.dtp.header": "沿著鐵軌往前跳",
-  "gui.dungeontrain.video_tools.dtp.desc": "把你傳送到那個世界 X 座標，並在那裡生成一列可供你落腳的列車，同時把難度提高到彷彿你一路開過來的程度——這是不必真的玩到那裡就能拍到後期畫面的最快辦法。它會取代你原本所在的列車，所以適合拍空鏡，而不適合用在你想保留的那一局中途。需要開啟作弊，和這裡的其他指令一樣。",
+  "gui.dungeontrain.video_tools.dtp.desc": "把你傳送到路線前方，直接落在列車上。",
   "gui.dungeontrain.video_tools.notes.header": "觀眾可以伸手進你的遊戲",
   "gui.dungeontrain.video_tools.notes.desc": "死亡筆記與戀愛筆記能在不同的安裝之間往來。看你直播的人可以從自己的遊戲裡，送出一樣在你這邊即時出現的東西——你們不必在同一個伺服器上，他們也從不直接更動你的世界。",
   "gui.dungeontrain.video_tools.notes.how": "它是怎麼運作的？",

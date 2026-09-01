@@ -804,7 +804,7 @@
   "gui.dungeontrain.video_tools.cinematic.desc": "Menjalankan sinematik pembukaan dari mana sahaja anda berada, seberapa kerap yang anda mahu — untuk kad pengenalan, rakaman semula, atau pembukaan terus. /dt cinematic current menjalankannya dari pandangan semasa anda, bukan permulaan gaya spawn. Ia tidak menyentuh larian anda — tiada apa yang berhenti disimpan.",
   "gui.dungeontrain.video_tools.cinematic.hotkey": "Sudah dalam mod penonton? Tekan C sahaja.",
   "gui.dungeontrain.video_tools.dtp.header": "Melompat jauh ke hadapan di landasan",
-  "gui.dungeontrain.video_tools.dtp.desc": "Memindahkan anda ke world-X itu dan memunculkan kereta api di sana untuk anda mendarat, dengan kesukaran dinaikkan seolah-olah anda menempuh keseluruhan perjalanan — cara terpantas merakam babak permainan lewat tanpa bermain sampai ke sana. Ia menggantikan kereta api yang anda naiki, jadi ia untuk b-roll dan bukan untuk pertengahan larian yang ingin anda simpan. Perlu cheat dihidupkan, seperti perintah lain di sini.",
+  "gui.dungeontrain.video_tools.dtp.desc": "Memindahkan anda jauh ke hadapan di landasan, ke atas kereta api.",
   "gui.dungeontrain.video_tools.notes.header": "Penonton anda boleh menjangkau permainan anda",
   "gui.dungeontrain.video_tools.notes.desc": "Nota Maut dan Nota Cinta merentas antara pemasangan berbeza. Orang yang menonton anda boleh, dari permainannya sendiri, menghantar sesuatu yang muncul secara langsung dalam permainan anda — anda tidak perlu berada di pelayan yang sama, dan dunia anda tidak pernah disentuh secara terus.",
   "gui.dungeontrain.video_tools.notes.how": "Bagaimana ia berfungsi?",

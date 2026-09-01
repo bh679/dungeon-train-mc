@@ -827,7 +827,7 @@
   "gui.dungeontrain.video_tools.cinematic.desc": "Lanza la cinemática de apertura desde donde estés, tantas veces como quieras: para una careta de entrada, repetir una toma o abrir en frío. /dt cinematic current la ejecuta desde tu vista actual en lugar del arranque tipo aparición. No toca tu partida: no se deja de guardar nada.",
   "gui.dungeontrain.video_tools.cinematic.hotkey": "¿Ya estás en espectador? Basta con pulsar C.",
   "gui.dungeontrain.video_tools.dtp.header": "Saltar más allá en la vía",
-  "gui.dungeontrain.video_tools.dtp.desc": "Te teletransporta a esa X del mundo y genera allí un tren en el que aterrizar, con la dificultad subida como si hubieras recorrido todo el camino: la forma más rápida de grabar material de partida avanzada sin jugar hasta allí. Sustituye el tren en el que estabas, así que es para material de recurso y no para mitad de una partida que quieras conservar. Necesita los trucos activados, como los demás comandos de aquí.",
+  "gui.dungeontrain.video_tools.dtp.desc": "Te teletransporta más allá en la vía, sobre el tren.",
   "gui.dungeontrain.video_tools.notes.header": "Tus espectadores pueden meterse en tu partida",
   "gui.dungeontrain.video_tools.notes.desc": "Las Notas de Muerte y las Notas de Amor cruzan de una instalación a otra. Quien te está viendo puede, desde su propia partida, enviar algo que aparece en directo en la tuya: no hace falta estar en el mismo servidor, y nunca tocan tu mundo directamente.",
   "gui.dungeontrain.video_tools.notes.how": "¿Cómo funciona?",

@@ -827,7 +827,7 @@
   "gui.dungeontrain.video_tools.cinematic.desc": "Corre a cinemática de abertura a partir de onde estiveres, as vezes que quiseres — para um genérico, uma repetição de plano ou uma abertura a frio. /dt cinematic current corre-a a partir da tua vista atual, em vez do arranque ao estilo do spawn. Não mexe na tua partida — nada deixa de ser guardado.",
   "gui.dungeontrain.video_tools.cinematic.hotkey": "Já estás em espetador? Basta premires C.",
   "gui.dungeontrain.video_tools.dtp.header": "Saltar mais à frente na linha",
-  "gui.dungeontrain.video_tools.dtp.desc": "Teletransporta-te para esse X do mundo e faz aparecer aí um comboio para aterrares, com a dificuldade elevada como se tivesses percorrido todo o caminho — a forma mais rápida de filmar imagens de fim de partida sem jogar até lá. Substitui o comboio em que estavas, por isso serve para imagens de apoio e não para o meio de uma partida que queiras guardar. Precisa de cheats ligados, tal como os outros comandos aqui.",
+  "gui.dungeontrain.video_tools.dtp.desc": "Teletransporta-te mais à frente na linha, para cima do comboio.",
   "gui.dungeontrain.video_tools.notes.header": "Os teus espectadores podem chegar ao teu jogo",
   "gui.dungeontrain.video_tools.notes.desc": "As Notas de Morte e as Notas de Amor atravessam de uma instalação para outra. Quem te está a ver pode, a partir do próprio jogo, enviar algo que aparece em direto no teu — não precisam de estar no mesmo servidor, e o teu mundo nunca é tocado diretamente.",
   "gui.dungeontrain.video_tools.notes.how": "Como funciona?",

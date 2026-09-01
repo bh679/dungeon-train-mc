@@ -50,6 +50,9 @@ public final class VideoToolsScreen extends Screen {
     private static final int TABS_GAP = 6;
     private static final int TAB_H = 20;
     private static final int TAB_GAP = 2;
+    /** Between a card and the action button under it. */
+    private static final int CARD_ACTION_GAP = 8;
+    private static final int CARD_ACTION_W = 160;
     /** Breathing room each side of a tile's clip. The caption still spans the full half-column. */
     private static final int TILE_PAD = 12;
     /** Between a clip and the caption under it. */
@@ -123,6 +126,10 @@ public final class VideoToolsScreen extends Screen {
      * the page fresh from the title screen starts on the commands.
      */
     private Tab tab = Tab.COMMANDS;
+    /** The current tab's own action button, or null on a tab that has none. */
+    private DarkTintedButton cardAction;
+    /** Where that button sits in canvas space, so it scrolls with its card. */
+    private int cardActionCanvasY;
 
     public VideoToolsScreen(Screen parent) {
         super(Component.translatable("gui.dungeontrain.video_tools.title"));
@@ -156,12 +163,43 @@ public final class VideoToolsScreen extends Screen {
             case CONTACT -> y = addReachCard(y);
         }
 
-        // The viewport runs from under the tab row to just above the button row, so neither the
-        // tabs nor the buttons are ever overlapped by scrolling content.
+        // The tab's own action, under its card and coloured for what it does. Laid out in canvas
+        // space like the card above it, so it scrolls with the section it belongs to.
+        cardAction = null;
+        if (tab == Tab.RESET || tab == Tab.CONTACT) {
+            y += CARD_ACTION_GAP;
+            cardActionCanvasY = y;
+            cardAction = tab == Tab.RESET ? buildResetButton(colX, colW) : buildDiscordButton(colX, colW);
+            addRenderableWidget(cardAction);
+            y += TAB_H;
+        }
+
+        // The viewport runs from under the tab row to just above the Done row, so neither the tabs
+        // nor the button are ever overlapped by scrolling content.
         int rowY = this.height - 28;
         canvas.finishLayout(y, TOP + this.font.lineHeight + TITLE_GAP + TAB_H + TABS_GAP, rowY - 8);
 
-        addBottomRow(rowY);
+        addRenderableWidget(Button.builder(CommonComponents.GUI_DONE, b -> onClose())
+                .bounds((this.width - 100) / 2, rowY, 100, 20)
+                .build());
+    }
+
+    /** Red, because it deletes every Dungeon Train world and profile on this install. */
+    private DarkTintedButton buildResetButton(int colX, int colW) {
+        int w = Math.min(CARD_ACTION_W, colW);
+        DarkTintedButton reset = new DarkTintedButton(colX + (colW - w) / 2, 0, w, TAB_H,
+                tr("reset.button"), b -> openReset(), 1.15F, 0.35F, 0.35F);
+        // Title-screen-only today, so this never fires; the guard is here so putting the page on the
+        // pause menu later cannot hand someone a world-deleting button while that world is loaded.
+        reset.active = Minecraft.getInstance().level == null;
+        return reset;
+    }
+
+    /** Blue, matching the inline link beside it and Discord's own colour. */
+    private DarkTintedButton buildDiscordButton(int colX, int colW) {
+        int w = Math.min(CARD_ACTION_W, colW);
+        return new DarkTintedButton(colX + (colW - w) / 2, 0, w, TAB_H,
+                tr("discord_button"), b -> openDiscord(), 0.45F, 0.60F, 1.25F);
     }
 
     /**
@@ -193,40 +231,6 @@ public final class VideoToolsScreen extends Screen {
         tab = which;
         canvas.resetScroll();
         rebuildWidgets();
-    }
-
-    /**
-     * {@code Done}, plus whatever the tab you are on can act on: the reset from the Reset tab, the
-     * Discord invite from the Contact tab. Keeping the row per-tab means no tab shows a button for
-     * something you are not reading about — least of all a world-deleting one.
-     */
-    private void addBottomRow(int rowY) {
-        int gap = 4;
-        int doneW = 70;
-        int actionW = switch (tab) {
-            case RESET -> 120;
-            case CONTACT -> 110;
-            default -> 0;
-        };
-        int rowW = doneW + (actionW > 0 ? actionW + gap : 0);
-        int rowX = (this.width - rowW) / 2;
-
-        if (tab == Tab.RESET) {
-            DarkTintedButton reset = new DarkTintedButton(rowX, rowY, actionW, 20,
-                    tr("reset.button"), b -> openReset());
-            // Title-screen-only today, so this never fires; the guard is here so putting the page on
-            // the pause menu later cannot hand someone a world-deleting button while that world is
-            // loaded.
-            reset.active = Minecraft.getInstance().level == null;
-            addRenderableWidget(reset);
-        } else if (tab == Tab.CONTACT) {
-            addRenderableWidget(new DarkTintedButton(rowX, rowY, actionW, 20,
-                    tr("discord_button"), b -> openDiscord()));
-        }
-
-        addRenderableWidget(Button.builder(CommonComponents.GUI_DONE, b -> onClose())
-                .bounds(rowX + (actionW > 0 ? actionW + gap : 0), rowY, doneW, 20)
-                .build());
     }
 
     /**
@@ -455,19 +459,20 @@ public final class VideoToolsScreen extends Screen {
                 canvas.colX() + canvas.colW() + CardCanvas.PANEL_PAD,
                 canvas.viewportTop() - CardCanvas.PANEL_PAD, CardCanvas.COLOUR_PANEL);
         canvas.renderPanel(g);
+
+        // The cards and the clips are drawn HERE, in the background pass, rather than after
+        // super.render: vanilla draws the background first and the widgets second, and a card's
+        // action button sits inside its card, so the card has to be underneath it.
+        canvas.render(g, this.width);
+        renderClips(g, mouseX, mouseY);
     }
 
-    @Override
-    public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
-        // Draws the background (with our panel), the tab row and the button row.
-        super.render(g, mouseX, mouseY, partialTick);
-        // The title sits above the tabs, outside the scrolling viewport — it names the page, not the
-        // section, so it must not scroll away with one section's contents.
-        g.drawCenteredString(this.font, this.title, this.width / 2, TOP, CardCanvas.COLOUR_HEADER);
-        canvas.render(g, this.width);
-
-        // The clips, after the canvas pass so the card's translucent fill sits BEHIND them rather
-        // than tinting them. Clipped to the content column, which keeps them off the scrollbar.
+    /**
+     * The looping command clips. {@link CardCanvas} can blit a still texture but not a per-frame
+     * sprite sheet, so these are the page's own, drawn over the card fill rather than tinted by it
+     * and clipped to the content column, which keeps them off the scrollbar.
+     */
+    private void renderClips(GuiGraphics g, int mouseX, int mouseY) {
         Tile hovered = tileAt(mouseX, mouseY);
         g.enableScissor(canvas.colX(), canvas.viewportTop(),
                 canvas.colX() + canvas.colW(), canvas.viewportBottom());
@@ -481,6 +486,25 @@ public final class VideoToolsScreen extends Screen {
                     tile == hovered ? COLOUR_TILE_EDGE_HOVER : COLOUR_TILE_EDGE);
         }
         g.disableScissor();
+    }
+
+    @Override
+    public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+        // The card action lives in canvas space, so its screen Y follows the scroll. Hidden outright
+        // when it scrolls out of the viewport — a vanilla widget cannot be clipped, so a visible one
+        // would float over the tabs or the Done row.
+        if (cardAction != null) {
+            int drawY = canvas.screenY(cardActionCanvasY);
+            cardAction.setY(drawY);
+            cardAction.visible = drawY >= canvas.viewportTop()
+                    && drawY + cardAction.getHeight() <= canvas.viewportBottom();
+        }
+
+        // Draws the background (panel, cards, clips), then the tab row, the card action and Done.
+        super.render(g, mouseX, mouseY, partialTick);
+        // The title sits above the tabs, outside the scrolling viewport — it names the page, not the
+        // section, so it must not scroll away with one section's contents.
+        g.drawCenteredString(this.font, this.title, this.width / 2, TOP, CardCanvas.COLOUR_HEADER);
     }
 
     @Override

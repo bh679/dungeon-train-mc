@@ -985,7 +985,7 @@
   "gui.dungeontrain.video_tools.cinematic.desc": "Rulează cinematicul de deschidere de oriunde te-ai afla, de câte ori vrei — pentru un cartuș de intro, o refilmare sau un cold open. /dt cinematic current îl rulează din perspectiva ta curentă, în loc de startul din spawn. Nu îți afectează rularea — nimic nu se oprește din salvat.",
   "gui.dungeontrain.video_tools.cinematic.hotkey": "Ești deja în spectator? Apasă doar C.",
   "gui.dungeontrain.video_tools.dtp.header": "Sari mai departe pe traseu",
-  "gui.dungeontrain.video_tools.dtp.desc": "Te teleportează la acel X din lume și creează acolo un tren pe care să aterizezi, cu dificultatea ridicată ca și cum ai fi parcurs tot drumul — cel mai rapid mod de a filma cadre de final de rundă fără să joci până acolo. Înlocuiește trenul pe care erai, așa că e pentru cadre de umplutură, nu pentru mijlocul unei runde pe care vrei s-o păstrezi. Are nevoie de cheat-uri activate, ca și celelalte comenzi de aici.",
+  "gui.dungeontrain.video_tools.dtp.desc": "Te teleportează mai departe pe traseu, pe tren.",
   "gui.dungeontrain.video_tools.notes.header": "Spectatorii tăi pot ajunge în jocul tău",
   "gui.dungeontrain.video_tools.notes.desc": "Caietele morții și biletele de iubire trec de la o instalare la alta. Cine te privește poate, din propriul joc, să trimită ceva care apare în direct în al tău — nu trebuie să fiți pe același server, iar lumea ta nu este atinsă niciodată direct.",
   "gui.dungeontrain.video_tools.notes.how": "Cum funcționează?",

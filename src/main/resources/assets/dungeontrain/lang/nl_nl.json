@@ -827,7 +827,7 @@
   "gui.dungeontrain.video_tools.cinematic.desc": "Speelt de openingsfilm af vanaf waar je ook staat, zo vaak als je wilt — voor een introkaart, een nieuwe opname of een cold open. /dt cinematic current speelt hem af vanuit je huidige camerastandpunt in plaats van de spawn-achtige start. Het raakt je run niet aan — er blijft gewoon alles opgeslagen worden.",
   "gui.dungeontrain.video_tools.cinematic.hotkey": "Al in toeschouwermodus? Druk gewoon op C.",
   "gui.dungeontrain.video_tools.dtp.header": "Verderop het spoor in springen",
-  "gui.dungeontrain.video_tools.dtp.desc": "Teleporteert je naar die wereld-X en laat daar een trein verschijnen om op te landen, met de moeilijkheid opgeschroefd alsof je de hele weg gereden had — de snelste manier om beelden uit een late run te schieten zonder er naartoe te spelen. Het vervangt de trein waar je op zat, dus het is voor b-roll en niet voor het midden van een run die je wilt bewaren. Vereist ingeschakelde cheats, net als de andere commando's hier.",
+  "gui.dungeontrain.video_tools.dtp.desc": "Teleporteert je verderop het spoor in, boven op de trein.",
   "gui.dungeontrain.video_tools.notes.header": "Je kijkers kunnen in je spel reiken",
   "gui.dungeontrain.video_tools.notes.desc": "Doodsnotities en Liefdesnotities steken over tussen installaties. Wie naar je kijkt kan vanuit zijn eigen spel iets sturen dat live in het jouwe opduikt — jullie hoeven niet op dezelfde server te zitten, en je wereld wordt nooit rechtstreeks aangeraakt.",
   "gui.dungeontrain.video_tools.notes.how": "Hoe werkt het?",

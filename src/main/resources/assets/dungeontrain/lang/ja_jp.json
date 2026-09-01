@@ -804,7 +804,7 @@
   "gui.dungeontrain.video_tools.cinematic.desc": "今いる場所からオープニング映像を、何度でも再生します——イントロ、撮り直し、冒頭のつかみに。/dt cinematic current なら、スポーン風の始まりではなく今の視点から流します。旅には触れません——保存が止まることもありません。",
   "gui.dungeontrain.video_tools.cinematic.hotkey": "すでにスペクテイターなら、C を押すだけです。",
   "gui.dungeontrain.video_tools.dtp.header": "線路の先へ跳ぶ",
-  "gui.dungeontrain.video_tools.dtp.desc": "そのワールドXへテレポートし、着地できる列車をその場に生成します。難易度はそこまで乗ってきたかのように引き上げられるので、終盤の映像をそこまで遊ばずに撮る最短の方法です。乗っていた列車は置き換えられるため、残したいランの途中ではなくB ロール向けです。ほかのコマンドと同じくチートを有効にしておく必要があります。",
+  "gui.dungeontrain.video_tools.dtp.desc": "線路の先へテレポートして列車の上に降ろします。",
   "gui.dungeontrain.video_tools.notes.header": "視聴者はあなたのゲームに手を伸ばせます",
   "gui.dungeontrain.video_tools.notes.desc": "デスノートとラブノートは、別々のインストールをまたいで届きます。あなたを見ている人は自分のゲームから、あなたのゲームに生で現れる何かを送れます。同じサーバーにいる必要はなく、あなたのワールドが直接いじられることもありません。",
   "gui.dungeontrain.video_tools.notes.how": "どういう仕組み？",
