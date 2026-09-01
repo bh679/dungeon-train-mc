@@ -15,16 +15,17 @@ import net.neoforged.api.distmarker.OnlyIn;
  * character dies and the run is over. One misclick used to be enough. So the screen spells out the
  * part the label doesn't: <b>you will die</b>, it counts as a death, and there is no undo.</p>
  *
- * <p>Shaped like {@code BuilderSwitchConfirmScreen} — centred button column, destructive option
- * first but plainly worded, Escape falling back to the way out that changes nothing. What
- * "continue" means is the caller's: {@code proceed} runs only once the player has said yes.</p>
+ * <p>One centred row of two buttons — the destructive one on the left, the way out on its right,
+ * the order vanilla's own confirm screens use — and Escape falling back to the option that changes
+ * nothing. What "continue" means is the caller's: {@code proceed} runs only once the player has
+ * said yes.</p>
  */
 @OnlyIn(Dist.CLIENT)
 public final class AbandonConfirmScreen extends Screen {
 
-    private static final int BUTTON_WIDTH = 220;
+    private static final int BUTTON_WIDTH = 150;
     private static final int BUTTON_HEIGHT = 20;
-    private static final int GAP = 6;
+    private static final int GAP = 8;
 
     private static final Component LINE_1 = Component.translatable("gui.dungeontrain.abandon_confirm.line1");
     private static final Component LINE_2 = Component.translatable("gui.dungeontrain.abandon_confirm.line2");
@@ -44,7 +45,7 @@ public final class AbandonConfirmScreen extends Screen {
 
     @Override
     protected void init() {
-        int x = (this.width - BUTTON_WIDTH) / 2;
+        int x = (this.width - (BUTTON_WIDTH * 2 + GAP)) / 2;
         int y = this.height / 2 - BUTTON_HEIGHT;
 
         // The same red the Abandon button carries on the pause menu — the colour is the warning.
@@ -53,11 +54,10 @@ public final class AbandonConfirmScreen extends Screen {
                 1.0F, 0.30F, 0.30F,
                 b -> proceedNow()));
 
-        y += BUTTON_HEIGHT + GAP;
         this.addRenderableWidget(Button.builder(
                         Component.translatable("gui.dungeontrain.abandon_confirm.back"),
                         b -> this.onClose())
-                .bounds(x, y, BUTTON_WIDTH, BUTTON_HEIGHT).build());
+                .bounds(x + BUTTON_WIDTH + GAP, y, BUTTON_WIDTH, BUTTON_HEIGHT).build());
     }
 
     @Override

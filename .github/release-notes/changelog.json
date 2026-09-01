@@ -10680,6 +10680,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "abandon-confirm-row",
+      "version": "0.768.0",
+      "type": "feat",
+      "title": "Clearer 'step off the train' confirmation",
+      "summary": "The confirmation that appears when you abandon a run now puts both options side by side and says plainly what happens: you die, it counts as a death, and there is no undo.",
+      "highlights": [
+        "Both options on one row \u2014 'Step off and die' beside 'Stay aboard'",
+        "Rewritten in the train's voice, and it now speaks to you rather than about 'your character'"
+      ],
+      "pr": 1251,
+      "date": "2026-09-01",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
