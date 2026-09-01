@@ -9,10 +9,12 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Locks down {@link StoryCodec}'s optional {@code weight} field — the knob that defers a narrative
- * series without removing it from the lectern rotation.
+ * Locks down {@link StoryCodec}'s optional {@code deferred} flag — the hold-back tier that keeps a
+ * series out of the lectern rotation until every ordinary series has been read.
  */
 final class StoryCodecTest {
 
@@ -29,33 +31,33 @@ final class StoryCodecTest {
          "letters":[{"index":1,"label":"Letter One","variants":["body"]}]}""";
 
     @Test
-    @DisplayName("a fractional weight survives the parse")
-    void parsesFractionalWeight() throws Exception {
-        StoryFile story = StoryCodec.parse(json(ONE_LETTER.formatted(",\"weight\":0.1")), ID);
-        assertEquals(0.1, story.weight(), 1e-9);
+    @DisplayName("the deferred flag survives the parse")
+    void parsesDeferred() throws Exception {
+        StoryFile story = StoryCodec.parse(json(ONE_LETTER.formatted(",\"deferred\":true")), ID);
+        assertTrue(story.deferred());
     }
 
     @Test
-    @DisplayName("a missing weight defaults to the 1.0 baseline — every other shipped story")
-    void defaultsToBaseline() throws Exception {
+    @DisplayName("a missing flag defaults to not-deferred — every other shipped story")
+    void defaultsToOrdinary() throws Exception {
         StoryFile story = StoryCodec.parse(json(ONE_LETTER.formatted("")), ID);
-        assertEquals(1.0, story.weight(), 1e-9);
+        assertFalse(story.deferred());
     }
 
     @Test
-    @DisplayName("parseWeight reads the weight alone, defaulting when the field is absent")
-    void parseWeightReadsJustTheField() throws Exception {
-        assertEquals(0.1, StoryCodec.parseWeight(json(ONE_LETTER.formatted(",\"weight\":0.1"))), 1e-9);
-        assertEquals(1.0, StoryCodec.parseWeight(json(ONE_LETTER.formatted(""))), 1e-9);
+    @DisplayName("parseDeferred reads the flag alone, defaulting when it is absent")
+    void parseDeferredReadsJustTheField() throws Exception {
+        assertTrue(StoryCodec.parseDeferred(json(ONE_LETTER.formatted(",\"deferred\":true"))));
+        assertFalse(StoryCodec.parseDeferred(json(ONE_LETTER.formatted(""))));
     }
 
     @Test
-    @DisplayName("withWeight rebuilds rather than mutating")
-    void withWeightRebuilds() throws Exception {
+    @DisplayName("withDeferred rebuilds rather than mutating")
+    void withDeferredRebuilds() throws Exception {
         StoryFile story = StoryCodec.parse(json(ONE_LETTER.formatted("")), ID);
-        StoryFile deferred = story.withWeight(0.1);
-        assertEquals(1.0, story.weight(), 1e-9);
-        assertEquals(0.1, deferred.weight(), 1e-9);
-        assertEquals(story.letters(), deferred.letters());
+        StoryFile held = story.withDeferred(true);
+        assertFalse(story.deferred());
+        assertTrue(held.deferred());
+        assertEquals(story.letters(), held.letters());
     }
 }

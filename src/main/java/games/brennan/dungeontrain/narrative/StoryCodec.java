@@ -51,7 +51,7 @@ public final class StoryCodec {
 
         String character = optionalString(root, "character", "Anonymous");
         String story = optionalString(root, "story", "Untitled");
-        double weight = optionalDouble(root, "weight", 1.0);
+        boolean deferred = optionalBoolean(root, "deferred", false);
 
         if (!root.has("letters") || !root.get("letters").isJsonArray()) {
             throw new StoryParseException("missing or non-array 'letters' field");
@@ -88,7 +88,7 @@ public final class StoryCodec {
         if (letters.isEmpty()) {
             throw new StoryParseException("story has zero letters");
         }
-        return new StoryFile(fileId, character, story, weight, letters);
+        return new StoryFile(fileId, character, story, deferred, letters);
     }
 
     private static String optionalString(JsonObject obj, String key, String fallback) {
@@ -99,20 +99,20 @@ public final class StoryCodec {
         return v.isEmpty() ? fallback : v;
     }
 
-    private static double optionalDouble(JsonObject obj, String key, double fallback) {
-        if (!obj.has(key) || !obj.get(key).isJsonPrimitive() || !obj.get(key).getAsJsonPrimitive().isNumber()) {
+    private static boolean optionalBoolean(JsonObject obj, String key, boolean fallback) {
+        if (!obj.has(key) || !obj.get(key).isJsonPrimitive() || !obj.get(key).getAsJsonPrimitive().isBoolean()) {
             return fallback;
         }
-        return obj.get(key).getAsDouble();
+        return obj.get(key).getAsBoolean();
     }
 
     /**
-     * Read just the {@code weight} of a story without building the whole record. {@link
+     * Read just the {@code deferred} flag of a story without building the whole record. {@link
      * StoryRegistry} uses this on the ENGLISH base file when a localized copy has replaced it —
-     * the localized copies carry no weight of their own, so parsing them alone would silently
-     * reset every story to the {@code 1.0} baseline. Caller owns the stream lifecycle.
+     * the localized copies carry no flag of their own, so parsing them alone would silently
+     * un-defer every held-back series. Caller owns the stream lifecycle.
      */
-    public static double parseWeight(InputStream in) throws StoryParseException {
+    public static boolean parseDeferred(InputStream in) throws StoryParseException {
         JsonElement rootEl;
         try {
             rootEl = JsonParser.parseReader(new InputStreamReader(in, StandardCharsets.UTF_8));
@@ -122,7 +122,7 @@ public final class StoryCodec {
         if (!rootEl.isJsonObject()) {
             throw new StoryParseException("root is not a JSON object");
         }
-        return optionalDouble(rootEl.getAsJsonObject(), "weight", 1.0);
+        return optionalBoolean(rootEl.getAsJsonObject(), "deferred", false);
     }
 
     /** Surfaced to the registry's per-file try/catch so logging is uniform. */

@@ -15,7 +15,7 @@ Every file in this folder is one story. Schema:
   "id": "filename_slug",
   "character": "Author Name",
   "story": "Story Title",
-  "weight": 1,
+  "deferred": false,
   "letters": [
     {
       "index": 1,
@@ -36,13 +36,13 @@ Rules:
 - **Filename matches `id`** — snake_case, no spaces. e.g. `corren_vale_three_heads.json`.
 - `character` omitted → defaults to `"Anonymous"`.
 - `story` omitted → defaults to `"Untitled"` (then the letter `label` is used as the book title).
-- `weight` omitted → defaults to `1`. A number ≥ 0 (fractional allowed) driving which uncompleted
-  story a lectern serves next, and this story's share of the post-completion re-read pool. A low
-  weight **defers** a series rather than removing it — a player who reads everything still reaches
-  it, just much later. `0.1` is the "hold this one back" tier (`the_querys_and_life_of_fourteen`,
-  `edda_marsh_the_wither_at_the_window`).
-  Weight lives in the English base file only: a localized copy replaces the base wholesale and
-  carries no weight of its own, so `StoryRegistry.baseWeighted` puts the base's weight back.
+- `deferred` omitted → defaults to `false`. `true` holds the series back: a lectern never **starts**
+  it while any ordinary series is still unfinished, so the held-back ones are what remains once the
+  rest of the corpus has been read. It is an ordering tier, not a removal — and once everything is
+  complete the post-completion re-read pool treats every story alike. Currently `true` for
+  `the_querys_and_life_of_fourteen` and `edda_marsh_the_wither_at_the_window`.
+  The flag lives in the English base file only: a localized copy replaces the base wholesale and
+  carries no flag of its own, so `StoryRegistry.baseDeferred` puts the base's value back.
 - Each letter MUST have `index` (1-based), `label`, and at least one `variants[]` entry.
 - `notes` is optional — used for editor annotations on a specific variant's char offset.
 

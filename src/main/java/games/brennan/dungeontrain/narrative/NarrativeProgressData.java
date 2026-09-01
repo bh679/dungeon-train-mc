@@ -517,17 +517,26 @@ public final class NarrativeProgressData extends SavedData {
     /**
      * Pick the next uncompleted story for the world, alphabetical by
      * basename. Iterates the live registry so newly-loaded stories show up
-     * automatically. Empty when every story is complete.
+     * automatically. {@code deferred} series come last, after every ordinary
+     * one is complete. Empty when every story is complete.
      */
     public Optional<String> nextUncompletedStory() {
         List<String> all = StoryRegistry.basenames();
+        String firstDeferred = null;
         for (String basename : all) {
             Optional<StoryFile> story = StoryRegistry.getByBasename(basename);
             if (story.isEmpty()) continue;
             NarrativeProgress p = progressFor(basename);
-            if (!p.isComplete(story.get().letters().size())) return Optional.of(basename);
+            if (p.isComplete(story.get().letters().size())) continue;
+            // Same hold-back tier as randomUncompletedStory — the two must not disagree, or one
+            // sweep would start a series the other refuses to.
+            if (story.get().deferred()) {
+                if (firstDeferred == null) firstDeferred = basename;
+                continue;
+            }
+            return Optional.of(basename);
         }
-        return Optional.empty();
+        return Optional.ofNullable(firstDeferred);
     }
 
     /**
@@ -559,38 +568,26 @@ public final class NarrativeProgressData extends SavedData {
      * no in-progress story — same lectern shows the same first-read story
      * on re-clicks (until something actually advances).
      *
-     * <p>Weighted by each story's {@code weight}, so a deliberately deferred series turns up far
-     * later in a playthrough than a baseline one. Empty when every loaded story is complete.</p>
+     * <p>Two-tier: a {@code deferred} series is never started while an ordinary series is still
+     * unfinished, so the held-back ones are what is left once the rest of the corpus has been read.
+     * Empty when every loaded story is complete.</p>
      */
     public Optional<String> randomUncompletedStory(long randomSeed) {
         List<String> uncompleted = new java.util.ArrayList<>();
-        List<Double> weights = new java.util.ArrayList<>();
-        double totalWeight = 0;
+        List<String> deferred = new java.util.ArrayList<>();
         for (String basename : StoryRegistry.basenames()) {
             Optional<StoryFile> story = StoryRegistry.getByBasename(basename);
             if (story.isEmpty()) continue;
             NarrativeProgress p = progressFor(basename);
-            if (!p.isComplete(story.get().letters().size())) {
-                double weight = Math.max(0, story.get().weight());
-                uncompleted.add(basename);
-                weights.add(weight);
-                totalWeight += weight;
-            }
+            if (p.isComplete(story.get().letters().size())) continue;
+            (story.get().deferred() ? deferred : uncompleted).add(basename);
         }
-        if (uncompleted.isEmpty()) return Optional.empty();
+        // Held-back series only once nothing ordinary is left to read.
+        List<String> tier = uncompleted.isEmpty() ? deferred : uncompleted;
+        if (tier.isEmpty()) return Optional.empty();
         // Deterministic mix so the lectern seed produces a stable index
         // across re-clicks until state advances.
-        if (totalWeight <= 0) {
-            // Every remaining story is zero-weight — a lectern still has to serve something, so
-            // fall back to the uniform pick rather than reporting "nothing left to read".
-            return Optional.of(uncompleted.get(Math.floorMod(randomSeed, uncompleted.size())));
-        }
-        double target = WeightedPick.target(randomSeed, totalWeight);
-        for (int i = 0; i < uncompleted.size(); i++) {
-            target -= weights.get(i);
-            if (target < 0) return Optional.of(uncompleted.get(i));
-        }
-        return Optional.of(uncompleted.get(uncompleted.size() - 1)); // numerical edge
+        return Optional.of(tier.get(Math.floorMod(randomSeed, tier.size())));
     }
 
     // ---------------- Letter-series tracking (player-written lectern letters) ----------------

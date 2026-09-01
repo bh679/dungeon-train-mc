@@ -205,14 +205,15 @@ public final class BookFactory {
 
     /**
      * A seeded RE-READ of an already-read mod story — served once every story is complete so built-in
-     * content keeps its fair share rather than vanishing. Picks a story + letter deterministically from
+     * content keeps its fair share rather than vanishing. Every story is equal here: the hold-back
+     * tier only governs the ORDER series are first served in, and by now they have all been read. Picks a story + letter deterministically from
      * {@code seed}; the book is a normal mod-story book ({@link NarrativeBookTag}), and its idempotent
      * read-credit re-marks already-read progress harmlessly.
      */
     private static Optional<ItemStack> buildModStoryReread(long seed) {
         List<String> names = StoryRegistry.basenames();
         if (names.isEmpty()) return Optional.empty();
-        String basename = pickStoryWeighted(names, mixNarrative(seed, SALT_REREAD_STORY));
+        String basename = names.get((int) Math.floorMod(mixNarrative(seed, SALT_REREAD_STORY), names.size()));
         Optional<StoryFile> storyOpt = StoryRegistry.getByBasename(basename);
         if (storyOpt.isEmpty()) return Optional.empty();
         StoryFile story = storyOpt.get();
@@ -222,26 +223,6 @@ public final class BookFactory {
         Letter letter = story.letterByIndex(index).orElse(null);
         if (letter == null) return Optional.empty();
         return Optional.of(buildSignedBook(story, letter, seed));
-    }
-
-    /**
-     * Pick one of {@code basenames} weighted by each story's {@code weight}, deterministic per
-     * {@code seed}. A story the corpus deliberately deferred takes a proportionally smaller share
-     * of the re-read pool. An all-zero-weight registry degrades to the uniform pick — a lectern
-     * must still serve something.
-     */
-    private static String pickStoryWeighted(List<String> basenames, long seed) {
-        double total = 0;
-        for (String name : basenames) {
-            total += StoryRegistry.getByBasename(name).map(s -> Math.max(0, s.weight())).orElse(0d);
-        }
-        if (total <= 0) return basenames.get((int) Math.floorMod(seed, basenames.size()));
-        double target = WeightedPick.target(seed, total);
-        for (String name : basenames) {
-            target -= StoryRegistry.getByBasename(name).map(s -> Math.max(0, s.weight())).orElse(0d);
-            if (target < 0) return name;
-        }
-        return basenames.get(basenames.size() - 1); // numerical edge
     }
 
     /**
