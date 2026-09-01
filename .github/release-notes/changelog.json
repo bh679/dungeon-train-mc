@@ -10670,8 +10670,21 @@
       "released_at": null
     },
     {
+      "id": "death-screen-updates-card",
+      "version": "0.767.0",
+      "type": "feat",
+      "title": "Updates card on the death screen",
+      "summary": "The support page now shows how many updates the train has had, and when the last one landed.",
+      "highlights": [],
+      "pr": 1253,
+      "date": "2026-09-01",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "death-form-dont-show-again",
-      "version": "0.766.0",
+      "version": "0.767.0",
       "type": "feat",
       "title": "Skip feedback questions you have already answered",
       "summary": "The death screen used to ask the same feedback questions after every single run. Now, once you have answered one, it offers a \"Don't ask me this again\" tick box the next time it comes up \u2014 tick it and that question stops appearing. An envelope button on the last page still walks you through every question whenever you do want to say something, and un-ticking a box there puts that question back in the normal flow.",
