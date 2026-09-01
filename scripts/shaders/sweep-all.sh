@@ -104,6 +104,14 @@ for pack in "${PACKS[@]}"; do
     fi
     wait "$pid" 2>/dev/null
 
+    # Keep the log before the next pack deletes it. The screenshots carry the panel visually, but
+    # the log is the greppable half — one line per site with every value the panel drew, which is
+    # what makes a result comparable across twelve runs instead of only readable one image at a time.
+    if [ -f "$LOG" ]; then
+        mkdir -p run/logs/packs
+        cp "$LOG" "run/logs/packs/${pack%.zip}.log" 2>/dev/null
+    fi
+
     if [ "$done_ok" -eq 1 ]; then
         shots=$(ls -1 run/screenshots/sweep-*.png 2>/dev/null | wc -l | tr -d ' ')
         echo "  done — $shots shot(s) in run/screenshots so far"

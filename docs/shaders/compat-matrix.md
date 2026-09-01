@@ -119,22 +119,53 @@ result can be grepped across all eleven runs rather than only read off an image.
 
 ### The sites
 
-| Site | How it is reached |
-|---|---|
-| `00-plain` | Baseline, creative, wherever the world left the player |
-| `01-band-void` | `/dtp` to the first X where the End ramp reads ≥ 0.95 |
-| `02-band-nether` | Same, on the Nether ramp |
-| `03-band-upsidedown` | Same, on the upside-down ramp |
-| `04-skybox-blocks` | `/fill` a wall of `dungeontrain:skybox_end` four blocks ahead, then face it |
-| `05-carriage-room` | `/dungeontrain portal carriage 1`, then wait for the train to roll a portal group |
-| `06-carriage-inside` | `/dungeontrain portal tp` |
+| Site | How it is reached | What it measures |
+|---|---|---|
+| `00-plain` | Creative, wherever the world left the player | Baseline |
+| `01-band-void` | `/dtp` to the first X where the End ramp reads ≥ 0.95 | Band skybox + fog colour |
+| `02-band-nether` | Same, on the Nether ramp | Band skybox + fog colour |
+| `03-band-upsidedown` | Same, on the upside-down ramp | Band skybox + fog colour |
+| `04-skybox-blocks` | Spectator above the train, forceloaded chunk, wall of `dungeontrain:skybox_end` | Skybox blocks |
+| `05-carriage-plot` | `editor portals enter`, then force an endless mode + a `day` sky | Setup only |
+| `06-carriage-corridor` | `portal test` — stamps the room as a twin, camera at the corridor mouth | Carriage fog, room sky |
+| `07-carriage-room` | A step down the corridor into the room | Carriage fog, room sky |
 
 Band stops are **located at runtime** by scanning each ramp forward from the player, not hard-coded:
 the bands are a function of the world's own cycle config, so a fixed X would quietly photograph the
 wrong place. A band that is not found within 400k blocks is logged and skipped rather than faked.
 
-A site that cannot be reached is skipped, not fatal — four measured cells and one honest "unreachable"
-beats a run that returns nothing.
+A site that cannot be reached is skipped, not fatal — measured cells and one honest "unreachable"
+beat a run that returns nothing.
+
+> **Why the carriage sites force the room's settings.** The fog is only sent for a mode that fogs
+> (`if (!structure.mode().fogs()) return`) and the sky lift only for a room that names a sky.
+> `backrooms` does neither by default, so both systems would have read as "the pack discarded it"
+> when nothing had been asked of them. Forcing the settings means a zero is always the pack's doing.
+> It does mutate the room's authored settings, and the in-game editor auto-writes those into
+> `src/main/resources` — check and revert that path after a sweep.
+
+### Two failure modes the harness had to be taught about
+
+Both were caught by the control, and both would have become confident, wrong cells.
+
+**Stale captures.** macOS stops rendering an occluded window while its ticks carry on. One run
+produced eight screenshots of which seven were byte-identical, under a log that looked perfectly
+healthy — the panel values moved from site to site exactly as they should. Every capture now reports
+how many frames actually rendered since its site began and shouts when that is too few, and the
+sweep script fronts the window so the frames exist to capture. **This is why the sweep cannot run
+minimised or fully covered.** If a run reports `THE IMAGE IS PROBABLY STALE`, discard it.
+
+**Coordinates on the train.** A rider sits on a Sable sub-level, so the server resolves `~` in far
+shipyard plot space rather than the track coordinates the camera is looking at — `/fill ~4 …`
+answers "that position is not loaded". Anything placed near the player needs absolute coordinates
+over a forceloaded chunk.
+
+### Not covered
+
+**The carriage transition.** `ClientPortalCrossing` is driven by the live corridor swap, and the
+`portal test` twin has no train and nothing that swaps, so `crossing` reads `0.000` at every
+carriage site. This is a property of the test stamp, not of any shader pack. Measuring the
+transition needs a real portal crossing in play, and it is not in this matrix.
 
 ### Doing it by hand
 
@@ -151,19 +182,27 @@ File the results as `test-results/gate2-shader-compat-2026-09/<pack-id>-<site>.p
 Cells: **works** / **degraded** (visible but wrong) / **absent** (DT asked, nothing appeared) /
 **wrong** (actively worse than no effect) / **off** (DT declined to draw).
 
-| Pack | Band skybox | Skybox Blocks | Carriage fog | Carriage sky & lighting | Transition |
-|---|---|---|---|---|---|
-| complementary_reimagined | | off | | | |
-| complementary_unbound | | off | | | |
-| bsl | | off | | | |
-| bliss | | off | | | |
-| solas | | off | | | |
-| makeup_ultra_fast | | off | | | |
-| spooklementary | | off | | | |
-| footage | | off | | | |
-| insanity | | off | | | |
-| hysteria | | off | | | |
-| sildurs | | off | | | |
+The `none` row is the control — what the same site looks like in the same world with shaders off.
+Every other row is read as a difference from it.
+
+| Pack | Band skybox | Skybox Blocks | Carriage fog | Carriage sky & lighting |
+|---|---|---|---|---|
+| none (control) | | | | |
+| complementary_reimagined | | off | | |
+| complementary_unbound | | off | | |
+| bsl | | off | | |
+| bliss | | off | | |
+| solas | | off | | |
+| makeup_ultra_fast | | off | | |
+| spooklementary | | off | | |
+| footage | | off | | |
+| insanity | | off | | |
+| hysteria | | off | | |
+| sildurs | | off | | |
+
+The Skybox Blocks column reads **off** for every pack because `ShaderCompat.allows` gates it off
+under any pack — that is DT's own decision, not a measurement of the pack. What the control's cell
+says is whether the effect works at all when nothing is in its way.
 
 ### Per-system conclusion
 
