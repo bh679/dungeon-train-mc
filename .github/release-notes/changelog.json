@@ -10576,6 +10576,22 @@
       "released": true,
       "released_in": "v0.762.0",
       "released_at": "2026-09-01T06:09:52Z"
+    },
+    {
+      "id": "hide-world-list-cog",
+      "version": "0.763.0",
+      "type": "feat",
+      "title": "World list moved behind Shift on the main menu",
+      "summary": "The main menu's first row is now just New World. The unlabelled cog beside it \u2014 the one that opened your list of saved worlds \u2014 is hidden until you hold Shift, which brings it back exactly where it was.",
+      "highlights": [
+        "New World now fills the whole row",
+        "Hold Shift on the main menu to reach your saved worlds"
+      ],
+      "pr": 1245,
+      "date": "2026-09-01",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
