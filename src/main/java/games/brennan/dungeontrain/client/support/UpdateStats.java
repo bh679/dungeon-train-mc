@@ -14,9 +14,10 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeParseException;
 
 /**
- * The updates card on the death screen's donation page — the tile that takes the server bill's
- * slot once that bill is paid. Two lines: how many updates have shipped, and the span they landed
- * in.
+ * The updates card on the death screen's donation page — the third tile of the grid, in every
+ * state. Two lines: how many updates have shipped, and the span they landed in. It displaces the
+ * month's takings while the server bill is still the ask, and the settled bill itself once that
+ * bill is paid.
  *
  * <pre>
  *   765 Updates
@@ -35,8 +36,9 @@ import java.time.format.DateTimeParseException;
  * <p>Two sources, in order: the relay's live block ({@link DonationSummaryClient.Updates}), else
  * the numbers {@link VersionInfo} baked at build time for a player who is offline or on a relay
  * that predates the field. Neither available means <b>unknown</b>, and the page keeps the layout
- * it had before this card existed rather than putting a zero in front of a would-be donor — the
- * same rule {@link DevHours#takesGoalSlot} follows.</p>
+ * it had before this card existed — whichever tile the card would have displaced stays — rather
+ * than putting a zero in front of a would-be donor, the same rule {@link DevHours#takesGoalSlot}
+ * follows.</p>
  */
 public final class UpdateStats {
 

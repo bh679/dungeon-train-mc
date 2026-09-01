@@ -1,8 +1,8 @@
 # Version history
 
-The death screen's donation page shows, once the running costs are met, **how many updates have
-shipped** and **how long ago the most recent one was**. This directory produces the first figure's
-source data.
+The death screen's donation page carries an updates card — **how many updates have shipped**, over
+the span they landed in, with **how long ago the most recent one was** in its tooltip. This
+directory produces its source data.
 
 ## What counts as an update
 

@@ -1511,12 +1511,13 @@ public final class NarrativeDeathScreen extends Screen {
         boolean hoursLead = DevHours.takesGoalSlot(
                 DevHours.hours(), serverCostsMet, activeGoal != null && activeGoal.complete());
 
-        // The updates card takes the settled bill's slot once that bill is paid — a tile that only
-        // says "this is done" is not worth a quarter of the grid, and what the money bought is.
-        // Null when neither the relay nor this jar knows a count, which leaves the layout exactly
-        // as it was before the card existed.
-        UpdateStats.Figures updates = serverCostsMet || hoursLead
-                ? UpdateStats.current(s.updates()) : null;
+        // The updates card holds the third slot in every state — bottom-left, under the ask. What
+        // it displaces changes: the settled server bill once that bill is paid (a tile whose whole
+        // content is a tick is not worth a quarter of the grid), and the raised-this-month figure
+        // while the bill is still the ask, since the supporter names down the right side already
+        // add up to roughly that number. Null when neither the relay nor this jar knows a count,
+        // which leaves the layout exactly as it was before the card existed.
+        UpdateStats.Figures updates = UpdateStats.current(s.updates());
         boolean updatesCard = UpdateStats.hasCount(updates);
 
         // Every funded rung the grid has no slot for, ticked off on one line above it. A rung is
@@ -1606,9 +1607,14 @@ public final class NarrativeDeathScreen extends Screen {
             costTile(g, lc1, y, cellW, percent >= 0 ? percent + "%" : "—",
                     Component.translatable("gui.dungeontrain.death.narr.lbl_covered"),
                     "gui.dungeontrain.death.narr.tip_covered", VALUE);
-            costTile(g, lc0, ly, cellW, fmtUsd(s.monthlyRaisedUsd()),
-                    "gui.dungeontrain.death.narr.lbl_raised_month",
-                    "gui.dungeontrain.death.narr.tip_raised", VALUE);
+            // Slot 3: the card, or the month's takings on a build with no count to show.
+            if (updatesCard) {
+                updatesTile(g, lc0, ly, cellW, updates, mouseX, mouseY);
+            } else {
+                costTile(g, lc0, ly, cellW, fmtUsd(s.monthlyRaisedUsd()),
+                        "gui.dungeontrain.death.narr.lbl_raised_month",
+                        "gui.dungeontrain.death.narr.tip_raised", VALUE);
+            }
         }
         // Contribute button in place of the old "your total" tile.
         donateRect = drawBevel(g, lc1 - cellW / 2, ly, cellW, 26,
