@@ -301,11 +301,9 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             case BACKUPS_PER_VERSION -> List.of(backupsPerVersionLabel(
                     Component.translatable("gui.dungeontrain.options.backups_per_version"),
                     BACKUPS_PER_VERSION_MAX));
+            case CONFIRM_BUILD_RESTORE -> onOffCandidates("gui.dungeontrain.options.confirm_build_restore");
             // The size is read at build time, so the candidate has to stand in for the widest it
             // could ever be rather than whatever it happens to be right now.
-            case CONFIRM_BUILD_RESTORE -> List.of(
-                    Component.translatable("gui.dungeontrain.options.confirm_build_restore"),
-                    Component.translatable("gui.dungeontrain.options.confirm_build_restore.tip"));
             case CLEAR_BACKUPS -> List.of(Component.translatable(
                 "gui.dungeontrain.options.clear_backups", "000.0 GB"));
             case BACKUPS -> {

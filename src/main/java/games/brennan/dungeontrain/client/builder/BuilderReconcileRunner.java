@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.client.builder;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.discordpresence.config.DiscordPresenceClientConfig;
+import games.brennan.dungeontrain.builder.relay.BuilderProfileCap;
 import games.brennan.dungeontrain.builder.relay.BuilderRelayKinds;
 import games.brennan.dungeontrain.builder.relay.BuilderTemplateSource;
 import games.brennan.dungeontrain.net.relay.RelayTarget;
@@ -44,7 +45,12 @@ public final class BuilderReconcileRunner {
     /** Gap between uploads — the relay's per-IP window is 300 a minute, and this is one client. */
     private static final long PACE_MS = 250L;
 
-    /** Under the relay's per-author profile cap (200), which evicts the oldest to make room. */
+    /**
+     * A ceiling on one run, on top of the profile-cap allowance below.
+     *
+     * <p>Not about the cap: it bounds how long a single title-screen restore can run and how much of
+     * the relay's rate budget it takes. Whatever is left is picked up next launch.</p>
+     */
     private static final int MAX_PER_RUN = 150;
 
     private static final AtomicBoolean RUNNING = new AtomicBoolean(false);
@@ -87,7 +93,8 @@ public final class BuilderReconcileRunner {
                     List<BuilderReconcileScan.Build> onDisk = BuilderReconcileScan.localBuilds();
                     List<BuilderReconcileScan.Build> inBackups =
                             BuilderReconcileScan.backupBuilds(BuilderReconcileScan.keysOf(onDisk));
-                    return BuilderReconcileScan.compare(onDisk, inBackups, relayKeys);
+                    return BuilderReconcileScan.compare(onDisk, inBackups, relayKeys,
+                            BuilderProfileCap.used(builds));
                 }, worker())
                 .exceptionally(error -> {
                     LOGGER.warn("[DungeonTrain] Build reconcile: scan failed: {}", error.toString());
@@ -111,9 +118,20 @@ public final class BuilderReconcileRunner {
         if (queue.isEmpty() || !RUNNING.compareAndSet(false, true)) {
             return CompletableFuture.completedFuture(new Outcome(0, 0, queue.size()));
         }
-        int remaining = Math.max(0, queue.size() - MAX_PER_RUN);
+        // Never fill the profile past its cap. Going over does not fail — the relay accepts the
+        // upload and deletes this player's OLDEST build to make room, which would mean a restore
+        // quietly costing them work in the act of returning it.
+        int allowance = Math.min(MAX_PER_RUN, BuilderProfileCap.remaining(scan.profileUsed()));
+        if (allowance <= 0) {
+            LOGGER.warn("[DungeonTrain] Build reconcile: profile is full ({}/{}); {} build(s) left "
+                    + "un-restored. Remove some from My Builds to make room.", scan.profileUsed(),
+                    BuilderProfileCap.MAX_PROFILE_BUILDS, queue.size());
+            RUNNING.set(false);
+            return CompletableFuture.completedFuture(new Outcome(0, 0, queue.size()));
+        }
+        int remaining = Math.max(0, queue.size() - allowance);
         List<BuilderReconcileScan.Build> run =
-                List.copyOf(queue.size() > MAX_PER_RUN ? queue.subList(0, MAX_PER_RUN) : queue);
+                List.copyOf(queue.size() > allowance ? queue.subList(0, allowance) : queue);
         UUID uuid = uuid();
         String name = Minecraft.getInstance().getUser().getName();
         HolderLookup.Provider registries = registries();
@@ -215,7 +233,7 @@ public final class BuilderReconcileRunner {
     }
 
     private static BuilderReconcileScan.Result empty() {
-        return new BuilderReconcileScan.Result(List.of(), List.of());
+        return new BuilderReconcileScan.Result(List.of(), List.of(), 0);
     }
 
     private static void pace() {

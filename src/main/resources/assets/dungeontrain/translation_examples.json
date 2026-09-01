@@ -2756,6 +2756,12 @@
       ]
     }
   },
+  "gui.dungeontrain.builder.profile.full": {
+    "1": {
+      "label": "how many builds a player's profile can hold on the build server",
+      "examples": ["200"]
+    }
+  },
   "gui.dungeontrain.builder.reconcile.toast.body": {
     "1": {
       "label": "how many builds were sent back to the build server",
