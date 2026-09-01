@@ -10714,6 +10714,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "builder-build-restore",
+      "version": "0.769.0",
+      "type": "feat",
+      "title": "Builds the build server lost come back on their own",
+      "summary": "If the build server no longer has builds you uploaded, Dungeon Train now notices at the title screen and sends them back up from your own copy \u2014 including builds that survive only inside a backup. They return private, so nothing is published without you.",
+      "highlights": [
+        "Runs at startup, with no prompt: your build, your copy, your private profile.",
+        "Recovers builds that are gone from this install but still inside a backup archive, without writing anything back to disk.",
+        "Turn on Confirm restores in Options > Dungeon Train to be asked first, and to choose whether backup-only builds are included.",
+        "Saving a build when your profile is full now tells you, instead of the server quietly deleting your oldest build to make room."
+      ],
+      "date": "2026-09-01",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
