@@ -56,6 +56,14 @@ public final class VersionInfo {
     public static final int UPDATES_MONTH;
     /** Updates shipped in the last 7 days — the card's default timeframe. */
     public static final int UPDATES_WEEK;
+    /** Updates shipped today, for the menu splash that names the day. */
+    public static final int UPDATES_DAY;
+    /**
+     * Updates shipped since 1 January, for the menu splash that names the year. Deliberately not
+     * {@link #UPDATES_COUNT}, which covers a rolling window — on a splash "this year" means the
+     * calendar.
+     */
+    public static final int UPDATES_YEAR;
     /**
      * The day the newest baked version landed, {@code yyyy-MM-dd}, or {@code ""} when unknown.
      * The offline stand-in for the relay's latest-release timestamp: the closest thing a jar can
@@ -71,6 +79,8 @@ public final class VersionInfo {
         int updatesWindowMonths = 0;
         int updatesMonth = 0;
         int updatesWeek = 0;
+        int updatesDay = 0;
+        int updatesYear = 0;
         String lastUpdateDate = "";
         try (InputStream in = VersionInfo.class.getResourceAsStream(PROPERTIES_PATH)) {
             if (in != null) {
@@ -84,6 +94,8 @@ public final class VersionInfo {
                         "updates_window_months");
                 updatesMonth = parseCount(props.getProperty("updates_month"), "updates_month");
                 updatesWeek = parseCount(props.getProperty("updates_week"), "updates_week");
+                updatesDay = parseCount(props.getProperty("updates_day"), "updates_day");
+                updatesYear = parseCount(props.getProperty("updates_year"), "updates_year");
                 String day = props.getProperty("last_update_date");
                 lastUpdateDate = day == null ? "" : day.trim();
             } else {
@@ -99,6 +111,8 @@ public final class VersionInfo {
         UPDATES_WINDOW_MONTHS = updatesWindowMonths;
         UPDATES_MONTH = updatesMonth;
         UPDATES_WEEK = updatesWeek;
+        UPDATES_DAY = updatesDay;
+        UPDATES_YEAR = updatesYear;
         LAST_UPDATE_DATE = lastUpdateDate;
         DISPLAY = "Dungeon Train v" + VERSION + " (" + BRANCH + ")";
     }

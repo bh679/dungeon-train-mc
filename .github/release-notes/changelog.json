@@ -10748,6 +10748,18 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "death-screen-menu-updates",
+      "version": "0.771.0",
+      "type": "feat",
+      "title": "The engine room speaks, and the menu joins in",
+      "summary": "The support page now leads with how many changes were made this week. The main menu occasionally does too, across today, this week, this month and this year.",
+      "highlights": [],
+      "date": "2026-09-01",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

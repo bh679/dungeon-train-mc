@@ -1570,10 +1570,19 @@ public final class NarrativeDeathScreen extends Screen {
         y += 14;
         drawTrain(g, left, w, y, currentPage);
         y += 46;
-        y = drawNarration(g, Component.translatable("gui.dungeontrain.death.narr.donate_intro").getString(), cx, w, y);
-        y += 8;
 
         DonationSummaryClient.Summary s = DonationSummaryCache.get();
+        // Resolved before the narration, not with the tiles below, because the pitch itself quotes
+        // the week's work. The summary may still be loading — the figures fall back to the numbers
+        // baked into this jar, which are known before any fetch starts, so the opening line does
+        // not have to wait on the network to say something true.
+        UpdateStats.Figures updates = UpdateStats.current(s == null ? null : s.updates());
+
+        // The pitch names the week when the week is worth naming; below that threshold it opens
+        // with the plain line, which is the sentence this page has always had.
+        y = drawNarration(g, donateIntro(updates), cx, w, y);
+        y += 8;
+
         if (s == null) {
             y = drawCentered(g, Component.translatable("gui.dungeontrain.death.narr.donate_loading"), cx, w, y, SUBLINE);
             y += 10;
@@ -1602,20 +1611,26 @@ public final class NarrativeDeathScreen extends Screen {
         // it displaces changes: the settled server bill once that bill is paid (a tile whose whole
         // content is a tick is not worth a quarter of the grid), and the raised-this-month figure
         // while the bill is still the ask, since the supporter names down the right side already
-        // add up to roughly that number. Null when neither the relay nor this jar knows a count,
-        // which leaves the layout exactly as it was before the card existed.
-        UpdateStats.Figures updates = UpdateStats.current(s.updates());
+        // add up to roughly that number. Absent when neither the relay nor this jar knows a count,
+        // which leaves the layout exactly as it was before the card existed. (The figures behind it
+        // were resolved above — the opening line quotes them too.)
         boolean updatesCard = UpdateStats.hasCount(updates);
 
         // Every funded rung the grid has no slot for, ticked off on one line above it. A rung is
         // excluded from the line only while it still holds a tile of its own — so which rungs
         // appear depends on what the third slot is holding.
+        //
+        // The server bill is excluded outright, tile or no tile: "✓ Running Costs This Month" told
+        // the player something the page says more plainly by what it stopped asking for. With the
+        // standard two-rung ladder that empties this line entirely, and it takes no height at all.
         List<String> tiled = new ArrayList<>();
+        tiled.add(FundingGoals.RUNNING_COSTS);
         if (activeGoal != null && !hoursLead) tiled.add(activeGoal.id());   // slot 1: the ask
-        if (!updatesCard) {
-            // No card, so the third slot keeps its old occupant: the settled goal once the hours
-            // tile leads, otherwise the settled server bill.
-            tiled.add(hoursLead ? activeGoal.id() : FundingGoals.RUNNING_COSTS);
+        if (!updatesCard && hoursLead) {
+            // No card, so the third slot keeps its old occupant: the settled goal, once the hours
+            // tile leads. (Without the card and without the hours tile it holds the server bill,
+            // which is excluded above either way.)
+            tiled.add(activeGoal.id());
         }
         List<Goal> done = FundingGoals.completed(s.goals(), tiled);
         if (!done.isEmpty()) {
@@ -1648,39 +1663,40 @@ public final class NarrativeDeathScreen extends Screen {
             costTile(g, lc0, y, cellW, DevHours.value(),
                     "gui.dungeontrain.death.narr.lbl_hours",
                     "gui.dungeontrain.death.narr.tip_hours", VALUE);
-            costTile(g, lc1, y, cellW, fmtUsd(s.monthlyRaisedUsd()),
-                    "gui.dungeontrain.death.narr.lbl_raised_month",
-                    "gui.dungeontrain.death.narr.tip_raised", VALUE);
-            // Slot 3: the updates card, or — on a build that knows no count — the goal that was
+            // Slot 2: the updates card, or — on a build that knows no count — the goal that was
             // leading, now settled, which is the layout this page had before the card existed.
             if (updatesCard) {
-                updatesTile(g, lc0, ly, cellW, updates, mouseX, mouseY);
+                updatesTile(g, lc1, y, cellW, updates, mouseX, mouseY);
             } else {
-                checkedCostTile(g, lc0, ly, cellW, fmtUsd(activeGoal.targetAud()),
+                checkedCostTile(g, lc1, y, cellW, fmtUsd(activeGoal.targetAud()),
                         FundingGoals.label(activeGoal), FundingGoals.tipKey(activeGoal), GOAL_MET);
-                drawTileProgress(g, lc0, ly, cellW, activeGoal.percent());
+                drawTileProgress(g, lc1, y, cellW, activeGoal.percent());
             }
+            // Slot 3: raised.
+            costTile(g, lc0, ly, cellW, fmtUsd(s.monthlyRaisedUsd()),
+                    "gui.dungeontrain.death.narr.lbl_raised_month",
+                    "gui.dungeontrain.death.narr.tip_raised", VALUE);
         } else if (serverCostsMet) {
             // Slot 1: the new goal, as a COST — what the next thing needs per month, not a
             // percentage. The progress against it reads off the raised figure beside it.
             costTile(g, lc0, y, cellW, fmtUsd(activeGoal.targetAud()),
                     FundingGoals.label(activeGoal), FundingGoals.tipKey(activeGoal), COST);
-            // Slot 2: raised.
-            costTile(g, lc1, y, cellW, fmtUsd(s.monthlyRaisedUsd()),
-                    "gui.dungeontrain.death.narr.lbl_raised_month",
-                    "gui.dungeontrain.death.narr.tip_raised", VALUE);
-            // Slot 3: the updates card. The settled server bill has moved to the ✓ line above —
+            // Slot 2: the updates card. The settled server bill has moved to the ✓ line above —
             // it is paid, and a tile whose whole content is a tick earns its slot less than the
             // work the money paid for. Without a count to show, that blue tile is still the
             // fallback rather than a hole in the grid.
             if (updatesCard) {
-                updatesTile(g, lc0, ly, cellW, updates, mouseX, mouseY);
+                updatesTile(g, lc1, y, cellW, updates, mouseX, mouseY);
             } else {
-                checkedCostTile(g, lc0, ly, cellW, costValue,
+                checkedCostTile(g, lc1, y, cellW, costValue,
                         "gui.dungeontrain.death.narr.lbl_server_cost",
                         "gui.dungeontrain.death.narr.tip_monthly_cost", GOAL_MET);
-                drawTileProgress(g, lc0, ly, cellW, serverCosts.percent());
+                drawTileProgress(g, lc1, y, cellW, serverCosts.percent());
             }
+            // Slot 3: raised.
+            costTile(g, lc0, ly, cellW, fmtUsd(s.monthlyRaisedUsd()),
+                    "gui.dungeontrain.death.narr.lbl_raised_month",
+                    "gui.dungeontrain.death.narr.tip_raised", VALUE);
             // The ask's own progress along the foot of its tile.
             drawTileProgress(g, lc0, y, cellW, activeGoal.percent());
         } else {
@@ -1740,6 +1756,25 @@ public final class NarrativeDeathScreen extends Screen {
         }
 
         return Math.max(leftBottom, listTop + listH) + 10;
+    }
+
+    /**
+     * The engine room's opening pitch. When the week is worth naming it leads with the work — "The
+     * rails do not lay themselves. 117 changes were laid this week alone." — and otherwise it is the
+     * plain line this page has always opened with.
+     *
+     * <p>The figure is wrapped in the narration's number sentinels so {@link #styled} renders the
+     * digits white against the muted prose, the same treatment every other number in this screen's
+     * narration gets. The word beside it stays muted: the sentinels close before it.</p>
+     */
+    private String donateIntro(UpdateStats.Figures updates) {
+        if (!UpdateStats.hasWeekPitch(updates)) {
+            return Component.translatable("gui.dungeontrain.death.narr.donate_intro").getString();
+        }
+        String figure = NUM_START + UpdateStats.groupedWeek(updates) + NUM_END;
+        Component clause = UpdateStats.changesClause(updates, ClientLanguage.selected(), figure);
+        return Component.translatable("gui.dungeontrain.death.narr.donate_intro_updates", clause)
+                .getString();
     }
 
     /**
