@@ -2,10 +2,19 @@ package games.brennan.dungeontrain.event;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.narrative.NoteKind;
+import games.brennan.dungeontrain.narrative.NoteSpokenLines;
+import games.brennan.dungeontrain.train.DeathNoteEchoSpawner;
 import games.brennan.playermob.compat.TrainConfinement;
 import games.brennan.playermob.entity.PlayerMobEntity;
+import net.minecraft.ChatFormatting;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
@@ -28,6 +37,14 @@ import java.util.concurrent.ConcurrentHashMap;
  *       and no target is ever forced. Forcing one would make it attack the very player it was sent
  *       to love, overriding the feeling the spawner seeded.</li>
  * </ul>
+ *
+ * <p>An echo also <b>reads its note aloud</b> once it is alongside: the same carriage-index test
+ * that decides a curse may engage decides that either kind may speak, and from there it works
+ * through the script stamped on it at spawn ({@code DeathNoteEchoSpawner.KEY_LINES}) — opening by
+ * calling the target's name, then one line at a time, the gap between them set by the length of the
+ * line just spoken ({@link NoteSpokenLines#delayTicksFor}). The whole server hears it, like the
+ * arrival announcement it follows. A note with no approved words simply never speaks: the relay
+ * withholds a body its moderation flagged, and that costs the echo its voice, never the curse.</p>
  *
  * <p>Echoes are tracked by UUID (registered at spawn) rather than a spatial scan, because a
  * carriage-bound echo lives in Sable shipyard coordinates far from the player's world position — a
@@ -70,6 +87,7 @@ public final class DeathNoteEchoController {
             ServerPlayer target = level.getServer().getPlayerList().getPlayer(e.getValue().targetUuid());
             if (target == null) continue;                                    // target offline
             steer(echo, target, e.getValue().kind());
+            speak(level, echo, target);
         }
     }
 
@@ -96,5 +114,73 @@ public final class DeathNoteEchoController {
         if (kind != NoteKind.LOVE && Math.abs(echoIdx - targetIdx) <= 1) {
             echo.setTarget(target);                                       // engage even an invulnerable target
         }
+    }
+
+    /**
+     * Read out the next line of the note, if the echo is alongside its target and the previous line
+     * has had its say. Both kinds speak — a Love Note echo has come a long way to say something too.
+     *
+     * <p>Everything the recital needs lives on the entity ({@code KEY_LINES} /
+     * {@code KEY_LINE_INDEX} / {@code KEY_NEXT_SPEAK}), so an echo that is saved and reloaded picks
+     * up exactly where it stopped rather than starting the note again. Timing is quantised to
+     * {@link #SCAN_PERIOD_TICKS} because this rides the same scan as the steering — half a second of
+     * slack on a pause of one to ten seconds, which nobody can hear.</p>
+     */
+    private static void speak(ServerLevel level, PlayerMobEntity echo, ServerPlayer target) {
+        CompoundTag data = echo.getPersistentData();
+        if (!data.contains(DeathNoteEchoSpawner.KEY_LINES)) return;      // nothing approved to say
+        int echoIdx = TrainConfinement.carriageIndex(echo);
+        int targetIdx = TrainConfinement.carriageIndex(target);
+        if (echoIdx == TrainConfinement.NO_CARRIAGE || targetIdx == TrainConfinement.NO_CARRIAGE) return;
+        if (Math.abs(echoIdx - targetIdx) > 1) return;                   // not close enough yet
+        ListTag lines = data.getList(DeathNoteEchoSpawner.KEY_LINES, Tag.TAG_STRING);
+        int spoken = data.getInt(DeathNoteEchoSpawner.KEY_LINE_INDEX);
+        if (spoken > lines.size()) return;                               // the note has been read out
+        long now = level.getGameTime();
+        if (spoken > 0 && now < data.getLong(DeathNoteEchoSpawner.KEY_NEXT_SPEAK)) return;
+        // The opener is the target's name, the way the note itself names them; then the lines below it.
+        boolean opener = spoken == 0;
+        String text = opener
+                ? "@" + target.getGameProfile().getName()
+                : lines.getString(spoken - 1);
+        if (text.isBlank()) { data.putInt(DeathNoteEchoSpawner.KEY_LINE_INDEX, spoken + 1); return; }
+        Component body = opener ? mention(text) : Component.literal(text);
+        level.getServer().getPlayerList().broadcastSystemMessage(spokenLine(echo, body), false);
+        if (opener) ping(target);
+        data.putInt(DeathNoteEchoSpawner.KEY_LINE_INDEX, spoken + 1);
+        // A longer line buys a longer silence after it — the note is being read out, not pasted.
+        data.putLong(DeathNoteEchoSpawner.KEY_NEXT_SPEAK, now + NoteSpokenLines.delayTicksFor(text));
+    }
+
+    /**
+     * One spoken line, rendered as chat — deliberately indistinguishable from a player talking:
+     * vanilla's own {@code chat.type.text} ({@code <name> words}), in vanilla's own colour, with no
+     * styling of ours on top. An earlier version coloured it by kind (dark red / pink), which read
+     * as a system announcement; the note is someone speaking, so it should look like someone
+     * speaking. Using the vanilla key rather than one of ours also means every locale already has
+     * it, in the phrasing that locale's players already read chat in.
+     */
+    private static Component spokenLine(PlayerMobEntity echo, Component body) {
+        return Component.translatable("chat.type.text", echo.getName(), body);
+    }
+
+    /**
+     * The opening {@code @name}, rendered as a mention rather than as text that merely looks like
+     * one: gold and bold, so it stands out of a chat line that is otherwise deliberately plain.
+     * Minecraft has no mention primitive, so this is the whole of what a mention is here — the
+     * highlight, plus {@link #ping} in the target's ears.
+     */
+    private static Component mention(String text) {
+        return Component.literal(text).withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD);
+    }
+
+    /**
+     * The other half of the mention: a sound only the named player hears, so a note read out while
+     * they are looking elsewhere still reaches them. {@code playNotifySound} is the vanilla path for
+     * a sound played AT a player rather than in the world — it goes to that client alone, so nobody
+     * else on the server hears the echo call someone's name.
+     */
+    private static void ping(ServerPlayer target) {
+        target.playNotifySound(SoundEvents.NOTE_BLOCK_PLING.value(), SoundSource.PLAYERS, 1.0f, 1.0f);
     }
 }
