@@ -6,12 +6,15 @@ import games.brennan.dungeontrain.narrative.NoteSpokenLines;
 import games.brennan.dungeontrain.train.DeathNoteEchoSpawner;
 import games.brennan.playermob.compat.TrainConfinement;
 import games.brennan.playermob.entity.PlayerMobEntity;
+import net.minecraft.ChatFormatting;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
@@ -136,11 +139,14 @@ public final class DeathNoteEchoController {
         long now = level.getGameTime();
         if (spoken > 0 && now < data.getLong(DeathNoteEchoSpawner.KEY_NEXT_SPEAK)) return;
         // The opener is the target's name, the way the note itself names them; then the lines below it.
-        String text = spoken == 0
+        boolean opener = spoken == 0;
+        String text = opener
                 ? "@" + target.getGameProfile().getName()
                 : lines.getString(spoken - 1);
         if (text.isBlank()) { data.putInt(DeathNoteEchoSpawner.KEY_LINE_INDEX, spoken + 1); return; }
-        level.getServer().getPlayerList().broadcastSystemMessage(spokenLine(echo, text), false);
+        Component body = opener ? mention(text) : Component.literal(text);
+        level.getServer().getPlayerList().broadcastSystemMessage(spokenLine(echo, body), false);
+        if (opener) ping(target);
         data.putInt(DeathNoteEchoSpawner.KEY_LINE_INDEX, spoken + 1);
         // A longer line buys a longer silence after it — the note is being read out, not pasted.
         data.putLong(DeathNoteEchoSpawner.KEY_NEXT_SPEAK, now + NoteSpokenLines.delayTicksFor(text));
@@ -154,7 +160,27 @@ public final class DeathNoteEchoController {
      * speaking. Using the vanilla key rather than one of ours also means every locale already has
      * it, in the phrasing that locale's players already read chat in.
      */
-    private static Component spokenLine(PlayerMobEntity echo, String text) {
-        return Component.translatable("chat.type.text", echo.getName(), Component.literal(text));
+    private static Component spokenLine(PlayerMobEntity echo, Component body) {
+        return Component.translatable("chat.type.text", echo.getName(), body);
+    }
+
+    /**
+     * The opening {@code @name}, rendered as a mention rather than as text that merely looks like
+     * one: gold and bold, so it stands out of a chat line that is otherwise deliberately plain.
+     * Minecraft has no mention primitive, so this is the whole of what a mention is here — the
+     * highlight, plus {@link #ping} in the target's ears.
+     */
+    private static Component mention(String text) {
+        return Component.literal(text).withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD);
+    }
+
+    /**
+     * The other half of the mention: a sound only the named player hears, so a note read out while
+     * they are looking elsewhere still reaches them. {@code playNotifySound} is the vanilla path for
+     * a sound played AT a player rather than in the world — it goes to that client alone, so nobody
+     * else on the server hears the echo call someone's name.
+     */
+    private static void ping(ServerPlayer target) {
+        target.playNotifySound(SoundEvents.NOTE_BLOCK_PLING.value(), SoundSource.PLAYERS, 1.0f, 1.0f);
     }
 }

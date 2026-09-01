@@ -24,15 +24,21 @@ public final class NoteSpokenLines {
     public static final int MAX_LINE_CHARS = 128;
 
     /**
-     * Ticks of silence bought per character of the line just spoken — 1.5 ticks/char is about 13
-     * characters a second, an unhurried reading pace. Longer lines therefore hang longer before the
-     * next one, which is the whole point: the note is being read out, not dumped.
+     * Ticks of silence bought per character of the line just spoken — 2.5 ticks/char is about 8
+     * characters a second, slower than reading aloud because the reader is also being read: the
+     * next line should not arrive until the last one has been taken in. Longer lines therefore hang
+     * longer before the next one, which is the whole point: the note is being read out, not dumped.
      */
-    private static final float TICKS_PER_CHAR = 1.5f;
-    /** Never less than a second between lines, however short the line. */
-    public static final int MIN_DELAY_TICKS = 20;
-    /** Never more than ten seconds, however long the line. */
-    public static final int MAX_DELAY_TICKS = 200;
+    private static final float TICKS_PER_CHAR = 2.5f;
+    /**
+     * Never less than three seconds between lines, however short the line. The floor does most of
+     * the work: real note lines are short ("I remember."), so without a generous floor the whole
+     * note lands almost at once and reads as a paste rather than someone speaking. It also has to
+     * clear the arrival broadcast that lands immediately before the first line.
+     */
+    public static final int MIN_DELAY_TICKS = 60;
+    /** Never more than twelve seconds, however long the line. */
+    public static final int MAX_DELAY_TICKS = 240;
 
     private NoteSpokenLines() {}
 

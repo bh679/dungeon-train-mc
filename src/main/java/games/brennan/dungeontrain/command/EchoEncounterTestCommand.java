@@ -280,14 +280,18 @@ public final class EchoEncounterTestCommand {
         Integer carriage = TrainCarriageAppender.lastCarriageIndex(player.getUUID());
         int deathCarriage = carriage == null ? 0 : carriage;
         // noteId 0 — a dev spawn has no relay note behind it, so its outcome is reported nowhere.
+        // Asked BEFORE the spawn: afterwards the answer is stale, and on success there is no reason
+        // to report. Both deferral branches log at DEBUG only, so without this a FALSE is mute.
+        String why = DeathNoteEchoSpawner.deferReason(level, player);
         boolean ok = DeathNoteEchoSpawner.spawnForTarget(level, player,
             player.getUUID().toString(), player.getGameProfile().getName(), deathCarriage, 0, kind,
             DEV_SCRIPT);
         source.sendSuccess(() -> Component.literal(
                 "[echotest] " + kind.englishTitle() + " spawnForTarget -> "
                     + (ok ? "TRUE" : "FALSE (deferred/failed)")
-                    + " at carriage " + deathCarriage + " (lastCarriageIndex=" + carriage
-                    + "). Watch for an 'Echo of " + player.getGameProfile().getName() + "' beside you.")
+                    + " at carriage " + deathCarriage + " (lastCarriageIndex=" + carriage + ")"
+                    + (ok ? ". Watch for an 'Echo of " + player.getGameProfile().getName() + "' beside you."
+                          : ": " + (why == null ? "spawn threw — see the log" : why)))
             .withStyle(ok ? ChatFormatting.AQUA : ChatFormatting.RED), false);
         return ok ? 1 : 0;
     }

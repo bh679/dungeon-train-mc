@@ -135,6 +135,29 @@ public final class DeathNoteEchoSpawner {
                 spokenLines);
     }
 
+    /**
+     * Why {@link #spawnForTarget} would defer for {@code target} right now, or null if it would
+     * place the echo. Exists because both deferral branches only log at DEBUG: for a real curse that
+     * is right (the note stays pooled and the next scan retries, so a deferral is a wait, not a
+     * fault), but it leaves the dev {@code /dtechotest} spawn reporting a bare FALSE with no way to
+     * tell "stand somewhere else" from "the spawn is broken". Diagnostics only — nothing branches
+     * on it.
+     */
+    public static String deferReason(ServerLevel level, ServerPlayer target) {
+        Trains.Carriage group = groupContaining(level, target);
+        if (group == null) {
+            return "not inside any carriage group's world AABB (off the train, or in the gap between groups)";
+        }
+        TrainTransformProvider provider = group.provider();
+        int anchor = provider.getPIdx();
+        int pidx = TrainConfinement.carriageIndex(target);
+        if (pidx < anchor || pidx >= anchor + provider.getGroupSize()) pidx = anchor;
+        if (PortalCarriageSelection.isPortalGroup(level, pidx)) {
+            return "standing in a portal group (pIdx=" + pidx + ") — walk out of the portal and retry";
+        }
+        return null;
+    }
+
     /** The train group whose world AABB contains {@code player} (player position is world-space), or null. */
     private static Trains.Carriage groupContaining(ServerLevel level, ServerPlayer player) {
         double x = player.getX(), y = player.getY(), z = player.getZ();
