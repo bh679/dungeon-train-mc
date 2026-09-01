@@ -122,9 +122,18 @@ public final class DeathNoteEchoSpawner {
         TrainTransformProvider provider = group.provider();
         int anchor = provider.getPIdx();
         int groupSize = provider.getGroupSize();
-        // Spawn in the player's own carriage; clamp into this group's range so the slot is valid.
+        // Spawn ahead of the player, by one carriage per two lines of note, so a long note has
+        // somewhere to be read FROM: the echo marches back down the train reading, and lands its
+        // last line about when it reaches its target. A note of one or two lines keeps the old
+        // behaviour of appearing in the player's own carriage.
+        //
+        // Clamped into this group's range, so the run-up is only as long as the group is: a
+        // two-carriage group cannot put an echo four carriages away, and a long note in a short
+        // group simply starts closer. Better a shorter run-up than a slot that is not in the group.
         int pidx = TrainConfinement.carriageIndex(target);
         if (pidx < anchor || pidx >= anchor + groupSize) pidx = anchor;
+        int lead = NoteSpokenLines.startCarriageGap(spokenLines == null ? 0 : spokenLines.size());
+        pidx = Math.min(pidx + lead - 1, anchor + groupSize - 1);   // -1: a 1-carriage lead IS the player's cart
         if (PortalCarriageSelection.isPortalGroup(level, pidx)) {
             LOGGER.debug("[DungeonTrain] DeathNote echo: {} is in a portal group (pIdx={}) — deferring.",
                     target.getGameProfile().getName(), pidx);
