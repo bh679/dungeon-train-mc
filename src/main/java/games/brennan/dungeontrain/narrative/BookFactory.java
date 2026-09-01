@@ -205,7 +205,8 @@ public final class BookFactory {
 
     /**
      * A seeded RE-READ of an already-read mod story — served once every story is complete so built-in
-     * content keeps its fair share rather than vanishing. Picks a story + letter deterministically from
+     * content keeps its fair share rather than vanishing. Every story is equal here: the hold-back
+     * tier only governs the ORDER series are first served in, and by now they have all been read. Picks a story + letter deterministically from
      * {@code seed}; the book is a normal mod-story book ({@link NarrativeBookTag}), and its idempotent
      * read-credit re-marks already-read progress harmlessly.
      */

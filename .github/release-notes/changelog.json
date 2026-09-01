@@ -10578,8 +10578,65 @@
       "released_at": "2026-09-01T06:09:52Z"
     },
     {
-      "id": "note-echo-reads-aloud",
+      "id": "hide-world-list-cog",
       "version": "0.763.0",
+      "type": "feat",
+      "title": "Menu changes",
+      "summary": "Some tidying on the main menu.",
+      "highlights": [],
+      "pr": 1245,
+      "date": "2026-09-01",
+      "released": true,
+      "released_in": "v0.763.0",
+      "released_at": "2026-09-01T13:08:12Z"
+    },
+    {
+      "id": "leaderboard-standing-after-death",
+      "version": "0.763.0",
+      "type": "fix",
+      "title": "Your leaderboard position keeps up with you",
+      "summary": "A leaderboard book ends by telling you where you stand on that board. That position was worked out once, when you joined, and never again \u2014 so on a long session it slowly went stale, and a book you found late in the evening could still be quoting the number you had hours earlier. Your standing is now looked up again after each death, which is the moment it actually moves.",
+      "highlights": [
+        "Leaderboard books quote a current position, not the one you joined with",
+        "Your standing is looked up again after each death"
+      ],
+      "pr": 1246,
+      "date": "2026-09-01",
+      "released": true,
+      "released_in": "v0.763.0",
+      "released_at": "2026-09-01T13:08:12Z"
+    },
+    {
+      "id": "meta-books-rarer-and-two-series-held-back",
+      "version": "0.764.0",
+      "type": "content",
+      "title": "Adjustments to in-built narratives",
+      "summary": "Some of the train's built-in books and story series have been retuned.",
+      "highlights": [],
+      "pr": 1249,
+      "date": "2026-09-01",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "trade-everything-diamond-payout-half",
+      "version": "0.764.0",
+      "type": "chore",
+      "title": "Trade Everything updated to 0.10.0",
+      "summary": "Dungeon Train now builds against Trade Everything 0.10.0, which adds a payout-currency setting to the Trade Anything slot: when a villager pays you in a premium currency, the trade is worth a fraction of face value, shipped with diamonds at half. No vanilla villager pays out in diamonds, so the trades you make today are unchanged \u2014 and the required Trade Everything version stays 0.8.0, so nothing forces you to update.",
+      "highlights": [
+        "Trade Everything 0.10.0: a payout in diamonds is worth half the value of what you traded in",
+        "Configurable per currency in tradeeverything.json (payout_multipliers); set an entry to 1.0 to turn it off"
+      ],
+      "date": "2026-09-01",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "note-echo-reads-aloud",
+      "version": "0.765.0",
       "type": "feat",
       "title": "Death Note and Love Note echoes read the note aloud",
       "summary": "An echo sent by a Death Note or a Love Note now speaks the note it came from. When it reaches the player it was written for, it calls their name and then reads the note out one line at a time, pausing between lines the way someone reading aloud would. It looks like any other player talking in chat, because that is what it is meant to feel like.",
@@ -10590,6 +10647,7 @@
         "A note that is only a name still spawns its echo; it simply arrives with nothing to say.",
         "The words are screened before they ever reach another player's chat. A note whose body is withheld loses its voice and nothing else \u2014 the curse lands exactly the same."
       ],
+      "pr": 1247,
       "date": "2026-09-01",
       "released": false,
       "released_in": null,
