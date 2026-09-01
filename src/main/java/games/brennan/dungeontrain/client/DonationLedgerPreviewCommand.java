@@ -93,8 +93,13 @@ public final class DonationLedgerPreviewCommand {
         List<Entry> board = List.of(
                 new Entry("PreviewPatron", 25, "patreon"),
                 new Entry("PreviewDonor", 10, "revolut"));
+        // A relay-shaped updates block, so the preview exercises the live path the settled page
+        // takes rather than falling through to the jar's baked numbers.
+        DonationSummaryClient.Updates updates = new DonationSummaryClient.Updates(
+                765, 5, 244, 117,
+                System.currentTimeMillis() - java.time.Duration.ofHours(3).toMillis(), "0.763.0");
         return new DonationSummaryClient.Summary(
                 210, 1450, 120, 175, 3, 45,
-                board, board, false, 0, 0, goals, activeGoalId);
+                board, board, false, 0, 0, goals, activeGoalId, updates);
     }
 }

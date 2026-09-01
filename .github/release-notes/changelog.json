@@ -10668,6 +10668,18 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "death-screen-updates-card",
+      "version": "0.767.0",
+      "type": "feat",
+      "title": "Updates card on the death screen",
+      "summary": "The support page now shows how many updates the train has had, and when the last one landed.",
+      "highlights": [],
+      "date": "2026-09-01",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

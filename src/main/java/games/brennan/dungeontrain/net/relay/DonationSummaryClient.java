@@ -63,6 +63,18 @@ public final class DonationSummaryClient {
                        int percent, boolean complete) {}
 
     /**
+     * The updates ledger the death screen's card reads: how many updates shipped in the last week,
+     * in the last 30 days, and across the longest window on offer, plus when the newest release was
+     * published (epoch millis, {@code 0} when the relay has no release timestamp).
+     *
+     * <p>{@code windowMonths} sizes {@code count}: the project's own age in months, capped at the
+     * twelve the card renders as "1 year". The relay re-derives every figure at read time, so the
+     * window widens on its own without a jar or a deploy.</p>
+     */
+    public record Updates(int count, int windowMonths, int month, int week,
+                          long latestReleaseAtMs, String latestVersion) {}
+
+    /**
      * The parsed ledger. {@code monthlyCostUsd}/{@code percentCovered} are -1 when the relay has no
      * cost snapshot yet; {@code hasYou} is false when the player hasn't consented / isn't a donor.
      * {@code goals} is empty (and {@code activeGoalId} null) against a relay that predates the
@@ -73,7 +85,7 @@ public final class DonationSummaryClient {
                           int percentCovered, int patronCount, int patronMonthlyUsd,
                           List<Entry> monthly, List<Entry> allTime,
                           boolean hasYou, int youMonthlyUsd, int youTotalUsd,
-                          List<Goal> goals, String activeGoalId) {}
+                          List<Goal> goals, String activeGoalId, Updates updates) {}
 
     /**
      * Fetch the donation summary off-thread and hand the parsed result to {@code callback} (invoked
@@ -143,7 +155,8 @@ public final class DonationSummaryClient {
                 you != null ? optInt(you, "totalUsd", 0) : 0,
                 parseGoals(o),
                 o.has("activeGoalId") && o.get("activeGoalId").isJsonPrimitive()
-                        ? o.get("activeGoalId").getAsString() : null);
+                        ? o.get("activeGoalId").getAsString() : null,
+                parseUpdates(o));
     }
 
     /**
@@ -166,6 +179,29 @@ public final class DonationSummaryClient {
                     optInt(g, "percent", 0), complete));
         }
         return out;
+    }
+
+    /**
+     * The updates block, or null against a relay that predates it (or one whose own upstream poll
+     * has never resolved) — which the death screen reads as "fall back to the baked numbers".
+     * A block with no count is treated the same way: an unknown figure is never rendered.
+     */
+    private static Updates parseUpdates(JsonObject o) {
+        if (!o.has("updates") || !o.get("updates").isJsonObject()) return null;
+        JsonObject u = o.getAsJsonObject("updates");
+        int count = optInt(u, "count", 0);
+        if (count <= 0) return null;
+        long latestAt = 0L;
+        try {
+            if (u.has("latestReleaseAt") && u.get("latestReleaseAt").isJsonPrimitive()) {
+                latestAt = u.get("latestReleaseAt").getAsLong();
+            }
+        } catch (RuntimeException ignored) { /* unparseable timestamp — treat as unknown */ }
+        String latestVersion = u.has("latestVersion") && u.get("latestVersion").isJsonPrimitive()
+                ? u.get("latestVersion").getAsString() : "";
+        return new Updates(count, Math.max(0, optInt(u, "windowMonths", 0)),
+                Math.max(0, optInt(u, "month", 0)), Math.max(0, optInt(u, "week", 0)),
+                Math.max(0L, latestAt), latestVersion);
     }
 
     private static List<Entry> parseEntries(JsonObject o, String key) {

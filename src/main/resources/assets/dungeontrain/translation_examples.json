@@ -2481,6 +2481,118 @@
       ]
     }
   },
+  "chat.dungeontrain.time.week.one": {
+    "1": {
+      "label": "a count of one",
+      "examples": [
+        "1"
+      ]
+    }
+  },
+  "chat.dungeontrain.time.week.other": {
+    "1": {
+      "label": "how many weeks",
+      "examples": [
+        "2",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.time.month.one": {
+    "1": {
+      "label": "a count of one",
+      "examples": [
+        "1"
+      ]
+    }
+  },
+  "chat.dungeontrain.time.month.other": {
+    "1": {
+      "label": "how many months",
+      "examples": [
+        "5",
+        "11"
+      ]
+    }
+  },
+  "chat.dungeontrain.time.year.one": {
+    "1": {
+      "label": "a count of one",
+      "examples": [
+        "1"
+      ]
+    }
+  },
+  "chat.dungeontrain.time.year.other": {
+    "1": {
+      "label": "how many years",
+      "examples": [
+        "2",
+        "3"
+      ]
+    }
+  },
+  "gui.dungeontrain.death.narr.updates_value.one": {
+    "1": {
+      "label": "a count of one",
+      "examples": [
+        "1"
+      ]
+    }
+  },
+  "gui.dungeontrain.death.narr.updates_value.other": {
+    "1": {
+      "label": "how many updates shipped in the span named on the line below",
+      "examples": [
+        "117",
+        "765"
+      ]
+    }
+  },
+  "gui.dungeontrain.death.narr.lbl_updates_in": {
+    "1": {
+      "label": "the span those updates landed in, as a whole clause - a week by default, the project's whole life on hover",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.time.week.one",
+          "args": [
+            "1"
+          ]
+        },
+        {
+          "key": "chat.dungeontrain.time.month.other",
+          "args": [
+            "5"
+          ]
+        },
+        {
+          "key": "chat.dungeontrain.time.year.one",
+          "args": [
+            "1"
+          ]
+        }
+      ]
+    }
+  },
+  "gui.dungeontrain.death.narr.tip_last_update": {
+    "1": {
+      "label": "how long ago the newest release went out, as a whole clause",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.time.hour.other",
+          "args": [
+            "3"
+          ]
+        },
+        {
+          "key": "chat.dungeontrain.time.day.one",
+          "args": [
+            "1"
+          ]
+        }
+      ]
+    }
+  },
   "gui.dungeontrain.options.value_row": {
     "1": {
       "label": "the setting's name",
