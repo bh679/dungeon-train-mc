@@ -254,6 +254,15 @@ public final class ClientDisplayConfig {
      */
     public static final ModConfigSpec.IntValue BACKUPS_PER_VERSION;
 
+    /**
+     * Whether to ask before re-uploading builds the build server has lost.
+     *
+     * <p>Off by default, so the restore just happens. What it puts back is the player's own build,
+     * from the player's own copy, into the player's own private profile — the same upload their next
+     * save would have made. There is no decision in that worth interrupting a title screen for.</p>
+     */
+    public static final ModConfigSpec.BooleanValue CONFIRM_BUILD_RESTORE;
+
     /** The player's answer to the Political Filter prompt. See {@link #POLITICAL_FILTER}. */
     public enum PoliticalFilter {
         /** Never asked (or asked and dismissed before the prompt existed) — resolved from the locale. */
@@ -308,6 +317,7 @@ public final class ClientDisplayConfig {
         POLITICAL_FILTER = pair.getLeft().politicalFilter;
         BACKUP_MODE = pair.getLeft().backupMode;
         BACKUPS_PER_VERSION = pair.getLeft().backupsPerVersion;
+        CONFIRM_BUILD_RESTORE = pair.getLeft().confirmBuildRestore;
         CONTENT_MODE = pair.getLeft().contentMode;
         CUSTOM_CONTENT_PREFERENCE = pair.getLeft().customContentPreference;
         CUSTOM_CONTENT_LAST_ANSWER = pair.getLeft().customContentLastAnswer;
@@ -593,6 +603,14 @@ public final class ClientDisplayConfig {
                          "Set from the Backups per version row in Options > Dungeon Train.")
                 .defineInRange("backupsPerVersion",
                     games.brennan.dungeontrain.data.PlayerDataBackup.DEFAULT_PER_VERSION, 1, 20);
+        ModConfigSpec.BooleanValue confirmBuildRestore = b
+                .comment("Whether to ask first when the build server turns out to have lost builds you",
+                         "uploaded. Off means they are simply sent back up from your local copy, privately,",
+                         "which is what the next save of each one would have done anyway. On shows a card at",
+                         "the title screen listing what is missing, including any build recoverable only from",
+                         "a backup — which may be one you deleted on purpose.",
+                         "Set from the Confirm build restores row in Options > Dungeon Train.")
+                .define("confirmBuildRestore", false);
         b.pop();
 
         b.push("configIntegrity");
@@ -641,7 +659,8 @@ public final class ClientDisplayConfig {
                 commandMenuSpace, templateBlocksMenuSpace, containerContentsMenuSpace,
                 blockVariantMenuSpace,
                 backupMode,
-                backupsPerVersion);
+                backupsPerVersion,
+                confirmBuildRestore);
     }
 
     /**
@@ -840,6 +859,23 @@ public final class ClientDisplayConfig {
         if (BACKUPS_PER_VERSION.get() == value) return; // skip a needless TOML write
         BACKUPS_PER_VERSION.set(value);
         BACKUPS_PER_VERSION.save();
+    }
+
+    /**
+     * Whether the build-restore card is shown rather than the restore just running.
+     *
+     * <p>Falls back to {@code false} wherever the client spec is absent, which is the same answer as
+     * the default: nowhere without a client spec has a title screen to show a card on.</p>
+     */
+    public static boolean isConfirmBuildRestore() {
+        return isLoaded() && CONFIRM_BUILD_RESTORE.get();
+    }
+
+    public static void setConfirmBuildRestore(boolean value) {
+        if (!isLoaded()) return;
+        if (CONFIRM_BUILD_RESTORE.get() == value) return; // skip a needless TOML write
+        CONFIRM_BUILD_RESTORE.set(value);
+        CONFIRM_BUILD_RESTORE.save();
     }
 
     public static void setBackupMode(BackupMode value) {
@@ -1591,6 +1627,7 @@ public final class ClientDisplayConfig {
             ModConfigSpec.EnumValue<EditorMenuSpace> containerContentsMenuSpace,
             ModConfigSpec.EnumValue<EditorMenuSpace> blockVariantMenuSpace,
             ModConfigSpec.EnumValue<BackupMode> backupMode,
-            ModConfigSpec.IntValue backupsPerVersion
+            ModConfigSpec.IntValue backupsPerVersion,
+            ModConfigSpec.BooleanValue confirmBuildRestore
     ) {}
 }

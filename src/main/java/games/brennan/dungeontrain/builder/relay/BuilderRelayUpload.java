@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.builder.BuilderSave;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.event.NetworkConsentMirror;
 import games.brennan.dungeontrain.event.SharedCarriageMode;
+import games.brennan.dungeontrain.net.relay.RelayTarget;
 import games.brennan.dungeontrain.net.relay.SharedCarriageClient;
 import games.brennan.dungeontrain.train.CarriageBlockSnapshot;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
@@ -44,7 +45,7 @@ public final class BuilderRelayUpload {
      * player is told their build is too big by the game, in the builder, rather than by a 400 from a
      * server they can't see.
      */
-    private static final int MAX_BLOCKS_CHARS = 690_000;
+    static final int MAX_BLOCKS_CHARS = 690_000;
 
     private BuilderRelayUpload() {}
 
@@ -111,12 +112,38 @@ public final class BuilderRelayUpload {
             }
             return;
         }
-        submitNew(player, level, key, blocks, text, written, data, stageId);
+        submitNew(player, level, key, blocks, text, written, stageId);
     }
 
-    /** First upload of this template: create the profile entry and remember what came back. */
+    /**
+     * First upload of this template: create the profile entry and remember what came back.
+     *
+     * <p>Preceded by a check that there is room. A profile at the relay's cap does not reject the
+     * next upload — it accepts it and deletes the author's oldest build to make room, silently. This
+     * is the one path that adds a row, so it is the one place that can catch that before it happens
+     * and let the player choose what goes instead. A save that stops here is still saved locally;
+     * only the relay copy is withheld.</p>
+     */
     private static void submitNew(ServerPlayer player, ServerLevel level, String key, String blocks, String text,
-                                  BuilderSave.Written written, DungeonTrainWorldData data, String stageId) {
+                                  BuilderSave.Written written, String stageId) {
+        SharedCarriageClient.listMine(player.getUUID().toString(), player.getUUID().toString(),
+                        RelayTarget.dev())
+                .thenAccept(builds -> onServer(level, () -> {
+                    // A failed listing is not evidence of a full profile. Upload rather than block —
+                    // the relay is the authority, and refusing a save because a check could not be
+                    // made would be the worse failure.
+                    if (builds != null && BuilderProfileCap.isFull(BuilderProfileCap.used(builds))) {
+                        tell(player, "gui.dungeontrain.builder.profile.full", ChatFormatting.YELLOW,
+                                BuilderProfileCap.MAX_PROFILE_BUILDS);
+                        return;
+                    }
+                    submitNewNow(player, level, key, blocks, text, written, stageId);
+                }));
+    }
+
+    /** The upload itself, once there is known to be room for it. */
+    private static void submitNewNow(ServerPlayer player, ServerLevel level, String key, String blocks,
+                                     String text, BuilderSave.Written written, String stageId) {
         SharedCarriageClient.submitBuild(
                 player.getUUID().toString(), player.getGameProfile().getName(), blocks,
                 written.size().getX(), written.size().getY(), written.size().getZ(),
@@ -297,7 +324,7 @@ public final class BuilderRelayUpload {
      * tool, where creative is the whole point, and reading it as cheating would quarantine every build
      * ever made in it away from the trains it was made for.</p>
      */
-    private static String poolFor() {
+    static String poolFor() {
         return SharedCarriageMode.NORMAL;
     }
 

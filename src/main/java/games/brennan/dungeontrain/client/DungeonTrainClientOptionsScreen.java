@@ -301,6 +301,7 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             case BACKUPS_PER_VERSION -> List.of(backupsPerVersionLabel(
                     Component.translatable("gui.dungeontrain.options.backups_per_version"),
                     BACKUPS_PER_VERSION_MAX));
+            case CONFIRM_BUILD_RESTORE -> onOffCandidates("gui.dungeontrain.options.confirm_build_restore");
             // The size is read at build time, so the candidate has to stand in for the widest it
             // could ever be rather than whatever it happens to be right now.
             case CLEAR_BACKUPS -> List.of(Component.translatable(
@@ -505,6 +506,15 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             }
 
             case BACKUPS_PER_VERSION -> slider(backupsPerVersionOption(), width);
+
+            // Off by default: a restore is the same upload the build's next save would have made, so
+            // there is normally nothing to decide. On, it shows the title-screen card instead.
+            case CONFIRM_BUILD_RESTORE -> withTip(
+                    CycleButton.onOffBuilder(ClientDisplayConfig.isConfirmBuildRestore())
+                            .create(0, 0, width, ROW_H,
+                                    Component.translatable("gui.dungeontrain.options.confirm_build_restore"),
+                                    (btn, on) -> ClientDisplayConfig.setConfirmBuildRestore(on)),
+                    "gui.dungeontrain.options.confirm_build_restore.tip");
 
             case CLEAR_BACKUPS -> withTip(
                     Button.builder(
