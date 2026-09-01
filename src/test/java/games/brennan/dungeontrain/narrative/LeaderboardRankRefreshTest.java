@@ -70,6 +70,19 @@ class LeaderboardRankRefreshTest {
     }
 
     @Test
+    @DisplayName("a throttled ask reports exactly how long it must wait, so it can be deferred")
+    void rankCooldownReportsItsRemainder() {
+        long now = 1_000_000L;
+        assertEquals(0L, LeaderboardPool.rankRequestWaitMs(null, now), "never asked → no wait");
+        assertEquals(0L, LeaderboardPool.rankRequestWaitMs(
+                now - LeaderboardPool.RANK_ATTEMPT_COOLDOWN_MS, now), "cooldown elapsed → no wait");
+        // A death 26s after the last fetch waits out the remaining 34s rather than being dropped —
+        // the case seen in testing, where a death shortly after joining updated nothing at all.
+        assertEquals(LeaderboardPool.RANK_ATTEMPT_COOLDOWN_MS - 26_000L,
+                LeaderboardPool.rankRequestWaitMs(now - 26_000L, now));
+    }
+
+    @Test
     @DisplayName("first ask goes through; a second inside the cooldown does not")
     void rankCooldown() {
         long now = 1_000_000L;

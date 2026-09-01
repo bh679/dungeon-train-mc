@@ -115,6 +115,15 @@ public final class LeaderboardRefreshEvents {
         for (UUID id : PENDING.drainDue(nowMs)) {
             ServerPlayer player = server == null ? null : server.getPlayerList().getPlayer(id);
             if (player == null) continue;
+            // Inside the per-player cooldown, this death waits for it rather than being dropped —
+            // otherwise a death shortly after joining (or a second death in quick succession) would
+            // never reach the relay at all, and that player's book would keep a standing the game
+            // already knows is out of date. Re-scheduling costs one map entry.
+            long wait = LeaderboardPool.rankRefreshWaitMs(id, nowMs);
+            if (wait > 0L) {
+                PENDING.schedule(id, nowMs + wait);
+                continue;
+            }
             LeaderboardPool.refreshRanks(id, player.getName().getString());
         }
     }

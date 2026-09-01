@@ -260,7 +260,27 @@ public final class LeaderboardPool {
      * @param lastAttempt when they were last asked for, or null if they never have been
      */
     static boolean dueForRankRequest(Long lastAttempt, long now) {
-        return lastAttempt == null || now - lastAttempt >= RANK_ATTEMPT_COOLDOWN_MS;
+        return rankRequestWaitMs(lastAttempt, now) == 0L;
+    }
+
+    /**
+     * How long until this player may be asked about again — 0 when they may be asked now.
+     *
+     * <p>Callers that are acting on a DEATH use this rather than the boolean, so a refetch inside the
+     * cooldown is deferred to the moment it expires instead of dropped. Dropping it loses the death
+     * outright: a player who dies half a minute after joining would carry their pre-death standing
+     * until some later death happened to fall outside a window. Rate-limited is not the same as
+     * discarded.</p>
+     */
+    static long rankRequestWaitMs(Long lastAttempt, long now) {
+        if (lastAttempt == null) return 0L;
+        long elapsed = now - lastAttempt;
+        return elapsed >= RANK_ATTEMPT_COOLDOWN_MS ? 0L : RANK_ATTEMPT_COOLDOWN_MS - elapsed;
+    }
+
+    /** As {@link #rankRequestWaitMs(Long, long)}, for the live cooldown of one player. */
+    public static long rankRefreshWaitMs(UUID player, long now) {
+        return player == null ? 0L : rankRequestWaitMs(RANK_ATTEMPT_MS.get(player), now);
     }
 
     /**
