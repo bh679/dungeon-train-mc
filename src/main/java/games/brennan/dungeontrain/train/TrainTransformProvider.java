@@ -242,6 +242,18 @@ public final class TrainTransformProvider implements KinematicDriver {
     // application so it fires once. See {@link #preSeedSpawnShiftX}.
     private double pendingSpawnShiftX = 0.0;
 
+    // Game tick spawnWorldPos was captured on and any pendingSpawnShiftX applied — i.e. the tick
+    // this carriage's pose last moved for a reason that is NOT a placement-tracker shift.
+    //
+    // The tracker measures seams from the body's worldAABB, which lags the pose by a tick or two.
+    // The pre-seed is a move of up to half a block, so a reading taken inside that lag describes
+    // where the group WAS, at its quantised integer origin, not where it now is. Every other shift
+    // in that system arms the SHIFT_SETTLE_TICKS throttle before the next reading; this one had
+    // nothing to arm it with, which is exactly why freshly spawned seams read too-far and then
+    // too-close (down to 0.00 — touching) and burned two corrections undoing each other.
+    // -1 until captured. See TrainCarriageAppender.placementReadingIsTrustworthy.
+    private volatile long spawnCaptureGameTick = -1L;
+
     // When true, {@link TrainCarriageAppender} skips this carriage's train
     // entirely — no append regardless of player pIdx. Set by debug probes
     // (see {@code /dt debug pair}) so test fixtures stay exactly the size
@@ -774,8 +786,30 @@ public final class TrainTransformProvider implements KinematicDriver {
      * leader and followers must move together or not at all, otherwise the
      * intra-burst seam is exactly what absorbs the difference.</p>
      */
+    /**
+     * World distance a train travels along one axis in {@code ticks} at {@code velocity} blocks per
+     * second — the same {@code velocity * ticks * PHYSICS_DT} the canonical-position formula uses.
+     *
+     * <p>Exposed because a catch-up fill run plans a group against the placement of the group
+     * before it, which was computed on an earlier tick: the train has moved since, and at
+     * speed 12 that is 0.6 blocks per tick — wider than the seam itself.</p>
+     */
+    public static double travelDistance(double velocity, long ticks) {
+        return velocity * ticks * PHYSICS_DT;
+    }
+
     public boolean hasCapturedSpawnPosition() {
         return spawnWorldPos != null;
+    }
+
+    /**
+     * Game tick this carriage's spawn position was captured and its pre-seeded sub-block nudge
+     * applied, or {@code -1} while it has never kinematically ticked. Read by the placement
+     * tracker to tell a seam reading that reflects the current pose from one taken while the
+     * body's AABB still describes the pre-nudge placement.
+     */
+    public long getSpawnCaptureGameTick() {
+        return spawnCaptureGameTick;
     }
 
     /**
@@ -911,6 +945,9 @@ public final class TrainTransformProvider implements KinematicDriver {
                 canonicalPos.x += pendingSpawnShiftX;
                 pendingSpawnShiftX = 0.0;
             }
+            // Stamped AFTER the nudge lands, so it dates the final pose rather than the
+            // quantised one the tracker must not judge.
+            spawnCaptureGameTick = currentGameTick;
             lockedPositionInModel = new Vector3d(input.currentPositionInModel());
             JITTER_LOGGER.info(
                 "[baseline] pIdx={} groupSize={} trainId={} forced identity lockedRotation; spawnWorldPos={} spawnGameTick={} lockedPositionInModel={}",
