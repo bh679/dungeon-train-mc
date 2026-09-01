@@ -802,6 +802,34 @@ public final class SharedCarriageClient {
         return statusPost("/carriages/save", body);
     }
 
+    /**
+     * Full save of a build this player OWNS, authed by the build's durable owner {@code secret} rather
+     * than by a lease token.
+     *
+     * <p>The author's counterpart to {@link #save}, which is the rider's path. A lease is a
+     * drifting-carriage rule — it keeps two worlds from fighting over one carriage mid-ride — and
+     * putting an authored build behind it let any live rider lock its own author out: the save had to
+     * {@link #claim} first, and a claim answers {@code in_use} while somebody is out on their train,
+     * so an editor save silently stopped syncing. This needs no lease, and takes none: whoever is
+     * riding keeps riding.</p>
+     *
+     * <p>{@code world} is this process's holder token, carried only so the edit trail records where
+     * the save came from. {@link CallStatus#UNKNOWN} is a 404, which on this path is ambiguous by
+     * design — an unknown build, or a relay too old to have the route — and the caller falls back
+     * accordingly.</p>
+     */
+    public static CompletableFuture<CallStatus> ownerSave(int id, String secret, String blocksBase64,
+                                                          String text, int baseSeq) {
+        JsonObject body = new JsonObject();
+        body.addProperty("id", id);
+        body.addProperty("secret", secret == null ? "" : secret);
+        body.addProperty("blocks", blocksBase64);
+        body.addProperty("baseSeq", baseSeq);
+        body.addProperty("world", WORLD);
+        if (text != null && !text.isEmpty()) body.addProperty("text", text);
+        return statusPost("/carriages/owner-save", body);
+    }
+
     public static CompletableFuture<CallStatus> heartbeat(int id, String token, String holderUuid, String holderName) {
         JsonObject body = new JsonObject();
         body.addProperty("id", id);

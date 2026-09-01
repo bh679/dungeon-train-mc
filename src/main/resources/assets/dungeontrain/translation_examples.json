@@ -2812,6 +2812,24 @@
       ]
     }
   },
+  "gui.dungeontrain.builder.profile.collision.replace.title": {
+    "1": {
+      "label": "the build already on this install, which is being replaced",
+      "examples": [
+        "Brick Carriage",
+        "Long Hall"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.profile.collision.rename_existing": {
+    "1": {
+      "label": "the build already on this install, which would be kept under another name",
+      "examples": [
+        "Brick Carriage",
+        "Long Hall"
+      ]
+    }
+  },
   "gui.dungeontrain.builder.profile.saved": {
     "1": {
       "label": "the build that was saved and uploaded",
