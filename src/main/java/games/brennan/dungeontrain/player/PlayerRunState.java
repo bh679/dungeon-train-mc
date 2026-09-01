@@ -129,6 +129,20 @@ public final class PlayerRunState {
     private final Set<UUID> encounteredMobs;
     /** Distinct PlayerMobs that liked this player (feeling above the friend threshold) this run — the death-screen "friends" tally. */
     private final Set<UUID> befriendedMobs;
+    /**
+     * PlayerMobs this player has KILLED this run. A killed passenger is struck from
+     * {@link #befriendedMobs} and can never re-enter it — you don't get to count someone
+     * as a friend you made after putting them down.
+     *
+     * <p>Also load-bearing against a re-add: a killed mob lingers in the level for its death
+     * animation, so the next proximity scan would otherwise see it (still liking you) and put
+     * it straight back in the friends set.</p>
+     *
+     * <p><b>In-memory only — deliberately NOT in {@link #CODEC}</b> (the 16-field cap, see
+     * {@link #narrativeLetters}). Nothing is lost: a dead mob never comes back, so after a
+     * relog it can neither be re-befriended nor re-killed.</p>
+     */
+    private final Set<UUID> killedMobs;
     /** Server ticks spent boarded this run (boarded-only; resets on death). Time twin of {@link #distanceBlocks}. */
     private long trainTimeTicks;
     /**
@@ -187,6 +201,12 @@ public final class PlayerRunState {
     private PlayerMobAppearance friendAppearance;
     /** Warmest feeling-toward-this-player (0–10) behind {@link #friendAppearance}; lower can be superseded. */
     private float friendFeeling = Float.NEGATIVE_INFINITY;
+    /**
+     * UUID of the PlayerMob behind {@link #friendAppearance}, so killing that particular mob can
+     * drop the portrait. {@code null} when no friend has been captured. Transient, as the
+     * appearance beside it is.
+     */
+    private UUID friendUuid;
     /**
      * Visual identity of the MOST-RECENT PlayerMob killed this run, or
      * {@code null} if none (last-wins — overwritten each kill). Same transient,
@@ -248,6 +268,7 @@ public final class PlayerRunState {
         this.damageTaken = 0.0;
         this.encounteredMobs = new HashSet<>();
         this.befriendedMobs = new HashSet<>();
+        this.killedMobs = new HashSet<>();
         this.trainTimeTicks = 0L;
         this.echoesKilled = 0;
         this.carriagesSinceChest = 0;
@@ -290,6 +311,7 @@ public final class PlayerRunState {
         this.damageTaken = damageTaken;
         this.encounteredMobs = new HashSet<>(encounteredMobs);
         this.befriendedMobs = new HashSet<>(befriendedMobs);
+        this.killedMobs = new HashSet<>();
         this.trainTimeTicks = trainTimeTicks;
         this.echoesKilled = 0;
         this.carriagesSinceChest = 0;
@@ -684,10 +706,31 @@ public final class PlayerRunState {
      * Record a PlayerMob that likes this player (above the friend threshold) this
      * run — the death-screen "friends" tally; fed by the proximity scan.
      *
-     * @return {@code true} if newly recorded this run, {@code false} if already counted.
+     * <p>A mob this player has killed this run ({@link #recordKilledPlayerMob}) is never
+     * recorded — including on the scans that still see it during its death animation.</p>
+     *
+     * @return {@code true} if newly recorded this run, {@code false} if already counted or killed.
      */
     public boolean recordBefriended(UUID mobUuid) {
+        if (killedMobs.contains(mobUuid)) return false;
         return befriendedMobs.add(mobUuid);
+    }
+
+    /**
+     * Record a PlayerMob this player killed this run: it leaves the friends tally (and can't
+     * re-enter it), and if it was the friend portrait's subject that portrait is dropped so a
+     * still-living friend can take its place on a later scan.
+     *
+     * @return {@code true} if the kill un-friended a mob that was counted, {@code false} otherwise.
+     */
+    public boolean recordKilledPlayerMob(UUID mobUuid) {
+        killedMobs.add(mobUuid);
+        if (mobUuid.equals(friendUuid)) {
+            friendAppearance = null;
+            friendUuid = null;
+            friendFeeling = Float.NEGATIVE_INFINITY;
+        }
+        return befriendedMobs.remove(mobUuid);
     }
 
     /** Number of distinct PlayerMobs that liked this player (above the friend threshold) this run. */
@@ -706,9 +749,10 @@ public final class PlayerRunState {
     }
 
     /** Keep the warmest friend's appearance this run — a higher feeling supersedes the current one. */
-    public void captureFriendAppearance(PlayerMobAppearance appearance, float feeling) {
+    public void captureFriendAppearance(UUID mobUuid, PlayerMobAppearance appearance, float feeling) {
         if (appearance != null && feeling > friendFeeling) {
             friendAppearance = appearance;
+            friendUuid = mobUuid;
             friendFeeling = feeling;
         }
     }
@@ -750,7 +794,9 @@ public final class PlayerRunState {
         damageTaken = 0.0;
         encounteredMobs.clear();
         befriendedMobs.clear();
+        killedMobs.clear();
         friendAppearance = null;
+        friendUuid = null;
         friendFeeling = Float.NEGATIVE_INFINITY;
         killedAppearance = null;
         echoesKilled = 0;

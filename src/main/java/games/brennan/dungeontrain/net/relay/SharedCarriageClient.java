@@ -158,7 +158,8 @@ public final class SharedCarriageClient {
      */
     public record ProfileBuild(int id, String kind, String subKind, String buildName, String visibility,
                                String source, String stage, String flag, String review, int l, int h, int w,
-                               int changeCount, long updatedTs) {}
+                               int changeCount, long updatedTs,
+                               boolean favourite, String ownerUuid, String ownerName) {}
 
     /**
      * Upload a Train Builder save. {@code visibility} is {@code profile} for a build that is only in
@@ -222,8 +223,22 @@ public final class SharedCarriageClient {
 
     /** As above against a named relay — the live toggle's path. */
     public static CompletableFuture<List<ProfileBuild>> listMine(String ownerUuid, String baseUrl) {
+        return listMine(ownerUuid, ownerUuid, baseUrl);
+    }
+
+    /**
+     * As above, saying separately WHOSE builds to list and WHOSE stars to stamp on them.
+     *
+     * <p>The two are the same player almost always, and differ on the one path that matters: a dev
+     * build looking at somebody else's profile, where the builds are theirs and the stars on them are
+     * still the viewer's own. Passing the owner for both — which the two-argument overload does — is
+     * what reading your own profile means.</p>
+     */
+    public static CompletableFuture<List<ProfileBuild>> listMine(String ownerUuid, String viewerUuid,
+                                                                 String baseUrl) {
         JsonObject body = new JsonObject();
         body.addProperty("uuid", ownerUuid == null ? "" : ownerUuid);
+        body.addProperty("viewer", viewerUuid == null ? "" : viewerUuid);
         return post(baseUrl, "/carriages/mine", body).thenApply(resp -> {
             JsonObject o = okJson(resp);
             if (o == null || !o.has("carriages") || !o.get("carriages").isJsonArray()) return null;
@@ -232,14 +247,28 @@ public final class SharedCarriageClient {
                 if (!el.isJsonObject()) continue;
                 JsonObject r = el.getAsJsonObject();
                 if (!r.has("id")) continue;
-                JsonObject d = r.has("dims") && r.get("dims").isJsonObject() ? r.getAsJsonObject("dims") : null;
-                out.add(new ProfileBuild(r.get("id").getAsInt(), str(r, "kind"), str(r, "subKind"),
-                        str(r, "buildName"), str(r, "visibility"), str(r, "source"), str(r, "stage"),
-                        str(r, "flag"), str(r, "review"), intOf(d, "l"), intOf(d, "h"), intOf(d, "w"),
-                        intOf(r, "changeCount"), longOf(r, "updatedTs")));
+                out.add(parseBuild(r));
             }
             return List.copyOf(out);
         });
+    }
+
+    /**
+     * One build row as every listing spells it — {@code /carriages/mine} and {@code /carriages/favourites}
+     * answer in the same shape, so they are parsed by the same code and cannot drift apart.
+     *
+     * <p>{@code ownerUuid}/{@code ownerName} are redundant on a profile listing, where every build has
+     * the same author, and load-bearing on a favourites listing, which spans owners and has to caption
+     * each tile with whose work it is.</p>
+     */
+    private static ProfileBuild parseBuild(JsonObject r) {
+        JsonObject d = r.has("dims") && r.get("dims").isJsonObject() ? r.getAsJsonObject("dims") : null;
+        return new ProfileBuild(r.get("id").getAsInt(), str(r, "kind"), str(r, "subKind"),
+                str(r, "buildName"), str(r, "visibility"), str(r, "source"), str(r, "stage"),
+                str(r, "flag"), str(r, "review"), intOf(d, "l"), intOf(d, "h"), intOf(d, "w"),
+                intOf(r, "changeCount"), longOf(r, "updatedTs"),
+                r.has("favourite") && r.get("favourite").getAsBoolean(),
+                str(r, "ownerUuid"), str(r, "ownerName"));
     }
 
     /** One builder the relay knows, as a creator search names them. */
@@ -285,7 +314,17 @@ public final class SharedCarriageClient {
 
     /** The creator rows in a search answer, or null when there was no usable answer. */
     private static List<Creator> parseCreators(HttpResponse<String> resp) {
-        JsonObject o = okJson(resp);
+        return parseCreatorArray(okJson(resp));
+    }
+
+    /**
+     * The {@code creators} array of an already-parsed answer, or null when there isn't a usable one.
+     *
+     * <p>Split out because a favourites listing carries its builders under the same key and in the
+     * same shape as a creator search — one parser, so a change to what a builder row looks like cannot
+     * reach one screen and miss the other.</p>
+     */
+    private static List<Creator> parseCreatorArray(JsonObject o) {
         if (o == null || !o.has("creators") || !o.get("creators").isJsonArray()) return null;
         List<Creator> out = new java.util.ArrayList<>();
         for (JsonElement el : o.getAsJsonArray("creators")) {
@@ -299,6 +338,79 @@ public final class SharedCarriageClient {
             out.add(new Creator(uuid, name.isEmpty() ? uuid : name, intOf(r, "builds")));
         }
         return List.copyOf(out);
+    }
+
+    // ---- favourites ---------------------------------------------------------
+    //
+    // A star is PRIVATE: the relay never aggregates it, never counts it, and never shows one player's
+    // to another. It says "show me this again", not "this is good" — so there is nothing here to
+    // display as a score and nothing for a build to be ranked by.
+
+    /**
+     * Star or un-star one build for this player.
+     *
+     * <p>Resolves to {@code true} when the relay confirmed the star is now in the state asked for, and
+     * {@code false} for every way it might not be — refused, unreachable, unknown build. The screen
+     * flips its star optimistically and uses this only to put it back, so "we don't know" and "no" want
+     * the same answer: a star left showing filled on a relay that never took it would be a lie the
+     * player only discovers on their next visit.</p>
+     *
+     * <p>Idempotent at the far end — a repeat of a star that already landed answers OK rather than
+     * being refused — so a retry costs nothing.</p>
+     */
+    public static CompletableFuture<Boolean> setFavourite(String uuid, int relayId, boolean on,
+                                                          String baseUrl) {
+        JsonObject body = new JsonObject();
+        body.addProperty("uuid", uuid == null ? "" : uuid);
+        body.addProperty("id", relayId);
+        body.addProperty("favourite", on);
+        return post(baseUrl, "/carriages/favourite", body)
+                .thenApply(resp -> okJson(resp) != null);
+    }
+
+    /** As above for a BUILDER rather than one of their builds. */
+    public static CompletableFuture<Boolean> setBuilderFavourite(String uuid, String builderUuid,
+                                                                 boolean on, String baseUrl) {
+        JsonObject body = new JsonObject();
+        body.addProperty("uuid", uuid == null ? "" : uuid);
+        body.addProperty("builderUuid", builderUuid == null ? "" : builderUuid);
+        body.addProperty("favourite", on);
+        return post(baseUrl, "/carriages/favourite-builder", body)
+                .thenApply(resp -> okJson(resp) != null);
+    }
+
+    /** Everything one player has starred: the builds, and the builders. */
+    public record Favourites(List<ProfileBuild> builds, List<Creator> builders) {}
+
+    /**
+     * This player's whole favourites list.
+     *
+     * <p>{@code null} on an unreachable or unusable answer, and a {@link Favourites} with two empty
+     * lists when they simply have not starred anything — the same two-answer convention
+     * {@link #listMine} follows, and for the same reason: "we couldn't ask" and "you have none" are
+     * different things to put on a screen.</p>
+     *
+     * <p>The relay answers builds in {@code /carriages/mine}'s shape and builders in
+     * {@code /carriages/creators}', so both halves are parsed by the code those already use.</p>
+     */
+    public static CompletableFuture<Favourites> listFavourites(String uuid, String baseUrl) {
+        JsonObject body = new JsonObject();
+        body.addProperty("uuid", uuid == null ? "" : uuid);
+        return post(baseUrl, "/carriages/favourites", body).thenApply(resp -> {
+            JsonObject o = okJson(resp);
+            if (o == null) return null;
+            List<ProfileBuild> builds = new java.util.ArrayList<>();
+            if (o.has("carriages") && o.get("carriages").isJsonArray()) {
+                for (JsonElement el : o.getAsJsonArray("carriages")) {
+                    if (!el.isJsonObject()) continue;
+                    JsonObject r = el.getAsJsonObject();
+                    if (!r.has("id")) continue;
+                    builds.add(parseBuild(r));
+                }
+            }
+            List<Creator> builders = parseCreatorArray(o);
+            return new Favourites(List.copyOf(builds), builders == null ? List.of() : builders);
+        });
     }
 
     /** GET a JSON URL; resolves to the HttpResponse, or null on transport failure. */
@@ -715,6 +827,47 @@ public final class SharedCarriageClient {
         if (text != null && !text.isEmpty()) body.addProperty("text", text);
         if (sidecars != null && !sidecars.isEmpty()) body.addProperty("sidecars", sidecars);
         return statusPost("/carriages/save", body);
+    }
+
+    /**
+     * Full save of a build this player OWNS, authed by the build's durable owner {@code secret} rather
+     * than by a lease token.
+     *
+     * <p>The author's counterpart to {@link #save}, which is the rider's path. A lease is a
+     * drifting-carriage rule — it keeps two worlds from fighting over one carriage mid-ride — and
+     * putting an authored build behind it let any live rider lock its own author out: the save had to
+     * {@link #claim} first, and a claim answers {@code in_use} while somebody is out on their train,
+     * so an editor save silently stopped syncing. This needs no lease, and takes none: whoever is
+     * riding keeps riding.</p>
+     *
+     * <p>{@code world} is this process's holder token, carried only so the edit trail records where
+     * the save came from. {@link CallStatus#UNKNOWN} is a 404, which on this path is ambiguous by
+     * design — an unknown build, or a relay too old to have the route — and the caller falls back
+     * accordingly.</p>
+     */
+    public static CompletableFuture<CallStatus> ownerSave(int id, String secret, String blocksBase64,
+                                                          String text, int baseSeq) {
+        return ownerSave(id, secret, blocksBase64, text, baseSeq, null);
+    }
+
+    /**
+     * As above, replacing the build's sidecar document too — the author's re-save path, and the
+     * counterpart of {@link #save(int, String, String, String, int, String)} on the lease path.
+     *
+     * @param sidecars the document from {@code TemplateSidecars.collect}; null or empty leaves
+     *                 whatever the relay already holds
+     */
+    public static CompletableFuture<CallStatus> ownerSave(int id, String secret, String blocksBase64,
+                                                          String text, int baseSeq, String sidecars) {
+        JsonObject body = new JsonObject();
+        body.addProperty("id", id);
+        body.addProperty("secret", secret == null ? "" : secret);
+        body.addProperty("blocks", blocksBase64);
+        body.addProperty("baseSeq", baseSeq);
+        body.addProperty("world", WORLD);
+        if (text != null && !text.isEmpty()) body.addProperty("text", text);
+        if (sidecars != null && !sidecars.isEmpty()) body.addProperty("sidecars", sidecars);
+        return statusPost("/carriages/owner-save", body);
     }
 
     public static CompletableFuture<CallStatus> heartbeat(int id, String token, String holderUuid, String holderName) {

@@ -136,7 +136,7 @@ public final class BuilderRelayDownload {
 
         BuilderRelayInstall.Outcome installed = BuilderRelayInstall.install(
                 kind, build.buildName(), build.subKind(), build.stage(), template, resolution, newName,
-                build.sidecars());
+                build.sidecars(), mine);
         // Which name the build ended up under: its own, unless the player asked for it to arrive as
         // something else. This is what the screen opens, so it has to be the name that was written.
         String installedAs = resolution == BuilderRelayInstall.Resolution.LOAD_AS_NEW

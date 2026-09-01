@@ -110,8 +110,13 @@ public final class BuilderRelayUpload {
         }
         if (known != null) {
             // Known build, but this world isn't holding the lease — it was published, or the lease
-            // expired. Take it back first; a save without a token is refused by the relay.
-            claimThenSave(player, level, key, known, blocks, text, sidecars, written);
+            // expired. The owner secret is authority enough to write anyway; only a build uploaded
+            // before secrets existed has to go the long way round and take a lease back first.
+            if (!known.secret().isEmpty()) {
+                ownerSave(player, level, key, known, blocks, text, sidecars, written);
+            } else {
+                claimThenSave(player, level, key, known, blocks, text, sidecars, written);
+            }
             return;
         }
         submitNew(player, level, key, blocks, text, sidecars, written, data, stageId);
@@ -161,15 +166,54 @@ public final class BuilderRelayUpload {
                         return;
                     }
                     if (status == SharedCarriageClient.CallStatus.FORBIDDEN) {
-                        // Somebody else took the lease. Drop the stale token and try to claim it back.
+                        // Somebody else took the lease. Drop the stale token and write as the owner
+                        // instead — the same route afterSave takes for a build it holds no lease on.
                         BuilderRelayBuilds.Entry tokenless = entry.withToken("");
                         DungeonTrainWorldData live = DungeonTrainWorldData.get(level);
                         live.builderRelayBuilds().put(key, tokenless);
                         live.markBuilderRelayBuildsDirty();
-                        claimThenSave(player, level, key, tokenless, blocks, text, sidecars, written);
+                        if (!tokenless.secret().isEmpty()) {
+                            ownerSave(player, level, key, tokenless, blocks, text, sidecars, written);
+                        } else {
+                            claimThenSave(player, level, key, tokenless, blocks, text, sidecars, written);
+                        }
                         return;
                     }
                     LOGGER.warn("[DungeonTrain] Builder relay upload: saving '{}' through its lease failed — {}",
+                            written.id(), status);
+                    tell(player, "gui.dungeontrain.builder.profile.upload_failed", ChatFormatting.RED, written.id());
+                }));
+    }
+
+    /**
+     * Save a build this world holds no lease on, as its owner.
+     *
+     * <p>The author's save is authoritative and nobody may block it. Taking a lease first — which is
+     * what this path used to do — meant any stranger out riding a published build answered
+     * {@code in_use}, and the player was told their build "is out on someone's train" for a save that
+     * had already succeeded locally and would never sync however many times they repeated it. A lease
+     * is a drifting-carriage rule, for two worlds editing one carriage mid-ride; an authored template
+     * has one owner, and the {@code secret} the relay issued at submit is that ownership.</p>
+     *
+     * <p>Nobody is displaced: the relay writes the blob and leaves the rider's lease alone.</p>
+     */
+    private static void ownerSave(ServerPlayer player, ServerLevel level, String key,
+                                  BuilderRelayBuilds.Entry entry, String blocks, String text,
+                                  String sidecars, BuilderSave.Written written) {
+        SharedCarriageClient.ownerSave(entry.relayId(), entry.secret(), blocks, text, 0, sidecars)
+                .thenAccept(status -> onServer(level, () -> {
+                    if (status == SharedCarriageClient.CallStatus.OK) {
+                        tell(player, "gui.dungeontrain.builder.profile.saved", ChatFormatting.GRAY, written.id());
+                        return;
+                    }
+                    if (status == SharedCarriageClient.CallStatus.UNKNOWN) {
+                        // A 404 is either the build being gone or a relay too old to have the route,
+                        // and this call can't tell them apart. The lease path can — its own 404 is
+                        // unambiguous — so hand over to it rather than guessing.
+                        claimThenSave(player, level, key, entry, blocks, text, sidecars, written);
+                        return;
+                    }
+                    LOGGER.warn("[DungeonTrain] Builder relay upload: saving '{}' as its owner failed — {}",
                             written.id(), status);
                     tell(player, "gui.dungeontrain.builder.profile.upload_failed", ChatFormatting.RED, written.id());
                 }));

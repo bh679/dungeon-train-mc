@@ -1,6 +1,8 @@
 package games.brennan.dungeontrain.train;
 
 import games.brennan.dungeontrain.train.TrainCarriageAppender.TrailingId;
+import net.minecraft.core.BlockPos;
+import org.joml.Vector3d;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -626,5 +628,270 @@ final class TrainCarriageAppenderTest {
             "must clear the worst legitimate spawn offset");
         assertTrue(TrainCarriageAppender.LARGE_GAP_CONFIRM_TICKS >= 2,
             "one frame of stale geometry must never teleport a carriage");
+    }
+
+    @Test
+    @DisplayName("a seam reading is trusted only once the pose it measures is the final one")
+    void placementReading_waitsForTheCapturedPose() {
+        int settle = TrainCarriageAppender.SHIFT_SETTLE_TICKS;
+
+        assertFalse(TrainCarriageAppender.placementReadingIsTrustworthy(-1L, 1000L),
+            "a carriage that has never kinematically ticked has an AABB it is about to leave");
+        assertFalse(TrainCarriageAppender.placementReadingIsTrustworthy(1000L, 1000L),
+            "the sub-block nudge lands on the pose this tick; the AABB still shows the old one");
+        assertFalse(TrainCarriageAppender.placementReadingIsTrustworthy(1000L, 1000L + settle - 1),
+            "still inside the lag the throttle exists to cover");
+        assertTrue(TrainCarriageAppender.placementReadingIsTrustworthy(1000L, 1000L + settle),
+            "same window this system waits after any other shift");
+        assertTrue(TrainCarriageAppender.placementReadingIsTrustworthy(1000L, 1000L + 600),
+            "a long-settled carriage is always readable");
+    }
+
+    // ---- catch-up burst ----------------------------------------------------
+    //
+    // The per-lane placement gate paces spawning at one group per settle
+    // window. catchUpBurstGroups is the ONLY thing that lets a lane exceed
+    // that, so its boundary is where "steady state unchanged" is enforced.
+
+    private static int burstGroups(int deficitPIdx, int groupSize) {
+        return TrainCarriageAppender.catchUpBurstGroups(deficitPIdx, groupSize, CatchUpBurstMode.BURST_TWO);
+    }
+
+    @Test
+    @DisplayName("catchUpBurstGroups: a covered lane keeps the one-group cadence")
+    void burst_coveredLane_noBurst() {
+        assertEquals(1, burstGroups(0, GROUP_SIZE));
+        assertEquals(1, burstGroups(-9, GROUP_SIZE),
+            "a lane already past the needed window is not behind");
+    }
+
+    @Test
+    @DisplayName("catchUpBurstGroups: one group behind is ordinary extension, not a burst")
+    void burst_oneGroupBehind_noBurst() {
+        assertEquals(1, burstGroups(1, GROUP_SIZE));
+        assertEquals(1, burstGroups(GROUP_SIZE, GROUP_SIZE),
+            "exactly one group short is what every normal spawn starts from");
+    }
+
+    @Test
+    @DisplayName("catchUpBurstGroups: two groups behind engages the burst")
+    void burst_twoGroupsBehind_bursts() {
+        assertEquals(TrainCarriageAppender.CATCH_UP_BURST_GROUPS,
+            burstGroups(GROUP_SIZE + 1, GROUP_SIZE),
+            "a partial second group still means the lane cannot cover the window this spawn");
+        assertEquals(TrainCarriageAppender.CATCH_UP_BURST_GROUPS,
+            burstGroups(2 * GROUP_SIZE, GROUP_SIZE));
+    }
+
+    @Test
+    @DisplayName("catchUpBurstGroups: far behind is still capped at the burst size")
+    void burst_farBehind_capped() {
+        assertEquals(TrainCarriageAppender.CATCH_UP_BURST_GROUPS,
+            burstGroups(40 * GROUP_SIZE, GROUP_SIZE),
+            "BURST_TWO is a rate bump, not an unbounded fill");
+    }
+
+    @Test
+    @DisplayName("catchUpBurstGroups: groupSize 1 measures the deficit in carriages")
+    void burst_groupSizeOne() {
+        assertEquals(1, burstGroups(1, 1));
+        assertEquals(TrainCarriageAppender.CATCH_UP_BURST_GROUPS, burstGroups(2, 1));
+    }
+
+    @Test
+    @DisplayName("catchUpBurstGroups: a non-positive groupSize throws in every mode")
+    void burst_groupSizeZero_throws() {
+        for (CatchUpBurstMode mode : CatchUpBurstMode.values()) {
+            assertThrows(IllegalArgumentException.class,
+                () -> TrainCarriageAppender.catchUpBurstGroups(9, 0, mode));
+        }
+    }
+
+    @Test
+    @DisplayName("OFF never bursts, however far behind the lane is")
+    void burstMode_off_neverBursts() {
+        for (int deficit : new int[] { 0, 1, GROUP_SIZE, 2 * GROUP_SIZE, 40 * GROUP_SIZE }) {
+            assertEquals(1, TrainCarriageAppender.catchUpBurstGroups(deficit, GROUP_SIZE, CatchUpBurstMode.OFF),
+                "OFF is the pre-feature cadence: one group per lane per settle window");
+        }
+    }
+
+    @Test
+    @DisplayName("FILL spawns its per-tick cap, however deep the shortfall — the rest follows on later ticks")
+    void burstMode_fill_capsPerTick() {
+        int cap = TrainCarriageAppender.CATCH_UP_FILL_GROUPS_PER_TICK;
+        for (int groups : new int[] { 2, 5, 20 }) {
+            assertEquals(cap,
+                TrainCarriageAppender.catchUpBurstGroups(groups * GROUP_SIZE, GROUP_SIZE, CatchUpBurstMode.FILL),
+                "a deep shortfall must not be paid on one tick — that is the 170ms stall this replaced");
+        }
+        assertEquals(cap,
+            TrainCarriageAppender.catchUpBurstGroups(2 * GROUP_SIZE + 1, GROUP_SIZE, CatchUpBurstMode.FILL),
+            "a partial group still needs a whole group to cover it");
+    }
+
+    @Test
+    @DisplayName("deficitGroups counts whole groups, and nothing when the lane is level")
+    void deficitGroups_counting() {
+        assertEquals(0, TrainCarriageAppender.deficitGroups(0, GROUP_SIZE));
+        assertEquals(0, TrainCarriageAppender.deficitGroups(-9, GROUP_SIZE));
+        assertEquals(1, TrainCarriageAppender.deficitGroups(1, GROUP_SIZE));
+        assertEquals(1, TrainCarriageAppender.deficitGroups(GROUP_SIZE, GROUP_SIZE));
+        assertEquals(2, TrainCarriageAppender.deficitGroups(GROUP_SIZE + 1, GROUP_SIZE));
+        assertThrows(IllegalArgumentException.class, () -> TrainCarriageAppender.deficitGroups(9, 0));
+    }
+
+    @Test
+    @DisplayName("a fill run keeps going while it is behind and contiguous")
+    void fillRun_continuesWhileBehind() {
+        assertTrue(TrainCarriageAppender.fillRunShouldContinue(100L, 101L, 3, 5),
+            "advanced last tick, still five groups short");
+        assertTrue(TrainCarriageAppender.fillRunShouldContinue(100L, 100L, 3, 5),
+            "twice in the same tick is contiguous by definition");
+    }
+
+    @Test
+    @DisplayName("a fill run stops when level, at its cap, or after a skipped tick")
+    void fillRun_stopConditions() {
+        assertFalse(TrainCarriageAppender.fillRunShouldContinue(100L, 101L, 3, 0),
+            "caught up — the run is done");
+        assertFalse(TrainCarriageAppender.fillRunShouldContinue(100L, 101L,
+                TrainCarriageAppender.CATCH_UP_FILL_MAX_GROUPS, 5),
+            "the runaway guard bounds a run, not just a tick");
+        assertFalse(TrainCarriageAppender.fillRunShouldContinue(100L, 103L, 3, 5),
+            "a gap means something interrupted it — the stored plan is no longer trustworthy, "
+                + "so the lane must re-resolve its edge through the normal gate");
+    }
+
+    @Test
+    @DisplayName("FILL leaves the steady state alone")
+    void burstMode_fill_steadyStateUnchanged() {
+        assertEquals(1, TrainCarriageAppender.catchUpBurstGroups(0, GROUP_SIZE, CatchUpBurstMode.FILL));
+        assertEquals(1, TrainCarriageAppender.catchUpBurstGroups(-9, GROUP_SIZE, CatchUpBurstMode.FILL));
+        assertEquals(1, TrainCarriageAppender.catchUpBurstGroups(GROUP_SIZE, GROUP_SIZE, CatchUpBurstMode.FILL),
+            "one group short is one group spawned — the same as every other mode");
+    }
+
+    @Test
+    @DisplayName("FILL is bounded per tick, so a pathological deficit can't ask for a thousand sub-levels")
+    void burstMode_fill_boundedPerTick() {
+        assertEquals(TrainCarriageAppender.CATCH_UP_FILL_GROUPS_PER_TICK,
+            TrainCarriageAppender.catchUpBurstGroups(500 * GROUP_SIZE, GROUP_SIZE, CatchUpBurstMode.FILL));
+        assertTrue(TrainCarriageAppender.CATCH_UP_FILL_GROUPS_PER_TICK
+                <= TrainCarriageAppender.CATCH_UP_FILL_MAX_GROUPS,
+            "one tick can never exceed what a whole run is allowed");
+    }
+
+    @Test
+    @DisplayName("the follower-chain depth cap covers the longest chain FILL can build")
+    void burstChain_depthCapCoversFill() {
+        assertTrue(TrainCarriageAppender.CATCH_UP_FILL_MAX_GROUPS >= TrainCarriageAppender.CATCH_UP_BURST_GROUPS,
+            "FILL is the widest mode");
+        // shiftBurstFollowers stops at CATCH_UP_FILL_MAX_GROUPS. If a mode could ever
+        // chain more groups than that, a leader's shift would stop propagating partway
+        // down the chain and silently re-open the seam the lockstep fix closed.
+        assertEquals(TrainCarriageAppender.CATCH_UP_FILL_MAX_GROUPS,
+            Math.max(TrainCarriageAppender.CATCH_UP_FILL_MAX_GROUPS, TrainCarriageAppender.CATCH_UP_BURST_GROUPS),
+            "the depth cap must be the widest mode's group count");
+    }
+
+    @Test
+    @DisplayName("chainedSpawnDesiredX: one whole stride plus the target seam, both directions")
+    void chainedStride_landsOnTargetGap() {
+        double target = TrainCarriageAppender.TARGET_GAP_BLOCKS;
+        int stride = 31;
+        double prevX = 120.25;
+
+        double forward = TrainCarriageAppender.chainedSpawnDesiredX(prevX, stride, true);
+        assertEquals(target, forward - (prevX + stride), 1e-9,
+            "the forward seam is measured from the previous group's far edge");
+
+        double backward = TrainCarriageAppender.chainedSpawnDesiredX(prevX, stride, false);
+        assertEquals(target, (prevX - stride) - backward, 1e-9,
+            "the backward seam mirrors it");
+    }
+
+    @Test
+    @DisplayName("chainedSpawnDesiredX: the seam lands inside the tracker's clean dead-band")
+    void chainedStride_startsInBand() {
+        double gap = TrainCarriageAppender.chainedSpawnDesiredX(0.0, 31, true) - 31.0;
+        assertTrue(gap >= TrainCarriageAppender.MIN_GAP_BLOCKS
+                && gap <= TrainCarriageAppender.MAX_GAP_BLOCKS,
+            "a burst group must not need a shift pass to settle");
+    }
+
+    /** Bare provider — the constructor only stores its arguments, so no Minecraft bootstrap. */
+    private static TrainTransformProvider burstProvider(int pIdx) {
+        return new TrainTransformProvider(
+            new Vector3d(2.0, 0.0, 0.0),
+            new BlockPos(0, 78, 0),
+            null,
+            pIdx,
+            GROUP_SIZE,
+            CarriageDims.DEFAULT,
+            UUID.randomUUID());
+    }
+
+    @Test
+    @DisplayName("a burst's follower is moved by its leader's shift, and stops being once unlinked")
+    void burstFollower_movesInSyncWithItsLeader() {
+        TrainTransformProvider leader = burstProvider(3);
+        TrainTransformProvider follower = burstProvider(6);
+        UUID leaderId = UUID.randomUUID();
+        UUID followerId = UUID.randomUUID();
+
+        // The follower was quietly settling on its own seam.
+        follower.incrementConsecutiveCleanTicks();
+        assertEquals(1, follower.getConsecutiveCleanTicks());
+
+        TrainCarriageAppender.linkBurstFollower(leaderId, followerId, follower);
+        assertTrue(TrainCarriageAppender.isBurstFollower(followerId),
+            "a linked follower is owned by its leader — the tracker must not steer it");
+        assertFalse(TrainCarriageAppender.isBurstFollower(leaderId),
+            "the leader still steers for the pair");
+        TrainCarriageAppender.shiftBurstFollowers(leaderId, -0.5, 100L, 0);
+
+        assertEquals(0, follower.getConsecutiveCleanTicks(),
+            "the follower moved with its leader, so it must re-settle as part of the pair — "
+                + "if it kept counting, the pair would settle at different times and the "
+                + "intra-burst seam would be judged on a stale reading");
+
+        // Once the leader is placed the link is dropped: it never shifts again.
+        TrainCarriageAppender.forgetBurstFollowers(leaderId);
+        assertFalse(TrainCarriageAppender.isBurstFollower(followerId),
+            "once the leader is placed the follower is an ordinary carriage again");
+        follower.incrementConsecutiveCleanTicks();
+        TrainCarriageAppender.shiftBurstFollowers(leaderId, -0.5, 101L, 0);
+        assertEquals(1, follower.getConsecutiveCleanTicks(),
+            "an unlinked follower must not be dragged by a stale link");
+
+        // The propagation is gated on the leader's shift having actually landed:
+        // shiftSpawnPosition no-ops until Sable captures spawnWorldPos, and a
+        // fresh provider has not.
+        assertFalse(leader.hasCapturedSpawnPosition(),
+            "a provider that has never kinematically ticked cannot be shifted, so nothing propagates");
+    }
+
+    @Test
+    @DisplayName("burstChainIsCommittable: only an unshoved chained placement may be committed")
+    void burstChain_onlyCleanPlacementsCommit() {
+        assertTrue(TrainCarriageAppender.burstChainIsCommittable(0),
+            "a placement that landed exactly where the stride put it is the chain's premise");
+        assertFalse(TrainCarriageAppender.burstChainIsCommittable(-116),
+            "the 116-block shove observed in play must abandon the burst, not place a hole");
+        assertFalse(TrainCarriageAppender.burstChainIsCommittable(-1),
+            "even a one-block shove means something already sits where the chain expected free space");
+        assertFalse(TrainCarriageAppender.burstChainIsCommittable(1),
+            "direction of the shove is irrelevant — any correction voids the chain");
+    }
+
+    @Test
+    @DisplayName("chainedSpawnDesiredX: chaining twice never accumulates drift")
+    void chainedStride_chainsWithoutDrift() {
+        int stride = 31;
+        double step = stride + TrainCarriageAppender.TARGET_GAP_BLOCKS;
+        double first = TrainCarriageAppender.chainedSpawnDesiredX(0.0, stride, true);
+        double second = TrainCarriageAppender.chainedSpawnDesiredX(first, stride, true);
+        assertEquals(2 * step, second, 1e-9);
     }
 }

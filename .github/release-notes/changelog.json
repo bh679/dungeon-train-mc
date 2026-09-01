@@ -10444,6 +10444,138 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "book-placeholder-guard",
+      "version": "0.756.0",
+      "type": "feat",
+      "title": "Translation editor catches a book losing its numbers",
+      "summary": "When you translate a story book in the in-game translation editor, the editor now tells you if your text has lost one of the numbers the game fills in \u2014 the death count in an epitaph, the carriage you fell in. Those are written as {deaths} or {deaths_nth} in the English, and until now nothing noticed when one went missing on the way through: the line would ship with the number simply gone. Only bracketed figures are checked, so a percent sign or a stray brace in a story is still just prose.",
+      "highlights": [
+        "The editor names the missing figure while you are still typing",
+        "Approved translations that lost a figure are held back instead of shipped"
+      ],
+      "pr": 1235,
+      "date": "2026-08-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "builder-load-own-build",
+      "version": "0.757.0",
+      "type": "fix",
+      "title": "Loading your own build from My Builds works again",
+      "summary": "Loading one of your own builds back from My Builds could refuse with \"you already have a build by that name here\" when you didn't. Any name Dungeon Train itself ships counted as one you already had \u2014 which is every sub-variant of a contents group, so those could never be loaded at all. Your own builds now load; a build by somebody else still asks before it replaces anything built in. Loading a dimensional carriage also opens it properly instead of failing with \"Unknown dimensional carriage\" straight after downloading it.",
+      "highlights": [
+        "Your own builds load from My Builds even when the name matches one Dungeon Train ships",
+        "Contents sub-variants can be loaded at all \u2014 every one of them was blocked",
+        "A downloaded dimensional carriage opens in the editor and shows up in the list right away"
+      ],
+      "pr": 1237,
+      "date": "2026-08-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "owner-authoritative-build-save",
+      "version": "0.758.0",
+      "type": "fix",
+      "title": "Saving a build you've submitted always syncs",
+      "summary": "Saving a template in the Train Editor could tell you it was \"out on someone's train\" and quietly skip the upload to My Builds \u2014 and saying it would sync next time was wrong, because every later save stopped in the same place. Your own saves no longer wait for anyone: they go straight to your build, whoever happens to be riding it.",
+      "highlights": [
+        "An editor or builder save always reaches My Builds, even for a build you've submitted for review",
+        "Nobody riding a build is interrupted by its author saving it"
+      ],
+      "pr": 1238,
+      "date": "2026-08-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "carriage-catch-up-spawning",
+      "version": "0.758.0",
+      "type": "feat",
+      "title": "The train catches up when it gets ahead of you",
+      "summary": "When the train outran you \u2014 you sprinted ahead, or it rolled past while you stood still \u2014 its ends could only grow back one group of carriages at a time, so a fast train just left you behind. Each end now fills in every carriage it is missing the moment it falls behind, and settles back to its normal pace once it has caught up. A new Catch-up spawning setting under Options \u2192 Dungeon Train \u2192 Train chooses how hard it tries: Fill all, the default, keeps adding carriages every moment until the train has caught up; Burst 2 adds two at a time for a gentler catch-up; and Off keeps the old one-group-at-a-time pace. It applies to the train you are already riding.",
+      "highlights": [
+        "Train ends fill back in when they fall behind, instead of letting a fast train run away from you",
+        "New Catch-up spawning setting in Options \u2192 Dungeon Train \u2192 Train \u2014 Fill all (default), Burst 2, or Off",
+        "Carriage gaps stay even while catching up \u2014 groups added together move as one unit until they settle"
+      ],
+      "pr": 1240,
+      "date": "2026-08-31",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "builder-load-collision-flow",
+      "version": "0.759.0",
+      "type": "fix",
+      "title": "Loading one of your own builds back is a shorter question",
+      "summary": "Loading a build from My Builds now ends with you standing at it: the menu closes and the editor takes you to the template, even if you weren't in an editor plot when you started. When the name is already in use, the question fits on screen and comes in two halves \u2014 New loads it under a fresh name, or Replace Existing asks whether to keep a copy of the build you have or overwrite it.",
+      "highlights": [
+        "A load finishes at the build, not at the menu you started from",
+        "The name-clash question no longer runs off the edge of the screen",
+        "New / Replace Existing, with keep-a-copy or overwrite behind the second"
+      ],
+      "date": "2026-08-31",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "builder-favourites",
+      "version": "0.760.0",
+      "type": "feat",
+      "title": "Star the builds and builders you want to find again",
+      "summary": "My Builds now has a star on every build, and a Favourites screen listing everything you have starred. A star is private \u2014 nobody else sees it, nothing is counted, and no build is ranked by it. It simply follows you: star something on one machine and it is starred on the next, because your favourites live with your builder profile rather than in that world's files.",
+      "highlights": [
+        "A star on every tile in My Builds, and a Starred filter to narrow the grid to just those",
+        "A Favourites screen collecting everything you have starred, with Load into Editor to pull one back into your library",
+        "Your stars are private and uncounted \u2014 this is a bookmark, not a vote",
+        "Favourites follow your profile between worlds and machines"
+      ],
+      "date": "2026-09-01",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "smoother-carriage-catch-up",
+      "version": "0.761.0",
+      "type": "perf",
+      "title": "Smoother carriage catch-up, and carriages that no longer touch",
+      "summary": "When the train gets ahead of you \u2014 or rolls past while you stand still \u2014 it adds the carriages it is missing one at a time over successive moments, instead of dropping the whole missing stretch in at once. Catching up now happens just as quickly without the brief stutter it used to cost. Freshly appeared carriages also settle straight into place: the game had been judging the gap to a new carriage's neighbour before that carriage had finished moving into position, which could shunt it around and leave two carriages briefly touching.",
+      "highlights": [
+        "Catching up no longer causes a visible stutter, however far behind the train has fallen",
+        "New carriages no longer end up momentarily touching the one in front",
+        "Carriages settle into place first time instead of being nudged back and forth",
+        "Catch-up spawning can be set to Off, Burst 2, or Fill all under Options \u2192 Dungeon Train \u2192 Train"
+      ],
+      "date": "2026-09-01",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "friends-made-excludes-killed",
+      "version": "0.762.0",
+      "type": "fix",
+      "title": "Friends you kill no longer count as friends you made",
+      "summary": "Befriending a passenger and then killing them used to leave them counted on both sides of the ledger \u2014 they stayed in your friends made tally on the death screen, in your lifetime total, in your stat book and on the leaderboard. Now a kill takes them out of it. The kill itself still counts.",
+      "highlights": [
+        "Killing a passenger removes them from your friends made count for that run.",
+        "If the passenger you killed was your closest friend, the death-screen friend portrait moves to whoever is still alive and likes you most."
+      ],
+      "pr": 1244,
+      "date": "2026-09-01",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
