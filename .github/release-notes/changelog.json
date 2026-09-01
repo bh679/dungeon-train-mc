@@ -10615,9 +10615,9 @@
       "highlights": [],
       "pr": 1249,
       "date": "2026-09-01",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.769.0",
+      "released_at": "2026-09-01T15:39:18Z"
     },
     {
       "id": "trade-everything-diamond-payout-half",
@@ -10630,9 +10630,9 @@
         "Configurable per currency in tradeeverything.json (payout_multipliers); set an entry to 1.0 to turn it off"
       ],
       "date": "2026-09-01",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.769.0",
+      "released_at": "2026-09-01T15:39:18Z"
     },
     {
       "id": "note-echo-reads-aloud",
@@ -10649,9 +10649,9 @@
       ],
       "pr": 1247,
       "date": "2026-09-01",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.769.0",
+      "released_at": "2026-09-01T15:39:18Z"
     },
     {
       "id": "video-tools-tabs-and-notes",
@@ -10665,9 +10665,9 @@
       ],
       "pr": 1250,
       "date": "2026-09-01",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.769.0",
+      "released_at": "2026-09-01T15:39:18Z"
     },
     {
       "id": "death-screen-updates-card",
@@ -10678,9 +10678,9 @@
       "highlights": [],
       "pr": 1253,
       "date": "2026-09-01",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.769.0",
+      "released_at": "2026-09-01T15:39:18Z"
     },
     {
       "id": "death-form-dont-show-again",
@@ -10695,9 +10695,9 @@
       ],
       "pr": 1253,
       "date": "2026-09-01",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.769.0",
+      "released_at": "2026-09-01T15:39:18Z"
     },
     {
       "id": "abandon-confirm-row",
@@ -10711,9 +10711,9 @@
       ],
       "pr": 1251,
       "date": "2026-09-01",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.769.0",
+      "released_at": "2026-09-01T15:39:18Z"
     },
     {
       "id": "builder-build-restore",
@@ -10728,9 +10728,9 @@
         "Saving a build when your profile is full now tells you, instead of the server quietly deleting your oldest build to make room."
       ],
       "date": "2026-09-01",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.769.0",
+      "released_at": "2026-09-01T15:39:18Z"
     },
     {
       "id": "builder-load-name-and-unsaved-guards",
