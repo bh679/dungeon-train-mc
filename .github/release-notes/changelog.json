@@ -10620,8 +10620,42 @@
       "released_at": null
     },
     {
-      "id": "video-tools-tabs-and-notes",
+      "id": "trade-everything-diamond-payout-half",
+      "version": "0.764.0",
+      "type": "chore",
+      "title": "Trade Everything updated to 0.10.0",
+      "summary": "Dungeon Train now builds against Trade Everything 0.10.0, which adds a payout-currency setting to the Trade Anything slot: when a villager pays you in a premium currency, the trade is worth a fraction of face value, shipped with diamonds at half. No vanilla villager pays out in diamonds, so the trades you make today are unchanged \u2014 and the required Trade Everything version stays 0.8.0, so nothing forces you to update.",
+      "highlights": [
+        "Trade Everything 0.10.0: a payout in diamonds is worth half the value of what you traded in",
+        "Configurable per currency in tradeeverything.json (payout_multipliers); set an entry to 1.0 to turn it off"
+      ],
+      "date": "2026-09-01",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "note-echo-reads-aloud",
       "version": "0.765.0",
+      "type": "feat",
+      "title": "Death Note and Love Note echoes read the note aloud",
+      "summary": "An echo sent by a Death Note or a Love Note now speaks the note it came from. When it reaches the player it was written for, it calls their name and then reads the note out one line at a time, pausing between lines the way someone reading aloud would. It looks like any other player talking in chat, because that is what it is meant to feel like.",
+      "highlights": [
+        "The echo opens by tagging the player it came for \u2014 a highlighted mention and a sound only they hear, so a note read out while you are looking elsewhere still reaches you.",
+        "Lines arrive one at a time with a real pause between them, longer after a longer line, instead of the whole note landing at once.",
+        "The echo only speaks once it is actually alongside you \u2014 same carriage or the next one \u2014 and picks up where it left off if you leave and come back, or reload the world.",
+        "A note that is only a name still spawns its echo; it simply arrives with nothing to say.",
+        "The words are screened before they ever reach another player's chat. A note whose body is withheld loses its voice and nothing else \u2014 the curse lands exactly the same."
+      ],
+      "pr": 1247,
+      "date": "2026-09-01",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "video-tools-tabs-and-notes",
+      "version": "0.766.0",
       "type": "feat",
       "title": "Video Tools page rebuilt, with a section for what your viewers can send you",
       "summary": "The Video Tools page is now tabbed \u2014 Commands, Viewers, Fresh start, Contact \u2014 and looks like the Credits and AI Policy pages rather than one long scroll. A new Viewers tab points at Death Notes and Love Notes: things someone watching your stream can send into your game from their own. Reset Everything and Join the Discord are now coloured buttons on the sections they belong to.",

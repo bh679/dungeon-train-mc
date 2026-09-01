@@ -97,7 +97,11 @@ public final class DeathNoteSigning {
         }
 
         String targetUuid = resolveTargetUuid(player.getServer(), targetName);
-        pending.add(new PendingDeathNotes.PendingDeathNote(player.getUUID(), author, targetName, targetUuid, kind));
+        // What the author wrote below the name travels with the note: their echo reads it aloud when
+        // it reaches the target (see NoteSpokenLines + DeathNoteEchoController). A note that is only
+        // a name yields an empty script and a silent echo, as every note was before this.
+        pending.add(new PendingDeathNotes.PendingDeathNote(player.getUUID(), author, targetName,
+                targetUuid, kind, NoteSpokenLines.fromPages(pages)));
 
         player.sendSystemMessage(
             Component.translatable(chatKey(kind, "taken"),
