@@ -155,7 +155,10 @@ public final class UpdateStats {
     public static Component splash(Figures f, Timeframe timeframe, String localeCode,
                                    java.util.Locale grouping) {
         int count = timeframe.countIn(f);
-        Component clause = Component.translatable("gui.dungeontrain.death.narr.changes_count."
+        // "10 new updates" / "1 new update" — its own clause rather than the death-screen pitch's
+        // changes_count, because this sentence supplies its own noun phrase ("made … to the
+        // Dungeon Train mod!") and needs the number on its own, not pre-bound to the word "changes".
+        Component clause = Component.translatable("gui.dungeontrain.splash.new_updates."
                 + PluralRules.category(localeCode, count),
                 NumberFormat.getIntegerInstance(grouping).format(count));
         return Component.translatable(timeframe.key, clause);

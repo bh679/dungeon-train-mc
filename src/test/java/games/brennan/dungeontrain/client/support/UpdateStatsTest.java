@@ -218,12 +218,12 @@ class UpdateStatsTest {
         var many = live(1, 1234, 0, 0);
         var clause = translatable((Component) translatable(
                 UpdateStats.splash(many, UpdateStats.Timeframe.WEEK, "en_us", Locale.US)).getArgs()[0]);
-        assertEquals("gui.dungeontrain.death.narr.changes_count.other", clause.getKey());
+        assertEquals("gui.dungeontrain.splash.new_updates.other", clause.getKey());
         assertEquals("1,234", clause.getArgs()[0]);
 
         var one = translatable((Component) translatable(
                 UpdateStats.splash(many, UpdateStats.Timeframe.DAY, "en_us", Locale.US)).getArgs()[0]);
-        assertEquals("gui.dungeontrain.death.narr.changes_count.one", one.getKey());
+        assertEquals("gui.dungeontrain.splash.new_updates.one", one.getKey());
     }
 
     private static void assertSplash(UpdateStats.Figures f, UpdateStats.Timeframe timeframe,
