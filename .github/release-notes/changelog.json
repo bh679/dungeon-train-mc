@@ -10427,9 +10427,9 @@
       "summary": "Development tooling changes.",
       "highlights": [],
       "date": "2026-08-30",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.762.0",
+      "released_at": "2026-09-01T06:09:52Z"
     },
     {
       "id": "cheat-list-visual-mobs-edit",
@@ -10441,9 +10441,9 @@
         "Visual Mobs Edit and In-game NBTEdit Reborn added to the cheat-mod list"
       ],
       "date": "2026-08-30",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.762.0",
+      "released_at": "2026-09-01T06:09:52Z"
     },
     {
       "id": "book-placeholder-guard",
@@ -10457,9 +10457,9 @@
       ],
       "pr": 1235,
       "date": "2026-08-30",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.762.0",
+      "released_at": "2026-09-01T06:09:52Z"
     },
     {
       "id": "builder-load-own-build",
@@ -10474,9 +10474,9 @@
       ],
       "pr": 1237,
       "date": "2026-08-30",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.762.0",
+      "released_at": "2026-09-01T06:09:52Z"
     },
     {
       "id": "owner-authoritative-build-save",
@@ -10490,9 +10490,9 @@
       ],
       "pr": 1238,
       "date": "2026-08-30",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.762.0",
+      "released_at": "2026-09-01T06:09:52Z"
     },
     {
       "id": "carriage-catch-up-spawning",
@@ -10507,9 +10507,9 @@
       ],
       "pr": 1240,
       "date": "2026-08-31",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.762.0",
+      "released_at": "2026-09-01T06:09:52Z"
     },
     {
       "id": "builder-load-collision-flow",
@@ -10523,9 +10523,9 @@
         "New / Replace Existing, with keep-a-copy or overwrite behind the second"
       ],
       "date": "2026-08-31",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.762.0",
+      "released_at": "2026-09-01T06:09:52Z"
     },
     {
       "id": "builder-favourites",
@@ -10540,9 +10540,9 @@
         "Favourites follow your profile between worlds and machines"
       ],
       "date": "2026-09-01",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.762.0",
+      "released_at": "2026-09-01T06:09:52Z"
     },
     {
       "id": "smoother-carriage-catch-up",
@@ -10557,9 +10557,9 @@
         "Catch-up spawning can be set to Off, Burst 2, or Fill all under Options \u2192 Dungeon Train \u2192 Train"
       ],
       "date": "2026-09-01",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.762.0",
+      "released_at": "2026-09-01T06:09:52Z"
     },
     {
       "id": "friends-made-excludes-killed",
@@ -10573,9 +10573,9 @@
       ],
       "pr": 1244,
       "date": "2026-09-01",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.762.0",
+      "released_at": "2026-09-01T06:09:52Z"
     }
   ]
 }
