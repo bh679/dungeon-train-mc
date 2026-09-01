@@ -448,6 +448,7 @@
   "chat.dungeontrain.familiar_book.dur.m": "%s phút",
   "chat.dungeontrain.familiar_book.dur.ms": "%s phút %s giây",
   "chat.dungeontrain.familiar_book.dur.s": "%s giây",
+  "chat.dungeontrain.note.echo_says": "<%s> %s",
   "chat.dungeontrain.deathnote.already": "%s đã được ghi vào Cuốn Sổ Tử Thần trong kiếp này rồi; cuốn này cháy thành hư vô.",
   "chat.dungeontrain.deathnote.no_name": "Cuốn Sổ Tử Thần không tìm thấy cái tên nào; nó cháy thành hư vô.",
   "chat.dungeontrain.deathnote.taken": "Cuốn Sổ Tử Thần lấy %s. Khi bạn gục ngã, vọng ảnh của bạn sẽ truy đuổi họ.",

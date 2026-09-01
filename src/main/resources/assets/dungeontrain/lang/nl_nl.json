@@ -467,6 +467,7 @@
   "chat.dungeontrain.familiar_book.dur.m": "%s min",
   "chat.dungeontrain.familiar_book.dur.ms": "%s min %s s",
   "chat.dungeontrain.familiar_book.dur.s": "%s s",
+  "chat.dungeontrain.note.echo_says": "<%s> %s",
   "chat.dungeontrain.deathnote.already": "%s staat dit leven al in een Death Note; deze verbrandt tot niets.",
   "chat.dungeontrain.deathnote.no_name": "Het Death Note vindt geen naam; het verbrandt tot niets.",
   "chat.dungeontrain.deathnote.taken": "Het Death Note neemt %s. Wanneer je valt, zal je echo hen achtervolgen.",

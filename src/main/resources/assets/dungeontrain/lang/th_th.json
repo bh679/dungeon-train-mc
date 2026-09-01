@@ -448,6 +448,7 @@
   "chat.dungeontrain.familiar_book.dur.m": "%s น.",
   "chat.dungeontrain.familiar_book.dur.ms": "%s น. %s วิ.",
   "chat.dungeontrain.familiar_book.dur.s": "%s วิ.",
+  "chat.dungeontrain.note.echo_says": "<%s> %s",
   "chat.dungeontrain.deathnote.already": "%s ถูกจดไว้ในสมุดมรณะแล้วในชีวิตนี้ เล่มนี้จึงมอดไหม้จนไม่เหลือ",
   "chat.dungeontrain.deathnote.no_name": "สมุดมรณะไม่พบชื่อใด มันมอดไหม้จนไม่เหลือ",
   "chat.dungeontrain.deathnote.taken": "สมุดมรณะรับ %s ไว้ เมื่อคุณล้มลง เสียงสะท้อนของคุณจะไล่ล่าพวกเขา",

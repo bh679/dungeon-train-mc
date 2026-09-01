@@ -448,6 +448,7 @@
   "chat.dungeontrain.familiar_book.dur.m": "%s分",
   "chat.dungeontrain.familiar_book.dur.ms": "%s分%s秒",
   "chat.dungeontrain.familiar_book.dur.s": "%s秒",
+  "chat.dungeontrain.note.echo_says": "<%s> %s",
   "chat.dungeontrain.deathnote.already": "%sはこの生ですでにデスノートに記されている。これは燃え尽きて無になる。",
   "chat.dungeontrain.deathnote.no_name": "デスノートは名を見つけられず、燃え尽きて無になる。",
   "chat.dungeontrain.deathnote.taken": "デスノートは%sを記した。君が倒れたとき、君のエコーが彼らを狩る。",

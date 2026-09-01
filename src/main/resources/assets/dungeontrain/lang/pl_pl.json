@@ -486,6 +486,7 @@
   "chat.dungeontrain.familiar_book.dur.m": "%s min",
   "chat.dungeontrain.familiar_book.dur.ms": "%s min %s s",
   "chat.dungeontrain.familiar_book.dur.s": "%s s",
+  "chat.dungeontrain.note.echo_says": "<%s> %s",
   "chat.dungeontrain.deathnote.already": "%s zostało już zapisane w Notatniku Śmierci w tym życiu; ten spala się do cna.",
   "chat.dungeontrain.deathnote.no_name": "Notatnik Śmierci nie znajduje imienia; spala się do cna.",
   "chat.dungeontrain.deathnote.taken": "Notatnik Śmierci zabiera %s. Gdy padniesz, twoje echo będzie ich ścigać.",

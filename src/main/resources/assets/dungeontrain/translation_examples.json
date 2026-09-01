@@ -1050,6 +1050,22 @@
       ]
     }
   },
+  "chat.dungeontrain.note.echo_says": {
+    "1": {
+      "label": "the name of the echo reading its note aloud",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    },
+    "2": {
+      "label": "one line of the note, as the echo speaks it",
+      "examples": [
+        "I remember what you did.",
+        "I never stopped loving you."
+      ]
+    }
+  },
   "chat.dungeontrain.deathnote.already": {
     "1": {
       "label": "the player already named on a Death Note this life",

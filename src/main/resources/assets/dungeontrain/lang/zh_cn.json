@@ -448,6 +448,7 @@
   "chat.dungeontrain.familiar_book.dur.m": "%s分钟",
   "chat.dungeontrain.familiar_book.dur.ms": "%s分钟%s秒",
   "chat.dungeontrain.familiar_book.dur.s": "%s秒",
+  "chat.dungeontrain.note.echo_says": "<%s> %s",
   "chat.dungeontrain.deathnote.already": "%s 这一世已被死亡笔记记下，此册随即燃烧殆尽。",
   "chat.dungeontrain.deathnote.no_name": "死亡笔记没有找到任何名字，随即燃烧殆尽。",
   "chat.dungeontrain.deathnote.taken": "死亡笔记已选定 %s。你倒下之后，自己的回声便会追猎此人。",
