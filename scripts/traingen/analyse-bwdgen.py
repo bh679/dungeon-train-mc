@@ -48,7 +48,8 @@ VERDICTS = {
         "Read span: LARGE/growing means ghost anchors (H2, registry min far below the "
         "visible tail). span≈0 with growing skew, or a flat minNeeded while playerX "
         "keeps falling, means frame divergence (H5, the window is computed in the lead "
-        "group's frame)."),
+        "group's frame). Cross-check tailGapX: if it stays large the train IS behind the player "
+        "and the complaint is not a generation stall at all."),
     "ANCHOR_KNOWN": (
         "H2 variant — the next backward anchor is already registered but not visible: "
         "a ghost sits exactly where the lane wants to spawn."),
@@ -150,7 +151,7 @@ def report(train: str, samples: list[dict]) -> None:
     print("\nstate series after the stall (deduped, last 24 changes):")
     for key in ("playerPIdx", "occupiedPIdx", "skew", "playerX", "minNeeded",
                 "registryMin", "visibleTail", "span", "registryCount", "visibleCount",
-                "deficit", "ticksPending", "latchAge", "forceLoaded", "chunkWait"):
+                "deficit", "ticksPending", "latchAge", "forceLoaded", "chunkWait", "tailGapX"):
         print(f"  {key:>13}: {series(after, key)}")
 
     dominant, hits = counts.most_common(1)[0]

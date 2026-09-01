@@ -114,6 +114,11 @@ public final class BackwardGenTrace {
      * @param forceLoaded    number of sub-levels this train currently force-loads
      * @param chunkWait      ticks the lane has been waiting on footprint chunk-gen, or −1
      * @param targetCount    the player's target carriage count (config or auto-from-render-distance)
+     * @param tailGapX       blocks of train physically behind the player: their world X minus the
+     *                       visible tail group's lowest-X face. Near zero means they are standing at
+     *                       the end of the train, which is the symptom being investigated — pIdx
+     *                       accounting alone cannot distinguish "20 carriages behind me" from "a
+     *                       void behind me". {@code NaN} when there is no near player.
      */
     public record Sample(
         long gameTick,
@@ -134,7 +139,8 @@ public final class BackwardGenTrace {
         UUID edgeSub,
         int forceLoaded,
         long chunkWait,
-        int targetCount
+        int targetCount,
+        double tailGapX
     ) {
         /**
          * How far the registry's min anchor sits below the visible tail. A
@@ -163,12 +169,12 @@ public final class BackwardGenTrace {
                 "[DungeonTrain][bwdgen] tick=%d train=%s reason=%s blockedFor=%d playerPIdx=%d "
                     + "occupiedPIdx=%s skew=%d playerX=%.2f minNeeded=%d registryMin=%d visibleTail=%d "
                     + "span=%d registryCount=%d visibleCount=%d anchor=%d deficit=%d ticksPending=%d "
-                    + "latchAge=%d edgeSub=%s forceLoaded=%d chunkWait=%d target=%d",
+                    + "latchAge=%d edgeSub=%s forceLoaded=%d chunkWait=%d target=%d tailGapX=%.1f",
                 gameTick, shortId(trainId), reason, blockedFor, playerPIdx,
                 (occupiedPIdx == null) ? "n/a" : occupiedPIdx.toString(), skew(), playerX,
                 minNeeded, registryMin, visibleTail, span(), registryCount, visibleCount,
                 anchor, deficit, ticksPending, latchAge, shortId(edgeSub), forceLoaded,
-                chunkWait, targetCount);
+                chunkWait, targetCount, tailGapX);
         }
     }
 
@@ -228,6 +234,26 @@ public final class BackwardGenTrace {
     }
 
     /**
+     * Is the lane actually FAILING to extend, as opposed to having nothing to do?
+     *
+     * <p>{@link Reason#isBlocking} alone answers "did a group spawn this tick", which is not the
+     * same question. In the steady state a healthy lane spends most of its time on
+     * {@link Reason#NO_NEED} with a non-positive deficit — it has already generated everything the
+     * player's window asks for and is waiting for them to travel further. Escalating that produced
+     * a STOPPED warning every five seconds through a 10-minute ride in which the lane never once
+     * fell behind, which is worse than no signal: it makes a real stall indistinguishable from
+     * normal pacing.
+     *
+     * <p>So a sample counts as stalling only when the lane WANTS to extend — a positive deficit —
+     * or when it is held by a hard gate that no amount of waiting resolves.</p>
+     */
+    static boolean isStalling(Reason reason, int deficit) {
+        if (!reason.isBlocking()) return false;
+        if (reason == Reason.NO_NEED) return deficit > 0;
+        return true;
+    }
+
+    /**
      * Pure emission policy, split out so the throttle is unit-testable without
      * a level: emit when the reason changed since the last line (including the
      * very first line for a train, where {@code previous} is {@code null}), or
@@ -258,7 +284,7 @@ public final class BackwardGenTrace {
      */
     public static void record(ServerLevel level, UUID trainId, Sample sample) {
         long now = sample.gameTick();
-        boolean blocking = sample.reason().isBlocking();
+        boolean blocking = isStalling(sample.reason(), sample.deficit());
 
         Long blockedSince;
         if (blocking) {
@@ -277,7 +303,7 @@ public final class BackwardGenTrace {
             sample.playerX(), sample.minNeeded(), sample.registryMin(), sample.visibleTail(),
             sample.registryCount(), sample.visibleCount(), sample.anchor(), sample.deficit(),
             sample.ticksPending(), sample.latchAge(), sample.edgeSub(), sample.forceLoaded(),
-            sample.chunkWait(), sample.targetCount());
+            sample.chunkWait(), sample.targetCount(), sample.tailGapX());
         LAST_SAMPLE.put(trainId, stamped);
 
         Reason previous = LAST_REASON.get(trainId);
@@ -336,12 +362,12 @@ public final class BackwardGenTrace {
             out.add(String.format(
                 "train %s: %s (blocked %d ticks) anchor=%d playerPIdx=%d occupied=%s skew=%d "
                     + "minNeeded=%d registryMin=%d visibleTail=%d span=%d groups=%d/%d "
-                    + "forceLoaded=%d pending=%d latch=%d chunkWait=%d",
+                    + "forceLoaded=%d pending=%d latch=%d chunkWait=%d tailGapX=%.1f",
                 shortId(e.getKey()), s.reason(), s.blockedFor(), s.anchor(), s.playerPIdx(),
                 (s.occupiedPIdx() == null) ? "n/a" : s.occupiedPIdx().toString(), s.skew(),
                 s.minNeeded(), s.registryMin(), s.visibleTail(), s.span(),
                 s.visibleCount(), s.registryCount(), s.forceLoaded(), s.ticksPending(),
-                s.latchAge(), s.chunkWait()));
+                s.latchAge(), s.chunkWait(), s.tailGapX()));
         }
         return out;
     }

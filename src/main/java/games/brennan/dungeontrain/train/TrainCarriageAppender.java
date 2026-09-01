@@ -3071,11 +3071,27 @@ public final class TrainCarriageAppender {
         if (!BackwardGenTrace.enabled()) return;
 
         int visibleTail = Integer.MAX_VALUE;
+        Trains.Carriage tailCarriage = null;
         for (Trains.Carriage c : train) {
             int p = c.provider().getPIdx();
-            if (p < visibleTail) visibleTail = p;
+            if (p < visibleTail) {
+                visibleTail = p;
+                tailCarriage = c;
+            }
         }
         if (visibleTail == Integer.MAX_VALUE) visibleTail = registryMin;
+
+        // How much train is physically behind the player: their world X minus the tail group's
+        // lowest-X face. pIdx accounting alone cannot tell "20 carriages behind me" from "a void
+        // behind me" — a culled group still holds its registry pIdx — so measure the world gap the
+        // player actually walks into.
+        double tailGapX = Double.NaN;
+        if (tracePlayer != null && tailCarriage != null) {
+            AABBdc tailBox = tailCarriage.ship().worldAABB();
+            if (!isZeroAabb(tailBox)) {
+                tailGapX = tracePlayer.getX() - tailBox.minX();
+            }
+        }
 
         Long pendingTick = LAST_SPAWNED_TICK_BACKWARD.get(trainId);
         long ticksPending = (LAST_SPAWNED_SHIP_BACKWARD.get(trainId) == null || pendingTick == null)
@@ -3097,7 +3113,7 @@ public final class TrainCarriageAppender {
             now, reason, 0L, tracePlayerPIdx, occupied, playerX,
             minNeeded, registryMin, visibleTail, registryCount, train.size(),
             anchor, deficit, ticksPending, latchAge, edgeSub,
-            (forceLoaded == null) ? 0 : forceLoaded.size(), chunkWait, traceTargetCount));
+            (forceLoaded == null) ? 0 : forceLoaded.size(), chunkWait, traceTargetCount, tailGapX));
     }
 
     // ---- Trailing-segment force-load window (backward-generation-stall fix) ----

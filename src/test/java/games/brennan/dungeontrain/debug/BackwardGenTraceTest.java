@@ -53,6 +53,38 @@ class BackwardGenTraceTest {
         assertEquals(0L, BackwardGenTrace.blockedFor(600L, 500L));
     }
 
+    /**
+     * The distinction that matters for escalation: a satisfied lane is not a stalled one.
+     * NO_NEED with a non-positive deficit is the healthy steady state — it dominated a 10-minute
+     * ride in which the lane never fell behind — so it must not trip the STOPPED warning.
+     */
+    @Test
+    void satisfiedLaneIsNotStalling() {
+        assertFalse(BackwardGenTrace.isStalling(Reason.NO_NEED, 0));
+        assertFalse(BackwardGenTrace.isStalling(Reason.NO_NEED, -7));
+        // ...but a positive deficit on NO_NEED means the window DOES want a group and isn't getting
+        // one, which is a genuine fault worth escalating.
+        assertTrue(BackwardGenTrace.isStalling(Reason.NO_NEED, 3));
+    }
+
+    /** A hard gate stalls regardless of deficit — waiting alone never clears it. */
+    @Test
+    void hardGatesAlwaysStall() {
+        for (Reason r : new Reason[]{Reason.EDGE_DEFER, Reason.EDGE_RELOAD, Reason.GATE_PENDING,
+                                     Reason.GATE_CULL_LATCH, Reason.CHUNKGEN_DEFER, Reason.NOT_NEAR,
+                                     Reason.ANCHOR_KNOWN}) {
+            assertTrue(BackwardGenTrace.isStalling(r, 0), r.name());
+            assertTrue(BackwardGenTrace.isStalling(r, -5), r.name());
+        }
+    }
+
+    /** A spawn is never a stall, whatever the deficit. */
+    @Test
+    void spawnsNeverStall() {
+        assertFalse(BackwardGenTrace.isStalling(Reason.SPAWNED, 12));
+        assertFalse(BackwardGenTrace.isStalling(Reason.FILL_RUN, 12));
+    }
+
     /** Only the reasons that mean "no group was added" count as blocking. */
     @Test
     void spawnReasonsAreNotBlocking() {
@@ -93,6 +125,7 @@ class BackwardGenTraceTest {
         assertTrue(line.contains("skew=-3"), line);
         assertTrue(line.contains("registryMin=-60"), line);
         assertTrue(line.contains("visibleTail=-48"), line);
+        assertTrue(line.contains("tailGapX=84.5"), line);
     }
 
     private static Sample sample(Reason reason, int playerPIdx, Integer occupied,
@@ -103,6 +136,6 @@ class BackwardGenTraceTest {
             /*registryCount*/ 20, /*visibleCount*/ 16,
             /*anchor*/ registryMin - 3, /*deficit*/ 5,
             /*ticksPending*/ -1L, /*latchAge*/ -1L, /*edgeSub*/ null,
-            /*forceLoaded*/ 4, /*chunkWait*/ -1L, /*targetCount*/ 30);
+            /*forceLoaded*/ 4, /*chunkWait*/ -1L, /*targetCount*/ 30, /*tailGapX*/ 84.5);
     }
 }
