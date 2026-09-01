@@ -659,6 +659,8 @@
   "gui.dungeontrain.death.narr.bug_submit": "Zgłoś błąd",
   "gui.dungeontrain.death.narr.bug_submitted": "Błąd zgłoszony",
   "gui.dungeontrain.death.narr.feedback_sent": "Wysłano",
+  "gui.dungeontrain.death.narr.dont_show": "Nie pytaj mnie o to ponownie",
+  "gui.dungeontrain.death.narr.feedback_chip_tip": "Przekaż opinię twórcy linii",
   "gui.dungeontrain.death.narr.kicker_fall": "upadek",
   "gui.dungeontrain.death.narr.kicker_deeds": "czyny",
   "gui.dungeontrain.death.narr.kicker_lives": "wszystkie twoje życia",

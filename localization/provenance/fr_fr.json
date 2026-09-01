@@ -636,6 +636,8 @@
   "gui.dungeontrain.death.narr.bug_submit": {"author": "Opus 4.8 (Claude)", "reviewer": ""},
   "gui.dungeontrain.death.narr.bug_submitted": {"author": "Opus 4.8 (Claude)", "reviewer": ""},
   "gui.dungeontrain.death.narr.feedback_sent": {"author": "Opus 4.8 (Claude)", "reviewer": ""},
+  "gui.dungeontrain.death.narr.dont_show": {"author": "Opus 5 (Claude)", "reviewer": ""},
+  "gui.dungeontrain.death.narr.feedback_chip_tip": {"author": "Opus 5 (Claude)", "reviewer": ""},
   "gui.dungeontrain.death.narr.kicker_fall": {"author": "Opus 4.8 (Claude)", "reviewer": ""},
   "gui.dungeontrain.death.narr.kicker_deeds": {"author": "Opus 4.8 (Claude)", "reviewer": ""},
   "gui.dungeontrain.death.narr.kicker_lives": {"author": "Opus 4.8 (Claude)", "reviewer": ""},

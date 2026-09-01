@@ -613,6 +613,8 @@
   "gui.dungeontrain.death.narr.bug_submit": "Kirim Bug",
   "gui.dungeontrain.death.narr.bug_submitted": "Bug Terkirim",
   "gui.dungeontrain.death.narr.feedback_sent": "Terkirim",
+  "gui.dungeontrain.death.narr.dont_show": "Jangan tanyakan ini lagi",
+  "gui.dungeontrain.death.narr.feedback_chip_tip": "Beri masukan kepada pencipta jalur ini",
   "gui.dungeontrain.death.narr.kicker_fall": "kejatuhan",
   "gui.dungeontrain.death.narr.kicker_deeds": "perbuatan",
   "gui.dungeontrain.death.narr.kicker_lives": "semua kehidupanmu",

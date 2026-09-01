@@ -636,6 +636,8 @@
   "gui.dungeontrain.death.narr.bug_submit": "Enviar Bug",
   "gui.dungeontrain.death.narr.bug_submitted": "Bug Enviado",
   "gui.dungeontrain.death.narr.feedback_sent": "Enviado",
+  "gui.dungeontrain.death.narr.dont_show": "Não me perguntar isso de novo",
+  "gui.dungeontrain.death.narr.feedback_chip_tip": "Envie sua opinião ao criador da linha",
   "gui.dungeontrain.death.narr.kicker_fall": "a queda",
   "gui.dungeontrain.death.narr.kicker_deeds": "os feitos",
   "gui.dungeontrain.death.narr.kicker_lives": "todas as suas vidas",

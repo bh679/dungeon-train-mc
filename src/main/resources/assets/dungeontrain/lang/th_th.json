@@ -613,6 +613,8 @@
   "gui.dungeontrain.death.narr.bug_submit": "ส่งรายงานข้อผิดพลาด",
   "gui.dungeontrain.death.narr.bug_submitted": "ส่งรายงานข้อผิดพลาดแล้ว",
   "gui.dungeontrain.death.narr.feedback_sent": "ส่งแล้ว",
+  "gui.dungeontrain.death.narr.dont_show": "ไม่ต้องถามฉันอีก",
+  "gui.dungeontrain.death.narr.feedback_chip_tip": "ส่งความคิดเห็นถึงผู้สร้างเส้นทางนี้",
   "gui.dungeontrain.death.narr.kicker_fall": "การล้มลง",
   "gui.dungeontrain.death.narr.kicker_deeds": "วีรกรรม",
   "gui.dungeontrain.death.narr.kicker_lives": "ทุกชีวิตของคุณ",

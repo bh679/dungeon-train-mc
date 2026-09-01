@@ -613,6 +613,8 @@
   "gui.dungeontrain.death.narr.bug_submit": "Isumite ang Bug",
   "gui.dungeontrain.death.narr.bug_submitted": "Naisumite ang Bug",
   "gui.dungeontrain.death.narr.feedback_sent": "Naipadala",
+  "gui.dungeontrain.death.narr.dont_show": "Huwag na akong tanungin ulit nito",
+  "gui.dungeontrain.death.narr.feedback_chip_tip": "Magbigay ng feedback sa lumikha ng linya",
   "gui.dungeontrain.death.narr.kicker_fall": "ang pagbagsak",
   "gui.dungeontrain.death.narr.kicker_deeds": "ang mga gawa",
   "gui.dungeontrain.death.narr.kicker_lives": "lahat ng iyong buhay",
