@@ -10733,8 +10733,25 @@
       "released_at": null
     },
     {
-      "id": "echo-note-starts-further-away",
+      "id": "builder-load-name-and-unsaved-guards",
       "version": "0.770.0",
+      "type": "fix",
+      "title": "Loading your own builds back is less of a maze",
+      "summary": "Loading a build from My Builds no longer dead-ends. A dimensional carriage you move aside or load under a new name is usable straight away instead of after a restart, the name box opens on a name that is actually free, and a name already in use is a warning you can edit rather than a refusal that throws your answer away. Loading also stops asking you to save every unrelated plot in the editor, and asks about the one build it is going to replace instead.",
+      "highlights": [
+        "Rename existing and Load as new now register the room they create, so it opens without restarting the world",
+        "The name box suggests the first free number, and says so in place when you type one that is taken",
+        "Load no longer shows the 'save before switch?' list; it warns only when the build being replaced has unsaved edits, before anything is written"
+      ],
+      "pr": 1255,
+      "date": "2026-09-01",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "echo-note-starts-further-away",
+      "version": "0.771.0",
       "type": "feat",
       "title": "A longer note is read from further away",
       "summary": "An echo carrying a long note now starts reading it while it is still coming down the train, instead of waiting until it is standing next to you. It gets a carriage of run-up for every couple of lines, so a full page finishes about the time the echo reaches you rather than being half-read.",
