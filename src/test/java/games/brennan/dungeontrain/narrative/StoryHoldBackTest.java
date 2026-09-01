@@ -93,17 +93,22 @@ final class StoryHoldBackTest {
         return ResourceLocation.fromNamespaceAndPath("dungeontrain", DIR + "/" + name + ".json");
     }
 
-    @BeforeEach
-    void loadFixture() {
+    private static Map<ResourceLocation, String> baseFixture() {
         Map<ResourceLocation, String> files = new LinkedHashMap<>();
         files.put(file("ordinary_a"), storyJson("ordinary_a", false, 2));
         files.put(file("ordinary_b"), storyJson("ordinary_b", false, 2));
         files.put(file("held_back"), storyJson("held_back", true, 2));
-        StoryRegistry.load(managerOf(files));
+        return files;
+    }
+
+    @BeforeEach
+    void loadFixture() {
+        StoryRegistry.load(managerOf(baseFixture()));
     }
 
     @AfterEach
     void clearFixture() {
+        NarrativeContentLocale.set("");
         StoryRegistry.clear();
     }
 
@@ -152,6 +157,28 @@ final class StoryHoldBackTest {
             assertEquals("held_back", data.randomUncompletedStory(seed).orElseThrow());
         }
         assertEquals("held_back", data.nextUncompletedStory().orElseThrow());
+    }
+
+    @Test
+    @DisplayName("a localized copy that omits the flag does not un-defer the series")
+    void localeOverlayCannotUnDefer() {
+        // The shipped narrative_localizations story copies carry prose only — no `deferred`. Parsing
+        // one alone would default it to false and hand Fourteen / Edda Marsh straight to every
+        // non-English player, which is exactly what StoryRegistry.baseDeferred exists to stop.
+        Map<ResourceLocation, String> files = baseFixture();
+        files.put(ResourceLocation.fromNamespaceAndPath("dungeontrain",
+                "narrative_localizations/es_es/stories/held_back.json"),
+            storyJson("held_back", false, 2));   // translated prose, flag dropped
+        NarrativeContentLocale.set("es_es");
+        StoryRegistry.load(managerOf(files));
+
+        assertTrue(StoryRegistry.getByBasename("held_back").orElseThrow().deferred(),
+            "the English base's hold-back flag must survive the locale overlay");
+
+        NarrativeProgressData data = NarrativeProgressData.load(new CompoundTag());
+        for (long seed = -500L; seed <= 500L; seed++) {
+            assertFalse(data.randomUncompletedStory(seed).orElseThrow().equals("held_back"));
+        }
     }
 
     @Test
