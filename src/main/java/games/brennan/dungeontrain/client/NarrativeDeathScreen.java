@@ -1663,39 +1663,40 @@ public final class NarrativeDeathScreen extends Screen {
             costTile(g, lc0, y, cellW, DevHours.value(),
                     "gui.dungeontrain.death.narr.lbl_hours",
                     "gui.dungeontrain.death.narr.tip_hours", VALUE);
-            costTile(g, lc1, y, cellW, fmtUsd(s.monthlyRaisedUsd()),
-                    "gui.dungeontrain.death.narr.lbl_raised_month",
-                    "gui.dungeontrain.death.narr.tip_raised", VALUE);
-            // Slot 3: the updates card, or — on a build that knows no count — the goal that was
+            // Slot 2: the updates card, or — on a build that knows no count — the goal that was
             // leading, now settled, which is the layout this page had before the card existed.
             if (updatesCard) {
-                updatesTile(g, lc0, ly, cellW, updates, mouseX, mouseY);
+                updatesTile(g, lc1, y, cellW, updates, mouseX, mouseY);
             } else {
-                checkedCostTile(g, lc0, ly, cellW, fmtUsd(activeGoal.targetAud()),
+                checkedCostTile(g, lc1, y, cellW, fmtUsd(activeGoal.targetAud()),
                         FundingGoals.label(activeGoal), FundingGoals.tipKey(activeGoal), GOAL_MET);
-                drawTileProgress(g, lc0, ly, cellW, activeGoal.percent());
+                drawTileProgress(g, lc1, y, cellW, activeGoal.percent());
             }
+            // Slot 3: raised.
+            costTile(g, lc0, ly, cellW, fmtUsd(s.monthlyRaisedUsd()),
+                    "gui.dungeontrain.death.narr.lbl_raised_month",
+                    "gui.dungeontrain.death.narr.tip_raised", VALUE);
         } else if (serverCostsMet) {
             // Slot 1: the new goal, as a COST — what the next thing needs per month, not a
             // percentage. The progress against it reads off the raised figure beside it.
             costTile(g, lc0, y, cellW, fmtUsd(activeGoal.targetAud()),
                     FundingGoals.label(activeGoal), FundingGoals.tipKey(activeGoal), COST);
-            // Slot 2: raised.
-            costTile(g, lc1, y, cellW, fmtUsd(s.monthlyRaisedUsd()),
-                    "gui.dungeontrain.death.narr.lbl_raised_month",
-                    "gui.dungeontrain.death.narr.tip_raised", VALUE);
-            // Slot 3: the updates card. The settled server bill has moved to the ✓ line above —
+            // Slot 2: the updates card. The settled server bill has moved to the ✓ line above —
             // it is paid, and a tile whose whole content is a tick earns its slot less than the
             // work the money paid for. Without a count to show, that blue tile is still the
             // fallback rather than a hole in the grid.
             if (updatesCard) {
-                updatesTile(g, lc0, ly, cellW, updates, mouseX, mouseY);
+                updatesTile(g, lc1, y, cellW, updates, mouseX, mouseY);
             } else {
-                checkedCostTile(g, lc0, ly, cellW, costValue,
+                checkedCostTile(g, lc1, y, cellW, costValue,
                         "gui.dungeontrain.death.narr.lbl_server_cost",
                         "gui.dungeontrain.death.narr.tip_monthly_cost", GOAL_MET);
-                drawTileProgress(g, lc0, ly, cellW, serverCosts.percent());
+                drawTileProgress(g, lc1, y, cellW, serverCosts.percent());
             }
+            // Slot 3: raised.
+            costTile(g, lc0, ly, cellW, fmtUsd(s.monthlyRaisedUsd()),
+                    "gui.dungeontrain.death.narr.lbl_raised_month",
+                    "gui.dungeontrain.death.narr.tip_raised", VALUE);
             // The ask's own progress along the foot of its tile.
             drawTileProgress(g, lc0, y, cellW, activeGoal.percent());
         } else {
