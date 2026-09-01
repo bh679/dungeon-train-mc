@@ -595,6 +595,8 @@
       "gui.dungeontrain.death.narr.kicker_gear",
       "gui.dungeontrain.death.narr.kicker_donate",
       "gui.dungeontrain.death.narr.donate_intro",
+      "gui.dungeontrain.death.narr.donate_intro_updates",
+      "gui.dungeontrain.death.narr.changes_count.other",
       "gui.dungeontrain.death.narr.donate_loading",
       "gui.dungeontrain.death.narr.donate_button",
       "gui.dungeontrain.death.narr.donate_chip_tip",

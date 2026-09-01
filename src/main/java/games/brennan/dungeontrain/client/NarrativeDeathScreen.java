@@ -1483,10 +1483,19 @@ public final class NarrativeDeathScreen extends Screen {
         y += 14;
         drawTrain(g, left, w, y, currentPage);
         y += 46;
-        y = drawNarration(g, Component.translatable("gui.dungeontrain.death.narr.donate_intro").getString(), cx, w, y);
-        y += 8;
 
         DonationSummaryClient.Summary s = DonationSummaryCache.get();
+        // Resolved before the narration, not with the tiles below, because the pitch itself quotes
+        // the week's work. The summary may still be loading — the figures fall back to the numbers
+        // baked into this jar, which are known before any fetch starts, so the opening line does
+        // not have to wait on the network to say something true.
+        UpdateStats.Figures updates = UpdateStats.current(s == null ? null : s.updates());
+
+        // The pitch names the week when the week is worth naming; below that threshold it opens
+        // with the plain line, which is the sentence this page has always had.
+        y = drawNarration(g, donateIntro(updates), cx, w, y);
+        y += 8;
+
         if (s == null) {
             y = drawCentered(g, Component.translatable("gui.dungeontrain.death.narr.donate_loading"), cx, w, y, SUBLINE);
             y += 10;
@@ -1515,9 +1524,9 @@ public final class NarrativeDeathScreen extends Screen {
         // it displaces changes: the settled server bill once that bill is paid (a tile whose whole
         // content is a tick is not worth a quarter of the grid), and the raised-this-month figure
         // while the bill is still the ask, since the supporter names down the right side already
-        // add up to roughly that number. Null when neither the relay nor this jar knows a count,
-        // which leaves the layout exactly as it was before the card existed.
-        UpdateStats.Figures updates = UpdateStats.current(s.updates());
+        // add up to roughly that number. Absent when neither the relay nor this jar knows a count,
+        // which leaves the layout exactly as it was before the card existed. (The figures behind it
+        // were resolved above — the opening line quotes them too.)
         boolean updatesCard = UpdateStats.hasCount(updates);
 
         // Every funded rung the grid has no slot for, ticked off on one line above it. A rung is
@@ -1653,6 +1662,25 @@ public final class NarrativeDeathScreen extends Screen {
         }
 
         return Math.max(leftBottom, listTop + listH) + 10;
+    }
+
+    /**
+     * The engine room's opening pitch. When the week is worth naming it leads with the work — "The
+     * rails do not lay themselves. 117 changes were laid this week alone." — and otherwise it is the
+     * plain line this page has always opened with.
+     *
+     * <p>The figure is wrapped in the narration's number sentinels so {@link #styled} renders the
+     * digits white against the muted prose, the same treatment every other number in this screen's
+     * narration gets. The word beside it stays muted: the sentinels close before it.</p>
+     */
+    private String donateIntro(UpdateStats.Figures updates) {
+        if (!UpdateStats.hasWeekPitch(updates)) {
+            return Component.translatable("gui.dungeontrain.death.narr.donate_intro").getString();
+        }
+        String figure = NUM_START + UpdateStats.groupedWeek(updates) + NUM_END;
+        Component clause = UpdateStats.changesClause(updates, ClientLanguage.selected(), figure);
+        return Component.translatable("gui.dungeontrain.death.narr.donate_intro_updates", clause)
+                .getString();
     }
 
     /**

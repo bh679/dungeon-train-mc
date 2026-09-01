@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.net.relay.DonationSummaryClient;
 import games.brennan.dungeontrain.util.PresenceLine;
 import net.minecraft.network.chat.Component;
 
+import java.text.NumberFormat;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -131,6 +132,43 @@ public final class UpdateStats {
     /** Whether there is anything to draw at all — a card with no count is no card. */
     public static boolean hasCount(Figures f) {
         return f != null && f.windowCount() > 0;
+    }
+
+    /**
+     * Whether the donation page's pitch can name the week's work — "117 changes were laid this week
+     * alone" — rather than opening with the plain line.
+     *
+     * <p>The same {@link #MIN_WORTH_SHOWING} threshold the card uses for its own default span, for
+     * the same reason and then some: "1 change was laid this week alone" argues against the
+     * sentence it sits in, and a quiet week is exactly when the pitch can least afford to sound
+     * dead. Below the threshold the page says nothing about the week at all.</p>
+     */
+    public static boolean hasWeekPitch(Figures f) {
+        return f != null && f.week() >= MIN_WORTH_SHOWING;
+    }
+
+    /**
+     * "117 changes", for the pitch's opening sentence, with the grammatical number the language
+     * wants.
+     *
+     * <p>{@code numberText} is the already-rendered figure rather than a count, so the caller can
+     * hand in a string the death screen has wrapped in its number sentinels — which is what makes
+     * the digits render white against the muted narration around them. Use {@link #groupedWeek} to
+     * produce it.</p>
+     */
+    public static Component changesClause(Figures f, String localeCode, String numberText) {
+        return Component.translatable("gui.dungeontrain.death.narr.changes_count."
+                + PluralRules.category(localeCode, f.week()), numberText);
+    }
+
+    /** The week's count, grouped for the language chosen in Minecraft ("117" / "1.117"). */
+    public static String groupedWeek(Figures f) {
+        return groupedWeek(f, DevHours.clientLocale());
+    }
+
+    /** As {@link #groupedWeek(Figures)}, for an explicit locale — kept pure for tests. */
+    public static String groupedWeek(Figures f, java.util.Locale locale) {
+        return NumberFormat.getIntegerInstance(locale).format(f.week());
     }
 
     /** The card's first line — "765 Updates" — for the language chosen in Minecraft. */

@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Locale;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -125,6 +126,41 @@ class UpdateStatsTest {
         var f = figures(0, 0, 1, 1);
         assertEquals("gui.dungeontrain.death.narr.updates_value.one",
                 translatable(UpdateStats.value(f, false, "en_us")).getKey());
+    }
+
+    // ---- the pitch's opening line ----
+
+    @Test
+    void theWeekIsNamedInThePitchOnlyWhenItIsWorthNaming() {
+        assertTrue(UpdateStats.hasWeekPitch(figures(2, 244, 765, 5)));
+        assertTrue(UpdateStats.hasWeekPitch(figures(117, 244, 765, 5)));
+        // "1 change was laid this week alone" argues against the sentence it sits in.
+        assertFalse(UpdateStats.hasWeekPitch(figures(1, 244, 765, 5)));
+        assertFalse(UpdateStats.hasWeekPitch(figures(0, 244, 765, 5)));
+        assertFalse(UpdateStats.hasWeekPitch(null), "nothing known — the plain line stands");
+    }
+
+    @Test
+    void theClauseTakesTheNumberVerbatimSoItsHighlightingSurvives() {
+        // The screen hands in the figure already wrapped in its narration sentinels; the clause
+        // must pass that string through untouched or the digits stop rendering white.
+        var tc = translatable(UpdateStats.changesClause(figures(117, 244, 765, 5), "en_us", "117"));
+        assertEquals("gui.dungeontrain.death.narr.changes_count.other", tc.getKey());
+        assertEquals("117", tc.getArgs()[0]);
+    }
+
+    @Test
+    void aSingleChangeWouldTakeTheSingularForm() {
+        // Unreachable through hasWeekPitch, but the clause is public and must not be wrong.
+        assertEquals("gui.dungeontrain.death.narr.changes_count.one",
+                translatable(UpdateStats.changesClause(figures(1, 0, 1, 1), "en_us", "1")).getKey());
+    }
+
+    @Test
+    void theWeeksFigureIsGroupedForTheClientLanguage() {
+        var f = figures(1117, 2440, 7650, 5);
+        assertEquals("1,117", UpdateStats.groupedWeek(f, Locale.US));
+        assertEquals("1.117", UpdateStats.groupedWeek(f, Locale.GERMANY));
     }
 
     // ---- the tooltip ----

@@ -120,6 +120,8 @@
       "gui.dungeontrain.death.modrec.name",
       "gui.dungeontrain.death.modrec.why",
       "gui.dungeontrain.death.modrec.send",
+      "gui.dungeontrain.death.narr.donate_intro_updates",
+      "gui.dungeontrain.death.narr.changes_count.other",
       "gui.dungeontrain.death.narr.lbl_server_cost",
       "gui.dungeontrain.death.narr.goal_running_costs",
       "gui.dungeontrain.death.narr.goal_dev_tools",
