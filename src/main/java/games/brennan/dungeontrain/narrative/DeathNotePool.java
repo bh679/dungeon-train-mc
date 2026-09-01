@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.narrative;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -48,9 +49,21 @@ public final class DeathNotePool {
      * One downloaded, not-yet-spawned note targeting the local player. {@code kind} decides how the
      * echo feels about them on arrival; a relay too old to send the field yields
      * {@link NoteKind#DEATH}, which is what every note predating Love Notes was.
+     *
+     * <p>{@code lines} is the note's own handwriting, read aloud by the echo once it reaches the
+     * target ({@link NoteSpokenLines}). The relay serves it ONLY for a body its moderation approved,
+     * so an empty list means one of three things — the author wrote nothing but a name, the relay
+     * withheld the words, or the relay predates the feature — and all three come out the same way:
+     * the curse lands exactly as before and the echo says nothing.</p>
      */
     public record Note(int id, String authorUuid, String authorName, String authorSkinRef,
-                       int deathCarriage, String worldKey, boolean freePlay, NoteKind kind) {}
+                       int deathCarriage, String worldKey, boolean freePlay, NoteKind kind,
+                       List<String> lines) {
+
+        public Note {
+            lines = lines == null ? List.of() : List.copyOf(lines);
+        }
+    }
 
     /** targetPlayerUuid → their current immutable snapshot of unspawned notes. */
     private static final Map<UUID, List<Note>> NOTES = new ConcurrentHashMap<>();
@@ -163,10 +176,32 @@ public final class DeathNotePool {
             int id = o.get("id").getAsInt();
             int carriage = o.get("deathCarriage").getAsInt();
             return new Note(id, str(o, "authorUuid"), str(o, "authorName"), str(o, "authorSkinRef"),
-                    carriage, str(o, "worldKey"), bool(o, "freePlay"), NoteKind.fromId(str(o, "kind")));
+                    carriage, str(o, "worldKey"), bool(o, "freePlay"), NoteKind.fromId(str(o, "kind")),
+                    lines(o));
         } catch (RuntimeException e) {
             return null;
         }
+    }
+
+    /**
+     * The approved spoken lines on a served note, capped exactly as {@link NoteSpokenLines} caps
+     * them at the authoring end (the relay caps them too — this is the third of three agreeing
+     * copies, and the one that protects this client from a relay that ever stops). Empty when the
+     * field is absent, which is the normal case for a withheld body or an older relay.
+     */
+    private static List<String> lines(JsonObject o) {
+        if (!o.has("lines") || !o.get("lines").isJsonArray()) return List.of();
+        JsonArray arr = o.getAsJsonArray("lines");
+        List<String> out = new ArrayList<>(Math.min(arr.size(), NoteSpokenLines.MAX_LINES));
+        for (JsonElement el : arr) {
+            if (out.size() >= NoteSpokenLines.MAX_LINES) break;
+            if (el == null || !el.isJsonPrimitive()) continue;
+            String line = el.getAsString().trim();
+            if (line.isEmpty()) continue;
+            out.add(line.length() > NoteSpokenLines.MAX_LINE_CHARS
+                    ? line.substring(0, NoteSpokenLines.MAX_LINE_CHARS) : line);
+        }
+        return List.copyOf(out);
     }
 
     private static String str(JsonObject o, String k) {

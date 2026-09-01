@@ -10633,6 +10633,87 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "note-echo-reads-aloud",
+      "version": "0.765.0",
+      "type": "feat",
+      "title": "Death Note and Love Note echoes read the note aloud",
+      "summary": "An echo sent by a Death Note or a Love Note now speaks the note it came from. When it reaches the player it was written for, it calls their name and then reads the note out one line at a time, pausing between lines the way someone reading aloud would. It looks like any other player talking in chat, because that is what it is meant to feel like.",
+      "highlights": [
+        "The echo opens by tagging the player it came for \u2014 a highlighted mention and a sound only they hear, so a note read out while you are looking elsewhere still reaches you.",
+        "Lines arrive one at a time with a real pause between them, longer after a longer line, instead of the whole note landing at once.",
+        "The echo only speaks once it is actually alongside you \u2014 same carriage or the next one \u2014 and picks up where it left off if you leave and come back, or reload the world.",
+        "A note that is only a name still spawns its echo; it simply arrives with nothing to say.",
+        "The words are screened before they ever reach another player's chat. A note whose body is withheld loses its voice and nothing else \u2014 the curse lands exactly the same."
+      ],
+      "pr": 1247,
+      "date": "2026-09-01",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "video-tools-tabs-and-notes",
+      "version": "0.766.0",
+      "type": "feat",
+      "title": "Video Tools page rebuilt, with a section for what your viewers can send you",
+      "summary": "The Video Tools page is now tabbed \u2014 Commands, Viewers, Fresh start, Contact \u2014 and looks like the Credits and AI Policy pages rather than one long scroll. A new Viewers tab points at Death Notes and Love Notes: things someone watching your stream can send into your game from their own. Reset Everything and Join the Discord are now coloured buttons on the sections they belong to.",
+      "highlights": [
+        "Video Tools split into four tabs",
+        "New Viewers section on Death Notes and Love Notes"
+      ],
+      "pr": 1250,
+      "date": "2026-09-01",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "death-screen-updates-card",
+      "version": "0.767.0",
+      "type": "feat",
+      "title": "Updates card on the death screen",
+      "summary": "The support page now shows how many updates the train has had, and when the last one landed.",
+      "highlights": [],
+      "pr": 1253,
+      "date": "2026-09-01",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "death-form-dont-show-again",
+      "version": "0.767.0",
+      "type": "feat",
+      "title": "Skip feedback questions you have already answered",
+      "summary": "The death screen used to ask the same feedback questions after every single run. Now, once you have answered one, it offers a \"Don't ask me this again\" tick box the next time it comes up \u2014 tick it and that question stops appearing. An envelope button on the last page still walks you through every question whenever you do want to say something, and un-ticking a box there puts that question back in the normal flow.",
+      "highlights": [
+        "\"Don't ask me this again\" on any feedback question you have already answered",
+        "New envelope button on the death screen's last page walks through every feedback question on demand",
+        "Skipped questions stay reachable through that button \u2014 and that is where you un-skip them"
+      ],
+      "pr": 1253,
+      "date": "2026-09-01",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "abandon-confirm-row",
+      "version": "0.768.0",
+      "type": "feat",
+      "title": "Clearer 'step off the train' confirmation",
+      "summary": "The confirmation that appears when you abandon a run now puts both options side by side and says plainly what happens: you die, it counts as a death, and there is no undo.",
+      "highlights": [
+        "Both options on one row \u2014 'Step off and die' beside 'Stay aboard'",
+        "Rewritten in the train's voice, and it now speaks to you rather than about 'your character'"
+      ],
+      "pr": 1251,
+      "date": "2026-09-01",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

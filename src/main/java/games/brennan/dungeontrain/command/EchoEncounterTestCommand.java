@@ -259,7 +259,16 @@ public final class EchoEncounterTestCommand {
      * <p>{@code deathnote} spawns a hostile echo, {@code lovenote} a loving one — the same recipe
      * with the opposite seeded feeling, which is the only difference between the two mechanics at
      * spawn time.</p>
+     *
+     * <p>The spawn carries a canned script so the recital ({@code DeathNoteEchoController.speak}) is
+     * testable without a relay round-trip: two lines of deliberately different lengths, so the
+     * length-driven pause between them is visible in chat.</p>
      */
+    /** The canned note a dev-spawned echo reads out — see {@link #noteEcho}. */
+    private static final java.util.List<String> DEV_SCRIPT = java.util.List.of(
+        "I remember.",
+        "You left me on the tracks at the ninth carriage and did not look back once.");
+
     private static int noteEcho(CommandContext<CommandSourceStack> ctx, NoteKind kind) {
         CommandSourceStack source = ctx.getSource();
         ServerPlayer player = source.getPlayer();
@@ -271,13 +280,18 @@ public final class EchoEncounterTestCommand {
         Integer carriage = TrainCarriageAppender.lastCarriageIndex(player.getUUID());
         int deathCarriage = carriage == null ? 0 : carriage;
         // noteId 0 — a dev spawn has no relay note behind it, so its outcome is reported nowhere.
+        // Asked BEFORE the spawn: afterwards the answer is stale, and on success there is no reason
+        // to report. Both deferral branches log at DEBUG only, so without this a FALSE is mute.
+        String why = DeathNoteEchoSpawner.deferReason(level, player);
         boolean ok = DeathNoteEchoSpawner.spawnForTarget(level, player,
-            player.getUUID().toString(), player.getGameProfile().getName(), deathCarriage, 0, kind);
+            player.getUUID().toString(), player.getGameProfile().getName(), deathCarriage, 0, kind,
+            DEV_SCRIPT);
         source.sendSuccess(() -> Component.literal(
                 "[echotest] " + kind.englishTitle() + " spawnForTarget -> "
                     + (ok ? "TRUE" : "FALSE (deferred/failed)")
-                    + " at carriage " + deathCarriage + " (lastCarriageIndex=" + carriage
-                    + "). Watch for an 'Echo of " + player.getGameProfile().getName() + "' beside you.")
+                    + " at carriage " + deathCarriage + " (lastCarriageIndex=" + carriage + ")"
+                    + (ok ? ". Watch for an 'Echo of " + player.getGameProfile().getName() + "' beside you."
+                          : ": " + (why == null ? "spawn threw — see the log" : why)))
             .withStyle(ok ? ChatFormatting.AQUA : ChatFormatting.RED), false);
         return ok ? 1 : 0;
     }

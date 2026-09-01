@@ -39,6 +39,40 @@ final class DonationSummaryClientTest {
     }
 
     @Test
+    @DisplayName("the updates block parses, and its absence is not a failure")
+    void parsesTheUpdatesBlock() {
+        // The relay adds this once its own poll of the version history resolves; a body without
+        // it is the normal case for every relay that predates the field.
+        assertNull(DonationSummaryClient.parse(realRelayBody()).updates(),
+                "no updates block means the screen uses the jar's baked numbers");
+
+        Summary s = DonationSummaryClient.parse("""
+        {"ok":true,"monthlyRaisedUsd":155,"monthlyCostUsd":40,
+         "updates":{"count":765,"windowMonths":5,"month":244,"week":117,
+                    "latestReleaseAt":1756728000000,"latestVersion":"0.763.0"}}
+        """);
+        assertEquals(765, s.updates().count());
+        assertEquals(5, s.updates().windowMonths());
+        assertEquals(244, s.updates().month());
+        assertEquals(117, s.updates().week());
+        assertEquals(1756728000000L, s.updates().latestReleaseAtMs());
+        assertEquals("0.763.0", s.updates().latestVersion());
+    }
+
+    @Test
+    @DisplayName("an updates block the relay could not fill is treated as absent")
+    void anEmptyUpdatesBlockIsAbsent() {
+        // windowMonths 0 is meaningful ("this year"), so the count is what decides. A block whose
+        // count never resolved must fall through to the baked numbers rather than render a zero.
+        assertNull(DonationSummaryClient.parse("""
+        {"ok":true,"updates":{"count":null,"windowMonths":0,"month":0}}
+        """).updates());
+        assertNull(DonationSummaryClient.parse("""
+        {"ok":true,"updates":[]}
+        """).updates());
+    }
+
+    @Test
     @DisplayName("a real relay body parses into the ledger the screen draws")
     void parsesARealRelayBody() {
         Summary s = DonationSummaryClient.parse(realRelayBody());
