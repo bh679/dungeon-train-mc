@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.difficulty.DifficultyProgression;
 import games.brennan.dungeontrain.echo.RemoteEchoEncounters;
 import games.brennan.dungeontrain.event.DeathNoteEchoController;
 import games.brennan.dungeontrain.narrative.NoteKind;
+import games.brennan.dungeontrain.narrative.NoteSpokenLines;
 import games.brennan.dungeontrain.portal.PortalCarriageSelection;
 import games.brennan.playermob.compat.TrainConfinement;
 import games.brennan.playermob.entity.FeelingLedger;
@@ -14,6 +15,8 @@ import games.brennan.playermob.entity.PlayerMobEntity;
 import games.brennan.playermob.player.SourceProfileSkin;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.StringTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
@@ -25,6 +28,7 @@ import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.phys.Vec3;
 import org.slf4j.Logger;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -65,6 +69,19 @@ public final class DeathNoteEchoSpawner {
      * Love Notes existed, which {@link NoteKind#fromId} reads back as {@link NoteKind#DEATH}.
      */
     public static final String KEY_KIND = "dt_deathnote_kind";
+    /**
+     * Persistent-data marker: the note's own lines, which this echo reads aloud once it reaches its
+     * target ({@code DeathNoteEchoController}). Stored on the entity rather than only in memory so a
+     * saved-and-reloaded echo still carries its script. Absent when the note had nothing to say.
+     */
+    public static final String KEY_LINES = "dt_deathnote_lines";
+    /**
+     * Persistent-data marker: how much of the recital is done — 0 = nothing said yet, 1 = the opening
+     * {@code @name} is out, n+1 = every one of the n lines has been spoken.
+     */
+    public static final String KEY_LINE_INDEX = "dt_deathnote_line_index";
+    /** Persistent-data marker: the game time the echo may speak its next line at (see the controller). */
+    public static final String KEY_NEXT_SPEAK = "dt_deathnote_next_speak";
 
     private DeathNoteEchoSpawner() {}
 
@@ -80,6 +97,11 @@ public final class DeathNoteEchoSpawner {
      * against the right curse — see {@code DeathNoteEvents}. Pass {@code 0} for an echo with no
      * relay note behind it (the dev {@code /dtechotest} spawn); no outcome is then reported.</p>
      *
+     * <p>{@code spokenLines} is the note's own handwriting — what the echo reads out once it reaches
+     * the target. Empty (or null) is normal and harmless: a note that is only a name, a body the
+     * relay's moderation withheld, or a relay older than the feature all arrive that way, and the
+     * echo then behaves exactly as echoes did before they could speak.</p>
+     *
      * <p><b>A portal group defers the curse rather than dropping it.</b> No PlayerMob belongs in a
      * portal group — the cart between the corridors is sealed and the corridors are twinned transit
      * copies (see {@link PlayerMobGroupSpawner}'s class javadoc) — but a vengeance echo is owed to the
@@ -90,7 +112,7 @@ public final class DeathNoteEchoSpawner {
      */
     public static boolean spawnForTarget(ServerLevel level, ServerPlayer target,
                                          String authorUuid, String authorName, int deathCarriage,
-                                         int noteId, NoteKind kind) {
+                                         int noteId, NoteKind kind, List<String> spokenLines) {
         Trains.Carriage group = groupContaining(level, target);
         if (group == null) {
             LOGGER.debug("[DungeonTrain] DeathNote echo: {} not on a resolvable carriage group yet — deferring.",
@@ -109,7 +131,8 @@ public final class DeathNoteEchoSpawner {
             return false;
         }
         BlockPos floorPos = interiorFloorPos(provider, pidx);
-        return spawn(level, floorPos, deathCarriage, authorUuid, authorName, target, noteId, kind);
+        return spawn(level, floorPos, deathCarriage, authorUuid, authorName, target, noteId, kind,
+                spokenLines);
     }
 
     /** The train group whose world AABB contains {@code player} (player position is world-space), or null. */
@@ -144,7 +167,7 @@ public final class DeathNoteEchoSpawner {
      */
     private static boolean spawn(ServerLevel level, BlockPos floorPos, int carriagePIdx,
                                  String authorUuidStr, String authorNameStr, ServerPlayer target,
-                                 int noteId, NoteKind kind) {
+                                 int noteId, NoteKind kind, List<String> spokenLines) {
         UUID targetUuid = target.getUUID();
         try {
             Optional<EntityType<?>> typeOpt = EntityType.byString(PLAYER_MOB_ID.toString());
@@ -196,6 +219,18 @@ public final class DeathNoteEchoSpawner {
             persistent.putString(KEY_TARGET, targetUuid.toString());
             persistent.putString(KEY_AUTHOR, authorName);
             persistent.putString(KEY_KIND, kind.id());
+            // The note's own words. Stamped on the entity — rather than held only in the controller's
+            // map — so the script, and how far through it the echo has got, survive a save/reload
+            // mid-recital.
+            List<String> script = spokenLines == null ? List.of() : spokenLines;
+            if (!script.isEmpty()) {
+                ListTag lines = new ListTag();
+                for (String line : script) {
+                    if (line != null && !line.isBlank()) lines.add(StringTag.valueOf(line));
+                    if (lines.size() >= NoteSpokenLines.MAX_LINES) break;
+                }
+                if (!lines.isEmpty()) persistent.put(KEY_LINES, lines);
+            }
             // The curse this echo is: lets the outcome of the fight be reported back to the relay
             // against the right note, so the author's story book can tell how it ended. A dev-spawned
             // echo (noteId 0) carries no id and reports nothing.

@@ -259,7 +259,16 @@ public final class EchoEncounterTestCommand {
      * <p>{@code deathnote} spawns a hostile echo, {@code lovenote} a loving one — the same recipe
      * with the opposite seeded feeling, which is the only difference between the two mechanics at
      * spawn time.</p>
+     *
+     * <p>The spawn carries a canned script so the recital ({@code DeathNoteEchoController.speak}) is
+     * testable without a relay round-trip: two lines of deliberately different lengths, so the
+     * length-driven pause between them is visible in chat.</p>
      */
+    /** The canned note a dev-spawned echo reads out — see {@link #noteEcho}. */
+    private static final java.util.List<String> DEV_SCRIPT = java.util.List.of(
+        "I remember.",
+        "You left me on the tracks at the ninth carriage and did not look back once.");
+
     private static int noteEcho(CommandContext<CommandSourceStack> ctx, NoteKind kind) {
         CommandSourceStack source = ctx.getSource();
         ServerPlayer player = source.getPlayer();
@@ -272,7 +281,8 @@ public final class EchoEncounterTestCommand {
         int deathCarriage = carriage == null ? 0 : carriage;
         // noteId 0 — a dev spawn has no relay note behind it, so its outcome is reported nowhere.
         boolean ok = DeathNoteEchoSpawner.spawnForTarget(level, player,
-            player.getUUID().toString(), player.getGameProfile().getName(), deathCarriage, 0, kind);
+            player.getUUID().toString(), player.getGameProfile().getName(), deathCarriage, 0, kind,
+            DEV_SCRIPT);
         source.sendSuccess(() -> Component.literal(
                 "[echotest] " + kind.englishTitle() + " spawnForTarget -> "
                     + (ok ? "TRUE" : "FALSE (deferred/failed)")

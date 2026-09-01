@@ -2,8 +2,15 @@ package games.brennan.dungeontrain.event;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.narrative.NoteKind;
+import games.brennan.dungeontrain.narrative.NoteSpokenLines;
+import games.brennan.dungeontrain.train.DeathNoteEchoSpawner;
 import games.brennan.playermob.compat.TrainConfinement;
 import games.brennan.playermob.entity.PlayerMobEntity;
+import net.minecraft.ChatFormatting;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -28,6 +35,14 @@ import java.util.concurrent.ConcurrentHashMap;
  *       and no target is ever forced. Forcing one would make it attack the very player it was sent
  *       to love, overriding the feeling the spawner seeded.</li>
  * </ul>
+ *
+ * <p>An echo also <b>reads its note aloud</b> once it is alongside: the same carriage-index test
+ * that decides a curse may engage decides that either kind may speak, and from there it works
+ * through the script stamped on it at spawn ({@code DeathNoteEchoSpawner.KEY_LINES}) — opening by
+ * calling the target's name, then one line at a time, the gap between them set by the length of the
+ * line just spoken ({@link NoteSpokenLines#delayTicksFor}). The whole server hears it, like the
+ * arrival announcement it follows. A note with no approved words simply never speaks: the relay
+ * withholds a body its moderation flagged, and that costs the echo its voice, never the curse.</p>
  *
  * <p>Echoes are tracked by UUID (registered at spawn) rather than a spatial scan, because a
  * carriage-bound echo lives in Sable shipyard coordinates far from the player's world position — a
@@ -70,6 +85,7 @@ public final class DeathNoteEchoController {
             ServerPlayer target = level.getServer().getPlayerList().getPlayer(e.getValue().targetUuid());
             if (target == null) continue;                                    // target offline
             steer(echo, target, e.getValue().kind());
+            speak(level, echo, target, e.getValue().kind());
         }
     }
 
@@ -96,5 +112,47 @@ public final class DeathNoteEchoController {
         if (kind != NoteKind.LOVE && Math.abs(echoIdx - targetIdx) <= 1) {
             echo.setTarget(target);                                       // engage even an invulnerable target
         }
+    }
+
+    /**
+     * Read out the next line of the note, if the echo is alongside its target and the previous line
+     * has had its say. Both kinds speak — a Love Note echo has come a long way to say something too.
+     *
+     * <p>Everything the recital needs lives on the entity ({@code KEY_LINES} /
+     * {@code KEY_LINE_INDEX} / {@code KEY_NEXT_SPEAK}), so an echo that is saved and reloaded picks
+     * up exactly where it stopped rather than starting the note again. Timing is quantised to
+     * {@link #SCAN_PERIOD_TICKS} because this rides the same scan as the steering — half a second of
+     * slack on a pause of one to ten seconds, which nobody can hear.</p>
+     */
+    private static void speak(ServerLevel level, PlayerMobEntity echo, ServerPlayer target, NoteKind kind) {
+        CompoundTag data = echo.getPersistentData();
+        if (!data.contains(DeathNoteEchoSpawner.KEY_LINES)) return;      // nothing approved to say
+        int echoIdx = TrainConfinement.carriageIndex(echo);
+        int targetIdx = TrainConfinement.carriageIndex(target);
+        if (echoIdx == TrainConfinement.NO_CARRIAGE || targetIdx == TrainConfinement.NO_CARRIAGE) return;
+        if (Math.abs(echoIdx - targetIdx) > 1) return;                   // not close enough yet
+        ListTag lines = data.getList(DeathNoteEchoSpawner.KEY_LINES, Tag.TAG_STRING);
+        int spoken = data.getInt(DeathNoteEchoSpawner.KEY_LINE_INDEX);
+        if (spoken > lines.size()) return;                               // the note has been read out
+        long now = level.getGameTime();
+        if (spoken > 0 && now < data.getLong(DeathNoteEchoSpawner.KEY_NEXT_SPEAK)) return;
+        // The opener is the target's name, the way the note itself names them; then the lines below it.
+        String text = spoken == 0
+                ? "@" + target.getGameProfile().getName()
+                : lines.getString(spoken - 1);
+        if (text.isBlank()) { data.putInt(DeathNoteEchoSpawner.KEY_LINE_INDEX, spoken + 1); return; }
+        level.getServer().getPlayerList().broadcastSystemMessage(spokenLine(echo, text, kind), false);
+        data.putInt(DeathNoteEchoSpawner.KEY_LINE_INDEX, spoken + 1);
+        // A longer line buys a longer silence after it — the note is being read out, not pasted.
+        data.putLong(DeathNoteEchoSpawner.KEY_NEXT_SPEAK, now + NoteSpokenLines.delayTicksFor(text));
+    }
+
+    /** One spoken line, rendered as chat: the echo's own name, then the words, coloured by kind. */
+    private static Component spokenLine(PlayerMobEntity echo, String text, NoteKind kind) {
+        boolean love = kind == NoteKind.LOVE;
+        return Component.translatable("chat.dungeontrain.note.echo_says",
+                        echo.getName().copy().withStyle(love ? ChatFormatting.LIGHT_PURPLE : ChatFormatting.GRAY),
+                        Component.literal(text))
+                .withStyle(love ? ChatFormatting.GRAY : ChatFormatting.DARK_GRAY);
     }
 }

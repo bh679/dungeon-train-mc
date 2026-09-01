@@ -527,6 +527,7 @@
   "chat.dungeontrain.familiar_book.dur.m": "%sm",
   "chat.dungeontrain.familiar_book.dur.ms": "%sm %ss",
   "chat.dungeontrain.familiar_book.dur.s": "%ss",
+  "chat.dungeontrain.note.echo_says": "<%s> %s",
   "chat.dungeontrain.deathnote.already": "%s has already been death noted this life; this one burns to nothing.",
   "chat.dungeontrain.deathnote.no_name": "The Death Note finds no name; it burns to nothing.",
   "chat.dungeontrain.deathnote.taken": "The Death Note takes %s. When you fall, your echo will hunt them.",
