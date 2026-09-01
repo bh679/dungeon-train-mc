@@ -10576,6 +10576,19 @@
       "released": true,
       "released_in": "v0.762.0",
       "released_at": "2026-09-01T06:09:52Z"
+    },
+    {
+      "id": "hide-world-list-cog",
+      "version": "0.763.0",
+      "type": "feat",
+      "title": "Menu changes",
+      "summary": "Some tidying on the main menu.",
+      "highlights": [],
+      "pr": 1245,
+      "date": "2026-09-01",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
