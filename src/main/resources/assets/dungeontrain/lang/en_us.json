@@ -1071,6 +1071,7 @@
   "gui.dungeontrain.builder.profile.collision.replace.title": "Replace %s",
   "gui.dungeontrain.builder.profile.collision.replace.hint": "Keeping a copy renames the build you have and loads this one in its place. Overwriting throws yours away.",
   "gui.dungeontrain.builder.profile.name.rename_existing": "New name for the build you already have",
+  "gui.dungeontrain.builder.profile.name.taken": "That name is already used here. Pick another.",
   "gui.dungeontrain.builder.profile.name.load_as_new": "Name for the copy you're loading",
   "gui.dungeontrain.builder.profile.download_not_yours": "That build isn't yours to load.",
   "gui.dungeontrain.builder.profile.download_unsupported": "This version can't open that kind of build.",

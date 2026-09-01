@@ -59,9 +59,24 @@ public final class BuilderRelayDownload {
      * What an install produced: the outcome, and — when something landed — enough to name it, so the
      * screen can offer to open the thing that was just written.
      */
-    public record Result(Outcome outcome, BuilderPhotoPaths.Kind kind, String id, String subKind) {
+    public record Result(Outcome outcome, BuilderPhotoPaths.Kind kind, String id, String subKind,
+                         List<String> takenNames) {
+        Result(Outcome outcome, BuilderPhotoPaths.Kind kind, String id, String subKind) {
+            this(outcome, kind, id, subKind, List.of());
+        }
+
         static Result of(Outcome outcome) {
-            return new Result(outcome, null, "", "");
+            return new Result(outcome, null, "", "", List.of());
+        }
+
+        /**
+         * The same answer, carrying the names this install will not write over.
+         *
+         * <p>Only worth sending on an outcome that asks the player to name something — see
+         * {@link BuilderRelayInstall#takenNames}.</p>
+         */
+        Result withTakenNames(List<String> names) {
+            return new Result(outcome, kind, id, subKind, names);
         }
     }
 
@@ -161,12 +176,17 @@ public final class BuilderRelayDownload {
         // the same name the unsaved-edits question above was asked about.
         String installedAs = landsOn;
         if (installed != BuilderRelayInstall.Outcome.INSTALLED) {
-            return new Result(switch (installed) {
+            Result refusal = new Result(switch (installed) {
                 case ALREADY_HERE -> Outcome.ALREADY_HERE;
                 case NAME_TAKEN -> Outcome.NAME_TAKEN;
                 case UNSUPPORTED -> Outcome.UNSUPPORTED;
                 default -> Outcome.FAILED;
             }, kind, build.buildName(), build.subKind());
+            // The two outcomes that send the player to a name box are the two worth telling which
+            // names are gone — the box can then open on a free one and refuse a used one itself.
+            return refusal.outcome() == Outcome.ALREADY_HERE || refusal.outcome() == Outcome.NAME_TAKEN
+                    ? refusal.withTakenNames(BuilderRelayInstall.takenNames(kind, build.subKind(), mine))
+                    : refusal;
         }
 
         // Only a build that kept its relay name is still that relay row. A copy loaded under a new

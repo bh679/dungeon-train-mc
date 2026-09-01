@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.client.builder;
 
 import games.brennan.dungeontrain.builder.BuilderLabels;
+import games.brennan.dungeontrain.builder.BuilderNewOptions;
 import games.brennan.dungeontrain.builder.BuilderPhotoPaths;
 import games.brennan.dungeontrain.builder.relay.BuilderRelayKinds;
 import games.brennan.dungeontrain.builder.BuilderMode;
@@ -32,6 +33,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * <b>My Builds</b> — everything this player has uploaded to their relay profile, and the one action
@@ -492,8 +494,30 @@ public final class BuilderProfileScreen extends Screen {
         if (packet.outcome() == BuilderRelayDownload.Outcome.ALREADY_HERE) {
             BuilderProfilePacket.Entry entry = selectedBuild();
             if (entry != null) {
-                this.minecraft.setScreen(new BuilderProfileCollisionScreen(this, entry.buildName(),
-                        (resolution, name) -> resolveDownload(entry.relayId(), resolution, name)));
+                BuilderProfileCollisionScreen question = new BuilderProfileCollisionScreen(this,
+                        entry.buildName(),
+                        (resolution, name) -> resolveDownload(entry.relayId(), resolution, name));
+                // What the server says is already in use, so the name box can open on a free name
+                // and refuse a used one where the player is standing rather than a round trip later.
+                question.setTakenNames(Set.copyOf(packet.takenNames()));
+                this.minecraft.setScreen(question);
+            }
+            return;
+        }
+
+        // The name they chose was gone after all — a race, or a name only the server can see is
+        // taken. Back to the same box, with the warning showing and the fresher list, rather than
+        // out to the list with the answer thrown away.
+        if (packet.outcome() == BuilderRelayDownload.Outcome.NAME_TAKEN) {
+            BuilderProfilePacket.Entry entry = selectedBuild();
+            if (entry != null && lastResolution != BuilderRelayInstall.Resolution.AS_IS) {
+                Set<String> taken = Set.copyOf(packet.takenNames());
+                BuilderRelayInstall.Resolution resolution = lastResolution;
+                this.minecraft.setScreen(new BuilderProfileNameScreen(this, this,
+                        Component.translatable(promptKeyFor(resolution),
+                                Component.literal(BuilderLabels.pretty(entry.buildName()))),
+                        BuilderNewOptions.firstFreeName(entry.buildName(), taken), taken, true,
+                        chosen -> resolveDownload(entry.relayId(), resolution, chosen)));
             }
             return;
         }
@@ -626,6 +650,17 @@ public final class BuilderProfileScreen extends Screen {
      */
     private void closeToGame() {
         this.minecraft.setScreen(null);
+    }
+
+    /**
+     * Which name the prompt is asking for — the downloaded copy's, or the local build's on its way
+     * out of the road. The same two keys {@code BuilderProfileChoiceScreen} uses, so a re-ask after a
+     * refusal reads as the question the player was already answering.
+     */
+    private static String promptKeyFor(BuilderRelayInstall.Resolution resolution) {
+        return resolution == BuilderRelayInstall.Resolution.RENAME_EXISTING
+                ? "gui.dungeontrain.builder.profile.name.rename_existing"
+                : "gui.dungeontrain.builder.profile.name.load_as_new";
     }
 
     /** The line to show for an outcome — each sends the player somewhere different. */

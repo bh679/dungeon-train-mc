@@ -4,6 +4,8 @@ import games.brennan.dungeontrain.builder.BuilderPhotoPaths;
 import games.brennan.dungeontrain.builder.relay.BuilderRelayDownload;
 import games.brennan.dungeontrain.builder.relay.BuilderRelayInstall;
 import io.netty.buffer.Unpooled;
+
+import java.util.List;
 import net.minecraft.network.FriendlyByteBuf;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -84,6 +86,22 @@ final class BuilderProfileDownloadPacketTest {
                 BuilderRelayDownload.Outcome.INSTALLED, BuilderPhotoPaths.Kind.PART.id(),
                 "brass_door", "door");
         assertEquals(original, roundTrip(original));
+    }
+
+    @Test
+    @DisplayName("a naming question carries the names already in use, and others carry none")
+    void takenNamesRoundTrip() {
+        BuilderProfileDownloadResultPacket asking = new BuilderProfileDownloadResultPacket(
+                BuilderRelayDownload.Outcome.ALREADY_HERE, "portal_room", "testtt", "",
+                List.of("testtt", "testtt_2"));
+        BuilderProfileDownloadResultPacket back = roundTrip(asking);
+        assertEquals(List.of("testtt", "testtt_2"), back.takenNames(),
+                "the name box opens on this list — a truncated one offers a name that is gone");
+        assertEquals(asking, back);
+
+        assertEquals(List.of(), new BuilderProfileDownloadResultPacket(
+                        BuilderRelayDownload.Outcome.INSTALLED, "portal_room", "testtt", "").takenNames(),
+                "an outcome that asks for no name carries no list");
     }
 
     @Test
