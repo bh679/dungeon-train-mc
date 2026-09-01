@@ -689,7 +689,7 @@ public final class NarrativeDeathScreen extends Screen {
                 case LIVES -> y = drawLives(g, stats, narr, left, contentW, cx, y);
                 case SURVEY -> y = drawSurvey(g, page.survey(), left, contentW, cx, y);
                 case MODREC -> y = drawModRec(g, left, contentW, cx, y, mouseX, mouseY);
-                case DONATE -> y = drawDonate(g, left, contentW, cx, y);
+                case DONATE -> y = drawDonate(g, left, contentW, cx, y, mouseX, mouseY);
                 case PLATFORM -> y = drawPlatform(g, narr, left, contentW, cx, y);
             }
 
@@ -1478,7 +1478,7 @@ public final class NarrativeDeathScreen extends Screen {
         box.setWidth(w);
     }
 
-    private int drawDonate(GuiGraphics g, int left, int w, int cx, int y) {
+    private int drawDonate(GuiGraphics g, int left, int w, int cx, int y, int mouseX, int mouseY) {
         drawKicker(g, cx, y, "gui.dungeontrain.death.narr.kicker_donate");
         y += 14;
         drawTrain(g, left, w, y, currentPage);
@@ -1511,15 +1511,25 @@ public final class NarrativeDeathScreen extends Screen {
         boolean hoursLead = DevHours.takesGoalSlot(
                 DevHours.hours(), serverCostsMet, activeGoal != null && activeGoal.complete());
 
-        // Any OTHER goal already funded — one the grid has no slot for — ticked off on one line
-        // above it. Usually empty: with the standard two-rung ladder the blue server-costs tile is
-        // the completion marker, and no line is drawn (nor vertical space taken).
-        // Once the hours tile leads, the server bill has no tile of its own — it joins this line
-        // instead of vanishing from the page.
-        List<Goal> done = hoursLead
-                ? FundingGoals.completed(s.goals(), List.of(activeGoal.id()))
-                : FundingGoals.completed(s.goals(),
-                        List.of(activeGoal == null ? "" : activeGoal.id(), FundingGoals.RUNNING_COSTS));
+        // The updates card takes the settled bill's slot once that bill is paid — a tile that only
+        // says "this is done" is not worth a quarter of the grid, and what the money bought is.
+        // Null when neither the relay nor this jar knows a count, which leaves the layout exactly
+        // as it was before the card existed.
+        UpdateStats.Figures updates = serverCostsMet || hoursLead
+                ? UpdateStats.current(s.updates()) : null;
+        boolean updatesCard = UpdateStats.hasCount(updates);
+
+        // Every funded rung the grid has no slot for, ticked off on one line above it. A rung is
+        // excluded from the line only while it still holds a tile of its own — so which rungs
+        // appear depends on what the third slot is holding.
+        List<String> tiled = new ArrayList<>();
+        if (activeGoal != null && !hoursLead) tiled.add(activeGoal.id());   // slot 1: the ask
+        if (!updatesCard) {
+            // No card, so the third slot keeps its old occupant: the settled goal once the hours
+            // tile leads, otherwise the settled server bill.
+            tiled.add(hoursLead ? activeGoal.id() : FundingGoals.RUNNING_COSTS);
+        }
+        List<Goal> done = FundingGoals.completed(s.goals(), tiled);
         if (!done.isEmpty()) {
             MutableComponent line = Component.empty();
             for (int i = 0; i < done.size(); i++) {
@@ -1553,28 +1563,38 @@ public final class NarrativeDeathScreen extends Screen {
             costTile(g, lc1, y, cellW, fmtUsd(s.monthlyRaisedUsd()),
                     "gui.dungeontrain.death.narr.lbl_raised_month",
                     "gui.dungeontrain.death.narr.tip_raised", VALUE);
-            // Slot 3: the goal that was leading, now settled — the same treatment the server bill
-            // got when IT was paid off, so the shift reads as the ladder moving, not a new layout.
-            checkedCostTile(g, lc0, ly, cellW, fmtUsd(activeGoal.targetAud()),
-                    FundingGoals.label(activeGoal), FundingGoals.tipKey(activeGoal), GOAL_MET);
-            drawTileProgress(g, lc0, ly, cellW, activeGoal.percent());
+            // Slot 3: the updates card, or — on a build that knows no count — the goal that was
+            // leading, now settled, which is the layout this page had before the card existed.
+            if (updatesCard) {
+                updatesTile(g, lc0, ly, cellW, updates, mouseX, mouseY);
+            } else {
+                checkedCostTile(g, lc0, ly, cellW, fmtUsd(activeGoal.targetAud()),
+                        FundingGoals.label(activeGoal), FundingGoals.tipKey(activeGoal), GOAL_MET);
+                drawTileProgress(g, lc0, ly, cellW, activeGoal.percent());
+            }
         } else if (serverCostsMet) {
             // Slot 1: the new goal, as a COST — what the next thing needs per month, not a
             // percentage. The progress against it reads off the raised figure beside it.
             costTile(g, lc0, y, cellW, fmtUsd(activeGoal.targetAud()),
                     FundingGoals.label(activeGoal), FundingGoals.tipKey(activeGoal), COST);
-            // Slot 2: raised. Slot 3: the settled server bill, blue and renamed — it is no longer
-            // the ask, it is the thing this month's support already paid off.
+            // Slot 2: raised.
             costTile(g, lc1, y, cellW, fmtUsd(s.monthlyRaisedUsd()),
                     "gui.dungeontrain.death.narr.lbl_raised_month",
                     "gui.dungeontrain.death.narr.tip_raised", VALUE);
-            checkedCostTile(g, lc0, ly, cellW, costValue,
-                    "gui.dungeontrain.death.narr.lbl_server_cost",
-                    "gui.dungeontrain.death.narr.tip_monthly_cost", GOAL_MET);
-            // Each rung's progress along the foot of its own tile: the new goal part-filled, the
-            // server bill full — the same bar in both, so one reads as the continuation of the other.
+            // Slot 3: the updates card. The settled server bill has moved to the ✓ line above —
+            // it is paid, and a tile whose whole content is a tick earns its slot less than the
+            // work the money paid for. Without a count to show, that blue tile is still the
+            // fallback rather than a hole in the grid.
+            if (updatesCard) {
+                updatesTile(g, lc0, ly, cellW, updates, mouseX, mouseY);
+            } else {
+                checkedCostTile(g, lc0, ly, cellW, costValue,
+                        "gui.dungeontrain.death.narr.lbl_server_cost",
+                        "gui.dungeontrain.death.narr.tip_monthly_cost", GOAL_MET);
+                drawTileProgress(g, lc0, ly, cellW, serverCosts.percent());
+            }
+            // The ask's own progress along the foot of its tile.
             drawTileProgress(g, lc0, y, cellW, activeGoal.percent());
-            drawTileProgress(g, lc0, ly, cellW, serverCosts.percent());
         } else {
             // Nothing covered yet: the bill leads, with progress toward it beside it — the layout
             // this page has always had. The percentage is the first rung's when a ladder is served,
@@ -1595,28 +1615,6 @@ public final class NarrativeDeathScreen extends Screen {
                 Component.translatable("gui.dungeontrain.death.narr.donate_button"),
                 BTN_PRI_BG, BTN_PRI_LIGHT, BTN_DARK, 0xFFFFFFFF);
         int leftBottom = ly + 30;
-
-        // Once the bill is settled the page has stopped asking, so it has room to say what the
-        // support bought: how many updates have shipped, and how recently. The window shrinks to
-        // the project's own age while it is young — "the last 5 months", not "this year". Relay
-        // first, the jar's baked numbers behind it, and nothing at all when neither knows: a row
-        // of zeroes in front of a would-be donor is worse than no row.
-        UpdateStats.Figures updates = serverCostsMet || hoursLead
-                ? UpdateStats.current(s.updates()) : null;
-        if (updates != null) {
-            int uy = ly + 30;
-            costTile(g, lc0, uy, cellW, UpdateStats.countValue(updates),
-                    UpdateStats.countLabel(updates), UpdateStats.countTip(updates), VALUE);
-            // The recency tile stands down on its own when no timestamp resolved, leaving the
-            // count where it is rather than shifting the row.
-            if (UpdateStats.hasRecency(updates)) {
-                costTile(g, lc1, uy, cellW,
-                        UpdateStats.ago(updates, java.time.Instant.now()).getString(),
-                        Component.translatable("gui.dungeontrain.death.narr.lbl_last_update"),
-                        "gui.dungeontrain.death.narr.tip_last_update", VALUE);
-            }
-            leftBottom = uy + 30;
-        }
 
         // ---- Right block: supporter names, scrollable, amount right-aligned. Patreon tinted. ----
         drawCenteredStr(g, Component.translatable("gui.dungeontrain.death.narr.lbl_leaderboard_monthly"),
@@ -1649,6 +1647,25 @@ public final class NarrativeDeathScreen extends Screen {
         }
 
         return Math.max(leftBottom, listTop + listH) + 10;
+    }
+
+    /**
+     * The updates card: "765 Updates" over "in 1 week". Hovering swaps the span to the longest one
+     * on offer — a year, or the project's own age while it is younger — so the same tile answers
+     * both "is this thing alive?" and "how much has it had done to it?". The tooltip says how long
+     * ago the newest release went out.
+     *
+     * <p>The hover is read here rather than in the tooltip pass because it changes what is DRAWN,
+     * not just what is explained; it honours {@link #settled()} for the same reason the tooltips
+     * do — nothing on this page reacts to the cursor while it is still fading in.</p>
+     */
+    private void updatesTile(GuiGraphics g, int centerX, int y, int cw,
+                             UpdateStats.Figures f, int mouseX, int mouseY) {
+        Rect rect = new Rect(centerX - cw / 2, y, cw, 26);
+        boolean hovered = settled() && rect.has(mouseX, mouseY);
+        drawCell(g, centerX, y, UpdateStats.value(f, hovered).getString(),
+                UpdateStats.label(f, hovered), cw, VALUE);
+        donateTips.add(new TileTip(rect, UpdateStats.tooltip(f, java.time.Instant.now())));
     }
 
     /** A cost/stat tile plus its hover-tooltip region (rendered when the page is settled). */

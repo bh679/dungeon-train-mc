@@ -543,29 +543,27 @@ def updateStats = { ->
     }
 
     if (daily.isEmpty()) {
-        logger.warn('version-history: no history found — the death screen will omit the updates line')
-        return [count: 0, windowMonths: 0, month: 0, lastUpdate: '']
+        logger.warn('version-history: no history found — the death screen will omit the updates card')
+        return [count: 0, windowMonths: 0, month: 0, week: 0, lastUpdate: '']
     }
 
     var today = java.time.LocalDate.now()
     var first = java.time.LocalDate.parse(daily.firstKey())
     // The window rule, mirrored in collect.py, UpdateStats.java and dp-relay's updates.js: the
-    // project's own age rounded UP while it is younger than a year (so the window still covers
-    // every update ever shipped), then the calendar year to date once it is a year old.
+    // longest window the card offers is the project's own age rounded UP (so it still covers every
+    // update ever shipped), capped at the twelve months the card renders as "1 year".
     var whole = (today.year - first.year) * 12 + (today.monthValue - first.monthValue)
     if (today.dayOfMonth < first.dayOfMonth) whole -= 1
-    int windowMonths = whole >= 12 ? 0
-            : Math.max(1, today.dayOfMonth == first.dayOfMonth ? whole : whole + 1)
-    var windowStart = windowMonths == 0
-            ? java.time.LocalDate.of(today.year, 1, 1)
-            : today.minusMonths(windowMonths)
+    if (today.dayOfMonth != first.dayOfMonth) whole += 1
+    int windowMonths = Math.max(1, Math.min(12, whole))
     var countSince = { java.time.LocalDate from ->
         var key = from.toString()
         daily.findAll { day, n -> day >= key }.values().sum(0) as int
     }
-    return [count       : countSince(windowStart),
+    return [count       : countSince(today.minusMonths(windowMonths)),
             windowMonths: windowMonths,
             month       : countSince(today.minusDays(30)),
+            week        : countSince(today.minusDays(7)),
             lastUpdate  : daily.lastKey()]
 }()
 
@@ -588,6 +586,7 @@ tasks.register('generateModMetadata', ProcessResources) {
         updates_count              : updateStats.count,
         updates_window_months      : updateStats.windowMonths,
         updates_month              : updateStats.month,
+        updates_week               : updateStats.week,
         last_update_date           : updateStats.lastUpdate,
         sable_mod_version          : sable_mod_version,
         adventureitemnames_version : adventureitemnames_version,

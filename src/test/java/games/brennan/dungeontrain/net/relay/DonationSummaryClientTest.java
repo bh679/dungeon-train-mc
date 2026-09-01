@@ -48,12 +48,13 @@ final class DonationSummaryClientTest {
 
         Summary s = DonationSummaryClient.parse("""
         {"ok":true,"monthlyRaisedUsd":155,"monthlyCostUsd":40,
-         "updates":{"count":765,"windowMonths":5,"month":244,
+         "updates":{"count":765,"windowMonths":5,"month":244,"week":117,
                     "latestReleaseAt":1756728000000,"latestVersion":"0.763.0"}}
         """);
         assertEquals(765, s.updates().count());
         assertEquals(5, s.updates().windowMonths());
         assertEquals(244, s.updates().month());
+        assertEquals(117, s.updates().week());
         assertEquals(1756728000000L, s.updates().latestReleaseAtMs());
         assertEquals("0.763.0", s.updates().latestVersion());
     }

@@ -2481,6 +2481,23 @@
       ]
     }
   },
+  "chat.dungeontrain.time.week.one": {
+    "1": {
+      "label": "a count of one",
+      "examples": [
+        "1"
+      ]
+    }
+  },
+  "chat.dungeontrain.time.week.other": {
+    "1": {
+      "label": "how many weeks",
+      "examples": [
+        "2",
+        "3"
+      ]
+    }
+  },
   "chat.dungeontrain.time.month.one": {
     "1": {
       "label": "a count of one",
@@ -2498,26 +2515,7 @@
       ]
     }
   },
-  "gui.dungeontrain.death.narr.lbl_updates_window": {
-    "1": {
-      "label": "the span the count covers, as a whole clause - the project's own age while it is younger than a year",
-      "examples": [
-        {
-          "key": "chat.dungeontrain.time.month.other",
-          "args": [
-            "5"
-          ]
-        },
-        {
-          "key": "chat.dungeontrain.time.month.one",
-          "args": [
-            "1"
-          ]
-        }
-      ]
-    }
-  },
-  "gui.dungeontrain.death.narr.updates_count.one": {
+  "chat.dungeontrain.time.year.one": {
     "1": {
       "label": "a count of one",
       "examples": [
@@ -2525,36 +2523,65 @@
       ]
     }
   },
-  "gui.dungeontrain.death.narr.updates_count.other": {
+  "chat.dungeontrain.time.year.other": {
     "1": {
-      "label": "how many updates shipped",
+      "label": "how many years",
       "examples": [
-        "244",
-        "12"
+        "2",
+        "3"
       ]
     }
   },
-  "gui.dungeontrain.death.narr.tip_updates": {
+  "gui.dungeontrain.death.narr.updates_value.one": {
     "1": {
-      "label": "how many updates landed in the last 30 days, as a whole clause",
+      "label": "a count of one",
+      "examples": [
+        "1"
+      ]
+    }
+  },
+  "gui.dungeontrain.death.narr.updates_value.other": {
+    "1": {
+      "label": "how many updates shipped in the span named on the line below",
+      "examples": [
+        "117",
+        "765"
+      ]
+    }
+  },
+  "gui.dungeontrain.death.narr.lbl_updates_in": {
+    "1": {
+      "label": "the span those updates landed in, as a whole clause - a week by default, the project's whole life on hover",
       "examples": [
         {
-          "key": "gui.dungeontrain.death.narr.updates_count.other",
+          "key": "chat.dungeontrain.time.week.one",
           "args": [
-            "244"
+            "1"
+          ]
+        },
+        {
+          "key": "chat.dungeontrain.time.month.other",
+          "args": [
+            "5"
+          ]
+        },
+        {
+          "key": "chat.dungeontrain.time.year.one",
+          "args": [
+            "1"
           ]
         }
       ]
     }
   },
-  "gui.dungeontrain.death.narr.ago": {
+  "gui.dungeontrain.death.narr.tip_last_update": {
     "1": {
-      "label": "how long ago, as a whole clause",
+      "label": "how long ago the newest release went out, as a whole clause",
       "examples": [
         {
           "key": "chat.dungeontrain.time.hour.other",
           "args": [
-            "2"
+            "3"
           ]
         },
         {

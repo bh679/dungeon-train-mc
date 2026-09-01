@@ -63,16 +63,15 @@ public final class DonationSummaryClient {
                        int percent, boolean complete) {}
 
     /**
-     * The updates ledger: how many updates have shipped in the window the relay picked, how many
-     * in the last 30 days, and when the newest release was published (epoch millis, {@code 0} when
-     * the relay has no release timestamp).
+     * The updates ledger the death screen's card reads: how many updates shipped in the last week,
+     * in the last 30 days, and across the longest window on offer, plus when the newest release was
+     * published (epoch millis, {@code 0} when the relay has no release timestamp).
      *
-     * <p>{@code windowMonths} is the project's own age in months while it is younger than a year —
-     * a five-month-old game says "the last 5 months", not "this year" — and {@code 0} once it is a
-     * year or more old, meaning the calendar year to date. The relay re-derives both at read time,
-     * so the window widens and eventually flips on its own without a jar or a deploy.</p>
+     * <p>{@code windowMonths} sizes {@code count}: the project's own age in months, capped at the
+     * twelve the card renders as "1 year". The relay re-derives every figure at read time, so the
+     * window widens on its own without a jar or a deploy.</p>
      */
-    public record Updates(int count, int windowMonths, int month,
+    public record Updates(int count, int windowMonths, int month, int week,
                           long latestReleaseAtMs, String latestVersion) {}
 
     /**
@@ -201,7 +200,8 @@ public final class DonationSummaryClient {
         String latestVersion = u.has("latestVersion") && u.get("latestVersion").isJsonPrimitive()
                 ? u.get("latestVersion").getAsString() : "";
         return new Updates(count, Math.max(0, optInt(u, "windowMonths", 0)),
-                Math.max(0, optInt(u, "month", 0)), Math.max(0L, latestAt), latestVersion);
+                Math.max(0, optInt(u, "month", 0)), Math.max(0, optInt(u, "week", 0)),
+                Math.max(0L, latestAt), latestVersion);
     }
 
     private static List<Entry> parseEntries(JsonObject o, String key) {

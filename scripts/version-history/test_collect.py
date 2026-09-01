@@ -77,10 +77,12 @@ class WindowTest(unittest.TestCase):
     def test_just_under_a_year_is_twelve_months(self):
         self.assertEqual(collect.window_months(date(2026, 4, 20), date(2027, 3, 25)), 12)
 
-    def test_a_year_old_switches_to_the_calendar_year(self):
-        self.assertEqual(collect.window_months(date(2026, 4, 20), date(2027, 4, 20)), 0)
+    def test_a_year_old_caps_at_twelve_months(self):
+        # 12 is what the card renders as "1 year"; an older project does not grow past it.
+        self.assertEqual(collect.window_months(date(2026, 4, 20), date(2027, 4, 20)), 12)
+        self.assertEqual(collect.window_months(date(2026, 4, 20), date(2030, 4, 20)), 12)
         self.assertEqual(collect.window_start(date(2026, 4, 20), date(2027, 4, 20)),
-                         date(2027, 1, 1))
+                         date(2026, 4, 20))
 
     def test_months_ago_clamps_into_a_short_month(self):
         self.assertEqual(collect.months_ago(date(2026, 3, 31), 1), date(2026, 2, 28))

@@ -36,8 +36,11 @@ SCHEMA_VERSION = "1.0"
 GIT_LOG = ["git", "log", "--reverse", "--format=%x00%ad", "--date=short",
            "-p", "--", "gradle.properties"]
 
-# The rolling "recently" window shown on hover, in days.
+# The rolling windows the card can show: a week by default, a month when the week is too thin.
+RECENT_WEEK_DAYS = 7
 RECENT_DAYS = 30
+# The longest window the card offers (on hover), in months — "1 year" once the project is that old.
+MAX_WINDOW_MONTHS = 12
 
 
 def parse_log(lines):
@@ -100,9 +103,9 @@ def daily_counts(bumps):
 
 def window_months(first, today):
     """
-    How many months the tile should claim: the project's own age, rounded UP, while it is
-    younger than a year — a five-month-old game does not get to say "this year". ``0`` once it
-    is a year or older, meaning the caller shows the calendar year to date instead.
+    The longest window the card offers, in months: the project's own age, rounded UP, capped at
+    a year. A five-month-old game says "in 5 months" rather than "in 1 year"; once it is old
+    enough the answer is simply 12, which the card renders as "1 year".
 
     Rounding up rather than down keeps the window covering the whole history: an age of 4
     months and 12 days is "the last 5 months", which includes every update ever shipped.
@@ -110,11 +113,9 @@ def window_months(first, today):
     whole = (today.year - first.year) * 12 + (today.month - first.month)
     if today.day < first.day:
         whole -= 1
-    if whole >= 12:
-        return 0
-    if today.day == first.day:
-        return max(1, whole)
-    return max(1, whole + 1)
+    if today.day != first.day:
+        whole += 1
+    return max(1, min(MAX_WINDOW_MONTHS, whole))
 
 
 def months_ago(today, months):
@@ -128,9 +129,8 @@ def months_ago(today, months):
 
 
 def window_start(first, today):
-    """The first day the tile's count includes, for the window :func:`window_months` picked."""
-    months = window_months(first, today)
-    return date(today.year, 1, 1) if months == 0 else months_ago(today, months)
+    """The first day the card's long count includes, for the window :func:`window_months` picked."""
+    return months_ago(today, window_months(first, today))
 
 
 def count_since(daily, start):
@@ -207,13 +207,15 @@ def main(argv=None):
     if bumps:
         first = date.fromisoformat(index["firstVersionDate"])
         months = window_months(first, today)
-        window = "this year" if months == 0 else f"the last {months} month{'s' if months > 1 else ''}"
+        window = "1 year" if months == MAX_WINDOW_MONTHS else f"{months} month{'s' if months > 1 else ''}"
         recent = count_since(index["daily"], today - timedelta(days=RECENT_DAYS))
+        week = count_since(index["daily"], today - timedelta(days=RECENT_WEEK_DAYS))
         print(f"  first update        {index['firstVersionDate']}")
         print(f"  latest update       {index['latestVersion']} ({index['latestVersionDate']})")
         print(f"  updates, all time   {index['totalUpdates']}")
-        print(f"  updates in {window:<9} {count_since(index['daily'], window_start(first, today))}")
+        print(f"  updates, last {RECENT_WEEK_DAYS}d    {week}")
         print(f"  updates, last {RECENT_DAYS}d   {recent}")
+        print(f"  updates in {window:<9} {count_since(index['daily'], window_start(first, today))}")
     else:
         print("  no version history found — the death screen will omit the line")
 
