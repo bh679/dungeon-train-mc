@@ -37,9 +37,11 @@ import java.util.concurrent.ConcurrentHashMap;
  * behind a 300s edge cache, so the refresh interval here is deliberately unhurried: a leaderboard
  * that is five minutes stale is not wrong in any way a reader could notice.</p>
  *
- * <p>Per-player ranks are fetched once, at login, from {@code /leaderboard/me} and cached by uuid.
+ * <p>Per-player ranks are fetched from {@code /leaderboard/me} and cached by uuid: once at login,
+ * and again shortly after each death, which is the moment a player's own position actually moves.
  * That is what lets a book's closing "where you stand" line cost nothing at the moment the book is
- * opened — by then the answer is already here.</p>
+ * opened — by then the answer is already here. A per-player cooldown
+ * ({@link #RANK_ATTEMPT_COOLDOWN_MS}) keeps a run of quick deaths down to one request.</p>
  *
  * <p>Never throws and never blocks. A failed, slow or empty response leaves the previous snapshot in
  * place, and a player with no network simply finds an ordinary random book instead.</p>
@@ -73,6 +75,16 @@ public final class LeaderboardPool {
      * <p>Shorter than the board TTL, so a board that starts being served still appears promptly.</p>
      */
     private static final long EMPTY_ATTEMPT_COOLDOWN_MS = 60_000L;
+
+    /**
+     * Shortest gap between two rank fetches for the SAME player.
+     *
+     * <p>{@code /leaderboard/me} is the one leaderboard call that touches SQLite — an indexed count
+     * per board, fifteen of them in a single request — so it is the one that must not be reachable in
+     * a loop. Login asks once; a death asks again. A player dying every few seconds in lava would
+     * otherwise ask every few seconds, and their rank does not meaningfully move in that time.</p>
+     */
+    static final long RANK_ATTEMPT_COOLDOWN_MS = 60_000L;
 
     /** Ceilings mirroring the relay's own, so an out-of-date or wrong relay can't push junk into a book. */
     static final int MAX_ROWS = 200;
@@ -117,6 +129,13 @@ public final class LeaderboardPool {
      */
     private static final Map<LeaderboardCategory, Long> LAST_ATTEMPT_MS = new ConcurrentHashMap<>();
     private static final Map<UUID, Map<LeaderboardCategory, Standing>> RANKS = new ConcurrentHashMap<>();
+
+    /**
+     * When each player's ranks were last asked for, whatever the answer was — the brake described on
+     * {@link #RANK_ATTEMPT_COOLDOWN_MS}. Stamped before dispatch, like {@link #LAST_ATTEMPT_MS}, so a
+     * request that never answers cannot open the door for the next one.
+     */
+    private static final Map<UUID, Long> RANK_ATTEMPT_MS = new ConcurrentHashMap<>();
 
     /**
      * Set once a leaderboard book actually exists somewhere in the world. Until then this pool makes
@@ -192,6 +211,7 @@ public final class LeaderboardPool {
     /** Drop a player's cached ranks — call on logout so the map doesn't grow with the session. */
     public static void forget(UUID player) {
         RANKS.remove(player);
+        RANK_ATTEMPT_MS.remove(player);
     }
 
     /**
@@ -234,11 +254,25 @@ public final class LeaderboardPool {
     }
 
     /**
-     * Fetch one player's standings across every board, once. Called at login; the result is what the
-     * closing line of every leaderboard book they find is written from.
+     * Whether this player's ranks are worth asking the relay for right now — over plain values, so
+     * the cooldown can be tested without a relay. See {@link #RANK_ATTEMPT_COOLDOWN_MS}.
+     *
+     * @param lastAttempt when they were last asked for, or null if they never have been
+     */
+    static boolean dueForRankRequest(Long lastAttempt, long now) {
+        return lastAttempt == null || now - lastAttempt >= RANK_ATTEMPT_COOLDOWN_MS;
+    }
+
+    /**
+     * Fetch one player's standings across every board. Called at login and again a few seconds after
+     * each of their deaths; the result is what the closing line of every leaderboard book they find is
+     * written from. Held off by {@link #RANK_ATTEMPT_COOLDOWN_MS} when asked again too soon.
      */
     public static void refreshRanks(UUID player, String name) {
         if (player == null) return;
+        long now = System.currentTimeMillis();
+        if (!dueForRankRequest(RANK_ATTEMPT_MS.get(player), now)) return;
+        RANK_ATTEMPT_MS.put(player, now);
         try {
             String url = DungeonTrain.relayBaseUrl() + "/leaderboard/me?uuid=" + enc(player.toString())
                     + (name == null || name.isBlank() ? "" : "&name=" + enc(name));
@@ -364,6 +398,7 @@ public final class LeaderboardPool {
         IN_FLIGHT.clear();
         LAST_ATTEMPT_MS.clear();
         RANKS.clear();
+        RANK_ATTEMPT_MS.clear();
         wanted = false;
         warmCursor = 0;
     }

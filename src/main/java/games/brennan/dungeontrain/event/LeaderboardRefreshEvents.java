@@ -1,27 +1,42 @@
 package games.brennan.dungeontrain.event;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.cheat.RunIntegrity;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.narrative.LeaderboardPool;
+import games.brennan.dungeontrain.narrative.LeaderboardRankSchedule;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
+import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
+import java.util.UUID;
+
 /**
- * Keeps {@link LeaderboardPool} warm, and fetches each player's own standings once when they join.
+ * Keeps {@link LeaderboardPool} warm, and keeps each player's own standings current.
  *
- * <p>Both halves are deliberately unhurried. The tick asks for at most one board every
+ * <p>The board half is deliberately unhurried. The tick asks for at most one board every
  * {@link #REFRESH_PERIOD_TICKS} and only once a leaderboard book has actually been rolled into the
  * world, so the twenty-four boards cycle in about twelve minutes and a server whose loot never
  * produces one never contacts the relay at all. The relay serves these behind a five-minute edge
  * cache anyway — a board that is a few minutes old is not wrong in any way a reader could notice.</p>
  *
- * <p>The per-player fetch happens at login, once, which is what lets a book's closing "where you
- * stand" line cost nothing at the moment the book is opened. It carries the player's uuid and name,
- * so it is gated on the same network-consent setting as every other relay call that identifies
- * somebody.</p>
+ * <p>The per-player half fetches at login and again after every death, which is the only moment a
+ * player's own position actually moves. Both carry the player's uuid and name, so both wait on the
+ * same network-consent setting as every other relay call that identifies somebody.</p>
+ *
+ * <h2>Why a death schedules rather than fetches</h2>
+ * <p>The death's own telemetry — the run summary and death detail the relay scores from — only leaves
+ * in the trailing flush of {@code RunStatsEvents.onPlayerDeath}'s {@code RelayOutbox.runBatched(...)}
+ * block. Asking for ranks inside the death handler would therefore read back the position the player
+ * held BEFORE the death that just happened, which is the exact staleness this is here to fix. So the
+ * death puts the player on {@link #PENDING} and a tick {@link #DEATH_RANK_DELAY_TICKS} later does the
+ * fetching, by which time the relay has ingested the death and {@code /leaderboard/me} — which reads
+ * {@code player_scores} live and is never edge-cached — answers with the new number.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class LeaderboardRefreshEvents {
@@ -29,12 +44,27 @@ public final class LeaderboardRefreshEvents {
     /** One board per this many server ticks (20 ticks = 1 s → ~30 s). */
     static final int REFRESH_PERIOD_TICKS = 600;
 
+    /**
+     * How long after a death the rank refetch runs (20 ticks = 1 s → ~5 s). Long enough for the
+     * death's telemetry batch to reach the relay and be scored; short enough that a player who dies,
+     * respawns and picks up a leaderboard book reads a current position.
+     */
+    static final int DEATH_RANK_DELAY_TICKS = 100;
+
+    /** Deaths waiting on their delay. See the class note on why a death cannot fetch on the spot. */
+    private static final LeaderboardRankSchedule PENDING = new LeaderboardRankSchedule();
+
     private static int tickCounter = 0;
+
+    /** Monotonic tick clock, the one the schedule's due-ticks are measured against. */
+    private static long serverTicks = 0L;
 
     private LeaderboardRefreshEvents() {}
 
     @SubscribeEvent
     public static void onServerTick(ServerTickEvent.Post event) {
+        long now = ++serverTicks;
+        if (!PENDING.isEmpty()) drainDueRanks(event.getServer(), now);
         if (++tickCounter < REFRESH_PERIOD_TICKS) return;
         tickCounter = 0;
         LeaderboardPool.warmNext();
@@ -50,10 +80,41 @@ public final class LeaderboardRefreshEvents {
         LeaderboardPool.refreshRanks(player.getUUID(), player.getName().getString());
     }
 
+    /**
+     * A death moves the player's own numbers, so their standings are re-asked for shortly after.
+     *
+     * <p>LOWEST priority so {@code RunStatsEvents.onPlayerDeath} (LOW) — the handler that accrues the
+     * lifetime counters and enqueues the telemetry — has already run. A Free Play run is skipped
+     * outright: its death writes no score, so there would be nothing new to read.</p>
+     */
+    @SubscribeEvent(priority = EventPriority.LOWEST)
+    public static void onPlayerDeath(LivingDeathEvent event) {
+        if (event.isCanceled()) return;
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        if (!DungeonTrainConfig.isWorldInfoToRelay()) return;
+        if (RunIntegrity.isCheated(player)) return;
+        PENDING.schedule(player.getUUID(), serverTicks + DEATH_RANK_DELAY_TICKS);
+    }
+
     @SubscribeEvent
     public static void onLogout(PlayerEvent.PlayerLoggedOutEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
+            PENDING.cancel(player.getUUID());
             LeaderboardPool.forget(player.getUUID());
+        }
+    }
+
+    /**
+     * Fetch ranks for everyone whose post-death delay has elapsed. The live {@link ServerPlayer} is
+     * resolved here rather than captured at death time so the request carries the name the relay
+     * knows them by — the boards keyed by credit name (translations, donations) need it — and so a
+     * player who left in the interval is simply dropped instead of fetched for.
+     */
+    private static void drainDueRanks(MinecraftServer server, long now) {
+        for (UUID id : PENDING.drainDue(now)) {
+            ServerPlayer player = server == null ? null : server.getPlayerList().getPlayer(id);
+            if (player == null) continue;
+            LeaderboardPool.refreshRanks(id, player.getName().getString());
         }
     }
 }
