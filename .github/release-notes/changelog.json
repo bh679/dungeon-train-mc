@@ -10605,6 +10605,21 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "trade-everything-diamond-payout-half",
+      "version": "0.764.0",
+      "type": "chore",
+      "title": "Trade Everything updated to 0.10.0",
+      "summary": "Dungeon Train now builds against Trade Everything 0.10.0, which adds a payout-currency setting to the Trade Anything slot: when a villager pays you in a premium currency, the trade is worth a fraction of face value, shipped with diamonds at half. No vanilla villager pays out in diamonds, so the trades you make today are unchanged \u2014 and the required Trade Everything version stays 0.8.0, so nothing forces you to update.",
+      "highlights": [
+        "Trade Everything 0.10.0: a payout in diamonds is worth half the value of what you traded in",
+        "Configurable per currency in tradeeverything.json (payout_multipliers); set an entry to 1.0 to turn it off"
+      ],
+      "date": "2026-09-01",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
