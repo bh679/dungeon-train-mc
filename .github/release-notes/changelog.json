@@ -10750,14 +10750,26 @@
       "released_at": null
     },
     {
-      "id": "echo-note-starts-further-away",
+      "id": "death-screen-menu-updates",
       "version": "0.771.0",
       "type": "feat",
+      "title": "The engine room speaks, and the menu joins in",
+      "summary": "The support page now leads with how many changes were made this week. The main menu occasionally does too, across today, this week, this month and this year.",
+      "highlights": [],
+      "date": "2026-09-01",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "echo-note-starts-further-away",
+      "version": "0.772.0",
+      "type": "feat",
       "title": "A longer note is read from further away",
-      "summary": "An echo carrying a long note now starts reading it while it is still coming down the train, instead of waiting until it is standing next to you. It gets a carriage of run-up for every couple of lines, so a full page finishes about the time the echo reaches you rather than being half-read.",
+      "summary": "An echo carrying a long note now arrives further up the train and reads it as it comes, instead of appearing beside you and starting to talk. It gets a carriage of run-up for every couple of lines, so a full page finishes about the time the echo reaches you rather than being half-read.",
       "highlights": [
-        "Longer notes start sooner, so you hear the whole thing instead of the first line or two.",
-        "Short notes are unchanged \u2014 they still begin when the echo is alongside."
+        "Longer notes start sooner and further off, so you hear the whole thing instead of the first line or two.",
+        "Short notes are unchanged \u2014 they still arrive alongside you."
       ],
       "pr": 1256,
       "date": "2026-09-01",

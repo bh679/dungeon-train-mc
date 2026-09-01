@@ -7,11 +7,14 @@ import games.brennan.dungeontrain.net.relay.DonationSummaryClient;
 import games.brennan.dungeontrain.util.PresenceLine;
 import net.minecraft.network.chat.Component;
 
+import java.text.NumberFormat;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * The updates card on the death screen's donation page — the third tile of the grid, in every
@@ -56,7 +59,33 @@ public final class UpdateStats {
      * the tooltip its recency line.
      */
     public record Figures(int week, int month, int windowCount, int windowMonths,
-                          long lastUpdateAtMs) {}
+                          int day, int year, long lastUpdateAtMs, boolean live) {}
+
+    /**
+     * A timeframe the menu splash can name. Ordered shortest first, which is the order a player
+     * reading several of them over a few visits would expect them in.
+     */
+    public enum Timeframe {
+        DAY("gui.dungeontrain.splash.updates_day"),
+        WEEK("gui.dungeontrain.splash.updates_week"),
+        MONTH("gui.dungeontrain.splash.updates_month"),
+        YEAR("gui.dungeontrain.splash.updates_year");
+
+        private final String key;
+
+        Timeframe(String key) {
+            this.key = key;
+        }
+
+        int countIn(Figures f) {
+            return switch (this) {
+                case DAY -> f.day();
+                case WEEK -> f.week();
+                case MONTH -> f.month();
+                case YEAR -> f.year();
+            };
+        }
+    }
 
     private UpdateStats() {}
 
@@ -64,6 +93,7 @@ public final class UpdateStats {
     public static Figures current(DonationSummaryClient.Updates relay) {
         return resolve(relay, VersionInfo.UPDATES_WEEK, VersionInfo.UPDATES_MONTH,
                 VersionInfo.UPDATES_COUNT, VersionInfo.UPDATES_WINDOW_MONTHS,
+                VersionInfo.UPDATES_DAY, VersionInfo.UPDATES_YEAR,
                 VersionInfo.LAST_UPDATE_DATE);
     }
 
@@ -77,16 +107,61 @@ public final class UpdateStats {
      */
     public static Figures resolve(DonationSummaryClient.Updates relay, int bakedWeek,
                                   int bakedMonth, int bakedCount, int bakedWindowMonths,
-                                  String bakedDay) {
+                                  int bakedToday, int bakedYear, String bakedDay) {
         if (relay != null && relay.count() > 0) {
             return new Figures(relay.week(), relay.month(), relay.count(),
-                    clampMonths(relay.windowMonths()), relay.latestReleaseAtMs());
+                    clampMonths(relay.windowMonths()), relay.day(), relay.year(),
+                    relay.latestReleaseAtMs(), true);
         }
         if (bakedCount > 0) {
             return new Figures(bakedWeek, bakedMonth, bakedCount, clampMonths(bakedWindowMonths),
-                    dayToMillis(bakedDay));
+                    bakedToday, bakedYear, dayToMillis(bakedDay), false);
         }
         return null;
+    }
+
+    /**
+     * Whether these figures came from the relay rather than the jar.
+     *
+     * <p>The menu splash requires it. A line reading "9 changes today!" is a claim about today, and
+     * the baked numbers are frozen at build time — on a jar a fortnight old that sentence is
+     * confidently wrong. The death screen's card is happy with either: "770 in 5 months" ages by a
+     * rounding error, not by a lie.</p>
+     */
+    public static boolean isLive(Figures f) {
+        return f != null && f.live();
+    }
+
+    /**
+     * The timeframes worth naming on the menu, shortest first. A timeframe with nothing in it is
+     * dropped rather than shown as a zero, so a quiet Monday offers three lines instead of
+     * announcing that nothing happened.
+     */
+    public static List<Timeframe> splashTimeframes(Figures f) {
+        if (!isLive(f)) return List.of();
+        List<Timeframe> out = new ArrayList<>(Timeframe.values().length);
+        for (Timeframe t : Timeframe.values()) {
+            if (t.countIn(f) > 0) out.add(t);
+        }
+        return out;
+    }
+
+    /** One menu splash — "122 changes this week!" — for the language chosen in Minecraft. */
+    public static Component splash(Figures f, Timeframe timeframe) {
+        return splash(f, timeframe, ClientLanguage.selected(), DevHours.clientLocale());
+    }
+
+    /** As {@link #splash(Figures, Timeframe)}, with both locales explicit — kept pure for tests. */
+    public static Component splash(Figures f, Timeframe timeframe, String localeCode,
+                                   java.util.Locale grouping) {
+        int count = timeframe.countIn(f);
+        // "10 new updates" / "1 new update" — its own clause rather than the death-screen pitch's
+        // changes_count, because this sentence supplies its own noun phrase ("made … to the
+        // Dungeon Train mod!") and needs the number on its own, not pre-bound to the word "changes".
+        Component clause = Component.translatable("gui.dungeontrain.splash.new_updates."
+                + PluralRules.category(localeCode, count),
+                NumberFormat.getIntegerInstance(grouping).format(count));
+        return Component.translatable(timeframe.key, clause);
     }
 
     /** A window a relay or a build could not state properly still has to name something sane. */
@@ -131,6 +206,43 @@ public final class UpdateStats {
     /** Whether there is anything to draw at all — a card with no count is no card. */
     public static boolean hasCount(Figures f) {
         return f != null && f.windowCount() > 0;
+    }
+
+    /**
+     * Whether the donation page's pitch can name the week's work — "117 changes were laid this week
+     * alone" — rather than opening with the plain line.
+     *
+     * <p>The same {@link #MIN_WORTH_SHOWING} threshold the card uses for its own default span, for
+     * the same reason and then some: "1 change was laid this week alone" argues against the
+     * sentence it sits in, and a quiet week is exactly when the pitch can least afford to sound
+     * dead. Below the threshold the page says nothing about the week at all.</p>
+     */
+    public static boolean hasWeekPitch(Figures f) {
+        return f != null && f.week() >= MIN_WORTH_SHOWING;
+    }
+
+    /**
+     * "117 changes", for the pitch's opening sentence, with the grammatical number the language
+     * wants.
+     *
+     * <p>{@code numberText} is the already-rendered figure rather than a count, so the caller can
+     * hand in a string the death screen has wrapped in its number sentinels — which is what makes
+     * the digits render white against the muted narration around them. Use {@link #groupedWeek} to
+     * produce it.</p>
+     */
+    public static Component changesClause(Figures f, String localeCode, String numberText) {
+        return Component.translatable("gui.dungeontrain.death.narr.changes_count."
+                + PluralRules.category(localeCode, f.week()), numberText);
+    }
+
+    /** The week's count, grouped for the language chosen in Minecraft ("117" / "1.117"). */
+    public static String groupedWeek(Figures f) {
+        return groupedWeek(f, DevHours.clientLocale());
+    }
+
+    /** As {@link #groupedWeek(Figures)}, for an explicit locale — kept pure for tests. */
+    public static String groupedWeek(Figures f, java.util.Locale locale) {
+        return NumberFormat.getIntegerInstance(locale).format(f.week());
     }
 
     /** The card's first line — "765 Updates" — for the language chosen in Minecraft. */

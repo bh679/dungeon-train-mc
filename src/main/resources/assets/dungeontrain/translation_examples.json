@@ -2532,6 +2532,105 @@
       ]
     }
   },
+  "gui.dungeontrain.splash.updates_day": {
+    "1": {
+      "label": "how many updates were made in this timeframe, as a whole clause - this is a main-menu splash line",
+      "examples": [
+        {
+          "key": "gui.dungeontrain.splash.new_updates.other",
+          "args": [
+            "9"
+          ]
+        }
+      ]
+    }
+  },
+  "gui.dungeontrain.splash.updates_week": {
+    "1": {
+      "label": "how many updates were made in this timeframe, as a whole clause - this is a main-menu splash line",
+      "examples": [
+        {
+          "key": "gui.dungeontrain.splash.new_updates.other",
+          "args": [
+            "122"
+          ]
+        }
+      ]
+    }
+  },
+  "gui.dungeontrain.splash.updates_month": {
+    "1": {
+      "label": "how many updates were made in this timeframe, as a whole clause - this is a main-menu splash line",
+      "examples": [
+        {
+          "key": "gui.dungeontrain.splash.new_updates.other",
+          "args": [
+            "249"
+          ]
+        }
+      ]
+    }
+  },
+  "gui.dungeontrain.splash.updates_year": {
+    "1": {
+      "label": "how many updates were made in this timeframe, as a whole clause - this is a main-menu splash line",
+      "examples": [
+        {
+          "key": "gui.dungeontrain.splash.new_updates.other",
+          "args": [
+            "770"
+          ]
+        }
+      ]
+    }
+  },
+  "gui.dungeontrain.splash.new_updates.one": {
+    "1": {
+      "label": "a count of one",
+      "examples": [
+        "1"
+      ]
+    }
+  },
+  "gui.dungeontrain.splash.new_updates.other": {
+    "1": {
+      "label": "how many updates were made - this feeds a main-menu splash line",
+      "examples": [
+        "10",
+        "250"
+      ]
+    }
+  },
+  "gui.dungeontrain.death.narr.changes_count.one": {
+    "1": {
+      "label": "a count of one",
+      "examples": [
+        "1"
+      ]
+    }
+  },
+  "gui.dungeontrain.death.narr.changes_count.other": {
+    "1": {
+      "label": "how many changes landed in the last week",
+      "examples": [
+        "117",
+        "24"
+      ]
+    }
+  },
+  "gui.dungeontrain.death.narr.donate_intro_updates": {
+    "1": {
+      "label": "how many changes were made this week, as a whole clause - the opening line of the donation pitch",
+      "examples": [
+        {
+          "key": "gui.dungeontrain.death.narr.changes_count.other",
+          "args": [
+            "117"
+          ]
+        }
+      ]
+    }
+  },
   "gui.dungeontrain.death.narr.updates_value.one": {
     "1": {
       "label": "a count of one",

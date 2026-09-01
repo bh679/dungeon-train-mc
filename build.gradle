@@ -544,7 +544,7 @@ def updateStats = { ->
 
     if (daily.isEmpty()) {
         logger.warn('version-history: no history found — the death screen will omit the updates card')
-        return [count: 0, windowMonths: 0, month: 0, week: 0, lastUpdate: '']
+        return [count: 0, windowMonths: 0, month: 0, week: 0, day: 0, year: 0, lastUpdate: '']
     }
 
     var today = java.time.LocalDate.now()
@@ -564,6 +564,10 @@ def updateStats = { ->
             windowMonths: windowMonths,
             month       : countSince(today.minusDays(30)),
             week        : countSince(today.minusDays(7)),
+            day         : (daily[today.toString()] ?: 0) as int,
+            // Calendar year to date, for the menu's "N changes this year" line. Deliberately not
+            // the rolling window above: on a splash "this year" means the calendar.
+            year        : countSince(java.time.LocalDate.of(today.year, 1, 1)),
             lastUpdate  : daily.lastKey()]
 }()
 
@@ -587,6 +591,8 @@ tasks.register('generateModMetadata', ProcessResources) {
         updates_window_months      : updateStats.windowMonths,
         updates_month              : updateStats.month,
         updates_week               : updateStats.week,
+        updates_day                : updateStats.day,
+        updates_year               : updateStats.year,
         last_update_date           : updateStats.lastUpdate,
         sable_mod_version          : sable_mod_version,
         adventureitemnames_version : adventureitemnames_version,
