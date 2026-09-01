@@ -10731,6 +10731,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "echo-note-starts-further-away",
+      "version": "0.770.0",
+      "type": "feat",
+      "title": "A longer note is read from further away",
+      "summary": "An echo carrying a long note now starts reading it while it is still coming down the train, instead of waiting until it is standing next to you. It gets a carriage of run-up for every couple of lines, so a full page finishes about the time the echo reaches you rather than being half-read.",
+      "highlights": [
+        "Longer notes start sooner, so you hear the whole thing instead of the first line or two.",
+        "Short notes are unchanged \u2014 they still begin when the echo is alongside."
+      ],
+      "pr": 1256,
+      "date": "2026-09-01",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
