@@ -7,7 +7,9 @@ import games.brennan.dungeontrain.train.CarriagePartKind;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
+import games.brennan.dungeontrain.DungeonTrain;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
@@ -65,6 +67,26 @@ final class BuilderTemplateTile {
 
     /** Padding between the state badge and the two cell edges it sits in the corner of. */
     private static final int BADGE_INSET = 3;
+
+    /**
+     * The favourite star, in four states.
+     *
+     * <p>Hollow when the build is not starred, filled when it is, and each swapping to a brighter
+     * version while the pointer is over it — the padlock precedent from the book vote page, where the
+     * hover state answers "what does this do" before the thing is pressed rather than only after.</p>
+     */
+    private static final ResourceLocation STAR_SPRITE =
+        ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "widget/star");
+    private static final ResourceLocation STAR_HIGHLIGHTED_SPRITE =
+        ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "widget/star_highlighted");
+    private static final ResourceLocation STAR_FILLED_SPRITE =
+        ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "widget/star_filled");
+    private static final ResourceLocation STAR_FILLED_HIGHLIGHTED_SPRITE =
+        ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "widget/star_filled_highlighted");
+
+    /** A backing plate under the star, so a hollow one reads against a pale build behind it. */
+    private static final int STAR_BG = 0x90101010;
+    private static final int STAR_BG_HOVER = 0xC0303030;
 
     private BuilderTemplateTile() {}
 
@@ -191,6 +213,25 @@ final class BuilderTemplateTile {
             BuilderTileArt.render(g, mode, modeArtAvailable, x, y, width, height, 1.0F);
             g.fill(x, y, x + width, y + height, FALLBACK_DIM);
         }
+    }
+
+    /**
+     * The favourite star, in a cell's top-left corner.
+     *
+     * <p>Drawn as a separate call after the cell, exactly as {@link #renderMore} is and for the same
+     * reason: it is a second hit target inside one cell, and only the caller knows which entries can
+     * carry one. Its geometry comes from {@link BuilderTemplateGridLayout}, so what is drawn here and
+     * what a click tests cannot disagree.</p>
+     *
+     * @param favourite whether this build is starred — which fills the star rather than outlining it
+     * @param hovered   whether the pointer is on the STAR, not merely on the cell around it
+     */
+    static void renderStar(GuiGraphics g, int x, int y, int size, boolean favourite, boolean hovered) {
+        g.fill(x, y, x + size, y + size, hovered ? STAR_BG_HOVER : STAR_BG);
+        ResourceLocation sprite = favourite
+                ? (hovered ? STAR_FILLED_HIGHLIGHTED_SPRITE : STAR_FILLED_SPRITE)
+                : (hovered ? STAR_HIGHLIGHTED_SPRITE : STAR_SPRITE);
+        g.blitSprite(sprite, x, y, size, size);
     }
 
     /**

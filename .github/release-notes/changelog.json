@@ -10526,6 +10526,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "builder-favourites",
+      "version": "0.760.0",
+      "type": "feat",
+      "title": "Star the builds and builders you want to find again",
+      "summary": "My Builds now has a star on every build, and a Favourites screen listing everything you have starred. A star is private \u2014 nobody else sees it, nothing is counted, and no build is ranked by it. It simply follows you: star something on one machine and it is starred on the next, because your favourites live with your builder profile rather than in that world's files.",
+      "highlights": [
+        "A star on every tile in My Builds, and a Starred filter to narrow the grid to just those",
+        "A Favourites screen collecting everything you have starred, with Load into Editor to pull one back into your library",
+        "Your stars are private and uncounted \u2014 this is a bookmark, not a vote",
+        "Favourites follow your profile between worlds and machines"
+      ],
+      "date": "2026-09-01",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

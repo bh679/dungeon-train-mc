@@ -79,7 +79,7 @@ public record BuilderProfileRequestPacket(String ownerUuid, boolean live) implem
                 DungeonTrainNet.sendTo(player, BuilderProfilePacket.of(blocked, owner, name, mine));
                 return;
             }
-            SharedCarriageClient.listMine(owner, relay).thenAccept(rows -> {
+            SharedCarriageClient.listMine(owner, ownProfile(player), relay).thenAccept(rows -> {
                 if (player.getServer() == null) return;
                 player.getServer().execute(() -> {
                     if (player.hasDisconnected()) return;
@@ -137,7 +137,7 @@ public record BuilderProfileRequestPacket(String ownerUuid, boolean live) implem
      * <p>Order within the refusal: the server's own switch is named first, because when profiles are
      * off the player's consent is moot and pointing them at their own setting would be a dead end.</p>
      */
-    private static BuilderProfilePacket.Status blockedReason(ServerPlayer player) {
+    static BuilderProfilePacket.Status blockedReason(ServerPlayer player) {
         if (BuilderRelayUpload.canUpload(player)) return null;
         if (!DungeonTrainConfig.isBuilderProfileEnabled()) {
             return BuilderProfilePacket.Status.DISABLED;

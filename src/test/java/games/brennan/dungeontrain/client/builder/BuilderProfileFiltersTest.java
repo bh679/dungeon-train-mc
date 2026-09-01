@@ -20,7 +20,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 final class BuilderProfileFiltersTest {
 
     private static BuilderProfilePacket.Entry build(int id, String kind, String review) {
-        return new BuilderProfilePacket.Entry(id, kind, "", "b" + id, false, "approved", review, "stone", 0);
+        return build(id, kind, review, false);
+    }
+
+    private static BuilderProfilePacket.Entry build(int id, String kind, String review, boolean starred) {
+        return new BuilderProfilePacket.Entry(id, kind, "", "b" + id, false, "approved", review, "stone", 0,
+                starred, "", "");
     }
 
     private static final BuilderProfilePacket.Entry WAITING =
@@ -60,6 +65,36 @@ final class BuilderProfileFiltersTest {
         List<BuilderProfilePacket.Entry> reversed = List.of(ROOM, ACCEPTED, WAITING);
         assertEquals(List.of(ACCEPTED, WAITING), BuilderProfileFilters.apply(reversed,
                 BuilderRelayKinds.CARRIAGE, BuilderProfileFilters.ALL));
+    }
+
+    @Test
+    @DisplayName("the favourite chip narrows to starred builds, and composes with the other two")
+    void narrowsToStarred() {
+        BuilderProfilePacket.Entry starredCarriage =
+                build(4, BuilderRelayKinds.CARRIAGE, BuilderReviewState.NONE, true);
+        BuilderProfilePacket.Entry starredRoom =
+                build(5, BuilderRelayKinds.PORTAL_ROOM, BuilderReviewState.NONE, true);
+        List<BuilderProfilePacket.Entry> mixed = List.of(WAITING, starredCarriage, ROOM, starredRoom);
+
+        assertEquals(List.of(starredCarriage, starredRoom), BuilderProfileFilters.apply(mixed,
+                BuilderProfileFilters.ALL, BuilderProfileFilters.ALL, BuilderProfileFilters.STARRED));
+        // Composes with the kind axis rather than replacing it.
+        assertEquals(List.of(starredCarriage), BuilderProfileFilters.apply(mixed,
+                BuilderRelayKinds.CARRIAGE, BuilderProfileFilters.ALL, BuilderProfileFilters.STARRED));
+        // Nothing starred is an ordinary empty answer, not an error.
+        assertEquals(List.of(), BuilderProfileFilters.apply(ALL_BUILDS,
+                BuilderProfileFilters.ALL, BuilderProfileFilters.ALL, BuilderProfileFilters.STARRED));
+    }
+
+    @Test
+    @DisplayName("the favourite axis on All is still the same list object, and still no narrowing")
+    void favouriteAllIsNoNarrowing() {
+        assertSame(ALL_BUILDS, BuilderProfileFilters.apply(ALL_BUILDS,
+                BuilderProfileFilters.ALL, BuilderProfileFilters.ALL, BuilderProfileFilters.ALL));
+        // An unrecognised value on this axis means "everything", not "match nothing" — the same rule
+        // that keeps an unknown review state out of the gaps below.
+        assertSame(ALL_BUILDS, BuilderProfileFilters.apply(ALL_BUILDS,
+                BuilderProfileFilters.ALL, BuilderProfileFilters.ALL, "something-else"));
     }
 
     @Test

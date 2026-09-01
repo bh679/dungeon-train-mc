@@ -2765,6 +2765,28 @@
       ]
     }
   },
+  "gui.dungeontrain.builder.favourites.tab.builds": {
+    "1": {
+      "label": "how many builds this player has starred, on the tab that shows them",
+      "examples": ["5", "0"]
+    }
+  },
+  "gui.dungeontrain.builder.favourites.tab.builders": {
+    "1": {
+      "label": "how many builders this player has starred, on the tab that shows them",
+      "examples": ["2", "0"]
+    }
+  },
+  "gui.dungeontrain.builder.favourites.tile": {
+    "1": {
+      "label": "the name of a starred build, as the caption under its tile",
+      "examples": ["brick_cabin", "library"]
+    },
+    "2": {
+      "label": "the player who built it \u2014 this list spans builders, so each tile names its own",
+      "examples": ["Brennan", "Steve"]
+    }
+  },
   "gui.dungeontrain.builder.creators.row": {
     "1": {
       "label": "a builder's name, as a row in the search results",

@@ -211,6 +211,12 @@ public final class DungeonTrainNet {
         // again by the relay, which answers this search on the dev cap alone.
         registrar.playToServer(BuilderCreatorSearchPacket.TYPE, BuilderCreatorSearchPacket.STREAM_CODEC, BuilderCreatorSearchPacket::handle);
         registrar.playToClient(BuilderCreatorResultsPacket.TYPE, BuilderCreatorResultsPacket.STREAM_CODEC, BuilderCreatorResultsPacket::handle);
+        // Favourites: a private per-player list of builds and builders worth coming back to. The star
+        // is fire-and-forget — the screen flips it and this follows — and the request/reply pair is
+        // what re-reads the truth. Nothing here is counted or shown to anyone else.
+        registrar.playToServer(BuilderFavouritePacket.TYPE, BuilderFavouritePacket.STREAM_CODEC, BuilderFavouritePacket::handle);
+        registrar.playToServer(BuilderFavouritesRequestPacket.TYPE, BuilderFavouritesRequestPacket.STREAM_CODEC, BuilderFavouritesRequestPacket::handle);
+        registrar.playToClient(BuilderFavouritesPacket.TYPE, BuilderFavouritesPacket.STREAM_CODEC, BuilderFavouritesPacket::handle);
 
         // Remote-echo encounter screenshot: server → player at first eye-contact to frame + capture the
         // echo; client → server with the resulting PNG, buffered on the encounter journal for its story embed.

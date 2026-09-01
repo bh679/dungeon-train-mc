@@ -15,6 +15,7 @@ import games.brennan.dungeontrain.client.menu.UnsavedCheckScreen;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.net.BuilderCreatorResultsPacket;
 import games.brennan.dungeontrain.net.BuilderOpenPacket;
+import games.brennan.dungeontrain.net.BuilderFavouritePacket;
 import games.brennan.dungeontrain.net.BuilderProfileActionPacket;
 import games.brennan.dungeontrain.net.BuilderProfileDownloadPacket;
 import games.brennan.dungeontrain.net.BuilderProfileDownloadResultPacket;
@@ -89,6 +90,8 @@ public final class BuilderProfileScreen extends Screen {
     private static final int CONTROL_ROW_H = 20;
     private static final int CONTROL_GAP = 4;
     private static final int FILTER_WIDTH = 96;
+    /** The favourite chip: two short options, so it does not need the others' width. */
+    private static final int FAVOURITE_WIDTH = 68;
 
     /**
      * The kinds a profile can hold, in the order the chip offers them — {@link BuilderProfileFilters#ALL}
@@ -130,6 +133,19 @@ public final class BuilderProfileScreen extends Screen {
                     BuilderReviewState.BORDER_DECLINED));
 
     /**
+     * The favourite axis, in the order the chip offers it — everything first, then the narrowing.
+     *
+     * <p>Two options rather than three: there is no "only the ones I haven't starred", because a star
+     * marks the few worth returning to out of many and narrowing away from them is asking for the pile
+     * already on screen.</p>
+     */
+    private static final List<BuilderProfileFilterButton.Option> FAVOURITE_OPTIONS = List.of(
+            new BuilderProfileFilterButton.Option(BuilderProfileFilters.ALL,
+                    "gui.dungeontrain.builder.profile.favourite.all"),
+            new BuilderProfileFilterButton.Option(BuilderProfileFilters.STARRED,
+                    "gui.dungeontrain.builder.profile.favourite.starred"));
+
+    /**
      * Where the player left the two chips.
      *
      * <p>Static, so closing the screen and reopening it — which is what pressing Submit and coming
@@ -140,6 +156,7 @@ public final class BuilderProfileScreen extends Screen {
      */
     private static String typeFilter = BuilderProfileFilters.ALL;
     private static String statusFilter = BuilderProfileFilters.ALL;
+    private static String favouriteFilter = BuilderProfileFilters.ALL;
 
     /** Longest timestep the tile spin will accept, so a stalled frame doesn't fling it round. */
     private static final float MAX_FRAME_SECONDS = 0.1F;
@@ -254,7 +271,7 @@ public final class BuilderProfileScreen extends Screen {
      * happens to sit there, and the next press would act on a build the player never chose.</p>
      */
     private void refilter(int keepRelayId) {
-        this.shown = BuilderProfileFilters.apply(builds, typeFilter, statusFilter);
+        this.shown = BuilderProfileFilters.apply(builds, typeFilter, statusFilter, favouriteFilter);
         this.selected = -1;
         for (int i = 0; i < shown.size(); i++) {
             if (shown.get(i).relayId() == keepRelayId) {
@@ -334,7 +351,8 @@ public final class BuilderProfileScreen extends Screen {
         // competing with the thing it is meant to help you look at. Below the owner row, which is
         // there on every build — the two would otherwise land on the same pixels.
         int controlY = OWNER_TOP + OWNER_BUTTON_H + CONTROL_GAP;
-        int rowWidth = FILTER_WIDTH * 2 + BuilderTilesPerRowButton.WIDTH + CONTROL_GAP * 2;
+        int rowWidth = FILTER_WIDTH * 2 + FAVOURITE_WIDTH + BuilderTilesPerRowButton.WIDTH
+                + CONTROL_GAP * 3;
         int controlX = this.width / 2 - rowWidth / 2;
         addRenderableWidget(new BuilderProfileFilterButton(controlX, controlY, FILTER_WIDTH,
                 CONTROL_ROW_H, TYPE_OPTIONS, () -> typeFilter,
@@ -344,12 +362,19 @@ public final class BuilderProfileScreen extends Screen {
                 controlY, FILTER_WIDTH, CONTROL_ROW_H, STATUS_OPTIONS, () -> statusFilter,
                 v -> { statusFilter = v; onFilterChanged(); },
                 "gui.dungeontrain.builder.profile.status.tooltip"));
+        // Narrower than the other two: it has two short options where they have five and seven, and
+        // giving it their width would be reserving space for text that is never going to be there.
+        addRenderableWidget(new BuilderProfileFilterButton(
+                controlX + (FILTER_WIDTH + CONTROL_GAP) * 2, controlY, FAVOURITE_WIDTH,
+                CONTROL_ROW_H, FAVOURITE_OPTIONS, () -> favouriteFilter,
+                v -> { favouriteFilter = v; onFilterChanged(); },
+                "gui.dungeontrain.builder.profile.favourite.tooltip"));
         // The same chip the Open screen has, reading and writing the same stored count: it is one
         // answer to "how big do I like builder tiles", and two screens disagreeing about it would be
         // a bug rather than a choice.
         addRenderableWidget(new BuilderTilesPerRowButton(
-                controlX + (FILTER_WIDTH + CONTROL_GAP) * 2, controlY, CONTROL_ROW_H, this.width,
-                this::rebuild));
+                controlX + (FILTER_WIDTH + CONTROL_GAP) * 2 + FAVOURITE_WIDTH + CONTROL_GAP,
+                controlY, CONTROL_ROW_H, this.width, this::rebuild));
 
         int gridTop = controlY + CONTROL_ROW_H + CONTROL_GAP;
         int gridBottom = this.height - BACK_BUTTON_BOTTOM_MARGIN - STATUS_GAP - 24;
@@ -375,9 +400,16 @@ public final class BuilderProfileScreen extends Screen {
         this.downloadButton.active = selectedBuild() != null;
         addRenderableWidget(this.downloadButton);
 
+        // The bottom row is split the same way the action row above it is, rather than Back taking the
+        // whole width: Favourites is a place to go rather than something to do to the selected build,
+        // so it belongs down here with Back and not up there with Submit.
         addRenderableWidget(Button.builder(CommonComponents.GUI_BACK, b -> onClose())
-                .bounds(this.width / 2 - BACK_BUTTON_WIDTH / 2,
-                        this.height - BACK_BUTTON_BOTTOM_MARGIN, BACK_BUTTON_WIDTH, 20)
+                .bounds(left, this.height - BACK_BUTTON_BOTTOM_MARGIN, half, 20)
+                .build());
+        addRenderableWidget(Button.builder(
+                        Component.translatable("gui.dungeontrain.builder.favourites.open"),
+                        b -> this.minecraft.setScreen(new BuilderFavouritesScreen(lastScreen)))
+                .bounds(left + half + ACTION_GAP, this.height - BACK_BUTTON_BOTTOM_MARGIN, half, 20)
                 .build());
     }
 
@@ -558,7 +590,7 @@ public final class BuilderProfileScreen extends Screen {
     }
 
     /** The line to show for an outcome — each sends the player somewhere different. */
-    private static String noteKeyFor(BuilderRelayDownload.Outcome outcome) {
+    static String noteKeyFor(BuilderRelayDownload.Outcome outcome) {
         return switch (outcome) {
             case INSTALLED -> "gui.dungeontrain.builder.profile.downloaded";
             case ALREADY_HERE -> "gui.dungeontrain.builder.profile.download_already_here";
@@ -576,6 +608,14 @@ public final class BuilderProfileScreen extends Screen {
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (button == 0 && !shown.isEmpty()) {
+            // The star is tested BEFORE the cell, because it sits inside one: the other order would
+            // mean the cell swallowed the click and the star could never be pressed at all.
+            for (int i = 0; i < shown.size(); i++) {
+                if (grid.isVisible(i, scrollY) && grid.isOverStar(i, mouseX, mouseY, scrollY)) {
+                    toggleFavourite(shown.get(i));
+                    return true;
+                }
+            }
             int index = grid.indexAt(mouseX, mouseY, scrollY, shown.size());
             if (index >= 0) {
                 this.selected = index;
@@ -585,6 +625,27 @@ public final class BuilderProfileScreen extends Screen {
             }
         }
         return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    /**
+     * Star or un-star one build.
+     *
+     * <p>Optimistic: the tile flips now and the packet follows. A star that waited on a round trip
+     * through the server to the relay before it filled in would read as a broken button, and the cost
+     * of being wrong is small and self-correcting — the next listing carries the truth.</p>
+     *
+     * <p>Recorded on the cached profile as well as the visible list, so closing and reopening the
+     * screen inside one session does not show the star snapping back to where it was.</p>
+     */
+    private void toggleFavourite(BuilderProfilePacket.Entry entry) {
+        boolean next = !entry.favourite();
+        DungeonTrainNet.sendToServer(
+                BuilderFavouritePacket.forBuild(entry.relayId(), next, BuilderProfileState.live()));
+        BuilderProfileState.noteFavourite(entry.relayId(), next);
+        this.builds = BuilderProfileState.builds();
+        int keep = selectedBuild() == null ? -1 : selectedBuild().relayId();
+        refilter(keep);
+        rebuild();
     }
 
     @Override
@@ -625,6 +686,9 @@ public final class BuilderProfileScreen extends Screen {
                         x, y, grid.cellWidth(), grid.cellHeight(), hovered || i == selected, true,
                         spin.advance(String.valueOf(entry.relayId()), hovered, seconds),
                         badgeOf(entry), grid.badgeSize());
+                BuilderTemplateTile.renderStar(g, grid.starX(i), grid.starY(i, scrollY),
+                        grid.starSize(), entry.favourite(),
+                        grid.isOverStar(i, mouseX, mouseY, scrollY));
             }
             g.disableScissor();
         }
@@ -704,7 +768,7 @@ public final class BuilderProfileScreen extends Screen {
     }
 
     /** Which local store to draw this build's tile from — the mirror of {@link BuilderRelayKinds#idOf}. */
-    private static BuilderPhotoPaths.Kind photoKindOf(BuilderProfilePacket.Entry entry) {
+    static BuilderPhotoPaths.Kind photoKindOf(BuilderProfilePacket.Entry entry) {
         return switch (entry.kind()) {
             case BuilderRelayKinds.CARRIAGE_GROUP -> BuilderPhotoPaths.Kind.CARRIAGE_GROUP;
             case BuilderRelayKinds.CONTENTS -> BuilderPhotoPaths.Kind.CONTENTS;
@@ -716,14 +780,14 @@ public final class BuilderProfileScreen extends Screen {
     }
 
     /** A part's kind, which its id is only unique within; null for every other kind. */
-    private static CarriagePartKind partKindOf(BuilderProfilePacket.Entry entry) {
+    static CarriagePartKind partKindOf(BuilderProfilePacket.Entry entry) {
         return BuilderRelayKinds.PART.equals(entry.kind())
                 ? CarriagePartKind.fromId(entry.subKind())
                 : null;
     }
 
     /** As above for a track template. A portal room is stored under its own fixed kind. */
-    private static TrackKind trackKindOf(BuilderProfilePacket.Entry entry) {
+    static TrackKind trackKindOf(BuilderProfilePacket.Entry entry) {
         if (BuilderRelayKinds.PORTAL_ROOM.equals(entry.kind())) return TrackKind.PORTAL_ROOM;
         return BuilderRelayKinds.TRACK.equals(entry.kind()) ? TrackKind.fromId(entry.subKind()) : null;
     }
