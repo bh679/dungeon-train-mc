@@ -467,7 +467,6 @@
   "chat.dungeontrain.familiar_book.dur.m": "%s min",
   "chat.dungeontrain.familiar_book.dur.ms": "%s min %s s",
   "chat.dungeontrain.familiar_book.dur.s": "%s s",
-  "chat.dungeontrain.note.echo_says": "<%s> %s",
   "chat.dungeontrain.deathnote.already": "%s ya ha sido anotado en una Nota de Muerte esta vida; esta se consume hasta la nada.",
   "chat.dungeontrain.deathnote.no_name": "La Nota de Muerte no encuentra ningún nombre; se consume hasta la nada.",
   "chat.dungeontrain.deathnote.taken": "La Nota de Muerte reclama a %s. Cuando caigas, tu eco los perseguirá.",

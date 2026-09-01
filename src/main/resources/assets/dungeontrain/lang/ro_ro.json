@@ -545,7 +545,6 @@
   "chat.dungeontrain.familiar_book.dur.m": "%sm",
   "chat.dungeontrain.familiar_book.dur.ms": "%sm %ss",
   "chat.dungeontrain.familiar_book.dur.s": "%ss",
-  "chat.dungeontrain.note.echo_says": "<%s> %s",
   "chat.dungeontrain.deathnote.already": "%s a fost deja trecut în Caietul morții în viața asta; ăsta arde până nu mai rămâne nimic.",
   "chat.dungeontrain.deathnote.no_name": "Caietul morții nu găsește niciun nume; arde până nu mai rămâne nimic.",
   "chat.dungeontrain.deathnote.taken": "Caietul morții îl ia pe %s. Când vei cădea, ecoul tău îl va vâna.",

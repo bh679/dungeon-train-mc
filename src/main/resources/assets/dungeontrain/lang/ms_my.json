@@ -448,7 +448,6 @@
   "chat.dungeontrain.familiar_book.dur.m": "%sm",
   "chat.dungeontrain.familiar_book.dur.ms": "%sm %ss",
   "chat.dungeontrain.familiar_book.dur.s": "%ss",
-  "chat.dungeontrain.note.echo_says": "<%s> %s",
   "chat.dungeontrain.deathnote.already": "%s sudah dicatat dalam Nota Kematian dalam hidup ini; yang ini terbakar menjadi tiada.",
   "chat.dungeontrain.deathnote.no_name": "Nota Kematian tidak menemui nama; ia terbakar menjadi tiada.",
   "chat.dungeontrain.deathnote.taken": "Nota Kematian mengambil %s. Apabila anda tumbang, gema anda akan memburu mereka.",

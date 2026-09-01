@@ -467,7 +467,6 @@
   "chat.dungeontrain.familiar_book.dur.m": "%s Min.",
   "chat.dungeontrain.familiar_book.dur.ms": "%s Min. %s Sek.",
   "chat.dungeontrain.familiar_book.dur.s": "%s Sek.",
-  "chat.dungeontrain.note.echo_says": "<%s> %s",
   "chat.dungeontrain.deathnote.already": "%s steht diesem Leben schon in einer Todesnotiz; diese hier verbrennt zu nichts.",
   "chat.dungeontrain.deathnote.no_name": "Die Todesnotiz findet keinen Namen; sie verbrennt zu nichts.",
   "chat.dungeontrain.deathnote.taken": "Die Todesnotiz nimmt %s. Wenn du fällst, wird dein Echo sie jagen.",

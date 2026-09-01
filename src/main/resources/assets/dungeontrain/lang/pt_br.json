@@ -467,7 +467,6 @@
   "chat.dungeontrain.familiar_book.dur.m": "%sm",
   "chat.dungeontrain.familiar_book.dur.ms": "%sm %ss",
   "chat.dungeontrain.familiar_book.dur.s": "%ss",
-  "chat.dungeontrain.note.echo_says": "<%s> %s",
   "chat.dungeontrain.deathnote.already": "%s já foi anotado no Caderno da Morte nesta vida; este queima até virar nada.",
   "chat.dungeontrain.deathnote.no_name": "O Caderno da Morte não encontra nome algum; ele queima até virar nada.",
   "chat.dungeontrain.deathnote.taken": "O Caderno da Morte leva %s. Quando você cair, seu eco os caçará.",

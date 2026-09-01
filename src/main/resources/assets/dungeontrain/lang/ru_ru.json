@@ -491,7 +491,6 @@
   "chat.dungeontrain.familiar_book.dur.m": "%s мин",
   "chat.dungeontrain.familiar_book.dur.ms": "%s мин %s с",
   "chat.dungeontrain.familiar_book.dur.s": "%s с",
-  "chat.dungeontrain.note.echo_says": "<%s> %s",
   "chat.dungeontrain.deathnote.already": "%s уже вписан(а) в Тетрадь смерти в этот забег; эта Тетрадь сгорает дотла.",
   "chat.dungeontrain.deathnote.no_name": "Тетрадь смерти не нашла имени, она сгорает без смысла.",
   "chat.dungeontrain.deathnote.taken": "Тетрадь смерти забирает %s. После смерти ваше эхо будет охотиться за ним.",

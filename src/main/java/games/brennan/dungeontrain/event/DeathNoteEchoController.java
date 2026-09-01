@@ -6,7 +6,6 @@ import games.brennan.dungeontrain.narrative.NoteSpokenLines;
 import games.brennan.dungeontrain.train.DeathNoteEchoSpawner;
 import games.brennan.playermob.compat.TrainConfinement;
 import games.brennan.playermob.entity.PlayerMobEntity;
-import net.minecraft.ChatFormatting;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
@@ -85,7 +84,7 @@ public final class DeathNoteEchoController {
             ServerPlayer target = level.getServer().getPlayerList().getPlayer(e.getValue().targetUuid());
             if (target == null) continue;                                    // target offline
             steer(echo, target, e.getValue().kind());
-            speak(level, echo, target, e.getValue().kind());
+            speak(level, echo, target);
         }
     }
 
@@ -124,7 +123,7 @@ public final class DeathNoteEchoController {
      * {@link #SCAN_PERIOD_TICKS} because this rides the same scan as the steering — half a second of
      * slack on a pause of one to ten seconds, which nobody can hear.</p>
      */
-    private static void speak(ServerLevel level, PlayerMobEntity echo, ServerPlayer target, NoteKind kind) {
+    private static void speak(ServerLevel level, PlayerMobEntity echo, ServerPlayer target) {
         CompoundTag data = echo.getPersistentData();
         if (!data.contains(DeathNoteEchoSpawner.KEY_LINES)) return;      // nothing approved to say
         int echoIdx = TrainConfinement.carriageIndex(echo);
@@ -141,18 +140,21 @@ public final class DeathNoteEchoController {
                 ? "@" + target.getGameProfile().getName()
                 : lines.getString(spoken - 1);
         if (text.isBlank()) { data.putInt(DeathNoteEchoSpawner.KEY_LINE_INDEX, spoken + 1); return; }
-        level.getServer().getPlayerList().broadcastSystemMessage(spokenLine(echo, text, kind), false);
+        level.getServer().getPlayerList().broadcastSystemMessage(spokenLine(echo, text), false);
         data.putInt(DeathNoteEchoSpawner.KEY_LINE_INDEX, spoken + 1);
         // A longer line buys a longer silence after it — the note is being read out, not pasted.
         data.putLong(DeathNoteEchoSpawner.KEY_NEXT_SPEAK, now + NoteSpokenLines.delayTicksFor(text));
     }
 
-    /** One spoken line, rendered as chat: the echo's own name, then the words, coloured by kind. */
-    private static Component spokenLine(PlayerMobEntity echo, String text, NoteKind kind) {
-        boolean love = kind == NoteKind.LOVE;
-        return Component.translatable("chat.dungeontrain.note.echo_says",
-                        echo.getName().copy().withStyle(love ? ChatFormatting.LIGHT_PURPLE : ChatFormatting.GRAY),
-                        Component.literal(text))
-                .withStyle(love ? ChatFormatting.GRAY : ChatFormatting.DARK_GRAY);
+    /**
+     * One spoken line, rendered as chat — deliberately indistinguishable from a player talking:
+     * vanilla's own {@code chat.type.text} ({@code <name> words}), in vanilla's own colour, with no
+     * styling of ours on top. An earlier version coloured it by kind (dark red / pink), which read
+     * as a system announcement; the note is someone speaking, so it should look like someone
+     * speaking. Using the vanilla key rather than one of ours also means every locale already has
+     * it, in the phrasing that locale's players already read chat in.
+     */
+    private static Component spokenLine(PlayerMobEntity echo, String text) {
+        return Component.translatable("chat.type.text", echo.getName(), Component.literal(text));
     }
 }
