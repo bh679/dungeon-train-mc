@@ -857,7 +857,7 @@
   "gui.dungeontrain.death.board_anew": "Board anew",
   "gui.dungeontrain.abandon_run": "Abandon This Run",
   "gui.dungeontrain.abandon_confirm.title": "Step off the train?",
-  "gui.dungeontrain.abandon_confirm.line1": "Stepping off is fatal — your character dies and the train rolls on.",
+  "gui.dungeontrain.abandon_confirm.line1": "Stepping off is fatal — you die here, and the train rolls on.",
   "gui.dungeontrain.abandon_confirm.line2": "The run ends and goes down as a death. There is no undo.",
   "gui.dungeontrain.abandon_confirm.yes": "Step off and die",
   "gui.dungeontrain.abandon_confirm.back": "Stay aboard",
