@@ -1532,12 +1532,18 @@ public final class NarrativeDeathScreen extends Screen {
         // Every funded rung the grid has no slot for, ticked off on one line above it. A rung is
         // excluded from the line only while it still holds a tile of its own — so which rungs
         // appear depends on what the third slot is holding.
+        //
+        // The server bill is excluded outright, tile or no tile: "✓ Running Costs This Month" told
+        // the player something the page says more plainly by what it stopped asking for. With the
+        // standard two-rung ladder that empties this line entirely, and it takes no height at all.
         List<String> tiled = new ArrayList<>();
+        tiled.add(FundingGoals.RUNNING_COSTS);
         if (activeGoal != null && !hoursLead) tiled.add(activeGoal.id());   // slot 1: the ask
-        if (!updatesCard) {
-            // No card, so the third slot keeps its old occupant: the settled goal once the hours
-            // tile leads, otherwise the settled server bill.
-            tiled.add(hoursLead ? activeGoal.id() : FundingGoals.RUNNING_COSTS);
+        if (!updatesCard && hoursLead) {
+            // No card, so the third slot keeps its old occupant: the settled goal, once the hours
+            // tile leads. (Without the card and without the hours tile it holds the server bill,
+            // which is excluded above either way.)
+            tiled.add(activeGoal.id());
         }
         List<Goal> done = FundingGoals.completed(s.goals(), tiled);
         if (!done.isEmpty()) {

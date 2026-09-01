@@ -13,6 +13,8 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * The updates card on the death screen's donation page — the third tile of the grid, in every
@@ -57,7 +59,33 @@ public final class UpdateStats {
      * the tooltip its recency line.
      */
     public record Figures(int week, int month, int windowCount, int windowMonths,
-                          long lastUpdateAtMs) {}
+                          int day, int year, long lastUpdateAtMs, boolean live) {}
+
+    /**
+     * A timeframe the menu splash can name. Ordered shortest first, which is the order a player
+     * reading several of them over a few visits would expect them in.
+     */
+    public enum Timeframe {
+        DAY("gui.dungeontrain.splash.updates_day"),
+        WEEK("gui.dungeontrain.splash.updates_week"),
+        MONTH("gui.dungeontrain.splash.updates_month"),
+        YEAR("gui.dungeontrain.splash.updates_year");
+
+        private final String key;
+
+        Timeframe(String key) {
+            this.key = key;
+        }
+
+        int countIn(Figures f) {
+            return switch (this) {
+                case DAY -> f.day();
+                case WEEK -> f.week();
+                case MONTH -> f.month();
+                case YEAR -> f.year();
+            };
+        }
+    }
 
     private UpdateStats() {}
 
@@ -65,6 +93,7 @@ public final class UpdateStats {
     public static Figures current(DonationSummaryClient.Updates relay) {
         return resolve(relay, VersionInfo.UPDATES_WEEK, VersionInfo.UPDATES_MONTH,
                 VersionInfo.UPDATES_COUNT, VersionInfo.UPDATES_WINDOW_MONTHS,
+                VersionInfo.UPDATES_DAY, VersionInfo.UPDATES_YEAR,
                 VersionInfo.LAST_UPDATE_DATE);
     }
 
@@ -78,16 +107,58 @@ public final class UpdateStats {
      */
     public static Figures resolve(DonationSummaryClient.Updates relay, int bakedWeek,
                                   int bakedMonth, int bakedCount, int bakedWindowMonths,
-                                  String bakedDay) {
+                                  int bakedToday, int bakedYear, String bakedDay) {
         if (relay != null && relay.count() > 0) {
             return new Figures(relay.week(), relay.month(), relay.count(),
-                    clampMonths(relay.windowMonths()), relay.latestReleaseAtMs());
+                    clampMonths(relay.windowMonths()), relay.day(), relay.year(),
+                    relay.latestReleaseAtMs(), true);
         }
         if (bakedCount > 0) {
             return new Figures(bakedWeek, bakedMonth, bakedCount, clampMonths(bakedWindowMonths),
-                    dayToMillis(bakedDay));
+                    bakedToday, bakedYear, dayToMillis(bakedDay), false);
         }
         return null;
+    }
+
+    /**
+     * Whether these figures came from the relay rather than the jar.
+     *
+     * <p>The menu splash requires it. A line reading "9 changes today!" is a claim about today, and
+     * the baked numbers are frozen at build time — on a jar a fortnight old that sentence is
+     * confidently wrong. The death screen's card is happy with either: "770 in 5 months" ages by a
+     * rounding error, not by a lie.</p>
+     */
+    public static boolean isLive(Figures f) {
+        return f != null && f.live();
+    }
+
+    /**
+     * The timeframes worth naming on the menu, shortest first. A timeframe with nothing in it is
+     * dropped rather than shown as a zero, so a quiet Monday offers three lines instead of
+     * announcing that nothing happened.
+     */
+    public static List<Timeframe> splashTimeframes(Figures f) {
+        if (!isLive(f)) return List.of();
+        List<Timeframe> out = new ArrayList<>(Timeframe.values().length);
+        for (Timeframe t : Timeframe.values()) {
+            if (t.countIn(f) > 0) out.add(t);
+        }
+        return out;
+    }
+
+    /** One menu splash — "122 changes this week!" — for the language chosen in Minecraft. */
+    public static Component splash(Figures f, Timeframe timeframe) {
+        return splash(f, timeframe, ClientLanguage.selected(), DevHours.clientLocale());
+    }
+
+    /** As {@link #splash(Figures, Timeframe)}, with both locales explicit — kept pure for tests. */
+    public static Component splash(Figures f, Timeframe timeframe, String localeCode,
+                                   java.util.Locale grouping) {
+        int count = timeframe.countIn(f);
+        Component clause = Component.translatable("gui.dungeontrain.death.narr.changes_count."
+                + PluralRules.category(localeCode, count),
+                NumberFormat.getIntegerInstance(grouping).format(count));
+        return Component.translatable(timeframe.key, clause);
     }
 
     /** A window a relay or a build could not state properly still has to name something sane. */

@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 import java.util.Locale;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -26,21 +27,26 @@ class UpdateStatsTest {
     private static final Instant NOW = Instant.parse("2026-09-01T12:00:00Z");
     private static final long THREE_HOURS_AGO = NOW.minus(Duration.ofHours(3)).toEpochMilli();
 
-    /** A relay block: {@code count} over {@code windowMonths}, plus this week's and this month's. */
+    /** A relay block: {@code count} over {@code windowMonths}, plus the shorter spans. */
+    private static DonationSummaryClient.Updates relay(int count, int windowMonths, int month,
+                                                       int week, int day, int year) {
+        return new DonationSummaryClient.Updates(count, windowMonths, month, week, day, year,
+                THREE_HOURS_AGO, "0.768.0");
+    }
+
     private static DonationSummaryClient.Updates relay(int count, int windowMonths, int month, int week) {
-        return new DonationSummaryClient.Updates(count, windowMonths, month, week,
-                THREE_HOURS_AGO, "0.763.0");
+        return relay(count, windowMonths, month, week, 0, count);
     }
 
     private static UpdateStats.Figures figures(int week, int month, int count, int windowMonths) {
-        return UpdateStats.resolve(relay(count, windowMonths, month, week), 0, 0, 0, 0, "");
+        return UpdateStats.resolve(relay(count, windowMonths, month, week), 0, 0, 0, 0, 0, 0, "");
     }
 
     // ---- which source answers ----
 
     @Test
     void theRelayBeatsTheBakedNumbers() {
-        var f = UpdateStats.resolve(relay(765, 5, 244, 117), 9, 40, 700, 4, "2026-08-01");
+        var f = UpdateStats.resolve(relay(765, 5, 244, 117), 9, 40, 700, 4, 1, 700, "2026-08-01");
         assertEquals(117, f.week());
         assertEquals(244, f.month());
         assertEquals(765, f.windowCount());
@@ -50,7 +56,7 @@ class UpdateStatsTest {
 
     @Test
     void anOfflineClientFallsBackToWhatTheJarBaked() {
-        var f = UpdateStats.resolve(null, 9, 40, 700, 4, "2026-08-01");
+        var f = UpdateStats.resolve(null, 9, 40, 700, 4, 1, 700, "2026-08-01");
         assertEquals(9, f.week());
         assertEquals(700, f.windowCount());
         assertEquals(4, f.windowMonths());
@@ -61,13 +67,13 @@ class UpdateStatsTest {
     void aRelayBlockWithNoCountIsNotAResult() {
         // An `updates` object the relay's own upstream poll never filled must not shadow the baked
         // numbers — 0 is unknown, and the baked figure is the better answer.
-        assertEquals(700, UpdateStats.resolve(relay(0, 5, 0, 0), 9, 40, 700, 4, "2026-08-01")
+        assertEquals(700, UpdateStats.resolve(relay(0, 5, 0, 0), 9, 40, 700, 4, 1, 700, "2026-08-01")
                 .windowCount());
     }
 
     @Test
     void nothingKnownMeansNoCardAtAll() {
-        assertNull(UpdateStats.resolve(null, 0, 0, 0, 0, ""),
+        assertNull(UpdateStats.resolve(null, 0, 0, 0, 0, 0, 0, ""),
                 "0 baked means the build could count none — the settled bill keeps its slot");
         assertFalse(UpdateStats.hasCount(null));
         assertTrue(UpdateStats.hasCount(figures(117, 244, 765, 5)));
@@ -163,6 +169,70 @@ class UpdateStatsTest {
         assertEquals("1.117", UpdateStats.groupedWeek(f, Locale.GERMANY));
     }
 
+    // ---- the menu splash ----
+
+    /** Figures as the relay would send them, with every timeframe populated. */
+    private static UpdateStats.Figures live(int day, int week, int month, int year) {
+        return UpdateStats.resolve(relay(770, 5, month, week, day, year), 0, 0, 0, 0, 0, 0, "");
+    }
+
+    @Test
+    void everyTimeframeWithSomethingToSayIsOffered() {
+        assertEquals(List.of(UpdateStats.Timeframe.DAY, UpdateStats.Timeframe.WEEK,
+                        UpdateStats.Timeframe.MONTH, UpdateStats.Timeframe.YEAR),
+                UpdateStats.splashTimeframes(live(9, 122, 249, 770)));
+    }
+
+    @Test
+    void aQuietDayDropsOutRatherThanAnnouncingZero() {
+        assertEquals(List.of(UpdateStats.Timeframe.WEEK, UpdateStats.Timeframe.MONTH,
+                        UpdateStats.Timeframe.YEAR),
+                UpdateStats.splashTimeframes(live(0, 122, 249, 770)));
+        // A brand-new year with nothing in it yet leaves nothing at all to say.
+        assertEquals(List.of(), UpdateStats.splashTimeframes(live(0, 0, 0, 0)));
+    }
+
+    @Test
+    void bakedFiguresNeverReachTheMenu() {
+        // The baked numbers are frozen at build time; "9 changes today!" off a fortnight-old jar is
+        // a claim about today that is simply false. The card may use them, the splash may not.
+        var baked = UpdateStats.resolve(null, 122, 249, 770, 5, 9, 770, "2026-09-01");
+        assertTrue(UpdateStats.hasCount(baked), "the card still draws from them");
+        assertFalse(UpdateStats.isLive(baked));
+        assertEquals(List.of(), UpdateStats.splashTimeframes(baked));
+        assertFalse(UpdateStats.isLive(null));
+        assertTrue(UpdateStats.isLive(live(9, 122, 249, 770)));
+    }
+
+    @Test
+    void eachSplashQuotesItsOwnTimeframesCount() {
+        var f = live(9, 122, 249, 770);
+        assertSplash(f, UpdateStats.Timeframe.DAY, "gui.dungeontrain.splash.updates_day", "9");
+        assertSplash(f, UpdateStats.Timeframe.WEEK, "gui.dungeontrain.splash.updates_week", "122");
+        assertSplash(f, UpdateStats.Timeframe.MONTH, "gui.dungeontrain.splash.updates_month", "249");
+        assertSplash(f, UpdateStats.Timeframe.YEAR, "gui.dungeontrain.splash.updates_year", "770");
+    }
+
+    @Test
+    void aSplashCountIsGroupedAndPluralisedForItsLanguage() {
+        var many = live(1, 1234, 0, 0);
+        var clause = translatable((Component) translatable(
+                UpdateStats.splash(many, UpdateStats.Timeframe.WEEK, "en_us", Locale.US)).getArgs()[0]);
+        assertEquals("gui.dungeontrain.death.narr.changes_count.other", clause.getKey());
+        assertEquals("1,234", clause.getArgs()[0]);
+
+        var one = translatable((Component) translatable(
+                UpdateStats.splash(many, UpdateStats.Timeframe.DAY, "en_us", Locale.US)).getArgs()[0]);
+        assertEquals("gui.dungeontrain.death.narr.changes_count.one", one.getKey());
+    }
+
+    private static void assertSplash(UpdateStats.Figures f, UpdateStats.Timeframe timeframe,
+                                     String expectedKey, String expectedCount) {
+        var tc = translatable(UpdateStats.splash(f, timeframe, "en_us", Locale.US));
+        assertEquals(expectedKey, tc.getKey());
+        assertEquals(expectedCount, translatable((Component) tc.getArgs()[0]).getArgs()[0]);
+    }
+
     // ---- the tooltip ----
 
     @Test
@@ -177,7 +247,7 @@ class UpdateStatsTest {
 
     @Test
     void withNoTimestampTheTooltipExplainsInsteadOfGoingBlank() {
-        var f = UpdateStats.resolve(null, 9, 40, 700, 4, "not-a-date");
+        var f = UpdateStats.resolve(null, 9, 40, 700, 4, 1, 700, "not-a-date");
         assertEquals(0L, f.lastUpdateAtMs());
         assertEquals("gui.dungeontrain.death.narr.tip_updates",
                 translatable(UpdateStats.tooltip(f, NOW, "en_us")).getKey());

@@ -210,12 +210,16 @@ def main(argv=None):
         window = "1 year" if months == MAX_WINDOW_MONTHS else f"{months} month{'s' if months > 1 else ''}"
         recent = count_since(index["daily"], today - timedelta(days=RECENT_DAYS))
         week = count_since(index["daily"], today - timedelta(days=RECENT_WEEK_DAYS))
+        day = index["daily"].get(today.isoformat(), 0)
+        year = count_since(index["daily"], date(today.year, 1, 1))
         print(f"  first update        {index['firstVersionDate']}")
         print(f"  latest update       {index['latestVersion']} ({index['latestVersionDate']})")
         print(f"  updates, all time   {index['totalUpdates']}")
+        print(f"  updates, today      {day}")
         print(f"  updates, last {RECENT_WEEK_DAYS}d    {week}")
         print(f"  updates, last {RECENT_DAYS}d   {recent}")
         print(f"  updates in {window:<9} {count_since(index['daily'], window_start(first, today))}")
+        print(f"  updates, {today.year} so far {year}")
     else:
         print("  no version history found — the death screen will omit the line")
 

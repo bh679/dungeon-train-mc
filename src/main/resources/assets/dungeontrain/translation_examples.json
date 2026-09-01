@@ -2532,6 +2532,58 @@
       ]
     }
   },
+  "gui.dungeontrain.splash.updates_day": {
+    "1": {
+      "label": "how many changes landed today, as a whole clause - this is a main-menu splash line",
+      "examples": [
+        {
+          "key": "gui.dungeontrain.death.narr.changes_count.other",
+          "args": [
+            "9"
+          ]
+        }
+      ]
+    }
+  },
+  "gui.dungeontrain.splash.updates_week": {
+    "1": {
+      "label": "how many changes landed in the last week, as a whole clause - this is a main-menu splash line",
+      "examples": [
+        {
+          "key": "gui.dungeontrain.death.narr.changes_count.other",
+          "args": [
+            "122"
+          ]
+        }
+      ]
+    }
+  },
+  "gui.dungeontrain.splash.updates_month": {
+    "1": {
+      "label": "how many changes landed in the last 30 days, as a whole clause - this is a main-menu splash line",
+      "examples": [
+        {
+          "key": "gui.dungeontrain.death.narr.changes_count.other",
+          "args": [
+            "249"
+          ]
+        }
+      ]
+    }
+  },
+  "gui.dungeontrain.splash.updates_year": {
+    "1": {
+      "label": "how many changes landed since 1 January, as a whole clause - this is a main-menu splash line",
+      "examples": [
+        {
+          "key": "gui.dungeontrain.death.narr.changes_count.other",
+          "args": [
+            "770"
+          ]
+        }
+      ]
+    }
+  },
   "gui.dungeontrain.death.narr.changes_count.one": {
     "1": {
       "label": "a count of one",

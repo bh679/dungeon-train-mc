@@ -71,7 +71,7 @@ public final class DonationSummaryClient {
      * twelve the card renders as "1 year". The relay re-derives every figure at read time, so the
      * window widens on its own without a jar or a deploy.</p>
      */
-    public record Updates(int count, int windowMonths, int month, int week,
+    public record Updates(int count, int windowMonths, int month, int week, int day, int year,
                           long latestReleaseAtMs, String latestVersion) {}
 
     /**
@@ -201,6 +201,7 @@ public final class DonationSummaryClient {
                 ? u.get("latestVersion").getAsString() : "";
         return new Updates(count, Math.max(0, optInt(u, "windowMonths", 0)),
                 Math.max(0, optInt(u, "month", 0)), Math.max(0, optInt(u, "week", 0)),
+                Math.max(0, optInt(u, "day", 0)), Math.max(0, optInt(u, "year", 0)),
                 Math.max(0L, latestAt), latestVersion);
     }
 
