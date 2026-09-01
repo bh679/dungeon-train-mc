@@ -254,6 +254,29 @@ public final class PlayerDataBackup {
     }
 
     /**
+     * Every file entry in an archive, by name.
+     *
+     * <p>What an archive <em>held</em> is evidence in its own right: a build that is in no backup and
+     * not on disk was never here, while one that is in a backup and not on disk was. The build
+     * reconcile reads this to find the second kind. Never throws — an unreadable archive is empty.</p>
+     */
+    public static List<String> listEntries(Path archive) {
+        if (archive == null) return List.of();
+        List<String> names = new ArrayList<>();
+        try (ZipFile zip = new ZipFile(archive.toFile())) {
+            var it = zip.entries();
+            while (it.hasMoreElements()) {
+                ZipEntry entry = it.nextElement();
+                if (!entry.isDirectory()) names.add(entry.getName());
+            }
+        } catch (IOException | SecurityException e) {
+            LOGGER.warn("[DungeonTrain] Backup: couldn't list {}: {}", archive.getFileName(), e.toString());
+            return List.of();
+        }
+        return List.copyOf(names);
+    }
+
+    /**
      * The mod version an archive's manifest records, or empty.
      *
      * <p>{@link #versionOf} reads the filename, which is enough to group archives for pruning but is

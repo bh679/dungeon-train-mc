@@ -2756,6 +2756,12 @@
       ]
     }
   },
+  "gui.dungeontrain.builder.reconcile.toast.body": {
+    "1": {
+      "label": "how many builds were sent back to the build server",
+      "examples": ["3", "17"]
+    }
+  },
   "gui.dungeontrain.builder.reconcile.body": {
     "1": {
       "label": "how many of the player's builds the build server no longer has",

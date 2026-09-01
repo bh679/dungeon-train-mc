@@ -1,13 +1,13 @@
 package games.brennan.dungeontrain.client;
 
-import games.brennan.dungeontrain.net.BuilderReconcileStartPacket;
+import games.brennan.dungeontrain.client.builder.BuilderReconcileRunner;
+import games.brennan.dungeontrain.client.builder.BuilderReconcileScan;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
-import net.neoforged.neoforge.network.PacketDistributor;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -15,8 +15,8 @@ import java.util.List;
 /**
  * Offers to put back builds the relay has lost.
  *
- * <p>Shown once after joining, when the server has found builds this install uploaded that the relay
- * no longer has. The usual cause is the pool's ring eviction: builds go up, the pool fills, and the
+ * <p>Shown once a session at the title screen, when the relay turns out not to have builds this
+ * install does. The usual cause is the pool's ring eviction: builds go up, the pool fills, and the
  * oldest rows are deleted with no notice to anyone.</p>
  *
  * <p>Two things the card has to be honest about, because both surprise people. A restored build comes
@@ -25,8 +25,8 @@ import java.util.List;
  * the player deleted them on purpose; that tier is a separate, off-by-default toggle rather than part
  * of the main button.</p>
  *
- * <p>Same flat card as {@link DataRecoveryScreen}, so a one-time question looks like a one-time
- * question wherever it appears. Client-only.</p>
+ * <p>Same flat card as {@link DataRecoveryScreen}, and beside it in the title screen's queue, so a
+ * one-time question looks like a one-time question wherever it appears. Client-only.</p>
  */
 public final class BuilderReconcileScreen extends Screen {
 
@@ -56,6 +56,8 @@ public final class BuilderReconcileScreen extends Screen {
     private static final int COLOR_BODY = 0xFFE0E0E0;
     private static final int COLOR_NOTE = 0xFF9A9AA2;
 
+    private final Screen previousScreen;
+    private final BuilderReconcileScan.Result scan;
     private final int onDisk;
     private final int backupOnly;
 
@@ -73,10 +75,12 @@ public final class BuilderReconcileScreen extends Screen {
     /** Index in {@link #bodyLines} where the greyed "comes back private" note starts. */
     private int noteFrom = 0;
 
-    public BuilderReconcileScreen(int onDisk, int backupOnly) {
+    public BuilderReconcileScreen(Screen previousScreen, BuilderReconcileScan.Result scan) {
         super(Component.translatable(KEY_TITLE)); // narration title
-        this.onDisk = onDisk;
-        this.backupOnly = backupOnly;
+        this.previousScreen = previousScreen;
+        this.scan = scan;
+        this.onDisk = scan.onDisk().size();
+        this.backupOnly = scan.inBackups().size();
     }
 
     @Override
@@ -140,21 +144,25 @@ public final class BuilderReconcileScreen extends Screen {
         rebuildWidgets();
     }
 
+    /**
+     * Send the builds back up, and get out of the way.
+     *
+     * <p>The uploads are paced over the following minutes on a worker thread, so there is nothing for
+     * this card to wait for. The player goes on to pick a world; the log records what landed.</p>
+     */
     private void restore() {
-        PacketDistributor.sendToServer(new BuilderReconcileStartPacket(includeBackups));
-        // The upload is paced over the following minutes and reports in chat, so there is nothing for
-        // this card to wait for. Getting out of the way IS the response.
-        BuilderReconcileClient.onAnswered(false);
+        BuilderReconcileRunner.restore(scan, includeBackups);
+        BuilderReconcilePromptHandler.onAnswered(false);
         close();
     }
 
     private void never() {
-        BuilderReconcileClient.onAnswered(true);
+        BuilderReconcilePromptHandler.onAnswered(true);
         close();
     }
 
     private void close() {
-        this.minecraft.setScreen(null);
+        this.minecraft.setScreen(previousScreen);
     }
 
     @Override

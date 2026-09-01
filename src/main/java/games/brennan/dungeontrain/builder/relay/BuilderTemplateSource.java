@@ -9,6 +9,7 @@ import games.brennan.dungeontrain.editor.CarriageContentsStore;
 import games.brennan.dungeontrain.editor.CarriageGroupTemplateStore;
 import games.brennan.dungeontrain.editor.CarriagePartTemplateStore;
 import games.brennan.dungeontrain.editor.CarriageTemplateStore;
+import games.brennan.dungeontrain.editor.UserContentPaths;
 import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.track.variant.TrackVariantStore;
 import games.brennan.dungeontrain.train.CarriagePartKind;
@@ -93,6 +94,48 @@ public final class BuilderTemplateSource {
             }
             case PORTAL_ROOM -> Optional.of(TrackVariantStore.fileFor(TrackKind.PORTAL_ROOM, id));
         };
+    }
+
+    /**
+     * One store directory, and the build kind it holds.
+     *
+     * @param kind    the relay-facing kind
+     * @param subKind the part/track kind whose id-space this directory is, or empty
+     * @param subSlug the directory under the user-content root — what
+     *                {@link UserContentPaths#listBasenamesAcrossSearchDirs} and
+     *                {@link UserContentPaths#provenanceOf} are addressed by
+     */
+    public record Slug(BuilderPhotoPaths.Kind kind, String subKind, String subSlug) {}
+
+    /**
+     * Every directory a build can live in.
+     *
+     * <p>Stated once, here, because two things read it from opposite ends and neither can check the
+     * other: a scan walks these directories to find what this install has, and a backup archive's
+     * entry names are parsed back through them to find what it used to have. A missing entry is a
+     * whole kind of build that silently cannot be recovered.</p>
+     *
+     * <p>Whole carriages are deliberately absent. A whole-carriage save writes the shell to
+     * {@code templates/} as well ({@code BuilderSave.saveWholeCarriage}), and that shell is what the
+     * relay holds — listing {@code wholecarriages/} too would offer the same build twice.</p>
+     */
+    public static List<Slug> slugs() {
+        List<Slug> out = new ArrayList<>();
+        out.add(new Slug(BuilderPhotoPaths.Kind.CARRIAGE, "", CarriageTemplateStore.SUBDIR));
+        out.add(new Slug(BuilderPhotoPaths.Kind.CARRIAGE_GROUP, "", CarriageGroupTemplateStore.SUBDIR));
+        out.add(new Slug(BuilderPhotoPaths.Kind.CONTENTS, "", CarriageContentsStore.SUBDIR));
+        for (CarriagePartKind part : CarriagePartKind.values()) {
+            out.add(new Slug(BuilderPhotoPaths.Kind.PART, part.id(),
+                    CarriagePartTemplateStore.SUBDIR_BASE + "/" + part.id()));
+        }
+        for (TrackKind track : TrackKind.values()) {
+            // A portal room is its own relay kind, though it is a track directory on disk.
+            BuilderPhotoPaths.Kind kind = track == TrackKind.PORTAL_ROOM
+                    ? BuilderPhotoPaths.Kind.PORTAL_ROOM
+                    : BuilderPhotoPaths.Kind.TRACK;
+            out.add(new Slug(kind, track.id(), track.subdir()));
+        }
+        return List.copyOf(out);
     }
 
     /**
