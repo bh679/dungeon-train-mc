@@ -64,6 +64,15 @@ public final class ShaderSweep {
     /** {@code -PshaderSweep=<world folder>} in build.gradle becomes this. */
     private static final String PROPERTY = "dungeontrain.shader_sweep";
 
+    /**
+     * {@code -PshaderSweepSites=05,06,07} — visit only the sites whose id starts with one of these.
+     *
+     * <p>A fix to one site should not cost a re-run of all eight across twelve packs. The sites
+     * before the filtered ones still run their commands, because a later site's position depends on
+     * where the earlier ones left the player; only their captures are skipped.</p>
+     */
+    private static final String SITES_PROPERTY = "dungeontrain.shader_sweep_sites";
+
     /** The line the shell wrapper watches for to know the run is over. */
     public static final String DONE_MARKER = "[DungeonTrain] SHADER SWEEP COMPLETE";
 
@@ -145,6 +154,16 @@ public final class ShaderSweep {
     private static final int MIN_FRAMES_PER_SITE = 30;
 
     private ShaderSweep() {}
+
+    /** Whether this site is in the filter, or there is no filter. */
+    private static boolean wanted(Site site) {
+        String filter = System.getProperty(SITES_PROPERTY);
+        if (filter == null || filter.isBlank()) return true;
+        for (String want : filter.split(",")) {
+            if (site.id().startsWith(want.trim())) return true;
+        }
+        return false;
+    }
 
     /** The world folder to open, or {@code null} when the sweep is off. */
     public static String world() {
@@ -251,6 +270,7 @@ public final class ShaderSweep {
         dismissScreen(mc);
         if (--timer > 0) return;
         showPanel();
+        if (!packLoadedAsRequested()) return;
         sites = buildSites(mc);
         if (sites.isEmpty()) {
             finish("no sites could be built");
@@ -313,6 +333,12 @@ public final class ShaderSweep {
 
     private static void tickCapture(Minecraft mc) {
         Site site = sites.get(siteIndex);
+        if (!wanted(site)) {
+            LOGGER.info("[DungeonTrain] sweep[{}]: not in the site filter — visited, not captured", site.id());
+            phase = Phase.CAPTURE_WAIT;
+            timer = 1;
+            return;
+        }
         pendingCapture = String.format(Locale.ROOT, "sweep-%s-%s.png", ShaderCompat.token(), site.id());
         logPanel(site);
         phase = Phase.CAPTURE_WAIT;
@@ -396,16 +422,27 @@ public final class ShaderSweep {
         // so a zero is always the pack's doing.
         out.add(new Site("05-carriage-plot", List.of(
             "gamemode creative",
+            // Sweep the previous run's stamp first. Every sweep stamps a twin into the same
+            // basement lane, and they accumulate across runs in a save that is reused twelve times
+            // over: the two Complementary packs measured a room cleanly and every pack after them
+            // read room=NONE with the identical setup chat, which is what leftover stamps look
+            // like. `back` is the command's own undo, so this is what it is for.
+            "dungeontrain portal test back",
+            WAIT_PREFIX + "60",
             "dungeontrain editor portals enter " + CARRIAGE_ROOM,
-            WAIT_PREFIX + "100",
+            WAIT_PREFIX + "160",
             "dungeontrain editor portals mode endless_repetition",
             "dungeontrain editor portals sky day"), CARRIAGE_TICKS));
-        out.add(new Site("06-carriage-corridor", List.of(
-            "dungeontrain portal test"), SITE_TICKS));
-        // Forward into the room itself: the fog and the sky lift belong to the room, and the
-        // corridor mouth is outside its box.
-        out.add(new Site("07-carriage-room", List.of(
+        // Both captures are taken INSIDE the room. `portal test` lands the camera in the doorway,
+        // which is on the edge of the room's own box — and the corridor ramp that would carry the
+        // lift across that edge is dead in a twin with no train, so a doorway shot is a coin toss
+        // between t=1.000 and t=0.000. Stepping in first makes the reading deterministic.
+        out.add(new Site("06-carriage-room", List.of(
+            "dungeontrain portal test",
+            WAIT_PREFIX + "120",
             "tp @s ^ ^ ^14"), SITE_TICKS));
+        out.add(new Site("07-carriage-deep", List.of(
+            "tp @s ^ ^ ^8"), SITE_TICKS));
 
         return out;
     }
@@ -480,6 +517,26 @@ public final class ShaderSweep {
             ShaderDiagnostics.fmt(ShaderDiagnostics.roomSkyT()),
             ShaderDiagnostics.fmt(ShaderDiagnostics.roomSkyLift()),
             ShaderDiagnostics.fmt(ShaderDiagnostics.crossingT()));
+    }
+
+    /**
+     * Refuse to measure a pack that did not actually load.
+     *
+     * <p>FOOTAGE 1.0 fails to compile on Iris 1.8.14 ({@code Unable to parse scale directive}), and
+     * Iris answers by disabling shaders and carrying on. The sweep then ran happily with no pack at
+     * all and, because the filename is keyed on the <em>active</em> pack, wrote its shots over
+     * {@code sweep-none-*} — silently replacing the control with a second copy of itself. A pack
+     * that cannot load is a result worth reporting; it is not a licence to overwrite the baseline.</p>
+     */
+    private static boolean packLoadedAsRequested() {
+        String requested = GraphicsCapabilities.configuredShaderPack();
+        if (requested.isEmpty()) return true;          // the control: no pack was asked for
+        if (ShaderCompat.active()) return true;        // asked for one, got one
+        LOGGER.error("[DungeonTrain] sweep: '{}' was requested but no pack is active — it failed to "
+            + "load (see the Iris errors above). Capturing nothing, so the control is not "
+            + "overwritten by a run that had no shaders in it.", requested);
+        finish("pack failed to load: " + requested);
+        return false;
     }
 
     /** Make sure the panel is up — every shot has to carry the ask, or it is only half a record. */

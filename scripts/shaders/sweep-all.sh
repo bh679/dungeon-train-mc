@@ -112,6 +112,12 @@ for pack in "${PACKS[@]}"; do
         cp "$LOG" "run/logs/packs/${pack%.zip}.log" 2>/dev/null
     fi
 
+    # A pack that failed to compile leaves Iris with shaders off, and a sweep that ran with no
+    # pack at all is not a measurement of that pack.
+    if [ -f "$LOG" ] && /usr/bin/grep -q "pack failed to load" "$LOG"; then
+        done_ok=0
+    fi
+
     if [ "$done_ok" -eq 1 ]; then
         shots=$(ls -1 run/screenshots/sweep-*.png 2>/dev/null | wc -l | tr -d ' ')
         echo "  done — $shots shot(s) in run/screenshots so far"

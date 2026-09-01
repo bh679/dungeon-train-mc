@@ -110,9 +110,21 @@ public final class GraphicsCapabilities {
     }
 
     /**
+     * The pack {@code config/iris.properties} <em>asks</em> for, whether or not it loaded.
+     *
+     * <p>Distinct from {@link #shaderPackName()} on purpose. A pack that fails to compile leaves
+     * Iris reporting no active pack at all ({@code Failed to create shader rendering pipeline,
+     * disabling shaders!}), so the two disagreeing is exactly how "this pack is broken on this Iris"
+     * is detected — as FOOTAGE 1.0 is, on Iris 1.8.14. Empty when shaders are switched off.</p>
+     */
+    public static String configuredShaderPack() {
+        return packNameFromIrisConfig();
+    }
+
+    /**
      * {@code shaderPack} out of {@code <gameDir>/config/iris.properties}, memoised against the
      * file's modification time so switching packs in the Video Settings GUI is picked up without
-     * re-reading the file on every frame.
+     * re-reading the file on every frame. Empty when {@code enableShaders} is not true.
      */
     private static String packNameFromIrisConfig() {
         try {
@@ -136,6 +148,7 @@ public final class GraphicsCapabilities {
         try (InputStream in = Files.newInputStream(file)) {
             props.load(in);
         }
+        if (!Boolean.parseBoolean(props.getProperty("enableShaders", "false"))) return "";
         String name = props.getProperty("shaderPack");
         return name == null ? "" : name.trim();
     }

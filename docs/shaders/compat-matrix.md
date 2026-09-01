@@ -179,37 +179,81 @@ File the results as `test-results/gate2-shader-compat-2026-09/<pack-id>-<site>.p
 
 ## Results
 
-Cells: **works** / **degraded** (visible but wrong) / **absent** (DT asked, nothing appeared) /
-**wrong** (actively worse than no effect) / **off** (DT declined to draw).
+**Status: partial. One sweep of twelve runs completed 2026-09-02; the band column is measured, the
+carriage column is not.** Read the caveats before quoting any of this.
 
-The `none` row is the control — what the same site looks like in the same world with shaders off.
-Every other row is read as a difference from it.
+### Pack load failures — the one unambiguous result
 
-| Pack | Band skybox | Skybox Blocks | Carriage fog | Carriage sky & lighting |
-|---|---|---|---|---|
-| none (control) | | | | |
-| complementary_reimagined | | off | | |
-| complementary_unbound | | off | | |
-| bsl | | off | | |
-| bliss | | off | | |
-| solas | | off | | |
-| makeup_ultra_fast | | off | | |
-| spooklementary | | off | | |
-| footage | | off | | |
-| insanity | | off | | |
-| hysteria | | off | | |
-| sildurs | | off | | |
+Two of the eleven packs **do not load at all** on Iris `1.8.14-beta.1`, the build
+`modpack.config.json` pins:
 
-The Skybox Blocks column reads **off** for every pack because `ShaderCompat.allows` gates it off
-under any pack — that is DT's own decision, not a measurement of the pack. What the control's cell
-says is whether the effect works at all when nothing is in its way.
+| Pack | Outcome |
+|---|---|
+| FOOTAGE 1.0 | `Unable to parse scale directive for composite1: 0.67 0.67` → `ArrayIndexOutOfBoundsException` → `Failed to create shader rendering pipeline, disabling shaders!` |
+| Solas 3.7b | Same signature: produced no captures, Iris fell back to no shaders |
 
-### Per-system conclusion
+Both are pack-authoring bugs against this Iris, not Dungeon Train problems. They matter here because
+Iris answers a failed pack by silently disabling shaders and carrying on — so a sweep run keeps
+going with no pack at all. `ShaderSweep` now refuses to capture in that state
+(`pack failed to load`); before that guard existed, those runs wrote their screenshots over the
+control's.
 
-To be written once the rows are filled. Each system needs one of:
+### Band atmosphere — measured
 
-- **honoured** — leave the vanilla path alone;
-- **per-pack override** — the mechanism works on some packs, so gate it in `ShaderCompat.allows`;
-- **post-composite** — no pack honours it, so DT must draw its own atmosphere after Iris' composite
-  (a fullscreen depth-aware pass and DT's first shipped GLSL — the expensive option, and the reason
-  this matrix exists rather than being assumed).
+Mean luma of the sky region (top 15–65% of frame, left of the panel), against the no-shader control.
+The scenes are genuinely dark — the void, the Nether's `#330808`, the underside of the upside-down
+band — so these are small absolute numbers and the ratio is what carries meaning.
+
+| Pack | void | nether | upside-down |
+|---|---|---|---|
+| none (control) | 11.1 | 10.7 | 12.9 |
+| complementary_unbound | 19.9 (1.80×) | 19.8 (1.86×) | 19.8 (1.54×) |
+| bsl | 13.0 (1.17×) | 17.1 (1.60×) | 16.6 (1.29×) |
+| insanity | 12.4 (1.12×) | 10.1 (0.95×) | 13.2 (1.03×) |
+| sildurs | 11.0 (1.00×) | 11.1 (1.04×) | 12.1 (0.94×) |
+| complementary_reimagined | 10.4 (0.94×) | 11.5 (1.08×) | 12.0 (0.93×) |
+| makeup_ultra_fast | 11.0 (0.99×) | 10.1 (0.95×) | 11.1 (0.86×) |
+| hysteria | 10.7 (0.96×) | 10.3 (0.96×) | 10.9 (0.84×) |
+| bliss | 10.4 (0.94×) | 10.6 (1.00×) | 10.6 (0.82×) |
+| spooklementary | 10.2 (0.92×) | 10.2 (0.95×) | 10.2 (0.80×) |
+
+In every run DT's own ask was identical and correct — `bandSky void/nether/flip` at ~1.0 with the
+fog tint applied — so the differences above are the pack's doing, not DT's.
+
+**What this supports:** Complementary Unbound and BSL materially brighten the band atmosphere
+(1.5–1.9×); Spooklementary, Bliss and Hysteria slightly darken it; the rest track vanilla.
+
+**What this does NOT support:** any claim that a pack discards DT's sky dome. The sites frame the
+band *environment* from where the train puts the camera, not the dome itself — in the upside-down
+band the day sky is below the train and out of shot entirely. Answering "does the dome survive"
+needs a site that puts the camera in open air aimed at it. That is the first thing to fix next.
+
+### Carriage fog / sky & lighting — NOT measured
+
+Only `complementary_reimagined` and `complementary_unbound` ever produced a live room
+(`fogDist 192→60 cancelled=true`, `room DAY t=1.000 lift=0.250`). Every pack after them read
+`room(NONE t=0.000)` with byte-identical setup chat, including the three that ran a harness with a
+`portal test back` sweep added on the theory that stamps were accumulating in the reused save. That
+theory was wrong — the fix changed nothing — and the cause is still unknown. Two data points out of
+ten is not a column.
+
+### Skybox blocks — not informative
+
+`ShaderCompat.allows` gates the effect off under every pack, so every shader row is "off by DT's own
+decision". Only the control cell could carry information, and that site was the most fragile of the
+eight.
+
+### The transition — not reachable
+
+Unchanged from the note above: `portal test` stamps a twin with no train and nothing that swaps, so
+`crossing` reads `0.000` everywhere.
+
+## What the next pass has to do
+
+1. **Aim the band sites at the sky.** Spectator, absolute coordinates over a forceloaded chunk,
+   above the train, camera pitched at the dome — the shape the skybox site eventually needed.
+2. **Find out why the room stops engaging.** Two packs worked, eight did not, with identical setup
+   chat. Suspect world state, not the packs; a fresh save per run would isolate it.
+3. **Run the sweep once, from a clean save, on one build.** This sweep is not internally consistent:
+   `gradle runClient` recompiles per launch, so mid-sweep source edits reached the later packs and
+   three of them ran a different harness than the first seven.

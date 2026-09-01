@@ -160,6 +160,11 @@ neoForge {
             if (project.hasProperty('shaderSweep')) {
                 systemProperty 'dungeontrain.shader_sweep', project.property('shaderSweep').toString()
             }
+            // -PshaderSweepSites=05,06,07 captures only those sites. A fix to one site should not
+            // cost a re-run of all eight across a dozen packs.
+            if (project.hasProperty('shaderSweepSites')) {
+                systemProperty 'dungeontrain.shader_sweep_sites', project.property('shaderSweepSites').toString()
+            }
         }
 
         server {
