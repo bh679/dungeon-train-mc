@@ -10560,6 +10560,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "friends-made-excludes-killed",
+      "version": "0.762.0",
+      "type": "fix",
+      "title": "Friends you kill no longer count as friends you made",
+      "summary": "Befriending a passenger and then killing them used to leave them counted on both sides of the ledger \u2014 they stayed in your friends made tally on the death screen, in your lifetime total, in your stat book and on the leaderboard. Now a kill takes them out of it. The kill itself still counts.",
+      "highlights": [
+        "Killing a passenger removes them from your friends made count for that run.",
+        "If the passenger you killed was your closest friend, the death-screen friend portrait moves to whoever is still alive and likes you most."
+      ],
+      "pr": 1244,
+      "date": "2026-09-01",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
