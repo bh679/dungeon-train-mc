@@ -80,13 +80,12 @@ public final class VideoToolsScreen extends Screen {
     /**
      * The Death/Love Note rows, each with the item glyph drawn in its margin. Same shape as
      * {@code AiPolicyContent}'s bullets — content as data, so adding a row is one line.
+     *
+     * <p>Deliberately one row. How the notes actually work is not spelled out here: the page says
+     * they exist and points at the one thing that stops them arriving, and the rest is left for
+     * players to find. See {@code notes.secret}.</p>
      */
     private static final List<NoteRow> NOTE_ROWS = List.of(
-            new NoteRow("notes.death", Items.WRITABLE_BOOK),
-            new NoteRow("notes.love", Items.WRITTEN_BOOK),
-            new NoteRow("notes.arrival", Items.PLAYER_HEAD),
-            new NoteRow("notes.timing", Items.CLOCK),
-            new NoteRow("notes.trophy", Items.BOOK),
             new NoteRow("notes.gate", Items.BARRIER));
 
     private record NoteRow(String key, Item glyph) {}
@@ -282,6 +281,8 @@ public final class VideoToolsScreen extends Screen {
         int y = cardHeading(top, innerX, innerW, tr("notes.header"), ACCENT_NOTES);
 
         y = canvas.addWrappedAt(tr("notes.desc"), innerX, innerW, y, CardCanvas.COLOUR_DESC);
+        y += CardCanvas.PARA_GAP;
+        y = canvas.addWrappedAt(tr("notes.secret"), innerX, innerW, y, CardCanvas.COLOUR_DESC);
         y += CardCanvas.ROW_GAP;
 
         int textX = innerX + CardCanvas.ICON + CardCanvas.ICON_GAP;
