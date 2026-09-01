@@ -187,6 +187,41 @@ record BuilderTemplateGridLayout(int columns, int cellWidth, int cellHeight,
         return mouseX >= bx && mouseX < bx + size && mouseY >= by && mouseY < by + size;
     }
 
+    // ---- the favourite star ----
+    //
+    // The third corner. The state badge has the top-right and the drill-in button the bottom-right, so
+    // the star takes the top-LEFT — the one corner where it cannot land on either, whatever the grid
+    // reflows to. Its geometry lives here for the same reason theirs does: the renderer and the click
+    // handler must not each derive it, or the star draws in one place and responds in another.
+
+    int starSize() {
+        return moreSize();
+    }
+
+    int starX(int index) {
+        return xFor(index) + MORE_INSET;
+    }
+
+    int starY(int index, int scrollY) {
+        return yFor(index, scrollY) + MORE_INSET;
+    }
+
+    /**
+     * Whether the point is on {@code index}'s star.
+     *
+     * <p>Viewport-checked like {@link #isOverMore}, so a scrolled-away star can't be clicked through
+     * the chrome above or below the grid.</p>
+     */
+    boolean isOverStar(int index, double mouseX, double mouseY, int scrollY) {
+        if (mouseY < topY || mouseY >= bottomY) {
+            return false;
+        }
+        int bx = starX(index);
+        int by = starY(index, scrollY);
+        int size = starSize();
+        return mouseX >= bx && mouseX < bx + size && mouseY >= by && mouseY < by + size;
+    }
+
     /**
      * Which cell contains {@code (mouseX, mouseY)}, or -1.
      *
