@@ -830,6 +830,7 @@
   "gui.dungeontrain.video_tools.dtp.desc": "Teletransporta-te para esse X do mundo e faz aparecer aí um comboio para aterrares, com a dificuldade elevada como se tivesses percorrido todo o caminho — a forma mais rápida de filmar imagens de fim de partida sem jogar até lá. Substitui o comboio em que estavas, por isso serve para imagens de apoio e não para o meio de uma partida que queiras guardar. Precisa de cheats ligados, tal como os outros comandos aqui.",
   "gui.dungeontrain.video_tools.notes.header": "Os teus espectadores podem chegar ao teu jogo",
   "gui.dungeontrain.video_tools.notes.desc": "As Notas de Morte e as Notas de Amor atravessam de uma instalação para outra. Quem te está a ver pode, a partir do próprio jogo, enviar algo que aparece em direto no teu — não precisam de estar no mesmo servidor, e o teu mundo nunca é tocado diretamente.",
+  "gui.dungeontrain.video_tools.notes.how": "Como funciona?",
   "gui.dungeontrain.video_tools.notes.secret": "Quem sabe, sabe. Não vou revelar os segredos aqui.",
   "gui.dungeontrain.video_tools.notes.gate": "Ambos os lados precisam das funcionalidades de rede ativadas, e o modo infantil não envia nem recebe. Se não chegar nada durante a transmissão, é a primeira coisa a verificar.",
   "gui.dungeontrain.video_tools.share.header": "Fizeste alguma coisa? Deixa o link.",

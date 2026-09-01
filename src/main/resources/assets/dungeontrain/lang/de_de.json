@@ -830,6 +830,7 @@
   "gui.dungeontrain.video_tools.dtp.desc": "Teleportiert dich auf dieses Welt-X und lässt dort einen Zug entstehen, auf dem du landest, mit einer Schwierigkeit, als wärst du die ganze Strecke gefahren — der schnellste Weg zu Aufnahmen aus dem Spätspiel, ohne sich dorthin zu spielen. Der Zug, auf dem du warst, wird ersetzt, also eher für B-Roll als mitten in einem Lauf, den du behalten willst. Braucht aktivierte Cheats, wie die übrigen Befehle hier.",
   "gui.dungeontrain.video_tools.notes.header": "Deine Zuschauer können in dein Spiel greifen",
   "gui.dungeontrain.video_tools.notes.desc": "Todesnotizen und Liebesnotizen wirken über Installationen hinweg. Wer dir zusieht, kann aus dem eigenen Spiel heraus etwas schicken, das live in deinem auftaucht — ihr müsst nicht auf demselben Server sein, und deine Welt wird nie direkt berührt.",
+  "gui.dungeontrain.video_tools.notes.how": "Wie funktioniert das?",
   "gui.dungeontrain.video_tools.notes.secret": "Wer es weiß, weiß es. Die Geheimnisse verrate ich hier nicht.",
   "gui.dungeontrain.video_tools.notes.gate": "Beide Seiten brauchen aktivierte Netzwerkfunktionen, und im Kindermodus wird weder gesendet noch empfangen. Kommt im Stream nichts an, ist das der erste Punkt zum Prüfen.",
   "gui.dungeontrain.video_tools.share.header": "Etwas gemacht? Lass den Link da.",

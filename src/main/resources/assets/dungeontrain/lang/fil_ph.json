@@ -807,6 +807,7 @@
   "gui.dungeontrain.video_tools.dtp.desc": "Ipapa-teleport ka sa world-X na iyon at maglalagay ng tren doon para lapagan mo, na itinaas ang hirap na parang binagtas mo ang buong layo — ito ang pinakamabilis na paraan para kumuha ng late-run na footage nang hindi na kailangang laruin hanggang doon. Papalitan nito ang tren na sinasakyan mo, kaya para ito sa b-roll at hindi sa gitna ng run na gusto mong itago. Kailangang naka-on ang cheats, tulad ng ibang command dito.",
   "gui.dungeontrain.video_tools.notes.header": "Kayang abutin ng mga manonood ang laro mo",
   "gui.dungeontrain.video_tools.notes.desc": "Tumatawid ang Tala ng Patay at Tala ng Puso sa pagitan ng magkaibang install. Ang nanonood sa iyo ay puwedeng magpadala, mula sa sarili niyang laro, ng isang bagay na lilitaw nang live sa iyo — hindi kailangang magkasama kayo sa iisang server, at hindi nila hinahawakan ang mundo mo nang direkta.",
+  "gui.dungeontrain.video_tools.notes.how": "Paano ito gumagana?",
   "gui.dungeontrain.video_tools.notes.secret": "Kung alam mo, alam mo. Hindi ko ibubunyag dito ang mga sikreto.",
   "gui.dungeontrain.video_tools.notes.gate": "Kailangan ng magkabilang panig na naka-on ang mga network feature, at sa Kid mode ay walang naipapadala ni natatanggap. Kung walang dumarating habang nag-i-stream, iyon ang unang tingnan.",
   "gui.dungeontrain.video_tools.share.header": "May nagawa ka? Ilagay ang link.",

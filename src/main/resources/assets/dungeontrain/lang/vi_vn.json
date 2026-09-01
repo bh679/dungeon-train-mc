@@ -807,6 +807,7 @@
   "gui.dungeontrain.video_tools.dtp.desc": "Dịch chuyển bạn tới tọa độ X đó của thế giới và tạo sẵn một đoàn tàu ở đấy để bạn đáp xuống, với độ khó được nâng như thể bạn đã đi hết quãng đường — cách nhanh nhất để quay cảnh giai đoạn sau mà không phải chơi tới đó. Nó thay thế đoàn tàu bạn đang đi, nên hợp với cảnh chèn hơn là giữa một lượt chơi bạn muốn giữ lại. Cần bật cheat, giống các lệnh khác ở đây.",
   "gui.dungeontrain.video_tools.notes.header": "Người xem có thể với tay vào ván chơi của bạn",
   "gui.dungeontrain.video_tools.notes.desc": "Tử Thư và Tình Thư đi xuyên giữa các bản cài đặt khác nhau. Người đang xem bạn có thể, từ ván chơi của chính họ, gửi một thứ xuất hiện trực tiếp trong ván của bạn — hai bên không cần ở chung máy chủ, và thế giới của bạn không bị đụng tới trực tiếp.",
+  "gui.dungeontrain.video_tools.notes.how": "Nó hoạt động thế nào?",
   "gui.dungeontrain.video_tools.notes.secret": "Ai biết thì biết. Tôi sẽ không tiết lộ bí mật ở đây.",
   "gui.dungeontrain.video_tools.notes.gate": "Cả hai đầu đều cần bật tính năng mạng, và chế độ trẻ em thì không gửi cũng không nhận. Nếu lên sóng mà chẳng có gì đến, hãy kiểm tra chỗ này trước.",
   "gui.dungeontrain.video_tools.share.header": "Làm được gì rồi? Gửi liên kết đi.",

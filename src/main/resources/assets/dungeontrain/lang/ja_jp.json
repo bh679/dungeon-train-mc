@@ -807,6 +807,7 @@
   "gui.dungeontrain.video_tools.dtp.desc": "そのワールドXへテレポートし、着地できる列車をその場に生成します。難易度はそこまで乗ってきたかのように引き上げられるので、終盤の映像をそこまで遊ばずに撮る最短の方法です。乗っていた列車は置き換えられるため、残したいランの途中ではなくB ロール向けです。ほかのコマンドと同じくチートを有効にしておく必要があります。",
   "gui.dungeontrain.video_tools.notes.header": "視聴者はあなたのゲームに手を伸ばせます",
   "gui.dungeontrain.video_tools.notes.desc": "デスノートとラブノートは、別々のインストールをまたいで届きます。あなたを見ている人は自分のゲームから、あなたのゲームに生で現れる何かを送れます。同じサーバーにいる必要はなく、あなたのワールドが直接いじられることもありません。",
+  "gui.dungeontrain.video_tools.notes.how": "どういう仕組み？",
   "gui.dungeontrain.video_tools.notes.secret": "知っている人は知っています。ここで種明かしはしません。",
   "gui.dungeontrain.video_tools.notes.gate": "両側でネットワーク機能を有効にしておく必要があり、キッズモードでは送信も受信もされません。配信中に何も届かないときは、まずここを確認してください。",
   "gui.dungeontrain.video_tools.share.header": "何か作りましたか？リンクをどうぞ。",

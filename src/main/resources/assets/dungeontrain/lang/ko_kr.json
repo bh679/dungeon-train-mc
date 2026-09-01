@@ -807,6 +807,7 @@
   "gui.dungeontrain.video_tools.dtp.desc": "해당 월드 X 좌표로 순간이동하고, 착지할 열차를 그 자리에 생성합니다. 난이도는 거기까지 내내 달려온 것처럼 올라가므로, 후반부 영상을 거기까지 플레이하지 않고 찍는 가장 빠른 방법입니다. 타고 있던 열차는 대체되니, 남기고 싶은 플레이 도중이 아니라 보조 영상용으로 쓰세요. 여기 있는 다른 명령어처럼 치트가 켜져 있어야 합니다.",
   "gui.dungeontrain.video_tools.notes.header": "시청자가 당신의 게임에 손을 뻗을 수 있습니다",
   "gui.dungeontrain.video_tools.notes.desc": "데스노트와 러브노트는 서로 다른 설치본 사이를 건너갑니다. 당신을 보는 사람은 자기 게임에서, 당신의 게임에 실시간으로 나타나는 무언가를 보낼 수 있습니다. 같은 서버에 있을 필요도 없고, 당신의 월드를 직접 건드리지도 않습니다.",
+  "gui.dungeontrain.video_tools.notes.how": "어떻게 작동하나요?",
   "gui.dungeontrain.video_tools.notes.secret": "아는 사람은 압니다. 비밀은 여기서 밝히지 않겠습니다.",
   "gui.dungeontrain.video_tools.notes.gate": "양쪽 모두 네트워크 기능이 켜져 있어야 하며, 키즈 모드에서는 보내지도 받지도 않습니다. 방송 중에 아무것도 오지 않는다면 여기부터 확인하세요.",
   "gui.dungeontrain.video_tools.share.header": "뭔가 만드셨나요? 링크를 남겨 주세요.",

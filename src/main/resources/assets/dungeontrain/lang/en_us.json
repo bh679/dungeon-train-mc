@@ -966,6 +966,7 @@
   "gui.dungeontrain.video_tools.dtp.desc": "Teleports you to that world-X and spawns a train there to land on, with difficulty raised as if you had ridden the whole way — the quickest way to shoot late-run footage without playing to it. It replaces the train you were on, so it's for b-roll rather than the middle of a run you're keeping. Needs cheats on, like the other commands here.",
   "gui.dungeontrain.video_tools.notes.header": "Your viewers can reach into your game",
   "gui.dungeontrain.video_tools.notes.desc": "Death Notes and Love Notes cross between installs. Someone watching you can, from their own game, send something that turns up live in yours — you don't have to be on a server together, and they never touch your world directly.",
+  "gui.dungeontrain.video_tools.notes.how": "How does it work?",
   "gui.dungeontrain.video_tools.notes.secret": "If they know, they know. I won't reveal the secrets here.",
   "gui.dungeontrain.video_tools.notes.gate": "Both ends need network features switched on, and Kid mode neither sends nor receives them. If nothing is arriving on stream, that's the first thing to check.",
   "gui.dungeontrain.video_tools.share.header": "Made something? Drop the link.",

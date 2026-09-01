@@ -807,6 +807,7 @@
   "gui.dungeontrain.video_tools.dtp.desc": "把你傳送到那個世界 X 座標，並在那裡生成一列可供你落腳的列車，同時把難度提高到彷彿你一路開過來的程度——這是不必真的玩到那裡就能拍到後期畫面的最快辦法。它會取代你原本所在的列車，所以適合拍空鏡，而不適合用在你想保留的那一局中途。需要開啟作弊，和這裡的其他指令一樣。",
   "gui.dungeontrain.video_tools.notes.header": "觀眾可以伸手進你的遊戲",
   "gui.dungeontrain.video_tools.notes.desc": "死亡筆記與戀愛筆記能在不同的安裝之間往來。看你直播的人可以從自己的遊戲裡，送出一樣在你這邊即時出現的東西——你們不必在同一個伺服器上，他們也從不直接更動你的世界。",
+  "gui.dungeontrain.video_tools.notes.how": "它是怎麼運作的？",
   "gui.dungeontrain.video_tools.notes.secret": "懂的人自然懂。這裡就不揭祕了。",
   "gui.dungeontrain.video_tools.notes.gate": "兩端都需要開啟連線功能，而兒童模式既不傳送也不接收。如果直播中始終沒有東西送到，先從這裡查起。",
   "gui.dungeontrain.video_tools.share.header": "做出東西了嗎？把連結貼上來。",

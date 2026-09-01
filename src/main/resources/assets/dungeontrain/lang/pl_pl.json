@@ -853,6 +853,7 @@
   "gui.dungeontrain.video_tools.dtp.desc": "Przenosi cię na to X świata i tworzy tam pociąg, na którym wylądujesz, z poziomem trudności podniesionym tak, jakbyś przejechał całą drogę — najszybszy sposób na nagranie materiału z późnej rozgrywki bez dojeżdżania tam grą. Zastępuje pociąg, na którym byłeś, więc nadaje się na przebitki, a nie na środek przejścia, które chcesz zachować. Wymaga włączonych cheatów, jak pozostałe komendy tutaj.",
   "gui.dungeontrain.video_tools.notes.header": "Widzowie mogą sięgnąć do twojej gry",
   "gui.dungeontrain.video_tools.notes.desc": "Notesy śmierci i notesy miłości przechodzą między osobnymi instalacjami. Ktoś, kto cię ogląda, może ze swojej gry wysłać coś, co pojawi się na żywo w twojej — nie musicie być na tym samym serwerze, a twój świat nigdy nie jest ruszany bezpośrednio.",
+  "gui.dungeontrain.video_tools.notes.how": "Jak to działa?",
   "gui.dungeontrain.video_tools.notes.secret": "Kto wie, ten wie. Sekretów tutaj nie zdradzę.",
   "gui.dungeontrain.video_tools.notes.gate": "Po obu stronach muszą być włączone funkcje sieciowe, a tryb dziecięcy ani ich nie wysyła, ani nie odbiera. Jeśli na streamie nic nie przychodzi, sprawdź to najpierw.",
   "gui.dungeontrain.video_tools.share.header": "Zrobiłeś coś? Wrzuć link.",

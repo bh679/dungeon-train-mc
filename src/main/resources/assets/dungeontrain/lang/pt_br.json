@@ -830,6 +830,7 @@
   "gui.dungeontrain.video_tools.dtp.desc": "Teleporta você para esse X do mundo e cria um trem ali para você aterrissar, com a dificuldade elevada como se você tivesse percorrido todo o caminho — o jeito mais rápido de gravar imagens de fim de partida sem jogar até lá. Ele substitui o trem em que você estava, então serve para imagens de apoio e não para o meio de uma partida que você queira manter. Precisa de cheats ligados, como os outros comandos daqui.",
   "gui.dungeontrain.video_tools.notes.header": "Seus espectadores podem alcançar o seu jogo",
   "gui.dungeontrain.video_tools.notes.desc": "As Notas da Morte e as Notas de Amor atravessam de uma instalação para outra. Quem está te assistindo pode, do próprio jogo, mandar algo que aparece ao vivo no seu — vocês não precisam estar no mesmo servidor, e o seu mundo nunca é tocado diretamente.",
+  "gui.dungeontrain.video_tools.notes.how": "Como funciona?",
   "gui.dungeontrain.video_tools.notes.secret": "Quem sabe, sabe. Não vou revelar os segredos aqui.",
   "gui.dungeontrain.video_tools.notes.gate": "Os dois lados precisam dos recursos de rede ligados, e o modo infantil não envia nem recebe. Se nada estiver chegando na live, é a primeira coisa a conferir.",
   "gui.dungeontrain.video_tools.share.header": "Fez alguma coisa? Manda o link.",

@@ -830,6 +830,7 @@
   "gui.dungeontrain.video_tools.dtp.desc": "Teleporteert je naar die wereld-X en laat daar een trein verschijnen om op te landen, met de moeilijkheid opgeschroefd alsof je de hele weg gereden had — de snelste manier om beelden uit een late run te schieten zonder er naartoe te spelen. Het vervangt de trein waar je op zat, dus het is voor b-roll en niet voor het midden van een run die je wilt bewaren. Vereist ingeschakelde cheats, net als de andere commando's hier.",
   "gui.dungeontrain.video_tools.notes.header": "Je kijkers kunnen in je spel reiken",
   "gui.dungeontrain.video_tools.notes.desc": "Doodsnotities en Liefdesnotities steken over tussen installaties. Wie naar je kijkt kan vanuit zijn eigen spel iets sturen dat live in het jouwe opduikt — jullie hoeven niet op dezelfde server te zitten, en je wereld wordt nooit rechtstreeks aangeraakt.",
+  "gui.dungeontrain.video_tools.notes.how": "Hoe werkt het?",
   "gui.dungeontrain.video_tools.notes.secret": "Wie het weet, weet het. De geheimen verklap ik hier niet.",
   "gui.dungeontrain.video_tools.notes.gate": "Aan beide kanten moeten de netwerkfuncties aanstaan, en de kindermodus verstuurt noch ontvangt ze. Komt er tijdens de stream niets binnen, dan is dat het eerste om te controleren.",
   "gui.dungeontrain.video_tools.share.header": "Iets gemaakt? Plaats de link.",

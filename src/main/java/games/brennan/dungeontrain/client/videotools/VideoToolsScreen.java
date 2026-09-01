@@ -282,6 +282,9 @@ public final class VideoToolsScreen extends Screen {
 
         y = canvas.addWrappedAt(tr("notes.desc"), innerX, innerW, y, CardCanvas.COLOUR_DESC);
         y += CardCanvas.PARA_GAP;
+        // The question a creator will ask, answered by refusing to answer it: how the notes work is
+        // the discovery, and this page is the worst place to spend it.
+        y = canvas.addWrappedAt(tr("notes.how"), innerX, innerW, y, CardCanvas.COLOUR_HEADER);
         y = canvas.addWrappedAt(tr("notes.secret"), innerX, innerW, y, CardCanvas.COLOUR_DESC);
         y += CardCanvas.ROW_GAP;
 

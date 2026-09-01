@@ -830,6 +830,7 @@
   "gui.dungeontrain.video_tools.dtp.desc": "Ti teletrasporta a quella X del mondo e vi fa comparire un treno su cui atterrare, con la difficoltà alzata come se avessi percorso tutta la strada: il modo più rapido per girare riprese di fine partita senza arrivarci giocando. Sostituisce il treno su cui eri, quindi è per il materiale di repertorio e non per metà di una partita che vuoi tenere. Servono i trucchi attivi, come per gli altri comandi qui.",
   "gui.dungeontrain.video_tools.notes.header": "I tuoi spettatori possono entrare nella tua partita",
   "gui.dungeontrain.video_tools.notes.desc": "Le Note di Morte e le Note d'Amore attraversano installazioni diverse. Chi ti guarda può, dalla propria partita, mandare qualcosa che compare dal vivo nella tua: non serve essere sullo stesso server, e il tuo mondo non viene mai toccato direttamente.",
+  "gui.dungeontrain.video_tools.notes.how": "Come funziona?",
   "gui.dungeontrain.video_tools.notes.secret": "Chi lo sa, lo sa. I segreti non li svelo qui.",
   "gui.dungeontrain.video_tools.notes.gate": "Servono le funzioni di rete attive da entrambe le parti, e la modalità bambini non le invia né le riceve. Se in diretta non arriva nulla, è la prima cosa da controllare.",
   "gui.dungeontrain.video_tools.share.header": "Hai fatto qualcosa? Lascia il link.",

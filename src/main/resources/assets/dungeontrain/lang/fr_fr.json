@@ -830,6 +830,7 @@
   "gui.dungeontrain.video_tools.dtp.desc": "Te téléporte à ce X du monde et y fait apparaître un train sur lequel atterrir, avec la difficulté relevée comme si tu avais parcouru tout le trajet — le moyen le plus rapide de filmer des plans de fin de partie sans y jouer. Cela remplace le train sur lequel tu étais : c'est pour des plans de coupe, pas pour le milieu d'une partie que tu veux garder. Nécessite les triches activées, comme les autres commandes ici.",
   "gui.dungeontrain.video_tools.notes.header": "Tes spectateurs peuvent entrer dans ta partie",
   "gui.dungeontrain.video_tools.notes.desc": "Les Notes de Mort et les Notes d'Amour traversent d'une installation à l'autre. Quelqu'un qui te regarde peut, depuis sa propre partie, envoyer quelque chose qui apparaît en direct dans la tienne — inutile d'être sur le même serveur, et ton monde n'est jamais touché directement.",
+  "gui.dungeontrain.video_tools.notes.how": "Comment ça marche ?",
   "gui.dungeontrain.video_tools.notes.secret": "Ceux qui savent savent. Je ne révélerai pas les secrets ici.",
   "gui.dungeontrain.video_tools.notes.gate": "Les deux côtés doivent avoir les fonctions réseau activées, et le mode enfant n'envoie ni ne reçoit rien. Si rien n'arrive pendant le live, c'est la première chose à vérifier.",
   "gui.dungeontrain.video_tools.share.header": "Tu as fait quelque chose ? Balance le lien.",
