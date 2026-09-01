@@ -2,6 +2,7 @@
   "id": "edda_marsh_the_wither_at_the_window",
   "character": "Edda Marsh",
   "story": "The Wither at the Window",
+  "deferred": true,
   "letters": [
     {
       "index": 1,
