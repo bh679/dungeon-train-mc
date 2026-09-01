@@ -10610,13 +10610,9 @@
       "id": "meta-books-rarer-and-two-series-held-back",
       "version": "0.764.0",
       "type": "content",
-      "title": "Fewer books about the game, and two stories saved for later",
-      "summary": "The books that ask you to donate, point you at the feedback survey, or explain how the book system works now turn up about a tenth as often \u2014 they were a quarter of everything you could find in a chest, and now they are closer to one in forty. Fourteen's and Edda Marsh's letter series are held back until you have read the rest of the train's stories, so a new run opens on the other characters first.",
-      "highlights": [
-        "Five meta books dropped from 25% of the random-book pool to 2.7% \u2014 still findable, just rare",
-        "Fourteen and Edda Marsh no longer appear at a lectern until every other series is finished",
-        "Book rarity is read from the English files, so the change reaches players in every language"
-      ],
+      "title": "Adjustments to in-built narratives",
+      "summary": "Some of the train's built-in books and story series have been retuned.",
+      "highlights": [],
       "pr": 1249,
       "date": "2026-09-01",
       "released": false,
