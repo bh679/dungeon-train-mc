@@ -68,7 +68,7 @@ public final class StoryRegistry {
             // variant-count denominators are unaffected.
             try (InputStream in = NarrativeContentLocale.open(resourceManager, id, DIR, entry.getValue())) {
                 StoryFile story = StoryCodec.parse(in, id);
-                STORIES.put(id, story);
+                STORIES.put(id, baseWeighted(resourceManager, id, story, entry.getValue()));
                 loaded++;
             } catch (StoryCodec.StoryParseException e) {
                 LOGGER.error("[DungeonTrain] Narrative: failed to parse {} — {}", file, e.getMessage());
@@ -80,6 +80,29 @@ public final class StoryRegistry {
         }
         LOGGER.info("[DungeonTrain] Narrative registry loaded — {} stories from '{}' (failed: {})",
             loaded, DIR, failed);
+    }
+
+    /**
+     * The parsed story, carrying the ENGLISH base file's {@code weight}.
+     *
+     * <p>A localized copy REPLACES the base wholesale and carries no weight of its own, so parsing
+     * it alone would silently reset a deliberately deferred series to the {@code 1.0} baseline for
+     * every non-English player. Weight is tuning, not prose — the base wins.</p>
+     *
+     * <p>Costs one extra small parse per story, and only when a localized copy actually replaced
+     * the base — in an English world the parsed record already IS the base.</p>
+     */
+    private static StoryFile baseWeighted(ResourceManager resourceManager, ResourceLocation id,
+                                          StoryFile parsed, Resource base) {
+        if (NarrativeContentLocale.localized(resourceManager, id, DIR).isEmpty()) return parsed;
+        try (InputStream baseIn = base.open()) {
+            double baseWeight = StoryCodec.parseWeight(baseIn);
+            return baseWeight == parsed.weight() ? parsed : parsed.withWeight(baseWeight);
+        } catch (Exception e) {
+            // Unreadable base — keep the localized copy's weight rather than dropping the story.
+            LOGGER.warn("[DungeonTrain] Narrative: could not read base weight for {} — {}", id, e.toString());
+            return parsed;
+        }
     }
 
     /** Drop every loaded story (called on server stop). */

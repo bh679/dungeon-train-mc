@@ -17,7 +17,7 @@ import java.util.List;
  * {@code data/<modid>/narratives/random_books/}. Mirrors {@link StoryCodec}'s
  * forgiving style — missing optional fields default to sensible sentinels
  * ({@code "Anonymous"}, {@code "Untitled"}, {@code generation=0},
- * {@code weight=1}) so a bare-minimum file with just {@code variants} still
+ * {@code weight=1.0}) so a bare-minimum file with just {@code variants} still
  * loads.
  *
  * <p>A bad file logs at the registry layer and is skipped — one corrupt
@@ -51,7 +51,7 @@ public final class RandomBookCodec {
         String title = optionalString(root, "title", "Untitled");
         String author = optionalString(root, "author", "Anonymous");
         int generation = optionalInt(root, "generation", 0);
-        int weight = optionalInt(root, "weight", 1);
+        double weight = optionalDouble(root, "weight", 1.0);
 
         if (!root.has("variants") || !root.get("variants").isJsonArray()) {
             throw new RandomBookParseException("missing or non-array 'variants' field");
@@ -70,6 +70,25 @@ public final class RandomBookCodec {
         return new RandomBookFile(fileId, title, author, generation, weight, variants);
     }
 
+    /**
+     * Read just the {@code weight} of a book without building the whole record. The registries use
+     * this on the ENGLISH base file when a localized copy has replaced it: the localized copy is
+     * prose, and its own {@code weight} (a stale {@code 1} in every shipped locale file) must not
+     * override the tuning the base carries. Caller owns the stream lifecycle.
+     */
+    public static double parseWeight(InputStream in) throws RandomBookParseException {
+        JsonElement rootEl;
+        try {
+            rootEl = JsonParser.parseReader(new InputStreamReader(in, StandardCharsets.UTF_8));
+        } catch (Exception e) {
+            throw new RandomBookParseException("invalid JSON: " + e.getMessage(), e);
+        }
+        if (!rootEl.isJsonObject()) {
+            throw new RandomBookParseException("root is not a JSON object");
+        }
+        return optionalDouble(rootEl.getAsJsonObject(), "weight", 1.0);
+    }
+
     private static String optionalString(JsonObject obj, String key, String fallback) {
         if (!obj.has(key) || !obj.get(key).isJsonPrimitive() || !obj.get(key).getAsJsonPrimitive().isString()) {
             return fallback;
@@ -83,6 +102,13 @@ public final class RandomBookCodec {
             return fallback;
         }
         return obj.get(key).getAsInt();
+    }
+
+    private static double optionalDouble(JsonObject obj, String key, double fallback) {
+        if (!obj.has(key) || !obj.get(key).isJsonPrimitive() || !obj.get(key).getAsJsonPrimitive().isNumber()) {
+            return fallback;
+        }
+        return obj.get(key).getAsDouble();
     }
 
     /** Surfaced to the registry's per-file try/catch so logging is uniform. */
