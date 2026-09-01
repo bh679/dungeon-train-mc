@@ -29,6 +29,23 @@ import java.util.UUID;
  * player's own position actually moves. Both carry the player's uuid and name, so both wait on the
  * same network-consent setting as every other relay call that identifies somebody.</p>
  *
+ * <h2>Which deaths this actually catches</h2>
+ * <p>In SINGLEPLAYER, none of them — and that is fine. A singleplayer death ends the run and leaves
+ * the world (see {@code NarrativeDeathScreen}: the respawn control is the server path; locally the
+ * world is recreated for a new run), so the logout lands about two seconds after the death and
+ * cancels the refetch scheduled five seconds out. Measured across five deaths on 2026-09-01. Nothing
+ * is lost: the next login fetches fresh ranks ~0.5 s after joining, well after the death's telemetry
+ * has been ingested, so a new run always starts with a current standing.</p>
+ *
+ * <p>ON A SERVER the player respawns and stays connected, which is the case this path exists for —
+ * and the case that is <strong>NOT yet verified in game</strong> as of v0.760.4. Verifying it needs a
+ * real dedicated server ({@code ./gradlew runServer -PserverDir=run-server}, whose own game directory
+ * keeps its log from clobbering the client's): join, die, press Respawn, stay in the world, and watch
+ * {@code run-server/logs/debug.log} for "leaderboard ranks refreshed" — ~5 s after the death, or at
+ * the 60 s mark when the death fell inside {@code LeaderboardPool.RANK_ATTEMPT_COOLDOWN_MS} and the
+ * refetch deferred rather than dropped. The scheduling, the logout cancellation and the cooldown
+ * arithmetic are unit-tested; what is unproven is only that a respawning player reaches them.</p>
+ *
  * <h2>Why a death schedules rather than fetches</h2>
  * <p>The death's own telemetry — the run summary and death detail the relay scores from — only leaves
  * in the trailing flush of {@code RunStatsEvents.onPlayerDeath}'s {@code RelayOutbox.runBatched(...)}
