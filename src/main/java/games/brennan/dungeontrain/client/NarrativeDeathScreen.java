@@ -465,7 +465,10 @@ public final class NarrativeDeathScreen extends Screen {
         }
         pages = buildPages();
         donateInFlow = shouldShowDonate();
-        chipReturnPage = -1;
+        // chipReturnPage is deliberately NOT reset here: init() re-runs on every page swap, so
+        // clearing it would wipe the return index between a chip click and the page landing —
+        // Next Screen then paged forward instead of going back where the chip was pressed. A new
+        // death is a new screen instance, which is what the field initializer covers.
         if (currentPage >= pages.size()) currentPage = pages.size() - 1;
         if (currentPage < 0) currentPage = 0;
         assignBackgrounds();
