@@ -302,6 +302,14 @@ public final class BuilderRelayInstall {
             }
             case PORTAL_ROOM -> {
                 if (!TrackVariantStore.rename(TrackKind.PORTAL_ROOM, id, newId)) return false;
+                // Rooms are discovered by a directory scan that runs at server start, so without
+                // this pair the name the file just moved TO is unknown for the rest of the session:
+                // missing from the editor's Portals list, and "Unknown dimensional carriage" from
+                // the enter command. Unregistering the old name is right even though the caller
+                // writes the download under it next — the file really has moved away, and the write
+                // registers it again.
+                TrackVariantRegistry.register(TrackKind.PORTAL_ROOM, newId);
+                TrackVariantRegistry.unregister(TrackKind.PORTAL_ROOM, id);
                 // The room's remembered size is filed under its name; drop the stale entry so the
                 // next read measures the template rather than trusting the old name's number.
                 PortalRoomSizes.forget(id);
