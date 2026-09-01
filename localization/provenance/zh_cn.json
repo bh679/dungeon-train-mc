@@ -613,6 +613,8 @@
   "gui.dungeontrain.death.narr.bug_submit": {"author": "老本願", "reviewer": "老本願"},
   "gui.dungeontrain.death.narr.bug_submitted": {"author": "老本願", "reviewer": "老本願"},
   "gui.dungeontrain.death.narr.feedback_sent": {"author": "老本願", "reviewer": "老本願"},
+  "gui.dungeontrain.death.narr.dont_show": {"author": "Opus 5 (Claude)", "reviewer": ""},
+  "gui.dungeontrain.death.narr.feedback_chip_tip": {"author": "Opus 5 (Claude)", "reviewer": ""},
   "gui.dungeontrain.death.narr.kicker_fall": {"author": "老本願", "reviewer": "老本願"},
   "gui.dungeontrain.death.narr.kicker_deeds": {"author": "老本願", "reviewer": "老本願"},
   "gui.dungeontrain.death.narr.kicker_lives": {"author": "老本願", "reviewer": "老本願"},

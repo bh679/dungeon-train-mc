@@ -664,6 +664,8 @@
   "gui.dungeontrain.death.narr.bug_submit": "Отправить отчёт",
   "gui.dungeontrain.death.narr.bug_submitted": "Отчёт отправлен",
   "gui.dungeontrain.death.narr.feedback_sent": "Отправлено",
+  "gui.dungeontrain.death.narr.dont_show": "Больше не спрашивать",
+  "gui.dungeontrain.death.narr.feedback_chip_tip": "Отправить отзыв создателю линии",
   "gui.dungeontrain.death.narr.kicker_fall": "смерть",
   "gui.dungeontrain.death.narr.kicker_deeds": "деяния",
   "gui.dungeontrain.death.narr.kicker_lives": "все ваши жизни",

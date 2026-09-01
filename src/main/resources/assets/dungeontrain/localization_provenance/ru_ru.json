@@ -317,6 +317,8 @@
       "gui.dungeontrain.death.narr.bug_submit",
       "gui.dungeontrain.death.narr.bug_submitted",
       "gui.dungeontrain.death.narr.feedback_sent",
+      "gui.dungeontrain.death.narr.dont_show",
+      "gui.dungeontrain.death.narr.feedback_chip_tip",
       "gui.dungeontrain.death.narr.kicker_deeds",
       "gui.dungeontrain.death.narr.kicker_lives",
       "gui.dungeontrain.death.narr.kicker_ledger",

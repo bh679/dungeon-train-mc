@@ -636,6 +636,8 @@
   "gui.dungeontrain.death.narr.bug_submit": "Bug indienen",
   "gui.dungeontrain.death.narr.bug_submitted": "Bug ingediend",
   "gui.dungeontrain.death.narr.feedback_sent": "Verzonden",
+  "gui.dungeontrain.death.narr.dont_show": "Vraag dit niet meer",
+  "gui.dungeontrain.death.narr.feedback_chip_tip": "Geef feedback aan de maker van de lijn",
   "gui.dungeontrain.death.narr.kicker_fall": "de val",
   "gui.dungeontrain.death.narr.kicker_deeds": "de daden",
   "gui.dungeontrain.death.narr.kicker_lives": "al je levens",

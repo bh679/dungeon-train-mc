@@ -613,6 +613,8 @@
   "gui.dungeontrain.death.narr.bug_submit": "回報錯誤",
   "gui.dungeontrain.death.narr.bug_submitted": "錯誤已回報",
   "gui.dungeontrain.death.narr.feedback_sent": "已送出",
+  "gui.dungeontrain.death.narr.dont_show": "不要再問我這個",
+  "gui.dungeontrain.death.narr.feedback_chip_tip": "向路線的創造者回饋意見",
   "gui.dungeontrain.death.narr.kicker_fall": "墜落",
   "gui.dungeontrain.death.narr.kicker_deeds": "功績",
   "gui.dungeontrain.death.narr.kicker_lives": "你所有的生命",

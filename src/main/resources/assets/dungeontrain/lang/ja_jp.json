@@ -613,6 +613,8 @@
   "gui.dungeontrain.death.narr.bug_submit": "不具合を報告",
   "gui.dungeontrain.death.narr.bug_submitted": "報告しました",
   "gui.dungeontrain.death.narr.feedback_sent": "送信しました",
+  "gui.dungeontrain.death.narr.dont_show": "今後は質問しない",
+  "gui.dungeontrain.death.narr.feedback_chip_tip": "路線の創り手にフィードバックを送る",
   "gui.dungeontrain.death.narr.kicker_fall": "その最期",
   "gui.dungeontrain.death.narr.kicker_deeds": "その行い",
   "gui.dungeontrain.death.narr.kicker_lives": "すべての生",

@@ -613,6 +613,8 @@
   "gui.dungeontrain.death.narr.bug_submit": "Hantar Pepijat",
   "gui.dungeontrain.death.narr.bug_submitted": "Pepijat Dihantar",
   "gui.dungeontrain.death.narr.feedback_sent": "Dihantar",
+  "gui.dungeontrain.death.narr.dont_show": "Jangan tanya saya lagi",
+  "gui.dungeontrain.death.narr.feedback_chip_tip": "Beri maklum balas kepada pencipta laluan ini",
   "gui.dungeontrain.death.narr.kicker_fall": "kejatuhan",
   "gui.dungeontrain.death.narr.kicker_deeds": "perbuatan",
   "gui.dungeontrain.death.narr.kicker_lives": "semua hayat anda",

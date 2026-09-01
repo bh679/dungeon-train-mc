@@ -613,6 +613,8 @@
   "gui.dungeontrain.death.narr.bug_submit": "Gửi Lỗi",
   "gui.dungeontrain.death.narr.bug_submitted": "Đã Gửi Lỗi",
   "gui.dungeontrain.death.narr.feedback_sent": "Đã gửi",
+  "gui.dungeontrain.death.narr.dont_show": "Đừng hỏi tôi điều này nữa",
+  "gui.dungeontrain.death.narr.feedback_chip_tip": "Gửi phản hồi cho người tạo ra tuyến đường",
   "gui.dungeontrain.death.narr.kicker_fall": "cú ngã",
   "gui.dungeontrain.death.narr.kicker_deeds": "những việc đã làm",
   "gui.dungeontrain.death.narr.kicker_lives": "tất cả kiếp sống của bạn",

@@ -613,6 +613,8 @@
   "gui.dungeontrain.death.narr.bug_submit": "버그 제출",
   "gui.dungeontrain.death.narr.bug_submitted": "버그 제출됨",
   "gui.dungeontrain.death.narr.feedback_sent": "전송됨",
+  "gui.dungeontrain.death.narr.dont_show": "다시 묻지 않기",
+  "gui.dungeontrain.death.narr.feedback_chip_tip": "이 노선을 만든 사람에게 의견 보내기",
   "gui.dungeontrain.death.narr.kicker_fall": "추락",
   "gui.dungeontrain.death.narr.kicker_deeds": "행적",
   "gui.dungeontrain.death.narr.kicker_lives": "당신의 모든 생",

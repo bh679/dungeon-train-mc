@@ -636,6 +636,8 @@
   "gui.dungeontrain.death.narr.bug_submit": "Fehler senden",
   "gui.dungeontrain.death.narr.bug_submitted": "Fehler gesendet",
   "gui.dungeontrain.death.narr.feedback_sent": "Gesendet",
+  "gui.dungeontrain.death.narr.dont_show": "Nicht mehr danach fragen",
+  "gui.dungeontrain.death.narr.feedback_chip_tip": "Gib dem Schöpfer der Strecke eine Rückmeldung",
   "gui.dungeontrain.death.narr.kicker_fall": "der Sturz",
   "gui.dungeontrain.death.narr.kicker_deeds": "die Taten",
   "gui.dungeontrain.death.narr.kicker_lives": "all deine Leben",

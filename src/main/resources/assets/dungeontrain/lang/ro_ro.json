@@ -787,6 +787,8 @@
   "gui.dungeontrain.death.narr.bug_submit": "Trimite bugul",
   "gui.dungeontrain.death.narr.bug_submitted": "Bug trimis",
   "gui.dungeontrain.death.narr.feedback_sent": "Trimis",
+  "gui.dungeontrain.death.narr.dont_show": "Nu mă mai întreba asta",
+  "gui.dungeontrain.death.narr.feedback_chip_tip": "Trimite un feedback creatorului liniei",
   "gui.dungeontrain.death.narr.kicker_fall": "căderea",
   "gui.dungeontrain.death.narr.kicker_deeds": "faptele",
   "gui.dungeontrain.death.narr.kicker_lives": "toate viețile tale",
