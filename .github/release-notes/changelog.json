@@ -10760,6 +10760,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "any-template-submittable",
+      "version": "0.772.0",
+      "type": "feat",
+      "title": "Submit any build you make, not just carriages",
+      "summary": "The Train Builder's My Builds screen now offers Submit for Review on everything you make \u2014 carriage rooms, parts, tracks, portal rooms and whole carriage groups \u2014 not carriages alone. Submitted builds show whether they are waiting, accepted or not accepted, and withdrawing puts one back in your profile. Carriages still work exactly as before.",
+      "highlights": [
+        "Submit for Review now works for every kind of build",
+        "Waiting / Accepted / Not accepted badges on every build, not only carriages"
+      ],
+      "pr": 1259,
+      "date": "2026-09-01",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
