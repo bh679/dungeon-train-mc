@@ -4,12 +4,14 @@ import games.brennan.dungeontrain.builder.BuilderPhotoPaths;
 import games.brennan.dungeontrain.builder.relay.BuilderRelayDownload;
 import games.brennan.dungeontrain.builder.relay.BuilderRelayInstall;
 import io.netty.buffer.Unpooled;
+
+import java.util.List;
 import net.minecraft.network.FriendlyByteBuf;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -35,10 +37,30 @@ final class BuilderProfileDownloadPacketTest {
     void resolvedRequestRoundTrip() {
         for (BuilderRelayInstall.Resolution resolution : BuilderRelayInstall.Resolution.values()) {
             BuilderProfileDownloadPacket original =
-                    new BuilderProfileDownloadPacket(4271, resolution, "brick_cabin_2", "", false);
+                    new BuilderProfileDownloadPacket(4271, resolution, "brick_cabin_2", "", false, false);
             assertEquals(original, roundTrip(original),
                     "the second press must survive the wire for " + resolution);
         }
+    }
+
+    @Test
+    @DisplayName("a first press never confirms overwriting unsaved edits")
+    void firstPressDoesNotConfirmOverwrite() {
+        assertFalse(new BuilderProfileDownloadPacket(4271).overwriteUnsaved(),
+                "the unsaved-edits question has to be asked before anything is written");
+        assertFalse(new BuilderProfileDownloadPacket(4271, "", false).overwriteUnsaved());
+    }
+
+    @Test
+    @DisplayName("the answer to the unsaved-edits question survives the wire with its resolution")
+    void overwriteUnsavedRoundTrip() {
+        BuilderProfileDownloadPacket original = new BuilderProfileDownloadPacket(
+                4271, BuilderRelayInstall.Resolution.LOAD_AS_NEW, "brick_cabin_2", "", false, true);
+        BuilderProfileDownloadPacket back = roundTrip(original);
+        assertTrue(back.overwriteUnsaved(), "a confirmed overwrite that arrived as false would re-ask forever");
+        assertEquals(BuilderRelayInstall.Resolution.LOAD_AS_NEW, back.resolution(),
+                "the collision answer given on the earlier press must ride along");
+        assertEquals(original, back);
     }
 
     private static BuilderProfileDownloadPacket roundTrip(BuilderProfileDownloadPacket packet) {
@@ -64,6 +86,22 @@ final class BuilderProfileDownloadPacketTest {
                 BuilderRelayDownload.Outcome.INSTALLED, BuilderPhotoPaths.Kind.PART.id(),
                 "brass_door", "door");
         assertEquals(original, roundTrip(original));
+    }
+
+    @Test
+    @DisplayName("a naming question carries the names already in use, and others carry none")
+    void takenNamesRoundTrip() {
+        BuilderProfileDownloadResultPacket asking = new BuilderProfileDownloadResultPacket(
+                BuilderRelayDownload.Outcome.ALREADY_HERE, "portal_room", "testtt", "",
+                List.of("testtt", "testtt_2"));
+        BuilderProfileDownloadResultPacket back = roundTrip(asking);
+        assertEquals(List.of("testtt", "testtt_2"), back.takenNames(),
+                "the name box opens on this list — a truncated one offers a name that is gone");
+        assertEquals(asking, back);
+
+        assertEquals(List.of(), new BuilderProfileDownloadResultPacket(
+                        BuilderRelayDownload.Outcome.INSTALLED, "portal_room", "testtt", "").takenNames(),
+                "an outcome that asks for no name carries no list");
     }
 
     @Test
