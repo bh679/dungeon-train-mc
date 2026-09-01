@@ -10,6 +10,7 @@ import games.brennan.dungeontrain.client.analytics.UiAnalytics;
 import games.brennan.dungeontrain.client.links.OfficialLinks;
 import games.brennan.dungeontrain.client.support.DevHours;
 import games.brennan.dungeontrain.client.support.FundingGoals;
+import games.brennan.dungeontrain.client.support.UpdateStats;
 import games.brennan.dungeontrain.net.relay.DonationSummaryClient.Goal;
 import games.brennan.dungeontrain.client.modrec.ModRecPage;
 import games.brennan.dungeontrain.client.modrec.ModRecState;
@@ -312,7 +313,11 @@ public final class NarrativeDeathScreen extends Screen {
     private boolean donateInFlow;
     // When the donation page was opened via the "$" chip, the page index to return to (-1 = none).
     private int donateReturnPage = -1;
-    private record TileTip(Rect rect, String tipKey) {}
+    /**
+     * A tile's hover region and the tooltip it shows. The tip is a resolved {@link Component}
+     * rather than a key because some of them quote a figure ("244 updates in the last 30 days").
+     */
+    private record TileTip(Rect rect, Component tip) {}
     private final List<TileTip> donateTips = new ArrayList<>();
     // Smooth scroll: the wheel nudges donateScrollTarget; the drawn offset (donateScroll) eases
     // toward it each frame so the list glides rather than jumping a row per notch.
@@ -709,8 +714,7 @@ public final class NarrativeDeathScreen extends Screen {
                 for (TileTip t : donateTips) {
                     if (t.rect().has(mouseX, mouseY)) {
                         int maxW = (int) (this.width * 0.6);
-                        g.renderTooltip(this.font, this.font.split(Component.translatable(t.tipKey()), maxW),
-                                mouseX, mouseY);
+                        g.renderTooltip(this.font, this.font.split(t.tip(), maxW), mouseX, mouseY);
                         break;
                     }
                 }
@@ -1592,6 +1596,28 @@ public final class NarrativeDeathScreen extends Screen {
                 BTN_PRI_BG, BTN_PRI_LIGHT, BTN_DARK, 0xFFFFFFFF);
         int leftBottom = ly + 30;
 
+        // Once the bill is settled the page has stopped asking, so it has room to say what the
+        // support bought: how many updates have shipped, and how recently. The window shrinks to
+        // the project's own age while it is young — "the last 5 months", not "this year". Relay
+        // first, the jar's baked numbers behind it, and nothing at all when neither knows: a row
+        // of zeroes in front of a would-be donor is worse than no row.
+        UpdateStats.Figures updates = serverCostsMet || hoursLead
+                ? UpdateStats.current(s.updates()) : null;
+        if (updates != null) {
+            int uy = ly + 30;
+            costTile(g, lc0, uy, cellW, UpdateStats.countValue(updates),
+                    UpdateStats.countLabel(updates), UpdateStats.countTip(updates), VALUE);
+            // The recency tile stands down on its own when no timestamp resolved, leaving the
+            // count where it is rather than shifting the row.
+            if (UpdateStats.hasRecency(updates)) {
+                costTile(g, lc1, uy, cellW,
+                        UpdateStats.ago(updates, java.time.Instant.now()).getString(),
+                        Component.translatable("gui.dungeontrain.death.narr.lbl_last_update"),
+                        "gui.dungeontrain.death.narr.tip_last_update", VALUE);
+            }
+            leftBottom = uy + 30;
+        }
+
         // ---- Right block: supporter names, scrollable, amount right-aligned. Patreon tinted. ----
         drawCenteredStr(g, Component.translatable("gui.dungeontrain.death.narr.lbl_leaderboard_monthly"),
                 rightX + colW / 2, y, KICKER);
@@ -1637,8 +1663,14 @@ public final class NarrativeDeathScreen extends Screen {
      */
     private void costTile(GuiGraphics g, int centerX, int y, int cw, String value,
                           Component label, String tipKey, int valueColor) {
+        costTile(g, centerX, y, cw, value, label, Component.translatable(tipKey), valueColor);
+    }
+
+    /** As above, for a tooltip that had to be built rather than looked up. */
+    private void costTile(GuiGraphics g, int centerX, int y, int cw, String value,
+                          Component label, Component tip, int valueColor) {
         drawCell(g, centerX, y, value, label, cw, valueColor);
-        donateTips.add(new TileTip(new Rect(centerX - cw / 2, y, cw, 26), tipKey));
+        donateTips.add(new TileTip(new Rect(centerX - cw / 2, y, cw, 26), tip));
     }
 
     /**
@@ -1666,7 +1698,7 @@ public final class NarrativeDeathScreen extends Screen {
         int ly = y + 4 + this.font.lineHeight + 1;
         drawCheckGlyph(g, startX, ly + 1);
         g.drawString(this.font, label, startX + CHECK_W, ly, fade(LABEL), false);
-        donateTips.add(new TileTip(new Rect(x, y, cw, ch), tipKey));
+        donateTips.add(new TileTip(new Rect(x, y, cw, ch), Component.translatable(tipKey)));
     }
 
     /** Advance of {@link #drawCheckGlyph}: the 8px mark plus the gap before the label. */

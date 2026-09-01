@@ -2481,6 +2481,91 @@
       ]
     }
   },
+  "chat.dungeontrain.time.month.one": {
+    "1": {
+      "label": "a count of one",
+      "examples": [
+        "1"
+      ]
+    }
+  },
+  "chat.dungeontrain.time.month.other": {
+    "1": {
+      "label": "how many months",
+      "examples": [
+        "5",
+        "11"
+      ]
+    }
+  },
+  "gui.dungeontrain.death.narr.lbl_updates_window": {
+    "1": {
+      "label": "the span the count covers, as a whole clause - the project's own age while it is younger than a year",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.time.month.other",
+          "args": [
+            "5"
+          ]
+        },
+        {
+          "key": "chat.dungeontrain.time.month.one",
+          "args": [
+            "1"
+          ]
+        }
+      ]
+    }
+  },
+  "gui.dungeontrain.death.narr.updates_count.one": {
+    "1": {
+      "label": "a count of one",
+      "examples": [
+        "1"
+      ]
+    }
+  },
+  "gui.dungeontrain.death.narr.updates_count.other": {
+    "1": {
+      "label": "how many updates shipped",
+      "examples": [
+        "244",
+        "12"
+      ]
+    }
+  },
+  "gui.dungeontrain.death.narr.tip_updates": {
+    "1": {
+      "label": "how many updates landed in the last 30 days, as a whole clause",
+      "examples": [
+        {
+          "key": "gui.dungeontrain.death.narr.updates_count.other",
+          "args": [
+            "244"
+          ]
+        }
+      ]
+    }
+  },
+  "gui.dungeontrain.death.narr.ago": {
+    "1": {
+      "label": "how long ago, as a whole clause",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.time.hour.other",
+          "args": [
+            "2"
+          ]
+        },
+        {
+          "key": "chat.dungeontrain.time.day.one",
+          "args": [
+            "1"
+          ]
+        }
+      ]
+    }
+  },
   "gui.dungeontrain.options.value_row": {
     "1": {
       "label": "the setting's name",

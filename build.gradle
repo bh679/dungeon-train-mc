@@ -468,6 +468,107 @@ def devHours = { ->
     return hours.size()
 }()
 
+// How many updates have shipped, and when the newest one landed — the pair the death screen's
+// donation page shows once the running costs are met. An "update" is a MINOR version bump: one
+// per Gate 3 merge. The cascade's PATCH ticks are excluded, or automation would treble the count.
+//
+// These are the OFFLINE FALLBACK. The live figures come from the relay (which polls the same
+// committed index over HTTP and re-derives them daily); these only render when that fetch fails,
+// so a stale window on an old jar is the point at which the numbers stop moving, not a bug.
+//
+// Two sources, unioned per-day by MAX, for the same reason dev-hours has two:
+//   - docs/version-history/index.json — a committed snapshot from scripts/version-history/collect.py,
+//     which is all a shallow CI clone has to go on.
+//   - the live git history of THIS checkout, so a dev build counts today's merges too.
+// Both count the same events, so the larger count for a given day is the more complete one.
+//
+// Every failure path degrades: a missing index, no git, a corrupt file. Worst case the count is
+// 0, which callers read as UNKNOWN and the screen omits the line rather than claiming zero work.
+def updateStats = { ->
+    var daily = new TreeMap<String, Integer>()
+    var addDay = { String day, int n -> daily[day] = Math.max(daily[day] ?: 0, n) }
+
+    var indexFile = file('docs/version-history/index.json')
+    try {
+        if (indexFile.exists()) {
+            var parsed = new groovy.json.JsonSlurper().parse(indexFile)
+            (parsed.daily ?: [:]).each { day, n -> addDay(day as String, n as int) }
+        } else {
+            logger.info('version-history: {} absent — using this checkout\'s history only', indexFile)
+        }
+    } catch (Exception e) {
+        logger.warn('version-history: could not read {}: {}', indexFile, e.message)
+    }
+
+    try {
+        // Mirrors collect.py: one `+mod_version=` line per commit that changed it, kept only
+        // when its MAJOR.MINOR differs from the version before it.
+        var proc = ['git', 'log', '--reverse', '--format=%x00%ad', '--date=short',
+                    '-p', '--', 'gradle.properties'].execute(null, project.projectDir)
+        var out = new StringBuilder()
+        var err = new StringBuilder()
+        proc.consumeProcessOutput(out, err)   // drain first: this output is thousands of lines
+        proc.waitForOrKill(60000)
+        var live = new TreeMap<String, Integer>()
+        String when = null
+        String seen = null
+        String previousMinor = null
+        out.toString().eachLine { line ->
+            if (line.startsWith('\u0000')) {
+                when = line.substring(1).trim() ?: null
+                return
+            }
+            if (!line.startsWith('+mod_version=') || when == null) return
+            var version = line.substring('+mod_version='.length()).trim()
+            if (version.isEmpty() || version == seen) return
+            seen = version
+            var parts = version.split('\\.')
+            if (parts.length < 2) return
+            var minor = parts[0] + '.' + parts[1]
+            if (minor == previousMinor) return
+            previousMinor = minor
+            live[when] = (live[when] ?: 0) + 1
+        }
+        // The version in gradle.properties right now, when it is a MINOR ahead of the last one
+        // in the history — the bump commit's own version isn't in `git log` while it is being
+        // built. Mirrors collect.py's with_working_tree.
+        var pendingMinor = (mod_version as String).split('\\.').with { it.length >= 2 ? it[0] + '.' + it[1] : null }
+        if (pendingMinor != null && pendingMinor != previousMinor) {
+            var day = java.time.LocalDate.now().toString()
+            live[day] = (live[day] ?: 0) + 1
+        }
+        live.each { day, n -> addDay(day, n) }
+    } catch (Exception e) {
+        logger.warn('version-history: could not read git history: {}', e.message)
+    }
+
+    if (daily.isEmpty()) {
+        logger.warn('version-history: no history found — the death screen will omit the updates line')
+        return [count: 0, windowMonths: 0, month: 0, lastUpdate: '']
+    }
+
+    var today = java.time.LocalDate.now()
+    var first = java.time.LocalDate.parse(daily.firstKey())
+    // The window rule, mirrored in collect.py, UpdateStats.java and dp-relay's updates.js: the
+    // project's own age rounded UP while it is younger than a year (so the window still covers
+    // every update ever shipped), then the calendar year to date once it is a year old.
+    var whole = (today.year - first.year) * 12 + (today.monthValue - first.monthValue)
+    if (today.dayOfMonth < first.dayOfMonth) whole -= 1
+    int windowMonths = whole >= 12 ? 0
+            : Math.max(1, today.dayOfMonth == first.dayOfMonth ? whole : whole + 1)
+    var windowStart = windowMonths == 0
+            ? java.time.LocalDate.of(today.year, 1, 1)
+            : today.minusMonths(windowMonths)
+    var countSince = { java.time.LocalDate from ->
+        var key = from.toString()
+        daily.findAll { day, n -> day >= key }.values().sum(0) as int
+    }
+    return [count       : countSince(windowStart),
+            windowMonths: windowMonths,
+            month       : countSince(today.minusDays(30)),
+            lastUpdate  : daily.lastKey()]
+}()
+
 // Generate neoforge.mods.toml + dungeontrain_version.properties + pack.mcmeta from templates.
 tasks.register('generateModMetadata', ProcessResources) {
     var replaceProperties = [
@@ -484,6 +585,10 @@ tasks.register('generateModMetadata', ProcessResources) {
         update_json_url            : update_json_url,
         git_branch                 : gitBranch,
         dev_hours                  : devHours,
+        updates_count              : updateStats.count,
+        updates_window_months      : updateStats.windowMonths,
+        updates_month              : updateStats.month,
+        last_update_date           : updateStats.lastUpdate,
         sable_mod_version          : sable_mod_version,
         adventureitemnames_version : adventureitemnames_version,
         adventureitemstats_version : adventureitemstats_version,

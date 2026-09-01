@@ -8,7 +8,7 @@
         {
           "locale": "zh_cn",
           "contributed": 1018,
-          "total": 1837
+          "total": 1845
         }
       ]
     },
@@ -18,7 +18,7 @@
         {
           "locale": "ru_ru",
           "contributed": 1032,
-          "total": 1877
+          "total": 1889
         }
       ]
     },
@@ -28,7 +28,7 @@
         {
           "locale": "vi_vn",
           "contributed": 30,
-          "total": 1823
+          "total": 1831
         }
       ]
     },
@@ -38,12 +38,12 @@
         {
           "locale": "zh_cn",
           "contributed": 14,
-          "total": 1837
+          "total": 1845
         },
         {
           "locale": "zh_tw",
           "contributed": 14,
-          "total": 1837
+          "total": 1845
         }
       ]
     },
@@ -53,7 +53,7 @@
         {
           "locale": "ru_ru",
           "contributed": 9,
-          "total": 1877
+          "total": 1889
         }
       ]
     },
@@ -63,7 +63,7 @@
         {
           "locale": "zh_cn",
           "contributed": 2,
-          "total": 1837
+          "total": 1845
         }
       ]
     },
@@ -73,7 +73,7 @@
         {
           "locale": "ko_kr",
           "contributed": 1,
-          "total": 1823
+          "total": 1831
         }
       ]
     },
@@ -83,7 +83,7 @@
         {
           "locale": "ru_ru",
           "contributed": 1,
-          "total": 1877
+          "total": 1889
         }
       ]
     }
