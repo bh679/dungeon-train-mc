@@ -34,9 +34,9 @@ import java.util.UUID;
  * in the trailing flush of {@code RunStatsEvents.onPlayerDeath}'s {@code RelayOutbox.runBatched(...)}
  * block. Asking for ranks inside the death handler would therefore read back the position the player
  * held BEFORE the death that just happened, which is the exact staleness this is here to fix. So the
- * death puts the player on {@link #PENDING} and a tick {@link #DEATH_RANK_DELAY_TICKS} later does the
- * fetching, by which time the relay has ingested the death and {@code /leaderboard/me} — which reads
- * {@code player_scores} live and is never edge-cached — answers with the new number.</p>
+ * death puts the player on {@link #PENDING} and the first tick {@link #DEATH_RANK_DELAY_MS} later does
+ * the fetching, by which time the relay has ingested the death and {@code /leaderboard/me} — which
+ * reads {@code player_scores} live and is never edge-cached — answers with the new number.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class LeaderboardRefreshEvents {
@@ -45,26 +45,27 @@ public final class LeaderboardRefreshEvents {
     static final int REFRESH_PERIOD_TICKS = 600;
 
     /**
-     * How long after a death the rank refetch runs (20 ticks = 1 s → ~5 s). Long enough for the
-     * death's telemetry batch to reach the relay and be scored; short enough that a player who dies,
-     * respawns and picks up a leaderboard book reads a current position.
+     * How long after a death the rank refetch runs. Long enough for the death's telemetry batch to
+     * reach the relay and be scored; short enough that a player who dies, respawns and picks up a
+     * leaderboard book reads a current position.
+     *
+     * <p>Wall-clock, not ticks. This waits on a network round trip, and the seconds right after a
+     * death are the ones the server is least likely to tick on time: measured as 100 ticks, this wait
+     * ran 17–20 s in testing, alongside "Can't keep up … 42 ticks behind" in the same second of log.
+     * The tick handler is only what drives the check; the deadline itself is real time.</p>
      */
-    static final int DEATH_RANK_DELAY_TICKS = 100;
+    static final long DEATH_RANK_DELAY_MS = 5_000L;
 
     /** Deaths waiting on their delay. See the class note on why a death cannot fetch on the spot. */
     private static final LeaderboardRankSchedule PENDING = new LeaderboardRankSchedule();
 
     private static int tickCounter = 0;
 
-    /** Monotonic tick clock, the one the schedule's due-ticks are measured against. */
-    private static long serverTicks = 0L;
-
     private LeaderboardRefreshEvents() {}
 
     @SubscribeEvent
     public static void onServerTick(ServerTickEvent.Post event) {
-        long now = ++serverTicks;
-        if (!PENDING.isEmpty()) drainDueRanks(event.getServer(), now);
+        if (!PENDING.isEmpty()) drainDueRanks(event.getServer(), System.currentTimeMillis());
         if (++tickCounter < REFRESH_PERIOD_TICKS) return;
         tickCounter = 0;
         LeaderboardPool.warmNext();
@@ -93,7 +94,7 @@ public final class LeaderboardRefreshEvents {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         if (!DungeonTrainConfig.isWorldInfoToRelay()) return;
         if (RunIntegrity.isCheated(player)) return;
-        PENDING.schedule(player.getUUID(), serverTicks + DEATH_RANK_DELAY_TICKS);
+        PENDING.schedule(player.getUUID(), System.currentTimeMillis() + DEATH_RANK_DELAY_MS);
     }
 
     @SubscribeEvent
@@ -110,8 +111,8 @@ public final class LeaderboardRefreshEvents {
      * knows them by — the boards keyed by credit name (translations, donations) need it — and so a
      * player who left in the interval is simply dropped instead of fetched for.
      */
-    private static void drainDueRanks(MinecraftServer server, long now) {
-        for (UUID id : PENDING.drainDue(now)) {
+    private static void drainDueRanks(MinecraftServer server, long nowMs) {
+        for (UUID id : PENDING.drainDue(nowMs)) {
             ServerPlayer player = server == null ? null : server.getPlayerList().getPlayer(id);
             if (player == null) continue;
             LeaderboardPool.refreshRanks(id, player.getName().getString());

@@ -346,6 +346,10 @@ public final class LeaderboardPool {
         Map<LeaderboardCategory, Standing> parsed = parseRanks(body);
         if (parsed.isEmpty()) return;
         RANKS.put(player, Map.copyOf(parsed));
+        // The one line that says a refresh actually landed. Every other outcome here is already
+        // logged (a failed fetch, a bad status), so without this a rank refresh — the login one and
+        // the post-death one alike — is invisible even at debug, and "did it fire?" is unanswerable.
+        LOGGER.debug("[DungeonTrain] leaderboard ranks refreshed for {}: {} boards", player, parsed.size());
     }
 
     static Map<LeaderboardCategory, Standing> parseRanks(String body) {

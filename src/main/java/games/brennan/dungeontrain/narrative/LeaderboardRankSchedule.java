@@ -8,7 +8,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * "Who is due a leaderboard rank refetch, and when" — a due-tick per player, drained by the server
+ * "Who is due a leaderboard rank refetch, and when" — a due-time per player, drained by the server
  * tick handler in {@code LeaderboardRefreshEvents}.
  *
  * <p>A death cannot refetch ranks on the spot: the death's own telemetry only leaves in the trailing
@@ -16,33 +16,39 @@ import java.util.concurrent.ConcurrentHashMap;
  * {@code /leaderboard/me} would race it and read back the <em>pre</em>-death position — precisely the
  * staleness the refetch exists to remove. So the death schedules, and a later tick fetches.</p>
  *
+ * <p>Due times are wall-clock milliseconds, NOT server ticks. What is being waited on is a network
+ * round trip — the death's telemetry reaching the relay — and a tick is not a unit of time when the
+ * server is behind. Measured in ticks, a 5-second wait ran 20 seconds in testing, because respawn
+ * chunkgen is precisely the moment the tick rate collapses (the log said "42 ticks behind" in the
+ * same second). Wall-clock is immune to that.</p>
+ *
  * <p>Free of Minecraft types on purpose: the scheduling rule is the part worth testing, and it tests
- * without a server. Ticks are passed in rather than read, for the same reason.</p>
+ * without a server. The clock is passed in rather than read, for the same reason.</p>
  */
 public final class LeaderboardRankSchedule {
 
-    /** Player → the server tick at which their refetch comes due. */
+    /** Player → the epoch millisecond at which their refetch comes due. */
     private final Map<UUID, Long> due = new ConcurrentHashMap<>();
 
     /**
-     * Note that {@code player} should be refetched at {@code dueTick}.
+     * Note that {@code player} should be refetched at {@code dueAtMs}.
      *
-     * <p>An already-scheduled player keeps the EARLIER tick. Two deaths in quick succession should
+     * <p>An already-scheduled player keeps the EARLIER time. Two deaths in quick succession should
      * settle at one fetch that happens promptly, not one that keeps being pushed further out by each
      * new death — a player dying repeatedly is exactly the player whose rank is moving.</p>
      */
-    public void schedule(UUID player, long dueTick) {
+    public void schedule(UUID player, long dueAtMs) {
         if (player == null) return;
-        due.merge(player, dueTick, Math::min);
+        due.merge(player, dueAtMs, Math::min);
     }
 
-    /** Everyone due at or before {@code nowTick}, removed as they are returned. Never null. */
-    public List<UUID> drainDue(long nowTick) {
+    /** Everyone due at or before {@code nowMs}, removed as they are returned. Never null. */
+    public List<UUID> drainDue(long nowMs) {
         if (due.isEmpty()) return List.of();
         List<UUID> out = new ArrayList<>();
         for (Iterator<Map.Entry<UUID, Long>> it = due.entrySet().iterator(); it.hasNext(); ) {
             Map.Entry<UUID, Long> e = it.next();
-            if (e.getValue() <= nowTick) {
+            if (e.getValue() <= nowMs) {
                 out.add(e.getKey());
                 it.remove();
             }
