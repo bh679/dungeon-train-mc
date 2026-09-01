@@ -80,9 +80,13 @@ public final class NetherFogEvents {
         float fg = ((target >> 8) & 0xFF) / 255.0f;
         float fb = (target & 0xFF) / 255.0f;
 
+        int before = ShaderDiagnostics.recording() ? ShaderDiagnostics.packFog(event) : 0;
         event.setRed(lerp(event.getRed(), fr, t));
         event.setGreen(lerp(event.getGreen(), fg, t));
         event.setBlue(lerp(event.getBlue(), fb, t));
+        if (ShaderDiagnostics.recording()) {
+            ShaderDiagnostics.recordFogColor("nether", before, ShaderDiagnostics.packFog(event));
+        }
     }
 
     /**

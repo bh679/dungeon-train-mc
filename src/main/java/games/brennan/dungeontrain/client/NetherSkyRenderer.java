@@ -42,7 +42,11 @@ public final class NetherSkyRenderer {
         double n = ClientNetherBand.netherIntensityAt(camera.getPosition().x);
         if (n <= 0.0) return;
         int rgb = NetherFogEvents.netherTargetColor(mc.level, camera.getBlockPosition());
-        draw(frustumMatrix, (float) Math.min(1.0, n), rgb);
+        float alpha = (float) Math.min(1.0, n);
+        draw(frustumMatrix, alpha, rgb);
+        if (ShaderDiagnostics.recording()) {
+            ShaderDiagnostics.recordBandSky(ShaderDiagnostics.BandSky.NETHER, alpha);
+        }
     }
 
     /**

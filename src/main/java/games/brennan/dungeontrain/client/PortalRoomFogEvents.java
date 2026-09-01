@@ -63,17 +63,35 @@ public final class PortalRoomFogEvents {
         float distance = ClientPortalRoomFog.fogDistanceAt(
             camera.x, camera.y, camera.z, event.getFarPlaneDistance(),
             ClientPortalCrossing.current());
-        if (distance <= 0.0f) return;
+        if (distance <= 0.0f) {
+            // No room in range. Recorded as an untouched pass rather than not recorded at all —
+            // on the diagnostics panel "we asked for nothing" has to be distinguishable from "we
+            // asked and the pack threw it away".
+            if (ShaderDiagnostics.recording()) {
+                ShaderDiagnostics.recordFogDistance(event.getFarPlaneDistance(),
+                    event.getFarPlaneDistance(), event.getNearPlaneDistance(), false);
+            }
+            return;
+        }
 
         float far = Math.min(event.getFarPlaneDistance(), distance);
         // The near plane rides in proportionally, so a heavily shrunk fog thickens rather than
         // becoming a hard edge at arm's length.
         float near = Math.min(event.getNearPlaneDistance(), far * 0.25f);
-        if (far >= event.getFarPlaneDistance() && near >= event.getNearPlaneDistance()) return;
+        if (far >= event.getFarPlaneDistance() && near >= event.getNearPlaneDistance()) {
+            if (ShaderDiagnostics.recording()) {
+                ShaderDiagnostics.recordFogDistance(event.getFarPlaneDistance(), far, near, false);
+            }
+            return;
+        }
 
+        float vanillaFar = event.getFarPlaneDistance();
         event.setFarPlaneDistance(far);
         event.setNearPlaneDistance(near);
         event.setCanceled(true);
+        if (ShaderDiagnostics.recording()) {
+            ShaderDiagnostics.recordFogDistance(vanillaFar, far, near, true);
+        }
     }
 
     @SubscribeEvent
