@@ -17,6 +17,10 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  * <p>Carries the relay id and, on a second press, what to do about a name this install already uses
  * ({@code resolution}) and the name the player picked for it ({@code name}).</p>
  *
+ * <p>{@code overwriteUnsaved} is the player's answer to the other second-press question: the
+ * template this build lands on has unsaved editor edits, and installing replaces it. False on every
+ * first press, so the question is always asked before anything is written.</p>
+ *
  * <p>{@code ownerUuid} names whose build it is, and like
  * {@link BuilderProfileRequestPacket#ownerUuid} it is honoured on a dev build only — a release server
  * downloads the caller's own build instead, so nothing a client sends widens what it may fetch.
@@ -29,11 +33,12 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  */
 public record BuilderProfileDownloadPacket(int relayId, BuilderRelayInstall.Resolution resolution,
                                            String name, String ownerUuid,
-                                           boolean live) implements CustomPacketPayload {
+                                           boolean live, boolean overwriteUnsaved)
+        implements CustomPacketPayload {
 
     /** The first press on one of my own builds: install it, unless the name is already in use here. */
     public BuilderProfileDownloadPacket(int relayId) {
-        this(relayId, BuilderRelayInstall.Resolution.AS_IS, "", "", false);
+        this(relayId, BuilderRelayInstall.Resolution.AS_IS, "", "", false, false);
     }
 
     /**
@@ -42,7 +47,7 @@ public record BuilderProfileDownloadPacket(int relayId, BuilderRelayInstall.Reso
      * from the pool it was shown in.
      */
     public BuilderProfileDownloadPacket(int relayId, String ownerUuid, boolean live) {
-        this(relayId, BuilderRelayInstall.Resolution.AS_IS, "", ownerUuid, live);
+        this(relayId, BuilderRelayInstall.Resolution.AS_IS, "", ownerUuid, live, false);
     }
 
     public static final Type<BuilderProfileDownloadPacket> TYPE =
@@ -56,10 +61,11 @@ public record BuilderProfileDownloadPacket(int relayId, BuilderRelayInstall.Reso
                 buf.writeUtf(packet.name, 64);
                 buf.writeUtf(packet.ownerUuid, 48);
                 buf.writeBoolean(packet.live);
+                buf.writeBoolean(packet.overwriteUnsaved);
             },
             buf -> new BuilderProfileDownloadPacket(buf.readVarInt(),
                     buf.readEnum(BuilderRelayInstall.Resolution.class), buf.readUtf(64), buf.readUtf(48),
-                    buf.readBoolean())
+                    buf.readBoolean(), buf.readBoolean())
         );
 
     @Override
@@ -75,7 +81,7 @@ public record BuilderProfileDownloadPacket(int relayId, BuilderRelayInstall.Reso
             String owner = BuilderProfileRequestPacket.viewedOwner(player, packet.ownerUuid);
             boolean live = BuilderProfileRequestPacket.liveRequested(packet.live);
             BuilderRelayDownload.download(player, level, packet.relayId, packet.resolution, packet.name,
-                            owner, live)
+                            owner, live, packet.overwriteUnsaved)
                     .thenAccept(result -> player.getServer().execute(() -> {
                         if (player.hasDisconnected()) return;
                         DungeonTrainNet.sendTo(player, BuilderProfileDownloadResultPacket.of(result));

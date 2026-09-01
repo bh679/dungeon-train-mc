@@ -50,7 +50,14 @@ public final class BuilderProfileCollisionScreen extends BuilderProfileChoiceScr
                 () -> promptFor(BuilderRelayInstall.Resolution.LOAD_AS_NEW,
                         "gui.dungeontrain.builder.profile.name.load_as_new"),
                 Component.translatable("gui.dungeontrain.builder.profile.collision.replace_existing"),
-                () -> this.minecraft.setScreen(
-                        new BuilderProfileReplaceScreen(this, lastScreen, buildName, onChosen)));
+                () -> openReplaceStep());
+    }
+
+    /** The second question, carrying what this one was told is already in use. */
+    private void openReplaceStep() {
+        BuilderProfileReplaceScreen next =
+                new BuilderProfileReplaceScreen(this, lastScreen, buildName, onChosen);
+        next.setTakenNames(takenNames);
+        this.minecraft.setScreen(next);
     }
 }
