@@ -89,6 +89,44 @@ public final class BackwardGenTrace {
     }
 
     /**
+     * How the player is riding, and how the catch-up spawner is configured.
+     *
+     * <p>Grouped into its own record rather than flattened into {@link Sample} because these
+     * describe the RIDE rather than the lane, and because the first instrumented ride failed to
+     * reproduce the reported stall — the player was walking backwards ON TOP of the train in
+     * survival, and none of the lane fields distinguish that from riding inside a carriage. A
+     * player on the roof may not be carried by the sub-level, in which case their backward speed
+     * relative to the train is walk speed PLUS train speed, which is the regime where the lane can
+     * be outrun.</p>
+     *
+     * @param onDeck     whether {@code CarriageDeck.isOnCarriageDeck} considers the player
+     *                   supported by a carriage — false on the roof means they are not being
+     *                   carried
+     * @param gameMode   survival / creative — the reported failure was in survival
+     * @param sprinting  sprinting roughly doubles backward closure speed
+     * @param trainVelX  the train's own +X velocity, the other half of the relative speed
+     * @param burstMode  the configured {@link games.brennan.dungeontrain.train.CatchUpBurstMode}
+     * @param burstGroups groups the catch-up spawner would allow THIS tick — 1 means catch-up is
+     *                   not engaging, which is what the first ride showed (FILL_RUN covered 0.2%)
+     */
+    public record RideContext(
+        boolean onDeck,
+        String gameMode,
+        boolean sprinting,
+        double trainVelX,
+        String burstMode,
+        int burstGroups
+    ) {
+        /** Placeholder for samples taken with no near player. */
+        public static final RideContext NONE = new RideContext(false, "?", false, 0.0, "?", 0);
+
+        String format() {
+            return String.format("onDeck=%s mode=%s sprint=%s trainVelX=%.2f burst=%s/%d",
+                onDeck, gameMode, sprinting, trainVelX, burstMode, burstGroups);
+        }
+    }
+
+    /**
      * One tick's worth of backward-lane state for one train. Immutable; a new
      * instance is built per emitted sample and the previous one is replaced
      * wholesale in {@link #LAST_SAMPLE}.
@@ -140,7 +178,8 @@ public final class BackwardGenTrace {
         int forceLoaded,
         long chunkWait,
         int targetCount,
-        double tailGapX
+        double tailGapX,
+        RideContext ride
     ) {
         /**
          * How far the registry's min anchor sits below the visible tail. A
@@ -169,12 +208,13 @@ public final class BackwardGenTrace {
                 "[DungeonTrain][bwdgen] tick=%d train=%s reason=%s blockedFor=%d playerPIdx=%d "
                     + "occupiedPIdx=%s skew=%d playerX=%.2f minNeeded=%d registryMin=%d visibleTail=%d "
                     + "span=%d registryCount=%d visibleCount=%d anchor=%d deficit=%d ticksPending=%d "
-                    + "latchAge=%d edgeSub=%s forceLoaded=%d chunkWait=%d target=%d tailGapX=%.1f",
+                    + "latchAge=%d edgeSub=%s forceLoaded=%d chunkWait=%d target=%d tailGapX=%.1f %s",
                 gameTick, shortId(trainId), reason, blockedFor, playerPIdx,
                 (occupiedPIdx == null) ? "n/a" : occupiedPIdx.toString(), skew(), playerX,
                 minNeeded, registryMin, visibleTail, span(), registryCount, visibleCount,
                 anchor, deficit, ticksPending, latchAge, shortId(edgeSub), forceLoaded,
-                chunkWait, targetCount, tailGapX);
+                chunkWait, targetCount, tailGapX,
+                (ride == null ? RideContext.NONE : ride).format());
         }
     }
 
@@ -199,6 +239,30 @@ public final class BackwardGenTrace {
      * captures the trace with no setup, while shipped builds stay silent.
      */
     private static volatile boolean enabled = !FMLLoader.isProduction();
+
+    /**
+     * Window over which the race between the player and the lane is measured. 600 ticks = 30 s —
+     * long enough to average out the lane's one-group-per-settle cadence, short enough to show a
+     * player pulling ahead well before they reach the tail.
+     */
+    static final long RATE_WINDOW_TICKS = 600L;
+
+    /**
+     * How close (in blocks) the player must get to the visible tail's far face before the trace
+     * declares they have REACHED it. 16 blocks is roughly one carriage: close enough that the
+     * player is looking at the end of the train, far enough not to fire while they walk the last
+     * carriage normally. This is the event the whole investigation is about — the first ride had
+     * no such marker, so a 10-minute log could not say whether the player ever got near the end.
+     */
+    static final double AT_TAIL_BLOCKS = 16.0;
+
+    /** Hysteresis: the at-tail latch re-arms only once the player is this far back in front. */
+    static final double AT_TAIL_REARM_BLOCKS = AT_TAIL_BLOCKS * 2.0;
+
+    /** Rolling anchor per train for the rate window. */
+    private static final Map<UUID, Sample> RATE_ANCHOR = new ConcurrentHashMap<>();
+    /** Trains currently latched as "player is at the tail", cleared by the re-arm hysteresis. */
+    private static final Map<UUID, Boolean> AT_TAIL_LATCH = new ConcurrentHashMap<>();
 
     /** Newest sample per train, for the {@code traingen status} command. */
     private static final Map<UUID, Sample> LAST_SAMPLE = new ConcurrentHashMap<>();
@@ -231,6 +295,17 @@ public final class BackwardGenTrace {
     /** Every train with a recorded sample, newest state each. Snapshot copy. */
     public static Map<UUID, Sample> allSamples() {
         return Map.copyOf(LAST_SAMPLE);
+    }
+
+    /**
+     * Carriage indices per minute, from a delta measured over {@code dTicks}. Positive means
+     * "moving toward the tail" for both the player and the lane, so the two are directly
+     * comparable: player rate above lane rate means the player is winning the race and will
+     * eventually stand at the end of the train no matter how healthy the lane looks.
+     */
+    static double perMinute(int deltaCarriages, long dTicks) {
+        if (dTicks <= 0) return 0.0;
+        return deltaCarriages * 1200.0 / dTicks;
     }
 
     /**
@@ -303,15 +378,55 @@ public final class BackwardGenTrace {
             sample.playerX(), sample.minNeeded(), sample.registryMin(), sample.visibleTail(),
             sample.registryCount(), sample.visibleCount(), sample.anchor(), sample.deficit(),
             sample.ticksPending(), sample.latchAge(), sample.edgeSub(), sample.forceLoaded(),
-            sample.chunkWait(), sample.targetCount(), sample.tailGapX());
+            sample.chunkWait(), sample.targetCount(), sample.tailGapX(), sample.ride());
         LAST_SAMPLE.put(trainId, stamped);
+
+        // Race rates over the rolling window: is the player pulling away from the lane? A lane that
+        // never reports a fault can still lose this race, which is the regime the reported failure
+        // (walking backwards on the roof) most likely sits in.
+        Sample anchor = RATE_ANCHOR.get(trainId);
+        double laneRate = 0.0;
+        double playerRate = 0.0;
+        if (anchor != null) {
+            long dt = now - anchor.gameTick();
+            laneRate = perMinute(anchor.registryMin() - stamped.registryMin(), dt);
+            playerRate = perMinute(anchor.playerPIdx() - stamped.playerPIdx(), dt);
+            if (dt >= RATE_WINDOW_TICKS) RATE_ANCHOR.put(trainId, stamped);
+        } else {
+            RATE_ANCHOR.put(trainId, stamped);
+        }
 
         Reason previous = LAST_REASON.get(trainId);
         Long lastEmit = LAST_EMIT_TICK.get(trainId);
         if (shouldEmit(previous, stamped.reason(), (lastEmit == null) ? Long.MIN_VALUE : lastEmit, now)) {
-            LOGGER.info("{}", stamped.format(trainId));
+            LOGGER.info("{} laneRate={} playerRate={} outrun={}",
+                stamped.format(trainId),
+                String.format("%.1f", laneRate), String.format("%.1f", playerRate),
+                String.format("%.1f", playerRate - laneRate));
             LAST_REASON.put(trainId, stamped.reason());
             LAST_EMIT_TICK.put(trainId, now);
+        }
+
+        // The moment the investigation exists to capture: the player has walked to the end of the
+        // train. Independent of whether the lane reports a fault — the first ride proved a lane can
+        // look perfectly healthy the whole way, so "did the player reach the end" has to be its own
+        // measurement rather than an inference from the reason codes.
+        double gap = stamped.tailGapX();
+        if (!Double.isNaN(gap)) {
+            if (gap <= AT_TAIL_BLOCKS && AT_TAIL_LATCH.putIfAbsent(trainId, Boolean.TRUE) == null) {
+                LOGGER.warn("[DungeonTrain][bwdgen] AT-TAIL trainId={} — player is {} blocks from the "
+                        + "visible tail (pIdx {}); laneRate={} playerRate={} outrun={}; {}",
+                    trainId, String.format("%.1f", gap), stamped.visibleTail(),
+                    String.format("%.1f", laneRate), String.format("%.1f", playerRate),
+                    String.format("%.1f", playerRate - laneRate), stamped.format(trainId));
+                announce(level, Component.literal(
+                    "[DT] You have reached the END of the train — reason=" + stamped.reason()
+                        + " deficit=" + stamped.deficit()
+                        + " outrun=" + String.format("%.1f", playerRate - laneRate) + "/min"
+                ).withStyle(ChatFormatting.RED));
+            } else if (gap > AT_TAIL_REARM_BLOCKS) {
+                AT_TAIL_LATCH.remove(trainId);
+            }
         }
 
         if (!blocking) {
@@ -379,6 +494,8 @@ public final class BackwardGenTrace {
         LAST_REASON.clear();
         BLOCKED_SINCE.clear();
         STOPPED_WARNED.clear();
+        RATE_ANCHOR.clear();
+        AT_TAIL_LATCH.clear();
     }
 
     /** First 8 chars of a UUID — enough to correlate lines, short enough to read. */

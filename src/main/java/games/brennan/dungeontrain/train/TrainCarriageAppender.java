@@ -9,6 +9,7 @@ import games.brennan.dungeontrain.debug.DebugAccessEvents;
 import games.brennan.dungeontrain.net.CarriageIndexPacket;
 import games.brennan.dungeontrain.net.TrainDebugCarriagePacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.ship.CarriageDeck;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.Shipyard;
 import games.brennan.dungeontrain.ship.Shipyards;
@@ -2292,7 +2293,7 @@ public final class TrainCarriageAppender {
             // IS the finding (the near-check measures against group world AABBs,
             // which a culled group reports as zero).
             traceBackwardLane(level, trainId, train, BackwardGenTrace.Reason.NOT_NEAR, nowTick,
-                null, 0, 0, 0, 0, Trains.knownAnchors(trainId).size(), 0, 0, null, dims, groupSize);
+                null, 0, 0, 0, 0, Trains.knownAnchors(trainId).size(), 0, 0, null, dims, groupSize, velocity);
             if (withinResumeGrace(RESUME_GRACE_UNTIL_TICK.get(trainId), nowTick)) {
                 if (shouldRenewResumeGrace(RESUME_STARTED_TICK.get(trainId), nowTick, RESUME_HOLD_CAP_TICKS)) {
                     RESUME_GRACE_UNTIL_TICK.put(trainId, nowTick + RESUME_GRACE_RENEW_TICKS);
@@ -2519,7 +2520,7 @@ public final class TrainCarriageAppender {
             traceBackwardLane(level, trainId, train, backwardBlockReason(bwdNeedWindow, bwdEdgeAction),
                 level.getGameTime(), tracePlayer, tracePlayerPIdx, traceTargetCount,
                 globalMinNeededPIdx, trainMinAnchor, knownAnchors.size(),
-                backwardAnchor, backwardDeficitPIdx, bwdEdgeSub, dims, groupSize);
+                backwardAnchor, backwardDeficitPIdx, bwdEdgeSub, dims, groupSize, velocity);
         }
 
         if (!needsForward && !needsBackward) return false;
@@ -2678,7 +2679,7 @@ public final class TrainCarriageAppender {
             traceBackwardLane(level, trainId, train, outcome, now,
                 tracePlayer, tracePlayerPIdx, traceTargetCount,
                 globalMinNeededPIdx, trainMinAnchor, knownAnchors.size(),
-                backwardAnchor, backwardDeficitPIdx, bwdEdgeSub, dims, groupSize);
+                backwardAnchor, backwardDeficitPIdx, bwdEdgeSub, dims, groupSize, velocity);
         }
 
         if (STALL_DETECTION_ENABLED) {
@@ -3066,7 +3067,7 @@ public final class TrainCarriageAppender {
         ServerPlayer tracePlayer, int tracePlayerPIdx, int traceTargetCount,
         int minNeeded, int registryMin, int registryCount,
         int anchor, int deficit, UUID edgeSub,
-        CarriageDims dims, int groupSize
+        CarriageDims dims, int groupSize, Vector3dc velocity
     ) {
         if (!BackwardGenTrace.enabled()) return;
 
@@ -3113,7 +3114,28 @@ public final class TrainCarriageAppender {
             now, reason, 0L, tracePlayerPIdx, occupied, playerX,
             minNeeded, registryMin, visibleTail, registryCount, train.size(),
             anchor, deficit, ticksPending, latchAge, edgeSub,
-            (forceLoaded == null) ? 0 : forceLoaded.size(), chunkWait, traceTargetCount, tailGapX));
+            (forceLoaded == null) ? 0 : forceLoaded.size(), chunkWait, traceTargetCount, tailGapX,
+            rideContext(train, tracePlayer, deficit, groupSize, velocity)));
+    }
+
+    /**
+     * Describe HOW the player is riding, alongside the lane state. The reported failure happened
+     * while walking backwards on the roof in survival; a player the deck test doesn't consider
+     * carried closes on the tail at walk speed PLUS train speed, so these fields are what separate
+     * that ride from one taken inside a carriage.
+     */
+    private static BackwardGenTrace.RideContext rideContext(
+        List<Trains.Carriage> train, ServerPlayer player, int deficit, int groupSize, Vector3dc velocity
+    ) {
+        if (player == null) return BackwardGenTrace.RideContext.NONE;
+        CatchUpBurstMode mode = DungeonTrainConfig.getCatchUpBurstMode();
+        return new BackwardGenTrace.RideContext(
+            CarriageDeck.isOnCarriageDeck(train, player),
+            player.gameMode.getGameModeForPlayer().getName(),
+            player.isSprinting(),
+            (velocity == null) ? 0.0 : velocity.x(),
+            mode.name(),
+            catchUpBurstGroups(Math.max(deficit, 0), Math.max(groupSize, 1), mode));
     }
 
     // ---- Trailing-segment force-load window (backward-generation-stall fix) ----

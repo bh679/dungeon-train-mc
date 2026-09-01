@@ -128,6 +128,38 @@ class BackwardGenTraceTest {
         assertTrue(line.contains("tailGapX=84.5"), line);
     }
 
+    /**
+     * The race metric: player and lane rates are both "carriage indices toward the tail per
+     * minute", so they subtract directly. A player outrunning the lane reaches the end of the
+     * train however healthy the lane's reason codes look — the failure mode the first ride missed.
+     */
+    @Test
+    void perMinuteMakesPlayerAndLaneRatesComparable() {
+        // 20 carriages over 600 ticks (30s) = 40/min
+        assertEquals(40.0, BackwardGenTrace.perMinute(20, 600), 1e-9);
+        // no elapsed time cannot imply infinite speed
+        assertEquals(0.0, BackwardGenTrace.perMinute(20, 0), 1e-9);
+        assertEquals(0.0, BackwardGenTrace.perMinute(20, -5), 1e-9);
+        // moving forward (away from the tail) is negative
+        assertEquals(-20.0, BackwardGenTrace.perMinute(-10, 600), 1e-9);
+    }
+
+    /** The at-tail threshold must sit below its own re-arm point, or the latch would chatter. */
+    @Test
+    void atTailHysteresisIsOrdered() {
+        assertTrue(BackwardGenTrace.AT_TAIL_BLOCKS < BackwardGenTrace.AT_TAIL_REARM_BLOCKS);
+    }
+
+    /** Ride context reaches the log line — it is what separates a roof walk from riding inside. */
+    @Test
+    void formatCarriesRideContext() {
+        String line = sample(Reason.NO_NEED, -40, -43, -60, -48).format(UUID.nameUUIDFromBytes(new byte[]{2}));
+        assertTrue(line.contains("onDeck=false"), line);
+        assertTrue(line.contains("mode=survival"), line);
+        assertTrue(line.contains("sprint=true"), line);
+        assertTrue(line.contains("burst=FILL/1"), line);
+    }
+
     private static Sample sample(Reason reason, int playerPIdx, Integer occupied,
                                  int registryMin, int visibleTail) {
         return new Sample(
@@ -136,6 +168,7 @@ class BackwardGenTraceTest {
             /*registryCount*/ 20, /*visibleCount*/ 16,
             /*anchor*/ registryMin - 3, /*deficit*/ 5,
             /*ticksPending*/ -1L, /*latchAge*/ -1L, /*edgeSub*/ null,
-            /*forceLoaded*/ 4, /*chunkWait*/ -1L, /*targetCount*/ 30, /*tailGapX*/ 84.5);
+            /*forceLoaded*/ 4, /*chunkWait*/ -1L, /*targetCount*/ 30, /*tailGapX*/ 84.5,
+            new BackwardGenTrace.RideContext(false, "survival", true, 2.0, "FILL", 1));
     }
 }

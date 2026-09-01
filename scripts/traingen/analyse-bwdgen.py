@@ -69,10 +69,12 @@ VERDICTS = {
         "AABBs, and a culled group reports a zero AABB."),
 }
 
+FLOAT_FIELDS = {"playerX", "tailGapX", "trainVelX", "laneRate", "playerRate", "outrun"}
+
 INT_FIELDS = {
     "tick", "blockedFor", "playerPIdx", "skew", "minNeeded", "registryMin",
     "visibleTail", "span", "registryCount", "visibleCount", "anchor", "deficit",
-    "ticksPending", "latchAge", "forceLoaded", "chunkWait", "target",
+    "ticksPending", "latchAge", "forceLoaded", "chunkWait", "target", "burstGroups",
 }
 
 
@@ -94,6 +96,11 @@ def parse(paths: list[Path]) -> list[dict]:
                     if key in INT_FIELDS:
                         try:
                             sample[key] = int(value)
+                        except ValueError:
+                            sample[key] = None
+                    elif key in FLOAT_FIELDS:
+                        try:
+                            sample[key] = float(value)
                         except ValueError:
                             sample[key] = None
                     else:
@@ -148,10 +155,43 @@ def report(train: str, samples: list[dict]) -> None:
     counts = Counter(s["reason"] for s in after)
     print(f"reasons AFTER  the stall: {dict(counts)}")
 
+    # The race. A lane can report no fault for an entire ride and still lose it: if the player
+    # closes on the tail faster than the lane extends, they reach the end of the train regardless.
+    # This is measured, not inferred, because the first instrumented ride looked healthy throughout.
+    rated = [s for s in samples if s.get("outrun") is not None]
+    if rated:
+        outruns = sorted(s["outrun"] for s in rated)
+        worst = max(rated, key=lambda s: s["outrun"])
+        print(f"\nRACE (carriages/min toward the tail): outrun median "
+              f"{outruns[len(outruns)//2]:+.1f}, worst {outruns[-1]:+.1f}")
+        print(f"  worst at tick={worst['tick']}: player {worst.get('playerRate'):+.1f} vs "
+              f"lane {worst.get('laneRate'):+.1f}  ({worst.get('reason')})")
+        losing = [s for s in rated if s["outrun"] > 0]
+        print(f"  player ahead of the lane in {len(losing)}/{len(rated)} samples "
+              f"({100*len(losing)/len(rated):.0f}%)")
+
+    gaps = [s for s in samples if s.get("tailGapX") is not None]
+    if gaps:
+        closest = min(gaps, key=lambda s: s["tailGapX"])
+        print(f"\nTAIL GAP: closest approach {closest['tailGapX']:.1f} blocks at tick="
+              f"{closest['tick']} (reason={closest.get('reason')}, deficit={closest.get('deficit')})")
+        if closest["tailGapX"] > 32:
+            print("  -> the player never got near the end; a 'train stopped' complaint from this "
+                  "ride is NOT a generation stall.")
+        else:
+            print("  -> the player REACHED the end of the train; read the AT-TAIL line above it.")
+
+    ondeck = Counter(s.get("onDeck") for s in samples if "onDeck" in s)
+    if ondeck:
+        print(f"\nride: onDeck={dict(ondeck)} "
+              f"modes={dict(Counter(s.get('mode') for s in samples if 'mode' in s))} "
+              f"burst={dict(Counter(s.get('burst') for s in samples if 'burst' in s))}")
+
     print("\nstate series after the stall (deduped, last 24 changes):")
     for key in ("playerPIdx", "occupiedPIdx", "skew", "playerX", "minNeeded",
                 "registryMin", "visibleTail", "span", "registryCount", "visibleCount",
-                "deficit", "ticksPending", "latchAge", "forceLoaded", "chunkWait", "tailGapX"):
+                "deficit", "ticksPending", "latchAge", "forceLoaded", "chunkWait", "tailGapX",
+                "outrun", "onDeck"):
         print(f"  {key:>13}: {series(after, key)}")
 
     dominant, hits = counts.most_common(1)[0]
