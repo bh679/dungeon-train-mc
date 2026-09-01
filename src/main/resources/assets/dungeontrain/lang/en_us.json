@@ -962,6 +962,8 @@
   "gui.dungeontrain.video_tools.cinematic.blurb": "Run the opening shot again, from anywhere in the game.",
   "gui.dungeontrain.video_tools.cinematic.desc": "Runs the opening cinematic from wherever you are, as many times as you like — for an intro card, a re-shoot, or a cold open. /dt cinematic current runs it from your current view instead of the spawn-style start. It doesn't touch your run — nothing stops saving.",
   "gui.dungeontrain.video_tools.cinematic.hotkey": "Already in spectator? Just press C.",
+  "gui.dungeontrain.video_tools.dtp.header": "Jump down the line",
+  "gui.dungeontrain.video_tools.dtp.desc": "Teleports you to that world-X and spawns a train there to land on, with difficulty raised as if you had ridden the whole way — the quickest way to shoot late-run footage without playing to it. It replaces the train you were on, so it's for b-roll rather than the middle of a run you're keeping. Needs cheats on, like the other commands here.",
   "gui.dungeontrain.video_tools.notes.header": "Your viewers can reach into your game",
   "gui.dungeontrain.video_tools.notes.desc": "Death Notes and Love Notes cross between installs. Someone watching you can, from their own game, send something that turns up live in yours — you don't have to be on a server together, and they never touch your world directly.",
   "gui.dungeontrain.video_tools.notes.death": "Death Note — a viewer writes a book & quill, titles it Death Note, and puts your exact Minecraft name on the first line. When they next die, their echo is sent to your train and hunts you.",

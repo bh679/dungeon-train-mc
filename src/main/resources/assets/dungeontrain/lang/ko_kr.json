@@ -803,6 +803,8 @@
   "gui.dungeontrain.video_tools.cinematic.blurb": "게임 어디서든 오프닝 장면을 다시 재생합니다.",
   "gui.dungeontrain.video_tools.cinematic.desc": "지금 있는 곳에서 오프닝 시네마틱을 원하는 만큼 몇 번이든 재생합니다 — 인트로 화면으로, 재촬영으로, 콜드 오픈으로. /dt cinematic current는 스폰 지점 대신 현재 시점에서 재생합니다. 플레이에는 아무 영향이 없고, 저장도 멈추지 않습니다.",
   "gui.dungeontrain.video_tools.cinematic.hotkey": "이미 관전 모드인가요? C만 누르세요.",
+  "gui.dungeontrain.video_tools.dtp.header": "선로 저 앞으로 뛰기",
+  "gui.dungeontrain.video_tools.dtp.desc": "해당 월드 X 좌표로 순간이동하고, 착지할 열차를 그 자리에 생성합니다. 난이도는 거기까지 내내 달려온 것처럼 올라가므로, 후반부 영상을 거기까지 플레이하지 않고 찍는 가장 빠른 방법입니다. 타고 있던 열차는 대체되니, 남기고 싶은 플레이 도중이 아니라 보조 영상용으로 쓰세요. 여기 있는 다른 명령어처럼 치트가 켜져 있어야 합니다.",
   "gui.dungeontrain.video_tools.notes.header": "시청자가 당신의 게임에 손을 뻗을 수 있습니다",
   "gui.dungeontrain.video_tools.notes.desc": "데스노트와 러브노트는 서로 다른 설치본 사이를 건너갑니다. 당신을 보는 사람은 자기 게임에서, 당신의 게임에 실시간으로 나타나는 무언가를 보낼 수 있습니다. 같은 서버에 있을 필요도 없고, 당신의 월드를 직접 건드리지도 않습니다.",
   "gui.dungeontrain.video_tools.notes.death": "데스노트 — 시청자가 책과 깃펜에 글을 쓰고 제목을 「데스노트」로 붙인 뒤, 첫 줄에 당신의 정확한 마인크래프트 이름을 적습니다. 그 사람이 다음에 죽으면 그 메아리가 당신의 기차로 보내져 당신을 사냥합니다.",

@@ -854,6 +854,8 @@
   "gui.dungeontrain.video_tools.cinematic.blurb": {"author": "helluvaboy", "reviewer": "helluvaboy"},
   "gui.dungeontrain.video_tools.cinematic.desc": {"author": "helluvaboy", "reviewer": "helluvaboy"},
   "gui.dungeontrain.video_tools.cinematic.hotkey": {"author": "Opus 5 (Claude)", "reviewer": ""},
+  "gui.dungeontrain.video_tools.dtp.header": {"author": "Opus 5 (Claude)", "reviewer": ""},
+  "gui.dungeontrain.video_tools.dtp.desc": {"author": "Opus 5 (Claude)", "reviewer": ""},
   "gui.dungeontrain.video_tools.notes.header": {"author": "Opus 5 (Claude)", "reviewer": ""},
   "gui.dungeontrain.video_tools.notes.desc": {"author": "Opus 5 (Claude)", "reviewer": ""},
   "gui.dungeontrain.video_tools.notes.death": {"author": "Opus 5 (Claude)", "reviewer": ""},

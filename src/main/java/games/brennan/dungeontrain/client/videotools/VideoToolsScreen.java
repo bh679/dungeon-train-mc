@@ -57,6 +57,13 @@ public final class VideoToolsScreen extends Screen {
 
     /** Commands, so they read as something to type rather than prose. */
     private static final int COLOUR_COMMAND = 0xFFFFD37F;
+
+    /**
+     * The example {@code /dtp} invocation shown under the tiles. A literal, like every other command
+     * on this page: it is typed, not translated, and the number is only there to show the shape of
+     * the argument ({@code DtpCommand} takes a world-X).
+     */
+    private static final String DTP_COMMAND = "/dtp 40000";
     /** 1px frame around each tile — brightens on hover so the tile reads as clickable. */
     private static final int COLOUR_TILE_EDGE = 0xFF3A3A3A;
     private static final int COLOUR_TILE_EDGE_HOVER = 0xFFFFFFFF;
@@ -251,7 +258,17 @@ public final class VideoToolsScreen extends Screen {
             bottom = Math.max(bottom, ty);
         }
 
-        return closeCard(top, bottom);
+        // /dtp has no clip of its own, so it sits under the tiles as a text row rather than as a
+        // third, empty-looking cell — a hairline between it and them, the way the Contact card
+        // separates its two halves.
+        int y2 = bottom + CardCanvas.ROW_GAP;
+        y2 = canvas.addDivider(innerX, y2, innerW);
+        y2 += CardCanvas.ROW_GAP;
+        y2 = canvas.addWrappedAt(tr("dtp.header"), innerX, innerW, y2, CardCanvas.COLOUR_HEADER);
+        y2 = canvas.addWrappedAt(Component.literal(DTP_COMMAND), innerX, innerW, y2, COLOUR_COMMAND);
+        y2 = canvas.addWrappedAt(tr("dtp.desc"), innerX, innerW, y2, CardCanvas.COLOUR_DESC);
+
+        return closeCard(top, y2);
     }
 
     /**

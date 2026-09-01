@@ -793,6 +793,8 @@
       "gui.dungeontrain.video_tools.cinematic.blurb",
       "gui.dungeontrain.video_tools.cinematic.desc",
       "gui.dungeontrain.video_tools.cinematic.hotkey",
+      "gui.dungeontrain.video_tools.dtp.header",
+      "gui.dungeontrain.video_tools.dtp.desc",
       "gui.dungeontrain.video_tools.notes.header",
       "gui.dungeontrain.video_tools.notes.desc",
       "gui.dungeontrain.video_tools.notes.death",
