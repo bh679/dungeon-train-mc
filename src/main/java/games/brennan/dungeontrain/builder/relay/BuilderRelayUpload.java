@@ -44,7 +44,7 @@ public final class BuilderRelayUpload {
      * player is told their build is too big by the game, in the builder, rather than by a 400 from a
      * server they can't see.
      */
-    private static final int MAX_BLOCKS_CHARS = 690_000;
+    static final int MAX_BLOCKS_CHARS = 690_000;
 
     private BuilderRelayUpload() {}
 
@@ -297,7 +297,7 @@ public final class BuilderRelayUpload {
      * tool, where creative is the whole point, and reading it as cheating would quarantine every build
      * ever made in it away from the trains it was made for.</p>
      */
-    private static String poolFor() {
+    static String poolFor() {
         return SharedCarriageMode.NORMAL;
     }
 

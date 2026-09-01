@@ -316,6 +316,34 @@ class PlayerDataBackupTest {
     }
 
     @Test
+    void readsOneEntryWithoutRestoringAnything() throws IOException {
+        write(tmp.resolve("data/user/templates/a.nbt"), "the build");
+        write(tmp.resolve("data/achievements/uuid.json"), "granted");
+        Path archive = PlayerDataBackup.create(backups(), sources(), "launch", "1.2.3")
+            .archive().orElseThrow();
+        Files.delete(tmp.resolve("data/user/templates/a.nbt"));
+
+        // The build reconcile reads one build out of an archive and uploads it. Nothing lands on
+        // disk: a file missing from the store may be one the player deleted on purpose.
+        assertEquals("the build",
+            new String(PlayerDataBackup.readEntry(archive, "user/templates/a.nbt").orElseThrow()));
+        assertFalse(Files.exists(tmp.resolve("data/user/templates/a.nbt")),
+            "reading an entry must not write it back");
+    }
+
+    @Test
+    void readEntryIsEmptyForAnythingItCannotRead() throws IOException {
+        write(tmp.resolve("data/user/templates/a.nbt"), "the build");
+        Path archive = PlayerDataBackup.create(backups(), sources(), "launch", "1.2.3")
+            .archive().orElseThrow();
+
+        assertTrue(PlayerDataBackup.readEntry(archive, "user/templates/missing.nbt").isEmpty());
+        assertTrue(PlayerDataBackup.readEntry(tmp.resolve("not-an-archive.zip"), "user/a").isEmpty());
+        assertTrue(PlayerDataBackup.readEntry(archive, "").isEmpty());
+        assertEquals("1.2.3", PlayerDataBackup.manifestVersionOf(archive).orElseThrow());
+    }
+
+    @Test
     void restoreRefusesToEscapeItsTargetDirectory() {
         List<PlayerDataBackup.Source> targets =
             List.of(new PlayerDataBackup.Source("user", tmp.resolve("restored/user")));

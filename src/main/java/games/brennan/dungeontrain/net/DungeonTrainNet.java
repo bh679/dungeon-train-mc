@@ -206,6 +206,10 @@ public final class DungeonTrainNet {
         registrar.playToServer(BuilderProfileActionPacket.TYPE, BuilderProfileActionPacket.STREAM_CODEC, BuilderProfileActionPacket::handle);
         registrar.playToServer(BuilderProfileDownloadPacket.TYPE, BuilderProfileDownloadPacket.STREAM_CODEC, BuilderProfileDownloadPacket::handle);
         registrar.playToClient(BuilderProfileDownloadResultPacket.TYPE, BuilderProfileDownloadResultPacket.STREAM_CODEC, BuilderProfileDownloadResultPacket::handle);
+        // Builds the relay has lost: the server checks at join and offers, the client answers. Counts
+        // one way, a yes/no the other — the set to re-upload is worked out server-side both times.
+        registrar.playToClient(BuilderReconcileOfferPacket.TYPE, BuilderReconcileOfferPacket.STREAM_CODEC, BuilderReconcileOfferPacket::handle);
+        registrar.playToServer(BuilderReconcileStartPacket.TYPE, BuilderReconcileStartPacket.STREAM_CODEC, BuilderReconcileStartPacket::handle);
         // Dev builds only: find another player by name, so their profile can be listed and one of
         // their builds pulled into this install. Refused server-side on a release build, and refused
         // again by the relay, which answers this search on the dev cap alone.
