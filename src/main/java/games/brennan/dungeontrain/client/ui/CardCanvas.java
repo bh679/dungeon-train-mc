@@ -249,6 +249,16 @@ public final class CardCanvas {
 
     // ---- Input ----
 
+    /**
+     * Send the next layout back to the top. For a page that swaps what it is showing — the Video
+     * Tools tabs — where an offset carried over from the previous section means nothing. NOT for a
+     * re-layout: {@link #finishLayout} keeps the scroll on purpose, so a window resize does not
+     * throw the reader back to the top of what they were reading.
+     */
+    public void resetScroll() {
+        scrollY = 0;
+    }
+
     /** Scroll by a wheel delta. Returns whether the page consumed it. */
     public boolean scroll(double delta) {
         if (maxScroll <= 0) {

@@ -24,10 +24,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The <b>Video Tools</b> hub, opened from the title-screen button beside Train Editor. One card per
+ * The <b>Video Tools</b> hub, opened from the title-screen button beside Train Editor. One tab per
  * thing a creator came here for: the filming commands (a clickable, looping clip each — the clip
  * shows what the command does faster than a paragraph can), what an audience can send into the
- * stream, how to start a run from a genuinely clean slate, and where to post the result.
+ * stream, how to start a run from a genuinely clean slate, and where to post the result. Each tab
+ * is one card; only the section you are on is laid out, and the bottom row carries that section's
+ * own action beside {@code Done}.
  *
  * <p>Layout, scrolling, clipping, the card/rule/glyph draw order, inline-link hit-testing and the
  * palette all live in {@link CardCanvas}, shared with the Credits and AI Policy pages so the four
@@ -42,6 +44,12 @@ public final class VideoToolsScreen extends Screen {
     private static final int SIDE_MARGIN = 40;
     private static final int TOP = 16;
     private static final int TILE_GAP = 10;
+    /** Between the fixed title and the tab row. */
+    private static final int TITLE_GAP = 6;
+    /** Between the tab row and the top of the scrolling viewport. */
+    private static final int TABS_GAP = 6;
+    private static final int TAB_H = 20;
+    private static final int TAB_GAP = 2;
     /** Breathing room each side of a tile's clip. The caption still spans the full half-column. */
     private static final int TILE_PAD = 12;
     /** Between a clip and the caption under it. */
@@ -76,12 +84,39 @@ public final class VideoToolsScreen extends Screen {
 
     private record NoteRow(String key, Item glyph) {}
 
+    /**
+     * The page's sections, one per tab, in the order a creator wants them: what to film with, what
+     * their audience can send them, how to start clean, and how to reach me.
+     */
+    private enum Tab {
+        COMMANDS("tab.commands"),
+        NOTES("tab.notes"),
+        RESET("tab.reset"),
+        CONTACT("tab.contact");
+
+        private final String labelKey;
+
+        Tab(String labelKey) {
+            this.labelKey = labelKey;
+        }
+
+        String labelKey() {
+            return labelKey;
+        }
+    }
+
     /** One clickable command tile: its clip's rect in canvas space. */
     private record Tile(VideoTool tool, int x, int canvasY, int w, int h) {}
 
     private final Screen parent;
     private final CardCanvas canvas;
     private final List<Tile> tiles = new ArrayList<>();
+    /**
+     * The section being read. An instance field, not a static one: a detail page keeps this screen
+     * as its parent, so leaving and coming back returns you to the tab you were on, while opening
+     * the page fresh from the title screen starts on the commands.
+     */
+    private Tab tab = Tab.COMMANDS;
 
     public VideoToolsScreen(Screen parent) {
         super(Component.translatable("gui.dungeontrain.video_tools.title"));
@@ -93,50 +128,98 @@ public final class VideoToolsScreen extends Screen {
     protected void init() {
         tiles.clear();
         int colW = Math.min(MAX_COL_W, this.width - SIDE_MARGIN);
-        canvas.beginLayout((this.width - colW) / 2, colW);
+        int colX = (this.width - colW) / 2;
+        canvas.beginLayout(colX, colW);
+
+        addTabs(colX, colW);
 
         int y = 0;
+        switch (tab) {
+            case COMMANDS -> {
+                // The subtitle lives here rather than above the tabs: "pick one to learn more" is
+                // about the tiles, which are on this tab.
+                y = canvas.addCenteredWrapped(tr("subtitle"), y, CardCanvas.COLOUR_DESC);
+                y += CardCanvas.SECTION_GAP;
+                y = addCommandsCard(y);
+            }
+            case NOTES -> y = addNotesCard(y);
+            // The reset lives on this page because it exists for filming: a creator shooting a
+            // first-run video needs the mod to behave as if it had never been played, which no new
+            // world can do on its own (the cross-world profile replays onto every world).
+            case RESET -> y = addProseCard(y, ACCENT_RESET, tr("reset.header"), tr("reset.desc"));
+            case CONTACT -> y = addReachCard(y);
+        }
 
-        // Title + subtitle, centred and un-carded — they frame the page.
-        y = canvas.addCentered(this.title, y, CardCanvas.COLOUR_HEADER);
-        y += CardCanvas.PARA_GAP;
-        y = canvas.addCenteredWrapped(tr("subtitle"), y, CardCanvas.COLOUR_DESC);
-        y += CardCanvas.SECTION_GAP;
-
-        y = addCommandsCard(y);
-        y += CardCanvas.CARD_GAP;
-
-        y = addNotesCard(y);
-        y += CardCanvas.CARD_GAP;
-
-        // The reset lives on this page because it exists for filming: a creator shooting a first-run
-        // video needs the mod to behave as if it had never been played, which no new world can do on
-        // its own (the cross-world profile replays onto every world).
-        y = addProseCard(y, ACCENT_RESET, tr("reset.header"), tr("reset.desc"));
-        y += CardCanvas.CARD_GAP;
-
-        y = addReachCard(y);
-
-        // The viewport ends just above the button row so scrolling content never overlaps it.
+        // The viewport runs from under the tab row to just above the button row, so neither the
+        // tabs nor the buttons are ever overlapped by scrolling content.
         int rowY = this.height - 28;
-        canvas.finishLayout(y, TOP, rowY - 8);
+        canvas.finishLayout(y, TOP + this.font.lineHeight + TITLE_GAP + TAB_H + TABS_GAP, rowY - 8);
 
+        addBottomRow(rowY);
+    }
+
+    /**
+     * The four section tabs, filling the content column under the title. The tab you are on is the
+     * INACTIVE button — a tab you are already looking at is not something to press — which says so
+     * in vanilla's own styling and needs no new widget. Same shape as
+     * {@code BuilderFavouritesScreen.addTabs}.
+     */
+    private void addTabs(int colX, int colW) {
+        Tab[] all = Tab.values();
+        int tabW = (colW - TAB_GAP * (all.length - 1)) / all.length;
+        int tabsY = TOP + this.font.lineHeight + TITLE_GAP;
+        for (int i = 0; i < all.length; i++) {
+            Tab which = all[i];
+            Button button = Button.builder(tr(which.labelKey()), b -> switchTab(which))
+                    .bounds(colX + i * (tabW + TAB_GAP), tabsY, tabW, TAB_H)
+                    .build();
+            button.active = which != tab;
+            addRenderableWidget(button);
+        }
+    }
+
+    /** Show another section. The scroll goes back to the top — an offset from one section means
+     * nothing in another. */
+    private void switchTab(Tab which) {
+        if (which == tab) {
+            return;
+        }
+        tab = which;
+        canvas.resetScroll();
+        rebuildWidgets();
+    }
+
+    /**
+     * {@code Done}, plus whatever the tab you are on can act on: the reset from the Reset tab, the
+     * Discord invite from the Contact tab. Keeping the row per-tab means no tab shows a button for
+     * something you are not reading about — least of all a world-deleting one.
+     */
+    private void addBottomRow(int rowY) {
         int gap = 4;
-        int resetW = 120;
-        int discordW = 110;
         int doneW = 70;
-        int rowX = (this.width - (resetW + discordW + doneW + 2 * gap)) / 2;
+        int actionW = switch (tab) {
+            case RESET -> 120;
+            case CONTACT -> 110;
+            default -> 0;
+        };
+        int rowW = doneW + (actionW > 0 ? actionW + gap : 0);
+        int rowX = (this.width - rowW) / 2;
 
-        DarkTintedButton reset = new DarkTintedButton(rowX, rowY, resetW, 20,
-                tr("reset.button"), b -> openReset());
-        // Title-screen-only today, so this never fires; the guard is here so putting the page on the
-        // pause menu later cannot hand someone a world-deleting button while that world is loaded.
-        reset.active = Minecraft.getInstance().level == null;
-        addRenderableWidget(reset);
-        addRenderableWidget(new DarkTintedButton(rowX + resetW + gap, rowY, discordW, 20,
-                tr("discord_button"), b -> openDiscord()));
+        if (tab == Tab.RESET) {
+            DarkTintedButton reset = new DarkTintedButton(rowX, rowY, actionW, 20,
+                    tr("reset.button"), b -> openReset());
+            // Title-screen-only today, so this never fires; the guard is here so putting the page on
+            // the pause menu later cannot hand someone a world-deleting button while that world is
+            // loaded.
+            reset.active = Minecraft.getInstance().level == null;
+            addRenderableWidget(reset);
+        } else if (tab == Tab.CONTACT) {
+            addRenderableWidget(new DarkTintedButton(rowX, rowY, actionW, 20,
+                    tr("discord_button"), b -> openDiscord()));
+        }
+
         addRenderableWidget(Button.builder(CommonComponents.GUI_DONE, b -> onClose())
-                .bounds(rowX + resetW + discordW + 2 * gap, rowY, doneW, 20)
+                .bounds(rowX + (actionW > 0 ? actionW + gap : 0), rowY, doneW, 20)
                 .build());
     }
 
@@ -344,13 +427,22 @@ public final class VideoToolsScreen extends Screen {
         // Blurred menu panorama (vanilla), then the canvas's own translucent panel so text stays
         // readable over the spinning background.
         super.renderBackground(g, mouseX, mouseY, partialTick);
+        // The canvas panel covers the scrolling viewport only; this second fill carries it up behind
+        // the title and the tab row, and the two meet exactly at the viewport's padding so they read
+        // as one panel.
+        g.fill(canvas.colX() - CardCanvas.PANEL_PAD, TOP - CardCanvas.PANEL_PAD,
+                canvas.colX() + canvas.colW() + CardCanvas.PANEL_PAD,
+                canvas.viewportTop() - CardCanvas.PANEL_PAD, CardCanvas.COLOUR_PANEL);
         canvas.renderPanel(g);
     }
 
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
-        // Draws the background (with our panel) and the button row.
+        // Draws the background (with our panel), the tab row and the button row.
         super.render(g, mouseX, mouseY, partialTick);
+        // The title sits above the tabs, outside the scrolling viewport — it names the page, not the
+        // section, so it must not scroll away with one section's contents.
+        g.drawCenteredString(this.font, this.title, this.width / 2, TOP, CardCanvas.COLOUR_HEADER);
         canvas.render(g, this.width);
 
         // The clips, after the canvas pass so the card's translucent fill sits BEHIND them rather
