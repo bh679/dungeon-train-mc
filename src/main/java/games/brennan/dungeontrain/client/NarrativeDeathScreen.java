@@ -224,6 +224,23 @@ public final class NarrativeDeathScreen extends Screen {
     // by the on-demand /bug + /feedback survey).
     private static final String BUG_REPORT_ID = BugLogReporter.BUG_REPORT_ID;
 
+    // The mod-recommendation page's form id. It has no survey question behind it, so it needs its
+    // own id to sit alongside the real question ids in the answered / muted sets. Namespaced, so it
+    // can never collide with a Discord Presence question id.
+    private static final String MODREC_FORM_ID = "dungeontrain:modrec";
+
+    // Which death-screen forms this player has answered before, and which they have asked not to be
+    // shown again. Read ONCE, at construction: buildPages() and the opt-out checkbox both consult
+    // these, and init() re-runs on every rebuildWidgets(), so reading the live config instead would
+    // make the current page vanish under the player the moment they tick the box — and would pop the
+    // checkbox onto a form the moment it was answered, in the same death that first asked it.
+    private final Set<String> answeredForms = ClientDisplayConfig.answeredDeathForms();
+    // What was muted when this screen opened. buildPages() reads THIS one, so ticking the box
+    // never pulls the page out from under the player mid-death.
+    private final Set<String> deckMutedForms = ClientDisplayConfig.mutedDeathForms();
+    // Live tick state for the checkbox, seeded from the same snapshot and toggled by clicks.
+    private final Set<String> mutedForms = new HashSet<>(deckMutedForms);
+
     private final Map<String, Integer> scores = new HashMap<>();
     private final Map<String, String> comments = new HashMap<>();
     private final Set<String> submitted = new HashSet<>();
@@ -304,6 +321,10 @@ public final class NarrativeDeathScreen extends Screen {
     // keeps the ledger reachable on the deaths where donateInFlow gated the page out of the
     // normal flow.
     private Rect dollarRect;
+    // Top-bar envelope chip — final (platform) page only, jumps to the first feedback question.
+    // The way back in for someone who muted a form: the muted page still draws its (ticked)
+    // "Don't ask me this again" row, so reaching it is also how it gets un-muted.
+    private Rect envelopeRect;
     // Ticks since the screen opened, for the respawn hold-off (see runEndReady).
     private int ticksOpen;
     /** Vanilla's death-screen button delay — one second before an exit control may fire. */
@@ -311,8 +332,13 @@ public final class NarrativeDeathScreen extends Screen {
     // Whether the donation page appears in the normal Next-Screen flow this death (the gate). When
     // false it's skipped in-flow but still reachable via the top-bar "$" chip.
     private boolean donateInFlow;
-    // When the donation page was opened via the "$" chip, the page index to return to (-1 = none).
-    private int donateReturnPage = -1;
+    // When a page was opened via a top-bar chip ("$" or the envelope), the page index to return
+    // to on Next Screen / back (-1 = none).
+    private int chipReturnPage = -1;
+    // True while the player is walking every survey question via the envelope chip (X/10, bugs,
+    // suggestions — muted ones included). Not reset in init() for the same reason as
+    // chipReturnPage: init() re-runs on every page swap.
+    private boolean surveyTour;
     /**
      * A tile's hover region and the tooltip it shows. The tip is a resolved {@link Component}
      * rather than a key because some of them quote a figure ("244 updates in the last 30 days").
@@ -328,6 +354,8 @@ public final class NarrativeDeathScreen extends Screen {
     private Rect photosRect;
     // Trash toggle left of the reboard chip: delete the old world's save on reboard?
     private Rect deleteWorldRect;
+    /** The "Don't ask me this again" checkbox on an already-answered form page; null when absent. */
+    private Rect dontShowRect;
     // Red "Submit Bug" shortcut (start page only); null when absent or shown as the
     // non-clickable green "Bug Submitted" status.
     private Rect bugReportRect;
@@ -362,6 +390,9 @@ public final class NarrativeDeathScreen extends Screen {
         list.add(Page.of(Kind.GEAR));
         list.add(Page.of(Kind.LIVES));
         for (SurveyQuestionPayload.Entry e : SurveyClientState.questions()) {
+            // A muted form stays in the deck but sits out of the normal Next-Screen flow (see
+            // outOfFlow), exactly like the gated-out donation page — that keeps it reachable
+            // through the envelope chip, which is where it gets un-muted.
             list.add(Page.survey(e));
         }
         // "Support the line" — the donation ledger. Always in the list (so the "$" chip can always
@@ -376,6 +407,42 @@ public final class NarrativeDeathScreen extends Screen {
         }
         list.add(Page.of(Kind.PLATFORM));
         return list;
+    }
+
+    /** The form id a page carries, or null for the pages that aren't forms. */
+    private String formId(Page p) {
+        if (p.kind() == Kind.MODREC) return MODREC_FORM_ID;
+        return p.survey() != null ? p.survey().id() : null;
+    }
+
+    /**
+     * Whether a page is skipped by the normal Next-Screen / back walk this death: the donation
+     * page on the deaths its gate keeps it out of, and any form the player has muted. Both stay
+     * in the deck and stay reachable through their top-bar chip. PLATFORM is never out of flow,
+     * so paging forward always terminates.
+     */
+    private boolean outOfFlow(Page p) {
+        if (p.kind() == Kind.DONATE) return !donateInFlow;
+        String id = formId(p);
+        return id != null && deckMutedForms.contains(id);
+    }
+
+    /** Index of the first feedback-survey page, or -1 when the survey sent no questions. */
+    private int firstSurveyPageIndex() {
+        for (int i = 0; i < pages.size(); i++) if (pages.get(i).kind() == Kind.SURVEY) return i;
+        return -1;
+    }
+
+    /**
+     * The next SURVEY page from {@code from} walking by {@code step} (+1 forward, -1 back), or -1
+     * when there is none that way. Deliberately ignores {@link #outOfFlow}: the envelope's walk is
+     * where a muted question is revisited (and un-muted).
+     */
+    private int nextSurveyPage(int from, int step) {
+        for (int i = from + step; i >= 0 && i < pages.size(); i += step) {
+            if (pages.get(i).kind() == Kind.SURVEY) return i;
+        }
+        return -1;
     }
 
     private int donatePageIndex() {
@@ -419,7 +486,10 @@ public final class NarrativeDeathScreen extends Screen {
         }
         pages = buildPages();
         donateInFlow = shouldShowDonate();
-        donateReturnPage = -1;
+        // chipReturnPage is deliberately NOT reset here: init() re-runs on every page swap, so
+        // clearing it would wipe the return index between a chip click and the page landing —
+        // Next Screen then paged forward instead of going back where the chip was pressed. A new
+        // death is a new screen instance, which is what the field initializer covers.
         if (currentPage >= pages.size()) currentPage = pages.size() - 1;
         if (currentPage < 0) currentPage = 0;
         assignBackgrounds();
@@ -649,9 +719,11 @@ public final class NarrativeDeathScreen extends Screen {
         platformLeaveRect = null;
         donateRect = null;
         dollarRect = null;
+        envelopeRect = null;
         donateTips.clear();
         donateListViewport = null;
         deleteWorldRect = null;
+        dontShowRect = null;
         continueRect = null;
         backRect = null;
         bugReportRect = null;
@@ -732,6 +804,11 @@ public final class NarrativeDeathScreen extends Screen {
             if (settled() && dollarRect != null && dollarRect.has(mouseX, mouseY)) {
                 g.renderTooltip(this.font,
                         Component.translatable("gui.dungeontrain.death.narr.donate_chip_tip"), mouseX, mouseY);
+            }
+            // Envelope chip hover — what it does.
+            if (settled() && envelopeRect != null && envelopeRect.has(mouseX, mouseY)) {
+                g.renderTooltip(this.font,
+                        Component.translatable("gui.dungeontrain.death.narr.feedback_chip_tip"), mouseX, mouseY);
             }
         }
     }
@@ -1414,6 +1491,11 @@ public final class NarrativeDeathScreen extends Screen {
                 y = drawCentered(g, Component.translatable(noticeKey), cx, w, y, SUBLINE);
                 y += 4;
             }
+            // Only from the second time this question is put in front of someone who already
+            // answered it — a first ask has nothing to opt out of yet.
+            if (answeredForms.contains(e.id())) {
+                y = drawDontShowAgain(g, e.id(), cx, y);
+            }
         }
         return y;
     }
@@ -1448,6 +1530,11 @@ public final class NarrativeDeathScreen extends Screen {
         // would swallow tile clicks.
         placeBox(modNameBox, modRecPage.commentBoxX(), modRecPage.nameBoxY(), modRecPage.commentBoxW());
         placeBox(modCommentBox, modRecPage.commentBoxX(), modRecPage.commentBoxY(), modRecPage.commentBoxW());
+        // Same opt-out as the survey forms, once the player has recommended something before. The
+        // grid can run long, so the row is clamped to sit clear of the button footer.
+        if (answeredForms.contains(MODREC_FORM_ID)) {
+            below = drawDontShowAgain(g, MODREC_FORM_ID, cx, Math.min(below, this.height - 28 - DONT_SHOW_H));
+        }
         return below;
     }
 
@@ -1893,7 +1980,63 @@ public final class NarrativeDeathScreen extends Screen {
             Component dollar = Component.literal("$");
             int dollarW = this.font.width(dollar) + 16;
             dollarRect = drawChip(g, anchorX - 6 - dollarW, 8, dollar, CHIP_PH_BORDER, CHIP_PH_TEXT);
+            // Envelope → the feedback forms, immediately left of "$". Absent when the survey sent
+            // no questions (disabled / no webhook / no consent), so it is never a dead control.
+            if (firstSurveyPageIndex() >= 0) {
+                envelopeRect = drawEnvelopeChip(g, dollarRect.x() - 6 - 14, 8);
+            }
         }
+    }
+
+    /** Height of the opt-out row, including the gap below it. */
+    private static final int DONT_SHOW_H = 14;
+
+    /**
+     * The "Don't ask me this again" opt-out for a form the player has already answered once: a
+     * centered tick box plus its label, hit-tested through {@link #dontShowRect} like the rest of
+     * this screen's chrome (a vanilla {@code Checkbox} widget can't take the page fade).
+     *
+     * @return the y below the row
+     */
+    private int drawDontShowAgain(GuiGraphics g, String formId, int cx, int y) {
+        boolean on = mutedForms.contains(formId);
+        Component label = Component.translatable("gui.dungeontrain.death.narr.dont_show");
+        int box = 9;
+        int gap = 5;
+        int rowW = box + gap + this.font.width(label);
+        int x = cx - rowW / 2;
+        g.fill(x, y, x + box, y + box, fade(0x66000000));
+        drawBorder(g, x, y, box, box, on ? BTN_PRI_LIGHT : SCORE_BORDER);
+        if (on) {
+            g.fill(x + 2, y + 2, x + box - 2, y + box - 2, fade(BTN_PRI_LIGHT));
+        }
+        g.drawString(this.font, label, x + box + gap, y + 1, fade(on ? VALUE : SUBLINE), false);
+        dontShowRect = new Rect(x, y, rowW, box);
+        return y + DONT_SHOW_H;
+    }
+
+    /**
+     * Square 14×14 chip with a pixel-art envelope — the way back to the feedback forms, including
+     * any the player has muted. Drawn in {@code fill}s rather than a glyph: the default font has
+     * no ✉, and fills honour the {@link #fade} alpha where a sprite can't.
+     */
+    private Rect drawEnvelopeChip(GuiGraphics g, int x, int y) {
+        int w = 14, h = 14;
+        g.fill(x, y, x + w, y + h, fade(0x66000000));
+        drawBorder(g, x, y, w, h, CHIP_PH_BORDER);
+        int c = fade(CHIP_PH_TEXT);
+        // Body: a 10x7 outlined rectangle inset in the chip.
+        int bx = x + 2, by = y + 4, bw = 10, bh = 7;
+        g.fill(bx, by, bx + bw, by + 1, c);                  // top
+        g.fill(bx, by + bh - 1, bx + bw, by + bh, c);        // bottom
+        g.fill(bx, by, bx + 1, by + bh, c);                  // left
+        g.fill(bx + bw - 1, by, bx + bw, by + bh, c);        // right
+        // Flap: two diagonals meeting in the middle, one pixel per step.
+        for (int i = 1; i <= 4; i++) {
+            g.fill(bx + i, by + i, bx + i + 1, by + i + 1, c);
+            g.fill(bx + bw - 1 - i, by + i, bx + bw - i, by + i + 1, c);
+        }
+        return new Rect(x, y, w, h);
     }
 
     /**
@@ -2011,8 +2154,34 @@ public final class NarrativeDeathScreen extends Screen {
                 // Jump to the donation page from anywhere; Next/back there return to this page.
                 if (!pages.isEmpty() && pages.get(currentPage).kind() != Kind.DONATE) {
                     UiAnalytics.click(UiAnalytics.SURFACE_DEATH_SCREEN, UiAnalytics.TARGET_CHIP);
-                    donateReturnPage = currentPage;
+                    chipReturnPage = currentPage;
                     startTransition(donatePageIndex());
+                }
+                return true;
+            }
+            if (envelopeRect != null && envelopeRect.has(mx, my)) {
+                // Jump to the feedback forms; Next/back there return to this page. Muted forms are
+                // reachable this way — and their ticked checkbox is how they get un-muted.
+                int dest = firstSurveyPageIndex();
+                if (dest >= 0 && dest != currentPage) {
+                    UiAnalytics.click(UiAnalytics.SURFACE_DEATH_SCREEN, UiAnalytics.TARGET_CHIP);
+                    chipReturnPage = currentPage;
+                    surveyTour = true;
+                    startTransition(dest);
+                }
+                return true;
+            }
+            if (dontShowRect != null && dontShowRect.has(mx, my)) {
+                Page p = pages.isEmpty() ? Page.of(Kind.FALL) : pages.get(currentPage);
+                String formId = p.kind() == Kind.MODREC ? MODREC_FORM_ID
+                        : (p.survey() != null ? p.survey().id() : null);
+                if (formId != null) {
+                    // Written through immediately, so ticking the box and quitting straight from the
+                    // death screen still counts. Only the live tick state moves — the deck was built
+                    // from deckMutedForms, so this page stays put until the next death.
+                    boolean muted = !mutedForms.contains(formId);
+                    if (muted) mutedForms.add(formId); else mutedForms.remove(formId);
+                    ClientDisplayConfig.setDeathFormMuted(formId, muted);
                 }
                 return true;
             }
@@ -2124,10 +2293,20 @@ public final class NarrativeDeathScreen extends Screen {
                 && page.kind() == Kind.SURVEY && page.survey() != null
                 && BUG_REPORT_ID.equals(page.survey().id());
         returnToStartAfterBug = false;
-        // Donation page opened via the "$" chip: Next returns to where it was opened from.
-        if (page.kind() == Kind.DONATE && donateReturnPage >= 0) {
-            int dest = donateReturnPage;
-            donateReturnPage = -1;
+        // Walking the survey via the envelope chip: Next Screen steps to the following question
+        // (muted ones included) and only hands back once they have all been offered.
+        if (surveyTour && page.kind() == Kind.SURVEY) {
+            int next = nextSurveyPage(currentPage, +1);
+            if (next >= 0) {
+                startTransition(next);
+                return;
+            }
+            surveyTour = false; // out of questions — fall through to the chip return below
+        }
+        // Page opened via a top-bar chip ("$" / envelope): Next returns to where it was opened from.
+        if (chipReturnPage >= 0) {
+            int dest = chipReturnPage;
+            chipReturnPage = -1;
             startTransition(Math.min(dest, pages.size() - 1));
             return;
         }
@@ -2135,8 +2314,9 @@ public final class NarrativeDeathScreen extends Screen {
             startTransition(0);
         } else if (currentPage < pages.size() - 1) {
             int next = currentPage + 1;
-            // Skip the gated-out donation page in the normal forward flow (PLATFORM follows it).
-            if (pages.get(next).kind() == Kind.DONATE && !donateInFlow) next++;
+            // Step over every out-of-flow page (the gated-out donation page, muted forms) — there
+            // can be a run of them, so this is a loop rather than a single skip.
+            while (next < pages.size() && outOfFlow(pages.get(next))) next++;
             if (next < pages.size()) startTransition(next);
         }
     }
@@ -2144,17 +2324,26 @@ public final class NarrativeDeathScreen extends Screen {
     private void back() {
         if (uiBusy) return;
         returnToStartAfterBug = false;
-        // Donation page opened via the "$" chip: back returns to where it was opened from too.
-        if (pages.get(currentPage).kind() == Kind.DONATE && donateReturnPage >= 0) {
-            int dest = donateReturnPage;
-            donateReturnPage = -1;
+        // Same walk in reverse; from the first question, back leaves the tour and returns.
+        if (surveyTour && !pages.isEmpty() && pages.get(currentPage).kind() == Kind.SURVEY) {
+            int prev = nextSurveyPage(currentPage, -1);
+            if (prev >= 0) {
+                startTransition(prev);
+                return;
+            }
+            surveyTour = false;
+        }
+        // Page opened via a top-bar chip: back returns to where it was opened from too.
+        if (chipReturnPage >= 0) {
+            int dest = chipReturnPage;
+            chipReturnPage = -1;
             startTransition(Math.min(dest, pages.size() - 1));
             return;
         }
         if (currentPage > 0) {
             int prev = currentPage - 1;
-            // Skip the gated-out donation page when stepping back past it.
-            if (pages.get(prev).kind() == Kind.DONATE && !donateInFlow) prev--;
+            // Same, stepping back.
+            while (prev >= 0 && outOfFlow(pages.get(prev))) prev--;
             if (prev >= 0) startTransition(prev);
         }
     }
@@ -2178,6 +2367,8 @@ public final class NarrativeDeathScreen extends Screen {
         }
         DPNetwork.sendToServer(new SurveySubmitPayload(e.id(), score, comment));
         submitted.add(e.id());
+        // Answered at least once — from the next death this form offers its opt-out checkbox.
+        ClientDisplayConfig.markDeathFormAnswered(e.id());
         // Funnel: record the chosen rating for scale questions (the score drives the death-screen
         // survey-response distribution). Text-only questions have no meaningful score, so they're
         // left out — never the free-text comment either way.
@@ -2281,6 +2472,7 @@ public final class NarrativeDeathScreen extends Screen {
         UiAnalytics.click(UiAnalytics.SURFACE_DEATH_SCREEN,
                 hack ? UiAnalytics.TARGET_MOD_HACK_REPORT : UiAnalytics.TARGET_MOD_RECOMMEND);
         modRec.markSent();
+        ClientDisplayConfig.markDeathFormAnswered(MODREC_FORM_ID);
         if (modCommentBox != null) modCommentBox.setValue("");
         if (modNameBox != null) modNameBox.setValue("");
         this.setFocused(null);

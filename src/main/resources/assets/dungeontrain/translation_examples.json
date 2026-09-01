@@ -2967,6 +2967,68 @@
       ]
     }
   },
+  "gui.dungeontrain.builder.profile.full": {
+    "1": {
+      "label": "how many builds a player's profile can hold on the build server",
+      "examples": ["200"]
+    }
+  },
+  "gui.dungeontrain.builder.reconcile.toast.body": {
+    "1": {
+      "label": "how many builds were sent back to the build server",
+      "examples": ["3", "17"]
+    }
+  },
+  "gui.dungeontrain.builder.reconcile.body": {
+    "1": {
+      "label": "how many of the player's builds the build server no longer has",
+      "examples": ["3", "17"]
+    }
+  },
+  "gui.dungeontrain.builder.reconcile.backups.off": {
+    "1": {
+      "label": "how many further builds exist only inside a backup",
+      "examples": ["2", "9"]
+    }
+  },
+  "gui.dungeontrain.builder.reconcile.backups.on": {
+    "1": {
+      "label": "how many further builds exist only inside a backup",
+      "examples": ["2", "9"]
+    }
+  },
+  "gui.dungeontrain.builder.reconcile.started": {
+    "1": {
+      "label": "how many builds are being sent back up to the build server",
+      "examples": ["3", "17"]
+    }
+  },
+  "gui.dungeontrain.builder.reconcile.done": {
+    "1": {
+      "label": "how many builds were restored",
+      "examples": ["3", "17"]
+    }
+  },
+  "gui.dungeontrain.builder.reconcile.partial": {
+    "1": {
+      "label": "how many builds were restored in this run",
+      "examples": ["150"]
+    },
+    "2": {
+      "label": "how many builds are left for the next run",
+      "examples": ["12"]
+    }
+  },
+  "gui.dungeontrain.builder.reconcile.some_failed": {
+    "1": {
+      "label": "how many builds were restored",
+      "examples": ["14"]
+    },
+    "2": {
+      "label": "how many builds could not be sent",
+      "examples": ["2"]
+    }
+  },
   "gui.dungeontrain.builder.profile.owner_other": {
     "1": {
       "label": "the player whose builds are being looked at",

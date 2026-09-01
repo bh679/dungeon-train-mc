@@ -92,7 +92,12 @@ public final class PlayerDataBackup {
             this(label, dir, Set.of());
         }
 
-        boolean excludes(Path dir, Path file) {
+        /**
+         * Whether {@code file} sits under one of this source's excluded top-level folders — what the
+         * walk skips, and therefore what is <em>not</em> in an archive. Public because a caller
+         * working out which entry name a file would have has to ask the same question the writer did.
+         */
+        public boolean excludes(Path dir, Path file) {
             Path relative = dir.relativize(file);
             return relative.getNameCount() > 0
                 && excludeTopLevel.contains(relative.getName(0).toString());
@@ -217,6 +222,72 @@ public final class PlayerDataBackup {
             LOGGER.warn("[DungeonTrain] Backup: couldn't list {}: {}", backupsRoot, e.toString());
             return List.of();
         }
+    }
+
+    /**
+     * Read one file out of an archive, without restoring anything.
+     *
+     * <p>For callers that want a single build back rather than a whole install — the build reconcile
+     * reads one template out of an archive, uploads it, and writes nothing to disk. Deliberately not
+     * {@link #restore}: restoring is additive and lands files in the live store, which is the wrong
+     * answer for a build the player may have deleted on purpose.</p>
+     *
+     * <p>Never throws. A missing archive, a missing entry, or an unreadable zip is empty — the caller
+     * moves on to the next archive.</p>
+     *
+     * @param entryName the full entry name, {@code "<label>/<relative path>"} with {@code /}
+     *                  separators, exactly as {@link #create} writes it
+     */
+    public static Optional<byte[]> readEntry(Path archive, String entryName) {
+        if (archive == null || entryName == null || entryName.isEmpty()) return Optional.empty();
+        try (ZipFile zip = new ZipFile(archive.toFile())) {
+            ZipEntry entry = zip.getEntry(entryName);
+            if (entry == null || entry.isDirectory()) return Optional.empty();
+            try (var in = zip.getInputStream(entry)) {
+                return Optional.of(in.readAllBytes());
+            }
+        } catch (IOException | SecurityException e) {
+            LOGGER.warn("[DungeonTrain] Backup: couldn't read {} from {}: {}",
+                entryName, archive.getFileName(), e.toString());
+            return Optional.empty();
+        }
+    }
+
+    /**
+     * Every file entry in an archive, by name.
+     *
+     * <p>What an archive <em>held</em> is evidence in its own right: a build that is in no backup and
+     * not on disk was never here, while one that is in a backup and not on disk was. The build
+     * reconcile reads this to find the second kind. Never throws — an unreadable archive is empty.</p>
+     */
+    public static List<String> listEntries(Path archive) {
+        if (archive == null) return List.of();
+        List<String> names = new ArrayList<>();
+        try (ZipFile zip = new ZipFile(archive.toFile())) {
+            var it = zip.entries();
+            while (it.hasMoreElements()) {
+                ZipEntry entry = it.nextElement();
+                if (!entry.isDirectory()) names.add(entry.getName());
+            }
+        } catch (IOException | SecurityException e) {
+            LOGGER.warn("[DungeonTrain] Backup: couldn't list {}: {}", archive.getFileName(), e.toString());
+            return List.of();
+        }
+        return List.copyOf(names);
+    }
+
+    /**
+     * The mod version an archive's manifest records, or empty.
+     *
+     * <p>{@link #versionOf} reads the filename, which is enough to group archives for pruning but is
+     * not evidence — a copied or renamed file carries whatever name it was given. This reads what the
+     * writer actually stamped inside, which is what to show a player being told where a recovered
+     * build came from.</p>
+     */
+    public static Optional<String> manifestVersionOf(Path archive) {
+        return readEntry(archive, MANIFEST_ENTRY)
+            .map(bytes -> jsonString(new String(bytes, StandardCharsets.UTF_8), "modVersion"))
+            .filter(v -> !v.isEmpty());
     }
 
     /**

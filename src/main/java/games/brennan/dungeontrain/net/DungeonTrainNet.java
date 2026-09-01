@@ -206,6 +206,9 @@ public final class DungeonTrainNet {
         registrar.playToServer(BuilderProfileActionPacket.TYPE, BuilderProfileActionPacket.STREAM_CODEC, BuilderProfileActionPacket::handle);
         registrar.playToServer(BuilderProfileDownloadPacket.TYPE, BuilderProfileDownloadPacket.STREAM_CODEC, BuilderProfileDownloadPacket::handle);
         registrar.playToClient(BuilderProfileDownloadResultPacket.TYPE, BuilderProfileDownloadResultPacket.STREAM_CODEC, BuilderProfileDownloadResultPacket::handle);
+        // Builds the relay has lost, asked for from in-world (/dtrebuild). The title-screen card
+        // does the same work client-side, where there is no server to ask.
+        registrar.playToServer(BuilderReconcileStartPacket.TYPE, BuilderReconcileStartPacket.STREAM_CODEC, BuilderReconcileStartPacket::handle);
         // Dev builds only: find another player by name, so their profile can be listed and one of
         // their builds pulled into this install. Refused server-side on a release build, and refused
         // again by the relay, which answers this search on the dev cap alone.

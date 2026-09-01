@@ -169,6 +169,18 @@ public final class ClientDisplayConfig {
     /** The player's most recent NPS ("recommend") answer (0-10), or -1 if never answered. */
     public static final ModConfigSpec.IntValue DEATH_SCREEN_LAST_NPS;
     /**
+     * Ids of the death-screen forms (survey question ids, plus the mod-recommendation sentinel)
+     * this player has submitted at least once. Drives the "Don't ask me this again" checkbox,
+     * which only appears from the SECOND time a form is put in front of someone who answered it.
+     */
+    public static final ModConfigSpec.ConfigValue<List<? extends String>> DEATH_FORM_ANSWERED_IDS;
+    /**
+     * Ids of the death-screen forms the player has muted with that checkbox. Muted forms are left
+     * out of the death screen's page deck; the on-demand paths ({@code /feedback}, {@code /bug})
+     * ignore this list entirely, since those are asked for rather than offered.
+     */
+    public static final ModConfigSpec.ConfigValue<List<? extends String>> DEATH_FORM_MUTED_IDS;
+    /**
      * Which tier of other-players' content this client accepts — see {@link ContentMode}. Client-scope
      * so it follows the player across worlds and servers, like the dev-consent and shared-book-read
      * state above; the server learns it per-player via {@code ContentModeSyncPacket}.
@@ -242,6 +254,15 @@ public final class ClientDisplayConfig {
      */
     public static final ModConfigSpec.IntValue BACKUPS_PER_VERSION;
 
+    /**
+     * Whether to ask before re-uploading builds the build server has lost.
+     *
+     * <p>Off by default, so the restore just happens. What it puts back is the player's own build,
+     * from the player's own copy, into the player's own private profile — the same upload their next
+     * save would have made. There is no decision in that worth interrupting a title screen for.</p>
+     */
+    public static final ModConfigSpec.BooleanValue CONFIRM_BUILD_RESTORE;
+
     /** The player's answer to the Political Filter prompt. See {@link #POLITICAL_FILTER}. */
     public enum PoliticalFilter {
         /** Never asked (or asked and dismissed before the prompt existed) — resolved from the locale. */
@@ -291,9 +312,12 @@ public final class ClientDisplayConfig {
         CREATIVE_SHIFT_CLICK_TO_HOTBAR = pair.getLeft().creativeShiftClickToHotbar;
         SHARED_BOOKS_READ = pair.getLeft().sharedBooksRead;
         DEATH_SCREEN_LAST_NPS = pair.getLeft().deathScreenLastNps;
+        DEATH_FORM_ANSWERED_IDS = pair.getLeft().deathFormAnsweredIds;
+        DEATH_FORM_MUTED_IDS = pair.getLeft().deathFormMutedIds;
         POLITICAL_FILTER = pair.getLeft().politicalFilter;
         BACKUP_MODE = pair.getLeft().backupMode;
         BACKUPS_PER_VERSION = pair.getLeft().backupsPerVersion;
+        CONFIRM_BUILD_RESTORE = pair.getLeft().confirmBuildRestore;
         CONTENT_MODE = pair.getLeft().contentMode;
         CUSTOM_CONTENT_PREFERENCE = pair.getLeft().customContentPreference;
         CUSTOM_CONTENT_LAST_ANSWER = pair.getLeft().customContentLastAnswer;
@@ -536,6 +560,19 @@ public final class ClientDisplayConfig {
         ModConfigSpec.IntValue deathScreenLastNps = b
                 .comment("Internal: the player's most recent NPS (\"how likely to recommend\") answer, 0-10, or -1 if never answered. Used to decide when the death-screen donation page appears. Managed automatically.")
                 .defineInRange("lastNpsScore", -1, -1, 10);
+        ModConfigSpec.ConfigValue<List<? extends String>> deathFormAnsweredIds = b
+                .comment("Ids of the death-screen feedback forms you have already answered at least once",
+                         "(survey question ids, plus \"dungeontrain:modrec\" for the mod-recommendation page).",
+                         "A form only offers its \"Don't ask me this again\" checkbox once it is in here.",
+                         "Managed automatically — you can clear it by emptying this list.")
+                .defineListAllowEmpty("answeredForms", () -> List.<String>of(), () -> "",
+                        o -> o instanceof String);
+        ModConfigSpec.ConfigValue<List<? extends String>> deathFormMutedIds = b
+                .comment("Ids of the death-screen feedback forms you have asked not to see again. Muted forms",
+                         "are skipped on the death screen; /feedback and /bug still offer every question.",
+                         "Managed automatically — you can clear it by emptying this list.")
+                .defineListAllowEmpty("mutedForms", () -> List.<String>of(), () -> "",
+                        o -> o instanceof String);
         b.pop();
 
         b.push("contentFilter");
@@ -566,6 +603,14 @@ public final class ClientDisplayConfig {
                          "Set from the Backups per version row in Options > Dungeon Train.")
                 .defineInRange("backupsPerVersion",
                     games.brennan.dungeontrain.data.PlayerDataBackup.DEFAULT_PER_VERSION, 1, 20);
+        ModConfigSpec.BooleanValue confirmBuildRestore = b
+                .comment("Whether to ask first when the build server turns out to have lost builds you",
+                         "uploaded. Off means they are simply sent back up from your local copy, privately,",
+                         "which is what the next save of each one would have done anyway. On shows a card at",
+                         "the title screen listing what is missing, including any build recoverable only from",
+                         "a backup — which may be one you deleted on purpose.",
+                         "Set from the Confirm build restores row in Options > Dungeon Train.")
+                .define("confirmBuildRestore", false);
         b.pop();
 
         b.push("configIntegrity");
@@ -607,13 +652,15 @@ public final class ClientDisplayConfig {
                 menuRenderDistance,
                 editorPlotLighting,
                 sharedBooksRead,
-                deathScreenLastNps, politicalFilter, contentMode, customContentPreference,
+                deathScreenLastNps, deathFormAnsweredIds, deathFormMutedIds,
+                politicalFilter, contentMode, customContentPreference,
                 customContentLastAnswer,
                 configDeviationAcknowledged, dpiBypassWarningOptedOut, bookAuthorBurnChat,
                 commandMenuSpace, templateBlocksMenuSpace, containerContentsMenuSpace,
                 blockVariantMenuSpace,
                 backupMode,
-                backupsPerVersion);
+                backupsPerVersion,
+                confirmBuildRestore);
     }
 
     /**
@@ -814,6 +861,23 @@ public final class ClientDisplayConfig {
         BACKUPS_PER_VERSION.save();
     }
 
+    /**
+     * Whether the build-restore card is shown rather than the restore just running.
+     *
+     * <p>Falls back to {@code false} wherever the client spec is absent, which is the same answer as
+     * the default: nowhere without a client spec has a title screen to show a card on.</p>
+     */
+    public static boolean isConfirmBuildRestore() {
+        return isLoaded() && CONFIRM_BUILD_RESTORE.get();
+    }
+
+    public static void setConfirmBuildRestore(boolean value) {
+        if (!isLoaded()) return;
+        if (CONFIRM_BUILD_RESTORE.get() == value) return; // skip a needless TOML write
+        CONFIRM_BUILD_RESTORE.set(value);
+        CONFIRM_BUILD_RESTORE.save();
+    }
+
     public static void setBackupMode(BackupMode value) {
         if (!isLoaded() || value == null) return;
         if (BACKUP_MODE.get() == value) return; // skip a needless TOML write
@@ -877,6 +941,66 @@ public final class ClientDisplayConfig {
         DEATH_SCREEN_LAST_NPS.save();
     }
 
+    /**
+     * The death-screen forms this player has already answered at least once. Empty (never null)
+     * before the config loads. Read once per death screen and held as a snapshot, so answering a
+     * form doesn't grow its own opt-out checkbox halfway through the same death.
+     */
+    public static Set<String> answeredDeathForms() {
+        return readIdList(DEATH_FORM_ANSWERED_IDS);
+    }
+
+    /** The death-screen forms the player has muted. Empty (never null) before the config loads. */
+    public static Set<String> mutedDeathForms() {
+        return readIdList(DEATH_FORM_MUTED_IDS);
+    }
+
+    /**
+     * Record that this player has submitted the death-screen form with this id. Idempotent — skips
+     * the TOML write when the id is already known. Returns true when it was newly added.
+     */
+    public static boolean markDeathFormAnswered(String id) {
+        return addId(DEATH_FORM_ANSWERED_IDS, id);
+    }
+
+    /**
+     * Mute or unmute a death-screen form. Written through immediately rather than on screen close,
+     * so a player who ticks the box and quits straight from the death screen still gets their wish.
+     * Returns true when the stored set changed.
+     */
+    public static boolean setDeathFormMuted(String id, boolean muted) {
+        return muted ? addId(DEATH_FORM_MUTED_IDS, id) : removeId(DEATH_FORM_MUTED_IDS, id);
+    }
+
+    /** Shared reader for the two death-form id lists: blank / non-string entries are skipped. */
+    private static Set<String> readIdList(ModConfigSpec.ConfigValue<List<? extends String>> value) {
+        Set<String> out = new LinkedHashSet<>();
+        if (!isLoaded()) return out;
+        for (String s : value.get()) {
+            if (s == null || s.isBlank()) continue;
+            out.add(s.trim());
+        }
+        return out;
+    }
+
+    private static boolean addId(ModConfigSpec.ConfigValue<List<? extends String>> value, String id) {
+        if (!isLoaded() || id == null || id.isBlank()) return false;
+        Set<String> ids = readIdList(value);
+        if (!ids.add(id.trim())) return false; // already recorded — no write
+        value.set(new ArrayList<>(ids));
+        value.save();
+        return true;
+    }
+
+    private static boolean removeId(ModConfigSpec.ConfigValue<List<? extends String>> value, String id) {
+        if (!isLoaded() || id == null || id.isBlank()) return false;
+        Set<String> ids = readIdList(value);
+        if (!ids.remove(id.trim())) return false; // not there — no write
+        value.set(new ArrayList<>(ids));
+        value.save();
+        return true;
+    }
+
     public static void setOpenedAdvancementsBefore(boolean value) {
         if (!isLoaded()) return;
         if (OPENED_ADVANCEMENTS_BEFORE.get() == value) return;
@@ -902,7 +1026,9 @@ public final class ClientDisplayConfig {
         return OPENED_ADVANCEMENTS_BEFORE.get()
             || DEVELOPER_POPUP_OPTED_OUT.get()
             || FREE_PLAY_CONFIRM_OPTED_OUT.get()
-            || DEATH_SCREEN_LAST_NPS.get() >= 0;
+            || DEATH_SCREEN_LAST_NPS.get() >= 0
+            || !DEATH_FORM_ANSWERED_IDS.get().isEmpty()
+            || !DEATH_FORM_MUTED_IDS.get().isEmpty();
     }
 
     public static void resetFirstRunFlags() {
@@ -911,6 +1037,8 @@ public final class ClientDisplayConfig {
         DEVELOPER_POPUP_OPTED_OUT.set(false);
         FREE_PLAY_CONFIRM_OPTED_OUT.set(false);
         DEATH_SCREEN_LAST_NPS.set(-1);
+        DEATH_FORM_ANSWERED_IDS.set(List.<String>of());
+        DEATH_FORM_MUTED_IDS.set(List.<String>of());
         OPENED_ADVANCEMENTS_BEFORE.save();
     }
 
@@ -1485,6 +1613,8 @@ public final class ClientDisplayConfig {
             ModConfigSpec.BooleanValue editorPlotLighting,
             ModConfigSpec.ConfigValue<List<? extends String>> sharedBooksRead,
             ModConfigSpec.IntValue deathScreenLastNps,
+            ModConfigSpec.ConfigValue<List<? extends String>> deathFormAnsweredIds,
+            ModConfigSpec.ConfigValue<List<? extends String>> deathFormMutedIds,
             ModConfigSpec.EnumValue<PoliticalFilter> politicalFilter,
             ModConfigSpec.EnumValue<ContentMode> contentMode,
             ModConfigSpec.EnumValue<CustomContentPreference> customContentPreference,
@@ -1497,6 +1627,7 @@ public final class ClientDisplayConfig {
             ModConfigSpec.EnumValue<EditorMenuSpace> containerContentsMenuSpace,
             ModConfigSpec.EnumValue<EditorMenuSpace> blockVariantMenuSpace,
             ModConfigSpec.EnumValue<BackupMode> backupMode,
-            ModConfigSpec.IntValue backupsPerVersion
+            ModConfigSpec.IntValue backupsPerVersion,
+            ModConfigSpec.BooleanValue confirmBuildRestore
     ) {}
 }
