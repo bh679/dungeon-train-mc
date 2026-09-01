@@ -10586,9 +10586,25 @@
       "highlights": [],
       "pr": 1245,
       "date": "2026-09-01",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.763.0",
+      "released_at": "2026-09-01T13:08:12Z"
+    },
+    {
+      "id": "leaderboard-standing-after-death",
+      "version": "0.763.0",
+      "type": "fix",
+      "title": "Your leaderboard position keeps up with you",
+      "summary": "A leaderboard book ends by telling you where you stand on that board. That position was worked out once, when you joined, and never again \u2014 so on a long session it slowly went stale, and a book you found late in the evening could still be quoting the number you had hours earlier. Your standing is now looked up again after each death, which is the moment it actually moves.",
+      "highlights": [
+        "Leaderboard books quote a current position, not the one you joined with",
+        "Your standing is looked up again after each death"
+      ],
+      "pr": 1246,
+      "date": "2026-09-01",
+      "released": true,
+      "released_in": "v0.763.0",
+      "released_at": "2026-09-01T13:08:12Z"
     }
   ]
 }
