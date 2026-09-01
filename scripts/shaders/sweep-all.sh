@@ -64,6 +64,15 @@ for pack in "${PACKS[@]}"; do
     ./gradlew runClient --no-daemon -PshaderSweep="$WORLD" >"run/logs/sweep-launch.out" 2>&1 &
     pid=$!
 
+    # Bring the game window to the front and leave it there.
+    #
+    # Not cosmetic: macOS stops rendering an occluded window while its ticks carry on, so the
+    # framebuffer goes stale and every capture is a copy of the last frame that drew. One run
+    # produced eight screenshots of which seven were byte-identical, with a log that looked
+    # perfectly healthy. ShaderSweep now shouts when a capture lands on too few frames; this is
+    # what stops it happening in the first place.
+    ( sleep 45; osascript -e 'tell application "System Events" to tell process "java" to set frontmost to true' >/dev/null 2>&1 ) &
+
     started=$SECONDS
     done_ok=0
     while true; do

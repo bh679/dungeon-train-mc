@@ -126,6 +126,24 @@ public final class ShaderSweep {
     /** Last screen class dismissed, so a screen that reopens every tick is logged once. */
     private static String lastDismissed = "";
 
+    /**
+     * Frames actually rendered, counted by the render hook.
+     *
+     * <p>This exists because of a run that produced eight screenshots of which seven were
+     * byte-identical. The panel values in the log moved from site to site exactly as they should,
+     * so every check that looked at DT's own state said the sweep was working — but macOS throttles
+     * an occluded window's rendering to nothing, so the framebuffer never changed while the ticks
+     * carried on. A stale capture is the worst possible failure here: it is not an error, it is a
+     * confident wrong answer, and it would have been copied into the matrix as fact.</p>
+     */
+    private static volatile long framesRendered = 0;
+
+    /** Frame count when the current site's settle began, so staleness is measurable per site. */
+    private static long framesAtSiteStart = 0;
+
+    /** Frames a site must render before its capture is trustworthy. */
+    private static final int MIN_FRAMES_PER_SITE = 30;
+
     private ShaderSweep() {}
 
     /** The world folder to open, or {@code null} when the sweep is off. */
@@ -163,13 +181,23 @@ public final class ShaderSweep {
      */
     @SubscribeEvent
     public static void onRenderFrameEnd(RenderFrameEvent.Post event) {
+        framesRendered++;
         String name = pendingCapture;
         if (name == null) return;
         pendingCapture = null;
         Minecraft mc = Minecraft.getInstance();
         if (mc == null || mc.getMainRenderTarget() == null) return;
         Screenshot.grab(mc.gameDirectory, name, mc.getMainRenderTarget(), msg -> { });
-        LOGGER.info("[DungeonTrain] sweep captured {}", name);
+        long frames = framesRendered - framesAtSiteStart;
+        if (frames < MIN_FRAMES_PER_SITE) {
+            // Loud, because the image will look plausible and be wrong. Almost always an occluded
+            // or minimised window: bring it to the front and run again.
+            LOGGER.error("[DungeonTrain] sweep captured {} after only {} frame(s) — THE IMAGE IS "
+                + "PROBABLY STALE. The window is likely occluded or minimised; macOS stops "
+                + "rendering it while ticks continue.", name, frames);
+        } else {
+            LOGGER.info("[DungeonTrain] sweep captured {} ({} frames)", name, frames);
+        }
     }
 
     private static void tickBoot(Minecraft mc) {
@@ -246,6 +274,7 @@ public final class ShaderSweep {
      */
     private static void tickSiteSetup(Minecraft mc) {
         Site site = sites.get(siteIndex);
+        if (commandIndex == 0 && setupWait == 0) framesAtSiteStart = framesRendered;
         if (setupWait > 0) {
             setupWait--;
             return;
@@ -330,12 +359,18 @@ public final class ShaderSweep {
         // what makes the hole legible at all.
         if (plainX != Integer.MIN_VALUE) {
             out.add(new Site("04-skybox-blocks", List.of(
+                // Everything here is absolute, and the chunk is forceloaded before anything is
+                // asked of it. Two earlier shapes both answered "that position is not loaded":
+                // a bare teleport to a distant coordinate (nothing had ever asked the server for
+                // that chunk), and `~` offsets while standing on the train — a rider sits on a
+                // Sable sub-level, so the server resolves `~` in far shipyard plot space rather
+                // than in the track coordinates the camera is actually looking at.
                 "gamemode spectator",
-                "tp @s " + plainX + " 150 200 -90 0",
-                // The control answered "that position is not loaded" here: the fill followed the
-                // teleport by one tick, and the destination chunk had not arrived.
+                "forceload add " + (plainX - 16) + " 184 " + (plainX + 16) + " 216",
+                "tp @s " + plainX + " 250 200 -90 0",
                 WAIT_PREFIX + "200",
-                "fill ~4 ~-3 ~-3 ~4 ~3 ~3 dungeontrain:skybox_end"), SITE_TICKS));
+                "fill " + (plainX + 4) + " 247 197 " + (plainX + 4) + " 253 203 dungeontrain:skybox_end"),
+                SITE_TICKS));
         }
 
         // A real dimensional carriage on a real train — the only way to reach the fog, the room's
