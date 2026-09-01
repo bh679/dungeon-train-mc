@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.client.builder;
 
 import games.brennan.dungeontrain.net.BuilderCreatorResultsPacket;
+import games.brennan.dungeontrain.net.BuilderFavouritesPacket;
 import games.brennan.dungeontrain.net.BuilderProfileDownloadResultPacket;
 import games.brennan.dungeontrain.net.BuilderProfilePacket;
 import net.neoforged.api.distmarker.Dist;
@@ -24,6 +25,8 @@ public final class BuilderProfileState {
     private static volatile Consumer<BuilderProfilePacket> listener = null;
     private static volatile Consumer<BuilderProfileDownloadResultPacket> downloadListener = null;
     private static volatile Consumer<BuilderCreatorResultsPacket> creatorListener = null;
+    private static volatile BuilderFavouritesPacket favourites = null;
+    private static volatile Consumer<BuilderFavouritesPacket> favouritesListener = null;
 
     /**
      * Whether My Builds is pointed at the LIVE relay rather than the one this build writes to.
@@ -100,6 +103,60 @@ public final class BuilderProfileState {
     }
 
     /**
+     * The favourites list arrived. Cached, unlike a search or a download result: a star set in My
+     * Builds has to show on the Favourites screen without a round trip, and the screen reopens often
+     * enough that an instant first paint is worth a stale one second.
+     */
+    public static void acceptFavourites(BuilderFavouritesPacket packet) {
+        favourites = packet;
+        Consumer<BuilderFavouritesPacket> current = favouritesListener;
+        if (current != null) current.accept(packet);
+    }
+
+    /** The last favourites list received, or null when none has arrived this session. */
+    public static BuilderFavouritesPacket favourites() {
+        return favourites;
+    }
+
+    /** Listen for favourites while a screen is open; null clears it, as {@link #listen} does. */
+    public static void listenForFavourites(Consumer<BuilderFavouritesPacket> consumer) {
+        favouritesListener = consumer;
+    }
+
+    /**
+     * Note locally that one build's star has been flipped, so a screen redrawn before the relay
+     * answers shows what the player just did.
+     *
+     * <p>The star is set optimistically — the packet is fire-and-forget and the truth comes back on
+     * the next listing — and this is what keeps the CACHED profile agreeing with the tile the player
+     * is looking at. Without it, closing and reopening My Builds inside one session would show the
+     * star snapping back, which reads as the click having failed when it did not.</p>
+     */
+    public static void noteFavourite(int relayId, boolean favourite) {
+        BuilderProfilePacket packet = latest;
+        if (packet == null) return;
+        List<BuilderProfilePacket.Entry> updated = new java.util.ArrayList<>(packet.builds().size());
+        boolean changed = false;
+        for (BuilderProfilePacket.Entry e : packet.builds()) {
+            if (e.relayId() == relayId && e.favourite() != favourite) {
+                updated.add(new BuilderProfilePacket.Entry(e.relayId(), e.kind(), e.subKind(),
+                        e.buildName(), e.published(), e.flag(), e.review(), e.stage(), e.changes(),
+                        favourite, e.ownerUuid(), e.ownerName()));
+                changed = true;
+            } else {
+                updated.add(e);
+            }
+        }
+        if (!changed) return;
+        latest = new BuilderProfilePacket(packet.status(), List.copyOf(updated),
+                packet.ownerUuid(), packet.ownerName(), packet.mine());
+        // The favourites LIST is now wrong either way — a star added is a row it lacks, one removed is
+        // a row it should lose — and rebuilding it here would mean guessing at rows this cache does not
+        // hold. Dropped instead, so the screen re-asks and gets the truth.
+        favourites = null;
+    }
+
+    /**
      * Drop the cached profile without touching the listeners.
      *
      * <p>What {@link #clear} does on the way out of a world is heavier than a screen wants: switching
@@ -108,6 +165,7 @@ public final class BuilderProfileState {
      */
     public static void clearCache() {
         latest = null;
+        favourites = null;
     }
 
     /** Whether calls from the profile screens should address the live relay. */
@@ -142,9 +200,11 @@ public final class BuilderProfileState {
      */
     public static void clear() {
         latest = null;
+        favourites = null;
         listener = null;
         downloadListener = null;
         creatorListener = null;
+        favouritesListener = null;
         live = false;
         setViewed("", "");
     }
