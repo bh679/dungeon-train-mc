@@ -75,6 +75,7 @@ INT_FIELDS = {
     "tick", "blockedFor", "playerPIdx", "skew", "minNeeded", "registryMin",
     "visibleTail", "span", "registryCount", "visibleCount", "anchor", "deficit",
     "ticksPending", "latchAge", "forceLoaded", "chunkWait", "target", "burstGroups",
+    "maxNeeded",
 }
 
 
@@ -181,6 +182,28 @@ def report(train: str, samples: list[dict]) -> None:
         else:
             print("  -> the player REACHED the end of the train; read the AT-TAIL line above it.")
 
+    # The confirming check. The window that picks spawn targets ALSO picks what stays
+    # force-loaded, so a window anchored away from the player leaves the groups they are standing
+    # among unprotected — the train then ends underneath them with no fault reported anywhere.
+    held = [s for s in samples if s.get("heldOccupied") in ("true", "false")]
+    if held:
+        exposed = [s for s in held if s["heldOccupied"] == "false"]
+        print(f"\nHOLD WINDOW: player's own group NOT force-loaded in {len(exposed)}/{len(held)} "
+              f"samples ({100*len(exposed)/len(held):.0f}%)")
+        outside = [s for s in samples
+                   if s.get("occupiedPIdx") is not None and s.get("maxNeeded") is not None
+                   and s.get("minNeeded") is not None
+                   and not (s["minNeeded"] <= s["occupiedPIdx"] <= s["maxNeeded"])]
+        print(f"  player's ACTUAL group outside the window [minNeeded,maxNeeded] in "
+              f"{len(outside)}/{len(samples)} samples")
+        if exposed:
+            w = exposed[-1]
+            print(f"  last exposed: tick={w['tick']} occupied={w.get('occupiedPIdx')} "
+                  f"window=[{w.get('minNeeded')},{w.get('maxNeeded')}] skew={w.get('skew')} "
+                  f"reason={w.get('reason')}")
+            print("  -> if this is common while mid-train, the hold window has drifted off the "
+                  "player and THAT is the mechanism, not the spawn lane.")
+
     ondeck = Counter(s.get("onDeck") for s in samples if "onDeck" in s)
     if ondeck:
         print(f"\nride: onDeck={dict(ondeck)} "
@@ -191,7 +214,7 @@ def report(train: str, samples: list[dict]) -> None:
     for key in ("playerPIdx", "occupiedPIdx", "skew", "playerX", "minNeeded",
                 "registryMin", "visibleTail", "span", "registryCount", "visibleCount",
                 "deficit", "ticksPending", "latchAge", "forceLoaded", "chunkWait", "tailGapX",
-                "outrun", "onDeck"):
+                "outrun", "onDeck", "heldOccupied", "maxNeeded"):
         print(f"  {key:>13}: {series(after, key)}")
 
     dominant, hits = counts.most_common(1)[0]

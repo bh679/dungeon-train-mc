@@ -2293,7 +2293,8 @@ public final class TrainCarriageAppender {
             // IS the finding (the near-check measures against group world AABBs,
             // which a culled group reports as zero).
             traceBackwardLane(level, trainId, train, BackwardGenTrace.Reason.NOT_NEAR, nowTick,
-                null, 0, 0, 0, 0, Trains.knownAnchors(trainId).size(), 0, 0, null, dims, groupSize, velocity);
+                null, 0, 0, 0, 0, Trains.knownAnchors(trainId).size(), 0, 0, null, dims, groupSize,
+                velocity, 0);
             if (withinResumeGrace(RESUME_GRACE_UNTIL_TICK.get(trainId), nowTick)) {
                 if (shouldRenewResumeGrace(RESUME_STARTED_TICK.get(trainId), nowTick, RESUME_HOLD_CAP_TICKS)) {
                     RESUME_GRACE_UNTIL_TICK.put(trainId, nowTick + RESUME_GRACE_RENEW_TICKS);
@@ -2520,7 +2521,8 @@ public final class TrainCarriageAppender {
             traceBackwardLane(level, trainId, train, backwardBlockReason(bwdNeedWindow, bwdEdgeAction),
                 level.getGameTime(), tracePlayer, tracePlayerPIdx, traceTargetCount,
                 globalMinNeededPIdx, trainMinAnchor, knownAnchors.size(),
-                backwardAnchor, backwardDeficitPIdx, bwdEdgeSub, dims, groupSize, velocity);
+                backwardAnchor, backwardDeficitPIdx, bwdEdgeSub, dims, groupSize, velocity,
+                globalMaxNeededPIdx);
         }
 
         if (!needsForward && !needsBackward) return false;
@@ -2679,7 +2681,8 @@ public final class TrainCarriageAppender {
             traceBackwardLane(level, trainId, train, outcome, now,
                 tracePlayer, tracePlayerPIdx, traceTargetCount,
                 globalMinNeededPIdx, trainMinAnchor, knownAnchors.size(),
-                backwardAnchor, backwardDeficitPIdx, bwdEdgeSub, dims, groupSize, velocity);
+                backwardAnchor, backwardDeficitPIdx, bwdEdgeSub, dims, groupSize, velocity,
+                globalMaxNeededPIdx);
         }
 
         if (STALL_DETECTION_ENABLED) {
@@ -3067,7 +3070,7 @@ public final class TrainCarriageAppender {
         ServerPlayer tracePlayer, int tracePlayerPIdx, int traceTargetCount,
         int minNeeded, int registryMin, int registryCount,
         int anchor, int deficit, UUID edgeSub,
-        CarriageDims dims, int groupSize, Vector3dc velocity
+        CarriageDims dims, int groupSize, Vector3dc velocity, int maxNeeded
     ) {
         if (!BackwardGenTrace.enabled()) return;
 
@@ -3110,11 +3113,27 @@ public final class TrainCarriageAppender {
         Integer occupied = (tracePlayer == null) ? null : occupiedPIdx(train, tracePlayer, dims, groupSize);
         double playerX = (tracePlayer == null) ? Double.NaN : tracePlayer.getX();
 
+        // Is the group the player is PHYSICALLY standing in force-loaded? The hold set is derived
+        // from the same window as the spawn target, so if that window is anchored away from the
+        // player, their own surroundings stop being protected from Sable's cull — the train can
+        // then end underneath them while the lane, looking at the window, reports nothing wrong.
+        Boolean heldOccupied = null;
+        if (occupied != null) {
+            for (Trains.Carriage c : train) {
+                TrainTransformProvider p = c.provider();
+                if (occupied >= p.getPIdx() && occupied <= p.getGroupHighestPIdx()) {
+                    heldOccupied = forceLoaded != null && forceLoaded.contains(c.ship().subLevelId());
+                    break;
+                }
+            }
+        }
+
         BackwardGenTrace.record(level, trainId, new BackwardGenTrace.Sample(
             now, reason, 0L, tracePlayerPIdx, occupied, playerX,
             minNeeded, registryMin, visibleTail, registryCount, train.size(),
             anchor, deficit, ticksPending, latchAge, edgeSub,
             (forceLoaded == null) ? 0 : forceLoaded.size(), chunkWait, traceTargetCount, tailGapX,
+            maxNeeded, heldOccupied,
             rideContext(train, tracePlayer, deficit, groupSize, velocity)));
     }
 

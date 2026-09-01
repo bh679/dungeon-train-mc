@@ -150,6 +150,18 @@ class BackwardGenTraceTest {
         assertTrue(BackwardGenTrace.AT_TAIL_BLOCKS < BackwardGenTrace.AT_TAIL_REARM_BLOCKS);
     }
 
+    /**
+     * The confirming field: whether the group the player is standing in is force-loaded. It must
+     * survive into the log line, because "false while mid-train" is the evidence that the hold
+     * window has drifted off the player and left their surroundings exposed to Sable's cull.
+     */
+    @Test
+    void formatCarriesTheHoldWindowAndOccupiedHold() {
+        String line = sample(Reason.NO_NEED, -40, -43, -60, -48).format(UUID.nameUUIDFromBytes(new byte[]{3}));
+        assertTrue(line.contains("heldOccupied=false"), line);
+        assertTrue(line.contains("maxNeeded=-20"), line);
+    }
+
     /** Ride context reaches the log line — it is what separates a roof walk from riding inside. */
     @Test
     void formatCarriesRideContext() {
@@ -169,6 +181,7 @@ class BackwardGenTraceTest {
             /*anchor*/ registryMin - 3, /*deficit*/ 5,
             /*ticksPending*/ -1L, /*latchAge*/ -1L, /*edgeSub*/ null,
             /*forceLoaded*/ 4, /*chunkWait*/ -1L, /*targetCount*/ 30, /*tailGapX*/ 84.5,
+            /*maxNeeded*/ -20, /*heldOccupied*/ Boolean.FALSE,
             new BackwardGenTrace.RideContext(false, "survival", true, 2.0, "FILL", 1));
     }
 }

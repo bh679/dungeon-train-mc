@@ -152,6 +152,16 @@ public final class BackwardGenTrace {
      * @param forceLoaded    number of sub-levels this train currently force-loads
      * @param chunkWait      ticks the lane has been waiting on footprint chunk-gen, or −1
      * @param targetCount    the player's target carriage count (config or auto-from-render-distance)
+     * @param maxNeeded      highest pIdx any player needs. With {@link #minNeeded} this is the whole
+     *                       active window — and the window is not only the spawn target, it is also
+     *                       what decides which groups stay force-loaded. A window anchored away
+     *                       from where the player actually is therefore stops holding the groups
+     *                       they are standing among.
+     * @param heldOccupied   whether the group the player is PHYSICALLY in is currently force-loaded.
+     *                       {@code false} while mid-train is the confirming symptom: the player's
+     *                       own surroundings are unprotected from Sable's cull, which is how a train
+     *                       can end underneath a player while the lane reports no fault at all.
+     *                       {@code null} when the occupied group could not be resolved.
      * @param tailGapX       blocks of train physically behind the player: their world X minus the
      *                       visible tail group's lowest-X face. Near zero means they are standing at
      *                       the end of the train, which is the symptom being investigated — pIdx
@@ -179,6 +189,8 @@ public final class BackwardGenTrace {
         long chunkWait,
         int targetCount,
         double tailGapX,
+        int maxNeeded,
+        Boolean heldOccupied,
         RideContext ride
     ) {
         /**
@@ -208,12 +220,14 @@ public final class BackwardGenTrace {
                 "[DungeonTrain][bwdgen] tick=%d train=%s reason=%s blockedFor=%d playerPIdx=%d "
                     + "occupiedPIdx=%s skew=%d playerX=%.2f minNeeded=%d registryMin=%d visibleTail=%d "
                     + "span=%d registryCount=%d visibleCount=%d anchor=%d deficit=%d ticksPending=%d "
-                    + "latchAge=%d edgeSub=%s forceLoaded=%d chunkWait=%d target=%d tailGapX=%.1f %s",
+                    + "latchAge=%d edgeSub=%s forceLoaded=%d chunkWait=%d target=%d tailGapX=%.1f "
+                    + "maxNeeded=%d heldOccupied=%s %s",
                 gameTick, shortId(trainId), reason, blockedFor, playerPIdx,
                 (occupiedPIdx == null) ? "n/a" : occupiedPIdx.toString(), skew(), playerX,
                 minNeeded, registryMin, visibleTail, span(), registryCount, visibleCount,
                 anchor, deficit, ticksPending, latchAge, shortId(edgeSub), forceLoaded,
-                chunkWait, targetCount, tailGapX,
+                chunkWait, targetCount, tailGapX, maxNeeded,
+                (heldOccupied == null) ? "n/a" : heldOccupied.toString(),
                 (ride == null ? RideContext.NONE : ride).format());
         }
     }
@@ -378,7 +392,8 @@ public final class BackwardGenTrace {
             sample.playerX(), sample.minNeeded(), sample.registryMin(), sample.visibleTail(),
             sample.registryCount(), sample.visibleCount(), sample.anchor(), sample.deficit(),
             sample.ticksPending(), sample.latchAge(), sample.edgeSub(), sample.forceLoaded(),
-            sample.chunkWait(), sample.targetCount(), sample.tailGapX(), sample.ride());
+            sample.chunkWait(), sample.targetCount(), sample.tailGapX(), sample.maxNeeded(),
+            sample.heldOccupied(), sample.ride());
         LAST_SAMPLE.put(trainId, stamped);
 
         // Race rates over the rolling window: is the player pulling away from the lane? A lane that
@@ -477,12 +492,14 @@ public final class BackwardGenTrace {
             out.add(String.format(
                 "train %s: %s (blocked %d ticks) anchor=%d playerPIdx=%d occupied=%s skew=%d "
                     + "minNeeded=%d registryMin=%d visibleTail=%d span=%d groups=%d/%d "
-                    + "forceLoaded=%d pending=%d latch=%d chunkWait=%d tailGapX=%.1f",
+                    + "forceLoaded=%d pending=%d latch=%d chunkWait=%d tailGapX=%.1f "
+                    + "window=[%d,%d] heldOccupied=%s",
                 shortId(e.getKey()), s.reason(), s.blockedFor(), s.anchor(), s.playerPIdx(),
                 (s.occupiedPIdx() == null) ? "n/a" : s.occupiedPIdx().toString(), s.skew(),
                 s.minNeeded(), s.registryMin(), s.visibleTail(), s.span(),
                 s.visibleCount(), s.registryCount(), s.forceLoaded(), s.ticksPending(),
-                s.latchAge(), s.chunkWait(), s.tailGapX()));
+                s.latchAge(), s.chunkWait(), s.tailGapX(), s.minNeeded(), s.maxNeeded(),
+                (s.heldOccupied() == null) ? "n/a" : s.heldOccupied().toString()));
         }
         return out;
     }
