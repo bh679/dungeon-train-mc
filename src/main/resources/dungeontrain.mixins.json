@@ -72,6 +72,7 @@
     "client.CreativeModeInventoryScreenAccessor",
     "client.AbstractContainerScreenPrefabTintMixin",
     "client.MainMenuLogoMixin",
+    "client.SplashUpdateCountsMixin",
     "client.LevelLoadingScreenThemeMixin",
     "client.ReceivingLevelScreenThemeMixin",
     "client.ProgressScreenThemeMixin",

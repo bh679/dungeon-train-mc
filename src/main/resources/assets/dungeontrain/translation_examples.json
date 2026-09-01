@@ -2481,6 +2481,217 @@
       ]
     }
   },
+  "chat.dungeontrain.time.week.one": {
+    "1": {
+      "label": "a count of one",
+      "examples": [
+        "1"
+      ]
+    }
+  },
+  "chat.dungeontrain.time.week.other": {
+    "1": {
+      "label": "how many weeks",
+      "examples": [
+        "2",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.time.month.one": {
+    "1": {
+      "label": "a count of one",
+      "examples": [
+        "1"
+      ]
+    }
+  },
+  "chat.dungeontrain.time.month.other": {
+    "1": {
+      "label": "how many months",
+      "examples": [
+        "5",
+        "11"
+      ]
+    }
+  },
+  "chat.dungeontrain.time.year.one": {
+    "1": {
+      "label": "a count of one",
+      "examples": [
+        "1"
+      ]
+    }
+  },
+  "chat.dungeontrain.time.year.other": {
+    "1": {
+      "label": "how many years",
+      "examples": [
+        "2",
+        "3"
+      ]
+    }
+  },
+  "gui.dungeontrain.splash.updates_day": {
+    "1": {
+      "label": "how many updates were made in this timeframe, as a whole clause - this is a main-menu splash line",
+      "examples": [
+        {
+          "key": "gui.dungeontrain.splash.new_updates.other",
+          "args": [
+            "9"
+          ]
+        }
+      ]
+    }
+  },
+  "gui.dungeontrain.splash.updates_week": {
+    "1": {
+      "label": "how many updates were made in this timeframe, as a whole clause - this is a main-menu splash line",
+      "examples": [
+        {
+          "key": "gui.dungeontrain.splash.new_updates.other",
+          "args": [
+            "122"
+          ]
+        }
+      ]
+    }
+  },
+  "gui.dungeontrain.splash.updates_month": {
+    "1": {
+      "label": "how many updates were made in this timeframe, as a whole clause - this is a main-menu splash line",
+      "examples": [
+        {
+          "key": "gui.dungeontrain.splash.new_updates.other",
+          "args": [
+            "249"
+          ]
+        }
+      ]
+    }
+  },
+  "gui.dungeontrain.splash.updates_year": {
+    "1": {
+      "label": "how many updates were made in this timeframe, as a whole clause - this is a main-menu splash line",
+      "examples": [
+        {
+          "key": "gui.dungeontrain.splash.new_updates.other",
+          "args": [
+            "770"
+          ]
+        }
+      ]
+    }
+  },
+  "gui.dungeontrain.splash.new_updates.one": {
+    "1": {
+      "label": "a count of one",
+      "examples": [
+        "1"
+      ]
+    }
+  },
+  "gui.dungeontrain.splash.new_updates.other": {
+    "1": {
+      "label": "how many updates were made - this feeds a main-menu splash line",
+      "examples": [
+        "10",
+        "250"
+      ]
+    }
+  },
+  "gui.dungeontrain.death.narr.changes_count.one": {
+    "1": {
+      "label": "a count of one",
+      "examples": [
+        "1"
+      ]
+    }
+  },
+  "gui.dungeontrain.death.narr.changes_count.other": {
+    "1": {
+      "label": "how many changes landed in the last week",
+      "examples": [
+        "117",
+        "24"
+      ]
+    }
+  },
+  "gui.dungeontrain.death.narr.donate_intro_updates": {
+    "1": {
+      "label": "how many changes were made this week, as a whole clause - the opening line of the donation pitch",
+      "examples": [
+        {
+          "key": "gui.dungeontrain.death.narr.changes_count.other",
+          "args": [
+            "117"
+          ]
+        }
+      ]
+    }
+  },
+  "gui.dungeontrain.death.narr.updates_value.one": {
+    "1": {
+      "label": "a count of one",
+      "examples": [
+        "1"
+      ]
+    }
+  },
+  "gui.dungeontrain.death.narr.updates_value.other": {
+    "1": {
+      "label": "how many updates shipped in the span named on the line below",
+      "examples": [
+        "117",
+        "765"
+      ]
+    }
+  },
+  "gui.dungeontrain.death.narr.lbl_updates_in": {
+    "1": {
+      "label": "the span those updates landed in, as a whole clause - a week by default, the project's whole life on hover",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.time.week.one",
+          "args": [
+            "1"
+          ]
+        },
+        {
+          "key": "chat.dungeontrain.time.month.other",
+          "args": [
+            "5"
+          ]
+        },
+        {
+          "key": "chat.dungeontrain.time.year.one",
+          "args": [
+            "1"
+          ]
+        }
+      ]
+    }
+  },
+  "gui.dungeontrain.death.narr.tip_last_update": {
+    "1": {
+      "label": "how long ago the newest release went out, as a whole clause",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.time.hour.other",
+          "args": [
+            "3"
+          ]
+        },
+        {
+          "key": "chat.dungeontrain.time.day.one",
+          "args": [
+            "1"
+          ]
+        }
+      ]
+    }
+  },
   "gui.dungeontrain.options.value_row": {
     "1": {
       "label": "the setting's name",
@@ -2756,6 +2967,68 @@
       ]
     }
   },
+  "gui.dungeontrain.builder.profile.full": {
+    "1": {
+      "label": "how many builds a player's profile can hold on the build server",
+      "examples": ["200"]
+    }
+  },
+  "gui.dungeontrain.builder.reconcile.toast.body": {
+    "1": {
+      "label": "how many builds were sent back to the build server",
+      "examples": ["3", "17"]
+    }
+  },
+  "gui.dungeontrain.builder.reconcile.body": {
+    "1": {
+      "label": "how many of the player's builds the build server no longer has",
+      "examples": ["3", "17"]
+    }
+  },
+  "gui.dungeontrain.builder.reconcile.backups.off": {
+    "1": {
+      "label": "how many further builds exist only inside a backup",
+      "examples": ["2", "9"]
+    }
+  },
+  "gui.dungeontrain.builder.reconcile.backups.on": {
+    "1": {
+      "label": "how many further builds exist only inside a backup",
+      "examples": ["2", "9"]
+    }
+  },
+  "gui.dungeontrain.builder.reconcile.started": {
+    "1": {
+      "label": "how many builds are being sent back up to the build server",
+      "examples": ["3", "17"]
+    }
+  },
+  "gui.dungeontrain.builder.reconcile.done": {
+    "1": {
+      "label": "how many builds were restored",
+      "examples": ["3", "17"]
+    }
+  },
+  "gui.dungeontrain.builder.reconcile.partial": {
+    "1": {
+      "label": "how many builds were restored in this run",
+      "examples": ["150"]
+    },
+    "2": {
+      "label": "how many builds are left for the next run",
+      "examples": ["12"]
+    }
+  },
+  "gui.dungeontrain.builder.reconcile.some_failed": {
+    "1": {
+      "label": "how many builds were restored",
+      "examples": ["14"]
+    },
+    "2": {
+      "label": "how many builds could not be sent",
+      "examples": ["2"]
+    }
+  },
   "gui.dungeontrain.builder.profile.owner_other": {
     "1": {
       "label": "the player whose builds are being looked at",
@@ -2763,6 +3036,28 @@
         "Brennan",
         "Steve"
       ]
+    }
+  },
+  "gui.dungeontrain.builder.favourites.tab.builds": {
+    "1": {
+      "label": "how many builds this player has starred, on the tab that shows them",
+      "examples": ["5", "0"]
+    }
+  },
+  "gui.dungeontrain.builder.favourites.tab.builders": {
+    "1": {
+      "label": "how many builders this player has starred, on the tab that shows them",
+      "examples": ["2", "0"]
+    }
+  },
+  "gui.dungeontrain.builder.favourites.tile": {
+    "1": {
+      "label": "the name of a starred build, as the caption under its tile",
+      "examples": ["brick_cabin", "library"]
+    },
+    "2": {
+      "label": "the player who built it \u2014 this list spans builders, so each tile names its own",
+      "examples": ["Brennan", "Steve"]
     }
   },
   "gui.dungeontrain.builder.creators.row": {
@@ -2781,9 +3076,36 @@
       ]
     }
   },
+  "gui.dungeontrain.builder.profile.unsaved.title": {
+    "1": {
+      "label": "the build on this install that has unsaved editor edits",
+      "examples": [
+        "Brick Carriage",
+        "Long Hall"
+      ]
+    }
+  },
   "gui.dungeontrain.builder.profile.collision.title": {
     "1": {
       "label": "the build whose name this install already uses",
+      "examples": [
+        "Brick Carriage",
+        "Long Hall"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.profile.collision.replace.title": {
+    "1": {
+      "label": "the build already on this install, which is being replaced",
+      "examples": [
+        "Brick Carriage",
+        "Long Hall"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.profile.collision.rename_existing": {
+    "1": {
+      "label": "the build already on this install, which would be kept under another name",
       "examples": [
         "Brick Carriage",
         "Long Hall"

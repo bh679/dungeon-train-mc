@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.builder.BuilderSave;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.event.NetworkConsentMirror;
 import games.brennan.dungeontrain.event.SharedCarriageMode;
+import games.brennan.dungeontrain.net.relay.RelayTarget;
 import games.brennan.dungeontrain.net.relay.SharedCarriageClient;
 import games.brennan.dungeontrain.train.CarriageBlockSnapshot;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
@@ -44,7 +45,7 @@ public final class BuilderRelayUpload {
      * player is told their build is too big by the game, in the builder, rather than by a 400 from a
      * server they can't see.
      */
-    private static final int MAX_BLOCKS_CHARS = 690_000;
+    static final int MAX_BLOCKS_CHARS = 690_000;
 
     private BuilderRelayUpload() {}
 
@@ -102,16 +103,47 @@ public final class BuilderRelayUpload {
         }
         if (known != null) {
             // Known build, but this world isn't holding the lease — it was published, or the lease
-            // expired. Take it back first; a save without a token is refused by the relay.
-            claimThenSave(player, level, key, known, blocks, text, written);
+            // expired. The owner secret is authority enough to write anyway; only a build uploaded
+            // before secrets existed has to go the long way round and take a lease back first.
+            if (!known.secret().isEmpty()) {
+                ownerSave(player, level, key, known, blocks, text, written);
+            } else {
+                claimThenSave(player, level, key, known, blocks, text, written);
+            }
             return;
         }
-        submitNew(player, level, key, blocks, text, written, data, stageId);
+        submitNew(player, level, key, blocks, text, written, stageId);
     }
 
-    /** First upload of this template: create the profile entry and remember what came back. */
+    /**
+     * First upload of this template: create the profile entry and remember what came back.
+     *
+     * <p>Preceded by a check that there is room. A profile at the relay's cap does not reject the
+     * next upload — it accepts it and deletes the author's oldest build to make room, silently. This
+     * is the one path that adds a row, so it is the one place that can catch that before it happens
+     * and let the player choose what goes instead. A save that stops here is still saved locally;
+     * only the relay copy is withheld.</p>
+     */
     private static void submitNew(ServerPlayer player, ServerLevel level, String key, String blocks, String text,
-                                  BuilderSave.Written written, DungeonTrainWorldData data, String stageId) {
+                                  BuilderSave.Written written, String stageId) {
+        SharedCarriageClient.listMine(player.getUUID().toString(), player.getUUID().toString(),
+                        RelayTarget.dev())
+                .thenAccept(builds -> onServer(level, () -> {
+                    // A failed listing is not evidence of a full profile. Upload rather than block —
+                    // the relay is the authority, and refusing a save because a check could not be
+                    // made would be the worse failure.
+                    if (builds != null && BuilderProfileCap.isFull(BuilderProfileCap.used(builds))) {
+                        tell(player, "gui.dungeontrain.builder.profile.full", ChatFormatting.YELLOW,
+                                BuilderProfileCap.MAX_PROFILE_BUILDS);
+                        return;
+                    }
+                    submitNewNow(player, level, key, blocks, text, written, stageId);
+                }));
+    }
+
+    /** The upload itself, once there is known to be room for it. */
+    private static void submitNewNow(ServerPlayer player, ServerLevel level, String key, String blocks,
+                                     String text, BuilderSave.Written written, String stageId) {
         SharedCarriageClient.submitBuild(
                 player.getUUID().toString(), player.getGameProfile().getName(), blocks,
                 written.size().getX(), written.size().getY(), written.size().getZ(),
@@ -151,15 +183,54 @@ public final class BuilderRelayUpload {
                         return;
                     }
                     if (status == SharedCarriageClient.CallStatus.FORBIDDEN) {
-                        // Somebody else took the lease. Drop the stale token and try to claim it back.
+                        // Somebody else took the lease. Drop the stale token and write as the owner
+                        // instead — the same route afterSave takes for a build it holds no lease on.
                         BuilderRelayBuilds.Entry tokenless = entry.withToken("");
                         DungeonTrainWorldData live = DungeonTrainWorldData.get(level);
                         live.builderRelayBuilds().put(key, tokenless);
                         live.markBuilderRelayBuildsDirty();
-                        claimThenSave(player, level, key, tokenless, blocks, text, written);
+                        if (!tokenless.secret().isEmpty()) {
+                            ownerSave(player, level, key, tokenless, blocks, text, written);
+                        } else {
+                            claimThenSave(player, level, key, tokenless, blocks, text, written);
+                        }
                         return;
                     }
                     LOGGER.warn("[DungeonTrain] Builder relay upload: saving '{}' through its lease failed — {}",
+                            written.id(), status);
+                    tell(player, "gui.dungeontrain.builder.profile.upload_failed", ChatFormatting.RED, written.id());
+                }));
+    }
+
+    /**
+     * Save a build this world holds no lease on, as its owner.
+     *
+     * <p>The author's save is authoritative and nobody may block it. Taking a lease first — which is
+     * what this path used to do — meant any stranger out riding a published build answered
+     * {@code in_use}, and the player was told their build "is out on someone's train" for a save that
+     * had already succeeded locally and would never sync however many times they repeated it. A lease
+     * is a drifting-carriage rule, for two worlds editing one carriage mid-ride; an authored template
+     * has one owner, and the {@code secret} the relay issued at submit is that ownership.</p>
+     *
+     * <p>Nobody is displaced: the relay writes the blob and leaves the rider's lease alone.</p>
+     */
+    private static void ownerSave(ServerPlayer player, ServerLevel level, String key,
+                                  BuilderRelayBuilds.Entry entry, String blocks, String text,
+                                  BuilderSave.Written written) {
+        SharedCarriageClient.ownerSave(entry.relayId(), entry.secret(), blocks, text, 0)
+                .thenAccept(status -> onServer(level, () -> {
+                    if (status == SharedCarriageClient.CallStatus.OK) {
+                        tell(player, "gui.dungeontrain.builder.profile.saved", ChatFormatting.GRAY, written.id());
+                        return;
+                    }
+                    if (status == SharedCarriageClient.CallStatus.UNKNOWN) {
+                        // A 404 is either the build being gone or a relay too old to have the route,
+                        // and this call can't tell them apart. The lease path can — its own 404 is
+                        // unambiguous — so hand over to it rather than guessing.
+                        claimThenSave(player, level, key, entry, blocks, text, written);
+                        return;
+                    }
+                    LOGGER.warn("[DungeonTrain] Builder relay upload: saving '{}' as its owner failed — {}",
                             written.id(), status);
                     tell(player, "gui.dungeontrain.builder.profile.upload_failed", ChatFormatting.RED, written.id());
                 }));
@@ -260,7 +331,7 @@ public final class BuilderRelayUpload {
      * tool, where creative is the whole point, and reading it as cheating would quarantine every build
      * ever made in it away from the trains it was made for.</p>
      */
-    private static String poolFor() {
+    static String poolFor() {
         return SharedCarriageMode.NORMAL;
     }
 

@@ -20,9 +20,10 @@ import java.util.List;
  *       render at, plus where each of the four editor menus (X/V/C/Z) draws itself.</li>
  * </ul>
  *
- * <p>Kept free of Minecraft types on purpose. Two rows are conditional — {@link Row#POLITICAL_FILTER}
- * on Chinese clients, {@link Row#TRANSLATE} when a translation target resolves — and the screen packs
- * rows two-across, so either one appearing re-pairs everything after it in its tab. That pairing is
+ * <p>Kept free of Minecraft types on purpose. Three rows are conditional — {@link Row#POLITICAL_FILTER}
+ * on Chinese clients, {@link Row#TRANSLATE} when a translation target resolves, and
+ * {@link Row#CATCH_UP_BURST} when the train settings are writable from here — and the screen packs
+ * rows two-across, so any one appearing re-pairs everything after it in its tab. That pairing is
  * the part most likely to break silently and the part a headless test can actually reach, which it
  * cannot do through live widgets.</p>
  */
@@ -80,6 +81,8 @@ public enum ClientOptionsTab {
         BACKUPS_PER_VERSION,
         /** Deletes every archive, in the instance and outside it. Shows the size on disk. */
         CLEAR_BACKUPS,
+        /** Whether to be asked before builds the build server has lost are sent back up. */
+        CONFIRM_BUILD_RESTORE,
         /** Opens the AI Policy page. Unconditional — every client can reach it. */
         AI_POLICY,
         /** Only when {@code TranslationTarget.resolveForClient()} names a language to edit. */
@@ -90,6 +93,14 @@ public enum ClientOptionsTab {
         CUSTOM_CONTENT,
         SNAPSHOT_MAX_RES,
         SNAPSHOT_CHAT_LOG,
+        /**
+         * How fast an end of the train may extend once it has fallen behind. Present only
+         * when the train settings are actually writable from here — i.e. a singleplayer
+         * world is open. On a multiplayer client the value belongs to the server, and at
+         * the title screen the server config is not loaded and the write silently no-ops,
+         * so the row is absent rather than a control that lies about what it did.
+         */
+        CATCH_UP_BURST,
 
         // --- Editor ---
         SCALE_ALL,
@@ -133,7 +144,8 @@ public enum ClientOptionsTab {
         return GROUP_LEADERS.contains(row);
     }
 
-    public static List<Row> rowsFor(ClientOptionsTab tab, boolean chineseLocale, boolean hasTranslateTarget) {
+    public static List<Row> rowsFor(ClientOptionsTab tab, boolean chineseLocale, boolean hasTranslateTarget,
+                                    boolean trainSettingsWritable) {
         List<Row> rows = new ArrayList<>();
         switch (tab) {
             case GENERAL -> {
@@ -159,6 +171,9 @@ public enum ClientOptionsTab {
                 // Adjacent so the width packer pairs the two short backup rows on one line.
                 rows.add(Row.BACKUPS_PER_VERSION);
                 rows.add(Row.CLEAR_BACKUPS);
+                // Beside the backups because that is where its second tier comes from: the card this
+                // turns on is the only place a backup-only build can be kept out of a restore.
+                rows.add(Row.CONFIRM_BUILD_RESTORE);
             }
             case TRAIN -> {
                 // The two short-captioned rows lead so they pair on one line; the two whose captions
@@ -168,6 +183,12 @@ public enum ClientOptionsTab {
                 rows.add(Row.SNAPSHOT_CHAT_LOG);
                 rows.add(Row.CUSTOM_CONTENT);
                 rows.add(Row.SNAPSHOT_MAX_RES);
+                // Conditional, so it goes LAST: a row that appears and disappears re-pairs
+                // everything after it in the tab (see the class javadoc), and nothing follows
+                // it here.
+                if (trainSettingsWritable) {
+                    rows.add(Row.CATCH_UP_BURST);
+                }
             }
             case EDITOR -> {
                 rows.add(Row.SCALE_ALL);

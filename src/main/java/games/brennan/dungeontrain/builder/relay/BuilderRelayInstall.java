@@ -30,6 +30,8 @@ import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemp
 import org.slf4j.Logger;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -222,6 +224,48 @@ public final class BuilderRelayInstall {
     }
 
     /**
+     * Every name of {@code kind} this install will not write over — {@link #taken}, asked of a whole
+     * id space instead of one name.
+     *
+     * <p>Sent to the screen that asks a player to name a copy, so it can offer a name that is free
+     * and say so when the one they typed is not. It walks the kind's own registry and keeps what
+     * {@link #taken} refuses, rather than restating the rule: a list built from a second opinion
+     * would put the screen and the refusal out of step, which is the one way a naming prompt can
+     * waste an answer the player already gave.</p>
+     *
+     * <p>A snapshot, and only ever a convenience. The server asks {@link #taken} again on the press
+     * that follows, and that answer is the authority.</p>
+     */
+    public static List<String> takenNames(BuilderPhotoPaths.Kind kind, String subKind, boolean mine) {
+        if (kind == null) return List.of();
+        List<String> candidates = switch (kind) {
+            case CARRIAGE -> {
+                List<String> ids = new ArrayList<>(WholeCarriageRegistry.ids());
+                for (CarriageVariant v : CarriageVariantRegistry.allVariants()) ids.add(v.id());
+                yield ids;
+            }
+            case CARRIAGE_GROUP -> CarriageGroupRegistry.ids();
+            case CONTENTS -> CarriageContentsRegistry.allContents().stream().map(CarriageContents::id).toList();
+            case PART -> {
+                CarriagePartKind partKind = CarriagePartKind.fromId(subKind);
+                yield partKind == null ? List.<String>of() : CarriagePartRegistry.registeredNames(partKind);
+            }
+            case TRACK -> {
+                TrackKind trackKind = TrackKind.fromId(subKind);
+                yield trackKind == null ? List.<String>of() : TrackVariantRegistry.namesFor(trackKind);
+            }
+            case PORTAL_ROOM -> TrackVariantRegistry.namesFor(TrackKind.PORTAL_ROOM);
+        };
+
+        List<String> out = new ArrayList<>();
+        for (String name : candidates) {
+            if (name == null || name.isEmpty() || out.contains(name)) continue;
+            if (taken(kind, name, subKind, mine)) out.add(name);
+        }
+        return out;
+    }
+
+    /**
      * Whether the mod jar ships a template of {@code kind} under {@code id}.
      *
      * <p>Not a collision — see {@link #occupied}. Read for one thing only: to say in the log that an
@@ -302,6 +346,14 @@ public final class BuilderRelayInstall {
             }
             case PORTAL_ROOM -> {
                 if (!TrackVariantStore.rename(TrackKind.PORTAL_ROOM, id, newId)) return false;
+                // Rooms are discovered by a directory scan that runs at server start, so without
+                // this pair the name the file just moved TO is unknown for the rest of the session:
+                // missing from the editor's Portals list, and "Unknown dimensional carriage" from
+                // the enter command. Unregistering the old name is right even though the caller
+                // writes the download under it next — the file really has moved away, and the write
+                // registers it again.
+                TrackVariantRegistry.register(TrackKind.PORTAL_ROOM, newId);
+                TrackVariantRegistry.unregister(TrackKind.PORTAL_ROOM, id);
                 // The room's remembered size is filed under its name; drop the stale entry so the
                 // next read measures the template rather than trusting the old name's number.
                 PortalRoomSizes.forget(id);

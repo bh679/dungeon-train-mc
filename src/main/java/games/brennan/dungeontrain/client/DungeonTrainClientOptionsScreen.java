@@ -6,6 +6,8 @@ import games.brennan.dungeontrain.client.policy.AiPolicyScreen;
 import games.brennan.dungeontrain.client.localization.edit.TranslationTarget;
 import games.brennan.dungeontrain.client.sound.TrainVolumeOption;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
+import games.brennan.dungeontrain.config.DungeonTrainConfig;
+import games.brennan.dungeontrain.train.CatchUpBurstMode;
 import games.brennan.dungeontrain.data.PlayerDataBackup;
 import games.brennan.dungeontrain.data.PlayerDataPaths;
 import games.brennan.dungeontrain.data.BackupMode;
@@ -110,11 +112,14 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
     protected void init() {
         this.translateTarget = TranslationTarget.resolveForClient();
         boolean chinese = PoliticalFilterPrefs.isChineseLocale();
+        // The catch-up row writes the SERVER config, which is only loaded (and only ours to
+        // write) while a singleplayer world is open.
+        boolean trainSettingsWritable = DungeonTrainConfig.isLoaded();
 
         this.tabs.clear();
         for (ClientOptionsTab tab : ClientOptionsTab.values()) {
             this.tabs.add(new OptionsTab(tab,
-                    ClientOptionsTab.rowsFor(tab, chinese, !this.translateTarget.isEmpty())));
+                    ClientOptionsTab.rowsFor(tab, chinese, !this.translateTarget.isEmpty(), trainSettingsWritable)));
         }
 
         this.tabNavigationBar = TabNavigationBar.builder(this.tabManager, this.width)
@@ -275,6 +280,12 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             case CINEMATIC_HOTKEY -> onOffCandidates("gui.dungeontrain.options.cinematic_hotkey");
             case SNAPSHOT_CHAT_LOG -> onOffCandidates("gui.dungeontrain.options.snapshot_chat_log");
             case BACKPACK_BUTTON -> onOffCandidates("gui.dungeontrain.options.backpack_button");
+            // Every mode, because the row must fit its LONGEST value — the button shows the
+            // caption and the value together, and "Fill all" is not the longest in every locale.
+            case CATCH_UP_BURST -> List.of(
+                    value("gui.dungeontrain.options.catch_up_burst", catchUpBurstLabel(CatchUpBurstMode.OFF)),
+                    value("gui.dungeontrain.options.catch_up_burst", catchUpBurstLabel(CatchUpBurstMode.BURST_TWO)),
+                    value("gui.dungeontrain.options.catch_up_burst", catchUpBurstLabel(CatchUpBurstMode.FILL)));
             case AI_POLICY -> List.of(Component.translatable("gui.dungeontrain.options.ai_policy"));
             case TRANSLATE -> List.of(Component.translatable("gui.dungeontrain.options.translate"));
             case CUSTOM_CONTENT -> {
@@ -290,6 +301,7 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             case BACKUPS_PER_VERSION -> List.of(backupsPerVersionLabel(
                     Component.translatable("gui.dungeontrain.options.backups_per_version"),
                     BACKUPS_PER_VERSION_MAX));
+            case CONFIRM_BUILD_RESTORE -> onOffCandidates("gui.dungeontrain.options.confirm_build_restore");
             // The size is read at build time, so the candidate has to stand in for the widest it
             // could ever be rather than whatever it happens to be right now.
             case CLEAR_BACKUPS -> List.of(Component.translatable(
@@ -392,6 +404,18 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                                     (btn, on) -> ClientDisplayConfig.setBookAuthorBurnChat(on)),
                     "gui.dungeontrain.options.book_author_chat.tip");
 
+            // How fast the train may re-extend once an end has fallen behind the carriages a nearby
+            // player needs. Applies live to the train already running — the appender reads this at
+            // the moment it decides each spawn, so there is no reload or respawn to wait for.
+            case CATCH_UP_BURST -> withTip(
+                    CycleButton.<CatchUpBurstMode>builder(DungeonTrainClientOptionsScreen::catchUpBurstLabel)
+                            .withValues(CatchUpBurstMode.values())
+                            .withInitialValue(DungeonTrainConfig.getCatchUpBurstMode())
+                            .create(0, 0, width, ROW_H,
+                                    Component.translatable("gui.dungeontrain.options.catch_up_burst"),
+                                    (btn, mode) -> DungeonTrainConfig.setCatchUpBurstMode(mode)),
+                    "gui.dungeontrain.options.catch_up_burst.tip");
+
             // The binding itself lives in vanilla Controls (Dungeon Train category); this only decides
             // whether it does anything, so a player who wants the key back for something else can free
             // it without hunting through the keybind list.
@@ -483,6 +507,15 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
 
             case BACKUPS_PER_VERSION -> slider(backupsPerVersionOption(), width);
 
+            // Off by default: a restore is the same upload the build's next save would have made, so
+            // there is normally nothing to decide. On, it shows the title-screen card instead.
+            case CONFIRM_BUILD_RESTORE -> withTip(
+                    CycleButton.onOffBuilder(ClientDisplayConfig.isConfirmBuildRestore())
+                            .create(0, 0, width, ROW_H,
+                                    Component.translatable("gui.dungeontrain.options.confirm_build_restore"),
+                                    (btn, on) -> ClientDisplayConfig.setConfirmBuildRestore(on)),
+                    "gui.dungeontrain.options.confirm_build_restore.tip");
+
             case CLEAR_BACKUPS -> withTip(
                     Button.builder(
                             Component.translatable("gui.dungeontrain.options.clear_backups",
@@ -572,6 +605,11 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
     }
 
     /** Attaches a word-wrapping hover tooltip from a lang key and hands the widget straight back. */
+    private static Component catchUpBurstLabel(CatchUpBurstMode mode) {
+        return Component.translatable("gui.dungeontrain.options.catch_up_burst."
+                + mode.name().toLowerCase(java.util.Locale.ROOT));
+    }
+
     private static <T extends AbstractWidget> T withTip(T widget, String key) {
         widget.setTooltip(Tooltip.create(Component.translatable(key)));
         return widget;

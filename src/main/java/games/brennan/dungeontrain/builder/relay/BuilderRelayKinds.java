@@ -2,6 +2,8 @@ package games.brennan.dungeontrain.builder.relay;
 
 import games.brennan.dungeontrain.builder.BuilderMode;
 import games.brennan.dungeontrain.builder.BuilderPhotoPaths;
+import games.brennan.dungeontrain.editor.PlotCategory;
+import games.brennan.dungeontrain.track.variant.TrackKind;
 
 /**
  * How a Train Builder template kind is named on the relay.
@@ -141,5 +143,31 @@ public final class BuilderRelayKinds {
     /** As {@link #canJoinTheTrain}, from the relay's own kind string (what a profile listing carries). */
     public static boolean canJoinTheTrain(String kindId) {
         return CARRIAGE.equals(kindId);
+    }
+
+    /**
+     * The in-world editor category a template of this kind is edited in, or {@code null} when the
+     * editor has no home for it.
+     *
+     * <p>Here rather than beside the enter commands in {@code EditorTemplateJump} because both sides
+     * ask it: the client, to decide whether the jump has to switch category at all, and the server,
+     * to look the build up in the dirty scan's per-category set before a download writes over it.
+     * A second copy would be a mapping that could drift.</p>
+     *
+     * <p>Null for a carriage group: a run of carriages is authored in the Train Builder and the
+     * editor has no category that holds one.</p>
+     */
+    public static String categoryIdFor(BuilderPhotoPaths.Kind kind, String subKind) {
+        if (kind == null) return null;
+        return switch (kind) {
+            // Parts are stamped as part of the carriages plots — PlotCategory.PARTS.owner() says so.
+            case CARRIAGE, PART -> PlotCategory.CARRIAGES.id();
+            case CONTENTS -> PlotCategory.CONTENTS.id();
+            case TRACK -> TrackKind.PORTAL_ROOM == TrackKind.fromId(subKind)
+                    ? PlotCategory.PORTALS.id()
+                    : PlotCategory.TRACKS.id();
+            case PORTAL_ROOM -> PlotCategory.PORTALS.id();
+            case CARRIAGE_GROUP -> null;
+        };
     }
 }
