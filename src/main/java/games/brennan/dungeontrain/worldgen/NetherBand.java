@@ -89,6 +89,38 @@ public final class NetherBand {
     }
 
     /**
+     * How far (blocks) past the near (-X) edge of the Nether core a player must be before the world
+     * treats them as <b>properly in the Nether</b> rather than just touching the edge. The train
+     * travels +X, so a player enters the contiguous core from its -X side; requiring the column this
+     * far behind them to also read as core proves they are at least that deep, and since the core is
+     * a single trapezoid two in-core samples imply everything between is core too.
+     *
+     * <p>Shared by the {@code reached_nether} advancement (see
+     * {@link games.brennan.dungeontrain.event.ZoneProgressEvents}) and the Nether bed explosion
+     * ({@code BedBlockMixin}) so a bed can never detonate before the player has been told they
+     * entered the Nether. The default core (~520 blocks of Nether-reading column, larger in
+     * dev-test) comfortably contains this depth.</p>
+     */
+    public static final int CORE_DEPTH_BLOCKS = 400;
+
+    /**
+     * True when world-X is at least {@link #CORE_DEPTH_BLOCKS} deep inside the Nether core — i.e.
+     * both this column and the one that far behind it read as {@link #isInNetherBiome the core}.
+     */
+    public static boolean isDeepInNetherCore(ServerLevel overworld, int worldX) {
+        return isInNetherBiome(overworld, worldX)
+            && isInNetherBiome(overworld, worldX - CORE_DEPTH_BLOCKS);
+    }
+
+    /** Pure, allocation-free {@link WorldGenCycle} overload of
+     *  {@link #isDeepInNetherCore(ServerLevel, int)} — for tests and callers that hoisted the cycle.
+     *  The caller MUST have already confirmed {@link #startX} != {@link #OFF}. */
+    public static boolean isDeepInNetherCore(WorldGenCycle cycle, int worldX) {
+        return isInNetherBiome(cycle, worldX)
+            && isInNetherBiome(cycle, worldX - CORE_DEPTH_BLOCKS);
+    }
+
+    /**
      * True when world-X sits anywhere in the band's <b>netherrack stretch</b> — the netherrack
      * crossfade-in, the core, and the crossfade-out (i.e. {@code netherRamp > 0}), End band not
      * owning the column. This is the span where the world <em>reads</em> as the Nether (netherrack

@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.mixin;
 
+import games.brennan.dungeontrain.worldgen.NetherBand;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.server.level.ServerLevel;
@@ -35,7 +36,15 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * {@code the_end} and the four outer-island biomes — carries it). We gate on the persisted biome,
  * not a live band-formula recompute, so the explosion follows what the world actually generated
  * and the player sees — the green highland/crossfade approach columns and any config/build-drift
- * columns are neither {@code IS_NETHER} nor {@code IS_END} and sleep normally. Server-side only
+ * columns are neither {@code IS_NETHER} nor {@code IS_END} and sleep normally.</p>
+ *
+ * <p>A Nether-band bed must additionally be
+ * {@link games.brennan.dungeontrain.worldgen.NetherBand#CORE_DEPTH_BLOCKS} deep into the core (via
+ * {@link games.brennan.dungeontrain.worldgen.NetherBand#isDeepInNetherCore}) — the very gate that
+ * grants {@code reached_nether}, so the bed can never detonate before the "Entered the Nether"
+ * advancement that warns the player. The End branch keeps the plain biome gate: its
+ * {@code reached_end_islands} marker has no depth gate, so End beds already explode no earlier
+ * than their advancement. Server-side only
  * (the explosion path is); the {@code bedWorks()} guard means the real Nether/End keep their own
  * handling and we only <i>add</i> behaviour the overworld lacks.</p>
  */
@@ -54,7 +63,20 @@ public abstract class BedBlockMixin {
         // EndCoreBiomes); the green highland/crossfade approach and any config/build-drift columns
         // are neither, so beds sleep there as in vanilla.
         Holder<Biome> biome = serverLevel.getBiome(pos);
-        if (!biome.is(BiomeTags.IS_NETHER) && !biome.is(BiomeTags.IS_END)) return;
+        boolean nether = biome.is(BiomeTags.IS_NETHER);
+        if (!nether && !biome.is(BiomeTags.IS_END)) return;
+        // Nether band: hold the explosion until the player is as deep as "Entered the Nether"
+        // (reached_nether) — the SAME NetherBand.CORE_DEPTH_BLOCKS gate ZoneProgressEvents uses, so
+        // a bed can never detonate before the advancement that warns them fires. Formula-sampled,
+        // not a second getBiome() 400 blocks away, so no chunk is forced. Scoped to worlds that
+        // actually run the band (overworld + startX != OFF); any other bedWorks dimension carrying
+        // a Nether-tagged biome keeps the plain baked-biome behaviour.
+        if (nether
+            && Level.OVERWORLD.equals(serverLevel.dimension())
+            && NetherBand.startX(serverLevel) != NetherBand.OFF
+            && !NetherBand.isDeepInNetherCore(serverLevel, pos.getX())) {
+            return;
+        }
 
         Block self = (Block) (Object) this;
         BlockState headState = state;

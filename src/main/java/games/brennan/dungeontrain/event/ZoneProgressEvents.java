@@ -38,8 +38,9 @@ import java.util.List;
  *
  * <p>Independently of the void/End {@code zoneAt} classification, the same scan also grants two
  * Nether-band markers when the player's column reads as the Nether core of the cycle's Nether band
- * (via {@link NetherBand#isInNetherBiome}): {@code reached_nether} ("Entered the Nether") on any
- * Nether band, and {@code nether_return_again} ("Nether Return Again") once the player is deep in
+ * (via {@link NetherBand#isDeepInNetherCore}): {@code reached_nether} ("Entered the Nether") once
+ * the player is {@link NetherBand#CORE_DEPTH_BLOCKS} into any Nether band, and
+ * {@code nether_return_again} ("Nether Return Again") once the player is deep in
  * the Nether band on the SECOND or later cycle repeat (via {@link NetherBand#netherPassIndex} ≥ 1)
  * — i.e. they have looped all the way out to the End and back to solid ground, then returned to the
  * Nether. That second-band gate is positional, not advancement-based: the loop-completion
@@ -76,14 +77,6 @@ public final class ZoneProgressEvents {
 
     /** Zone-scan cadence (ticks) — matches the other per-level advancement scans. */
     private static final int SCAN_PERIOD_TICKS = 20;
-
-    /**
-     * How far (blocks) past the near edge of the Nether-core band the player must be before
-     * {@code reached_nether} is granted — so the advancement reads as "deep in the Nether",
-     * not "just touched the edge". The default core band (~520 blocks of Nether-reading column,
-     * larger in dev-test) comfortably contains this depth.
-     */
-    private static final int NETHER_DEPTH_BLOCKS = 400;
 
     /**
      * How far (blocks) into the upside-down band the player must be before {@code the_upside_down} is
@@ -129,13 +122,11 @@ public final class ZoneProgressEvents {
 
             // Nether band — a separate phase of the cycle from the void/End classification below.
             // Only grant once the player is well INSIDE the Nether (not the moment they cross the
-            // edge): the train travels +X, so the player enters the contiguous Nether-core band
-            // from its -X side; requiring the column NETHER_DEPTH_BLOCKS behind them to also read
-            // as Nether proves they are at least that deep. The band is a single trapezoid, so two
-            // in-band samples imply everything between is in-band too.
+            // edge), via the shared NetherBand.isDeepInNetherCore depth gate — the same predicate
+            // the Nether bed explosion (BedBlockMixin) uses, so a bed can never detonate before
+            // this advancement fires.
             int px = player.getBlockX();
-            if (NetherBand.isInNetherBiome(level, px)
-                && NetherBand.isInNetherBiome(level, px - NETHER_DEPTH_BLOCKS)) {
+            if (NetherBand.isDeepInNetherCore(level, px)) {
                 ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "reached_nether");
                 // "Nether Return Again" — deep inside the Nether band on the SECOND (or later)
                 // cycle repeat: the player has ridden a full loop out to the End and back to solid

@@ -44,6 +44,35 @@ final class NetherBandCoreGateTest {
     }
 
     @Test
+    @DisplayName("isDeepInNetherCore == core(x) ∧ core(x - CORE_DEPTH_BLOCKS) across a full cycle")
+    void deepGateMatchesTwoSamples() {
+        long period = NETHER_AND_END.period();
+        for (int x = -50; x <= period + 50; x++) {
+            boolean expected = NetherBand.isInNetherBiome(NETHER_AND_END, x)
+                && NetherBand.isInNetherBiome(NETHER_AND_END, x - NetherBand.CORE_DEPTH_BLOCKS);
+            assertEquals(expected, NetherBand.isDeepInNetherCore(NETHER_AND_END, x),
+                "mismatch at worldX=" + x);
+        }
+    }
+
+    @Test
+    @DisplayName("the deep window is a strict subset of the core, starting CORE_DEPTH_BLOCKS in")
+    void deepStartsAfterTheLeadingEdge() {
+        // A core with room to spare: coreFade 50 + coreHold 900 around a 120-block rise.
+        WorldGenCycle wide = new WorldGenCycle(0L, 100, 40, new int[] {1, 2, 4}, 0, 0, 50, 900, 0, 0, 0, 0, 0, 0, 0);
+        // First column that reads as the core — the leading edge a player crosses first.
+        int firstCore = -50;
+        while (!NetherBand.isInNetherBiome(wide, firstCore)) firstCore++;
+
+        assertFalse(NetherBand.isDeepInNetherCore(wide, firstCore),
+            "a bed at the core's leading edge must NOT count as deep (the advancement has not fired)");
+        assertFalse(NetherBand.isDeepInNetherCore(wide, firstCore + NetherBand.CORE_DEPTH_BLOCKS - 1),
+            "one block short of the depth is still not deep");
+        assertTrue(NetherBand.isDeepInNetherCore(wide, firstCore + NetherBand.CORE_DEPTH_BLOCKS),
+            "exactly CORE_DEPTH_BLOCKS past the leading edge is deep — where the advancement fires");
+    }
+
+    @Test
     @DisplayName("isInNetherBand = netherrack present (netherRamp > 0); it is a superset of the biome core")
     void bandIsWiderThanCore() {
         long period = NETHER_ONLY.period();
