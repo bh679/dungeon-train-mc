@@ -131,6 +131,9 @@ public final class RunStatsEvents {
         if (victim instanceof PlayerMobEntity pm) {
             run.incrementPlayerKills();
             run.setKilledAppearance(PlayerMobAppearance.capture(pm));
+            // ...and they stop being a friend you made. The kill still counts on the kill
+            // side; it just can't also count on the friends side.
+            run.recordKilledPlayerMob(pm.getUUID());
         }
         // Attribute the kill to the weapon that actually dealt it. Arrows
         // (from bows/crossbows) and thrown tridents carry the firing weapon
@@ -644,7 +647,7 @@ public final class RunStatsEvents {
                     if (feeling > FRIEND_FEELING_MIN) {
                         run.recordBefriended(mob.getUUID());
                         if (feeling > run.friendFeeling()) {
-                            run.captureFriendAppearance(PlayerMobAppearance.capture(pm), feeling);
+                            run.captureFriendAppearance(mob.getUUID(), PlayerMobAppearance.capture(pm), feeling);
                         }
                     }
                 }

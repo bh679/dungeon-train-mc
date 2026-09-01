@@ -10427,9 +10427,9 @@
       "summary": "Development tooling changes.",
       "highlights": [],
       "date": "2026-08-30",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.762.0",
+      "released_at": "2026-09-01T06:09:52Z"
     },
     {
       "id": "cheat-list-visual-mobs-edit",
@@ -10441,9 +10441,9 @@
         "Visual Mobs Edit and In-game NBTEdit Reborn added to the cheat-mod list"
       ],
       "date": "2026-08-30",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.762.0",
+      "released_at": "2026-09-01T06:09:52Z"
     },
     {
       "id": "book-placeholder-guard",
@@ -10457,9 +10457,9 @@
       ],
       "pr": 1235,
       "date": "2026-08-30",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.762.0",
+      "released_at": "2026-09-01T06:09:52Z"
     },
     {
       "id": "builder-load-own-build",
@@ -10474,9 +10474,9 @@
       ],
       "pr": 1237,
       "date": "2026-08-30",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.762.0",
+      "released_at": "2026-09-01T06:09:52Z"
     },
     {
       "id": "owner-authoritative-build-save",
@@ -10490,16 +10490,16 @@
       ],
       "pr": 1238,
       "date": "2026-08-30",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.762.0",
+      "released_at": "2026-09-01T06:09:52Z"
     },
     {
       "id": "carriage-catch-up-spawning",
       "version": "0.758.0",
       "type": "feat",
       "title": "The train catches up when it gets ahead of you",
-      "summary": "When the train outran you \u2014 you sprinted ahead, or it rolled past while you stood still \u2014 its ends could only grow back one group of carriages at a time, so a fast train just left you behind. Each end now fills in every carriage it is missing the moment it falls behind, and settles back to its normal pace once it has caught up. A new Catch-up spawning setting under Options \u2192 Dungeon Train \u2192 Train chooses how hard it tries: Fill all, the default, adds every missing group at once so the train catches up immediately; Burst 2 adds two at a time for a gentler catch-up; and Off keeps the old one-group-at-a-time pace. It applies to the train you are already riding.",
+      "summary": "When the train outran you \u2014 you sprinted ahead, or it rolled past while you stood still \u2014 its ends could only grow back one group of carriages at a time, so a fast train just left you behind. Each end now fills in every carriage it is missing the moment it falls behind, and settles back to its normal pace once it has caught up. A new Catch-up spawning setting under Options \u2192 Dungeon Train \u2192 Train chooses how hard it tries: Fill all, the default, keeps adding carriages every moment until the train has caught up; Burst 2 adds two at a time for a gentler catch-up; and Off keeps the old one-group-at-a-time pace. It applies to the train you are already riding.",
       "highlights": [
         "Train ends fill back in when they fall behind, instead of letting a fast train run away from you",
         "New Catch-up spawning setting in Options \u2192 Dungeon Train \u2192 Train \u2014 Fill all (default), Burst 2, or Off",
@@ -10507,9 +10507,9 @@
       ],
       "pr": 1240,
       "date": "2026-08-31",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.762.0",
+      "released_at": "2026-09-01T06:09:52Z"
     },
     {
       "id": "builder-load-collision-flow",
@@ -10523,9 +10523,9 @@
         "New / Replace Existing, with keep-a-copy or overwrite behind the second"
       ],
       "date": "2026-08-31",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.762.0",
+      "released_at": "2026-09-01T06:09:52Z"
     },
     {
       "id": "builder-favourites",
@@ -10540,9 +10540,42 @@
         "Favourites follow your profile between worlds and machines"
       ],
       "date": "2026-09-01",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.762.0",
+      "released_at": "2026-09-01T06:09:52Z"
+    },
+    {
+      "id": "smoother-carriage-catch-up",
+      "version": "0.761.0",
+      "type": "perf",
+      "title": "Smoother carriage catch-up, and carriages that no longer touch",
+      "summary": "When the train gets ahead of you \u2014 or rolls past while you stand still \u2014 it adds the carriages it is missing one at a time over successive moments, instead of dropping the whole missing stretch in at once. Catching up now happens just as quickly without the brief stutter it used to cost. Freshly appeared carriages also settle straight into place: the game had been judging the gap to a new carriage's neighbour before that carriage had finished moving into position, which could shunt it around and leave two carriages briefly touching.",
+      "highlights": [
+        "Catching up no longer causes a visible stutter, however far behind the train has fallen",
+        "New carriages no longer end up momentarily touching the one in front",
+        "Carriages settle into place first time instead of being nudged back and forth",
+        "Catch-up spawning can be set to Off, Burst 2, or Fill all under Options \u2192 Dungeon Train \u2192 Train"
+      ],
+      "date": "2026-09-01",
+      "released": true,
+      "released_in": "v0.762.0",
+      "released_at": "2026-09-01T06:09:52Z"
+    },
+    {
+      "id": "friends-made-excludes-killed",
+      "version": "0.762.0",
+      "type": "fix",
+      "title": "Friends you kill no longer count as friends you made",
+      "summary": "Befriending a passenger and then killing them used to leave them counted on both sides of the ledger \u2014 they stayed in your friends made tally on the death screen, in your lifetime total, in your stat book and on the leaderboard. Now a kill takes them out of it. The kill itself still counts.",
+      "highlights": [
+        "Killing a passenger removes them from your friends made count for that run.",
+        "If the passenger you killed was your closest friend, the death-screen friend portrait moves to whoever is still alive and likes you most."
+      ],
+      "pr": 1244,
+      "date": "2026-09-01",
+      "released": true,
+      "released_in": "v0.762.0",
+      "released_at": "2026-09-01T06:09:52Z"
     }
   ]
 }
