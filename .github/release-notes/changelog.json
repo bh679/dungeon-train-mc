@@ -10578,6 +10578,19 @@
       "released_at": "2026-09-01T06:09:52Z"
     },
     {
+      "id": "hide-world-list-cog",
+      "version": "0.763.0",
+      "type": "feat",
+      "title": "Menu changes",
+      "summary": "Some tidying on the main menu.",
+      "highlights": [],
+      "pr": 1245,
+      "date": "2026-09-01",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "leaderboard-standing-after-death",
       "version": "0.763.0",
       "type": "fix",

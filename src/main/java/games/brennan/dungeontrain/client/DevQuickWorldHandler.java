@@ -51,17 +51,23 @@ import java.util.function.Function;
  * TitleScreen first-row layout. Always installs four replacement widgets in
  * the vanilla Singleplayer slot and toggles their visibility based on
  * {@link VersionInfo#BRANCH} + Shift modifier. Vanilla Singleplayer is always
- * hidden — the settings icon is the single entry point into
- * {@link SelectWorldScreen}.
+ * hidden — the ⚙ icon is the single entry point into {@link SelectWorldScreen},
+ * and it is revealed by holding Shift rather than shown outright.
  *
  * <p>Visibility matrix:</p>
  * <pre>
  *   Branch | Shift | First row
  *   -------+-------+------------------------------------------------
- *   main   | any   | [ New World (survival, DT preset) | ⚙ settings ]
+ *   main   | no    | [ New World (survival, DT preset) ............. ]
+ *   main   | yes   | [ New World (survival, DT preset) | ⚙ world list ]
  *   dev    | no    | [ New World (creative, DT preset) | ⏱ perf world ]
- *   dev    | yes   | [ New World (survival, DT preset) | ⚙ settings ]
+ *   dev    | yes   | [ New World (survival, DT preset) | ⚙ world list ]
  * </pre>
+ *
+ * <p>The world list is a rare errand — a player starts a fresh run far more often than they
+ * return to an old save — so the unlabelled cog is not worth a permanent slot on the menu. It
+ * sits behind Shift, the same modifier that reveals the Train Builder on the row below, and the
+ * survival New World button takes the freed width when it is hidden.</p>
  *
  * <p>Both rows share one wide+square split, so the layout doesn't shift when the
  * shift modifier swaps them — only the square's occupant changes. The ⏱ button
@@ -187,7 +193,7 @@ public final class DevQuickWorldHandler {
         contentToggleRef = new WeakReference<>(contentToggle);
         screenRef = new WeakReference<>(titleScreen);
 
-        applyVisibility(currentMode());
+        applyVisibility();
     }
 
     @SubscribeEvent
@@ -195,10 +201,19 @@ public final class DevQuickWorldHandler {
         if (event.getScreen() != screenRef.get()) {
             return;
         }
-        applyVisibility(currentMode());
+        applyVisibility();
     }
 
-    private static void applyVisibility(FirstRowMode mode) {
+    /**
+     * One read of the Shift key drives both decisions in a frame: which New World row shows, and
+     * whether the ⚙ world-list icon is revealed beside it.
+     */
+    private static void applyVisibility() {
+        boolean shift = Screen.hasShiftDown();
+        applyVisibility(currentMode(shift), shift);
+    }
+
+    private static void applyVisibility(FirstRowMode mode, boolean shift) {
         Button sp = singleplayerRef.get();
         Button creative = creativeNewWorldRef.get();
         Button perf = perfNewWorldRef.get();
@@ -214,7 +229,17 @@ public final class DevQuickWorldHandler {
         // on main builds or behind the shift modifier.
         perf.visible = !showRow;
         survival.visible = showRow;
-        settings.visible = showRow;
+        // The world list is Shift-only. On main that is the whole gating; on dev the survival row
+        // is behind Shift anyway, so the cog rides in with it exactly as before.
+        boolean showSettings = showRow && shift;
+        settings.visible = showSettings;
+        // New World absorbs the cog's square when it is hidden, so the row reads as one finished
+        // button rather than a button with a hole next to it. Both edges are derived from the cog's
+        // own bounds, which never move — no second set of widths to keep in sync.
+        int survivalRight = showSettings
+                ? settings.getX() - GAP
+                : settings.getX() + settings.getWidth();
+        survival.setWidth(survivalRight - survival.getX());
         // Outside the null guard above: a clean install has no toggle at all, and that is not a
         // reason to stop laying out the rest of the row.
         Button contentToggle = contentToggleRef.get();
@@ -459,9 +484,8 @@ public final class DevQuickWorldHandler {
         };
     }
 
-    private static FirstRowMode currentMode() {
+    private static FirstRowMode currentMode(boolean shift) {
         boolean main = "main".equals(VersionInfo.BRANCH);
-        boolean shift = Screen.hasShiftDown();
         return (main || shift) ? FirstRowMode.SURVIVAL_ROW : FirstRowMode.CREATIVE_QUICK;
     }
 
