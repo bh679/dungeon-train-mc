@@ -175,8 +175,8 @@ public final class NarrativeCommand {
                 int variants = story.letters().stream().mapToInt(l -> l.variants().size()).sum();
                 String tail = id.getPath().substring(id.getPath().lastIndexOf('/') + 1);
                 source.sendSuccess(() -> Component.literal(
-                    String.format("  %s (%d letters, %d variants) — %s",
-                        tail, letters, variants, story.story())
+                    String.format("  %s (%d letters, %d variants, weight %s) — %s",
+                        tail, letters, variants, formatWeight(story.weight()), story.story())
                 ), false);
             });
         }
