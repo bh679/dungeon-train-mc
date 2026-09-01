@@ -1,7 +1,7 @@
 package games.brennan.dungeontrain.client.menu;
 
 import games.brennan.dungeontrain.builder.BuilderPhotoPaths;
-import games.brennan.dungeontrain.editor.PlotCategory;
+import games.brennan.dungeontrain.builder.relay.BuilderRelayKinds;
 import games.brennan.dungeontrain.track.PillarAdjunct;
 import games.brennan.dungeontrain.track.PillarSection;
 import games.brennan.dungeontrain.track.variant.TrackKind;
@@ -32,17 +32,9 @@ public final class EditorTemplateJump {
      * the player somewhere it isn't.</p>
      */
     public static String categoryIdFor(BuilderPhotoPaths.Kind kind, String subKind) {
-        if (kind == null) return null;
-        return switch (kind) {
-            // Parts are stamped as part of the carriages plots — PlotCategory.PARTS.owner() says so.
-            case CARRIAGE, PART -> PlotCategory.CARRIAGES.id();
-            case CONTENTS -> PlotCategory.CONTENTS.id();
-            case TRACK -> TrackKind.PORTAL_ROOM == TrackKind.fromId(subKind)
-                    ? PlotCategory.PORTALS.id()
-                    : PlotCategory.TRACKS.id();
-            case PORTAL_ROOM -> PlotCategory.PORTALS.id();
-            case CARRIAGE_GROUP -> null;
-        };
+        // The map itself lives beside the relay kinds, because the server asks it too — the download
+        // path looks a build up in the dirty scan's per-category set before writing over it.
+        return BuilderRelayKinds.categoryIdFor(kind, subKind);
     }
 
     /**

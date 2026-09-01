@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.builder.relay;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.builder.BuilderPhotoPaths;
+import games.brennan.dungeontrain.editor.EditorDirtyCheck;
 import games.brennan.dungeontrain.net.relay.RelayTarget;
 import games.brennan.dungeontrain.net.relay.SharedCarriageClient;
 import games.brennan.dungeontrain.train.CarriageBlockSnapshot;
@@ -42,12 +43,17 @@ public final class BuilderRelayDownload {
     /**
      * What the player is told happened.
      *
-     * <p>Six outcomes and not one blanket failure, because they send the player to six different
-     * places: a build that is already here needs nothing, one the relay never heard of is gone for
-     * good, one that is not theirs is a bug or a stale screen, and a relay that could not be reached
-     * is worth trying again in a minute.</p>
+     * <p>Not one blanket failure, because they send the player to different places: a build that is
+     * already here needs nothing, one the relay never heard of is gone for good, one that is not
+     * theirs is a bug or a stale screen, and a relay that could not be reached is worth trying again
+     * in a minute.</p>
+     *
+     * <p>{@link #UNSAVED_EDITS} is a question rather than a refusal, and the only one raised before
+     * anything is read off the wire is written: the template this build would land on has in-world
+     * edits nobody has saved, and installing would put them beyond reach. The player answers it and
+     * presses again — see {@link #download(ServerPlayer, ServerLevel, int, BuilderRelayInstall.Resolution, String, String, boolean, boolean)}.</p>
      */
-    public enum Outcome { INSTALLED, ALREADY_HERE, NAME_TAKEN, NOT_YOURS, GONE, UNAVAILABLE, UNSUPPORTED, FAILED }
+    public enum Outcome { INSTALLED, ALREADY_HERE, NAME_TAKEN, UNSAVED_EDITS, NOT_YOURS, GONE, UNAVAILABLE, UNSUPPORTED, FAILED }
 
     /**
      * What an install produced: the outcome, and — when something landed — enough to name it, so the
@@ -68,7 +74,7 @@ public final class BuilderRelayDownload {
      * is not asked to accept them coming down either.</p>
      */
     public static CompletableFuture<Result> download(ServerPlayer player, ServerLevel level, int relayId) {
-        return download(player, level, relayId, BuilderRelayInstall.Resolution.AS_IS, "", "", false);
+        return download(player, level, relayId, BuilderRelayInstall.Resolution.AS_IS, "", "", false, false);
     }
 
     /**
@@ -82,7 +88,8 @@ public final class BuilderRelayDownload {
      */
     public static CompletableFuture<Result> download(ServerPlayer player, ServerLevel level, int relayId,
                                                      BuilderRelayInstall.Resolution resolution,
-                                                     String newName, String ownerUuid, boolean live) {
+                                                     String newName, String ownerUuid, boolean live,
+                                                     boolean overwriteUnsaved) {
         if (player == null || level == null || !BuilderRelayUpload.canUpload(player)) {
             return CompletableFuture.completedFuture(Result.of(Outcome.UNAVAILABLE));
         }
@@ -94,7 +101,8 @@ public final class BuilderRelayDownload {
                     case FORBIDDEN -> CompletableFuture.completedFuture(Result.of(Outcome.NOT_YOURS));
                     case UNKNOWN -> CompletableFuture.completedFuture(Result.of(Outcome.GONE));
                     case ERROR -> CompletableFuture.completedFuture(Result.of(Outcome.UNAVAILABLE));
-                    case OK -> onServer(level, () -> install(level, result.build(), resolution, newName, mine));
+                    case OK -> onServer(level, () -> install(level, result.build(), resolution, newName, mine,
+                            overwriteUnsaved));
                 });
     }
 
@@ -107,7 +115,8 @@ public final class BuilderRelayDownload {
      * as it is now.</p>
      */
     private static Result install(ServerLevel level, SharedCarriageClient.BuildFetch build,
-                                  BuilderRelayInstall.Resolution resolution, String newName, boolean mine) {
+                                  BuilderRelayInstall.Resolution resolution, String newName, boolean mine,
+                                  boolean overwriteUnsaved) {
         BuilderPhotoPaths.Kind kind = BuilderRelayKinds.kindOf(build.kind());
         if (kind == null || build.buildName().isEmpty()) {
             // A kind this build of the mod does not know, or a build the relay never named. Neither
@@ -134,13 +143,23 @@ public final class BuilderRelayDownload {
             return Result.of(Outcome.FAILED);
         }
 
+        // The name this build will land on, asked before anything is written. Installing over a
+        // template whose editor plot holds edits nobody has saved puts those blocks beyond reach —
+        // the file is replaced and the next stamp restamps from it — so the player is asked first.
+        // A fetch is a read, so answering "no" here leaves both the file and the plot as they were.
+        String landsOn = resolution == BuilderRelayInstall.Resolution.LOAD_AS_NEW
+                ? newName.trim()
+                : build.buildName();
+        if (!overwriteUnsaved && hasUnsavedEdits(level, kind, build.subKind(), landsOn)) {
+            return new Result(Outcome.UNSAVED_EDITS, kind, landsOn, build.subKind());
+        }
+
         BuilderRelayInstall.Outcome installed = BuilderRelayInstall.install(
                 kind, build.buildName(), build.subKind(), build.stage(), template, resolution, newName, mine);
         // Which name the build ended up under: its own, unless the player asked for it to arrive as
-        // something else. This is what the screen opens, so it has to be the name that was written.
-        String installedAs = resolution == BuilderRelayInstall.Resolution.LOAD_AS_NEW
-                ? newName.trim()
-                : build.buildName();
+        // something else. This is what the screen opens, so it has to be the name that was written —
+        // the same name the unsaved-edits question above was asked about.
+        String installedAs = landsOn;
         if (installed != BuilderRelayInstall.Outcome.INSTALLED) {
             return new Result(switch (installed) {
                 case ALREADY_HERE -> Outcome.ALREADY_HERE;
@@ -161,6 +180,24 @@ public final class BuilderRelayDownload {
             remember(level, build, kind);
         }
         return new Result(Outcome.INSTALLED, kind, installedAs, build.subKind());
+    }
+
+    /**
+     * Whether the template {@code id} names has in-world edits that have not been saved to disk.
+     *
+     * <p>The same scan the editor's own "save before switch" list runs
+     * ({@link EditorDirtyCheck#unsavedModelIds}), narrowed to the one template a download is about to
+     * write over. Answers false for anything with no plot of its own to lose — a part, a carriage
+     * group — and for a template nobody has stamped this session, which is what a name this install
+     * has never held looks like.</p>
+     */
+    private static boolean hasUnsavedEdits(ServerLevel level, BuilderPhotoPaths.Kind kind,
+                                           String subKind, String id) {
+        String categoryId = BuilderRelayKinds.categoryIdFor(kind, subKind);
+        String modelId = EditorDirtyCheck.dirtyKeyFor(kind, subKind, id);
+        if (categoryId == null || modelId == null) return false;
+        return EditorDirtyCheck.unsavedModelIds(level, DungeonTrainWorldData.get(level).dims(), categoryId)
+                .contains(modelId);
     }
 
     /**

@@ -8,10 +8,8 @@ import games.brennan.dungeontrain.builder.relay.BuilderRelayDownload;
 import games.brennan.dungeontrain.builder.relay.BuilderRelayInstall;
 import games.brennan.dungeontrain.builder.relay.BuilderReviewState;
 import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
-import games.brennan.dungeontrain.client.menu.CommandMenuState;
 import games.brennan.dungeontrain.client.menu.CommandRunner;
 import games.brennan.dungeontrain.client.menu.EditorTemplateJump;
-import games.brennan.dungeontrain.client.menu.UnsavedCheckScreen;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.net.BuilderCreatorResultsPacket;
 import games.brennan.dungeontrain.net.BuilderOpenPacket;
@@ -193,6 +191,15 @@ public final class BuilderProfileScreen extends Screen {
      * different answers to the same pixel.</p>
      */
     private Component downloadNote;
+
+    /**
+     * The answers the last download press carried, so a question raised by that press can be
+     * answered without losing them. The unsaved-edits prompt can arrive on the second press of a
+     * collision flow — the player has already said "load it as bb_2" — and replaying the download
+     * has to carry that choice, not start over from a first press.
+     */
+    private BuilderRelayInstall.Resolution lastResolution = BuilderRelayInstall.Resolution.AS_IS;
+    private String lastChosenName = "";
 
     private final BuilderTileSpin spin = new BuilderTileSpin();
     private long lastFrameNanos;
@@ -461,6 +468,8 @@ public final class BuilderProfileScreen extends Screen {
     private void downloadSelected() {
         BuilderProfilePacket.Entry entry = selectedBuild();
         if (entry == null) return;
+        this.lastResolution = BuilderRelayInstall.Resolution.AS_IS;
+        this.lastChosenName = "";
         DungeonTrainNet.sendToServer(new BuilderProfileDownloadPacket(entry.relayId(), viewedUuid, BuilderProfileState.live()));
         this.downloadButton.active = false;
         this.downloadNote = Component.translatable("gui.dungeontrain.builder.profile.downloading");
@@ -485,6 +494,20 @@ public final class BuilderProfileScreen extends Screen {
             if (entry != null) {
                 this.minecraft.setScreen(new BuilderProfileCollisionScreen(this, entry.buildName(),
                         (resolution, name) -> resolveDownload(entry.relayId(), resolution, name)));
+            }
+            return;
+        }
+        // Unsaved edits on the template this build would land on are the same shape of question, and
+        // asked before anything is written: answering it replays the download with the overwrite
+        // confirmed, cancelling leaves the file and the plot untouched.
+        if (packet.outcome() == BuilderRelayDownload.Outcome.UNSAVED_EDITS) {
+            BuilderProfilePacket.Entry entry = selectedBuild();
+            if (entry != null) {
+                // packet.id() is the name it would LAND on, which for a load-as-new is the name the
+                // player typed rather than the build's own — that is the plot with the edits in it.
+                this.minecraft.setScreen(new BuilderProfileUnsavedScreen(this, packet.id(),
+                        lastResolution, lastChosenName,
+                        (resolution, name) -> resolveDownload(entry.relayId(), resolution, name, true)));
             }
             return;
         }
@@ -529,10 +552,16 @@ public final class BuilderProfileScreen extends Screen {
      *
      * <p>Two cases, and the difference is whether the editor has to be moved between categories.
      * Inside the right one already, the per-template enter command teleports and nothing is
-     * disturbed. From anywhere else the switch has to happen first — and that switch clears and
-     * restamps every plot, which silently destroys unsaved edits, so it goes through the same
-     * {@link UnsavedCheckScreen} the Enter menu uses rather than around it. A clean editor never
-     * sees that screen: it dispatches and closes on its own.</p>
+     * disturbed. From anywhere else the switch runs first and the enter command follows it — the
+     * order matters, because the switch restamps every plot and would wipe a teleport that ran
+     * before it.</p>
+     *
+     * <p>No "save before switch?" list on the way through, unlike the Enter menu. That list names
+     * every dirty plot in the session, which is the right question for a menu whose whole purpose is
+     * the switch and the wrong one for a player who pressed Load on one build: the template this
+     * download actually lands on is asked about server-side, before anything is written
+     * ({@link BuilderRelayDownload.Outcome#UNSAVED_EDITS}), and that question is the one worth
+     * stopping for.</p>
      *
      * <p>Standing in an editor plot is deliberately <em>not</em> required. A load ends with the
      * build in front of you, and the player who has just downloaded one has said plainly enough
@@ -553,7 +582,8 @@ public final class BuilderProfileScreen extends Screen {
             if (enter != null) CommandRunner.run(enter);
             return;
         }
-        CommandMenuState.openAt(new UnsavedCheckScreen(target, enter == null ? "" : enter));
+        CommandRunner.run("dungeontrain editor " + target);
+        if (enter != null) CommandRunner.run(enter);
     }
 
     /**
@@ -573,7 +603,16 @@ public final class BuilderProfileScreen extends Screen {
      * question up again rather than silently doing nothing.</p>
      */
     private void resolveDownload(int relayId, BuilderRelayInstall.Resolution resolution, String name) {
-        DungeonTrainNet.sendToServer(new BuilderProfileDownloadPacket(relayId, resolution, name, viewedUuid, BuilderProfileState.live()));
+        resolveDownload(relayId, resolution, name, false);
+    }
+
+    /** As above, with the player's answer to the unsaved-edits question carried alongside. */
+    private void resolveDownload(int relayId, BuilderRelayInstall.Resolution resolution, String name,
+                                 boolean overwriteUnsaved) {
+        this.lastResolution = resolution;
+        this.lastChosenName = name == null ? "" : name;
+        DungeonTrainNet.sendToServer(new BuilderProfileDownloadPacket(relayId, resolution, name, viewedUuid,
+                BuilderProfileState.live(), overwriteUnsaved));
         this.downloadNote = Component.translatable("gui.dungeontrain.builder.profile.downloading");
         if (this.downloadButton != null) this.downloadButton.active = false;
     }
@@ -595,6 +634,7 @@ public final class BuilderProfileScreen extends Screen {
             case INSTALLED -> "gui.dungeontrain.builder.profile.downloaded";
             case ALREADY_HERE -> "gui.dungeontrain.builder.profile.download_already_here";
             case NAME_TAKEN -> "gui.dungeontrain.builder.profile.download_name_taken";
+            case UNSAVED_EDITS -> "gui.dungeontrain.builder.profile.download_unsaved";
             case NOT_YOURS -> "gui.dungeontrain.builder.profile.download_not_yours";
             case GONE -> "gui.dungeontrain.builder.profile.gone_short";
             case UNAVAILABLE -> "gui.dungeontrain.builder.profile.unavailable";

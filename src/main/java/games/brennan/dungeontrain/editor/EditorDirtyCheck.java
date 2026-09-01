@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.editor;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.builder.BuilderPhotoPaths;
 import games.brennan.dungeontrain.template.Template;
 import games.brennan.dungeontrain.track.PillarAdjunct;
 import games.brennan.dungeontrain.track.PillarSection;
@@ -493,6 +494,47 @@ public final class EditorDirtyCheck {
             case PILLAR, STAIRS, STAIRS_ENTRANCE, TUNNEL, PORTAL_ROOM ->
                 model.id() + "." + model.variantName();
             case PART, WHOLE_CARRIAGE -> null;
+        };
+    }
+
+    /**
+     * As {@link #dirtyKeyFor(Template)}, from the kind a <em>relay download</em> carries — which is
+     * all a build has before it is installed and the registries have caught up, so there is no
+     * {@link Template} to ask.
+     *
+     * <p>Read by the download path to answer one question before it writes: does the template this
+     * build is about to land on have in-world edits nobody has saved? The strings have to be exactly
+     * the {@link DirtyEntry#modelId()} keys the scan passes emit, so they are built from the same
+     * {@link PillarSection}, {@link PillarAdjunct} and {@link TunnelVariant} ids those passes use
+     * rather than written out as literals.</p>
+     *
+     * @return null when there is nothing to compare against — a kind with no plot of its own (a part
+     *         is stamped inside the carriages plots, a carriage group is a builder-world build), or a
+     *         track sub-kind this build of the mod does not know. A null key means no prompt.
+     */
+    public static String dirtyKeyFor(BuilderPhotoPaths.Kind kind, String subKind, String id) {
+        if (kind == null || id == null || id.isEmpty()) return null;
+        return switch (kind) {
+            case CARRIAGE, CONTENTS -> id;
+            case PORTAL_ROOM -> "portal_room." + id;
+            case TRACK -> trackDirtyKeyFor(TrackKind.fromId(subKind), id);
+            case PART, CARRIAGE_GROUP -> null;
+        };
+    }
+
+    /** The {@link #dirtyKeyFor} arm for the track-side kinds, one key shape per editor. */
+    private static String trackDirtyKeyFor(TrackKind kind, String id) {
+        if (kind == null) return null;
+        return switch (kind) {
+            case TILE -> "track." + id;
+            case PILLAR_TOP -> "pillar_" + PillarSection.TOP.id() + "." + id;
+            case PILLAR_MIDDLE -> "pillar_" + PillarSection.MIDDLE.id() + "." + id;
+            case PILLAR_BOTTOM -> "pillar_" + PillarSection.BOTTOM.id() + "." + id;
+            case ADJUNCT_STAIRS -> "adjunct_" + PillarAdjunct.STAIRS.id() + "." + id;
+            case ADJUNCT_STAIRS_ENTRANCE -> "adjunct_" + PillarAdjunct.STAIRS_ENTRANCE.id() + "." + id;
+            case TUNNEL_SECTION -> "tunnel_" + TunnelVariant.SECTION.id() + "." + id;
+            case TUNNEL_PORTAL -> "tunnel_" + TunnelVariant.PORTAL.id() + "." + id;
+            case PORTAL_ROOM -> "portal_room." + id;
         };
     }
 
