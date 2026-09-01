@@ -334,6 +334,10 @@ public final class NarrativeDeathScreen extends Screen {
     // When a page was opened via a top-bar chip ("$" or the envelope), the page index to return
     // to on Next Screen / back (-1 = none).
     private int chipReturnPage = -1;
+    // True while the player is walking every survey question via the envelope chip (X/10, bugs,
+    // suggestions — muted ones included). Not reset in init() for the same reason as
+    // chipReturnPage: init() re-runs on every page swap.
+    private boolean surveyTour;
     private record TileTip(Rect rect, String tipKey) {}
     private final List<TileTip> donateTips = new ArrayList<>();
     // Smooth scroll: the wheel nudges donateScrollTarget; the drawn offset (donateScroll) eases
@@ -421,6 +425,18 @@ public final class NarrativeDeathScreen extends Screen {
     /** Index of the first feedback-survey page, or -1 when the survey sent no questions. */
     private int firstSurveyPageIndex() {
         for (int i = 0; i < pages.size(); i++) if (pages.get(i).kind() == Kind.SURVEY) return i;
+        return -1;
+    }
+
+    /**
+     * The next SURVEY page from {@code from} walking by {@code step} (+1 forward, -1 back), or -1
+     * when there is none that way. Deliberately ignores {@link #outOfFlow}: the envelope's walk is
+     * where a muted question is revisited (and un-muted).
+     */
+    private int nextSurveyPage(int from, int step) {
+        for (int i = from + step; i >= 0 && i < pages.size(); i += step) {
+            if (pages.get(i).kind() == Kind.SURVEY) return i;
+        }
         return -1;
     }
 
@@ -2061,6 +2077,7 @@ public final class NarrativeDeathScreen extends Screen {
                 if (dest >= 0 && dest != currentPage) {
                     UiAnalytics.click(UiAnalytics.SURFACE_DEATH_SCREEN, UiAnalytics.TARGET_CHIP);
                     chipReturnPage = currentPage;
+                    surveyTour = true;
                     startTransition(dest);
                 }
                 return true;
@@ -2187,6 +2204,16 @@ public final class NarrativeDeathScreen extends Screen {
                 && page.kind() == Kind.SURVEY && page.survey() != null
                 && BUG_REPORT_ID.equals(page.survey().id());
         returnToStartAfterBug = false;
+        // Walking the survey via the envelope chip: Next Screen steps to the following question
+        // (muted ones included) and only hands back once they have all been offered.
+        if (surveyTour && page.kind() == Kind.SURVEY) {
+            int next = nextSurveyPage(currentPage, +1);
+            if (next >= 0) {
+                startTransition(next);
+                return;
+            }
+            surveyTour = false; // out of questions — fall through to the chip return below
+        }
         // Page opened via a top-bar chip ("$" / envelope): Next returns to where it was opened from.
         if (chipReturnPage >= 0) {
             int dest = chipReturnPage;
@@ -2208,6 +2235,15 @@ public final class NarrativeDeathScreen extends Screen {
     private void back() {
         if (uiBusy) return;
         returnToStartAfterBug = false;
+        // Same walk in reverse; from the first question, back leaves the tour and returns.
+        if (surveyTour && !pages.isEmpty() && pages.get(currentPage).kind() == Kind.SURVEY) {
+            int prev = nextSurveyPage(currentPage, -1);
+            if (prev >= 0) {
+                startTransition(prev);
+                return;
+            }
+            surveyTour = false;
+        }
         // Page opened via a top-bar chip: back returns to where it was opened from too.
         if (chipReturnPage >= 0) {
             int dest = chipReturnPage;
