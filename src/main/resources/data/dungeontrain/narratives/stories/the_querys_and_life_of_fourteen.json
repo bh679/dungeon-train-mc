@@ -2,6 +2,7 @@
   "id": "the_querys_and_life_of_fourteen",
   "character": "Fourteen",
   "story": "The Querys And Life Of Fourteen",
+  "deferred": true,
   "letters": [
     {
       "index": 1,

@@ -13,13 +13,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The scrolling, carded text canvas behind DT's long-form information pages — the AI Policy page
- * and the Credits page.
+ * The scrolling, carded text canvas behind DT's long-form information pages — the AI Policy page,
+ * the Credits page and the Video Tools pages.
  *
- * <p>Both pages are the same thing underneath: a column of headings, wrapped prose and rows, laid
+ * <p>They are all the same thing underneath: a column of headings, wrapped prose and rows, laid
  * out once into flat draw lists at canvas-relative Y, then drawn inside a scissor-clipped viewport
  * offset by a scroll position, with inline links hit-tested against the same lines. This class owns
- * all of that, plus the shared palette and spacing scale, so the two pages cannot drift apart —
+ * all of that, plus the shared palette and spacing scale, so the pages cannot drift apart —
  * which they did once already, the Credits page being the copy the AI Policy page was made from.</p>
  *
  * <h2>Using it</h2>
@@ -159,6 +159,23 @@ public final class CardCanvas {
         return font.lineHeight;
     }
 
+    public int viewportTop() {
+        return viewportTop;
+    }
+
+    public int viewportBottom() {
+        return viewportBottom;
+    }
+
+    /**
+     * Screen Y for a canvas Y, at the current scroll position. Public so a page can draw content
+     * this class has no business owning — the Video Tools pages' per-frame sprite-sheet clips —
+     * in its own scissored pass, scrolling in lockstep with the text laid out here.
+     */
+    public int screenY(int canvasY) {
+        return viewportTop + canvasY - scrollY;
+    }
+
     // ---- Layout ----
 
     /** A single line centred on the screen. */
@@ -232,6 +249,16 @@ public final class CardCanvas {
 
     // ---- Input ----
 
+    /**
+     * Send the next layout back to the top. For a page that swaps what it is showing — the Video
+     * Tools tabs — where an offset carried over from the previous section means nothing. NOT for a
+     * re-layout: {@link #finishLayout} keeps the scroll on purpose, so a window resize does not
+     * throw the reader back to the top of what they were reading.
+     */
+    public void resetScroll() {
+        scrollY = 0;
+    }
+
     /** Scroll by a wheel delta. Returns whether the page consumed it. */
     public boolean scroll(double delta) {
         if (maxScroll <= 0) {
@@ -279,7 +306,7 @@ public final class CardCanvas {
         g.enableScissor(colX - PANEL_PAD, viewportTop, colX + colW + PANEL_PAD, viewportBottom);
 
         for (Card card : cards) {
-            int drawY = top(card.canvasY());
+            int drawY = screenY(card.canvasY());
             if (offscreen(drawY, card.height())) {
                 continue;
             }
@@ -288,7 +315,7 @@ public final class CardCanvas {
         }
 
         for (Rule rule : rules) {
-            int drawY = top(rule.canvasY());
+            int drawY = screenY(rule.canvasY());
             if (offscreen(drawY, rule.h())) {
                 continue;
             }
@@ -296,7 +323,7 @@ public final class CardCanvas {
         }
 
         for (Img img : imgs) {
-            int drawY = top(img.canvasY());
+            int drawY = screenY(img.canvasY());
             if (offscreen(drawY, img.h())) {
                 continue;
             }
@@ -305,7 +332,7 @@ public final class CardCanvas {
         }
 
         for (Icon icon : icons) {
-            int drawY = top(icon.canvasY());
+            int drawY = screenY(icon.canvasY());
             if (offscreen(drawY, ICON)) {
                 continue;
             }
@@ -313,7 +340,7 @@ public final class CardCanvas {
         }
 
         for (Line line : lines) {
-            int drawY = top(line.canvasY());
+            int drawY = screenY(line.canvasY());
             if (offscreen(drawY, lh)) {
                 continue;
             }
@@ -323,11 +350,6 @@ public final class CardCanvas {
 
         g.disableScissor();
         renderScrollbar(g);
-    }
-
-    /** Screen Y for a canvas Y, at the current scroll position. */
-    private int top(int canvasY) {
-        return viewportTop + canvasY - scrollY;
     }
 
     /** Whether something of the given height at {@code drawY} falls entirely outside the viewport. */

@@ -250,8 +250,8 @@ public final class StartingBookRegistry {
      * {@code /narrative startingbook list}. For weighted-pick total, prefer
      * {@link #totalWeightFor}.
      */
-    public static synchronized int totalWeight() {
-        int total = 0;
+    public static synchronized double totalWeight() {
+        double total = 0;
         for (Map<ResourceLocation, RandomBookFile> pool : POOLS.values()) {
             for (RandomBookFile b : pool.values()) total += b.weight();
         }
@@ -259,8 +259,8 @@ public final class StartingBookRegistry {
     }
 
     /** Total weight inside a single context's pool. 0 → pool is empty / dead. */
-    public static synchronized int totalWeightFor(StartingBookContext context) {
-        int total = 0;
+    public static synchronized double totalWeightFor(StartingBookContext context) {
+        double total = 0;
         for (RandomBookFile b : POOLS.get(context).values()) total += b.weight();
         return total;
     }
@@ -300,10 +300,9 @@ public final class StartingBookRegistry {
     private static Optional<RandomBookFile> pickFrom(StartingBookContext context, long seed) {
         Map<ResourceLocation, RandomBookFile> pool = POOLS.get(context);
         if (pool.isEmpty()) return Optional.empty();
-        int total = totalWeightFor(context);
+        double total = totalWeightFor(context);
         if (total <= 0) return Optional.empty();
-        long unsigned = seed & 0x7FFFFFFFFFFFFFFFL;
-        int target = (int) (unsigned % total);
+        double target = WeightedPick.target(seed, total);
         List<ResourceLocation> ordered = idsFor(context);
         for (ResourceLocation id : ordered) {
             RandomBookFile book = pool.get(id);

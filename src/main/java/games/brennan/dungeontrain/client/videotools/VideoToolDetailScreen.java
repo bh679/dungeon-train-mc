@@ -1,144 +1,127 @@
 package games.brennan.dungeontrain.client.videotools;
 
+import games.brennan.dungeontrain.client.ui.CardCanvas;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
-import net.minecraft.util.FormattedCharSequence;
-import net.minecraft.util.Mth;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
- * One filming command in full: its clip playing at the top of the column, the command, then the
- * body copy from {@link VideoTool#bodyKeys()}. Opened by clicking a tile on
+ * One filming command in full: its clip playing at the top of the column, then a card holding the
+ * command and the body copy from {@link VideoTool#bodyKeys()}. Opened by clicking a tile on
  * {@link VideoToolsScreen}, and Done returns there.
  *
- * <p>Same scroll/viewport machinery as the hub — laid out once into canvas-relative
- * {@link Line}s, drawn scissor-clipped and offset by {@link #scrollY}. No inline links here, so
- * there is no click hit-testing to do.</p>
+ * <p>Same {@link CardCanvas} the hub uses, so the two pages cannot drift apart — including the clip
+ * being drawn in the page's own scissored pass against {@link CardCanvas#screenY}, which is the one
+ * thing the canvas does not own. No inline links here, so there is no click hit-testing to do.</p>
  */
 public final class VideoToolDetailScreen extends Screen {
 
     private static final int MAX_COL_W = 360;
     private static final int SIDE_MARGIN = 40;
-    private static final int PANEL_PAD = 10;
     private static final int TOP = 16;
-    private static final int PARA_GAP = 6;
-    private static final int SCROLL_STEP = 12;
+    /** Between the clip and the card under it. */
+    private static final int CLIP_GAP = 8;
 
-    private static final int COLOUR_PANEL = 0xC0101010;
-    private static final int COLOUR_HEADER = 0xFFFFFFFF;
-    private static final int COLOUR_DESC = 0xFFCACACA;
     private static final int COLOUR_COMMAND = 0xFFFFD37F;
     private static final int COLOUR_CLIP_EDGE = 0xFF3A3A3A;
+    /** The hub's commands accent, so a detail page reads as part of that card. */
+    private static final int ACCENT_COMMAND = 0xFFE0B56A;
 
     private final Screen parent;
     private final VideoTool tool;
+    private final CardCanvas canvas;
 
-    private int colX;
-    private int colW;
     private int clipY;
     private int clipH;
-    private int viewportTop;
-    private int viewportBottom;
-    private int scrollY;
-    private int maxScroll;
-    private final List<Line> lines = new ArrayList<>();
-
-    private record Line(FormattedCharSequence text, int canvasY, int colour) {}
 
     public VideoToolDetailScreen(Screen parent, VideoTool tool) {
         super(tool.header());
         this.parent = parent;
         this.tool = tool;
+        this.canvas = new CardCanvas(Minecraft.getInstance().font);
     }
 
     @Override
     protected void init() {
-        lines.clear();
-        colW = Math.min(MAX_COL_W, this.width - SIDE_MARGIN);
-        colX = (this.width - colW) / 2;
-        int lh = this.font.lineHeight;
+        int colW = Math.min(MAX_COL_W, this.width - SIDE_MARGIN);
+        canvas.beginLayout((this.width - colW) / 2, colW);
 
         int y = 0;
-        y = add(this.title, y, lh, COLOUR_HEADER);
-        y += 4;
+        y = canvas.addCenteredWrapped(this.title, y, CardCanvas.COLOUR_HEADER);
+        y += CardCanvas.PARA_GAP;
 
-        // The clip, full column width at the sheet's 8:5.
+        // The clip, full column width at the sheet's 8:5. Un-carded — it frames the page the way
+        // the hub's title does, and a card border around a bordered clip reads as noise.
         clipY = y;
         clipH = colW * VideoTool.FRAME_H / VideoTool.FRAME_W;
-        y += clipH + 6;
+        y += clipH + CLIP_GAP;
 
-        y = add(Component.literal(tool.command()), y, lh, COLOUR_COMMAND);
-        y += 3;
-        for (String key : tool.bodyKeys()) {
-            y = add(tool.body(key), y, lh, COLOUR_DESC);
-            y += PARA_GAP;
-        }
+        y = addBodyCard(y);
 
-        int contentHeight = y;
+        // The viewport ends just above the Done button so scrolling content never overlaps it.
         int rowY = this.height - 28;
-        viewportTop = TOP;
-        viewportBottom = rowY - 8;
-        if (viewportBottom < viewportTop) {
-            viewportBottom = viewportTop;
-        }
-        maxScroll = Math.max(0, contentHeight - (viewportBottom - viewportTop));
-        scrollY = Mth.clamp(scrollY, 0, maxScroll);
+        canvas.finishLayout(y, TOP, rowY - 8);
 
         addRenderableWidget(Button.builder(CommonComponents.GUI_DONE, b -> onClose())
                 .bounds((this.width - 100) / 2, rowY, 100, 20)
                 .build());
     }
 
-    private int add(Component text, int y, int lh, int colour) {
-        for (FormattedCharSequence line : this.font.split(text, colW)) {
-            lines.add(new Line(line, y, colour));
-            y += lh;
+    /** The command as the card's heading, over its accent bar, then the body paragraphs. */
+    private int addBodyCard(int top) {
+        int innerX = canvas.colX() + CardCanvas.CARD_PAD;
+        int innerW = Math.max(1, canvas.colW() - CardCanvas.CARD_PAD * 2);
+
+        int y = canvas.addWrappedAt(Component.literal(tool.command()), innerX, innerW,
+                top + CardCanvas.CARD_PAD, COLOUR_COMMAND);
+        y += CardCanvas.RULE_GAP;
+        y = canvas.addRule(innerX, y, Math.min(CardCanvas.RULE_W, innerW), ACCENT_COMMAND);
+        y += CardCanvas.RULE_TO_BODY;
+
+        List<String> keys = tool.bodyKeys();
+        for (int i = 0; i < keys.size(); i++) {
+            y = canvas.addWrappedAt(tool.body(keys.get(i)), innerX, innerW, y, CardCanvas.COLOUR_DESC);
+            if (i < keys.size() - 1) {
+                y += CardCanvas.PARA_GAP;
+            }
         }
-        return y;
+
+        int bottom = y + CardCanvas.CARD_PAD;
+        canvas.addCard(top, bottom - top);
+        return bottom;
     }
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
-        if (maxScroll > 0) {
-            this.scrollY = Mth.clamp(this.scrollY - (int) (scrollY * SCROLL_STEP), 0, maxScroll);
-            return true;
-        }
-        return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
+        return canvas.scroll(scrollY) || super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
     }
 
     @Override
     public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
         super.renderBackground(g, mouseX, mouseY, partialTick);
-        g.fill(colX - PANEL_PAD, viewportTop - PANEL_PAD,
-                colX + colW + PANEL_PAD, viewportBottom + PANEL_PAD, COLOUR_PANEL);
+        canvas.renderPanel(g);
     }
 
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
         super.render(g, mouseX, mouseY, partialTick);
+        canvas.render(g, this.width);
 
-        int lh = this.font.lineHeight;
-        g.enableScissor(colX - PANEL_PAD, viewportTop, colX + colW + PANEL_PAD, viewportBottom);
-
-        int clipDrawY = viewportTop + clipY - scrollY;
-        if (clipDrawY + clipH >= viewportTop && clipDrawY <= viewportBottom) {
-            AnimatedSheet.draw(g, tool, colX, clipDrawY, colW, clipH);
-            g.renderOutline(colX - 1, clipDrawY - 1, colW + 2, clipH + 2, COLOUR_CLIP_EDGE);
+        // The clip, after the canvas pass and clipped to the content column — see the hub for why.
+        int drawY = canvas.screenY(clipY);
+        if (drawY + clipH >= canvas.viewportTop() && drawY <= canvas.viewportBottom()) {
+            // Two px either side of the column so the clip's own 1px frame is not clipped off.
+            g.enableScissor(canvas.colX() - 2, canvas.viewportTop(),
+                    canvas.colX() + canvas.colW() + 2, canvas.viewportBottom());
+            AnimatedSheet.draw(g, tool, canvas.colX(), drawY, canvas.colW(), clipH);
+            g.renderOutline(canvas.colX() - 1, drawY - 1, canvas.colW() + 2, clipH + 2, COLOUR_CLIP_EDGE);
+            g.disableScissor();
         }
-        for (Line line : lines) {
-            int drawY = viewportTop + line.canvasY() - scrollY;
-            if (drawY + lh < viewportTop || drawY > viewportBottom) {
-                continue; // cull off-viewport lines
-            }
-            g.drawString(this.font, line.text(), colX, drawY, line.colour(), false);
-        }
-        g.disableScissor();
     }
 
     @Override
