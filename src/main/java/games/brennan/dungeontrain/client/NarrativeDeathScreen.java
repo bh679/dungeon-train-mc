@@ -1616,22 +1616,15 @@ public final class NarrativeDeathScreen extends Screen {
         // were resolved above — the opening line quotes them too.)
         boolean updatesCard = UpdateStats.hasCount(updates);
 
-        // Every funded rung the grid has no slot for, ticked off on one line above it. A rung is
-        // excluded from the line only while it still holds a tile of its own — so which rungs
-        // appear depends on what the third slot is holding.
-        //
-        // The server bill is excluded outright, tile or no tile: "✓ Running Costs This Month" told
-        // the player something the page says more plainly by what it stopped asking for. With the
-        // standard two-rung ladder that empties this line entirely, and it takes no height at all.
+        // Every funded rung the grid has no slot for, ticked off on one line above it — but the
+        // two rungs the page itself is built around are excluded outright, tiled or not. Both the
+        // server bill and the current ask tell their own story more plainly by what the page stops
+        // doing once they're settled (the bill drops off the grid; the hours tile takes the lead),
+        // so a tick line repeating that is a line the page didn't need. With the standard two-rung
+        // ladder this empties the line entirely in every state, and it takes no height at all.
         List<String> tiled = new ArrayList<>();
         tiled.add(FundingGoals.RUNNING_COSTS);
-        if (activeGoal != null && !hoursLead) tiled.add(activeGoal.id());   // slot 1: the ask
-        if (!updatesCard && hoursLead) {
-            // No card, so the third slot keeps its old occupant: the settled goal, once the hours
-            // tile leads. (Without the card and without the hours tile it holds the server bill,
-            // which is excluded above either way.)
-            tiled.add(activeGoal.id());
-        }
+        if (activeGoal != null) tiled.add(activeGoal.id());
         List<Goal> done = FundingGoals.completed(s.goals(), tiled);
         if (!done.isEmpty()) {
             MutableComponent line = Component.empty();
