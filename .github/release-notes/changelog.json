@@ -10607,6 +10607,19 @@
       "released_at": "2026-09-01T13:08:12Z"
     },
     {
+      "id": "meta-books-rarer-and-two-series-held-back",
+      "version": "0.764.0",
+      "type": "content",
+      "title": "Adjustments to in-built narratives",
+      "summary": "Some of the train's built-in books and story series have been retuned.",
+      "highlights": [],
+      "pr": 1249,
+      "date": "2026-09-01",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "trade-everything-diamond-payout-half",
       "version": "0.764.0",
       "type": "chore",
