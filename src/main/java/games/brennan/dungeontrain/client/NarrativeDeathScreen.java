@@ -223,6 +223,23 @@ public final class NarrativeDeathScreen extends Screen {
     // by the on-demand /bug + /feedback survey).
     private static final String BUG_REPORT_ID = BugLogReporter.BUG_REPORT_ID;
 
+    // The mod-recommendation page's form id. It has no survey question behind it, so it needs its
+    // own id to sit alongside the real question ids in the answered / muted sets. Namespaced, so it
+    // can never collide with a Discord Presence question id.
+    private static final String MODREC_FORM_ID = "dungeontrain:modrec";
+
+    // Which death-screen forms this player has answered before, and which they have asked not to be
+    // shown again. Read ONCE, at construction: buildPages() and the opt-out checkbox both consult
+    // these, and init() re-runs on every rebuildWidgets(), so reading the live config instead would
+    // make the current page vanish under the player the moment they tick the box — and would pop the
+    // checkbox onto a form the moment it was answered, in the same death that first asked it.
+    private final Set<String> answeredForms = ClientDisplayConfig.answeredDeathForms();
+    // What was muted when this screen opened. buildPages() reads THIS one, so ticking the box
+    // never pulls the page out from under the player mid-death.
+    private final Set<String> deckMutedForms = ClientDisplayConfig.mutedDeathForms();
+    // Live tick state for the checkbox, seeded from the same snapshot and toggled by clicks.
+    private final Set<String> mutedForms = new HashSet<>(deckMutedForms);
+
     private final Map<String, Integer> scores = new HashMap<>();
     private final Map<String, String> comments = new HashMap<>();
     private final Set<String> submitted = new HashSet<>();
@@ -323,6 +340,8 @@ public final class NarrativeDeathScreen extends Screen {
     private Rect photosRect;
     // Trash toggle left of the reboard chip: delete the old world's save on reboard?
     private Rect deleteWorldRect;
+    /** The "Don't ask me this again" checkbox on an already-answered form page; null when absent. */
+    private Rect dontShowRect;
     // Red "Submit Bug" shortcut (start page only); null when absent or shown as the
     // non-clickable green "Bug Submitted" status.
     private Rect bugReportRect;
@@ -357,6 +376,9 @@ public final class NarrativeDeathScreen extends Screen {
         list.add(Page.of(Kind.GEAR));
         list.add(Page.of(Kind.LIVES));
         for (SurveyQuestionPayload.Entry e : SurveyClientState.questions()) {
+            // Answered once and muted since: the player asked not to be shown this form again. The
+            // question is still offered by /feedback and /bug, which are asked for, not offered.
+            if (deckMutedForms.contains(e.id())) continue;
             list.add(Page.survey(e));
         }
         // "Support the line" — the donation ledger. Always in the list (so the "$" chip can always
@@ -366,7 +388,7 @@ public final class NarrativeDeathScreen extends Screen {
         list.add(Page.of(Kind.DONATE));
         // "The recommendations" — only for players running mods that aren't ours. On a clean
         // Dungeon Train / modpack install there is nothing to ask about and the page never exists.
-        if (modRec != null && !modRec.isEmpty()) {
+        if (modRec != null && !modRec.isEmpty() && !deckMutedForms.contains(MODREC_FORM_ID)) {
             list.add(Page.of(Kind.MODREC));
         }
         list.add(Page.of(Kind.PLATFORM));
@@ -647,6 +669,7 @@ public final class NarrativeDeathScreen extends Screen {
         donateTips.clear();
         donateListViewport = null;
         deleteWorldRect = null;
+        dontShowRect = null;
         continueRect = null;
         backRect = null;
         bugReportRect = null;
@@ -1410,6 +1433,11 @@ public final class NarrativeDeathScreen extends Screen {
                 y = drawCentered(g, Component.translatable(noticeKey), cx, w, y, SUBLINE);
                 y += 4;
             }
+            // Only from the second time this question is put in front of someone who already
+            // answered it — a first ask has nothing to opt out of yet.
+            if (answeredForms.contains(e.id())) {
+                y = drawDontShowAgain(g, e.id(), cx, y);
+            }
         }
         return y;
     }
@@ -1444,6 +1472,11 @@ public final class NarrativeDeathScreen extends Screen {
         // would swallow tile clicks.
         placeBox(modNameBox, modRecPage.commentBoxX(), modRecPage.nameBoxY(), modRecPage.commentBoxW());
         placeBox(modCommentBox, modRecPage.commentBoxX(), modRecPage.commentBoxY(), modRecPage.commentBoxW());
+        // Same opt-out as the survey forms, once the player has recommended something before. The
+        // grid can run long, so the row is clamped to sit clear of the button footer.
+        if (answeredForms.contains(MODREC_FORM_ID)) {
+            below = drawDontShowAgain(g, MODREC_FORM_ID, cx, Math.min(below, this.height - 28 - DONT_SHOW_H));
+        }
         return below;
     }
 
@@ -1807,6 +1840,33 @@ public final class NarrativeDeathScreen extends Screen {
         }
     }
 
+    /** Height of the opt-out row, including the gap below it. */
+    private static final int DONT_SHOW_H = 14;
+
+    /**
+     * The "Don't ask me this again" opt-out for a form the player has already answered once: a
+     * centered tick box plus its label, hit-tested through {@link #dontShowRect} like the rest of
+     * this screen's chrome (a vanilla {@code Checkbox} widget can't take the page fade).
+     *
+     * @return the y below the row
+     */
+    private int drawDontShowAgain(GuiGraphics g, String formId, int cx, int y) {
+        boolean on = mutedForms.contains(formId);
+        Component label = Component.translatable("gui.dungeontrain.death.narr.dont_show");
+        int box = 9;
+        int gap = 5;
+        int rowW = box + gap + this.font.width(label);
+        int x = cx - rowW / 2;
+        g.fill(x, y, x + box, y + box, fade(0x66000000));
+        drawBorder(g, x, y, box, box, on ? BTN_PRI_LIGHT : SCORE_BORDER);
+        if (on) {
+            g.fill(x + 2, y + 2, x + box - 2, y + box - 2, fade(BTN_PRI_LIGHT));
+        }
+        g.drawString(this.font, label, x + box + gap, y + 1, fade(on ? VALUE : SUBLINE), false);
+        dontShowRect = new Rect(x, y, rowW, box);
+        return y + DONT_SHOW_H;
+    }
+
     /**
      * Square 14×14 chip with a pixel-art trash can drawn in {@code fill}s (no
      * sprite — fills honour the {@link #fade} alpha where {@code blitSprite}
@@ -1924,6 +1984,20 @@ public final class NarrativeDeathScreen extends Screen {
                     UiAnalytics.click(UiAnalytics.SURFACE_DEATH_SCREEN, UiAnalytics.TARGET_CHIP);
                     donateReturnPage = currentPage;
                     startTransition(donatePageIndex());
+                }
+                return true;
+            }
+            if (dontShowRect != null && dontShowRect.has(mx, my)) {
+                Page p = pages.isEmpty() ? Page.of(Kind.FALL) : pages.get(currentPage);
+                String formId = p.kind() == Kind.MODREC ? MODREC_FORM_ID
+                        : (p.survey() != null ? p.survey().id() : null);
+                if (formId != null) {
+                    // Written through immediately, so ticking the box and quitting straight from the
+                    // death screen still counts. Only the live tick state moves — the deck was built
+                    // from deckMutedForms, so this page stays put until the next death.
+                    boolean muted = !mutedForms.contains(formId);
+                    if (muted) mutedForms.add(formId); else mutedForms.remove(formId);
+                    ClientDisplayConfig.setDeathFormMuted(formId, muted);
                 }
                 return true;
             }
@@ -2089,6 +2163,8 @@ public final class NarrativeDeathScreen extends Screen {
         }
         DPNetwork.sendToServer(new SurveySubmitPayload(e.id(), score, comment));
         submitted.add(e.id());
+        // Answered at least once — from the next death this form offers its opt-out checkbox.
+        ClientDisplayConfig.markDeathFormAnswered(e.id());
         // Funnel: record the chosen rating for scale questions (the score drives the death-screen
         // survey-response distribution). Text-only questions have no meaningful score, so they're
         // left out — never the free-text comment either way.
@@ -2192,6 +2268,7 @@ public final class NarrativeDeathScreen extends Screen {
         UiAnalytics.click(UiAnalytics.SURFACE_DEATH_SCREEN,
                 hack ? UiAnalytics.TARGET_MOD_HACK_REPORT : UiAnalytics.TARGET_MOD_RECOMMEND);
         modRec.markSent();
+        ClientDisplayConfig.markDeathFormAnswered(MODREC_FORM_ID);
         if (modCommentBox != null) modCommentBox.setValue("");
         if (modNameBox != null) modNameBox.setValue("");
         this.setFocused(null);
