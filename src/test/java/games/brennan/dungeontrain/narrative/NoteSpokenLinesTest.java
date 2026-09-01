@@ -64,6 +64,24 @@ class NoteSpokenLinesTest {
     }
 
     @Test
+    void aLongerNoteStartsFromFurtherAway() {
+        // One carriage of run-up per two lines, so a long note has room to finish around the time
+        // the echo actually arrives instead of still being mid-page.
+        assertEquals(1, NoteSpokenLines.startCarriageGap(1));
+        assertEquals(1, NoteSpokenLines.startCarriageGap(2));
+        assertEquals(2, NoteSpokenLines.startCarriageGap(3));
+        assertEquals(2, NoteSpokenLines.startCarriageGap(4));
+        assertEquals(8, NoteSpokenLines.startCarriageGap(NoteSpokenLines.MAX_LINES));
+    }
+
+    @Test
+    void aShortNoteKeepsTheAdjacentCarriageGapItAlwaysHad() {
+        // The floor is the pre-existing behaviour: nothing gets a SMALLER window than it used to.
+        assertEquals(1, NoteSpokenLines.startCarriageGap(0));
+        assertEquals(1, NoteSpokenLines.startCarriageGap(-3));
+    }
+
+    @Test
     void theCapsMatchTheRelaysOwnCaps() {
         // deathnotes.js MAX_BODY_LINES / MAX_BODY_LINE_CHARS. Three copies of these numbers exist by
         // design (author, relay, target); this is the one that fails loudly if they drift.
