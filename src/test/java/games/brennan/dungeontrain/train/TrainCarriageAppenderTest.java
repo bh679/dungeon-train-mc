@@ -13,6 +13,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -905,5 +906,75 @@ final class TrainCarriageAppenderTest {
         double first = TrainCarriageAppender.chainedSpawnDesiredX(0.0, stride, true);
         double second = TrainCarriageAppender.chainedSpawnDesiredX(first, stride, true);
         assertEquals(2 * step, second, 1e-9);
+    }
+
+    // ---- backward frontier (fill the needed range outward from the player) ----
+
+    @Test
+    @DisplayName("backwardFrontier: every needed anchor visible → no frontier")
+    void frontier_allVisibleIsNone() {
+        // Player in group 0, window needs down to carriage -6; groups -3 and -6 visible.
+        assertNull(TrainCarriageAppender.backwardFrontier(0, -6, Set.of(0, -3, -6), 3));
+        // Window needs down to -5: anchor -6 covers [-6,-4] so it is still needed and visible.
+        assertNull(TrainCarriageAppender.backwardFrontier(0, -5, Set.of(0, -3, -6), 3));
+    }
+
+    @Test
+    @DisplayName("backwardFrontier: a trailing hole is the first missing anchor below the tail")
+    void frontier_trailingHole() {
+        assertEquals(-9, TrainCarriageAppender.backwardFrontier(0, -12, Set.of(0, -3, -6), 3));
+    }
+
+    @Test
+    @DisplayName("backwardFrontier: an interior hole is resolved before anything below it")
+    void frontier_interiorHoleNearestFirst() {
+        // -3 is missing even though -6 and -9 are visible: the nearest hole to the player wins,
+        // otherwise the train would grow past a gap the player is about to walk into.
+        assertEquals(-3, TrainCarriageAppender.backwardFrontier(0, -12, Set.of(0, -6, -9), 3));
+    }
+
+    @Test
+    @DisplayName("backwardFrontier: clamps at the window — an anchor entirely below minNeeded is not needed")
+    void frontier_clampsAtWindow() {
+        // Anchor -6 covers [-6,-4]; minNeeded -3 means nothing below -3 is needed.
+        assertNull(TrainCarriageAppender.backwardFrontier(0, -3, Set.of(0, -3), 3));
+        // minNeeded -4 makes -6 needed (it covers -4).
+        assertEquals(-6, TrainCarriageAppender.backwardFrontier(0, -4, Set.of(0, -3), 3));
+    }
+
+    @Test
+    @DisplayName("backwardFrontier: starts from the player's own group, not the registry edge")
+    void frontier_startsFromPlayerGroup() {
+        // Player standing in group -6; -3 above them is missing but irrelevant to the walk down.
+        assertEquals(-9, TrainCarriageAppender.backwardFrontier(-6, -12, Set.of(0, -6), 3));
+    }
+
+    @Test
+    @DisplayName("backwardFrontier: no near player (MAX_VALUE sentinel) → none; groupSize validated")
+    void frontier_sentinelAndValidation() {
+        assertNull(TrainCarriageAppender.backwardFrontier(0, Integer.MAX_VALUE, Set.of(0), 3));
+        assertThrows(IllegalArgumentException.class,
+            () -> TrainCarriageAppender.backwardFrontier(0, -3, Set.of(0), 0));
+    }
+
+    @Test
+    @DisplayName("decideFrontierAction: held → reload, resident → wait, otherwise reap")
+    void frontierAction_table() {
+        assertEquals(TrainCarriageAppender.EdgeAction.RELOAD_DEFER,
+            TrainCarriageAppender.decideFrontierAction(true, false));
+        // A held wrapper still answers resident from its last-known state — held wins.
+        assertEquals(TrainCarriageAppender.EdgeAction.RELOAD_DEFER,
+            TrainCarriageAppender.decideFrontierAction(true, true));
+        assertEquals(TrainCarriageAppender.EdgeAction.DEFER,
+            TrainCarriageAppender.decideFrontierAction(false, true));
+        assertEquals(TrainCarriageAppender.EdgeAction.REAP_DEFER,
+            TrainCarriageAppender.decideFrontierAction(false, false));
+    }
+
+    @Test
+    @DisplayName("backwardBlockReason: a reaped frontier reports FRONTIER_REAP")
+    void blockReason_reap() {
+        assertEquals(games.brennan.dungeontrain.debug.BackwardGenTrace.Reason.FRONTIER_REAP,
+            TrainCarriageAppender.backwardBlockReason(true, TrainCarriageAppender.EdgeAction.REAP_DEFER));
     }
 }
