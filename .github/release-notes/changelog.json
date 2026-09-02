@@ -10955,6 +10955,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "vr-melee-works-without-the-addon",
+      "version": "0.781.1",
+      "type": "fix",
+      "title": "VR melee works on the train again, addon or not",
+      "summary": "If you play in VR, swinging at a mob standing next to you on the train stopped working in a recent update, because the fix for it moved out into a separate mod. Dungeon Train now carries that fix again for anyone who has not installed the separate mod yet, so melee works either way. Installing Vivecraft Sable Compat is still worth it \u2014 it also stops VR teleport dropping you into the void, which Dungeon Train cannot fix on its own \u2014 and when it is installed Dungeon Train steps aside and lets it do the work.",
+      "highlights": [
+        "VR melee hits mobs on the train without any extra download",
+        "Install Vivecraft Sable Compat as well to fix VR teleport",
+        "No effect at all if you do not play in VR"
+      ],
+      "date": "2026-09-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

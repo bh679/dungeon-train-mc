@@ -330,9 +330,9 @@ public class DungeonTrain {
         // Suppress ONE spammy Sable log line — the per-call stack-trace-capturing "Aborting entity
         // get for abnormally large AABB" ERROR — without touching Sable's log level. It fires on the
         // render thread ~15×/sec when a Vivecraft (VR) player stands on a sub-level (train carriage),
-        // hitching frames. Root-caused for Vivecraft by the separate Vivecraft Sable Compat mod
-        // (vivecraft-sable-compat), which players install alongside DT; this is the always-on belt so
-        // the storm can't resurface without it, or from any other trigger. See SableAabbLogFilter.
+        // hitching frames. Root-caused by the Vivecraft Sable Compat addon, with DT carrying a
+        // temporary copy of the melee half (VivecraftMixinPlugin) for players without it; this is the
+        // always-on belt under both, for any other trigger. See SableAabbLogFilter.
         SableAabbLogFilter.install();
 
         LOGGER.info("Dungeon Train constructor — mod loading");
