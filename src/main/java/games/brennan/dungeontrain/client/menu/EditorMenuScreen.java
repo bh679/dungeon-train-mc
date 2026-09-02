@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.menu;
 
+import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.EditorMenusModeState;
 import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
 import games.brennan.dungeontrain.client.builder.BuilderProfileScreen;
@@ -7,12 +8,12 @@ import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.client.VersionInfo;
 import games.brennan.dungeontrain.client.menu.plot.EditorTypeMenuRenderer;
 import games.brennan.dungeontrain.editor.EditorMenusMode;
-import games.brennan.dungeontrain.net.EditorStatusPacket;
 import games.brennan.dungeontrain.portal.PortalRoomCopiesVariant;
 import games.brennan.dungeontrain.portal.PortalRoomSettings;
 import games.brennan.dungeontrain.editor.PlotCategory;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 
 import java.util.ArrayList;
 import java.util.EnumMap;
@@ -42,23 +43,14 @@ import java.util.Map;
 public final class EditorMenuScreen implements MenuScreen {
 
     /**
-     * Panel width while the Walls row is showing, in world units.
-     *
-     * <p>Sized for the longest mode label, "Walls: Endless Repetition", at
-     * {@link CommandMenuLayout#TEXT_SCALE} — the shared default fits about fifteen characters and
-     * that is twenty-five. A constant rather than a measurement because the row builders have no
-     * {@code Font} to hand, and the set of modes is fixed and small.</p>
+     * The two save commands, shared by the File-tab Save row and the header icon so the two
+     * surfaces cannot drift.
      */
-    private static final double WALLS_ROW_PANEL_WIDTH = 2.6;
+    static final String SAVE_COMMAND = "dungeontrain save";
+    static final String PART_SAVE_COMMAND = "dungeontrain editor part save";
 
-    /**
-     * Panel width while the Copies Block row is showing.
-     *
-     * <p>The same width the Walls row asks for. The row named a block id when it was added, which
-     * needed more than forty characters; it names the gesture now — {@code Blocks: + held} — and the
-     * palette itself is shown as icons on the plot panel, so there is nothing here to size for.</p>
-     */
-    private static final double COPIES_BLOCK_ROW_PANEL_WIDTH = WALLS_ROW_PANEL_WIDTH;
+    private static final ResourceLocation SAVE_ICON =
+        ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "icon/save");
 
     @Override public String title() { return "Editor"; }
 
@@ -205,7 +197,7 @@ public final class EditorMenuScreen implements MenuScreen {
         // which doesn't see part plots.
         out.add(new CommandMenuEntry.Split(
             new CommandMenuEntry.Run("Save",
-                ctx.isParts() ? "dungeontrain editor part save" : "dungeontrain save"),
+                ctx.isParts() ? PART_SAVE_COMMAND : SAVE_COMMAND),
             new CommandMenuEntry.Run("All",
                 ctx.isParts() ? "dungeontrain editor part save all" : "dungeontrain save all"),
             0.80));
@@ -577,26 +569,18 @@ public final class EditorMenuScreen implements MenuScreen {
     }
 
     /**
-     * Wider than the shared default while a Walls row is showing.
-     *
-     * <p>{@link CommandMenuLayout#PANEL_WIDTH} fits about fifteen characters, which covered every
-     * row this menu had until "Walls: Endless Repetition" — twenty-five — ran off both edges. The
-     * wide rows only exist in Current, so the panel widens only while that tab is the one showing;
-     * every other tab, and every other menu in the game, keeps the width it was tuned at.</p>
+     * The Save icon at the right of the breadcrumb band — one tap from any tab, where the
+     * File-tab row is two. Same command as that row, so what the icon saves is what Save saves.
      */
     @Override
-    public double panelWidth() {
-        if (EditorMenuTab.active() != EditorMenuTab.CURRENT) {
-            return CommandMenuLayout.PANEL_WIDTH;
-        }
-        String mode = EditorStatusHudOverlay.roomMode();
-        if (mode == null || EditorStatusPacket.NO_MODE.equals(mode)) {
-            return CommandMenuLayout.PANEL_WIDTH;
-        }
-        double widest = EditorPlotLabelsRenderer.hasCopiesBlockRowFor(mode)
-            ? Math.max(WALLS_ROW_PANEL_WIDTH, COPIES_BLOCK_ROW_PANEL_WIDTH)
-            : WALLS_ROW_PANEL_WIDTH;
-        return Math.max(CommandMenuLayout.PANEL_WIDTH, widest);
+    public MenuHeaderAction headerAction() {
+        return saveHeaderAction(Ctx.read().category());
+    }
+
+    /** The header Save for a category: parts route through the part-aware subcommand. */
+    static MenuHeaderAction saveHeaderAction(PlotCategory category) {
+        return new MenuHeaderAction(SAVE_ICON, "Save",
+            category == PlotCategory.PARTS ? PART_SAVE_COMMAND : SAVE_COMMAND);
     }
 
     /**

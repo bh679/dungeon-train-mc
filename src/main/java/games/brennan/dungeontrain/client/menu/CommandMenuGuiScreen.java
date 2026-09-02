@@ -76,9 +76,19 @@ public final class CommandMenuGuiScreen extends Screen {
     /** Floor for a panel's width when everything is scaled down to fit a narrow window. */
     private static final int MIN_PANEL_W = 60;
 
+    /** Side of the square header button — a row's height, so it reads as one more control. */
+    private static final int HEADER_BTN = CommandMenuLayout.ROW_H;
+
+    /** Authored side of the header button's sprite; drawn 1:1 so it stays crisp. */
+    private static final int HEADER_ICON = 16;
+
     // Panel geometry, recomputed each frame in render() and read by the hit-test.
     private int mainX, mainY, mainW, mainH;
     private int sideX, sideY, sideW, sideH;
+
+    // The main panel's header button (MenuScreen#headerAction), if the screen has one.
+    private int headerBtnX, headerBtnY;
+    private boolean headerHovered;
 
     // Scroll state. `sticky` rows stay pinned at the top; the rest scroll under them.
     private int mainSticky, mainScroll, mainVisible, mainMaxScroll;
@@ -190,6 +200,15 @@ public final class CommandMenuGuiScreen extends Screen {
         mainY = PANEL_TOP;
         sideX = mainX + mainW + CommandMenuLayout.SIDE_GAP_PX;
         sideY = PANEL_TOP;
+
+        headerBtnX = mainX + mainW - CommandMenuLayout.PANEL_PAD - HEADER_BTN;
+        headerBtnY = mainY + (CommandMenuLayout.HEADER_H - HEADER_BTN) / 2;
+    }
+
+    /** The main screen's header action, or null when there is none or the menu is closed. */
+    private static MenuHeaderAction headerAction() {
+        MenuScreen top = CommandMenuState.mainScreen();
+        return top == null ? null : top.headerAction();
     }
 
     // ------------------------------------------------------------------
@@ -226,30 +245,47 @@ public final class CommandMenuGuiScreen extends Screen {
         updateHover(mouseX, mouseY);
 
         List<CommandMenuEntry> entries = CommandMenuState.entries();
+        MenuHeaderAction action = headerAction();
         drawPanel(gg, mainX, mainY, mainW, mainH, entries,
-            CommandMenuState.breadcrumb(),
+            CommandMenuState.breadcrumb(), action,
             CommandMenuState.hoveredIdx(), CommandMenuState.hoveredSubIdx(),
             mainSticky, mainScroll, mainVisible, mainMaxScroll);
 
         if (CommandMenuState.hasSidePanel()) {
             MenuScreen side = CommandMenuState.sideScreen();
             drawPanel(gg, sideX, sideY, sideW, sideH, CommandMenuState.sideEntries(),
-                side != null ? side.title() : "",
+                side != null ? side.title() : "", null,
                 CommandMenuState.sideHoveredIdx(), CommandMenuState.sideHoveredSubIdx(),
                 0, sideScroll, sideVisible, sideMaxScroll);
+        }
+
+        // The icon carries no text, so its name rides on the cursor while it is under it.
+        if (headerHovered && action != null) {
+            gg.renderTooltip(this.font, Component.literal(action.label()), mouseX, mouseY);
         }
     }
 
     private void drawPanel(
         GuiGraphics gg, int px, int py, int pw, int ph,
-        List<CommandMenuEntry> entries, String title, int hovered, int hoveredSub,
+        List<CommandMenuEntry> entries, String title, MenuHeaderAction action,
+        int hovered, int hoveredSub,
         int sticky, int scroll, int visible, int maxScroll
     ) {
         gg.fill(px, py, px + pw, py + ph, PANEL_BG);
 
+        // The breadcrumb stays centred on the panel; with a button at the right it is clipped
+        // symmetrically, to the width between the button and its mirror on the left, so a
+        // shrunk panel can never run the text under the icon.
         String header = (title == null || title.isEmpty()) ? "Dungeon Train" : title;
+        int reserve = CommandMenuLayout.PANEL_PAD + (action == null ? 0 : HEADER_BTN + CELL_PAD_X);
+        int headerAvail = pw - reserve * 2;
+        if (headerAvail > 0 && this.font.width(header) > headerAvail) {
+            header = this.font.plainSubstrByWidth(header, headerAvail);
+        }
         drawLabel(gg, header, px + pw / 2,
             py + (CommandMenuLayout.HEADER_H - this.font.lineHeight) / 2, TEXT_HEADER, true);
+
+        if (action != null) drawHeaderButton(gg, action);
 
         // Pinned rows first, then the scrolled window beneath them. `slot` is the visual
         // position; `idx` is the index into entries, which is what hover and dispatch speak.
@@ -265,6 +301,14 @@ public final class CommandMenuGuiScreen extends Screen {
         if (maxScroll > 0) {
             drawScrollbar(gg, px, py, pw, sticky, scroll, visible, maxScroll);
         }
+    }
+
+    /** The header icon button: tinted like a cell, with the sprite drawn 1:1 at its centre. */
+    private void drawHeaderButton(GuiGraphics gg, MenuHeaderAction action) {
+        gg.fill(headerBtnX, headerBtnY, headerBtnX + HEADER_BTN, headerBtnY + HEADER_BTN,
+            headerHovered ? CELL_HOVER : CELL_IDLE);
+        int pad = (HEADER_BTN - HEADER_ICON) / 2;
+        gg.blitSprite(action.icon(), headerBtnX + pad, headerBtnY + pad, HEADER_ICON, HEADER_ICON);
     }
 
     /** A thin track inside the right edge, so a truncated list doesn't look like the whole list. */
@@ -419,6 +463,16 @@ public final class CommandMenuGuiScreen extends Screen {
     // ------------------------------------------------------------------
 
     private void updateHover(int mouseX, int mouseY) {
+        // The header button first: it sits in the band above row 0, which the row hit-test
+        // never covers, so the two cannot both claim a click.
+        headerHovered = headerAction() != null
+            && over(mouseX, mouseY, headerBtnX, headerBtnY, HEADER_BTN, HEADER_BTN);
+        if (headerHovered) {
+            CommandMenuState.setHovered(-1, 0);
+            CommandMenuState.setSideHovered(-1, 0);
+            return;
+        }
+
         long main = hitPanel(mouseX, mouseY, mainX, mainY, mainW, CommandMenuState.entries(),
             mainSticky, mainScroll, mainVisible);
         if (main >= 0) {
@@ -496,6 +550,13 @@ public final class CommandMenuGuiScreen extends Screen {
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (button != GLFW.GLFW_MOUSE_BUTTON_LEFT && button != GLFW.GLFW_MOUSE_BUTTON_RIGHT) {
             return super.mouseClicked(mouseX, mouseY, button);
+        }
+        if (headerHovered) {
+            MenuHeaderAction action = headerAction();
+            if (action != null) {
+                CommandMenuState.activateHeader(action);
+                return true;
+            }
         }
         int hovered = CommandMenuState.hoveredIdx();
         if (hovered >= 0) {

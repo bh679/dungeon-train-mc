@@ -293,6 +293,20 @@ public final class CommandMenuState {
         rebuildEntries();
     }
 
+    /**
+     * Run a {@link MenuHeaderAction} — the icon at the right of the breadcrumb band.
+     *
+     * <p>Unlike a {@code Run} row this leaves the menu open: it is a toolbar button, and an author
+     * who saves from it is mid-edit and expects the panel to still be there. The next rebuild
+     * picks up whatever the server reports back.</p>
+     */
+    static void activateHeader(MenuHeaderAction action) {
+        if (action == null) return;
+        LOGGER.info("Menu header action command={}", action.command());
+        playClickSound();
+        CommandRunner.run(action.command());
+    }
+
     public static void activate(int idx, int subIdx) {
         if (idx < 0 || idx >= entries.size()) return;
         CommandMenuEntry entry = entries.get(idx);
