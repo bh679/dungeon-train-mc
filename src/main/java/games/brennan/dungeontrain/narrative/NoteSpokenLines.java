@@ -40,7 +40,34 @@ public final class NoteSpokenLines {
     /** Never more than twelve seconds, however long the line. */
     public static final int MAX_DELAY_TICKS = 240;
 
+    /**
+     * Lines of note per carriage of run-up: a longer note starts being read from further away, so it
+     * has room to finish around the time the echo actually reaches its target rather than still
+     * being halfway through the page.
+     *
+     * <p>Measured in CARRIAGES rather than blocks on purpose. The echo is spawned into its
+     * carriage's shipyard coordinates while the target stands in world space, so the distance
+     * between them is not a subtraction — carriage indices are the one frame both share (see
+     * {@code DeathNoteEchoController}). A carriage is roughly nine to thirteen blocks, so this is
+     * "about five blocks per line" at the only resolution actually available.</p>
+     */
+    private static final int LINES_PER_CARRIAGE_OF_LEAD = 2;
+
     private NoteSpokenLines() {}
+
+    /**
+     * How many carriages apart the echo may be and still be reading: one per
+     * {@link #LINES_PER_CARRIAGE_OF_LEAD} lines, and never less than the adjacent-carriage gap that
+     * every note got before length mattered. A note of one or two lines therefore behaves exactly as
+     * it did; a four-line note starts a carriage earlier; an eight-line note four.
+     *
+     * <p>The same gap governs stopping: walk far enough ahead and the echo falls silent, and resumes
+     * where it left off once you are back inside it.</p>
+     */
+    public static int startCarriageGap(int lineCount) {
+        if (lineCount <= 0) return 1;
+        return Math.max(1, (lineCount + LINES_PER_CARRIAGE_OF_LEAD - 1) / LINES_PER_CARRIAGE_OF_LEAD);
+    }
 
     /**
      * The spoken script for a note whose book holds {@code pages}: every page split into lines,
