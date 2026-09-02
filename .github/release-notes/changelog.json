@@ -11066,6 +11066,23 @@
       "released": true,
       "released_in": "v0.788.0",
       "released_at": "2026-09-02T12:47:47Z"
+    },
+    {
+      "id": "nether-arrival-tuning",
+      "version": "0.789.0",
+      "type": "feat",
+      "title": "A calmer arrival in the Nether",
+      "summary": "Ghasts no longer ambush you while the world is still crossfading into the Nether \u2014 they hold off until you are properly inside it, and there are half as many of them. Bastion remnants are half as common on the band too; fortresses are unchanged.",
+      "highlights": [
+        "Ghasts wait until you are 100 blocks into the real Nether \u2014 the netherrack crossfade on the way in (and on the way out) is now ghast-free",
+        "Half as many ghasts overall, at every lap of the cycle",
+        "Half as many bastion remnants; fortress frequency is unchanged (newly generated terrain only)"
+      ],
+      "pr": 1284,
+      "date": "2026-09-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
