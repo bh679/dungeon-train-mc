@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Map;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -140,5 +141,46 @@ class TranslationFiltersTest {
         assertFalse(TranslationFilters.isTranslatableLocale(null));
         assertFalse(TranslationFilters.isTranslatableLocale(""));
         assertFalse(TranslationFilters.isTranslatableLocale("   "));
+    }
+
+    // ---- which pool a client reads ---------------------------------------------------------------
+
+    @Test
+    @DisplayName("a translatable locale reads its own pool")
+    void translatableLocaleReadsItsOwnPool() {
+        assertEquals("de_de", TranslationFilters.poolLocaleFor("de_de"));
+        assertEquals("hu_hu", TranslationFilters.poolLocaleFor(" HU_HU "));
+    }
+
+    @Test
+    @DisplayName("every English variant reads the one source pool an operator authors into")
+    void englishVariantsShareTheSourcePool() {
+        // An operator rewording an advancement title writes en_us once; en_gb and en_au players
+        // are reading the same English and must get the same correction.
+        assertEquals("en_us", TranslationFilters.poolLocaleFor("en_us"));
+        assertEquals("en_us", TranslationFilters.poolLocaleFor("en_gb"));
+        assertEquals("en_us", TranslationFilters.poolLocaleFor("en_au"));
+        // Pirate, upside-down and LOLCAT ship no Dungeon Train text, so they render the English
+        // the source pool corrects.
+        assertEquals("en_us", TranslationFilters.poolLocaleFor("en_pt"));
+        assertEquals("en_us", TranslationFilters.poolLocaleFor("en_ud"));
+        assertEquals("en_us", TranslationFilters.poolLocaleFor("lol_us"));
+    }
+
+    @Test
+    @DisplayName("reading the source pool does not open the editor on English")
+    void englishStaysUneditable() {
+        // The two questions are deliberately separate: English is served TO clients but never
+        // translated BY them, so no player submit path can reach it.
+        assertEquals("en_us", TranslationFilters.poolLocaleFor("en_gb"));
+        assertFalse(TranslationFilters.isTranslatableLocale("en_gb"));
+    }
+
+    @Test
+    @DisplayName("no locale means no pool to fetch")
+    void blankLocaleHasNoPool() {
+        assertEquals("", TranslationFilters.poolLocaleFor(null));
+        assertEquals("", TranslationFilters.poolLocaleFor(""));
+        assertEquals("", TranslationFilters.poolLocaleFor("   "));
     }
 }

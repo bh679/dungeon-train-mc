@@ -16,6 +16,9 @@ public final class TranslationFilters {
      */
     private static final java.util.Set<String> JOKE_LOCALES = java.util.Set.of("lol_us");
 
+    /** The locale Dungeon Train is written in, and the one operator edits are authored against. */
+    public static final String SOURCE_LOCALE = "en_us";
+
     private TranslationFilters() {}
 
     /**
@@ -39,6 +42,29 @@ public final class TranslationFilters {
         }
         String code = locale.trim().toLowerCase(java.util.Locale.ROOT);
         return !code.startsWith("en_") && !JOKE_LOCALES.contains(code);
+    }
+
+    /**
+     * The relay pool a client displaying {@code locale} should fetch and apply.
+     *
+     * <p>For a translatable locale that is the locale itself. For everything else — the English
+     * family and the joke locales, which all render Dungeon Train's English because the mod ships
+     * nothing for them — it is {@code en_us}, the source pool an OPERATOR authors into. That pool
+     * is how a reworded advancement title or a corrected hint reaches players who are already on a
+     * shipped jar, instead of waiting for the next release.</p>
+     *
+     * <p>Deliberately a separate question from {@link #isTranslatableLocale}, which still says no
+     * to English and so still keeps the in-game editor — and with it the player submit path —
+     * closed to it. Nobody translates English; only the operator writes it.</p>
+     *
+     * @return the pool's locale code, or {@code ""} when there is nothing to fetch
+     */
+    public static String poolLocaleFor(String locale) {
+        if (locale == null || locale.isBlank()) {
+            return "";
+        }
+        String code = locale.trim().toLowerCase(java.util.Locale.ROOT);
+        return isTranslatableLocale(code) ? code : SOURCE_LOCALE;
     }
 
     /** This layer's override for {@code unit}, or null — the two bodies are keyed separately. */
