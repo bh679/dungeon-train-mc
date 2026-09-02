@@ -29,6 +29,16 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class TemplateDecorTest {
 
     /** One entry as {@code StructureTemplate.save} writes it: local {@code pos}, {@code blockPos}, {@code nbt}. */
+    /**
+     * An entry for a living entity — {@link #entry} plus the {@code Health} value every
+     * {@code LivingEntity} writes, which is what {@code TemplateDecor.carries} reads.
+     */
+    private static CompoundTag living(String id, double x, double y, double z) {
+        CompoundTag e = entry(id, x, y, z, (int) x, (int) y, (int) z);
+        e.getCompound("nbt").putFloat("Health", 20.0f);
+        return e;
+    }
+
     private static CompoundTag entry(String id, double x, double y, double z, int bx, int by, int bz) {
         CompoundTag e = new CompoundTag();
         ListTag pos = new ListTag();
@@ -61,26 +71,51 @@ class TemplateDecorTest {
     }
 
     @Test
-    void framesAndPaintingsAreDecorAndMobsAreNot() {
+    void decorAndLivingEntitiesAreCarriedAndLitterIsNot() {
         assertTrue(TemplateDecor.isDecor(entry("minecraft:item_frame", 1, 2, 3, 1, 2, 3)));
         assertTrue(TemplateDecor.isDecor(entry("minecraft:glow_item_frame", 1, 2, 3, 1, 2, 3)));
         assertTrue(TemplateDecor.isDecor(entry("minecraft:painting", 1, 2, 3, 1, 2, 3)));
-        assertFalse(TemplateDecor.isDecor(entry("minecraft:villager", 1, 2, 3, 1, 2, 3)));
-        assertFalse(TemplateDecor.isDecor(entry("minecraft:armor_stand", 1, 2, 3, 1, 2, 3)));
+
+        // A mob an author stands in a plot IS part of the build — the editor world switches natural
+        // spawning off so nothing else can wander in and be saved alongside it. Recognised by the
+        // Health tag every LivingEntity saves, which is what a real capture writes.
+        assertTrue(TemplateDecor.isDecor(living("minecraft:villager", 1, 2, 3)));
+        assertTrue(TemplateDecor.isDecor(living("minecraft:parrot", 1, 2, 3)));
+        assertTrue(TemplateDecor.isDecor(living("minecraft:zombie", 1, 2, 3)));
+
+        // Both of these are MobCategory.MISC, so the tempting "carried unless MISC" rule drops them
+        // both. That rule was written; the villager above is what caught it.
+        assertTrue(TemplateDecor.isDecor(living("minecraft:armor_stand", 1, 2, 3)),
+            "an armor stand is MISC, and still authored content");
+
+        // A plot's litter, not its content: none of these save a Health value.
+        assertFalse(TemplateDecor.isDecor(entry("minecraft:minecart", 1, 2, 3, 1, 2, 3)));
+        assertFalse(TemplateDecor.isDecor(entry("minecraft:boat", 1, 2, 3, 1, 2, 3)));
+        assertFalse(TemplateDecor.isDecor(entry("minecraft:item", 1, 2, 3, 1, 2, 3)));
+        assertFalse(TemplateDecor.isDecor(entry("minecraft:arrow", 1, 2, 3, 1, 2, 3)));
+        assertFalse(TemplateDecor.isDecor(entry("minecraft:experience_orb", 1, 2, 3, 1, 2, 3)));
+
+        // A tag with neither a decor id nor a Health value — an entity type this build has never
+        // heard of, saved by a newer one — is refused rather than let into a template.
+        assertFalse(TemplateDecor.carries(new CompoundTag()));
+        assertFalse(TemplateDecor.carries(null));
     }
 
     @Test
-    void filteringKeepsDecorAndDropsEverythingElse() {
+    void filteringKeepsWhatIsCarriedAndDropsTheRest() {
         CompoundTag tag = saved(
             entry("minecraft:item_frame", 1, 2, 3, 1, 2, 3),
-            entry("minecraft:villager", 4, 0, 4, 4, 0, 4),
+            living("minecraft:villager", 4, 0, 4),
+            entry("minecraft:minecart", 2, 0, 2, 2, 0, 2),
             entry("minecraft:painting", 0, 3, 5, 0, 3, 5));
 
-        assertTrue(TemplateDecor.filterEntities(tag), "a mob was present, so the tag needs reloading");
+        assertTrue(TemplateDecor.filterEntities(tag),
+            "a minecart was present, so the tag needs reloading");
         ListTag kept = tag.getList("entities", Tag.TAG_COMPOUND);
-        assertEquals(2, kept.size());
+        assertEquals(3, kept.size(), "the mob stays; only the minecart goes");
         assertEquals("minecraft:item_frame", kept.getCompound(0).getCompound("nbt").getString("id"));
-        assertEquals("minecraft:painting", kept.getCompound(1).getCompound("nbt").getString("id"));
+        assertEquals("minecraft:villager", kept.getCompound(1).getCompound("nbt").getString("id"));
+        assertEquals("minecraft:painting", kept.getCompound(2).getCompound("nbt").getString("id"));
     }
 
     @Test

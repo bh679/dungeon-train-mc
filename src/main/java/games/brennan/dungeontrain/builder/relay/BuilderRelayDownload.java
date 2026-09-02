@@ -170,7 +170,8 @@ public final class BuilderRelayDownload {
         }
 
         BuilderRelayInstall.Outcome installed = BuilderRelayInstall.install(
-                kind, build.buildName(), build.subKind(), build.stage(), template, resolution, newName, mine);
+                kind, build.buildName(), build.subKind(), build.stage(), template, resolution, newName,
+                build.sidecars(), mine);
         // Which name the build ended up under: its own, unless the player asked for it to arrive as
         // something else. This is what the screen opens, so it has to be the name that was written —
         // the same name the unsaved-edits question above was asked about.

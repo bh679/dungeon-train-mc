@@ -143,7 +143,7 @@ public final class CarriageVariantBlocks {
     public static final int CURRENT_SCHEMA_VERSION = 9;
 
     static final String SUBDIR = "templates";
-    private static final String EXT = ".variants.json";
+    static final String EXT = ".variants.json";
     private static final String RESOURCE_PREFIX = "/data/dungeontrain/templates/";
     private static final String SOURCE_REL_PATH = "src/main/resources/data/dungeontrain/templates";
 
