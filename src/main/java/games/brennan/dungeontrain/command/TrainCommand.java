@@ -124,6 +124,7 @@ public final class TrainCommand {
             .then(DebugCommand.build())
             .then(PackageCommand.build())
             .then(NarrativeCommand.build())
+            .then(SharedBookCommand.build())
             .then(CinematographerCommand.build())
             .then(PortalCommand.build());
 
