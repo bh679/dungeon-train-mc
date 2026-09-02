@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.event;
 
+import games.brennan.dungeontrain.editor.EditorWorldLayout;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.builder.BuilderWorldLayout;
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
@@ -71,6 +72,8 @@ public final class BedrockFloorEvents {
         // gates above — but it is meant to be void outside its one 300×300 platform. Floor it and
         // the "platform in the void" becomes an infinite bedrock plane instead.
         if (level.dimensionTypeRegistration().is(BuilderWorldLayout.BUILDER_DIMENSION_TYPE)) return;
+        // Same for the Train Editor's void world — its plots hang in the sky over nothing.
+        if (EditorWorldLayout.isEditorWorld(level)) return;
 
         ChunkAccess chunk = event.getChunk();
         int chunkMinX = chunk.getPos().getMinBlockX();

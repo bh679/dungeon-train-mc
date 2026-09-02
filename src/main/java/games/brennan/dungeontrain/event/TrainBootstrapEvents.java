@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.event;
 
+import games.brennan.dungeontrain.editor.EditorWorldLayout;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.bootstrap.BootstrapProgress;
@@ -76,6 +77,7 @@ public final class TrainBootstrapEvents {
         if (!data.startsWithTrain()) {
             LOGGER.info("[DungeonTrain] startsWithTrain=false — skipping bootstrap auto-spawn");
             anchorBuilderPlatformSpawn(overworld);
+            anchorEditorSpawn(overworld);
             return;
         }
 
@@ -201,6 +203,23 @@ public final class TrainBootstrapEvents {
         overworld.setDefaultSpawnPos(spawnPos, yaw);
         LOGGER.info("[DungeonTrain] Builder world — spawn anchored on the platform at {} facing {}",
                 spawnPos, String.format("%.0f", yaw));
+    }
+
+    /**
+     * Put the world spawn over the editor's first plot.
+     *
+     * <p>The editor world is pure void, so vanilla's spawn search has nothing to find and would
+     * drop the player out of the bottom. {@code BuilderSpawn.startFlying} keeps them hovering here
+     * until the editor command lifts them onto a plot. Gated on the editor dimension type, like the
+     * builder's anchor above, so no other no-train world is touched.</p>
+     */
+    private static void anchorEditorSpawn(ServerLevel overworld) {
+        if (!EditorWorldLayout.isEditorWorld(overworld)) {
+            return;
+        }
+        overworld.setDefaultSpawnPos(EditorWorldLayout.SPAWN, 0.0F);
+        LOGGER.info("[DungeonTrain] Editor world — spawn anchored over the plots at {}",
+                EditorWorldLayout.SPAWN);
     }
 
     private static ManagedShip findTrain(ServerLevel level) {

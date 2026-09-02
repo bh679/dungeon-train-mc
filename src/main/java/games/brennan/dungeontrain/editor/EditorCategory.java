@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.editor;
 
+import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.template.Template;
 import games.brennan.dungeontrain.track.PillarAdjunct;
 import games.brennan.dungeontrain.track.PillarSection;
@@ -231,9 +232,14 @@ public enum EditorCategory {
     /**
      * Erase every known editor plot in every category — footprints + barrier
      * cages all go back to air. Called when the player exits the editor and
-     * when switching categories so stale models don't pile up at the plot floor. Cheap
-     * — the total is a handful of plots ({@code CarriageVariantRegistry} size
-     * + 3 pillars + 2 tunnels).
+     * when switching categories so stale models don't pile up at the plot floor.
+     *
+     * <p><b>Not cheap.</b> Every registered carriage, contents template, part, track tile, pillar,
+     * tunnel and portal room has a plot, and each erase writes air unconditionally — a Z-span of
+     * thousands of blocks at {@link EditorLayout#PLOT_Y}, several hundred chunk columns, every one
+     * forced to load. On a world where nothing was ever stamped that whole sweep is wasted, so it is
+     * skipped until {@link DungeonTrainWorldData#editorPlotsStamped()} says a plot may hold blocks
+     * — which this method itself records, since every stamp is preceded by a call here.</p>
      */
     public static void clearAllPlots(ServerLevel overworld, CarriageDims dims) {
         // Tearing down every plot also invalidates the floating plot labels —
@@ -249,6 +255,13 @@ public enum EditorCategory {
         // catch that on use; dropping the history here is the honest signal.
         EditorEditHistory.clearAll();
         EditorEditRecorder.discardPending();
+        DungeonTrainWorldData data = DungeonTrainWorldData.get(overworld);
+        if (!data.editorPlotsStamped()) {
+            // Fresh world: no plot has ever held a block, so there is nothing to erase. Whatever
+            // the caller stamps next is the first thing in the sky — mark it so the next clear runs.
+            data.markEditorPlotsStamped();
+            return;
+        }
         for (CarriageVariant v : CarriageVariantRegistry.allVariants()) {
             CarriageEditor.clearPlot(overworld, v, dims);
         }

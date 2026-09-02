@@ -44,7 +44,14 @@ import org.slf4j.Logger;
 public final class EditorAutoOpenHandler {
 
     private static final Logger LOGGER = LogUtils.getLogger();
-    private static final int DISPATCH_DELAY_TICKS = 40; // 2s @ 20Hz
+    /**
+     * Margin between the four readiness checks in {@link #onClientTickPost} all passing and the
+     * armed action firing, so the server has finished its own join work before it is asked to
+     * stamp plots or a platform. Both worlds it fires in are created with {@code startsWithTrain =
+     * false}, so there is no train bootstrap or intro cinematic left to wait out — half a second
+     * is plenty. Was 2 s, an untuned margin from when the editor world still spawned a train.
+     */
+    private static final int DISPATCH_DELAY_TICKS = 10; // 0.5s @ 20Hz
 
     /**
      * What to do once the world is up. A {@code null} {@code builderMode} means the technical

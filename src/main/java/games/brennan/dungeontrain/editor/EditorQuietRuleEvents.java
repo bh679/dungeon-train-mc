@@ -17,18 +17,14 @@ import org.slf4j.Logger;
  * it, "nothing wanders into your plots" would be true of new editor worlds only — and a mob that
  * wanders in now ends up saved into somebody's template.</p>
  *
- * <h2>Why the name, and not the dimension</h2>
- * <p>{@code BuilderQuietRuleEvents} gates on the overworld's dimension type, because a builder world
- * <em>is</em> its own dimension. An editor world has no such marker: {@code launchEditorWorld} builds
- * an ordinary world on the default DT preset, and the only thing distinguishing it is the
- * {@link #EDITOR_WORLD_PREFIX} name it is given. So that is what this matches.</p>
- *
- * <p><b>It is a weaker marker and worth saying so.</b> A player who hand-names a save
- * {@code train editor 3} gets no natural mob spawning in it. The stronger alternative — a flag saved
- * into {@code DungeonTrainWorldData}, armed through {@code PendingWorldChoices} the way
- * {@code startsWithTrain} is — is a good deal more plumbing than the difference earns, and the
- * failure mode here is a quiet world rather than a broken one. Revisit if editor worlds ever grow a
- * preset of their own, which would give this a real marker to use.</p>
+ * <h2>Two markers</h2>
+ * <p>Editor worlds made since {@link EditorWorldLayout} exist are their own dimension type, and
+ * that is the strong marker this checks first — the same way {@code BuilderQuietRuleEvents} gates
+ * on the builder's type. Editor worlds made before that are ordinary worlds on the default DT
+ * preset, and the only thing distinguishing them is the {@link #EDITOR_WORLD_PREFIX} name they were
+ * given; that weaker match stays so those saves keep their quiet rule too. A player who hand-names
+ * a save {@code train editor 3} gets no natural mob spawning in it, which is a quiet world rather
+ * than a broken one.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class EditorQuietRuleEvents {
@@ -54,8 +50,10 @@ public final class EditorQuietRuleEvents {
     @SubscribeEvent
     public static void onServerStarted(ServerStartedEvent event) {
         MinecraftServer server = event.getServer();
-        if (server.getWorldData() == null
-                || !isEditorWorldName(server.getWorldData().getLevelName())) {
+        boolean editorWorld = EditorWorldLayout.isEditorWorld(server.overworld())
+                || (server.getWorldData() != null
+                    && isEditorWorldName(server.getWorldData().getLevelName()));
+        if (!editorWorld) {
             return; // not an editor world — leave the rules alone
         }
         EditorQuietRules.apply(server.getGameRules(), server);

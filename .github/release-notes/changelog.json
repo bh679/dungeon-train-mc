@@ -11049,6 +11049,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "editor-world-loads-in-seconds",
+      "version": "0.788.0",
+      "type": "perf",
+      "title": "The Train Editor opens in seconds",
+      "summary": "Opening the Train Editor from the title screen no longer builds a whole Dungeon Train world first. The editor world is now its own void space \u2014 no train, no track, no terrain, no nether or end \u2014 and the first time you open it, it skips the sweep that used to clear every plot in the sky before anything was placed. Tile click to standing on your plot went from around 40 seconds to about 4. Existing editor worlds are unchanged.",
+      "highlights": [
+        "Train Editor worlds no longer spawn a train or generate terrain",
+        "Editor opens about ten times faster from the title screen",
+        "Portal room test sessions keep their full-depth basement in the new editor world"
+      ],
+      "pr": 1281,
+      "date": "2026-09-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
