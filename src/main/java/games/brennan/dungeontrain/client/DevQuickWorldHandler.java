@@ -293,7 +293,16 @@ public final class DevQuickWorldHandler {
         return null;
     }
 
-    static void launchEditorWorld(Screen lastScreen) {
+    /**
+     * Create the world the technical Train Editor is edited in: an ordinary creative overworld on
+     * the DT preset, named {@code train editor N} on the lowest unused index so repeat launches
+     * never clobber a save.
+     *
+     * <p>Which editor category to open on arrival is not written into the world — the client-side
+     * {@link EditorAutoOpenHandler} carries the picker's choice across the load, the same way it
+     * carries a {@link BuilderMode} for the builder path.</p>
+     */
+    public static void launchEditorWorld(Screen lastScreen) {
         String name = nextWorldName(EDITOR_WORLD_PREFIX);
         LevelSettings settings = new LevelSettings(
                 name,

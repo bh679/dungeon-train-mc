@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.client;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.builder.BuilderMode;
+import games.brennan.dungeontrain.editor.EditorCategory;
 import games.brennan.dungeontrain.net.BuilderSetupPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import net.minecraft.client.Minecraft;
@@ -23,8 +24,9 @@ import org.slf4j.Logger;
  * of it:</p>
  *
  * <ul>
- *   <li>{@link #queueAutoOpen()} — fires the chat command {@code /dungeontrain editor} (the
- *       same command the X-menu "Editor" entry runs).</li>
+ *   <li>{@link #queueAutoOpen(EditorCategory)} — fires the chat command
+ *       {@code /dungeontrain editor <category>} (the same command the X-menu "Editor" entry
+ *       runs, aimed at the category whose tile was clicked on the picker).</li>
  *   <li>{@link #queueBuilderSetup(BuilderMode)} — asks the server to build out the Train
  *       Builder world (platform, track, and this mode's carriages). The mode is a client-side
  *       choice, so the client is the only one who can tell the server about it.</li>
@@ -46,9 +48,10 @@ public final class EditorAutoOpenHandler {
 
     /**
      * What to do once the world is up. A {@code null} {@code builderMode} means the technical
-     * editor; any other value means set that builder mode's world up.
+     * editor, and {@code category} says which of its categories to open; any other value means
+     * set that builder mode's world up, and {@code category} is unused.
      */
-    private record PendingAction(BuilderMode builderMode) {
+    private record PendingAction(BuilderMode builderMode, EditorCategory category) {
         boolean isEditor() {
             return builderMode == null;
         }
@@ -60,13 +63,25 @@ public final class EditorAutoOpenHandler {
 
     private EditorAutoOpenHandler() {}
 
+    /** Open the editor on its default category — where a bare {@code /dungeontrain editor} lands. */
     public static void queueAutoOpen() {
-        arm(new PendingAction(null), "editor");
+        queueAutoOpen(EditorCategory.CARRIAGES);
+    }
+
+    /**
+     * Open the editor on {@code category}, to fire once the fresh world has loaded.
+     *
+     * <p>Which category is a client-side choice made on the picker before the world existed, so
+     * the client is the only one who can say — the same reason
+     * {@link #queueBuilderSetup(BuilderMode)} has to carry its mode across the load.</p>
+     */
+    public static void queueAutoOpen(EditorCategory category) {
+        arm(new PendingAction(null, category), "editor:" + category.id());
     }
 
     /** Arm the world-setup request for a Train Builder mode, to fire once its world has loaded. */
     public static void queueBuilderSetup(BuilderMode mode) {
-        arm(new PendingAction(mode), "builder:" + mode.id());
+        arm(new PendingAction(mode, null), "builder:" + mode.id());
     }
 
     private static void arm(PendingAction action, String describe) {
@@ -116,14 +131,15 @@ public final class EditorAutoOpenHandler {
         waitTickLogCounter = 0;
 
         if (action.isEditor()) {
-            dispatchEditor(mc);
+            dispatchEditor(mc, action.category());
         } else {
             dispatchBuilderSetup(action.builderMode());
         }
     }
 
-    private static void dispatchEditor(Minecraft mc) {
-        LOGGER.info("EditorAutoOpen: dispatching `/dungeontrain editor` now");
+    private static void dispatchEditor(Minecraft mc, EditorCategory category) {
+        String command = "dungeontrain editor " + category.id();
+        LOGGER.info("EditorAutoOpen: dispatching `/{}` now", command);
 
         // Visible-in-chat dispatch:
         //  1. show a heads-up in the chat overlay so the player knows the
@@ -134,11 +150,11 @@ public final class EditorAutoOpenHandler {
         //     vanilla chat screen uses for typed commands, which produces
         //     normal server-side feedback (success/error messages).
         if (mc.gui != null) {
-            mc.gui.getChat().addMessage(Component.literal("§7[Train Editor] auto-running /dungeontrain editor"));
+            mc.gui.getChat().addMessage(Component.literal("§7[Train Editor] auto-running /" + command));
             mc.gui.getChat().addMessage(Component.literal("§e[Train Editor] please wait a few seconds…"));
-            mc.gui.getChat().addRecentChat("/dungeontrain editor");
+            mc.gui.getChat().addRecentChat("/" + command);
         }
-        mc.player.connection.sendCommand("dungeontrain editor");
+        mc.player.connection.sendCommand(command);
     }
 
     private static void dispatchBuilderSetup(BuilderMode mode) {
