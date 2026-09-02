@@ -104,6 +104,30 @@ jobs:
             python3 scripts/localization/validate-locale.py $locales
           fi
 
+      # The guards above ask whether the TEXT is well-formed. They cannot ask whether it still
+      # works, and on 2026-08-30 that gap was live: an approved ru_ru epitaph swapped {deaths_nth}
+      # for {deaths}, which substitutes a spelled-out cardinal — "двай, кто пал" — and fails
+      # DeathLoreOrdinalTest. The job went green and opened the PR anyway (#1232), and because a
+      # token-authored PR raises no workflow events, build.yml never ran on it either. Nothing
+      # between the relay and main would have caught it.
+      #
+      # So the suite runs HERE, for the same reason the locale checks do: this job is the only
+      # place a translation import is ever tested. ~1 minute, once a week.
+      - name: Set up JDK 21
+        if: steps.changed.outputs.yes == 'true'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Set up Gradle
+        if: steps.changed.outputs.yes == 'true'
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Run the test suite against the imported text
+        if: steps.changed.outputs.yes == 'true'
+        run: ./gradlew test --no-daemon
+
       # The static template plus, when the import registered anyone, the names it added — a
       # reviewer should not have to spot a new person in the authors.json hunk to know they are
       # being asked to vouch for one. Composed in Python because a translator name is arbitrary

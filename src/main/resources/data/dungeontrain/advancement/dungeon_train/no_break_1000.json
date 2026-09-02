@@ -1,0 +1,19 @@
+{
+  "parent": "dungeontrain:dungeon_train/no_break_100",
+  "display": {
+    "icon": { "id": "minecraft:diamond_pickaxe" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.no_break_1000.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.no_break_1000.description" },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "action": {
+      "trigger": "dungeontrain:gameplay_action",
+      "conditions": { "actionId": "no_break_1000_carts" }
+    }
+  },
+  "requirements": [["action"]]
+}
