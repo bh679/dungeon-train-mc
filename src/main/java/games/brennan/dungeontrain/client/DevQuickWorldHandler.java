@@ -309,12 +309,32 @@ public final class DevQuickWorldHandler {
      * EditorQuietRuleEvents} re-applies it on every start, so this is the default rather than the
      * only enforcement.</p>
      *
+     * <p><b>No train.</b> The editor lives on plots in the sky at {@code EditorLayout.PLOT_Y} and
+     * reads nothing off a train, so this arms {@link PendingWorldChoices} with
+     * {@code startsWithTrain = false} exactly as {@link #launchBuilderWorld} does. That one flag
+     * skips the bootstrap spawn (the Sable ship, the eager carriage fill), the track corridor and
+     * every band — the whole cost the player used to sit through before being lifted to the plots.
+     * The other four fields are what {@code DungeonTrainWorldData.createDefault()} would have
+     * chosen anyway, so plot sizing ({@code dims}) is unchanged from an editor world made before
+     * this flag was armed.</p>
+     *
      * <p>Which editor category to open on arrival is not written into the world — the client-side
      * {@link EditorAutoOpenHandler} carries the picker's choice across the load, the same way it
      * carries a {@link BuilderMode} for the builder path.</p>
      */
     public static void launchEditorWorld(Screen lastScreen) {
         String name = nextWorldName(EDITOR_WORLD_PREFIX);
+        LOGGER.info("Editor world: creating '{}' (creative, no train — plots only)", name);
+
+        // isPresent() requires all five fields, so pass the createDefault() values for the four we
+        // don't care about — a partial set would be ignored and the world would spawn a train.
+        PendingWorldChoices.set(
+                DungeonTrainConfig.getTrainY(),
+                false,
+                CarriageDims.DEFAULT,
+                DungeonTrainConfig.DEFAULT_GENERATION_MODE,
+                DungeonTrainConfig.DEFAULT_GROUP_SIZE);
+
         GameRules rules = new GameRules();
         EditorQuietRules.apply(rules, null);   // no server yet — world is still being created
         LevelSettings settings = new LevelSettings(

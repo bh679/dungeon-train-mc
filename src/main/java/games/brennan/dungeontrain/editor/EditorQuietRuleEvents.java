@@ -20,8 +20,9 @@ import org.slf4j.Logger;
  * <h2>Why the name, and not the dimension</h2>
  * <p>{@code BuilderQuietRuleEvents} gates on the overworld's dimension type, because a builder world
  * <em>is</em> its own dimension. An editor world has no such marker: {@code launchEditorWorld} builds
- * an ordinary world on the default DT preset, and the only thing distinguishing it is the
- * {@link #EDITOR_WORLD_PREFIX} name it is given. So that is what this matches.</p>
+ * an ordinary world on the default DT preset (created with {@code startsWithTrain = false}, but so
+ * is any survival world whose author turned the train off), and the only thing distinguishing it is
+ * the {@link #EDITOR_WORLD_PREFIX} name it is given. So that is what this matches.</p>
  *
  * <p><b>It is a weaker marker and worth saying so.</b> A player who hand-names a save
  * {@code train editor 3} gets no natural mob spawning in it. The stronger alternative — a flag saved
