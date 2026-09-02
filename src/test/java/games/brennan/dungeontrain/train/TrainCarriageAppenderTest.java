@@ -699,6 +699,18 @@ final class TrainCarriageAppenderTest {
         assertEquals(TrainCarriageAppender.CATCH_UP_BURST_GROUPS, burstGroups(2, 1));
     }
 
+    /**
+     * AUTO is resolved by CatchUpBurstAuto above every call site. If it ever reaches the pacing
+     * function it falls past the FILL branch and silently paces as BURST_TWO — a wrong answer that
+     * produces no error and no log line, so it is asserted rather than trusted.
+     */
+    @Test
+    @DisplayName("catchUpBurstGroups: AUTO is rejected, never silently paced")
+    void burst_autoIsRejected() {
+        assertThrows(IllegalArgumentException.class,
+            () -> TrainCarriageAppender.catchUpBurstGroups(9, GROUP_SIZE, CatchUpBurstMode.AUTO));
+    }
+
     @Test
     @DisplayName("catchUpBurstGroups: a non-positive groupSize throws in every mode")
     void burst_groupSizeZero_throws() {
@@ -964,5 +976,138 @@ final class TrainCarriageAppenderTest {
     void blockReason_reap() {
         assertEquals(games.brennan.dungeontrain.debug.BackwardGenTrace.Reason.FRONTIER_REAP,
             TrainCarriageAppender.backwardBlockReason(true, TrainCarriageAppender.EdgeAction.REAP_DEFER));
+    }
+
+    // ---- remote players: carriages anywhere on the line ----
+
+    @Test
+    @DisplayName("isCorridorNear: within NEAR_RADIUS of the line in Y/Z, X unbounded")
+    void corridor_nearTest() {
+        assertTrue(TrainCarriageAppender.isCorridorNear(64, 3, 64, 3));
+        assertTrue(TrainCarriageAppender.isCorridorNear(64, 131, 64, 3));      // dz = 128, on the edge
+        assertFalse(TrainCarriageAppender.isCorridorNear(64, 131.5, 64, 3));   // just past it
+        assertTrue(TrainCarriageAppender.isCorridorNear(192, 3, 64, 3));       // dy = 128
+        assertFalse(TrainCarriageAppender.isCorridorNear(193, 3, 64, 3));
+        assertFalse(TrainCarriageAppender.isCorridorNear(164, 103, 64, 3));    // 100² + 100² > 128²
+        assertTrue(TrainCarriageAppender.isCorridorNear(64, -125, 64, 3));     // below the line's Z
+    }
+
+    @Test
+    @DisplayName("estimatePIdx: slots within the reference group, pads attributed to the carriage beside them")
+    void estimate_withinGroup() {
+        // groupSize 3, length 9, halfPadLen 5, seam 0.4: [pad 0..5)[c0 5..14)[c1 14..23)[c2 23..32)[pad 32..37)
+        assertEquals(0, TrainCarriageAppender.estimatePIdx(0, 0.0, 5.0, 3, 9, 5, 0.4));
+        assertEquals(0, TrainCarriageAppender.estimatePIdx(0, 0.0, 2.0, 3, 9, 5, 0.4));   // back pad → slot 0
+        assertEquals(1, TrainCarriageAppender.estimatePIdx(0, 0.0, 14.0, 3, 9, 5, 0.4));
+        assertEquals(2, TrainCarriageAppender.estimatePIdx(0, 0.0, 31.9, 3, 9, 5, 0.4));
+        assertEquals(2, TrainCarriageAppender.estimatePIdx(0, 0.0, 36.0, 3, 9, 5, 0.4));  // front pad → last slot
+    }
+
+    @Test
+    @DisplayName("estimatePIdx: whole groups ahead and behind step by the padded stride plus the seam")
+    void estimate_acrossGroups() {
+        double stride = 3 * 9 + 2 * 5 + 0.4;
+        assertEquals(3, TrainCarriageAppender.estimatePIdx(0, 0.0, stride + 5.0, 3, 9, 5, 0.4));
+        assertEquals(-3, TrainCarriageAppender.estimatePIdx(0, 0.0, -stride + 5.0, 3, 9, 5, 0.4));
+        assertEquals(-1, TrainCarriageAppender.estimatePIdx(0, 0.0, -stride + 31.0, 3, 9, 5, 0.4));
+        // 60 groups away: the seam accumulates 24 blocks, which the naive stride would misplace.
+        assertEquals(180, TrainCarriageAppender.estimatePIdx(0, 0.0, 60 * stride + 5.0, 3, 9, 5, 0.4));
+        assertEquals(179, TrainCarriageAppender.estimatePIdx(0, 0.0, 60 * stride - 3.0, 3, 9, 5, 0.4));
+    }
+
+    @Test
+    @DisplayName("estimatePIdx: negative anchors and non-zero reference X; groupSize 1 has no pads")
+    void estimate_referenceOffsetsAndSingles() {
+        double stride = 3 * 9 + 2 * 5 + 0.4;
+        assertEquals(1, TrainCarriageAppender.estimatePIdx(-6, 100.0, 100.0 + 2 * stride + 14.0, 3, 9, 5, 0.4));
+        // groupSize 1: stride = length + seam, no pad offset.
+        assertEquals(0, TrainCarriageAppender.estimatePIdx(0, 0.0, 0.5, 1, 9, 5, 0.4));
+        assertEquals(1, TrainCarriageAppender.estimatePIdx(0, 0.0, 9.5, 1, 9, 5, 0.4));
+        assertThrows(IllegalArgumentException.class,
+            () -> TrainCarriageAppender.estimatePIdx(0, 0.0, 0.0, 0, 9, 5, 0.4));
+    }
+
+    @Test
+    @DisplayName("extrapolatedMinX: travel since the fix, minus ticks spent frozen, never backwards")
+    void lineFix_extrapolation() {
+        TrainCarriageAppender.LineFix fix = new TrainCarriageAppender.LineFix(0, 100.0, 1000L, 10L, 2.0);
+        assertEquals(110.0, TrainCarriageAppender.extrapolatedMinX(fix, 1100L, 10L), 1e-9);   // 100 ticks × 0.1
+        assertEquals(108.0, TrainCarriageAppender.extrapolatedMinX(fix, 1100L, 30L), 1e-9);   // 20 frozen
+        assertEquals(100.0, TrainCarriageAppender.extrapolatedMinX(fix, 900L, 10L), 1e-9);    // clock behind → 0
+        assertEquals(110.0, TrainCarriageAppender.extrapolatedMinX(fix, 1100L, 5L), 1e-9);    // frozen count reset → 0
+        assertEquals(100.0, TrainCarriageAppender.extrapolatedMinX(fix, 1100L, 500L), 1e-9);  // frozen the whole time
+    }
+
+    @Test
+    @DisplayName("remoteFrontierStart: lowest visible anchor above the player, else highest at/below")
+    void remoteFrontier_start() {
+        assertEquals(-6, TrainCarriageAppender.remoteFrontierStart(Set.of(0, -3, -6), -10));
+        assertEquals(-3, TrainCarriageAppender.remoteFrontierStart(Set.of(0, -3, -6), -4));
+        assertEquals(0, TrainCarriageAppender.remoteFrontierStart(Set.of(0, -3, -6), 5));
+        assertEquals(0, TrainCarriageAppender.remoteFrontierStart(Set.of(0, -3, -6), 0));
+        assertNull(TrainCarriageAppender.remoteFrontierStart(Set.of(), 0));
+    }
+
+    @Test
+    @DisplayName("nearestRegisteredAnchor / withinRemoteCap: the cap counts groups from the nearest anchor")
+    void remote_cap() {
+        assertEquals(-3, TrainCarriageAppender.nearestRegisteredAnchor(Set.of(0, -3, -6), -4));
+        assertEquals(0, TrainCarriageAppender.nearestRegisteredAnchor(Set.of(0, -3, -6), 10));
+        assertNull(TrainCarriageAppender.nearestRegisteredAnchor(Set.of(), 10));
+        int cap = TrainCarriageAppender.REMOTE_CATCH_UP_MAX_GROUPS;
+        assertTrue(TrainCarriageAppender.withinRemoteCap(0, -cap * 3, 3, cap));
+        assertFalse(TrainCarriageAppender.withinRemoteCap(0, -cap * 3 - 1, 3, cap));
+        assertTrue(TrainCarriageAppender.withinRemoteCap(0, cap * 3, 3, cap));
+        assertTrue(TrainCarriageAppender.withinRemoteCap(5, 5, 3, cap));
+        assertThrows(IllegalArgumentException.class, () -> TrainCarriageAppender.withinRemoteCap(0, 0, 0, cap));
+    }
+
+    @Test
+    @DisplayName("frontmostForceLoadTargets: the N highest-pIdx groups, mirror of the backmost selector")
+    void frontmost_targets() {
+        UUID a = UUID.nameUUIDFromBytes(new byte[]{1});
+        UUID b = UUID.nameUUIDFromBytes(new byte[]{2});
+        UUID c = UUID.nameUUIDFromBytes(new byte[]{3});
+        List<TrainCarriageAppender.TrailingId> ids = List.of(
+            new TrainCarriageAppender.TrailingId(-3, a),
+            new TrainCarriageAppender.TrailingId(3, b),
+            new TrainCarriageAppender.TrailingId(0, c));
+        assertEquals(Set.of(b, c), TrainCarriageAppender.frontmostForceLoadTargets(ids, 2));
+        assertEquals(Set.of(a, b, c), TrainCarriageAppender.frontmostForceLoadTargets(ids, 9));
+        assertEquals(Set.of(), TrainCarriageAppender.frontmostForceLoadTargets(ids, 0));
+        assertEquals(Set.of(), TrainCarriageAppender.frontmostForceLoadTargets(List.of(), 2));
+    }
+
+    @Test
+    @DisplayName("isReapableGhost: held and resident entries are never reaped")
+    void reapable_table() {
+        assertFalse(TrainCarriageAppender.isReapableGhost(true, false));
+        assertFalse(TrainCarriageAppender.isReapableGhost(true, true));
+        assertFalse(TrainCarriageAppender.isReapableGhost(false, true));
+        assertTrue(TrainCarriageAppender.isReapableGhost(false, false));
+    }
+
+    @Test
+    @DisplayName("mayWakeRemote: first attempt free, then rate-limited, then capped per episode")
+    void wake_budget() {
+        assertTrue(TrainCarriageAppender.mayWakeRemote(null, 0L));
+        TrainCarriageAppender.RemoteWake one = new TrainCarriageAppender.RemoteWake(100L, 1);
+        assertFalse(TrainCarriageAppender.mayWakeRemote(one, 100L + TrainCarriageAppender.REMOTE_WAKE_INTERVAL_TICKS - 1));
+        assertTrue(TrainCarriageAppender.mayWakeRemote(one, 100L + TrainCarriageAppender.REMOTE_WAKE_INTERVAL_TICKS));
+        TrainCarriageAppender.RemoteWake spent = new TrainCarriageAppender.RemoteWake(100L, TrainCarriageAppender.REMOTE_MAX_WAKES);
+        assertFalse(TrainCarriageAppender.mayWakeRemote(spent, 100L + TrainCarriageAppender.REMOTE_WAKE_COOLDOWN_TICKS - 1));
+        assertFalse(TrainCarriageAppender.isNewWakeEpisode(spent, 100L + TrainCarriageAppender.REMOTE_WAKE_COOLDOWN_TICKS - 1));
+        // After the cooldown a spent episode starts over (a held group can become snatchable later).
+        assertTrue(TrainCarriageAppender.mayWakeRemote(spent, 100L + TrainCarriageAppender.REMOTE_WAKE_COOLDOWN_TICKS));
+        assertTrue(TrainCarriageAppender.isNewWakeEpisode(spent, 100L + TrainCarriageAppender.REMOTE_WAKE_COOLDOWN_TICKS));
+        assertFalse(TrainCarriageAppender.isNewWakeEpisode(one, 100_000L));
+        assertFalse(TrainCarriageAppender.isNewWakeEpisode(null, 100_000L));
+    }
+
+    @Test
+    @DisplayName("backwardBlockReason: a frozen reference reports EDGE_FROZEN")
+    void blockReason_frozen() {
+        assertEquals(games.brennan.dungeontrain.debug.BackwardGenTrace.Reason.EDGE_FROZEN,
+            TrainCarriageAppender.backwardBlockReason(true, TrainCarriageAppender.EdgeAction.FROZEN_DEFER));
     }
 }

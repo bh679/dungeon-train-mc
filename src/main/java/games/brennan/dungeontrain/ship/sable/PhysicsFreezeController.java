@@ -36,17 +36,25 @@ import java.util.UUID;
  * tick (ready before it can be seen); it must be continuously inactive for {@link #FREEZE_GRACE_TICKS}
  * before we freeze, so a brief tracking flicker never flaps the body.</p>
  *
+ * <p><b>Only the body parks; the pose keeps following the train.</b> {@link PhysicsFreeze#followParked}
+ * writes the driver's output into the frozen sub-level's Java {@code logicalPose()} every tick (no
+ * native call), so Sable's tracking, its chunk tickets, serialization and DT's {@code worldAABB()}
+ * readers all see a parked carriage where the train actually has it. Tracking is the one that
+ * matters: it measures the player's distance to that pose, so a stale parked pose let a group's true
+ * slot come into view without the group ever being re-tracked — a group-sized hole in the train.</p>
+ *
  * <p><b>Unsettled carriages are never frozen.</b> A carriage that hasn't reached
  * {@code placedSuccessfully} is still being nudged into its seam by
  * {@link games.brennan.dungeontrain.train.TrainCarriageAppender#runPlacementCollisionTracker}, which
- * reads back the body's {@code worldAABB()} every tick to decide the next nudge. Freezing skips the
- * per-tick teleport, so the AABB stops moving, the tracker never sees a clean tick, and it keeps
- * shifting {@code spawnWorldPos} blind until the 200-tick safety valve fires — leaving up to 25
- * blocks of accumulated offset that materialises as a wide seam the moment the body unfreezes, and
- * collapsing the appender's per-lane spawn rate. A group appended behind a backward-riding player is
- * untracked by construction, so this was the backward-generation stall. At most one unsettled group
- * per lane is ever in flight (the appender's placement gate enforces it), so the exemption costs
- * nothing measurable.</p>
+ * reads back the body's {@code worldAABB()} every tick to decide the next nudge. Before the pose
+ * followed the train, freezing skipped the per-tick teleport, so the AABB stopped moving, the tracker
+ * never saw a clean tick, and it kept shifting {@code spawnWorldPos} blind until the 200-tick safety
+ * valve fired — leaving up to 25 blocks of accumulated offset that materialised as a wide seam the
+ * moment the body unfroze, and collapsing the appender's per-lane spawn rate. A group appended behind
+ * a backward-riding player is untracked by construction, so this was the backward-generation stall.
+ * The exemption is kept: a settling group still wants its real body in play, and at most one
+ * unsettled group per lane is ever in flight (the appender's placement gate enforces it), so it
+ * costs nothing measurable.</p>
  *
  * <p><b>...and neither are their neighbours.</b> A seam is a relationship between two carriages, so
  * exempting only the unsettled one just breaks the assumption from the other side: it keeps
@@ -142,8 +150,19 @@ public final class PhysicsFreezeController {
                 PhysicsFreeze.setInactiveTicks(sl, inactive);
 
                 switch (decide(activeNow, settling, inactive, frozenNow)) {
-                    case FREEZE -> PhysicsFreeze.freeze(sl);
-                    case UNFREEZE -> PhysicsFreeze.unfreeze(sl);
+                    case FREEZE -> PhysicsFreeze.freeze(sl, level.getGameTime());
+                    case UNFREEZE -> {
+                        // The pose has followed the train the whole time it was parked (see
+                        // PhysicsFreeze.followParked); only the native body is behind, by roughly
+                        // train speed × parked ticks, and applyTickOutput's next teleport closes
+                        // exactly this distance. Logged so the resume can be checked in a ride log:
+                        // bodyLagBlocks ≈ 0.1 × parkedTicks at the default 2 blocks/s.
+                        LOGGER.debug("[freeze.unpark] pIdx={} trainId={} parkedTicks={} bodyLagBlocks={}",
+                            c.provider().getPIdx(), c.provider().getTrainId(),
+                            PhysicsFreeze.parkedTicks(sl, level.getGameTime()),
+                            String.format("%.2f", PhysicsFreeze.bodyLagBlocks(sl)));
+                        PhysicsFreeze.unfreeze(sl);
+                    }
                     case NONE -> { }
                 }
                 if (PhysicsFreeze.isFrozen(sl)) frozen++;
@@ -161,8 +180,10 @@ public final class PhysicsFreezeController {
     }
 
     /**
-     * Anchors that must keep ticking: every unsettled group in {@code train}, plus each one's
-     * immediate neighbours on both sides.
+     * Anchors that must keep ticking: every group of a train that has any unsettled group (see
+     * {@link #anchorsToKeepTicking}). The original rule was "the unsettled group plus its
+     * immediate neighbours", which the paragraph below explains; the remote-player catch-up
+     * showed a parked group two or more strides away can sit inside the spawn zone too.
      *
      * <p><b>Why the neighbours.</b> The placement tracker settles a group by measuring the seam
      * against its train-facing neighbour and nudging. That model assumes the two share a motion
@@ -178,18 +199,33 @@ public final class PhysicsFreezeController {
      */
     private static Set<Integer> settlingAnchors(List<Trains.Carriage> train) {
         Set<Integer> unsettled = new HashSet<>();
-        for (Trains.Carriage c : train) {
-            if (!c.provider().isPlacedSuccessfully()) unsettled.add(c.provider().getPIdx());
-        }
-        if (unsettled.isEmpty()) return Set.of();
-        Set<Integer> out = new HashSet<>(unsettled);
+        Set<Integer> all = new HashSet<>();
         for (Trains.Carriage c : train) {
             int anchor = c.provider().getPIdx();
-            int groupSize = Math.max(1, c.provider().getGroupSize());
-            if (unsettled.contains(anchor + groupSize) || unsettled.contains(anchor - groupSize)) {
-                out.add(anchor);
-            }
+            all.add(anchor);
+            if (!c.provider().isPlacedSuccessfully()) unsettled.add(anchor);
         }
+        return anchorsToKeepTicking(unsettled, all);
+    }
+
+    /**
+     * Pure core of {@link #settlingAnchors}: while any group of a train is unsettled, EVERY group
+     * of that train keeps ticking; once none is, nothing is exempt on this account.
+     *
+     * <p><b>Why the whole train, not just the neighbours.</b> A parked body physically stays where
+     * it was while its canonical position keeps advancing, so after a minute it sits ~100 blocks
+     * behind the train's frame. A remote player's catch-up run spawns groups into exactly that
+     * zone (the lane places against a live reference, but the collision check sees the parked
+     * body's real box): the burst leader read "colliding" against a group two strides above,
+     * nudged −0.5, and the train's own +0.5 of travel undid it — for the whole settle budget, on
+     * sixteen groups in a row. Waking the whole train while a lane is spawning is bounded by the
+     * force-load window (only resident groups can be parked) and lasts 40 ticks past the last
+     * spawn, after which parking resumes.</p>
+     */
+    static Set<Integer> anchorsToKeepTicking(Set<Integer> unsettled, Set<Integer> all) {
+        if (unsettled.isEmpty()) return Set.of();
+        Set<Integer> out = new HashSet<>(all);
+        out.addAll(unsettled);
         return out;
     }
 

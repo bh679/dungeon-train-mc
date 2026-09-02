@@ -87,15 +87,6 @@ public final class PortalSwapDiagnostics {
         /** No twin at all: the pocket structure could not be placed for this pair. */
         NO_TWIN_STRUCTURE("this pair has no twin structure — there is no room for one under this world"),
 
-        /**
-         * An exit corridor reached before its pair's entry ever placed the structure.
-         *
-         * <p>Walking a train backwards into an exit corridor before anyone has been within approach
-         * range of the entry two slots behind it. The exit waits rather than placing a structure on
-         * its own coordinates — see the note in {@code PortalCarriageEvents.handlePortalCarriage}.</p>
-         */
-        EXIT_WITHOUT_STRUCTURE("exit corridor reached before its entry placed the pair's room — walk toward the entry"),
-
         /** The group's sub-level has been culled, so its last pose cannot be trusted. */
         GROUP_NOT_RESIDENT("the carriage group's sub-level is culled — its pose is stale"),
 

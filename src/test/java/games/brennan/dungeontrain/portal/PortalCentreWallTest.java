@@ -193,4 +193,36 @@ final class PortalCentreWallTest {
         }
         return out;
     }
+
+    /**
+     * The same agreement, phrased the way the live code now reaches the wall: from each corridor's
+     * WORLD origin as {@code PortalCorridorSize.corridorOriginX} places it. This is the invariant
+     * behind the walk-through fallback — an exit corridor opening the plate must hit the very cells
+     * an entry corridor would, or one of them opens a hole somewhere else in the group.
+     */
+    @Test
+    @DisplayName("from either corridor's world origin the column lands on the same world cells")
+    void worldOriginsAgreeForBothRolesAndKinds() {
+        double groupMinX = 5000.25;
+        int padLen = 4;
+        for (CarriageDims dims : new CarriageDims[] {DEFAULT_DIMS, EVEN_DIMS}) {
+            for (PortalCorridorKind k : PortalCorridorKind.values()) {
+                double entryOrigin = PortalCorridorSize.corridorOriginX(groupMinX, padLen,
+                    PortalCarriageSelection.SLOT_ENTRY, dims, PortalCarriageRole.ENTRY, k);
+                double exitOrigin = PortalCorridorSize.corridorOriginX(groupMinX, padLen,
+                    PortalCarriageSelection.SLOT_EXIT, dims, PortalCarriageRole.EXIT, k);
+
+                Set<String> fromEntry = new HashSet<>();
+                for (int[] c : PortalCentreWall.doorwayCellsFromCorridor(dims, k, PortalCarriageRole.ENTRY)) {
+                    fromEntry.add(Math.floor(entryOrigin + c[0]) + "," + c[1] + "," + c[2]);
+                }
+                Set<String> fromExit = new HashSet<>();
+                for (int[] c : PortalCentreWall.doorwayCellsFromCorridor(dims, k, PortalCarriageRole.EXIT)) {
+                    fromExit.add(Math.floor(exitOrigin + c[0]) + "," + c[1] + "," + c[2]);
+                }
+                assertEquals(fromEntry, fromExit, "length " + dims.length() + " " + k);
+                assertFalse(fromEntry.isEmpty());
+            }
+        }
+    }
 }

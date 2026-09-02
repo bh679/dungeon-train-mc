@@ -78,4 +78,19 @@ final class PhysicsFreezeControllerTest {
     void placedAfterUnplaced_freezesAgain() {
         assertEquals(Action.FREEZE, decide(false, false, FREEZE_GRACE_TICKS, false));
     }
+
+    @Test
+    void anchorsToKeepTicking_wholeTrainWhileAnyGroupIsUnsettled() {
+        java.util.Set<Integer> all = java.util.Set.of(0, -3, -6, -9, -12);
+        // Nothing settling → nothing exempt on this account.
+        org.junit.jupiter.api.Assertions.assertEquals(java.util.Set.of(),
+            PhysicsFreezeController.anchorsToKeepTicking(java.util.Set.of(), all));
+        // One unsettled group anywhere → every group keeps ticking (a parked body two strides away
+        // can sit inside the spawn zone).
+        org.junit.jupiter.api.Assertions.assertEquals(all,
+            PhysicsFreezeController.anchorsToKeepTicking(java.util.Set.of(-12), all));
+        // An unsettled anchor not yet in the visible set is still included.
+        org.junit.jupiter.api.Assertions.assertEquals(java.util.Set.of(0, -3, -6, -9, -12, -15),
+            PhysicsFreezeController.anchorsToKeepTicking(java.util.Set.of(-15), all));
+    }
 }
