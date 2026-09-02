@@ -3,7 +3,6 @@ package games.brennan.dungeontrain.train;
 import com.mojang.logging.LogUtils;
 import dev.ryanhcode.sable.SableConfig;
 import games.brennan.dungeontrain.bootstrap.BootstrapProgress;
-import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.debug.BackwardGenTrace;
 import games.brennan.dungeontrain.debug.DebugAccessEvents;
@@ -1811,6 +1810,12 @@ public final class TrainCarriageAppender {
         if (groupSize <= 0) {
             throw new IllegalArgumentException("groupSize must be > 0, got " + groupSize);
         }
+        if (mode == CatchUpBurstMode.AUTO) {
+            // AUTO is resolved by CatchUpBurstAuto.effectiveMode() above every call site. Reaching
+            // here means a caller passed the stored value straight through; without this it would
+            // fall past the FILL branch and quietly pace as BURST_TWO, which no log would show.
+            throw new IllegalArgumentException("AUTO must be resolved before pacing; see CatchUpBurstAuto");
+        }
         if (mode == CatchUpBurstMode.OFF) return 1;
         if (deficitPIdx <= 0) return 1;
         int deficitGroups = Math.ceilDiv(deficitPIdx, groupSize);
@@ -3118,7 +3123,9 @@ public final class TrainCarriageAppender {
         List<Trains.Carriage> train, ServerPlayer player, int deficit, int groupSize, Vector3dc velocity
     ) {
         if (player == null) return BackwardGenTrace.RideContext.NONE;
-        CatchUpBurstMode mode = DungeonTrainCommonConfig.getCatchUpBurstMode();
+        // Resolved, not stored: the trace must report the pacing the spawner actually used, and
+        // catchUpBurstGroups below rejects AUTO outright.
+        CatchUpBurstMode mode = CatchUpBurstAuto.effectiveMode();
         return new BackwardGenTrace.RideContext(
             CarriageDeck.isOnCarriageDeck(train, player),
             player.gameMode.getGameModeForPlayer().getName(),
@@ -4628,7 +4635,7 @@ public final class TrainCarriageAppender {
         long now,
         boolean forward
     ) {
-        CatchUpBurstMode mode = DungeonTrainCommonConfig.getCatchUpBurstMode();
+        CatchUpBurstMode mode = CatchUpBurstAuto.effectiveMode();
         int allowed = catchUpBurstGroups(deficitPIdx, groupSize, mode);
         if (allowed <= 1) return 0;
         Plan prevPlan = firstPlan;
@@ -4683,7 +4690,7 @@ public final class TrainCarriageAppender {
      */
     private static void openFillRun(UUID trainId, Map<UUID, FillRun> lane, Plan plan, int anchor,
                                     ManagedShip ship, long now, int deficitPIdx, int groupSize) {
-        if (DungeonTrainCommonConfig.getCatchUpBurstMode() != CatchUpBurstMode.FILL) return;
+        if (CatchUpBurstAuto.effectiveMode() != CatchUpBurstMode.FILL) return;
         if (deficitGroups(deficitPIdx, groupSize) <= 1) return;
         lane.put(trainId, new FillRun(plan, anchor, ship.subLevelId(), ship.id(), 1, now, now));
     }
@@ -4721,7 +4728,7 @@ public final class TrainCarriageAppender {
     ) {
         FillRun run = lane.get(trainId);
         if (run == null) return false;
-        if (DungeonTrainCommonConfig.getCatchUpBurstMode() != CatchUpBurstMode.FILL) {
+        if (CatchUpBurstAuto.effectiveMode() != CatchUpBurstMode.FILL) {
             lane.remove(trainId);
             return false;
         }

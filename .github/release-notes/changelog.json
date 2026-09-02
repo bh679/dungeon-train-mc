@@ -10904,6 +10904,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "catch-up-spawning-auto-from-specs",
+      "version": "0.780.0",
+      "type": "feat",
+      "title": "Catch-up spawning now suits your computer instead of guessing",
+      "summary": "Catch-up spawning decides how quickly the train re-extends after an end of it falls behind you. It was set to Fill all for everyone, which closes the gap fastest but asks the most of your machine \u2014 great on a desktop, a stutter on a thin laptop. It now has an Automatic setting, which is the new default: it looks at your processor and the memory the launcher gave Minecraft, picks the pacing that suits, and tells you which one it chose. You can still pick a mode yourself at any time and it will be left alone from then on.",
+      "highlights": [
+        "New Automatic option, and it is now the default. The setting shows what it picked, e.g. \"Automatic (Fill all)\".",
+        "A capable machine still gets Fill all \u2014 a typical 8-core setup with 4GB allocated is unchanged.",
+        "A machine short on cores or memory steps down to Burst 2 or Off, so catching up no longer costs you a stutter that lasts longer than the problem.",
+        "If you never changed this setting, you move to Automatic. If you deliberately chose Off or Burst 2, your choice is kept."
+      ],
+      "pr": 1271,
+      "date": "2026-09-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

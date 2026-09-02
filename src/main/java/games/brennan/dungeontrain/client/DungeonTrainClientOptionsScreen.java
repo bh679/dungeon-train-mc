@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.client.localization.edit.TranslationTarget;
 import games.brennan.dungeontrain.client.sound.TrainVolumeOption;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
+import games.brennan.dungeontrain.train.CatchUpBurstAuto;
 import games.brennan.dungeontrain.train.CatchUpBurstMode;
 import games.brennan.dungeontrain.data.PlayerDataBackup;
 import games.brennan.dungeontrain.data.PlayerDataPaths;
@@ -39,6 +40,7 @@ import net.minecraft.util.Mth;
 import java.nio.file.Path;
 import java.util.Optional;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.function.Consumer;
@@ -285,10 +287,10 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             case BACKPACK_BUTTON -> onOffCandidates("gui.dungeontrain.options.backpack_button");
             // Every mode, because the row must fit its LONGEST value — the button shows the
             // caption and the value together, and "Fill all" is not the longest in every locale.
-            case CATCH_UP_BURST -> List.of(
-                    value("gui.dungeontrain.options.catch_up_burst", catchUpBurstLabel(CatchUpBurstMode.OFF)),
-                    value("gui.dungeontrain.options.catch_up_burst", catchUpBurstLabel(CatchUpBurstMode.BURST_TWO)),
-                    value("gui.dungeontrain.options.catch_up_burst", catchUpBurstLabel(CatchUpBurstMode.FILL)));
+            // AUTO is the longest of all: it names the mode it resolved to inside its own label.
+            case CATCH_UP_BURST -> Arrays.stream(CatchUpBurstMode.values())
+                    .map(m -> value("gui.dungeontrain.options.catch_up_burst", catchUpBurstLabel(m)))
+                    .toList();
             case AI_POLICY -> List.of(Component.translatable("gui.dungeontrain.options.ai_policy"));
             case TRANSLATE -> List.of(Component.translatable("gui.dungeontrain.options.translate"));
             case CUSTOM_CONTENT -> {
@@ -608,10 +610,19 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
         return Component.translatable("gui.dungeontrain.menu_space." + space.name().toLowerCase(Locale.ROOT));
     }
 
-    /** Attaches a word-wrapping hover tooltip from a lang key and hands the widget straight back. */
+    /**
+     * The label for one catch-up mode. AUTO names what it actually resolved to — "Automatic (Fill
+     * all)" — because "Automatic" alone tells a player nothing about what their train will do, and
+     * the resolution is available here: in singleplayer it is this same JVM.
+     */
     private static Component catchUpBurstLabel(CatchUpBurstMode mode) {
+        if (mode == CatchUpBurstMode.AUTO) {
+            return Component.translatable("gui.dungeontrain.options.catch_up_burst.auto",
+                    Component.translatable("gui.dungeontrain.options.catch_up_burst."
+                            + CatchUpBurstAuto.machineMode().name().toLowerCase(Locale.ROOT)));
+        }
         return Component.translatable("gui.dungeontrain.options.catch_up_burst."
-                + mode.name().toLowerCase(java.util.Locale.ROOT));
+                + mode.name().toLowerCase(Locale.ROOT));
     }
 
     private static <T extends AbstractWidget> T withTip(T widget, String key) {

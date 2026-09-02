@@ -945,6 +945,7 @@
   "gui.dungeontrain.settings.label.compatible_terrain": "Terrain compat. :",
   "gui.dungeontrain.options.catch_up_burst": "Génération de rattrapage",
   "gui.dungeontrain.options.catch_up_burst.tip": "À quelle vitesse une extrémité du train se prolonge après avoir pris du retard — quand vous le distancez, ou qu'il vous dépasse pendant que vous restez sur place. « Désactivée » ajoute un groupe de wagons à la fois : les écarts entre groupes restent réguliers, mais un train rapide vous échappe. « 2 d'un coup » en ajoute deux tant qu'une extrémité est en retard. « Tout combler » ajoute d'un seul coup tous les groupes manquants : le rattrapage est immédiat, au prix d'un bref à-coup pendant leur apparition. S'applique au train sur lequel vous roulez déjà.",
+  "gui.dungeontrain.options.catch_up_burst.auto": "Automatique (%s)",
   "gui.dungeontrain.options.catch_up_burst.off": "Désactivée",
   "gui.dungeontrain.options.catch_up_burst.burst_two": "2 d'un coup",
   "gui.dungeontrain.options.catch_up_burst.fill": "Tout combler",

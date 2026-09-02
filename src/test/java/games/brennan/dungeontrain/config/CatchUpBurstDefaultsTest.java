@@ -9,6 +9,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Pins where catch-up spawning lives and what it ships as.
@@ -24,14 +25,40 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class CatchUpBurstDefaultsTest {
 
     @Test
-    @DisplayName("catch-up spawning ships as FILL")
-    void defaultIsFill() {
-        assertEquals(CatchUpBurstMode.FILL, DungeonTrainCommonConfig.DEFAULT_CATCH_UP_BURST_MODE,
-                "FILL is the only mode measured to actually close a deficit at speed — BURST_TWO "
-                        + "held a ~8-group shortfall steady without ever catching up");
+    @DisplayName("catch-up spawning ships as AUTO")
+    void defaultIsAuto() {
+        assertEquals(CatchUpBurstMode.AUTO, DungeonTrainCommonConfig.DEFAULT_CATCH_UP_BURST_MODE,
+                "one pacing cannot suit both a desktop and a thin laptop — AUTO picks per machine");
         assertNotNull(DungeonTrainCommonConfig.getCatchUpBurstMode(),
                 "the getter is read by the title-screen Options row, where a null would take the "
                         + "screen down");
+    }
+
+    @Test
+    @DisplayName("FILL is remembered as the legacy default, so the migration can spot it")
+    void legacyDefaultIsFill() {
+        assertEquals(CatchUpBurstMode.FILL, DungeonTrainCommonConfig.LEGACY_CATCH_UP_BURST_MODE,
+                "the v0 -> v1 migration moves exactly this value to AUTO; change it and every "
+                        + "existing install is either missed or has a deliberate choice overwritten");
+    }
+
+    /**
+     * Flipping a shipped default only ever reaches installs with no config file yet. Everyone
+     * already playing has FILL written to disk, so without a version bump the migration never runs
+     * and AUTO reaches almost nobody — the failure mode is total silence.
+     */
+    @Test
+    @DisplayName("a config migration ships to carry AUTO to existing installs")
+    void aMigrationShipsForTheNewDefault() {
+        assertTrue(DungeonTrainCommonConfig.CURRENT_CONFIG_VERSION
+                        > DungeonTrainCommonConfig.DEFAULT_CONFIG_VERSION,
+                "CURRENT_CONFIG_VERSION must exceed the pre-versioning default, or "
+                        + "runPendingMigrations() returns immediately and every existing "
+                        + "dungeontrain-common.toml keeps FILL forever");
+        assertTrue(DungeonTrainCommonConfig.CURRENT_CONFIG_VERSION
+                        <= DungeonTrainCommonConfig.MAX_CONFIG_VERSION,
+                "outside the spec's range the value fails validation and NeoForge silently resets "
+                        + "it to the default, re-running every migration on every launch");
     }
 
     @Test

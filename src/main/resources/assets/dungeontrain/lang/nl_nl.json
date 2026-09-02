@@ -945,6 +945,7 @@
   "gui.dungeontrain.settings.label.compatible_terrain": "Compat. terrein:",
   "gui.dungeontrain.options.catch_up_burst": "Inhaal-spawnen",
   "gui.dungeontrain.options.catch_up_burst.tip": "Hoe snel een uiteinde van de trein weer aangroeit nadat het is achtergeraakt — als jij hem voorbijloopt, of als hij langs je rijdt terwijl je stilstaat. «Uit» zet er telkens één groep wagons bij: de tussenruimtes blijven gelijkmatig, maar een snelle trein loopt van je weg. «2 tegelijk» zet er twee bij zolang een uiteinde achterloopt. «Alles aanvullen» zet in één keer elke ontbrekende groep erbij, zodat hij meteen bijtrekt, ten koste van een korte hapering terwijl ze verschijnen. Geldt ook voor de trein waarop je al rijdt.",
+  "gui.dungeontrain.options.catch_up_burst.auto": "Automatisch (%s)",
   "gui.dungeontrain.options.catch_up_burst.off": "Uit",
   "gui.dungeontrain.options.catch_up_burst.burst_two": "2 tegelijk",
   "gui.dungeontrain.options.catch_up_burst.fill": "Alles aanvullen",
