@@ -11004,9 +11004,9 @@
       ],
       "pr": 1269,
       "date": "2026-09-02",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.788.0",
+      "released_at": "2026-09-02T12:47:47Z"
     },
     {
       "id": "no-blocks-broken-chain",
@@ -11017,9 +11017,9 @@
       "highlights": [],
       "pr": 1277,
       "date": "2026-09-02",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.788.0",
+      "released_at": "2026-09-02T12:47:47Z"
     },
     {
       "id": "editor-menu-width-save-icon",
@@ -11034,9 +11034,9 @@
       ],
       "pr": 1282,
       "date": "2026-09-02",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.788.0",
+      "released_at": "2026-09-02T12:47:47Z"
     },
     {
       "id": "portal-carriage-bookshelf-removal",
@@ -11046,9 +11046,9 @@
       "summary": "Small fixes and adjustments.",
       "highlights": [],
       "date": "2026-09-02",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.788.0",
+      "released_at": "2026-09-02T12:47:47Z"
     },
     {
       "id": "editor-world-loads-in-seconds",
@@ -11063,9 +11063,9 @@
       ],
       "pr": 1281,
       "date": "2026-09-02",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.788.0",
+      "released_at": "2026-09-02T12:47:47Z"
     }
   ]
 }
