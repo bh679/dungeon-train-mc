@@ -482,6 +482,7 @@
   "chat.dungeontrain.portal.reviving": "This corridor has lost track of its train. Hold on…",
   "chat.dungeontrain.portal.no_train": "This room has lost its train. Its corridors lead nowhere.",
   "chat.dungeontrain.portal.returned": "This room lost its train — you've been put back on it.",
+  "chat.dungeontrain.portal.walk_through": "This dimensional carriage isn't connecting. The way through has been opened.",
   "chat.dungeontrain.portal.no_shulker_box.1": "The shulker box senses this is not the place for that, perhaps a bug in the creator's code?",
   "chat.dungeontrain.portal.no_shulker_box.2": "It's not worth the risk. Find a different carriage.",
   "chat.dungeontrain.portal_library.1": "Every book in here carries the same name: %1$s.",

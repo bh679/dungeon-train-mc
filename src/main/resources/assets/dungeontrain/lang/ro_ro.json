@@ -496,6 +496,7 @@
   "chat.dungeontrain.portal.reviving": "Coridorul ăsta și-a pierdut urma trenului. Ține-te bine…",
   "chat.dungeontrain.portal.no_train": "Camera asta și-a pierdut trenul. Coridoarele ei nu duc nicăieri.",
   "chat.dungeontrain.portal.returned": "Camera asta și-a pierdut trenul — ai fost pus înapoi pe el.",
+  "chat.dungeontrain.portal.walk_through": "Acest vagon dimensional nu se conectează. Trecerea a fost deschisă.",
   "chat.dungeontrain.portal.no_shulker_box.1": "Cutia shulker simte că nu ăsta e locul pentru așa ceva — poate o eroare în codul creatorului?",
   "chat.dungeontrain.portal.no_shulker_box.2": "Nu merită riscul. Găsește alt vagon.",
   "chat.dungeontrain.portal_library.1": "Fiecare carte de aici poartă același nume: %1$s.",

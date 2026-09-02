@@ -404,6 +404,7 @@
   "chat.dungeontrain.portal.reviving": "Koridor ini kehilangan jejak kereta apinya. Bertahan…",
   "chat.dungeontrain.portal.no_train": "Bilik ini kehilangan kereta apinya. Koridornya tidak menuju ke mana-mana.",
   "chat.dungeontrain.portal.returned": "Bilik ini kehilangan kereta apinya — anda telah dikembalikan ke atasnya.",
+  "chat.dungeontrain.portal.walk_through": "Gerabak dimensi ini tidak bersambung. Laluan menembusinya telah dibuka.",
   "chat.dungeontrain.portal.no_shulker_box.1": "Kotak shulker itu merasakan ini bukan tempatnya, mungkin ada pepijat dalam kod penciptanya?",
   "chat.dungeontrain.portal.no_shulker_box.2": "Ia tidak berbaloi diambil risiko. Cari gerabak lain.",
   "chat.dungeontrain.portal_library.1": "Setiap buku di sini membawa nama yang sama: %1$s.",

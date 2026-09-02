@@ -419,6 +419,7 @@
   "chat.dungeontrain.portal.reviving": "Este corredor perdeu o rastro do seu trem. Aguente firme…",
   "chat.dungeontrain.portal.no_train": "Esta sala perdeu o seu trem. Seus corredores não levam a lugar nenhum.",
   "chat.dungeontrain.portal.returned": "Esta sala perdeu o seu trem — você foi recolocado nele.",
+  "chat.dungeontrain.portal.walk_through": "Este vagão dimensional não está conectando. A passagem foi aberta.",
   "chat.dungeontrain.portal.no_shulker_box.1": "A caixa de shulker sente que este não é o lugar para isso, talvez um bug no código do criador?",
   "chat.dungeontrain.portal.no_shulker_box.2": "Não vale o risco. Procure outro vagão.",
   "chat.dungeontrain.portal_library.1": "Todo livro aqui traz o mesmo nome: %1$s.",

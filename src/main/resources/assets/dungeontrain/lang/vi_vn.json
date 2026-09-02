@@ -404,6 +404,7 @@
   "chat.dungeontrain.portal.reviving": "Hành lang này đã lạc mất dấu đoàn tàu của mình. Bám chắc nhé…",
   "chat.dungeontrain.portal.no_train": "Căn phòng này đã mất đoàn tàu của mình. Những hành lang của nó chẳng dẫn về đâu.",
   "chat.dungeontrain.portal.returned": "Căn phòng này đã mất đoàn tàu của mình — bạn được đưa trở lại trên tàu.",
+  "chat.dungeontrain.portal.walk_through": "Toa liên chiều này không kết nối. Lối đi xuyên qua đã được mở.",
   "chat.dungeontrain.portal.no_shulker_box.1": "Rương Ẩn Giới cảm thấy đây không phải nơi dành cho việc đó, có lẽ là một lỗi trong mã của đấng sáng tạo?",
   "chat.dungeontrain.portal.no_shulker_box.2": "Không đáng để liều. Hãy tìm một toa khác.",
   "chat.dungeontrain.portal_library.1": "Mọi cuốn sách trong này đều mang cùng một cái tên: %1$s.",

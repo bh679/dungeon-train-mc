@@ -82,7 +82,7 @@ public final class RelayOutbox {
     private static final Set<String> BATCHABLE_PATHS = Set.of(
             "/telemetry/book-read", "/telemetry/run-summary", "/telemetry/death",
             "/telemetry/world-info", "/telemetry/death-equipment", "/telemetry/death-detail",
-            "/telemetry/death-inventory", "/telemetry/builder-time");
+            "/telemetry/death-inventory", "/telemetry/builder-time", "/telemetry/portal-stats");
     private static final String BATCH_PATH = "/telemetry/batch";
     /** Batch-POST statuses that mean "this relay can't take the batch" → deliver the items individually. */
     private static final Set<Integer> BATCH_FALLBACK_STATUSES = Set.of(404, 405, 413, 501);

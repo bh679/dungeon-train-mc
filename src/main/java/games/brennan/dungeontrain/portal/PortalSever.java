@@ -2,10 +2,13 @@ package games.brennan.dungeontrain.portal;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
+import games.brennan.dungeontrain.ship.ManagedShip;
+import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.Vec3;
 import org.slf4j.Logger;
 
 /**
@@ -136,10 +139,33 @@ public final class PortalSever {
      * right, because the twin pair has no cart between its halves to open.</p>
      */
     private static void openCentreWall(ServerLevel level, PortalPairIndex.Entry entry) {
-        PortalFrames frames = entry.frames();
-        for (int[] cell : PortalCentreWall.doorwayCellsFromCorridor(
-                entry.dims(), entry.kind(), frames.role())) {
-            SilentBlockOps.clearBlockSilent(level, entry.plotPosOf(cell));
+        openCentreWall(level, entry.ship(), entry.carriageWorld(), entry.dims(), entry.kind(),
+            entry.frames().role());
+    }
+
+    /**
+     * The same opening, for a caller that holds no pairing.
+     *
+     * <p>{@link PortalWalkThrough} reaches this for a corridor whose swap keeps being refused —
+     * including one whose pair never got as far as a structure, and so was never published to
+     * {@link PortalPairIndex}. The corridor's world origin and its ship are what the tick handler has
+     * in hand, and they are all the conversion needs.</p>
+     *
+     * <p><b>Idempotent.</b> A cell that is already air is left alone, so re-asserting an open plate
+     * every second — which is what keeps a mid-episode re-stamp from sealing it again — costs a read
+     * per cell and no write. Written at shipyard coordinates through {@link SilentBlockOps}, which
+     * goes through {@code level.setBlock} and so reaches clients; the cells sit outside the
+     * corridor's own box, so {@link PortalEditMirror} neither mirrors nor severs on them.</p>
+     *
+     * @param carriageWorld the corridor's origin in world space — its minimum corner, read live
+     */
+    public static void openCentreWall(ServerLevel level, ManagedShip ship, Vec3 carriageWorld,
+                                      CarriageDims dims, PortalCorridorKind kind,
+                                      PortalCarriageRole role) {
+        for (int[] cell : PortalCentreWall.doorwayCellsFromCorridor(dims, kind, role)) {
+            BlockPos pos = PortalPairIndex.plotPosOf(ship, carriageWorld, cell);
+            if (level.getBlockState(pos).isAir()) continue;
+            SilentBlockOps.clearBlockSilent(level, pos);
         }
     }
 
